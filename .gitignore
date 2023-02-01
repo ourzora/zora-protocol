@@ -12,3 +12,12 @@ docs/
 
 # Dotenv file
 .env
+
+# yarn error
+yarn-error.log
+
+# osx
+.DS_Store
+
+# npm
+node_modules/
