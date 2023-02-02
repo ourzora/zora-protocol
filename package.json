@@ -6,12 +6,18 @@
   "license": "MIT",
   "scripts": {
     "test": "forge test",
-    "test-gas": "forge test --gas-report"
+    "test-gas": "forge test --gas-report",
+    "prettier": "prettier --write 'src/**/*.sol'",
+    "coverage": "forge coverage --report lcov"
   },
   "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "4.8.0",
     "@openzeppelin/contracts": "4.8.0",
+    "@openzeppelin/contracts-upgradeable": "4.8.0",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
     "forge-std": "https://github.com/foundry-rs/forge-std#cd7d533f9a0ee0ec02ad81e0a8f262bc4203c653"
+  },
+  "devDependencies": {
+    "prettier": "^2.8.3",
+    "prettier-plugin-solidity": "^1.1.1"
   }
 }
