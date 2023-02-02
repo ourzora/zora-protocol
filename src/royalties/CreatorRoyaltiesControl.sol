@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import {CreatorRoyaltiesStorageV1} from "./CreatorRoyaltiesStorageV1.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
+import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 abstract contract CreatorRoyaltiesControl is
     CreatorRoyaltiesStorageV1,
@@ -42,5 +43,14 @@ abstract contract CreatorRoyaltiesControl is
     ) internal {
         royalties[tokenId] = configuration;
         emit UpdatedRoyalties(tokenId, msg.sender, configuration);
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        returns (bool)
+    {
+        return interfaceId == type(IERC2981).interfaceId;
     }
 }

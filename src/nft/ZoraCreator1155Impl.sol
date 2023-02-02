@@ -8,6 +8,7 @@ import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
+import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 
 contract ZoraCreator1155Impl is
@@ -17,9 +18,8 @@ contract ZoraCreator1155Impl is
     ERC1155Upgradeable,
     ZoraCreator1155StorageV1,
     CreatorPermissionControl,
-    SharedBaseConstants
+    CreatorRoyaltiesControl
 {
-
     uint256 public immutable PERMISSION_BIT_ADMIN = 1; // 0b1
     uint256 public immutable PERMISSION_BIT_MINTER = 2; // 0b01
     uint256 public immutable PERMISSION_BIT_SALES = 4; // 0b001
@@ -51,18 +51,17 @@ contract ZoraCreator1155Impl is
         string memory contractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration
     ) internal {
+        // Add admin permission to default admin to manage contract
         _addPermission(CONTRACT_BASE_ID, defaultAdmin, PERMISSION_BIT_ADMIN);
 
         // Mint token ID 0 / don't allow any user mints
         _setupNewToken(contractURI, 0);
 
-        _updateRoyaltyConfiguration(
-            CONTRACT_BASE_ID,
-            defaultRoyaltyConfiguration
-        );
+        // Update default royalties
+        _updateRoyalties(CONTRACT_BASE_ID, defaultRoyaltyConfiguration);
     }
 
-    // remove from OZ impl
+    // remove from openzeppelin impl
     function _setURI(string memory newuri) internal virtual override {}
 
     function _getNextTokenId() internal returns (uint256) {
@@ -132,19 +131,6 @@ contract ZoraCreator1155Impl is
         });
         tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
-    }
-
-    function _updateRoyaltyConfiguration(
-        uint256 tokenId,
-        RoyaltyConfiguration memory royaltyConfiguration
-    ) internal {
-        royaltyConfigurations[tokenId] = royaltyConfiguration;
-
-        emit RoyaltyConfigurationUpdated({
-            tokenId: tokenId,
-            sender: msg.sender,
-            royaltyConfiguration: royaltyConfiguration
-        });
     }
 
     function setTokenMetadataRenderer(
@@ -239,5 +225,17 @@ contract ZoraCreator1155Impl is
             minterArguments
         );
         // );
+    }
+
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(CreatorRoyaltiesControl, ERC1155Upgradeable)
+        returns (bool)
+    {
+        return
+            super.supportsInterface(interfaceId) ||
+            interfaceId == type(IZoraCreator1155).interfaceId;
     }
 }
