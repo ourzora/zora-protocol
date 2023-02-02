@@ -8,6 +8,7 @@ import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
+import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 
 contract ZoraCreator1155Impl is
     IZoraCreator1155,
@@ -15,9 +16,9 @@ contract ZoraCreator1155Impl is
     PublicMulticall,
     ERC1155Upgradeable,
     ZoraCreator1155StorageV1,
-    CreatorPermissionControl
+    CreatorPermissionControl,
+    SharedBaseConstants
 {
-    uint256 private immutable CONTRACT_BASE_ID = 0;
 
     uint256 public immutable PERMISSION_BIT_ADMIN = 1; // 0b1
     uint256 public immutable PERMISSION_BIT_MINTER = 2; // 0b01
