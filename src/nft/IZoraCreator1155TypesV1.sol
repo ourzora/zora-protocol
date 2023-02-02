@@ -2,11 +2,6 @@
 pragma solidity 0.8.17;
 
 interface IZoraCreator1155TypesV1 {
-    struct RoyaltyConfiguration {
-        uint32 royaltyBPS;
-        address royaltyRecipient;
-    }
-
     struct TokenData {
         string uri;
         uint256 maxSupply;

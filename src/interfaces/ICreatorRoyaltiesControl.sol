@@ -15,8 +15,8 @@ interface ICreatorRoyaltiesControl is IERC2981 {
         RoyaltyConfiguration configuration
     );
 
-    function getPermissions(uint256 token, address user)
+    function getRoyalties(uint256 token)
         external
         view
-        returns (uint256);
+        returns (RoyaltyConfiguration memory);
 }

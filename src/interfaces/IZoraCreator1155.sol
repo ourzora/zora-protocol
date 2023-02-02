@@ -16,12 +16,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
-    event RoyaltyConfigurationUpdated(
-        uint256 tokenId,
-        address sender,
-        RoyaltyConfiguration royaltyConfiguration
-    );
-
     // TODO: maybe add more context
     error CannotMintMoreTokens(uint256 tokenId);
 
