@@ -21,3 +21,6 @@ yarn-error.log
 
 # npm
 node_modules/
+
+# coverage info
+lcov.info
