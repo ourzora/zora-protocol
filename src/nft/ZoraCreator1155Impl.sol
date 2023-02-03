@@ -7,15 +7,22 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
 import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
+import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
+import {MintFeeManager} from "../fee/MintFeeManager.sol";
+
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 contract ZoraCreator1155Impl is
     IZoraCreator1155,
     ReentrancyGuardUpgradeable,
     PublicMulticall,
     ERC1155Upgradeable,
+    MintFeeManager,
+    UUPSUpgradeable,
     ZoraCreator1155StorageV1,
     CreatorPermissionControl,
     CreatorRoyaltiesControl
@@ -25,12 +32,20 @@ contract ZoraCreator1155Impl is
     uint256 public immutable PERMISSION_BIT_SALES = 4; // 0b001
     uint256 public immutable PERMISSION_BIT_METADATA = 8; // 0b0001
 
-    constructor() initializer {}
+    IZoraCreator1155Factory public immutable factory;
+
+    constructor(IZoraCreator1155Factory _factory, uint256 _mintFeeBPS)
+        MintFeeManager(_mintFeeBPS)
+        initializer
+    {
+        factory = _factory;
+    }
 
     function initialize(
         string memory contractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address defaultAdmin
+        address defaultAdmin,
+        bytes[] calldata setupActions
     ) external initializer {
         // Initialize OZ 1155 implementation
         __ERC1155_init("");
@@ -44,6 +59,23 @@ contract ZoraCreator1155Impl is
             contractURI,
             defaultRoyaltyConfiguration
         );
+
+        // Run Setup actions
+        if (setupActions.length > 0) {
+            // Temporarily make sender admin
+            _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
+
+            // Make calls
+            multicall(setupActions);
+
+            // Remove admin
+            _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
+            _removePermission(
+                CONTRACT_BASE_ID,
+                msg.sender,
+                PERMISSION_BIT_ADMIN
+            );
+        }
     }
 
     function _setupDefaultToken(
@@ -88,8 +120,17 @@ contract ZoraCreator1155Impl is
         }
     }
 
+    function _requireAdmin(address user, uint256 tokenId) internal view {
+        _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN);
+    }
+
     modifier onlyAdminOrRole(uint256 tokenId, uint256 role) {
         _requireAdminOrRole(msg.sender, tokenId, role);
+        _;
+    }
+
+    modifier onlyAdmin(uint256 tokenId) {
+        _requireAdmin(msg.sender, tokenId);
         _;
     }
 
@@ -195,12 +236,6 @@ contract ZoraCreator1155Impl is
         _mintBatch(recipient, tokenIds, quantities, data);
     }
 
-    // multicall [
-    //   mint() -- mint
-    //   setSalesConfiguration() -- set sales configuration
-    //   adminMint() -- mint reserved quantity
-    // ]
-
     function executeCommands(Command[] calldata commands) internal {}
 
     // Only allow minting one token id at time
@@ -208,7 +243,7 @@ contract ZoraCreator1155Impl is
         address minter,
         uint256 tokenId,
         uint256 quantity,
-        address findersRecipient,
+        address mintFeeRecipient,
         bytes calldata minterArguments
     )
         external
@@ -216,12 +251,15 @@ contract ZoraCreator1155Impl is
         onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER)
         canMint(tokenId, quantity)
     {
+        // Get value sent and handle mint fee
+        uint256 ethValueSent = _handleFeeAndGetValueSent(mintFeeRecipient);
+
         // executeCommands(
         IMinter1155(minter).requestMint(
             address(this),
             tokenId,
             quantity,
-            findersRecipient,
+            ethValueSent,
             minterArguments
         );
         // );
@@ -238,4 +276,17 @@ contract ZoraCreator1155Impl is
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IZoraCreator1155).interfaceId;
     }
+
+    ///                                                          ///
+    ///                         MANAGER UPGRADE                  ///
+    ///                                                          ///
+
+    /// @notice Ensures the caller is authorized to upgrade the contract
+    /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
+    /// @param _newImpl The new implementation address
+    function _authorizeUpgrade(address _newImpl)
+        internal
+        override
+        onlyAdmin(CONTRACT_BASE_ID)
+    {}
 }
