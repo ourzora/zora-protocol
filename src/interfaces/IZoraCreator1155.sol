@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
+import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
 interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
@@ -16,8 +17,17 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
+
     // TODO: maybe add more context
     error CannotMintMoreTokens(uint256 tokenId);
+
+    function initialize(
+        string memory contractURI,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration
+            memory defaultRoyaltyConfiguration,
+        address defaultAdmin,
+        bytes[] calldata setupActions
+    ) external;
 
     // Only allow minting one token id at time
     function purchase(
