@@ -5,14 +5,14 @@ import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {IMintFeeManager} from "../interfaces/IMintFeeManager.sol";
 
 contract MintFeeManager is IMintFeeManager {
-    uint256 public immutable mintFeeBPS;
+    uint256 public immutable mintFee;
 
-    constructor(uint256 _mintFeeBPS) {
+    constructor(uint256 _mintFee) {
         // Set fixed finders fee
-        if (_mintFeeBPS >= 10_000) {
-            revert FindersFeeCannotBe100OrMore(_mintFeeBPS);
+        if (_mintFee >= 1 ether) {
+            revert MintFeeCannotBeMoreThanOneETH(_mintFee);
         }
-        mintFeeBPS = _mintFeeBPS;
+        mintFee = _mintFee;
     }
 
     function _handleFeeAndGetValueSent(address mintFeeRecipient)
@@ -22,7 +22,6 @@ contract MintFeeManager is IMintFeeManager {
         ethValueSent = msg.value;
         // Handle mint fee
         if (mintFeeRecipient != address(0)) {
-            uint256 mintFee = ethValueSent * (mintFeeBPS / 10_000);
             ethValueSent -= mintFee;
             if (
                 !TransferHelperUtils.safeSendETHLowLimit(
