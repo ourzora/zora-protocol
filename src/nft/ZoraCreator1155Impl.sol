@@ -27,30 +27,18 @@ contract ZoraCreator1155Impl is
 
     constructor() initializer {}
 
-    function initialize(
-        string memory contractURI,
-        RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address defaultAdmin
-    ) external initializer {
+    function initialize(string memory contractURI, RoyaltyConfiguration memory defaultRoyaltyConfiguration, address defaultAdmin) external initializer {
         // Initialize OZ 1155 implementation
-        __ERC1155_init("");
+        __ERC1155_init(contractURI);
 
         // Setup re-entracy guard
         __ReentrancyGuard_init();
 
         // Setup contract-default token ID
-        _setupDefaultToken(
-            defaultAdmin,
-            contractURI,
-            defaultRoyaltyConfiguration
-        );
+        _setupDefaultToken(defaultAdmin, contractURI, defaultRoyaltyConfiguration);
     }
 
-    function _setupDefaultToken(
-        address defaultAdmin,
-        string memory contractURI,
-        RoyaltyConfiguration memory defaultRoyaltyConfiguration
-    ) internal {
+    function _setupDefaultToken(address defaultAdmin, string memory contractURI, RoyaltyConfiguration memory defaultRoyaltyConfiguration) internal {
         // Add admin permission to default admin to manage contract
         _addPermission(CONTRACT_BASE_ID, defaultAdmin, PERMISSION_BIT_ADMIN);
 
@@ -66,23 +54,15 @@ contract ZoraCreator1155Impl is
 
     function _getNextTokenId() internal returns (uint256) {
         unchecked {
-            return ++nextTokenId;
+            return nextTokenId++;
         }
     }
 
-    function _isAdminOrRole(
-        address user,
-        uint256 tokenId,
-        uint256 role
-    ) internal view returns (bool) {
+    function _isAdminOrRole(address user, uint256 tokenId, uint256 role) internal view returns (bool) {
         return _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role);
     }
 
-    function _requireAdminOrRole(
-        address user,
-        uint256 tokenId,
-        uint256 role
-    ) internal view {
+    function _requireAdminOrRole(address user, uint256 tokenId, uint256 role) internal view {
         if (!_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role)) {
             revert UserMissingRoleForToken(user, tokenId, role);
         }
@@ -93,14 +73,9 @@ contract ZoraCreator1155Impl is
         _;
     }
 
-    function requireCanMintQuantity(uint256 tokenId, uint256 quantity)
-        internal
-        view
-    {
+    function requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
         TokenData memory tokenInformation = tokens[tokenId];
-        if (
-            tokenInformation.totalSupply + quantity >= tokens[tokenId].maxSupply
-        ) {
+        if (tokenInformation.totalSupply + quantity > tokenInformation.maxSupply) {
             revert CannotMintMoreTokens(tokenId);
         }
     }
@@ -110,25 +85,19 @@ contract ZoraCreator1155Impl is
         _;
     }
 
-    function setupNewToken(string memory _uri, uint256 maxSupply)
-        public
-        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
-        nonReentrant
-        returns (uint256)
-    {
-        return _setupNewToken(_uri, maxSupply);
+    function setupNewToken(
+        string memory _uri,
+        uint256 maxSupply
+    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
+        uint256 tokenId = _setupNewToken(_uri, maxSupply);
+        // Allow the token creator to administrate this token
+        _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
+        return tokenId;
     }
 
-    function _setupNewToken(string memory _uri, uint256 maxSupply)
-        internal
-        returns (uint256 tokenId)
-    {
+    function _setupNewToken(string memory _uri, uint256 maxSupply) internal returns (uint256 tokenId) {
         tokenId = _getNextTokenId();
-        TokenData memory tokenData = TokenData({
-            uri: _uri,
-            maxSupply: maxSupply,
-            totalSupply: 0
-        });
+        TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalSupply: 0});
         tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
     }
@@ -137,60 +106,34 @@ contract ZoraCreator1155Impl is
         uint256 tokenId,
         address metadataRenderer,
         bytes memory initData
-    ) public {
-        if (!_isAdminOrRole(msg.sender, tokenId, PERMISSION_BIT_METADATA)) {
-            _requireAdminOrRole(msg.sender, tokenId, PERMISSION_BIT_METADATA);
-        }
-
+    ) public onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) nonReentrant {
         metadataRendererContract[tokenId] = metadataRenderer;
 
         if (initData.length > 0) {
             // metadataRenderer.
         }
 
-        emit UpdatedMetadataRendererForToken(
-            tokenId,
-            msg.sender,
-            metadataRenderer
-        );
+        emit UpdatedMetadataRendererForToken(tokenId, msg.sender, metadataRenderer);
     }
 
-    function adminMint(
-        address recipient,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes memory data
-    ) public canMint(tokenId, quantity) nonReentrant {
+    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) public canMint(tokenId, quantity) nonReentrant {
         // First check token specific role
         if (!_isAdminOrRole(msg.sender, tokenId, PERMISSION_BIT_MINTER)) {
             // Then check admin role
-            _requireAdminOrRole(
-                msg.sender,
-                CONTRACT_BASE_ID,
-                PERMISSION_BIT_MINTER
-            );
+            _requireAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
         }
         _mint(recipient, tokenId, quantity, data);
     }
 
-    function adminMintBatch(
-        address recipient,
-        uint256[] memory tokenIds,
-        uint256[] memory quantities,
-        bytes memory data
-    ) public nonReentrant {
-        if (
-            !_isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
-        ) {
-            for (uint256 i = 0; i < tokenIds.length; ++i) {
+    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) public nonReentrant {
+        bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            if (!isGlobalAdminOrMinter) {
                 uint256 checkingTokenId = tokenIds[i];
-                requireCanMintQuantity(tokenIds[i], quantities[i]);
-                _requireAdminOrRole(
-                    msg.sender,
-                    checkingTokenId,
-                    PERMISSION_BIT_MINTER
-                );
+                _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
             }
+            requireCanMintQuantity(tokenIds[i], quantities[i]);
         }
         _mintBatch(recipient, tokenIds, quantities, data);
     }
@@ -210,32 +153,25 @@ contract ZoraCreator1155Impl is
         uint256 quantity,
         address findersRecipient,
         bytes calldata minterArguments
-    )
-        external
-        payable
-        onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER)
-        canMint(tokenId, quantity)
-    {
+    ) external payable onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) canMint(tokenId, quantity) {
         // executeCommands(
-        IMinter1155(minter).requestMint(
-            address(this),
-            tokenId,
-            quantity,
-            findersRecipient,
-            minterArguments
-        );
+        IMinter1155(minter).requestMint(address(this), tokenId, quantity, findersRecipient, minterArguments);
         // );
     }
 
-    function supportsInterface(bytes4 interfaceId)
-        public
-        view
-        virtual
-        override(CreatorRoyaltiesControl, ERC1155Upgradeable)
-        returns (bool)
-    {
-        return
-            super.supportsInterface(interfaceId) ||
-            interfaceId == type(IZoraCreator1155).interfaceId;
+    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable) returns (bool) {
+        return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
+    }
+
+    function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal virtual override {
+        super._mint(account, id, amount, data);
+        tokens[id].totalSupply += amount;
+    }
+
+    function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
+        super._mintBatch(to, ids, amounts, data);
+        for (uint256 i = 0; i < ids.length; ++i) {
+            tokens[ids[i]].totalSupply += amounts[i];
+        }
     }
 }
