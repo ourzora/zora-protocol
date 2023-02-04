@@ -20,23 +20,11 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
     error CannotMintMoreTokens(uint256 tokenId);
 
     // Only allow minting one token id at time
-    function purchase(
-        address minter,
-        uint256 tokenId,
-        uint256 quantity,
-        address findersRecipient,
-        bytes calldata minterArguments
-    ) external payable;
+    function purchase(address minter, uint256 tokenId, uint256 quantity, address findersRecipient, bytes calldata minterArguments) external payable;
 
-    function setupNewToken(string memory _uri, uint256 maxSupply)
-        external
-        returns (uint256 tokenId);
+    function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
 
     event ContractURIUpdated(address updater, string newURI);
 
-    event UpdatedMetadataRendererForToken(
-        uint256 tokenId,
-        address user,
-        address metadataRenderer
-    );
+    event UpdatedMetadataRendererForToken(uint256 tokenId, address user, address metadataRenderer);
 }
