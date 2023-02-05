@@ -7,6 +7,7 @@ import {ZoraCreator1155Proxy} from "../../src/proxies/ZoraCreator1155Proxy.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
+import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 
 contract ZoraCreator1155Test is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
@@ -15,23 +16,27 @@ contract ZoraCreator1155Test is Test {
     address internal recipient;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl();
+        zoraCreator1155Impl = new ZoraCreator1155Impl(IZoraCreator1155Factory(address(0)), 0, address(0));
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         admin = vm.addr(0x1);
         recipient = vm.addr(0x2);
     }
 
+    function _emptyInitData() internal returns (bytes[] memory response) {
+        response = new bytes[](0);
+    }
+
     function init() internal {
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin);
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
     }
 
     function init(uint32 royaltyBps, address royaltyRecipient) internal {
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBps, royaltyRecipient), admin);
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
     function test_intialize(uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
-        target.initialize("test", config, defaultAdmin);
+        target.initialize("test", config, defaultAdmin, _emptyInitData());
 
         // TODO: test URI when metadata functions are complete
         // assertEq(target.uri(0), "test");
@@ -42,10 +47,10 @@ contract ZoraCreator1155Test is Test {
 
     function test_initialize_revertAlreadyInitialized(uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
-        target.initialize("test", config, defaultAdmin);
+        target.initialize("test", config, defaultAdmin, _emptyInitData());
 
         vm.expectRevert();
-        target.initialize("test", config, defaultAdmin);
+        target.initialize("test", config, defaultAdmin, _emptyInitData());
     }
 
     function test_setupNewToken_asAdmin(string memory _uri, uint256 _maxSupply) external {
@@ -216,14 +221,14 @@ contract ZoraCreator1155Test is Test {
         target.adminMintBatch(address(0), tokenIds, quantities, "");
     }
 
-    function xtest_purchase(address minter, uint256 quantity, address findersRecipient) external {
+    function xtest_purchase(address minter, uint256 quantity) external {
         init();
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity);
 
         vm.prank(admin);
-        target.purchase(minter, tokenId, quantity, findersRecipient, "");
+        target.purchase(minter, tokenId, quantity, "");
 
         (, , uint256 totalSupply) = target.tokens(tokenId);
         assertEq(totalSupply, 1);

@@ -6,7 +6,7 @@ interface IMinter1155 {
         address sender,
         uint256 tokenId,
         uint256 quantity,
-        address findersRecipient,
+        uint256 ethValueSent,
         bytes calldata minterArguments
     ) external;
 }
