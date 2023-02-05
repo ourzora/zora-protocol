@@ -6,12 +6,17 @@ import {IMintFeeManager} from "../interfaces/IMintFeeManager.sol";
 
 contract MintFeeManager is IMintFeeManager {
     uint256 public immutable mintFee;
+    address public immutable mintFeeRecipient;
 
-    constructor(uint256 _mintFee) {
+    constructor(uint256 _mintFee, address _mintFeeRecipient) {
         // Set fixed finders fee
         if (_mintFee >= 1 ether) {
             revert MintFeeCannotBeMoreThanOneETH(_mintFee);
         }
+        if (_mintFeeRecipient == address(0) && _mintFee > 0) {
+            revert CannotSetMintFeeToZeroAddress();
+        }
+        mintFeeRecipient = _mintFeeRecipient;
         mintFee = _mintFee;
     }
 
