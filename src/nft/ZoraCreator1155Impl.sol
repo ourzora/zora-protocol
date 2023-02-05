@@ -27,10 +27,11 @@ contract ZoraCreator1155Impl is
     CreatorPermissionControl,
     CreatorRoyaltiesControl
 {
-    uint256 public immutable PERMISSION_BIT_ADMIN = 1; // 0b1
-    uint256 public immutable PERMISSION_BIT_MINTER = 2; // 0b01
-    uint256 public immutable PERMISSION_BIT_SALES = 4; // 0b001
-    uint256 public immutable PERMISSION_BIT_METADATA = 8; // 0b0001
+    uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
+    uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
+    uint256 public immutable PERMISSION_BIT_SALES = 2**3;
+    uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
+    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
 
     IZoraCreator1155Factory public immutable factory;
 
@@ -224,14 +225,15 @@ contract ZoraCreator1155Impl is
             !_isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
         ) {
             for (uint256 i = 0; i < tokenIds.length; ++i) {
-                uint256 checkingTokenId = tokenIds[i];
-                requireCanMintQuantity(tokenIds[i], quantities[i]);
                 _requireAdminOrRole(
                     msg.sender,
-                    checkingTokenId,
+                    tokenIds[i],
                     PERMISSION_BIT_MINTER
                 );
             }
+        }
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            requireCanMintQuantity(tokenIds[i], quantities[i]);
         }
         _mintBatch(recipient, tokenIds, quantities, data);
     }
@@ -275,6 +277,35 @@ contract ZoraCreator1155Impl is
         return
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IZoraCreator1155).interfaceId;
+    }
+
+    /// ETH Withdraw Functions ///
+
+    function withdrawAll()
+        public
+        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER)
+    {
+        uint256 contractValue = address(this).balance;
+        if (!TransferHelperUtils.safeSendETH(msg.sender, contractValue)) {
+            revert ETHWithdrawFailed(msg.sender, contractValue);
+        }
+    }
+
+    function withdrawCustom(address recipient, uint256 amount)
+        public
+        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER)
+    {
+        uint256 contractValue = address(this).balance;
+        if (amount == 0) {
+            amount = contractValue;
+        }
+        if (amount > contractValue) {
+            revert FundsWithdrawInsolvent(amount, contractValue);
+        }
+
+        if (!TransferHelperUtils.safeSendETH(recipient, amount)) {
+            revert ETHWithdrawFailed(recipient, amount);
+        }
     }
 
     ///                                                          ///

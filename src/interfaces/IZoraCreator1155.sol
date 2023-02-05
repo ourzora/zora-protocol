@@ -17,6 +17,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
+    error ETHWithdrawFailed(address recipient, uint256 amount);
+    error FundsWithdrawInsolvent(uint256 amount, uint256 contractValue);
 
     // TODO: maybe add more context
     error CannotMintMoreTokens(uint256 tokenId);
