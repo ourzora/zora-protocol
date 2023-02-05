@@ -36,7 +36,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
         address minter,
         uint256 tokenId,
         uint256 quantity,
-        address findersRecipient,
         bytes calldata minterArguments
     ) external payable;
 
