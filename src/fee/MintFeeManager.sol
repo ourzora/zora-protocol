@@ -20,7 +20,7 @@ contract MintFeeManager is IMintFeeManager {
         mintFee = _mintFee;
     }
 
-    function _handleFeeAndGetValueSent(address mintFeeRecipient)
+    function _handleFeeAndGetValueSent()
         internal
         returns (uint256 ethValueSent)
     {

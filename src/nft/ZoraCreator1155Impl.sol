@@ -245,7 +245,6 @@ contract ZoraCreator1155Impl is
         address minter,
         uint256 tokenId,
         uint256 quantity,
-        address mintFeeRecipient,
         bytes calldata minterArguments
     )
         external
@@ -254,7 +253,7 @@ contract ZoraCreator1155Impl is
         canMint(tokenId, quantity)
     {
         // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleFeeAndGetValueSent(mintFeeRecipient);
+        uint256 ethValueSent = _handleFeeAndGetValueSent();
 
         // executeCommands(
         IMinter1155(minter).requestMint(
