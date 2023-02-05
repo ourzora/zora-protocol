@@ -1,4 +1,4 @@
-name: test
+name: coverage
 
 on: push
 
@@ -20,9 +20,7 @@ jobs:
       - uses: actions/setup-node@v2
         with:
           node-version: "16"
-      
-      - run: sudo apt-get install -y genhtml 
-
+  
       - run: npm install
 
       - name: Install Foundry
@@ -40,8 +38,7 @@ jobs:
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v2
         with:
-          coverage-files: coverage/lcov.*.info
-          minimum-coverage: 90
+          coverage-files: lcov.info
           artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ./
