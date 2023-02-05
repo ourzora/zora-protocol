@@ -35,10 +35,11 @@ contract ZoraCreator1155Impl is
 
     IZoraCreator1155Factory public immutable factory;
 
-    constructor(IZoraCreator1155Factory _factory, uint256 _mintFeeBPS)
-        MintFeeManager(_mintFeeBPS)
-        initializer
-    {
+    constructor(
+        IZoraCreator1155Factory _factory,
+        uint256 _mintFeeBPS,
+        address _mintFeeRecipient
+    ) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {
         factory = _factory;
     }
 
