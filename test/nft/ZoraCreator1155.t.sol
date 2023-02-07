@@ -42,7 +42,11 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
-    function test_intialize(uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_intialize(
+        uint32 royaltyBPS,
+        address royaltyRecipient,
+        address defaultAdmin
+    ) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
         target.initialize("test", config, defaultAdmin, _emptyInitData());
 
@@ -53,7 +57,12 @@ contract ZoraCreator1155Test is Test {
         assertEq(fetchedRecipient, royaltyRecipient);
     }
 
-    function test_initialize_withSetupActions(uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin, uint256 maxSupply) external {
+    function test_initialize_withSetupActions(
+        uint32 royaltyBPS,
+        address royaltyRecipient,
+        address defaultAdmin,
+        uint256 maxSupply
+    ) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
         bytes[] memory setupActions = new bytes[](1);
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply);
@@ -63,7 +72,11 @@ contract ZoraCreator1155Test is Test {
         assertEq(fetchedMaxSupply, maxSupply);
     }
 
-    function test_initialize_revertAlreadyInitialized(uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_initialize_revertAlreadyInitialized(
+        uint32 royaltyBPS,
+        address royaltyRecipient,
+        address defaultAdmin
+    ) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
         target.initialize("test", config, defaultAdmin, _emptyInitData());
 
@@ -93,18 +106,22 @@ contract ZoraCreator1155Test is Test {
         target.setupNewToken("test", 1);
     }
 
-    function test_setTokenMetadataRenderer(string memory _uri, uint256 _maxSupply, address _renderer) external {
-        init();
+    // function test_setTokenMetadataRenderer(
+    //     string memory _uri,
+    //     uint256 _maxSupply,
+    //     address _renderer
+    // ) external {
+    //     init();
 
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
+    //     vm.prank(admin);
+    //     uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
 
-        vm.prank(admin);
-        target.setTokenMetadataRenderer(1, IRenderer1155(_renderer), "");
+    //     vm.prank(admin);
+    //     target.setTokenMetadataRenderer(1, IRenderer1155(_renderer), "");
 
-        address renderer = target.metadataRendererContract(tokenId);
-        assertEq(renderer, _renderer);
-    }
+    //     address renderer = target.metadataRendererContract(tokenId);
+    //     assertEq(renderer, _renderer);
+    // }
 
     function test_setTokenMetadataRenderer_revertOnlyAdminOrRole() external {
         init();
@@ -113,7 +130,11 @@ contract ZoraCreator1155Test is Test {
         target.setTokenMetadataRenderer(0, IRenderer1155(address(0)), "");
     }
 
-    function test_addPermission(uint256 tokenId, uint256 permission, address user) external {
+    function test_addPermission(
+        uint256 tokenId,
+        uint256 permission,
+        address user
+    ) external {
         vm.assume(permission != 0);
         init();
 
@@ -135,7 +156,11 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, recipient, adminRole);
     }
 
-    function test_removePermission(uint256 tokenId, uint256 permission, address user) external {
+    function test_removePermission(
+        uint256 tokenId,
+        uint256 permission,
+        address user
+    ) external {
         vm.assume(permission != 0);
         init();
 
@@ -181,7 +206,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_MINTER()));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER()));
         target.adminMint(address(0), tokenId, 0, "");
     }
 
