@@ -7,6 +7,7 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
@@ -126,7 +127,9 @@ contract ZoraCreator1155Impl is
     }
 
     function _requireAdmin(address user, uint256 tokenId) internal view {
-        _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN);
+        if (!(_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
+            revert UserMissingRoleForToken(user, tokenId, PERMISSION_BIT_ADMIN);
+        }
     }
 
     modifier onlyAdminOrRole(uint256 tokenId, uint256 role) {
@@ -175,14 +178,25 @@ contract ZoraCreator1155Impl is
         uint256 tokenId,
         uint256 quantity,
         bytes memory data
-    ) external {
-        // First check token specific role
-        if (!_isAdminOrRole(msg.sender, tokenId, PERMISSION_BIT_MINTER)) {
-            // Then check admin role
-            _requireAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
-        }
+    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
         // Call internal admin mint
         _adminMint(recipient, tokenId, quantity, data);
+    }
+
+    function addPermission(
+        uint256 tokenId,
+        address user,
+        uint256 permissionBits
+    ) external onlyAdmin(tokenId) {
+        _addPermission(tokenId, user, permissionBits);
+    }
+
+    function removePermission(
+        uint256 tokenId,
+        address user,
+        uint256 permissionBits
+    ) external onlyAdmin(tokenId) {
+        _removePermission(tokenId, user, permissionBits);
     }
 
     /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
@@ -224,6 +238,14 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleFeeAndGetValueSent();
 
         _executeCommands(IMinter1155(minter).requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments), ethValueSent);
+    }
+
+    function setTokenMetadataRenderer(
+        uint256 tokenId,
+        IRenderer1155 renderer,
+        bytes calldata setupData
+    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        _setRenderer(tokenId, renderer, setupData);
     }
 
     /// Execute minter commands ///
