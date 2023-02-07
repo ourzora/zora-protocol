@@ -99,7 +99,9 @@ contract ZoraCreator1155Impl is
     }
 
     function _requireAdmin(address user, uint256 tokenId) internal view {
-        _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN);
+        if (!(_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
+            revert UserMissingRoleForToken(user, tokenId, PERMISSION_BIT_ADMIN);
+        }
     }
 
     modifier onlyAdminOrRole(uint256 tokenId, uint256 role) {
@@ -153,6 +155,14 @@ contract ZoraCreator1155Impl is
         }
 
         emit UpdatedMetadataRendererForToken(tokenId, msg.sender, metadataRenderer);
+    }
+
+    function addPermission(uint256 tokenId, address user, uint256 permissionBits) external onlyAdmin(tokenId) {
+        _addPermission(tokenId, user, permissionBits);
+    }
+
+    function removePermission(uint256 tokenId, address user, uint256 permissionBits) external onlyAdmin(tokenId) {
+        _removePermission(tokenId, user, permissionBits);
     }
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) public canMint(tokenId, quantity) nonReentrant {
