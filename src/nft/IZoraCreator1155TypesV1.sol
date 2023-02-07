@@ -7,10 +7,4 @@ interface IZoraCreator1155TypesV1 {
         uint256 maxSupply;
         uint256 totalSupply;
     }
-
-    struct Command {
-        uint256 blank;
-        // type
-        // args
-    }
 }

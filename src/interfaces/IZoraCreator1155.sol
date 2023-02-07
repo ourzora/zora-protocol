@@ -17,6 +17,12 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
+    error Mint_InsolventSaleTransfer();
+    error Mint_ValueTransferFail();
+
+    error Sale_CallFailed();
+    error Metadata_CallFailed();
+
     error ETHWithdrawFailed(address recipient, uint256 amount);
     error FundsWithdrawInsolvent(uint256 amount, uint256 contractValue);
 
@@ -31,11 +37,24 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
     ) external;
 
     // Only allow minting one token id at time
-    function purchase(address minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
+    function purchase(
+        address minter,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes calldata minterArguments
+    ) external payable;
 
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
 
     event ContractURIUpdated(address updater, string newURI);
 
     event UpdatedMetadataRendererForToken(uint256 tokenId, address user, address metadataRenderer);
+
+    function contractURI() external view returns (string memory);
+
+    function isAdminOrRole(
+        address user,
+        uint256 tokenId,
+        uint256 role
+    ) external view returns (bool);
 }

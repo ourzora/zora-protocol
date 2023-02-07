@@ -16,18 +16,17 @@ abstract contract CreatorRendererControl is CreatorRendererStorageV1 {
         }
         renderer.setup(setupData);
 
-        emit RendererUpdated({
-            tokenId: tokenId,
-            renderer: address(renderer),
-            user: msg.sender
-        });
+        emit RendererUpdated({tokenId: tokenId, renderer: address(renderer), user: msg.sender});
     }
 
-    function hasRenderer(uint256 tokenId) public returns (bool) {
-        return address(customRenderers[tokenId]) != address(0);
+    function getCustomRenderer(uint256 tokenId) public view returns (IRenderer1155 renderer) {
+        renderer = customRenderers[tokenId];
+        if (address(renderer) == address(0)) {
+            revert NoRendererForToken(tokenId);
+        }
     }
 
-    function _render(uint256 tokenId) internal returns (string memory) {
-      return customRenderers[tokenId].uriFromContract(address(this), tokenId);
+    function _render(uint256 tokenId) internal view returns (string memory) {
+        return getCustomRenderer(tokenId).uriFromContract(address(this), tokenId);
     }
 }
