@@ -7,12 +7,14 @@ import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/se
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
 import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {MintFeeManager} from "../fee/MintFeeManager.sol";
+import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
@@ -23,19 +25,24 @@ contract ZoraCreator1155Impl is
     ERC1155Upgradeable,
     MintFeeManager,
     UUPSUpgradeable,
+    CreatorRendererControl,
     ZoraCreator1155StorageV1,
     CreatorPermissionControl,
     CreatorRoyaltiesControl
 {
-    uint256 public immutable PERMISSION_BIT_ADMIN = 2 ** 1;
-    uint256 public immutable PERMISSION_BIT_MINTER = 2 ** 2;
-    uint256 public immutable PERMISSION_BIT_SALES = 2 ** 3;
-    uint256 public immutable PERMISSION_BIT_METADATA = 2 ** 4;
-    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
+    uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
+    uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
+    uint256 public immutable PERMISSION_BIT_SALES = 2**3;
+    uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
+    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
 
     IZoraCreator1155Factory public immutable factory;
 
-    constructor(IZoraCreator1155Factory _factory, uint256 _mintFeeBPS, address _mintFeeRecipient) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {
+    constructor(
+        IZoraCreator1155Factory _factory,
+        uint256 _mintFeeBPS,
+        address _mintFeeRecipient
+    ) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {
         factory = _factory;
     }
 
@@ -68,12 +75,16 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    function _setupDefaultToken(address defaultAdmin, string memory contractURI, RoyaltyConfiguration memory defaultRoyaltyConfiguration) internal {
+    function _setupDefaultToken(
+        address defaultAdmin,
+        string memory newContractURI,
+        RoyaltyConfiguration memory defaultRoyaltyConfiguration
+    ) internal {
         // Add admin permission to default admin to manage contract
         _addPermission(CONTRACT_BASE_ID, defaultAdmin, PERMISSION_BIT_ADMIN);
 
         // Mint token ID 0 / don't allow any user mints
-        _setupNewToken(contractURI, 0);
+        _setupNewToken(newContractURI, 0);
 
         // Update default royalties
         _updateRoyalties(CONTRACT_BASE_ID, defaultRoyaltyConfiguration);
@@ -88,11 +99,27 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    function _isAdminOrRole(address user, uint256 tokenId, uint256 role) internal view returns (bool) {
+    function _isAdminOrRole(
+        address user,
+        uint256 tokenId,
+        uint256 role
+    ) internal view returns (bool) {
         return _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role);
     }
 
-    function _requireAdminOrRole(address user, uint256 tokenId, uint256 role) internal view {
+    function isAdminOrRole(
+        address user,
+        uint256 tokenId,
+        uint256 role
+    ) external view returns (bool) {
+        return _isAdminOrRole(user, tokenId, role);
+    }
+
+    function _requireAdminOrRole(
+        address user,
+        uint256 tokenId,
+        uint256 role
+    ) internal view {
         if (!_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role)) {
             revert UserMissingRoleForToken(user, tokenId, role);
         }
@@ -119,15 +146,17 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    modifier canMint(uint256 tokenId, uint256 quantity) {
+    modifier canMintQuantity(uint256 tokenId, uint256 quantity) {
         requireCanMintQuantity(tokenId, quantity);
         _;
     }
 
-    function setupNewToken(
-        string memory _uri,
-        uint256 maxSupply
-    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
+    function setupNewToken(string memory _uri, uint256 maxSupply)
+        public
+        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
+        nonReentrant
+        returns (uint256)
+    {
         uint256 tokenId = _setupNewToken(_uri, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
@@ -141,30 +170,37 @@ contract ZoraCreator1155Impl is
         emit UpdatedToken(msg.sender, tokenId, tokenData);
     }
 
-    function setTokenMetadataRenderer(
+    function adminMint(
+        address recipient,
         uint256 tokenId,
-        address metadataRenderer,
-        bytes memory initData
-    ) public onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) nonReentrant {
-        metadataRendererContract[tokenId] = metadataRenderer;
-
-        if (initData.length > 0) {
-            // metadataRenderer.
-        }
-
-        emit UpdatedMetadataRendererForToken(tokenId, msg.sender, metadataRenderer);
-    }
-
-    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) public canMint(tokenId, quantity) nonReentrant {
+        uint256 quantity,
+        bytes memory data
+    ) external {
         // First check token specific role
         if (!_isAdminOrRole(msg.sender, tokenId, PERMISSION_BIT_MINTER)) {
             // Then check admin role
             _requireAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
         }
+        // Call internal admin mint
+        _adminMint(recipient, tokenId, quantity, data);
+    }
+
+    /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
+    function _adminMint(
+        address recipient,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes memory data
+    ) internal canMintQuantity(tokenId, quantity) nonReentrant {
         _mint(recipient, tokenId, quantity, data);
     }
 
-    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) public nonReentrant {
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) public nonReentrant {
         bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         for (uint256 i = 0; i < tokenIds.length; ++i) {
@@ -177,36 +213,102 @@ contract ZoraCreator1155Impl is
         _mintBatch(recipient, tokenIds, quantities, data);
     }
 
-    function executeCommands(Command[] calldata commands) internal {}
-
     // Only allow minting one token id at time
     function purchase(
         address minter,
         uint256 tokenId,
         uint256 quantity,
         bytes calldata minterArguments
-    ) external payable onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) canMint(tokenId, quantity) {
+    ) external payable onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) canMintQuantity(tokenId, quantity) {
         // Get value sent and handle mint fee
         uint256 ethValueSent = _handleFeeAndGetValueSent();
 
-        // executeCommands(
-        IMinter1155(minter).requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments);
+        _executeCommands(IMinter1155(minter).requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments), ethValueSent);
     }
 
+    /// Execute minter commands ///
+
+    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent) internal {
+        for (uint256 i = 0; i < commands.length; ++i) {
+            ICreatorCommands.CreatorActions method = commands[i].method;
+            if (method == ICreatorCommands.CreatorActions.SEND_ETH) {
+                (address recipient, uint256 amount) = abi.decode(commands[i].args, (address, uint256));
+                if (ethValueSent > amount) {
+                    revert Mint_InsolventSaleTransfer();
+                }
+                if (!TransferHelperUtils.safeSendETH(recipient, amount)) {
+                    revert Mint_ValueTransferFail();
+                }
+            } else if (method == ICreatorCommands.CreatorActions.MINT) {
+                (address recipient, uint256 tokenId, uint256 quantity) = abi.decode(commands[i].args, (address, uint256, uint256));
+                _adminMint(recipient, tokenId, quantity, "");
+            }
+        }
+    }
+
+    /// Proxy setter for sale updates ///
+
+    function callSale(
+        uint256 tokenId,
+        address salesConfig,
+        bytes memory data
+    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
+        _requireAdminOrRole(salesConfig, tokenId, PERMISSION_BIT_MINTER);
+        (bool success, ) = salesConfig.call(data);
+        if (!success) {
+            revert Sale_CallFailed();
+        }
+    }
+
+    /// Proxy setter for renderer updates ///
+
+    function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        (bool success, ) = address(getCustomRenderer(tokenId)).call(data);
+        if (!success) {
+            revert Metadata_CallFailed();
+        }
+    }
+
+    /// Getter for supports interface ///
     function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
     }
 
-    function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal virtual override {
+    /// Generic 1155 function overrides ///
+
+    function _mint(
+        address account,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) internal virtual override {
         super._mint(account, id, amount, data);
         tokens[id].totalSupply += amount;
     }
 
-    function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
+    function _mintBatch(
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal virtual override {
         super._mintBatch(to, ids, amounts, data);
         for (uint256 i = 0; i < ids.length; ++i) {
             tokens[ids[i]].totalSupply += amounts[i];
         }
+    }
+
+    /// Metadata Getter Functions ///
+
+    function contractURI() external view returns (string memory) {
+        return uri(0);
+    }
+
+    function uri(uint256 tokenId) public view override returns (string memory) {
+        if (bytes(tokens[tokenId].uri).length > 0) {
+            return tokens[tokenId].uri;
+        }
+        return _render(tokenId);
     }
 
     /// ETH Withdraw Functions ///

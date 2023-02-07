@@ -1,9 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-interface ICreatorRendererControl {
-    function getCustomRenderer(uint256 token) external view returns (address);
+import {IRenderer1155} from "./IRenderer1155.sol";
 
+interface ICreatorRendererControl {
+    function getCustomRenderer(uint256 tokenId) external view returns (IRenderer1155 renderer);
+
+    error NoRendererForToken(uint256 tokenId);
     error RendererNotValid(address renderer);
     event RendererUpdated(uint256 tokenId, address renderer, address user);
 }

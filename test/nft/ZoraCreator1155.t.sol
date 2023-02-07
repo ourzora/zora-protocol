@@ -75,26 +75,6 @@ contract ZoraCreator1155Test is Test {
         target.setupNewToken("test", 1);
     }
 
-    function test_setTokenMetadataRenderer(string memory _uri, uint256 _maxSupply, address _renderer) external {
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
-
-        vm.prank(admin);
-        target.setTokenMetadataRenderer(1, _renderer, "");
-
-        address renderer = target.metadataRendererContract(tokenId);
-        assertEq(renderer, _renderer);
-    }
-
-    function test_setTokenMetadataRenderer_revertOnlyAdminOrRole() external {
-        init();
-
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_METADATA()));
-        target.setTokenMetadataRenderer(0, address(0), "");
-    }
-
     function test_adminMint(uint256 quantity) external {
         vm.assume(quantity < 1000);
         init();
