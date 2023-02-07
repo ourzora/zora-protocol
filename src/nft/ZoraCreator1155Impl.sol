@@ -121,7 +121,7 @@ contract ZoraCreator1155Impl is
         uint256 tokenId,
         uint256 role
     ) internal view {
-        if (!_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role)) {
+        if (!(_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role) || _hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
             revert UserMissingRoleForToken(user, tokenId, role);
         }
     }

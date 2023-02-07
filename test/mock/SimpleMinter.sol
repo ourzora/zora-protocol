@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
+import {ICreatorCommands} from "../../src/interfaces/ICreatorCommands.sol";
 
 contract SimpleMinter is IMinter1155 {
     bool receiveETH;
@@ -11,9 +12,16 @@ contract SimpleMinter is IMinter1155 {
         receiveETH = _receiveETH;
     }
 
-    function requestMint(address sender, uint256 tokenId, uint256 quantity, uint256, bytes calldata minterArguments) external {
+    function requestMint(
+        address sender,
+        uint256 tokenId,
+        uint256 quantity,
+        uint256,
+        bytes calldata minterArguments
+    ) external returns (ICreatorCommands.Command[] memory commands) {
         address recipient = abi.decode(minterArguments, (address));
         ZoraCreator1155Impl(sender).adminMint(recipient, tokenId, quantity, minterArguments);
+        commands = new ICreatorCommands.Command[](0);
     }
 
     receive() external payable {
