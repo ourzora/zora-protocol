@@ -20,24 +20,14 @@ contract MintFeeManager is IMintFeeManager {
         mintFee = _mintFee;
     }
 
-    function _handleFeeAndGetValueSent()
-        internal
-        returns (uint256 ethValueSent)
-    {
+    function _handleFeeAndGetValueSent() internal returns (uint256 ethValueSent) {
         ethValueSent = msg.value;
+
         // Handle mint fee
         if (mintFeeRecipient != address(0)) {
             ethValueSent -= mintFee;
-            if (
-                !TransferHelperUtils.safeSendETHLowLimit(
-                    mintFeeRecipient,
-                    mintFee
-                )
-            ) {
-                revert CannotSendMintFee({
-                    mintFeeRecipient: mintFeeRecipient,
-                    mintFee: mintFee
-                });
+            if (!TransferHelperUtils.safeSendETHLowLimit(mintFeeRecipient, mintFee)) {
+                revert CannotSendMintFee(mintFeeRecipient, mintFee);
             }
         }
     }

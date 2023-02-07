@@ -5,8 +5,6 @@ import {CreatorPermissionStorageV1} from "./CreatorPermissionStorageV1.sol";
 import {ICreatorPermissionControl} from "../interfaces/ICreatorPermissionControl.sol";
 
 contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermissionControl {
-    uint256 private MAX_INT = 2 ** 256 - 1;
-
     function getPermissionKey(uint256 token, address user) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(token, user)));
     }
