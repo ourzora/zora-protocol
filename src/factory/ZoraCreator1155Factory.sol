@@ -10,11 +10,7 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
-contract ZoraCreator1155Factory is
-    IZoraCreator1155Factory,
-    FactoryManagedUpgradeGate,
-    UUPSUpgradeable
-{
+contract ZoraCreator1155Factory is IZoraCreator1155Factory, FactoryManagedUpgradeGate, UUPSUpgradeable {
     IZoraCreator1155 public immutable implementation;
 
     constructor(IZoraCreator1155 _implementation) initializer {
@@ -28,14 +24,11 @@ contract ZoraCreator1155Factory is
 
     function createContract(
         string memory contractURI,
-        ICreatorRoyaltiesControl.RoyaltyConfiguration
-            memory defaultRoyaltyConfiguration,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address defaultAdmin,
         bytes[] calldata setupActions
-    ) external {
-        IZoraCreator1155 newContract = IZoraCreator1155(
-            address(new ZoraCreator1155Proxy(address(implementation)))
-        );
+    ) external returns (address) {
+        IZoraCreator1155 newContract = IZoraCreator1155(address(new ZoraCreator1155Proxy(address(implementation))));
         // TODO: figure out how to add multicall here to setup contract
         newContract.initialize({
             contractURI: contractURI,
@@ -43,6 +36,8 @@ contract ZoraCreator1155Factory is
             defaultAdmin: defaultAdmin,
             setupActions: setupActions
         });
+
+        return address(newContract);
     }
 
     ///                                                          ///
