@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
+import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
 interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
@@ -49,6 +50,12 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
     event ContractURIUpdated(address updater, string newURI);
 
     event UpdatedMetadataRendererForToken(uint256 tokenId, address user, address metadataRenderer);
+
+    function setTokenMetadataRenderer(
+        uint256 tokenId,
+        IRenderer1155 renderer,
+        bytes calldata setupData
+    ) external;
 
     function contractURI() external view returns (string memory);
 
