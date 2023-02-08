@@ -21,7 +21,7 @@ contract ZoraCreator1155Test is Test {
     uint256 internal fundsManagerRole;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl( 0, address(0));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         admin = vm.addr(0x1);
         recipient = vm.addr(0x2);
@@ -335,7 +335,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER()));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
         target.purchase(SimpleMinter(payable(address(0))), tokenId, 0, "");
     }
 
