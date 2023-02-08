@@ -35,7 +35,7 @@ contract MintFeeManagerTest is Test {
         uint256 quantity
     ) external {
         vm.assume(purchasePrice > mintFee);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(IZoraCreator1155Factory(address(0)), mintFee, recipient);
+        zoraCreator1155Impl = new ZoraCreator1155Impl( mintFee, recipient);
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
@@ -71,7 +71,7 @@ contract MintFeeManagerTest is Test {
         _recip.setReceiveETH(false);
         address _recipient = address(_recip);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(IZoraCreator1155Factory(address(0)), mintFee, _recipient);
+        zoraCreator1155Impl = new ZoraCreator1155Impl( mintFee, _recipient);
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());

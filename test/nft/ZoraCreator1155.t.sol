@@ -21,7 +21,7 @@ contract ZoraCreator1155Test is Test {
     uint256 internal fundsManagerRole;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl(IZoraCreator1155Factory(address(0)), 0, address(0));
+        zoraCreator1155Impl = new ZoraCreator1155Impl( 0, address(0));
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         admin = vm.addr(0x1);
         recipient = vm.addr(0x2);

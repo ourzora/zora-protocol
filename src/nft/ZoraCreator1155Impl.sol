@@ -9,7 +9,6 @@ import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
-import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
 import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
@@ -37,30 +36,22 @@ contract ZoraCreator1155Impl is
     uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
     uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
 
-    IZoraCreator1155Factory public immutable factory;
-
-    constructor(
-        IZoraCreator1155Factory _factory,
-        uint256 _mintFeeBPS,
-        address _mintFeeRecipient
-    ) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {
-        factory = _factory;
-    }
+    constructor(uint256 _mintFeeBPS, address _mintFeeRecipient) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {}
 
     function initialize(
-        string memory contractURI,
+        string memory newContractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address defaultAdmin,
         bytes[] calldata setupActions
     ) external initializer {
         // Initialize OZ 1155 implementation
-        __ERC1155_init(contractURI);
+        __ERC1155_init("");
 
         // Setup re-entracy guard
         __ReentrancyGuard_init();
 
         // Setup contract-default token ID
-        _setupDefaultToken(defaultAdmin, contractURI, defaultRoyaltyConfiguration);
+        _setupDefaultToken(defaultAdmin, newContractURI, defaultRoyaltyConfiguration);
 
         // Run Setup actions
         if (setupActions.length > 0) {
@@ -233,10 +224,7 @@ contract ZoraCreator1155Impl is
         uint256 tokenId,
         uint256 quantity,
         bytes calldata minterArguments
-    )
-        external
-        payable
-    {
+    ) external payable {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
