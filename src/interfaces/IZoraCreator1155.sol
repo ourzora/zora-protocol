@@ -20,6 +20,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
     error ETHWithdrawFailed(address recipient, uint256 amount);
     error FundsWithdrawInsolvent(uint256 amount, uint256 contractValue);
 
+    error OperatorNotAllowed(address operator, address from, address to);
+
     // TODO: maybe add more context
     error CannotMintMoreTokens(uint256 tokenId);
 
@@ -31,7 +33,12 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
     ) external;
 
     // Only allow minting one token id at time
-    function purchase(address minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
+    function purchase(
+        address minter,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes calldata minterArguments
+    ) external payable;
 
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
 
