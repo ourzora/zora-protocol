@@ -7,14 +7,15 @@ import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 
 contract ZoraCreatorFixedPriceSaleStrategy is IMinter1155 {
     struct SalesConfig {
-        uint256 pricePerToken;
         uint64 saleStart;
         uint64 saleEnd;
         uint64 maxTokensPerTransaction;
         uint64 maxTokensPerAddress;
+        uint96 pricePerToken;
+        address fundsRecipient;
     }
     mapping(uint256 => SalesConfig) internal salesConfigs;
-    mapping(uint256 => uint256) internal mintedPerAddress;
+    mapping(bytes32 => uint256) internal mintedPerAddress;
 
     function _getKey(address mediaContract, uint256 tokenId) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(mediaContract, tokenId)));
@@ -23,6 +24,8 @@ contract ZoraCreatorFixedPriceSaleStrategy is IMinter1155 {
     error WrongValueSent();
     error SaleEnded();
     error SaleHasNotStarted();
+    error MintedTooManyForAddress();
+    error TooManyTokensInOneTxn();
 
     event SetupSale(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
     event RemovedSale(address from, uint256 tokenId);
@@ -33,8 +36,8 @@ contract ZoraCreatorFixedPriceSaleStrategy is IMinter1155 {
         uint256 quantity,
         uint256 ethValueSent,
         bytes calldata minterArguments
-    ) external view returns (ICreatorCommands.Command[] memory commands) {
-        (address mintTo, address fundsRecipient) = abi.decode(minterArguments, (address, address));
+    ) external returns (ICreatorCommands.Command[] memory commands) {
+        address mintTo = abi.decode(minterArguments, (address));
 
         SalesConfig memory config = salesConfigs[_getKey(msg.sender, tokenId)];
 
@@ -43,15 +46,28 @@ contract ZoraCreatorFixedPriceSaleStrategy is IMinter1155 {
             revert WrongValueSent();
         }
         // Check sale end
-        if (config.saleEnd > block.timestamp) {
+        if (block.timestamp > config.saleEnd) {
             revert SaleEnded();
         }
         // Check sale start
-        if (config.saleStart < block.timestamp) {
+        if (block.timestamp < config.saleStart) {
             revert SaleHasNotStarted();
         }
+        // Check minted per address limit
+        if (config.maxTokensPerAddress > 0) {
+            bytes32 key = keccak256(abi.encode(msg.sender, tokenId, mintTo));
+            mintedPerAddress[key] += quantity;
+            if (config.maxTokensPerAddress > mintedPerAddress[key]) {
+                revert MintedTooManyForAddress();
+            }
+        }
+        // Check minted per txn limit
+        if (config.maxTokensPerTransaction > 0 && quantity > config.maxTokensPerTransaction) {
+            revert TooManyTokensInOneTxn();
+        }
 
-        bool shouldTransferFunds = fundsRecipient != address(0);
+        // Should transfer funds if funds recipient is set to a non-default address
+        bool shouldTransferFunds = config.fundsRecipient != address(0);
 
         // Setup contract commands
         commands = new ICreatorCommands.Command[](shouldTransferFunds ? 2 : 1);
@@ -61,7 +77,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is IMinter1155 {
 
         // If we have a non-default funds recipient for this token
         if (shouldTransferFunds) {
-            commands[1] = ICreatorCommands.Command({method: ICreatorCommands.CreatorActions.SEND_ETH, args: abi.encode(fundsRecipient)});
+            commands[1] = ICreatorCommands.Command({method: ICreatorCommands.CreatorActions.SEND_ETH, args: abi.encode(config.fundsRecipient, ethValueSent)});
         }
     }
 
