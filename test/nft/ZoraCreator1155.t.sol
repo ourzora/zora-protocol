@@ -317,9 +317,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity);
 
-        address minter = address(new SimpleMinter());
+        SimpleMinter minter = new SimpleMinter();
         vm.prank(admin);
-        target.addPermission(tokenId, minter, adminRole);
+        target.addPermission(tokenId, address(minter), adminRole);
 
         vm.prank(admin);
         target.purchase(minter, tokenId, quantity, abi.encode(recipient));
@@ -336,7 +336,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER()));
-        target.purchase(address(0), tokenId, 0, "");
+        target.purchase(SimpleMinter(payable(address(0))), tokenId, 0, "");
     }
 
     function test_purchase_revertCannotMintMoreTokens() external {
@@ -345,9 +345,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        address minter = address(new SimpleMinter());
+        SimpleMinter minter = new SimpleMinter();
         vm.prank(admin);
-        target.addPermission(tokenId, minter, adminRole);
+        target.addPermission(tokenId, address(minter), adminRole);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId));
         vm.prank(admin);
@@ -368,9 +368,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        address minter = address(new SimpleMinter());
+        SimpleMinter minter = new SimpleMinter();
         vm.prank(admin);
-        target.addPermission(tokenId, minter, minterRole);
+        target.addPermission(tokenId, address(minter), minterRole);
 
         vm.deal(admin, 1 ether);
         vm.prank(admin);
@@ -389,21 +389,21 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        address minter = address(new SimpleMinter());
+        SimpleMinter minter = new SimpleMinter();
         SimpleMinter(payable(minter)).setReceiveETH(false);
 
         vm.prank(admin);
-        target.addPermission(tokenId, minter, minterRole);
+        target.addPermission(tokenId, address(minter), minterRole);
 
         vm.prank(admin);
-        target.addPermission(0, minter, fundsManagerRole);
+        target.addPermission(0, address(minter), fundsManagerRole);
 
         vm.deal(admin, 1 ether);
         vm.prank(admin);
         target.purchase{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
-        vm.prank(minter);
+        vm.prank(address(minter));
         target.withdrawAll();
     }
 
@@ -414,9 +414,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        address minter = address(new SimpleMinter());
+        SimpleMinter minter = new SimpleMinter();
         vm.prank(admin);
-        target.addPermission(tokenId, minter, minterRole);
+        target.addPermission(tokenId, address(minter), minterRole);
 
         vm.deal(admin, purchaseAmount);
         vm.prank(admin);
@@ -439,9 +439,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        address minter = address(new SimpleMinter());
+        SimpleMinter minter = new SimpleMinter();
         vm.prank(admin);
-        target.addPermission(tokenId, minter, minterRole);
+        target.addPermission(tokenId, address(minter), minterRole);
 
         vm.deal(admin, purchaseAmount);
         vm.prank(admin);
@@ -449,7 +449,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.FundsWithdrawInsolvent.selector, withdrawAmount, purchaseAmount));
         vm.prank(admin);
-        target.withdrawCustom(minter, withdrawAmount);
+        target.withdrawCustom(address(minter), withdrawAmount);
     }
 
     function test_withdrawCustom_revertETHWithdrawFailed() external {
@@ -458,11 +458,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        address minter = address(new SimpleMinter());
-        SimpleMinter(payable(minter)).setReceiveETH(false);
+        SimpleMinter minter = new SimpleMinter();
+        minter.setReceiveETH(false);
 
         vm.prank(admin);
-        target.addPermission(tokenId, minter, minterRole);
+        target.addPermission(tokenId, address(minter), minterRole);
 
         vm.deal(admin, 1 ether);
         vm.prank(admin);
@@ -470,6 +470,6 @@ contract ZoraCreator1155Test is Test {
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
         vm.prank(admin);
-        target.withdrawCustom(minter, 1 ether);
+        target.withdrawCustom(address(minter), 1 ether);
     }
 }

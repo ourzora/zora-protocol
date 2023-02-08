@@ -229,15 +229,21 @@ contract ZoraCreator1155Impl is
 
     // Only allow minting one token id at time
     function purchase(
-        address minter,
+        IMinter1155 minter,
         uint256 tokenId,
         uint256 quantity,
         bytes calldata minterArguments
-    ) external payable onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) canMintQuantity(tokenId, quantity) {
+    )
+        external
+        payable
+    {
+        // Require admin from the minter to mint
+        _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
+
         // Get value sent and handle mint fee
         uint256 ethValueSent = _handleFeeAndGetValueSent();
 
-        _executeCommands(IMinter1155(minter).requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments), ethValueSent);
+        _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments), ethValueSent);
     }
 
     function setTokenMetadataRenderer(
@@ -248,7 +254,7 @@ contract ZoraCreator1155Impl is
         _setRenderer(tokenId, renderer, setupData);
     }
 
-    /// Execute minter commands ///
+    /// Execute Minter Commands ///
 
     function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent) internal {
         for (uint256 i = 0; i < commands.length; ++i) {
@@ -268,15 +274,15 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    /// Proxy setter for sale updates ///
+    /// Proxy Setter for Sale Updates ///
 
     function callSale(
         uint256 tokenId,
-        address salesConfig,
+        IMinter1155 salesConfig,
         bytes memory data
     ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
-        _requireAdminOrRole(salesConfig, tokenId, PERMISSION_BIT_MINTER);
-        (bool success, ) = salesConfig.call(data);
+        _requireAdminOrRole(address(salesConfig), tokenId, PERMISSION_BIT_MINTER);
+        (bool success, ) = address(salesConfig).call(data);
         if (!success) {
             revert Sale_CallFailed();
         }

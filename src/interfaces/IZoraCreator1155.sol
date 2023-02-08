@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
+import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
 interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
@@ -39,7 +40,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     // Only allow minting one token id at time
     function purchase(
-        address minter,
+        IMinter1155 minter,
         uint256 tokenId,
         uint256 quantity,
         bytes calldata minterArguments
