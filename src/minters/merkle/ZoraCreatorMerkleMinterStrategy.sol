@@ -1,22 +1,30 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 
-contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
-    struct SalesConfig {
-        uint64 saleStart;
-        uint64 saleEnd;
-        uint64 maxTokensPerTransaction;
-        uint64 maxTokensPerAddress;
-        uint96 pricePerToken;
+contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
+    struct MerkleSaleSettings {
+        uint64 presaleStart;
+        uint64 presaleEnd;
         address fundsRecipient;
+        bytes32 merkleRoot;
     }
-    mapping(uint256 => SalesConfig) internal salesConfigs;
+
+    event SaleSetup(address sender, uint256 tokenId, MerkleSaleSettings merkleSaleSettings);
+
+    mapping(uint256 => MerkleSaleSettings) allowedMerkles;
+
     mapping(bytes32 => uint256) internal mintedPerAddress;
+
+    error MintedTooManyForAddress();
+
+    error IncorrectValueSent(uint256 tokenId, uint256 quantity, uint256 ethValueSent);
+    error InvalidMerkleProof(address mintTo, bytes32[] merkleProof, bytes32 merkleRoot);
 
     function contractURI() external pure override returns (string memory) {
         // TODO(iain): Add contract URI configuration json for front-end
@@ -24,20 +32,17 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     }
 
     function contractName() external pure override returns (string memory) {
-        return "Fixed Price Sale Strategy";
+        return "Merkle Tree Sale Strategy";
     }
 
     function contractVersion() external pure override returns (string memory) {
         return "0.0.1";
     }
 
-    error WrongValueSent();
-    error SaleEnded();
-    error SaleHasNotStarted();
-    error MintedTooManyForAddress();
-    error TooManyTokensInOneTxn();
+    error MerkleClaimsExceeded();
 
-    event SaleSetup(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
+    event SetupMerkleRoot(address mediaContract, uint256 tokenId, bytes32 merkleRoot);
+    event RemovedMerkleRoot(address mediaContract, uint256 tokenId);
 
     function requestMint(
         address,
@@ -46,37 +51,27 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         uint256 ethValueSent,
         bytes calldata minterArguments
     ) external returns (ICreatorCommands.Command[] memory commands) {
-        address mintTo = abi.decode(minterArguments, (address));
+        (address mintTo, uint256 maxQuantity, uint256 pricePerToken, bytes32[] memory merkleProof) = abi.decode(
+            minterArguments,
+            (address, uint256, uint256, bytes32[])
+        );
 
-        SalesConfig memory config = salesConfigs[_getKey(msg.sender, tokenId)];
+        MerkleSaleSettings memory config = allowedMerkles[_getKey(msg.sender, tokenId)];
 
-        // Check value sent
-        if (config.pricePerToken * quantity != ethValueSent) {
-            revert WrongValueSent();
+        if (!MerkleProof.verify(merkleProof, config.merkleRoot, keccak256(abi.encode(mintTo, maxQuantity, pricePerToken)))) {
+            revert InvalidMerkleProof(mintTo, merkleProof, config.merkleRoot);
         }
 
-        // Check sale end
-        if (block.timestamp > config.saleEnd) {
-            revert SaleEnded();
-        }
-
-        // Check sale start
-        if (block.timestamp < config.saleStart) {
-            revert SaleHasNotStarted();
-        }
-
-        // Check minted per address limit
-        if (config.maxTokensPerAddress > 0) {
+        if (maxQuantity > 0) {
             bytes32 key = keccak256(abi.encode(msg.sender, tokenId, mintTo));
             mintedPerAddress[key] += quantity;
-            if (config.maxTokensPerAddress > mintedPerAddress[key]) {
+            if (maxQuantity > mintedPerAddress[key]) {
                 revert MintedTooManyForAddress();
             }
         }
 
-        // Check minted per txn limit
-        if (config.maxTokensPerTransaction > 0 && quantity > config.maxTokensPerTransaction) {
-            revert TooManyTokensInOneTxn();
+        if (quantity * pricePerToken != ethValueSent) {
+            revert IncorrectValueSent(tokenId, quantity * pricePerToken, ethValueSent);
         }
 
         // Should transfer funds if funds recipient is set to a non-default address
@@ -94,15 +89,15 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         }
     }
 
-    function setupSale(uint256 tokenId, SalesConfig memory salesConfig) external {
-        salesConfigs[_getKey(msg.sender, tokenId)] = salesConfig;
+    function setupSale(uint256 tokenId, MerkleSaleSettings memory merkleSaleSettings) external {
+        allowedMerkles[_getKey(msg.sender, tokenId)] = merkleSaleSettings;
 
         // Emit event
-        emit SaleSetup(msg.sender, tokenId, salesConfig);
+        emit SaleSetup(msg.sender, tokenId, merkleSaleSettings);
     }
 
     function resetSale(uint256 tokenId) external override {
-        delete salesConfigs[_getKey(msg.sender, tokenId)];
+        delete allowedMerkles[_getKey(msg.sender, tokenId)];
 
         // Removed sale confirmation
         emit SaleRemoved(msg.sender, tokenId);
