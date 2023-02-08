@@ -231,6 +231,7 @@ contract ZoraCreator1155Impl is
         // Get value sent and handle mint fee
         uint256 ethValueSent = _handleFeeAndGetValueSent();
 
+        // Execute commands returned from minter
         _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments), ethValueSent);
     }
 
