@@ -29,9 +29,13 @@ contract MintFeeManagerTest is Test {
         response = new bytes[](0);
     }
 
-    function test_mintFeeSent(uint32 mintFee, uint256 purchasePrice, uint256 quantity) external {
+    function test_mintFeeSent(
+        uint32 mintFee,
+        uint256 purchasePrice,
+        uint256 quantity
+    ) external {
         vm.assume(purchasePrice > mintFee);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(IZoraCreator1155Factory(address(0)), mintFee, recipient);
+        zoraCreator1155Impl = new ZoraCreator1155Impl( mintFee, recipient);
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
@@ -45,7 +49,7 @@ contract MintFeeManagerTest is Test {
 
         vm.deal(admin, purchasePrice);
         vm.prank(admin);
-        target.purchase{value: purchasePrice}(minter, tokenId, quantity, abi.encode(recipient));
+        target.purchase{value: purchasePrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
 
         vm.prank(admin);
         target.withdrawAll();
@@ -55,7 +59,11 @@ contract MintFeeManagerTest is Test {
         assertEq(admin.balance, recipient == address(0) ? purchasePrice : purchasePrice - mintFee);
     }
 
-    function test_mintFeeSent_revertCannotSendMintFee(uint32 mintFee, uint256 purchasePrice, uint256 quantity) external {
+    function test_mintFeeSent_revertCannotSendMintFee(
+        uint32 mintFee,
+        uint256 purchasePrice,
+        uint256 quantity
+    ) external {
         vm.assume(purchasePrice > mintFee);
 
         // Use this mock contract as a recipient so we can reject ETH payments.
@@ -63,7 +71,7 @@ contract MintFeeManagerTest is Test {
         _recip.setReceiveETH(false);
         address _recipient = address(_recip);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(IZoraCreator1155Factory(address(0)), mintFee, _recipient);
+        zoraCreator1155Impl = new ZoraCreator1155Impl( mintFee, _recipient);
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
@@ -78,6 +86,6 @@ contract MintFeeManagerTest is Test {
         vm.deal(admin, purchasePrice);
         vm.expectRevert(abi.encodeWithSelector(IMintFeeManager.CannotSendMintFee.selector, _recipient, mintFee));
         vm.prank(admin);
-        target.purchase{value: purchasePrice}(minter, tokenId, quantity, abi.encode(recipient));
+        target.purchase{value: purchasePrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
     }
 }
