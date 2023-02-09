@@ -50,6 +50,10 @@ contract ZoraCreator1155Impl is
         // Setup re-entracy guard
         __ReentrancyGuard_init();
 
+        // Setup uups
+        // TODO this does nothing and costs gas, remove?
+        __UUPSUpgradeable_init();
+
         // Setup contract-default token ID
         _setupDefaultToken(defaultAdmin, newContractURI, defaultRoyaltyConfiguration);
 
@@ -232,7 +236,7 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleFeeAndGetValueSent();
 
         // Execute commands returned from minter
-        _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent);
+        _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
     }
 
     function setTokenMetadataRenderer(
@@ -245,7 +249,7 @@ contract ZoraCreator1155Impl is
 
     /// Execute Minter Commands ///
 
-    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent) internal {
+    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
         for (uint256 i = 0; i < commands.length; ++i) {
             ICreatorCommands.CreatorActions method = commands[i].method;
             if (method == ICreatorCommands.CreatorActions.SEND_ETH) {
@@ -257,8 +261,15 @@ contract ZoraCreator1155Impl is
                     revert Mint_ValueTransferFail();
                 }
             } else if (method == ICreatorCommands.CreatorActions.MINT) {
-                (address recipient, uint256 tokenId, uint256 quantity) = abi.decode(commands[i].args, (address, uint256, uint256));
+                (address recipient, uint256 mintTokenId, uint256 quantity) = abi.decode(commands[i].args, (address, uint256, uint256));
+                if (tokenId != 0 && mintTokenId != tokenId) {
+                    revert Mint_TokenIDMintNotAllowed();
+                }
                 _adminMint(recipient, tokenId, quantity, "");
+            } else if (method == ICreatorCommands.CreatorActions.NO_OP) {
+                // no-op
+            } else {
+                revert Mint_UnknownCommand();
             }
         }
     }

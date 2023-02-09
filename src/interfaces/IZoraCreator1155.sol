@@ -22,6 +22,10 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
     error Mint_InsolventSaleTransfer();
     error Mint_ValueTransferFail();
 
+    error Mint_TokenIDMintNotAllowed();
+
+    error Mint_UnknownCommand();
+
     error Sale_CallFailed();
     error Metadata_CallFailed();
 
