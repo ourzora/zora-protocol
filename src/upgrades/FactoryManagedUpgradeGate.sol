@@ -5,7 +5,7 @@ import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGa
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
 import {FactoryManagedUpgradeGateStorageV1} from "./FactoryManagedUpgradeGateStorageV1.sol";
 
-contract FactoryManagedUpgradeGate is
+abstract contract FactoryManagedUpgradeGate is
     IFactoryManagedUpgradeGate,
     Ownable2StepUpgradeable,
     FactoryManagedUpgradeGateStorageV1
