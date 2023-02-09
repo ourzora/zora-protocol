@@ -10,15 +10,21 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
+// TODO rename ZoraCreator1155FactoryImpl?
 contract ZoraCreator1155Factory is IZoraCreator1155Factory, FactoryManagedUpgradeGate, UUPSUpgradeable {
     IZoraCreator1155 public immutable implementation;
 
     constructor(IZoraCreator1155 _implementation) initializer {
         implementation = _implementation;
+        if (address(implementation) == address(0)) {
+            revert Constructor_ImplCannotBeZero();
+        }
     }
 
     function initialize(address _initialOwner) public initializer {
         __Ownable_init(_initialOwner);
+        __UUPSUpgradeable_init();
+
         emit FactorySetup();
     }
 
@@ -29,7 +35,7 @@ contract ZoraCreator1155Factory is IZoraCreator1155Factory, FactoryManagedUpgrad
         bytes[] calldata setupActions
     ) external returns (address) {
         IZoraCreator1155 newContract = IZoraCreator1155(address(new ZoraCreator1155Proxy(address(implementation))));
-        // TODO: figure out how to add multicall here to setup contract
+
         newContract.initialize({
             contractURI: contractURI,
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration,

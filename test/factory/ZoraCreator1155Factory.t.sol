@@ -13,7 +13,7 @@ contract ZoraCreator1155FactoryTest is Test {
     ZoraCreator1155Factory internal factory;
 
     function setUp() external {
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(IZoraCreator1155Factory(address(0)), 0, address(0));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl( 0, address(0));
         factory = new ZoraCreator1155Factory(zoraCreator1155Impl);
     }
 
