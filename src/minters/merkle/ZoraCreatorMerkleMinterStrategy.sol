@@ -6,8 +6,11 @@ import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
+import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
+import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
 contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
+    using SaleCommandHelper for ICreatorCommands.CommandSet;
     struct MerkleSaleSettings {
         uint64 presaleStart;
         uint64 presaleEnd;
@@ -50,7 +53,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         uint256 quantity,
         uint256 ethValueSent,
         bytes calldata minterArguments
-    ) external returns (ICreatorCommands.Command[] memory commands) {
+    ) external returns (ICreatorCommands.CommandSet memory commands) {
         (address mintTo, uint256 maxQuantity, uint256 pricePerToken, bytes32[] memory merkleProof) = abi.decode(
             minterArguments,
             (address, uint256, uint256, bytes32[])
@@ -78,14 +81,14 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         bool shouldTransferFunds = config.fundsRecipient != address(0);
 
         // Setup contract commands
-        commands = new ICreatorCommands.Command[](shouldTransferFunds ? 2 : 1);
+        commands.setSize(shouldTransferFunds ? 2 : 1);
 
         // Mint command
-        commands[0] = ICreatorCommands.Command({method: ICreatorCommands.CreatorActions.MINT, args: abi.encode(mintTo, tokenId, quantity)});
+        commands.mint(mintTo, tokenId, quantity);
 
         // If we have a non-default funds recipient for this token
         if (shouldTransferFunds) {
-            commands[1] = ICreatorCommands.Command({method: ICreatorCommands.CreatorActions.SEND_ETH, args: abi.encode(config.fundsRecipient, ethValueSent)});
+            commands.transfer(config.fundsRecipient, ethValueSent);
         }
     }
 
