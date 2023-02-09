@@ -3,8 +3,11 @@ pragma solidity 0.8.17;
 
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IVersionedContract} from "../interfaces/IVersionedContract.sol";
+import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
+import {SaleCommandHelper} from "./SaleCommandHelper.sol";
 
 abstract contract SaleStrategy is IMinter1155, IVersionedContract {
+
     function contractURI() external virtual returns (string memory);
 
     function contractName() external virtual returns (string memory);

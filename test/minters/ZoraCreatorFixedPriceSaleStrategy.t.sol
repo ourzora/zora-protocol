@@ -52,6 +52,9 @@ contract ZoraCreator1155Test is Test {
         vm.startPrank(tokenRecipient);
         target.purchase{value: 10 ether}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient));
 
+        assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
+        assertEq(address(target).balance, 10 ether);
+
         vm.stopPrank();
     }
 }

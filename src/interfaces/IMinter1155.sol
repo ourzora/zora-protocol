@@ -11,5 +11,5 @@ interface IMinter1155 {
         uint256 quantity,
         uint256 ethValueSent,
         bytes calldata minterArguments
-    ) external returns (ICreatorCommands.Command[] memory commands);
+    ) external returns (ICreatorCommands.CommandSet memory commands);
 }

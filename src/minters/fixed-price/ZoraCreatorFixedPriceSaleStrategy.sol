@@ -5,6 +5,7 @@ import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
+import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
 contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     struct SalesConfig {
@@ -17,6 +18,8 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     }
     mapping(uint256 => SalesConfig) internal salesConfigs;
     mapping(bytes32 => uint256) internal mintedPerAddress;
+
+    using SaleCommandHelper for ICreatorCommands.CommandSet;
 
     function contractURI() external pure override returns (string memory) {
         // TODO(iain): Add contract URI configuration json for front-end
@@ -45,7 +48,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         uint256 quantity,
         uint256 ethValueSent,
         bytes calldata minterArguments
-    ) external returns (ICreatorCommands.Command[] memory commands) {
+    ) external returns (ICreatorCommands.CommandSet memory commands) {
         address mintTo = abi.decode(minterArguments, (address));
 
         SalesConfig memory config = salesConfigs[_getKey(msg.sender, tokenId)];
@@ -79,18 +82,15 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
             revert TooManyTokensInOneTxn();
         }
 
-        // Should transfer funds if funds recipient is set to a non-default address
         bool shouldTransferFunds = config.fundsRecipient != address(0);
-
-        // Setup contract commands
-        commands = new ICreatorCommands.Command[](shouldTransferFunds ? 2 : 1);
+        commands.setSize(shouldTransferFunds ? 2 : 1);
 
         // Mint command
-        commands[0] = ICreatorCommands.Command({method: ICreatorCommands.CreatorActions.MINT, args: abi.encode(mintTo, tokenId, quantity)});
+        commands.mint(mintTo, tokenId, quantity);
 
-        // If we have a non-default funds recipient for this token
+        // Should transfer funds if funds recipient is set to a non-default address
         if (shouldTransferFunds) {
-            commands[1] = ICreatorCommands.Command({method: ICreatorCommands.CreatorActions.SEND_ETH, args: abi.encode(config.fundsRecipient, ethValueSent)});
+            commands.transfer(config.fundsRecipient, ethValueSent);
         }
     }
 

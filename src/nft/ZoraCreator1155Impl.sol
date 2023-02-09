@@ -232,7 +232,7 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleFeeAndGetValueSent();
 
         // Execute commands returned from minter
-        _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments), ethValueSent);
+        _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent);
     }
 
     function setTokenMetadataRenderer(

@@ -12,4 +12,9 @@ interface ICreatorCommands {
     CreatorActions method;
     bytes args;
   }
+
+  struct CommandSet {
+    Command[] commands;
+    uint256 at;
+  }
 }
