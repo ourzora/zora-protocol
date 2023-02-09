@@ -53,10 +53,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
         SalesConfig memory config = salesConfigs[_getKey(msg.sender, tokenId)];
 
-        // Check value sent
-        if (config.pricePerToken * quantity != ethValueSent) {
-            revert WrongValueSent();
-        }
+        // If sales config does not exist this first check will always fail.
 
         // Check sale end
         if (block.timestamp > config.saleEnd) {
@@ -66,6 +63,11 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         // Check sale start
         if (block.timestamp < config.saleStart) {
             revert SaleHasNotStarted();
+        }
+
+        // Check value sent
+        if (config.pricePerToken * quantity != ethValueSent) {
+            revert WrongValueSent();
         }
 
         // Check minted per address limit
