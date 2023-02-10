@@ -86,6 +86,13 @@ contract ZoraCreator1155Impl is
         _updateRoyalties(CONTRACT_BASE_ID, defaultRoyaltyConfiguration);
     }
 
+    function updateRoyaltiesForToken(uint256 tokenId, RoyaltyConfiguration memory newConfiguration)
+        external
+        onlyAdminOrRole(tokenId, PERMISSION_BIT_FUNDS_MANAGER)
+    {
+        _updateRoyalties(tokenId, newConfiguration);
+    }
+
     // remove from openzeppelin impl
     function _setURI(string memory newuri) internal virtual override {}
 
@@ -249,7 +256,11 @@ contract ZoraCreator1155Impl is
 
     /// Execute Minter Commands ///
 
-    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
+    function _executeCommands(
+        ICreatorCommands.Command[] memory commands,
+        uint256 ethValueSent,
+        uint256 tokenId
+    ) internal {
         for (uint256 i = 0; i < commands.length; ++i) {
             ICreatorCommands.CreatorActions method = commands[i].method;
             if (method == ICreatorCommands.CreatorActions.SEND_ETH) {
