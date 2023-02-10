@@ -28,8 +28,12 @@ contract Ownable2StepUpgradableTest is Test {
     function test_transferOwnership(address _newOwner) external {
         vm.assume(_newOwner != address(0));
 
+        assertEq(ownable.owner(), owner);
+
         vm.prank(owner);
         ownable.transferOwnership(_newOwner);
+
+        assertEq(ownable.owner(), _newOwner);
     }
 
     function test_transferOwnership_revertNotZeroAddress() external {
@@ -50,6 +54,7 @@ contract Ownable2StepUpgradableTest is Test {
         ownable.safeTransferOwnership(_newOwner);
 
         assertEq(ownable.pendingOwner(), _newOwner);
+        assertEq(ownable.owner(), owner);
     }
 
     function test_safeTransferOwnership_revertNotZeroAddress() external {
