@@ -2,8 +2,8 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {Ownable2StepUpgradeable} from "../../../src/utils/ownable/Ownable2StepUpgradeable.sol";
-import {IOwnable2StepUpgradeable} from "../../../src/utils/ownable/IOwnable2StepUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "../../src/utils/ownable/Ownable2StepUpgradeable.sol";
+import {IOwnable2StepUpgradeable} from "../../src/utils/ownable/IOwnable2StepUpgradeable.sol";
 import {ZoraCreator1155Factory} from "../../src/factory/ZoraCreator1155Factory.sol";
 import {ZoraCreator1155FactoryProxy} from "../../src/proxies/ZoraCreator1155FactoryProxy.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
