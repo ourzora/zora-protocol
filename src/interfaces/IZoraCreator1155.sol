@@ -26,6 +26,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     error Mint_UnknownCommand();
 
+    error NewOwnerNeedsToBeAdmin();
+
     error Sale_CallFailed();
     error Metadata_CallFailed();
 
