@@ -3,12 +3,12 @@ pragma solidity 0.8.17;
 
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
-import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
-import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
+import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
+import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
+import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
 
 // TODO rename ZoraCreator1155FactoryImpl?
 contract ZoraCreator1155Factory is IZoraCreator1155Factory, FactoryManagedUpgradeGate, UUPSUpgradeable {
