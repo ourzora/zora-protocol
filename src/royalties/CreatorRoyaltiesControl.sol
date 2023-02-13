@@ -18,7 +18,7 @@ abstract contract CreatorRoyaltiesControl is
         returns (RoyaltyConfiguration memory)
     {
         RoyaltyConfiguration memory config = royalties[tokenId];
-        if (config.royaltyBPS == 0) {
+        if (config.royaltyRecipient != address(0)) {
             return config;
         }
         // Otherwise, return default.
