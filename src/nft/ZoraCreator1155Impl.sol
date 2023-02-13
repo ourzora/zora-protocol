@@ -57,6 +57,9 @@ contract ZoraCreator1155Impl is
         // Setup contract-default token ID
         _setupDefaultToken(defaultAdmin, newContractURI, defaultRoyaltyConfiguration);
 
+        // Set owner to default admin
+        _setOwner(defaultAdmin);
+
         // Run Setup actions
         if (setupActions.length > 0) {
             // Temporarily make sender admin
@@ -192,6 +195,26 @@ contract ZoraCreator1155Impl is
         uint256 permissionBits
     ) external onlyAdmin(tokenId) {
         _removePermission(tokenId, user, permissionBits);
+
+        // Clear owner field
+        if (tokenId == CONTRACT_BASE_ID && user == owner && !_hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
+            _setOwner(address(0));
+        }
+    }
+
+    function setOwner(address newOwner) external onlyAdmin(CONTRACT_BASE_ID) {
+        if (!_hasPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
+            revert NewOwnerNeedsToBeAdmin();
+        }
+        // Update owner field
+        _setOwner(newOwner);
+    }
+
+    function _setOwner(address newOwner) internal {
+        address lastOwner = owner;
+        owner = newOwner;
+
+        emit OwnershipTransferred(lastOwner, newOwner);
     }
 
     /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
@@ -249,7 +272,11 @@ contract ZoraCreator1155Impl is
 
     /// Execute Minter Commands ///
 
-    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
+    function _executeCommands(
+        ICreatorCommands.Command[] memory commands,
+        uint256 ethValueSent,
+        uint256 tokenId
+    ) internal {
         for (uint256 i = 0; i < commands.length; ++i) {
             ICreatorCommands.CreatorActions method = commands[i].method;
             if (method == ICreatorCommands.CreatorActions.SEND_ETH) {

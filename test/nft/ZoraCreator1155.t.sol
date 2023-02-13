@@ -30,7 +30,7 @@ contract ZoraCreator1155Test is Test {
         fundsManagerRole = target.PERMISSION_BIT_FUNDS_MANAGER();
     }
 
-    function _emptyInitData() internal returns (bytes[] memory response) {
+    function _emptyInitData() internal pure returns (bytes[] memory response) {
         response = new bytes[](0);
     }
 
