@@ -11,12 +11,11 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     struct SalesConfig {
         uint64 saleStart;
         uint64 saleEnd;
-        uint64 maxTokensPerTransaction;
         uint64 maxTokensPerAddress;
         uint96 pricePerToken;
         address fundsRecipient;
     }
-    mapping(uint256 => SalesConfig) internal salesConfigs;
+    mapping(bytes32 => SalesConfig) internal salesConfigs;
     mapping(bytes32 => uint256) internal mintedPerAddress;
 
     using SaleCommandHelper for ICreatorCommands.CommandSet;
@@ -79,11 +78,6 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
             }
         }
 
-        // Check minted per txn limit
-        if (config.maxTokensPerTransaction > 0 && quantity > config.maxTokensPerTransaction) {
-            revert TooManyTokensInOneTxn();
-        }
-
         bool shouldTransferFunds = config.fundsRecipient != address(0);
         commands.setSize(shouldTransferFunds ? 2 : 1);
 
@@ -108,5 +102,9 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
         // Removed sale confirmation
         emit SaleRemoved(msg.sender, tokenId);
+    }
+
+    function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
+        return salesConfigs[_getKey(tokenContract, tokenId)];
     }
 }
