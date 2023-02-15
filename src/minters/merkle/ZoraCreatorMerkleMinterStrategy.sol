@@ -20,7 +20,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
     event SaleSetup(address sender, uint256 tokenId, MerkleSaleSettings merkleSaleSettings);
 
-    mapping(uint256 => MerkleSaleSettings) allowedMerkles;
+    mapping(bytes32 => MerkleSaleSettings) allowedMerkles;
 
     mapping(bytes32 => uint256) internal mintedPerAddress;
 
@@ -104,5 +104,9 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
         // Removed sale confirmation
         emit SaleRemoved(msg.sender, tokenId);
+    }
+
+    function sale(address tokenContract, uint256 tokenId) external view returns (MerkleSaleSettings memory) {
+        return allowedMerkles[_getKey(tokenContract, tokenId)];
     }
 }

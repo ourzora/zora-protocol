@@ -69,7 +69,6 @@ contract ZoraCreator1155Impl is
             multicall(setupActions);
 
             // Remove admin
-            _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
             _removePermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
         }
     }
@@ -165,6 +164,8 @@ contract ZoraCreator1155Impl is
         nonReentrant
         returns (uint256)
     {
+        // TODO(iain): isMaxSupply = 0 open edition?
+
         uint256 tokenId = _setupNewToken(_uri, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
