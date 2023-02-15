@@ -10,8 +10,7 @@ import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.
 import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
 
-// TODO rename ZoraCreator1155FactoryImpl?
-contract ZoraCreator1155Factory is IZoraCreator1155Factory, FactoryManagedUpgradeGate, UUPSUpgradeable {
+contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, FactoryManagedUpgradeGate, UUPSUpgradeable {
     IZoraCreator1155 public immutable implementation;
 
     constructor(IZoraCreator1155 _implementation) initializer {
