@@ -39,8 +39,8 @@ contract CreatorRoyaltiesControlTest is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 100);
 
-        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenId, 1 ether);
-        assertEq(amount, 0.001 ether);
+        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenId, 1 ether, 10);
+        assertEq(amount, 1);
         assertEq(royaltyRecipient, royaltyPayout);
     }
 
@@ -59,12 +59,12 @@ contract CreatorRoyaltiesControlTest is Test {
 
         vm.stopPrank();
 
-        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenIdFirst, 1 ether);
-        assertEq(amount, 0.001 ether);
+        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenIdFirst, 0, 10);
+        assertEq(amount, 1);
         assertEq(royaltyRecipient, royaltyPayout);
 
-        (address royaltyRecipientSecond, uint256 amountSecond) = target.royaltyInfo(tokenIdSecond, 1 ether);
-        assertEq(amountSecond, 0.01 ether);
+        (address royaltyRecipientSecond, uint256 amountSecond) = target.royaltyInfo(tokenIdSecond, 0, 1000);
+        assertEq(amountSecond, 10);
         assertEq(royaltyRecipientSecond, address(0x992));
     }
 }

@@ -13,7 +13,7 @@ contract ZoraCreator1155FactoryTest is Test {
     ZoraCreator1155Factory internal factory;
 
     function setUp() external {
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl( 0, address(0));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
         factory = new ZoraCreator1155Factory(zoraCreator1155Impl);
     }
 
@@ -25,10 +25,10 @@ contract ZoraCreator1155FactoryTest is Test {
         assertEq(proxy.owner(), initialOwner);
     }
 
-    function test_createContract(string memory contractURI, uint32 royaltyBPS, address royaltyRecipient, address admin) external {
+    function test_createContract(string memory contractURI, uint32 royaltySchedule, address royaltyRecipient, address admin) external {
         address deployedAddress = factory.createContract(
             contractURI,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient),
+            ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyRecipient),
             admin,
             new bytes[](0)
         );
@@ -36,7 +36,7 @@ contract ZoraCreator1155FactoryTest is Test {
         // TODO: test URI when metadata functions are complete
         // assertEq(zoraCreator1155.uri(0), contractURI);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = target.getRoyalties(0);
-        assertEq(config.royaltyBPS, royaltyBPS);
+        assertEq(config.royaltyMintSchedule, royaltySchedule);
         assertEq(config.royaltyRecipient, royaltyRecipient);
         assertEq(target.getPermissions(0, admin), target.PERMISSION_BIT_ADMIN());
     }
