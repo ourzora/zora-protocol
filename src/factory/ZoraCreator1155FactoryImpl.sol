@@ -35,12 +35,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, FactoryManagedUp
     ) external returns (address) {
         IZoraCreator1155 newContract = IZoraCreator1155(address(new ZoraCreator1155Proxy(address(implementation))));
 
-        newContract.initialize({
-            contractURI: contractURI,
-            defaultRoyaltyConfiguration: defaultRoyaltyConfiguration,
-            defaultAdmin: defaultAdmin,
-            setupActions: setupActions
-        });
+        newContract.initialize(contractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
         return address(newContract);
     }

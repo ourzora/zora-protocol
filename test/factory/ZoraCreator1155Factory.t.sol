@@ -19,9 +19,10 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function test_initialize(address initialOwner) external {
         vm.assume(initialOwner != address(0));
-        address payable proxyAddress = payable(address(new ZoraCreator1155FactoryProxy(address(factory))));
+        address payable proxyAddress = payable(
+            address(new ZoraCreator1155FactoryProxy(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+        );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
-        proxy.initialize(initialOwner);
         assertEq(proxy.owner(), initialOwner);
     }
 
