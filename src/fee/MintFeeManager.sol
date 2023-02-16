@@ -10,7 +10,7 @@ contract MintFeeManager is IMintFeeManager {
 
     constructor(uint256 _mintFee, address _mintFeeRecipient) {
         // Set fixed finders fee
-        if (_mintFee >= 1 ether) {
+        if (_mintFee >= 0.1 ether) {
             revert MintFeeCannotBeMoreThanOneETH(_mintFee);
         }
         if (_mintFeeRecipient == address(0) && _mintFee > 0) {

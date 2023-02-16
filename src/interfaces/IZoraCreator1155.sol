@@ -52,6 +52,20 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
         bytes calldata minterArguments
     ) external payable;
 
+     function adminMint(
+        address recipient,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes memory data
+    ) external;
+
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) external;
+
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
 
     event ContractURIUpdated(address updater, string newURI);

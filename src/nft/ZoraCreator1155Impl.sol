@@ -36,7 +36,7 @@ contract ZoraCreator1155Impl is
     uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
     uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
 
-    constructor(uint256 _mintFeeBPS, address _mintFeeRecipient) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {}
+    constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
 
     function initialize(
         string memory newContractURI,
@@ -189,6 +189,25 @@ contract ZoraCreator1155Impl is
         _adminMint(recipient, tokenId, quantity, data);
     }
 
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) public nonReentrant {
+        bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            if (!isGlobalAdminOrMinter) {
+                uint256 checkingTokenId = tokenIds[i];
+                _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
+            }
+            requireCanMintQuantity(tokenIds[i], quantities[i]);
+        }
+        _mintBatch(recipient, tokenIds, quantities, data);
+    }
+
+
     function addPermission(
         uint256 tokenId,
         address user,
@@ -233,24 +252,6 @@ contract ZoraCreator1155Impl is
         bytes memory data
     ) internal canMintQuantity(tokenId, quantity) nonReentrant {
         _mint(recipient, tokenId, quantity, data);
-    }
-
-    function adminMintBatch(
-        address recipient,
-        uint256[] memory tokenIds,
-        uint256[] memory quantities,
-        bytes memory data
-    ) public nonReentrant {
-        bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
-
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
-            if (!isGlobalAdminOrMinter) {
-                uint256 checkingTokenId = tokenIds[i];
-                _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
-            }
-            requireCanMintQuantity(tokenIds[i], quantities[i]);
-        }
-        _mintBatch(recipient, tokenIds, quantities, data);
     }
 
     // Only allow minting one token id at time
