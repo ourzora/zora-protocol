@@ -18,14 +18,13 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         bytes32 merkleRoot;
     }
 
-    event SaleSetup(address sender, uint256 tokenId, MerkleSaleSettings merkleSaleSettings);
+    event SaleSet(address sender, uint256 tokenId, MerkleSaleSettings merkleSaleSettings);
 
-    mapping(bytes32 => MerkleSaleSettings) allowedMerkles;
+    mapping(bytes32 => MerkleSaleSettings) public allowedMerkles;
 
-    mapping(bytes32 => uint256) internal mintedPerAddress;
+    mapping(bytes32 => uint256) public mintedPerAddress;
 
     error MintedTooManyForAddress();
-
     error IncorrectValueSent(uint256 tokenId, uint256 quantity, uint256 ethValueSent);
     error InvalidMerkleProof(address mintTo, bytes32[] merkleProof, bytes32 merkleRoot);
 
@@ -43,9 +42,6 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     }
 
     error MerkleClaimsExceeded();
-
-    event SetupMerkleRoot(address mediaContract, uint256 tokenId, bytes32 merkleRoot);
-    event RemovedMerkleRoot(address mediaContract, uint256 tokenId);
 
     function requestMint(
         address,
@@ -95,15 +91,15 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     function setupSale(uint256 tokenId, MerkleSaleSettings memory merkleSaleSettings) external {
         allowedMerkles[_getKey(msg.sender, tokenId)] = merkleSaleSettings;
 
-        // Emit event
-        emit SaleSetup(msg.sender, tokenId, merkleSaleSettings);
+        // Emit event for new sale
+        emit SaleSet(msg.sender, tokenId, merkleSaleSettings);
     }
 
     function resetSale(uint256 tokenId) external override {
         delete allowedMerkles[_getKey(msg.sender, tokenId)];
 
-        // Removed sale confirmation
-        emit SaleRemoved(msg.sender, tokenId);
+        // Emit event with empty sale
+        emit SaleSet(msg.sender, tokenId, allowedMerkles[_getKey(msg.sender, tokenId)]);
     }
 
     function sale(address tokenContract, uint256 tokenId) external view returns (MerkleSaleSettings memory) {

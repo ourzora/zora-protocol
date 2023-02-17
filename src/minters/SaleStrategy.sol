@@ -15,8 +15,6 @@ abstract contract SaleStrategy is IMinter1155, IVersionedContract {
 
     function resetSale(uint256 tokenId) external virtual;
 
-    event SaleRemoved(address targetContract, uint256 tokenId);
-
     function _getKey(address mediaContract, uint256 tokenId) internal pure returns (bytes32) {
         return keccak256(abi.encode(mediaContract, tokenId));
     }

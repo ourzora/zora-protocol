@@ -39,7 +39,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     error MintedTooManyForAddress();
     error TooManyTokensInOneTxn();
 
-    event SaleSetup(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
+    event SaleSet(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
 
     function requestMint(
         address,
@@ -90,18 +90,18 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         }
     }
 
-    function setupSale(uint256 tokenId, SalesConfig memory salesConfig) external {
+    function setSale(uint256 tokenId, SalesConfig memory salesConfig) external {
         salesConfigs[_getKey(msg.sender, tokenId)] = salesConfig;
 
         // Emit event
-        emit SaleSetup(msg.sender, tokenId, salesConfig);
+        emit SaleSet(msg.sender, tokenId, salesConfig);
     }
 
     function resetSale(uint256 tokenId) external override {
         delete salesConfigs[_getKey(msg.sender, tokenId)];
 
-        // Removed sale confirmation
-        emit SaleRemoved(msg.sender, tokenId);
+        // Deleted sale emit event
+        emit SaleSet(msg.sender, tokenId, salesConfigs[_getKey(msg.sender, tokenId)]);
     }
 
     function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
