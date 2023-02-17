@@ -32,6 +32,8 @@ contract ZoraCreator1155Impl is
 {
     uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
     uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
+
+// option @tyson remove all of these until we need them
     uint256 public immutable PERMISSION_BIT_SALES = 2**3;
     uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
     uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
@@ -164,12 +166,23 @@ contract ZoraCreator1155Impl is
         nonReentrant
         returns (uint256)
     {
-        // TODO(iain): isMaxSupply = 0 open edition?
+        // TODO(iain): isMaxSupply = 0 open edition or maybe uint256(max) - 1
+        //                                                  0xffffffff -> 2**8*4 4.2bil
+        //                                                  0xf0000000 -> 2**8*4-(8*3)
 
         uint256 tokenId = _setupNewToken(_uri, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
+        if (bytes(_uri).length > 0) {
+            emit URI(_uri, tokenId);
+        }
+
         return tokenId;
+    }
+
+    function updateTokenURI(uint256 tokenId, string memory _newURI) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        emit URI(_newURI, tokenId);
+        tokens[tokenId].uri = _newURI;
     }
 
     function _setupNewToken(string memory _uri, uint256 maxSupply) internal returns (uint256 tokenId) {
@@ -207,7 +220,6 @@ contract ZoraCreator1155Impl is
         _mintBatch(recipient, tokenIds, quantities, data);
     }
 
-
     function addPermission(
         uint256 tokenId,
         address user,
@@ -233,6 +245,7 @@ contract ZoraCreator1155Impl is
         if (!_hasPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
             revert NewOwnerNeedsToBeAdmin();
         }
+
         // Update owner field
         _setOwner(newOwner);
     }
@@ -277,6 +290,13 @@ contract ZoraCreator1155Impl is
         bytes calldata setupData
     ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
         _setRenderer(tokenId, renderer, setupData);
+
+        if (tokenId == 0) {
+            emit ContractRendererUpdated(renderer);
+        } else {
+            // We don't know the uri from the renderer but can emit a notification to the indexer here
+            emit URI("", tokenId);
+        }
     }
 
     /// Execute Minter Commands ///

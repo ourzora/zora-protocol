@@ -17,6 +17,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     event UpdatedToken(address from, uint256 tokenId, TokenData tokenData);
 
+    emit ContractRendererUpdated();
+
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
     error Mint_InsolventSaleTransfer();
@@ -36,10 +38,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     // TODO: maybe add more context
     error CannotMintMoreTokens(uint256 tokenId);
-
-    event ContractURIUpdated(address updater, string newURI);
-
-    event UpdatedMetadataRendererForToken(uint256 tokenId, address user, address metadataRenderer);
 
     function initialize(
         string memory contractURI,
