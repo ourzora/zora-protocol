@@ -25,10 +25,10 @@ contract ZoraCreator1155FactoryTest is Test {
         assertEq(proxy.owner(), initialOwner);
     }
 
-    function test_createContract(string memory contractURI, uint32 royaltySchedule, address royaltyRecipient, address admin) external {
+    function test_createContract(string memory contractURI, uint32 royaltySchedule, uint32 royaltyBps, address royaltyRecipient, address admin) external {
         address deployedAddress = factory.createContract(
             contractURI,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyRecipient),
+            ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient),
             admin,
             new bytes[](0)
         );
@@ -37,6 +37,7 @@ contract ZoraCreator1155FactoryTest is Test {
         // assertEq(zoraCreator1155.uri(0), contractURI);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = target.getRoyalties(0);
         assertEq(config.royaltyMintSchedule, royaltySchedule);
+        assertEq(config.royaltyBPS, royaltyBps);
         assertEq(config.royaltyRecipient, royaltyRecipient);
         assertEq(target.getPermissions(0, admin), target.PERMISSION_BIT_ADMIN());
     }

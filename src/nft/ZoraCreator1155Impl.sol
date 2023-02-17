@@ -278,14 +278,14 @@ contract ZoraCreator1155Impl is
     }
 
     /// Getter for supports interface ///
-    function supportsInterface(bytes4 interfaceId) public view virtual override(ERC1155Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
     }
 
     /// Generic 1155 function overrides ///
 
     function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal virtual override {
-        (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = royaltyInfo(id, tokens[id].totalSupply, amount);
+        (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalSupply, amount);
         super._mint(account, id, amount, data);
         if (supplyRoyaltyAmount > 0) {
             super._mint(supplyRoyaltyRecipient, id, supplyRoyaltyAmount, data);
@@ -297,7 +297,7 @@ contract ZoraCreator1155Impl is
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
-            (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = royaltyInfo(ids[i], tokens[ids[i]].totalSupply, amounts[i]);
+            (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalSupply, amounts[i]);
             if (supplyRoyaltyAmount > 0) {
                 super._mint(supplyRoyaltyRecipient, ids[i], supplyRoyaltyAmount, data);
             }

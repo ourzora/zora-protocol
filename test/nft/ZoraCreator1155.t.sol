@@ -35,35 +35,41 @@ contract ZoraCreator1155Test is Test {
     }
 
     function init() internal {
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
     }
 
-    function init(uint32 royaltyBps, address royaltyRecipient) internal {
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBps, royaltyRecipient), admin, _emptyInitData());
+    function init(uint32 royaltySchedule, uint32 royaltyBps, address royaltyRecipient) internal {
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
-    function test_intialize(
-        uint32 royaltyBPS,
-        address royaltyRecipient,
-        address defaultAdmin
-    ) external {
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
+    function test_intialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
+            royaltySchedule,
+            royaltyBPS,
+            royaltyRecipient
+        );
         target.initialize("test", config, defaultAdmin, _emptyInitData());
 
         // TODO: test URI when metadata functions are complete
         // assertEq(target.uri(0), "test");
-        (uint256 fetchedBps, address fetchedRecipient) = target.royalties(0);
+        (uint32 fetchedSchedule, uint256 fetchedBps, address fetchedRecipient) = target.royalties(0);
+        assertEq(fetchedSchedule, royaltySchedule);
         assertEq(fetchedBps, royaltyBPS);
         assertEq(fetchedRecipient, royaltyRecipient);
     }
 
     function test_initialize_withSetupActions(
+        uint32 royaltySchedule,
         uint32 royaltyBPS,
         address royaltyRecipient,
         address defaultAdmin,
         uint256 maxSupply
     ) external {
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
+            royaltySchedule,
+            royaltyBPS,
+            royaltyRecipient
+        );
         bytes[] memory setupActions = new bytes[](1);
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply);
         target.initialize("test", config, defaultAdmin, setupActions);
@@ -72,12 +78,12 @@ contract ZoraCreator1155Test is Test {
         assertEq(fetchedMaxSupply, maxSupply);
     }
 
-    function test_initialize_revertAlreadyInitialized(
-        uint32 royaltyBPS,
-        address royaltyRecipient,
-        address defaultAdmin
-    ) external {
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient);
+    function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
+            royaltySchedule,
+            royaltyBPS,
+            royaltyRecipient
+        );
         target.initialize("test", config, defaultAdmin, _emptyInitData());
 
         vm.expectRevert();
@@ -130,11 +136,7 @@ contract ZoraCreator1155Test is Test {
         target.setTokenMetadataRenderer(0, IRenderer1155(address(0)), "");
     }
 
-    function test_addPermission(
-        uint256 tokenId,
-        uint256 permission,
-        address user
-    ) external {
+    function test_addPermission(uint256 tokenId, uint256 permission, address user) external {
         vm.assume(permission != 0);
         init();
 
@@ -156,11 +158,7 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, recipient, adminRole);
     }
 
-    function test_removePermission(
-        uint256 tokenId,
-        uint256 permission,
-        address user
-    ) external {
+    function test_removePermission(uint256 tokenId, uint256 permission, address user) external {
         vm.assume(permission != 0);
         init();
 

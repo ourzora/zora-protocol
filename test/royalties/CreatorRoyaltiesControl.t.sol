@@ -34,14 +34,16 @@ contract CreatorRoyaltiesControlTest is Test {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient);
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, address(royaltyPayout)), admin, _emptyInitData());
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)), admin, _emptyInitData());
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 100);
 
-        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenId, 1 ether, 10);
-        assertEq(amount, 1);
+        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenId, 1 ether);
+        (, uint256 supplyAmount) = target.supplyRoyaltyInfo(tokenId, 0, 100);
+        assertEq(amount, 0.001 ether);
         assertEq(royaltyRecipient, royaltyPayout);
+        assertEq(supplyAmount, 10);
     }
 
     function test_GetsRoyaltiesInfoSpecificToken() external {
@@ -49,22 +51,26 @@ contract CreatorRoyaltiesControlTest is Test {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient);
         target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, address(royaltyPayout)), admin, _emptyInitData());
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)), admin, _emptyInitData());
 
         vm.startPrank(admin);
         uint256 tokenIdFirst = target.setupNewToken("test", 100);
         uint256 tokenIdSecond = target.setupNewToken("test", 100);
 
-        target.updateRoyaltiesForToken(tokenIdSecond, ICreatorRoyaltiesControl.RoyaltyConfiguration(100, address(0x992)));
+        target.updateRoyaltiesForToken(tokenIdSecond, ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 100, address(0x992)));
 
         vm.stopPrank();
 
-        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenIdFirst, 0, 10);
-        assertEq(amount, 1);
+        (address royaltyRecipient, uint256 amount) = target.royaltyInfo(tokenIdFirst, 1 ether);
+        (, uint256 supplyAmount) = target.supplyRoyaltyInfo(tokenIdFirst, 0, 100);
+        assertEq(amount, 0.001 ether);
+        assertEq(supplyAmount, 1);
         assertEq(royaltyRecipient, royaltyPayout);
 
-        (address royaltyRecipientSecond, uint256 amountSecond) = target.royaltyInfo(tokenIdSecond, 0, 1000);
-        assertEq(amountSecond, 10);
+        (address royaltyRecipientSecond, uint256 amountSecond) = target.royaltyInfo(tokenIdSecond, 1 ether);
+        (, uint256 supplyAmountSecond) = target.supplyRoyaltyInfo(tokenIdSecond, 0, 100);
+        assertEq(amountSecond, 0.01 ether);
+        assertEq(supplyAmountSecond, 10);
         assertEq(royaltyRecipientSecond, address(0x992));
     }
 }

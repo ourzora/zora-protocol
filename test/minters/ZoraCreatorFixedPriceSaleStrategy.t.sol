@@ -17,10 +17,10 @@ contract ZoraCreator1155Test is Test {
 
     function setUp() external {
         bytes[] memory emptyData = new bytes[](0);
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl( 0, address(0));
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, address(0));
         ZoraCreator1155Proxy proxy = new ZoraCreator1155Proxy(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, emptyData);
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
         fixedPrice = new ZoraCreatorFixedPriceSaleStrategy();
     }
 
