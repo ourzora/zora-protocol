@@ -382,6 +382,13 @@ contract ZoraCreator1155Impl is
         }
     }
 
+    /// Burn functions ///
+
+    /// @dev Only the current owner is allowed to burn
+    function burn(uint256 tokenId, uint256 amount) external {
+        _burn(msg.sender, tokenId, amount);
+    }
+
     /// Metadata Getter Functions ///
 
     function contractURI() external view returns (string memory) {

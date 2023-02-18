@@ -88,7 +88,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         }
     }
 
-    function setupSale(uint256 tokenId, MerkleSaleSettings memory merkleSaleSettings) external {
+    function setSale(uint256 tokenId, MerkleSaleSettings memory merkleSaleSettings) external {
         allowedMerkles[_getKey(msg.sender, tokenId)] = merkleSaleSettings;
 
         // Emit event for new sale
