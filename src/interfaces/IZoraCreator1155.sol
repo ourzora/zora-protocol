@@ -17,7 +17,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     event UpdatedToken(address from, uint256 tokenId, TokenData tokenData);
 
-    emit ContractRendererUpdated();
+    event ContractRendererUpdated(IRenderer1155 renderer);
 
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 

@@ -11,9 +11,10 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 
 contract ZoraCreator1155FactoryTest is Test {
     ZoraCreator1155FactoryImpl internal factory;
+    ZoraCreator1155Impl internal zoraCreator1155Impl;
 
     function setUp() external {
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
         factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl);
     }
 
@@ -47,5 +48,21 @@ contract ZoraCreator1155FactoryTest is Test {
         assertEq(config.royaltyRecipient, royaltyRecipient);
         assertEq(target.getPermissions(0, admin), target.PERMISSION_BIT_ADMIN());
         assertEq(target.uri(1), "ipfs://asdfadsf");
+    }
+
+    function test_upgrade(address initialOwner) external {
+        vm.assume(initialOwner != address(0));
+
+        IZoraCreator1155 mockNewContract = IZoraCreator1155(address(0x999));
+
+        ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(mockNewContract);
+
+        address payable proxyAddress = payable(
+            address(new ZoraCreator1155FactoryProxy(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+        );
+        ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
+        vm.prank(initialOwner);
+        proxy.upgradeTo(address(newFactoryImpl));
+        assertEq(address(proxy.implementation()), address(mockNewContract));
     }
 }
