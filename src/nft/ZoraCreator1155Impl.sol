@@ -32,11 +32,13 @@ contract ZoraCreator1155Impl is
 {
     uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
     uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
+
+// option @tyson remove all of these until we need them
     uint256 public immutable PERMISSION_BIT_SALES = 2**3;
     uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
     uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
 
-    constructor(uint256 _mintFeeBPS, address _mintFeeRecipient) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {}
+    constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
 
     function contractVersion() external pure override returns (string memory) {
         return "0.0.1";
@@ -73,7 +75,6 @@ contract ZoraCreator1155Impl is
             multicall(setupActions);
 
             // Remove admin
-            _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
             _removePermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
         }
     }
@@ -169,10 +170,23 @@ contract ZoraCreator1155Impl is
         nonReentrant
         returns (uint256)
     {
+        // TODO(iain): isMaxSupply = 0 open edition or maybe uint256(max) - 1
+        //                                                  0xffffffff -> 2**8*4 4.2bil
+        //                                                  0xf0000000 -> 2**8*4-(8*3)
+
         uint256 tokenId = _setupNewToken(_uri, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
+        if (bytes(_uri).length > 0) {
+            emit URI(_uri, tokenId);
+        }
+
         return tokenId;
+    }
+
+    function updateTokenURI(uint256 tokenId, string memory _newURI) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        emit URI(_newURI, tokenId);
+        tokens[tokenId].uri = _newURI;
     }
 
     function _setupNewToken(string memory _uri, uint256 maxSupply) internal returns (uint256 tokenId) {
@@ -190,6 +204,24 @@ contract ZoraCreator1155Impl is
     ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
         // Call internal admin mint
         _adminMint(recipient, tokenId, quantity, data);
+    }
+
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) public nonReentrant {
+        bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+
+        for (uint256 i = 0; i < tokenIds.length; ++i) {
+            if (!isGlobalAdminOrMinter) {
+                uint256 checkingTokenId = tokenIds[i];
+                _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
+            }
+            requireCanMintQuantity(tokenIds[i], quantities[i]);
+        }
+        _mintBatch(recipient, tokenIds, quantities, data);
     }
 
     function addPermission(
@@ -217,6 +249,7 @@ contract ZoraCreator1155Impl is
         if (!_hasPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
             revert NewOwnerNeedsToBeAdmin();
         }
+
         // Update owner field
         _setOwner(newOwner);
     }
@@ -234,26 +267,8 @@ contract ZoraCreator1155Impl is
         uint256 tokenId,
         uint256 quantity,
         bytes memory data
-    ) internal  nonReentrant {
+    ) internal canMintQuantity(tokenId, quantity) nonReentrant {
         _mint(recipient, tokenId, quantity, data);
-    }
-
-    function adminMintBatch(
-        address recipient,
-        uint256[] memory tokenIds,
-        uint256[] memory quantities,
-        bytes memory data
-    ) public nonReentrant {
-        bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
-
-        for (uint256 i = 0; i < tokenIds.length; ++i) {
-            if (!isGlobalAdminOrMinter) {
-                uint256 checkingTokenId = tokenIds[i];
-                _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
-            }
-            requireCanMintQuantity(tokenIds[i], quantities[i]);
-        }
-        _mintBatch(recipient, tokenIds, quantities, data);
     }
 
     // Only allow minting one token id at time
@@ -279,6 +294,13 @@ contract ZoraCreator1155Impl is
         bytes calldata setupData
     ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
         _setRenderer(tokenId, renderer, setupData);
+
+        if (tokenId == 0) {
+            emit ContractRendererUpdated(renderer);
+        } else {
+            // We don't know the uri from the renderer but can emit a notification to the indexer here
+            emit URI("", tokenId);
+        }
     }
 
     /// Execute Minter Commands ///
@@ -362,6 +384,13 @@ contract ZoraCreator1155Impl is
         for (uint256 i = 0; i < ids.length; ++i) {
             tokens[ids[i]].totalSupply += amounts[i];
         }
+    }
+
+    /// Burn functions ///
+
+    /// @dev Only the current owner is allowed to burn
+    function burn(uint256 tokenId, uint256 amount) external {
+        _burn(msg.sender, tokenId, amount);
     }
 
     /// Metadata Getter Functions ///

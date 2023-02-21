@@ -32,13 +32,12 @@ contract ZoraCreator1155Test is Test {
             newTokenId,
             fixedPrice,
             abi.encodeWithSelector(
-                ZoraCreatorFixedPriceSaleStrategy.setupSale.selector,
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
                 ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
-                    maxTokensPerTransaction: 0,
                     maxTokensPerAddress: 0,
                     fundsRecipient: address(0)
                 })

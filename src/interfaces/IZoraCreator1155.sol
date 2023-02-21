@@ -18,6 +18,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
 
     event UpdatedToken(address from, uint256 tokenId, TokenData tokenData);
 
+    event ContractRendererUpdated(IRenderer1155 renderer);
+
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
     error Mint_InsolventSaleTransfer();
@@ -45,7 +47,12 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
         bytes[] calldata setupActions
     ) external;
 
-    // Only allow minting one token id at time
+    /// @notice Only allow minting one token id at time
+    /// @dev Purchase contract function that calls the underlying sales function for commands
+    /// @param minter Address for the minter
+    /// @param tokenId tokenId to mint, set to 0 for new tokenId
+    /// @param quantity to purchase
+    /// @param minterArguments calldata for the minter contracts
     function purchase(
         IMinter1155 minter,
         uint256 tokenId,
@@ -53,11 +60,24 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
         bytes calldata minterArguments
     ) external payable;
 
+    function adminMint(
+        address recipient,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes memory data
+    ) external;
+
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) external;
+
+    /// @notice Contract call to setupNewToken
+    /// @param _uri URI for the token
+    /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
-
-    event ContractURIUpdated(address updater, string newURI);
-
-    event UpdatedMetadataRendererForToken(uint256 tokenId, address user, address metadataRenderer);
 
     function setTokenMetadataRenderer(
         uint256 tokenId,
