@@ -11,12 +11,11 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     struct SalesConfig {
         uint64 saleStart;
         uint64 saleEnd;
-        uint64 maxTokensPerTransaction;
         uint64 maxTokensPerAddress;
         uint96 pricePerToken;
         address fundsRecipient;
     }
-    mapping(uint256 => SalesConfig) internal salesConfigs;
+    mapping(bytes32 => SalesConfig) internal salesConfigs;
     mapping(bytes32 => uint256) internal mintedPerAddress;
 
     using SaleCommandHelper for ICreatorCommands.CommandSet;
@@ -40,7 +39,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     error MintedTooManyForAddress();
     error TooManyTokensInOneTxn();
 
-    event SaleSetup(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
+    event SaleSet(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
 
     function requestMint(
         address,
@@ -79,11 +78,6 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
             }
         }
 
-        // Check minted per txn limit
-        if (config.maxTokensPerTransaction > 0 && quantity > config.maxTokensPerTransaction) {
-            revert TooManyTokensInOneTxn();
-        }
-
         bool shouldTransferFunds = config.fundsRecipient != address(0);
         commands.setSize(shouldTransferFunds ? 2 : 1);
 
@@ -96,17 +90,21 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         }
     }
 
-    function setupSale(uint256 tokenId, SalesConfig memory salesConfig) external {
+    function setSale(uint256 tokenId, SalesConfig memory salesConfig) external {
         salesConfigs[_getKey(msg.sender, tokenId)] = salesConfig;
 
         // Emit event
-        emit SaleSetup(msg.sender, tokenId, salesConfig);
+        emit SaleSet(msg.sender, tokenId, salesConfig);
     }
 
     function resetSale(uint256 tokenId) external override {
         delete salesConfigs[_getKey(msg.sender, tokenId)];
 
-        // Removed sale confirmation
-        emit SaleRemoved(msg.sender, tokenId);
+        // Deleted sale emit event
+        emit SaleSet(msg.sender, tokenId, salesConfigs[_getKey(msg.sender, tokenId)]);
+    }
+
+    function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
+        return salesConfigs[_getKey(tokenContract, tokenId)];
     }
 }
