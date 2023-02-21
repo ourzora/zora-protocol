@@ -38,6 +38,10 @@ contract ZoraCreator1155Impl is
 
     constructor(uint256 _mintFeeBPS, address _mintFeeRecipient) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {}
 
+    function contractVersion() external pure override returns (string memory) {
+        return "0.0.1";
+    }
+
     function initialize(
         string memory newContractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
@@ -230,7 +234,7 @@ contract ZoraCreator1155Impl is
         uint256 tokenId,
         uint256 quantity,
         bytes memory data
-    ) internal canMintQuantity(tokenId, quantity) nonReentrant {
+    ) internal  nonReentrant {
         _mint(recipient, tokenId, quantity, data);
     }
 
