@@ -138,11 +138,6 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    modifier canMintQuantity(uint256 tokenId, uint256 quantity) {
-        requireCanMintQuantity(tokenId, quantity);
-        _;
-    }
-
     function setupNewToken(
         string memory _uri,
         uint256 maxSupply
@@ -194,7 +189,7 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
-    function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal canMintQuantity(tokenId, quantity) nonReentrant {
+    function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal nonReentrant {
         _mint(recipient, tokenId, quantity, data);
     }
 
@@ -286,6 +281,9 @@ contract ZoraCreator1155Impl is
 
     function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal virtual override {
         (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalSupply, amount);
+
+        requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
+
         super._mint(account, id, amount, data);
         if (supplyRoyaltyAmount > 0) {
             super._mint(supplyRoyaltyRecipient, id, supplyRoyaltyAmount, data);
@@ -298,6 +296,7 @@ contract ZoraCreator1155Impl is
 
         for (uint256 i = 0; i < ids.length; ++i) {
             (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalSupply, amounts[i]);
+            requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
             if (supplyRoyaltyAmount > 0) {
                 super._mint(supplyRoyaltyRecipient, ids[i], supplyRoyaltyAmount, data);
             }
