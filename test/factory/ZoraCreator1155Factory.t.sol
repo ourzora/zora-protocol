@@ -20,9 +20,10 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function test_initialize(address initialOwner) external {
         vm.assume(initialOwner != address(0));
-        address payable proxyAddress = payable(address(new ZoraCreator1155FactoryProxy(address(factory))));
+        address payable proxyAddress = payable(
+            address(new ZoraCreator1155FactoryProxy(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+        );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
-        proxy.initialize(initialOwner);
         assertEq(proxy.owner(), initialOwner);
     }
 
@@ -32,18 +33,36 @@ contract ZoraCreator1155FactoryTest is Test {
         address royaltyRecipient,
         address admin
     ) external {
+        bytes[] memory initSetup = new bytes[](1);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
         address deployedAddress = factory.createContract(
             contractURI,
             ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient),
             admin,
-            new bytes[](0)
+            initSetup
         );
         ZoraCreator1155Impl target = ZoraCreator1155Impl(deployedAddress);
-        // TODO: test URI when metadata functions are complete
-        // assertEq(zoraCreator1155.uri(0), contractURI);
+
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = target.getRoyalties(0);
         assertEq(config.royaltyBPS, royaltyBPS);
         assertEq(config.royaltyRecipient, royaltyRecipient);
         assertEq(target.getPermissions(0, admin), target.PERMISSION_BIT_ADMIN());
+        assertEq(target.uri(1), "ipfs://asdfadsf");
+    }
+
+    function test_upgrade(address initialOwner) external {
+        vm.assume(initialOwner != address(0));
+
+        IZoraCreator1155 mockNewContract = IZoraCreator1155(address(0x999));
+
+        ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(mockNewContract, IMinter1155(address(0)), IMinter1155(address(0)));
+
+        address payable proxyAddress = payable(
+            address(new ZoraCreator1155FactoryProxy(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+        );
+        ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
+        vm.prank(initialOwner);
+        proxy.upgradeTo(address(newFactoryImpl));
+        assertEq(address(proxy.implementation()), address(mockNewContract));
     }
 }
