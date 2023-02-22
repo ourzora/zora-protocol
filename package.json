@@ -1,5 +1,5 @@
 {
-  "name": "zora-creator-contracts",
+  "name": "@zoralabs/zora-creator-contracts",
   "version": "0.0.2",
   "repository": "git@github.com:ourzora/creator-contracts.git",
   "author": "Iain <iain@zora.co>",
@@ -8,8 +8,12 @@
     "test": "forge test",
     "test-gas": "forge test --gas-report",
     "prettier": "prettier --write 'src/**/*.sol'",
-    "coverage": "forge coverage --report lcov"
+    "coverage": "forge coverage --report lcov",
+    "prepublish": "mkdir -p dist && cp -r src/ dist/contracts && cp -r addresses/ dist/addresses && cp -r out/ dist/artifacts/"
   },
+  "files": [
+    "dist/"
+  ],
   "dependencies": {
     "@openzeppelin/contracts": "4.8.0",
     "@openzeppelin/contracts-upgradeable": "4.8.0",
