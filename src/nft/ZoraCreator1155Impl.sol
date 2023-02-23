@@ -33,7 +33,7 @@ contract ZoraCreator1155Impl is
     uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
     uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
 
-// option @tyson remove all of these until we need them
+    // option @tyson remove all of these until we need them
     uint256 public immutable PERMISSION_BIT_SALES = 2**3;
     uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
     uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
@@ -100,9 +100,17 @@ contract ZoraCreator1155Impl is
     // remove from openzeppelin impl
     function _setURI(string memory newuri) internal virtual override {}
 
-    function _getNextTokenId() internal returns (uint256) {
+    function _getAndUpdateNextTokenId() internal returns (uint256) {
         unchecked {
             return nextTokenId++;
+        }
+    }
+
+    function invariantLastTokenIdMatches(uint256 lastTokenId) external view {
+        unchecked {
+            if (nextTokenId - 1 != lastTokenId) {
+                revert TokenIdMismatch(lastTokenId, nextTokenId - 1);
+            }
         }
     }
 
@@ -177,6 +185,8 @@ contract ZoraCreator1155Impl is
             emit URI(_uri, tokenId);
         }
 
+        emit SetupNewToken(tokenId, msg.sender, _uri, maxSupply);
+
         return tokenId;
     }
 
@@ -186,7 +196,7 @@ contract ZoraCreator1155Impl is
     }
 
     function _setupNewToken(string memory _uri, uint256 maxSupply) internal returns (uint256 tokenId) {
-        tokenId = _getNextTokenId();
+        tokenId = _getAndUpdateNextTokenId();
         TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalSupply: 0});
         tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
@@ -282,6 +292,8 @@ contract ZoraCreator1155Impl is
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+
+        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
     function setTokenMetadataRenderer(
