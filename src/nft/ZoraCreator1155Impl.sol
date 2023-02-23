@@ -40,6 +40,10 @@ contract ZoraCreator1155Impl is
 
     constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
 
+    function contractVersion() external pure override returns (string memory) {
+        return "0.0.1";
+    }
+
     function initialize(
         string memory newContractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
