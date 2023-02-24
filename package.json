@@ -9,7 +9,7 @@
     "test-gas": "forge test --gas-report",
     "prettier": "prettier --write 'src/**/*.sol'",
     "coverage": "forge coverage --report lcov",
-    "prepublish": "mkdir -p dist && cp -r src/ dist/contracts && cp -r addresses/ dist/addresses && cp -r out/ dist/artifacts/"
+    "prepack": "mkdir -p dist && cp -r src/ dist/contracts && cp -r addresses/ dist/addresses && cp -r out/ dist/artifacts/"
   },
   "files": [
     "dist/"
