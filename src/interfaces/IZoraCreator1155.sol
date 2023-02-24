@@ -17,8 +17,12 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     function PERMISSION_BIT_METADATA() external returns (uint256);
 
     event UpdatedToken(address from, uint256 tokenId, TokenData tokenData);
+    event SetupNewToken(uint256 tokenId, address sender, string _uri, uint256 maxSupply);
 
     event ContractRendererUpdated(IRenderer1155 renderer);
+    event Purchased(address sender, address minter, uint256 tokenId, uint256 quantity, uint256 value);
+
+    error TokenIdMismatch(uint256 expected, uint256 actual);
 
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
