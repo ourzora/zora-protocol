@@ -24,3 +24,6 @@ node_modules/
 
 # coverage info
 lcov.info
+
+# package files
+dist/
