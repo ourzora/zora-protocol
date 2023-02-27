@@ -24,8 +24,10 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
     mapping(bytes32 => uint256) public mintedPerAddress;
 
+    error SaleEnded();
+    error SaleHasNotStarted();
     error MintedTooManyForAddress();
-    error IncorrectValueSent(uint256 tokenId, uint256 quantity, uint256 ethValueSent);
+    error WrongValueSent();
     error InvalidMerkleProof(address mintTo, bytes32[] merkleProof, bytes32 merkleRoot);
 
     function contractURI() external pure override returns (string memory) {
@@ -57,6 +59,16 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
         MerkleSaleSettings memory config = allowedMerkles[_getKey(msg.sender, tokenId)];
 
+        // Check sale end
+        if (block.timestamp > config.presaleEnd) {
+            revert SaleEnded();
+        }
+
+        // Check sale start
+        if (block.timestamp < config.presaleStart) {
+            revert SaleHasNotStarted();
+        }
+
         if (!MerkleProof.verify(merkleProof, config.merkleRoot, keccak256(abi.encode(mintTo, maxQuantity, pricePerToken)))) {
             revert InvalidMerkleProof(mintTo, merkleProof, config.merkleRoot);
         }
@@ -64,13 +76,13 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         if (maxQuantity > 0) {
             bytes32 key = keccak256(abi.encode(msg.sender, tokenId, mintTo));
             mintedPerAddress[key] += quantity;
-            if (maxQuantity > mintedPerAddress[key]) {
+            if (mintedPerAddress[key] > maxQuantity) {
                 revert MintedTooManyForAddress();
             }
         }
 
         if (quantity * pricePerToken != ethValueSent) {
-            revert IncorrectValueSent(tokenId, quantity * pricePerToken, ethValueSent);
+            revert WrongValueSent();
         }
 
         // Should transfer funds if funds recipient is set to a non-default address

@@ -37,7 +37,6 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     error SaleEnded();
     error SaleHasNotStarted();
     error MintedTooManyForAddress();
-    error TooManyTokensInOneTxn();
 
     event SaleSet(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
 
