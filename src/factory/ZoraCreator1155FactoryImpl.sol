@@ -49,6 +49,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, FactoryManagedUp
 
     function createContract(
         string memory contractURI,
+        string calldata name,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address defaultAdmin,
         bytes[] calldata setupActions
@@ -62,6 +63,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, FactoryManagedUp
             creator: msg.sender,
             defaultAdmin: defaultAdmin,
             contractURI: contractURI,
+            name: name,
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration
         });
 

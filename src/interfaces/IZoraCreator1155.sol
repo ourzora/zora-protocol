@@ -7,6 +7,7 @@ import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
+
 interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
@@ -16,21 +17,20 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
 
     function PERMISSION_BIT_METADATA() external returns (uint256);
 
-    event UpdatedToken(address from, uint256 tokenId, TokenData tokenData);
-    event SetupNewToken(uint256 tokenId, address sender, string _uri, uint256 maxSupply);
+    event UpdatedToken(address indexed from, uint256 indexed tokenId, TokenData tokenData);
+    event SetupNewToken(uint256 indexed tokenId, address indexed sender, string _uri, uint256 maxSupply);
 
     event ContractRendererUpdated(IRenderer1155 renderer);
-    event Purchased(address sender, address minter, uint256 tokenId, uint256 quantity, uint256 value);
+    event ContractMetadataUpdated(address indexed updater, string uri, string name);
+    event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
     error TokenIdMismatch(uint256 expected, uint256 actual);
-
+    error NotAllowedContractBaseIDUpdate();
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
     error Mint_InsolventSaleTransfer();
     error Mint_ValueTransferFail();
-
     error Mint_TokenIDMintNotAllowed();
-
     error Mint_UnknownCommand();
 
     error NewOwnerNeedsToBeAdmin();
