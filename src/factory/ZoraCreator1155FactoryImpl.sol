@@ -14,8 +14,8 @@ import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
 contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, FactoryManagedUpgradeGate, UUPSUpgradeable {
     IZoraCreator1155 public immutable implementation;
 
-    IMinter1155 private immutable merkleMinter;
-    IMinter1155 private immutable fixedPriceMinter;
+    IMinter1155 public immutable merkleMinter;
+    IMinter1155 public immutable fixedPriceMinter;
 
     function contractVersion() external pure override returns (string memory) {
         return "0.0.1";
