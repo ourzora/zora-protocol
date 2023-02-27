@@ -90,11 +90,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
 
-        (string memory uri, uint256 maxSupply, uint256 totalSupply) = target.tokens(tokenId);
+        (string memory uri, uint256 maxSupply, uint256 totalMinted) = target.tokens(tokenId);
 
         assertEq(uri, _uri);
         assertEq(maxSupply, _maxSupply);
-        assertEq(totalSupply, 0);
+        assertEq(totalMinted, 0);
     }
 
     function xtest_setupNewToken_asMinter(string memory _uri, uint256 _maxSupply) external {}
@@ -195,8 +195,8 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
 
-        (, , uint256 totalSupply) = target.tokens(tokenId);
-        assertEq(totalSupply, quantity);
+        (, , uint256 totalMinted) = target.tokens(tokenId);
+        assertEq(totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
@@ -254,11 +254,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.adminMintBatch(recipient, tokenIds, quantities, "");
 
-        (, , uint256 totalSupply1) = target.tokens(tokenId1);
-        (, , uint256 totalSupply2) = target.tokens(tokenId2);
+        (, , uint256 totalMinted1) = target.tokens(tokenId1);
+        (, , uint256 totalMinted2) = target.tokens(tokenId2);
 
-        assertEq(totalSupply1, quantity1);
-        assertEq(totalSupply2, quantity2);
+        assertEq(totalMinted1, quantity1);
+        assertEq(totalMinted2, quantity2);
         assertEq(target.balanceOf(recipient, tokenId1), quantity1);
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
     }
@@ -324,8 +324,8 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.purchase(minter, tokenId, quantity, abi.encode(recipient));
 
-        (, , uint256 totalSupply) = target.tokens(tokenId);
-        assertEq(totalSupply, quantity);
+        (, , uint256 totalMinted) = target.tokens(tokenId);
+        assertEq(totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
