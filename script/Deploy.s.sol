@@ -11,6 +11,9 @@ import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesContr
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
+import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+
 
 contract DeployScript is Script {
     function setUp() public {}
@@ -18,8 +21,18 @@ contract DeployScript is Script {
     function run() public {
         address deployer = vm.envAddress("DEPLOYER");
         vm.startBroadcast(deployer);
+
+        ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
+        ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
+
         ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(100, deployer);
-        ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl(creatorImpl, IMinter1155(address(0)), IMinter1155(address(0)));
+
+        ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
+            _implementation: creatorImpl,
+            _merkleMinter: merkleMinter,
+            _fixedPriceMinter: fixedPricedMinter
+        });
+
         ZoraCreator1155FactoryProxy factoryProxy = new ZoraCreator1155FactoryProxy(
             address(factoryImpl),
             abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, deployer)
