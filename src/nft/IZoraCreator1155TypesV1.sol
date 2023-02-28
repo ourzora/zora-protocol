@@ -5,6 +5,6 @@ interface IZoraCreator1155TypesV1 {
     struct TokenData {
         string uri;
         uint256 maxSupply;
-        uint256 totalSupply;
+        uint256 totalMinted;
     }
 }

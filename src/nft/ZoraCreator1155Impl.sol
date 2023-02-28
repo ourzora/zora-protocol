@@ -14,6 +14,7 @@ import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol"
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {MintFeeManager} from "../fee/MintFeeManager.sol";
+import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -26,17 +27,24 @@ contract ZoraCreator1155Impl is
     MintFeeManager,
     UUPSUpgradeable,
     CreatorRendererControl,
+    LegacyNamingControl,
     ZoraCreator1155StorageV1,
     CreatorPermissionControl,
     CreatorRoyaltiesControl
 {
-    uint256 public immutable PERMISSION_BIT_ADMIN = 2 ** 1;
-    uint256 public immutable PERMISSION_BIT_MINTER = 2 ** 2;
-    uint256 public immutable PERMISSION_BIT_SALES = 2 ** 3;
-    uint256 public immutable PERMISSION_BIT_METADATA = 2 ** 4;
-    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
+    uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
+    uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
 
-    constructor(uint256 _mintFeeBPS, address _mintFeeRecipient) MintFeeManager(_mintFeeBPS, _mintFeeRecipient) initializer {}
+    // option @tyson remove all of these until we need them
+    uint256 public immutable PERMISSION_BIT_SALES = 2**3;
+    uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
+    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
+
+    constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
+
+    function contractVersion() external pure override returns (string memory) {
+        return "0.0.1";
+    }
 
     function initialize(
         string memory newContractURI,
@@ -69,7 +77,6 @@ contract ZoraCreator1155Impl is
             multicall(setupActions);
 
             // Remove admin
-            _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
             _removePermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
         }
     }
@@ -95,13 +102,25 @@ contract ZoraCreator1155Impl is
     // remove from openzeppelin impl
     function _setURI(string memory newuri) internal virtual override {}
 
-    function _getNextTokenId() internal returns (uint256) {
+    function _getAndUpdateNextTokenId() internal returns (uint256) {
         unchecked {
             return nextTokenId++;
         }
     }
 
-    function _isAdminOrRole(address user, uint256 tokenId, uint256 role) internal view returns (bool) {
+    function invariantLastTokenIdMatches(uint256 lastTokenId) external view {
+        unchecked {
+            if (nextTokenId - 1 != lastTokenId) {
+                revert TokenIdMismatch(lastTokenId, nextTokenId - 1);
+            }
+        }
+    }
+
+    function _isAdminOrRole(
+        address user,
+        uint256 tokenId,
+        uint256 role
+    ) internal view returns (bool) {
         return _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role);
     }
 
@@ -131,26 +150,57 @@ contract ZoraCreator1155Impl is
         _;
     }
 
+    modifier canMintQuantity(uint256 tokenId, uint256 quantity) {
+        requireCanMintQuantity(tokenId, quantity);
+        _;
+    }
+
     function requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
         TokenData memory tokenInformation = tokens[tokenId];
-        if (tokenInformation.totalSupply + quantity > tokenInformation.maxSupply) {
+        if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
             revert CannotMintMoreTokens(tokenId);
         }
     }
 
-    function setupNewToken(
-        string memory _uri,
-        uint256 maxSupply
-    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
+    function setupNewToken(string memory _uri, uint256 maxSupply)
+        public
+        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
+        nonReentrant
+        returns (uint256)
+    {
+        // TODO(iain): isMaxSupply = 0 open edition or maybe uint256(max) - 1
+        //                                                  0xffffffff -> 2**8*4 4.2bil
+        //                                                  0xf0000000 -> 2**8*4-(8*3)
+
         uint256 tokenId = _setupNewToken(_uri, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
+        if (bytes(_uri).length > 0) {
+            emit URI(_uri, tokenId);
+        }
+
+        emit SetupNewToken(tokenId, msg.sender, _uri, maxSupply);
+
         return tokenId;
     }
 
+    function updateTokenURI(uint256 tokenId, string memory _newURI) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        if (tokenId == CONTRACT_BASE_ID) {
+            revert NotAllowedContractBaseIDUpdate();
+        }
+        emit URI(_newURI, tokenId);
+        tokens[tokenId].uri = _newURI;
+    }
+
+    function updateContractMetadata(string memory _newURI, string memory _newName) external onlyAdminOrRole(0, PERMISSION_BIT_METADATA) {
+        tokens[CONTRACT_BASE_ID].uri = _newURI;
+        _setName(_newName);
+        emit ContractMetadataUpdated(msg.sender, _newURI, _newName);
+    }
+
     function _setupNewToken(string memory _uri, uint256 maxSupply) internal returns (uint256 tokenId) {
-        tokenId = _getNextTokenId();
-        TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalSupply: 0});
+        tokenId = _getAndUpdateNextTokenId();
+        TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalMinted: 0});
         tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
     }
@@ -160,7 +210,11 @@ contract ZoraCreator1155Impl is
         _adminMint(recipient, tokenId, quantity, data);
     }
 
-    function addPermission(uint256 tokenId, address user, uint256 permissionBits) external onlyAdmin(tokenId) {
+    function addPermission(
+        uint256 tokenId,
+        address user,
+        uint256 permissionBits
+    ) external onlyAdmin(tokenId) {
         _addPermission(tokenId, user, permissionBits);
     }
 
@@ -177,6 +231,7 @@ contract ZoraCreator1155Impl is
         if (!_hasPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
             revert NewOwnerNeedsToBeAdmin();
         }
+
         // Update owner field
         _setOwner(newOwner);
     }
@@ -193,7 +248,12 @@ contract ZoraCreator1155Impl is
         _mint(recipient, tokenId, quantity, data);
     }
 
-    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) public nonReentrant {
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) public nonReentrant {
         bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         for (uint256 i = 0; i < tokenIds.length; ++i) {
@@ -216,6 +276,8 @@ contract ZoraCreator1155Impl is
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+
+        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
     function setTokenMetadataRenderer(
@@ -224,6 +286,13 @@ contract ZoraCreator1155Impl is
         bytes calldata setupData
     ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
         _setRenderer(tokenId, renderer, setupData);
+
+        if (tokenId == 0) {
+            emit ContractRendererUpdated(renderer);
+        } else {
+            // We don't know the uri from the renderer but can emit a notification to the indexer here
+            emit URI("", tokenId);
+        }
     }
 
     /// Execute Minter Commands ///
@@ -280,7 +349,7 @@ contract ZoraCreator1155Impl is
     /// Generic 1155 function overrides ///
 
     function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal virtual override {
-        (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalSupply, amount);
+        (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalMinted, amount);
 
         requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
 
@@ -288,20 +357,28 @@ contract ZoraCreator1155Impl is
         if (supplyRoyaltyAmount > 0) {
             super._mint(supplyRoyaltyRecipient, id, supplyRoyaltyAmount, data);
         }
-        tokens[id].totalSupply += amount + supplyRoyaltyAmount;
+        tokens[id].totalMinted += amount + supplyRoyaltyAmount;
     }
 
     function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
-            (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalSupply, amounts[i]);
+            _mint(to, ids[i], amounts[i], data);
+            (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalMinted, amounts[i]);
             requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
             if (supplyRoyaltyAmount > 0) {
                 super._mint(supplyRoyaltyRecipient, ids[i], supplyRoyaltyAmount, data);
             }
-            tokens[ids[i]].totalSupply += amounts[i] + supplyRoyaltyAmount;
+            tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyAmount;
         }
+    }
+
+    /// Burn functions ///
+
+    /// @dev Only the current owner is allowed to burn
+    function burn(uint256 tokenId, uint256 amount) external {
+        _burn(msg.sender, tokenId, amount);
     }
 
     /// Metadata Getter Functions ///

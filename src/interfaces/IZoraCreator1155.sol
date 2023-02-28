@@ -4,9 +4,11 @@ pragma solidity 0.8.17;
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
-interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
+
+interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
     function PERMISSION_BIT_MINTER() external returns (uint256);
@@ -15,15 +17,20 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
 
     function PERMISSION_BIT_METADATA() external returns (uint256);
 
-    event UpdatedToken(address from, uint256 tokenId, TokenData tokenData);
+    event UpdatedToken(address indexed from, uint256 indexed tokenId, TokenData tokenData);
+    event SetupNewToken(uint256 indexed tokenId, address indexed sender, string _uri, uint256 maxSupply);
 
+    event ContractRendererUpdated(IRenderer1155 renderer);
+    event ContractMetadataUpdated(address indexed updater, string uri, string name);
+    event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
+
+    error TokenIdMismatch(uint256 expected, uint256 actual);
+    error NotAllowedContractBaseIDUpdate();
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
     error Mint_InsolventSaleTransfer();
     error Mint_ValueTransferFail();
-
     error Mint_TokenIDMintNotAllowed();
-
     error Mint_UnknownCommand();
 
     error NewOwnerNeedsToBeAdmin();
@@ -44,7 +51,12 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
         bytes[] calldata setupActions
     ) external;
 
-    // Only allow minting one token id at time
+    /// @notice Only allow minting one token id at time
+    /// @dev Purchase contract function that calls the underlying sales function for commands
+    /// @param minter Address for the minter
+    /// @param tokenId tokenId to mint, set to 0 for new tokenId
+    /// @param quantity to purchase
+    /// @param minterArguments calldata for the minter contracts
     function purchase(
         IMinter1155 minter,
         uint256 tokenId,
@@ -52,11 +64,24 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1 {
         bytes calldata minterArguments
     ) external payable;
 
+    function adminMint(
+        address recipient,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes memory data
+    ) external;
+
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) external;
+
+    /// @notice Contract call to setupNewToken
+    /// @param _uri URI for the token
+    /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
-
-    event ContractURIUpdated(address updater, string newURI);
-
-    event UpdatedMetadataRendererForToken(uint256 tokenId, address user, address metadataRenderer);
 
     function setTokenMetadataRenderer(
         uint256 tokenId,

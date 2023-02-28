@@ -25,7 +25,7 @@ contract MintFeeManagerTest is Test {
         recipient = vm.addr(0x2);
     }
 
-    function _emptyInitData() internal returns (bytes[] memory response) {
+    function _emptyInitData() internal pure returns (bytes[] memory response) {
         response = new bytes[](0);
     }
 
