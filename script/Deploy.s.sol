@@ -48,7 +48,8 @@ contract DeployScript is Script {
         initUpdate[3] = abi.encodeWithSelector(ZoraCreator1155Impl.adminMint.selector, deployer, 2, 10, "");
         address newContract = address(
             IZoraCreator1155Factory(address(factoryProxy)).createContract(
-                "",
+                "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
+                "testing contract",
                 ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0)}),
                 deployer,
                 initUpdate

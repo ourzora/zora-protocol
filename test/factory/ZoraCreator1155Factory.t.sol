@@ -40,6 +40,7 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function test_createContract(
         string memory contractURI,
+        string memory name,
         uint32 royaltyBPS,
         address royaltyRecipient,
         address admin
@@ -48,6 +49,7 @@ contract ZoraCreator1155FactoryTest is Test {
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
         address deployedAddress = factory.createContract(
             contractURI,
+            name,
             ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient),
             admin,
             initSetup

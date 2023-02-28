@@ -14,6 +14,7 @@ import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol"
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {MintFeeManager} from "../fee/MintFeeManager.sol";
+import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -26,6 +27,7 @@ contract ZoraCreator1155Impl is
     MintFeeManager,
     UUPSUpgradeable,
     CreatorRendererControl,
+    LegacyNamingControl,
     ZoraCreator1155StorageV1,
     CreatorPermissionControl,
     CreatorRoyaltiesControl
@@ -162,7 +164,7 @@ contract ZoraCreator1155Impl is
 
     function requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
         TokenData memory tokenInformation = tokens[tokenId];
-        if (tokenInformation.totalSupply + quantity > tokenInformation.maxSupply) {
+        if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
             revert CannotMintMoreTokens(tokenId);
         }
     }
@@ -195,13 +197,22 @@ contract ZoraCreator1155Impl is
     }
 
     function updateTokenURI(uint256 tokenId, string memory _newURI) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        if (tokenId == CONTRACT_BASE_ID) {
+            revert NotAllowedContractBaseIDUpdate();
+        }
         emit URI(_newURI, tokenId);
         tokens[tokenId].uri = _newURI;
     }
 
+    function updateContractMetadata(string memory _newURI, string memory _newName) external onlyAdminOrRole(0, PERMISSION_BIT_METADATA) {
+        tokens[CONTRACT_BASE_ID].uri = _newURI;
+        _setName(_newName);
+        emit ContractMetadataUpdated(msg.sender, _newURI, _newName);
+    }
+
     function _setupNewToken(string memory _uri, uint256 maxSupply) internal returns (uint256 tokenId) {
         tokenId = _getAndUpdateNextTokenId();
-        TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalSupply: 0});
+        TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalMinted: 0});
         tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
     }
@@ -383,7 +394,7 @@ contract ZoraCreator1155Impl is
         bytes memory data
     ) internal virtual override {
         super._mint(account, id, amount, data);
-        tokens[id].totalSupply += amount;
+        tokens[id].totalMinted += amount;
     }
 
     function _mintBatch(
@@ -394,7 +405,7 @@ contract ZoraCreator1155Impl is
     ) internal virtual override {
         super._mintBatch(to, ids, amounts, data);
         for (uint256 i = 0; i < ids.length; ++i) {
-            tokens[ids[i]].totalSupply += amounts[i];
+            tokens[ids[i]].totalMinted += amounts[i];
         }
     }
 

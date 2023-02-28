@@ -18,7 +18,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         bytes32 merkleRoot;
     }
 
-    event SaleSet(address sender, uint256 tokenId, MerkleSaleSettings merkleSaleSettings);
+    event SaleSet(address mediaContract, uint256 tokenId, MerkleSaleSettings merkleSaleSettings);
 
     mapping(bytes32 => MerkleSaleSettings) public allowedMerkles;
 
