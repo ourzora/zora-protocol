@@ -10,6 +10,7 @@ import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
+import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 
 contract ZoraCreator1155Test is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
@@ -19,6 +20,7 @@ contract ZoraCreator1155Test is Test {
     uint256 internal adminRole;
     uint256 internal minterRole;
     uint256 internal fundsManagerRole;
+    uint256 internal metadataRole;
 
     function setUp() external {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
@@ -28,6 +30,7 @@ contract ZoraCreator1155Test is Test {
         adminRole = target.PERMISSION_BIT_ADMIN();
         minterRole = target.PERMISSION_BIT_MINTER();
         fundsManagerRole = target.PERMISSION_BIT_FUNDS_MANAGER();
+        metadataRole = target.PERMISSION_BIT_METADATA();
     }
 
     function _emptyInitData() internal pure returns (bytes[] memory response) {
@@ -84,6 +87,37 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", config, defaultAdmin, _emptyInitData());
     }
 
+    function test_contractVersion() external {
+        init();
+
+        assertEq(target.contractVersion(), "0.0.1");
+    }
+
+    function test_invariantLastTokenIdMatches() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1);
+        assertEq(tokenId, 1);
+        target.invariantLastTokenIdMatches(tokenId);
+
+        vm.expectRevert(abi.encodeWithSignature("TokenIdMismatch(uint256,uint256)", 2, 1));
+        target.invariantLastTokenIdMatches(2);
+    }
+
+    function test_isAdminOrRole() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1);
+
+        assertEq(target.isAdminOrRole(admin, tokenId, adminRole), true);
+        assertEq(target.isAdminOrRole(admin, tokenId, minterRole), true);
+        assertEq(target.isAdminOrRole(admin, tokenId, fundsManagerRole), true);
+        assertEq(target.isAdminOrRole(admin, 2, adminRole), false);
+        assertEq(target.isAdminOrRole(recipient, tokenId, adminRole), false);
+    }
+
     function test_setupNewToken_asAdmin(string memory _uri, uint256 _maxSupply) external {
         init();
 
@@ -106,22 +140,35 @@ contract ZoraCreator1155Test is Test {
         target.setupNewToken("test", 1);
     }
 
-    // function test_setTokenMetadataRenderer(
-    //     string memory _uri,
-    //     uint256 _maxSupply,
-    //     address _renderer
-    // ) external {
-    //     init();
+    function test_updateTokenURI() external {
+        init();
 
-    //     vm.prank(admin);
-    //     uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1);
+        assertEq(target.uri(tokenId), "test");
 
-    //     vm.prank(admin);
-    //     target.setTokenMetadataRenderer(1, IRenderer1155(_renderer), "");
+        vm.prank(admin);
+        target.updateTokenURI(tokenId, "test2");
+        assertEq(target.uri(tokenId), "test2");
+    }
 
-    //     address renderer = target.metadataRendererContract(tokenId);
-    //     assertEq(renderer, _renderer);
-    // }
+    function test_setTokenMetadataRenderer() external {
+        target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
+
+        SimpleRenderer contractRenderer = new SimpleRenderer();
+        SimpleRenderer singletonRenderer = new SimpleRenderer();
+
+        vm.startPrank(admin);
+        target.setTokenMetadataRenderer(0, contractRenderer, "contract renderer");
+        uint256 tokenId = target.setupNewToken("", 1);
+        target.setTokenMetadataRenderer(tokenId, singletonRenderer, "singleton renderer");
+        vm.stopPrank();
+
+        assertEq(address(target.getCustomRenderer(0)), address(contractRenderer));
+        assertEq(target.contractURI(), "contract renderer");
+        assertEq(address(target.getCustomRenderer(tokenId)), address(singletonRenderer));
+        assertEq(target.uri(tokenId), "singleton renderer");
+    }
 
     function test_setTokenMetadataRenderer_revertOnlyAdminOrRole() external {
         init();
@@ -174,6 +221,32 @@ contract ZoraCreator1155Test is Test {
         target.removePermission(tokenId, user, permission);
 
         assertEq(target.getPermissions(tokenId, user), 0);
+    }
+
+    function test_removePermissionRevokeOwnership() external {
+        init();
+
+        assertEq(target.owner(), admin);
+
+        vm.prank(admin);
+        target.removePermission(0, admin, adminRole);
+        assertEq(target.owner(), address(0));
+    }
+
+    function test_setOwner() external {
+        init();
+
+        assertEq(target.owner(), admin);
+
+        vm.startPrank(admin);
+        vm.expectRevert(abi.encodeWithSignature("NewOwnerNeedsToBeAdmin()"));
+        target.setOwner(recipient);
+
+        target.addPermission(0, recipient, adminRole);
+        target.setOwner(recipient);
+        assertEq(target.owner(), recipient);
+
+        vm.stopPrank();
     }
 
     function test_removePermission_revertOnlyAdminOrRole(uint256 tokenId) external {
@@ -354,12 +427,68 @@ contract ZoraCreator1155Test is Test {
         target.purchase(minter, tokenId, 1001, abi.encode(recipient));
     }
 
+    function test_callSale() external {
+        init();
+
+        SimpleMinter minter = new SimpleMinter();
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("", 1);
+        target.addPermission(tokenId, address(minter), minterRole);
+
+        target.callSale(tokenId, minter, abi.encodeWithSignature("setNum(uint256)", 1));
+        assertEq(minter.num(), 1);
+
+        vm.expectRevert(abi.encodeWithSignature("Sale_CallFailed()"));
+        target.callSale(tokenId, minter, abi.encodeWithSignature("setNum(uint256)", 0));
+
+        vm.stopPrank();
+    }
+
+    function test_callRenderer() external {
+        init();
+
+        SimpleRenderer renderer = new SimpleRenderer();
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("", 1);
+        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+        assertEq(target.uri(tokenId), "renderer");
+
+        target.callRenderer(tokenId, abi.encodeWithSignature("setup(bytes)", "callRender successful"));
+        assertEq(target.uri(tokenId), "callRender successful");
+
+        vm.expectRevert(abi.encodeWithSignature("Metadata_CallFailed()"));
+        target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, ""));
+
+        vm.stopPrank();
+    }
+
     function test_supportsInterface() external {
         init();
 
         bytes4 interfaceId = type(IZoraCreator1155).interfaceId;
 
         assertEq(target.supportsInterface(interfaceId), true);
+    }
+
+    function test_burn() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 10);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.prank(admin);
+        target.purchase(minter, tokenId, 5, abi.encode(recipient));
+
+        vm.prank(recipient);
+        target.burn(tokenId, 3);
     }
 
     function test_withdrawAll() external {
