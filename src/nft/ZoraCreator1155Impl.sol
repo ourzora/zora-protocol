@@ -364,7 +364,6 @@ contract ZoraCreator1155Impl is
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
-            _mint(to, ids[i], amounts[i], data);
             (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalMinted, amounts[i]);
             requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
             if (supplyRoyaltyAmount > 0) {

@@ -40,8 +40,6 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function test_createContract(
         string memory contractURI,
-        uint32 royaltySchedule,
-        uint32 royaltyBps,
         string memory name,
         uint32 royaltyBPS,
         uint32 royaltyMintSchedule,
@@ -64,8 +62,8 @@ contract ZoraCreator1155FactoryTest is Test {
         ZoraCreator1155Impl target = ZoraCreator1155Impl(deployedAddress);
 
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = target.getRoyalties(0);
-        assertEq(config.royaltyMintSchedule, royaltySchedule);
-        assertEq(config.royaltyBPS, royaltyBps);
+        assertEq(config.royaltyMintSchedule, royaltyMintSchedule);
+        assertEq(config.royaltyBPS, royaltyBPS);
         assertEq(config.royaltyRecipient, royaltyRecipient);
         assertEq(target.getPermissions(0, admin), target.PERMISSION_BIT_ADMIN());
         assertEq(target.uri(1), "ipfs://asdfadsf");
