@@ -38,7 +38,7 @@ contract ZoraCreator1155Test is Test {
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
-                    maxTokensPerAddress: 0,
+                    maxTokensPerAddress: 100,
                     fundsRecipient: address(0)
                 })
             )
