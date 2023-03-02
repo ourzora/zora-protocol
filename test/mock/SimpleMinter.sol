@@ -9,6 +9,7 @@ import {SaleCommandHelper} from "../../src/minters/SaleCommandHelper.sol";
 contract SimpleMinter is IMinter1155 {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
     bool receiveETH;
+    uint256 public num;
 
     function setReceiveETH(bool _receiveETH) external {
         receiveETH = _receiveETH;
@@ -24,6 +25,13 @@ contract SimpleMinter is IMinter1155 {
         address recipient = abi.decode(minterArguments, (address));
         ZoraCreator1155Impl(sender).adminMint(recipient, tokenId, quantity, minterArguments);
         commands.setSize(0);
+    }
+
+    function setNum(uint256 _num) external {
+        if (_num == 0) {
+            revert();
+        }
+        num = _num;
     }
 
     receive() external payable {
