@@ -42,6 +42,7 @@ contract ZoraCreator1155FactoryTest is Test {
         string memory contractURI,
         string memory name,
         uint32 royaltyBPS,
+        uint32 royaltyMintSchedule,
         address royaltyRecipient,
         address admin
     ) external {
@@ -50,13 +51,18 @@ contract ZoraCreator1155FactoryTest is Test {
         address deployedAddress = factory.createContract(
             contractURI,
             name,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltyBPS, royaltyRecipient),
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({
+                royaltyBPS: royaltyBPS,
+                royaltyRecipient: royaltyRecipient,
+                royaltyMintSchedule: royaltyMintSchedule
+            }),
             admin,
             initSetup
         );
         ZoraCreator1155Impl target = ZoraCreator1155Impl(deployedAddress);
 
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = target.getRoyalties(0);
+        assertEq(config.royaltyMintSchedule, royaltyMintSchedule);
         assertEq(config.royaltyBPS, royaltyBPS);
         assertEq(config.royaltyRecipient, royaltyRecipient);
         assertEq(target.getPermissions(0, admin), target.PERMISSION_BIT_ADMIN());
