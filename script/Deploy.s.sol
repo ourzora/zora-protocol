@@ -50,7 +50,7 @@ contract DeployScript is Script {
             IZoraCreator1155Factory(address(factoryProxy)).createContract(
                 "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
                 "testing contract",
-                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0)}),
+                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
                 deployer,
                 initUpdate
             )
