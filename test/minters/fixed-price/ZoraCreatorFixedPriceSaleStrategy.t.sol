@@ -93,7 +93,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
                     pricePerToken: 1 ether,
                     saleStart: uint64(block.timestamp + 1 days),
                     saleEnd: type(uint64).max,
-                    maxTokensPerAddress: 0,
+                    maxTokensPerAddress: 10,
                     fundsRecipient: address(0)
                 })
             )
@@ -169,6 +169,40 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.expectRevert(abi.encodeWithSignature("MintedTooManyForAddress()"));
         target.purchase{value: 6 ether}(fixedPrice, newTokenId, 6, abi.encode(tokenRecipient));
     }
+
+    function testFail_setupPurchase() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+        target.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 9,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+        vm.stopPrank();
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        vm.startPrank(tokenRecipient);
+        target.purchase{value: 10 ether}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient));
+
+        assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
+        assertEq(address(target).balance, 10 ether);
+
+        vm.stopPrank();
+    }
+
 
     function test_PricePerToken() external {
         vm.warp(2 days);
