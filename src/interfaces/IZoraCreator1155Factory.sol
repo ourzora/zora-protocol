@@ -6,23 +6,25 @@ import {IMinter1155} from "./IMinter1155.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 
 interface IZoraCreator1155Factory is IVersionedContract {
-    event FactorySetup();
     error Constructor_ImplCannotBeZero();
+
+    event FactorySetup();
+    event SetupNewContract(
+        address indexed newContract,
+        address indexed creator,
+        address indexed defaultAdmin,
+        string contractURI,
+        string name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration
+    );
 
     function createContract(
         string memory contractURI,
+        string calldata name,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address);
-
-    event SetupNewContract(
-        address newContract,
-        address creator,
-        address defaultAdmin,
-        string contractURI,
-        ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration
-    );
 
     function defaultMinters() external returns (IMinter1155[] memory minters);
 
