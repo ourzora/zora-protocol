@@ -72,11 +72,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         if (config.maxTokensPerAddress > 0) {
             bytes32 key = keccak256(abi.encode(msg.sender, tokenId, mintTo));
             mintedPerAddress[key] += quantity;
-<<<<<<< HEAD
-            if (config.maxTokensPerAddress < mintedPerAddress[key]) {
-=======
             if (mintedPerAddress[key] > config.maxTokensPerAddress) {
->>>>>>> origin/main
                 revert MintedTooManyForAddress();
             }
         }
