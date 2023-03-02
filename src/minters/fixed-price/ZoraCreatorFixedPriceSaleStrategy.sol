@@ -37,7 +37,6 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     error SaleEnded();
     error SaleHasNotStarted();
     error MintedTooManyForAddress();
-    error TooManyTokensInOneTxn();
 
     event SaleSet(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
 
@@ -73,7 +72,11 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         if (config.maxTokensPerAddress > 0) {
             bytes32 key = keccak256(abi.encode(msg.sender, tokenId, mintTo));
             mintedPerAddress[key] += quantity;
+<<<<<<< HEAD
             if (config.maxTokensPerAddress < mintedPerAddress[key]) {
+=======
+            if (mintedPerAddress[key] > config.maxTokensPerAddress) {
+>>>>>>> origin/main
                 revert MintedTooManyForAddress();
             }
         }
