@@ -18,9 +18,11 @@ import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 contract ZoraCreator1155Impl is
     IZoraCreator1155,
+    ContractVersionBase,
     ReentrancyGuardUpgradeable,
     PublicMulticall,
     ERC1155Upgradeable,
@@ -41,10 +43,6 @@ contract ZoraCreator1155Impl is
     uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
 
     constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
-
-    function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
-    }
 
     function initialize(
         string memory newContractURI,

@@ -159,7 +159,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_setTokenMetadataRenderer() external {
-        target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
+        target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
         SimpleRenderer contractRenderer = new SimpleRenderer();
         SimpleRenderer singletonRenderer = new SimpleRenderer();
