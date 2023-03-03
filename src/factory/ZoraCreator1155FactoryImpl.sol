@@ -11,15 +11,14 @@ import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.
 import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
 
-contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, FactoryManagedUpgradeGate, UUPSUpgradeable {
+import {ContractVersionBase} from "../version/ContractVersionBase.sol";
+
+
+contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable {
     IZoraCreator1155 public immutable implementation;
 
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
-
-    function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
-    }
 
     constructor(
         IZoraCreator1155 _implementation,
