@@ -96,7 +96,7 @@ contract ZoraCreator1155Test is Test {
     function test_contractVersion() external {
         init();
 
-        assertEq(target.contractVersion(), "0.0.1");
+        assertEq(target.contractVersion(), "0.0.6");
     }
 
     function test_invariantLastTokenIdMatches() external {
@@ -159,7 +159,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_setTokenMetadataRenderer() external {
-        target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, address(0)), admin, _emptyInitData());
+        target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
         SimpleRenderer contractRenderer = new SimpleRenderer();
         SimpleRenderer singletonRenderer = new SimpleRenderer();
