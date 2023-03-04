@@ -6,9 +6,13 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
+/// @title CreatorRoyaltiesControl
+/// @notice Contract for managing the royalties of an 1155 contract
 abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBaseConstants {
     uint256 immutable ROYALTY_BPS_TO_PERCENT = 10_000;
 
+    /// @notice The royalty information for a given token.
+    /// @param tokenId The token ID to get the royalty information for.
     function getRoyalties(uint256 tokenId) public view returns (RoyaltyConfiguration memory) {
         RoyaltyConfiguration memory config = royalties[tokenId];
         if (config.royaltyRecipient != address(0)) {

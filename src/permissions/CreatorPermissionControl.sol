@@ -5,6 +5,7 @@ import {CreatorPermissionStorageV1} from "./CreatorPermissionStorageV1.sol";
 import {ICreatorPermissionControl} from "../interfaces/ICreatorPermissionControl.sol";
 
 contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermissionControl {
+    /// @notice Return the permission bits for a given user and token combo
     function getPermissionKey(uint256 token, address user) internal pure returns (uint256) {
         return uint256(keccak256(abi.encode(token, user)));
     }
@@ -13,6 +14,7 @@ contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermiss
         return permissions[getPermissionKey(token, user)] & permissionBits > 0;
     }
 
+    /// @notice return the permission bits for a given user and token combo
     function getPermissions(uint256 token, address user) external view returns (uint256) {
         return permissions[getPermissionKey(token, user)];
     }
