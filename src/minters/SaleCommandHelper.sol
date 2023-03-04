@@ -3,18 +3,20 @@ pragma solidity 0.8.17;
 
 import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 
+/// @title SaleCommandHelper
+/// @notice Helper library for creating commands for the sale contract
 library SaleCommandHelper {
-    function setSize(ICreatorCommands.CommandSet memory commandSet, uint256 size) pure internal {
+    function setSize(ICreatorCommands.CommandSet memory commandSet, uint256 size) internal pure {
         commandSet.commands = new ICreatorCommands.Command[](size);
     }
 
     /// todo: should tokenid be removed
-    function mint(
-        ICreatorCommands.CommandSet memory commandSet,
-        address to,
-        uint256 tokenId,
-        uint256 quantity
-    ) pure internal {
+    /// @notice Creates a command to mint a token
+    /// @param commandSet The command set to add the command to
+    /// @param to The address to mint to
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    function mint(ICreatorCommands.CommandSet memory commandSet, address to, uint256 tokenId, uint256 quantity) internal pure {
         unchecked {
             commandSet.commands[commandSet.at++] = ICreatorCommands.Command({
                 method: ICreatorCommands.CreatorActions.MINT,
@@ -23,11 +25,11 @@ library SaleCommandHelper {
         }
     }
 
-    function transfer(
-        ICreatorCommands.CommandSet memory commandSet,
-        address to,
-        uint256 amount
-    ) pure internal {
+    /// @notice Creates a command to transfer ETH
+    /// @param commandSet The command set to add the command to
+    /// @param to The address to transfer to
+    /// @param amount The amount of ETH to transfer
+    function transfer(ICreatorCommands.CommandSet memory commandSet, address to, uint256 amount) internal pure {
         unchecked {
             commandSet.commands[commandSet.at++] = ICreatorCommands.Command({method: ICreatorCommands.CreatorActions.SEND_ETH, args: abi.encode(to, amount)});
         }
