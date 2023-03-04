@@ -10,7 +10,6 @@ library SaleCommandHelper {
         commandSet.commands = new ICreatorCommands.Command[](size);
     }
 
-    /// todo: should tokenid be removed
     /// @notice Creates a command to mint a token
     /// @param commandSet The command set to add the command to
     /// @param to The address to mint to

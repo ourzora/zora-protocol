@@ -3,7 +3,6 @@ pragma solidity 0.8.17;
 
 import {ICreatorCommands} from "./ICreatorCommands.sol";
 
-
 interface IMinter1155 {
     function requestMint(
         address sender,
