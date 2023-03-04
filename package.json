@@ -9,7 +9,8 @@
     "test-gas": "forge test --gas-report",
     "prettier": "prettier --write 'src/**/*.sol'",
     "coverage": "forge coverage --report lcov",
-    "prepack": "mkdir -p dist && cp -r src/ dist/contracts && cp -r addresses/ dist/addresses && cp -r out/ dist/artifacts/"
+    "prepack": "mkdir -p dist && cp -r src/ dist/contracts && cp -r addresses/ dist/addresses && cp -r out/ dist/artifacts/",
+    "prepare": "husky install"
   },
   "files": [
     "dist/"
@@ -21,7 +22,12 @@
     "forge-std": "https://github.com/foundry-rs/forge-std#cd7d533f9a0ee0ec02ad81e0a8f262bc4203c653"
   },
   "devDependencies": {
+    "husky": ">=6",
+    "lint-staged": ">=10",
     "prettier": "^2.8.3",
     "prettier-plugin-solidity": "^1.1.1"
+  },
+  "lint-staged": {
+    "*.{sol,json}": "prettier --write"
   }
 }
