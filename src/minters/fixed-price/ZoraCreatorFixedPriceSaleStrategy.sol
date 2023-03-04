@@ -7,6 +7,8 @@ import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
+/// @title ZoraCreatorFixedPriceSaleStrategy
+/// @notice A sale strategy for ZoraCreator that allows for fixed price sales over a given time period
 contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     struct SalesConfig {
         uint64 saleStart;
@@ -25,10 +27,12 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         return "";
     }
 
+    /// @notice The name of the sale strategy
     function contractName() external pure override returns (string memory) {
         return "Fixed Price Sale Strategy";
     }
 
+    /// @notice The version of the sale strategy
     function contractVersion() external pure override returns (string memory) {
         return "0.0.1";
     }
@@ -40,6 +44,11 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
     event SaleSet(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
 
+    /// @notice Compiles and returns the commands needed to mint a token using this sales strategy
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param ethValueSent The amount of ETH sent with the transaction
+    /// @param minterArguments The arguments passed to the minter, which should be the address to mint to
     function requestMint(
         address,
         uint256 tokenId,
@@ -89,6 +98,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         }
     }
 
+    /// @notice Sets the sale config for a given token
     function setSale(uint256 tokenId, SalesConfig memory salesConfig) external {
         salesConfigs[_getKey(msg.sender, tokenId)] = salesConfig;
 
@@ -96,6 +106,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         emit SaleSet(msg.sender, tokenId, salesConfig);
     }
 
+    /// @notice Deletes the sale config for a given token
     function resetSale(uint256 tokenId) external override {
         delete salesConfigs[_getKey(msg.sender, tokenId)];
 
@@ -103,6 +114,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
         emit SaleSet(msg.sender, tokenId, salesConfigs[_getKey(msg.sender, tokenId)]);
     }
 
+    /// @notice Returns the sale config for a given token
     function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
         return salesConfigs[_getKey(tokenContract, tokenId)];
     }
