@@ -4,6 +4,8 @@ pragma solidity 0.8.17;
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {IMintFeeManager} from "../interfaces/IMintFeeManager.sol";
 
+/// @title MintFeeManager
+/// @notice Manages mint fees for an 1155 contract
 contract MintFeeManager is IMintFeeManager {
     uint256 public immutable mintFee;
     address public immutable mintFeeRecipient;
@@ -20,6 +22,8 @@ contract MintFeeManager is IMintFeeManager {
         mintFee = _mintFee;
     }
 
+    /// @notice Sends the mint fee to the mint fee recipient and returns the amount of ETH remaining that can be used in this transaction
+    /// @param _quantity The amount of toknens being minted
     function _handleFeeAndGetValueSent(uint256 _quantity) internal returns (uint256 ethValueSent) {
         ethValueSent = msg.value;
 

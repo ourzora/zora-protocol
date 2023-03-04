@@ -9,6 +9,8 @@ import {SaleStrategy} from "../SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
+/// @title ZoraCreatorMerkleMinterStrategy
+/// notice Mints tokens based on a merkle tree, for presales for example
 contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
     struct MerkleSaleSettings {
@@ -35,16 +37,23 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         return "";
     }
 
+    /// @notice The name of the sale strategy
     function contractName() external pure override returns (string memory) {
         return "Merkle Tree Sale Strategy";
     }
 
+    /// @notice The version of the sale strategy
     function contractVersion() external pure override returns (string memory) {
         return "0.0.1";
     }
 
     error MerkleClaimsExceeded();
 
+    /// @notice Compiles and returns the commands needed to mint a token using this sales strategy
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param ethValueSent The amount of ETH sent with the transaction
+    /// @param minterArguments The arguments passed to the minter, which should be the address to mint to, the max quantity, the price per token, and the merkle proof
     function requestMint(
         address,
         uint256 tokenId,
@@ -100,6 +109,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         }
     }
 
+    /// @notice Sets the sale configuration for a token
     function setSale(uint256 tokenId, MerkleSaleSettings memory merkleSaleSettings) external {
         allowedMerkles[_getKey(msg.sender, tokenId)] = merkleSaleSettings;
 
@@ -107,6 +117,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         emit SaleSet(msg.sender, tokenId, merkleSaleSettings);
     }
 
+    /// @notice Resets the sale configuration for a token
     function resetSale(uint256 tokenId) external override {
         delete allowedMerkles[_getKey(msg.sender, tokenId)];
 
@@ -114,6 +125,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         emit SaleSet(msg.sender, tokenId, allowedMerkles[_getKey(msg.sender, tokenId)]);
     }
 
+    /// @notice Gets the sale configuration for a token
     function sale(address tokenContract, uint256 tokenId) external view returns (MerkleSaleSettings memory) {
         return allowedMerkles[_getKey(tokenContract, tokenId)];
     }

@@ -5,6 +5,8 @@ import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGa
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
 import {FactoryManagedUpgradeGateStorageV1} from "./FactoryManagedUpgradeGateStorageV1.sol";
 
+/// @title FactoryManagedUpgradeGate
+/// @notice Contract for managing upgrades and safe upgrade paths for 1155 contracts
 abstract contract FactoryManagedUpgradeGate is IFactoryManagedUpgradeGate, Ownable2StepUpgradeable, FactoryManagedUpgradeGateStorageV1 {
     ///                                                          ///
     ///                CREATOR TOKEN UPGRADES                    ///
