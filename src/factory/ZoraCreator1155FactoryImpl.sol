@@ -13,18 +13,15 @@ import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
-
+/// @title ZoraCreator1155FactoryImpl
+/// @notice Factory contract for creating new ZoraCreator1155 contracts
 contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable {
     IZoraCreator1155 public immutable implementation;
 
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
 
-    constructor(
-        IZoraCreator1155 _implementation,
-        IMinter1155 _merkleMinter,
-        IMinter1155 _fixedPriceMinter
-    ) initializer {
+    constructor(IZoraCreator1155 _implementation, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter) initializer {
         implementation = _implementation;
         if (address(implementation) == address(0)) {
             revert Constructor_ImplCannotBeZero();
@@ -33,6 +30,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         fixedPriceMinter = _fixedPriceMinter;
     }
 
+    /// @notice The default minters for new 1155 contracts
     function defaultMinters() external view returns (IMinter1155[] memory minters) {
         minters = new IMinter1155[](2);
         minters[0] = fixedPriceMinter;
@@ -46,6 +44,12 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         emit FactorySetup();
     }
 
+    /// @notice Creates a new ZoraCreator1155 contract
+    /// @param contractURI The URI for the contract metadata
+    /// @param name The name of the contract
+    /// @param defaultRoyaltyConfiguration The default royalty configuration for the contract
+    /// @param defaultAdmin The default admin for the contract
+    /// @param setupActions The actions to perform on the new contract upon initialization
     function createContract(
         string memory contractURI,
         string calldata name,
