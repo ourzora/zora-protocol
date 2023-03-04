@@ -22,15 +22,17 @@ contract MintFeeManager is IMintFeeManager {
         mintFee = _mintFee;
     }
 
-    /// @notice Sends teh mint fee to the mint fee recipient and returns the amount of ETH remaining that can be used in this transaction
-    function _handleFeeAndGetValueSent() internal returns (uint256 ethValueSent) {
+    /// @notice Sends the mint fee to the mint fee recipient and returns the amount of ETH remaining that can be used in this transaction
+    /// @param _quantity The amount of toknens being minted
+    function _handleFeeAndGetValueSent(uint256 _quantity) internal returns (uint256 ethValueSent) {
         ethValueSent = msg.value;
 
         // Handle mint fee
         if (mintFeeRecipient != address(0)) {
-            ethValueSent -= mintFee;
-            if (!TransferHelperUtils.safeSendETHLowLimit(mintFeeRecipient, mintFee)) {
-                revert CannotSendMintFee(mintFeeRecipient, mintFee);
+            uint256 totalFee = mintFee * _quantity;
+            ethValueSent -= totalFee;
+            if (!TransferHelperUtils.safeSendETHLowLimit(mintFeeRecipient, totalFee)) {
+                revert CannotSendMintFee(mintFeeRecipient, totalFee);
             }
         }
     }
