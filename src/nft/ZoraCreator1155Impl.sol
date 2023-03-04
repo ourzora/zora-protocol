@@ -34,13 +34,13 @@ contract ZoraCreator1155Impl is
     CreatorPermissionControl,
     CreatorRoyaltiesControl
 {
-    uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
-    uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
+    uint256 public immutable PERMISSION_BIT_ADMIN = 2 ** 1;
+    uint256 public immutable PERMISSION_BIT_MINTER = 2 ** 2;
 
     // option @tyson remove all of these until we need them
-    uint256 public immutable PERMISSION_BIT_SALES = 2**3;
-    uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
-    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
+    uint256 public immutable PERMISSION_BIT_SALES = 2 ** 3;
+    uint256 public immutable PERMISSION_BIT_METADATA = 2 ** 4;
+    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
 
     constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
 
@@ -114,11 +114,7 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    function _isAdminOrRole(
-        address user,
-        uint256 tokenId,
-        uint256 role
-    ) internal view returns (bool) {
+    function _isAdminOrRole(address user, uint256 tokenId, uint256 role) internal view returns (bool) {
         return _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role);
     }
 
@@ -160,12 +156,10 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    function setupNewToken(string memory _uri, uint256 maxSupply)
-        public
-        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
-        nonReentrant
-        returns (uint256)
-    {
+    function setupNewToken(
+        string memory _uri,
+        uint256 maxSupply
+    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         // TODO(iain): isMaxSupply = 0 open edition or maybe uint256(max) - 1
         //                                                  0xffffffff -> 2**8*4 4.2bil
         //                                                  0xf0000000 -> 2**8*4-(8*3)
@@ -208,11 +202,7 @@ contract ZoraCreator1155Impl is
         _adminMint(recipient, tokenId, quantity, data);
     }
 
-    function addPermission(
-        uint256 tokenId,
-        address user,
-        uint256 permissionBits
-    ) external onlyAdmin(tokenId) {
+    function addPermission(uint256 tokenId, address user, uint256 permissionBits) external onlyAdmin(tokenId) {
         _addPermission(tokenId, user, permissionBits);
     }
 
@@ -246,12 +236,7 @@ contract ZoraCreator1155Impl is
         _mint(recipient, tokenId, quantity, data);
     }
 
-    function adminMintBatch(
-        address recipient,
-        uint256[] memory tokenIds,
-        uint256[] memory quantities,
-        bytes memory data
-    ) public nonReentrant {
+    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) public nonReentrant {
         bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         for (uint256 i = 0; i < tokenIds.length; ++i) {

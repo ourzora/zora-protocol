@@ -13,18 +13,13 @@ import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
-
 contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable {
     IZoraCreator1155 public immutable implementation;
 
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
 
-    constructor(
-        IZoraCreator1155 _implementation,
-        IMinter1155 _merkleMinter,
-        IMinter1155 _fixedPriceMinter
-    ) initializer {
+    constructor(IZoraCreator1155 _implementation, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter) initializer {
         implementation = _implementation;
         if (address(implementation) == address(0)) {
             revert Constructor_ImplCannotBeZero();
