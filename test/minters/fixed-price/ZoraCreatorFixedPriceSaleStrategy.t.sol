@@ -203,7 +203,6 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.stopPrank();
     }
 
-
     function test_PricePerToken() external {
         vm.warp(2 days);
 

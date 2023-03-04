@@ -6,7 +6,7 @@ import {LegacyNamingStorageV1} from "./LegacyNamingStorageV1.sol";
 
 contract LegacyNamingControl is LegacyNamingStorageV1, ILegacyNaming {
     function name() external view returns (string memory) {
-      return _name;
+        return _name;
     }
 
     function symbol() external pure returns (string memory) {}

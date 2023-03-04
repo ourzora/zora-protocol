@@ -7,5 +7,6 @@ interface IMintFeeManager {
     error CannotSetMintFeeToZeroAddress();
 
     function mintFee() external view returns (uint256);
+
     function mintFeeRecipient() external view returns (address);
 }

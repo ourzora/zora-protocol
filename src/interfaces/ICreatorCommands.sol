@@ -2,19 +2,19 @@
 pragma solidity 0.8.17;
 
 interface ICreatorCommands {
-  enum CreatorActions {
-    NO_OP,
-    SEND_ETH,
-    MINT
-  }
+    enum CreatorActions {
+        NO_OP,
+        SEND_ETH,
+        MINT
+    }
 
-  struct Command {
-    CreatorActions method;
-    bytes args;
-  }
+    struct Command {
+        CreatorActions method;
+        bytes args;
+    }
 
-  struct CommandSet {
-    Command[] commands;
-    uint256 at;
-  }
+    struct CommandSet {
+        Command[] commands;
+        uint256 at;
+    }
 }

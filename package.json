@@ -7,7 +7,7 @@
   "scripts": {
     "test": "forge test",
     "test-gas": "forge test --gas-report",
-    "prettier": "prettier --write 'src/**/*.sol'",
+    "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol'",
     "coverage": "forge coverage --report lcov",
     "prepack": "mkdir -p dist && cp -r src/ dist/contracts && cp -r addresses/ dist/addresses && cp -r out/ dist/artifacts/",
     "prepare": "husky install"
