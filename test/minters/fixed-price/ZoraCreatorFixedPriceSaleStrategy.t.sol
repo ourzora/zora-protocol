@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ZoraCreator1155Impl} from "../../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155Proxy} from "../../../src/proxies/ZoraCreator1155Proxy.sol";
+import {ZORA1155} from "../../../src/proxies/ZORA1155.sol";
 import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
@@ -20,7 +20,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
     function setUp() external {
         bytes[] memory emptyData = new bytes[](0);
         ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, address(0));
-        ZoraCreator1155Proxy proxy = new ZoraCreator1155Proxy(address(targetImpl));
+        ZORA1155 proxy = new ZORA1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
         fixedPrice = new ZoraCreatorFixedPriceSaleStrategy();
