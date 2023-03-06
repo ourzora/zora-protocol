@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155FactoryProxy} from "../src/proxies/ZoraCreator1155FactoryProxy.sol";
+import {ZORA1155FACTORY} from "../src/proxies/ZORA1155FACTORY.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
@@ -33,7 +33,7 @@ contract DeployScript is Script {
             _fixedPriceMinter: fixedPricedMinter
         });
 
-        ZoraCreator1155FactoryProxy factoryProxy = new ZoraCreator1155FactoryProxy(
+        ZORA1155FACTORY factoryProxy = new ZORA1155FACTORY(
             address(factoryImpl),
             abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, deployer)
         );

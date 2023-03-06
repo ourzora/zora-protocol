@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155Proxy} from "../../src/proxies/ZoraCreator1155Proxy.sol";
+import {ZORA1155} from "../../src/proxies/ZORA1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
@@ -32,7 +32,7 @@ contract CreatorRoyaltiesControlTest is Test {
     function test_GetsRoyaltiesInfoGlobalDefault() external {
         address royaltyPayout = address(0x999);
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient);
-        target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
+        target = ZoraCreator1155Impl(address(new ZORA1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)), admin, _emptyInitData());
 
@@ -49,7 +49,7 @@ contract CreatorRoyaltiesControlTest is Test {
     function test_GetsRoyaltiesInfoSpecificToken() external {
         address royaltyPayout = address(0x999);
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient);
-        target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
+        target = ZoraCreator1155Impl(address(new ZORA1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)), admin, _emptyInitData());
 

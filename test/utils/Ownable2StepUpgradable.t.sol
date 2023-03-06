@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {Ownable2StepUpgradeable} from "../../src/utils/ownable/Ownable2StepUpgradeable.sol";
 import {IOwnable2StepUpgradeable} from "../../src/utils/ownable/IOwnable2StepUpgradeable.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155FactoryProxy} from "../../src/proxies/ZoraCreator1155FactoryProxy.sol";
+import {ZORA1155FACTORY} from "../../src/proxies/ZORA1155FACTORY.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
@@ -17,7 +17,7 @@ contract Ownable2StepUpgradableTest is Test {
     function setUp() external {
         owner = vm.addr(0x1);
         ZoraCreator1155FactoryImpl factory = new ZoraCreator1155FactoryImpl(IZoraCreator1155(owner), IMinter1155(address(0)), IMinter1155(address(0)));
-        ZoraCreator1155FactoryProxy proxy = new ZoraCreator1155FactoryProxy(address(factory), "");
+        ZORA1155FACTORY proxy = new ZORA1155FACTORY(address(factory), "");
         IZoraCreator1155Factory(address(proxy)).initialize(owner);
         ownable = Ownable2StepUpgradeable(address(proxy));
     }
