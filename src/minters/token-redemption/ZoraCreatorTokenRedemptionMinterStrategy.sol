@@ -13,7 +13,7 @@ import {SaleStrategy} from "../SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
-contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
+contract ZoraCreatorTokenRedemptionMinterStrategy is SaleStrategy {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 
     enum RedemptionTokenType {
@@ -29,7 +29,6 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
         uint256 redemptionAmountPerMint;
         uint64 redemptionStart;
         uint64 redemptionEnd;
-        address redemptionDestination;
         address redemptionRecipient;
         address fundsRecipient;
     }
@@ -39,17 +38,20 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
         uint256 tokenId;
     }
 
-    // redemption key (mediaContract, tokenId, redemptionContract, redemptionTokenId) => sale settings
+    // redemption key (tokenId, redemptionContract, redemptionTokenId) => sale settings
     mapping(bytes32 => RedemptionSettings) redemptionSettings;
 
-    // redemption contract key (mediaContract, tokenId, redemptionContract) => redemption token type
+    // redemption contract key (tokenId, redemptionContract) => redemption token type
     mapping(bytes32 => RedemptionTokenType) redemptionTokenTypes;
 
-    // key (mediaContract, tokenId) => array of redemption tokens
-    mapping(bytes32 => RedemptionToken[]) redemptionTokens;
+    // tokenId => array of redemption tokens
+    mapping(uint256 => RedemptionToken[]) redemptionTokens;
 
-    event SaleSet(address mediaContract, uint256 tokenId, RedemptionToken redemptionToken, RedemptionSettings redemptionSettings);
+    address public immutable dropContract;
 
+    event SaleSet(uint256 tokenId, RedemptionToken redemptionToken, RedemptionSettings redemptionSettings);
+
+    error InvalidDropContract();
     error SaleEnded();
     error SaleHasNotStarted();
     error MintedTooManyForAddress();
@@ -57,6 +59,22 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
     error InvalidTokenType();
     error IncorrectNumberOfTokenIdsProvided();
     error WrongValueSent();
+    error CallerNotDropContract();
+    error NoSaleSet();
+
+    modifier onlyDropContract() {
+        if (msg.sender != dropContract) {
+            revert CallerNotDropContract();
+        }
+        _;
+    }
+
+    constructor(address _dropContract) {
+        if (_dropContract == address(0)) {
+            revert InvalidDropContract();
+        }
+        dropContract = _dropContract;
+    }
 
     function contractURI() external pure override returns (string memory) {
         return "";
@@ -70,13 +88,7 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
         return "0.0.1";
     }
 
-    function _validateMint(
-        uint256 ethValueSent,
-        uint256 ethAmountPerMint,
-        uint256 quantity,
-        uint64 redemptionStart,
-        uint64 redemptionEnd
-    ) internal view {
+    function _validateMint(uint256 ethValueSent, uint256 ethAmountPerMint, uint256 quantity, uint64 redemptionStart, uint64 redemptionEnd) internal view {
         if (ethValueSent != ethAmountPerMint * quantity) {
             revert WrongValueSent();
         }
@@ -94,26 +106,26 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
         uint256 quantity,
         uint256 ethValueSent,
         bytes calldata minterArguments
-    ) external returns (ICreatorCommands.CommandSet memory commands) {
+    ) external onlyDropContract returns (ICreatorCommands.CommandSet memory commands) {
         (address mintTo, address redemptionToken, uint256[] memory tokenIds) = abi.decode(minterArguments, (address, address, uint256[]));
-        RedemptionTokenType redemptionTokenType = redemptionTokenTypes[keccak256(abi.encodePacked(msg.sender, tokenId, redemptionToken))];
+        RedemptionTokenType redemptionTokenType = redemptionTokenTypes[keccak256(abi.encodePacked(tokenId, redemptionToken))];
         RedemptionSettings memory settings;
         if (redemptionTokenType == RedemptionTokenType.ERC1155) {
-            settings = redemptionSettings[keccak256(abi.encodePacked(msg.sender, tokenId, redemptionToken, tokenIds[0]))];
+            settings = redemptionSettings[keccak256(abi.encodePacked(tokenId, redemptionToken, tokenIds[0]))];
             if (tokenIds.length != 1) {
                 revert IncorrectNumberOfTokenIdsProvided();
             }
             _validateMint(ethValueSent, settings.ethAmountPerMint, quantity, settings.redemptionStart, settings.redemptionEnd);
             IERC1155(redemptionToken).safeTransferFrom(mintTo, settings.redemptionRecipient, tokenIds[0], quantity * settings.redemptionAmountPerMint, "");
         } else if (redemptionTokenType == RedemptionTokenType.ERC20) {
-            settings = redemptionSettings[keccak256(abi.encodePacked(msg.sender, tokenId, redemptionToken, uint256(0)))];
+            settings = redemptionSettings[keccak256(abi.encodePacked(tokenId, redemptionToken, uint256(0)))];
             if (tokenIds.length != 0) {
                 revert IncorrectNumberOfTokenIdsProvided();
             }
             _validateMint(ethValueSent, settings.ethAmountPerMint, quantity, settings.redemptionStart, settings.redemptionEnd);
             IERC20(redemptionToken).transferFrom(mintTo, settings.redemptionRecipient, quantity * settings.redemptionAmountPerMint);
         } else if (redemptionTokenType == RedemptionTokenType.ERC721) {
-            settings = redemptionSettings[keccak256(abi.encodePacked(msg.sender, tokenId, redemptionToken, uint256(0)))];
+            settings = redemptionSettings[keccak256(abi.encodePacked(tokenId, redemptionToken, uint256(0)))];
             if (tokenIds.length == 0 || tokenIds.length * settings.redemptionAmountPerMint != quantity) {
                 revert IncorrectNumberOfTokenIdsProvided();
             }
@@ -122,7 +134,7 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
                 IERC721(redemptionToken).safeTransferFrom(mintTo, settings.redemptionRecipient, tokenIds[i]);
             }
         } else {
-            revert InvalidTokenType();
+            revert NoSaleSet();
         }
 
         bool shouldTransferFunds = settings.fundsRecipient != address(0);
@@ -139,7 +151,7 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
         RedemptionToken memory _redemptionToken,
         RedemptionSettings memory _redemptionSettings,
         RedemptionTokenType _redemptionTokenType
-    ) external {
+    ) external onlyDropContract {
         if (_redemptionTokenType != RedemptionTokenType.ERC1155 && _redemptionToken.tokenId != 0) {
             revert IncorrectNumberOfTokenIdsProvided();
         }
@@ -150,32 +162,31 @@ contract ZoraCreatorTokenRedemptionStrategy is SaleStrategy {
             revert SaleEnded();
         }
 
-        redemptionSettings[keccak256(abi.encodePacked(msg.sender, _tokenId, _redemptionToken.token, _redemptionToken.tokenId))] = _redemptionSettings;
-        redemptionTokens[_getKey(msg.sender, _tokenId)].push(_redemptionToken);
-        redemptionTokenTypes[keccak256(abi.encodePacked(msg.sender, _tokenId, _redemptionToken.token))] = _redemptionTokenType;
+        redemptionSettings[keccak256(abi.encodePacked(_tokenId, _redemptionToken.token, _redemptionToken.tokenId))] = _redemptionSettings;
+        redemptionTokens[_tokenId].push(_redemptionToken);
+        redemptionTokenTypes[keccak256(abi.encodePacked(_tokenId, _redemptionToken.token))] = _redemptionTokenType;
 
-        emit SaleSet(msg.sender, _tokenId, _redemptionToken, _redemptionSettings);
+        emit SaleSet(_tokenId, _redemptionToken, _redemptionSettings);
     }
 
-    function resetSale(uint256 _tokenId) external override {
-        bytes32 saleKey = _getKey(msg.sender, _tokenId);
-        while (redemptionTokens[saleKey].length > 0) {
-            RedemptionToken memory _redemptionToken = redemptionTokens[saleKey][redemptionTokens[saleKey].length - 1];
-            bytes32 redemptionKey = keccak256(abi.encodePacked(msg.sender, _tokenId, _redemptionToken.token, _redemptionToken.tokenId));
+    function resetSale(uint256 _tokenId) external override onlyDropContract {
+        if (redemptionTokens[_tokenId].length == 0) {
+            revert NoSaleSet();
+        }
+        for (uint256 i = 0; i < redemptionTokens[_tokenId].length; i++) {
+            RedemptionToken memory _redemptionToken = redemptionTokens[_tokenId][i];
+            bytes32 redemptionKey = keccak256(abi.encodePacked(_tokenId, _redemptionToken.token, _redemptionToken.tokenId));
 
             delete redemptionSettings[redemptionKey];
-            delete redemptionTokenTypes[keccak256(abi.encodePacked(msg.sender, _tokenId, _redemptionToken.token))];
-            redemptionTokens[saleKey].pop();
+            delete redemptionTokenTypes[keccak256(abi.encodePacked(_tokenId, _redemptionToken.token))];
 
-            emit SaleSet(msg.sender, _tokenId, _redemptionToken, redemptionSettings[redemptionKey]);
+            emit SaleSet(_tokenId, _redemptionToken, redemptionSettings[redemptionKey]);
         }
+
+        delete redemptionTokens[_tokenId];
     }
 
-    function sale(
-        uint256 _tokenId,
-        address _redemptionToken,
-        uint256 _redemptionTokenId
-    ) external view returns (RedemptionSettings memory) {
-        return redemptionSettings[keccak256(abi.encodePacked(msg.sender, _tokenId, _redemptionToken, _redemptionTokenId))];
+    function sale(uint256 _tokenId, address _redemptionToken, uint256 _erc1155RedemptionTokenTokenId) external view returns (RedemptionSettings memory) {
+        return redemptionSettings[keccak256(abi.encodePacked(_tokenId, _redemptionToken, _erc1155RedemptionTokenTokenId))];
     }
 }
