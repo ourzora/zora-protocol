@@ -5,6 +5,7 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
@@ -15,6 +16,7 @@ import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
 contract ZoraCreatorTokenRedemptionMinterStrategy is SaleStrategy {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
+    using SafeERC20 for IERC20;
 
     enum RedemptionTokenType {
         NULL,
@@ -23,7 +25,6 @@ contract ZoraCreatorTokenRedemptionMinterStrategy is SaleStrategy {
         ERC20
     }
 
-    // info about one single redemption
     struct RedemptionSettings {
         uint256 ethAmountPerMint;
         uint256 redemptionAmountPerMint;
@@ -123,7 +124,7 @@ contract ZoraCreatorTokenRedemptionMinterStrategy is SaleStrategy {
                 revert IncorrectNumberOfTokenIdsProvided();
             }
             _validateMint(ethValueSent, settings.ethAmountPerMint, quantity, settings.redemptionStart, settings.redemptionEnd);
-            IERC20(redemptionToken).transferFrom(mintTo, settings.redemptionRecipient, quantity * settings.redemptionAmountPerMint);
+            IERC20(redemptionToken).safeTransferFrom(mintTo, settings.redemptionRecipient, quantity * settings.redemptionAmountPerMint);
         } else if (redemptionTokenType == RedemptionTokenType.ERC721) {
             settings = redemptionSettings[keccak256(abi.encodePacked(tokenId, redemptionToken, uint256(0)))];
             if (tokenIds.length == 0 || tokenIds.length * settings.redemptionAmountPerMint != quantity) {
@@ -186,7 +187,19 @@ contract ZoraCreatorTokenRedemptionMinterStrategy is SaleStrategy {
         delete redemptionTokens[_tokenId];
     }
 
-    function sale(uint256 _tokenId, address _redemptionToken, uint256 _erc1155RedemptionTokenTokenId) external view returns (RedemptionSettings memory) {
-        return redemptionSettings[keccak256(abi.encodePacked(_tokenId, _redemptionToken, _erc1155RedemptionTokenTokenId))];
+    function sale(uint256 _tokenId, address _redemptionToken, uint256 _erc1155RedemptionTokenId) external view returns (RedemptionSettings memory) {
+        return redemptionSettings[keccak256(abi.encodePacked(_tokenId, _redemptionToken, _erc1155RedemptionTokenId))];
+    }
+
+    function getRedemptionSettings(
+        uint256 _tokenId,
+        address _redemptionToken,
+        uint256 _erc1155RedemptionTokenId
+    ) external view returns (RedemptionSettings memory) {
+        return redemptionSettings[keccak256(abi.encodePacked(_tokenId, _redemptionToken, _erc1155RedemptionTokenId))];
+    }
+
+    function getRedemptionTokenType(uint256 _tokenId, address _redemptionToken) external view returns (RedemptionTokenType) {
+        return redemptionTokenTypes[keccak256(abi.encodePacked(_tokenId, _redemptionToken))];
     }
 }
