@@ -32,6 +32,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     error Mint_TokenIDMintNotAllowed();
     error Mint_UnknownCommand();
 
+    error Burn_NotOwnerOrApproved(address operator, address user);
+
     error NewOwnerNeedsToBeAdmin();
 
     error Sale_CallFailed();
