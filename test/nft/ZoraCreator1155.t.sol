@@ -486,7 +486,7 @@ contract ZoraCreator1155Test is Test {
         target.purchase(minter, tokenId, 5, abi.encode(recipient));
 
         vm.prank(recipient);
-        target.burn(tokenId, 3);
+        target.burn(recipient, tokenId, 3);
     }
 
     function test_withdrawAll() external {
