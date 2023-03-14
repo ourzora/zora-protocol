@@ -5,7 +5,7 @@ import {ICreatorRendererControl} from "../interfaces/ICreatorRendererControl.sol
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 
 abstract contract CreatorRendererStorageV1 is ICreatorRendererControl {
-    mapping(uint256 => IRenderer1155) public customRenderers;
+    mapping(uint256 => CustomRenderer) public customRenderers;
 
     uint256[50] private ___gap;
 }
