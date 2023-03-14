@@ -4,6 +4,11 @@ pragma solidity 0.8.17;
 import {IRenderer1155} from "./IRenderer1155.sol";
 
 interface ICreatorRendererControl {
+    struct CustomRenderer {
+        bool supportsTransferHook;
+        IRenderer1155 renderer;
+    };
+
     function getCustomRenderer(uint256 tokenId) external view returns (IRenderer1155 renderer);
 
     error NoRendererForToken(uint256 tokenId);
