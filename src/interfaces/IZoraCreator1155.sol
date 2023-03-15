@@ -51,12 +51,12 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     ) external;
 
     /// @notice Only allow minting one token id at time
-    /// @dev Purchase contract function that calls the underlying sales function for commands
+    /// @dev Mint contract function that calls the underlying sales function for commands
     /// @param minter Address for the minter
     /// @param tokenId tokenId to mint, set to 0 for new tokenId
-    /// @param quantity to purchase
+    /// @param quantity to mint
     /// @param minterArguments calldata for the minter contracts
-    function purchase(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 

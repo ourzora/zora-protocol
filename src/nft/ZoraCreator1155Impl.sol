@@ -300,12 +300,12 @@ contract ZoraCreator1155Impl is
         _mintBatch(recipient, tokenIds, quantities, data);
     }
 
-    /// @notice Purchase tokens given a minter contract and minter arguments
+    /// @notice Mint tokens given a minter contract and minter arguments
     /// @param minter The minter contract to use
-    /// @param tokenId The token ID to purchase
-    /// @param quantity The quantity of tokens to purchase
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
-    function purchase(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable {
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
