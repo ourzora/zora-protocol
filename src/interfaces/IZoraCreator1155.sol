@@ -1,6 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+<<<<<<< HEAD
+=======
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
+>>>>>>> 9252f84 (add permission control docs)
 import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
@@ -8,6 +12,10 @@ import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> 9252f84 (add permission control docs)
 /// @notice Main interface for the ZoraCreator1155 contract
 interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1155MetadataURIUpgradeable {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
@@ -63,7 +71,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
     /// @param tokenId tokenId to mint, set to 0 for new tokenId
     /// @param quantity to mint
     /// @param minterArguments calldata for the minter contracts
-    function mint(
+    function purchase(
         IMinter1155 minter,
         uint256 tokenId,
         uint256 quantity,
@@ -100,10 +108,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
     /// @param _uri URI for the token
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
-
-    function updateTokenURI(uint256 tokenId, string memory _newURI) external;
-
-    function updateContractMetadata(string memory _newURI, string memory _newName) external;
 
     function setTokenMetadataRenderer(
         uint256 tokenId,

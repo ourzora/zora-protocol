@@ -171,6 +171,7 @@ contract ZoraCreator1155Impl is
     /// @dev This reverts if the user is not an admin for the given token id or contract
     /// @param user user to check
     /// @param tokenId tokenId to check
+    /// @return true or false if the permission exists for the user given the token id
     function _requireAdmin(address user, uint256 tokenId) internal view {
         if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
             revert UserMissingRoleForToken(user, tokenId, PERMISSION_BIT_ADMIN);
@@ -328,12 +329,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId token id to mint
     /// @param quantity quantity to mint
     /// @param data callback data as specified by the 1155 spec
-    function _adminMint(
-        address recipient,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes memory data
-    ) internal nonReentrant {
+    function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal nonReentrant {
         _mint(recipient, tokenId, quantity, data);
     }
 
@@ -418,11 +414,7 @@ contract ZoraCreator1155Impl is
     /// @param commands list of command structs 
     /// @param ethValueSent the ethereum value sent in the mint transaction into the contract
     /// @param tokenId the token id the user requested to mint (0 if the token id is set by the minter itself across the whole contract)
-    function _executeCommands(
-        ICreatorCommands.Command[] memory commands,
-        uint256 ethValueSent,
-        uint256 tokenId
-    ) internal {
+    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
         for (uint256 i = 0; i < commands.length; ++i) {
             ICreatorCommands.CreatorActions method = commands[i].method;
             if (method == ICreatorCommands.CreatorActions.SEND_ETH) {
@@ -484,7 +476,7 @@ contract ZoraCreator1155Impl is
     /// @notice Returns true if the contract implements the interface defined by interfaceId
     /// @param interfaceId The interface to check for
     /// @return if the interfaceId is marked as supported
-    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
     }
 
@@ -495,12 +487,7 @@ contract ZoraCreator1155Impl is
     /// @param id token id to mint
     /// @param amount of tokens to mint
     /// @param data as specified by 1155 standard
-    function _mint(
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) internal virtual override {
+    function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
         (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalMinted, amount);
 
         _requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
@@ -517,12 +504,7 @@ contract ZoraCreator1155Impl is
     /// @param ids token ids to mint
     /// @param amounts of tokens to mint
     /// @param data as specified by 1155 standard
-    function _mintBatch(
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) internal virtual override {
+    function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
