@@ -482,10 +482,14 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    function _validateFromApproved(address from) internal view {
+    /// @notice Only from approved address for burn
+    /// @param from address that the tokens will be burned from, validate that this is msg.sender or that msg.sender is approved
+    modifier onlyFromApprovedForBurn(address from) {
         if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
             revert Burn_NotOwnerOrApproved(msg.sender, from);
         }
+
+        _;
     }
 
     /// @dev Only the current owner is allowed to burn
@@ -497,13 +501,12 @@ contract ZoraCreator1155Impl is
         address from,
         uint256 tokenId,
         uint256 amount
-    ) external {
-        _validateFromApproved(from);
+    ) external onlyFromApprovedForBurn(from) {
         _burn(from, tokenId, amount);
     }
 
-    /// @dev Only the current owner is allowed to burn
     /// @notice Burns a batch of tokens
+    /// @dev Only the current owner is allowed to burn
     /// @param from the user to burn from
     /// @param tokenIds The token ID to burn
     /// @param amounts The amount of tokens to burn
@@ -511,8 +514,7 @@ contract ZoraCreator1155Impl is
         address from,
         uint256[] calldata tokenIds,
         uint256[] calldata amounts
-    ) external {
-        _validateFromApproved(from);
+    ) external onlyFromApprovedForBurn(from) {
         _burnBatch(from, tokenIds, amounts);
     }
 
