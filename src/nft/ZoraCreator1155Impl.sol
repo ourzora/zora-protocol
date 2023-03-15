@@ -171,7 +171,6 @@ contract ZoraCreator1155Impl is
     /// @dev This reverts if the user is not an admin for the given token id or contract
     /// @param user user to check
     /// @param tokenId tokenId to check
-    /// @return true or false if the permission exists for the user given the token id
     function _requireAdmin(address user, uint256 tokenId) internal view {
         if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
             revert UserMissingRoleForToken(user, tokenId, PERMISSION_BIT_ADMIN);
@@ -466,17 +465,20 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the renderer contract with
     /// @param data The data to pass to the renderer contract
     function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
-        // We assume any renderers set are checked for EIP165 signature during write stage. 
-        (bool success, bytes memory why) = address(getCustomRenderer(tokenId)).call(data);
+        IRenderer1155 renderer = getCustomRenderer(tokenId);
+        if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
+            revert Renderer_NotValidRendererContract();
+        }
+        (bool success, ) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
-            revert Renderer_CallFailed(why);
+            revert Renderer_CallFailed();
         }
     }
 
     /// @notice Returns true if the contract implements the interface defined by interfaceId
     /// @param interfaceId The interface to check for
     /// @return if the interfaceId is marked as supported
-    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
     }
 

@@ -1,10 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-<<<<<<< HEAD
-=======
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
->>>>>>> 9252f84 (add permission control docs)
 import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
@@ -12,10 +9,6 @@ import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
-<<<<<<< HEAD
-=======
-
->>>>>>> 9252f84 (add permission control docs)
 /// @notice Main interface for the ZoraCreator1155 contract
 interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1155MetadataURIUpgradeable {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
@@ -50,7 +43,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
 
     error Sale_CallFailed();
 
-    error Renderer_CallFailed(bytes reason);
+    error Renderer_CallFailed();
     error Renderer_NotValidRendererContract();
 
     error ETHWithdrawFailed(address recipient, uint256 amount);
