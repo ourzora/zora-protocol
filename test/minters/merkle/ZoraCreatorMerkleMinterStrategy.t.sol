@@ -335,6 +335,13 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         assertEq(sale.fundsRecipient, address(0));
         assertEq(sale.merkleRoot, bytes32(0));
     }
+
+    function test_MerkleSaleSupportsInterface() public {
+        assertTrue(merkleMinter.supportsInterface(0x6890e5b3));
+        assertTrue(merkleMinter.supportsInterface(0x01ffc9a7));
+        assertFalse(merkleMinter.supportsInterface(0x0));
+    }
+
 }
 
 /*
