@@ -32,7 +32,7 @@ contract MintFeeManagerTest is Test {
     function test_mintFeeSent(uint32 mintFee, uint256 quantity) external {
         vm.assume(quantity < 100);
         vm.assume(mintFee < 0.1 ether);
-        uint256 purchasePrice = mintFee * quantity;
+        uint256 mintPrice = mintFee * quantity;
         zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient);
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
@@ -45,22 +45,22 @@ contract MintFeeManagerTest is Test {
         vm.prank(admin);
         target.addPermission(tokenId, minter, adminRole);
 
-        vm.deal(admin, purchasePrice);
+        vm.deal(admin, mintPrice);
         vm.prank(admin);
-        target.purchase{value: purchasePrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
+        target.mint{value: mintPrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
 
         vm.prank(admin);
         target.withdrawAll();
 
         // Mint fee is not paid if the recipient is address(0)
-        assertEq(recipient.balance, recipient == address(0) ? 0 : purchasePrice);
-        assertEq(admin.balance, recipient == address(0) ? purchasePrice : purchasePrice - (mintFee * quantity));
+        assertEq(recipient.balance, recipient == address(0) ? 0 : mintPrice);
+        assertEq(admin.balance, recipient == address(0) ? mintPrice : mintPrice - (mintFee * quantity));
     }
 
     function test_mintFeeSent_revertCannotSendMintFee(uint32 mintFee, uint256 quantity) external {
         vm.assume(quantity < 100);
 
-        uint256 purchasePrice = mintFee * quantity;
+        uint256 mintPrice = mintFee * quantity;
 
         // Use this mock contract as a recipient so we can reject ETH payments.
         SimpleMinter _recip = new SimpleMinter();
@@ -79,9 +79,9 @@ contract MintFeeManagerTest is Test {
         vm.prank(admin);
         target.addPermission(tokenId, minter, adminRole);
 
-        vm.deal(admin, purchasePrice);
-        vm.expectRevert(abi.encodeWithSelector(IMintFeeManager.CannotSendMintFee.selector, _recipient, purchasePrice));
+        vm.deal(admin, mintPrice);
+        vm.expectRevert(abi.encodeWithSelector(IMintFeeManager.CannotSendMintFee.selector, _recipient, mintPrice));
         vm.prank(admin);
-        target.purchase{value: purchasePrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
+        target.mint{value: mintPrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
     }
 }
