@@ -42,7 +42,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     error SaleHasNotStarted();
     error MintedTooManyForAddress();
 
-    event SaleSet(address mediaContract, uint256 tokenId, SalesConfig salesConfig);
+    event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig salesConfig);
 
     /// @notice Compiles and returns the commands needed to mint a token using this sales strategy
     /// @param tokenId The token ID to mint

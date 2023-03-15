@@ -15,7 +15,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
     ZoraCreatorFixedPriceSaleStrategy internal fixedPrice;
     address internal admin = address(0x999);
 
-    event SaleSet(address mediaContract, uint256 tokenId, ZoraCreatorFixedPriceSaleStrategy.SalesConfig salesConfig);
+    event SaleSet(address indexed mediaContract, uint256 indexed tokenId, ZoraCreatorFixedPriceSaleStrategy.SalesConfig salesConfig);
 
     function setUp() external {
         bytes[] memory emptyData = new bytes[](0);
@@ -38,7 +38,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.startPrank(admin);
         uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
-        vm.expectEmit(false, false, false, false);
+        vm.expectEmit(true, true, true, true);
         emit SaleSet(
             address(target),
             newTokenId,

@@ -15,7 +15,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
     ZoraCreatorMerkleMinterStrategy internal merkleMinter;
     address internal admin = address(0x999);
 
-    event SaleSet(address sender, uint256 tokenId, ZoraCreatorMerkleMinterStrategy.MerkleSaleSettings merkleSaleSettings);
+    event SaleSet(address indexed sender, uint256 indexed tokenId, ZoraCreatorMerkleMinterStrategy.MerkleSaleSettings merkleSaleSettings);
 
     function setUp() external {
         bytes[] memory emptyData = new bytes[](0);
@@ -155,12 +155,12 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.startPrank(admin);
         uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
         target.addPermission(newTokenId, address(merkleMinter), target.PERMISSION_BIT_MINTER());
-        vm.expectEmit(false, false, false, false);
         bytes32 root = bytes32(0x7e7a334f9b622e055f2dd48534a493de2cf6a28e114e7b53129b75ed44742ca8);
+        vm.expectEmit(true, true, true, true);
         emit SaleSet(
             address(target),
             newTokenId,
-            ZoraCreatorMerkleMinterStrategy.MerkleSaleSettings({presaleStart: 0, presaleEnd: type(uint64).max, fundsRecipient: address(0), merkleRoot: root})
+            ZoraCreatorMerkleMinterStrategy.MerkleSaleSettings({presaleStart: 0, presaleEnd: type(uint64).max, fundsRecipient: address(1234), merkleRoot: root})
         );
         target.callSale(
             newTokenId,
@@ -196,7 +196,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.startPrank(admin);
         uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
         target.addPermission(newTokenId, address(merkleMinter), target.PERMISSION_BIT_MINTER());
-        vm.expectEmit(false, false, false, false);
+        vm.expectEmit(true, true, true, true);
         bytes32 root = bytes32(0x7e7a334f9b622e055f2dd48534a493de2cf6a28e114e7b53129b75ed44742ca8);
         emit SaleSet(
             address(target),
@@ -236,7 +236,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.startPrank(admin);
         uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
         target.addPermission(newTokenId, address(merkleMinter), target.PERMISSION_BIT_MINTER());
-        vm.expectEmit(false, false, false, false);
+        vm.expectEmit(true, true, true, true);
         bytes32 root = bytes32(0x7e7a334f9b622e055f2dd48534a493de2cf6a28e114e7b53129b75ed44742ca8);
         emit SaleSet(
             address(target),
