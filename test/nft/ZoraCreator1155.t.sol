@@ -77,8 +77,8 @@ contract ZoraCreator1155Test is Test {
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply);
         target.initialize("test", config, defaultAdmin, setupActions);
 
-        (, uint256 fetchedMaxSupply, ) = target.tokens(1);
-        assertEq(fetchedMaxSupply, maxSupply);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(1);
+        assertEq(tokenData.maxSupply, maxSupply);
     }
 
     function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
@@ -130,11 +130,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
 
-        (string memory uri, uint256 maxSupply, uint256 totalMinted) = target.tokens(tokenId);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
 
-        assertEq(uri, _uri);
-        assertEq(maxSupply, _maxSupply);
-        assertEq(totalMinted, 0);
+        assertEq(tokenData.uri, _uri);
+        assertEq(tokenData.maxSupply, _maxSupply);
+        assertEq(tokenData.totalMinted, 0);
     }
 
     function xtest_setupNewToken_asMinter(string memory _uri, uint256 _maxSupply) external {}
@@ -266,8 +266,8 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
 
-        (, , uint256 totalMinted) = target.tokens(tokenId);
-        assertEq(totalMinted, quantity);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
@@ -325,11 +325,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.adminMintBatch(recipient, tokenIds, quantities, "");
 
-        (, , uint256 totalMinted1) = target.tokens(tokenId1);
-        (, , uint256 totalMinted2) = target.tokens(tokenId2);
+        IZoraCreator1155TypesV1.TokenData memory tokenData1 = target.getTokenInfo(tokenId1);
+        IZoraCreator1155TypesV1.TokenData memory tokenData2 = target.getTokenInfo(tokenId2);
 
-        assertEq(totalMinted1, quantity1);
-        assertEq(totalMinted2, quantity2);
+        assertEq(tokenData1.totalMinted, quantity1);
+        assertEq(tokenData2.totalMinted, quantity2);
         assertEq(target.balanceOf(recipient, tokenId1), quantity1);
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
     }
@@ -395,8 +395,8 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.purchase(minter, tokenId, quantity, abi.encode(recipient));
 
-        (, , uint256 totalMinted) = target.tokens(tokenId);
-        assertEq(totalMinted, quantity);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 

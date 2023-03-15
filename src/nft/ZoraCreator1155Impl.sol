@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
-import {PublicMulticall} from "../utils/PublicMulticall.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
+import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
@@ -17,7 +20,6 @@ import {MintFeeManager} from "../fee/MintFeeManager.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraCreator1155Impl
@@ -110,9 +112,11 @@ contract ZoraCreator1155Impl is
         _updateRoyalties(tokenId, newConfiguration);
     }
 
-    // remove from openzeppelin impl
+    /// @notice remove this function from openzeppelin impl
+    /// @dev This makes this internal function a no-op
     function _setURI(string memory newuri) internal virtual override {}
 
+    /// @notice This gets the next token in line to be minted when minting linearly (default behavior) and updates the counter
     function _getAndUpdateNextTokenId() internal returns (uint256) {
         unchecked {
             return nextTokenId++;
@@ -149,17 +153,6 @@ contract ZoraCreator1155Impl is
         return _isAdminOrRole(user, tokenId, role);
     }
 
-    /// @notice Checks if the user has a role or admin permission for the given token id or is a contract admin
-    /// @dev This function reverts if the permission does not exist for the given user and tokenId
-    /// @param user user to check
-    /// @param tokenId tokenId to check
-    /// @param role role to check for admin
-    function _requireAdminOrRole(address user, uint256 tokenId, uint256 role) internal view {
-        if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN | role) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
-            revert UserMissingRoleForToken(user, tokenId, role);
-        }
-    }
-
     /// @notice Checks if the user is an admin for the given tokenId
     /// @dev This function reverts if the permission does not exist for the given user and tokenId
     /// @param user user to check
@@ -175,7 +168,6 @@ contract ZoraCreator1155Impl is
     /// @dev This reverts if the user is not an admin for the given token id or contract
     /// @param user user to check
     /// @param tokenId tokenId to check
-    /// @return true or false if the permission exists for the user given the token id
     function _requireAdmin(address user, uint256 tokenId) internal view {
         if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
             revert UserMissingRoleForToken(user, tokenId, PERMISSION_BIT_ADMIN);
@@ -295,7 +287,7 @@ contract ZoraCreator1155Impl is
         _removePermission(tokenId, user, permissionBits);
 
         // Clear owner field
-        if (tokenId == CONTRACT_BASE_ID && user == owner && !_hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
+        if (tokenId == CONTRACT_BASE_ID && user == owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
             _setOwner(address(0));
         }
     }
@@ -303,7 +295,7 @@ contract ZoraCreator1155Impl is
     /// @notice Set the owner of the contract
     /// @param newOwner The new owner of the contract
     function setOwner(address newOwner) external onlyAdmin(CONTRACT_BASE_ID) {
-        if (!_hasPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
+        if (!_hasAnyPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
             revert NewOwnerNeedsToBeAdmin();
         }
 
@@ -436,16 +428,20 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the renderer contract with
     /// @param data The data to pass to the renderer contract
     function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        IRenderer1155 renderer = getCustomRenderer(tokenId);
+        if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
+            revert Renderer_NotValidRendererContract();
+        }
         (bool success, ) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
-            revert Metadata_CallFailed();
+            revert Renderer_CallFailed();
         }
     }
 
     /// @notice Returns true if the contract implements the interface defined by interfaceId
     /// @param interfaceId The interface to check for
     /// @return if the interfaceId is marked as supported
-    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable) returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
     }
 
@@ -501,7 +497,7 @@ contract ZoraCreator1155Impl is
 
     /// @notice Returns the URI for a token
     /// @param tokenId The token ID to return the URI for
-    function uri(uint256 tokenId) public view override returns (string memory) {
+    function uri(uint256 tokenId) public view override(ERC1155Upgradeable, IERC1155MetadataURIUpgradeable) returns (string memory) {
         if (bytes(tokens[tokenId].uri).length > 0) {
             return tokens[tokenId].uri;
         }
