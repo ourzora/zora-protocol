@@ -15,7 +15,7 @@ abstract contract SaleStrategy is IMinter1155, IVersionedContract {
 
     function resetSale(uint256 tokenId) external virtual;
 
-    function _getKey(address mediaContract, uint256 tokenId) internal pure returns (bytes32) {
-        return keccak256(abi.encode(mediaContract, tokenId));
+    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+        return interfaceId == type(IMinter1155).interfaceId;
     }
 }
