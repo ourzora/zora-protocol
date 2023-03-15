@@ -370,6 +370,9 @@ contract ZoraCreator1155Impl is
     /// @param data The data to pass to the sales config contract
     function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
         _requireAdminOrRole(address(salesConfig), tokenId, PERMISSION_BIT_MINTER);
+        if (!salesConfig.supportsInterface(type(IMinter1155).interfaceId)) {
+            revert Sale_CannotCallNonSalesContract(address(salesConfig));
+        }
         (bool success, ) = address(salesConfig).call(data);
         if (!success) {
             revert Sale_CallFailed();
