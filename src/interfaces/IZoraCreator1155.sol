@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
@@ -39,7 +38,9 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
     error NewOwnerNeedsToBeAdmin();
 
     error Sale_CallFailed();
-    error Metadata_CallFailed();
+
+    error Renderer_CallFailed();
+    error Renderer_NotValidRendererContract();
 
     error ETHWithdrawFailed(address recipient, uint256 amount);
     error FundsWithdrawInsolvent(uint256 amount, uint256 contractValue);
