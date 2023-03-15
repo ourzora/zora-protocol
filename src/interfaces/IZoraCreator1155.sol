@@ -32,6 +32,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     error Mint_TokenIDMintNotAllowed();
     error Mint_UnknownCommand();
 
+    error Burn_NotOwnerOrApproved(address operator, address user);
+
     error NewOwnerNeedsToBeAdmin();
 
     error Sale_CallFailed();
@@ -61,6 +63,10 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 
     function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external;
+
+    function burn(address user, uint256 tokenId, uint256 amount) external;
+
+    function burnBatch(address user, uint256[] calldata tokenIds, uint256[] calldata amounts) external;
 
     /// @notice Contract call to setupNewToken
     /// @param _uri URI for the token
