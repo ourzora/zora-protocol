@@ -467,6 +467,7 @@ contract ZoraCreator1155Test is Test {
     function test_supportsInterface() external {
         init();
 
+        // TODO: make this static    
         bytes4 interfaceId = type(IZoraCreator1155).interfaceId;
 
         assertEq(target.supportsInterface(interfaceId), true);
@@ -486,7 +487,25 @@ contract ZoraCreator1155Test is Test {
         target.mint(minter, tokenId, 5, abi.encode(recipient));
 
         vm.prank(recipient);
-        target.burn(tokenId, 3);
+        target.burn(recipient, tokenId, 3);
+    }
+
+    function test_burn_user_not_approved_fails() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 10);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.prank(admin);
+        target.mint(minter, tokenId, 5, abi.encode(recipient));
+
+        vm.prank(address(0x123));
+        vm.expectRevert();
+        target.burn(recipient, tokenId, 3);
     }
 
     function test_withdrawAll() external {
