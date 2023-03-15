@@ -11,5 +11,5 @@ interface ICreatorRendererControl {
 
     error NoRendererForToken(uint256 tokenId);
     error RendererNotValid(address renderer);
-    event RendererUpdated(uint256 tokenId, address renderer, address user);
+    event RendererUpdated(uint256 indexed tokenId, address indexed renderer, address indexed user);
 }
