@@ -32,6 +32,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     error Mint_TokenIDMintNotAllowed();
     error Mint_UnknownCommand();
 
+    error Burn_NotOwnerOrApproved(address operator, address user);
+
     error NewOwnerNeedsToBeAdmin();
 
     error Sale_CallFailed();
@@ -51,16 +53,20 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     ) external;
 
     /// @notice Only allow minting one token id at time
-    /// @dev Purchase contract function that calls the underlying sales function for commands
+    /// @dev Mint contract function that calls the underlying sales function for commands
     /// @param minter Address for the minter
     /// @param tokenId tokenId to mint, set to 0 for new tokenId
-    /// @param quantity to purchase
+    /// @param quantity to mint
     /// @param minterArguments calldata for the minter contracts
-    function purchase(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 
     function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external;
+
+    function burn(address user, uint256 tokenId, uint256 amount) external;
+
+    function burnBatch(address user, uint256[] calldata tokenIds, uint256[] calldata amounts) external;
 
     /// @notice Contract call to setupNewToken
     /// @param _uri URI for the token
