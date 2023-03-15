@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ZoraCreator1155Impl} from "../../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155Proxy} from "../../../src/proxies/ZoraCreator1155Proxy.sol";
+import {Zora1155} from "../../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
@@ -20,7 +20,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
     function setUp() external {
         bytes[] memory emptyData = new bytes[](0);
         ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, address(0));
-        ZoraCreator1155Proxy proxy = new ZoraCreator1155Proxy(address(targetImpl));
+        Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
         merkleMinter = new ZoraCreatorMerkleMinterStrategy();
@@ -38,7 +38,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         assertEq(merkleMinter.contractVersion(), "0.0.1");
     }
 
-    function test_PurchaseFlow() external {
+    function test_MintFlow() external {
         vm.startPrank(admin);
         uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
         target.addPermission(newTokenId, address(merkleMinter), target.PERMISSION_BIT_MINTER());
@@ -74,7 +74,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         merkleProof[0] = bytes32(0x71013e6ce1f439aaa91aa706ddd0769517fbaa4d72a936af4a7c75d29b1ca862);
 
         vm.startPrank(mintTo);
-        target.purchase{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
 
         assertEq(target.balanceOf(mintTo, newTokenId), 10);
         assertEq(address(target).balance, 10 ether);
@@ -113,7 +113,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
 
         vm.prank(mintTo);
         vm.expectRevert(abi.encodeWithSignature("SaleHasNotStarted()"));
-        target.purchase{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
     }
 
     function test_PreSaleEnd() external {
@@ -148,7 +148,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
 
         vm.prank(mintTo);
         vm.expectRevert(abi.encodeWithSignature("SaleEnded()"));
-        target.purchase{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
     }
 
     function test_FundsRecipient() external {
@@ -187,7 +187,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         merkleProof[0] = bytes32(0x71013e6ce1f439aaa91aa706ddd0769517fbaa4d72a936af4a7c75d29b1ca862);
 
         vm.prank(mintTo);
-        target.purchase{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
 
         assertEq(address(1234).balance, 10 ether);
     }
@@ -229,7 +229,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
 
         vm.prank(mintTo);
         vm.expectRevert(abi.encodeWithSignature("InvalidMerkleProof(address,bytes32[],bytes32)", mintTo, merkleProof, root));
-        target.purchase{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
     }
 
     function test_MaxQuantity() external {
@@ -268,9 +268,9 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         merkleProof[0] = bytes32(0x71013e6ce1f439aaa91aa706ddd0769517fbaa4d72a936af4a7c75d29b1ca862);
 
         vm.startPrank(mintTo);
-        target.purchase{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: 10 ether}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
         vm.expectRevert(abi.encodeWithSignature("MintedTooManyForAddress()"));
-        target.purchase{value: 1 ether}(merkleMinter, newTokenId, 1, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: 1 ether}(merkleMinter, newTokenId, 1, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
 
         vm.stopPrank();
     }
@@ -313,7 +313,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
 
         vm.startPrank(mintTo);
         vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
-        target.purchase{value: ethToSend}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
+        target.mint{value: ethToSend}(merkleMinter, newTokenId, 10, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
     }
 
     function test_ResetSale() external {
