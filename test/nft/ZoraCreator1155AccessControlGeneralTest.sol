@@ -122,23 +122,12 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
         target.setTokenMetadataRenderer(1, renderer, "setup");
 
         vm.expectRevert();
-        target.callRenderer(10, abi.encodeWithSelector(
-            SimpleRenderer.setup.selector, "hello"
-        ));
+        target.callRenderer(10, abi.encodeWithSelector(SimpleRenderer.setup.selector, "hello"));
     }
 
     // Supports interface is a public getter. Skipping here.
 
-    function test_openAccessFails_burn() public {
-        vm.prank(admin);
-        target.adminMint(address(0x123), 1, 10, "");
-
-        vm.expectRevert();
-        target.burn(address(0), 1, 1);
-    }
-
     function test_openAccessFails_burnBatch() public {
-
         vm.prank(admin);
         target.adminMint(address(0x123), 1, 10, "");
 
@@ -150,7 +139,6 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
         vm.expectRevert();
         target.burnBatch(address(0), tokenIds, quantities);
     }
-
 
     // contract URI is a public getter
 
@@ -167,5 +155,4 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
         vm.expectRevert();
         target.withdrawCustom(address(0x123), 1);
     }
-
 }

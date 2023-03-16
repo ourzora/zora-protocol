@@ -63,38 +63,13 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
     /// @param tokenId tokenId to mint, set to 0 for new tokenId
     /// @param quantity to mint
     /// @param minterArguments calldata for the minter contracts
-    function mint(
-        IMinter1155 minter,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes calldata minterArguments
-    ) external payable;
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
 
-    function adminMint(
-        address recipient,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes memory data
-    ) external;
+    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 
-    function adminMintBatch(
-        address recipient,
-        uint256[] memory tokenIds,
-        uint256[] memory quantities,
-        bytes memory data
-    ) external;
+    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external;
 
-    function burn(
-        address user,
-        uint256 tokenId,
-        uint256 amount
-    ) external;
-
-    function burnBatch(
-        address user,
-        uint256[] calldata tokenIds,
-        uint256[] calldata amounts
-    ) external;
+    function burnBatch(address user, uint256[] calldata tokenIds, uint256[] calldata amounts) external;
 
     /// @notice Contract call to setupNewToken
     /// @param _uri URI for the token
@@ -105,11 +80,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
 
     function updateContractMetadata(string memory _newURI, string memory _newName) external;
 
-    function setTokenMetadataRenderer(
-        uint256 tokenId,
-        IRenderer1155 renderer,
-        bytes calldata setupData
-    ) external;
+    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer, bytes calldata setupData) external;
 
     function contractURI() external view returns (string memory);
 
@@ -117,31 +88,15 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
 
     function updateRoyaltiesForToken(uint256 tokenId, ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfiguration) external;
 
-    function addPermission(
-        uint256 tokenId,
-        address user,
-        uint256 permissionBits
-    ) external;
+    function addPermission(uint256 tokenId, address user, uint256 permissionBits) external;
 
-    function removePermission(
-        uint256 tokenId,
-        address user,
-        uint256 permissionBits
-    ) external;
+    function removePermission(uint256 tokenId, address user, uint256 permissionBits) external;
 
-    function isAdminOrRole(
-        address user,
-        uint256 tokenId,
-        uint256 role
-    ) external view returns (bool);
+    function isAdminOrRole(address user, uint256 tokenId, uint256 role) external view returns (bool);
 
     function getTokenInfo(uint256 tokenId) external view returns (TokenData memory);
 
     function callRenderer(uint256 tokenId, bytes memory data) external;
 
-    function callSale(
-        uint256 tokenId,
-        IMinter1155 salesConfig,
-        bytes memory data
-    ) external;
+    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external;
 }
