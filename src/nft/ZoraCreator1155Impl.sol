@@ -469,9 +469,10 @@ contract ZoraCreator1155Impl is
         if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
             revert Renderer_NotValidRendererContract();
         }
-        (bool success, ) = address(getCustomRenderer(tokenId)).call(data);
+        // We assume any renderers set are checked for EIP165 signature during write stage.
+        (bool success, bytes memory why) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
-            revert Renderer_CallFailed();
+            revert Renderer_CallFailed(why);
         }
     }
 
