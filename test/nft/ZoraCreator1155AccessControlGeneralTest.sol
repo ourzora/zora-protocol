@@ -14,7 +14,7 @@ import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererCont
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 
-contract ZoraCreator1155AccessInvariantTest is Test {
+contract ZoraCreator1155AccessControlGeneralTest is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
     address admin;
