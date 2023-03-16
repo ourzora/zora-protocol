@@ -95,7 +95,7 @@ contract ZoraCreator1155Test is Test {
     function test_contractVersion() external {
         init();
 
-        assertEq(target.contractVersion(), "0.0.6");
+        assertEq(target.contractVersion(), "0.0.8");
     }
 
     function test_invariantLastTokenIdMatches() external {
@@ -161,10 +161,11 @@ contract ZoraCreator1155Test is Test {
         target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
         SimpleRenderer contractRenderer = new SimpleRenderer();
+        contractRenderer.setContractURI("contract renderer");
         SimpleRenderer singletonRenderer = new SimpleRenderer();
 
         vm.startPrank(admin);
-        target.setTokenMetadataRenderer(0, contractRenderer, "contract renderer");
+        target.setTokenMetadataRenderer(0, contractRenderer, "fallback renderer");
         uint256 tokenId = target.setupNewToken("", 1);
         target.setTokenMetadataRenderer(tokenId, singletonRenderer, "singleton renderer");
         vm.stopPrank();
@@ -173,6 +174,11 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.contractURI(), "contract renderer");
         assertEq(address(target.getCustomRenderer(tokenId)), address(singletonRenderer));
         assertEq(target.uri(tokenId), "singleton renderer");
+
+        vm.prank(admin);
+        target.setTokenMetadataRenderer(tokenId, IRenderer1155(address(0)), "");
+        assertEq(address(target.getCustomRenderer(tokenId)), address(contractRenderer));
+        assertEq(target.uri(tokenId), "fallback renderer");
     }
 
     function test_setTokenMetadataRenderer_revertOnlyAdminOrRole() external {
@@ -536,6 +542,9 @@ contract ZoraCreator1155Test is Test {
 
         SimpleMinter minter = new SimpleMinter();
         SimpleMinter(payable(minter)).setReceiveETH(false);
+
+        vm.prank(admin);
+        target.setFundsRecipient(payable(minter));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), minterRole);
