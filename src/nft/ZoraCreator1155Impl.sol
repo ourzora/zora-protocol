@@ -1,26 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
-import {PublicMulticall} from "../utils/PublicMulticall.sol";
-import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
-import {IMinter1155} from "../interfaces/IMinter1155.sol";
-import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
-import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
-import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
-import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol";
-import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
-import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
-import {MintFeeManager} from "../fee/MintFeeManager.sol";
-import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
-import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
+import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
+import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
+import {CreatorRoyaltiesControl} from "../royalties/CreatorRoyaltiesControl.sol";
+import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
+import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
+import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
+import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
+import {MintFeeManager} from "../fee/MintFeeManager.sol";
+import {PublicMulticall} from "../utils/PublicMulticall.sol";
+import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
+import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
+import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 
 /// @title ZoraCreator1155Impl
 /// @notice The core implementation contract for a creator's 1155 token
@@ -38,12 +40,16 @@ contract ZoraCreator1155Impl is
     CreatorPermissionControl,
     CreatorRoyaltiesControl
 {
+    /// @notice This user role allows for any action to be performed
     uint256 public immutable PERMISSION_BIT_ADMIN = 2 ** 1;
+    /// @notice This user role allows for only mint actions to be performed
     uint256 public immutable PERMISSION_BIT_MINTER = 2 ** 2;
 
-    // option @tyson remove all of these until we need them
+    /// @notice This user role allows for only managing sales configurations
     uint256 public immutable PERMISSION_BIT_SALES = 2 ** 3;
+    /// @notice This user role allows for only managing metadata configuration
     uint256 public immutable PERMISSION_BIT_METADATA = 2 ** 4;
+    /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
     uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
 
     constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
@@ -56,7 +62,7 @@ contract ZoraCreator1155Impl is
     function initialize(
         string memory newContractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address defaultAdmin,
+        address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external initializer {
         // Initialize OZ 1155 implementation
@@ -73,6 +79,8 @@ contract ZoraCreator1155Impl is
 
         // Set owner to default admin
         _setOwner(defaultAdmin);
+
+        _setFundsRecipient(defaultAdmin);
 
         // Run Setup actions
         if (setupActions.length > 0) {
@@ -286,7 +294,7 @@ contract ZoraCreator1155Impl is
         _removePermission(tokenId, user, permissionBits);
 
         // Clear owner field
-        if (tokenId == CONTRACT_BASE_ID && user == owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
+        if (tokenId == CONTRACT_BASE_ID && user == config.owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
             _setOwner(address(0));
         }
     }
@@ -302,11 +310,10 @@ contract ZoraCreator1155Impl is
         _setOwner(newOwner);
     }
 
-    function _setOwner(address newOwner) internal {
-        address lastOwner = owner;
-        owner = newOwner;
-
-        emit OwnershipTransferred(lastOwner, newOwner);
+    /// @notice Getter for the owner singleton of the contract for outside interfaces
+    /// @return the owner of the contract singleton for compat.
+    function owner() external view returns (address) {
+        return config.owner;
     }
 
     /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
@@ -502,11 +509,48 @@ contract ZoraCreator1155Impl is
         if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
             revert Burn_NotOwnerOrApproved(msg.sender, from);
         }
+
         _burnBatch(from, tokenIds, amounts);
+    }
+
+    function setTransferHook(ITransferHookReceiver transferHook) external onlyAdmin(CONTRACT_BASE_ID) {
+        if (address(transferHook) != address(0)) {
+            if (!transferHook.supportsInterface(type(ITransferHookReceiver).interfaceId)) {
+                revert Config_TransferHookNotSupported(address(transferHook));
+            }
+        }
+
+        config.transferHook = transferHook;
+        emit ConfigUpdated(msg.sender, ConfigUpdate.TRANSFER_HOOK, config);
+    }
+
+    /// @notice Hook before token transfer that checks for a transfer hook integration
+    /// @param operator operator moving the tokens
+    /// @param from from address
+    /// @param to to address
+    /// @param ids token ids to move
+    /// @param amounts amounts of tokens
+    /// @param data data of tokens
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) internal override {
+        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+        if (address(config.transferHook) != address(0)) {
+            config.transferHook.onTokenTransferBatch({target: address(this), operator: operator, from: from, to: to, ids: ids, amounts: amounts, data: data});
+        }
     }
 
     /// @notice Returns the URI for the contract
     function contractURI() external view returns (string memory) {
+        IRenderer1155 customRenderer = getCustomRenderer(CONTRACT_BASE_ID);
+        if (address(customRenderer) != address(0)) {
+            return customRenderer.contractURI();
+        }
         return uri(0);
     }
 
@@ -519,28 +563,35 @@ contract ZoraCreator1155Impl is
         return _render(tokenId);
     }
 
-    /// @notice Withdraws all ETH from the contract to the message sender
-    function withdrawAll() public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
-        uint256 contractValue = address(this).balance;
-        if (!TransferHelperUtils.safeSendETH(msg.sender, contractValue)) {
-            revert ETHWithdrawFailed(msg.sender, contractValue);
-        }
+    /// @notice Internal setter for contract admin with no access checks
+    /// @param newOwner new owner address
+    function _setOwner(address newOwner) internal {
+        address lastOwner = config.owner;
+        config.owner = newOwner;
+
+        emit OwnershipTransferred(lastOwner, newOwner);
+        emit ConfigUpdated(msg.sender, ConfigUpdate.OWNER, config);
     }
 
-    /// @notice Withdraws a specified amount of ETH from the contract to a specified recipient
-    /// @param recipient The recipient of the ETH
-    /// @param amount The amount of ETH to withdraw
-    function withdrawCustom(address recipient, uint256 amount) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
-        uint256 contractValue = address(this).balance;
-        if (amount == 0) {
-            amount = contractValue;
-        }
-        if (amount > contractValue) {
-            revert FundsWithdrawInsolvent(amount, contractValue);
-        }
+    /// @notice Internal no-checks set funds recipient address
+    /// @param fundsRecipient new funds recipient address
+    function setFundsRecipient(address payable fundsRecipient) external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+        config.fundsRecipient = fundsRecipient;
+        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
+    }
 
-        if (!TransferHelperUtils.safeSendETH(recipient, amount)) {
-            revert ETHWithdrawFailed(recipient, amount);
+    /// @notice Internal no-checks set funds recipient address
+    /// @param fundsRecipient new funds recipient address
+    function _setFundsRecipient(address payable fundsRecipient) internal {
+        config.fundsRecipient = fundsRecipient;
+        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
+    }
+
+    /// @notice Withdraws all ETH from the contract to the message sender
+    function withdraw() public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+        uint256 contractValue = address(this).balance;
+        if (!TransferHelperUtils.safeSendETH(config.fundsRecipient, contractValue)) {
+            revert ETHWithdrawFailed(config.fundsRecipient, contractValue);
         }
     }
 
