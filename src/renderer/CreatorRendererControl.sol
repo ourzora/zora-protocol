@@ -26,6 +26,7 @@ abstract contract CreatorRendererControl is CreatorRendererStorageV1 {
         }
     }
 
+    /// @notice Function called to render when an empty tokenURI exists on the contract
     function _render(uint256 tokenId) internal view returns (string memory) {
         return getCustomRenderer(tokenId).uriFromContract(address(this), tokenId);
     }

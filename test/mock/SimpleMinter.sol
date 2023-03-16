@@ -37,4 +37,8 @@ contract SimpleMinter is IMinter1155 {
     receive() external payable {
         require(receiveETH, "SimpleMinter: not accepting ETH");
     }
+
+    function supportsInterface(bytes4) external pure returns (bool) {
+        return false;
+    }
 }
