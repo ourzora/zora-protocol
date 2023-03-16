@@ -14,6 +14,9 @@ interface ICreatorRoyaltiesControl is IERC2981 {
         address royaltyRecipient;
     }
 
+    /// @notice Thrown when a user tries to have 100% supply royalties
+    error InvalidMintSchedule();
+
     /// @notice Event emitted when royalties are updated
     event UpdatedRoyalties(uint256 indexed tokenId, address indexed user, RoyaltyConfiguration configuration);
 

@@ -37,7 +37,7 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
     /// @param totalSupply The total supply of the token,
     function supplyRoyaltyInfo(uint256 tokenId, uint256 totalSupply, uint256 mintAmount) public view returns (address receiver, uint256 royaltyAmount) {
         RoyaltyConfiguration memory config = getRoyalties(tokenId);
-        if (config.royaltyMintSchedule <= 1) {
+        if (config.royaltyMintSchedule == 0) {
             return (config.royaltyRecipient, 0);
         }
         uint256 totalRoyaltyMints = (mintAmount + (totalSupply % config.royaltyMintSchedule)) / (config.royaltyMintSchedule - 1);
@@ -45,6 +45,10 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
     }
 
     function _updateRoyalties(uint256 tokenId, RoyaltyConfiguration memory configuration) internal {
+        // Don't allow 100% supply royalties
+        if (configuration.royaltyMintSchedule == 1) {
+            revert InvalidMintSchedule();
+        }
         royalties[tokenId] = configuration;
         emit UpdatedRoyalties(tokenId, msg.sender, configuration);
     }
