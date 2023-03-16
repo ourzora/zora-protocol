@@ -14,7 +14,7 @@ abstract contract CreatorRendererControl is CreatorRendererStorageV1, SharedBase
         IRenderer1155 renderer,
         bytes calldata setupData
     ) internal {
-        if (address(0) == address(0)) {
+        if (address(renderer) == address(0)) {
             delete customRenderers[tokenId];
         } else {
             customRenderers[tokenId] = renderer;
