@@ -10,8 +10,6 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 
-import "forge-std/console2.sol";
-
 contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
     ZoraCreator1155Impl internal target;
     ZoraCreatorFixedPriceSaleStrategy internal fixedPrice;
