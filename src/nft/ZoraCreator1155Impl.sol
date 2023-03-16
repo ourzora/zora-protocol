@@ -64,7 +64,7 @@ contract ZoraCreator1155Impl is
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address payable defaultAdmin,
         bytes[] calldata setupActions
-    ) external initializer {
+    ) external nonReentrant initializer {
         // Initialize OZ 1155 implementation
         __ERC1155_init("");
 
@@ -229,24 +229,24 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Set up a new token
-    /// @param _uri The URI for the token (underscore since `uri()` is reserved by OpenZeppelin)
+    /// @param newURI The URI for the token (underscore since `uri()` is reserved by OpenZeppelin)
     /// @param maxSupply The maximum supply of the token
     function setupNewToken(
-        string memory _uri,
+        string memory newURI,
         uint256 maxSupply
     ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         // TODO(iain): isMaxSupply = 0 open edition or maybe uint256(max) - 1
         //                                                  0xffffffff -> 2**8*4 4.2bil
         //                                                  0xf0000000 -> 2**8*4-(8*3)
 
-        uint256 tokenId = _setupNewToken(_uri, maxSupply);
+        uint256 tokenId = _setupNewToken(newURI, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
-        if (bytes(_uri).length > 0) {
-            emit URI(_uri, tokenId);
+        if (bytes(newURI).length > 0) {
+            emit URI(newURI, tokenId);
         }
 
-        emit SetupNewToken(tokenId, msg.sender, _uri, maxSupply);
+        emit SetupNewToken(tokenId, msg.sender, newURI, maxSupply);
 
         return tokenId;
     }
@@ -271,9 +271,9 @@ contract ZoraCreator1155Impl is
         emit ContractMetadataUpdated(msg.sender, _newURI, _newName);
     }
 
-    function _setupNewToken(string memory _uri, uint256 maxSupply) internal returns (uint256 tokenId) {
+    function _setupNewToken(string memory newURI, uint256 maxSupply) internal returns (uint256 tokenId) {
         tokenId = _getAndUpdateNextTokenId();
-        TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalMinted: 0});
+        TokenData memory tokenData = TokenData({uri: newURI, maxSupply: maxSupply, totalMinted: 0});
         tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
     }
@@ -321,7 +321,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId token id to mint
     /// @param quantity quantity to mint
     /// @param data callback data as specified by the 1155 spec
-    function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal nonReentrant {
+    function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal {
         _mint(recipient, tokenId, quantity, data);
     }
 
@@ -330,7 +330,12 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param data The data to pass to the onERC1155Received function
-    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
+    function adminMint(
+        address recipient,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes memory data
+    ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
         // Call internal admin mint
         _adminMint(recipient, tokenId, quantity, data);
     }
@@ -340,15 +345,13 @@ contract ZoraCreator1155Impl is
     /// @param tokenIds The token IDs to mint
     /// @param quantities The quantities of tokens to mint
     /// @param data The data to pass to the onERC1155BatchReceived function
-    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) public nonReentrant {
+    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external nonReentrant {
         bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         for (uint256 i = 0; i < tokenIds.length; ++i) {
             if (!isGlobalAdminOrMinter) {
-                uint256 checkingTokenId = tokenIds[i];
-                _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
+                _requireAdminOrRole(msg.sender, tokenIds[i], PERMISSION_BIT_MINTER);
             }
-            _requireCanMintQuantity(tokenIds[i], quantities[i]);
         }
         _mintBatch(recipient, tokenIds, quantities, data);
     }
@@ -358,7 +361,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable {
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable nonReentrant {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
@@ -379,7 +382,7 @@ contract ZoraCreator1155Impl is
         uint256 tokenId,
         IRenderer1155 renderer,
         bytes calldata setupData
-    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+    ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
         _setRenderer(tokenId, renderer, setupData);
 
         if (tokenId == 0) {

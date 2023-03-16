@@ -29,7 +29,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     event ConfigUpdated(address indexed updater, ConfigUpdate indexed updateType, ContractConfig newConfig);
 
     event UpdatedToken(address indexed from, uint256 indexed tokenId, TokenData tokenData);
-    event SetupNewToken(uint256 indexed tokenId, address indexed sender, string _uri, uint256 maxSupply);
+    event SetupNewToken(uint256 indexed tokenId, address indexed sender, string newURI, uint256 maxSupply);
 
     function setOwner(address newOwner) external;
 
@@ -64,7 +64,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     error CannotMintMoreTokens(uint256 tokenId, uint256 quantity, uint256 totalMinted, uint256 maxSupply);
 
     function initialize(
-        string memory contractURI,
+        string memory newContractURI,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address payable defaultAdmin,
         bytes[] calldata setupActions
@@ -85,9 +85,9 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     function burnBatch(address user, uint256[] calldata tokenIds, uint256[] calldata amounts) external;
 
     /// @notice Contract call to setupNewToken
-    /// @param _uri URI for the token
+    /// @param tokenURI URI for the token
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
-    function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
+    function setupNewToken(string memory tokenURI, uint256 maxSupply) external returns (uint256 tokenId);
 
     function updateTokenURI(uint256 tokenId, string memory _newURI) external;
 
