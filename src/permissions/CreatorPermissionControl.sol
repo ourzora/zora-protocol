@@ -21,7 +21,6 @@ contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermiss
         return permissions[tokenId][user] & permissionBits > 0;
     }
 
-    /// @notice return the permission bits for a given user and token combo
     /// @return raw permission bits for the given user
     function getPermissions(uint256 tokenId, address user) external view returns (uint256) {
         return permissions[tokenId][user];
