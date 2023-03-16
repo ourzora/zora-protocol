@@ -288,7 +288,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity - 1);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
     }
@@ -361,7 +361,7 @@ contract ZoraCreator1155Test is Test {
         tokenIds[0] = tokenId;
         quantities[0] = quantity;
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
         vm.prank(admin);
         target.adminMintBatch(recipient, tokenIds, quantities, "");
     }
@@ -420,7 +420,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
         vm.prank(admin);
         target.mint(minter, tokenId, 1001, abi.encode(recipient));
     }
@@ -458,7 +458,7 @@ contract ZoraCreator1155Test is Test {
         target.callRenderer(tokenId, abi.encodeWithSignature("setup(bytes)", "callRender successful"));
         assertEq(target.uri(tokenId), "callRender successful");
 
-        vm.expectRevert(abi.encodeWithSignature("Metadata_CallFailed()"));
+        vm.expectRevert(abi.encodeWithSignature("Renderer_CallFailed()"));
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, ""));
 
         vm.stopPrank();
