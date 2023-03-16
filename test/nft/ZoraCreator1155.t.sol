@@ -42,11 +42,20 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
     }
 
-    function init(uint32 royaltySchedule, uint32 royaltyBps, address royaltyRecipient) internal {
+    function init(
+        uint32 royaltySchedule,
+        uint32 royaltyBps,
+        address royaltyRecipient
+    ) internal {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
-    function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_initialize(
+        uint32 royaltySchedule,
+        uint32 royaltyBPS,
+        address royaltyRecipient,
+        address defaultAdmin
+    ) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -82,7 +91,12 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.maxSupply, maxSupply);
     }
 
-    function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_initialize_revertAlreadyInitialized(
+        uint32 royaltySchedule,
+        uint32 royaltyBPS,
+        address royaltyRecipient,
+        address defaultAdmin
+    ) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -100,16 +114,16 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.contractVersion(), "0.0.6");
     }
 
-    function test_invariantLastTokenIdMatches() external {
+    function test_assumeLastTokenIdMatches() external {
         init();
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1);
         assertEq(tokenId, 1);
-        target.invariantLastTokenIdMatches(tokenId);
+        target.assumeLastTokenIdMatches(tokenId);
 
         vm.expectRevert(abi.encodeWithSignature("TokenIdMismatch(uint256,uint256)", 2, 1));
-        target.invariantLastTokenIdMatches(2);
+        target.assumeLastTokenIdMatches(2);
     }
 
     function test_isAdminOrRole() external {
@@ -184,7 +198,11 @@ contract ZoraCreator1155Test is Test {
         target.setTokenMetadataRenderer(0, IRenderer1155(address(0)), "");
     }
 
-    function test_addPermission(uint256 tokenId, uint256 permission, address user) external {
+    function test_addPermission(
+        uint256 tokenId,
+        uint256 permission,
+        address user
+    ) external {
         vm.assume(permission != 0);
         init();
 
@@ -206,7 +224,11 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, recipient, adminRole);
     }
 
-    function test_removePermission(uint256 tokenId, uint256 permission, address user) external {
+    function test_removePermission(
+        uint256 tokenId,
+        uint256 permission,
+        address user
+    ) external {
         vm.assume(permission != 0);
         init();
 
@@ -271,11 +293,11 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
-    
+
     //  function test_adminMintWithScheduleSmall() external {
     //     uint256 quantity = 100;
     //     address royaltyRecipient = address(0x3334);
-    //     // every 10 royalty 1000/10 = 100 tokens minted 
+    //     // every 10 royalty 1000/10 = 100 tokens minted
     //     init(10, 0, royaltyRecipient);
 
     //     vm.prank(admin);
@@ -295,7 +317,7 @@ contract ZoraCreator1155Test is Test {
     // function test_adminMintWithSchedule() external {
     //     uint256 quantity = 1000;
     //     address royaltyRecipient = address(0x3334);
-    //     // every 10 royalty 1000/10 = 100 tokens minted 
+    //     // every 10 royalty 1000/10 = 100 tokens minted
     //     init(10, 0, royaltyRecipient);
 
     //     vm.prank(admin);
@@ -505,6 +527,31 @@ contract ZoraCreator1155Test is Test {
         vm.stopPrank();
     }
 
+    function test_UpdateContractMetadataFailsContract() external {
+        init();
+
+        vm.expectRevert(IZoraCreator1155.NotAllowedContractBaseIDUpdate.selector);
+        vm.prank(admin);
+        target.updateTokenURI(0, "test");
+    }
+
+    function test_ContractNameUpdate() external {
+        init();
+        assertEq(target.name(), "");
+
+        vm.prank(admin);
+        target.updateContractMetadata("newURI", "ASDF");
+        assertEq(target.name(), "ASDF");
+    }
+
+    function test_TokenURI() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("mockuri", 1);
+        assertEq(target.uri(tokenId), "mockuri");
+    }
+
     function test_callSetupRendererFails() external {
         init();
 
@@ -532,7 +579,7 @@ contract ZoraCreator1155Test is Test {
     function test_supportsInterface() external {
         init();
 
-        // TODO: make this static    
+        // TODO: make this static
         bytes4 interfaceId = type(IZoraCreator1155).interfaceId;
 
         assertEq(target.supportsInterface(interfaceId), true);
