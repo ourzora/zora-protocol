@@ -61,5 +61,7 @@ contract DeployScript is Script {
         );
 
         console2.log("New 1155 contract address", newContract);
+
+        console2.log("Minter factory contract address", address(minterFactoryProxy));
     }
 }
