@@ -563,7 +563,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.supportsInterface(interfaceId), true);
     }
 
-    function test_burn() external {
+    function test_burnBatch() external {
         init();
 
         vm.prank(admin);
@@ -575,12 +575,17 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(admin);
         target.mint(minter, tokenId, 5, abi.encode(recipient));
+
+        uint256[] memory burnBatchIds = new uint256[](1);
+        uint256[] memory burnBatchValues = new uint256[](1);
+        burnBatchIds[0] = tokenId;
+        burnBatchValues[0] = 3;
 
         vm.prank(recipient);
-        target.burn(recipient, tokenId, 3);
+        target.burnBatch(recipient, burnBatchIds, burnBatchValues);
     }
 
-    function test_burn_user_not_approved_fails() external {
+    function test_burnBatch_user_not_approved_fails() external {
         init();
 
         vm.prank(admin);
@@ -593,9 +598,15 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.mint(minter, tokenId, 5, abi.encode(recipient));
 
-        vm.prank(address(0x123));
+        uint256[] memory burnBatchIds = new uint256[](1);
+        uint256[] memory burnBatchValues = new uint256[](1);
+        burnBatchIds[0] = tokenId;
+        burnBatchValues[0] = 3;
+
         vm.expectRevert();
-        target.burn(recipient, tokenId, 3);
+
+        vm.prank(address(0x123));
+        target.burnBatch(recipient, burnBatchIds, burnBatchValues);
     }
 
     function test_withdrawAll() external {
