@@ -10,7 +10,30 @@ import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
+/*
+
+
+             ░░░░░░░░░░░░░░              
+        ░░▒▒░░░░░░░░░░░░░░░░░░░░        
+      ░░▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░      
+    ░░▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░    
+   ░▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░    
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░░  
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░░░  
+  ░▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░  
+  ░▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░  
+   ░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░  
+    ░░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░    
+    ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒░░░░░░░░░▒▒▒▒▒░░    
+      ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░      
+          ░░▓▓▓▓▓▓▓▓▓▓▓▓▒▒░░░          
+
+               OURS TRULY,
+
+ */
+
 /// @notice Main interface for the ZoraCreator1155 contract
+/// @author @iainnash / @tbtstl
 interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 

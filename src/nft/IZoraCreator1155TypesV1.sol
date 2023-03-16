@@ -3,6 +3,31 @@ pragma solidity 0.8.17;
 
 import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
 
+/*
+
+
+             ░░░░░░░░░░░░░░              
+        ░░▒▒░░░░░░░░░░░░░░░░░░░░        
+      ░░▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░      
+    ░░▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░    
+   ░▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░    
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░░  
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░░░  
+  ░▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░  
+  ░▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░  
+   ░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░  
+    ░░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░    
+    ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒░░░░░░░░░▒▒▒▒▒░░    
+      ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░      
+          ░░▓▓▓▓▓▓▓▓▓▓▓▓▒▒░░░          
+
+               OURS TRULY,
+
+
+    github.com/ourzora/zora-1155-contracts
+
+ */
+
 /// @notice Interface for types used across the ZoraCreator1155 contract
 interface IZoraCreator1155TypesV1 {
     /// @notice Used to store individual token data

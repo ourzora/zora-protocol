@@ -9,6 +9,31 @@ import {SaleStrategy} from "../SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
+/*
+
+
+             ░░░░░░░░░░░░░░              
+        ░░▒▒░░░░░░░░░░░░░░░░░░░░        
+      ░░▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░      
+    ░░▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░    
+   ░▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░    
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░░  
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░░░  
+  ░▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░  
+  ░▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░  
+   ░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░  
+    ░░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░    
+    ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒░░░░░░░░░▒▒▒▒▒░░    
+      ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░      
+          ░░▓▓▓▓▓▓▓▓▓▓▓▓▒▒░░░          
+
+               OURS TRULY,
+
+
+    github.com/ourzora/zora-1155-contracts
+
+ */
+
 /// @title ZoraCreatorMerkleMinterStrategy
 /// notice Mints tokens based on a merkle tree, for presales for example
 contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
@@ -45,7 +70,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
     /// @notice ContractURI for contract information with the strategy
     function contractURI() external pure override returns (string memory) {
-        return "https://github.com/ourzora/zora-creator-contracts/";
+        return "https://github.com/ourzora/zora-1155-contracts/";
     }
 
     /// @notice The name of the sale strategy

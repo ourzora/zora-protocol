@@ -27,7 +27,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
     }
 
     function test_ContractURI() external {
-        assertEq(merkleMinter.contractURI(), "https://github.com/ourzora/zora-creator-contracts/");
+        assertEq(merkleMinter.contractURI(), "https://github.com/ourzora/zora-1155-contracts/");
     }
 
     function test_ContractName() external {
