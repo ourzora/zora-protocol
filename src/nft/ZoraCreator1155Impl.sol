@@ -38,13 +38,13 @@ contract ZoraCreator1155Impl is
     CreatorPermissionControl,
     CreatorRoyaltiesControl
 {
-    uint256 public immutable PERMISSION_BIT_ADMIN = 2**1;
-    uint256 public immutable PERMISSION_BIT_MINTER = 2**2;
+    uint256 public immutable PERMISSION_BIT_ADMIN = 2 ** 1;
+    uint256 public immutable PERMISSION_BIT_MINTER = 2 ** 2;
 
     // option @tyson remove all of these until we need them
-    uint256 public immutable PERMISSION_BIT_SALES = 2**3;
-    uint256 public immutable PERMISSION_BIT_METADATA = 2**4;
-    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2**5;
+    uint256 public immutable PERMISSION_BIT_SALES = 2 ** 3;
+    uint256 public immutable PERMISSION_BIT_METADATA = 2 ** 4;
+    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
 
     constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
 
@@ -90,11 +90,7 @@ contract ZoraCreator1155Impl is
     /// @notice sets up the global configuration for the 1155 contract
     /// @param newContractURI The contract URI
     /// @param defaultRoyaltyConfiguration The default royalty configuration
-    function _setupDefaultToken(
-        address defaultAdmin,
-        string memory newContractURI,
-        RoyaltyConfiguration memory defaultRoyaltyConfiguration
-    ) internal {
+    function _setupDefaultToken(address defaultAdmin, string memory newContractURI, RoyaltyConfiguration memory defaultRoyaltyConfiguration) internal {
         // Add admin permission to default admin to manage contract
         _addPermission(CONTRACT_BASE_ID, defaultAdmin, PERMISSION_BIT_ADMIN);
 
@@ -108,10 +104,10 @@ contract ZoraCreator1155Impl is
     /// @notice Updates the royalty configuration for a token
     /// @param tokenId The token ID to update
     /// @param newConfiguration The new royalty configuration
-    function updateRoyaltiesForToken(uint256 tokenId, RoyaltyConfiguration memory newConfiguration)
-        external
-        onlyAdminOrRole(tokenId, PERMISSION_BIT_FUNDS_MANAGER)
-    {
+    function updateRoyaltiesForToken(
+        uint256 tokenId,
+        RoyaltyConfiguration memory newConfiguration
+    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_FUNDS_MANAGER) {
         _updateRoyalties(tokenId, newConfiguration);
     }
 
@@ -227,12 +223,10 @@ contract ZoraCreator1155Impl is
     /// @notice Set up a new token
     /// @param _uri The URI for the token (underscore since `uri()` is reserved by OpenZeppelin)
     /// @param maxSupply The maximum supply of the token
-    function setupNewToken(string memory _uri, uint256 maxSupply)
-        public
-        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
-        nonReentrant
-        returns (uint256)
-    {
+    function setupNewToken(
+        string memory _uri,
+        uint256 maxSupply
+    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         // TODO(iain): isMaxSupply = 0 open edition or maybe uint256(max) - 1
         //                                                  0xffffffff -> 2**8*4 4.2bil
         //                                                  0xf0000000 -> 2**8*4-(8*3)
@@ -280,11 +274,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to add the role to
     /// @param user The user to add the role to
     /// @param permissionBits The permission bit to add
-    function addPermission(
-        uint256 tokenId,
-        address user,
-        uint256 permissionBits
-    ) external onlyAdmin(tokenId) {
+    function addPermission(uint256 tokenId, address user, uint256 permissionBits) external onlyAdmin(tokenId) {
         _addPermission(tokenId, user, permissionBits);
     }
 
@@ -292,11 +282,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to remove the role from
     /// @param user The user to remove the role from
     /// @param permissionBits The permission bit to remove
-    function removePermission(
-        uint256 tokenId,
-        address user,
-        uint256 permissionBits
-    ) external onlyAdmin(tokenId) {
+    function removePermission(uint256 tokenId, address user, uint256 permissionBits) external onlyAdmin(tokenId) {
         _removePermission(tokenId, user, permissionBits);
 
         // Clear owner field
@@ -324,7 +310,7 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
-    /// @param recipient recipient for admin minted tokens 
+    /// @param recipient recipient for admin minted tokens
     /// @param tokenId token id to mint
     /// @param quantity quantity to mint
     /// @param data callback data as specified by the 1155 spec
@@ -337,12 +323,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param data The data to pass to the onERC1155Received function
-    function adminMint(
-        address recipient,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes memory data
-    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
+    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
         // Call internal admin mint
         _adminMint(recipient, tokenId, quantity, data);
     }
@@ -352,12 +333,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenIds The token IDs to mint
     /// @param quantities The quantities of tokens to mint
     /// @param data The data to pass to the onERC1155BatchReceived function
-    function adminMintBatch(
-        address recipient,
-        uint256[] memory tokenIds,
-        uint256[] memory quantities,
-        bytes memory data
-    ) public nonReentrant {
+    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) public nonReentrant {
         bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         for (uint256 i = 0; i < tokenIds.length; ++i) {
@@ -410,7 +386,7 @@ contract ZoraCreator1155Impl is
     /// Execute Minter Commands ///
 
     /// @notice Internal functions to execute commands returned by the minter
-    /// @param commands list of command structs 
+    /// @param commands list of command structs
     /// @param ethValueSent the ethereum value sent in the mint transaction into the contract
     /// @param tokenId the token id the user requested to mint (0 if the token id is set by the minter itself across the whole contract)
     function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
@@ -449,11 +425,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the sale contract with
     /// @param salesConfig The sales config contract to call
     /// @param data The data to pass to the sales config contract
-    function callSale(
-        uint256 tokenId,
-        IMinter1155 salesConfig,
-        bytes memory data
-    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
+    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
         _requireAdminOrRole(address(salesConfig), tokenId, PERMISSION_BIT_MINTER);
         (bool success, ) = address(salesConfig).call(data);
         if (!success) {
@@ -465,10 +437,6 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the renderer contract with
     /// @param data The data to pass to the renderer contract
     function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
-        IRenderer1155 renderer = getCustomRenderer(tokenId);
-        if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
-            revert Renderer_NotValidRendererContract();
-        }
         // We assume any renderers set are checked for EIP165 signature during write stage.
         (bool success, bytes memory why) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
@@ -479,7 +447,9 @@ contract ZoraCreator1155Impl is
     /// @notice Returns true if the contract implements the interface defined by interfaceId
     /// @param interfaceId The interface to check for
     /// @return if the interfaceId is marked as supported
-    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
     }
 
@@ -520,29 +490,15 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    /// @dev Only the current owner is allowed to burn
-    /// @notice Burns a token
-    /// @param from the user to burn from
-    /// @param tokenId The token ID to burn
-    /// @param amount The amount of tokens to burn
-    function burn(
-        address from,
-        uint256 tokenId,
-        uint256 amount
-    ) external onlyFromApprovedForBurn(from) {
-        _burn(from, tokenId, amount);
-    }
-
     /// @notice Burns a batch of tokens
     /// @dev Only the current owner is allowed to burn
     /// @param from the user to burn from
     /// @param tokenIds The token ID to burn
     /// @param amounts The amount of tokens to burn
-    function burnBatch(
-        address from,
-        uint256[] calldata tokenIds,
-        uint256[] calldata amounts
-    ) external onlyFromApprovedForBurn(from) {
+    function burnBatch(address from, uint256[] calldata tokenIds, uint256[] calldata amounts) external {
+        if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
+            revert Burn_NotOwnerOrApproved(msg.sender, from);
+        }
         _burnBatch(from, tokenIds, amounts);
     }
 
