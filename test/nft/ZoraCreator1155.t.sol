@@ -132,20 +132,20 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.isAdminOrRole(recipient, tokenId, adminRole), false);
     }
 
-    function test_setupNewToken_asAdmin(string memory _uri, uint256 _maxSupply) external {
+    function test_setupNewToken_asAdmin(string memory newURI, uint256 _maxSupply) external {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
+        uint256 tokenId = target.setupNewToken(newURI, _maxSupply);
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
 
-        assertEq(tokenData.uri, _uri);
+        assertEq(tokenData.uri, newURI);
         assertEq(tokenData.maxSupply, _maxSupply);
         assertEq(tokenData.totalMinted, 0);
     }
 
-    function xtest_setupNewToken_asMinter(string memory _uri, uint256 _maxSupply) external {}
+    function xtest_setupNewToken_asMinter(string memory newURI, uint256 _maxSupply) external {}
 
     function test_setupNewToken_revertOnlyAdminOrRole() external {
         init();

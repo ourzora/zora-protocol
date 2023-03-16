@@ -12,6 +12,7 @@ import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.s
 import {Zora1155} from "../proxies/Zora1155.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
+
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
 contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable {
@@ -58,8 +59,6 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     ) external returns (address) {
         IZoraCreator1155 newContract = IZoraCreator1155(address(new Zora1155(address(implementation))));
 
-        newContract.initialize(contractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
-
         emit SetupNewContract({
             newContract: address(newContract),
             creator: msg.sender,
@@ -68,6 +67,8 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
             name: name,
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration
         });
+
+        newContract.initialize(contractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
         return address(newContract);
     }
