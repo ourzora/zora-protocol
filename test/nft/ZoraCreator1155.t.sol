@@ -46,7 +46,7 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
-    function test_intialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -271,21 +271,43 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
+    
+     function test_adminMintWithScheduleSmall() external {
+        uint256 quantity = 100;
+        address royaltyRecipient = address(0x3334);
+        // every 10 royalty 1000/10 = 100 tokens minted 
+        init(10, 0, royaltyRecipient);
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, 90, "");
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, 1, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, 100);
+        assertEq(target.balanceOf(recipient, tokenId), quantity*9/10);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId), quantity*1/10);
+    }
 
     function test_adminMintWithSchedule() external {
         uint256 quantity = 1000;
         address royaltyRecipient = address(0x3334);
-        // 10% royalty
-        init(10000, 0, royaltyRecipient);
+        // every 10 royalty 1000/10 = 100 tokens minted 
+        init(10, 0, royaltyRecipient);
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.prank(admin);
-        target.adminMint(recipient, tokenId, quantity*9/10, "");
+        target.adminMint(recipient, tokenId, quantity*9/10+9, "");
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, 1, "");
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
-        assertEq(tokenData.totalMinted, 900);
+        assertEq(tokenData.totalMinted, 1000);
         assertEq(target.balanceOf(recipient, tokenId), quantity*9/10);
         assertEq(target.balanceOf(royaltyRecipient, tokenId), quantity*1/10);
     }
