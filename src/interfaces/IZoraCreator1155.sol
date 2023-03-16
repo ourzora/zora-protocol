@@ -41,7 +41,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
 
     error Sale_CallFailed();
 
-    error Renderer_CallFailed();
+    error Renderer_CallFailed(bytes reason);
     error Renderer_NotValidRendererContract();
 
     error ETHWithdrawFailed(address recipient, uint256 amount);
