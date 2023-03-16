@@ -16,7 +16,7 @@ abstract contract SaleStrategy is IMinter1155, IVersionedContract {
 
     function resetSale(uint256 tokenId) external virtual;
 
-    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public pure virtual returns (bool) {
         return interfaceId == type(IMinter1155).interfaceId || interfaceId == type(IERC165Upgradeable).interfaceId;
     }
 
