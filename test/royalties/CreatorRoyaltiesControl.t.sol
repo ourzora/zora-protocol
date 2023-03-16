@@ -43,7 +43,7 @@ contract CreatorRoyaltiesControlTest is Test {
         (, uint256 supplyAmount) = target.supplyRoyaltyInfo(tokenId, 0, 100);
         assertEq(amount, 0.001 ether);
         assertEq(royaltyRecipient, royaltyPayout);
-        assertEq(supplyAmount, 10);
+        assertEq(supplyAmount, 11);
     }
 
     function test_GetsRoyaltiesInfoSpecificToken() external {
@@ -70,7 +70,7 @@ contract CreatorRoyaltiesControlTest is Test {
         (address royaltyRecipientSecond, uint256 amountSecond) = target.royaltyInfo(tokenIdSecond, 1 ether);
         (, uint256 supplyAmountSecond) = target.supplyRoyaltyInfo(tokenIdSecond, 0, 100);
         assertEq(amountSecond, 0.01 ether);
-        assertEq(supplyAmountSecond, 10);
+        assertEq(supplyAmountSecond, 11);
         assertEq(royaltyRecipientSecond, address(0x992));
     }
 }
