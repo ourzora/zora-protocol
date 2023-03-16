@@ -49,15 +49,15 @@ contract DeployScript is Script {
             1,
             fixedPricedMinter,
             abi.encodeWithSelector(
-              ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
-              1,
-              ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
-                  saleStart: 0,
-                  saleEnd: type(uint64).max,
-                  maxTokensPerAddress: 100,
-                  pricePerToken: 0.01 ether,
-                  fundsRecipient: address(0)
-              })
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+                1,
+                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 100,
+                    pricePerToken: 0.01 ether,
+                    fundsRecipient: address(0)
+                })
             )
         );
         bytes[] memory setup = new bytes[](0);
@@ -69,7 +69,7 @@ contract DeployScript is Script {
                 "testing contract",
                 ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
                 deployer,
-               setup 
+                setup
             )
         );
         ZoraCreator1155Impl(newContract).multicall(initUpdate);

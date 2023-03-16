@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IVersionedContract} from "../interfaces/IVersionedContract.sol";
 import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
@@ -20,4 +21,8 @@ abstract contract SaleStrategy is IMinter1155, IVersionedContract {
     /// @notice This function resets the sales configuration for a given tokenId and contract.
     /// @dev This function is intentioned to be called directly from the affected sales contract
     function resetSale(uint256 tokenId) external virtual;
+
+    function supportsInterface(bytes4 interfaceId) public pure virtual returns (bool) {
+        return interfaceId == type(IMinter1155).interfaceId || interfaceId == type(IERC165Upgradeable).interfaceId;
+    }
 }

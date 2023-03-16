@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {ZoraCreator1155Impl} from "../../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
-import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
+import {IMinter1155} from "../../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
@@ -286,5 +286,11 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         assertEq(sale.saleEnd, 0);
         assertEq(sale.maxTokensPerAddress, 0);
         assertEq(sale.fundsRecipient, address(0));
+    }
+
+    function test_fixedPriceSaleSupportsInterface() public {
+        assertTrue(fixedPrice.supportsInterface(0x6890e5b3));
+        assertTrue(fixedPrice.supportsInterface(0x01ffc9a7));
+        assertFalse(fixedPrice.supportsInterface(0x0));
     }
 }

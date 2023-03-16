@@ -12,6 +12,7 @@ import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.s
 import {Zora1155} from "../proxies/Zora1155.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
+
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
 contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable {
