@@ -19,7 +19,7 @@ contract ZoraCreator1155FactoryTest is Test {
     }
 
     function test_contractVersion() external {
-        assertEq(factory.contractVersion(), "0.0.6");
+        assertEq(factory.contractVersion(), "0.0.8");
     }
 
     function test_initialize(address initialOwner) external {
@@ -44,7 +44,7 @@ contract ZoraCreator1155FactoryTest is Test {
         uint32 royaltyBPS,
         uint32 royaltyMintSchedule,
         address royaltyRecipient,
-        address admin
+        address payable admin
     ) external {
         vm.assume(royaltyMintSchedule != 1);
         bytes[] memory initSetup = new bytes[](1);

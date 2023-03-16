@@ -6,11 +6,12 @@ import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeabl
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
 /// @notice Main interface for the ZoraCreator1155 contract
-interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1155MetadataURIUpgradeable {
+interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
     function PERMISSION_BIT_MINTER() external returns (uint256);
@@ -18,6 +19,14 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
     function PERMISSION_BIT_SALES() external returns (uint256);
 
     function PERMISSION_BIT_METADATA() external returns (uint256);
+
+    /// @notice Used to label the configuration update type
+    enum ConfigUpdate {
+        OWNER,
+        FUNDS_RECIPIENT,
+        TRANSFER_HOOK
+    }
+    event ConfigUpdated(address indexed updater, ConfigUpdate indexed updateType, ContractConfig newConfig);
 
     event UpdatedToken(address indexed from, uint256 indexed tokenId, TokenData tokenData);
     event SetupNewToken(uint256 indexed tokenId, address indexed sender, string _uri, uint256 maxSupply);
@@ -31,6 +40,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
     error TokenIdMismatch(uint256 expected, uint256 actual);
     error NotAllowedContractBaseIDUpdate();
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
+
+    error Config_TransferHookNotSupported(address proposedAddress);
 
     error Mint_InsolventSaleTransfer();
     error Mint_ValueTransferFail();
@@ -54,7 +65,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1
     function initialize(
         string memory contractURI,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address defaultAdmin,
+        address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external;
 

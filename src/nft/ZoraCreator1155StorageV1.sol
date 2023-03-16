@@ -2,9 +2,8 @@
 pragma solidity 0.8.17;
 
 import {IZoraCreator1155TypesV1} from "./IZoraCreator1155TypesV1.sol";
-import {IOwnable} from "../interfaces/IOwnable.sol";
 
-contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1, IOwnable {
+contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1 {
     /// @notice token data stored for each token
     mapping(uint256 => TokenData) internal tokens;
 
@@ -14,11 +13,8 @@ contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1, IOwnable {
     /// @notice next token id available when using a linear mint style (default for launch)
     uint256 public nextTokenId;
 
-    /// @notice Owner address proxy for 3rd party queries
-    address public owner;
-
-    /// @notice Default funds recipient address
-    address public fundsRecipient;
+    /// @notice Global contract configuration
+    ContractConfig config;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new

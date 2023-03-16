@@ -22,7 +22,7 @@ interface IZoraCreator1155Factory is IVersionedContract {
         string memory contractURI,
         string calldata name,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address defaultAdmin,
+        address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address);
 
