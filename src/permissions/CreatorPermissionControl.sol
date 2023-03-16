@@ -4,6 +4,8 @@ pragma solidity 0.8.17;
 import {CreatorPermissionStorageV1} from "./CreatorPermissionStorageV1.sol";
 import {ICreatorPermissionControl} from "../interfaces/ICreatorPermissionControl.sol";
 
+/// Imagine. Mint. Enjoy.
+/// @author @iainnash / @tbtstl
 contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermissionControl {
     /// @notice Check if the user has the given permissions
     /// @dev if multiple permissions are passed in this checks for all the permissions requested

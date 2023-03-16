@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {Enjoy} from "_imagine/mint/Enjoy.sol";
-import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.sol";
-
 /*
+
+
+
 
 
              ░░░░░░░░░░░░░░              
@@ -25,11 +25,17 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
                OURS TRULY,
 
 
+
+
+
+
+
+
+
+
+
  */
 
-/// Imagine. Mint. Enjoy.
-/// @notice Imagine. Mint. Enjoy.
-/// @author @iainnash / @tbtstl
-contract Zora1155Factory is Enjoy, ERC1967Proxy {
-    constructor(address _logic, bytes memory _data) ERC1967Proxy(_logic, _data) {}
+interface Enjoy {
+
 }

@@ -35,7 +35,8 @@ import {SaleCommandHelper} from "../SaleCommandHelper.sol";
  */
 
 /// @title ZoraCreatorMerkleMinterStrategy
-/// notice Mints tokens based on a merkle tree, for presales for example
+/// @notice Mints tokens based on a merkle tree, for presales for example
+/// @author @iainnash / @tbtstl
 contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 

@@ -19,12 +19,14 @@ contract DeployScript is Script {
 
     function run() public {
         address payable deployer = payable(vm.envAddress("DEPLOYER"));
+        uint256 zoraFeeAmount = vm.envUint("ZORA_FEE_AMOUNT");
+        address payable zoraFeeRecipient = payable(vm.envAddress("ZORA_FEE_RECIPIENT"));
         vm.startBroadcast(deployer);
 
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(100, deployer);
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(zoraFeeAmount, zoraFeeRecipient);
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: creatorImpl,
