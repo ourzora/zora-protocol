@@ -34,6 +34,7 @@ import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
 /// @title ZoraCreatorFixedPriceSaleStrategy
 /// @notice A sale strategy for ZoraCreator that allows for fixed price sales over a given time period
+/// @author @iainnash / @tbtstl
 contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     struct SalesConfig {
         /// @notice Unix timestamp for the sale start

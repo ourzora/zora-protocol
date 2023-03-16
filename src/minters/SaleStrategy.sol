@@ -9,6 +9,7 @@ import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "./SaleCommandHelper.sol";
 
 /// @notice Sales Strategy Helper contract template on top of IMinter1155
+/// @author @iainnash / @tbtstl
 abstract contract SaleStrategy is IMinter1155, IVersionedContract, IContractMetadata {
     /// @notice This function resets the sales configuration for a given tokenId and contract.
     /// @dev This function is intentioned to be called directly from the affected sales contract

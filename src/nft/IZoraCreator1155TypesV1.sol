@@ -23,12 +23,11 @@ import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
 
                OURS TRULY,
 
-
-    github.com/ourzora/zora-1155-contracts
-
  */
 
+/// Imagine. Mint. Enjoy.
 /// @notice Interface for types used across the ZoraCreator1155 contract
+/// @author @iainnash / @tbtstl
 interface IZoraCreator1155TypesV1 {
     /// @notice Used to store individual token data
     struct TokenData {
