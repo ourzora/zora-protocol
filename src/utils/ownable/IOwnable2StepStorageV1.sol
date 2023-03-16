@@ -9,5 +9,5 @@ abstract contract IOwnable2StepStorageV1 {
     address internal _pendingOwner;
 
     /// @dev storage gap
-    uint256[50] private ___gap;
+    uint256[50] private __gap;
 }

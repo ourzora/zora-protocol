@@ -13,7 +13,7 @@ import {ZoraCreatorMerkleMinterStrategy} from "../../../src/minters/merkle/ZoraC
 contract ZoraCreatorMerkleMinterStrategyTest is Test {
     ZoraCreator1155Impl internal target;
     ZoraCreatorMerkleMinterStrategy internal merkleMinter;
-    address internal admin = address(0x999);
+    address payable internal admin = payable(address(0x999));
 
     event SaleSet(address indexed sender, uint256 indexed tokenId, ZoraCreatorMerkleMinterStrategy.MerkleSaleSettings merkleSaleSettings);
 
@@ -27,7 +27,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
     }
 
     function test_ContractURI() external {
-        assertEq(merkleMinter.contractURI(), "");
+        assertEq(merkleMinter.contractURI(), "https://github.com/ourzora/zora-creator-contracts/");
     }
 
     function test_ContractName() external {

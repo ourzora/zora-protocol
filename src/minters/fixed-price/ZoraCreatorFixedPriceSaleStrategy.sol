@@ -11,20 +11,28 @@ import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 /// @notice A sale strategy for ZoraCreator that allows for fixed price sales over a given time period
 contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     struct SalesConfig {
+        /// @notice Unix timestamp for the sale start
         uint64 saleStart;
+        /// @notice Unix timestamp for the sale end
         uint64 saleEnd;
+        /// @notice Max tokens that can be minted for an address, 0 if unlimited
         uint64 maxTokensPerAddress;
+        /// @notice Price per token in eth wei
         uint96 pricePerToken;
+        /// @notice Funds recipient (0 if no different funds recipient than the contract global)
         address fundsRecipient;
     }
-    mapping(bytes32 => SalesConfig) internal salesConfigs;
-    mapping(bytes32 => uint256) internal mintedPerAddress;
+
+    mapping(address => mapping(uint256 => SalesConfig)) internal salesConfigs;
+    // target -> tokenId -> settings
+
+    mapping(address => mapping(uint256 => mapping(address => uint256))) internal mintedPerAddress;
+    // target -> tokenId -> minter -> count
 
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 
     function contractURI() external pure override returns (string memory) {
-        // TODO(iain): Add contract URI configuration json for front-end
-        return "";
+        return "https://github.com/ourzora/zora-creator-contracts/";
     }
 
     /// @notice The name of the sale strategy
@@ -58,7 +66,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     ) external returns (ICreatorCommands.CommandSet memory commands) {
         address mintTo = abi.decode(minterArguments, (address));
 
-        SalesConfig memory config = salesConfigs[_getKey(msg.sender, tokenId)];
+        SalesConfig memory config = salesConfigs[msg.sender][tokenId];
 
         // If sales config does not exist this first check will always fail.
 
@@ -79,9 +87,8 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
         // Check minted per address limit
         if (config.maxTokensPerAddress > 0) {
-            bytes32 key = keccak256(abi.encode(msg.sender, tokenId, mintTo));
-            mintedPerAddress[key] += quantity;
-            if (mintedPerAddress[key] > config.maxTokensPerAddress) {
+            mintedPerAddress[msg.sender][tokenId][mintTo] += quantity;
+            if (mintedPerAddress[msg.sender][tokenId][mintTo] > config.maxTokensPerAddress) {
                 revert MintedTooManyForAddress();
             }
         }
@@ -100,7 +107,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
     /// @notice Sets the sale config for a given token
     function setSale(uint256 tokenId, SalesConfig memory salesConfig) external {
-        salesConfigs[_getKey(msg.sender, tokenId)] = salesConfig;
+        salesConfigs[msg.sender][tokenId] = salesConfig;
 
         // Emit event
         emit SaleSet(msg.sender, tokenId, salesConfig);
@@ -108,14 +115,14 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
     /// @notice Deletes the sale config for a given token
     function resetSale(uint256 tokenId) external override {
-        delete salesConfigs[_getKey(msg.sender, tokenId)];
+        delete salesConfigs[msg.sender][tokenId];
 
         // Deleted sale emit event
-        emit SaleSet(msg.sender, tokenId, salesConfigs[_getKey(msg.sender, tokenId)]);
+        emit SaleSet(msg.sender, tokenId, salesConfigs[msg.sender][tokenId]);
     }
 
     /// @notice Returns the sale config for a given token
     function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
-        return salesConfigs[_getKey(tokenContract, tokenId)];
+        return salesConfigs[tokenContract][tokenId];
     }
 }
