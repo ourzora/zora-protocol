@@ -66,7 +66,6 @@ contract ZoraCreator1155Impl is
         __ReentrancyGuard_init();
 
         // Setup uups
-        // TODO this does nothing and costs gas, remove?
         __UUPSUpgradeable_init();
 
         // Setup contract-default token ID
@@ -130,7 +129,7 @@ contract ZoraCreator1155Impl is
     /// @notice Ensure that the next token ID is correct
     /// @dev This reverts if the invariant doesn't match. This is used for multicall token id assumptions
     /// @param lastTokenId The last token ID
-    function invariantLastTokenIdMatches(uint256 lastTokenId) external view {
+    function assumeLastTokenIdMatches(uint256 lastTokenId) external view {
         unchecked {
             if (nextTokenId - 1 != lastTokenId) {
                 revert TokenIdMismatch(lastTokenId, nextTokenId - 1);
@@ -200,7 +199,17 @@ contract ZoraCreator1155Impl is
     /// @param tokenId token id to check available allowed quantity
     /// @param quantity requested to be minted
     modifier canMintQuantity(uint256 tokenId, uint256 quantity) {
-        requireCanMintQuantity(tokenId, quantity);
+        _requireCanMintQuantity(tokenId, quantity);
+        _;
+    }
+
+    /// @notice Only from approved address for burn
+    /// @param from address that the tokens will be burned from, validate that this is msg.sender or that msg.sender is approved
+    modifier onlyFromApprovedForBurn(address from) {
+        if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
+            revert Burn_NotOwnerOrApproved(msg.sender, from);
+        }
+
         _;
     }
 
@@ -208,7 +217,7 @@ contract ZoraCreator1155Impl is
     /// @dev Reverts if the mint exceeds the allowed quantity (or if the token does not exist)
     /// @param tokenId The token ID to check
     /// @param quantity The quantity of tokens to mint to check
-    function requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
+    function _requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
         TokenData memory tokenInformation = tokens[tokenId];
         if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
             revert CannotMintMoreTokens(tokenId, quantity, tokenInformation.totalMinted, tokenInformation.maxSupply);
@@ -265,21 +274,6 @@ contract ZoraCreator1155Impl is
         TokenData memory tokenData = TokenData({uri: _uri, maxSupply: maxSupply, totalMinted: 0});
         tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
-    }
-
-    /// @notice Mint a token to a user as the admin or minter
-    /// @param recipient The recipient of the token
-    /// @param tokenId The token ID to mint
-    /// @param quantity The quantity of tokens to mint
-    /// @param data The data to pass to the onERC1155Received function
-    function adminMint(
-        address recipient,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes memory data
-    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
-        // Call internal admin mint
-        _adminMint(recipient, tokenId, quantity, data);
     }
 
     /// @notice Add a role to a user for a token
@@ -343,6 +337,21 @@ contract ZoraCreator1155Impl is
         _mint(recipient, tokenId, quantity, data);
     }
 
+    /// @notice Mint a token to a user as the admin or minter
+    /// @param recipient The recipient of the token
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param data The data to pass to the onERC1155Received function
+    function adminMint(
+        address recipient,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes memory data
+    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
+        // Call internal admin mint
+        _adminMint(recipient, tokenId, quantity, data);
+    }
+
     /// @notice Batch mint tokens to a user as the admin or minter
     /// @param recipient The recipient of the tokens
     /// @param tokenIds The token IDs to mint
@@ -361,7 +370,7 @@ contract ZoraCreator1155Impl is
                 uint256 checkingTokenId = tokenIds[i];
                 _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
             }
-            requireCanMintQuantity(tokenIds[i], quantities[i]);
+            _requireCanMintQuantity(tokenIds[i], quantities[i]);
         }
         _mintBatch(recipient, tokenIds, quantities, data);
     }
@@ -494,7 +503,7 @@ contract ZoraCreator1155Impl is
     ) internal virtual override {
         (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalMinted, amount);
 
-        requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
+        _requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
 
         super._mint(to, id, amount, data);
         if (supplyRoyaltyAmount > 0) {
@@ -518,22 +527,12 @@ contract ZoraCreator1155Impl is
 
         for (uint256 i = 0; i < ids.length; ++i) {
             (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalMinted, amounts[i]);
-            requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
+            _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
             if (supplyRoyaltyAmount > 0) {
                 super._mint(supplyRoyaltyRecipient, ids[i], supplyRoyaltyAmount, data);
             }
             tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyAmount;
         }
-    }
-
-    /// @notice Only from approved address for burn
-    /// @param from address that the tokens will be burned from, validate that this is msg.sender or that msg.sender is approved
-    modifier onlyFromApprovedForBurn(address from) {
-        if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
-            revert Burn_NotOwnerOrApproved(msg.sender, from);
-        }
-
-        _;
     }
 
     /// @dev Only the current owner is allowed to burn
