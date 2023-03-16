@@ -6,6 +6,10 @@ import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 /// @title SaleCommandHelper
 /// @notice Helper library for creating commands for the sale contract
 library SaleCommandHelper {
+    /// @notice Sets the size of commands and initializes command array. Empty entries are skipped by the resolver.
+    /// @dev Beware: this removes all previous command entries from memory
+    /// @param commandSet command set struct storage.
+    /// @param size size to set for the new struct
     function setSize(ICreatorCommands.CommandSet memory commandSet, uint256 size) internal pure {
         commandSet.commands = new ICreatorCommands.Command[](size);
     }
