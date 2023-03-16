@@ -465,13 +465,10 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the renderer contract with
     /// @param data The data to pass to the renderer contract
     function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
-        IRenderer1155 renderer = getCustomRenderer(tokenId);
-        if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
-            revert Renderer_NotValidRendererContract();
-        }
-        (bool success, ) = address(getCustomRenderer(tokenId)).call(data);
+        // We assume any renderers set are checked for EIP165 signature during write stage. 
+        (bool success, bytes memory why) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
-            revert Renderer_CallFailed();
+            revert Renderer_CallFailed(why);
         }
     }
 

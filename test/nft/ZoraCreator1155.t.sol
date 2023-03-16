@@ -9,6 +9,7 @@ import {IRenderer1155} from "../../src/interfaces/IRenderer1155.sol";
 import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
+import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 
@@ -271,6 +272,24 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
+    function test_adminMintWithSchedule() external {
+        uint256 quantity = 1000;
+        address royaltyRecipient = address(0x3334);
+        // 10% royalty
+        init(10000, 0, royaltyRecipient);
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1000);
+
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, quantity*9/10, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, 900);
+        assertEq(target.balanceOf(recipient, tokenId), quantity*9/10);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId), quantity*1/10);
+    }
+
     function test_adminMint_revertOnlyAdminOrRole() external {
         init();
 
@@ -458,10 +477,34 @@ contract ZoraCreator1155Test is Test {
         target.callRenderer(tokenId, abi.encodeWithSignature("setup(bytes)", "callRender successful"));
         assertEq(target.uri(tokenId), "callRender successful");
 
-        vm.expectRevert(abi.encodeWithSignature("Renderer_CallFailed()"));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, ""));
 
         vm.stopPrank();
+    }
+
+    function test_callSetupRendererFails() external {
+        init();
+
+        SimpleRenderer renderer = SimpleRenderer(address(new SimpleMinter()));
+
+        vm.startPrank(admin);
+        uint256 tokenId = target.setupNewToken("", 1);
+        vm.expectRevert(abi.encodeWithSelector(ICreatorRendererControl.RendererNotValid.selector, address(renderer)));
+        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+    }
+
+    function test_callRendererFails() external {
+        init();
+
+        SimpleRenderer renderer = new SimpleRenderer();
+
+        vm.startPrank(admin);
+        uint256 tokenId = target.setupNewToken("", 1);
+        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
+        target.callRenderer(tokenId, "0xfoobar");
     }
 
     function test_supportsInterface() external {
