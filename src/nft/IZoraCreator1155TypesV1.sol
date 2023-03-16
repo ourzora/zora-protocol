@@ -15,7 +15,10 @@ interface IZoraCreator1155TypesV1 {
     /// @notice Used to store contract-level configuration
     struct ContractConfig {
         address owner;
+        uint96 __gap1;
         address payable fundsRecipient;
+        uint96 __gap2;
         ITransferHookReceiver transferHook;
+        uint96 __gap3;
     }
 }
