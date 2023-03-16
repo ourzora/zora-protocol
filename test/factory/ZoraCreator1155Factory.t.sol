@@ -44,7 +44,7 @@ contract ZoraCreator1155FactoryTest is Test {
         uint32 royaltyBPS,
         uint32 royaltyMintSchedule,
         address royaltyRecipient,
-        address admin
+        address payable admin
     ) external {
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);

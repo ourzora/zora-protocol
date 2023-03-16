@@ -53,7 +53,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         string memory contractURI,
         string calldata name,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address defaultAdmin,
+        address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
         IZoraCreator1155 newContract = IZoraCreator1155(address(new Zora1155(address(implementation))));
