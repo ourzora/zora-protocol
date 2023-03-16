@@ -169,9 +169,9 @@ contract ZoraCreator1155Test is Test {
         target.setTokenMetadataRenderer(tokenId, singletonRenderer, "singleton renderer");
         vm.stopPrank();
 
-        assertEq(address(target.getCustomRenderer(0).renderer), address(contractRenderer));
+        assertEq(address(target.getCustomRenderer(0)), address(contractRenderer));
         assertEq(target.contractURI(), "contract renderer");
-        assertEq(address(target.getCustomRenderer(tokenId).renderer), address(singletonRenderer));
+        assertEq(address(target.getCustomRenderer(tokenId)), address(singletonRenderer));
         assertEq(target.uri(tokenId), "singleton renderer");
     }
 
