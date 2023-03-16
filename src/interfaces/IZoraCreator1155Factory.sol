@@ -5,6 +5,8 @@ import {ICreatorRoyaltiesControl} from "./ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "./IMinter1155.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 
+/// @notice Factory for 1155 contracts
+/// @author @iainnash / @tbtstl
 interface IZoraCreator1155Factory is IVersionedContract {
     error Constructor_ImplCannotBeZero();
 
