@@ -14,7 +14,7 @@ interface ICreatorCommands {
         MINT
     }
 
-    /// @notice This command is for 
+    /// @notice This command is for
     struct Command {
         // Method for operation
         CreatorActions method;

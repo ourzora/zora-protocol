@@ -42,20 +42,11 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
     }
 
-    function init(
-        uint32 royaltySchedule,
-        uint32 royaltyBps,
-        address royaltyRecipient
-    ) internal {
+    function init(uint32 royaltySchedule, uint32 royaltyBps, address royaltyRecipient) internal {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
-    function test_initialize(
-        uint32 royaltySchedule,
-        uint32 royaltyBPS,
-        address royaltyRecipient,
-        address defaultAdmin
-    ) external {
+    function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -91,12 +82,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.maxSupply, maxSupply);
     }
 
-    function test_initialize_revertAlreadyInitialized(
-        uint32 royaltySchedule,
-        uint32 royaltyBPS,
-        address royaltyRecipient,
-        address defaultAdmin
-    ) external {
+    function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -198,11 +184,7 @@ contract ZoraCreator1155Test is Test {
         target.setTokenMetadataRenderer(0, IRenderer1155(address(0)), "");
     }
 
-    function test_addPermission(
-        uint256 tokenId,
-        uint256 permission,
-        address user
-    ) external {
+    function test_addPermission(uint256 tokenId, uint256 permission, address user) external {
         vm.assume(permission != 0);
         init();
 
@@ -224,11 +206,7 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, recipient, adminRole);
     }
 
-    function test_removePermission(
-        uint256 tokenId,
-        uint256 permission,
-        address user
-    ) external {
+    function test_removePermission(uint256 tokenId, uint256 permission, address user) external {
         vm.assume(permission != 0);
         init();
 
@@ -585,7 +563,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.supportsInterface(interfaceId), true);
     }
 
-    function test_burn() external {
+    function test_burnBatch() external {
         init();
 
         vm.prank(admin);
@@ -597,12 +575,17 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(admin);
         target.mint(minter, tokenId, 5, abi.encode(recipient));
+
+        uint256[] memory burnBatchIds = new uint256[](1);
+        uint256[] memory burnBatchValues = new uint256[](1);
+        burnBatchIds[0] = tokenId;
+        burnBatchValues[0] = 3;
 
         vm.prank(recipient);
-        target.burn(recipient, tokenId, 3);
+        target.burnBatch(recipient, burnBatchIds, burnBatchValues);
     }
 
-    function test_burn_user_not_approved_fails() external {
+    function test_burnBatch_user_not_approved_fails() external {
         init();
 
         vm.prank(admin);
@@ -615,9 +598,15 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.mint(minter, tokenId, 5, abi.encode(recipient));
 
-        vm.prank(address(0x123));
+        uint256[] memory burnBatchIds = new uint256[](1);
+        uint256[] memory burnBatchValues = new uint256[](1);
+        burnBatchIds[0] = tokenId;
+        burnBatchValues[0] = 3;
+
         vm.expectRevert();
-        target.burn(recipient, tokenId, 3);
+
+        vm.prank(address(0x123));
+        target.burnBatch(recipient, burnBatchIds, burnBatchValues);
     }
 
     function test_withdrawAll() external {
