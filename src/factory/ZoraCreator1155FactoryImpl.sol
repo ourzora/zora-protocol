@@ -59,8 +59,6 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     ) external returns (address) {
         IZoraCreator1155 newContract = IZoraCreator1155(address(new Zora1155(address(implementation))));
 
-        newContract.initialize(contractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
-
         emit SetupNewContract({
             newContract: address(newContract),
             creator: msg.sender,
@@ -69,6 +67,8 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
             name: name,
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration
         });
+
+        newContract.initialize(contractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
         return address(newContract);
     }
