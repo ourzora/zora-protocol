@@ -17,10 +17,7 @@ abstract contract CreatorRendererControl is CreatorRendererStorageV1, SharedBase
         if (address(0) == address(0)) {
             delete customRenderers[tokenId];
         } else {
-            customRenderers[tokenId] = CustomRenderer({
-                renderer: renderer,
-                supportsTransferHook: renderer.supportsInterface(type(ITransferHookReceiver).interfaceId)
-            });
+            customRenderers[tokenId] = renderer;
 
             if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
                 revert RendererNotValid(address(renderer));
@@ -34,14 +31,14 @@ abstract contract CreatorRendererControl is CreatorRendererStorageV1, SharedBase
     /// @notice Return the renderer for a given token
     /// @dev Returns address 0 for no results
     /// @param tokenId The token to get the renderer for
-    function getCustomRenderer(uint256 tokenId) public view returns (CustomRenderer memory customRenderer) {
+    function getCustomRenderer(uint256 tokenId) public view returns (IRenderer1155 customRenderer) {
         customRenderer = customRenderers[tokenId];
-        if (address(customRenderer.renderer) == address(0)) {
+        if (address(customRenderer) == address(0)) {
             customRenderer = customRenderers[CONTRACT_BASE_ID];
         }
     }
 
     function _render(uint256 tokenId) internal view returns (string memory) {
-        return getCustomRenderer(tokenId).renderer.uri(tokenId);
+        return getCustomRenderer(tokenId).uri(tokenId);
     }
 }

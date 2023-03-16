@@ -425,7 +425,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the renderer contract with
     /// @param data The data to pass to the renderer contract
     function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
-        (bool success, ) = address(getCustomRenderer(tokenId).renderer).call(data);
+        (bool success, ) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
             revert Metadata_CallFailed();
         }
@@ -509,6 +509,19 @@ contract ZoraCreator1155Impl is
         _burnBatch(from, tokenIds, amounts);
     }
 
+    // Transfer Hook Feature Disabled for launch to save gas / for further review
+
+    // function setTransferHook(ITransferHookReceiver transferHook) external onlyAdmin(CONTRACT_BASE_ID) {
+    //     if (address(transferHook) != address(0)) {
+    //         if (!transferHook.supportsInterface(type(ITransferHookReceiver).interfaceId)) {
+    //             revert Config_TransferHookNotSupported(address(transferHook));
+    //         }
+    //     }
+
+    //     config.transferHook = transferHook;
+    //     emit ConfigUpdated(msg.sender, ConfigUpdate.TRANSFER_HOOK, config);
+    // }
+
     /// @notice Hook before token transfer that checks for a transfer hook integration
     /// @param operator operator moving the tokens 
     /// @param from from address
@@ -516,20 +529,20 @@ contract ZoraCreator1155Impl is
     /// @param ids token ids to move 
     /// @param amounts amounts of tokens
     /// @param data data of tokens
-    function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal override {
-        super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
-        if (address(config.transferHook) != address(0)) {
-            config.transferHook.onTokenTransferBatch({
-                target: address(this), 
-                operator: operator, 
-                from: from, 
-                to: to, 
-                ids: ids,
-                amounts: amounts,
-                data: data
-            });
-        }
-    }
+    // function _beforeTokenTransfer(address operator, address from, address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal override {
+    //     super._beforeTokenTransfer(operator, from, to, ids, amounts, data);
+    //     if (address(config.transferHook) != address(0)) {
+    //         config.transferHook.onTokenTransferBatch({
+    //             target: address(this), 
+    //             operator: operator, 
+    //             from: from, 
+    //             to: to, 
+    //             ids: ids,
+    //             amounts: amounts,
+    //             data: data
+    //         });
+    //     }
+    // }
 
     /// @notice Returns the URI for the contract
     function contractURI() external view returns (string memory) {
@@ -545,15 +558,9 @@ contract ZoraCreator1155Impl is
         return _render(tokenId);
     }
 
-    function setFundsRecipient(address payable fundsRecipient) external onlyAdmin(CONTRACT_BASE_ID) {
-        _setFundsRecipient(fundsRecipient);
-    }
 
-    function _setFundsRecipient(address payable fundsRecipient) internal {
-        config.fundsRecipient = fundsRecipient;
-        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
-    }
-
+    /// @notice Internal setter for contract admin with no access checks 
+    /// @param newOwner new owner address
     function _setOwner(address newOwner) internal {
         address lastOwner = config.owner;
         config.owner = newOwner;
@@ -562,15 +569,17 @@ contract ZoraCreator1155Impl is
         emit ConfigUpdated(msg.sender, ConfigUpdate.OWNER, config);
     }
 
-    function setTransferHook(ITransferHookReceiver transferHook) external onlyAdmin(CONTRACT_BASE_ID) {
-        if (address(transferHook) != address(0)) {
-            if (!transferHook.supportsInterface(type(ITransferHookReceiver).interfaceId)) {
-                revert Config_TransferHookNotSupported(address(transferHook));
-            }
-        }
+    /// @notice Set funds recipient address, only called by an admin for the whole contract 
+    /// @param fundsRecipient new funds recipient address
+    function setFundsRecipient(address payable fundsRecipient) external onlyAdmin(CONTRACT_BASE_ID) {
+        _setFundsRecipient(fundsRecipient);
+    }
 
-        config.transferHook = transferHook;
-        emit ConfigUpdated(msg.sender, ConfigUpdate.TRANSFER_HOOK, config);
+    /// @notice Internal no-checks set funds recipient address
+    /// @param fundsRecipient new funds recipient address
+    function _setFundsRecipient(address payable fundsRecipient) internal {
+        config.fundsRecipient = fundsRecipient;
+        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
     }
 
     /// @notice Withdraws all ETH from the contract to the message sender

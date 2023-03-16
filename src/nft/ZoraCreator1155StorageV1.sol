@@ -17,5 +17,5 @@ contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1, IOwnable {
     /// @notice Global contract configuration
     ContractConfig config;
 
-    uint256[50] private ___gap;
+    uint256[50] private __gap;
 }

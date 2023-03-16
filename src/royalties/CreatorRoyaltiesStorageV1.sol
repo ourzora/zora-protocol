@@ -6,5 +6,5 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 abstract contract CreatorRoyaltiesStorageV1 is ICreatorRoyaltiesControl {
     mapping(uint256 => RoyaltyConfiguration) public royalties;
 
-    uint256[50] private ___gap;
+    uint256[50] private __gap;
 }
