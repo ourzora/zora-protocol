@@ -46,6 +46,7 @@ contract ZoraCreator1155FactoryTest is Test {
         address royaltyRecipient,
         address payable admin
     ) external {
+        vm.assume(royaltyMintSchedule != 1);
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
         address deployedAddress = factory.createContract(

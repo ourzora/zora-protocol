@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import {CreatorPermissionStorageV1} from "./CreatorPermissionStorageV1.sol";
 import {ICreatorPermissionControl} from "../interfaces/ICreatorPermissionControl.sol";
 
-abstract contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermissionControl {
+contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermissionControl {
     /// @notice Check if the user has the given permissions
     /// @dev if multiple permissions are passed in this checks for all the permissions requested
     /// @return true or false if all of the passed in permissions apply
