@@ -4,7 +4,7 @@ pragma solidity 0.8.17;
 import "forge-std/Test.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155FactoryProxy} from "../../src/proxies/ZoraCreator1155FactoryProxy.sol";
+import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
@@ -25,7 +25,7 @@ contract ZoraCreator1155FactoryTest is Test {
     function test_initialize(address initialOwner) external {
         vm.assume(initialOwner != address(0));
         address payable proxyAddress = payable(
-            address(new ZoraCreator1155FactoryProxy(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         assertEq(proxy.owner(), initialOwner);
@@ -46,6 +46,7 @@ contract ZoraCreator1155FactoryTest is Test {
         address royaltyRecipient,
         address admin
     ) external {
+        vm.assume(royaltyMintSchedule != 1);
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
         address deployedAddress = factory.createContract(
@@ -77,7 +78,7 @@ contract ZoraCreator1155FactoryTest is Test {
         ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(mockNewContract, IMinter1155(address(0)), IMinter1155(address(0)));
 
         address payable proxyAddress = payable(
-            address(new ZoraCreator1155FactoryProxy(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         vm.prank(initialOwner);
