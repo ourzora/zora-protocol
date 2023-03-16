@@ -16,15 +16,15 @@ contract SimpleMinter is IMinter1155 {
     }
 
     function requestMint(
-        address sender,
+        address,
         uint256 tokenId,
         uint256 quantity,
         uint256,
         bytes calldata minterArguments
-    ) external returns (ICreatorCommands.CommandSet memory commands) {
+    ) external pure returns (ICreatorCommands.CommandSet memory commands) {
         address recipient = abi.decode(minterArguments, (address));
-        ZoraCreator1155Impl(sender).adminMint(recipient, tokenId, quantity, minterArguments);
-        commands.setSize(0);
+        commands.setSize(1);
+        commands.mint(recipient, tokenId, quantity);
     }
 
     function setNum(uint256 _num) external {
