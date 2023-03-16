@@ -7,9 +7,9 @@ interface ICreatorRendererControl {
     struct CustomRenderer {
         bool supportsTransferHook;
         IRenderer1155 renderer;
-    };
+    }
 
-    function getCustomRenderer(uint256 tokenId) external view returns (IRenderer1155 renderer);
+    function getCustomRenderer(uint256 tokenId) external view returns (CustomRenderer memory customRenderer);
 
     error NoRendererForToken(uint256 tokenId);
     error RendererNotValid(address renderer);

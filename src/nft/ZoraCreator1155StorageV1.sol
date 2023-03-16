@@ -14,5 +14,8 @@ contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1, IOwnable {
     /// @notice Owner address proxy for 3rd party queries
     address public owner;
 
+    /// @notice Global contract configuration
+    ContractConfig config;
+
     uint256[50] private ___gap;
 }

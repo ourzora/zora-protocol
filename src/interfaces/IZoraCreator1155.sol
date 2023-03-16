@@ -16,6 +16,14 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
 
     function PERMISSION_BIT_METADATA() external returns (uint256);
 
+    /// @notice Used to label the configuration update type 
+    enum ConfigUpdate {
+        OWNER,
+        FUNDS_RECIPIENT,
+        TRANSFER_HOOK
+    }
+    event ConfigUpdated(address indexed updater, ConfigUpdate indexed updateType, ContractConfig newConfig);
+
     event UpdatedToken(address indexed from, uint256 indexed tokenId, TokenData tokenData);
     event SetupNewToken(uint256 indexed tokenId, address indexed sender, string _uri, uint256 maxSupply);
 
@@ -26,6 +34,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     error TokenIdMismatch(uint256 expected, uint256 actual);
     error NotAllowedContractBaseIDUpdate();
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
+
+    error Config_TransferHookNotSupported(address proposedAddress);
 
     error Mint_InsolventSaleTransfer();
     error Mint_ValueTransferFail();
@@ -48,7 +58,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     function initialize(
         string memory contractURI,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address defaultAdmin,
+        address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external;
 
@@ -58,24 +68,55 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     /// @param tokenId tokenId to mint, set to 0 for new tokenId
     /// @param quantity to mint
     /// @param minterArguments calldata for the minter contracts
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
+    function mint(
+        IMinter1155 minter,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes calldata minterArguments
+    ) external payable;
 
-    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
+    function adminMint(
+        address recipient,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes memory data
+    ) external;
 
-    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external;
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) external;
 
-    function burn(address user, uint256 tokenId, uint256 amount) external;
+    function burn(
+        address user,
+        uint256 tokenId,
+        uint256 amount
+    ) external;
 
-    function burnBatch(address user, uint256[] calldata tokenIds, uint256[] calldata amounts) external;
+    function burnBatch(
+        address user,
+        uint256[] calldata tokenIds,
+        uint256[] calldata amounts
+    ) external;
 
     /// @notice Contract call to setupNewToken
     /// @param _uri URI for the token
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
 
-    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer, bytes calldata setupData) external;
+    function setTokenMetadataRenderer(
+        uint256 tokenId,
+        IRenderer1155 renderer,
+        bytes calldata setupData
+    ) external;
 
     function contractURI() external view returns (string memory);
 
-    function isAdminOrRole(address user, uint256 tokenId, uint256 role) external view returns (bool);
+    function isAdminOrRole(
+        address user,
+        uint256 tokenId,
+        uint256 role
+    ) external view returns (bool);
 }

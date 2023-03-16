@@ -17,7 +17,7 @@ contract DeployScript is Script {
     function setUp() public {}
 
     function run() public {
-        address deployer = vm.envAddress("DEPLOYER");
+        address payable deployer = payable(vm.envAddress("DEPLOYER"));
         // vm.startBroadcast(deployer);
 
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
