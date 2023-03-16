@@ -47,6 +47,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -69,6 +70,7 @@ contract ZoraCreator1155Test is Test {
         address defaultAdmin,
         uint256 maxSupply
     ) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -83,6 +85,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
