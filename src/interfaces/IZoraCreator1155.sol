@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
-interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
+/// @notice Main interface for the ZoraCreator1155 contract
+interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IERC1155MetadataURIUpgradeable {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
     function PERMISSION_BIT_MINTER() external returns (uint256);
@@ -18,6 +20,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
 
     event UpdatedToken(address indexed from, uint256 indexed tokenId, TokenData tokenData);
     event SetupNewToken(uint256 indexed tokenId, address indexed sender, string _uri, uint256 maxSupply);
+
+    function setOwner(address newOwner) external;
 
     event ContractRendererUpdated(IRenderer1155 renderer);
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
@@ -37,13 +41,14 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     error NewOwnerNeedsToBeAdmin();
 
     error Sale_CallFailed();
-    error Metadata_CallFailed();
+
+    error Renderer_CallFailed(bytes reason);
+    error Renderer_NotValidRendererContract();
 
     error ETHWithdrawFailed(address recipient, uint256 amount);
     error FundsWithdrawInsolvent(uint256 amount, uint256 contractValue);
 
-    // TODO: maybe add more context
-    error CannotMintMoreTokens(uint256 tokenId);
+    error CannotMintMoreTokens(uint256 tokenId, uint256 quantity, uint256 totalMinted, uint256 maxSupply);
 
     function initialize(
         string memory contractURI,
@@ -73,9 +78,27 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory _uri, uint256 maxSupply) external returns (uint256 tokenId);
 
+    function updateTokenURI(uint256 tokenId, string memory _newURI) external;
+
+    function updateContractMetadata(string memory _newURI, string memory _newName) external;
+
     function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer, bytes calldata setupData) external;
 
     function contractURI() external view returns (string memory);
 
+    function assumeLastTokenIdMatches(uint256 tokenId) external;
+
+    function updateRoyaltiesForToken(uint256 tokenId, ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfiguration) external;
+
+    function addPermission(uint256 tokenId, address user, uint256 permissionBits) external;
+
+    function removePermission(uint256 tokenId, address user, uint256 permissionBits) external;
+
     function isAdminOrRole(address user, uint256 tokenId, uint256 role) external view returns (bool);
+
+    function getTokenInfo(uint256 tokenId) external view returns (TokenData memory);
+
+    function callRenderer(uint256 tokenId, bytes memory data) external;
+
+    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external;
 }
