@@ -127,14 +127,6 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
 
     // Supports interface is a public getter. Skipping here.
 
-    function test_openAccessFails_burn() public {
-        vm.prank(admin);
-        target.adminMint(address(0x123), 1, 10, "");
-
-        vm.expectRevert();
-        target.burn(address(0), 1, 1);
-    }
-
     function test_openAccessFails_burnBatch() public {
         vm.prank(admin);
         target.adminMint(address(0x123), 1, 10, "");

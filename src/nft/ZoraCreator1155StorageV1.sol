@@ -16,9 +16,6 @@ contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1 {
     /// @notice Global contract configuration
     ContractConfig config;
 
-    /// @notice Default funds recipient address
-    address public fundsRecipient;
-
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
      * variables without shifting down storage in the inheritance chain.

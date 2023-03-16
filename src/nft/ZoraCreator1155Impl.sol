@@ -493,21 +493,16 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    /// @dev Only the current owner is allowed to burn
-    /// @notice Burns a token
-    /// @param from the user to burn from
-    /// @param tokenId The token ID to burn
-    /// @param amount The amount of tokens to burn
-    function burn(address from, uint256 tokenId, uint256 amount) external onlyFromApprovedForBurn(from) {
-        _burn(from, tokenId, amount);
-    }
-
     /// @notice Burns a batch of tokens
     /// @dev Only the current owner is allowed to burn
     /// @param from the user to burn from
     /// @param tokenIds The token ID to burn
     /// @param amounts The amount of tokens to burn
-    function burnBatch(address from, uint256[] calldata tokenIds, uint256[] calldata amounts) external onlyFromApprovedForBurn(from) {
+    function burnBatch(address from, uint256[] calldata tokenIds, uint256[] calldata amounts) external {
+        if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
+            revert Burn_NotOwnerOrApproved(msg.sender, from);
+        }
+
         _burnBatch(from, tokenIds, amounts);
     }
 
@@ -571,10 +566,11 @@ contract ZoraCreator1155Impl is
         emit ConfigUpdated(msg.sender, ConfigUpdate.OWNER, config);
     }
 
-    /// @notice Set funds recipient address, only called by an admin for the whole contract
+    /// @notice Internal no-checks set funds recipient address
     /// @param fundsRecipient new funds recipient address
-    function setFundsRecipient(address payable fundsRecipient) external onlyAdmin(CONTRACT_BASE_ID) {
-        _setFundsRecipient(fundsRecipient);
+    function setFundsRecipient(address payable fundsRecipient) external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+        config.fundsRecipient = fundsRecipient;
+        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
     }
 
     /// @notice Internal no-checks set funds recipient address
