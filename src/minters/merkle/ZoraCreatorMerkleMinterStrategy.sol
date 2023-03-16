@@ -13,18 +13,29 @@ import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 /// notice Mints tokens based on a merkle tree, for presales for example
 contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
+
+    /// @notice General merkle sale settings
     struct MerkleSaleSettings {
+        /// @notice Unix timestamp for the sale start
         uint64 presaleStart;
+        /// @notice Unix timestamp for the sale end
         uint64 presaleEnd;
+        /// @notice Funds recipient (0 if no different funds recipient than the contract global)
         address fundsRecipient;
+        /// @notice Merkle root for 
         bytes32 merkleRoot;
     }
 
+    /// @notice Event for sale configuration updated
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, MerkleSaleSettings merkleSaleSettings);
 
-    mapping(bytes32 => MerkleSaleSettings) public allowedMerkles;
+    /// @notice Storage for allowed merkle settings for the sales configuration
+    mapping(address => mapping(uint256 => MerkleSaleSettings)) public allowedMerkles;
+    // target -> tokenId -> settings
 
-    mapping(bytes32 => uint256) public mintedPerAddress;
+    /// @notice Storage for the number minted per address
+    mapping(address => mapping(uint256 => mapping(address => uint256))) public mintedPerAddress;
+    // target -> tokenId -> minter -> count
 
     error SaleEnded();
     error SaleHasNotStarted();
@@ -32,9 +43,9 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     error WrongValueSent();
     error InvalidMerkleProof(address mintTo, bytes32[] merkleProof, bytes32 merkleRoot);
 
+    /// @notice ContractURI for contract information with the strategy
     function contractURI() external pure override returns (string memory) {
-        // TODO(iain): Add contract URI configuration json for front-end
-        return "";
+        return "https://github.com/ourzora/zora-creator-contracts/";
     }
 
     /// @notice The name of the sale strategy
@@ -66,7 +77,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
             (address, uint256, uint256, bytes32[])
         );
 
-        MerkleSaleSettings memory config = allowedMerkles[_getKey(msg.sender, tokenId)];
+        MerkleSaleSettings memory config = allowedMerkles[msg.sender][tokenId];
 
         // Check sale end
         if (block.timestamp > config.presaleEnd) {
@@ -111,7 +122,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
     /// @notice Sets the sale configuration for a token
     function setSale(uint256 tokenId, MerkleSaleSettings memory merkleSaleSettings) external {
-        allowedMerkles[_getKey(msg.sender, tokenId)] = merkleSaleSettings;
+        allowedMerkles[msg.sender][tokenId] = merkleSaleSettings;
 
         // Emit event for new sale
         emit SaleSet(msg.sender, tokenId, merkleSaleSettings);
@@ -119,14 +130,14 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
     /// @notice Resets the sale configuration for a token
     function resetSale(uint256 tokenId) external override {
-        delete allowedMerkles[_getKey(msg.sender, tokenId)];
+        delete allowedMerkles[msg.sender][tokenId];
 
         // Emit event with empty sale
-        emit SaleSet(msg.sender, tokenId, allowedMerkles[_getKey(msg.sender, tokenId)]);
+        emit SaleSet(msg.sender, tokenId, allowedMerkles[msg.sender][tokenId]);
     }
 
     /// @notice Gets the sale configuration for a token
     function sale(address tokenContract, uint256 tokenId) external view returns (MerkleSaleSettings memory) {
-        return allowedMerkles[_getKey(tokenContract, tokenId)];
+        return allowedMerkles[tokenContract][tokenId]];
     }
 }
