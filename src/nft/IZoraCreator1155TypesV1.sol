@@ -3,9 +3,9 @@ pragma solidity 0.8.17;
 
 import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
 
-/// @notice Creator Base Storage Types V1
+/// @notice Interface for types used across the ZoraCreator1155 contract
 interface IZoraCreator1155TypesV1 {
-    /// @notice Used to store each individual token data
+    /// @notice Used to store individual token data
     struct TokenData {
         string uri;
         uint256 maxSupply;

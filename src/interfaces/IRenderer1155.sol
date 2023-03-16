@@ -19,4 +19,5 @@ interface IRenderer1155 is IERC165Upgradeable {
     /// @dev contract target is assumed to be msg.sender
     function setup(bytes memory initData) external;
 
+    // IERC165 type required – set in base helper
 }
