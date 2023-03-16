@@ -12,8 +12,8 @@ import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
-import {ZoraCreatorBurnToRedeemMinterStrategy} from "../../../src/minters/token-redemption/ZoraCreatorBurnToRedeemMinterStrategy.sol";
-import {ZoraCreatorBurnToRedeemMinterFactoryImpl} from "../../../src/minters/token-redemption/ZoraCreatorBurnToRedeemMinterFactoryImpl.sol";
+import {ZoraCreatorBurnToRedeemMinterStrategy} from "../../../src/minters/burn-to-redeem/ZoraCreatorBurnToRedeemMinterStrategy.sol";
+import {ZoraCreatorBurnToRedeemMinterFactoryImpl} from "../../../src/minters/burn-to-redeem/ZoraCreatorBurnToRedeemMinterFactoryImpl.sol";
 import {ZoraBurnToRedeemMinterFactory} from "../../../src/proxies/ZoraBurnToRedeemMinterFactory.sol";
 
 contract ZoraCreatorBurnToRedeemMinterFactoryTest is Test {

@@ -13,7 +13,8 @@ import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
-
+import {ZoraCreatorBurnToRedeemMinterFactoryImpl} from "../src/minters/burn-to-redeem/ZoraCreatorBurnToRedeemMinterFactoryImpl.sol";
+import {ZoraBurnToRedeemMinterFactory} from "../src/proxies/ZoraBurnToRedeemMinterFactory.sol";
 
 contract DeployScript is Script {
     function setUp() public {}
@@ -21,6 +22,9 @@ contract DeployScript is Script {
     function run() public {
         address deployer = vm.envAddress("DEPLOYER");
         vm.startBroadcast(deployer);
+
+        ZoraCreatorBurnToRedeemMinterFactoryImpl minterFactoryImpl = new ZoraCreatorBurnToRedeemMinterFactoryImpl();
+        ZoraBurnToRedeemMinterFactory minterFactoryProxy = new ZoraBurnToRedeemMinterFactory(address(minterFactoryImpl), "");
 
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();

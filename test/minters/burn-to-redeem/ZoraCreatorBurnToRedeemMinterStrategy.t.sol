@@ -12,7 +12,7 @@ import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
-import {ZoraCreatorBurnToRedeemMinterStrategy} from "../../../src/minters/token-redemption/ZoraCreatorBurnToRedeemMinterStrategy.sol";
+import {ZoraCreatorBurnToRedeemMinterStrategy} from "../../../src/minters/burn-to-redeem/ZoraCreatorBurnToRedeemMinterStrategy.sol";
 
 contract ZoraCreatorBurnToRedeemMinterStrategyTest is Test {
     ZoraCreator1155Impl internal target;
