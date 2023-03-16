@@ -16,7 +16,7 @@ import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 contract ZoraCreator1155Test is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
-    address internal admin;
+    address payable internal admin;
     address internal recipient;
     uint256 internal adminRole;
     uint256 internal minterRole;
@@ -26,7 +26,7 @@ contract ZoraCreator1155Test is Test {
     function setUp() external {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
-        admin = vm.addr(0x1);
+        admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
         adminRole = target.PERMISSION_BIT_ADMIN();
         minterRole = target.PERMISSION_BIT_MINTER();
@@ -46,7 +46,7 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
-    function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin) external {
         vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
@@ -55,8 +55,7 @@ contract ZoraCreator1155Test is Test {
         );
         target.initialize("test", config, defaultAdmin, _emptyInitData());
 
-        // TODO: test URI when metadata functions are complete
-        // assertEq(target.uri(0), "test");
+        assertEq(target.contractURI(), "test");
         (uint32 fetchedSchedule, uint256 fetchedBps, address fetchedRecipient) = target.royalties(0);
         assertEq(fetchedSchedule, royaltySchedule);
         assertEq(fetchedBps, royaltyBPS);
@@ -67,7 +66,7 @@ contract ZoraCreator1155Test is Test {
         uint32 royaltySchedule,
         uint32 royaltyBPS,
         address royaltyRecipient,
-        address defaultAdmin,
+        address payable defaultAdmin,
         uint256 maxSupply
     ) external {
         vm.assume(royaltySchedule != 1);
@@ -84,7 +83,12 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.maxSupply, maxSupply);
     }
 
-    function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_initialize_revertAlreadyInitialized(
+        uint32 royaltySchedule,
+        uint32 royaltyBPS,
+        address royaltyRecipient,
+        address payable defaultAdmin
+    ) external {
         vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
@@ -100,7 +104,7 @@ contract ZoraCreator1155Test is Test {
     function test_contractVersion() external {
         init();
 
-        assertEq(target.contractVersion(), "0.0.6");
+        assertEq(target.contractVersion(), "0.0.8");
     }
 
     function test_assumeLastTokenIdMatches() external {
@@ -166,10 +170,11 @@ contract ZoraCreator1155Test is Test {
         target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
         SimpleRenderer contractRenderer = new SimpleRenderer();
+        contractRenderer.setContractURI("contract renderer");
         SimpleRenderer singletonRenderer = new SimpleRenderer();
 
         vm.startPrank(admin);
-        target.setTokenMetadataRenderer(0, contractRenderer, "contract renderer");
+        target.setTokenMetadataRenderer(0, contractRenderer, "fallback renderer");
         uint256 tokenId = target.setupNewToken("", 1);
         target.setTokenMetadataRenderer(tokenId, singletonRenderer, "singleton renderer");
         vm.stopPrank();
@@ -178,6 +183,11 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.contractURI(), "contract renderer");
         assertEq(address(target.getCustomRenderer(tokenId)), address(singletonRenderer));
         assertEq(target.uri(tokenId), "singleton renderer");
+
+        vm.prank(admin);
+        target.setTokenMetadataRenderer(tokenId, IRenderer1155(address(0)), "");
+        assertEq(address(target.getCustomRenderer(tokenId)), address(contractRenderer));
+        assertEq(target.uri(tokenId), "fallback renderer");
     }
 
     function test_setTokenMetadataRenderer_revertOnlyAdminOrRole() external {
@@ -658,7 +668,7 @@ contract ZoraCreator1155Test is Test {
         target.mint{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
 
         vm.prank(admin);
-        target.withdrawAll();
+        target.withdraw();
 
         assertEq(admin.balance, 1 ether);
     }
@@ -674,6 +684,9 @@ contract ZoraCreator1155Test is Test {
         SimpleMinter(payable(minter)).setReceiveETH(false);
 
         vm.prank(admin);
+        target.setFundsRecipient(payable(minter));
+
+        vm.prank(admin);
         target.addPermission(tokenId, address(minter), minterRole);
 
         vm.prank(admin);
@@ -685,72 +698,6 @@ contract ZoraCreator1155Test is Test {
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
         vm.prank(address(minter));
-        target.withdrawAll();
-    }
-
-    function test_withdrawCustom(uint256 purchaseAmount, uint256 withdrawAmount) external {
-        vm.assume(withdrawAmount <= purchaseAmount);
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), minterRole);
-
-        vm.deal(admin, purchaseAmount);
-        vm.prank(admin);
-        target.mint{value: purchaseAmount}(minter, tokenId, 1000, abi.encode(recipient));
-
-        console.log("recipient balance before ", recipient.balance);
-        vm.prank(admin);
-        target.withdrawCustom(recipient, withdrawAmount);
-        console.log("recipient balance after ", recipient.balance);
-
-        // a withdraw amount of 0 is treated as a withdrawAll()
-        assertEq(recipient.balance, withdrawAmount == 0 ? purchaseAmount : withdrawAmount);
-        assertEq(address(target).balance, withdrawAmount == 0 ? 0 : purchaseAmount - withdrawAmount);
-    }
-
-    function test_withdrawCustom_revertFundsWithdrawInsolvent(uint256 purchaseAmount, uint256 withdrawAmount) external {
-        vm.assume(withdrawAmount > purchaseAmount);
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), minterRole);
-
-        vm.deal(admin, purchaseAmount);
-        vm.prank(admin);
-        target.mint{value: purchaseAmount}(minter, tokenId, 1000, abi.encode(recipient));
-
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.FundsWithdrawInsolvent.selector, withdrawAmount, purchaseAmount));
-        vm.prank(admin);
-        target.withdrawCustom(address(minter), withdrawAmount);
-    }
-
-    function test_withdrawCustom_revertETHWithdrawFailed() external {
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
-
-        SimpleMinter minter = new SimpleMinter();
-        minter.setReceiveETH(false);
-
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), minterRole);
-
-        vm.deal(admin, 1 ether);
-        vm.prank(admin);
-        target.mint{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
-
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
-        vm.prank(admin);
-        target.withdrawCustom(address(minter), 1 ether);
+        target.withdraw();
     }
 }

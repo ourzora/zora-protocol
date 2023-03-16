@@ -13,7 +13,7 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../../../src/minters/fixed-pric
 contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
     ZoraCreator1155Impl internal target;
     ZoraCreatorFixedPriceSaleStrategy internal fixedPrice;
-    address internal admin = address(0x999);
+    address payable internal admin = payable(address(0x999));
 
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, ZoraCreatorFixedPriceSaleStrategy.SalesConfig salesConfig);
 

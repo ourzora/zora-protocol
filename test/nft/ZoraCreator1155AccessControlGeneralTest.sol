@@ -17,12 +17,12 @@ import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 contract ZoraCreator1155AccessControlGeneralTest is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
-    address admin;
+    address payable admin;
 
     function setUp() external {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
-        admin = address(0x9);
+        admin = payable(address(0x9));
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
         vm.prank(admin);
         target.setupNewToken("test_uri", 100);
@@ -142,17 +142,10 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
 
     // contract URI is a public getter
 
-    function test_openAccessFails_withdrawAll() public {
-        vm.deal(address(target), 1 ether);
-
-        vm.expectRevert();
-        target.withdrawAll();
-    }
-
     function test_openAccessFails_withdrawCustom() public {
         vm.deal(address(target), 1 ether);
 
         vm.expectRevert();
-        target.withdrawCustom(address(0x123), 1);
+        target.withdraw();
     }
 }

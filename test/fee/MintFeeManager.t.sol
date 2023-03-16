@@ -14,14 +14,14 @@ import {SimpleMinter} from "../mock/SimpleMinter.sol";
 contract MintFeeManagerTest is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
-    address internal admin;
+    address payable internal admin;
     address internal recipient;
     uint256 internal adminRole;
     uint256 internal minterRole;
     uint256 internal fundsManagerRole;
 
     function setUp() external {
-        admin = vm.addr(0x1);
+        admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
     }
 
@@ -50,7 +50,7 @@ contract MintFeeManagerTest is Test {
         target.mint{value: mintPrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
 
         vm.prank(admin);
-        target.withdrawAll();
+        target.withdraw();
 
         // Mint fee is not paid if the recipient is address(0)
         assertEq(recipient.balance, recipient == address(0) ? 0 : mintPrice);

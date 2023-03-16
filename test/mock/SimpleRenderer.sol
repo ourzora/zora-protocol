@@ -6,17 +6,26 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IRenderer1155} from "../../src/interfaces/IRenderer1155.sol";
 
 contract SimpleRenderer is IRenderer1155 {
-    string internal uri;
+    string internal _uri;
+    string internal _contractURI;
 
-    function uriFromContract(address, uint256) external view override returns (string memory) {
-        return uri;
+    function uri(uint256) external view returns (string memory) {
+        return _uri;
+    }
+
+    function contractURI() external view returns (string memory) {
+        return _contractURI;
     }
 
     function setup(bytes memory data) external override {
         if (data.length == 0) {
             revert();
         }
-        uri = string(data);
+        _uri = string(data);
+    }
+
+    function setContractURI(string memory _newURI) external {
+        _contractURI = _newURI;
     }
 
     function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
