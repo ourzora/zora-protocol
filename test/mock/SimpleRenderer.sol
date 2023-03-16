@@ -19,7 +19,7 @@ contract SimpleRenderer is IRenderer1155 {
         uri = string(data);
     }
 
-    function supportsInterface(bytes4 interfaceID) external view returns (bool) {
+    function supportsInterface(bytes4 interfaceID) external pure returns (bool) {
         return interfaceID == type(IRenderer1155).interfaceId;
     }
 }

@@ -14,7 +14,10 @@ interface ICreatorRoyaltiesControl is IERC2981 {
         address royaltyRecipient;
     }
 
-    event UpdatedRoyalties(uint256 tokenId, address user, RoyaltyConfiguration configuration);
+    /// @notice Event emitted when royalties are updated
+    event UpdatedRoyalties(uint256 indexed tokenId, address indexed user, RoyaltyConfiguration configuration);
 
-    function getRoyalties(uint256 token) external view returns (RoyaltyConfiguration memory);
+    /// @notice External data getter to get royalties for a token
+    /// @param tokenId tokenId to get royalties configuration for
+    function getRoyalties(uint256 tokenId) external view returns (RoyaltyConfiguration memory);
 }
