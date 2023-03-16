@@ -22,7 +22,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         uint64 presaleEnd;
         /// @notice Funds recipient (0 if no different funds recipient than the contract global)
         address fundsRecipient;
-        /// @notice Merkle root for 
+        /// @notice Merkle root for
         bytes32 merkleRoot;
     }
 
@@ -94,9 +94,8 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         }
 
         if (maxQuantity > 0) {
-            bytes32 key = keccak256(abi.encode(msg.sender, tokenId, mintTo));
-            mintedPerAddress[key] += quantity;
-            if (mintedPerAddress[key] > maxQuantity) {
+            mintedPerAddress[msg.sender][tokenId][mintTo] += quantity;
+            if (mintedPerAddress[msg.sender][tokenId][mintTo] > maxQuantity) {
                 revert MintedTooManyForAddress();
             }
         }
@@ -138,6 +137,6 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
     /// @notice Gets the sale configuration for a token
     function sale(address tokenContract, uint256 tokenId) external view returns (MerkleSaleSettings memory) {
-        return allowedMerkles[tokenContract][tokenId]];
+        return allowedMerkles[tokenContract][tokenId];
     }
 }
