@@ -47,6 +47,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -69,6 +70,7 @@ contract ZoraCreator1155Test is Test {
         address defaultAdmin,
         uint256 maxSupply
     ) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -83,6 +85,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -272,45 +275,41 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
-    //  function test_adminMintWithScheduleSmall() external {
-    //     uint256 quantity = 100;
-    //     address royaltyRecipient = address(0x3334);
-    //     // every 10 royalty 1000/10 = 100 tokens minted
-    //     init(10, 0, royaltyRecipient);
+    function test_adminMintWithScheduleSmall() external {
+        uint256 quantity = 100;
+        address royaltyRecipient = address(0x3334);
+        // every 10 royalty 100/10 = 10 tokens minted
+        init(10, 0, royaltyRecipient);
 
-    //     vm.prank(admin);
-    //     uint256 tokenId = target.setupNewToken("test", quantity);
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
 
-    //     vm.prank(admin);
-    //     target.adminMint(recipient, tokenId, 90, "");
-    //     vm.prank(admin);
-    //     target.adminMint(recipient, tokenId, 1, "");
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, 90, "");
 
-    //     IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
-    //     assertEq(tokenData.totalMinted, 100);
-    //     assertEq(target.balanceOf(recipient, tokenId), quantity*9/10);
-    //     assertEq(target.balanceOf(royaltyRecipient, tokenId), quantity*1/10);
-    // }
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, 100);
+        assertEq(target.balanceOf(recipient, tokenId), (quantity * 9) / 10);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId), (quantity * 1) / 10);
+    }
 
-    // function test_adminMintWithSchedule() external {
-    //     uint256 quantity = 1000;
-    //     address royaltyRecipient = address(0x3334);
-    //     // every 10 royalty 1000/10 = 100 tokens minted
-    //     init(10, 0, royaltyRecipient);
+    function test_adminMintWithSchedule() external {
+        uint256 quantity = 1000;
+        address royaltyRecipient = address(0x3334);
+        // every 10 tokens, mint 1 to  royalty 1000/10 = 100 tokens minted to royalty recipient
+        init(10, 0, royaltyRecipient);
 
-    //     vm.prank(admin);
-    //     uint256 tokenId = target.setupNewToken("test", 1000);
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1000);
 
-    //     vm.prank(admin);
-    //     target.adminMint(recipient, tokenId, quantity*9/10+9, "");
-    //     vm.prank(admin);
-    //     target.adminMint(recipient, tokenId, 1, "");
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, (quantity * 9) / 10, "");
 
-    //     IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
-    //     assertEq(tokenData.totalMinted, 1000);
-    //     assertEq(target.balanceOf(recipient, tokenId), quantity*9/10);
-    //     assertEq(target.balanceOf(royaltyRecipient, tokenId), quantity*1/10);
-    // }
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, 1000);
+        assertEq(target.balanceOf(recipient, tokenId), (quantity * 9) / 10);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId), (quantity * 1) / 10);
+    }
 
     function test_adminMint_revertOnlyAdminOrRole() external {
         init();
@@ -373,6 +372,41 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData2.totalMinted, quantity2);
         assertEq(target.balanceOf(recipient, tokenId1), quantity1);
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
+    }
+
+    function test_adminMintBatchWithSchedule(uint256 quantity1, uint256 quantity2) external {
+        vm.assume(quantity1 < 900);
+        vm.assume(quantity2 < 900);
+
+        address royaltyRecipient = address(0x3334);
+        // every 10th token is a token for the royalty recipient
+        init(10, 0, royaltyRecipient);
+
+        vm.prank(admin);
+        uint256 tokenId1 = target.setupNewToken("test", 1000);
+
+        vm.prank(admin);
+        uint256 tokenId2 = target.setupNewToken("test", 1000);
+
+        uint256[] memory tokenIds = new uint256[](2);
+        uint256[] memory quantities = new uint256[](2);
+        tokenIds[0] = tokenId1;
+        tokenIds[1] = tokenId2;
+        quantities[0] = quantity1;
+        quantities[1] = quantity2;
+
+        vm.prank(admin);
+        target.adminMintBatch(recipient, tokenIds, quantities, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData1 = target.getTokenInfo(tokenId1);
+        IZoraCreator1155TypesV1.TokenData memory tokenData2 = target.getTokenInfo(tokenId2);
+
+        assertEq(tokenData1.totalMinted, quantity1 + (quantity1 / 9));
+        assertEq(tokenData2.totalMinted, quantity2 + (quantity2 / 9));
+        assertEq(target.balanceOf(recipient, tokenId1), quantity1);
+        assertEq(target.balanceOf(recipient, tokenId2), quantity2);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId1), quantity1 / 9);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId2), quantity2 / 9);
     }
 
     function test_adminMintBatch_revertOnlyAdminOrRole() external {
