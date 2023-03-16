@@ -40,12 +40,15 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
         if (config.royaltyMintSchedule == 0) {
             return (config.royaltyRecipient, 0);
         }
-        uint256 existingRoyaltySupply = totalSupply / config.royaltyMintSchedule;
-        uint256 postMintRoyaltySupply = (totalSupply + mintAmount) / config.royaltyMintSchedule;
-        return (config.royaltyRecipient, postMintRoyaltySupply - existingRoyaltySupply);
+        uint256 totalRoyaltyMints = (mintAmount + (totalSupply % config.royaltyMintSchedule)) / (config.royaltyMintSchedule - 1);
+        return (config.royaltyRecipient, totalRoyaltyMints);
     }
 
     function _updateRoyalties(uint256 tokenId, RoyaltyConfiguration memory configuration) internal {
+        // Don't allow 100% supply royalties
+        if (configuration.royaltyMintSchedule == 1) {
+            revert InvalidMintSchedule();
+        }
         royalties[tokenId] = configuration;
         emit UpdatedRoyalties(tokenId, msg.sender, configuration);
     }

@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155Proxy} from "../../src/proxies/ZoraCreator1155Proxy.sol";
+import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
@@ -32,7 +32,7 @@ contract CreatorRoyaltiesControlTest is Test {
     function test_GetsRoyaltiesInfoGlobalDefault() external {
         address royaltyPayout = address(0x999);
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient);
-        target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
+        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)), admin, _emptyInitData());
 
@@ -43,13 +43,13 @@ contract CreatorRoyaltiesControlTest is Test {
         (, uint256 supplyAmount) = target.supplyRoyaltyInfo(tokenId, 0, 100);
         assertEq(amount, 0.001 ether);
         assertEq(royaltyRecipient, royaltyPayout);
-        assertEq(supplyAmount, 10);
+        assertEq(supplyAmount, 11);
     }
 
     function test_GetsRoyaltiesInfoSpecificToken() external {
         address royaltyPayout = address(0x999);
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient);
-        target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
+        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)), admin, _emptyInitData());
 
@@ -70,7 +70,7 @@ contract CreatorRoyaltiesControlTest is Test {
         (address royaltyRecipientSecond, uint256 amountSecond) = target.royaltyInfo(tokenIdSecond, 1 ether);
         (, uint256 supplyAmountSecond) = target.supplyRoyaltyInfo(tokenIdSecond, 0, 100);
         assertEq(amountSecond, 0.01 ether);
-        assertEq(supplyAmountSecond, 10);
+        assertEq(supplyAmountSecond, 11);
         assertEq(royaltyRecipientSecond, address(0x992));
     }
 }

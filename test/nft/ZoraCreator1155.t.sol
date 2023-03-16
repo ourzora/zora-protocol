@@ -3,12 +3,13 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155Proxy} from "../../src/proxies/ZoraCreator1155Proxy.sol";
+import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../src/interfaces/IRenderer1155.sol";
 import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
+import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 
@@ -24,7 +25,7 @@ contract ZoraCreator1155Test is Test {
 
     function setUp() external {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
-        target = ZoraCreator1155Impl(address(new ZoraCreator1155Proxy(address(zoraCreator1155Impl))));
+        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = vm.addr(0x1);
         recipient = vm.addr(0x2);
         adminRole = target.PERMISSION_BIT_ADMIN();
@@ -45,7 +46,8 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
-    function test_intialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+    function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -68,6 +70,7 @@ contract ZoraCreator1155Test is Test {
         address defaultAdmin,
         uint256 maxSupply
     ) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -77,11 +80,12 @@ contract ZoraCreator1155Test is Test {
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply);
         target.initialize("test", config, defaultAdmin, setupActions);
 
-        (, uint256 fetchedMaxSupply, ) = target.tokens(1);
-        assertEq(fetchedMaxSupply, maxSupply);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(1);
+        assertEq(tokenData.maxSupply, maxSupply);
     }
 
     function test_initialize_revertAlreadyInitialized(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address defaultAdmin) external {
+        vm.assume(royaltySchedule != 1);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -99,16 +103,16 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.contractVersion(), "0.0.6");
     }
 
-    function test_invariantLastTokenIdMatches() external {
+    function test_assumeLastTokenIdMatches() external {
         init();
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1);
         assertEq(tokenId, 1);
-        target.invariantLastTokenIdMatches(tokenId);
+        target.assumeLastTokenIdMatches(tokenId);
 
         vm.expectRevert(abi.encodeWithSignature("TokenIdMismatch(uint256,uint256)", 2, 1));
-        target.invariantLastTokenIdMatches(2);
+        target.assumeLastTokenIdMatches(2);
     }
 
     function test_isAdminOrRole() external {
@@ -130,11 +134,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken(_uri, _maxSupply);
 
-        (string memory uri, uint256 maxSupply, uint256 totalMinted) = target.tokens(tokenId);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
 
-        assertEq(uri, _uri);
-        assertEq(maxSupply, _maxSupply);
-        assertEq(totalMinted, 0);
+        assertEq(tokenData.uri, _uri);
+        assertEq(tokenData.maxSupply, _maxSupply);
+        assertEq(tokenData.totalMinted, 0);
     }
 
     function xtest_setupNewToken_asMinter(string memory _uri, uint256 _maxSupply) external {}
@@ -266,9 +270,45 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
 
-        (, , uint256 totalMinted) = target.tokens(tokenId);
-        assertEq(totalMinted, quantity);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
+    }
+
+    function test_adminMintWithScheduleSmall() external {
+        uint256 quantity = 100;
+        address royaltyRecipient = address(0x3334);
+        // every 10 royalty 100/10 = 10 tokens minted
+        init(10, 0, royaltyRecipient);
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, 90, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, 100);
+        assertEq(target.balanceOf(recipient, tokenId), (quantity * 9) / 10);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId), (quantity * 1) / 10);
+    }
+
+    function test_adminMintWithSchedule() external {
+        uint256 quantity = 1000;
+        address royaltyRecipient = address(0x3334);
+        // every 10 tokens, mint 1 to  royalty 1000/10 = 100 tokens minted to royalty recipient
+        init(10, 0, royaltyRecipient);
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1000);
+
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId, (quantity * 9) / 10, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, 1000);
+        assertEq(target.balanceOf(recipient, tokenId), (quantity * 9) / 10);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId), (quantity * 1) / 10);
     }
 
     function test_adminMint_revertOnlyAdminOrRole() external {
@@ -288,7 +328,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity - 1);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
     }
@@ -325,13 +365,48 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.adminMintBatch(recipient, tokenIds, quantities, "");
 
-        (, , uint256 totalMinted1) = target.tokens(tokenId1);
-        (, , uint256 totalMinted2) = target.tokens(tokenId2);
+        IZoraCreator1155TypesV1.TokenData memory tokenData1 = target.getTokenInfo(tokenId1);
+        IZoraCreator1155TypesV1.TokenData memory tokenData2 = target.getTokenInfo(tokenId2);
 
-        assertEq(totalMinted1, quantity1);
-        assertEq(totalMinted2, quantity2);
+        assertEq(tokenData1.totalMinted, quantity1);
+        assertEq(tokenData2.totalMinted, quantity2);
         assertEq(target.balanceOf(recipient, tokenId1), quantity1);
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
+    }
+
+    function test_adminMintBatchWithSchedule(uint256 quantity1, uint256 quantity2) external {
+        vm.assume(quantity1 < 900);
+        vm.assume(quantity2 < 900);
+
+        address royaltyRecipient = address(0x3334);
+        // every 10th token is a token for the royalty recipient
+        init(10, 0, royaltyRecipient);
+
+        vm.prank(admin);
+        uint256 tokenId1 = target.setupNewToken("test", 1000);
+
+        vm.prank(admin);
+        uint256 tokenId2 = target.setupNewToken("test", 1000);
+
+        uint256[] memory tokenIds = new uint256[](2);
+        uint256[] memory quantities = new uint256[](2);
+        tokenIds[0] = tokenId1;
+        tokenIds[1] = tokenId2;
+        quantities[0] = quantity1;
+        quantities[1] = quantity2;
+
+        vm.prank(admin);
+        target.adminMintBatch(recipient, tokenIds, quantities, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData1 = target.getTokenInfo(tokenId1);
+        IZoraCreator1155TypesV1.TokenData memory tokenData2 = target.getTokenInfo(tokenId2);
+
+        assertEq(tokenData1.totalMinted, quantity1 + (quantity1 / 9));
+        assertEq(tokenData2.totalMinted, quantity2 + (quantity2 / 9));
+        assertEq(target.balanceOf(recipient, tokenId1), quantity1);
+        assertEq(target.balanceOf(recipient, tokenId2), quantity2);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId1), quantity1 / 9);
+        assertEq(target.balanceOf(royaltyRecipient, tokenId2), quantity2 / 9);
     }
 
     function test_adminMintBatch_revertOnlyAdminOrRole() external {
@@ -361,7 +436,7 @@ contract ZoraCreator1155Test is Test {
         tokenIds[0] = tokenId;
         quantities[0] = quantity;
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
         vm.prank(admin);
         target.adminMintBatch(recipient, tokenIds, quantities, "");
     }
@@ -382,7 +457,7 @@ contract ZoraCreator1155Test is Test {
         target.adminMintBatch(address(0), tokenIds, quantities, "");
     }
 
-    function test_purchase(uint256 quantity) external {
+    function test_mint(uint256 quantity) external {
         init();
 
         vm.prank(admin);
@@ -393,24 +468,24 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, address(minter), adminRole);
 
         vm.prank(admin);
-        target.purchase(minter, tokenId, quantity, abi.encode(recipient));
+        target.mint(minter, tokenId, quantity, abi.encode(recipient));
 
-        (, , uint256 totalMinted) = target.tokens(tokenId);
-        assertEq(totalMinted, quantity);
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, quantity);
         assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
-    function test_purchase_revertOnlyMinter() external {
+    function test_mint_revertOnlyMinter() external {
         init();
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
-        target.purchase(SimpleMinter(payable(address(0))), tokenId, 0, "");
+        target.mint(SimpleMinter(payable(address(0))), tokenId, 0, "");
     }
 
-    function test_purchase_revertCannotMintMoreTokens() external {
+    function test_mint_revertCannotMintMoreTokens() external {
         init();
 
         vm.prank(admin);
@@ -420,9 +495,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
         vm.prank(admin);
-        target.purchase(minter, tokenId, 1001, abi.encode(recipient));
+        target.mint(minter, tokenId, 1001, abi.encode(recipient));
     }
 
     function test_callSale() external {
@@ -458,21 +533,71 @@ contract ZoraCreator1155Test is Test {
         target.callRenderer(tokenId, abi.encodeWithSignature("setup(bytes)", "callRender successful"));
         assertEq(target.uri(tokenId), "callRender successful");
 
-        vm.expectRevert(abi.encodeWithSignature("Metadata_CallFailed()"));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, ""));
 
         vm.stopPrank();
     }
 
+    function test_UpdateContractMetadataFailsContract() external {
+        init();
+
+        vm.expectRevert(IZoraCreator1155.NotAllowedContractBaseIDUpdate.selector);
+        vm.prank(admin);
+        target.updateTokenURI(0, "test");
+    }
+
+    function test_ContractNameUpdate() external {
+        init();
+        assertEq(target.name(), "");
+
+        vm.prank(admin);
+        target.updateContractMetadata("newURI", "ASDF");
+        assertEq(target.name(), "ASDF");
+    }
+
+    function test_TokenURI() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("mockuri", 1);
+        assertEq(target.uri(tokenId), "mockuri");
+    }
+
+    function test_callSetupRendererFails() external {
+        init();
+
+        SimpleRenderer renderer = SimpleRenderer(address(new SimpleMinter()));
+
+        vm.startPrank(admin);
+        uint256 tokenId = target.setupNewToken("", 1);
+        vm.expectRevert(abi.encodeWithSelector(ICreatorRendererControl.RendererNotValid.selector, address(renderer)));
+        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+    }
+
+    function test_callRendererFails() external {
+        init();
+
+        SimpleRenderer renderer = new SimpleRenderer();
+
+        vm.startPrank(admin);
+        uint256 tokenId = target.setupNewToken("", 1);
+        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
+        target.callRenderer(tokenId, "0xfoobar");
+    }
+
     function test_supportsInterface() external {
         init();
 
+        // TODO: make this static
         bytes4 interfaceId = type(IZoraCreator1155).interfaceId;
 
         assertEq(target.supportsInterface(interfaceId), true);
     }
 
-    function test_burn() external {
+    function test_burnBatch() external {
         init();
 
         vm.prank(admin);
@@ -483,10 +608,39 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, address(minter), adminRole);
 
         vm.prank(admin);
-        target.purchase(minter, tokenId, 5, abi.encode(recipient));
+        target.mint(minter, tokenId, 5, abi.encode(recipient));
+
+        uint256[] memory burnBatchIds = new uint256[](1);
+        uint256[] memory burnBatchValues = new uint256[](1);
+        burnBatchIds[0] = tokenId;
+        burnBatchValues[0] = 3;
 
         vm.prank(recipient);
-        target.burn(tokenId, 3);
+        target.burnBatch(recipient, burnBatchIds, burnBatchValues);
+    }
+
+    function test_burnBatch_user_not_approved_fails() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 10);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.prank(admin);
+        target.mint(minter, tokenId, 5, abi.encode(recipient));
+
+        uint256[] memory burnBatchIds = new uint256[](1);
+        uint256[] memory burnBatchValues = new uint256[](1);
+        burnBatchIds[0] = tokenId;
+        burnBatchValues[0] = 3;
+
+        vm.expectRevert();
+
+        vm.prank(address(0x123));
+        target.burnBatch(recipient, burnBatchIds, burnBatchValues);
     }
 
     function test_withdrawAll() external {
@@ -501,7 +655,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(admin, 1 ether);
         vm.prank(admin);
-        target.purchase{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
 
         vm.prank(admin);
         target.withdrawAll();
@@ -509,7 +663,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(admin.balance, 1 ether);
     }
 
-    function test_withdrawAll_revertETHWtihdrawFailed(uint256 purchaseAmount, uint256 withdrawAmount) external {
+    function test_withdrawAll_revertETHWithdrawFailed(uint256 purchaseAmount, uint256 withdrawAmount) external {
         vm.assume(withdrawAmount <= purchaseAmount);
         init();
 
@@ -527,7 +681,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(admin, 1 ether);
         vm.prank(admin);
-        target.purchase{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
         vm.prank(address(minter));
@@ -547,7 +701,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(admin, purchaseAmount);
         vm.prank(admin);
-        target.purchase{value: purchaseAmount}(minter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: purchaseAmount}(minter, tokenId, 1000, abi.encode(recipient));
 
         console.log("recipient balance before ", recipient.balance);
         vm.prank(admin);
@@ -572,7 +726,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(admin, purchaseAmount);
         vm.prank(admin);
-        target.purchase{value: purchaseAmount}(minter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: purchaseAmount}(minter, tokenId, 1000, abi.encode(recipient));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.FundsWithdrawInsolvent.selector, withdrawAmount, purchaseAmount));
         vm.prank(admin);
@@ -593,7 +747,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(admin, 1 ether);
         vm.prank(admin);
-        target.purchase{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
         vm.prank(admin);

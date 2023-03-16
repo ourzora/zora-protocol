@@ -9,9 +9,10 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
 import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
-import {ZoraCreator1155Proxy} from "../proxies/ZoraCreator1155Proxy.sol";
+import {Zora1155} from "../proxies/Zora1155.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
+
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
 contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable {
@@ -56,7 +57,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         address defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
-        IZoraCreator1155 newContract = IZoraCreator1155(address(new ZoraCreator1155Proxy(address(implementation))));
+        IZoraCreator1155 newContract = IZoraCreator1155(address(new Zora1155(address(implementation))));
 
         newContract.initialize(contractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 

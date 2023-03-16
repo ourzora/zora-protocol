@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
-import {PublicMulticall} from "../utils/PublicMulticall.sol";
+import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1155/ERC1155Upgradeable.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
+import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
@@ -17,7 +20,6 @@ import {MintFeeManager} from "../fee/MintFeeManager.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraCreator1155Impl
@@ -64,7 +66,6 @@ contract ZoraCreator1155Impl is
         __ReentrancyGuard_init();
 
         // Setup uups
-        // TODO this does nothing and costs gas, remove?
         __UUPSUpgradeable_init();
 
         // Setup contract-default token ID
@@ -110,9 +111,11 @@ contract ZoraCreator1155Impl is
         _updateRoyalties(tokenId, newConfiguration);
     }
 
-    // remove from openzeppelin impl
+    /// @notice remove this function from openzeppelin impl
+    /// @dev This makes this internal function a no-op
     function _setURI(string memory newuri) internal virtual override {}
 
+    /// @notice This gets the next token in line to be minted when minting linearly (default behavior) and updates the counter
     function _getAndUpdateNextTokenId() internal returns (uint256) {
         unchecked {
             return nextTokenId++;
@@ -120,8 +123,9 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Ensure that the next token ID is correct
+    /// @dev This reverts if the invariant doesn't match. This is used for multicall token id assumptions
     /// @param lastTokenId The last token ID
-    function invariantLastTokenIdMatches(uint256 lastTokenId) external view {
+    function assumeLastTokenIdMatches(uint256 lastTokenId) external view {
         unchecked {
             if (nextTokenId - 1 != lastTokenId) {
                 revert TokenIdMismatch(lastTokenId, nextTokenId - 1);
@@ -129,57 +133,95 @@ contract ZoraCreator1155Impl is
         }
     }
 
+    /// @notice Checks if a user either has a role for a token or if they are the admin
+    /// @dev This is an internal function that is called by the external getter and internal functions
+    /// @param user The user to check
+    /// @param tokenId The token ID to check
+    /// @param role The role to check
+    /// @return true or false if the permission exists for the user given the token id
     function _isAdminOrRole(address user, uint256 tokenId, uint256 role) internal view returns (bool) {
-        return _hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role);
+        return _hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN | role);
     }
 
     /// @notice Checks if a user either has a role for a token or if they are the admin
     /// @param user The user to check
     /// @param tokenId The token ID to check
     /// @param role The role to check
+    /// @return true or false if the permission exists for the user given the token id
     function isAdminOrRole(address user, uint256 tokenId, uint256 role) external view returns (bool) {
         return _isAdminOrRole(user, tokenId, role);
     }
 
+    /// @notice Checks if the user is an admin for the given tokenId
+    /// @dev This function reverts if the permission does not exist for the given user and tokenId
+    /// @param user user to check
+    /// @param tokenId tokenId to check
+    /// @param role role to check for admin
     function _requireAdminOrRole(address user, uint256 tokenId, uint256 role) internal view {
-        if (!(_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN | role) || _hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
+        if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN | role) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
             revert UserMissingRoleForToken(user, tokenId, role);
         }
     }
 
+    /// @notice Checks if the user is an admin
+    /// @dev This reverts if the user is not an admin for the given token id or contract
+    /// @param user user to check
+    /// @param tokenId tokenId to check
     function _requireAdmin(address user, uint256 tokenId) internal view {
-        if (!(_hasPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
+        if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
             revert UserMissingRoleForToken(user, tokenId, PERMISSION_BIT_ADMIN);
         }
     }
 
+    /// @notice Modifier checking if the user is an admin or has a role
+    /// @dev This reverts if the msg.sender is not an admin for the given token id or contract
+    /// @param tokenId tokenId to check
+    /// @param role role to check
     modifier onlyAdminOrRole(uint256 tokenId, uint256 role) {
         _requireAdminOrRole(msg.sender, tokenId, role);
         _;
     }
 
+    /// @notice Modifier checking if the user is an admin
+    /// @dev This reverts if the msg.sender is not an admin for the given token id or contract
+    /// @param tokenId tokenId to check
     modifier onlyAdmin(uint256 tokenId) {
         _requireAdmin(msg.sender, tokenId);
         _;
     }
 
+    /// @notice Modifier checking if the requested quantity of tokens can be minted for the tokenId
+    /// @dev This reverts if the number that can be minted is exceeded
+    /// @param tokenId token id to check available allowed quantity
+    /// @param quantity requested to be minted
     modifier canMintQuantity(uint256 tokenId, uint256 quantity) {
-        requireCanMintQuantity(tokenId, quantity);
+        _requireCanMintQuantity(tokenId, quantity);
+        _;
+    }
+
+    /// @notice Only from approved address for burn
+    /// @param from address that the tokens will be burned from, validate that this is msg.sender or that msg.sender is approved
+    modifier onlyFromApprovedForBurn(address from) {
+        if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
+            revert Burn_NotOwnerOrApproved(msg.sender, from);
+        }
+
         _;
     }
 
     /// @notice Checks if a user can mint a quantity of a token
+    /// @dev Reverts if the mint exceeds the allowed quantity (or if the token does not exist)
     /// @param tokenId The token ID to check
     /// @param quantity The quantity of tokens to mint to check
-    function requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
+    function _requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
         TokenData memory tokenInformation = tokens[tokenId];
         if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
-            revert CannotMintMoreTokens(tokenId);
+            revert CannotMintMoreTokens(tokenId, quantity, tokenInformation.totalMinted, tokenInformation.maxSupply);
         }
     }
 
     /// @notice Set up a new token
-    /// @param _uri The URI for the token
+    /// @param _uri The URI for the token (underscore since `uri()` is reserved by OpenZeppelin)
     /// @param maxSupply The maximum supply of the token
     function setupNewToken(
         string memory _uri,
@@ -228,16 +270,6 @@ contract ZoraCreator1155Impl is
         emit UpdatedToken(msg.sender, tokenId, tokenData);
     }
 
-    /// @notice Mint a token to a user as the admin or minter
-    /// @param recipient The recipient of the token
-    /// @param tokenId The token ID to mint
-    /// @param quantity The quantity of tokens to mint
-    /// @param data The data to pass to the onERC1155Received function
-    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
-        // Call internal admin mint
-        _adminMint(recipient, tokenId, quantity, data);
-    }
-
     /// @notice Add a role to a user for a token
     /// @param tokenId The token ID to add the role to
     /// @param user The user to add the role to
@@ -254,7 +286,7 @@ contract ZoraCreator1155Impl is
         _removePermission(tokenId, user, permissionBits);
 
         // Clear owner field
-        if (tokenId == CONTRACT_BASE_ID && user == owner && !_hasPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
+        if (tokenId == CONTRACT_BASE_ID && user == owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
             _setOwner(address(0));
         }
     }
@@ -262,7 +294,7 @@ contract ZoraCreator1155Impl is
     /// @notice Set the owner of the contract
     /// @param newOwner The new owner of the contract
     function setOwner(address newOwner) external onlyAdmin(CONTRACT_BASE_ID) {
-        if (!_hasPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
+        if (!_hasAnyPermission(CONTRACT_BASE_ID, newOwner, PERMISSION_BIT_ADMIN)) {
             revert NewOwnerNeedsToBeAdmin();
         }
 
@@ -278,8 +310,22 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
+    /// @param recipient recipient for admin minted tokens
+    /// @param tokenId token id to mint
+    /// @param quantity quantity to mint
+    /// @param data callback data as specified by the 1155 spec
     function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal nonReentrant {
         _mint(recipient, tokenId, quantity, data);
+    }
+
+    /// @notice Mint a token to a user as the admin or minter
+    /// @param recipient The recipient of the token
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param data The data to pass to the onERC1155Received function
+    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
+        // Call internal admin mint
+        _adminMint(recipient, tokenId, quantity, data);
     }
 
     /// @notice Batch mint tokens to a user as the admin or minter
@@ -295,17 +341,17 @@ contract ZoraCreator1155Impl is
                 uint256 checkingTokenId = tokenIds[i];
                 _requireAdminOrRole(msg.sender, checkingTokenId, PERMISSION_BIT_MINTER);
             }
-            requireCanMintQuantity(tokenIds[i], quantities[i]);
+            _requireCanMintQuantity(tokenIds[i], quantities[i]);
         }
         _mintBatch(recipient, tokenIds, quantities, data);
     }
 
-    /// @notice Purchase tokens given a minter contract and minter arguments
+    /// @notice Mint tokens given a minter contract and minter arguments
     /// @param minter The minter contract to use
-    /// @param tokenId The token ID to purchase
-    /// @param quantity The quantity of tokens to purchase
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
-    function purchase(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable {
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
@@ -339,6 +385,10 @@ contract ZoraCreator1155Impl is
 
     /// Execute Minter Commands ///
 
+    /// @notice Internal functions to execute commands returned by the minter
+    /// @param commands list of command structs
+    /// @param ethValueSent the ethereum value sent in the mint transaction into the contract
+    /// @param tokenId the token id the user requested to mint (0 if the token id is set by the minter itself across the whole contract)
     function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
         for (uint256 i = 0; i < commands.length; ++i) {
             ICreatorCommands.CreatorActions method = commands[i].method;
@@ -364,7 +414,14 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    /// @notice Proxy setter for sale contracts
+    /// @notice Token info getter
+    /// @param tokenId token id to get info for
+    /// @return TokenData struct returned
+    function getTokenInfo(uint256 tokenId) external view returns (TokenData memory) {
+        return tokens[tokenId];
+    }
+
+    /// @notice Proxy setter for sale contracts (only callable by SALES permission or admin)
     /// @param tokenId The token ID to call the sale contract with
     /// @param salesConfig The sales config contract to call
     /// @param data The data to pass to the sales config contract
@@ -379,41 +436,56 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    /// @notice Proxy setter for renderer contracts
+    /// @notice Proxy setter for renderer contracts (only callable by METADATA permission or admin)
     /// @param tokenId The token ID to call the renderer contract with
     /// @param data The data to pass to the renderer contract
     function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
-        (bool success, ) = address(getCustomRenderer(tokenId)).call(data);
+        // We assume any renderers set are checked for EIP165 signature during write stage.
+        (bool success, bytes memory why) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
-            revert Metadata_CallFailed();
+            revert Renderer_CallFailed(why);
         }
     }
 
     /// @notice Returns true if the contract implements the interface defined by interfaceId
     /// @param interfaceId The interface to check for
-    function supportsInterface(bytes4 interfaceId) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable) returns (bool) {
+    /// @return if the interfaceId is marked as supported
+    function supportsInterface(
+        bytes4 interfaceId
+    ) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
     }
 
     /// Generic 1155 function overrides ///
-    function _mint(address account, uint256 id, uint256 amount, bytes memory data) internal virtual override {
+
+    /// @notice Mint function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
+    /// @param to to mint to
+    /// @param id token id to mint
+    /// @param amount of tokens to mint
+    /// @param data as specified by 1155 standard
+    function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
         (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalMinted, amount);
 
-        requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
+        _requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
 
-        super._mint(account, id, amount, data);
+        super._mint(to, id, amount, data);
         if (supplyRoyaltyAmount > 0) {
             super._mint(supplyRoyaltyRecipient, id, supplyRoyaltyAmount, data);
         }
         tokens[id].totalMinted += amount + supplyRoyaltyAmount;
     }
 
+    /// @notice Mint batch function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
+    /// @param to to mint to
+    /// @param ids token ids to mint
+    /// @param amounts of tokens to mint
+    /// @param data as specified by 1155 standard
     function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
             (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalMinted, amounts[i]);
-            requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
+            _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
             if (supplyRoyaltyAmount > 0) {
                 super._mint(supplyRoyaltyRecipient, ids[i], supplyRoyaltyAmount, data);
             }
@@ -421,12 +493,16 @@ contract ZoraCreator1155Impl is
         }
     }
 
+    /// @notice Burns a batch of tokens
     /// @dev Only the current owner is allowed to burn
-    /// @notice Burns a token
-    /// @param tokenId The token ID to burn
-    /// @param amount The amount of tokens to burn
-    function burn(uint256 tokenId, uint256 amount) external {
-        _burn(msg.sender, tokenId, amount);
+    /// @param from the user to burn from
+    /// @param tokenIds The token ID to burn
+    /// @param amounts The amount of tokens to burn
+    function burnBatch(address from, uint256[] calldata tokenIds, uint256[] calldata amounts) external {
+        if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
+            revert Burn_NotOwnerOrApproved(msg.sender, from);
+        }
+        _burnBatch(from, tokenIds, amounts);
     }
 
     /// @notice Returns the URI for the contract
@@ -436,7 +512,7 @@ contract ZoraCreator1155Impl is
 
     /// @notice Returns the URI for a token
     /// @param tokenId The token ID to return the URI for
-    function uri(uint256 tokenId) public view override returns (string memory) {
+    function uri(uint256 tokenId) public view override(ERC1155Upgradeable, IERC1155MetadataURIUpgradeable) returns (string memory) {
         if (bytes(tokens[tokenId].uri).length > 0) {
             return tokens[tokenId].uri;
         }

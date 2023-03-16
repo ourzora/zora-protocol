@@ -5,7 +5,7 @@ import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 interface ICreatorRoyaltiesControl is IERC2981 {
     /// @notice The RoyaltyConfiguration struct is used to store the royalty configuration for a given token.
-    /// @param royaltyMintSchedule 1/N tokens are minted to the royalty recipient
+    /// @param royaltyMintSchedule Every nth token will go to the royalty recipient.
     /// @param royaltyBPS The royalty amount in basis points for secondary sales.
     /// @param royaltyRecipient The address that will receive the royalty payments.
     struct RoyaltyConfiguration {
@@ -14,7 +14,13 @@ interface ICreatorRoyaltiesControl is IERC2981 {
         address royaltyRecipient;
     }
 
-    event UpdatedRoyalties(uint256 tokenId, address user, RoyaltyConfiguration configuration);
+    /// @notice Thrown when a user tries to have 100% supply royalties
+    error InvalidMintSchedule();
 
-    function getRoyalties(uint256 token) external view returns (RoyaltyConfiguration memory);
+    /// @notice Event emitted when royalties are updated
+    event UpdatedRoyalties(uint256 indexed tokenId, address indexed user, RoyaltyConfiguration configuration);
+
+    /// @notice External data getter to get royalties for a token
+    /// @param tokenId tokenId to get royalties configuration for
+    function getRoyalties(uint256 tokenId) external view returns (RoyaltyConfiguration memory);
 }

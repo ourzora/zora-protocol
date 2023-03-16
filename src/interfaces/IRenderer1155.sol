@@ -8,5 +8,5 @@ interface IRenderer1155 is IERC165 {
 
     function setup(bytes memory initData) external;
 
-    // IERC165 type required
+    // IERC165 type required – set in base helper
 }
