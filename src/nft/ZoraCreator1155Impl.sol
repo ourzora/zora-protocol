@@ -487,19 +487,6 @@ contract ZoraCreator1155Impl is
         _;
     }
 
-    /// @dev Only the current owner is allowed to burn
-    /// @notice Burns a token
-    /// @param from the user to burn from
-    /// @param tokenId The token ID to burn
-    /// @param amount The amount of tokens to burn
-    function burn(
-        address from,
-        uint256 tokenId,
-        uint256 amount
-    ) external onlyFromApprovedForBurn(from) {
-        _burn(from, tokenId, amount);
-    }
-
     /// @notice Burns a batch of tokens
     /// @dev Only the current owner is allowed to burn
     /// @param from the user to burn from

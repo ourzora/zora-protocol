@@ -64,8 +64,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract {
 
     function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external;
 
-    function burn(address user, uint256 tokenId, uint256 amount) external;
-
     function burnBatch(address user, uint256[] calldata tokenIds, uint256[] calldata amounts) external;
 
     /// @notice Contract call to setupNewToken
