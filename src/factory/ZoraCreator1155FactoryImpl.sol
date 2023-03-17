@@ -7,6 +7,7 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
 import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {Zora1155} from "../proxies/Zora1155.sol";
@@ -15,7 +16,7 @@ import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
-contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable {
+contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable, IContractMetadata {
     IZoraCreator1155 public immutable implementation;
 
     IMinter1155 public immutable merkleMinter;
@@ -28,6 +29,16 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         }
         merkleMinter = _merkleMinter;
         fixedPriceMinter = _fixedPriceMinter;
+    }
+
+    /// @notice ContractURI for contract information with the strategy
+    function contractURI() external pure returns (string memory) {
+        return "https://github.com/ourzora/zora-1155-contracts/";
+    }
+
+    /// @notice The name of the sale strategy
+    function contractName() external pure returns (string memory) {
+        return "ZORA 1155 Contract Factory";
     }
 
     /// @notice The default minters for new 1155 contracts
