@@ -20,11 +20,12 @@ contract UpgradeScript is Script {
     string configFile;
 
     function _getKey(string memory key) internal view returns (address result) {
-        (result) = abi.decode(vm.parseJson(configFile, key), (address));
+        console2.log(configFile);
+        (result) = abi.decode(vm.parseJson(configFile, string.concat(".", key)), (address));
     }
 
     function _getKeyNumber(string memory key) internal view returns (uint256 result) {
-        (result) = abi.decode(vm.parseJson(configFile, key), (uint256));
+        (result) = abi.decode(vm.parseJson(configFile, string.concat(".", key)), (uint256));
     }
 
     function setUp() public {
@@ -46,7 +47,11 @@ contract UpgradeScript is Script {
 
         address nftImpl = _getKey("1155_IMPL");
         if (nftImpl == address(0)) {
-            nftImpl = address(new ZoraCreator1155Impl(_getKeyNumber("MINT_FEE_AMOUNT"), _getKey("MINT_FEE_RECIPIENT")));
+            uint256 mintFeeAmount = _getKeyNumber("MINT_FEE_AMOUNT");
+            address mintFeeRecipient = _getKey("MINT_FEE_RECIPIENT");
+            console2.log("mintFeeAmount", mintFeeAmount);
+            console2.log("minFeeRecipient", mintFeeRecipient);
+            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient));
             console2.log("New NFT_IMPL", nftImpl);
         } else {
             console2.log("Existing NFT_IMPL", nftImpl);
