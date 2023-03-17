@@ -8,6 +8,7 @@ import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
+import {ILimitedMintPerAddress} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 
 contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
@@ -31,7 +32,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
     }
 
     function test_Version() external {
-        assertEq(fixedPrice.contractVersion(), "0.0.1");
+        assertEq(fixedPrice.contractVersion(), "1.0.0");
     }
 
     function test_MintFlow() external {
@@ -166,7 +167,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.deal(tokenRecipient, 20 ether);
 
         vm.prank(tokenRecipient);
-        vm.expectRevert(abi.encodeWithSignature("MintedTooManyForAddress()"));
+        vm.expectRevert(abi.encodeWithSelector(ILimitedMintPerAddress.UserExceedsMintLimit.selector, tokenRecipient, 5, 6));
         target.mint{value: 6 ether}(fixedPrice, newTokenId, 6, abi.encode(tokenRecipient));
     }
 
@@ -265,6 +266,35 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         target.mint{value: 10 ether}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient));
 
         assertEq(address(1).balance, 10 ether);
+    }
+
+    function test_MintedPerRecipientGetter() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+        target.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 0 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 20,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+        vm.stopPrank();
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+        vm.prank(tokenRecipient);
+        target.mint{value: 0 ether}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient));
+
+        assertEq(fixedPrice.getMintedPerWallet(address(target), newTokenId, tokenRecipient), 10);
     }
 
     function test_ResetSale() external {
