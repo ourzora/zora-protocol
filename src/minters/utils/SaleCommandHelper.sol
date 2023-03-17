@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
+import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 
 /// @title SaleCommandHelper
 /// @notice Helper library for creating commands for the sale contract

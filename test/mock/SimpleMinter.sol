@@ -5,7 +5,7 @@ import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {ICreatorCommands} from "../../src/interfaces/ICreatorCommands.sol";
-import {SaleCommandHelper} from "../../src/minters/SaleCommandHelper.sol";
+import {SaleCommandHelper} from "../../src/minters/utils/SaleCommandHelper.sol";
 
 contract SimpleMinter is IMinter1155 {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
