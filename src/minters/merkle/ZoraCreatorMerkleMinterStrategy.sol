@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {Enjoy} from "_imagine/mint/Enjoy.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
-import {SaleCommandHelper} from "../SaleCommandHelper.sol";
+import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
+import {LimitedMintPerAddress} from "../utils/LimitedMintPerAddress.sol";
 
 /*
 
@@ -37,7 +39,7 @@ import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 /// @title ZoraCreatorMerkleMinterStrategy
 /// @notice Mints tokens based on a merkle tree, for presales for example
 /// @author @iainnash / @tbtstl
-contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
+contract ZoraCreatorMerkleMinterStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 
     /// @notice General merkle sale settings
@@ -59,13 +61,8 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     mapping(address => mapping(uint256 => MerkleSaleSettings)) public allowedMerkles;
     // target -> tokenId -> settings
 
-    /// @notice Storage for the number minted per address
-    mapping(address => mapping(uint256 => mapping(address => uint256))) public mintedPerAddress;
-    // target -> tokenId -> minter -> count
-
     error SaleEnded();
     error SaleHasNotStarted();
-    error MintedTooManyForAddress();
     error WrongValueSent();
     error InvalidMerkleProof(address mintTo, bytes32[] merkleProof, bytes32 merkleRoot);
 
@@ -81,7 +78,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
 
     /// @notice The version of the sale strategy
     function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
+        return "1.0.0";
     }
 
     error MerkleClaimsExceeded();
@@ -120,10 +117,7 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
         }
 
         if (maxQuantity > 0) {
-            mintedPerAddress[msg.sender][tokenId][mintTo] += quantity;
-            if (mintedPerAddress[msg.sender][tokenId][mintTo] > maxQuantity) {
-                revert MintedTooManyForAddress();
-            }
+            _requireMintNotOverLimitAndUpdate(maxQuantity, quantity, msg.sender, tokenId, mintTo);
         }
 
         if (quantity * pricePerToken != ethValueSent) {
@@ -162,7 +156,15 @@ contract ZoraCreatorMerkleMinterStrategy is SaleStrategy {
     }
 
     /// @notice Gets the sale configuration for a token
+    /// @param tokenContract address to look up sale for
+    /// @param tokenId token ID to look up sale for
     function sale(address tokenContract, uint256 tokenId) external view returns (MerkleSaleSettings memory) {
         return allowedMerkles[tokenContract][tokenId];
+    }
+
+    /// @notice IERC165 interface
+    /// @param interfaceId intrfaceinterface id to match
+    function supportsInterface(bytes4 interfaceId) public pure virtual override(LimitedMintPerAddress, SaleStrategy) returns (bool) {
+        return super.supportsInterface(interfaceId) || LimitedMintPerAddress.supportsInterface(interfaceId) || SaleStrategy.supportsInterface(interfaceId);
     }
 }

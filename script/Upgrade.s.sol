@@ -12,68 +12,72 @@ import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-contract DeployScript is Script {
-    function setUp() public {}
+contract UpgradeScript is Script {
+    using Strings for uint256;
+
+    string configFile;
+
+    function _getKey(string memory key) internal view returns (address result) {
+        (result) = abi.decode(vm.parseJson(configFile, string.concat(".", key)), (address));
+    }
+
+    function _getKeyNumber(string memory key) internal view returns (uint256 result) {
+        (result) = abi.decode(vm.parseJson(configFile, string.concat(".", key)), (uint256));
+    }
+
+    function setUp() public {
+        uint256 chainID = vm.envUint("CHAIN_ID");
+        console.log("CHAIN_ID", chainID);
+
+        console2.log("Starting ---");
+
+        configFile = vm.readFile(string.concat("./addresses/", Strings.toString(chainID), ".json"));
+    }
 
     function run() public {
         address payable deployer = payable(vm.envAddress("DEPLOYER"));
-        // vm.startBroadcast(deployer);
+
+        vm.startBroadcast(deployer);
 
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(100, deployer);
+        address nftImpl = _getKey("1155_IMPL");
+        if (nftImpl == address(0)) {
+            uint256 mintFeeAmount = _getKeyNumber("MINT_FEE_AMOUNT");
+            address mintFeeRecipient = _getKey("MINT_FEE_RECIPIENT");
+            console2.log("mintFeeAmount", mintFeeAmount);
+            console2.log("minFeeRecipient", mintFeeRecipient);
+            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient));
+            console2.log("New NFT_IMPL", nftImpl);
+        } else {
+            console2.log("Existing NFT_IMPL", nftImpl);
+        }
+
+        address factoryProxy = _getKey("FACTORY_PROXY");
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
-            _implementation: creatorImpl,
+            _implementation: IZoraCreator1155(nftImpl),
             _merkleMinter: merkleMinter,
             _fixedPriceMinter: fixedPricedMinter
         });
 
-        Zora1155Factory factoryProxy = new Zora1155Factory(
-            address(factoryImpl),
-            abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, deployer)
-        );
+        console2.log("New Factory Impl", address(factoryImpl));
+        console2.log("Upgrade to this new factory impl from ", factoryProxy);
 
-        console2.log("Factory Proxy", address(factoryProxy));
-        console2.log("Implementation Address", address(creatorImpl));
-
-        vm.startPrank(deployer);
-        bytes[] memory initUpdate = new bytes[](3);
-        initUpdate[0] = abi.encodeWithSelector(ZoraCreator1155Impl.setupNewToken.selector, "https://", 100);
-        initUpdate[1] = abi.encodeWithSelector(ZoraCreator1155Impl.adminMint.selector, deployer, 1, 100, "");
-        initUpdate[1] = abi.encodeWithSelector(ZoraCreator1155Impl.addPermission.selector, 1, address(fixedPricedMinter), creatorImpl.PERMISSION_BIT_MINTER());
-        initUpdate[2] = abi.encodeWithSelector(
-            ZoraCreator1155Impl.callSale.selector,
-            1,
-            fixedPricedMinter,
-            abi.encodeWithSelector(
-                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
-                1,
-                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
-                    saleStart: 0,
-                    saleEnd: type(uint64).max,
-                    maxTokensPerAddress: 100,
-                    pricePerToken: 0.01 ether,
-                    fundsRecipient: address(0)
-                })
-            )
-        );
         bytes[] memory setup = new bytes[](0);
-        // initUpdate[2] = abi.encodeWithSelector(ZoraCreator1155Impl.setupNewToken.selector, "https://", 100);
-        // initUpdate[3] = abi.encodeWithSelector(ZoraCreator1155Impl.adminMint.selector, deployer, 2, 10, "");
         address newContract = address(
             IZoraCreator1155Factory(address(factoryProxy)).createContract(
-                "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
-                "testing contract",
+                "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
+                "+++",
                 ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
                 deployer,
                 setup
             )
         );
-        ZoraCreator1155Impl(newContract).multicall(initUpdate);
 
-        console2.log("New 1155 contract address", newContract);
+        console2.log("Testing 1155 contract address", newContract);
     }
 }
