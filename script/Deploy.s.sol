@@ -21,6 +21,7 @@ contract DeployScript is Script {
         address payable deployer = payable(vm.envAddress("DEPLOYER"));
         uint256 zoraFeeAmount = vm.envUint("ZORA_FEE_AMOUNT");
         address payable zoraFeeRecipient = payable(vm.envAddress("ZORA_FEE_RECIPIENT"));
+        address factoryAdmin = payable(vm.envAddress("FACTORY_ADMIN"));
         vm.startBroadcast(deployer);
 
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
@@ -36,23 +37,31 @@ contract DeployScript is Script {
 
         Zora1155Factory factoryProxy = new Zora1155Factory(
             address(factoryImpl),
-            abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, deployer)
+            abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, factoryAdmin)
         );
 
         console2.log("Factory Proxy", address(factoryProxy));
         console2.log("Implementation Address", address(creatorImpl));
 
-        bytes[] memory initUpdate = new bytes[](4);
-        initUpdate[0] = abi.encodeWithSelector(ZoraCreator1155Impl.setupNewToken.selector, "https://", 100);
-        initUpdate[1] = abi.encodeWithSelector(ZoraCreator1155Impl.adminMint.selector, deployer, 1, 100, "");
-        initUpdate[2] = abi.encodeWithSelector(ZoraCreator1155Impl.setupNewToken.selector, "https://", 100);
-        initUpdate[3] = abi.encodeWithSelector(ZoraCreator1155Impl.adminMint.selector, deployer, 2, 10, "");
+        bytes[] memory initUpdate = new bytes[](2);
+        initUpdate[0] = abi.encodeWithSelector(
+            ZoraCreator1155Impl.setupNewToken.selector,
+            "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
+            100
+        );
+        initUpdate[1] = abi.encodeWithSelector(
+            ZoraCreator1155Impl.adminMint.selector,
+            factoryAdmin,
+            1,
+            100,
+            "ipfs://bafkreihjgdf6njqjchxbwwbwzvetrnlvsuyqllanc7g2azhy4hvaqhuqd4"
+        );
         address newContract = address(
             IZoraCreator1155Factory(address(factoryProxy)).createContract(
                 "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
-                "testing contract",
+                unicode"🪄",
                 ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
-                deployer,
+                payable(factoryAdmin),
                 initUpdate
             )
         );
