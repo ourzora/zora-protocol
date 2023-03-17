@@ -1,11 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {Enjoy} from "_imagine/mint/Enjoy.sol";
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
-import {SaleCommandHelper} from "../SaleCommandHelper.sol";
+import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
+import {LimitedMintPerAddress} from "../utils/LimitedMintPerAddress.sol";
 
 /*
 
@@ -35,7 +37,7 @@ import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 /// @title ZoraCreatorFixedPriceSaleStrategy
 /// @notice A sale strategy for ZoraCreator that allows for fixed price sales over a given time period
 /// @author @iainnash / @tbtstl
-contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
+contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress {
     struct SalesConfig {
         /// @notice Unix timestamp for the sale start
         uint64 saleStart;
@@ -52,7 +54,6 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     mapping(address => mapping(uint256 => SalesConfig)) internal salesConfigs;
     // target -> tokenId -> settings
 
-    mapping(address => mapping(uint256 => mapping(address => uint256))) internal mintedPerAddress;
     // target -> tokenId -> minter -> count
 
     using SaleCommandHelper for ICreatorCommands.CommandSet;
@@ -68,13 +69,12 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
     /// @notice The version of the sale strategy
     function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
+        return "1.0.0";
     }
 
     error WrongValueSent();
     error SaleEnded();
     error SaleHasNotStarted();
-    error MintedTooManyForAddress();
 
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig salesConfig);
 
@@ -113,10 +113,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
 
         // Check minted per address limit
         if (config.maxTokensPerAddress > 0) {
-            mintedPerAddress[msg.sender][tokenId][mintTo] += quantity;
-            if (mintedPerAddress[msg.sender][tokenId][mintTo] > config.maxTokensPerAddress) {
-                revert MintedTooManyForAddress();
-            }
+            _requireMintNotOverLimitAndUpdate(config.maxTokensPerAddress, quantity, msg.sender, tokenId, mintTo);
         }
 
         bool shouldTransferFunds = config.fundsRecipient != address(0);
@@ -150,5 +147,9 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     /// @notice Returns the sale config for a given token
     function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
         return salesConfigs[tokenContract][tokenId];
+    }
+
+    function supportsInterface(bytes4 interfaceId) public pure virtual override(LimitedMintPerAddress, SaleStrategy) returns (bool) {
+        return super.supportsInterface(interfaceId) || LimitedMintPerAddress.supportsInterface(interfaceId) || SaleStrategy.supportsInterface(interfaceId);
     }
 }
