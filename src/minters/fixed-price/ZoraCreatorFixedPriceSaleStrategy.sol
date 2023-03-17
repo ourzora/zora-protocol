@@ -7,8 +7,34 @@ import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {SaleCommandHelper} from "../SaleCommandHelper.sol";
 
+/*
+
+
+             ░░░░░░░░░░░░░░              
+        ░░▒▒░░░░░░░░░░░░░░░░░░░░        
+      ░░▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░      
+    ░░▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░    
+   ░▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░    
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░░  
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░░░  
+  ░▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░  
+  ░▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░  
+   ░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░  
+    ░░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░    
+    ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒░░░░░░░░░▒▒▒▒▒░░    
+      ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░      
+          ░░▓▓▓▓▓▓▓▓▓▓▓▓▒▒░░░          
+
+               OURS TRULY,
+
+
+    github.com/ourzora/zora-1155-contracts
+
+ */
+
 /// @title ZoraCreatorFixedPriceSaleStrategy
 /// @notice A sale strategy for ZoraCreator that allows for fixed price sales over a given time period
+/// @author @iainnash / @tbtstl
 contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     struct SalesConfig {
         /// @notice Unix timestamp for the sale start
@@ -32,7 +58,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is SaleStrategy {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 
     function contractURI() external pure override returns (string memory) {
-        return "https://github.com/ourzora/zora-creator-contracts/";
+        return "https://github.com/ourzora/zora-1155-contracts/";
     }
 
     /// @notice The name of the sale strategy

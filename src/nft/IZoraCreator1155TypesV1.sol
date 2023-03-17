@@ -3,7 +3,31 @@ pragma solidity 0.8.17;
 
 import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
 
+/*
+
+
+             ░░░░░░░░░░░░░░              
+        ░░▒▒░░░░░░░░░░░░░░░░░░░░        
+      ░░▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░      
+    ░░▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░    
+   ░▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░    
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░░  
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░░░  
+  ░▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░  
+  ░▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░  
+   ░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░  
+    ░░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░    
+    ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒░░░░░░░░░▒▒▒▒▒░░    
+      ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░      
+          ░░▓▓▓▓▓▓▓▓▓▓▓▓▒▒░░░          
+
+               OURS TRULY,
+
+ */
+
+/// Imagine. Mint. Enjoy.
 /// @notice Interface for types used across the ZoraCreator1155 contract
+/// @author @iainnash / @tbtstl
 interface IZoraCreator1155TypesV1 {
     /// @notice Used to store individual token data
     struct TokenData {

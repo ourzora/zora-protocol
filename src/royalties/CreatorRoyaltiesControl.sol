@@ -6,7 +6,9 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
+/// Imagine. Mint. Enjoy.
 /// @title CreatorRoyaltiesControl
+/// @author ZORA @iainnash / @tbtstl
 /// @notice Contract for managing the royalties of an 1155 contract
 abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBaseConstants {
     uint256 immutable ROYALTY_BPS_TO_PERCENT = 10_000;

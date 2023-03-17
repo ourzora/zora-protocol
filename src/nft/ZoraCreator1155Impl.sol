@@ -24,8 +24,10 @@ import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 
+/// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
 /// @notice The core implementation contract for a creator's 1155 token
+/// @author @iainnash / @tbtstl
 contract ZoraCreator1155Impl is
     IZoraCreator1155,
     ContractVersionBase,
@@ -65,14 +67,16 @@ contract ZoraCreator1155Impl is
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external nonReentrant initializer {
-        // Initialize OZ 1155 implementation
-        __ERC1155_init("");
-
-        // Setup re-entracy guard
-        __ReentrancyGuard_init();
+        // We are not initalizing the OZ 1155 implementation
+        // to save contract storage space and runtime
+        // since the only thing affected here is the uri.
+        // __ERC1155_init("");
 
         // Setup uups
         __UUPSUpgradeable_init();
+
+        // Setup re-entracy guard
+        __ReentrancyGuard_init();
 
         // Setup contract-default token ID
         _setupDefaultToken(defaultAdmin, newContractURI, defaultRoyaltyConfiguration);
