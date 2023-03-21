@@ -233,16 +233,12 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Set up a new token
-    /// @param newURI The URI for the token (underscore since `uri()` is reserved by OpenZeppelin)
+    /// @param newURI The URI for the token
     /// @param maxSupply The maximum supply of the token
     function setupNewToken(
         string memory newURI,
         uint256 maxSupply
     ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
-        // TODO(iain): isMaxSupply = 0 open edition or maybe uint256(max) - 1
-        //                                                  0xffffffff -> 2**8*4 4.2bil
-        //                                                  0xf0000000 -> 2**8*4-(8*3)
-
         uint256 tokenId = _setupNewToken(newURI, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
