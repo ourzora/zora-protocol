@@ -31,7 +31,7 @@ contract MintFeeManager is IMintFeeManager {
         if (mintFeeRecipient != address(0)) {
             uint256 totalFee = mintFee * _quantity;
             ethValueSent -= totalFee;
-            if (!TransferHelperUtils.safeSendETHLowLimit(mintFeeRecipient, totalFee)) {
+            if (!TransferHelperUtils.safeSendETH(mintFeeRecipient, totalFee, TransferHelperUtils.FUNDS_SEND_LOW_GAS_LIMIT)) {
                 revert CannotSendMintFee(mintFeeRecipient, totalFee);
             }
         }

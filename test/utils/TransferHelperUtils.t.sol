@@ -28,12 +28,16 @@ contract BadReceiver {
 }
 
 contract FundsSender {
-    function safeSendETHLowLimit(address recipient, uint256 value) external returns (bool) {
-        return TransferHelperUtils.safeSendETHLowLimit(recipient, value);
+    function lowGasLimit() external view returns (uint256) {
+        return TransferHelperUtils.FUNDS_SEND_LOW_GAS_LIMIT;
     }
 
-    function safeSendETH(address recipient, uint256 value) external returns (bool) {
-        return TransferHelperUtils.safeSendETH(recipient, value);
+    function normalGasLimit() external view returns (uint256) {
+        return TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT;
+    }
+
+    function safeSendETH(address recipient, uint256 value, uint256 limit) external returns (bool) {
+        return TransferHelperUtils.safeSendETH(recipient, value, limit);
     }
 }
 
@@ -43,14 +47,14 @@ contract TransferHelperUtilsTest is Test {
     function test_TransferHighGasLimitSucceeds() public {
         vm.deal(address(sender), 1 ether);
         address recipient1 = address(0x99942);
-        sender.safeSendETH(recipient1, 1 ether);
+        sender.safeSendETH(recipient1, 1 ether, sender.normalGasLimit());
         assertEq(address(recipient1).balance, 1 ether);
     }
 
     function test_TransferLowGasLimitSucceeds() public {
         vm.deal(address(sender), 1 ether);
         address recipient1 = address(0x99000);
-        sender.safeSendETHLowLimit(recipient1, 1 ether);
+        sender.safeSendETH(recipient1, 1 ether, sender.lowGasLimit());
         assertEq(address(recipient1).balance, 1 ether);
     }
 
@@ -58,7 +62,7 @@ contract TransferHelperUtilsTest is Test {
         BadReceiver bad = new BadReceiver();
         bad.setGasUsed(400_000);
         vm.deal(address(sender), 1 ether);
-        assertEq(sender.safeSendETHLowLimit(address(bad), 1 ether), false);
+        assertEq(sender.safeSendETH(address(bad), 1 ether, sender.lowGasLimit()), false);
         assertEq(address(sender).balance, 1 ether);
     }
 
@@ -66,7 +70,7 @@ contract TransferHelperUtilsTest is Test {
         BadReceiver bad = new BadReceiver();
         bad.setGasUsed(500_000);
         vm.deal(address(sender), 1 ether);
-        assertEq(sender.safeSendETH(address(bad), 1 ether), false);
+        assertEq(sender.safeSendETH(address(bad), 1 ether, sender.normalGasLimit()), false);
         assertEq(address(sender).balance, 1 ether);
     }
 
@@ -74,7 +78,7 @@ contract TransferHelperUtilsTest is Test {
         BadReceiver bad = new BadReceiver();
         bad.setGasUsed(55_000);
         vm.deal(address(sender), 1 ether);
-        assertEq(sender.safeSendETHLowLimit(address(bad), 1 ether), true);
+        assertEq(sender.safeSendETH(address(bad), 1 ether, sender.lowGasLimit()), true);
         assertEq(address(sender).balance, 0 ether);
         assertEq(address(bad).balance, 1 ether);
     }
@@ -83,7 +87,7 @@ contract TransferHelperUtilsTest is Test {
         BadReceiver bad = new BadReceiver();
         bad.setGasUsed(255_000);
         vm.deal(address(sender), 1 ether);
-        assertEq(sender.safeSendETH(address(bad), 1 ether), true);
+        assertEq(sender.safeSendETH(address(bad), 1 ether, sender.normalGasLimit()), true);
         assertEq(address(sender).balance, 0 ether);
         assertEq(address(bad).balance, 1 ether);
     }
