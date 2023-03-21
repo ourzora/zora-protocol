@@ -12,6 +12,10 @@ The main implementation of the Zora Creator 1155 Contracts includes the followin
 
 Most controls exist on a per-contract and per-token level. Per contract level is defined as any configuration existing in the pre-reserved 0 token space.
 
+## Official docs
+
+[View the official docs](https://docs.zora.co/docs/smart-contracts/creator-tools/Deploy1155Contract)
+
 ## Bug Bounty
 
 5 ETH for any critical bugs that could result in loss of funds. Rewards will be given for smaller bugs or ideas.
