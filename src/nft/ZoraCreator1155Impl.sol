@@ -463,7 +463,7 @@ contract ZoraCreator1155Impl is
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
-        return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId;
+        return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId || ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
     /// Generic 1155 function overrides ///
