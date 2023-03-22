@@ -104,7 +104,7 @@ contract ZoraCreator1155Test is Test {
     function test_contractVersion() external {
         init();
 
-        assertEq(target.contractVersion(), "1.0.1");
+        assertEq(target.contractVersion(), "1.1.0");
     }
 
     function test_assumeLastTokenIdMatches() external {
@@ -278,6 +278,25 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.prank(admin);
+        target.adminMint(recipient, tokenId, quantity, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
+        assertEq(tokenData.totalMinted, quantity);
+        assertEq(target.balanceOf(recipient, tokenId), quantity);
+    }
+
+    function test_adminMintMinterRole(uint256 quantity) external {
+        vm.assume(quantity < 1000);
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1000);
+
+        vm.prank(admin);
+        // 2 = permission bit minter
+        target.addPermission(tokenId, address(0x394), 2);
+
+        vm.prank(address(0x394));
         target.adminMint(recipient, tokenId, quantity, "");
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
@@ -564,6 +583,10 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.updateContractMetadata("newURI", "ASDF");
         assertEq(target.name(), "ASDF");
+    }
+
+    function test_noSymbol() external {
+        assertEq(target.symbol(), "");
     }
 
     function test_TokenURI() external {
