@@ -5,7 +5,6 @@ import {Enjoy} from "_imagine/mint/Enjoy.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
-import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
