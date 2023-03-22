@@ -54,6 +54,10 @@ contract ZoraCreator1155FactoryTest is Test {
         address royaltyRecipient,
         address payable admin
     ) external {
+        // If the factory is the admin, the admin flag is cleared
+        // during multicall breaking a further test assumption.
+        // Additionally, this case makes no sense from a user perspective.
+        vm.assume(admin != payable(address(factory)));
         vm.assume(royaltyMintSchedule != 1);
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
