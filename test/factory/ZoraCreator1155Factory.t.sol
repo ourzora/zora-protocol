@@ -19,7 +19,15 @@ contract ZoraCreator1155FactoryTest is Test {
     }
 
     function test_contractVersion() external {
-        assertEq(factory.contractVersion(), "1.0.1");
+        assertEq(factory.contractVersion(), "1.1.0");
+    }
+
+    function test_contractName() external {
+        assertEq(factory.contractName(), "ZORA 1155 Contract Factory");
+    }
+
+    function test_contractURI() external {
+        assertEq(factory.contractURI(), "https://github.com/ourzora/zora-1155-contracts/");
     }
 
     function test_initialize(address initialOwner) external {
