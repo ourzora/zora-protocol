@@ -407,7 +407,7 @@ contract ZoraCreator1155Impl is
                 if (ethValueSent > amount) {
                     revert Mint_InsolventSaleTransfer();
                 }
-                if (!TransferHelperUtils.safeSendETH(recipient, amount)) {
+                if (!TransferHelperUtils.safeSendETH(recipient, amount, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
                     revert Mint_ValueTransferFail();
                 }
             } else if (method == ICreatorCommands.CreatorActions.MINT) {
@@ -416,10 +416,8 @@ contract ZoraCreator1155Impl is
                     revert Mint_TokenIDMintNotAllowed();
                 }
                 _adminMint(recipient, tokenId, quantity, "");
-            } else if (method == ICreatorCommands.CreatorActions.NO_OP) {
-                // no-op
             } else {
-                revert Mint_UnknownCommand();
+                // no-op
             }
         }
     }
@@ -593,7 +591,7 @@ contract ZoraCreator1155Impl is
     /// @notice Withdraws all ETH from the contract to the message sender
     function withdraw() public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
         uint256 contractValue = address(this).balance;
-        if (!TransferHelperUtils.safeSendETH(config.fundsRecipient, contractValue)) {
+        if (!TransferHelperUtils.safeSendETH(config.fundsRecipient, contractValue, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
             revert ETHWithdrawFailed(config.fundsRecipient, contractValue);
         }
     }
