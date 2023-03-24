@@ -43,16 +43,16 @@ contract ZoraCreator1155Impl is
     CreatorRoyaltiesControl
 {
     /// @notice This user role allows for any action to be performed
-    uint256 public immutable PERMISSION_BIT_ADMIN = 2 ** 1;
+    uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
     /// @notice This user role allows for only mint actions to be performed
-    uint256 public immutable PERMISSION_BIT_MINTER = 2 ** 2;
+    uint256 public constant PERMISSION_BIT_MINTER = 2 ** 2;
 
     /// @notice This user role allows for only managing sales configurations
-    uint256 public immutable PERMISSION_BIT_SALES = 2 ** 3;
+    uint256 public constant PERMISSION_BIT_SALES = 2 ** 3;
     /// @notice This user role allows for only managing metadata configuration
-    uint256 public immutable PERMISSION_BIT_METADATA = 2 ** 4;
+    uint256 public constant PERMISSION_BIT_METADATA = 2 ** 4;
     /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
-    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
+    uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
 
     constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
 
