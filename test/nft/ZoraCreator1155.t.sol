@@ -12,10 +12,12 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
+import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
 
 contract ZoraCreator1155Test is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
+    MockUpgradeGate internal upgradeGate;
     address payable internal admin;
     address internal recipient;
     uint256 internal adminRole;
@@ -24,7 +26,9 @@ contract ZoraCreator1155Test is Test {
     uint256 internal metadataRole;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
+        upgradeGate = new MockUpgradeGate();
+        upgradeGate.initialize(admin);
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(upgradeGate));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
@@ -727,5 +731,25 @@ contract ZoraCreator1155Test is Test {
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
         vm.prank(address(minter));
         target.withdraw();
+    }
+
+    function test_unauthorizedUpgradeFails() external {
+        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+
+        vm.expectRevert();
+        target.upgradeTo(new1155Impl);
+    }
+
+    function test_authorizedUpgrade() external {
+        address[] memory oldImpls = new address[](1);
+
+        oldImpls[0] = address(target);
+
+        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+
+        vm.prank(admin);
+        upgradeGate.registerUpgradePath(oldImpls, new1155Impl);
+
+        target.upgradeTo(new1155Impl);
     }
 }
