@@ -382,13 +382,8 @@ contract ZoraCreator1155Impl is
     /// @notice Set a metadata renderer for a token
     /// @param tokenId The token ID to set the renderer for
     /// @param renderer The renderer to set
-    /// @param setupData The data to pass to the renderer upon intialization
-    function setTokenMetadataRenderer(
-        uint256 tokenId,
-        IRenderer1155 renderer,
-        bytes calldata setupData
-    ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
-        _setRenderer(tokenId, renderer, setupData);
+    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        _setRenderer(tokenId, renderer);
 
         if (tokenId == 0) {
             emit ContractRendererUpdated(renderer);

@@ -114,7 +114,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
 
     function updateContractMetadata(string memory _newURI, string memory _newName) external;
 
-    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer, bytes calldata setupData) external;
+    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer) external;
 
     function contractURI() external view returns (string memory);
 

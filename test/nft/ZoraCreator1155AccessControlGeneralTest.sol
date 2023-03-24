@@ -104,7 +104,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_setTokenMetadataRenderer() public {
         SimpleRenderer renderer = new SimpleRenderer();
         vm.expectRevert();
-        target.setTokenMetadataRenderer(0, renderer, "");
+        target.setTokenMetadataRenderer(0, renderer);
     }
 
     // Get token info is a public getter. Skipping here.
@@ -119,7 +119,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_callRenderer() public {
         SimpleRenderer renderer = new SimpleRenderer();
         vm.prank(admin);
-        target.setTokenMetadataRenderer(1, renderer, "setup");
+        target.setTokenMetadataRenderer(1, renderer);
 
         vm.expectRevert();
         target.callRenderer(10, abi.encodeWithSelector(SimpleRenderer.setup.selector, "hello"));
