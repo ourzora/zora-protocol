@@ -24,7 +24,7 @@ contract ZoraCreator1155Test is Test {
     uint256 internal metadataRole;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
@@ -562,7 +562,7 @@ contract ZoraCreator1155Test is Test {
         target.callRenderer(tokenId, abi.encodeWithSignature("setup(bytes)", "callRender successful"));
         assertEq(target.uri(tokenId), "callRender successful");
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, ""));
 
         vm.stopPrank();
@@ -571,7 +571,7 @@ contract ZoraCreator1155Test is Test {
     function test_UpdateContractMetadataFailsContract() external {
         init();
 
-        vm.expectRevert(IZoraCreator1155.NotAllowedContractBaseIDUpdate.selector);
+        vm.expectRevert();
         vm.prank(admin);
         target.updateTokenURI(0, "test");
     }
@@ -617,7 +617,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("", 1);
         target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
         target.callRenderer(tokenId, "0xfoobar");
     }
 

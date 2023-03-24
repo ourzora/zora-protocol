@@ -27,7 +27,7 @@ contract DeployScript is Script {
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(zoraFeeAmount, zoraFeeRecipient);
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(zoraFeeAmount, zoraFeeRecipient, address(0));
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: creatorImpl,
