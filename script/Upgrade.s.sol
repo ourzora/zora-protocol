@@ -50,7 +50,7 @@ contract UpgradeScript is Script {
             address mintFeeRecipient = _getKey("MINT_FEE_RECIPIENT");
             console2.log("mintFeeAmount", mintFeeAmount);
             console2.log("minFeeRecipient", mintFeeRecipient);
-            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient));
+            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient, address(0)));
             console2.log("New NFT_IMPL", nftImpl);
         } else {
             console2.log("Existing NFT_IMPL", nftImpl);
