@@ -542,7 +542,7 @@ contract ZoraCreator1155Test is Test {
         target.callSale(tokenId, minter, abi.encodeWithSignature("setNum(uint256)", 1));
         assertEq(minter.num(), 1);
 
-        vm.expectRevert(abi.encodeWithSignature("Sale_CallFailed()"));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
         target.callSale(tokenId, minter, abi.encodeWithSignature("setNum(uint256)", 0));
 
         vm.stopPrank();
