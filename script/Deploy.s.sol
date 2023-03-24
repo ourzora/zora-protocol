@@ -12,6 +12,7 @@ import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 
 contract DeployScript is Script {
@@ -27,7 +28,10 @@ contract DeployScript is Script {
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(zoraFeeAmount, zoraFeeRecipient, address(0));
+        address factoryShimAddress = address(new ProxyShim(deployer));
+        Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
+
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(zoraFeeAmount, zoraFeeRecipient, address(factoryProxy));
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: creatorImpl,
@@ -35,10 +39,9 @@ contract DeployScript is Script {
             _fixedPriceMinter: fixedPricedMinter
         });
 
-        Zora1155Factory factoryProxy = new Zora1155Factory(
-            address(factoryImpl),
-            abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, factoryAdmin)
-        );
+        // Upgrade to "real" factory address
+        ZoraCreator1155FactoryImpl(address(factoryProxy)).upgradeTo(address(factoryImpl));
+        ZoraCreator1155FactoryImpl(address(factoryProxy)).initialize(factoryAdmin);
 
         console2.log("Factory Proxy", address(factoryProxy));
         console2.log("Implementation Address", address(creatorImpl));
@@ -48,13 +51,6 @@ contract DeployScript is Script {
             ZoraCreator1155Impl.setupNewToken.selector,
             "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
             100
-        );
-        initUpdate[1] = abi.encodeWithSelector(
-            ZoraCreator1155Impl.adminMint.selector,
-            factoryAdmin,
-            1,
-            100,
-            "ipfs://bafkreihjgdf6njqjchxbwwbwzvetrnlvsuyqllanc7g2azhy4hvaqhuqd4"
         );
         address newContract = address(
             IZoraCreator1155Factory(address(factoryProxy)).createContract(
