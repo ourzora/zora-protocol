@@ -61,7 +61,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
     error TokenIdMismatch(uint256 expected, uint256 actual);
-    error NotAllowedContractBaseIDUpdate();
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
     error Config_TransferHookNotSupported(address proposedAddress);
@@ -76,9 +75,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     error NewOwnerNeedsToBeAdmin();
 
     error Sale_CannotCallNonSalesContract(address targetContract);
-    error Sale_CallFailed();
 
-    error Renderer_CallFailed(bytes reason);
+    error CallFailed(bytes reason);
     error Renderer_NotValidRendererContract();
 
     error ETHWithdrawFailed(address recipient, uint256 amount);
@@ -116,7 +114,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
 
     function updateContractMetadata(string memory _newURI, string memory _newName) external;
 
-    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer, bytes calldata setupData) external;
+    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer) external;
 
     function contractURI() external view returns (string memory);
 

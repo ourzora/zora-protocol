@@ -16,6 +16,7 @@ import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
+import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {MintFeeManager} from "../fee/MintFeeManager.sol";
@@ -43,18 +44,22 @@ contract ZoraCreator1155Impl is
     CreatorRoyaltiesControl
 {
     /// @notice This user role allows for any action to be performed
-    uint256 public immutable PERMISSION_BIT_ADMIN = 2 ** 1;
+    uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
     /// @notice This user role allows for only mint actions to be performed
-    uint256 public immutable PERMISSION_BIT_MINTER = 2 ** 2;
+    uint256 public constant PERMISSION_BIT_MINTER = 2 ** 2;
 
     /// @notice This user role allows for only managing sales configurations
-    uint256 public immutable PERMISSION_BIT_SALES = 2 ** 3;
+    uint256 public constant PERMISSION_BIT_SALES = 2 ** 3;
     /// @notice This user role allows for only managing metadata configuration
-    uint256 public immutable PERMISSION_BIT_METADATA = 2 ** 4;
+    uint256 public constant PERMISSION_BIT_METADATA = 2 ** 4;
     /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
-    uint256 public immutable PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
+    uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
+    /// @notice Factory contract
+    IFactoryManagedUpgradeGate internal immutable factory;
 
-    constructor(uint256 _mintFeeAmount, address _mintFeeRecipient) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {}
+    constructor(uint256 _mintFeeAmount, address _mintFeeRecipient, address _factory) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {
+        factory = IFactoryManagedUpgradeGate(_factory);
+    }
 
     /// @notice Initializes the contract
     /// @param newContractURI The contract URI
@@ -256,7 +261,7 @@ contract ZoraCreator1155Impl is
     /// @param _newURI The new URI
     function updateTokenURI(uint256 tokenId, string memory _newURI) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
         if (tokenId == CONTRACT_BASE_ID) {
-            revert NotAllowedContractBaseIDUpdate();
+            revert();
         }
         emit URI(_newURI, tokenId);
         tokens[tokenId].uri = _newURI;
@@ -377,13 +382,8 @@ contract ZoraCreator1155Impl is
     /// @notice Set a metadata renderer for a token
     /// @param tokenId The token ID to set the renderer for
     /// @param renderer The renderer to set
-    /// @param setupData The data to pass to the renderer upon intialization
-    function setTokenMetadataRenderer(
-        uint256 tokenId,
-        IRenderer1155 renderer,
-        bytes calldata setupData
-    ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
-        _setRenderer(tokenId, renderer, setupData);
+    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+        _setRenderer(tokenId, renderer);
 
         if (tokenId == 0) {
             emit ContractRendererUpdated(renderer);
@@ -415,7 +415,7 @@ contract ZoraCreator1155Impl is
                 if (tokenId != 0 && mintTokenId != tokenId) {
                     revert Mint_TokenIDMintNotAllowed();
                 }
-                _adminMint(recipient, tokenId, quantity, "");
+                _mint(recipient, tokenId, quantity, "");
             } else {
                 // no-op
             }
@@ -438,9 +438,9 @@ contract ZoraCreator1155Impl is
         if (!salesConfig.supportsInterface(type(IMinter1155).interfaceId)) {
             revert Sale_CannotCallNonSalesContract(address(salesConfig));
         }
-        (bool success, ) = address(salesConfig).call(data);
+        (bool success, bytes memory why) = address(salesConfig).call(data);
         if (!success) {
-            revert Sale_CallFailed();
+            revert CallFailed(why);
         }
     }
 
@@ -451,7 +451,7 @@ contract ZoraCreator1155Impl is
         // We assume any renderers set are checked for EIP165 signature during write stage.
         (bool success, bytes memory why) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
-            revert Renderer_CallFailed(why);
+            revert CallFailed(why);
         }
     }
 
@@ -603,5 +603,9 @@ contract ZoraCreator1155Impl is
     /// @notice Ensures the caller is authorized to upgrade the contract
     /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
     /// @param _newImpl The new implementation address
-    function _authorizeUpgrade(address _newImpl) internal override onlyAdmin(CONTRACT_BASE_ID) {}
+    function _authorizeUpgrade(address _newImpl) internal override onlyAdmin(CONTRACT_BASE_ID) {
+        if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
+            revert();
+        }
+    }
 }

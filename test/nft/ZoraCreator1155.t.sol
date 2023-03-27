@@ -12,10 +12,12 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
+import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
 
 contract ZoraCreator1155Test is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
+    MockUpgradeGate internal upgradeGate;
     address payable internal admin;
     address internal recipient;
     uint256 internal adminRole;
@@ -24,7 +26,9 @@ contract ZoraCreator1155Test is Test {
     uint256 internal metadataRole;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
+        upgradeGate = new MockUpgradeGate();
+        upgradeGate.initialize(admin);
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(upgradeGate));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
@@ -174,9 +178,11 @@ contract ZoraCreator1155Test is Test {
         SimpleRenderer singletonRenderer = new SimpleRenderer();
 
         vm.startPrank(admin);
-        target.setTokenMetadataRenderer(0, contractRenderer, "fallback renderer");
+        target.setTokenMetadataRenderer(0, contractRenderer);
+        target.callRenderer(0, abi.encodeWithSelector(SimpleRenderer.setup.selector, "fallback renderer"));
         uint256 tokenId = target.setupNewToken("", 1);
-        target.setTokenMetadataRenderer(tokenId, singletonRenderer, "singleton renderer");
+        target.setTokenMetadataRenderer(tokenId, singletonRenderer);
+        target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, "singleton renderer"));
         vm.stopPrank();
 
         assertEq(address(target.getCustomRenderer(0)), address(contractRenderer));
@@ -185,7 +191,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.uri(tokenId), "singleton renderer");
 
         vm.prank(admin);
-        target.setTokenMetadataRenderer(tokenId, IRenderer1155(address(0)), "");
+        target.setTokenMetadataRenderer(tokenId, IRenderer1155(address(0)));
         assertEq(address(target.getCustomRenderer(tokenId)), address(contractRenderer));
         assertEq(target.uri(tokenId), "fallback renderer");
     }
@@ -194,7 +200,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_METADATA()));
-        target.setTokenMetadataRenderer(0, IRenderer1155(address(0)), "");
+        target.setTokenMetadataRenderer(0, IRenderer1155(address(0)));
     }
 
     function test_addPermission(uint256 tokenId, uint256 permission, address user) external {
@@ -542,7 +548,7 @@ contract ZoraCreator1155Test is Test {
         target.callSale(tokenId, minter, abi.encodeWithSignature("setNum(uint256)", 1));
         assertEq(minter.num(), 1);
 
-        vm.expectRevert(abi.encodeWithSignature("Sale_CallFailed()"));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
         target.callSale(tokenId, minter, abi.encodeWithSignature("setNum(uint256)", 0));
 
         vm.stopPrank();
@@ -556,13 +562,15 @@ contract ZoraCreator1155Test is Test {
         vm.startPrank(admin);
 
         uint256 tokenId = target.setupNewToken("", 1);
-        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+        target.setTokenMetadataRenderer(tokenId, renderer);
+        assertEq(target.uri(tokenId), "");
+        target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, "renderer"));
         assertEq(target.uri(tokenId), "renderer");
 
-        target.callRenderer(tokenId, abi.encodeWithSignature("setup(bytes)", "callRender successful"));
+        target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, "callRender successful"));
         assertEq(target.uri(tokenId), "callRender successful");
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, ""));
 
         vm.stopPrank();
@@ -571,7 +579,7 @@ contract ZoraCreator1155Test is Test {
     function test_UpdateContractMetadataFailsContract() external {
         init();
 
-        vm.expectRevert(IZoraCreator1155.NotAllowedContractBaseIDUpdate.selector);
+        vm.expectRevert();
         vm.prank(admin);
         target.updateTokenURI(0, "test");
     }
@@ -605,7 +613,7 @@ contract ZoraCreator1155Test is Test {
         vm.startPrank(admin);
         uint256 tokenId = target.setupNewToken("", 1);
         vm.expectRevert(abi.encodeWithSelector(ICreatorRendererControl.RendererNotValid.selector, address(renderer)));
-        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+        target.setTokenMetadataRenderer(tokenId, renderer);
     }
 
     function test_callRendererFails() external {
@@ -615,9 +623,9 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
         uint256 tokenId = target.setupNewToken("", 1);
-        target.setTokenMetadataRenderer(tokenId, renderer, "renderer");
+        target.setTokenMetadataRenderer(tokenId, renderer);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.Renderer_CallFailed.selector, ""));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
         target.callRenderer(tokenId, "0xfoobar");
     }
 
@@ -727,5 +735,33 @@ contract ZoraCreator1155Test is Test {
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
         vm.prank(address(minter));
         target.withdraw();
+    }
+
+    function test_unauthorizedUpgradeFails() external {
+        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+
+        vm.expectRevert();
+        target.upgradeTo(new1155Impl);
+    }
+
+    function test_authorizedUpgrade() external {
+        init();
+        address[] memory oldImpls = new address[](1);
+
+        oldImpls[0] = address(zoraCreator1155Impl);
+
+        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+
+        vm.prank(upgradeGate.owner());
+        upgradeGate.registerUpgradePath(oldImpls, new1155Impl);
+
+        vm.prank(admin);
+        target.upgradeTo(new1155Impl);
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 1000);
+
+        vm.prank(admin);
+        target.adminMint(address(0x1234), tokenId, 1, "");
     }
 }

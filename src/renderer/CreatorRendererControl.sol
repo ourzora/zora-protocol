@@ -9,16 +9,12 @@ import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 /// @title CreatorRendererControl
 /// @notice Contract for managing the renderer of an 1155 contract
 abstract contract CreatorRendererControl is CreatorRendererStorageV1, SharedBaseConstants {
-    function _setRenderer(uint256 tokenId, IRenderer1155 renderer, bytes calldata setupData) internal {
-        if (address(renderer) == address(0)) {
-            delete customRenderers[tokenId];
-        } else {
-            customRenderers[tokenId] = renderer;
-
+    function _setRenderer(uint256 tokenId, IRenderer1155 renderer) internal {
+        customRenderers[tokenId] = renderer;
+        if (address(renderer) != address(0)) {
             if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
                 revert RendererNotValid(address(renderer));
             }
-            renderer.setup(setupData);
         }
 
         emit RendererUpdated({tokenId: tokenId, renderer: address(renderer), user: msg.sender});
