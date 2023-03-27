@@ -641,6 +641,9 @@ contract ZoraCreator1155Test is Test {
 
         bytes4 erc165InterfaceId = bytes4(0x01ffc9a7);
         assertTrue(target.supportsInterface(erc165InterfaceId));
+
+        bytes4 erc2981InterfaceId = bytes4(0x2a55205a);
+        assertTrue(target.supportsInterface(erc2981InterfaceId));
     }
 
     function test_burnBatch() external {
