@@ -464,6 +464,26 @@ contract ZoraCreator1155Impl is
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId || ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
+    function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount) internal returns (uint256 totalRoyaltyMints) {
+        uint256 royaltyMintSchedule = royalties[tokenId].royaltyMintSchedule;
+        if (royaltyMintSchedule == 0) {
+            royaltyMintSchedule = royalties[CONTRACT_BASE_ID].royaltyMintSchedule;
+        }
+        if (royaltyMintSchedule == 0) {
+            return 0;
+        }
+
+        totalRoyaltyMints = (mintAmount + (tokens[tokenId].totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
+
+        if (totalRoyaltyMints > 0) {
+            address royaltyRecipient = royalties[tokenId].royaltyRecipient;
+            if (royaltyRecipient == address(0)) {
+                royaltyRecipient = royalties[CONTRACT_BASE_ID].royaltyRecipient;
+            }
+            super._mint(royaltyRecipient, tokenId, totalRoyaltyMints, "");
+        }
+    }
+
     /// Generic 1155 function overrides ///
 
     /// @notice Mint function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
@@ -472,15 +492,13 @@ contract ZoraCreator1155Impl is
     /// @param amount of tokens to mint
     /// @param data as specified by 1155 standard
     function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
-        (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalMinted, amount);
+        _handleSupplyRoyalty(id, amount);
 
-        _requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
+        uint256 royaltyAmount = _handleSupplyRoyalty(id, amount);
+        _requireCanMintQuantity(id, amount + royaltyAmount);
 
         super._mint(to, id, amount, data);
-        if (supplyRoyaltyAmount > 0) {
-            super._mint(supplyRoyaltyRecipient, id, supplyRoyaltyAmount, data);
-        }
-        tokens[id].totalMinted += amount + supplyRoyaltyAmount;
+        tokens[id].totalMinted += amount + royaltyAmount;
     }
 
     /// @notice Mint batch function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
@@ -492,11 +510,8 @@ contract ZoraCreator1155Impl is
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
-            (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalMinted, amounts[i]);
+            uint256 supplyRoyaltyAmount = _handleSupplyRoyalty(ids[i], amounts[i]);
             _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
-            if (supplyRoyaltyAmount > 0) {
-                super._mint(supplyRoyaltyRecipient, ids[i], supplyRoyaltyAmount, data);
-            }
             tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyAmount;
         }
     }
