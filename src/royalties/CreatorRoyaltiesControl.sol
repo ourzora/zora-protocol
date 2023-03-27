@@ -16,9 +16,8 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
     /// @notice The royalty information for a given token.
     /// @param tokenId The token ID to get the royalty information for.
     function getRoyalties(uint256 tokenId) public view returns (RoyaltyConfiguration memory) {
-        RoyaltyConfiguration memory config = royalties[tokenId];
-        if (config.royaltyRecipient != address(0)) {
-            return config;
+        if (royalties[tokenId].royaltyRecipient != address(0)) {
+            return royalties[tokenId];
         }
         // Otherwise, return default.
         return royalties[CONTRACT_BASE_ID];
