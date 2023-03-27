@@ -492,13 +492,11 @@ contract ZoraCreator1155Impl is
     /// @param amount of tokens to mint
     /// @param data as specified by 1155 standard
     function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
-        _handleSupplyRoyalty(id, amount);
-
-        uint256 royaltyAmount = _handleSupplyRoyalty(id, amount);
-        _requireCanMintQuantity(id, amount + royaltyAmount);
+        uint256 supplyRoyaltyMints = _handleSupplyRoyalty(id, amount);
+        _requireCanMintQuantity(id, amount + supplyRoyaltyMints);
 
         super._mint(to, id, amount, data);
-        tokens[id].totalMinted += amount + royaltyAmount;
+        tokens[id].totalMinted += amount + supplyRoyaltyMints;
     }
 
     /// @notice Mint batch function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
@@ -510,9 +508,9 @@ contract ZoraCreator1155Impl is
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
-            uint256 supplyRoyaltyAmount = _handleSupplyRoyalty(ids[i], amounts[i]);
-            _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
-            tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyAmount;
+            uint256 supplyRoyaltyMints = _handleSupplyRoyalty(ids[i], amounts[i]);
+            _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyMints);
+            tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyMints;
         }
     }
 
