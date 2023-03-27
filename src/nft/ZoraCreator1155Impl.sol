@@ -464,7 +464,7 @@ contract ZoraCreator1155Impl is
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId || ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
-    function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount) internal returns (uint256 totalRoyaltyMints) {
+    function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount, bytes memory data) internal returns (uint256 totalRoyaltyMints) {
         uint256 royaltyMintSchedule = royalties[tokenId].royaltyMintSchedule;
         if (royaltyMintSchedule == 0) {
             royaltyMintSchedule = royalties[CONTRACT_BASE_ID].royaltyMintSchedule;
@@ -480,7 +480,7 @@ contract ZoraCreator1155Impl is
             if (royaltyRecipient == address(0)) {
                 royaltyRecipient = royalties[CONTRACT_BASE_ID].royaltyRecipient;
             }
-            super._mint(royaltyRecipient, tokenId, totalRoyaltyMints, "");
+            super._mint(royaltyRecipient, tokenId, totalRoyaltyMints, data);
         }
     }
 
@@ -492,7 +492,7 @@ contract ZoraCreator1155Impl is
     /// @param amount of tokens to mint
     /// @param data as specified by 1155 standard
     function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
-        uint256 supplyRoyaltyMints = _handleSupplyRoyalty(id, amount);
+        uint256 supplyRoyaltyMints = _handleSupplyRoyalty(id, amount, data);
         _requireCanMintQuantity(id, amount + supplyRoyaltyMints);
 
         super._mint(to, id, amount, data);
@@ -508,7 +508,7 @@ contract ZoraCreator1155Impl is
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
-            uint256 supplyRoyaltyMints = _handleSupplyRoyalty(ids[i], amounts[i]);
+            uint256 supplyRoyaltyMints = _handleSupplyRoyalty(ids[i], amounts[i], data);
             _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyMints);
             tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyMints;
         }
