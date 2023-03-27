@@ -231,7 +231,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to check
     /// @param quantity The quantity of tokens to mint to check
     function _requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
-        TokenData memory tokenInformation = tokens[tokenId];
+        TokenData storage tokenInformation = tokens[tokenId];
         if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
             revert CannotMintMoreTokens(tokenId, quantity, tokenInformation.totalMinted, tokenInformation.maxSupply);
         }
