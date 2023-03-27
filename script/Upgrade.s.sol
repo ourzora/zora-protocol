@@ -16,16 +16,9 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract UpgradeScript is Script {
     using Strings for uint256;
+    using stdJson for string;
 
     string configFile;
-
-    function _getKey(string memory key) internal view returns (address result) {
-        (result) = abi.decode(vm.parseJson(configFile, string.concat(".", key)), (address));
-    }
-
-    function _getKeyNumber(string memory key) internal view returns (uint256 result) {
-        (result) = abi.decode(vm.parseJson(configFile, string.concat(".", key)), (uint256));
-    }
 
     function setUp() public {
         uint256 chainID = vm.envUint("CHAIN_ID");
@@ -41,43 +34,57 @@ contract UpgradeScript is Script {
 
         vm.startBroadcast(deployer);
 
-        ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
-        ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
+        ZoraCreatorFixedPriceSaleStrategy fixedPriceMinter = ZoraCreatorFixedPriceSaleStrategy(configFile.readAddress(".FIXED_PRICE_SALE_STRATEGY"));
+        if (address(fixedPriceMinter) == address(0)) {
+            fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
+            console2.log("New FixedPriceMinter", address(fixedPriceMinter));
+        } else {
+            console2.log("Existing FIXED_PRICE_STRATEGY", address(fixedPriceMinter));
+        }
+        ZoraCreatorMerkleMinterStrategy merkleMinter = ZoraCreatorMerkleMinterStrategy(configFile.readAddress(".MERKLE_MINT_SALE_STRATEGY"));
+        if (address(merkleMinter) == address(0)) {
+            merkleMinter = new ZoraCreatorMerkleMinterStrategy();
+            console2.log("New MrkleMintStrategy", address(merkleMinter));
+        } else {
+            console2.log("Existing MERKLE_MINT_STRATEGY", address(merkleMinter));
+        }
 
-        address nftImpl = _getKey("1155_IMPL");
-        if (nftImpl == address(0)) {
-            uint256 mintFeeAmount = _getKeyNumber("MINT_FEE_AMOUNT");
-            address mintFeeRecipient = _getKey("MINT_FEE_RECIPIENT");
+        address factoryProxy = configFile.readAddress(".FACTORY_PROXY");
+
+        address nftImpl = configFile.readAddress(".1155_IMPL");
+        bool isNewNFTImpl = nftImpl == address(0);
+        if (isNewNFTImpl) {
+            uint256 mintFeeAmount = configFile.readUint(".MINT_FEE_AMOUNT");
+            address mintFeeRecipient = configFile.readAddress(".MINT_FEE_RECIPIENT");
             console2.log("mintFeeAmount", mintFeeAmount);
             console2.log("minFeeRecipient", mintFeeRecipient);
-            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient));
+            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient, factoryProxy));
             console2.log("New NFT_IMPL", nftImpl);
         } else {
             console2.log("Existing NFT_IMPL", nftImpl);
         }
 
-        address factoryProxy = _getKey("FACTORY_PROXY");
-
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: IZoraCreator1155(nftImpl),
             _merkleMinter: merkleMinter,
-            _fixedPriceMinter: fixedPricedMinter
+            _fixedPriceMinter: fixedPriceMinter
         });
 
         console2.log("New Factory Impl", address(factoryImpl));
         console2.log("Upgrade to this new factory impl from ", factoryProxy);
 
-        bytes[] memory setup = new bytes[](0);
-        address newContract = address(
-            IZoraCreator1155Factory(address(factoryProxy)).createContract(
-                "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
-                "+++",
-                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
-                deployer,
-                setup
-            )
-        );
-
-        console2.log("Testing 1155 contract address", newContract);
+        if (isNewNFTImpl) {
+            bytes[] memory setup = new bytes[](0);
+            address newContract = address(
+                IZoraCreator1155Factory(address(factoryProxy)).createContract(
+                    "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
+                    "+++",
+                    ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
+                    deployer,
+                    setup
+                )
+            );
+            console2.log("Deploying new contract for verifiation purposes", newContract);
+        }
     }
 }

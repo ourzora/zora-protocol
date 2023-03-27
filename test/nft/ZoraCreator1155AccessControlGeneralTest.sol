@@ -20,7 +20,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     address payable admin;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(address(0x9));
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
@@ -104,7 +104,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_setTokenMetadataRenderer() public {
         SimpleRenderer renderer = new SimpleRenderer();
         vm.expectRevert();
-        target.setTokenMetadataRenderer(0, renderer, "");
+        target.setTokenMetadataRenderer(0, renderer);
     }
 
     // Get token info is a public getter. Skipping here.
@@ -119,7 +119,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_callRenderer() public {
         SimpleRenderer renderer = new SimpleRenderer();
         vm.prank(admin);
-        target.setTokenMetadataRenderer(1, renderer, "setup");
+        target.setTokenMetadataRenderer(1, renderer);
 
         vm.expectRevert();
         target.callRenderer(10, abi.encodeWithSelector(SimpleRenderer.setup.selector, "hello"));
