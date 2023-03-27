@@ -50,10 +50,8 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
         address fundsRecipient;
     }
 
-    mapping(address => mapping(uint256 => SalesConfig)) internal salesConfigs;
     // target -> tokenId -> settings
-
-    // target -> tokenId -> minter -> count
+    mapping(address => mapping(uint256 => SalesConfig)) internal salesConfigs;
 
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 
@@ -91,7 +89,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
     ) external returns (ICreatorCommands.CommandSet memory commands) {
         address mintTo = abi.decode(minterArguments, (address));
 
-        SalesConfig memory config = salesConfigs[msg.sender][tokenId];
+        SalesConfig storage config = salesConfigs[msg.sender][tokenId];
 
         // If sales config does not exist this first check will always fail.
 
