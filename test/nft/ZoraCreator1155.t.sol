@@ -52,6 +52,7 @@ contract ZoraCreator1155Test is Test {
 
     function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin) external {
         vm.assume(royaltySchedule != 1);
+        vm.assume(royaltyRecipient != address(0) && royaltySchedule != 0 && royaltyBPS != 0);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -74,6 +75,7 @@ contract ZoraCreator1155Test is Test {
         uint256 maxSupply
     ) external {
         vm.assume(royaltySchedule != 1);
+        vm.assume(royaltyRecipient != address(0) && royaltySchedule != 0 && royaltyBPS != 0);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -94,6 +96,7 @@ contract ZoraCreator1155Test is Test {
         address payable defaultAdmin
     ) external {
         vm.assume(royaltySchedule != 1);
+        vm.assume(royaltyRecipient != address(0) && royaltySchedule != 0 && royaltyBPS != 0);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
             royaltySchedule,
             royaltyBPS,
@@ -641,6 +644,9 @@ contract ZoraCreator1155Test is Test {
 
         bytes4 erc165InterfaceId = bytes4(0x01ffc9a7);
         assertTrue(target.supportsInterface(erc165InterfaceId));
+
+        bytes4 erc2981InterfaceId = bytes4(0x2a55205a);
+        assertTrue(target.supportsInterface(erc2981InterfaceId));
     }
 
     function test_burnBatch() external {
