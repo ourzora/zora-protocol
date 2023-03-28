@@ -27,3 +27,7 @@ lcov.info
 
 # package files
 dist/
+
+.env
+.env*
+!.env.example
