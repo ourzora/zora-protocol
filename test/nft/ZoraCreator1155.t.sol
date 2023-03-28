@@ -15,6 +15,7 @@ import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
 
 contract ZoraCreator1155Test is Test {
+    using stdJson for string;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
     MockUpgradeGate internal upgradeGate;
@@ -48,6 +49,11 @@ contract ZoraCreator1155Test is Test {
 
     function init(uint32 royaltySchedule, uint32 royaltyBps, address royaltyRecipient) internal {
         target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
+    }
+
+    function test_packageJsonVersion() public {
+        string memory package = vm.readFile("./package.json");
+        assertEq(package.readString(".version"), target.contractVersion());
     }
 
     function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin) external {
@@ -445,6 +451,30 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
         assertEq(target.balanceOf(royaltyRecipient, tokenId1), quantity1 / 9);
         assertEq(target.balanceOf(royaltyRecipient, tokenId2), quantity2 / 9);
+    }
+
+    function test_adminMintWithInvalidScheduleSkipsSchedule() external {
+        // This configuration is invalid
+        vm.expectRevert();
+        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 0, address(0)), admin, _emptyInitData());
+    }
+
+    function test_adminMintWithEmptyScheduleSkipsSchedule() external {
+        // every 0th token is sent so no tokens
+        init(0, 0, address(0x99a));
+
+        vm.prank(admin);
+        uint256 tokenId1 = target.setupNewToken("test", 1000);
+
+        uint256[] memory tokenIds = new uint256[](1);
+        uint256[] memory quantities = new uint256[](1);
+        tokenIds[0] = tokenId1;
+        quantities[0] = 10;
+
+        vm.prank(admin);
+        target.adminMintBatch(recipient, tokenIds, quantities, "");
+
+        assertEq(target.balanceOf(recipient, tokenId1), 10);
     }
 
     function test_adminMintBatch_revertOnlyAdminOrRole() external {
