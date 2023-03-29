@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
+import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
@@ -68,7 +69,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
-        IZoraCreator1155 newContract = IZoraCreator1155(address(new Zora1155(address(implementation))));
+        address newContract = address(new Zora1155(address(implementation)));
 
         emit SetupNewContract({
             newContract: address(newContract),
@@ -79,7 +80,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration
         });
 
-        newContract.initialize(newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+        IZoraCreator1155Initializer(newContract).initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
         return address(newContract);
     }

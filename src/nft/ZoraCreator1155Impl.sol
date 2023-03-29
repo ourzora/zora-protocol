@@ -5,6 +5,7 @@ import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1
 import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
@@ -31,6 +32,7 @@ import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 /// @author @iainnash / @tbtstl
 contract ZoraCreator1155Impl is
     IZoraCreator1155,
+    IZoraCreator1155Initializer,
     ContractVersionBase,
     ReentrancyGuardUpgradeable,
     PublicMulticall,
@@ -62,11 +64,13 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Initializes the contract
+    /// @param contractName the legacy on-chain contract name
     /// @param newContractURI The contract URI
     /// @param defaultRoyaltyConfiguration The default royalty configuration
     /// @param defaultAdmin The default admin to manage the token
     /// @param setupActions The setup actions to run, if any
     function initialize(
+        string memory contractName,
         string memory newContractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address payable defaultAdmin,
@@ -90,6 +94,8 @@ contract ZoraCreator1155Impl is
         _setOwner(defaultAdmin);
 
         _setFundsRecipient(defaultAdmin);
+
+        _setName(contractName);
 
         // Run Setup actions
         if (setupActions.length > 0) {
