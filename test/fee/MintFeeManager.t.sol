@@ -36,7 +36,7 @@ contract MintFeeManagerTest is Test {
         zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient, address(0));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity);
@@ -70,7 +70,7 @@ contract MintFeeManagerTest is Test {
         zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, _recipient, address(0));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity);
