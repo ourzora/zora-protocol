@@ -44,11 +44,17 @@ contract ZoraCreator1155Test is Test {
     }
 
     function init() internal {
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
     }
 
     function init(uint32 royaltySchedule, uint32 royaltyBps, address royaltyRecipient) internal {
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient), admin, _emptyInitData());
+        target.initialize(
+            "test",
+            "test",
+            ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient),
+            admin,
+            _emptyInitData()
+        );
     }
 
     function test_packageJsonVersion() public {
@@ -64,7 +70,7 @@ contract ZoraCreator1155Test is Test {
             royaltyBPS,
             royaltyRecipient
         );
-        target.initialize("test", config, defaultAdmin, _emptyInitData());
+        target.initialize("test", "test", config, defaultAdmin, _emptyInitData());
 
         assertEq(target.contractURI(), "test");
         (uint32 fetchedSchedule, uint256 fetchedBps, address fetchedRecipient) = target.royalties(0);
@@ -89,7 +95,7 @@ contract ZoraCreator1155Test is Test {
         );
         bytes[] memory setupActions = new bytes[](1);
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply);
-        target.initialize("test", config, defaultAdmin, setupActions);
+        target.initialize("", "test", config, defaultAdmin, setupActions);
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(1);
         assertEq(tokenData.maxSupply, maxSupply);
@@ -108,10 +114,10 @@ contract ZoraCreator1155Test is Test {
             royaltyBPS,
             royaltyRecipient
         );
-        target.initialize("test", config, defaultAdmin, _emptyInitData());
+        target.initialize("test", "test", config, defaultAdmin, _emptyInitData());
 
         vm.expectRevert();
-        target.initialize("test", config, defaultAdmin, _emptyInitData());
+        target.initialize("test", "test", config, defaultAdmin, _emptyInitData());
     }
 
     function test_contractVersion() external {
@@ -180,7 +186,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_setTokenMetadataRenderer() external {
-        target.initialize("", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
+        target.initialize("", "", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
         SimpleRenderer contractRenderer = new SimpleRenderer();
         contractRenderer.setContractURI("contract renderer");
@@ -456,7 +462,7 @@ contract ZoraCreator1155Test is Test {
     function test_adminMintWithInvalidScheduleSkipsSchedule() external {
         // This configuration is invalid
         vm.expectRevert();
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 0, address(0)), admin, _emptyInitData());
+        target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 0, address(0)), admin, _emptyInitData());
     }
 
     function test_adminMintWithEmptyScheduleSkipsSchedule() external {
