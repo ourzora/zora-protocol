@@ -470,6 +470,7 @@ contract ZoraCreator1155Impl is
             royaltyMintSchedule = royalties[CONTRACT_BASE_ID].royaltyMintSchedule;
         }
         if (royaltyMintSchedule == 0) {
+            // If we still have no schedule, return 0 supply royalty.
             return 0;
         }
 
@@ -479,6 +480,10 @@ contract ZoraCreator1155Impl is
             address royaltyRecipient = royalties[tokenId].royaltyRecipient;
             if (royaltyRecipient == address(0)) {
                 royaltyRecipient = royalties[CONTRACT_BASE_ID].royaltyRecipient;
+            }
+            // If we have no recipient set, return 0 supply royalty.
+            if (royaltyRecipient == address(0)) {
+                return 0;
             }
             super._mint(royaltyRecipient, tokenId, totalRoyaltyMints, data);
         }
@@ -616,7 +621,7 @@ contract ZoraCreator1155Impl is
     /// @notice Ensures the caller is authorized to upgrade the contract
     /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
     /// @param _newImpl The new implementation address
-    function _authorizeUpgrade(address _newImpl) internal override onlyAdmin(CONTRACT_BASE_ID) {
+    function _authorizeUpgrade(address _newImpl) internal view override onlyAdmin(CONTRACT_BASE_ID) {
         if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
