@@ -626,7 +626,7 @@ contract ZoraCreator1155Test is Test {
 
     function test_ContractNameUpdate() external {
         init();
-        assertEq(target.name(), "");
+        assertEq(target.name(), "test");
 
         vm.prank(admin);
         target.updateContractMetadata("newURI", "ASDF");
