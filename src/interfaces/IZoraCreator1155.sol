@@ -84,14 +84,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
 
     error CannotMintMoreTokens(uint256 tokenId, uint256 quantity, uint256 totalMinted, uint256 maxSupply);
 
-    function initialize(
-        string memory contractName,
-        string memory newContractURI,
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address payable defaultAdmin,
-        bytes[] calldata setupActions
-    ) external;
-
     /// @notice Only allow minting one token id at time
     /// @dev Mint contract function that calls the underlying sales function for commands
     /// @param minter Address for the minter
