@@ -70,9 +70,10 @@ contract ZoraCreator1155Test is Test {
             royaltyBPS,
             royaltyRecipient
         );
-        target.initialize("test", "test", config, defaultAdmin, _emptyInitData());
+        target.initialize("contract name", "test", config, defaultAdmin, _emptyInitData());
 
         assertEq(target.contractURI(), "test");
+        assertEq(target.name(), "contract name");
         (uint32 fetchedSchedule, uint256 fetchedBps, address fetchedRecipient) = target.royalties(0);
         assertEq(fetchedSchedule, royaltySchedule);
         assertEq(fetchedBps, royaltyBPS);
