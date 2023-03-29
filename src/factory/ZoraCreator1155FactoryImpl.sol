@@ -79,7 +79,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration
         });
 
-        newContract.initialize(newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+        newContract.initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
         return address(newContract);
     }
