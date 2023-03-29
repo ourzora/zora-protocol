@@ -62,11 +62,13 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Initializes the contract
+    /// @param contractName the legacy on-chain contract name
     /// @param newContractURI The contract URI
     /// @param defaultRoyaltyConfiguration The default royalty configuration
     /// @param defaultAdmin The default admin to manage the token
     /// @param setupActions The setup actions to run, if any
     function initialize(
+        string memory contractName,
         string memory newContractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address payable defaultAdmin,
@@ -90,6 +92,8 @@ contract ZoraCreator1155Impl is
         _setOwner(defaultAdmin);
 
         _setFundsRecipient(defaultAdmin);
+
+        _setName(contractName);
 
         // Run Setup actions
         if (setupActions.length > 0) {
