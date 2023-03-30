@@ -53,10 +53,10 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     event RedeemSet(address indexed target, bytes32 indexed redeemsInstructionsHash, RedeemInstructions data);
     event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash);
-    event RedeemCleared(address indexed target, bytes32 indexed redeemInstructionsHash);
+    event RedeemsCleared(address indexed target, bytes32[] indexed redeemInstructionsHashes);
 
     error RedeemInstructionAlreadySet();
-    error RedeemInstructionNotSet();
+    error RedeemInstructionNotAllowed();
     error IncorrectNumberOfTokenIds();
     error ExternalCallFailed();
     error InvalidTokenIdsForTokenType();
@@ -76,7 +76,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     error MustCallClearRedeem();
     error TokenIdOutOfRange();
 
-    mapping(bytes32 => bool) redeemInstructionsSet;
+    mapping(bytes32 => bool) public redeemInstructionsHashIsAllowed;
 
     address public dropContract;
 
@@ -106,7 +106,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         return "0.0.1";
     }
 
-    function hashRedeemInstructions(RedeemInstructions memory _redeemInstructions) public pure returns (bytes32) {
+    function redeemInstructionsHash(RedeemInstructions memory _redeemInstructions) public pure returns (bytes32) {
         return keccak256(abi.encode(_redeemInstructions));
     }
 
@@ -154,22 +154,20 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     function setRedeem(RedeemInstructions calldata _redeemInstructions) external onlyDropContract {
         validateRedeemInstructions(_redeemInstructions);
 
-        bytes32 hash = hashRedeemInstructions(_redeemInstructions);
-        if (redeemInstructionsSet[hash]) {
+        bytes32 hash = redeemInstructionsHash(_redeemInstructions);
+        if (redeemInstructionsHashIsAllowed[hash]) {
             revert RedeemInstructionAlreadySet();
         }
-        redeemInstructionsSet[hashRedeemInstructions(_redeemInstructions)] = true;
+        redeemInstructionsHashIsAllowed[redeemInstructionsHash(_redeemInstructions)] = true;
 
         emit RedeemSet(dropContract, hash, _redeemInstructions);
     }
 
-    function clearRedeem(bytes32 hash) external onlyDropContract {
-        redeemInstructionsSet[hash] = false;
-        emit RedeemCleared(dropContract, hash);
-    }
-
-    function redeemIsSet(bytes32 hash) external view returns (bool) {
-        return redeemInstructionsSet[hash];
+    function clearRedeem(bytes32[] calldata hashes) external onlyDropContract {
+        for (uint256 i = 0; i < hashes.length; i++) {
+            redeemInstructionsHashIsAllowed[hashes[i]] = false;
+        }
+        emit RedeemsCleared(dropContract, hashes);
     }
 
     function requestMint(
@@ -183,9 +181,9 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             minterArguments,
             (address, RedeemInstructions, uint256[][], uint256[][])
         );
-        bytes32 hash = hashRedeemInstructions(redeemInstructions);
-        if (!redeemInstructionsSet[hash]) {
-            revert RedeemInstructionNotSet();
+        bytes32 hash = redeemInstructionsHash(redeemInstructions);
+        if (!redeemInstructionsHashIsAllowed[hash]) {
+            revert RedeemInstructionNotAllowed();
         }
         if (redeemInstructions.saleStart > block.timestamp) {
             revert SaleHasNotStarted();
