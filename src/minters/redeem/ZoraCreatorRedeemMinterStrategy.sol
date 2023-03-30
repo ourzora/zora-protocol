@@ -165,6 +165,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     function clearRedeem(bytes32 hash) external onlyDropContract {
         redeemInstructionsSet[hash] = false;
+        emit RedeemCleared(dropContract, hash);
     }
 
     function redeemIsSet(bytes32 hash) external view returns (bool) {
