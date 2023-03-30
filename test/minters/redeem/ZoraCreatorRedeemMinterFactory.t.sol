@@ -13,12 +13,11 @@ import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
-import {ZoraCreatorRedeemMinterFactoryImpl} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterFactoryImpl.sol";
-import {ZoraRedeemMinterFactory} from "../../../src/proxies/ZoraRedeemMinterFactory.sol";
+import {ZoraCreatorRedeemMinterFactory} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
 contract ZoraCreatorRedeemMinterFactoryTest is Test {
     ZoraCreator1155Impl internal target;
-    ZoraCreatorRedeemMinterFactoryImpl internal minterFactory;
+    ZoraCreatorRedeemMinterFactory internal minterFactory;
     address payable internal tokenAdmin = payable(address(0x999));
     address payable internal factoryAdmin = payable(address(0x888));
 
@@ -29,13 +28,10 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, address(0), address(0));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
-        target.initialize("test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);
 
         vm.startPrank(factoryAdmin);
-        ZoraCreatorRedeemMinterFactoryImpl minterFactoryImpl = new ZoraCreatorRedeemMinterFactoryImpl();
-        ZoraRedeemMinterFactory factoryProxy = new ZoraRedeemMinterFactory(address(minterFactoryImpl), "");
-        minterFactory = ZoraCreatorRedeemMinterFactoryImpl(address(factoryProxy));
-        minterFactory.initialize(factoryAdmin);
+        minterFactory = new ZoraCreatorRedeemMinterFactory();
         vm.stopPrank();
     }
 
@@ -49,7 +45,7 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         address predictedAddress = minterFactory.predictMinterAddress(address(target));
         vm.expectEmit(false, false, false, false);
         emit RedeemMinterDeployed(address(target), predictedAddress);
-        target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactoryImpl.createMinter.selector));
+        target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinter.selector));
         vm.stopPrank();
 
         ZoraCreatorRedeemMinterStrategy minter = ZoraCreatorRedeemMinterStrategy(predictedAddress);

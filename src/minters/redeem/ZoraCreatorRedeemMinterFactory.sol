@@ -11,7 +11,7 @@ import {ZoraCreatorRedeemMinterStrategy} from "./ZoraCreatorRedeemMinterStrategy
 import {IZoraCreator1155} from "../../interfaces/IZoraCreator1155.sol";
 import {SharedBaseConstants} from "../../shared/SharedBaseConstants.sol";
 
-contract ZoraCreatorRedeemMinterFactoryImpl is SharedBaseConstants, IVersionedContract, IMinter1155 {
+contract ZoraCreatorRedeemMinterFactory is SharedBaseConstants, IVersionedContract, IMinter1155 {
     struct MinterContract {
         address deployedAddress;
         string version;
