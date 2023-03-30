@@ -25,43 +25,14 @@
       "isFixedGasLimit": false
     }
   ],
-  "receipts": [
-    {
-      "transactionHash": "0x0aa9e44fb3f34bed8883130d3515bb5a1151f6f8b1ccba3ef74bff2e087a4c70",
-      "transactionIndex": "0xc1",
-      "blockHash": "0xb203f36989ca66568594aa618c2786c25779f3053f06e2778afda458fd4169ef",
-      "blockNumber": "0x8570aa",
-      "from": "0x9444390c01Dd5b7249E53FAc31290F7dFF53450D",
-      "to": null,
-      "cumulativeGasUsed": "0x12749ab",
-      "gasUsed": "0x1c6703",
-      "contractAddress": "0x9F3BeaA9eCf399C45E97F0C024fb94eFD4Af90CE",
-      "logs": [
-        {
-          "address": "0x9F3BeaA9eCf399C45E97F0C024fb94eFD4Af90CE",
-          "topics": [
-            "0x7f26b83ff96e1f2b6a682f133852f6798a09c465da95921460cefb3847402498"
-          ],
-          "data": "0x0000000000000000000000000000000000000000000000000000000000000001",
-          "blockHash": "0xb203f36989ca66568594aa618c2786c25779f3053f06e2778afda458fd4169ef",
-          "blockNumber": "0x8570aa",
-          "transactionHash": "0x0aa9e44fb3f34bed8883130d3515bb5a1151f6f8b1ccba3ef74bff2e087a4c70",
-          "transactionIndex": "0xc1",
-          "logIndex": "0xfc",
-          "removed": false
-        }
-      ],
-      "status": "0x1",
-      "logsBloom": "0x00000000000000000000000000000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000080000000000000000000000000000000000000000000000400000000000000000000000000000000000000000000000000000008000000040000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000",
-      "type": "0x2",
-      "effectiveGasPrice": "0x1bf08eb000"
-    }
-  ],
+  "receipts": [],
   "libraries": [],
-  "pending": [],
+  "pending": [
+    "0x0aa9e44fb3f34bed8883130d3515bb5a1151f6f8b1ccba3ef74bff2e087a4c70"
+  ],
   "path": "/Users/iain/zora/zora-creator-contracts/broadcast/Upgrade.s.sol/5/run-latest.json",
   "returns": {},
-  "timestamp": 1680196838,
+  "timestamp": 1680196350,
   "chain": 5,
   "multi": false,
   "commit": "e1cc111"
