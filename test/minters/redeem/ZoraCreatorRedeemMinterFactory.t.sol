@@ -42,7 +42,7 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
     function test_createMinter() public {
         vm.startPrank(tokenAdmin);
         target.addPermission(0, address(minterFactory), target.PERMISSION_BIT_MINTER());
-        address predictedAddress = minterFactory.predictMinterAddress(address(target));
+        address predictedAddress = minterFactory.predictRedeemMinterAddressForCreatorContract(address(target));
         vm.expectEmit(false, false, false, false);
         emit RedeemMinterDeployed(address(target), predictedAddress);
         target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinter.selector));
@@ -71,8 +71,8 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
     function test_getDeployedMinterForCreatorContract() public {
         vm.prank(address(target));
         minterFactory.createMinter();
-        address minterAddress = minterFactory.predictMinterAddress(address(target));
+        address minterAddress = minterFactory.predictRedeemMinterAddressForCreatorContract(address(target));
 
-        assertEq(minterAddress, minterFactory.getDeployedRedeemMinterForCreatorContract(address(target)));
+        assertEq(minterFactory.doesRedeemMinterExistForCreatorContract(address(target)), true);
     }
 }

@@ -58,14 +58,13 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     error RedeemInstructionAlreadySet();
     error RedeemInstructionNotAllowed();
     error IncorrectNumberOfTokenIds();
-    error ExternalCallFailed();
     error InvalidTokenIdsForTokenType();
     error InvalidSaleEndOrStart();
-    error EthRecipientCannotBeZero();
     error EmptyRedeemInstructions();
     error RedeemTokenTypeMustBeERC1155();
     error MustBurnOrTransfer();
-    error IncorrectAmount();
+    error IncorrectMintAmount();
+    error IncorrectBurnOrTransferAmount();
     error InvalidDropContract();
     error SaleEnded();
     error SaleHasNotStarted();
@@ -75,6 +74,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     error BurnFailed();
     error MustCallClearRedeem();
     error TokenIdOutOfRange();
+    error RedeemTokenContractMustBeDropContract();
 
     mapping(bytes32 => bool) public redeemInstructionsHashIsAllowed;
 
@@ -129,7 +129,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             revert MustBurnOrTransfer();
         }
         if (_redeemInstruction.amount == 0) {
-            revert IncorrectAmount();
+            revert IncorrectMintAmount();
         }
     }
 
@@ -141,7 +141,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             revert EmptyRedeemInstructions();
         }
         if (_redeemInstructions.redeemToken.tokenContract != dropContract) {
-            revert InvalidTokenType();
+            revert RedeemTokenContractMustBeDropContract();
         }
         if (_redeemInstructions.redeemToken.tokenType != TokenType.ERC1155) {
             revert RedeemTokenTypeMustBeERC1155();
@@ -197,6 +197,9 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         if (ethValueSent != redeemInstructions.ethAmount) {
             revert WrongValueSent();
         }
+        if (amount != redeemInstructions.redeemToken.amount) {
+            revert IncorrectMintAmount();
+        }
         for (uint256 i = 0; i < redeemInstructions.instructions.length; i++) {
             RedeemInstruction memory instruction = redeemInstructions.instructions[i];
             if (instruction.tokenType == TokenType.ERC1155) {
@@ -221,7 +224,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     function _handleErc721Redeem(RedeemInstruction memory instruction, address mintTo, uint256[] memory tokenIds) internal {
         if (tokenIds.length != instruction.amount) {
-            revert IncorrectAmount();
+            revert IncorrectBurnOrTransferAmount();
         }
         for (uint256 j = 0; j < tokenIds.length; j++) {
             if (tokenIds[j] < instruction.tokenIdStart || tokenIds[j] > instruction.tokenIdEnd) {
@@ -250,7 +253,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             }
         }
         if (sum != instruction.amount) {
-            revert IncorrectAmount();
+            revert IncorrectBurnOrTransferAmount();
         }
         if (instruction.burnFunction != 0) {
             (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, mintTo, tokenIds, amounts));

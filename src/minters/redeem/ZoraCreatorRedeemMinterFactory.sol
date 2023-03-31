@@ -63,7 +63,7 @@ contract ZoraCreatorRedeemMinterFactory is SharedBaseConstants, IVersionedContra
         emit RedeemMinterDeployed(msg.sender, minter);
     }
 
-    function predictMinterAddress(address _creatorContract) external view returns (address) {
+    function predictRedeemMinterAddressForCreatorContract(address _creatorContract) external view returns (address) {
         return Clones.predictDeterministicAddress(zoraRedeemMinterImplementation, keccak256(abi.encode(_creatorContract)), address(this));
     }
 
