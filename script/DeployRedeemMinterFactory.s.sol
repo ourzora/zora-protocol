@@ -10,7 +10,7 @@ contract DeployScript is Script {
         address deployer = vm.envAddress("DEPLOYER");
         vm.startBroadcast(deployer);
 
-        ZoraCreatorRedeemMinterFactory minterFactoryProxy = new ZoraCreatorRedeemMinterFactory();
+        ZoraCreatorRedeemMinterFactory minterFactory = new ZoraCreatorRedeemMinterFactory();
 
         vm.stopBroadcast();
     }
