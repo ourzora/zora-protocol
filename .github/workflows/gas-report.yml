@@ -1,0 +1,58 @@
+name: Report gas diff
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    # Optionally configure to run only for changes in specific files. For example:
+    # paths:
+    # - src/**
+    # - test/**
+    # - foundry.toml
+    # - remappings.txt
+    # - .github/workflows/foundry-gas-diff.yml
+
+jobs:
+  compare_gas_reports:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: recursive
+
+      - name: Install Foundry
+        uses: onbjerg/foundry-toolchain@v1
+        with:
+          version: nightly
+      
+      - name: Use Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "16.13.2"
+      - run: npm install
+
+      # Add any step generating a gas report to a temporary file named gasreport.ansi. For example:
+      - name: Run tests
+        run: npm run write-gas-report
+        env:
+          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-diff@v3.13.6
+        with:
+          summaryQuantile: 0.9 # only display the 10% most significant gas diffs in the summary (defaults to 20%)
+          sortCriteria: avg,max # sort diff rows by criteria
+          sortOrders: desc,asc # and directions
+          # ignore: test-foundry/**/* # filter out gas reports from specific paths (test/ is included by default)
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          # delete the comment in case changes no longer impact gas costs
+          delete: ${{ !steps.gas_diff.outputs.markdown }}
+          message: ${{ steps.gas_diff.outputs.markdown }}

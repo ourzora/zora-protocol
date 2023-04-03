@@ -377,10 +377,44 @@ contract ZoraCreator1155Impl is
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleFeeAndGetValueSent(quantity);
+        uint256 ethValueSent = msg.value;
+
+        // Handle mint fee
+        if (mintFeeRecipient != address(0)) {
+            uint256 totalFee = mintFee * quantity;
+            ethValueSent -= totalFee;
+            if (!TransferHelperUtils.safeSendETH(mintFeeRecipient, totalFee, TransferHelperUtils.FUNDS_SEND_LOW_GAS_LIMIT)) {
+                revert CannotSendMintFee(mintFeeRecipient, totalFee);
+            }
+        }
+
+        ICreatorCommands.Command[] memory commands = minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments).commands;
 
         // Execute commands returned from minter
-        _executeCommands(minter.requestMint(address(this), tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+        unchecked {
+            uint256 commandsLen = commands.length;
+            for (uint256 i = 0; i < commandsLen; ++i) {
+                ICreatorCommands.CreatorActions method = commands[i].method;
+
+                if (method == ICreatorCommands.CreatorActions.SEND_ETH) {
+                    (address recipient, uint256 amount) = abi.decode(commands[i].args, (address, uint256));
+                    if (ethValueSent > amount) {
+                        revert Mint_InsolventSaleTransfer();
+                    }
+                    if (!TransferHelperUtils.safeSendETH(recipient, amount, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
+                        revert Mint_ValueTransferFail();
+                    }
+                } else if (method == ICreatorCommands.CreatorActions.MINT) {
+                    (address recipient, uint256 mintTokenId, uint256 quantity) = abi.decode(commands[i].args, (address, uint256, uint256));
+                    if (tokenId != 0 && mintTokenId != tokenId) {
+                        revert Mint_TokenIDMintNotAllowed();
+                    }
+                    _mint(recipient, tokenId, quantity, "");
+                } else {
+                    // no-op
+                }
+            }
+        }
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
@@ -396,35 +430,6 @@ contract ZoraCreator1155Impl is
         } else {
             // We don't know the uri from the renderer but can emit a notification to the indexer here
             emit URI("", tokenId);
-        }
-    }
-
-    /// Execute Minter Commands ///
-
-    /// @notice Internal functions to execute commands returned by the minter
-    /// @param commands list of command structs
-    /// @param ethValueSent the ethereum value sent in the mint transaction into the contract
-    /// @param tokenId the token id the user requested to mint (0 if the token id is set by the minter itself across the whole contract)
-    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
-        for (uint256 i = 0; i < commands.length; ++i) {
-            ICreatorCommands.CreatorActions method = commands[i].method;
-            if (method == ICreatorCommands.CreatorActions.SEND_ETH) {
-                (address recipient, uint256 amount) = abi.decode(commands[i].args, (address, uint256));
-                if (ethValueSent > amount) {
-                    revert Mint_InsolventSaleTransfer();
-                }
-                if (!TransferHelperUtils.safeSendETH(recipient, amount, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
-                    revert Mint_ValueTransferFail();
-                }
-            } else if (method == ICreatorCommands.CreatorActions.MINT) {
-                (address recipient, uint256 mintTokenId, uint256 quantity) = abi.decode(commands[i].args, (address, uint256, uint256));
-                if (tokenId != 0 && mintTokenId != tokenId) {
-                    revert Mint_TokenIDMintNotAllowed();
-                }
-                _mint(recipient, tokenId, quantity, "");
-            } else {
-                // no-op
-            }
         }
     }
 
