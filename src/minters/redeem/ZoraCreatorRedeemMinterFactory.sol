@@ -43,6 +43,7 @@ import {ZoraCreatorRedeemMinterFactory} from "../../minters/redeem/ZoraCreatorRe
 /// @notice A factory for ZoraCreatorRedeemMinterStrategy contracts
 /// @author @jgeary
 contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseConstants, IVersionedContract, IMinter1155 {
+    bytes4 constant LEGACY_ZORA_IMINTER1155_INTERFACE_ID = 0x6467a6fc;
     address public immutable zoraRedeemMinterImplementation;
 
     event RedeemMinterDeployed(address indexed creatorContract, address indexed minterContract);
@@ -81,12 +82,15 @@ contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseC
 
     /// @notice IERC165 interface support
     function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-        return interfaceId == type(IMinter1155).interfaceId || interfaceId == bytes4(0x00000000) || interfaceId == type(IERC165).interfaceId;
+        return interfaceId == type(IMinter1155).interfaceId || interfaceId == LEGACY_ZORA_IMINTER1155_INTERFACE_ID || interfaceId == type(IERC165).interfaceId;
     }
 
     /// @notice Deploys a new ZoraCreatorRedeemMinterStrategy for caller ZoraCreator1155 contract if none exists
     function createMinterIfNoneExists() external {
-        if (!IERC165(msg.sender).supportsInterface(type(IZoraCreator1155).interfaceId)) {
+        if (
+            !IERC165(msg.sender).supportsInterface(type(IZoraCreator1155).interfaceId) &&
+            !IERC165(msg.sender).supportsInterface(LEGACY_ZORA_IMINTER1155_INTERFACE_ID)
+        ) {
             revert CallerNotZoraCreator1155();
         }
         if (doesRedeemMinterExistForCreatorContract(msg.sender)) {
