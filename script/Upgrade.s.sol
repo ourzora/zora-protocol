@@ -44,7 +44,7 @@ contract UpgradeScript is Script {
         ZoraCreatorMerkleMinterStrategy merkleMinter = ZoraCreatorMerkleMinterStrategy(configFile.readAddress(".MERKLE_MINT_SALE_STRATEGY"));
         if (address(merkleMinter) == address(0)) {
             merkleMinter = new ZoraCreatorMerkleMinterStrategy();
-            console2.log("New MrkleMintStrategy", address(merkleMinter));
+            console2.log("New MerkleMintStrategy", address(merkleMinter));
         } else {
             console2.log("Existing MERKLE_MINT_STRATEGY", address(merkleMinter));
         }
