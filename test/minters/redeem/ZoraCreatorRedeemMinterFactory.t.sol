@@ -8,6 +8,7 @@ import {ERC1155PresetMinterPauser} from "@openzeppelin/contracts/token/ERC1155/p
 
 import {ZoraCreator1155Impl} from "../../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../../src/proxies/Zora1155.sol";
+import {IMinter1155} from "../../../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
@@ -65,5 +66,11 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         address minterAddress = minterFactory.predictMinterAddress(address(target));
 
         assertEq(minterAddress, minterFactory.getDeployedRedeemMinterForCreatorContract(address(target)));
+    }
+
+    function test_supportsInterface() public {
+        assertTrue(minterFactory.supportsInterface(0x01ffc9a7)); // ERC165
+        assertTrue(minterFactory.supportsInterface(type(IMinter1155).interfaceId));
+        assertTrue(minterFactory.supportsInterface(0x6467a6fc)); // old IMinter1155
     }
 }
