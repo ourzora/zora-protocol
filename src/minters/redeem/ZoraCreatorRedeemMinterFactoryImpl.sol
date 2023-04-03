@@ -30,6 +30,7 @@ contract ZoraCreatorRedeemMinterFactoryImpl is UUPSUpgradeable, Ownable2StepUpgr
     error MinterContractAlreadyExists();
     error MinterContractDoesNotExist();
 
+    // TODO: if this approach is the one used make this an intiailizer
     constructor() {
         zoraRedeemMinterImplementation = address(new ZoraCreatorRedeemMinterStrategy());
     }

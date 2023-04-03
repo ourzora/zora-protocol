@@ -9,11 +9,13 @@ import {ZoraRedeemMinterFactory} from "../src/proxies/ZoraRedeemMinterFactory.so
 
 contract DeployScript is Script {
     function run() public {
-        uint256 key = vm.envUint("PRIVATE_KEY");
+        address key = vm.envAddress("DEPLOYER");
         vm.startBroadcast(key);
 
+        // TODO: use a static contract for the factory
         ZoraCreatorRedeemMinterFactoryImpl minterFactoryImpl = new ZoraCreatorRedeemMinterFactoryImpl();
         ZoraRedeemMinterFactory minterFactoryProxy = new ZoraRedeemMinterFactory(address(minterFactoryImpl), "");
+        ZoraCreatorRedeemMinterFactoryImpl(address(minterFactoryProxy)).initialize(key);
 
         vm.stopBroadcast();
     }
