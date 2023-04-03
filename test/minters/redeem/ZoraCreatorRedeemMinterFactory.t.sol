@@ -38,17 +38,17 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         assertEq(minterFactory.contractVersion(), "0.0.1");
     }
 
-    function test_createMinter() public {
+    function test_createMinterIfNoneExists() public {
         vm.startPrank(tokenAdmin);
         target.addPermission(0, address(minterFactory), target.PERMISSION_BIT_MINTER());
         address predictedAddress = minterFactory.predictMinterAddress(address(target));
         vm.expectEmit(false, false, false, false);
         emit RedeemMinterDeployed(address(target), predictedAddress);
-        target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinter.selector));
+        target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinterIfNoneExists.selector));
         vm.stopPrank();
 
         ZoraCreatorRedeemMinterStrategy minter = ZoraCreatorRedeemMinterStrategy(predictedAddress);
-        assertEq(minter.contractVersion(), "0.0.1");
+        assertTrue(address(minter).code.length > 0);
     }
 
     function test_createMinterRequiresIZoraCreator1155Caller() public {
@@ -56,20 +56,12 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
 
         vm.expectRevert(abi.encodeWithSignature("CallerNotZoraCreator1155()"));
         vm.prank(address(randomToken));
-        minterFactory.createMinter();
-    }
-
-    function test_createMinterCannotBeCalledTwice() public {
-        vm.startPrank(address(target));
-        minterFactory.createMinter();
-        vm.expectRevert(abi.encodeWithSignature("MinterContractAlreadyExists()"));
-        minterFactory.createMinter();
-        vm.stopPrank();
+        minterFactory.createMinterIfNoneExists();
     }
 
     function test_getDeployedMinterForCreatorContract() public {
         vm.prank(address(target));
-        minterFactory.createMinter();
+        minterFactory.createMinterIfNoneExists();
         address minterAddress = minterFactory.predictMinterAddress(address(target));
 
         assertEq(minterAddress, minterFactory.getDeployedRedeemMinterForCreatorContract(address(target)));

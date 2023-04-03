@@ -41,9 +41,10 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function test_defaultMinters() external {
         IMinter1155[] memory minters = factory.defaultMinters();
-        assertEq(minters.length, 2);
+        assertEq(minters.length, 3);
         assertEq(address(minters[0]), address(2));
         assertEq(address(minters[1]), address(1));
+        assertEq(address(minters[2]), address(3));
     }
 
     function test_createContract(
