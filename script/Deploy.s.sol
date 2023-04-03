@@ -11,9 +11,10 @@ import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesContr
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
-import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ProxyShim} from "../src/utils/ProxyShim.sol";
+import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
 contract DeployScript is Script {
     function setUp() public {}
@@ -27,6 +28,7 @@ contract DeployScript is Script {
 
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
+        ZoraCreatorRedeemMinterFactory redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
 
         address factoryShimAddress = address(new ProxyShim(deployer));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
@@ -36,6 +38,7 @@ contract DeployScript is Script {
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: creatorImpl,
             _merkleMinter: merkleMinter,
+            _redeemMinterFactory: redeemMinterFactory,
             _fixedPriceMinter: fixedPricedMinter
         });
 

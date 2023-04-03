@@ -16,7 +16,12 @@ contract Ownable2StepUpgradableTest is Test {
 
     function setUp() external {
         owner = vm.addr(0x1);
-        ZoraCreator1155FactoryImpl factory = new ZoraCreator1155FactoryImpl(IZoraCreator1155(owner), IMinter1155(address(0)), IMinter1155(address(0)));
+        ZoraCreator1155FactoryImpl factory = new ZoraCreator1155FactoryImpl(
+            IZoraCreator1155(owner),
+            IMinter1155(address(0)),
+            IMinter1155(address(0)),
+            IMinter1155(address(0))
+        );
         Zora1155Factory proxy = new Zora1155Factory(address(factory), "");
         IZoraCreator1155Factory(address(proxy)).initialize(owner);
         ownable = Ownable2StepUpgradeable(address(proxy));

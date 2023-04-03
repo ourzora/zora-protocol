@@ -31,7 +31,7 @@ import {LimitedMintPerAddress} from "../utils/LimitedMintPerAddress.sol";
 
     github.com/ourzora/zora-1155-contracts
 
- */
+*/
 
 /// @title ZoraCreatorFixedPriceSaleStrategy
 /// @notice A sale strategy for ZoraCreator that allows for fixed price sales over a given time period
