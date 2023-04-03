@@ -5,6 +5,7 @@ import {ERC1155Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC1
 import {IERC1155MetadataURIUpgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 
@@ -31,6 +32,7 @@ import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 /// @author @iainnash / @tbtstl
 contract ZoraCreator1155Impl is
     IZoraCreator1155,
+    IZoraCreator1155Initializer,
     ContractVersionBase,
     ReentrancyGuardUpgradeable,
     PublicMulticall,
@@ -62,11 +64,13 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Initializes the contract
+    /// @param contractName the legacy on-chain contract name
     /// @param newContractURI The contract URI
     /// @param defaultRoyaltyConfiguration The default royalty configuration
     /// @param defaultAdmin The default admin to manage the token
     /// @param setupActions The setup actions to run, if any
     function initialize(
+        string memory contractName,
         string memory newContractURI,
         RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address payable defaultAdmin,
@@ -90,6 +94,8 @@ contract ZoraCreator1155Impl is
         _setOwner(defaultAdmin);
 
         _setFundsRecipient(defaultAdmin);
+
+        _setName(contractName);
 
         // Run Setup actions
         if (setupActions.length > 0) {
@@ -231,7 +237,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to check
     /// @param quantity The quantity of tokens to mint to check
     function _requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
-        TokenData memory tokenInformation = tokens[tokenId];
+        TokenData storage tokenInformation = tokens[tokenId];
         if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
             revert CannotMintMoreTokens(tokenId, quantity, tokenInformation.totalMinted, tokenInformation.maxSupply);
         }
@@ -464,6 +470,31 @@ contract ZoraCreator1155Impl is
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId || ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
+    function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount, bytes memory data) internal returns (uint256 totalRoyaltyMints) {
+        uint256 royaltyMintSchedule = royalties[tokenId].royaltyMintSchedule;
+        if (royaltyMintSchedule == 0) {
+            royaltyMintSchedule = royalties[CONTRACT_BASE_ID].royaltyMintSchedule;
+        }
+        if (royaltyMintSchedule == 0) {
+            // If we still have no schedule, return 0 supply royalty.
+            return 0;
+        }
+
+        totalRoyaltyMints = (mintAmount + (tokens[tokenId].totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
+
+        if (totalRoyaltyMints > 0) {
+            address royaltyRecipient = royalties[tokenId].royaltyRecipient;
+            if (royaltyRecipient == address(0)) {
+                royaltyRecipient = royalties[CONTRACT_BASE_ID].royaltyRecipient;
+            }
+            // If we have no recipient set, return 0 supply royalty.
+            if (royaltyRecipient == address(0)) {
+                return 0;
+            }
+            super._mint(royaltyRecipient, tokenId, totalRoyaltyMints, data);
+        }
+    }
+
     /// Generic 1155 function overrides ///
 
     /// @notice Mint function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
@@ -472,15 +503,11 @@ contract ZoraCreator1155Impl is
     /// @param amount of tokens to mint
     /// @param data as specified by 1155 standard
     function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
-        (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(id, tokens[id].totalMinted, amount);
-
-        _requireCanMintQuantity(id, amount + supplyRoyaltyAmount);
+        uint256 supplyRoyaltyMints = _handleSupplyRoyalty(id, amount, data);
+        _requireCanMintQuantity(id, amount + supplyRoyaltyMints);
 
         super._mint(to, id, amount, data);
-        if (supplyRoyaltyAmount > 0) {
-            super._mint(supplyRoyaltyRecipient, id, supplyRoyaltyAmount, data);
-        }
-        tokens[id].totalMinted += amount + supplyRoyaltyAmount;
+        tokens[id].totalMinted += amount + supplyRoyaltyMints;
     }
 
     /// @notice Mint batch function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
@@ -492,12 +519,9 @@ contract ZoraCreator1155Impl is
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
-            (address supplyRoyaltyRecipient, uint256 supplyRoyaltyAmount) = supplyRoyaltyInfo(ids[i], tokens[ids[i]].totalMinted, amounts[i]);
-            _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyAmount);
-            if (supplyRoyaltyAmount > 0) {
-                super._mint(supplyRoyaltyRecipient, ids[i], supplyRoyaltyAmount, data);
-            }
-            tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyAmount;
+            uint256 supplyRoyaltyMints = _handleSupplyRoyalty(ids[i], amounts[i], data);
+            _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyMints);
+            tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyMints;
         }
     }
 
@@ -603,7 +627,7 @@ contract ZoraCreator1155Impl is
     /// @notice Ensures the caller is authorized to upgrade the contract
     /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
     /// @param _newImpl The new implementation address
-    function _authorizeUpgrade(address _newImpl) internal override onlyAdmin(CONTRACT_BASE_ID) {
+    function _authorizeUpgrade(address _newImpl) internal view override onlyAdmin(CONTRACT_BASE_ID) {
         if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }

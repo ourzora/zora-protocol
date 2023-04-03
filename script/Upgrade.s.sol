@@ -71,7 +71,7 @@ contract UpgradeScript is Script {
         });
 
         console2.log("New Factory Impl", address(factoryImpl));
-        console2.log("Upgrade to this new factory impl from ", factoryProxy);
+        console2.log("Upgrade to this new factory impl on the proxy:", factoryProxy);
 
         if (isNewNFTImpl) {
             bytes[] memory setup = new bytes[](0);

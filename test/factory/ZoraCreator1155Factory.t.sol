@@ -59,6 +59,8 @@ contract ZoraCreator1155FactoryTest is Test {
         // Additionally, this case makes no sense from a user perspective.
         vm.assume(admin != payable(address(factory)));
         vm.assume(royaltyMintSchedule != 1);
+        // Assume royalty recipient is not 0
+        vm.assume(royaltyRecipient != payable(address(0)));
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
         address deployedAddress = factory.createContract(
