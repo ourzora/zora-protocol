@@ -7,13 +7,41 @@ import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import {Enjoy} from "_imagine/mint/Enjoy.sol";
+
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
 import {IZoraCreator1155} from "../../interfaces/IZoraCreator1155.sol";
 
+/*
+
+
+             ░░░░░░░░░░░░░░              
+        ░░▒▒░░░░░░░░░░░░░░░░░░░░        
+      ░░▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░      
+    ░░▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░    
+   ░▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░    
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░        ░░░░░░░░  
+  ░▓▓▓▒▒▒▒░░░░░░░░░░░░░░    ░░░░░░░░░░  
+  ░▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░░  
+  ░▓▓▓▓▓▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░░░░  
+   ░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░░░░  
+    ░░▓▓▓▓▒▒▒▒▒▒░░░░░░░░░░░░░░░░░░░░    
+    ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒░░░░░░░░░▒▒▒▒▒░░    
+      ░░▓▓▓▓▓▓▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒▒░░      
+          ░░▓▓▓▓▓▓▓▓▓▓▓▓▒▒░░░          
+
+               OURS TRULY,
+
+
+    github.com/ourzora/zora-1155-contracts
+
+*/
+
+/// @title ZoraCreatorRedeemMinterStrategy
+/// @notice A strategy that allows minting by redeeming other (ERC20/721/1155) tokens
+/// @author @jgeary
 contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
     using SafeERC20 for IERC20;
@@ -25,29 +53,46 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         ERC20
     }
 
-    struct RedeemToken {
+    struct MintToken {
+        /// @notice The address of the minting token contract (always creatorContract)
         address tokenContract;
+        /// @notice The mint tokenId
         uint256 tokenId;
+        /// @notice The amount of tokens that can be minted
         uint256 amount;
+        /// @notice The mint token type (alwas ERC1155)
         TokenType tokenType;
     }
 
     struct RedeemInstruction {
+        /// @notice The type of token to be redeemed
         TokenType tokenType;
+        /// @notice The amount of tokens to be redeemed
         uint256 amount;
+        /// @notice The start of the range of token ids to be redeemed
         uint256 tokenIdStart;
+        /// @notice The end of the range of token ids to be redeemed
         uint256 tokenIdEnd;
+        /// @notice The address of the token contract to be redeemed
         address tokenContract;
+        /// @notice The address to transfer the redeemed tokens to
         address transferRecipient;
+        /// @notice The function to call on the token contract to burn the tokens
         bytes4 burnFunction;
     }
 
     struct RedeemInstructions {
-        RedeemToken redeemToken;
+        /// @notice The token to be minted
+        MintToken mintToken;
+        /// @notice The instructions for redeeming tokens
         RedeemInstruction[] instructions;
+        /// @notice The start of the sale
         uint64 saleStart;
+        /// @notice The end of the sale
         uint64 saleEnd;
+        /// @notice The amount of ETH to send to the recipient
         uint256 ethAmount;
+        /// @notice The address to send the ETH to (0x0 for the creator contract)
         address ethRecipient;
     }
 
@@ -61,51 +106,58 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     error InvalidTokenIdsForTokenType();
     error InvalidSaleEndOrStart();
     error EmptyRedeemInstructions();
-    error RedeemTokenTypeMustBeERC1155();
+    error MintTokenTypeMustBeERC1155();
     error MustBurnOrTransfer();
     error IncorrectMintAmount();
     error IncorrectBurnOrTransferAmount();
-    error InvalidDropContract();
+    error InvalidCreatorContract();
     error SaleEnded();
     error SaleHasNotStarted();
     error InvalidTokenType();
     error WrongValueSent();
-    error CallerNotDropContract();
+    error CallerNotCreatorContract();
     error BurnFailed();
     error MustCallClearRedeem();
     error TokenIdOutOfRange();
-    error RedeemTokenContractMustBeDropContract();
+    error MintTokenContractMustBeCreatorContract();
 
+    /// @notice keccak256(abi.encode(RedeemInstructions)) => redeem instructions are allowed
     mapping(bytes32 => bool) public redeemInstructionsHashIsAllowed;
 
-    address public dropContract;
+    /// @notice Zora creator contract
+    address public creatorContract;
 
-    modifier onlyDropContract() {
-        if (msg.sender != dropContract) {
-            revert CallerNotDropContract();
+    modifier onlyCreatorContract() {
+        if (msg.sender != creatorContract) {
+            revert CallerNotCreatorContract();
         }
         _;
     }
 
-    function initialize(address _dropContract) public initializer {
-        if (_dropContract == address(0)) {
-            revert InvalidDropContract();
+    function initialize(address _creatorContract) public initializer {
+        if (_creatorContract == address(0)) {
+            revert InvalidCreatorContract();
         }
-        dropContract = _dropContract;
+        creatorContract = _creatorContract;
     }
 
+    /// @notice Redeem Minter Strategy contract URI
     function contractURI() external pure override returns (string memory) {
         return "https://github.com/ourzora/zora-1155-contracts/";
     }
 
+    /// @notice Redeem Minter Strategy contract name
     function contractName() external pure override returns (string memory) {
         return "Redeem Minter Sale Strategy";
     }
 
+    /// @notice Redeem Minter Strategy contract version
     function contractVersion() external pure override returns (string memory) {
         return "0.0.1";
     }
 
+    /// @notice Redeem instructions object hash
+    /// @param _redeemInstructions The redeem instructions object
     function redeemInstructionsHash(RedeemInstructions memory _redeemInstructions) public pure returns (bytes32) {
         return keccak256(abi.encode(_redeemInstructions));
     }
@@ -133,6 +185,8 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         }
     }
 
+    /// @notice Validate redeem instructions
+    /// @param _redeemInstructions The redeem instructions object
     function validateRedeemInstructions(RedeemInstructions memory _redeemInstructions) public view {
         if (_redeemInstructions.saleEnd <= _redeemInstructions.saleStart || _redeemInstructions.saleEnd <= block.timestamp) {
             revert InvalidSaleEndOrStart();
@@ -140,18 +194,20 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         if (_redeemInstructions.instructions.length == 0) {
             revert EmptyRedeemInstructions();
         }
-        if (_redeemInstructions.redeemToken.tokenContract != dropContract) {
-            revert RedeemTokenContractMustBeDropContract();
+        if (_redeemInstructions.mintToken.tokenContract != creatorContract) {
+            revert MintTokenContractMustBeCreatorContract();
         }
-        if (_redeemInstructions.redeemToken.tokenType != TokenType.ERC1155) {
-            revert RedeemTokenTypeMustBeERC1155();
+        if (_redeemInstructions.mintToken.tokenType != TokenType.ERC1155) {
+            revert MintTokenTypeMustBeERC1155();
         }
         for (uint256 i = 0; i < _redeemInstructions.instructions.length; i++) {
             validateSingleRedeemInstruction(_redeemInstructions.instructions[i]);
         }
     }
 
-    function setRedeem(RedeemInstructions calldata _redeemInstructions) external onlyDropContract {
+    /// @notice Set redeem instructions
+    /// @param _redeemInstructions The redeem instructions object
+    function setRedeem(RedeemInstructions calldata _redeemInstructions) external onlyCreatorContract {
         validateRedeemInstructions(_redeemInstructions);
 
         bytes32 hash = redeemInstructionsHash(_redeemInstructions);
@@ -160,23 +216,30 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         }
         redeemInstructionsHashIsAllowed[redeemInstructionsHash(_redeemInstructions)] = true;
 
-        emit RedeemSet(dropContract, hash, _redeemInstructions);
+        emit RedeemSet(creatorContract, hash, _redeemInstructions);
     }
 
-    function clearRedeem(bytes32[] calldata hashes) external onlyDropContract {
+    /// @notice Clear redeem instructions
+    /// @param hashes Array of redeem instructions hashes to clear
+    function clearRedeem(bytes32[] calldata hashes) external onlyCreatorContract {
         for (uint256 i = 0; i < hashes.length; i++) {
             redeemInstructionsHashIsAllowed[hashes[i]] = false;
         }
-        emit RedeemsCleared(dropContract, hashes);
+        emit RedeemsCleared(creatorContract, hashes);
     }
 
+    /// @notice Request mint
+    /// @param tokenId The token id to mint
+    /// @param amount The amount to mint
+    /// @param ethValueSent The amount of eth sent
+    /// @param minterArguments The abi encoded minter arguments (address, RedeemInstructions, uint256[][], uint256[][])
     function requestMint(
         address,
         uint256 tokenId,
         uint256 amount,
         uint256 ethValueSent,
         bytes calldata minterArguments
-    ) external onlyDropContract returns (ICreatorCommands.CommandSet memory commands) {
+    ) external onlyCreatorContract returns (ICreatorCommands.CommandSet memory commands) {
         (address mintTo, RedeemInstructions memory redeemInstructions, uint256[][] memory tokenIds, uint256[][] memory amounts) = abi.decode(
             minterArguments,
             (address, RedeemInstructions, uint256[][], uint256[][])
@@ -197,7 +260,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         if (ethValueSent != redeemInstructions.ethAmount) {
             revert WrongValueSent();
         }
-        if (amount != redeemInstructions.redeemToken.amount) {
+        if (amount != redeemInstructions.mintToken.amount) {
             revert IncorrectMintAmount();
         }
         for (uint256 i = 0; i < redeemInstructions.instructions.length; i++) {
@@ -219,7 +282,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             commands.transfer(redeemInstructions.ethRecipient, ethValueSent);
         }
 
-        emit RedeemProcessed(dropContract, hash);
+        emit RedeemProcessed(creatorContract, hash);
     }
 
     function _handleErc721Redeem(RedeemInstruction memory instruction, address mintTo, uint256[] memory tokenIds) internal {
@@ -276,7 +339,8 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         }
     }
 
-    function resetSale(uint256) external view override onlyDropContract {
+    /// @notice Reset sale - Use clearRedeem instead
+    function resetSale(uint256) external view override onlyCreatorContract {
         revert MustCallClearRedeem();
     }
 }
