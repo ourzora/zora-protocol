@@ -54,18 +54,20 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions;
         vm.startPrank(address(admin));
 
-        vm.expectRevert(abi.encodeWithSignature("CallerNotDropContract()"));
+        vm.expectRevert(abi.encodeWithSignature("CallerNotCreatorContract()"));
         redeemMinter.setRedeem(redeemInstructions);
 
         bytes32[] memory hashes = new bytes32[](0);
-        vm.expectRevert(abi.encodeWithSignature("CallerNotDropContract()"));
+        vm.expectRevert(abi.encodeWithSignature("CallerNotCreatorContract()"));
         redeemMinter.clearRedeem(hashes);
 
-        vm.expectRevert(abi.encodeWithSignature("CallerNotDropContract()"));
+        vm.expectRevert(abi.encodeWithSignature("CallerNotCreatorContract()"));
         redeemMinter.requestMint(address(0), 0, 0, 0, bytes(""));
 
-        vm.expectRevert(abi.encodeWithSignature("CallerNotDropContract()"));
+        vm.expectRevert(abi.encodeWithSignature("CallerNotCreatorContract()"));
         redeemMinter.resetSale(0);
+
+        vm.stopPrank();
     }
 
     ///////// SET REDEEM /////////
@@ -79,7 +81,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -96,7 +98,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -123,7 +125,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -140,7 +142,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -167,7 +169,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         redeemInstructions.instructions[0].tokenIdEnd = 2;
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenIdsForTokenType()"));
         redeemMinter.setRedeem(redeemInstructions);
-        redeemInstructions.redeemToken.tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155;
+        redeemInstructions.mintToken.tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155;
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenIdsForTokenType()"));
         redeemMinter.setRedeem(redeemInstructions);
         redeemInstructions.instructions[0].tokenIdStart = 0;
@@ -220,15 +222,15 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         redeemMinter.setRedeem(redeemInstructions);
         redeemInstructions.instructions = instructions;
 
-        // RedeemTokenContractMustBeDropContract
-        redeemInstructions.redeemToken.tokenContract = address(0);
-        vm.expectRevert(abi.encodeWithSignature("RedeemTokenContractMustBeDropContract()"));
+        // MintTokenContractMustBeCreatorContract
+        redeemInstructions.mintToken.tokenContract = address(0);
+        vm.expectRevert(abi.encodeWithSignature("MintTokenContractMustBeCreatorContract()"));
         redeemMinter.setRedeem(redeemInstructions);
-        redeemInstructions.redeemToken.tokenContract = address(target);
+        redeemInstructions.mintToken.tokenContract = address(target);
 
-        // RedeemTokenTypeMustBeERC1155:
-        redeemInstructions.redeemToken.tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC721;
-        vm.expectRevert(abi.encodeWithSignature("RedeemTokenTypeMustBeERC1155()"));
+        // MintTokenTypeMustBeERC1155:
+        redeemInstructions.mintToken.tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC721;
+        vm.expectRevert(abi.encodeWithSignature("MintTokenTypeMustBeERC1155()"));
         redeemMinter.setRedeem(redeemInstructions);
     }
 
@@ -243,7 +245,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -260,7 +262,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -296,7 +298,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC1155PresetMinterPauser burnToken = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
         burnToken.mint(address(tokenRecipient), 1, 1000, "");
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -313,7 +315,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnBatch(address,uint256[],uint256[])")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -349,7 +351,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         burnToken.mint(address(tokenRecipient));
         burnToken.mint(address(tokenRecipient));
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -366,7 +368,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burn(uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -408,7 +410,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         burnTokenERC721.mint(address(tokenRecipient));
         burnTokenERC721.mint(address(tokenRecipient));
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -443,7 +445,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burn(uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -498,7 +500,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         burnTokenERC721.mint(address(tokenRecipient));
         burnTokenERC721.mint(address(tokenRecipient));
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -533,7 +535,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: 0
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -594,7 +596,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         burnTokenERC721.mint(address(tokenRecipient));
         burnTokenERC721.mint(address(tokenRecipient));
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -620,7 +622,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: 0
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -688,7 +690,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -705,7 +707,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: uint64(block.timestamp + 1 days),
             saleEnd: type(uint64).max,
@@ -737,7 +739,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -754,7 +756,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: uint64(1 days),
@@ -787,7 +789,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -804,7 +806,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -840,7 +842,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -857,7 +859,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -889,7 +891,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -906,7 +908,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -938,7 +940,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC1155PresetMinterPauser burnToken = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
         burnToken.mint(address(tokenRecipient), 1, 1000, "");
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -955,7 +957,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burnBatch(address,uint256[],uint256[])")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -998,7 +1000,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         burnTokenERC721.mint(address(tokenRecipient));
         burnTokenERC721.mint(address(tokenRecipient));
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -1024,7 +1026,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: 0
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
@@ -1091,7 +1093,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         burnToken.mint(address(tokenRecipient));
         burnToken.mint(address(tokenRecipient));
 
-        ZoraCreatorRedeemMinterStrategy.RedeemToken memory redeemToken = ZoraCreatorRedeemMinterStrategy.RedeemToken({
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
             amount: 10,
@@ -1108,7 +1110,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             burnFunction: bytes4(keccak256(bytes("burn(uint256)")))
         });
         ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
-            redeemToken: redeemToken,
+            mintToken: mintToken,
             instructions: instructions,
             saleStart: 0,
             saleEnd: type(uint64).max,
