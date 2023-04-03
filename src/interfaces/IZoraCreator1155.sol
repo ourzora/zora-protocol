@@ -84,13 +84,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
 
     error CannotMintMoreTokens(uint256 tokenId, uint256 quantity, uint256 totalMinted, uint256 maxSupply);
 
-    function initialize(
-        string memory newContractURI,
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
-        address payable defaultAdmin,
-        bytes[] calldata setupActions
-    ) external;
-
     /// @notice Only allow minting one token id at time
     /// @dev Mint contract function that calls the underlying sales function for commands
     /// @param minter Address for the minter
@@ -114,7 +107,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
 
     function updateContractMetadata(string memory _newURI, string memory _newName) external;
 
-    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer) external;
+    // Public interface for `setTokenMetadataRenderer(uint256, address) has been deprecated.
 
     function contractURI() external view returns (string memory);
 
