@@ -53,19 +53,18 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     event RedeemSet(address indexed target, bytes32 indexed redeemsInstructionsHash, RedeemInstructions data);
     event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash);
-    event RedeemCleared(address indexed target, bytes32 indexed redeemInstructionsHash);
+    event RedeemsCleared(address indexed target, bytes32[] indexed redeemInstructionsHashes);
 
     error RedeemInstructionAlreadySet();
-    error RedeemInstructionNotSet();
+    error RedeemInstructionNotAllowed();
     error IncorrectNumberOfTokenIds();
-    error ExternalCallFailed();
     error InvalidTokenIdsForTokenType();
     error InvalidSaleEndOrStart();
-    error EthRecipientCannotBeZero();
     error EmptyRedeemInstructions();
     error RedeemTokenTypeMustBeERC1155();
     error MustBurnOrTransfer();
-    error IncorrectAmount();
+    error IncorrectMintAmount();
+    error IncorrectBurnOrTransferAmount();
     error InvalidDropContract();
     error SaleEnded();
     error SaleHasNotStarted();
@@ -75,8 +74,9 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     error BurnFailed();
     error MustCallClearRedeem();
     error TokenIdOutOfRange();
+    error RedeemTokenContractMustBeDropContract();
 
-    mapping(bytes32 => bool) redeemInstructionsSet;
+    mapping(bytes32 => bool) public redeemInstructionsHashIsAllowed;
 
     address public dropContract;
 
@@ -106,7 +106,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         return "0.0.1";
     }
 
-    function hashRedeemInstructions(RedeemInstructions memory _redeemInstructions) public pure returns (bytes32) {
+    function redeemInstructionsHash(RedeemInstructions memory _redeemInstructions) public pure returns (bytes32) {
         return keccak256(abi.encode(_redeemInstructions));
     }
 
@@ -129,7 +129,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             revert MustBurnOrTransfer();
         }
         if (_redeemInstruction.amount == 0) {
-            revert IncorrectAmount();
+            revert IncorrectMintAmount();
         }
     }
 
@@ -141,7 +141,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             revert EmptyRedeemInstructions();
         }
         if (_redeemInstructions.redeemToken.tokenContract != dropContract) {
-            revert InvalidTokenType();
+            revert RedeemTokenContractMustBeDropContract();
         }
         if (_redeemInstructions.redeemToken.tokenType != TokenType.ERC1155) {
             revert RedeemTokenTypeMustBeERC1155();
@@ -154,21 +154,20 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     function setRedeem(RedeemInstructions calldata _redeemInstructions) external onlyDropContract {
         validateRedeemInstructions(_redeemInstructions);
 
-        bytes32 hash = hashRedeemInstructions(_redeemInstructions);
-        if (redeemInstructionsSet[hash]) {
+        bytes32 hash = redeemInstructionsHash(_redeemInstructions);
+        if (redeemInstructionsHashIsAllowed[hash]) {
             revert RedeemInstructionAlreadySet();
         }
-        redeemInstructionsSet[hashRedeemInstructions(_redeemInstructions)] = true;
+        redeemInstructionsHashIsAllowed[redeemInstructionsHash(_redeemInstructions)] = true;
 
         emit RedeemSet(dropContract, hash, _redeemInstructions);
     }
 
-    function clearRedeem(bytes32 hash) external onlyDropContract {
-        redeemInstructionsSet[hash] = false;
-    }
-
-    function redeemIsSet(bytes32 hash) external view returns (bool) {
-        return redeemInstructionsSet[hash];
+    function clearRedeem(bytes32[] calldata hashes) external onlyDropContract {
+        for (uint256 i = 0; i < hashes.length; i++) {
+            redeemInstructionsHashIsAllowed[hashes[i]] = false;
+        }
+        emit RedeemsCleared(dropContract, hashes);
     }
 
     function requestMint(
@@ -182,9 +181,9 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             minterArguments,
             (address, RedeemInstructions, uint256[][], uint256[][])
         );
-        bytes32 hash = hashRedeemInstructions(redeemInstructions);
-        if (!redeemInstructionsSet[hash]) {
-            revert RedeemInstructionNotSet();
+        bytes32 hash = redeemInstructionsHash(redeemInstructions);
+        if (!redeemInstructionsHashIsAllowed[hash]) {
+            revert RedeemInstructionNotAllowed();
         }
         if (redeemInstructions.saleStart > block.timestamp) {
             revert SaleHasNotStarted();
@@ -197,6 +196,9 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         }
         if (ethValueSent != redeemInstructions.ethAmount) {
             revert WrongValueSent();
+        }
+        if (amount != redeemInstructions.redeemToken.amount) {
+            revert IncorrectMintAmount();
         }
         for (uint256 i = 0; i < redeemInstructions.instructions.length; i++) {
             RedeemInstruction memory instruction = redeemInstructions.instructions[i];
@@ -222,7 +224,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     function _handleErc721Redeem(RedeemInstruction memory instruction, address mintTo, uint256[] memory tokenIds) internal {
         if (tokenIds.length != instruction.amount) {
-            revert IncorrectAmount();
+            revert IncorrectBurnOrTransferAmount();
         }
         for (uint256 j = 0; j < tokenIds.length; j++) {
             if (tokenIds[j] < instruction.tokenIdStart || tokenIds[j] > instruction.tokenIdEnd) {
@@ -251,7 +253,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             }
         }
         if (sum != instruction.amount) {
-            revert IncorrectAmount();
+            revert IncorrectBurnOrTransferAmount();
         }
         if (instruction.burnFunction != 0) {
             (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, mintTo, tokenIds, amounts));
