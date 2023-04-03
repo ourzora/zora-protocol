@@ -13,14 +13,7 @@ import {SharedBaseConstants} from "../../shared/SharedBaseConstants.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../../minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
 contract ZoraCreatorRedeemMinterFactory is SharedBaseConstants, IVersionedContract, IMinter1155 {
-    struct MinterContract {
-        address deployedAddress;
-        string version;
-    }
-
     address public immutable zoraRedeemMinterImplementation;
-
-    mapping(address => MinterContract) public deployedMinterContractForCreatorContract;
 
     event RedeemMinterDeployed(address indexed creatorContract, address indexed minterContract);
 
@@ -48,34 +41,32 @@ contract ZoraCreatorRedeemMinterFactory is SharedBaseConstants, IVersionedContra
         return interfaceId == type(IMinter1155).interfaceId || interfaceId == bytes4(0x00000000) || interfaceId == type(IERC165).interfaceId;
     }
 
-    function createMinter() external {
+    function createMinterIfNoneExists() external {
         if (!IERC165(msg.sender).supportsInterface(type(IZoraCreator1155).interfaceId)) {
             revert CallerNotZoraCreator1155();
         }
-        if (keccak256(abi.encodePacked(deployedMinterContractForCreatorContract[msg.sender].version)) == keccak256(abi.encodePacked(this.contractVersion()))) {
-            revert MinterContractAlreadyExists();
+        if (doesRedeemMinterExistForCreatorContract(msg.sender)) {
+            return;
         }
-
         address minter = Clones.cloneDeterministic(zoraRedeemMinterImplementation, keccak256(abi.encode(msg.sender)));
         ZoraCreatorRedeemMinterStrategy(minter).initialize(msg.sender);
-        deployedMinterContractForCreatorContract[msg.sender].deployedAddress = minter;
-        deployedMinterContractForCreatorContract[msg.sender].version = this.contractVersion();
 
         emit RedeemMinterDeployed(msg.sender, minter);
     }
 
-    function predictMinterAddress(address _creatorContract) external view returns (address) {
+    function predictMinterAddress(address _creatorContract) public view returns (address) {
         return Clones.predictDeterministicAddress(zoraRedeemMinterImplementation, keccak256(abi.encode(_creatorContract)), address(this));
     }
 
-    function doesRedeemMinterExistForCreatorContract(address _creatorContract) external view returns (bool) {
-        return deployedMinterContractForCreatorContract[_creatorContract].deployedAddress != address(0);
+    function doesRedeemMinterExistForCreatorContract(address _creatorContract) public view returns (bool) {
+        return address(predictMinterAddress(_creatorContract)).code.length > 0;
     }
 
     function getDeployedRedeemMinterForCreatorContract(address _creatorContract) external view returns (address) {
-        if (deployedMinterContractForCreatorContract[_creatorContract].deployedAddress == address(0)) {
+        address minter = predictMinterAddress(_creatorContract);
+        if (minter.code.length == 0) {
             revert MinterContractDoesNotExist();
         }
-        return deployedMinterContractForCreatorContract[_creatorContract].deployedAddress;
+        return minter;
     }
 }
