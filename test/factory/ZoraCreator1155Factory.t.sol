@@ -15,11 +15,11 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function setUp() external {
         ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
-        factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)));
+        factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
     }
 
     function test_contractVersion() external {
-        assertEq(factory.contractVersion(), "1.1.0");
+        assertEq(factory.contractVersion(), "1.2.0-pre2");
     }
 
     function test_contractName() external {
@@ -41,9 +41,10 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function test_defaultMinters() external {
         IMinter1155[] memory minters = factory.defaultMinters();
-        assertEq(minters.length, 2);
+        assertEq(minters.length, 3);
         assertEq(address(minters[0]), address(2));
         assertEq(address(minters[1]), address(1));
+        assertEq(address(minters[2]), address(3));
     }
 
     function test_createContract(
@@ -89,7 +90,12 @@ contract ZoraCreator1155FactoryTest is Test {
 
         IZoraCreator1155 mockNewContract = IZoraCreator1155(address(0x999));
 
-        ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(mockNewContract, IMinter1155(address(0)), IMinter1155(address(0)));
+        ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(
+            mockNewContract,
+            IMinter1155(address(0)),
+            IMinter1155(address(0)),
+            IMinter1155(address(0))
+        );
 
         address payable proxyAddress = payable(
             address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))

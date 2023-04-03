@@ -12,6 +12,7 @@ import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract UpgradeScript is Script {
@@ -41,12 +42,21 @@ contract UpgradeScript is Script {
         } else {
             console2.log("Existing FIXED_PRICE_STRATEGY", address(fixedPriceMinter));
         }
+
         ZoraCreatorMerkleMinterStrategy merkleMinter = ZoraCreatorMerkleMinterStrategy(configFile.readAddress(".MERKLE_MINT_SALE_STRATEGY"));
         if (address(merkleMinter) == address(0)) {
             merkleMinter = new ZoraCreatorMerkleMinterStrategy();
-            console2.log("New MrkleMintStrategy", address(merkleMinter));
+            console2.log("New MerkleMintStrategy", address(merkleMinter));
         } else {
             console2.log("Existing MERKLE_MINT_STRATEGY", address(merkleMinter));
+        }
+
+        ZoraCreatorRedeemMinterFactory redeemMinterFactory = ZoraCreatorRedeemMinterFactory(configFile.readAddress(".REDEEM_MINTER_FACTORY"));
+        if (address(redeemMinterFactory) == address(0)) {
+            redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
+            console2.log("New REDEEM_MINTER_FACTORY", address(redeemMinterFactory));
+        } else {
+            console2.log("Existing REDEEM_MINTER_FACTORY", address(redeemMinterFactory));
         }
 
         address factoryProxy = configFile.readAddress(".FACTORY_PROXY");
@@ -67,6 +77,7 @@ contract UpgradeScript is Script {
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: IZoraCreator1155(nftImpl),
             _merkleMinter: merkleMinter,
+            _redeemMinterFactory: redeemMinterFactory,
             _fixedPriceMinter: fixedPriceMinter
         });
 
