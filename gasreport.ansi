@@ -1,0 +1,422 @@
+No files changed, compilation skipped
+
+Running 3 tests for test/upgrades/FactoryManagedUpgradeGate.t.sol:FactoryManagedUpgradeGateTest
+[32m[PASS][0m test_AdminOnly() (gas: 14997)
+[32m[PASS][0m test_registersUpgradePath() (gas: 65214)
+[32m[PASS][0m test_removesUpgradePath() (gas: 48236)
+Test result: [32mok[0m. 3 passed; 0 failed; finished in 3.72ms
+
+Running 3 tests for test/utils/PublicMulticall.t.sol:PublicMulticallTest
+[32m[PASS][0m testCallsComeFromUser() (gas: 38181)
+[32m[PASS][0m testCallsFail() (gas: 14787)
+[32m[PASS][0m testCallsSucceed() (gas: 17426)
+Test result: [32mok[0m. 3 passed; 0 failed; finished in 3.96ms
+
+Running 6 tests for test/utils/TransferHelperUtils.t.sol:TransferHelperUtilsTest
+[32m[PASS][0m test_TransferHighGasLimitFailsNoMoreGas() (gas: 141776)
+[32m[PASS][0m test_TransferHighGasLimitSucceeds() (gas: 41124)
+[32m[PASS][0m test_TransferHighGasLimitSucceedsGasLimitOk() (gas: 398867)
+[32m[PASS][0m test_TransferLowGasLimitFailsNoMoreGas() (gas: 141840)
+[32m[PASS][0m test_TransferLowGasLimitSucceeds() (gas: 41061)
+[32m[PASS][0m test_TransferLowGasLimitSucceedsGasLimitOk() (gas: 198119)
+Test result: [32mok[0m. 6 passed; 0 failed; finished in 3.99ms
+
+Running 2 tests for test/royalties/CreatorRoyaltiesControl.t.sol:CreatorRoyaltiesControlTest
+[32m[PASS][0m test_GetsRoyaltiesInfoGlobalDefault() (gas: 5430382)
+[32m[PASS][0m test_GetsRoyaltiesInfoSpecificToken() (gas: 5546362)
+Test result: [32mok[0m. 2 passed; 0 failed; finished in 4.93ms
+
+Running 18 tests for test/nft/ZoraCreator1155AccessControlGeneralTest.sol:ZoraCreator1155AccessControlGeneralTest
+[32m[PASS][0m test_openAccessFails_addPermission() (gas: 16883)
+[32m[PASS][0m test_openAccessFails_adminMint() (gas: 24562)
+[32m[PASS][0m test_openAccessFails_adminMintBatch() (gas: 26815)
+[32m[PASS][0m test_openAccessFails_assumeLastTokenIdMatches() (gas: 16447)
+[32m[PASS][0m test_openAccessFails_burnBatch() (gas: 86304)
+[32m[PASS][0m test_openAccessFails_callRenderer() (gas: 462754)
+[32m[PASS][0m test_openAccessFails_callSale() (gas: 330415)
+[32m[PASS][0m test_openAccessFails_initialize() (gas: 25364)
+[32m[PASS][0m test_openAccessFails_isAdminOrRole() (gas: 12983)
+[32m[PASS][0m test_openAccessFails_mint() (gas: 334708)
+[32m[PASS][0m test_openAccessFails_removePermission() (gas: 16719)
+[32m[PASS][0m test_openAccessFails_setOwner() (gas: 16049)
+[32m[PASS][0m test_openAccessFails_setTokenMetadataRenderer() (gas: 429386)
+[32m[PASS][0m test_openAccessFails_setupNewToken() (gas: 17076)
+[32m[PASS][0m test_openAccessFails_updateContractMetadata() (gas: 17819)
+[32m[PASS][0m test_openAccessFails_updateRoyaltiesForToken() (gas: 17126)
+[32m[PASS][0m test_openAccessFails_updateTokenURI() (gas: 18514)
+[32m[PASS][0m test_openAccessFails_withdrawCustom() (gas: 14192)
+Test result: [32mok[0m. 18 passed; 0 failed; finished in 4.80ms
+
+Running 12 tests for test/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.t.sol:ZoraCreatorFixedPriceSaleStrategyTest
+[32m[PASS][0m testFail_setupMint() (gas: 279397)
+[32m[PASS][0m test_ContractName() (gas: 7109)
+[32m[PASS][0m test_FundsRecipient() (gas: 348415)
+[32m[PASS][0m test_MaxTokensPerAddress() (gas: 278010)
+[32m[PASS][0m test_MintFlow() (gas: 316461)
+[32m[PASS][0m test_MintedPerRecipientGetter() (gas: 308214)
+[32m[PASS][0m test_PricePerToken() (gas: 341074)
+[32m[PASS][0m test_ResetSale() (gas: 203886)
+[32m[PASS][0m test_SaleEnd() (gas: 254340)
+[32m[PASS][0m test_SaleStart() (gas: 253934)
+[32m[PASS][0m test_Version() (gas: 7219)
+[32m[PASS][0m test_fixedPriceSaleSupportsInterface() (gas: 7669)
+Test result: [32mok[0m. 12 passed; 0 failed; finished in 2.83ms
+
+Running 11 tests for test/utils/Ownable2StepUpgradable.t.sol:Ownable2StepUpgradableTest
+[32m[PASS][0m test_acceptOwnership(address) (runs: 256, μ: 37974, ~: 37960)
+[32m[PASS][0m test_acceptOwnership_revertOnlyPendingOwner() (gas: 15515)
+[32m[PASS][0m test_cancelOwnershipTransfer() (gas: 34404)
+[32m[PASS][0m test_init() (gas: 18432)
+[32m[PASS][0m test_resignOwnership() (gas: 22704)
+[32m[PASS][0m test_safeTransferOwnership(address) (runs: 256, μ: 44872, ~: 44872)
+[32m[PASS][0m test_safeTransferOwnership_revertNotZeroAddress() (gas: 15783)
+[32m[PASS][0m test_safeTransferOwnership_revertOnlyOwner() (gas: 16018)
+[32m[PASS][0m test_transferOwnership(address) (runs: 256, μ: 28184, ~: 28184)
+[32m[PASS][0m test_transferOwnership_revertNotZeroAddress() (gas: 16415)
+[32m[PASS][0m test_transferOwnership_revertOnlyOwner() (gas: 16361)
+Test result: [32mok[0m. 11 passed; 0 failed; finished in 49.43ms
+
+Running 12 tests for test/minters/merkle/ZoraCreatorMerkleMinterStrategy.t.sol:ZoraCreatorMerkleMinterStrategyTest
+[32m[PASS][0m test_ContractName() (gas: 7149)
+[32m[PASS][0m test_ContractURI() (gas: 7629)
+[32m[PASS][0m test_FundsRecipient() (gas: 397839)
+[32m[PASS][0m test_InvalidMerkleProof() (gas: 262465)
+[32m[PASS][0m test_MaxQuantity() (gas: 359590)
+[32m[PASS][0m test_MerkleSaleSupportsInterface() (gas: 7535)
+[32m[PASS][0m test_MintFlow() (gas: 342846)
+[32m[PASS][0m test_PreSaleEnd() (gas: 257978)
+[32m[PASS][0m test_PreSaleStart() (gas: 257635)
+[32m[PASS][0m test_PricePerToken(uint256) (runs: 256, μ: 284353, ~: 284694)
+[32m[PASS][0m test_ResetSale() (gas: 205533)
+[32m[PASS][0m test_Version() (gas: 7237)
+Test result: [32mok[0m. 12 passed; 0 failed; finished in 81.32ms
+
+Running 6 tests for test/permissions/CreatorPermissionControl.t.sol:CreatorPermissionControlTest
+[32m[PASS][0m test_addPermissionOtherExists(uint256,address,uint256) (runs: 256, μ: 34603, ~: 34603)
+[32m[PASS][0m test_addPermissions(uint256,address) (runs: 256, μ: 34228, ~: 34228)
+[32m[PASS][0m test_clearPermissions(uint256,address) (runs: 256, μ: 23796, ~: 23806)
+[32m[PASS][0m test_hasAllPermissions(uint256,address) (runs: 256, μ: 31168, ~: 31168)
+[32m[PASS][0m test_removePermission(uint256,address) (runs: 256, μ: 23785, ~: 23788)
+[32m[PASS][0m test_showsNoPermission(uint256,address,uint256) (runs: 256, μ: 7993, ~: 7993)
+Test result: [32mok[0m. 6 passed; 0 failed; finished in 242.35ms
+
+Running 7 tests for test/factory/ZoraCreator1155Factory.t.sol:ZoraCreator1155FactoryTest
+[32m[PASS][0m test_contractName() (gas: 7221)
+[32m[PASS][0m test_contractURI() (gas: 7801)
+[32m[PASS][0m test_contractVersion() (gas: 7353)
+[32m[PASS][0m test_createContract(string,string,uint32,uint32,address,address) (runs: 256, μ: 525229, ~: 519873)
+[32m[PASS][0m test_defaultMinters() (gas: 6847)
+[32m[PASS][0m test_initialize(address) (runs: 256, μ: 161817, ~: 161817)
+[32m[PASS][0m test_upgrade(address) (runs: 256, μ: 1893826, ~: 1893826)
+Test result: [32mok[0m. 7 passed; 0 failed; finished in 260.74ms
+
+Running 2 tests for test/fee/MintFeeManager.t.sol:MintFeeManagerTest
+[32m[PASS][0m test_mintFeeSent(uint32,uint256) (runs: 256, μ: 5842736, ~: 5867662)
+[32m[PASS][0m test_mintFeeSent_revertCannotSendMintFee(uint32,uint256) (runs: 256, μ: 6086141, ~: 6094601)
+Test result: [32mok[0m. 2 passed; 0 failed; finished in 261.86ms
+
+Running 50 tests for test/nft/ZoraCreator1155.t.sol:ZoraCreator1155Test
+[32m[PASS][0m test_ContractNameUpdate() (gas: 237544)
+[32m[PASS][0m test_TokenURI() (gas: 310936)
+[32m[PASS][0m test_UpdateContractMetadataFailsContract() (gas: 226662)
+[32m[PASS][0m test_addPermission(uint256,uint256,address) (runs: 256, μ: 338660, ~: 338828)
+[32m[PASS][0m test_addPermission_revertOnlyAdminOrRole(uint256) (runs: 256, μ: 236228, ~: 236228)
+[32m[PASS][0m test_adminMint(uint256) (runs: 256, μ: 360253, ~: 369426)
+[32m[PASS][0m test_adminMintBatch(uint256,uint256) (runs: 256, μ: 490596, ~: 510341)
+[32m[PASS][0m test_adminMintBatchWithSchedule(uint256,uint256) (runs: 256, μ: 527648, ~: 538500)
+[32m[PASS][0m test_adminMintBatch_revertMaxSupply(uint256) (runs: 256, μ: 348426, ~: 348426)
+[32m[PASS][0m test_adminMintBatch_revertOnlyAdminOrRole() (gas: 319866)
+[32m[PASS][0m test_adminMintBatch_revertZeroAddressRecipient() (gas: 313085)
+[32m[PASS][0m test_adminMintMinterRole(uint256) (runs: 256, μ: 386719, ~: 396825)
+[32m[PASS][0m test_adminMintWithEmptyScheduleSkipsSchedule() (gas: 389263)
+[32m[PASS][0m test_adminMintWithInvalidScheduleSkipsSchedule() (gas: 139908)
+[32m[PASS][0m test_adminMintWithSchedule() (gas: 419227)
+[32m[PASS][0m test_adminMintWithScheduleSmall() (gas: 419078)
+[32m[PASS][0m test_adminMint_revertMaxSupply(uint256) (runs: 256, μ: 316449, ~: 317305)
+[32m[PASS][0m test_adminMint_revertOnlyAdminOrRole() (gas: 317673)
+[32m[PASS][0m test_adminMint_revertZeroAddressRecipient() (gas: 314391)
+[32m[PASS][0m test_assumeLastTokenIdMatches() (gas: 312004)
+[32m[PASS][0m test_authorizedUpgrade() (gas: 5362087)
+[32m[PASS][0m test_burnBatch() (gas: 721301)
+[32m[PASS][0m test_burnBatch_user_not_approved_fails() (gas: 718084)
+[32m[PASS][0m test_callRenderer() (gas: 771783)
+[32m[PASS][0m test_callRendererFails() (gas: 724178)
+[32m[PASS][0m test_callSale() (gas: 657533)
+[32m[PASS][0m test_callSetupRendererFails() (gas: 620948)
+[32m[PASS][0m test_contractVersion() (gas: 223873)
+[32m[PASS][0m test_initialize(uint32,uint32,address,address) (runs: 256, μ: 253673, ~: 254295)
+[32m[PASS][0m test_initialize_revertAlreadyInitialized(uint32,uint32,address,address) (runs: 256, μ: 246508, ~: 246664)
+[32m[PASS][0m test_initialize_withSetupActions(uint32,uint32,address,address,uint256) (runs: 256, μ: 316749, ~: 317527)
+[32m[PASS][0m test_isAdminOrRole() (gas: 328130)
+[32m[PASS][0m test_mint(uint256) (runs: 256, μ: 713680, ~: 716479)
+[32m[PASS][0m test_mint_revertCannotMintMoreTokens() (gas: 661430)
+[32m[PASS][0m test_mint_revertOnlyMinter() (gas: 316276)
+[32m[PASS][0m test_noSymbol() (gas: 13232)
+[32m[PASS][0m test_packageJsonVersion() (gas: 25498)
+[32m[PASS][0m test_removePermission(uint256,uint256,address) (runs: 256, μ: 323450, ~: 323653)
+[32m[PASS][0m test_removePermissionRevokeOwnership() (gas: 200295)
+[32m[PASS][0m test_removePermission_revertOnlyAdminOrRole(uint256) (runs: 256, μ: 235858, ~: 235858)
+[32m[PASS][0m test_setOwner() (gas: 270736)
+[32m[PASS][0m test_setTokenMetadataRenderer() (gas: 1203238)
+[32m[PASS][0m test_setTokenMetadataRenderer_revertOnlyAdminOrRole() (gas: 230844)
+[32m[PASS][0m test_setupNewToken_asAdmin(string,uint256) (runs: 256, μ: 350383, ~: 358133)
+[32m[PASS][0m test_setupNewToken_revertOnlyAdminOrRole() (gas: 231352)
+[32m[PASS][0m test_supportsInterface() (gas: 225919)
+[32m[PASS][0m test_unauthorizedUpgradeFails() (gas: 4970030)
+[32m[PASS][0m test_updateTokenURI() (gas: 319586)
+[32m[PASS][0m test_withdrawAll() (gas: 753366)
+[32m[PASS][0m test_withdrawAll_revertETHWithdrawFailed(uint256,uint256) (runs: 256, μ: 767501, ~: 767501)
+Test result: [32mok[0m. 50 passed; 0 failed; finished in 501.02ms
+| src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl contract |                 |        |        |        |         |
+|--------------------------------------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                                                | Deployment Size |        |        |        |         |
+| 1692005                                                                        | 8986            |        |        |        |         |
+| Function Name                                                                  | min             | avg    | median | max    | # calls |
+| acceptOwnership                                                                | 2554            | 4067   | 4067   | 5581   | 2       |
+| cancelOwnershipTransfer                                                        | 1641            | 1641   | 1641   | 1641   | 1       |
+| contractName                                                                   | 743             | 743    | 743    | 743    | 1       |
+| contractURI                                                                    | 1017            | 1017   | 1017   | 1017   | 1       |
+| contractVersion                                                                | 853             | 853    | 853    | 853    | 1       |
+| createContract                                                                 | 497476          | 497476 | 497476 | 497476 | 1       |
+| defaultMinters                                                                 | 869             | 869    | 869    | 869    | 1       |
+| implementation                                                                 | 341             | 341    | 341    | 341    | 1       |
+| initialize                                                                     | 48753           | 48753  | 48753  | 48753  | 13      |
+| owner                                                                          | 554             | 1054   | 554    | 2554   | 8       |
+| pendingOwner                                                                   | 664             | 1064   | 664    | 2664   | 5       |
+| proxiableUUID                                                                  | 340             | 340    | 340    | 340    | 1       |
+| resignOwnership                                                                | 7413            | 7413   | 7413   | 7413   | 1       |
+| safeTransferOwnership                                                          | 352             | 16214  | 26081  | 26081  | 5       |
+| transferOwnership                                                              | 742             | 3724   | 2866   | 7566   | 3       |
+| upgradeTo                                                                      | 5144            | 5144   | 5144   | 5144   | 1       |
+
+
+| src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol:ZoraCreatorFixedPriceSaleStrategy contract |                 |       |        |       |         |
+|----------------------------------------------------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                                                          | Deployment Size |       |        |       |         |
+| 709148                                                                                                   | 3570            |       |        |       |         |
+| Function Name                                                                                            | min             | avg   | median | max   | # calls |
+| contractName                                                                                             | 619             | 619   | 619    | 619   | 1       |
+| contractVersion                                                                                          | 663             | 663   | 663    | 663   | 1       |
+| getMintedPerWallet                                                                                       | 689             | 689   | 689    | 689   | 1       |
+| requestMint                                                                                              | 891             | 8842  | 3035   | 25698 | 10      |
+| resetSale                                                                                                | 7971            | 7971  | 7971   | 7971  | 1       |
+| sale                                                                                                     | 1183            | 1183  | 1183   | 1183  | 1       |
+| setSale                                                                                                  | 28072           | 45484 | 47972  | 47972 | 8       |
+| supportsInterface                                                                                        | 310             | 314   | 310    | 336   | 12      |
+
+
+| src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol:ZoraCreatorMerkleMinterStrategy contract |                 |       |        |       |         |
+|-------------------------------------------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                                                 | Deployment Size |       |        |       |         |
+| 849891                                                                                          | 4273            |       |        |       |         |
+| Function Name                                                                                   | min             | avg   | median | max   | # calls |
+| contractName                                                                                    | 641             | 641   | 641    | 641   | 1       |
+| contractURI                                                                                     | 802             | 802   | 802    | 802   | 1       |
+| contractVersion                                                                                 | 685             | 685   | 685    | 685   | 1       |
+| requestMint                                                                                     | 1807            | 14743 | 14519  | 28273 | 8       |
+| resetSale                                                                                       | 9997            | 9997  | 9997   | 9997  | 1       |
+| sale                                                                                            | 1199            | 1199  | 1199   | 1199  | 1       |
+| setSale                                                                                         | 49776           | 52618 | 49776  | 69676 | 7       |
+| supportsInterface                                                                               | 310             | 314   | 310    | 336   | 11      |
+
+
+| src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl contract |                 |        |        |        |         |
+|--------------------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                              | Deployment Size |        |        |        |         |
+| 4915734                                                      | 25150           |        |        |        |         |
+| Function Name                                                | min             | avg    | median | max    | # calls |
+| PERMISSION_BIT_ADMIN                                         | 1093            | 1093   | 1093   | 1093   | 55      |
+| PERMISSION_BIT_FUNDS_MANAGER                                 | 895             | 895    | 895    | 895    | 50      |
+| PERMISSION_BIT_METADATA                                      | 1005            | 1005   | 1005   | 1005   | 51      |
+| PERMISSION_BIT_MINTER                                        | 1335            | 1335   | 1335   | 1335   | 71      |
+| addPermission                                                | 3636            | 24445  | 25577  | 27840  | 33      |
+| adminMint                                                    | 5278            | 42025  | 53656  | 82552  | 10      |
+| adminMintBatch                                               | 3374            | 40795  | 36058  | 103979 | 7       |
+| assumeLastTokenIdMatches                                     | 1344            | 2051   | 1405   | 3405   | 3       |
+| balanceOf                                                    | 522             | 772    | 522    | 2522   | 16      |
+| burnBatch                                                    | 3495            | 4672   | 3495   | 7026   | 3       |
+| callRenderer                                                 | 2576            | 12642  | 6077   | 25184  | 7       |
+| callSale                                                     | 3738            | 44248  | 53811  | 75509  | 20      |
+| contractURI                                                  | 3591            | 4206   | 4206   | 4821   | 2       |
+| contractVersion                                              | 1333            | 1333   | 1333   | 1333   | 2       |
+| getCustomRenderer                                            | 1506            | 1561   | 1506   | 1673   | 3       |
+| getPermissions                                               | 822             | 822    | 822    | 822    | 3       |
+| getRoyalties                                                 | 1904            | 1904   | 1904   | 1904   | 1       |
+| getTokenInfo                                                 | 2250            | 2271   | 2250   | 2485   | 11      |
+| initialize                                                   | 2813            | 202077 | 207269 | 384211 | 96      |
+| isAdminOrRole                                                | 711             | 1711   | 1711   | 2711   | 6       |
+| mint                                                         | 5619            | 41178  | 29510  | 124475 | 28      |
+| name                                                         | 965             | 965    | 965    | 965    | 3       |
+| owner                                                        | 972             | 972    | 972    | 972    | 4       |
+| proxiableUUID                                                | 604             | 604    | 604    | 604    | 1       |
+| removePermission                                             | 2916            | 4676   | 4353   | 7084   | 4       |
+| royalties                                                    | 1010            | 1010   | 1010   | 1010   | 1       |
+| royaltyInfo                                                  | 1362            | 2703   | 3374   | 3374   | 3       |
+| setFundsRecipient                                            | 4342            | 4342   | 4342   | 4342   | 1       |
+| setOwner                                                     | 2860            | 3931   | 2954   | 5980   | 3       |
+| setTokenMetadataRenderer                                     | 3582            | 20316  | 27165  | 31822  | 9       |
+| setupNewToken                                                | 4050            | 90577  | 82046  | 136251 | 79      |
+| supplyRoyaltyInfo                                            | 1897            | 1905   | 1909   | 1909   | 3       |
+| supportsInterface                                            | 291             | 359    | 352    | 440    | 4       |
+| symbol                                                       | 1037            | 1037   | 1037   | 1037   | 1       |
+| updateContractMetadata                                       | 4717            | 5715   | 5715   | 6713   | 2       |
+| updateRoyaltiesForToken                                      | 3948            | 15146  | 15146  | 26344  | 2       |
+| updateTokenURI                                               | 1136            | 3487   | 3885   | 5441   | 3       |
+| upgradeTo                                                    | 3362            | 6536   | 6536   | 9711   | 2       |
+| uri                                                          | 1412            | 2438   | 2872   | 4647   | 9       |
+| withdraw                                                     | 995             | 11253  | 5662   | 32695  | 4       |
+
+
+| src/proxies/Zora1155.sol:Zora1155 contract |                 |        |        |        |         |
+|--------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                            | Deployment Size |        |        |        |         |
+| 70099                                      | 1064            |        |        |        |         |
+| Function Name                              | min             | avg    | median | max    | # calls |
+| PERMISSION_BIT_ADMIN                       | 1409            | 1409   | 1409   | 1409   | 55      |
+| PERMISSION_BIT_FUNDS_MANAGER               | 1211            | 1211   | 1211   | 1211   | 50      |
+| PERMISSION_BIT_METADATA                    | 1321            | 1321   | 1321   | 1321   | 51      |
+| PERMISSION_BIT_MINTER                      | 1651            | 1651   | 1651   | 1651   | 71      |
+| addPermission                              | 5974            | 24907  | 25902  | 28165  | 33      |
+| adminMint                                  | 5631            | 43268  | 53993  | 82889  | 10      |
+| adminMintBatch                             | 3751            | 41810  | 36435  | 104352 | 7       |
+| assumeLastTokenIdMatches                   | 1660            | 3874   | 1731   | 8231   | 3       |
+| balanceOf                                  | 844             | 1094   | 844    | 2844   | 16      |
+| burnBatch                                  | 3854            | 5027   | 3854   | 7375   | 3       |
+| callRenderer                               | 2917            | 12993  | 6439   | 25533  | 7       |
+| callSale                                   | 4091            | 44837  | 54184  | 75876  | 20      |
+| contractURI                                | 3913            | 4528   | 4528   | 5143   | 2       |
+| contractVersion                            | 1655            | 3905   | 3905   | 6155   | 2       |
+| getCustomRenderer                          | 1825            | 1880   | 1825   | 1992   | 3       |
+| getPermissions                             | 1144            | 1144   | 1144   | 1144   | 3       |
+| getRoyalties                               | 2229            | 2229   | 2229   | 2229   | 1       |
+| getTokenInfo                               | 2593            | 2614   | 2593   | 2828   | 11      |
+| initialize                                 | 3208            | 204706 | 207648 | 384644 | 96      |
+| isAdminOrRole                              | 1039            | 2789   | 2039   | 7539   | 6       |
+| mint                                       | 5966            | 41694  | 29877  | 124848 | 28      |
+| name                                       | 1287            | 1287   | 1287   | 1287   | 3       |
+| owner                                      | 1288            | 1288   | 1288   | 1288   | 4       |
+| removePermission                           | 3176            | 6100   | 6517   | 8191   | 4       |
+| royalties                                  | 1335            | 1335   | 1335   | 1335   | 1       |
+| royaltyInfo                                | 1687            | 3028   | 3699   | 3699   | 3       |
+| setFundsRecipient                          | 4658            | 4658   | 4658   | 4658   | 1       |
+| setOwner                                   | 3180            | 5754   | 6296   | 7786   | 3       |
+| setTokenMetadataRenderer                   | 3917            | 21632  | 27484  | 36641  | 9       |
+| setupNewToken                              | 4400            | 91938  | 82380  | 141091 | 79      |
+| supplyRoyaltyInfo                          | 2228            | 2236   | 2240   | 2240   | 3       |
+| supportsInterface                          | 610             | 678    | 671    | 759    | 4       |
+| symbol                                     | 5856            | 5856   | 5856   | 5856   | 1       |
+| updateContractMetadata                     | 7056            | 8314   | 8314   | 9573   | 2       |
+| updateRoyaltiesForToken                    | 8792            | 17733  | 17733  | 26675  | 2       |
+| updateTokenURI                             | 1468            | 5323   | 4216   | 10285  | 3       |
+| upgradeTo                                  | 8194            | 9110   | 9110   | 10027  | 2       |
+| uri                                        | 1737            | 2763   | 3197   | 4969   | 9       |
+| withdraw                                   | 1308            | 12698  | 8238   | 33008  | 4       |
+
+
+| src/proxies/Zora1155Factory.sol:Zora1155Factory contract |                 |       |        |       |         |
+|----------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                          | Deployment Size |       |        |       |         |
+| 122330                                                   | 1233            |       |        |       |         |
+| Function Name                                            | min             | avg   | median | max   | # calls |
+| acceptOwnership                                          | 5832            | 6601  | 6601   | 7371  | 2       |
+| cancelOwnershipTransfer                                  | 1892            | 1892  | 1892   | 1892  | 1       |
+| implementation                                           | 657             | 657   | 657    | 657   | 1       |
+| initialize                                               | 49069           | 49069 | 49069  | 49069 | 11      |
+| owner                                                    | 870             | 2495  | 870    | 7370  | 8       |
+| pendingOwner                                             | 980             | 1380  | 980    | 2980  | 5       |
+| resignOwnership                                          | 11264           | 11264 | 11264  | 11264 | 1       |
+| safeTransferOwnership                                    | 5172            | 21032 | 30897  | 30897 | 5       |
+| transferOwnership                                        | 5562            | 7043  | 7686   | 7882  | 3       |
+| upgradeTo                                                | 5460            | 5460  | 5460   | 5460  | 1       |
+
+
+| test/mock/MockPermissionControl.sol:MockPermissionControl contract |                 |       |        |       |         |
+|--------------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                    | Deployment Size |       |        |       |         |
+| 184233                                                             | 948             |       |        |       |         |
+| Function Name                                                      | min             | avg   | median | max   | # calls |
+| addPermission                                                      | 2684            | 20934 | 24584  | 24584 | 6       |
+| clearPermissions                                                   | 1979            | 1979  | 1979   | 1979  | 2       |
+| getPermissions                                                     | 487             | 487   | 487    | 487   | 6       |
+| hasAnyPermission                                                   | 2561            | 2561  | 2561   | 2561  | 1       |
+| hasPermissions                                                     | 611             | 611   | 611    | 611   | 1       |
+
+
+| test/mock/MockUpgradeGate.sol:MockUpgradeGate contract |                 |       |        |       |         |
+|--------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                        | Deployment Size |       |        |       |         |
+| 476919                                                 | 2410            |       |        |       |         |
+| Function Name                                          | min             | avg   | median | max   | # calls |
+| initialize                                             | 6274            | 6274  | 6274   | 6274  | 50      |
+| isRegisteredUpgradePath                                | 540             | 540   | 540    | 540   | 1       |
+| owner                                                  | 2390            | 2390  | 2390   | 2390  | 1       |
+| registerUpgradePath                                    | 24897           | 24897 | 24897  | 24897 | 1       |
+
+
+| test/mock/MockUpgradeGateBase.sol:MockUpgradeGateBase contract |                 |       |        |       |         |
+|----------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                | Deployment Size |       |        |       |         |
+| 593833                                                         | 2994            |       |        |       |         |
+| Function Name                                                  | min             | avg   | median | max   | # calls |
+| isRegisteredUpgradePath                                        | 540             | 940   | 540    | 2540  | 5       |
+| registerUpgradePath                                            | 2901            | 34968 | 51002  | 51002 | 3       |
+| removeUpgradePath                                              | 2000            | 2324  | 2324   | 2648  | 2       |
+
+
+| test/mock/SimpleMinter.sol:SimpleMinter contract |                 |       |        |       |         |
+|--------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                  | Deployment Size |       |        |       |         |
+| 278525                                           | 1419            |       |        |       |         |
+| Function Name                                    | min             | avg   | median | max   | # calls |
+| num                                              | 306             | 306   | 306    | 306   | 1       |
+| receive                                          | 283             | 283   | 283    | 283   | 2       |
+| requestMint                                      | 2170            | 2170  | 2170   | 2170  | 7       |
+| setNum                                           | 264             | 11314 | 11314  | 22364 | 2       |
+| setReceiveETH                                    | 2481            | 2481  | 2481   | 2481  | 2       |
+| supportsInterface                                | 249             | 257   | 249    | 275   | 3       |
+
+
+| test/mock/SimpleRenderer.sol:SimpleRenderer contract |                 |       |        |       |         |
+|------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                      | Deployment Size |       |        |       |         |
+| 375218                                               | 1902            |       |        |       |         |
+| Function Name                                        | min             | avg   | median | max   | # calls |
+| contractURI                                          | 987             | 987   | 987    | 987   | 1       |
+| setContractURI                                       | 22977           | 22977 | 22977  | 22977 | 1       |
+| supportsInterface                                    | 209             | 209   | 209    | 209   | 5       |
+| uri                                                  | 907             | 1290  | 907    | 2824  | 5       |
+
+
+| test/utils/PublicMulticall.t.sol:DemoMulticall contract |                 |       |        |       |         |
+|---------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                         | Deployment Size |       |        |       |         |
+| 362917                                                  | 1741            |       |        |       |         |
+| Function Name                                           | min             | avg   | median | max   | # calls |
+| bop                                                     | 282             | 282   | 282    | 282   | 1       |
+| clear                                                   | 364             | 1499  | 1514   | 2604  | 4       |
+| multicall                                               | 5372            | 12496 | 7480   | 24636 | 3       |
+| num                                                     | 293             | 1793  | 2293   | 2293  | 4       |
+| setUser                                                 | 22270           | 22270 | 22270  | 22270 | 1       |
+| user                                                    | 331             | 331   | 331    | 331   | 1       |
+
+
+| test/utils/TransferHelperUtils.t.sol:BadReceiver contract |                 |       |        |        |         |
+|-----------------------------------------------------------|-----------------|-------|--------|--------|---------|
+| Deployment Cost                                           | Deployment Size |       |        |        |         |
+| 72729                                                     | 391             |       |        |        |         |
+| Function Name                                             | min             | avg   | median | max    | # calls |
+| receive                                                   | 256             | 78571 | 28384  | 257259 | 4       |
+| setGasUsed                                                | 22256           | 22256 | 22256  | 22256  | 4       |
+
+
+| test/utils/TransferHelperUtils.t.sol:FundsSender contract |                 |       |        |        |         |
+|-----------------------------------------------------------|-----------------|-------|--------|--------|---------|
+| Deployment Cost                                           | Deployment Size |       |        |        |         |
+| 91947                                                     | 487             |       |        |        |         |
+| Function Name                                             | min             | avg   | median | max    | # calls |
+| lowGasLimit                                               | 161             | 161   | 161    | 161    | 3       |
+| normalGasLimit                                            | 185             | 185   | 185    | 185    | 3       |
+| safeSendETH                                               | 7500            | 68700 | 34608  | 264367 | 6       |
+
+
+
