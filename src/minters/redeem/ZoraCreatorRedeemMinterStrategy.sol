@@ -234,15 +234,15 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     /// @param ethValueSent The amount of eth sent
     /// @param minterArguments The abi encoded minter arguments (address, RedeemInstructions, uint256[][], uint256[][])
     function requestMint(
-        address,
+        address sender,
         uint256 tokenId,
         uint256 amount,
         uint256 ethValueSent,
         bytes calldata minterArguments
     ) external onlyCreatorContract returns (ICreatorCommands.CommandSet memory commands) {
-        (address mintTo, RedeemInstructions memory redeemInstructions, uint256[][] memory tokenIds, uint256[][] memory amounts) = abi.decode(
+        (RedeemInstructions memory redeemInstructions, uint256[][] memory tokenIds, uint256[][] memory amounts) = abi.decode(
             minterArguments,
-            (address, RedeemInstructions, uint256[][], uint256[][])
+            (RedeemInstructions, uint256[][], uint256[][])
         );
         bytes32 hash = redeemInstructionsHash(redeemInstructions);
         if (!redeemInstructionsHashIsAllowed[hash]) {
@@ -266,17 +266,17 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         for (uint256 i = 0; i < redeemInstructions.instructions.length; i++) {
             RedeemInstruction memory instruction = redeemInstructions.instructions[i];
             if (instruction.tokenType == TokenType.ERC1155) {
-                _handleErc1155Redeem(instruction, mintTo, tokenIds[i], amounts[i]);
+                _handleErc1155Redeem(sender, instruction, tokenIds[i], amounts[i]);
             } else if (instruction.tokenType == TokenType.ERC721) {
-                _handleErc721Redeem(instruction, mintTo, tokenIds[i]);
+                _handleErc721Redeem(sender, instruction, tokenIds[i]);
             } else if (instruction.tokenType == TokenType.ERC20) {
-                _handleErc20Redeem(instruction, mintTo);
+                _handleErc20Redeem(sender, instruction);
             }
         }
 
         bool shouldTransferFunds = redeemInstructions.ethRecipient != address(0);
         commands.setSize(shouldTransferFunds ? 2 : 1);
-        commands.mint(mintTo, tokenId, amount);
+        commands.mint(sender, tokenId, amount);
 
         if (shouldTransferFunds) {
             commands.transfer(redeemInstructions.ethRecipient, ethValueSent);
@@ -285,7 +285,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         emit RedeemProcessed(creatorContract, hash);
     }
 
-    function _handleErc721Redeem(RedeemInstruction memory instruction, address mintTo, uint256[] memory tokenIds) internal {
+    function _handleErc721Redeem(address sender, RedeemInstruction memory instruction, uint256[] memory tokenIds) internal {
         if (tokenIds.length != instruction.amount) {
             revert IncorrectBurnOrTransferAmount();
         }
@@ -299,12 +299,12 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
                     revert BurnFailed();
                 }
             } else {
-                IERC721(instruction.tokenContract).safeTransferFrom(mintTo, instruction.transferRecipient, tokenIds[j]);
+                IERC721(instruction.tokenContract).safeTransferFrom(sender, instruction.transferRecipient, tokenIds[j]);
             }
         }
     }
 
-    function _handleErc1155Redeem(RedeemInstruction memory instruction, address mintTo, uint256[] memory tokenIds, uint256[] memory amounts) internal {
+    function _handleErc1155Redeem(address sender, RedeemInstruction memory instruction, uint256[] memory tokenIds, uint256[] memory amounts) internal {
         if (amounts.length != tokenIds.length) {
             revert IncorrectNumberOfTokenIds();
         }
@@ -319,23 +319,23 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             revert IncorrectBurnOrTransferAmount();
         }
         if (instruction.burnFunction != 0) {
-            (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, mintTo, tokenIds, amounts));
+            (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, sender, tokenIds, amounts));
             if (!success) {
                 revert BurnFailed();
             }
         } else {
-            IERC1155(instruction.tokenContract).safeBatchTransferFrom(mintTo, instruction.transferRecipient, tokenIds, amounts, bytes(""));
+            IERC1155(instruction.tokenContract).safeBatchTransferFrom(sender, instruction.transferRecipient, tokenIds, amounts, bytes(""));
         }
     }
 
-    function _handleErc20Redeem(RedeemInstruction memory instruction, address mintTo) internal {
+    function _handleErc20Redeem(address sender, RedeemInstruction memory instruction) internal {
         if (instruction.burnFunction != 0) {
-            (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, mintTo, instruction.amount));
+            (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, sender, instruction.amount));
             if (!success) {
                 revert BurnFailed();
             }
         } else {
-            IERC20(instruction.tokenContract).transferFrom(mintTo, instruction.transferRecipient, instruction.amount);
+            IERC20(instruction.tokenContract).transferFrom(sender, instruction.transferRecipient, instruction.amount);
         }
     }
 
