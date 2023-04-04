@@ -42,7 +42,7 @@ contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1 {
     uint256 public nextTokenId;
 
     /// @notice Global contract configuration
-    ContractConfig config;
+    ContractConfig public config;
 
     /**
      * @dev This empty reserved space is put in place to allow future versions to add new
