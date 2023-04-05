@@ -598,7 +598,7 @@ contract ZoraCreator1155Impl is
         emit ConfigUpdated(msg.sender, ConfigUpdate.OWNER, config);
     }
 
-    /// @notice Internal no-checks set funds recipient address
+    /// @notice Set funds recipient address
     /// @param fundsRecipient new funds recipient address
     function setFundsRecipient(address payable fundsRecipient) external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
         config.fundsRecipient = fundsRecipient;
@@ -612,7 +612,7 @@ contract ZoraCreator1155Impl is
         emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
     }
 
-    /// @notice Withdraws all ETH from the contract to the message sender
+    /// @notice Withdraws all ETH from the contract to the funds recipient address
     function withdraw() public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
         uint256 contractValue = address(this).balance;
         if (!TransferHelperUtils.safeSendETH(config.fundsRecipient, contractValue, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
