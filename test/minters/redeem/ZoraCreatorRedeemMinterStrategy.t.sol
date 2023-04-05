@@ -21,7 +21,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
     uint256 internal newTokenId;
 
     event RedeemSet(address indexed target, bytes32 indexed redeemsInstructionsHash, ZoraCreatorRedeemMinterStrategy.RedeemInstructions data);
-    event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash);
+    event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash, address sender, uint256[][] tokenIds, uint256[][] amounts);
     event RedeemsCleared(address indexed target, bytes32[] indexed redeemInstructionsHashes);
 
     function setUp() external {
@@ -281,7 +281,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
         vm.expectEmit(true, true, false, false);
-        emit RedeemProcessed(address(target), keccak256(abi.encode(redeemInstructions)));
+        emit RedeemProcessed(address(target), keccak256(abi.encode(redeemInstructions)), tokenRecipient, tokenIds, amounts);
         target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
         assertEq(address(target).balance, 1 ether);
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
@@ -1072,6 +1072,359 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         vm.expectRevert(abi.encodeWithSignature("IncorrectBurnOrTransferAmount()"));
         target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
 
+        vm.stopPrank();
+    }
+
+    function test_MintFlowSenderNotTokenOwnerBurn20() external {
+        vm.startPrank(admin);
+
+        address actualTokenOwner = address(92834);
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        ERC20PresetMinterPauser burnTokenERC20 = new ERC20PresetMinterPauser("Random Token", "RAND");
+        burnTokenERC20.mint(address(actualTokenOwner), 1000);
+        ERC1155PresetMinterPauser burnTokenERC1155 = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
+        burnTokenERC1155.mint(address(actualTokenOwner), 1, 1000, "");
+        ERC721PresetMinterPauserAutoId burnTokenERC721 = new ERC721PresetMinterPauserAutoId("Test token", "TEST", "https://zora.co/testing/token.json");
+        burnTokenERC721.mint(address(actualTokenOwner));
+        burnTokenERC721.mint(address(actualTokenOwner));
+
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
+            tokenContract: address(target),
+            tokenId: newTokenId,
+            amount: 10,
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155
+        });
+        ZoraCreatorRedeemMinterStrategy.RedeemInstruction[] memory instructions = new ZoraCreatorRedeemMinterStrategy.RedeemInstruction[](1);
+        instructions[0] = ZoraCreatorRedeemMinterStrategy.RedeemInstruction({
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC20,
+            amount: 500,
+            tokenIdStart: 0,
+            tokenIdEnd: 0,
+            tokenContract: address(burnTokenERC20),
+            transferRecipient: address(0),
+            burnFunction: bytes4(keccak256(bytes("burnFrom(address,uint256)")))
+        });
+        ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
+            mintToken: mintToken,
+            instructions: instructions,
+            saleStart: 0,
+            saleEnd: type(uint64).max,
+            ethAmount: 1 ether,
+            ethRecipient: address(0)
+        });
+
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        vm.stopPrank();
+
+        vm.startPrank(tokenRecipient);
+        burnTokenERC20.approve(address(redeemMinter), 500);
+
+        uint256[][] memory tokenIds = new uint256[][](1);
+        uint256[][] memory amounts = new uint256[][](1);
+        amounts[0] = new uint256[](1);
+        amounts[0][0] = 500;
+
+        vm.expectRevert(abi.encodeWithSignature("BurnFailed()"));
+        target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
+        vm.stopPrank();
+    }
+
+    function test_MintFlowSenderNotTokenOwnerBurn1155() external {
+        vm.startPrank(admin);
+
+        address actualTokenOwner = address(92834);
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        ERC20PresetMinterPauser burnTokenERC20 = new ERC20PresetMinterPauser("Random Token", "RAND");
+        burnTokenERC20.mint(address(actualTokenOwner), 1000);
+        ERC1155PresetMinterPauser burnTokenERC1155 = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
+        burnTokenERC1155.mint(address(actualTokenOwner), 1, 1000, "");
+        ERC721PresetMinterPauserAutoId burnTokenERC721 = new ERC721PresetMinterPauserAutoId("Test token", "TEST", "https://zora.co/testing/token.json");
+        burnTokenERC721.mint(address(actualTokenOwner));
+        burnTokenERC721.mint(address(actualTokenOwner));
+
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
+            tokenContract: address(target),
+            tokenId: newTokenId,
+            amount: 10,
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155
+        });
+
+        ZoraCreatorRedeemMinterStrategy.RedeemInstruction[] memory instructions = new ZoraCreatorRedeemMinterStrategy.RedeemInstruction[](1);
+        instructions[0] = ZoraCreatorRedeemMinterStrategy.RedeemInstruction({
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155,
+            amount: 500,
+            tokenIdStart: 1,
+            tokenIdEnd: 1,
+            tokenContract: address(burnTokenERC1155),
+            transferRecipient: address(0),
+            burnFunction: bytes4(keccak256(bytes("burnBatch(address,uint256[],uint256[])")))
+        });
+        ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
+            mintToken: mintToken,
+            instructions: instructions,
+            saleStart: 0,
+            saleEnd: type(uint64).max,
+            ethAmount: 1 ether,
+            ethRecipient: address(0)
+        });
+
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        vm.stopPrank();
+
+        vm.startPrank(tokenRecipient);
+        burnTokenERC1155.setApprovalForAll(address(redeemMinter), true);
+
+        uint256[][] memory tokenIds = new uint256[][](1);
+        tokenIds[0] = new uint256[](1);
+        tokenIds[0][0] = 1;
+        uint256[][] memory amounts = new uint256[][](1);
+        amounts[0] = new uint256[](1);
+        amounts[0][0] = 500;
+
+        vm.expectRevert(abi.encodeWithSignature("BurnFailed()"));
+        target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
+        vm.stopPrank();
+    }
+
+    function test_MintFlowSenderNotTokenOwnerBurn721() external {
+        vm.startPrank(admin);
+
+        address actualTokenOwner = address(92834);
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        ERC20PresetMinterPauser burnTokenERC20 = new ERC20PresetMinterPauser("Random Token", "RAND");
+        burnTokenERC20.mint(address(actualTokenOwner), 1000);
+        ERC1155PresetMinterPauser burnTokenERC1155 = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
+        burnTokenERC1155.mint(address(actualTokenOwner), 1, 1000, "");
+        ERC721PresetMinterPauserAutoId burnTokenERC721 = new ERC721PresetMinterPauserAutoId("Test token", "TEST", "https://zora.co/testing/token.json");
+        burnTokenERC721.mint(address(actualTokenOwner));
+        burnTokenERC721.mint(address(actualTokenOwner));
+
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
+            tokenContract: address(target),
+            tokenId: newTokenId,
+            amount: 10,
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155
+        });
+
+        ZoraCreatorRedeemMinterStrategy.RedeemInstruction[] memory instructions = new ZoraCreatorRedeemMinterStrategy.RedeemInstruction[](1);
+        instructions[0] = ZoraCreatorRedeemMinterStrategy.RedeemInstruction({
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC721,
+            amount: 2,
+            tokenIdStart: 0,
+            tokenIdEnd: 1,
+            tokenContract: address(burnTokenERC721),
+            transferRecipient: address(0),
+            burnFunction: bytes4(keccak256(bytes("burn(uint256)")))
+        });
+        ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
+            mintToken: mintToken,
+            instructions: instructions,
+            saleStart: 0,
+            saleEnd: type(uint64).max,
+            ethAmount: 1 ether,
+            ethRecipient: address(0)
+        });
+
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        vm.stopPrank();
+
+        vm.startPrank(tokenRecipient);
+        burnTokenERC721.setApprovalForAll(address(redeemMinter), true);
+
+        uint256[][] memory tokenIds = new uint256[][](1);
+        tokenIds[0] = new uint256[](2);
+        tokenIds[0][0] = 0;
+        tokenIds[0][1] = 1;
+        uint256[][] memory amounts;
+
+        vm.expectRevert(abi.encodeWithSignature("BurnFailed()"));
+        target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
+        vm.stopPrank();
+    }
+
+    function test_MintFlowSenderNotTokenOwnerTransfer20() external {
+        vm.startPrank(admin);
+
+        address actualTokenOwner = address(92834);
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        ERC20PresetMinterPauser burnTokenERC20 = new ERC20PresetMinterPauser("Random Token", "RAND");
+        burnTokenERC20.mint(address(actualTokenOwner), 1000);
+        ERC1155PresetMinterPauser burnTokenERC1155 = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
+        burnTokenERC1155.mint(address(actualTokenOwner), 1, 1000, "");
+        ERC721PresetMinterPauserAutoId burnTokenERC721 = new ERC721PresetMinterPauserAutoId("Test token", "TEST", "https://zora.co/testing/token.json");
+        burnTokenERC721.mint(address(actualTokenOwner));
+        burnTokenERC721.mint(address(actualTokenOwner));
+
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
+            tokenContract: address(target),
+            tokenId: newTokenId,
+            amount: 10,
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155
+        });
+
+        ZoraCreatorRedeemMinterStrategy.RedeemInstruction[] memory instructions = new ZoraCreatorRedeemMinterStrategy.RedeemInstruction[](1);
+        instructions[0] = ZoraCreatorRedeemMinterStrategy.RedeemInstruction({
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC20,
+            amount: 500,
+            tokenIdStart: 0,
+            tokenIdEnd: 0,
+            tokenContract: address(burnTokenERC20),
+            transferRecipient: address(1),
+            burnFunction: bytes4(0)
+        });
+        ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
+            mintToken: mintToken,
+            instructions: instructions,
+            saleStart: 0,
+            saleEnd: type(uint64).max,
+            ethAmount: 1 ether,
+            ethRecipient: address(0)
+        });
+
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        vm.stopPrank();
+
+        vm.startPrank(tokenRecipient);
+        burnTokenERC20.approve(address(redeemMinter), 500);
+
+        uint256[][] memory tokenIds = new uint256[][](1);
+        uint256[][] memory amounts = new uint256[][](1);
+        amounts[0] = new uint256[](1);
+        amounts[0][0] = 500;
+
+        vm.expectRevert("ERC20: transfer amount exceeds balance");
+        target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
+        vm.stopPrank();
+    }
+
+    function test_MintFlowSenderNotTokenOwnerTransfer1155() external {
+        vm.startPrank(admin);
+
+        address actualTokenOwner = address(92834);
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        ERC20PresetMinterPauser burnTokenERC20 = new ERC20PresetMinterPauser("Random Token", "RAND");
+        burnTokenERC20.mint(address(actualTokenOwner), 1000);
+        ERC1155PresetMinterPauser burnTokenERC1155 = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
+        burnTokenERC1155.mint(address(actualTokenOwner), 1, 1000, "");
+        ERC721PresetMinterPauserAutoId burnTokenERC721 = new ERC721PresetMinterPauserAutoId("Test token", "TEST", "https://zora.co/testing/token.json");
+        burnTokenERC721.mint(address(actualTokenOwner));
+        burnTokenERC721.mint(address(actualTokenOwner));
+
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
+            tokenContract: address(target),
+            tokenId: newTokenId,
+            amount: 10,
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155
+        });
+
+        ZoraCreatorRedeemMinterStrategy.RedeemInstruction[] memory instructions = new ZoraCreatorRedeemMinterStrategy.RedeemInstruction[](1);
+        instructions[0] = ZoraCreatorRedeemMinterStrategy.RedeemInstruction({
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155,
+            amount: 500,
+            tokenIdStart: 1,
+            tokenIdEnd: 1,
+            tokenContract: address(burnTokenERC1155),
+            transferRecipient: address(1),
+            burnFunction: bytes4(0)
+        });
+        ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
+            mintToken: mintToken,
+            instructions: instructions,
+            saleStart: 0,
+            saleEnd: type(uint64).max,
+            ethAmount: 1 ether,
+            ethRecipient: address(0)
+        });
+
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        vm.stopPrank();
+
+        vm.startPrank(tokenRecipient);
+        burnTokenERC1155.setApprovalForAll(address(redeemMinter), true);
+
+        uint256[][] memory tokenIds = new uint256[][](1);
+        tokenIds[0] = new uint256[](1);
+        tokenIds[0][0] = 1;
+        uint256[][] memory amounts = new uint256[][](1);
+        amounts[0] = new uint256[](1);
+        amounts[0][0] = 500;
+
+        vm.expectRevert("ERC1155: insufficient balance for transfer");
+        target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
+        vm.stopPrank();
+    }
+
+    function test_MintFlowSenderNotTokenOwnerTransfer721() external {
+        vm.startPrank(admin);
+
+        address actualTokenOwner = address(92834);
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        ERC20PresetMinterPauser burnTokenERC20 = new ERC20PresetMinterPauser("Random Token", "RAND");
+        burnTokenERC20.mint(address(actualTokenOwner), 1000);
+        ERC1155PresetMinterPauser burnTokenERC1155 = new ERC1155PresetMinterPauser("https://zora.co/testing/token.json");
+        burnTokenERC1155.mint(address(actualTokenOwner), 1, 1000, "");
+        ERC721PresetMinterPauserAutoId burnTokenERC721 = new ERC721PresetMinterPauserAutoId("Test token", "TEST", "https://zora.co/testing/token.json");
+        burnTokenERC721.mint(address(actualTokenOwner));
+        burnTokenERC721.mint(address(actualTokenOwner));
+
+        ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
+            tokenContract: address(target),
+            tokenId: newTokenId,
+            amount: 10,
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155
+        });
+
+        ZoraCreatorRedeemMinterStrategy.RedeemInstruction[] memory instructions = new ZoraCreatorRedeemMinterStrategy.RedeemInstruction[](1);
+        instructions[0] = ZoraCreatorRedeemMinterStrategy.RedeemInstruction({
+            tokenType: ZoraCreatorRedeemMinterStrategy.TokenType.ERC721,
+            amount: 2,
+            tokenIdStart: 0,
+            tokenIdEnd: 1,
+            tokenContract: address(burnTokenERC721),
+            transferRecipient: address(1),
+            burnFunction: bytes4(0)
+        });
+        ZoraCreatorRedeemMinterStrategy.RedeemInstructions memory redeemInstructions = ZoraCreatorRedeemMinterStrategy.RedeemInstructions({
+            mintToken: mintToken,
+            instructions: instructions,
+            saleStart: 0,
+            saleEnd: type(uint64).max,
+            ethAmount: 1 ether,
+            ethRecipient: address(0)
+        });
+
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        vm.stopPrank();
+
+        vm.startPrank(tokenRecipient);
+        burnTokenERC721.setApprovalForAll(address(redeemMinter), true);
+
+        uint256[][] memory tokenIds = new uint256[][](1);
+        tokenIds[0] = new uint256[](2);
+        tokenIds[0][0] = 0;
+        tokenIds[0][1] = 1;
+        uint256[][] memory amounts;
+
+        vm.expectRevert("ERC721: caller is not token owner or approved");
+        target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
         vm.stopPrank();
     }
 

@@ -97,7 +97,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     }
 
     event RedeemSet(address indexed target, bytes32 indexed redeemsInstructionsHash, RedeemInstructions data);
-    event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash);
+    event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash, address sender, uint256[][] tokenIds, uint256[][] amounts);
     event RedeemsCleared(address indexed target, bytes32[] indexed redeemInstructionsHashes);
 
     error RedeemInstructionAlreadySet();
@@ -282,7 +282,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             commands.transfer(redeemInstructions.ethRecipient, ethValueSent);
         }
 
-        emit RedeemProcessed(creatorContract, hash);
+        emit RedeemProcessed(creatorContract, hash, sender, tokenIds, amounts);
     }
 
     function _handleErc721Redeem(address sender, RedeemInstruction memory instruction, uint256[] memory tokenIds) internal {
