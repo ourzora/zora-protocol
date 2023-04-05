@@ -124,7 +124,7 @@ contract ZoraCreator1155Test is Test {
     function test_contractVersion() external {
         init();
 
-        assertEq(target.contractVersion(), "1.2.0-pre2");
+        assertEq(target.contractVersion(), "1.2.1");
     }
 
     function test_assumeLastTokenIdMatches() external {
