@@ -71,6 +71,6 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
     function test_supportsInterface() public {
         assertTrue(minterFactory.supportsInterface(0x01ffc9a7)); // ERC165
         assertTrue(minterFactory.supportsInterface(type(IMinter1155).interfaceId));
-        assertTrue(minterFactory.supportsInterface(0x6467a6fc)); // old IMinter1155
+        assertTrue(!minterFactory.supportsInterface(0x6467a6fc)); // old IMinter1155
     }
 }
