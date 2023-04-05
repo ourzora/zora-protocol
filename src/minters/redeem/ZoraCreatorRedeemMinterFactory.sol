@@ -82,15 +82,12 @@ contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseC
 
     /// @notice IERC165 interface support
     function supportsInterface(bytes4 interfaceId) public pure override returns (bool) {
-        return interfaceId == type(IMinter1155).interfaceId || interfaceId == LEGACY_ZORA_IMINTER1155_INTERFACE_ID || interfaceId == type(IERC165).interfaceId;
+        return interfaceId == type(IMinter1155).interfaceId || interfaceId == type(IERC165).interfaceId;
     }
 
     /// @notice Deploys a new ZoraCreatorRedeemMinterStrategy for caller ZoraCreator1155 contract if none exists
     function createMinterIfNoneExists() external {
-        if (
-            !IERC165(msg.sender).supportsInterface(type(IZoraCreator1155).interfaceId) &&
-            !IERC165(msg.sender).supportsInterface(LEGACY_ZORA_IMINTER1155_INTERFACE_ID)
-        ) {
+        if (!IERC165(msg.sender).supportsInterface(type(IZoraCreator1155).interfaceId)) {
             revert CallerNotZoraCreator1155();
         }
         if (doesRedeemMinterExistForCreatorContract(msg.sender)) {
