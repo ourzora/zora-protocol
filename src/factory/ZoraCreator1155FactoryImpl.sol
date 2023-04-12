@@ -15,14 +15,31 @@ import {Zora1155} from "../proxies/Zora1155.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
+import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
+import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+
+import {Create2Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
+
+error InvalidDelegateSignature();
+error InvalidNonce();
+
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
-contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable, IContractMetadata {
+contract ZoraCreator1155FactoryImpl is
+    IZoraCreator1155Factory,
+    ContractVersionBase,
+    FactoryManagedUpgradeGate,
+    UUPSUpgradeable,
+    EIP712Upgradeable,
+    IContractMetadata
+{
     IZoraCreator1155 public immutable implementation;
 
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
     IMinter1155 public immutable redeemMinterFactory;
+
+    string constant CONTRACT_NAME = "ZORA 1155 Contract Factory";
 
     constructor(IZoraCreator1155 _implementation, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
         implementation = _implementation;
@@ -41,7 +58,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
 
     /// @notice The name of the sale strategy
     function contractName() external pure returns (string memory) {
-        return "ZORA 1155 Contract Factory";
+        return CONTRACT_NAME;
     }
 
     /// @notice The default minters for new 1155 contracts
@@ -54,6 +71,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
 
     function initialize(address _initialOwner) public initializer {
         __Ownable_init(_initialOwner);
+        __EIP712_init(CONTRACT_NAME, contractVersion());
         __UUPSUpgradeable_init();
 
         emit FactorySetup();
@@ -66,17 +84,102 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     /// @param defaultAdmin The default admin for the contract
     /// @param setupActions The actions to perform on the new contract upon initialization
     function createContract(
-        string memory newContractURI,
+        string calldata newContractURI,
         string calldata name,
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
+        // call private _createContract with msg.sender as the creator
+        return _createContract(msg.sender, newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+    }
+
+    bytes32 constant DELEGATE_CREATE_TYPEHASH =
+        keccak256(
+            "delegateCreate(address creator,string newContractURI,string name, ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration,bytes[] setupActions,address erc1155implementation)"
+        );
+
+    /// Used to create a hash of the data for the delegateCreateContract function,
+    /// that is to be signed by the creator.
+    /// @param creator The creator of the contract - must match the address of the signer.
+    /// must be incremented by 1 for each new signature.
+    function delegateCreateContractHashTypeData(
+        address creator,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
+        bytes[] calldata setupActions
+    ) public view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(DELEGATE_CREATE_TYPEHASH, creator, bytes(newContractURI), bytes(name), defaultRoyaltyConfiguration, setupActions, implementation)
+        );
+
+        return _hashTypedDataV4(structHash);
+    }
+
+    /// Allows anyone to execute a signature to create a contract on behalf of a creator.
+    function delegateCreateContract(
+        address payable creator,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        bytes[] calldata setupActions,
+        bytes calldata signature
+    ) external returns (address) {
+        bytes32 digest = delegateCreateContractHashTypeData(creator, newContractURI, name, defaultRoyaltyConfiguration, setupActions);
+
+        address signatory = ECDSAUpgradeable.recover(digest, signature);
+
+        if (signatory != creator) {
+            revert InvalidDelegateSignature();
+        }
+
+        // create contract using deterministic address based on the salt (which is the arguments)
+        address newContract = address(new Zora1155{salt: digest}(address(implementation)));
+
+        _initializeContract(newContract, creator, newContractURI, name, defaultRoyaltyConfiguration, creator, setupActions);
+
+        return newContract;
+    }
+
+    /// Used to preview what a delegated created contract's address will be.  That address is deterministic
+    function computeDelegateCreatedContractAddress(bytes32 digest) external view returns (address) {
+        bytes memory bytecode = type(Zora1155).creationCode;
+
+        bytes32 contractCodeHash = keccak256(abi.encodePacked(bytecode, abi.encode(address(implementation))));
+
+        return Create2Upgradeable.computeAddress(digest, contractCodeHash);
+    }
+
+    /// Creates a new contract with a randomly generated new address.
+    function _createContract(
+        address creator,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) private returns (address) {
         address newContract = address(new Zora1155(address(implementation)));
 
+        _initializeContract(newContract, creator, newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+
+        return newContract;
+    }
+
+    /// Initializes an upgradeable contract.
+    function _initializeContract(
+        address newContract,
+        address creator,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) private {
         emit SetupNewContract({
-            newContract: address(newContract),
-            creator: msg.sender,
+            newContract: newContract,
+            creator: creator,
             defaultAdmin: defaultAdmin,
             contractURI: newContractURI,
             name: name,
@@ -84,8 +187,6 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         });
 
         IZoraCreator1155Initializer(newContract).initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
-
-        return address(newContract);
     }
 
     ///                                                          ///
