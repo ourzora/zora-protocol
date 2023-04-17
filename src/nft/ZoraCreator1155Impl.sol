@@ -382,7 +382,7 @@ contract ZoraCreator1155Impl is
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
-        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value, "");
+        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
     /// @notice Mint tokens with a comment given a minter contract and minter arguments
@@ -407,7 +407,8 @@ contract ZoraCreator1155Impl is
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
-        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value, comment);
+        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
+        emit MintComment(msg.sender, address(minter), tokenId, comment);
     }
 
     /// @notice Set a metadata renderer for a token
