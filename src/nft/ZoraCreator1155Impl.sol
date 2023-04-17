@@ -408,7 +408,7 @@ contract ZoraCreator1155Impl is
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
-        emit MintComment(msg.sender, address(minter), tokenId, comment);
+        emit MintComment(msg.sender, tokenId, quantity, comment);
     }
 
     /// @notice Set a metadata renderer for a token
