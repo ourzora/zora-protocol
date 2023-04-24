@@ -88,7 +88,13 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
         uint256 ethValueSent,
         bytes calldata minterArguments
     ) external returns (ICreatorCommands.CommandSet memory commands) {
-        (address mintTo, string memory comment) = abi.decode(minterArguments, (address, string));
+        address mintTo;
+        string memory comment = "";
+        if (minterArguments.length == 32) {
+            mintTo = abi.decode(minterArguments, (address));
+        } else {
+            (mintTo, comment) = abi.decode(minterArguments, (address, string));
+        }
 
         SalesConfig storage config = salesConfigs[msg.sender][tokenId];
 

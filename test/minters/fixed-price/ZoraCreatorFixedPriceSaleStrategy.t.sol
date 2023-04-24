@@ -17,6 +17,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
     address payable internal admin = payable(address(0x999));
 
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, ZoraCreatorFixedPriceSaleStrategy.SalesConfig salesConfig);
+    event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
 
     function setUp() external {
         bytes[] memory emptyData = new bytes[](0);
@@ -73,6 +74,98 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
         vm.startPrank(tokenRecipient);
         target.mint{value: 10 ether}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, ""));
+
+        assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
+        assertEq(address(target).balance, 10 ether);
+
+        vm.stopPrank();
+    }
+
+    function test_MintWithCommentBackwardsCompatible() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+        vm.expectEmit(true, true, true, true);
+        emit SaleSet(
+            address(target),
+            newTokenId,
+            ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                pricePerToken: 1 ether,
+                saleStart: 0,
+                saleEnd: type(uint64).max,
+                maxTokensPerAddress: 0,
+                fundsRecipient: address(0)
+            })
+        );
+        target.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+        vm.stopPrank();
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        vm.startPrank(tokenRecipient);
+        target.mint{value: 10 ether}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient));
+
+        assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
+        assertEq(address(target).balance, 10 ether);
+
+        vm.stopPrank();
+    }
+
+    function test_MintWithComment() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+        vm.expectEmit(true, true, true, true);
+        emit SaleSet(
+            address(target),
+            newTokenId,
+            ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                pricePerToken: 1 ether,
+                saleStart: 0,
+                saleEnd: type(uint64).max,
+                maxTokensPerAddress: 0,
+                fundsRecipient: address(0)
+            })
+        );
+        target.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+        vm.stopPrank();
+
+        address tokenRecipient = address(322);
+        vm.deal(tokenRecipient, 20 ether);
+
+        vm.startPrank(tokenRecipient);
+        vm.expectEmit(true, true, true, true);
+        emit MintComment(tokenRecipient, address(target), newTokenId, 10, "test comment");
+        target.mint{value: 10 ether}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"));
 
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
         assertEq(address(target).balance, 10 ether);
