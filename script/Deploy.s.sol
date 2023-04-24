@@ -49,7 +49,7 @@ contract DeployScript is Script {
         console2.log("Factory Proxy", address(factoryProxy));
         console2.log("Implementation Address", address(creatorImpl));
 
-        bytes[] memory initUpdate = new bytes[](2);
+        bytes[] memory initUpdate = new bytes[](1);
         initUpdate[0] = abi.encodeWithSelector(
             ZoraCreator1155Impl.setupNewToken.selector,
             "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
