@@ -27,7 +27,6 @@ contract ZoraCreator1155Test is Test {
     uint256 internal metadataRole;
 
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
-    event MintComment(address indexed to, uint256 indexed tokenId, uint256 quantity, string comment);
 
     function setUp() external {
         upgradeGate = new MockUpgradeGate();
@@ -549,28 +548,6 @@ contract ZoraCreator1155Test is Test {
         vm.expectEmit(true, true, true, true);
         emit Purchased(admin, address(minter), tokenId, quantity, 0);
         target.mint(minter, tokenId, quantity, abi.encode(recipient));
-
-        IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
-        assertEq(tokenData.totalMinted, quantity);
-        assertEq(target.balanceOf(recipient, tokenId), quantity);
-    }
-
-    function test_mintWithComment(uint256 quantity) external {
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), adminRole);
-
-        vm.prank(admin);
-        vm.expectEmit(true, true, true, true);
-        emit Purchased(admin, address(minter), tokenId, quantity, 0);
-        vm.expectEmit(true, true, true, true);
-        emit MintComment(admin, tokenId, quantity, "test comment");
-        target.mintWithComment(minter, tokenId, quantity, abi.encode(recipient), "test comment");
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
         assertEq(tokenData.totalMinted, quantity);

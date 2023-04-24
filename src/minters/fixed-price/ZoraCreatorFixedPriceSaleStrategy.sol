@@ -66,7 +66,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
 
     /// @notice The version of the sale strategy
     function contractVersion() external pure override returns (string memory) {
-        return "1.0.0";
+        return "1.0.1";
     }
 
     error WrongValueSent();
@@ -74,6 +74,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
     error SaleHasNotStarted();
 
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig salesConfig);
+    event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
 
     /// @notice Compiles and returns the commands needed to mint a token using this sales strategy
     /// @param tokenId The token ID to mint
@@ -87,7 +88,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
         uint256 ethValueSent,
         bytes calldata minterArguments
     ) external returns (ICreatorCommands.CommandSet memory commands) {
-        address mintTo = abi.decode(minterArguments, (address));
+        (address mintTo, string memory comment) = abi.decode(minterArguments, (address, string));
 
         SalesConfig storage config = salesConfigs[msg.sender][tokenId];
 
@@ -118,6 +119,10 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
 
         // Mint command
         commands.mint(mintTo, tokenId, quantity);
+
+        if (bytes(comment).length > 0) {
+            emit MintComment(mintTo, msg.sender, tokenId, quantity, comment);
+        }
 
         // Should transfer funds if funds recipient is set to a non-default address
         if (shouldTransferFunds) {

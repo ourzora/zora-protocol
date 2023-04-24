@@ -385,32 +385,6 @@ contract ZoraCreator1155Impl is
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
-    /// @notice Mint tokens with a comment given a minter contract and minter arguments
-    /// @param minter The minter contract to use
-    /// @param tokenId The token ID to mint
-    /// @param quantity The quantity of tokens to mint
-    /// @param minterArguments The arguments to pass to the minter
-    /// @param comment A comment to add to the Purchased event
-    function mintWithComment(
-        IMinter1155 minter,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes calldata minterArguments,
-        string calldata comment
-    ) external payable nonReentrant {
-        // Require admin from the minter to mint
-        _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
-
-        // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleFeeAndGetValueSent(quantity);
-
-        // Execute commands returned from minter
-        _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
-
-        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
-        emit MintComment(msg.sender, tokenId, quantity, comment);
-    }
-
     /// @notice Set a metadata renderer for a token
     /// @param tokenId The token ID to set the renderer for
     /// @param renderer The renderer to set
