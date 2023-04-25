@@ -66,7 +66,7 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
 
     /// @notice The version of the sale strategy
     function contractVersion() external pure override returns (string memory) {
-        return "1.0.1";
+        return "1.1.0";
     }
 
     error WrongValueSent();
