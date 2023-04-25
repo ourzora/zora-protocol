@@ -12,7 +12,6 @@ import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "./ZoraCreatorRedeemMinterStrategy.sol";
 import {IZoraCreator1155} from "../../interfaces/IZoraCreator1155.sol";
 import {SharedBaseConstants} from "../../shared/SharedBaseConstants.sol";
-import {ZoraCreatorRedeemMinterFactory} from "../../minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
 /*
 
@@ -68,7 +67,7 @@ contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseC
 
     /// @notice Factory contract version
     function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
+        return "1.0.0";
     }
 
     /// @notice No-op function for IMinter1155 compatibility
