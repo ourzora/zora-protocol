@@ -1,16 +1,89 @@
 No files changed, compilation skipped
 
-Running 3 tests for test/upgrades/FactoryManagedUpgradeGate.t.sol:FactoryManagedUpgradeGateTest
-[32m[PASS][0m test_AdminOnly() (gas: 14997)
-[32m[PASS][0m test_registersUpgradePath() (gas: 65214)
-[32m[PASS][0m test_removesUpgradePath() (gas: 48236)
-Test result: [32mok[0m. 3 passed; 0 failed; finished in 3.72ms
+Running 2 tests for test/royalties/CreatorRoyaltiesControl.t.sol:CreatorRoyaltiesControlTest
+[32m[PASS][0m test_GetsRoyaltiesInfoGlobalDefault() (gas: 5451534)
+[32m[PASS][0m test_GetsRoyaltiesInfoSpecificToken() (gas: 5567580)
+Test result: [32mok[0m. 2 passed; 0 failed; finished in 2.35ms
+
+Running 5 tests for test/minters/redeem/ZoraCreatorRedeemMinterFactory.t.sol:ZoraCreatorRedeemMinterFactoryTest
+[32m[PASS][0m test_contractVersion() (gas: 7148)
+[32m[PASS][0m test_createMinterIfNoneExists() (gas: 154433)
+[32m[PASS][0m test_createMinterRequiresIZoraCreator1155Caller() (gas: 2499239)
+[32m[PASS][0m test_getDeployedMinterForCreatorContract() (gas: 114030)
+[32m[PASS][0m test_supportsInterface() (gas: 7446)
+Test result: [32mok[0m. 5 passed; 0 failed; finished in 1.89ms
+
+Running 12 tests for test/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.t.sol:ZoraCreatorFixedPriceSaleStrategyTest
+[32m[PASS][0m testFail_setupMint() (gas: 279485)
+[32m[PASS][0m test_ContractName() (gas: 7109)
+[32m[PASS][0m test_FundsRecipient() (gas: 348503)
+[32m[PASS][0m test_MaxTokensPerAddress() (gas: 278098)
+[32m[PASS][0m test_MintFlow() (gas: 316549)
+[32m[PASS][0m test_MintedPerRecipientGetter() (gas: 308302)
+[32m[PASS][0m test_PricePerToken() (gas: 341162)
+[32m[PASS][0m test_ResetSale() (gas: 203974)
+[32m[PASS][0m test_SaleEnd() (gas: 254428)
+[32m[PASS][0m test_SaleStart() (gas: 254022)
+[32m[PASS][0m test_Version() (gas: 7219)
+[32m[PASS][0m test_fixedPriceSaleSupportsInterface() (gas: 7669)
+Test result: [32mok[0m. 12 passed; 0 failed; finished in 3.00ms
 
 Running 3 tests for test/utils/PublicMulticall.t.sol:PublicMulticallTest
 [32m[PASS][0m testCallsComeFromUser() (gas: 38181)
 [32m[PASS][0m testCallsFail() (gas: 14787)
 [32m[PASS][0m testCallsSucceed() (gas: 17426)
-Test result: [32mok[0m. 3 passed; 0 failed; finished in 3.96ms
+Test result: [32mok[0m. 3 passed; 0 failed; finished in 3.39ms
+
+Running 18 tests for test/nft/ZoraCreator1155AccessControlGeneralTest.sol:ZoraCreator1155AccessControlGeneralTest
+[32m[PASS][0m test_openAccessFails_addPermission() (gas: 16905)
+[32m[PASS][0m test_openAccessFails_adminMint() (gas: 24584)
+[32m[PASS][0m test_openAccessFails_adminMintBatch() (gas: 26837)
+[32m[PASS][0m test_openAccessFails_assumeLastTokenIdMatches() (gas: 16469)
+[32m[PASS][0m test_openAccessFails_burnBatch() (gas: 86326)
+[32m[PASS][0m test_openAccessFails_callRenderer() (gas: 462776)
+[32m[PASS][0m test_openAccessFails_callSale() (gas: 330437)
+[32m[PASS][0m test_openAccessFails_initialize() (gas: 25386)
+[32m[PASS][0m test_openAccessFails_isAdminOrRole() (gas: 12983)
+[32m[PASS][0m test_openAccessFails_mint() (gas: 334708)
+[32m[PASS][0m test_openAccessFails_removePermission() (gas: 16719)
+[32m[PASS][0m test_openAccessFails_setOwner() (gas: 16049)
+[32m[PASS][0m test_openAccessFails_setTokenMetadataRenderer() (gas: 429386)
+[32m[PASS][0m test_openAccessFails_setupNewToken() (gas: 17098)
+[32m[PASS][0m test_openAccessFails_updateContractMetadata() (gas: 17841)
+[32m[PASS][0m test_openAccessFails_updateRoyaltiesForToken() (gas: 17148)
+[32m[PASS][0m test_openAccessFails_updateTokenURI() (gas: 18514)
+[32m[PASS][0m test_openAccessFails_withdrawCustom() (gas: 14192)
+Test result: [32mok[0m. 18 passed; 0 failed; finished in 5.79ms
+
+Running 27 tests for test/minters/redeem/ZoraCreatorRedeemMinterStrategy.t.sol:ZoraCreatorRedeemMinterStrategyTest
+[32m[PASS][0m test_ClearRedeem() (gas: 2795919)
+[32m[PASS][0m test_ContractName() (gas: 7186)
+[32m[PASS][0m test_ContractURI() (gas: 7950)
+[32m[PASS][0m test_MintFlowAmount() (gas: 1910876)
+[32m[PASS][0m test_MintFlowERC1155() (gas: 2766558)
+[32m[PASS][0m test_MintFlowERC20() (gas: 1972853)
+[32m[PASS][0m test_MintFlowERC721() (gas: 2737867)
+[32m[PASS][0m test_MintFlowEthValue() (gas: 2014249)
+[32m[PASS][0m test_MintFlowFundsRecipient() (gas: 2000734)
+[32m[PASS][0m test_MintFlowIncorrectBurnOrTransferAmount() (gas: 5495181)
+[32m[PASS][0m test_MintFlowIncorrectNumberOfTokenIds() (gas: 2716157)
+[32m[PASS][0m test_MintFlowMultiple() (gas: 7153260)
+[32m[PASS][0m test_MintFlowMultipleWithTransferInsteadOfBurn() (gas: 7367750)
+[32m[PASS][0m test_MintFlowRedeemEnd() (gas: 1910133)
+[32m[PASS][0m test_MintFlowRedeemStart() (gas: 1911248)
+[32m[PASS][0m test_MintFlowSenderNotTokenOwnerBurn1155() (gas: 7156087)
+[32m[PASS][0m test_MintFlowSenderNotTokenOwnerBurn20() (gas: 7154621)
+[32m[PASS][0m test_MintFlowSenderNotTokenOwnerBurn721() (gas: 7154838)
+[32m[PASS][0m test_MintFlowSenderNotTokenOwnerTransfer1155() (gas: 7155592)
+[32m[PASS][0m test_MintFlowSenderNotTokenOwnerTransfer20() (gas: 7153595)
+[32m[PASS][0m test_MintFlowSenderNotTokenOwnerTransfer721() (gas: 7154793)
+[32m[PASS][0m test_MintFlowTokenIdRangesForERC1155AndERC721() (gas: 6120293)
+[32m[PASS][0m test_OnlyDropContractCanCallWriteFunctions() (gas: 28047)
+[32m[PASS][0m test_ResetSaleAlwaysReverts() (gas: 13414)
+[32m[PASS][0m test_SetRedeem() (gas: 1861945)
+[32m[PASS][0m test_SetRedeemInstructionValidation() (gas: 1887854)
+[32m[PASS][0m test_Version() (gas: 7439)
+Test result: [32mok[0m. 27 passed; 0 failed; finished in 26.50ms
 
 Running 6 tests for test/utils/TransferHelperUtils.t.sol:TransferHelperUtilsTest
 [32m[PASS][0m test_TransferHighGasLimitFailsNoMoreGas() (gas: 141776)
@@ -19,174 +92,178 @@ Running 6 tests for test/utils/TransferHelperUtils.t.sol:TransferHelperUtilsTest
 [32m[PASS][0m test_TransferLowGasLimitFailsNoMoreGas() (gas: 141840)
 [32m[PASS][0m test_TransferLowGasLimitSucceeds() (gas: 41061)
 [32m[PASS][0m test_TransferLowGasLimitSucceedsGasLimitOk() (gas: 198119)
-Test result: [32mok[0m. 6 passed; 0 failed; finished in 3.99ms
+Test result: [32mok[0m. 6 passed; 0 failed; finished in 653.21µs
 
-Running 2 tests for test/royalties/CreatorRoyaltiesControl.t.sol:CreatorRoyaltiesControlTest
-[32m[PASS][0m test_GetsRoyaltiesInfoGlobalDefault() (gas: 5430382)
-[32m[PASS][0m test_GetsRoyaltiesInfoSpecificToken() (gas: 5546362)
-Test result: [32mok[0m. 2 passed; 0 failed; finished in 4.93ms
-
-Running 18 tests for test/nft/ZoraCreator1155AccessControlGeneralTest.sol:ZoraCreator1155AccessControlGeneralTest
-[32m[PASS][0m test_openAccessFails_addPermission() (gas: 16883)
-[32m[PASS][0m test_openAccessFails_adminMint() (gas: 24562)
-[32m[PASS][0m test_openAccessFails_adminMintBatch() (gas: 26815)
-[32m[PASS][0m test_openAccessFails_assumeLastTokenIdMatches() (gas: 16447)
-[32m[PASS][0m test_openAccessFails_burnBatch() (gas: 86304)
-[32m[PASS][0m test_openAccessFails_callRenderer() (gas: 462754)
-[32m[PASS][0m test_openAccessFails_callSale() (gas: 330415)
-[32m[PASS][0m test_openAccessFails_initialize() (gas: 25364)
-[32m[PASS][0m test_openAccessFails_isAdminOrRole() (gas: 12983)
-[32m[PASS][0m test_openAccessFails_mint() (gas: 334708)
-[32m[PASS][0m test_openAccessFails_removePermission() (gas: 16719)
-[32m[PASS][0m test_openAccessFails_setOwner() (gas: 16049)
-[32m[PASS][0m test_openAccessFails_setTokenMetadataRenderer() (gas: 429386)
-[32m[PASS][0m test_openAccessFails_setupNewToken() (gas: 17076)
-[32m[PASS][0m test_openAccessFails_updateContractMetadata() (gas: 17819)
-[32m[PASS][0m test_openAccessFails_updateRoyaltiesForToken() (gas: 17126)
-[32m[PASS][0m test_openAccessFails_updateTokenURI() (gas: 18514)
-[32m[PASS][0m test_openAccessFails_withdrawCustom() (gas: 14192)
-Test result: [32mok[0m. 18 passed; 0 failed; finished in 4.80ms
-
-Running 12 tests for test/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.t.sol:ZoraCreatorFixedPriceSaleStrategyTest
-[32m[PASS][0m testFail_setupMint() (gas: 279397)
-[32m[PASS][0m test_ContractName() (gas: 7109)
-[32m[PASS][0m test_FundsRecipient() (gas: 348415)
-[32m[PASS][0m test_MaxTokensPerAddress() (gas: 278010)
-[32m[PASS][0m test_MintFlow() (gas: 316461)
-[32m[PASS][0m test_MintedPerRecipientGetter() (gas: 308214)
-[32m[PASS][0m test_PricePerToken() (gas: 341074)
-[32m[PASS][0m test_ResetSale() (gas: 203886)
-[32m[PASS][0m test_SaleEnd() (gas: 254340)
-[32m[PASS][0m test_SaleStart() (gas: 253934)
-[32m[PASS][0m test_Version() (gas: 7219)
-[32m[PASS][0m test_fixedPriceSaleSupportsInterface() (gas: 7669)
-Test result: [32mok[0m. 12 passed; 0 failed; finished in 2.83ms
-
-Running 11 tests for test/utils/Ownable2StepUpgradable.t.sol:Ownable2StepUpgradableTest
-[32m[PASS][0m test_acceptOwnership(address) (runs: 256, μ: 37974, ~: 37960)
-[32m[PASS][0m test_acceptOwnership_revertOnlyPendingOwner() (gas: 15515)
-[32m[PASS][0m test_cancelOwnershipTransfer() (gas: 34404)
-[32m[PASS][0m test_init() (gas: 18432)
-[32m[PASS][0m test_resignOwnership() (gas: 22704)
-[32m[PASS][0m test_safeTransferOwnership(address) (runs: 256, μ: 44872, ~: 44872)
-[32m[PASS][0m test_safeTransferOwnership_revertNotZeroAddress() (gas: 15783)
-[32m[PASS][0m test_safeTransferOwnership_revertOnlyOwner() (gas: 16018)
-[32m[PASS][0m test_transferOwnership(address) (runs: 256, μ: 28184, ~: 28184)
-[32m[PASS][0m test_transferOwnership_revertNotZeroAddress() (gas: 16415)
-[32m[PASS][0m test_transferOwnership_revertOnlyOwner() (gas: 16361)
-Test result: [32mok[0m. 11 passed; 0 failed; finished in 49.43ms
-
-Running 12 tests for test/minters/merkle/ZoraCreatorMerkleMinterStrategy.t.sol:ZoraCreatorMerkleMinterStrategyTest
-[32m[PASS][0m test_ContractName() (gas: 7149)
-[32m[PASS][0m test_ContractURI() (gas: 7629)
-[32m[PASS][0m test_FundsRecipient() (gas: 397839)
-[32m[PASS][0m test_InvalidMerkleProof() (gas: 262465)
-[32m[PASS][0m test_MaxQuantity() (gas: 359590)
-[32m[PASS][0m test_MerkleSaleSupportsInterface() (gas: 7535)
-[32m[PASS][0m test_MintFlow() (gas: 342846)
-[32m[PASS][0m test_PreSaleEnd() (gas: 257978)
-[32m[PASS][0m test_PreSaleStart() (gas: 257635)
-[32m[PASS][0m test_PricePerToken(uint256) (runs: 256, μ: 284353, ~: 284694)
-[32m[PASS][0m test_ResetSale() (gas: 205533)
-[32m[PASS][0m test_Version() (gas: 7237)
-Test result: [32mok[0m. 12 passed; 0 failed; finished in 81.32ms
+Running 3 tests for test/upgrades/FactoryManagedUpgradeGate.t.sol:FactoryManagedUpgradeGateTest
+[32m[PASS][0m test_AdminOnly() (gas: 14997)
+[32m[PASS][0m test_registersUpgradePath() (gas: 65214)
+[32m[PASS][0m test_removesUpgradePath() (gas: 48236)
+Test result: [32mok[0m. 3 passed; 0 failed; finished in 357.25µs
 
 Running 6 tests for test/permissions/CreatorPermissionControl.t.sol:CreatorPermissionControlTest
 [32m[PASS][0m test_addPermissionOtherExists(uint256,address,uint256) (runs: 256, μ: 34603, ~: 34603)
 [32m[PASS][0m test_addPermissions(uint256,address) (runs: 256, μ: 34228, ~: 34228)
-[32m[PASS][0m test_clearPermissions(uint256,address) (runs: 256, μ: 23796, ~: 23806)
+[32m[PASS][0m test_clearPermissions(uint256,address) (runs: 256, μ: 23784, ~: 23794)
 [32m[PASS][0m test_hasAllPermissions(uint256,address) (runs: 256, μ: 31168, ~: 31168)
-[32m[PASS][0m test_removePermission(uint256,address) (runs: 256, μ: 23785, ~: 23788)
+[32m[PASS][0m test_removePermission(uint256,address) (runs: 256, μ: 23758, ~: 23757)
 [32m[PASS][0m test_showsNoPermission(uint256,address,uint256) (runs: 256, μ: 7993, ~: 7993)
-Test result: [32mok[0m. 6 passed; 0 failed; finished in 242.35ms
+Test result: [32mok[0m. 6 passed; 0 failed; finished in 106.30ms
+
+Running 12 tests for test/minters/merkle/ZoraCreatorMerkleMinterStrategy.t.sol:ZoraCreatorMerkleMinterStrategyTest
+[32m[PASS][0m test_ContractName() (gas: 7149)
+[32m[PASS][0m test_ContractURI() (gas: 7629)
+[32m[PASS][0m test_FundsRecipient() (gas: 397927)
+[32m[PASS][0m test_InvalidMerkleProof() (gas: 262553)
+[32m[PASS][0m test_MaxQuantity() (gas: 359678)
+[32m[PASS][0m test_MerkleSaleSupportsInterface() (gas: 7535)
+[32m[PASS][0m test_MintFlow() (gas: 342934)
+[32m[PASS][0m test_PreSaleEnd() (gas: 258066)
+[32m[PASS][0m test_PreSaleStart() (gas: 257723)
+[32m[PASS][0m test_PricePerToken(uint256) (runs: 256, μ: 284494, ~: 284782)
+[32m[PASS][0m test_ResetSale() (gas: 205621)
+[32m[PASS][0m test_Version() (gas: 7237)
+Test result: [32mok[0m. 12 passed; 0 failed; finished in 91.73ms
 
 Running 7 tests for test/factory/ZoraCreator1155Factory.t.sol:ZoraCreator1155FactoryTest
 [32m[PASS][0m test_contractName() (gas: 7221)
-[32m[PASS][0m test_contractURI() (gas: 7801)
+[32m[PASS][0m test_contractURI() (gas: 7823)
 [32m[PASS][0m test_contractVersion() (gas: 7353)
-[32m[PASS][0m test_createContract(string,string,uint32,uint32,address,address) (runs: 256, μ: 525229, ~: 519873)
-[32m[PASS][0m test_defaultMinters() (gas: 6847)
+[32m[PASS][0m test_createContract(string,string,uint32,uint32,address,address) (runs: 256, μ: 527490, ~: 520787)
+[32m[PASS][0m test_defaultMinters() (gas: 7140)
 [32m[PASS][0m test_initialize(address) (runs: 256, μ: 161817, ~: 161817)
-[32m[PASS][0m test_upgrade(address) (runs: 256, μ: 1893826, ~: 1893826)
-Test result: [32mok[0m. 7 passed; 0 failed; finished in 260.74ms
+[32m[PASS][0m test_upgrade(address) (runs: 256, μ: 1923842, ~: 1923842)
+Test result: [32mok[0m. 7 passed; 0 failed; finished in 88.97ms
+
+Running 11 tests for test/utils/Ownable2StepUpgradable.t.sol:Ownable2StepUpgradableTest
+[32m[PASS][0m test_acceptOwnership(address) (runs: 256, μ: 37989, ~: 37977)
+[32m[PASS][0m test_acceptOwnership_revertOnlyPendingOwner() (gas: 15515)
+[32m[PASS][0m test_cancelOwnershipTransfer() (gas: 34421)
+[32m[PASS][0m test_init() (gas: 18454)
+[32m[PASS][0m test_resignOwnership() (gas: 22748)
+[32m[PASS][0m test_safeTransferOwnership(address) (runs: 256, μ: 44894, ~: 44894)
+[32m[PASS][0m test_safeTransferOwnership_revertNotZeroAddress() (gas: 15783)
+[32m[PASS][0m test_safeTransferOwnership_revertOnlyOwner() (gas: 16018)
+[32m[PASS][0m test_transferOwnership(address) (runs: 256, μ: 28206, ~: 28206)
+[32m[PASS][0m test_transferOwnership_revertNotZeroAddress() (gas: 16437)
+[32m[PASS][0m test_transferOwnership_revertOnlyOwner() (gas: 16383)
+Test result: [32mok[0m. 11 passed; 0 failed; finished in 165.15ms
 
 Running 2 tests for test/fee/MintFeeManager.t.sol:MintFeeManagerTest
-[32m[PASS][0m test_mintFeeSent(uint32,uint256) (runs: 256, μ: 5842736, ~: 5867662)
-[32m[PASS][0m test_mintFeeSent_revertCannotSendMintFee(uint32,uint256) (runs: 256, μ: 6086141, ~: 6094601)
-Test result: [32mok[0m. 2 passed; 0 failed; finished in 261.86ms
+[32m[PASS][0m test_mintFeeSent(uint32,uint256) (runs: 256, μ: 5864405, ~: 5888814)
+[32m[PASS][0m test_mintFeeSent_revertCannotSendMintFee(uint32,uint256) (runs: 256, μ: 6106876, ~: 6115753)
+Test result: [32mok[0m. 2 passed; 0 failed; finished in 173.08ms
 
 Running 50 tests for test/nft/ZoraCreator1155.t.sol:ZoraCreator1155Test
-[32m[PASS][0m test_ContractNameUpdate() (gas: 237544)
-[32m[PASS][0m test_TokenURI() (gas: 310936)
-[32m[PASS][0m test_UpdateContractMetadataFailsContract() (gas: 226662)
-[32m[PASS][0m test_addPermission(uint256,uint256,address) (runs: 256, μ: 338660, ~: 338828)
-[32m[PASS][0m test_addPermission_revertOnlyAdminOrRole(uint256) (runs: 256, μ: 236228, ~: 236228)
-[32m[PASS][0m test_adminMint(uint256) (runs: 256, μ: 360253, ~: 369426)
-[32m[PASS][0m test_adminMintBatch(uint256,uint256) (runs: 256, μ: 490596, ~: 510341)
-[32m[PASS][0m test_adminMintBatchWithSchedule(uint256,uint256) (runs: 256, μ: 527648, ~: 538500)
-[32m[PASS][0m test_adminMintBatch_revertMaxSupply(uint256) (runs: 256, μ: 348426, ~: 348426)
-[32m[PASS][0m test_adminMintBatch_revertOnlyAdminOrRole() (gas: 319866)
-[32m[PASS][0m test_adminMintBatch_revertZeroAddressRecipient() (gas: 313085)
-[32m[PASS][0m test_adminMintMinterRole(uint256) (runs: 256, μ: 386719, ~: 396825)
-[32m[PASS][0m test_adminMintWithEmptyScheduleSkipsSchedule() (gas: 389263)
-[32m[PASS][0m test_adminMintWithInvalidScheduleSkipsSchedule() (gas: 139908)
-[32m[PASS][0m test_adminMintWithSchedule() (gas: 419227)
-[32m[PASS][0m test_adminMintWithScheduleSmall() (gas: 419078)
-[32m[PASS][0m test_adminMint_revertMaxSupply(uint256) (runs: 256, μ: 316449, ~: 317305)
-[32m[PASS][0m test_adminMint_revertOnlyAdminOrRole() (gas: 317673)
-[32m[PASS][0m test_adminMint_revertZeroAddressRecipient() (gas: 314391)
-[32m[PASS][0m test_assumeLastTokenIdMatches() (gas: 312004)
-[32m[PASS][0m test_authorizedUpgrade() (gas: 5362087)
-[32m[PASS][0m test_burnBatch() (gas: 721301)
-[32m[PASS][0m test_burnBatch_user_not_approved_fails() (gas: 718084)
-[32m[PASS][0m test_callRenderer() (gas: 771783)
-[32m[PASS][0m test_callRendererFails() (gas: 724178)
-[32m[PASS][0m test_callSale() (gas: 657533)
-[32m[PASS][0m test_callSetupRendererFails() (gas: 620948)
-[32m[PASS][0m test_contractVersion() (gas: 223873)
-[32m[PASS][0m test_initialize(uint32,uint32,address,address) (runs: 256, μ: 253673, ~: 254295)
-[32m[PASS][0m test_initialize_revertAlreadyInitialized(uint32,uint32,address,address) (runs: 256, μ: 246508, ~: 246664)
-[32m[PASS][0m test_initialize_withSetupActions(uint32,uint32,address,address,uint256) (runs: 256, μ: 316749, ~: 317527)
-[32m[PASS][0m test_isAdminOrRole() (gas: 328130)
-[32m[PASS][0m test_mint(uint256) (runs: 256, μ: 713680, ~: 716479)
-[32m[PASS][0m test_mint_revertCannotMintMoreTokens() (gas: 661430)
-[32m[PASS][0m test_mint_revertOnlyMinter() (gas: 316276)
-[32m[PASS][0m test_noSymbol() (gas: 13232)
-[32m[PASS][0m test_packageJsonVersion() (gas: 25498)
-[32m[PASS][0m test_removePermission(uint256,uint256,address) (runs: 256, μ: 323450, ~: 323653)
-[32m[PASS][0m test_removePermissionRevokeOwnership() (gas: 200295)
-[32m[PASS][0m test_removePermission_revertOnlyAdminOrRole(uint256) (runs: 256, μ: 235858, ~: 235858)
-[32m[PASS][0m test_setOwner() (gas: 270736)
-[32m[PASS][0m test_setTokenMetadataRenderer() (gas: 1203238)
-[32m[PASS][0m test_setTokenMetadataRenderer_revertOnlyAdminOrRole() (gas: 230844)
-[32m[PASS][0m test_setupNewToken_asAdmin(string,uint256) (runs: 256, μ: 350383, ~: 358133)
-[32m[PASS][0m test_setupNewToken_revertOnlyAdminOrRole() (gas: 231352)
-[32m[PASS][0m test_supportsInterface() (gas: 225919)
-[32m[PASS][0m test_unauthorizedUpgradeFails() (gas: 4970030)
-[32m[PASS][0m test_updateTokenURI() (gas: 319586)
-[32m[PASS][0m test_withdrawAll() (gas: 753366)
-[32m[PASS][0m test_withdrawAll_revertETHWithdrawFailed(uint256,uint256) (runs: 256, μ: 767501, ~: 767501)
-Test result: [32mok[0m. 50 passed; 0 failed; finished in 501.02ms
+[32m[PASS][0m test_ContractNameUpdate() (gas: 237588)
+[32m[PASS][0m test_TokenURI() (gas: 310980)
+[32m[PASS][0m test_UpdateContractMetadataFailsContract() (gas: 226684)
+[32m[PASS][0m test_addPermission(uint256,uint256,address) (runs: 256, μ: 338727, ~: 338894)
+[32m[PASS][0m test_addPermission_revertOnlyAdminOrRole(uint256) (runs: 256, μ: 236272, ~: 236272)
+[32m[PASS][0m test_adminMint(uint256) (runs: 256, μ: 360807, ~: 369514)
+[32m[PASS][0m test_adminMintBatch(uint256,uint256) (runs: 256, μ: 494615, ~: 510473)
+[32m[PASS][0m test_adminMintBatchWithSchedule(uint256,uint256) (runs: 256, μ: 522004, ~: 538632)
+[32m[PASS][0m test_adminMintBatch_revertMaxSupply(uint256) (runs: 256, μ: 348492, ~: 348492)
+[32m[PASS][0m test_adminMintBatch_revertOnlyAdminOrRole() (gas: 319954)
+[32m[PASS][0m test_adminMintBatch_revertZeroAddressRecipient() (gas: 313151)
+[32m[PASS][0m test_adminMintMinterRole(uint256) (runs: 256, μ: 386985, ~: 396935)
+[32m[PASS][0m test_adminMintWithEmptyScheduleSkipsSchedule() (gas: 389329)
+[32m[PASS][0m test_adminMintWithInvalidScheduleSkipsSchedule() (gas: 139930)
+[32m[PASS][0m test_adminMintWithSchedule() (gas: 419315)
+[32m[PASS][0m test_adminMintWithScheduleSmall() (gas: 419166)
+[32m[PASS][0m test_adminMint_revertMaxSupply(uint256) (runs: 256, μ: 316282, ~: 317371)
+[32m[PASS][0m test_adminMint_revertOnlyAdminOrRole() (gas: 317761)
+[32m[PASS][0m test_adminMint_revertZeroAddressRecipient() (gas: 314457)
+[32m[PASS][0m test_assumeLastTokenIdMatches() (gas: 312092)
+[32m[PASS][0m test_authorizedUpgrade() (gas: 5383217)
+[32m[PASS][0m test_burnBatch() (gas: 721367)
+[32m[PASS][0m test_burnBatch_user_not_approved_fails() (gas: 718150)
+[32m[PASS][0m test_callRenderer() (gas: 771893)
+[32m[PASS][0m test_callRendererFails() (gas: 724244)
+[32m[PASS][0m test_callSale() (gas: 657643)
+[32m[PASS][0m test_callSetupRendererFails() (gas: 620992)
+[32m[PASS][0m test_contractVersion() (gas: 223917)
+[32m[PASS][0m test_initialize(uint32,uint32,address,address) (runs: 256, μ: 254205, ~: 254361)
+[32m[PASS][0m test_initialize_revertAlreadyInitialized(uint32,uint32,address,address) (runs: 256, μ: 245619, ~: 246708)
+[32m[PASS][0m test_initialize_withSetupActions(uint32,uint32,address,address,uint256) (runs: 256, μ: 316038, ~: 317593)
+[32m[PASS][0m test_isAdminOrRole() (gas: 328174)
+[32m[PASS][0m test_mint(uint256) (runs: 256, μ: 713768, ~: 716567)
+[32m[PASS][0m test_mint_revertCannotMintMoreTokens() (gas: 661496)
+[32m[PASS][0m test_mint_revertOnlyMinter() (gas: 316342)
+[32m[PASS][0m test_noSymbol() (gas: 13254)
+[32m[PASS][0m test_packageJsonVersion() (gas: 25520)
+[32m[PASS][0m test_removePermission(uint256,uint256,address) (runs: 256, μ: 323486, ~: 323719)
+[32m[PASS][0m test_removePermissionRevokeOwnership() (gas: 200361)
+[32m[PASS][0m test_removePermission_revertOnlyAdminOrRole(uint256) (runs: 256, μ: 235880, ~: 235880)
+[32m[PASS][0m test_setOwner() (gas: 270824)
+[32m[PASS][0m test_setTokenMetadataRenderer() (gas: 1203414)
+[32m[PASS][0m test_setTokenMetadataRenderer_revertOnlyAdminOrRole() (gas: 230888)
+[32m[PASS][0m test_setupNewToken_asAdmin(string,uint256) (runs: 256, μ: 351130, ~: 358199)
+[32m[PASS][0m test_setupNewToken_revertOnlyAdminOrRole() (gas: 231418)
+[32m[PASS][0m test_supportsInterface() (gas: 225941)
+[32m[PASS][0m test_unauthorizedUpgradeFails() (gas: 4991094)
+[32m[PASS][0m test_updateTokenURI() (gas: 319630)
+[32m[PASS][0m test_withdrawAll() (gas: 753432)
+[32m[PASS][0m test_withdrawAll_revertETHWithdrawFailed(uint256,uint256) (runs: 256, μ: 767589, ~: 767589)
+Test result: [32mok[0m. 50 passed; 0 failed; finished in 234.27ms
+| node_modules/@openzeppelin/contracts/token/ERC1155/presets/ERC1155PresetMinterPauser.sol:ERC1155PresetMinterPauser contract |                 |       |        |       |         |
+|-----------------------------------------------------------------------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                                                                             | Deployment Size |       |        |       |         |
+| 2498971                                                                                                                     | 12073           |       |        |       |         |
+| Function Name                                                                                                               | min             | avg   | median | max   | # calls |
+| balanceOf                                                                                                                   | 518             | 518   | 518    | 518   | 7       |
+| burnBatch                                                                                                                   | 4623            | 6109  | 6852   | 6852  | 3       |
+| mint                                                                                                                        | 26471           | 27542 | 26471  | 28971 | 14      |
+| safeBatchTransferFrom                                                                                                       | 4853            | 45632 | 63794  | 63794 | 5       |
+| setApprovalForAll                                                                                                           | 24699           | 24699 | 24699  | 24699 | 8       |
+| supportsInterface                                                                                                           | 451             | 451   | 451    | 451   | 1       |
+
+
+| node_modules/@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol:ERC20PresetMinterPauser contract |                 |       |        |       |         |
+|-----------------------------------------------------------------------------------------------------------------------|-----------------|-------|--------|-------|---------|
+| Deployment Cost                                                                                                       | Deployment Size |       |        |       |         |
+| 1702147                                                                                                               | 8614            |       |        |       |         |
+| Function Name                                                                                                         | min             | avg   | median | max   | # calls |
+| approve(address,uint256)                                                                                              | 24385           | 24385 | 24385  | 24385 | 2       |
+| approve(address,uint256)(bool)                                                                                        | 24385           | 24385 | 24385  | 24385 | 8       |
+| balanceOf                                                                                                             | 712             | 712   | 712    | 712   | 4       |
+| burnFrom                                                                                                              | 4375            | 4429  | 4443   | 4443  | 5       |
+| mint                                                                                                                  | 47015           | 47015 | 47015  | 47015 | 16      |
+| transferFrom                                                                                                          | 4267            | 13085 | 13085  | 21903 | 2       |
+
+
+| node_modules/@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol:ERC721PresetMinterPauserAutoId contract |                 |        |        |        |         |
+|--------------------------------------------------------------------------------------------------------------------------------------|-----------------|--------|--------|--------|---------|
+| Deployment Cost                                                                                                                      | Deployment Size |        |        |        |         |
+| 2423445                                                                                                                              | 12357           |        |        |        |         |
+| Function Name                                                                                                                        | min             | avg    | median | max    | # calls |
+| balanceOf                                                                                                                            | 851             | 851    | 851    | 851    | 4       |
+| burn                                                                                                                                 | 5700            | 20111  | 7539   | 39890  | 5       |
+| mint                                                                                                                                 | 101648          | 109132 | 115548 | 115548 | 26      |
+| ownerOf                                                                                                                              | 829             | 829    | 829    | 829    | 2       |
+| safeTransferFrom                                                                                                                     | 5902            | 35604  | 40700  | 42811  | 6       |
+| setApprovalForAll                                                                                                                    | 24863           | 24863  | 24863  | 24863  | 8       |
+
+
 | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl contract |                 |        |        |        |         |
 |--------------------------------------------------------------------------------|-----------------|--------|--------|--------|---------|
 | Deployment Cost                                                                | Deployment Size |        |        |        |         |
-| 1692005                                                                        | 8986            |        |        |        |         |
+| 1721959                                                                        | 9199            |        |        |        |         |
 | Function Name                                                                  | min             | avg    | median | max    | # calls |
 | acceptOwnership                                                                | 2554            | 4067   | 4067   | 5581   | 2       |
 | cancelOwnershipTransfer                                                        | 1641            | 1641   | 1641   | 1641   | 1       |
 | contractName                                                                   | 743             | 743    | 743    | 743    | 1       |
-| contractURI                                                                    | 1017            | 1017   | 1017   | 1017   | 1       |
+| contractURI                                                                    | 1039            | 1039   | 1039   | 1039   | 1       |
 | contractVersion                                                                | 853             | 853    | 853    | 853    | 1       |
-| createContract                                                                 | 497476          | 497476 | 497476 | 497476 | 1       |
-| defaultMinters                                                                 | 869             | 869    | 869    | 869    | 1       |
+| createContract                                                                 | 520245          | 520245 | 520245 | 520245 | 1       |
+| defaultMinters                                                                 | 989             | 989    | 989    | 989    | 1       |
 | implementation                                                                 | 341             | 341    | 341    | 341    | 1       |
 | initialize                                                                     | 48753           | 48753  | 48753  | 48753  | 13      |
 | owner                                                                          | 554             | 1054   | 554    | 2554   | 8       |
-| pendingOwner                                                                   | 664             | 1064   | 664    | 2664   | 5       |
+| pendingOwner                                                                   | 686             | 1086   | 686    | 2686   | 5       |
 | proxiableUUID                                                                  | 340             | 340    | 340    | 340    | 1       |
-| resignOwnership                                                                | 7413            | 7413   | 7413   | 7413   | 1       |
+| resignOwnership                                                                | 7431            | 7431   | 7431   | 7431   | 1       |
 | safeTransferOwnership                                                          | 352             | 16214  | 26081  | 26081  | 5       |
-| transferOwnership                                                              | 742             | 3724   | 2866   | 7566   | 3       |
+| transferOwnership                                                              | 764             | 3746   | 2888   | 7588   | 3       |
 | upgradeTo                                                                      | 5144            | 5144   | 5144   | 5144   | 1       |
 
 
@@ -220,47 +297,76 @@ Test result: [32mok[0m. 50 passed; 0 failed; finished in 501.02ms
 | supportsInterface                                                                               | 310             | 314   | 310    | 336   | 11      |
 
 
+| src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol:ZoraCreatorRedeemMinterFactory contract |                 |       |        |        |         |
+|-----------------------------------------------------------------------------------------------|-----------------|-------|--------|--------|---------|
+| Deployment Cost                                                                               | Deployment Size |       |        |        |         |
+| 2152191                                                                                       | 10752           |       |        |        |         |
+| Function Name                                                                                 | min             | avg   | median | max    | # calls |
+| contractVersion                                                                               | 702             | 702   | 702    | 702    | 1       |
+| createMinterIfNoneExists                                                                      | 1197            | 66211 | 96468  | 100968 | 3       |
+| getDeployedRedeemMinterForCreatorContract                                                     | 972             | 972   | 972    | 972    | 1       |
+| predictMinterAddress                                                                          | 713             | 713   | 713    | 713    | 2       |
+| supportsInterface                                                                             | 279             | 292   | 292    | 305    | 4       |
+
+
+| src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol:ZoraCreatorRedeemMinterStrategy contract |                 |       |        |        |         |
+|-------------------------------------------------------------------------------------------------|-----------------|-------|--------|--------|---------|
+| Deployment Cost                                                                                 | Deployment Size |       |        |        |         |
+| 1592076                                                                                         | 7980            |       |        |        |         |
+| Function Name                                                                                   | min             | avg   | median | max    | # calls |
+| clearRedeem                                                                                     | 2236            | 2450  | 2450   | 2665   | 2       |
+| contractName                                                                                    | 690             | 690   | 690    | 690    | 1       |
+| contractURI                                                                                     | 873             | 873   | 873    | 873    | 1       |
+| contractVersion                                                                                 | 734             | 734   | 734    | 734    | 1       |
+| initialize                                                                                      | 46247           | 46247 | 46247  | 46247  | 29      |
+| redeemInstructionsHashIsAllowed                                                                 | 451             | 451   | 451    | 451    | 1       |
+| requestMint                                                                                     | 2751            | 28968 | 11988  | 209224 | 31      |
+| resetSale                                                                                       | 2365            | 2365  | 2365   | 2366   | 2       |
+| setRedeem                                                                                       | 2402            | 26641 | 40815  | 51801  | 36      |
+| supportsInterface                                                                               | 262             | 262   | 262    | 262    | 21      |
+
+
 | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl contract |                 |        |        |        |         |
 |--------------------------------------------------------------|-----------------|--------|--------|--------|---------|
 | Deployment Cost                                              | Deployment Size |        |        |        |         |
-| 4915734                                                      | 25150           |        |        |        |         |
+| 4936761                                                      | 25255           |        |        |        |         |
 | Function Name                                                | min             | avg    | median | max    | # calls |
-| PERMISSION_BIT_ADMIN                                         | 1093            | 1093   | 1093   | 1093   | 55      |
-| PERMISSION_BIT_FUNDS_MANAGER                                 | 895             | 895    | 895    | 895    | 50      |
-| PERMISSION_BIT_METADATA                                      | 1005            | 1005   | 1005   | 1005   | 51      |
-| PERMISSION_BIT_MINTER                                        | 1335            | 1335   | 1335   | 1335   | 71      |
-| addPermission                                                | 3636            | 24445  | 25577  | 27840  | 33      |
-| adminMint                                                    | 5278            | 42025  | 53656  | 82552  | 10      |
-| adminMintBatch                                               | 3374            | 40795  | 36058  | 103979 | 7       |
-| assumeLastTokenIdMatches                                     | 1344            | 2051   | 1405   | 3405   | 3       |
-| balanceOf                                                    | 522             | 772    | 522    | 2522   | 16      |
+| PERMISSION_BIT_ADMIN                                         | 1115            | 1115   | 1115   | 1115   | 55      |
+| PERMISSION_BIT_FUNDS_MANAGER                                 | 917             | 917    | 917    | 917    | 50      |
+| PERMISSION_BIT_METADATA                                      | 1027            | 1027   | 1027   | 1027   | 51      |
+| PERMISSION_BIT_MINTER                                        | 1357            | 1357   | 1357   | 1357   | 99      |
+| addPermission                                                | 3658            | 25019  | 25599  | 27862  | 61      |
+| adminMint                                                    | 5300            | 38067  | 33778  | 82574  | 10      |
+| adminMintBatch                                               | 3396            | 54287  | 36080  | 159275 | 7       |
+| assumeLastTokenIdMatches                                     | 1366            | 2073   | 1427   | 3427   | 3       |
+| balanceOf                                                    | 522             | 522    | 522    | 522    | 22      |
 | burnBatch                                                    | 3495            | 4672   | 3495   | 7026   | 3       |
-| callRenderer                                                 | 2576            | 12642  | 6077   | 25184  | 7       |
-| callSale                                                     | 3738            | 44248  | 53811  | 75509  | 20      |
-| contractURI                                                  | 3591            | 4206   | 4206   | 4821   | 2       |
-| contractVersion                                              | 1333            | 1333   | 1333   | 1333   | 2       |
-| getCustomRenderer                                            | 1506            | 1561   | 1506   | 1673   | 3       |
+| callRenderer                                                 | 2598            | 12664  | 6099   | 25206  | 7       |
+| callSale                                                     | 3760            | 48520  | 50786  | 99762  | 42      |
+| contractURI                                                  | 3613            | 4228   | 4228   | 4843   | 2       |
+| contractVersion                                              | 1355            | 1355   | 1355   | 1355   | 2       |
+| getCustomRenderer                                            | 1528            | 1583   | 1528   | 1695   | 3       |
 | getPermissions                                               | 822             | 822    | 822    | 822    | 3       |
-| getRoyalties                                                 | 1904            | 1904   | 1904   | 1904   | 1       |
-| getTokenInfo                                                 | 2250            | 2271   | 2250   | 2485   | 11      |
-| initialize                                                   | 2813            | 202077 | 207269 | 384211 | 96      |
+| getRoyalties                                                 | 1926            | 1926   | 1926   | 1926   | 1       |
+| getTokenInfo                                                 | 2272            | 2316   | 2272   | 2766   | 11      |
+| initialize                                                   | 2835            | 203574 | 207291 | 406826 | 128     |
 | isAdminOrRole                                                | 711             | 1711   | 1711   | 2711   | 6       |
-| mint                                                         | 5619            | 41178  | 29510  | 124475 | 28      |
+| mint                                                         | 5619            | 47479  | 19571  | 264561 | 58      |
 | name                                                         | 965             | 965    | 965    | 965    | 3       |
-| owner                                                        | 972             | 972    | 972    | 972    | 4       |
+| owner                                                        | 994             | 994    | 994    | 994    | 4       |
 | proxiableUUID                                                | 604             | 604    | 604    | 604    | 1       |
 | removePermission                                             | 2916            | 4676   | 4353   | 7084   | 4       |
-| royalties                                                    | 1010            | 1010   | 1010   | 1010   | 1       |
+| royalties                                                    | 1032            | 1032   | 1032   | 1032   | 1       |
 | royaltyInfo                                                  | 1362            | 2703   | 3374   | 3374   | 3       |
 | setFundsRecipient                                            | 4342            | 4342   | 4342   | 4342   | 1       |
 | setOwner                                                     | 2860            | 3931   | 2954   | 5980   | 3       |
 | setTokenMetadataRenderer                                     | 3582            | 20316  | 27165  | 31822  | 9       |
-| setupNewToken                                                | 4050            | 90577  | 82046  | 136251 | 79      |
-| supplyRoyaltyInfo                                            | 1897            | 1905   | 1909   | 1909   | 3       |
-| supportsInterface                                            | 291             | 359    | 352    | 440    | 4       |
-| symbol                                                       | 1037            | 1037   | 1037   | 1037   | 1       |
-| updateContractMetadata                                       | 4717            | 5715   | 5715   | 6713   | 2       |
-| updateRoyaltiesForToken                                      | 3948            | 15146  | 15146  | 26344  | 2       |
+| setupNewToken                                                | 4072            | 100210 | 82068  | 136273 | 106     |
+| supplyRoyaltyInfo                                            | 1919            | 1927   | 1931   | 1931   | 3       |
+| supportsInterface                                            | 291             | 345    | 317    | 440    | 6       |
+| symbol                                                       | 1059            | 1059   | 1059   | 1059   | 1       |
+| updateContractMetadata                                       | 4739            | 5737   | 5737   | 6735   | 2       |
+| updateRoyaltiesForToken                                      | 3970            | 15168  | 15168  | 26366  | 2       |
 | updateTokenURI                                               | 1136            | 3487   | 3885   | 5441   | 3       |
 | upgradeTo                                                    | 3362            | 6536   | 6536   | 9711   | 2       |
 | uri                                                          | 1412            | 2438   | 2872   | 4647   | 9       |
@@ -272,41 +378,41 @@ Test result: [32mok[0m. 50 passed; 0 failed; finished in 501.02ms
 | Deployment Cost                            | Deployment Size |        |        |        |         |
 | 70099                                      | 1064            |        |        |        |         |
 | Function Name                              | min             | avg    | median | max    | # calls |
-| PERMISSION_BIT_ADMIN                       | 1409            | 1409   | 1409   | 1409   | 55      |
-| PERMISSION_BIT_FUNDS_MANAGER               | 1211            | 1211   | 1211   | 1211   | 50      |
-| PERMISSION_BIT_METADATA                    | 1321            | 1321   | 1321   | 1321   | 51      |
-| PERMISSION_BIT_MINTER                      | 1651            | 1651   | 1651   | 1651   | 71      |
-| addPermission                              | 5974            | 24907  | 25902  | 28165  | 33      |
-| adminMint                                  | 5631            | 43268  | 53993  | 82889  | 10      |
-| adminMintBatch                             | 3751            | 41810  | 36435  | 104352 | 7       |
-| assumeLastTokenIdMatches                   | 1660            | 3874   | 1731   | 8231   | 3       |
-| balanceOf                                  | 844             | 1094   | 844    | 2844   | 16      |
+| PERMISSION_BIT_ADMIN                       | 1431            | 1431   | 1431   | 1431   | 55      |
+| PERMISSION_BIT_FUNDS_MANAGER               | 1233            | 1233   | 1233   | 1233   | 50      |
+| PERMISSION_BIT_METADATA                    | 1343            | 1343   | 1343   | 1343   | 51      |
+| PERMISSION_BIT_MINTER                      | 1673            | 1718   | 1673   | 6173   | 99      |
+| addPermission                              | 5996            | 25418  | 25924  | 28187  | 61      |
+| adminMint                                  | 5653            | 39310  | 35110  | 82911  | 10      |
+| adminMintBatch                             | 3773            | 55302  | 36457  | 159648 | 7       |
+| assumeLastTokenIdMatches                   | 1682            | 3896   | 1753   | 8253   | 3       |
+| balanceOf                                  | 844             | 844    | 844    | 844    | 22      |
 | burnBatch                                  | 3854            | 5027   | 3854   | 7375   | 3       |
-| callRenderer                               | 2917            | 12993  | 6439   | 25533  | 7       |
-| callSale                                   | 4091            | 44837  | 54184  | 75876  | 20      |
-| contractURI                                | 3913            | 4528   | 4528   | 5143   | 2       |
-| contractVersion                            | 1655            | 3905   | 3905   | 6155   | 2       |
-| getCustomRenderer                          | 1825            | 1880   | 1825   | 1992   | 3       |
+| callRenderer                               | 2939            | 13015  | 6461   | 25555  | 7       |
+| callSale                                   | 4113            | 51176  | 55647  | 100099 | 42      |
+| contractURI                                | 3935            | 4550   | 4550   | 5165   | 2       |
+| contractVersion                            | 1677            | 3927   | 3927   | 6177   | 2       |
+| getCustomRenderer                          | 1847            | 1902   | 1847   | 2014   | 3       |
 | getPermissions                             | 1144            | 1144   | 1144   | 1144   | 3       |
-| getRoyalties                               | 2229            | 2229   | 2229   | 2229   | 1       |
-| getTokenInfo                               | 2593            | 2614   | 2593   | 2828   | 11      |
-| initialize                                 | 3208            | 204706 | 207648 | 384644 | 96      |
+| getRoyalties                               | 2251            | 2251   | 2251   | 2251   | 1       |
+| getTokenInfo                               | 2615            | 2660   | 2615   | 3115   | 11      |
+| initialize                                 | 3230            | 205640 | 207670 | 407259 | 128     |
 | isAdminOrRole                              | 1039            | 2789   | 2039   | 7539   | 6       |
-| mint                                       | 5966            | 41694  | 29877  | 124848 | 28      |
+| mint                                       | 5966            | 48000  | 20076  | 265056 | 58      |
 | name                                       | 1287            | 1287   | 1287   | 1287   | 3       |
-| owner                                      | 1288            | 1288   | 1288   | 1288   | 4       |
+| owner                                      | 1310            | 1310   | 1310   | 1310   | 4       |
 | removePermission                           | 3176            | 6100   | 6517   | 8191   | 4       |
-| royalties                                  | 1335            | 1335   | 1335   | 1335   | 1       |
+| royalties                                  | 1357            | 1357   | 1357   | 1357   | 1       |
 | royaltyInfo                                | 1687            | 3028   | 3699   | 3699   | 3       |
 | setFundsRecipient                          | 4658            | 4658   | 4658   | 4658   | 1       |
 | setOwner                                   | 3180            | 5754   | 6296   | 7786   | 3       |
 | setTokenMetadataRenderer                   | 3917            | 21632  | 27484  | 36641  | 9       |
-| setupNewToken                              | 4400            | 91938  | 82380  | 141091 | 79      |
-| supplyRoyaltyInfo                          | 2228            | 2236   | 2240   | 2240   | 3       |
-| supportsInterface                          | 610             | 678    | 671    | 759    | 4       |
-| symbol                                     | 5856            | 5856   | 5856   | 5856   | 1       |
-| updateContractMetadata                     | 7056            | 8314   | 8314   | 9573   | 2       |
-| updateRoyaltiesForToken                    | 8792            | 17733  | 17733  | 26675  | 2       |
+| setupNewToken                              | 4422            | 101310 | 82402  | 141113 | 106     |
+| supplyRoyaltyInfo                          | 2250            | 2258   | 2262   | 2262   | 3       |
+| supportsInterface                          | 610             | 1414   | 671    | 5136   | 6       |
+| symbol                                     | 5878            | 5878   | 5878   | 5878   | 1       |
+| updateContractMetadata                     | 7078            | 8336   | 8336   | 9595   | 2       |
+| updateRoyaltiesForToken                    | 8814            | 17755  | 17755  | 26697  | 2       |
 | updateTokenURI                             | 1468            | 5323   | 4216   | 10285  | 3       |
 | upgradeTo                                  | 8194            | 9110   | 9110   | 10027  | 2       |
 | uri                                        | 1737            | 2763   | 3197   | 4969   | 9       |
@@ -316,17 +422,17 @@ Test result: [32mok[0m. 50 passed; 0 failed; finished in 501.02ms
 | src/proxies/Zora1155Factory.sol:Zora1155Factory contract |                 |       |        |       |         |
 |----------------------------------------------------------|-----------------|-------|--------|-------|---------|
 | Deployment Cost                                          | Deployment Size |       |        |       |         |
-| 122330                                                   | 1233            |       |        |       |         |
+| 70448                                                    | 1169            |       |        |       |         |
 | Function Name                                            | min             | avg   | median | max   | # calls |
 | acceptOwnership                                          | 5832            | 6601  | 6601   | 7371  | 2       |
 | cancelOwnershipTransfer                                  | 1892            | 1892  | 1892   | 1892  | 1       |
 | implementation                                           | 657             | 657   | 657    | 657   | 1       |
 | initialize                                               | 49069           | 49069 | 49069  | 49069 | 11      |
 | owner                                                    | 870             | 2495  | 870    | 7370  | 8       |
-| pendingOwner                                             | 980             | 1380  | 980    | 2980  | 5       |
-| resignOwnership                                          | 11264           | 11264 | 11264  | 11264 | 1       |
+| pendingOwner                                             | 1002            | 1402  | 1002   | 3002  | 5       |
+| resignOwnership                                          | 11281           | 11281 | 11281  | 11281 | 1       |
 | safeTransferOwnership                                    | 5172            | 21032 | 30897  | 30897 | 5       |
-| transferOwnership                                        | 5562            | 7043  | 7686   | 7882  | 3       |
+| transferOwnership                                        | 5584            | 7065  | 7708   | 7904  | 3       |
 | upgradeTo                                                | 5460            | 5460  | 5460   | 5460  | 1       |
 
 
