@@ -33,7 +33,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
     }
 
     function test_Version() external {
-        assertEq(fixedPrice.contractVersion(), "1.0.1");
+        assertEq(fixedPrice.contractVersion(), "1.1.0");
     }
 
     function test_MintFlow() external {

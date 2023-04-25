@@ -36,7 +36,7 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
     }
 
     function test_contractVersion() public {
-        assertEq(minterFactory.contractVersion(), "0.0.1");
+        assertEq(minterFactory.contractVersion(), "1.0.0");
     }
 
     function test_createMinterIfNoneExists() public {
