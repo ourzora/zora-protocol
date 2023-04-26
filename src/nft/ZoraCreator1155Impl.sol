@@ -237,9 +237,8 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to check
     /// @param quantity The quantity of tokens to mint to check
     function _requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
-        TokenData storage tokenInformation = tokens[tokenId];
-        if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
-            revert CannotMintMoreTokens(tokenId, quantity, tokenInformation.totalMinted, tokenInformation.maxSupply);
+        if (tokenTotalMinted[tokenId] + quantity > tokenMaxSupply[tokenId]) {
+            revert CannotMintMoreTokens(tokenId, quantity, tokenTotalMinted[tokenId], tokenMaxSupply[tokenId]);
         }
     }
 
@@ -270,23 +269,26 @@ contract ZoraCreator1155Impl is
             revert();
         }
         emit URI(_newURI, tokenId);
-        tokens[tokenId].uri = _newURI;
+        tokenURI[tokenId] = _newURI;
     }
 
     /// @notice Update the global contract metadata
     /// @param _newURI The new contract URI
     /// @param _newName The new contract name
     function updateContractMetadata(string memory _newURI, string memory _newName) external onlyAdminOrRole(0, PERMISSION_BIT_METADATA) {
-        tokens[CONTRACT_BASE_ID].uri = _newURI;
+        tokenURI[CONTRACT_BASE_ID] = _newURI;
         _setName(_newName);
         emit ContractMetadataUpdated(msg.sender, _newURI, _newName);
     }
 
     function _setupNewToken(string memory newURI, uint256 maxSupply) internal returns (uint256 tokenId) {
         tokenId = _getAndUpdateNextTokenId();
-        TokenData memory tokenData = TokenData({uri: newURI, maxSupply: maxSupply, totalMinted: 0});
-        tokens[tokenId] = tokenData;
-        emit UpdatedToken(msg.sender, tokenId, tokenData);
+        if (bytes(newURI).length > 0) {
+            tokenURI[tokenId] = newURI;
+        }
+        tokenMaxSupply[tokenId] = maxSupply;
+
+        emit UpdatedToken(msg.sender, tokenId, getTokenInfo(tokenId));
     }
 
     /// @notice Add a role to a user for a token
@@ -431,8 +433,8 @@ contract ZoraCreator1155Impl is
     /// @notice Token info getter
     /// @param tokenId token id to get info for
     /// @return TokenData struct returned
-    function getTokenInfo(uint256 tokenId) external view returns (TokenData memory) {
-        return tokens[tokenId];
+    function getTokenInfo(uint256 tokenId) public view returns (TokenData memory) {
+        return TokenData({maxSupply: tokenMaxSupply[tokenId], totalMinted: tokenTotalMinted[tokenId], uri: tokenURI[tokenId]});
     }
 
     /// @notice Proxy setter for sale contracts (only callable by SALES permission or admin)
@@ -480,7 +482,7 @@ contract ZoraCreator1155Impl is
             return 0;
         }
 
-        totalRoyaltyMints = (mintAmount + (tokens[tokenId].totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
+        totalRoyaltyMints = (mintAmount + (tokenTotalMinted[tokenId] % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
 
         if (totalRoyaltyMints > 0) {
             address royaltyRecipient = royalties[tokenId].royaltyRecipient;
@@ -507,7 +509,7 @@ contract ZoraCreator1155Impl is
         _requireCanMintQuantity(id, amount + supplyRoyaltyMints);
 
         super._mint(to, id, amount, data);
-        tokens[id].totalMinted += amount + supplyRoyaltyMints;
+        tokenTotalMinted[id] += amount + supplyRoyaltyMints;
     }
 
     /// @notice Mint batch function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
@@ -521,7 +523,7 @@ contract ZoraCreator1155Impl is
         for (uint256 i = 0; i < ids.length; ++i) {
             uint256 supplyRoyaltyMints = _handleSupplyRoyalty(ids[i], amounts[i], data);
             _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyMints);
-            tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyMints;
+            tokenTotalMinted[ids[i]] += amounts[i] + supplyRoyaltyMints;
         }
     }
 
@@ -582,8 +584,8 @@ contract ZoraCreator1155Impl is
     /// @notice Returns the URI for a token
     /// @param tokenId The token ID to return the URI for
     function uri(uint256 tokenId) public view override(ERC1155Upgradeable, IERC1155MetadataURIUpgradeable) returns (string memory) {
-        if (bytes(tokens[tokenId].uri).length > 0) {
-            return tokens[tokenId].uri;
+        if (bytes(tokenURI[tokenId]).length > 0) {
+            return tokenURI[tokenId];
         }
         return _render(tokenId);
     }

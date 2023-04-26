@@ -33,10 +33,14 @@ import {IZoraCreator1155TypesV1} from "./IZoraCreator1155TypesV1.sol";
 /// @author @iainnash / @tbtstl
 contract ZoraCreator1155StorageV1 is IZoraCreator1155TypesV1 {
     /// @notice token data stored for each token
-    mapping(uint256 => TokenData) internal tokens;
+    // mapping(uint256 => TokenData) internal tokens;
 
     /// @notice metadata renderer contract for each token
     mapping(uint256 => address) public metadataRendererContract;
+
+    mapping(uint256 => uint256) internal tokenTotalMinted;
+    mapping(uint256 => uint256) internal tokenMaxSupply;
+    mapping(uint256 => string) internal tokenURI;
 
     /// @notice next token id available when using a linear mint style (default for launch)
     uint256 public nextTokenId;
