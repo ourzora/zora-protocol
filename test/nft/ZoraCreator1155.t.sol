@@ -26,6 +26,8 @@ contract ZoraCreator1155Test is Test {
     uint256 internal fundsManagerRole;
     uint256 internal metadataRole;
 
+    event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
+
     function setUp() external {
         upgradeGate = new MockUpgradeGate();
         upgradeGate.initialize(admin);
@@ -124,7 +126,7 @@ contract ZoraCreator1155Test is Test {
     function test_contractVersion() external {
         init();
 
-        assertEq(target.contractVersion(), "1.2.2");
+        assertEq(target.contractVersion(), "1.3.0");
     }
 
     function test_assumeLastTokenIdMatches() external {
@@ -543,6 +545,8 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, address(minter), adminRole);
 
         vm.prank(admin);
+        vm.expectEmit(true, true, true, true);
+        emit Purchased(admin, address(minter), tokenId, quantity, 0);
         target.mint(minter, tokenId, quantity, abi.encode(recipient));
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);

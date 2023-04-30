@@ -153,7 +153,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     /// @notice Redeem Minter Strategy contract version
     function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
+        return "1.0.0";
     }
 
     /// @notice Redeem instructions object hash
