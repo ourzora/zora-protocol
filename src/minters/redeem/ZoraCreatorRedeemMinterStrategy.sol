@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {Initializable} from "@openzeppelin/contracts/proxy/utils/Initializable.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -12,7 +11,6 @@ import {Enjoy} from "_imagine/mint/Enjoy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
-import {IZoraCreator1155} from "../../interfaces/IZoraCreator1155.sol";
 
 /*
 
@@ -153,7 +151,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     /// @notice Redeem Minter Strategy contract version
     function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
+        return "1.0.0";
     }
 
     /// @notice Redeem instructions object hash
@@ -162,7 +160,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         return keccak256(abi.encode(_redeemInstructions));
     }
 
-    function validateSingleRedeemInstruction(RedeemInstruction memory _redeemInstruction) internal pure {
+    function validateSingleRedeemInstruction(RedeemInstruction calldata _redeemInstruction) internal pure {
         if (_redeemInstruction.tokenType == TokenType.ERC20) {
             if (_redeemInstruction.tokenIdStart != 0 || _redeemInstruction.tokenIdEnd != 0) {
                 revert InvalidTokenIdsForTokenType();
@@ -187,7 +185,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     /// @notice Validate redeem instructions
     /// @param _redeemInstructions The redeem instructions object
-    function validateRedeemInstructions(RedeemInstructions memory _redeemInstructions) public view {
+    function validateRedeemInstructions(RedeemInstructions calldata _redeemInstructions) public view {
         if (_redeemInstructions.saleEnd <= _redeemInstructions.saleStart || _redeemInstructions.saleEnd <= block.timestamp) {
             revert InvalidSaleEndOrStart();
         }
@@ -200,8 +198,13 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         if (_redeemInstructions.mintToken.tokenType != TokenType.ERC1155) {
             revert MintTokenTypeMustBeERC1155();
         }
-        for (uint256 i = 0; i < _redeemInstructions.instructions.length; i++) {
-            validateSingleRedeemInstruction(_redeemInstructions.instructions[i]);
+
+        uint256 numInstructions = _redeemInstructions.instructions.length;
+
+        unchecked {
+            for (uint256 i; i < numInstructions; ++i) {
+                validateSingleRedeemInstruction(_redeemInstructions.instructions[i]);
+            }
         }
     }
 
@@ -214,7 +217,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         if (redeemInstructionsHashIsAllowed[hash]) {
             revert RedeemInstructionAlreadySet();
         }
-        redeemInstructionsHashIsAllowed[redeemInstructionsHash(_redeemInstructions)] = true;
+        redeemInstructionsHashIsAllowed[hash] = true;
 
         emit RedeemSet(creatorContract, hash, _redeemInstructions);
     }
@@ -222,9 +225,14 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     /// @notice Clear redeem instructions
     /// @param hashes Array of redeem instructions hashes to clear
     function clearRedeem(bytes32[] calldata hashes) external onlyCreatorContract {
-        for (uint256 i = 0; i < hashes.length; i++) {
-            redeemInstructionsHashIsAllowed[hashes[i]] = false;
+        uint256 numHashes = hashes.length;
+
+        unchecked {
+            for (uint256 i; i < numHashes; ++i) {
+                redeemInstructionsHashIsAllowed[hashes[i]] = false;
+            }
         }
+
         emit RedeemsCleared(creatorContract, hashes);
     }
 
@@ -263,14 +271,19 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         if (amount != redeemInstructions.mintToken.amount) {
             revert IncorrectMintAmount();
         }
-        for (uint256 i = 0; i < redeemInstructions.instructions.length; i++) {
-            RedeemInstruction memory instruction = redeemInstructions.instructions[i];
-            if (instruction.tokenType == TokenType.ERC1155) {
-                _handleErc1155Redeem(sender, instruction, tokenIds[i], amounts[i]);
-            } else if (instruction.tokenType == TokenType.ERC721) {
-                _handleErc721Redeem(sender, instruction, tokenIds[i]);
-            } else if (instruction.tokenType == TokenType.ERC20) {
-                _handleErc20Redeem(sender, instruction);
+
+        uint256 numInstructions = redeemInstructions.instructions.length;
+
+        unchecked {
+            for (uint256 i; i < numInstructions; ++i) {
+                RedeemInstruction memory instruction = redeemInstructions.instructions[i];
+                if (instruction.tokenType == TokenType.ERC1155) {
+                    _handleErc1155Redeem(sender, instruction, tokenIds[i], amounts[i]);
+                } else if (instruction.tokenType == TokenType.ERC721) {
+                    _handleErc721Redeem(sender, instruction, tokenIds[i]);
+                } else if (instruction.tokenType == TokenType.ERC20) {
+                    _handleErc20Redeem(sender, instruction);
+                }
             }
         }
 
@@ -286,35 +299,48 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     }
 
     function _handleErc721Redeem(address sender, RedeemInstruction memory instruction, uint256[] memory tokenIds) internal {
-        if (tokenIds.length != instruction.amount) {
+        uint256 numTokenIds = tokenIds.length;
+
+        if (numTokenIds != instruction.amount) {
             revert IncorrectBurnOrTransferAmount();
         }
-        for (uint256 j = 0; j < tokenIds.length; j++) {
-            if (tokenIds[j] < instruction.tokenIdStart || tokenIds[j] > instruction.tokenIdEnd) {
-                revert TokenIdOutOfRange();
-            }
-            if (instruction.burnFunction != 0) {
-                (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, tokenIds[j]));
-                if (!success) {
-                    revert BurnFailed();
+
+        unchecked {
+            for (uint256 j; j < numTokenIds; j++) {
+                if (tokenIds[j] < instruction.tokenIdStart || tokenIds[j] > instruction.tokenIdEnd) {
+                    revert TokenIdOutOfRange();
                 }
-            } else {
-                IERC721(instruction.tokenContract).safeTransferFrom(sender, instruction.transferRecipient, tokenIds[j]);
+                if (instruction.burnFunction != 0) {
+                    (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, tokenIds[j]));
+                    if (!success) {
+                        revert BurnFailed();
+                    }
+                } else {
+                    IERC721(instruction.tokenContract).safeTransferFrom(sender, instruction.transferRecipient, tokenIds[j]);
+                }
             }
         }
     }
 
     function _handleErc1155Redeem(address sender, RedeemInstruction memory instruction, uint256[] memory tokenIds, uint256[] memory amounts) internal {
-        if (amounts.length != tokenIds.length) {
+        uint256 numTokenIds = tokenIds.length;
+
+        if (amounts.length != numTokenIds) {
             revert IncorrectNumberOfTokenIds();
         }
         uint256 sum;
-        for (uint256 j = 0; j < tokenIds.length; j++) {
+        for (uint256 j = 0; j < numTokenIds; ) {
             sum += amounts[j];
+
             if (tokenIds[j] < instruction.tokenIdStart || tokenIds[j] > instruction.tokenIdEnd) {
                 revert TokenIdOutOfRange();
             }
+
+            unchecked {
+                ++j;
+            }
         }
+
         if (sum != instruction.amount) {
             revert IncorrectBurnOrTransferAmount();
         }
@@ -324,7 +350,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
                 revert BurnFailed();
             }
         } else {
-            IERC1155(instruction.tokenContract).safeBatchTransferFrom(sender, instruction.transferRecipient, tokenIds, amounts, bytes(""));
+            IERC1155(instruction.tokenContract).safeBatchTransferFrom(sender, instruction.transferRecipient, tokenIds, amounts, "");
         }
     }
 

@@ -95,7 +95,7 @@ contract UpgradeScript is Script {
                     setup
                 )
             );
-            console2.log("Deploying new contract for verifiation purposes", newContract);
+            console2.log("Deploying new contract for verification purposes", newContract);
         }
     }
 }
