@@ -12,7 +12,6 @@ import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "./ZoraCreatorRedeemMinterStrategy.sol";
 import {IZoraCreator1155} from "../../interfaces/IZoraCreator1155.sol";
 import {SharedBaseConstants} from "../../shared/SharedBaseConstants.sol";
-import {ZoraCreatorRedeemMinterFactory} from "../../minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
 /*
 
@@ -68,7 +67,7 @@ contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseC
 
     /// @notice Factory contract version
     function contractVersion() external pure override returns (string memory) {
-        return "0.0.1";
+        return "1.0.0";
     }
 
     /// @notice No-op function for IMinter1155 compatibility
@@ -110,7 +109,7 @@ contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseC
     /// @param _creatorContract ZoraCreator1155 contract address
     /// @return True if a ZoraCreatorRedeemMinterStrategy has been deployed for a given ZoraCreator1155 contract
     function doesRedeemMinterExistForCreatorContract(address _creatorContract) public view returns (bool) {
-        return address(predictMinterAddress(_creatorContract)).code.length > 0;
+        return predictMinterAddress(_creatorContract).code.length > 0;
     }
 
     /// @notice Returns address of deployed ZoraCreatorRedeemMinterStrategy for a given ZoraCreator1155 contract
