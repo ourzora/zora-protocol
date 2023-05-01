@@ -32,7 +32,6 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);
 
         minterFactory = new ZoraCreatorRedeemMinterFactory();
-        vm.stopPrank();
     }
 
     function test_contractVersion() public {
