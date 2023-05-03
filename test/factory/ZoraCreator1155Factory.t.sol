@@ -105,4 +105,18 @@ contract ZoraCreator1155FactoryTest is Test {
         proxy.upgradeTo(address(newFactoryImpl));
         assertEq(address(proxy.implementation()), address(mockNewContract));
     }
+
+    function test_upgradeFailsWithDifferentContractName(address initialOwner) external {
+        vm.assume(initialOwner != address(0));
+
+        MockContractMetadata mockContractMetadata = new MockContractMetadata("ipfs://asdfadsf", "name");
+
+        address payable proxyAddress = payable(
+            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+        );
+        ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
+        vm.prank(initialOwner);
+        vm.expectRevert(abi.encodeWithSignature("UpgradeToMismatchedContractName(string,string)", "ZORA 1155 Contract Factory", "name"));
+        proxy.upgradeTo(address(mockContractMetadata));
+    }
 }

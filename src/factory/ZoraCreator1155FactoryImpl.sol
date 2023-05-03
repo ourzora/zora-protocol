@@ -95,5 +95,9 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     /// @notice Ensures the caller is authorized to upgrade the contract
     /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
     /// @param _newImpl The new implementation address
-    function _authorizeUpgrade(address _newImpl) internal override onlyOwner {}
+    function _authorizeUpgrade(address _newImpl) internal override onlyOwner {
+        if (keccak256(abi.encode(IContractMetadata(_newImpl).contractName())) != keccak256(abi.encode(this.contractName()))) {
+            revert UpgradeToMismatchedContractName(this.contractName(), IContractMetadata(_newImpl).contractName());
+        }
+    }
 }
