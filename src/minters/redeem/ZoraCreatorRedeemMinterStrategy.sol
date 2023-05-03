@@ -118,6 +118,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     error MustCallClearRedeem();
     error TokenIdOutOfRange();
     error MintTokenContractMustBeCreatorContract();
+    error SenderIsNotTokenOwner();
 
     /// @notice keccak256(abi.encode(RedeemInstructions)) => redeem instructions are allowed
     mapping(bytes32 => bool) public redeemInstructionsHashIsAllowed;
@@ -311,6 +312,9 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
                     revert TokenIdOutOfRange();
                 }
                 if (instruction.burnFunction != 0) {
+                    if (IERC721(instruction.tokenContract).ownerOf(tokenIds[j]) != sender) {
+                        revert SenderIsNotTokenOwner();
+                    }
                     (bool success, ) = instruction.tokenContract.call(abi.encodeWithSelector(instruction.burnFunction, tokenIds[j]));
                     if (!success) {
                         revert BurnFailed();
