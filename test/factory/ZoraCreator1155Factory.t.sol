@@ -9,6 +9,7 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
+import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
     ZoraCreator1155FactoryImpl internal factory;
