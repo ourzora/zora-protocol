@@ -23,6 +23,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
         string memory deploymentJsonKey = "deployment_json_file_key";
         vm.serializeAddress(deploymentJsonKey, FIXED_PRICE_SALE_STRATEGY, deployment.fixedPriceSaleStrategy);
         vm.serializeAddress(deploymentJsonKey, MERKLE_MINT_SALE_STRATEGY, deployment.merkleMintSaleStrategy);
+        vm.serializeAddress(deploymentJsonKey, SIGNATURE_MINTER_SALE_STRATEGY, deployment.signatureMinterSaleStrategy);
         vm.serializeAddress(deploymentJsonKey, REDEEM_MINTER_FACTORY, deployment.redeemMinterFactory);
         vm.serializeAddress(deploymentJsonKey, CONTRACT_1155_IMPL, deployment.contract1155Impl);
         vm.serializeAddress(deploymentJsonKey, FACTORY_IMPL, deployment.factoryImpl);

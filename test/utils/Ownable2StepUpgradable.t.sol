@@ -20,6 +20,7 @@ contract Ownable2StepUpgradableTest is Test {
             IZoraCreator1155(owner),
             IMinter1155(address(0)),
             IMinter1155(address(0)),
+            IMinter1155(address(0)),
             IMinter1155(address(0))
         );
         Zora1155Factory proxy = new Zora1155Factory(address(factory), "");

@@ -20,7 +20,13 @@ contract ZoraCreator1155FactoryTest is Test {
         zora = makeAddr("zora");
         ProtocolRewards protocolRewards = new ProtocolRewards();
         ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
-        factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
+        factory = new ZoraCreator1155FactoryImpl(
+            zoraCreator1155Impl,
+            IMinter1155(address(1)),
+            IMinter1155(address(2)),
+            IMinter1155(address(3)),
+            IMinter1155(address(4))
+        );
     }
 
     function test_contractVersion() external {
@@ -46,10 +52,11 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function test_defaultMinters() external {
         IMinter1155[] memory minters = factory.defaultMinters();
-        assertEq(minters.length, 3);
+        assertEq(minters.length, 4);
         assertEq(address(minters[0]), address(2));
         assertEq(address(minters[1]), address(1));
         assertEq(address(minters[2]), address(3));
+        assertEq(address(minters[3]), address(4));
     }
 
     function test_createContract(
@@ -97,6 +104,7 @@ contract ZoraCreator1155FactoryTest is Test {
 
         ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(
             mockNewContract,
+            IMinter1155(address(0)),
             IMinter1155(address(0)),
             IMinter1155(address(0)),
             IMinter1155(address(0))

@@ -23,8 +23,15 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
     IMinter1155 public immutable redeemMinterFactory;
+    IMinter1155 public immutable signatureMinter;
 
-    constructor(IZoraCreator1155 _implementation, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
+    constructor(
+        IZoraCreator1155 _implementation,
+        IMinter1155 _merkleMinter,
+        IMinter1155 _fixedPriceMinter,
+        IMinter1155 _redeemMinterFactory,
+        IMinter1155 _signatureMinter
+    ) initializer {
         implementation = _implementation;
         if (address(implementation) == address(0)) {
             revert Constructor_ImplCannotBeZero();
@@ -32,6 +39,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         merkleMinter = _merkleMinter;
         fixedPriceMinter = _fixedPriceMinter;
         redeemMinterFactory = _redeemMinterFactory;
+        signatureMinter = _signatureMinter;
     }
 
     /// @notice ContractURI for contract information with the strategy
@@ -46,10 +54,11 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
 
     /// @notice The default minters for new 1155 contracts
     function defaultMinters() external view returns (IMinter1155[] memory minters) {
-        minters = new IMinter1155[](3);
+        minters = new IMinter1155[](4);
         minters[0] = fixedPriceMinter;
         minters[1] = merkleMinter;
         minters[2] = redeemMinterFactory;
+        minters[3] = signatureMinter;
     }
 
     function initialize(address _initialOwner) public initializer {

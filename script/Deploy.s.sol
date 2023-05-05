@@ -18,6 +18,7 @@ import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ZoraCreatorSignatureMinterStrategy} from "../src/minters/signature/ZoraCreatorSignatureMinterStrategy.sol";
 
 contract DeployScript is ZoraDeployerBase {
     function run() public returns (string memory) {
@@ -36,6 +37,7 @@ contract DeployScript is ZoraDeployerBase {
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
         ZoraCreatorRedeemMinterFactory redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
+        ZoraCreatorSignatureMinterStrategy signatureMinter = new ZoraCreatorSignatureMinterStrategy();
 
         deployment.fixedPriceSaleStrategy = address(fixedPricedMinter);
         deployment.merkleMintSaleStrategy = address(merkleMinter);
@@ -54,8 +56,9 @@ contract DeployScript is ZoraDeployerBase {
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: creatorImpl,
             _merkleMinter: merkleMinter,
+            _fixedPriceMinter: fixedPricedMinter,
             _redeemMinterFactory: redeemMinterFactory,
-            _fixedPriceMinter: fixedPricedMinter
+            _signatureMinter: signatureMinter
         });
 
         deployment.factoryImpl = address(factoryImpl);

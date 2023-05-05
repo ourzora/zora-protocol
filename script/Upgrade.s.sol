@@ -15,6 +15,7 @@ import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+import {ZoraCreatorSignatureMinterStrategy} from "../src/minters/signature/ZoraCreatorSignatureMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -44,6 +45,13 @@ contract UpgradeScript is ZoraDeployerBase {
             console2.log("Existing MERKLE_MINT_STRATEGY", deployment.merkleMintSaleStrategy);
         }
 
+        if (deployment.signatureMinterSaleStrategy == address(0)) {
+            deployment.signatureMinterSaleStrategy = address(new ZoraCreatorSignatureMinterStrategy());
+            console2.log("New SignatureMinterStrategy", deployment.signatureMinterSaleStrategy);
+        } else {
+            console2.log("Existing SIGNATURE_MINTER_STRATEGY", deployment.signatureMinterSaleStrategy);
+        }
+
         if (deployment.redeemMinterFactory == address(0)) {
             deployment.redeemMinterFactory = address(new ZoraCreatorRedeemMinterFactory());
             console2.log("New REDEEM_MINTER_FACTORY", address(deployment.redeemMinterFactory));
@@ -66,8 +74,9 @@ contract UpgradeScript is ZoraDeployerBase {
             new ZoraCreator1155FactoryImpl({
                 _implementation: IZoraCreator1155(deployment.contract1155Impl),
                 _merkleMinter: ZoraCreatorMerkleMinterStrategy(deployment.merkleMintSaleStrategy),
+                _fixedPriceMinter: ZoraCreatorFixedPriceSaleStrategy(deployment.fixedPriceSaleStrategy),
                 _redeemMinterFactory: ZoraCreatorRedeemMinterFactory(deployment.redeemMinterFactory),
-                _fixedPriceMinter: ZoraCreatorFixedPriceSaleStrategy(deployment.fixedPriceSaleStrategy)
+                _signatureMinter: ZoraCreatorSignatureMinterStrategy(deployment.signatureMinterSaleStrategy)
             })
         );
 

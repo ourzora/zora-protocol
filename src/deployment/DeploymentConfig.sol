@@ -23,6 +23,8 @@ struct Deployment {
     address fixedPriceSaleStrategy;
     /// @notice Merkle minter strategy (formerly presale) configuration
     address merkleMintSaleStrategy;
+    /// @notice Signature minter strategy configuration contract
+    address signatureMinterSaleStrategy;
     /// @notice Redeem minter factory contract for redeem sales configurations
     address redeemMinterFactory;
     /// @notice Implementation contract for the 1155 contract
@@ -51,6 +53,7 @@ abstract contract DeploymentConfig is CommonBase {
 
     string constant FIXED_PRICE_SALE_STRATEGY = "FIXED_PRICE_SALE_STRATEGY";
     string constant MERKLE_MINT_SALE_STRATEGY = "MERKLE_MINT_SALE_STRATEGY";
+    string constant SIGNATURE_MINTER_SALE_STRATEGY = "SIGNATURE_MINTER_SALE_STRATEGY";
     string constant REDEEM_MINTER_FACTORY = "REDEEM_MINTER_FACTORY";
     string constant CONTRACT_1155_IMPL = "CONTRACT_1155_IMPL";
     string constant FACTORY_IMPL = "FACTORY_IMPL";
@@ -79,6 +82,7 @@ abstract contract DeploymentConfig is CommonBase {
         string memory json = vm.readFile(string.concat("addresses/", Strings.toString(chainId()), ".json"));
         deployment.fixedPriceSaleStrategy = json.readAddress(getKeyPrefix(FIXED_PRICE_SALE_STRATEGY));
         deployment.merkleMintSaleStrategy = json.readAddress(getKeyPrefix(MERKLE_MINT_SALE_STRATEGY));
+        deployment.signatureMinterSaleStrategy = json.readAddress(getKeyPrefix(SIGNATURE_MINTER_SALE_STRATEGY));
         deployment.redeemMinterFactory = json.readAddress(getKeyPrefix(REDEEM_MINTER_FACTORY));
         deployment.contract1155Impl = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL));
         deployment.factoryImpl = json.readAddress(getKeyPrefix(FACTORY_IMPL));

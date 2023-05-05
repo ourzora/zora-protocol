@@ -8,7 +8,8 @@ type ContractNames =
   | "ZoraCreatorFixedPriceSaleStrategy"
   | "ZoraCreatorMerkleMinterStrategy"
   | "ZoraCreatorRedeemMinterFactory"
-  | "ZoraCreatorRedeemMinterStrategy";
+  | "ZoraCreatorRedeemMinterStrategy"
+  | "ZoraCreatorSignatureMinterStrategy";
 
 type Address = `0x${string}`;
 
@@ -19,6 +20,7 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorMerkleMinterStrategy",
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
+  "ZoraCreatorSignatureMinterStrategy",
 ];
 
 type Addresses = {
