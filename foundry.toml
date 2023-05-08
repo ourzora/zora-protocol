@@ -8,4 +8,14 @@ optimizer_runs = 5000
 via_ir = true
 fs_permissions = [{ access = "read", path = "./addresses"}, { access = "read", path = "./package.json" }]
 
+[profile.optimized]
+optimizer = true
+optimizer_runs = 5000
+out = 'out'
+script = 'src'
+solc_version = '0.8.17'
+src = 'src'
+test = 'src'
+via_ir = true
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
