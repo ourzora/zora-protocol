@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {IOwnable2StepUpgradeable} from "./IOwnable2StepUpgradeable.sol";
 import {IOwnable2StepStorageV1} from "./IOwnable2StepStorageV1.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
+import {Initializable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
 
 /// @title Ownable
 /// @author Rohan Kulkarni / Iain Nash

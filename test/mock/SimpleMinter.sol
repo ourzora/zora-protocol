@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
-import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {ICreatorCommands} from "../../src/interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "../../src/minters/utils/SaleCommandHelper.sol";

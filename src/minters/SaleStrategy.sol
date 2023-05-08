@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {IVersionedContract} from "../interfaces/IVersionedContract.sol";
