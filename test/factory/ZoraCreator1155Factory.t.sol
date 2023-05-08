@@ -9,6 +9,7 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
+import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
     ZoraCreator1155FactoryImpl internal factory;
@@ -104,5 +105,19 @@ contract ZoraCreator1155FactoryTest is Test {
         vm.prank(initialOwner);
         proxy.upgradeTo(address(newFactoryImpl));
         assertEq(address(proxy.implementation()), address(mockNewContract));
+    }
+
+    function test_upgradeFailsWithDifferentContractName(address initialOwner) external {
+        vm.assume(initialOwner != address(0));
+
+        MockContractMetadata mockContractMetadata = new MockContractMetadata("ipfs://asdfadsf", "name");
+
+        address payable proxyAddress = payable(
+            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+        );
+        ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
+        vm.prank(initialOwner);
+        vm.expectRevert(abi.encodeWithSignature("UpgradeToMismatchedContractName(string,string)", "ZORA 1155 Contract Factory", "name"));
+        proxy.upgradeTo(address(mockContractMetadata));
     }
 }
