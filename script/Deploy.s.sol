@@ -19,8 +19,8 @@ import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreator
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
 contract DeployScript is ZoraDeployerBase {
-    function run() public {
-        Deployment memory deployment = getDeployment();
+    function run() public returns (string memory) {
+        Deployment memory deployment;
         ChainConfig memory chainConfig = getChainConfig();
 
         console2.log("zoraFeeAmount", chainConfig.mintFeeAmount);
@@ -64,5 +64,7 @@ contract DeployScript is ZoraDeployerBase {
         console2.log("Implementation Address", address(creatorImpl));
 
         deployTestContractForVerification(address(factoryProxy), chainConfig.factoryOwner);
+
+        return getDeploymentJSON(deployment);
     }
 }

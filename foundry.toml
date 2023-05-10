@@ -6,7 +6,7 @@ solc_version = '0.8.17'
 optimizer = true
 optimizer_runs = 5000
 via_ir = true
-fs_permissions = [{ access = "read,write", path = "./addresses"}, { access = "read", path = "./chainConfigs"}, { access = "read", path = "./package.json" }]
+fs_permissions = [{ access = "read", path = "./addresses"}, { access = "read", path = "./chainConfigs"}, { access = "read", path = "./package.json" }]
 
 [profile.optimized]
 optimizer = true
