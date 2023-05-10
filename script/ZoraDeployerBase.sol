@@ -8,31 +8,50 @@ import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
 
+/// @notice Chain configuration for constants set manually during deploy. Does not get written to after deploys.
 struct ChainConfig {
+    /// @notice The user that owns the factory proxy. Allows ability to upgrade for new implementations deployed.
     address factoryOwner;
+    /// @notice Mint fee amount in WEI charged for each mint
     uint256 mintFeeAmount;
+    /// @notice Mint fee recipient user
     address mintFeeRecipient;
 }
 
+/// @notice Deployment addresses – set to new deployed addresses by the scripts.
 struct Deployment {
+    /// @notice Fixed price minter strategy configuration contract
     address fixedPriceSaleStrategy;
+    /// @notice Merkle minter strategy (formerly presale) configuration
     address merkleMintSaleStrategy;
+    /// @notice Redeem minter factory contract for redeem sales configurations
     address redeemMinterFactory;
+    /// @notice Implementation contract for the 1155 contract
     address contract1155Impl;
+    /// @notice Factory implementation contract that is the impl for the above proxy.
     address factoryImpl;
+    /// @notice Factory proxy contract that creates zora drops style NFT contracts
     address factoryProxy;
 }
 
+/// @notice Deployment drops for base where
 abstract contract ZoraDeployerBase is Script {
     using stdJson for string;
 
+    /// @notice ChainID convenience getter
+    /// @return id chainId
     function chainId() internal view returns (uint256 id) {
         assembly {
             id := chainid()
         }
     }
 
+    /// @notice File used for demo metadata on verification test mint
     string constant DEMO_IPFS_METADATA_FILE = "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi";
+
+    ///
+    // These are the JSON key constants to standardize writing and reading configuration
+    ///
 
     string constant FACTORY_OWNER = "FACTORY_OWNER";
     string constant MINT_FEE_AMOUNT = "MINT_FEE_AMOUNT";
@@ -45,10 +64,15 @@ abstract contract ZoraDeployerBase is Script {
     string constant FACTORY_IMPL = "FACTORY_IMPL";
     string constant FACTORY_PROXY = "FACTORY_PROXY";
 
+    /// @notice Return a prefixed key for reading with a ".".
+    /// @param key key to prefix
+    /// @return prefixed key
     function getKeyPrefix(string memory key) internal pure returns (string memory) {
         return string.concat(".", key);
     }
 
+    /// @notice Returns the chain configuration struct from the JSON configuration file
+    /// @return chainConfig structure
     function getChainConfig() internal returns (ChainConfig memory chainConfig) {
         string memory json = vm.readFile(string.concat("chainConfigs/", Strings.toString(chainId()), ".json"));
         chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
@@ -56,6 +80,8 @@ abstract contract ZoraDeployerBase is Script {
         chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
     }
 
+    /// @notice Get the deployment configuration struct from the JSON configuration file
+    /// @return deployment deployment configuration structure
     function getDeployment() internal returns (Deployment memory deployment) {
         string memory json = vm.readFile(string.concat("addresses/", Strings.toString(chainId()), ".json"));
         deployment.fixedPriceSaleStrategy = json.readAddress(getKeyPrefix(FIXED_PRICE_SALE_STRATEGY));
@@ -66,6 +92,9 @@ abstract contract ZoraDeployerBase is Script {
         deployment.factoryProxy = json.readAddress(getKeyPrefix(FACTORY_PROXY));
     }
 
+    /// @notice Get deployment configuration struct as JSON
+    /// @param deployment deploymet struct
+    /// @return deploymentJson string JSON of the deployment info
     function getDeploymentJSON(Deployment memory deployment) internal returns (string memory deploymentJson) {
         string memory deploymentJsonKey = "deployment_json_file_key";
         vm.serializeAddress(deploymentJsonKey, FIXED_PRICE_SALE_STRATEGY, deployment.fixedPriceSaleStrategy);
@@ -77,6 +106,9 @@ abstract contract ZoraDeployerBase is Script {
         console2.log(deploymentJson);
     }
 
+    /// @notice Deploy a test contract for etherscan auto-verification
+    /// @param factoryProxy Factory address to use
+    /// @param admin Admin owner address to use
     function deployTestContractForVerification(address factoryProxy, address admin) internal {
         bytes[] memory initUpdate = new bytes[](1);
         initUpdate[0] = abi.encodeWithSelector(
