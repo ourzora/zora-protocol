@@ -4,6 +4,8 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
+import {ZoraDeployerBase, ChainConfig, Deployment} from "./ZoraDeployerBase.sol";
+
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
@@ -16,24 +18,34 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/Zora
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
-contract DeployScript is Script {
-    function setUp() public {}
+contract DeployScript is ZoraDeployerBase {
+    function run() public returns (string memory) {
+        Deployment memory deployment;
+        ChainConfig memory chainConfig = getChainConfig();
 
-    function run() public {
-        address payable deployer = payable(vm.envAddress("DEPLOYER"));
-        uint256 zoraFeeAmount = vm.envUint("ZORA_FEE_AMOUNT");
-        address payable zoraFeeRecipient = payable(vm.envAddress("ZORA_FEE_RECIPIENT"));
-        address factoryAdmin = payable(vm.envAddress("FACTORY_ADMIN"));
+        console2.log("zoraFeeAmount", chainConfig.mintFeeAmount);
+        console2.log("zoraFeeRecipient", chainConfig.mintFeeRecipient);
+
+        address deployer = vm.envAddress("DEPLOYER");
+
         vm.startBroadcast(deployer);
 
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
         ZoraCreatorRedeemMinterFactory redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
 
+        deployment.fixedPriceSaleStrategy = address(fixedPricedMinter);
+        deployment.merkleMintSaleStrategy = address(merkleMinter);
+        deployment.redeemMinterFactory = address(redeemMinterFactory);
+
         address factoryShimAddress = address(new ProxyShim(deployer));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(zoraFeeAmount, zoraFeeRecipient, address(factoryProxy));
+        deployment.factoryProxy = address(factoryProxy);
+
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, address(factoryProxy));
+
+        deployment.contract1155Impl = address(creatorImpl);
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: creatorImpl,
@@ -42,29 +54,17 @@ contract DeployScript is Script {
             _fixedPriceMinter: fixedPricedMinter
         });
 
+        deployment.factoryImpl = address(factoryImpl);
+
         // Upgrade to "real" factory address
         ZoraCreator1155FactoryImpl(address(factoryProxy)).upgradeTo(address(factoryImpl));
-        ZoraCreator1155FactoryImpl(address(factoryProxy)).initialize(factoryAdmin);
+        ZoraCreator1155FactoryImpl(address(factoryProxy)).initialize(chainConfig.factoryOwner);
 
         console2.log("Factory Proxy", address(factoryProxy));
         console2.log("Implementation Address", address(creatorImpl));
 
-        bytes[] memory initUpdate = new bytes[](2);
-        initUpdate[0] = abi.encodeWithSelector(
-            ZoraCreator1155Impl.setupNewToken.selector,
-            "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
-            100
-        );
-        address newContract = address(
-            IZoraCreator1155Factory(address(factoryProxy)).createContract(
-                "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
-                unicode"🪄",
-                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
-                payable(factoryAdmin),
-                initUpdate
-            )
-        );
+        deployTestContractForVerification(address(factoryProxy), chainConfig.factoryOwner);
 
-        console2.log("New 1155 contract address", newContract);
+        return getDeploymentJSON(deployment);
     }
 }
