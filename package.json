@@ -25,8 +25,11 @@
     "forge-std": "https://github.com/foundry-rs/forge-std#cd7d533f9a0ee0ec02ad81e0a8f262bc4203c653"
   },
   "devDependencies": {
+    "es-main": "^1.2.0",
+    "glob": "^10.2.2",
     "husky": ">=6",
-    "lint-staged": ">=10",
+    "lint-staged": "^13.2.2",
+    "listr2": "^6.4.2",
     "prettier": "^2.8.3",
     "prettier-plugin-solidity": "^1.1.1"
   },
