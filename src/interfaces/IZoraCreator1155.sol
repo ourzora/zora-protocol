@@ -90,7 +90,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     /// @param tokenId tokenId to mint, set to 0 for new tokenId
     /// @param quantity to mint
     /// @param minterArguments calldata for the minter contracts
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address finder, address lister) external payable;
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 

@@ -20,7 +20,7 @@ import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
 import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
-import {MintFeeManager} from "../fee/MintFeeManager.sol";
+import {CreatorRewards} from "../rewards/CreatorRewards.sol";
 import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
@@ -37,7 +37,7 @@ contract ZoraCreator1155Impl is
     ReentrancyGuardUpgradeable,
     PublicMulticall,
     ERC1155Upgradeable,
-    MintFeeManager,
+    CreatorRewards,
     UUPSUpgradeable,
     CreatorRendererControl,
     LegacyNamingControl,
@@ -59,7 +59,7 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IFactoryManagedUpgradeGate internal immutable factory;
 
-    constructor(uint256 _mintFeeAmount, address _mintFeeRecipient, address _factory) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) initializer {
+    constructor(address _rewardsManager, address _zoraRewardRecipient, address _factory) CreatorRewards(_rewardsManager, _zoraRewardRecipient) initializer {
         factory = IFactoryManagedUpgradeGate(_factory);
     }
 
@@ -372,15 +372,35 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable nonReentrant {
+    /// @param finder The user or platform that finds the sale
+    /// @param lister The originator of the sale
+    function mint(
+        IMinter1155 minter,
+        uint256 tokenId,
+        uint256 quantity,
+        bytes calldata minterArguments,
+        address finder,
+        address lister
+    ) external payable nonReentrant {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
-        // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleFeeAndGetValueSent(quantity);
+        uint256 remainingEth = _parseAttachedEth(msg.value, quantity);
 
-        // Execute commands returned from minter
-        _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+        // If this is a free mint:
+        if (remainingEth == 0) {
+            _transferFreeMintRewards(quantity, config.fundsRecipient, finder, lister);
+
+            // Execute commands returned from minter
+            _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, 0, minterArguments).commands, 0, tokenId);
+
+            // Else this is a paid mint:
+        } else {
+            uint256 ethValueSent = _transferPaidMintRewards(msg.value, quantity, finder, lister);
+
+            // Execute commands returned from minter
+            _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+        }
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
