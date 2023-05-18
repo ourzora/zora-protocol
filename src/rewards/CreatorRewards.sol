@@ -53,12 +53,7 @@ abstract contract CreatorRewards is ICreatorRewards {
     }
 
     function _transferFreeMintRewards(uint256 numTokens, address creator, address finder, address lister) internal {
-        uint256 creatorReward = numTokens * CREATOR_REWARD_FREE_MINT;
-        uint256 zoraReward = numTokens * ZORA_REWARD_FREE_MINT;
-        uint256 finderReward = numTokens * FINDER_REWARD_FREE_MINT;
-        uint256 listerReward = numTokens * LISTER_REWARD_FREE_MINT;
-
-        uint256 totalReward = creatorReward + zoraReward + finderReward + listerReward;
+        (uint256 creatorReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward, uint256 totalReward) = _computeFreeMintRewards(numTokens);
 
         if (finder == address(0)) {
             finder = ZORA_REWARD_RECIPIENT;
@@ -74,11 +69,7 @@ abstract contract CreatorRewards is ICreatorRewards {
     }
 
     function _transferPaidMintRewards(uint256 msgValue, uint256 numTokens, address finder, address lister) internal returns (uint256 remainingEth) {
-        uint256 zoraReward = numTokens * ZORA_REWARD_PAID_MINT;
-        uint256 finderReward = numTokens * FINDER_REWARD_PAID_MINT;
-        uint256 listerReward = numTokens * LISTER_REWARD_PAID_MINT;
-
-        uint256 totalReward = zoraReward + finderReward + listerReward;
+        (uint256 zoraReward, uint256 finderReward, uint256 listerReward, uint256 totalReward) = _computePaidMintRewards(numTokens);
 
         remainingEth = msgValue - totalReward;
 
@@ -93,5 +84,24 @@ abstract contract CreatorRewards is ICreatorRewards {
         REWARDS_MANAGER.addReward{value: totalReward}(ZORA_REWARD_RECIPIENT, zoraReward, finder, finderReward, lister, listerReward);
 
         emit PaidMintRewardsTransferred(finder, finderReward, lister, listerReward);
+    }
+
+    function _computeFreeMintRewards(
+        uint256 numTokens
+    ) private pure returns (uint256 creatorReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward, uint256 totalReward) {
+        creatorReward = numTokens * CREATOR_REWARD_FREE_MINT;
+        zoraReward = numTokens * ZORA_REWARD_FREE_MINT;
+        finderReward = numTokens * FINDER_REWARD_FREE_MINT;
+        listerReward = numTokens * LISTER_REWARD_FREE_MINT;
+        totalReward = creatorReward + zoraReward + finderReward + listerReward;
+    }
+
+    function _computePaidMintRewards(
+        uint256 numTokens
+    ) private pure returns (uint256 zoraReward, uint256 finderReward, uint256 listerReward, uint256 totalReward) {
+        zoraReward = numTokens * ZORA_REWARD_PAID_MINT;
+        finderReward = numTokens * FINDER_REWARD_PAID_MINT;
+        listerReward = numTokens * LISTER_REWARD_PAID_MINT;
+        totalReward = zoraReward + finderReward + listerReward;
     }
 }
