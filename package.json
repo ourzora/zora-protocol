@@ -37,7 +37,7 @@
     "es-main": "^1.2.0",
     "glob": "^10.2.2",
     "husky": ">=6",
-    "lint-staged": "^13.2.2",
+    "lint-staged": ">=10",
     "listr2": "^6.4.2",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.1",
