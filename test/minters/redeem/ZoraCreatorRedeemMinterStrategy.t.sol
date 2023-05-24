@@ -47,7 +47,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
     }
 
     function test_Version() external {
-        assertEq(redeemMinter.contractVersion(), "0.0.1");
+        assertEq(redeemMinter.contractVersion(), "1.0.1");
     }
 
     function test_OnlyDropContractCanCallWriteFunctions() external {
@@ -1237,6 +1237,8 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
         vm.stopPrank();
 
+        vm.prank(actualTokenOwner);
+        burnTokenERC721.setApprovalForAll(address(redeemMinter), true);
         vm.startPrank(tokenRecipient);
         burnTokenERC721.setApprovalForAll(address(redeemMinter), true);
 
@@ -1246,7 +1248,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[0][1] = 1;
         uint256[][] memory amounts;
 
-        vm.expectRevert(abi.encodeWithSignature("BurnFailed()"));
+        vm.expectRevert(abi.encodeWithSignature("SenderIsNotTokenOwner()"));
         target.mint{value: 1 ether}(redeemMinter, newTokenId, 10, abi.encode(redeemInstructions, tokenIds, amounts));
         vm.stopPrank();
     }

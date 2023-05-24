@@ -9,6 +9,7 @@ import {IVersionedContract} from "./IVersionedContract.sol";
 /// @author @iainnash / @tbtstl
 interface IZoraCreator1155Factory is IVersionedContract {
     error Constructor_ImplCannotBeZero();
+    error UpgradeToMismatchedContractName(string expected, string actual);
 
     event FactorySetup();
     event SetupNewContract(

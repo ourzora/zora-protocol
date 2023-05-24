@@ -1,12 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/interfaces/IERC165Upgradeable.sol";
+import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {IVersionedContract} from "../interfaces/IVersionedContract.sol";
-import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
-import {SaleCommandHelper} from "./utils/SaleCommandHelper.sol";
 
 /// @notice Sales Strategy Helper contract template on top of IMinter1155
 /// @author @iainnash / @tbtstl

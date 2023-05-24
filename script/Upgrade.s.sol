@@ -3,6 +3,8 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
 
+import {ZoraDeployerBase, ChainConfig, Deployment} from "./ZoraDeployerBase.sol";
+
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
@@ -15,87 +17,63 @@ import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreator
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-contract UpgradeScript is Script {
+contract UpgradeScript is ZoraDeployerBase {
     using Strings for uint256;
     using stdJson for string;
 
     string configFile;
 
-    function setUp() public {
-        uint256 chainID = vm.envUint("CHAIN_ID");
-        console.log("CHAIN_ID", chainID);
-
-        console2.log("Starting ---");
-
-        configFile = vm.readFile(string.concat("./addresses/", Strings.toString(chainID), ".json"));
-    }
-
     function run() public {
-        address payable deployer = payable(vm.envAddress("DEPLOYER"));
+        Deployment memory deployment = getDeployment();
+        ChainConfig memory chainConfig = getChainConfig();
 
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
 
-        ZoraCreatorFixedPriceSaleStrategy fixedPriceMinter = ZoraCreatorFixedPriceSaleStrategy(configFile.readAddress(".FIXED_PRICE_SALE_STRATEGY"));
-        if (address(fixedPriceMinter) == address(0)) {
-            fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
-            console2.log("New FixedPriceMinter", address(fixedPriceMinter));
+        if (deployment.fixedPriceSaleStrategy == address(0)) {
+            deployment.fixedPriceSaleStrategy = address(new ZoraCreatorFixedPriceSaleStrategy());
+            console2.log("New FixedPriceMinter", deployment.fixedPriceSaleStrategy);
         } else {
-            console2.log("Existing FIXED_PRICE_STRATEGY", address(fixedPriceMinter));
+            console2.log("Existing FIXED_PRICE_STRATEGY", deployment.fixedPriceSaleStrategy);
         }
 
-        ZoraCreatorMerkleMinterStrategy merkleMinter = ZoraCreatorMerkleMinterStrategy(configFile.readAddress(".MERKLE_MINT_SALE_STRATEGY"));
-        if (address(merkleMinter) == address(0)) {
-            merkleMinter = new ZoraCreatorMerkleMinterStrategy();
-            console2.log("New MerkleMintStrategy", address(merkleMinter));
+        if (deployment.merkleMintSaleStrategy == address(0)) {
+            deployment.merkleMintSaleStrategy = address(new ZoraCreatorMerkleMinterStrategy());
+            console2.log("New MerkleMintStrategy", deployment.merkleMintSaleStrategy);
         } else {
-            console2.log("Existing MERKLE_MINT_STRATEGY", address(merkleMinter));
+            console2.log("Existing MERKLE_MINT_STRATEGY", deployment.merkleMintSaleStrategy);
         }
 
-        ZoraCreatorRedeemMinterFactory redeemMinterFactory = ZoraCreatorRedeemMinterFactory(configFile.readAddress(".REDEEM_MINTER_FACTORY"));
-        if (address(redeemMinterFactory) == address(0)) {
-            redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
-            console2.log("New REDEEM_MINTER_FACTORY", address(redeemMinterFactory));
+        if (deployment.redeemMinterFactory == address(0)) {
+            deployment.redeemMinterFactory = address(new ZoraCreatorRedeemMinterFactory());
+            console2.log("New REDEEM_MINTER_FACTORY", address(deployment.redeemMinterFactory));
         } else {
-            console2.log("Existing REDEEM_MINTER_FACTORY", address(redeemMinterFactory));
+            console2.log("Existing REDEEM_MINTER_FACTORY", deployment.redeemMinterFactory);
         }
 
-        address factoryProxy = configFile.readAddress(".FACTORY_PROXY");
-
-        address nftImpl = configFile.readAddress(".1155_IMPL");
-        bool isNewNFTImpl = nftImpl == address(0);
+        bool isNewNFTImpl = deployment.contract1155Impl == address(0);
         if (isNewNFTImpl) {
-            uint256 mintFeeAmount = configFile.readUint(".MINT_FEE_AMOUNT");
-            address mintFeeRecipient = configFile.readAddress(".MINT_FEE_RECIPIENT");
-            console2.log("mintFeeAmount", mintFeeAmount);
-            console2.log("minFeeRecipient", mintFeeRecipient);
-            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient, factoryProxy));
-            console2.log("New NFT_IMPL", nftImpl);
+            console2.log("mintFeeAmount", chainConfig.mintFeeAmount);
+            console2.log("minFeeRecipient", chainConfig.mintFeeRecipient);
+            deployment.contract1155Impl = address(new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, deployment.factoryProxy));
+            console2.log("New NFT_IMPL", deployment.contract1155Impl);
         } else {
-            console2.log("Existing NFT_IMPL", nftImpl);
+            console2.log("Existing NFT_IMPL", deployment.contract1155Impl);
         }
 
-        ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
-            _implementation: IZoraCreator1155(nftImpl),
-            _merkleMinter: merkleMinter,
-            _redeemMinterFactory: redeemMinterFactory,
-            _fixedPriceMinter: fixedPriceMinter
-        });
+        deployment.factoryProxy = address(
+            new ZoraCreator1155FactoryImpl({
+                _implementation: IZoraCreator1155(deployment.contract1155Impl),
+                _merkleMinter: ZoraCreatorMerkleMinterStrategy(deployment.merkleMintSaleStrategy),
+                _redeemMinterFactory: ZoraCreatorRedeemMinterFactory(deployment.redeemMinterFactory),
+                _fixedPriceMinter: ZoraCreatorFixedPriceSaleStrategy(deployment.fixedPriceSaleStrategy)
+            })
+        );
 
-        console2.log("New Factory Impl", address(factoryImpl));
-        console2.log("Upgrade to this new factory impl on the proxy:", factoryProxy);
+        console2.log("New Factory Impl", deployment.factoryImpl);
+        console2.log("Upgrade to this new factory impl on the proxy:", deployment.factoryProxy);
 
         if (isNewNFTImpl) {
-            bytes[] memory setup = new bytes[](0);
-            address newContract = address(
-                IZoraCreator1155Factory(address(factoryProxy)).createContract(
-                    "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
-                    "+++",
-                    ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
-                    deployer,
-                    setup
-                )
-            );
-            console2.log("Deploying new contract for verifiation purposes", newContract);
+            deployTestContractForVerification(deployment.factoryProxy, chainConfig.factoryOwner);
         }
     }
 }
