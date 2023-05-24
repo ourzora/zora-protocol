@@ -7,7 +7,7 @@ import {IVersionedContract} from "../interfaces/IVersionedContract.sol";
 /// @notice Base contract for versioning contracts
 contract ContractVersionBase is IVersionedContract {
     /// @notice The version of the contract
-    function contractVersion() external pure override returns (string memory) {
+    function contractVersion() public pure override returns (string memory) {
         return "1.3.0";
     }
 }

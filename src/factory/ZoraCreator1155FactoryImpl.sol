@@ -15,10 +15,10 @@ import {Zora1155} from "../proxies/Zora1155.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
-import {EIP712Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/EIP712Upgradeable.sol";
-import {ECDSAUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/cryptography/ECDSAUpgradeable.sol";
+import {EIP712Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/EIP712Upgradeable.sol";
+import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 
-import {Create2Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/Create2Upgradeable.sol";
+import {Create2Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/Create2Upgradeable.sol";
 
 error InvalidDelegateSignature();
 error InvalidNonce();
@@ -39,8 +39,6 @@ contract ZoraCreator1155FactoryImpl is
     IMinter1155 public immutable fixedPriceMinter;
     IMinter1155 public immutable redeemMinterFactory;
 
-    string constant CONTRACT_NAME = "ZORA 1155 Contract Factory";
-
     constructor(IZoraCreator1155 _implementation, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
         implementation = _implementation;
         if (address(implementation) == address(0)) {
@@ -57,8 +55,8 @@ contract ZoraCreator1155FactoryImpl is
     }
 
     /// @notice The name of the sale strategy
-    function contractName() external pure returns (string memory) {
-        return CONTRACT_NAME;
+    function contractName() public pure returns (string memory) {
+        return "ZORA 1155 Contract Factory";
     }
 
     /// @notice The default minters for new 1155 contracts
@@ -71,7 +69,7 @@ contract ZoraCreator1155FactoryImpl is
 
     function initialize(address _initialOwner) public initializer {
         __Ownable_init(_initialOwner);
-        __EIP712_init(CONTRACT_NAME, contractVersion());
+        __EIP712_init(contractName(), contractVersion());
         __UUPSUpgradeable_init();
 
         emit FactorySetup();
