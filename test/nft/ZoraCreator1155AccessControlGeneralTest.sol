@@ -13,14 +13,17 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
+import {RewardsManager} from "../../src/rewards/RewardsManager.sol";
 
 contract ZoraCreator1155AccessControlGeneralTest is Test {
+    RewardsManager internal rewardsManager;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
     address payable admin;
 
     function setUp() external {
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
+        rewardsManager = new RewardsManager();
+        zoraCreator1155Impl = new ZoraCreator1155Impl(address(rewardsManager), address(0), address(0));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
@@ -98,7 +101,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_mint() public {
         SimpleMinter minter = new SimpleMinter();
         vm.expectRevert();
-        target.mint(IMinter1155(address(minter)), 1, 1, "");
+        target.mint(IMinter1155(address(minter)), 1, 1, "", address(0), address(0));
     }
 
     function test_openAccessFails_setTokenMetadataRenderer() public {

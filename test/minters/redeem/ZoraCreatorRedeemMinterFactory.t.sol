@@ -15,8 +15,10 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {RewardsManager} from "../../../src/rewards/RewardsManager.sol";
 
 contract ZoraCreatorRedeemMinterFactoryTest is Test {
+    RewardsManager internal rewardsManager;
     ZoraCreator1155Impl internal target;
     ZoraCreatorRedeemMinterFactory internal minterFactory;
     address payable internal tokenAdmin = payable(address(0x999));
@@ -26,7 +28,8 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
 
     function setUp() public {
         bytes[] memory emptyData = new bytes[](0);
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, address(0), address(0));
+        rewardsManager = new RewardsManager();
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(address(rewardsManager), address(0), address(0));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);

@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
+import "forge-std/console2.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -13,12 +14,14 @@ import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererCont
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
+import {RewardsManager} from "../../src/rewards/RewardsManager.sol";
 
 contract ZoraCreator1155Test is Test {
     using stdJson for string;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
     MockUpgradeGate internal upgradeGate;
+    RewardsManager internal rewardsManager;
     address payable internal admin;
     address internal recipient;
     uint256 internal adminRole;
@@ -29,12 +32,16 @@ contract ZoraCreator1155Test is Test {
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
     function setUp() external {
-        upgradeGate = new MockUpgradeGate();
-        upgradeGate.initialize(admin);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(upgradeGate));
-        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
+        vm.deal(admin, 1 ether);
+
+        upgradeGate = new MockUpgradeGate();
+        upgradeGate.initialize(admin);
+        rewardsManager = new RewardsManager();
+        zoraCreator1155Impl = new ZoraCreator1155Impl(address(rewardsManager), address(0), address(upgradeGate));
+        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
+
         adminRole = target.PERMISSION_BIT_ADMIN();
         minterRole = target.PERMISSION_BIT_MINTER();
         fundsManagerRole = target.PERMISSION_BIT_FUNDS_MANAGER();
@@ -43,6 +50,10 @@ contract ZoraCreator1155Test is Test {
 
     function _emptyInitData() internal pure returns (bytes[] memory response) {
         response = new bytes[](0);
+    }
+
+    function computeTotalReward(uint256 numTokens) internal pure returns (uint256) {
+        return numTokens * 0.000999 ether;
     }
 
     function init() internal {
@@ -535,6 +546,10 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_mint(uint256 quantity) external {
+        // TEMP
+        uint256 maxQuantity = 115907997234550746169740725734422330183453438103744308347805389;
+        vm.assume(quantity < maxQuantity);
+
         init();
 
         vm.prank(admin);
@@ -544,10 +559,14 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
+        uint256 reward = computeTotalReward(quantity);
+
+        vm.deal(admin, reward);
+
         vm.prank(admin);
         vm.expectEmit(true, true, true, true);
-        emit Purchased(admin, address(minter), tokenId, quantity, 0);
-        target.mint(minter, tokenId, quantity, abi.encode(recipient));
+        emit Purchased(admin, address(minter), tokenId, quantity, reward);
+        target.mint{value: reward}(minter, tokenId, quantity, abi.encode(recipient), address(0), address(0));
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
         assertEq(tokenData.totalMinted, quantity);
@@ -561,7 +580,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
-        target.mint(SimpleMinter(payable(address(0))), tokenId, 0, "");
+        target.mint(SimpleMinter(payable(address(0))), tokenId, 0, "", address(0), address(0));
     }
 
     function test_mint_revertCannotMintMoreTokens() external {
@@ -569,14 +588,16 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 numTokens = 1001;
+        uint256 reward = computeTotalReward(numTokens);
 
         SimpleMinter minter = new SimpleMinter();
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, numTokens, 0, 1000));
         vm.prank(admin);
-        target.mint(minter, tokenId, 1001, abi.encode(recipient));
+        target.mint{value: reward}(minter, tokenId, numTokens, abi.encode(recipient), address(0), address(0));
     }
 
     function test_callSale() external {
@@ -700,8 +721,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
+        uint256 numTokens = 5;
+        uint256 reward = computeTotalReward(numTokens);
+
         vm.prank(admin);
-        target.mint(minter, tokenId, 5, abi.encode(recipient));
+        target.mint{value: reward}(minter, tokenId, numTokens, abi.encode(recipient), address(0), address(0));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -722,8 +746,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
+        uint256 numTokens = 5;
+        uint256 reward = computeTotalReward(numTokens);
+
         vm.prank(admin);
-        target.mint(minter, tokenId, 5, abi.encode(recipient));
+        target.mint{value: reward}(minter, tokenId, numTokens, abi.encode(recipient), address(0), address(0));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -746,9 +773,12 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), minterRole);
 
-        vm.deal(admin, 1 ether);
+        uint256 totalReward = computeTotalReward(1000);
+
+        vm.deal(admin, 1 ether + totalReward);
+
         vm.prank(admin);
-        target.mint{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: 1 ether + totalReward}(minter, tokenId, 1000, abi.encode(recipient), address(0), address(0));
 
         vm.prank(admin);
         target.withdraw();
@@ -775,9 +805,11 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(0, address(minter), fundsManagerRole);
 
-        vm.deal(admin, 1 ether);
+        uint256 totalReward = computeTotalReward(1000);
+
+        vm.deal(admin, 1 ether + totalReward);
         vm.prank(admin);
-        target.mint{value: 1 ether}(minter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: 1 ether + totalReward}(minter, tokenId, 1000, abi.encode(recipient), address(0), address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, minter, 1 ether));
         vm.prank(address(minter));
@@ -785,7 +817,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_unauthorizedUpgradeFails() external {
-        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+        address new1155Impl = address(new ZoraCreator1155Impl(address(rewardsManager), address(0), address(0)));
 
         vm.expectRevert();
         target.upgradeTo(new1155Impl);
@@ -797,7 +829,7 @@ contract ZoraCreator1155Test is Test {
 
         oldImpls[0] = address(zoraCreator1155Impl);
 
-        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+        address new1155Impl = address(new ZoraCreator1155Impl(address(rewardsManager), address(0), address(0)));
 
         vm.prank(upgradeGate.owner());
         upgradeGate.registerUpgradePath(oldImpls, new1155Impl);

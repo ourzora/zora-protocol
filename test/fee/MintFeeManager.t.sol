@@ -11,77 +11,77 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {IMintFeeManager} from "../../src/interfaces/IMintFeeManager.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 
-contract MintFeeManagerTest is Test {
-    ZoraCreator1155Impl internal zoraCreator1155Impl;
-    ZoraCreator1155Impl internal target;
-    address payable internal admin;
-    address internal recipient;
-    uint256 internal adminRole;
-    uint256 internal minterRole;
-    uint256 internal fundsManagerRole;
+// contract MintFeeManagerTest is Test {
+//     ZoraCreator1155Impl internal zoraCreator1155Impl;
+//     ZoraCreator1155Impl internal target;
+//     address payable internal admin;
+//     address internal recipient;
+//     uint256 internal adminRole;
+//     uint256 internal minterRole;
+//     uint256 internal fundsManagerRole;
 
-    function setUp() external {
-        admin = payable(vm.addr(0x1));
-        recipient = vm.addr(0x2);
-    }
+//     function setUp() external {
+//         admin = payable(vm.addr(0x1));
+//         recipient = vm.addr(0x2);
+//     }
 
-    function _emptyInitData() internal pure returns (bytes[] memory response) {
-        response = new bytes[](0);
-    }
+//     function _emptyInitData() internal pure returns (bytes[] memory response) {
+//         response = new bytes[](0);
+//     }
 
-    function test_mintFeeSent(uint32 mintFee, uint256 quantity) external {
-        vm.assume(quantity < 100);
-        vm.assume(mintFee < 0.1 ether);
-        uint256 mintPrice = mintFee * quantity;
-        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient, address(0));
-        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
-        adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
+//     function test_mintFeeSent(uint32 mintFee, uint256 quantity) external {
+//         vm.assume(quantity < 100);
+//         vm.assume(mintFee < 0.1 ether);
+//         uint256 mintPrice = mintFee * quantity;
+//         zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient, address(0));
+//         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
+//         adminRole = target.PERMISSION_BIT_ADMIN();
+//         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+//         vm.prank(admin);
+//         uint256 tokenId = target.setupNewToken("test", quantity);
 
-        address minter = address(new SimpleMinter());
-        vm.prank(admin);
-        target.addPermission(tokenId, minter, adminRole);
+//         address minter = address(new SimpleMinter());
+//         vm.prank(admin);
+//         target.addPermission(tokenId, minter, adminRole);
 
-        vm.deal(admin, mintPrice);
-        vm.prank(admin);
-        target.mint{value: mintPrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
+//         vm.deal(admin, mintPrice);
+//         vm.prank(admin);
+//         target.mint{value: mintPrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
 
-        vm.prank(admin);
-        target.withdraw();
+//         vm.prank(admin);
+//         target.withdraw();
 
-        // Mint fee is not paid if the recipient is address(0)
-        assertEq(recipient.balance, recipient == address(0) ? 0 : mintPrice);
-        assertEq(admin.balance, recipient == address(0) ? mintPrice : mintPrice - (mintFee * quantity));
-    }
+//         // Mint fee is not paid if the recipient is address(0)
+//         assertEq(recipient.balance, recipient == address(0) ? 0 : mintPrice);
+//         assertEq(admin.balance, recipient == address(0) ? mintPrice : mintPrice - (mintFee * quantity));
+//     }
 
-    function test_mintFeeSent_revertCannotSendMintFee(uint32 mintFee, uint256 quantity) external {
-        vm.assume(quantity < 100);
+//     function test_mintFeeSent_revertCannotSendMintFee(uint32 mintFee, uint256 quantity) external {
+//         vm.assume(quantity < 100);
 
-        uint256 mintPrice = mintFee * quantity;
+//         uint256 mintPrice = mintFee * quantity;
 
-        // Use this mock contract as a recipient so we can reject ETH payments.
-        SimpleMinter _recip = new SimpleMinter();
-        _recip.setReceiveETH(false);
-        address _recipient = address(_recip);
+//         // Use this mock contract as a recipient so we can reject ETH payments.
+//         SimpleMinter _recip = new SimpleMinter();
+//         _recip.setReceiveETH(false);
+//         address _recipient = address(_recip);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, _recipient, address(0));
-        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
-        adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
+//         zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, _recipient, address(0));
+//         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
+//         adminRole = target.PERMISSION_BIT_ADMIN();
+//         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
 
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+//         vm.prank(admin);
+//         uint256 tokenId = target.setupNewToken("test", quantity);
 
-        address minter = address(new SimpleMinter());
-        vm.prank(admin);
-        target.addPermission(tokenId, minter, adminRole);
+//         address minter = address(new SimpleMinter());
+//         vm.prank(admin);
+//         target.addPermission(tokenId, minter, adminRole);
 
-        vm.deal(admin, mintPrice);
-        vm.expectRevert(abi.encodeWithSelector(IMintFeeManager.CannotSendMintFee.selector, _recipient, mintPrice));
-        vm.prank(admin);
-        target.mint{value: mintPrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
-    }
-}
+//         vm.deal(admin, mintPrice);
+//         vm.expectRevert(abi.encodeWithSelector(IMintFeeManager.CannotSendMintFee.selector, _recipient, mintPrice));
+//         vm.prank(admin);
+//         target.mint{value: mintPrice}(SimpleMinter(payable(minter)), tokenId, quantity, abi.encode(recipient));
+//     }
+// }

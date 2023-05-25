@@ -10,12 +10,15 @@ import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
+import {RewardsManager} from "../../src/rewards/RewardsManager.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
     ZoraCreator1155FactoryImpl internal factory;
+    RewardsManager internal rewardsManager;
 
     function setUp() external {
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
+        rewardsManager = new RewardsManager();
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(address(rewardsManager), address(0), address(0));
         factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
     }
 
