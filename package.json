@@ -19,6 +19,7 @@
     "bundle-configs": "node script/bundle-chainConfigs.mjs",
     "copy-addresses-and-configs": "cp -r addresses/ dist/addresses && cp -r chainConfigs/ dist/chainConfigs",
     "wagmi": "wagmi generate",
+    "publish-packages": "yarn prepack && changeset publish",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl"
   },
