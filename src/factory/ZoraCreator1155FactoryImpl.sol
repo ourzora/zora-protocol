@@ -123,7 +123,20 @@ contract ZoraCreator1155FactoryImpl is
         ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
         bytes[] calldata setupActions,
         bytes calldata signature
-    ) external returns (address) {
+    ) external returns (address newContract) {
+        newContract = _createDelegatedContract(creator, newContractURI, name, defaultRoyaltyConfiguration, setupActions, signature);
+
+        _initializeContract(newContract, creator, newContractURI, name, defaultRoyaltyConfiguration, creator, setupActions);
+    }
+
+    function _createDelegatedContract(
+        address payable creator,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        bytes[] calldata setupActions,
+        bytes calldata signature
+    ) private returns (address newContract) {
         bytes32 digest = delegateCreateContractHashTypeData(creator, newContractURI, name, defaultRoyaltyConfiguration, setupActions);
 
         address signatory = ECDSAUpgradeable.recover(digest, signature);
@@ -133,11 +146,7 @@ contract ZoraCreator1155FactoryImpl is
         }
 
         // create contract using deterministic address based on the salt (which is the arguments)
-        address newContract = address(new Zora1155{salt: digest}(address(implementation)));
-
-        _initializeContract(newContract, creator, newContractURI, name, defaultRoyaltyConfiguration, creator, setupActions);
-
-        return newContract;
+        newContract = address(new Zora1155{salt: digest}(address(implementation)));
     }
 
     /// Used to preview what a delegated created contract's address will be.  That address is deterministic
