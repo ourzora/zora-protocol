@@ -21,7 +21,7 @@ contract DeployScript is Script {
 
     function run() public {
         address payable deployer = payable(vm.envAddress("DEPLOYER"));
-        uint256 zoraFeeAmount = vm.envUint("ZORA_FEE_AMOUNT");
+        address rewardsManager = vm.envAddress("REWARDS_MANAGER");
         address payable zoraFeeRecipient = payable(vm.envAddress("ZORA_FEE_RECIPIENT"));
         address factoryAdmin = payable(vm.envAddress("FACTORY_ADMIN"));
         vm.startBroadcast(deployer);
@@ -33,7 +33,7 @@ contract DeployScript is Script {
         address factoryShimAddress = address(new ProxyShim(deployer));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(zoraFeeAmount, zoraFeeRecipient, address(factoryProxy));
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(rewardsManager, zoraFeeRecipient, address(factoryProxy));
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
             _implementation: creatorImpl,

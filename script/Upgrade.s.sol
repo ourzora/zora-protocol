@@ -64,11 +64,10 @@ contract UpgradeScript is Script {
         address nftImpl = configFile.readAddress(".1155_IMPL");
         bool isNewNFTImpl = nftImpl == address(0);
         if (isNewNFTImpl) {
-            uint256 mintFeeAmount = configFile.readUint(".MINT_FEE_AMOUNT");
+            address rewardsManager = configFile.readAddress(".REWARDS_MANAGER");
             address mintFeeRecipient = configFile.readAddress(".MINT_FEE_RECIPIENT");
-            console2.log("mintFeeAmount", mintFeeAmount);
             console2.log("minFeeRecipient", mintFeeRecipient);
-            nftImpl = address(new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient, factoryProxy));
+            nftImpl = address(new ZoraCreator1155Impl(rewardsManager, mintFeeRecipient, factoryProxy));
             console2.log("New NFT_IMPL", nftImpl);
         } else {
             console2.log("Existing NFT_IMPL", nftImpl);
