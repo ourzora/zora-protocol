@@ -16,7 +16,7 @@
     "prepack": "node script/copy-deployed-contracts.mjs && yarn run wagmi && yarn bundle-configs && yarn build-ts && yarn copy-addresses-and-configs",
     "prepare": "husky install",
     "build-ts": "tsup package/index.ts --format cjs --dts --sourcemap",
-    "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
+    "bundle-configs": "node script/bundle-chainConfigs.mjs",
     "copy-addresses-and-configs": "cp -r addresses/ dist/addresses && cp -r chainConfigs/ dist/chainConfigs",
     "wagmi": "wagmi generate",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",

@@ -1,4 +1,5 @@
 import { readdirSync, readFileSync, writeFileSync } from 'fs';
+import prettier from 'prettier';
 
 // Reads all the chain configs in ./chainConfigs folder, and bundles them into a typescript 
 // definition that looks like:
@@ -11,26 +12,32 @@ function makeConfig() {
   // read all files in the chainConfigs folder
   const files = readdirSync('chainConfigs');
 
-  // combine them into a single mapping
-  const chainConfigsInner = files
-    .map((fileName) => {
-      const chainId = fileName.split('.')[0];
+  const byProperty = {};
 
-      const fileContents = JSON.parse(readFileSync(`chainConfigs/${fileName}`));
+  files.forEach(async(fileName) => {
+    // this is the properties for the chain id
+    const chainConfig = JSON.parse(readFileSync(`chainConfigs/${fileName}`));
+    const chainId = fileName.split('.')[0];
 
-      return `[${chainId}]: ${JSON.stringify(fileContents, null, 2)}`;
-    })
-    .join(', ');
+    Object.entries(chainConfig).forEach(([key, value]) => {
+      byProperty[key] = {
+        ...byProperty[key],
+        [chainId]: value
+      }
+    });
+  });
 
-  return `export const chainConfigs = {
-    ${chainConfigsInner}
-  };`;
+  return `export const chainConfigs = ${JSON.stringify(byProperty)};`
 }
 
 async function bundleChainConfigs() {
   const configString = makeConfig();
 
-  writeFileSync('./package/chainConfigs.ts', configString);
+  const prettierConfig = await prettier.resolveConfig('../.prettierrc.js');
+
+  const formatted = prettier.format(configString, prettierConfig);
+
+  writeFileSync('./package/chainConfigs.ts',  formatted);
 }
 
 await bundleChainConfigs();
