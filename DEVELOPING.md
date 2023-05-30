@@ -1,14 +1,13 @@
 # Developer Workflow
 
-
 # Deployment architecture
 
+![Development & Deployment Workflow](uml/generated/deployment.svg)
 
 # Whats bundled in the published package
 
-`./src/index.ts
-`./src/
-
+* `/package/wagmiGenerated.ts` - smart contract abis and deployment addresses
+* `./package/chainConfigs.ts` - configuration of smart contracts by chainId
 
 # Publishing the package; Generating changesets, versioning, building and Publishing.
 
