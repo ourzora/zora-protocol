@@ -2,14 +2,15 @@
 
 # Deployment architecture
 
-![Development & Deployment Workflow](uml/generated/deployment.svg)
-
 # Whats bundled in the published package
 
 * `/package/wagmiGenerated.ts` - smart contract abis and deployment addresses
 * `./package/chainConfigs.ts` - configuration of smart contracts by chainId
 
 # Publishing the package; Generating changesets, versioning, building and Publishing.
+
+Diagram of the deploying + publishing workflow:
+![Deploying & Publishing Workflow](uml/generated/deployment.svg)
 
 Publishing happens in the following steps:
 
@@ -30,7 +31,11 @@ Publishing happens in the following steps:
 
 In a future version, the when the version branch is merged into main, it can publish the new repos to github.
 
+Some active questions:
+
+* How do we ensure the contract version matches the package version?  Or does it need to match?  Sometimes there is a js package update without a smart contract update.
 
 Future ideas:
-Allow deployment to happen via github actions:
-Deployments can be added to changesets through some command.  If a changeset is pushed to main and a deployment is detected in it, a deployment task is added to the PR that's created.  When that PR is merged, the deployment happens, and a new package is built and publised to npm with the new versions.
+
+* Allow deployment to happen via github actions:
+* Deployments can be added to changesets through some command.  If a changeset is pushed to main and a deployment is detected in it, a deployment task is added to the PR that's created.  When that PR is merged, the deployment happens, and a new package is built and publised to npm with the new versions.
