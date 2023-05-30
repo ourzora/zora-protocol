@@ -14,16 +14,14 @@ Diagram of the deploying + publishing workflow:
 
 Publishing happens in the following steps:
 
-1. Some changes are made to the repo; this can include smart contract changes or additions, if smart contracts are changed, tests should be created or updated to reflect the changes.
-2. The changes are committed to a branch which is **pushed** to **github**.
-3. A **pr** is **opened** for this branch.
-4. The changes are reviewed, if they are **approved**:
-
-5. *If there are changes to the smart contracts that should be deployed*: the contract should be **deployed** TODO: using these instructions which we need to write. Deploying the contract results in the addresses of the deployed contracts being updated in the corresponding `./addresses/{chainId}.json` file. This file should be committed and pushed to github.
-
-5. Running the command `npx changeset` will generate **a new changeset** in the `./changesets` directory. This changeset will be used to determine the next version of the bundled packages; this commit should then be pushed.
-
-6. The pr is merged into main - any changesets in the PR are detected by a github action `release`, which will then **open a new PR** with proper the versions and readme updated in each each package.   If more changesets are pushed to main before this branch is merged, the PR will continuously update the version of the packages according to the changeset specifiction.
+* Some changes are made to the repo; this can include smart contract changes or additions, if smart contracts are changed, tests should be created or updated to reflect the changes.
+* The changes are committed to a branch which is **pushed** to **github**.
+* A **pr** is **opened** for this branch.
+* The changes are reviewed, if they are **approved**:
+* *If there are changes to the smart contracts that should be deployed*: the contract should be. Deploying the contract results in the addresses of the deployed contracts being updated in the corresponding `./addresses/{chainId}.json` file. This file should be committed and pushed to github.
+* Running the command `npx changeset` will generate **a new changeset** in the `./changesets` directory. This changeset will be used to determine the next version of the bundled packages; this commit should then be pushed.
+* The changeset and smart contract addresses are pushed to the branch.
+* The pr is merged into main - any changesets in the PR are detected by a github action `release`, which will then **open a new PR** with proper the versions and readme updated in each each package.   If more changesets are pushed to main before this branch is merged, the PR will continuously update the version of the packages according to the changeset specifiction.
 
 7. That version is merged into main along with the new versions.
 

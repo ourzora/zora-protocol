@@ -20,9 +20,11 @@ Reviewer -> RemotePR: Approve PR
 Developer -> LocalBranch: Deploy to all chains
 LocalBranch --> blockchain: Updated or new smart contracts
 LocalBranch --> LocalBranch: Update addresses json files
-Developer -> RemotePR: Merge to main
+Developer -> LocalBranch: push updated addresses json files
+LocalBranch --> RemotePR: Updated addresses json files
 deactivate LocalBranch
-RemotePR --> main: Code Deltas + Changesets
+Developer -> RemotePR: Merge to main
+RemotePR --> main: Code Deltas + Changesets + \nUpdated addresses
 deactivate RemotePR
 activate main
 main --> ReleaseGithubAction: Changes to main \nincluding changeset
