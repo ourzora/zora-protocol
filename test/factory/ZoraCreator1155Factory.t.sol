@@ -9,6 +9,7 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
+import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
@@ -119,5 +120,126 @@ contract ZoraCreator1155FactoryTest is Test {
         vm.prank(initialOwner);
         vm.expectRevert(abi.encodeWithSignature("UpgradeToMismatchedContractName(string,string)", "ZORA 1155 Contract Factory", "name"));
         proxy.upgradeTo(address(mockContractMetadata));
+    }
+
+    function test_createContractDeterminisitc_createsContractAtSameAddressForNameAndUri(
+        string calldata nameA,
+        string calldata uri,
+        address contractAdmin,
+        // this number will determine how transactions the factory makes before
+        // creating the deterministic contract.  it should not affect the address
+        uint16 numberOfCallsBeforeCreation
+    ) external {
+        vm.assume(contractAdmin != address(0));
+
+        address contractCreator = vm.addr(1);
+
+        // we can know ahead of time the expected address
+        address expectedContractAddress = factory.deterministicContractAddress(contractCreator, uri, nameA, contractAdmin);
+
+        // create parameters for contract creation
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
+            royaltyBPS: 10,
+            royaltyRecipient: vm.addr(5),
+            royaltyMintSchedule: 100
+        });
+        bytes[] memory initSetup = new bytes[](1);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
+
+        // create x number of contracts via the factory, this should affect the nonce.
+        for (uint256 i = 0; i < numberOfCallsBeforeCreation; i++) {
+            factory.createContract("ipfs://someOtherUri", "someOtherName", royaltyConfig, payable(vm.addr(3)), initSetup);
+        }
+
+        // now create deterministically, address should match expected address
+        vm.prank(contractCreator);
+        address createdAddress = factory.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), new bytes[](0));
+
+        assertEq(createdAddress, expectedContractAddress);
+    }
+
+    function test_createContractDeterministic_whenContractUpgraded_stillHasSameAddress() external {
+        string memory uri = "ipfs://asdfadsf";
+        string memory nameA = "nameA";
+        address contractAdmin = vm.addr(1);
+
+        address factoryOwner = vm.addr(10);
+
+        // account that creates the contract (not necessarily the owner/admin)
+        address contractCreator = vm.addr(2);
+
+        // 1. create the proxy, pointing it to the factory implentation and setting the owner
+        ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(
+            payable(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, factoryOwner)))
+        );
+
+        // get the deterministic address of the contract before its created
+        address expectedContractAddress = proxy.deterministicContractAddress(contractCreator, uri, nameA, contractAdmin);
+
+        uint256 newMintFeeAmount = 1 ether;
+
+        // 2. update the erc1155 implementation:
+        // * create a new version of the erc1155 implementation
+        // * create a new factory that points to that new erc1155 implementation,
+        // * upgrade the proxy to point to the new factory
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, address(0), address(0));
+
+        ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(
+            newZoraCreator,
+            IMinter1155(address(0)),
+            IMinter1155(address(0)),
+            IMinter1155(address(0))
+        );
+
+        vm.prank(factoryOwner);
+        proxy.upgradeTo(address(newFactoryImpl));
+
+        // sanity check - make sure that the proxy erc1155 implementation is pointing to the new implementation
+        assertEq(address(proxy.implementation()), address(newZoraCreator));
+
+        // 3. Create a contract with a deterministic address, it should match the address from before the upgrade
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
+            royaltyBPS: 10,
+            royaltyRecipient: vm.addr(5),
+            royaltyMintSchedule: 100
+        });
+        bytes[] memory initSetup = new bytes[](1);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
+
+        // now create deterministically, address should match expected address
+        vm.prank(contractCreator);
+        address createdAddress = proxy.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
+
+        assertEq(createdAddress, expectedContractAddress);
+    }
+
+    function test_createContractDeterministic_createdContractcontractCanBeUpgraded() external {
+        string memory uri = "ipfs://asdfadsf";
+        string memory nameA = "nameA";
+        address contractAdmin = vm.addr(1);
+
+        // 1. Have the factory the contract deterministically
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
+            royaltyBPS: 10,
+            royaltyRecipient: vm.addr(5),
+            royaltyMintSchedule: 100
+        });
+        bytes[] memory initSetup = new bytes[](1);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
+
+        // now create deterministically, address should match expected address
+        address createdAddress = factory.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
+
+        ZoraCreator1155Impl creatorProxy = ZoraCreator1155Impl(createdAddress);
+
+        // 2. upgrade the created contract by creating a new contract and upgrading the existing one to point to it.
+        uint256 newMintFeeAmount = 1 ether;
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, address(0), address(0));
+
+        vm.prank(creatorProxy.owner());
+        creatorProxy.upgradeTo(address(newZoraCreator));
+
+        // 3. check that proxy contract was upgraded
+        assertEq(creatorProxy.mintFee(), newMintFeeAmount);
     }
 }
