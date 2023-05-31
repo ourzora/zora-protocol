@@ -38,6 +38,7 @@ Group contract doesnt exist
 end
 
 PreminterContract -> 1155Contract: create new token\nwith signature
+PreminterContract -> 1155Contract: set new token sale parameters
 PreminterContract -> 1155Contract: mint tokens to collector
 
 deactivate PreminterContract
