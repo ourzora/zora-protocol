@@ -11,8 +11,9 @@ import {ILimitedMintPerAddress} from "../../../src/interfaces/ILimitedMintPerAdd
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../../../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {RewardsManager} from "../../../src/rewards/RewardsManager.sol";
+import {RewardsUtils} from "../../utils/RewardsUtils.sol";
 
-contract ZoraCreatorMerkleMinterStrategyTest is Test {
+contract ZoraCreatorMerkleMinterStrategyTest is Test, RewardsUtils {
     RewardsManager internal rewardsManager;
     ZoraCreator1155Impl internal target;
     ZoraCreatorMerkleMinterStrategy internal merkleMinter;
@@ -28,10 +29,6 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
         merkleMinter = new ZoraCreatorMerkleMinterStrategy();
-    }
-
-    function computeTotalReward(uint256 numTokens) internal pure returns (uint256) {
-        return numTokens * 0.000999 ether;
     }
 
     function test_ContractURI() external {

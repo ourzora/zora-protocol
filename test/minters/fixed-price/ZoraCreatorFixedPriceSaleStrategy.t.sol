@@ -11,8 +11,9 @@ import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155F
 import {ILimitedMintPerAddress} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {RewardsManager} from "../../../src/rewards/RewardsManager.sol";
+import {RewardsUtils} from "../../utils/RewardsUtils.sol";
 
-contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
+contract ZoraCreatorFixedPriceSaleStrategyTest is Test, RewardsUtils {
     ZoraCreator1155Impl internal target;
     ZoraCreatorFixedPriceSaleStrategy internal fixedPrice;
     RewardsManager internal rewardsManager;
@@ -29,10 +30,6 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
         fixedPrice = new ZoraCreatorFixedPriceSaleStrategy();
-    }
-
-    function computeTotalReward(uint256 numTokens) internal pure returns (uint256) {
-        return numTokens * 0.000999 ether;
     }
 
     function test_ContractName() external {

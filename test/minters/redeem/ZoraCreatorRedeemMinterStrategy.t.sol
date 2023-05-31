@@ -14,8 +14,9 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 import {RewardsManager} from "../../../src/rewards/RewardsManager.sol";
+import {RewardsUtils} from "../../utils/RewardsUtils.sol";
 
-contract ZoraCreatorRedeemMinterStrategyTest is Test {
+contract ZoraCreatorRedeemMinterStrategyTest is Test, RewardsUtils {
     RewardsManager internal rewardsManager;
     ZoraCreator1155Impl internal target;
     ZoraCreatorRedeemMinterStrategy internal redeemMinter;
@@ -39,10 +40,6 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
         target.addPermission(newTokenId, address(redeemMinter), target.PERMISSION_BIT_MINTER());
         vm.stopPrank();
-    }
-
-    function computeTotalReward(uint256 numTokens) internal pure returns (uint256) {
-        return numTokens * 0.000999 ether;
     }
 
     function test_ContractURI() external {

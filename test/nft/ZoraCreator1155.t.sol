@@ -15,9 +15,11 @@ import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
 import {RewardsManager} from "../../src/rewards/RewardsManager.sol";
+import {RewardsUtils} from "../utils/RewardsUtils.sol";
 
-contract ZoraCreator1155Test is Test {
+contract ZoraCreator1155Test is Test, RewardsUtils {
     using stdJson for string;
+
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
     MockUpgradeGate internal upgradeGate;
@@ -50,10 +52,6 @@ contract ZoraCreator1155Test is Test {
 
     function _emptyInitData() internal pure returns (bytes[] memory response) {
         response = new bytes[](0);
-    }
-
-    function computeTotalReward(uint256 numTokens) internal pure returns (uint256) {
-        return numTokens * 0.000999 ether;
     }
 
     function init() internal {
