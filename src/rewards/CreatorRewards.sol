@@ -47,6 +47,8 @@ abstract contract CreatorRewards is ICreatorRewards {
     function _transferFreeMintRewards(uint256 numTokens, address creator, address finder, address lister) internal {
         (uint256 totalReward, uint256 creatorReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) = _computeFreeMintRewards(numTokens);
 
+        totalReward -= creatorReward; // temp fix
+
         if (finder == address(0)) {
             finder = ZORA_REWARD_RECIPIENT;
         }
@@ -57,8 +59,6 @@ abstract contract CreatorRewards is ICreatorRewards {
 
         REWARDS_MANAGER.addReward{value: totalReward}(
             ZORA_FREE_MINT_REWARD_TYPE,
-            creator,
-            creatorReward,
             ZORA_REWARD_RECIPIENT,
             zoraReward,
             finder,
@@ -66,6 +66,14 @@ abstract contract CreatorRewards is ICreatorRewards {
             lister,
             listerReward
         );
+
+        if (creator != address(0)) {
+            (bool success, ) = creator.call{value: creatorReward, gas: 110_000}("");
+
+            if (!success) {
+                revert CREATOR_REWARD_TRANSFER_FAILED();
+            }
+        }
 
         emit FreeMintRewardsTransferred(creator, creatorReward, finder, finderReward, lister, listerReward);
     }

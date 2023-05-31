@@ -14,4 +14,5 @@ interface ICreatorRewards {
 
     error INVALID_TOKEN_QUANTITY();
     error INSUFFICIENT_ETH();
+    error CREATOR_REWARD_TRANSFER_FAILED();
 }
