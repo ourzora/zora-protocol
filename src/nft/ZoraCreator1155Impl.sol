@@ -385,21 +385,18 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
-        uint256 remainingEth = _parseAttachedEth(msg.value, quantity);
+        bool freeMint = _handleMintInput(msg.value, quantity);
 
-        // If this is a free mint:
-        if (remainingEth == 0) {
+        if (freeMint) {
             _transferFreeMintRewards(quantity, config.fundsRecipient, finder, lister);
 
             // Execute commands returned from minter
             _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, 0, minterArguments).commands, 0, tokenId);
-
-            // Else this is a paid mint:
         } else {
-            uint256 ethValueSent = _transferPaidMintRewards(msg.value, quantity, finder, lister);
+            uint256 ethAfterRewards = _transferPaidMintRewards(msg.value, quantity, finder, lister);
 
             // Execute commands returned from minter
-            _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+            _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethAfterRewards, minterArguments).commands, ethAfterRewards, tokenId);
         }
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
