@@ -29,6 +29,22 @@ interface IZoraCreator1155Factory is IVersionedContract {
         bytes[] calldata setupActions
     ) external returns (address);
 
+    /// @notice creates the contract, using a deterministic address based on the name, contract uri, and defaultAdmin
+    function createContractDeterministic(
+        string calldata contractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) external returns (address);
+
+    function deterministicContractAddress(
+        address msgSender,
+        string calldata newContractURI,
+        string calldata name,
+        address contractAdmin
+    ) external view returns (address);
+
     function defaultMinters() external returns (IMinter1155[] memory minters);
 
     function initialize(address _owner) external;
