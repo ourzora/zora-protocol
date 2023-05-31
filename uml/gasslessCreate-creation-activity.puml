@@ -1,0 +1,27 @@
+@startuml
+
+title Creating a token signature
+
+start
+
+if (new token) then (yes)
+  if (new contract) then (yes)
+    :Ask creator for new\ncontract creation params;
+    if (contract exists\nwith same params) then (yes)
+      :switch ui to create token\non existing contract;
+    else (no)
+    endif
+  else (no)
+    :load existing\ncontract creation parameters\nby hash id;
+  endif
+  :Get new uid\nfrom backend server;
+else (no)
+  :load existing\ncontract + token creation parameters\nby contract hash + uid;
+endif
+:Ask creator for new\ntoken creation params;
+:Request signature with:\ncontract + token params + uid;
+:Submit to backend server:\ncontract + token params + uid + signature\n;
+
+stop
+
+@enduml
