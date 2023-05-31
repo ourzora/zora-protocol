@@ -33,6 +33,8 @@ struct Deployment {
     address factoryImpl;
     /// @notice Factory proxy contract that creates zora drops style NFT contracts
     address factoryProxy;
+    /// @notice Preminter contract address
+    address preminter;
 }
 
 abstract contract DeploymentConfig is CommonBase {
@@ -58,6 +60,7 @@ abstract contract DeploymentConfig is CommonBase {
     string constant CONTRACT_1155_IMPL_VERSION = "CONTRACT_1155_IMPL_VERSION";
     string constant FACTORY_IMPL = "FACTORY_IMPL";
     string constant FACTORY_PROXY = "FACTORY_PROXY";
+    string constant PREMINTER = "PREMINTER";
 
     /// @notice Return a prefixed key for reading with a ".".
     /// @param key key to prefix
@@ -87,6 +90,7 @@ abstract contract DeploymentConfig is CommonBase {
         deployment.contract1155ImplVersion = json.readString(getKeyPrefix(CONTRACT_1155_IMPL_VERSION));
         deployment.factoryImpl = json.readAddress(getKeyPrefix(FACTORY_IMPL));
         deployment.factoryProxy = json.readAddress(getKeyPrefix(FACTORY_PROXY));
+        deployment.preminter = json.readAddress(getKeyPrefix(PREMINTER));
     }
 }
 

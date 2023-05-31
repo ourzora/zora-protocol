@@ -12,6 +12,8 @@ import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
 import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {Zora1155} from "../proxies/Zora1155.sol";
+import {Create2Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/Create2Upgradeable.sol";
+import {CREATE3} from "solmate/src/utils/CREATE3.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
@@ -66,14 +68,56 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     /// @param defaultAdmin The default admin for the contract
     /// @param setupActions The actions to perform on the new contract upon initialization
     function createContract(
-        string memory newContractURI,
+        string calldata newContractURI,
         string calldata name,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
-        address newContract = address(new Zora1155(address(implementation)));
+        Zora1155 newContract = new Zora1155(address(implementation));
 
+        _initializeContract(Zora1155(newContract), newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+
+        return address(newContract);
+    }
+
+    function createContractDeterministic(
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) external returns (address) {
+        bytes32 digest = _hashContract(msg.sender, newContractURI, name, defaultAdmin);
+
+        address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(implementation)), 0);
+
+        Zora1155 newContract = Zora1155(payable(createdContract));
+
+        _initializeContract(newContract, newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+
+        return address(newContract);
+    }
+
+    function deterministicContractAddress(
+        address msgSender,
+        string calldata newContractURI,
+        string calldata name,
+        address contractAdmin
+    ) external view returns (address) {
+        bytes32 digest = _hashContract(msgSender, newContractURI, name, contractAdmin);
+
+        return CREATE3.getDeployed(digest);
+    }
+
+    function _initializeContract(
+        Zora1155 newContract,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) private {
         emit SetupNewContract({
             newContract: address(newContract),
             creator: msg.sender,
@@ -83,9 +127,15 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration
         });
 
-        IZoraCreator1155Initializer(newContract).initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+        IZoraCreator1155Initializer(address(newContract)).initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+    }
 
-        return address(newContract);
+    function _hashContract(address msgSender, string calldata newContractURI, string calldata name, address contractAdmin) private pure returns (bytes32) {
+        return keccak256(abi.encode(msgSender, contractAdmin, _stringHash(newContractURI), _stringHash(name)));
+    }
+
+    function _stringHash(string calldata value) private pure returns (bytes32) {
+        return keccak256(bytes(value));
     }
 
     ///                                                          ///
