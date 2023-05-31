@@ -1,0 +1,41 @@
+@startuml
+
+title Creating a signature for a new erc1155 contract + token
+
+actor Creator
+entity CreatePage
+boundary SignatureAPI
+entity SignatureDB
+
+
+Group Signature not created for contract yet
+  
+  activate CreatePage
+  Creator -> CreatePage: setup NEW contract name + image
+  CreatePage -> SignatureAPI: validate that contract \nwith same params for\ncreator doesnt exist
+  SignatureAPI -> SignatureDB: check if signature with hash \nfor contract is already stored
+  SignatureAPI --> CreatePage: validation results
+
+end
+
+Group Signature has been created for contract
+
+  Creator -> CreatePage: load page by contract hash
+  CreatePage -> SignatureAPI: load contract creation params
+  SignatureAPI -> SignatureDB: fetch contract creation params\nby hash
+  SignatureAPI --> CreatePage: contract creation params
+
+end
+
+Creator -> CreatePage: setup new token
+Creator -> CreatePage: submit contract & token creation params
+CreatePage -> SignatureAPI: get new uid for token
+SignatureAPI -> SignatureDB: get next token uid\nscoped to contract hash
+SignatureDB --> SignatureAPI: next token uid
+SignatureAPI --> CreatePage: next token uid
+CreatePage -> Creator: request signature of\n contract + token creation params + token uid 
+deactivate CreatePage
+Creator -> SignatureAPI: Submit signature + contract + token params + token uid
+SignatureAPI -> SignatureDB: store signature + \ncontract creation + \ntoken creation params +\ntoken uid
+
+@enduml
