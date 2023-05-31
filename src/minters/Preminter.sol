@@ -20,6 +20,9 @@ contract Preminter is EIP712Upgradeable {
 
     /// @notice copied from SharedBaseConstants
     uint256 constant CONTRACT_BASE_ID = 0;
+    /// @notice This user role allows for any action to be performed
+    /// @dev copied from ZoraCreator1155Impl
+    uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
     /// @notice This user role allows for only mint actions to be performed.
     /// @dev copied from ZoraCreator1155Impl
     uint256 public constant PERMISSION_BIT_MINTER = 2 ** 2;
@@ -61,6 +64,7 @@ contract Preminter is EIP712Upgradeable {
         string calldata contractURI,
         string calldata contractName,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
+        uint256 quantityToMint,
         PremintTokenConfig calldata tokenConfig
     ) public returns (bytes32) {
         // This code must:
@@ -80,15 +84,15 @@ contract Preminter is EIP712Upgradeable {
 
         // create the contract via the factory.
         address newContractAddresss = factory.createContract(contractURI, contractName, defaultRoyaltyConfiguration, contractAdmin, setupActions);
-        IZoraCreator1155 newContract = IZoraCreator1155(newContractAddresss);
+        IZoraCreator1155 tokenContract = IZoraCreator1155(newContractAddresss);
 
         // we then mint a new token, and get its token id
-        uint256 newTokenId = newContract.setupNewToken(tokenConfig.tokenURI, tokenConfig.maxSupply);
+        uint256 newTokenId = tokenContract.setupNewToken(tokenConfig.tokenURI, tokenConfig.maxSupply);
         // we then set up the sales strategy
         // first we grant the fixed price sale strategy minting capabilities
-        newContract.addPermission(newTokenId, address(fixedPriceSaleStrategy), PERMISSION_BIT_MINTER);
+        tokenContract.addPermission(newTokenId, address(fixedPriceSaleStrategy), PERMISSION_BIT_MINTER);
         // then we set the sales config
-        newContract.callSale(
+        tokenContract.callSale(
             newTokenId,
             fixedPriceSaleStrategy,
             abi.encodeWithSelector(
@@ -97,10 +101,18 @@ contract Preminter is EIP712Upgradeable {
                 buildNewSalesConfig(contractAdmin, tokenConfig.fixedPriceSalesConfig)
             )
         );
-        // this contract is the admin of that token
+        // this contract is the admin of that token - lets make the contract
         // we make the creator the admin of that token, we remove this contracts admin rights on that token.
-
+        tokenContract.addPermission(newTokenId, tokenContract.owner(), PERMISSION_BIT_ADMIN);
+        tokenContract.removePermission(newTokenId, address(this), PERMISSION_BIT_ADMIN);
         // we mint the initial x tokens for this new token id to the executor.
+        address tokenRecipient = msg.sender;
+        tokenContract.mint{value: tokenConfig.fixedPriceSalesConfig.pricePerToken}(
+            fixedPriceSaleStrategy,
+            newTokenId,
+            quantityToMint,
+            abi.encode(tokenRecipient, "")
+        );
 
         bytes32 structHash = keccak256(
             abi.encode(DELEGATE_CREATE_TYPEHASH, contractAdmin, bytes(contractURI), bytes(contractName), defaultRoyaltyConfiguration, setupActions)
