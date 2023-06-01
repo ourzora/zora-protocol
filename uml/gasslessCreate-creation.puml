@@ -3,17 +3,24 @@ actor Creator
 entity CreatePage
 entity PreminterContract
 boundary SignatureAPI
+entity SignatureDB
 
 Creator -> CreatePage: setup contract and tokens
 activate CreatePage
-CreatePage -> PreminterContract: get premintHashDataAndIds
-PreminterContract --> CreatePage: contract + token ids\ndata hash for signing
-CreatePage -> SignatureAPI: validate that contract & token ids are unique
+CreatePage -> SignatureAPI: validate that contract & token creation params are unique
+SignatureAPI -> PreminterContract: get hashed ids for creation params\n
+PreminterContract --> SignatureAPI: hashed ids
+SignatureAPI -> SignatureDB: check if ids are already stored
 SignatureAPI --> CreatePage: validation results
 Creator -> CreatePage: submit
+CreatePage -> PreminterContract: get premintHashData
+PreminterContract --> CreatePage: data hash for signing
 CreatePage -> Creator: request signature of\n data hash
 deactivate CreatePage
-Creator -> SignatureAPI: Submit signed data hash +\ncontract creation params\n+ ids
+Creator -> SignatureAPI: Submit signed data hash +\ncontract creation params
+SignatureAPI -> PreminterContract: Get hashed ids for creation params\n
+PreminterContract --> SignatureAPI: hashed ids
+SignatureAPI -> SignatureDB: store signed data hash +\ncontract creation params\n+ ids
 
 
 @enduml
