@@ -8,6 +8,7 @@ import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
@@ -481,7 +482,7 @@ contract ZoraCreator1155Impl is
         }
 
         totalRoyaltyMints = (mintAmount + (tokens[tokenId].totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
-
+        totalRoyaltyMints = MathUpgradeable.min(totalRoyaltyMints, tokens[tokenId].maxSupply - (mintAmount + tokens[tokenId].totalMinted));
         if (totalRoyaltyMints > 0) {
             address royaltyRecipient = royalties[tokenId].royaltyRecipient;
             if (royaltyRecipient == address(0)) {
