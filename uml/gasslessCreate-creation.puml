@@ -1,0 +1,19 @@
+@startuml
+actor Creator
+entity CreatePage
+entity PreminterContract
+boundary SignatureAPI
+
+Creator -> CreatePage: setup contract and tokens
+activate CreatePage
+CreatePage -> PreminterContract: get premintHashDataAndIds
+PreminterContract --> CreatePage: contract + token ids\ndata hash for signing
+CreatePage -> SignatureAPI: validate that contract & token ids are unique
+SignatureAPI --> CreatePage: validation results
+Creator -> CreatePage: submit
+CreatePage -> Creator: request signature of\n data hash
+deactivate CreatePage
+Creator -> SignatureAPI: Submit signed data hash +\ncontract creation params\n+ ids
+
+
+@enduml

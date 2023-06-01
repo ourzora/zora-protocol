@@ -1,0 +1,36 @@
+@startuml
+actor Collector
+entity CollectPage 
+boundary SignatureAPI
+entity PreminterContract
+entity 1155FactoryContract
+entity 1155Contract
+
+Collector -> CollectPage: Open, params are \ncontract id + token id
+Activate CollectPage
+CollectPage -> SignatureAPI: Fetch by contract id + token id
+SignatureAPI -> CollectPage: contract creation params + signature
+Collector -> CollectPage: mint
+CollectPage -> Collector: Submit transaction
+deactivate CollectPage
+Collector -> PreminterContract: Submit premint transaction containing \nsignature, contract creation & token creation params
+activate PreminterContract
+PreminterContract -> PreminterContract: record signature used;\nrevert if already used
+
+Group contract doesnt exist
+  
+    PreminterContract -> 1155FactoryContract: create contract
+    1155FactoryContract -> 1155Contract: create
+    activate 1155Contract
+
+end
+
+PreminterContract -> 1155Contract: create new token
+PreminterContract -> 1155Contract: set new token sale parameters
+PreminterContract -> 1155Contract: mint tokens to collector
+
+deactivate PreminterContract
+1155Contract --> Collector: Minted tokens
+deactivate 1155Contract
+
+@enduml
