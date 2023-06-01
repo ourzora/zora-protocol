@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
-import {EIP712Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/EIP712Upgradeable.sol";
+import {EIP712UpgradeableWithChainId} from "./EIP712UpgradeableWithChainId.sol";
 import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
@@ -10,7 +10,7 @@ import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 
-contract Preminter is EIP712Upgradeable {
+contract Preminter is EIP712UpgradeableWithChainId {
     bytes32 constant PREMINT_TYPEHASH =
         keccak256(
             "delegateCreate(address contractAdmin,bytes contractURI,bytes contractName,ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration,bytes tokenURI,uint256 tokenMaxSupply,PremintFixedPriceSalesConfig tokenSalesConfig,uint256 quantityToMint)"
@@ -81,7 +81,8 @@ contract Preminter is EIP712Upgradeable {
             tokenURI,
             tokenMaxSupply,
             tokenSalesConfig,
-            quantityToMint
+            quantityToMint,
+            block.chainid
         );
 
         address signatory = ECDSAUpgradeable.recover(digest, signature);
@@ -178,7 +179,8 @@ contract Preminter is EIP712Upgradeable {
         string calldata tokenURI,
         uint256 tokenMaxSupply,
         PremintFixedPriceSalesConfig calldata fixedPriceSalesConfig,
-        uint256 quantityToMint
+        uint256 quantityToMint,
+        uint256 chainId
     ) public view returns (bytes32) {
         bytes32 structHash = keccak256(
             abi.encode(
@@ -194,7 +196,7 @@ contract Preminter is EIP712Upgradeable {
             )
         );
 
-        return _hashTypedDataV4(structHash);
+        return _hashTypedDataV4(structHash, chainId);
     }
 
     function _buildNewSalesConfig(
