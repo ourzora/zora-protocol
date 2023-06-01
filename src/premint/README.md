@@ -42,8 +42,9 @@ Functions:
         * `pricePerToken` - cost to mint each token
         * `quantityToMint` - how many of the initial tokens to mint to the executor as their reward
       * Returns - a `bytes32` hash that is signed using the creator’s account to create a `signature`
-  * `premintIds` - read only function that takes the contract and contract creation parameters, and gets unique hashes that act as unique ids for the contract and token.  Same logic is used in the contract to ensure uniqueniess of contracts and ids
-    * Returns - a `bytes32` of the hash to create the signature with, and two `uint256` values, one for the contract id, and one for the token id.
+  * `premintIds` - read only function that takes the premint parameters, and gets unique hashes that act as unique ids for the contract and token.  Same logic is used in the contract to ensure uniqueniess of contracts and ids. 
+    * inputs: same as `premint`
+    * Returns - two `uint256` values, one for the contract id, and one for the token id.
 
 ## Functional flow:
 
