@@ -9,10 +9,11 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {IMinter1155} from "../interfaces/IMinter1155.sol";
 
-contract Preminter is EIP712UpgradeableWithChainId {
+contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     IZoraCreator1155Factory factory;
-    ZoraCreatorFixedPriceSaleStrategy fixedPriceSaleStrategy;
+    IMinter1155 fixedPriceMinter;
 
     /// @notice copied from SharedBaseConstants
     uint256 constant CONTRACT_BASE_ID = 0;
@@ -23,13 +24,13 @@ contract Preminter is EIP712UpgradeableWithChainId {
     /// @dev copied from ZoraCreator1155Impl
     uint256 public constant PERMISSION_BIT_MINTER = 2 ** 2;
 
-    mapping(uint256 => address) contractAddresses;
+    mapping(uint256 => address) public contractAddresses;
     mapping(uint256 => bool) signatureUsed;
 
-    function initialize(IZoraCreator1155Factory _factory, ZoraCreatorFixedPriceSaleStrategy _fixedPriceSaleStrategy) public initializer {
+    function initialize(IZoraCreator1155Factory _factory, IMinter1155 _fixedPriceMinter) public initializer {
         __EIP712_init("Preminter", "0.0.1");
         factory = _factory;
-        fixedPriceSaleStrategy = _fixedPriceSaleStrategy;
+        fixedPriceMinter = _fixedPriceMinter;
     }
 
     struct PremintFixedPriceSalesConfig {
@@ -42,15 +43,22 @@ contract Preminter is EIP712UpgradeableWithChainId {
     }
 
     struct ContractCreationConfig {
+        /// @notice Creator/admin of the created contract.  Must match the account that signed the message
         address contractAdmin;
+        /// @notice Metadata URI for the created contract
         string contractURI;
+        /// @notice Name of the created contract
         string contractName;
+        /// @notice Royalty configuration for the created contract
         ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration;
     }
 
     struct TokenCreationConfig {
+        /// @notice Metadata URI for the created token
         string tokenURI;
+        /// @notice Max supply of the created token
         uint256 tokenMaxSupply;
+        /// @notice Sales config for the created token
         PremintFixedPriceSalesConfig tokenSalesConfig;
     }
 
@@ -58,7 +66,6 @@ contract Preminter is EIP712UpgradeableWithChainId {
     // so it is unaware of order, it just takes the token uri and creates the next token with it
     // this could include creating the contract.
     // do we need a deadline? open q
-
     function premint(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
@@ -67,39 +74,25 @@ contract Preminter is EIP712UpgradeableWithChainId {
     ) public payable returns (uint256 newTokenId) {
         // This code must:
         // 2. Create an erc1155 contract with the given name and uri and the creator as the admin
-        // 2. Allow this contract to set fixed price sale strategies on the created erc1155, and mint new tokens, so that in the future this contract can mint new tokens and set their rules
+        // 2. Allow this contract to create new new tokens on the contract
         // 3. Mint a new token, and get the new token id
         // 4. Setup fixed price minting rules for the new token
+        // 5. Make the creator an admin of that token (and remove this contracts admin rights)
         // 5. Mint x tokens, as configured, to the executor of this transaction.
 
-        // first validate the signature - the creator must match the signer of the message
-        (bytes32 digest, uint256 contractHashId, uint256 tokenHash) = premintHashData(
-            contractConfig,
-            tokenConfig,
-            quantityToMint,
-            // here we pass the current chain id, ensuring that the message
-            // only works for the current chain id
-            block.chainid
-        );
+        // validate the signature for the current chain id, and make sure it hasn't been used, marking
+        // that it has been used
+        (uint256 contractHashId, ) = _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, quantityToMint, signature);
 
-        // token hash includes the contract hash, so we can check uniqueness of contract + token pair
-        if (signatureUsed[tokenHash]) {
-            revert("Signature already used");
-        }
-        signatureUsed[tokenHash] = true;
-
-        address signatory = ECDSAUpgradeable.recover(digest, signature);
-        if (signatory != contractConfig.contractAdmin) {
-            revert("Invalid signature");
-        }
-
+        // get or create the contract with the given params
         IZoraCreator1155 tokenContract = _getOrCreateContract(contractConfig, contractHashId);
 
-        _setupNewTokenAndSale(tokenContract, contractConfig.contractAdmin, tokenConfig);
+        // setup the new token, and its sales config
+        newTokenId = _setupNewTokenAndSale(tokenContract, contractConfig.contractAdmin, tokenConfig);
 
-        // we mint the initial x tokens for this new token id to the executor.
+        // mint the initial x tokens for this new token id to the executor.
         address tokenRecipient = msg.sender;
-        tokenContract.mint{value: msg.value}(fixedPriceSaleStrategy, newTokenId, quantityToMint, abi.encode(tokenRecipient, ""));
+        tokenContract.mint{value: msg.value}(fixedPriceMinter, newTokenId, quantityToMint, abi.encode(tokenRecipient, ""));
     }
 
     function _getOrCreateContract(ContractCreationConfig calldata contractConfig, uint256 contractHash) private returns (IZoraCreator1155 tokenContract) {
@@ -118,7 +111,7 @@ contract Preminter is EIP712UpgradeableWithChainId {
         // we need to build the setup actions, that must:
         // grant this contract ability to mint tokens - when a token is minted, this contract is
         // granted admin rights on that token
-        bytes[] memory setupActions = new bytes[](2);
+        bytes[] memory setupActions = new bytes[](1);
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, CONTRACT_BASE_ID, address(this), PERMISSION_BIT_MINTER);
 
         // create the contract via the factory.
@@ -137,23 +130,24 @@ contract Preminter is EIP712UpgradeableWithChainId {
         address contractAdmin,
         TokenCreationConfig calldata tokenConfig
     ) private returns (uint256 newTokenId) {
-        // we then mint a new token, and get its token id
+        // mint a new token, and get its token id
+        // this contract has admin rights on that token
         newTokenId = tokenContract.setupNewToken(tokenConfig.tokenURI, tokenConfig.tokenMaxSupply);
-        // we then set up the sales strategy
-        // first we grant the fixed price sale strategy minting capabilities
-        tokenContract.addPermission(newTokenId, address(fixedPriceSaleStrategy), PERMISSION_BIT_MINTER);
-        // then we set the sales config
+        // set up the sales strategy
+        // first, grant the fixed price sale strategy minting capabilities on the token
+        tokenContract.addPermission(newTokenId, address(fixedPriceMinter), PERMISSION_BIT_MINTER);
+        // set the sales config on that token
         tokenContract.callSale(
             newTokenId,
-            fixedPriceSaleStrategy,
+            fixedPriceMinter,
             abi.encodeWithSelector(
                 ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
                 _buildNewSalesConfig(contractAdmin, tokenConfig.tokenSalesConfig)
             )
         );
-        // this contract is the admin of that token - lets make the contract
-        // we make the creator the admin of that token, we remove this contracts admin rights on that token.
+        // this contract is the admin of that token, and the creator isn't, so
+        // make the creator the admin of that token, and remove this contracts admin rights on that token.
         tokenContract.addPermission(newTokenId, tokenContract.owner(), PERMISSION_BIT_ADMIN);
         tokenContract.removePermission(newTokenId, address(this), PERMISSION_BIT_ADMIN);
     }
@@ -175,6 +169,36 @@ contract Preminter is EIP712UpgradeableWithChainId {
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
         structHash = _hashTypedDataV4(encoded, chainId);
+    }
+
+    function _validateSignatureAndEnsureNotUsed(
+        ContractCreationConfig calldata contractConfig,
+        TokenCreationConfig calldata tokenConfig,
+        uint256 quantityToMint,
+        bytes calldata signature
+    ) private returns (uint256 contractHashId, uint256 tokenHash) {
+        // first validate the signature - the creator must match the signer of the message
+        bytes32 digest;
+        (digest, contractHashId, tokenHash) = premintHashData(
+            contractConfig,
+            tokenConfig,
+            quantityToMint,
+            // here we pass the current chain id, ensuring that the message
+            // only works for the current chain id
+            block.chainid
+        );
+
+        // make sure that this signature hasn't been used
+        // token hash includes the contract hash, so we can check uniqueness of contract + token pair
+        if (signatureUsed[tokenHash]) {
+            revert("Signature already used");
+        }
+        signatureUsed[tokenHash] = true;
+
+        address signatory = ECDSAUpgradeable.recover(digest, signature);
+        if (signatory != contractConfig.contractAdmin) {
+            revert("Invalid signature");
+        }
     }
 
     /// returns a unique hash for the contract data, useful to uniquely identify a contract based on creation params
