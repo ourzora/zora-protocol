@@ -32,6 +32,8 @@ struct Deployment {
     address factoryImpl;
     /// @notice Factory proxy contract that creates zora drops style NFT contracts
     address factoryProxy;
+    /// @notice Preminter contract that is the impl for the above proxy.
+    address preminter;
 }
 
 /// @notice Deployment drops for base where
@@ -63,6 +65,7 @@ abstract contract ZoraDeployerBase is Script {
     string constant CONTRACT_1155_IMPL = "CONTRACT_1155_IMPL";
     string constant FACTORY_IMPL = "FACTORY_IMPL";
     string constant FACTORY_PROXY = "FACTORY_PROXY";
+    string constant PREMINTER = "PREMINTER";
 
     /// @notice Return a prefixed key for reading with a ".".
     /// @param key key to prefix
@@ -80,6 +83,12 @@ abstract contract ZoraDeployerBase is Script {
         chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
     }
 
+    // function readAddress(string memory json, string memory key) private returns (address result) {
+    //     try json.readAddress(key) returns (address _result) {
+    //         result = _result;
+    //     } catch {}
+    // }
+
     /// @notice Get the deployment configuration struct from the JSON configuration file
     /// @return deployment deployment configuration structure
     function getDeployment() internal returns (Deployment memory deployment) {
@@ -90,6 +99,7 @@ abstract contract ZoraDeployerBase is Script {
         deployment.contract1155Impl = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL));
         deployment.factoryImpl = json.readAddress(getKeyPrefix(FACTORY_IMPL));
         deployment.factoryProxy = json.readAddress(getKeyPrefix(FACTORY_PROXY));
+        deployment.preminter = json.readAddress(getKeyPrefix(PREMINTER));
     }
 
     /// @notice Get deployment configuration struct as JSON
@@ -102,6 +112,7 @@ abstract contract ZoraDeployerBase is Script {
         vm.serializeAddress(deploymentJsonKey, REDEEM_MINTER_FACTORY, deployment.redeemMinterFactory);
         vm.serializeAddress(deploymentJsonKey, CONTRACT_1155_IMPL, deployment.contract1155Impl);
         vm.serializeAddress(deploymentJsonKey, FACTORY_IMPL, deployment.factoryImpl);
+        vm.serializeAddress(deploymentJsonKey, PREMINTER, deployment.preminter);
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
         console2.log(deploymentJson);
     }
