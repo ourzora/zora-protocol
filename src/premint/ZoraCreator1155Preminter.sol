@@ -11,6 +11,12 @@ import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 
+/// @title Enables a creator to signal intent to create a Zora erc1155 contract or new token on that
+/// contract by signing a transaction but not paying gas, and have a third party/collector pay the gas
+/// by executing the transaction.  Incentivizes the third party to execute the transaction by offering
+/// a reward in the form of minted tokens.
+/// @author @oveddan
+/// @notice
 contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     IZoraCreator1155Factory factory;
     IMinter1155 fixedPriceMinter;
@@ -24,7 +30,9 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     /// @dev copied from ZoraCreator1155Impl
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
+    /// @notice Contract creation parameters unique hash => created contract address
     mapping(uint256 => address) public contractAddresses;
+    /// @dev Signature unique hash => signature used
     mapping(uint256 => bool) signatureUsed;
 
     function initialize(IZoraCreator1155Factory _factory, IMinter1155 _fixedPriceMinter) public initializer {
@@ -82,10 +90,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
-        (uint256 contractHashId, ) = _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, quantityToMint, signature);
+        _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, quantityToMint, signature);
 
         // get or create the contract with the given params
-        IZoraCreator1155 tokenContract = _getOrCreateContract(contractConfig, contractHashId);
+        IZoraCreator1155 tokenContract = _getOrCreateContract(contractConfig);
 
         // setup the new token, and its sales config
         newTokenId = _setupNewTokenAndSale(tokenContract, contractConfig.contractAdmin, tokenConfig);
@@ -95,7 +103,8 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         tokenContract.mint{value: msg.value}(fixedPriceMinter, newTokenId, quantityToMint, abi.encode(tokenRecipient, ""));
     }
 
-    function _getOrCreateContract(ContractCreationConfig calldata contractConfig, uint256 contractHash) private returns (IZoraCreator1155 tokenContract) {
+    function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
+        uint256 contractHash = _contractDataHash(contractConfig);
         address contractAddress = contractAddresses[contractHash];
         // if address already exists for hash, return it
         if (contractAddress != address(0)) {
@@ -152,23 +161,34 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         tokenContract.removePermission(newTokenId, address(this), PERMISSION_BIT_ADMIN);
     }
 
-    bytes32 constant PREMINT_TYPEHASH = keccak256("delegateCreate(uint256 contractHash,uint256 tokenHash,uint256 quantityToMint)");
+    // bytes32 constant PREMINT_TYPEHASH = keccak256("delegateCreate(uint256 contractHash,uint256 tokenHash,uint256 quantityToMint)");
+    bytes32 constant PREMINT_TYPEHASH =
+        keccak256(
+            "delegateCreate(address contractAdmin,bytes contractURI,bytes contractName,ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration,bytes tokenURI,uint256 tokenMaxSupply,PremintFixedPriceSalesConfig tokenSalesConfig,uint256 quantityToMint)"
+        );
 
     function premintHashData(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
         uint256 quantityToMint,
         uint256 chainId
-    ) public view returns (bytes32 structHash, uint256 contractHash, uint256 tokenHash) {
-        contractHash = _contractDataHash(contractConfig);
-        tokenHash = _tokenDataHash(contractHash, tokenConfig);
+    ) public view returns (bytes32) {
         bytes32 encoded = keccak256(
-            abi.encode(PREMINT_TYPEHASH, contractHash, bytes(tokenConfig.tokenURI), tokenConfig.tokenMaxSupply, tokenConfig.tokenSalesConfig, quantityToMint)
+            abi.encode(
+                PREMINT_TYPEHASH,
+                contractConfig.contractAdmin,
+                bytes(contractConfig.contractURI),
+                bytes(contractConfig.contractName),
+                bytes(tokenConfig.tokenURI),
+                tokenConfig.tokenMaxSupply,
+                tokenConfig.tokenSalesConfig,
+                quantityToMint
+            )
         );
 
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
-        structHash = _hashTypedDataV4(encoded, chainId);
+        return _hashTypedDataV4(encoded, chainId);
     }
 
     function _validateSignatureAndEnsureNotUsed(
@@ -176,10 +196,9 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         TokenCreationConfig calldata tokenConfig,
         uint256 quantityToMint,
         bytes calldata signature
-    ) private returns (uint256 contractHashId, uint256 tokenHash) {
+    ) private {
         // first validate the signature - the creator must match the signer of the message
-        bytes32 digest;
-        (digest, contractHashId, tokenHash) = premintHashData(
+        bytes32 digest = premintHashData(
             contractConfig,
             tokenConfig,
             quantityToMint,
@@ -187,13 +206,14 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
             // only works for the current chain id
             block.chainid
         );
+        uint256 signatureAsUint = uint256(digest);
 
         // make sure that this signature hasn't been used
         // token hash includes the contract hash, so we can check uniqueness of contract + token pair
-        if (signatureUsed[tokenHash]) {
+        if (signatureUsed[signatureAsUint]) {
             revert("Signature already used");
         }
-        signatureUsed[tokenHash] = true;
+        signatureUsed[signatureAsUint] = true;
 
         address signatory = ECDSAUpgradeable.recover(digest, signature);
         if (signatory != contractConfig.contractAdmin) {
@@ -214,11 +234,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
                     )
                 )
             );
-    }
-
-    /// Return a unique hash for a token creation config, unique within a contract. Used to check if a token has already been created with these params
-    function _tokenDataHash(uint256 contractHash, TokenCreationConfig calldata tokenConfig) private pure returns (uint256) {
-        return uint256(keccak256(abi.encode(contractHash, bytes(tokenConfig.tokenURI), tokenConfig.tokenMaxSupply, tokenConfig.tokenSalesConfig)));
     }
 
     function _bytesEncode(string calldata value) private pure returns (bytes32) {
