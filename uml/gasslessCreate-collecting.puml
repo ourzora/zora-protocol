@@ -6,9 +6,9 @@ entity PreminterContract
 entity 1155FactoryContract
 entity 1155Contract
 
-Collector -> CollectPage: Open, params are \ncontract id + token id
+Collector -> CollectPage: Open, params are \nsignature hash
 Activate CollectPage
-CollectPage -> SignatureAPI: Fetch by contract id + token id
+CollectPage -> SignatureAPI: Fetch by signature hash 
 SignatureAPI -> CollectPage: contract creation params + signature
 Collector -> CollectPage: mint
 CollectPage -> Collector: Submit transaction

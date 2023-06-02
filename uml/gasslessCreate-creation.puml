@@ -18,9 +18,7 @@ PreminterContract --> CreatePage: data hash for signing
 CreatePage -> Creator: request signature of\n data hash
 deactivate CreatePage
 Creator -> SignatureAPI: Submit signed data hash +\ncontract creation params
-SignatureAPI -> PreminterContract: Get hashed ids for creation params\n
-PreminterContract --> SignatureAPI: hashed ids
-SignatureAPI -> SignatureDB: store signed data hash +\ncontract creation params\n+ ids
+SignatureAPI -> SignatureDB: store signed data hash +\ncontract creation params\n
 
 
 @enduml

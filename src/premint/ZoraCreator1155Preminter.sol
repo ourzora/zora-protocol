@@ -104,7 +104,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
-        uint256 contractHash = _contractDataHash(contractConfig);
+        uint256 contractHash = contractDataHash(contractConfig);
         address contractAddress = contractAddresses[contractHash];
         // if address already exists for hash, return it
         if (contractAddress != address(0)) {
@@ -222,7 +222,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     /// returns a unique hash for the contract data, useful to uniquely identify a contract based on creation params
-    function _contractDataHash(ContractCreationConfig calldata contractConfig) private pure returns (uint256) {
+    function contractDataHash(ContractCreationConfig calldata contractConfig) public pure returns (uint256) {
         return
             uint256(
                 keccak256(
