@@ -66,16 +66,14 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
 
-        // 2. Call smart contract to get digest to sign for creation params, as well as the eventual contract hash id.
-        // the contract hash id is unique per contract creation config, and can be used later
-        // to get the created contract address for these params.
+        // 2. Call smart contract to get digest to sign for creation params.
         bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, quantityToMint, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
         bytes memory signature = _sign(creatorPrivateKey, digest);
 
-        // this accout will be used to execute the premint, and should result in a contract being created
+        // this account will be used to execute the premint, and should result in a contract being created
         address premintExecutor = vm.addr(701);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
