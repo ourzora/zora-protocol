@@ -19,10 +19,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     uint256 constant CONTRACT_BASE_ID = 0;
     /// @notice This user role allows for any action to be performed
     /// @dev copied from ZoraCreator1155Impl
-    uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
+    uint256 constant PERMISSION_BIT_ADMIN = 2 ** 1;
     /// @notice This user role allows for only mint actions to be performed.
     /// @dev copied from ZoraCreator1155Impl
-    uint256 public constant PERMISSION_BIT_MINTER = 2 ** 2;
+    uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
     mapping(uint256 => address) public contractAddresses;
     mapping(uint256 => bool) signatureUsed;
