@@ -72,13 +72,13 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         uint256 quantityToMint,
         bytes calldata signature
     ) public payable returns (uint256 newTokenId) {
-        // This code must:
-        // 2. Create an erc1155 contract with the given name and uri and the creator as the admin
-        // 2. Allow this contract to create new new tokens on the contract
-        // 3. Mint a new token, and get the new token id
-        // 4. Setup fixed price minting rules for the new token
-        // 5. Make the creator an admin of that token (and remove this contracts admin rights)
-        // 5. Mint x tokens, as configured, to the executor of this transaction.
+        // 1. Validate the signature, and mark it as used.
+        // 2. Create an erc1155 contract with the given name and uri and the creator as the admin/owner
+        // 3. Allow this contract to create new new tokens on the contract
+        // 4. Mint a new token, and get the new token id
+        // 5. Setup fixed price minting rules for the new token
+        // 6. Make the creator an admin of that token (and remove this contracts admin rights)
+        // 7. Mint x tokens, as configured, to the executor of this transaction.
 
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
