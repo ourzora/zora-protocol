@@ -21,6 +21,9 @@ devDependencies:
   '@wagmi/cli':
     specifier: ^1.0.1
     version: 1.0.1(typescript@5.0.4)
+  abitype:
+    specifier: ^0.8.7
+    version: 0.8.7(typescript@5.0.4)(zod@3.21.4)
   es-main:
     specifier: ^1.2.0
     version: 1.2.0

@@ -20,7 +20,9 @@
     "copy-addresses-and-configs": "cp -r addresses/ dist/addresses && cp -r chainConfigs/ dist/chainConfigs",
     "wagmi": "wagmi generate",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
-    "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl"
+    "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
+    "js-test:watch": "vitest watch",
+    "anvil": "source .env.anvil && anvil --fork-url $ALCHEMY_FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
   },
   "files": [
     "dist/"
@@ -32,6 +34,7 @@
     "forge-std": "https://github.com/foundry-rs/forge-std#cd7d533f9a0ee0ec02ad81e0a8f262bc4203c653"
   },
   "devDependencies": {
+    "abitype": "^0.8.7",
     "@types/node": "^20.1.2",
     "@wagmi/cli": "^1.0.1",
     "es-main": "^1.2.0",
