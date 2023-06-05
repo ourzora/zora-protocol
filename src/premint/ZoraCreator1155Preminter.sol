@@ -90,7 +90,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
-        _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, quantityToMint, signature);
+        _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, signature);
 
         // get or create the contract with the given params
         IZoraCreator1155 tokenContract = _getOrCreateContract(contractConfig);
@@ -164,13 +164,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     // bytes32 constant PREMINT_TYPEHASH = keccak256("delegateCreate(uint256 contractHash,uint256 tokenHash,uint256 quantityToMint)");
     bytes32 constant PREMINT_TYPEHASH =
         keccak256(
-            "delegateCreate(address contractAdmin,bytes contractURI,bytes contractName,ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration,bytes tokenURI,uint256 tokenMaxSupply,PremintFixedPriceSalesConfig tokenSalesConfig,uint256 quantityToMint)"
+            "delegateCreate(address contractAdmin,bytes contractURI,bytes contractName,ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration,bytes tokenURI,uint256 tokenMaxSupply,PremintFixedPriceSalesConfig tokenSalesConfig)"
         );
 
     function premintHashData(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
-        uint256 quantityToMint,
         uint256 chainId
     ) public view returns (bytes32) {
         bytes32 encoded = keccak256(
@@ -181,8 +180,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
                 bytes(contractConfig.contractName),
                 bytes(tokenConfig.tokenURI),
                 tokenConfig.tokenMaxSupply,
-                tokenConfig.tokenSalesConfig,
-                quantityToMint
+                tokenConfig.tokenSalesConfig
             )
         );
 
@@ -194,14 +192,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     function _validateSignatureAndEnsureNotUsed(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
-        uint256 quantityToMint,
         bytes calldata signature
     ) private {
         // first validate the signature - the creator must match the signer of the message
         bytes32 digest = premintHashData(
             contractConfig,
             tokenConfig,
-            quantityToMint,
             // here we pass the current chain id, ensuring that the message
             // only works for the current chain id
             block.chainid

@@ -67,7 +67,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, quantityToMint, chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -93,7 +93,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // alter the token creation config, create a new signature with the existing
         // contract config and new token config
         tokenConfig.tokenURI = "blah2.token";
-        digest = preminter.premintHashData(contractConfig, tokenConfig, quantityToMint, chainId);
+        digest = preminter.premintHashData(contractConfig, tokenConfig, chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature
