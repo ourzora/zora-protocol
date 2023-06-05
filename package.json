@@ -10,8 +10,8 @@
   "scripts": {
     "test": "forge test",
     "test-gas": "forge test --gas-report",
-    "prettier": "prettier 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
-    "prettier:fix": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
+    "prettier:check": "prettier 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
+    "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "coverage": "forge coverage --report lcov",
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
     "prepack": "node script/copy-deployed-contracts.mjs && pnpm wagmi && pnpm bundle-configs && pnpm build-ts && pnpm copy-addresses-and-configs",
