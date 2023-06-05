@@ -10,7 +10,7 @@
   "scripts": {
     "test": "forge test",
     "test-gas": "forge test --gas-report",
-    "prettier:check": "prettier 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
+    "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "coverage": "forge coverage --report lcov",
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
