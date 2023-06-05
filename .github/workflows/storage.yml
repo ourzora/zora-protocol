@@ -10,16 +10,19 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "16.13.2"
-      - run: npm install
+
+      - uses: pnpm/action-setup@v2
+        with:
+          version: 6.0.2
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
         with:
           version: nightly
-  
+
       - name: "Inspect Storage Layout"
         continue-on-error: false
         id: storage-inspect-check
         run: |
           forge build
-          yarn storage-inspect:check
+          pnpm storage-inspect:check
