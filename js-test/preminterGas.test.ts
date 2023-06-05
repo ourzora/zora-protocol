@@ -2,14 +2,13 @@ import { createTestClient, http, createWalletClient, createPublicClient, custom 
 import { foundry } from 'viem/chains'
 import { describe, it, beforeEach } from 'vitest';
 import { parseEther } from 'viem'
-import { zoraCreator1155FactoryImplABI, zoraCreatorSignatureMinterStrategyABI, zoraCreator1155FactoryImplConfig, iCreatorRoyaltiesControlABI } from '../package/wagmiGenerated';
+import { zoraCreator1155FactoryImplABI, zoraCreator1155FactoryImplConfig } from '../package/wagmiGenerated';
 import zoraStrategy from '../out/ZoraCreatorSignatureMinterStrategy.sol/ZoraCreatorSignatureMinterStrategy.json';
 
 const walletClient = createWalletClient({
   chain: foundry,
   transport: http(), 
 })
-
 
 export const walletClientWithAccount = createWalletClient({
   chain: foundry,
