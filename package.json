@@ -15,7 +15,6 @@
     "coverage": "forge coverage --report lcov",
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
     "prepack": "node script/copy-deployed-contracts.mjs && pnpm wagmi && pnpm bundle-configs && pnpm build-ts && pnpm copy-addresses-and-configs",
-    "prepare": "husky install",
     "build-ts": "tsup package/index.ts --format cjs --dts --sourcemap",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && pnpm prettier:fix",
     "copy-addresses-and-configs": "cp -r addresses/ dist/addresses && cp -r chainConfigs/ dist/chainConfigs",
@@ -37,15 +36,11 @@
     "@wagmi/cli": "^1.0.1",
     "es-main": "^1.2.0",
     "glob": "^10.2.2",
-    "lint-staged": "^13.2.2",
     "listr2": "^6.4.2",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
     "tsup": "^6.7.0",
     "typescript": "^5.0.4"
-  },
-  "lint-staged": {
-    "*.{sol,json}": "prettier --write"
   },
   "packageManager": "pnpm@7.9.4"
 }
