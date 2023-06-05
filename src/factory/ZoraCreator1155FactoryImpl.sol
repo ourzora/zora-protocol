@@ -36,7 +36,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
 
     /// @notice ContractURI for contract information with the strategy
     function contractURI() external pure returns (string memory) {
-          return "https://github.com/ourzora/zora-1155-contracts/";
+        return "https://github.com/ourzora/zora-1155-contracts/";
     }
 
     /// @notice The name of the sale strategy
