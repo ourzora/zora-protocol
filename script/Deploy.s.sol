@@ -43,7 +43,7 @@ contract DeployScript is ZoraDeployerBase {
 
         deployment.factoryProxy = address(factoryProxy);
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, address(factoryProxy));
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, address(factoryProxy), chainConfig.zoraRewards);
 
         deployment.contract1155Impl = address(creatorImpl);
 
