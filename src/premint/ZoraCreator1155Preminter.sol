@@ -41,15 +41,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         fixedPriceMinter = _fixedPriceMinter;
     }
 
-    struct PremintFixedPriceSalesConfig {
-        /// @notice Max tokens that can be minted for an address, 0 if unlimited
-        uint64 maxTokensPerAddress;
-        /// @notice Price per token in eth wei. 0 for a free mint.
-        uint96 pricePerToken;
-        /// @notice The duration of the sale, starting from the first mint of this token. 0 for infinite
-        uint64 duration;
-    }
-
     struct ContractCreationConfig {
         /// @notice Creator/admin of the created contract.  Must match the account that signed the message
         address contractAdmin;
@@ -57,17 +48,25 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         string contractURI;
         /// @notice Name of the created contract
         string contractName;
-        /// @notice Royalty configuration for the created contract
-        ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration;
+        /// @notice royaltyMintSchedule Every nth token will go to the royalty recipient.
+        uint32 royaltyMintSchedule;
+        /// @notice royaltyBPS The royalty amount in basis points for secondary sales.
+        uint32 royaltyBPS;
+        /// @notice royaltyRecipient The address that will receive the royalty payments.
+        address royaltyRecipient;
     }
 
     struct TokenCreationConfig {
         /// @notice Metadata URI for the created token
         string tokenURI;
         /// @notice Max supply of the created token
-        uint256 tokenMaxSupply;
-        /// @notice Sales config for the created token
-        PremintFixedPriceSalesConfig tokenSalesConfig;
+        uint256 maxSupply;
+        /// @notice Max tokens that can be minted for an address, 0 if unlimited
+        uint64 maxTokensPerAddress;
+        /// @notice Price per token in eth wei. 0 for a free mint.
+        uint96 pricePerToken;
+        /// @notice The duration of the sale, starting from the first mint of this token. 0 for infinite
+        uint64 saleDuration;
     }
 
     // same signature should work whether or not there is an existing contract
@@ -123,11 +122,17 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         bytes[] memory setupActions = new bytes[](1);
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, CONTRACT_BASE_ID, address(this), PERMISSION_BIT_MINTER);
 
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
+            royaltyBPS: contractConfig.royaltyBPS,
+            royaltyRecipient: contractConfig.royaltyRecipient,
+            royaltyMintSchedule: contractConfig.royaltyMintSchedule
+        });
+
         // create the contract via the factory.
         address newContractAddresss = factory.createContract(
             contractConfig.contractURI,
             contractConfig.contractName,
-            contractConfig.defaultRoyaltyConfiguration,
+            royaltyConfig,
             payable(contractConfig.contractAdmin),
             setupActions
         );
@@ -141,7 +146,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     ) private returns (uint256 newTokenId) {
         // mint a new token, and get its token id
         // this contract has admin rights on that token
-        newTokenId = tokenContract.setupNewToken(tokenConfig.tokenURI, tokenConfig.tokenMaxSupply);
+        newTokenId = tokenContract.setupNewToken(tokenConfig.tokenURI, tokenConfig.maxSupply);
         // set up the sales strategy
         // first, grant the fixed price sale strategy minting capabilities on the token
         tokenContract.addPermission(newTokenId, address(fixedPriceMinter), PERMISSION_BIT_MINTER);
@@ -152,7 +157,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
             abi.encodeWithSelector(
                 ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                _buildNewSalesConfig(contractAdmin, tokenConfig.tokenSalesConfig)
+                _buildNewSalesConfig(contractAdmin, tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.saleDuration)
             )
         );
         // this contract is the admin of that token, and the creator isn't, so
@@ -161,32 +166,79 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         tokenContract.removePermission(newTokenId, address(this), PERMISSION_BIT_ADMIN);
     }
 
-    // bytes32 constant PREMINT_TYPEHASH = keccak256("delegateCreate(uint256 contractHash,uint256 tokenHash,uint256 quantityToMint)");
-    bytes32 constant PREMINT_TYPEHASH =
-        keccak256(
-            "delegateCreate(address contractAdmin,bytes contractURI,bytes contractName,ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration,bytes tokenURI,uint256 tokenMaxSupply,PremintFixedPriceSalesConfig tokenSalesConfig)"
+    function recoverSigner(
+        ContractCreationConfig calldata contractConfig,
+        TokenCreationConfig calldata tokenConfig,
+        bytes calldata signature
+    ) public view returns (address signatory, bytes32 digest) {
+        // first validate the signature - the creator must match the signer of the message
+        digest = premintHashData(
+            contractConfig,
+            tokenConfig,
+            // here we pass the current chain id, ensuring that the message
+            // only works for the current chain id
+            block.chainid
         );
+
+        signatory = ECDSAUpgradeable.recover(digest, signature);
+    }
 
     function premintHashData(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
         uint256 chainId
     ) public view returns (bytes32) {
-        bytes32 encoded = keccak256(
-            abi.encode(
-                PREMINT_TYPEHASH,
-                contractConfig.contractAdmin,
-                bytes(contractConfig.contractURI),
-                bytes(contractConfig.contractName),
-                bytes(tokenConfig.tokenURI),
-                tokenConfig.tokenMaxSupply,
-                tokenConfig.tokenSalesConfig
-            )
-        );
+        bytes32 encoded = _hashContractAndToken(contractConfig, tokenConfig);
 
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
         return _hashTypedDataV4(encoded, chainId);
+    }
+
+    bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
+        keccak256(
+            "ContractAndToken(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig)ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration)"
+        );
+
+    function _hashContractAndToken(ContractCreationConfig calldata contractConfig, TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
+        return keccak256(abi.encode(CONTRACT_AND_TOKEN_DOMAIN, _hashContract(contractConfig), _hashToken(tokenConfig)));
+    }
+
+    bytes32 constant TOKEN_DOMAIN =
+        keccak256("TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration)");
+
+    function _hashToken(TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    TOKEN_DOMAIN,
+                    stringHash(tokenConfig.tokenURI),
+                    tokenConfig.maxSupply,
+                    tokenConfig.maxTokensPerAddress,
+                    tokenConfig.pricePerToken,
+                    tokenConfig.saleDuration
+                )
+            );
+    }
+
+    bytes32 constant CONTRACT_DOMAIN =
+        keccak256(
+            "ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+        );
+
+    function _hashContract(ContractCreationConfig calldata contractConfig) private pure returns (bytes32) {
+        return
+            keccak256(
+                abi.encode(
+                    CONTRACT_DOMAIN,
+                    contractConfig.contractAdmin,
+                    stringHash(contractConfig.contractURI),
+                    stringHash(contractConfig.contractName),
+                    contractConfig.royaltyMintSchedule,
+                    contractConfig.royaltyBPS,
+                    contractConfig.royaltyRecipient
+                )
+            );
     }
 
     function _validateSignatureAndEnsureNotUsed(
@@ -195,60 +247,45 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         bytes calldata signature
     ) private {
         // first validate the signature - the creator must match the signer of the message
-        bytes32 digest = premintHashData(
-            contractConfig,
-            tokenConfig,
-            // here we pass the current chain id, ensuring that the message
-            // only works for the current chain id
-            block.chainid
-        );
-        uint256 signatureAsUint = uint256(digest);
+        (address signatory, bytes32 digest) = recoverSigner(contractConfig, tokenConfig, signature);
 
+        if (signatory != contractConfig.contractAdmin) {
+            revert("Invalid signature");
+        }
+
+        uint256 signatureAsUint = uint256(digest);
         // make sure that this signature hasn't been used
         // token hash includes the contract hash, so we can check uniqueness of contract + token pair
         if (signatureUsed[signatureAsUint]) {
             revert("Signature already used");
         }
         signatureUsed[signatureAsUint] = true;
-
-        address signatory = ECDSAUpgradeable.recover(digest, signature);
-        if (signatory != contractConfig.contractAdmin) {
-            revert("Invalid signature");
-        }
     }
 
     /// returns a unique hash for the contract data, useful to uniquely identify a contract based on creation params
     function contractDataHash(ContractCreationConfig calldata contractConfig) public pure returns (uint256) {
-        return
-            uint256(
-                keccak256(
-                    abi.encode(
-                        contractConfig.contractAdmin,
-                        _bytesEncode(contractConfig.contractURI),
-                        _bytesEncode(contractConfig.contractName),
-                        contractConfig.defaultRoyaltyConfiguration
-                    )
-                )
-            );
+        return uint256(keccak256(abi.encode(contractConfig.contractAdmin, stringHash(contractConfig.contractURI), stringHash(contractConfig.contractName))));
     }
 
-    function _bytesEncode(string calldata value) private pure returns (bytes32) {
-        return keccak256(abi.encode(value));
+    function stringHash(string calldata value) private pure returns (bytes32) {
+        return keccak256(bytes(value));
     }
 
     function _buildNewSalesConfig(
         address creator,
-        PremintFixedPriceSalesConfig calldata _salesConfig
+        uint96 pricePerToken,
+        uint64 maxTokensPerAddress,
+        uint64 duration
     ) private view returns (ZoraCreatorFixedPriceSaleStrategy.SalesConfig memory) {
         uint64 saleStart = uint64(block.timestamp);
-        uint64 saleEnd = _salesConfig.duration == 0 ? type(uint64).max : saleStart + _salesConfig.duration;
+        uint64 saleEnd = duration == 0 ? type(uint64).max : saleStart + duration;
 
         return
             ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
-                pricePerToken: _salesConfig.pricePerToken,
+                pricePerToken: pricePerToken,
                 saleStart: saleStart,
                 saleEnd: saleEnd,
-                maxTokensPerAddress: _salesConfig.maxTokensPerAddress,
+                maxTokensPerAddress: maxTokensPerAddress,
                 fundsRecipient: creator
             });
     }

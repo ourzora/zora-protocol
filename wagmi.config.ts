@@ -20,7 +20,7 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorMerkleMinterStrategy",
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
-  "ZoraCreator1155Preminter"
+  "ZoraCreator1155Preminter",
 ];
 
 type Addresses = {

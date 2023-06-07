@@ -54,13 +54,17 @@ contract ZoraCreator1155PreminterTest is Test {
             contractAdmin: creator,
             contractName: "blah",
             contractURI: "blah.contract",
-            defaultRoyaltyConfiguration: defaultRoyaltyConfig
+            royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
+            royaltyBPS: defaultRoyaltyConfig.royaltyBPS,
+            royaltyRecipient: defaultRoyaltyConfig.royaltyRecipient
         });
         // configuration of token to create
         ZoraCreator1155Preminter.TokenCreationConfig memory tokenConfig = ZoraCreator1155Preminter.TokenCreationConfig({
             tokenURI: "blah.token",
-            tokenMaxSupply: 10,
-            tokenSalesConfig: ZoraCreator1155Preminter.PremintFixedPriceSalesConfig({maxTokensPerAddress: 5, pricePerToken: 0, duration: 0})
+            maxSupply: 10,
+            maxTokensPerAddress: 5,
+            pricePerToken: 0,
+            saleDuration: 0
         });
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
