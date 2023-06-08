@@ -1,18 +1,30 @@
 @startuml
 actor Collector
-entity CollectPage 
+entity PremintCollectPage 
 boundary SignatureAPI
+entity SignatureDB
 entity PreminterContract
 entity 1155FactoryContract
 entity 1155Contract
 
-Collector -> CollectPage: Open, params are \nsignature hash
-Activate CollectPage
-CollectPage -> SignatureAPI: Fetch by signature hash 
-SignatureAPI -> CollectPage: contract creation params + signature
-Collector -> CollectPage: mint
-CollectPage -> Collector: Submit transaction
-deactivate CollectPage
+Collector -> PremintCollectPage: Open, param is \nsignature hash
+Activate PremintCollectPage
+PremintCollectPage -> SignatureAPI: Fetch by signature hash 
+SignatureAPI -> SignatureDB: Fetch signature by hash\nthat isn't deleted
+SignatureDB --> SignatureAPI: contract + token creation params\n+ signature
+SignatureAPI --> PremintCollectPage: contract + token creation params\n+ signature
+PremintCollectPage -> PreminterContract: Check if signature has been used
+PreminterContract --> PremintCollectPage: Signature has been used or not
+
+Group signature has been used
+
+    PremintCollectPage -> Collector: Redirect to \nstandard collect page
+
+end
+
+Collector -> PremintCollectPage: mint
+PremintCollectPage -> Collector: Submit transaction
+deactivate PremintCollectPage
 Collector -> PreminterContract: Submit premint transaction containing \nsignature, contract creation & token creation params
 activate PreminterContract
 PreminterContract -> PreminterContract: record signature used;\nrevert if already used

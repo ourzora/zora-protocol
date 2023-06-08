@@ -1,24 +1,40 @@
 @startuml
+
+title Creating a signature for a new erc1155 contract + token
+
 actor Creator
 entity CreatePage
-entity PreminterContract
 boundary SignatureAPI
 entity SignatureDB
 
-Creator -> CreatePage: setup contract and tokens
-activate CreatePage
-CreatePage -> SignatureAPI: validate that contract & token creation params are unique
-SignatureAPI -> PreminterContract: get hashed ids for creation params\n
-PreminterContract --> SignatureAPI: hashed ids
-SignatureAPI -> SignatureDB: check if ids are already stored
+
+Group Signature not created for token in contract yet
+  
+  activate CreatePage
+  Creator -> CreatePage: setup NEW contract name + image
+  CreatePage -> SignatureAPI: validate that contract \nwith same params for\ncreator doesnt exist
+  SignatureAPI -> SignatureDB: check if hash for contract\nis already stored
+  SignatureAPI --> CreatePage: validation results
+
+end
+
+Group Signature has been created for token in contract
+
+  Creator -> CreatePage: load page by\ncontract hash
+  CreatePage -> SignatureAPI: load contract creation params
+  SignatureAPI -> SignatureDB: fetch contract creation params\nby hash
+  SignatureAPI --> CreatePage: contract creation params
+
+end
+
+Creator -> CreatePage: setup new token params
+CreatePage -> SignatureAPI: validate signature doesnt exist\nfor identitical creator + contract + token
+SignatureAPI -> SignatureDB: check if hash for signature\nis already stored
 SignatureAPI --> CreatePage: validation results
 Creator -> CreatePage: submit
-CreatePage -> PreminterContract: get premintHashData
-PreminterContract --> CreatePage: data hash for signing
 CreatePage -> Creator: request signature of\n data hash
 deactivate CreatePage
-Creator -> SignatureAPI: Submit signed data hash +\ncontract creation params
-SignatureAPI -> SignatureDB: store signed data hash +\ncontract creation params\n
-
+Creator -> SignatureAPI: Submit signature + contract + token params
+SignatureAPI -> SignatureDB: store signature + \ncontract creation + \ntoken creation params
 
 @enduml
