@@ -185,9 +185,7 @@ describe("ZoraCreator1155Preminter", () => {
       value: valueToSend
     })
 
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: mintHash });
-
-    expect(receipt.status).toBe('success');
+    expect((await publicClient.waitForTransactionReceipt({ hash: mintHash })).status).toBe('success');
 
     const contractHash = await publicClient.readContract({
       abi: preminterAbi,
@@ -247,9 +245,7 @@ describe("ZoraCreator1155Preminter", () => {
       value: valueToSend2
     });
 
-    const receipt2 = await publicClient.waitForTransactionReceipt({ hash: mintHash2 });
-
-    expect(receipt2.status).toBe('success');
+    expect((await publicClient.waitForTransactionReceipt({ hash: mintHash2 })).status).toBe('success');
 
     // get balance of second token
     const tokenBalance2 = await publicClient.readContract({
