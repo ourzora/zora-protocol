@@ -32,8 +32,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
     /// @notice Contract creation parameters unique hash => created contract address
     mapping(uint256 => address) public contractAddresses;
-    /// @dev Signature unique hash => signature used
-    mapping(uint256 => bool) signatureUsed;
+    /// @dev creator address -> token uid (part of sig) -> created
+    mapping(address => mapping(uint256 => bool)) tokenCreated;
+
+    error TokenAlreadyCreated(address creatorAddress, uint256 tokenUid);
 
     function initialize(IZoraCreator1155Factory _factory, IMinter1155 _fixedPriceMinter) public initializer {
         __EIP712_init("Preminter", "0.0.1");
@@ -67,6 +69,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         uint96 pricePerToken;
         /// @notice The duration of the sale, starting from the first mint of this token. 0 for infinite
         uint64 saleDuration;
+        uint256 uid;
     }
 
     // same signature should work whether or not there is an existing contract
@@ -253,13 +256,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
             revert("Invalid signature");
         }
 
-        uint256 signatureAsUint = uint256(digest);
         // make sure that this signature hasn't been used
         // token hash includes the contract hash, so we can check uniqueness of contract + token pair
-        if (signatureUsed[signatureAsUint]) {
-            revert("Signature already used");
+        if (tokenCreated[contractConfig.contractAdmin][tokenConfig.uid]) {
+            revert TokenAlreadyCreated(contractConfig.contractAdmin, tokenConfig.uid);
         }
-        signatureUsed[signatureAsUint] = true;
+        tokenCreated[contractConfig.contractAdmin][tokenConfig.uid] = true;
     }
 
     /// returns a unique hash for the contract data, useful to uniquely identify a contract based on creation params

@@ -53,7 +53,8 @@ contract EstimatePreminterGas is ZoraDeployerBase {
             maxSupply: 10,
             maxTokensPerAddress: 5,
             pricePerToken: 0,
-            saleDuration: 365 days
+            saleDuration: 365 days,
+            uid: 1
         });
         // how many tokens are minted to the executor
         uint256 quantityToMint = 1;
