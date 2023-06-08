@@ -86,7 +86,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     // this could include creating the contract.
     // do we need a deadline? open q
     function premint(
-        address signer,
+        address contractAdmin,
         ContractConfig calldata contractConfig,
         TokenConfig calldata tokenConfig,
         uint256 quantityToMint,
@@ -102,13 +102,13 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
-        uint256 tokenHash = _validateSignatureAndEnsureNotUsed(signer, contractConfig, tokenConfig, signature);
+        uint256 tokenHash = _validateSignatureAndEnsureNotUsed(contractAdmin, contractConfig, tokenConfig, signature);
 
         // get or create the contract with the given params
-        IZoraCreator1155 tokenContract = _getOrCreateContract(signer, contractConfig);
+        IZoraCreator1155 tokenContract = _getOrCreateContract(contractAdmin, contractConfig);
 
         // setup the new token, and its sales config
-        newTokenId = _setupNewTokenAndSale(tokenContract, signer, getCurrentTokenConfig(signer, tokenConfig, tokenHash));
+        newTokenId = _setupNewTokenAndSale(tokenContract, contractAdmin, getCurrentTokenConfig(contractAdmin, tokenConfig, tokenHash));
 
         // mint the initial x tokens for this new token id to the executor.
         address tokenRecipient = msg.sender;
@@ -118,25 +118,25 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     /// Stores an update to a premint token that will apply when the token is created.
     /// Uses a signature to ensure that the token creator is the one who created the update to the token.
     /// Can be executed by any account with the signature
-    /// @param tokenCreator The address of the creator of the token
+    /// @param contractAdmin The address of the creator of the token.  Must match the signer of the signature
     /// @param tokenHash The hash of the token to be updated
     /// @param newTokenConfig The new token config to be applied when the token is created
     /// @param nonce The nonce of the update, to ensure that updates are applied in order.
     /// @param signature The signature of the token creator for the token hash and new token config
-    function updatePremint(address tokenCreator, uint256 tokenHash, TokenConfig calldata newTokenConfig, uint256 nonce, bytes calldata signature) public {
+    function updatePremint(address contractAdmin, uint256 tokenHash, TokenConfig calldata newTokenConfig, uint256 nonce, bytes calldata signature) public {
         // check that the token has not been created yet - if it has, this update won't do anything so we just revert.
         require(signatureUsed[tokenHash] == false, "Token already created");
 
         // increment the nonce - this ensures updates arrive in order
-        require(nonces[tokenCreator]++ == nonce, "Invalid nonce");
+        require(nonces[contractAdmin]++ == nonce, "Invalid nonce");
 
         // validate the signature for the token hash and new tokenConfig
-        (address signer, ) = recoverPremintUpdateSigner(tokenCreator, tokenHash, newTokenConfig, nonce, signature);
-        require(signer == tokenCreator, "Invalid signature");
+        (address signer, ) = recoverPremintUpdateSigner(contractAdmin, tokenHash, newTokenConfig, nonce, signature);
+        require(signer == contractAdmin, "Invalid signature");
 
         // save the update - since this is scoped within the creator, its fine if they spoof the token hash
         // it'll just affect their own tokens
-        tokenUpdates[tokenCreator][tokenHash] = TokenUpdate(true, newTokenConfig);
+        tokenUpdates[contractAdmin][tokenHash] = TokenUpdate(true, newTokenConfig);
     }
 
     /// @notice gets the current token config for a token to be preminted, by retrieving the update if it exists
