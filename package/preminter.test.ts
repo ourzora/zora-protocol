@@ -261,6 +261,6 @@ describe("ZoraCreator1155Preminter", () => {
 
     expect(tokenBalance2).toBe(quantityToMint2);
   },
-    // 10 second timeout
-    10 * 1000);
+  // 10 second timeout
+  10 * 1000);
 });
