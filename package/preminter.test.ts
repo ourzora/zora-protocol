@@ -209,7 +209,7 @@ describe("ZoraCreator1155Preminter", () => {
       // creation parametesr, and can be used to look up the contract address
       const contractHash = toContractHash(contractConfig);
 
-      const mintedContractAddress = await publicClient.readContract({
+      const createdContractAddress = await publicClient.readContract({
         abi: preminterAbi,
         address: preminterAddress,
         functionName: "contractAddresses",
@@ -218,7 +218,7 @@ describe("ZoraCreator1155Preminter", () => {
 
       const tokenBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
-        address: mintedContractAddress,
+        address: createdContractAddress,
         functionName: "balanceOf",
         args: [collectorAccount, 1n],
       });
@@ -269,7 +269,7 @@ describe("ZoraCreator1155Preminter", () => {
       // get balance of second token
       const tokenBalance2 = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
-        address: mintedContractAddress,
+        address: createdContractAddress,
         functionName: "balanceOf",
         args: [collectorAccount, 2n],
       });
