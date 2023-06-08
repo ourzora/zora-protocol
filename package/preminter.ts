@@ -1,9 +1,12 @@
-import { Address } from "abitype";
+import { Address, parseAbiParameters } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
+import { zoraCreator1155PreminterABI as preminterAbi } from "./wagmiGenerated";
 import {
-  zoraCreator1155PreminterABI as preminterAbi,
-} from "./wagmiGenerated";
-import { TypedDataDefinition } from "viem";
+  TypedDataDefinition,
+  encodeAbiParameters,
+  hexToBigInt,
+  keccak256,
+} from "viem";
 
 type PreminterHashInputs = ExtractAbiFunction<
   typeof preminterAbi,
@@ -68,3 +71,18 @@ export const preminterTypedDataDefinition = ({
 
   return result;
 };
+
+// get the contract hash from the contract config, which is used to 
+// uniquely identify the contract
+export const toContractHash = (contractConfig: ContractCreationConfig) =>
+  hexToBigInt(
+    keccak256(
+      encodeAbiParameters(parseAbiParameters("address, bytes32, bytes32"), [
+        contractConfig.contractAdmin,
+        stringHash(contractConfig.contractName),
+        stringHash(contractConfig.contractURI),
+      ])
+    )
+  );
+
+const stringHash = (str: string) => keccak256(new TextEncoder().encode(str));
