@@ -50,7 +50,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // 1. Make contract creation params
 
         // configuration of contract to create
-        ZoraCreator1155Preminter.ContractConfig memory contractConfig = ZoraCreator1155Preminter.ContractConfig({
+        ZoraCreator1155Preminter.ContractCreationConfig memory contractConfig = ZoraCreator1155Preminter.ContractCreationConfig({
             contractAdmin: creator,
             contractName: "blah",
             contractURI: "blah.contract",

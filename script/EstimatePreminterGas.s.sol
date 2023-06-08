@@ -39,7 +39,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
 
         // now generate a signature
 
-        ZoraCreator1155Preminter.ContractConfig memory contractConfig = ZoraCreator1155Preminter.ContractConfig({
+        ZoraCreator1155Preminter.ContractCreationConfig memory contractConfig = ZoraCreator1155Preminter.ContractCreationConfig({
             contractAdmin: deployer,
             contractName: "blah",
             contractURI: "blah.contract",
