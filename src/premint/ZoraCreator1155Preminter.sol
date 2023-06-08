@@ -113,15 +113,23 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         tokenContract.mint{value: msg.value}(fixedPriceMinter, newTokenId, quantityToMint, abi.encode(tokenRecipient, ""));
     }
 
+    /// Stores an update to a premint token that will apply when the token is created.
+    /// Uses a signature to ensure that the token creator is the one who created the update to the token.
+    /// Can be executed by any account with the signature
+    /// @param tokenCreator The address of the creator of the token
+    /// @param tokenHash The hash of the token to be updated
+    /// @param newTokenConfig The new token config to be applied when the token is created
+    /// @param nonce The nonce of the update, to ensure that updates are applied in order.
+    /// @param signature The signature of the token creator for the token hash and new token config
     function updatePremint(address tokenCreator, uint256 tokenHash, TokenConfig calldata newTokenConfig, uint256 nonce, bytes calldata signature) public {
-        // check that the token has not been created yet - if it has, this won't affect existing tokens
+        // check that the token has not been created yet - if it has, this update won't do anything so we just revert.
         require(signatureUsed[tokenHash] == false, "Token already created");
 
         // increment the nonce - this ensures updates arrive in order
         require(nonces[tokenCreator]++ == nonce, "Invalid nonce");
-        // validate the signature for the token hash and new tokenConfig
-        (address signer, ) = recoverUpdateSigner(tokenCreator, tokenHash, newTokenConfig, nonce, signature);
 
+        // validate the signature for the token hash and new tokenConfig
+        (address signer, ) = recoverPremintUpdateSigner(tokenCreator, tokenHash, newTokenConfig, nonce, signature);
         require(signer == tokenCreator, "Invalid signature");
 
         // save the update - since this is scoped within the creator, its fine if they spoof the token hash
@@ -199,7 +207,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         tokenContract.removePermission(newTokenId, address(this), PERMISSION_BIT_ADMIN);
     }
 
-    function recoverSigner(
+    function recoverPremintSigner(
         address contractAdmin,
         ContractConfig calldata contractConfig,
         TokenConfig calldata tokenConfig,
@@ -218,16 +226,20 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         signatory = ECDSAUpgradeable.recover(digest, signature);
     }
 
-    function recoverUpdateSigner(
-        address contractAdmin,
+    /// Recovers the signing account for a premint token update
+    function recoverPremintUpdateSigner(
+        /// Contract & token creator
+        address premintCreator,
+        /// The hash of the token to be updated
         uint256 tokenHash,
+        /// Update to apply to the token.
         TokenConfig calldata newTokenConfig,
         uint256 nonce,
         bytes calldata signature
     ) public view returns (address signatory, bytes32 digest) {
         // first validate the signature - the creator must match the signer of the message
         digest = premintUpdateHashData(
-            contractAdmin,
+            premintCreator,
             tokenHash,
             newTokenConfig,
             nonce,
@@ -325,7 +337,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         bytes calldata signature
     ) private returns (uint256 signatureAsUint) {
         // first validate the signature - the creator must match the signer of the message
-        (address signatory, bytes32 digest) = recoverSigner(contractAdmin, contractConfig, tokenConfig, signature);
+        (address signatory, bytes32 digest) = recoverPremintSigner(contractAdmin, contractConfig, tokenConfig, signature);
 
         if (signatory != contractAdmin) {
             revert("Invalid signature");
