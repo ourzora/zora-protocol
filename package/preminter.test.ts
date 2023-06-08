@@ -210,6 +210,57 @@ describe("ZoraCreator1155Preminter", () => {
       args: [collectorAccount, 1n]
     })
 
+    // get token balance - should be amount that was created
     expect(tokenBalance).toBe(quantityToMint);
-  });
+
+    // create and sign a second token
+
+    const tokenConfig2: TokenCreationConfig = {
+      tokenURI: "ipfs://tokenIpfsId2",
+      maxSupply: 100n,
+      maxTokensPerAddress: 10n,
+      pricePerToken: parseEther("0.05"),
+      saleDuration: 100n,
+    };
+
+    const signedMessage2 = await walletClient.signTypedData({
+      ...preminterTypedDataDefinition({
+        preminterAddress,
+        chainId: foundry.id,
+        contractConfig,
+        tokenConfig: tokenConfig2,
+      }),
+      account: creatorAccount,
+    });
+
+    const quantityToMint2 = 4n;
+
+    const valueToSend2 = (zoraMintFee + tokenConfig2.pricePerToken) * quantityToMint2 ;
+
+    // now have the collector execute the second signed message
+    const mintHash2 = await walletClient.writeContract({
+      abi: preminterAbi,
+      functionName: 'premint',
+      account: collectorAccount,
+      address: preminterAddress,
+      args: [contractConfig, tokenConfig2, quantityToMint2, signedMessage2],
+      value: valueToSend2
+    });
+
+    const receipt2 = await publicClient.waitForTransactionReceipt({ hash: mintHash2 });
+
+    expect(receipt2.status).toBe('success');
+
+    // get balance of second token
+    const tokenBalance2 = await publicClient.readContract({
+      abi: zoraCreator1155ImplABI,
+      address: mintedContractAddress,
+      functionName: 'balanceOf',
+      args: [collectorAccount, 2n]
+    })
+
+    expect(tokenBalance2).toBe(quantityToMint2);
+  },
+    // 10 second timeout
+    10 * 1000);
 });
