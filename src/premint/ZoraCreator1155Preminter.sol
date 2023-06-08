@@ -35,9 +35,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     /// @dev Signature unique hash => signature used
     mapping(uint256 => bool) signatureUsed;
 
+    /// @notice Creator address => token hash => token update
     mapping(address => mapping(uint256 => TokenUpdate)) tokenUpdates;
 
-    // creator => update nonce
+    // creator => token update nonce.  Used to enforce updates are applied in order.
     mapping(address => uint256) public nonces;
 
     function initialize(IZoraCreator1155Factory _factory, IMinter1155 _fixedPriceMinter) public initializer {
@@ -46,7 +47,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         fixedPriceMinter = _fixedPriceMinter;
     }
 
-    // todo: optimize storage layout
     struct ContractConfig {
         /// @notice Metadata URI for the created contract
         string contractURI;
@@ -60,7 +60,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         address royaltyRecipient;
     }
 
-    // todo: optimize storage layout
     struct TokenConfig {
         /// @notice Metadata URI for the created token
         string tokenURI;
@@ -74,8 +73,11 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         uint64 saleDuration;
     }
 
+    /// @notice Most recent token config for a token hash, if an update has been applied
     struct TokenUpdate {
+        /// @notice if an update exists
         bool exists;
+        /// @notice the most recent token config
         TokenConfig tokenConfig;
     }
 
