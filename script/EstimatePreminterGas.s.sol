@@ -39,8 +39,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
 
         // now generate a signature
 
-        ZoraCreator1155Preminter.ContractCreationConfig memory contractConfig = ZoraCreator1155Preminter.ContractCreationConfig({
-            contractAdmin: deployer,
+        ZoraCreator1155Preminter.ContractConfig memory contractConfig = ZoraCreator1155Preminter.ContractConfig({
             contractName: "blah",
             contractURI: "blah.contract",
             royaltyBPS: 10,
@@ -48,7 +47,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
             royaltyMintSchedule: 20
         });
         // configuration of token to create
-        ZoraCreator1155Preminter.TokenCreationConfig memory tokenConfig = ZoraCreator1155Preminter.TokenCreationConfig({
+        ZoraCreator1155Preminter.TokenConfig memory tokenConfig = ZoraCreator1155Preminter.TokenConfig({
             tokenURI: "blah.token",
             maxSupply: 10,
             maxTokensPerAddress: 5,
@@ -60,7 +59,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
 
         uint256 valueToSend = quantityToMint * ZoraCreator1155Impl(address(factory.implementation())).mintFee();
 
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, chainId());
+        bytes32 digest = preminter.premintHashData(deployer, contractConfig, tokenConfig, chainId());
 
         uint256 privateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
@@ -72,7 +71,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
         // now do an on-chain premint
         vm.startBroadcast(deployer);
 
-        preminter.premint{value: valueToSend}(contractConfig, tokenConfig, quantityToMint, signature);
+        preminter.premint{value: valueToSend}(deployer, contractConfig, tokenConfig, quantityToMint, signature);
 
         vm.stopBroadcast();
     }
