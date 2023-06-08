@@ -48,6 +48,8 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     struct ContractConfig {
+        /// @notice Creator/admin of the created contract.  Must match the account that signed the message
+        address contractAdmin;
         /// @notice Metadata URI for the created contract
         string contractURI;
         /// @notice Name of the created contract
@@ -86,7 +88,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     // this could include creating the contract.
     // do we need a deadline? open q
     function premint(
-        address contractAdmin,
         ContractConfig calldata contractConfig,
         TokenConfig calldata tokenConfig,
         uint256 quantityToMint,
@@ -102,13 +103,17 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
-        uint256 tokenHash = _validateSignatureAndEnsureNotUsed(contractAdmin, contractConfig, tokenConfig, signature);
+        uint256 tokenHash = _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, signature);
 
         // get or create the contract with the given params
-        IZoraCreator1155 tokenContract = _getOrCreateContract(contractAdmin, contractConfig);
+        IZoraCreator1155 tokenContract = _getOrCreateContract(contractConfig);
 
         // setup the new token, and its sales config
-        newTokenId = _setupNewTokenAndSale(tokenContract, contractAdmin, getCurrentTokenConfig(contractAdmin, tokenConfig, tokenHash));
+        newTokenId = _setupNewTokenAndSale(
+            tokenContract,
+            contractConfig.contractAdmin,
+            getCurrentTokenConfig(contractConfig.contractAdmin, tokenConfig, tokenHash)
+        );
 
         // mint the initial x tokens for this new token id to the executor.
         address tokenRecipient = msg.sender;
@@ -149,20 +154,20 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         }
     }
 
-    function _getOrCreateContract(address contractAdmin, ContractConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
-        uint256 contractHash = contractDataHash(contractAdmin, contractConfig);
+    function _getOrCreateContract(ContractConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
+        uint256 contractHash = contractDataHash(contractConfig);
         address contractAddress = contractAddresses[contractHash];
         // if address already exists for hash, return it
         if (contractAddress != address(0)) {
             tokenContract = IZoraCreator1155(contractAddress);
         } else {
             // otherwise, create the contract and update the created contracts
-            tokenContract = _createContract(contractAdmin, contractConfig);
+            tokenContract = _createContract(contractConfig);
             contractAddresses[contractHash] = address(tokenContract);
         }
     }
 
-    function _createContract(address contractAdmin, ContractConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
+    function _createContract(ContractConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
         // we need to build the setup actions, that must:
         // grant this contract ability to mint tokens - when a token is minted, this contract is
         // granted admin rights on that token
@@ -180,7 +185,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
             contractConfig.contractURI,
             contractConfig.contractName,
             royaltyConfig,
-            payable(contractAdmin),
+            payable(contractConfig.contractAdmin),
             setupActions
         );
         tokenContract = IZoraCreator1155(newContractAddresss);
@@ -210,14 +215,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     function recoverPremintSigner(
-        address contractAdmin,
         ContractConfig calldata contractConfig,
         TokenConfig calldata tokenConfig,
         bytes calldata signature
     ) public view returns (address signatory, bytes32 digest) {
         // first validate the signature - the creator must match the signer of the message
         digest = premintHashData(
-            contractAdmin,
             contractConfig,
             tokenConfig,
             // here we pass the current chain id, ensuring that the message
@@ -272,13 +275,8 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         return _hashTypedDataV4(encoded, chainId);
     }
 
-    function premintHashData(
-        address contractAdmin,
-        ContractConfig calldata contractConfig,
-        TokenConfig calldata tokenConfig,
-        uint256 chainId
-    ) public view returns (bytes32) {
-        bytes32 encoded = _hashContractAndToken(contractAdmin, contractConfig, tokenConfig);
+    function premintHashData(ContractConfig calldata contractConfig, TokenConfig calldata tokenConfig, uint256 chainId) public view returns (bytes32) {
+        bytes32 encoded = _hashContractAndToken(contractConfig, tokenConfig);
 
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
@@ -287,15 +285,11 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "ContractAndToken(address contractAdmin,ContractConfig contractConfig,TokenConfig tokenConfig)ContractConfig(address contractAdmin,string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)TokenConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration)"
+            "ContractAndToken(ContractConfig contractConfig,TokenConfig tokenConfig)ContractConfig(address contractAdmin,string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)TokenConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration)"
         );
 
-    function _hashContractAndToken(
-        address contractAdmin,
-        ContractConfig calldata contractConfig,
-        TokenConfig calldata tokenConfig
-    ) private pure returns (bytes32) {
-        return keccak256(abi.encode(CONTRACT_AND_TOKEN_DOMAIN, contractAdmin, _hashContract(contractConfig), _hashToken(tokenConfig)));
+    function _hashContractAndToken(ContractConfig calldata contractConfig, TokenConfig calldata tokenConfig) private pure returns (bytes32) {
+        return keccak256(abi.encode(CONTRACT_AND_TOKEN_DOMAIN, _hashContract(contractConfig), _hashToken(tokenConfig)));
     }
 
     bytes32 constant TOKEN_DOMAIN =
@@ -316,13 +310,16 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     bytes32 constant CONTRACT_DOMAIN =
-        keccak256("ContractConfig(string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)");
+        keccak256(
+            "ContractConfig(address contractAdmin,string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+        );
 
     function _hashContract(ContractConfig calldata contractConfig) private pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
                     CONTRACT_DOMAIN,
+                    contractConfig.contractAdmin,
                     stringHash(contractConfig.contractURI),
                     stringHash(contractConfig.contractName),
                     contractConfig.royaltyMintSchedule,
@@ -333,15 +330,14 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     function _validateSignatureAndEnsureNotUsed(
-        address contractAdmin,
         ContractConfig calldata contractConfig,
         TokenConfig calldata tokenConfig,
         bytes calldata signature
     ) private returns (uint256 signatureAsUint) {
         // first validate the signature - the creator must match the signer of the message
-        (address signatory, bytes32 digest) = recoverPremintSigner(contractAdmin, contractConfig, tokenConfig, signature);
+        (address signatory, bytes32 digest) = recoverPremintSigner(contractConfig, tokenConfig, signature);
 
-        if (signatory != contractAdmin) {
+        if (signatory != contractConfig.contractAdmin) {
             revert("Invalid signature");
         }
 
@@ -355,8 +351,8 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     /// returns a unique hash for the contract data, useful to uniquely identify a contract based on creation params
-    function contractDataHash(address contractAdmin, ContractConfig calldata contractConfig) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(contractAdmin, stringHash(contractConfig.contractURI), stringHash(contractConfig.contractName))));
+    function contractDataHash(ContractConfig calldata contractConfig) public pure returns (uint256) {
+        return uint256(keccak256(abi.encode(contractConfig.contractAdmin, stringHash(contractConfig.contractURI), stringHash(contractConfig.contractName))));
     }
 
     function stringHash(string calldata value) private pure returns (bytes32) {

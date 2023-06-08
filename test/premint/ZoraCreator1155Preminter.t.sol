@@ -51,6 +51,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // configuration of contract to create
         ZoraCreator1155Preminter.ContractConfig memory contractConfig = ZoraCreator1155Preminter.ContractConfig({
+            contractAdmin: creator,
             contractName: "blah",
             contractURI: "blah.contract",
             royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
@@ -70,7 +71,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(creator, contractConfig, tokenConfig, chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -81,11 +82,11 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.prank(premintExecutor);
-        uint256 tokenId = preminter.premint(creator, contractConfig, tokenConfig, quantityToMint, signature);
+        uint256 tokenId = preminter.premint(contractConfig, tokenConfig, quantityToMint, signature);
 
         // get contract hash, which is unique per contract creation config, and can be used
         // retreive the address created for a contract
-        uint256 contractHash = preminter.contractDataHash(creator, contractConfig);
+        uint256 contractHash = preminter.contractDataHash(contractConfig);
 
         // get the contract address from the preminter based on the contract hash id.
         IZoraCreator1155 created1155Contract = IZoraCreator1155(preminter.contractAddresses(contractHash));
@@ -96,12 +97,12 @@ contract ZoraCreator1155PreminterTest is Test {
         // alter the token creation config, create a new signature with the existing
         // contract config and new token config
         tokenConfig.tokenURI = "blah2.token";
-        digest = preminter.premintHashData(creator, contractConfig, tokenConfig, chainId);
+        digest = preminter.premintHashData(contractConfig, tokenConfig, chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature
         vm.prank(premintExecutor);
-        tokenId = preminter.premint(creator, contractConfig, tokenConfig, quantityToMint, signature);
+        tokenId = preminter.premint(contractConfig, tokenConfig, quantityToMint, signature);
 
         // a new token shoudl have been created, with x tokens minted to the executor, on the same contract address
         // as before since the contract config didnt change
