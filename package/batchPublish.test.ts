@@ -3,6 +3,11 @@ import {
   createWalletClient,
   createPublicClient,
   encodeFunctionData,
+  TransactionReceipt,
+  decodeEventLog,
+  encodeAbiParameters,
+  parseEther,
+  createTestClient,
 } from "viem";
 import { foundry, mainnet } from "viem/chains";
 import { describe, it, expect } from "vitest";
@@ -11,38 +16,7 @@ import {
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyABI,
 } from "./wagmiGenerated";
-import { AbiParametersToPrimitiveTypes, ExtractAbiFunction } from "abitype";
-
-const multicallAbi = [
-  {
-    inputs: [
-      {
-        components: [
-          { internalType: "address", name: "target", type: "address" },
-          { internalType: "bool", name: "allowFailure", type: "bool" },
-          { internalType: "bytes", name: "callData", type: "bytes" },
-        ],
-        internalType: "struct Multicall3.Call3[]",
-        name: "calls",
-        type: "tuple[]",
-      },
-    ],
-    name: "aggregate3",
-    outputs: [
-      {
-        components: [
-          { internalType: "bool", name: "success", type: "bool" },
-          { internalType: "bytes", name: "returnData", type: "bytes" },
-        ],
-        internalType: "struct Multicall3.Result[]",
-        name: "returnData",
-        type: "tuple[]",
-      },
-    ],
-    stateMutability: "payable",
-    type: "function",
-  },
-] as const;
+import { chainConfigs } from "./chainConfigs";
 
 const walletClient = createWalletClient({
   chain: foundry,
@@ -51,6 +25,12 @@ const walletClient = createWalletClient({
 
 export const walletClientWithAccount = createWalletClient({
   chain: foundry,
+  transport: http(),
+});
+
+const testClient = createTestClient({
+  chain: foundry,
+  mode: "anvil",
   transport: http(),
 });
 
@@ -69,20 +49,13 @@ const factoryProxyAddress = zoraCreator1155FactoryImplConfig.address[
   mainnet.id
 ].toLowerCase() as `0x${string}`;
 
-const multicallAddress =
-  "0xcA11bde05977b3631167028862bE2a173976CA11".toLowerCase() as `0x${string}`;
-
-export type Multicall3Array = AbiParametersToPrimitiveTypes<
-  ExtractAbiFunction<typeof multicallAbi, "aggregate3">["inputs"]
->[0];
-
 const AddressZero = "0x0000000000000000000000000000000000000000";
 
 type CreateTokenParams = {
   fixedPriceStrategyAddress: `0x${string}`;
   maxSupply: bigint;
   nextTokenId: bigint;
-  price?: bigint;
+  price: bigint;
   saleEnd?: bigint;
   saleStart?: bigint;
   mintLimit?: bigint;
@@ -181,6 +154,46 @@ function constructCreate1155Calls({
   return contractCalls;
 }
 
+function parseCreate1155Receipt(receipt: TransactionReceipt): {
+  contractAddress?: `0x${string}`;
+  tokenId?: bigint;
+} {
+  const parsedLog = receipt.logs
+    .map((log) => {
+      try {
+        return decodeEventLog({
+          abi: zoraCreator1155ImplABI,
+          ...log,
+        });
+      } catch (e) {
+        return null;
+      }
+    })
+    .filter(Boolean);
+
+  const updatedTokenEvents = parsedLog.filter(
+    (log) => log?.eventName === "UpdatedToken"
+  );
+  const lastUpdatedTokenEvent =
+    updatedTokenEvents[updatedTokenEvents.length - 1];
+
+  let tokenId;
+  let contractAddress;
+
+  // @ts-ignore
+  if (lastUpdatedTokenEvent?.args?.tokenId) {
+    // @ts-ignore
+    tokenId = lastUpdatedTokenEvent?.args?.tokenId as bigint;
+  }
+
+  // @ts-ignore
+  if (receipt.logs?.[0].address) {
+    contractAddress = receipt.logs?.[0].address as `0x${string}`;
+  }
+
+  return { tokenId, contractAddress };
+}
+
 describe("ZoraCreator1155Preminter", () => {
   it(
     "can batch publish tokens",
@@ -197,12 +210,16 @@ describe("ZoraCreator1155Preminter", () => {
 
       const createToken1Params: CreateTokenParams = {
         maxSupply: 100n,
+        mintLimit: 100n,
         nextTokenId: 1n,
         tokenURI: "ipfs://token1",
         fixedPriceStrategyAddress: fixedPriceMinterAddress,
         autoSupplyInterval: 10,
+        price: parseEther("0.05"),
         royaltyBPS: 10,
         royaltyRecipient: creatorAccount,
+        saleStart: 0n,
+        saleEnd: 10000000000000n
       };
 
       const createToken2Params: CreateTokenParams = {
@@ -215,6 +232,7 @@ describe("ZoraCreator1155Preminter", () => {
         ...createToken1Params,
         tokenURI: "ipfs://token3",
         nextTokenId: 3n,
+        price: parseEther("0.0001"),
       };
 
       const setupActions = [
@@ -223,8 +241,9 @@ describe("ZoraCreator1155Preminter", () => {
         ...constructCreate1155Calls(createToken3Params),
       ];
 
-      const createFunctionCall = encodeFunctionData({
+      const createContractCall = await walletClient.writeContract({
         abi: zoraCreator1155FactoryImplConfig.abi,
+        address: zoraCreator1155FactoryImplConfig.address[mainnet.id],
         functionName: "createContract",
         args: [
           contractUri,
@@ -237,29 +256,65 @@ describe("ZoraCreator1155Preminter", () => {
           contractAdmin,
           setupActions,
         ],
+        account: creatorAccount,
       });
 
-      const multicallArgs: Multicall3Array = [
-        {
-          target: factoryProxyAddress,
-          allowFailure: false,
-          callData: createFunctionCall,
-        },
-      ];
+      const receipt = await publicClient.waitForTransactionReceipt({
+        hash: createContractCall,
+      });
 
-      const multicallHash = await walletClient.writeContract({
-        abi: multicallAbi,
-        address: multicallAddress,
-        functionName: "aggregate3",
-        account: creatorAccount,
-        args: [multicallArgs],
-        value: 0n,
+      expect(receipt.status).toBe("success");
+
+      const { contractAddress, tokenId: lastTokenId } =
+        parseCreate1155Receipt(receipt);
+
+      // now try to mint a token
+      const quantityToMint = 2n;
+
+      const encodedParams = encodeAbiParameters(
+        [{ type: "address", name: "address" }],
+        [collectorAccount]
+      );
+
+      const zoraMintFee = chainConfigs[mainnet.id].MINT_FEE_AMOUNT;
+
+      const valueToSend =
+        (BigInt(zoraMintFee) + createToken3Params.price) * quantityToMint;
+
+      // make sure the collector has enough balance
+      await testClient.setBalance({
+        address: collectorAccount,
+        value: parseEther('100'),
+      });
+
+      const mintCall = await walletClient.writeContract({
+        abi: zoraCreator1155ImplABI,
+        address: contractAddress!,
+        functionName: "mint",
+        account: collectorAccount,
+        args: [
+          fixedPriceMinterAddress,
+          lastTokenId!,
+          quantityToMint,
+          encodedParams,
+        ],
+        value: valueToSend,
       });
 
       expect(
-        (await publicClient.waitForTransactionReceipt({ hash: multicallHash }))
+        (await publicClient.waitForTransactionReceipt({ hash: mintCall }))
           .status
       ).toBe("success");
+
+        // check balance of token
+      const tokenBalance = await publicClient.readContract({
+        abi: zoraCreator1155ImplABI,
+        address: contractAddress!,
+        functionName: "balanceOf",
+        args: [collectorAccount, lastTokenId!],
+      })
+
+      expect(tokenBalance).toBe(quantityToMint);
     },
     // 10 second timeout
     10 * 1000
