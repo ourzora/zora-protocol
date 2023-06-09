@@ -30,6 +30,7 @@ Functions:
         * `saleDuration` - how long this token should be on sale for, from the time of the first mint.  If 0, duration is infinite
         * `maxTokensPerAddress` - max tokens an address can mint
         * `pricePerToken` - cost to mint each token
+        * `uid` - unique id of the token scoped within the contract.  Ensures that multiple signatures for a token cannot be executed thus creating two tokens. 
       * `signature` - signature signed message containing all of the above parameters
       * `quantityToMint` - how many of the initial tokens to mint to the executor
 
