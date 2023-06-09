@@ -18,7 +18,6 @@ import {
   ContractCreationConfig,
   TokenCreationConfig,
   preminterTypedDataDefinition,
-  toContractHash,
 } from "./preminter";
 
 const walletClient = createWalletClient({
@@ -123,6 +122,7 @@ describe("ZoraCreator1155Preminter", () => {
       maxTokensPerAddress: 10n,
       pricePerToken: parseEther("0.1"),
       saleDuration: 100n,
+      uid: 1n
     };
 
     const signedMessage = await walletClient.signTypedData({
@@ -165,6 +165,7 @@ describe("ZoraCreator1155Preminter", () => {
         maxTokensPerAddress: 10n,
         pricePerToken: parseEther("0.1"),
         saleDuration: 100n,
+        uid: 1n
       };
 
       // have creator sign the message to create the contract
@@ -207,7 +208,12 @@ describe("ZoraCreator1155Preminter", () => {
 
       // get contract hash which acts as a unique identifier for contract
       // creation parametesr, and can be used to look up the contract address
-      const contractHash = toContractHash(contractConfig);
+      const contractHash = await publicClient.readContract({
+        abi: preminterAbi,
+        address: preminterAddress,
+        functionName: "contractDataHash",
+        args: [contractConfig]
+      })
 
       const createdContractAddress = await publicClient.readContract({
         abi: preminterAbi,
@@ -234,6 +240,7 @@ describe("ZoraCreator1155Preminter", () => {
         maxTokensPerAddress: 10n,
         pricePerToken: parseEther("0.05"),
         saleDuration: 100n,
+        uid: 2n
       };
 
       const signedMessage2 = await walletClient.signTypedData({

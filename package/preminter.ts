@@ -51,6 +51,7 @@ export const preminterTypedDataDefinition = ({
       { name: "maxTokensPerAddress", type: "uint64" },
       { name: "pricePerToken", type: "uint96" },
       { name: "saleDuration", type: "uint64" },
+      { name: 'uid', type: 'uint256'}
     ],
   };
 
@@ -71,18 +72,3 @@ export const preminterTypedDataDefinition = ({
 
   return result;
 };
-
-// get the contract hash from the contract config, which is used to 
-// uniquely identify the contract
-export const toContractHash = (contractConfig: ContractCreationConfig) =>
-  hexToBigInt(
-    keccak256(
-      encodeAbiParameters(parseAbiParameters("address, bytes32, bytes32"), [
-        contractConfig.contractAdmin,
-        stringHash(contractConfig.contractName),
-        stringHash(contractConfig.contractURI),
-      ])
-    )
-  );
-
-const stringHash = (str: string) => keccak256(new TextEncoder().encode(str));

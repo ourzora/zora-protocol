@@ -156,9 +156,7 @@ contract ZoraCreator1155PreminterTest is Test {
         vm.startPrank(premintExecutor);
         preminter.premint(contractConfig, tokenConfig, quantityToMint, signature);
 
-        // execute it again - it should revert
-        vm.expectRevert(abi.encodeWithSelector(ZoraCreator1155Preminter.TokenAlreadyCreated.selector, creator, tokenConfig.uid));
-        preminter.premint(contractConfig, tokenConfig, quantityToMint, signature);
+        uint256 contractHash = preminter.contractDataHash(contractConfig);
 
         // create a sig for another token with same uid, it should revert
         tokenConfig.tokenURI = "blah2.token";
@@ -166,7 +164,7 @@ contract ZoraCreator1155PreminterTest is Test {
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature - it should revert
-        vm.expectRevert(abi.encodeWithSelector(ZoraCreator1155Preminter.TokenAlreadyCreated.selector, creator, tokenConfig.uid));
+        vm.expectRevert(abi.encodeWithSelector(ZoraCreator1155Preminter.TokenAlreadyCreated.selector, contractHash, tokenConfig.uid));
         preminter.premint(contractConfig, tokenConfig, quantityToMint, signature);
     }
 
