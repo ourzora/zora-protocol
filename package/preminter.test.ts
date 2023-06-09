@@ -111,9 +111,9 @@ describe("ZoraCreator1155Preminter", () => {
       contractAdmin: creatorAccount,
       contractURI: "ipfs://asdfasdfasdf",
       contractName: "My fun NFT",
-      royaltyMintSchedule: 30,
-      royaltyBPS: 200,
-      royaltyRecipient: creatorAccount,
+      defaultRoyaltyMintSchedule: 30,
+      defaultRoyaltyBPS: 200,
+      defaultRoyaltyRecipient: creatorAccount,
     };
 
     const tokenConfig: TokenCreationConfig = {
@@ -154,9 +154,9 @@ describe("ZoraCreator1155Preminter", () => {
         contractAdmin: creatorAccount,
         contractURI: "ipfs://asdfasdfasdf",
         contractName: "My fun NFT",
-        royaltyMintSchedule: 30,
-        royaltyBPS: 200,
-        royaltyRecipient: creatorAccount,
+        defaultRoyaltyMintSchedule: 30,
+        defaultRoyaltyBPS: 200,
+        defaultRoyaltyRecipient: creatorAccount,
       };
 
       const tokenConfig: TokenCreationConfig = {

@@ -41,9 +41,9 @@ export const preminterTypedDataDefinition = ({
       { name: "contractAdmin", type: "address" },
       { name: "contractURI", type: "string" },
       { name: "contractName", type: "string" },
-      { name: "royaltyMintSchedule", type: "uint32" },
-      { name: "royaltyBPS", type: "uint32" },
-      { name: "royaltyRecipient", type: "address" },
+      { name: "defaultRoyaltyMintSchedule", type: "uint32" },
+      { name: "defaultRoyaltyBPS", type: "uint32" },
+      { name: "defaultRoyaltyRecipient", type: "address" },
     ],
     TokenCreationConfig: [
       { name: "tokenURI", type: "string" },

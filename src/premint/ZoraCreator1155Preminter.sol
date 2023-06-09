@@ -50,12 +50,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         string contractURI;
         /// @notice Name of the created contract
         string contractName;
-        /// @notice royaltyMintSchedule Every nth token will go to the royalty recipient.
-        uint32 royaltyMintSchedule;
-        /// @notice royaltyBPS The royalty amount in basis points for secondary sales.
-        uint32 royaltyBPS;
-        /// @notice royaltyRecipient The address that will receive the royalty payments.
-        address royaltyRecipient;
+        /// @notice Default royaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
+        uint32 defaultRoyaltyMintSchedule;
+        /// @notice Default royaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+        uint32 defaultRoyaltyBPS;
+        /// @notice Default royaltyRecipient for created tokens. The address that will receive the royalty payments.
+        address defaultRoyaltyRecipient;
     }
 
     struct TokenCreationConfig {
@@ -129,9 +129,9 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, CONTRACT_BASE_ID, address(this), PERMISSION_BIT_MINTER);
 
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
-            royaltyBPS: contractConfig.royaltyBPS,
-            royaltyRecipient: contractConfig.royaltyRecipient,
-            royaltyMintSchedule: contractConfig.royaltyMintSchedule
+            royaltyBPS: contractConfig.defaultRoyaltyBPS,
+            royaltyRecipient: contractConfig.defaultRoyaltyRecipient,
+            royaltyMintSchedule: contractConfig.defaultRoyaltyMintSchedule
         });
 
         // create the contract via the factory.
@@ -203,7 +203,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "ContractAndToken(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig)ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint256 uid)"
+            "ContractAndToken(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig)ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 defaultRoyaltyMintSchedule,uint32 defaultRoyaltyBPS,address defaultRoyaltyRecipient)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint256 uid)"
         );
 
     function _hashContractAndToken(ContractCreationConfig calldata contractConfig, TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
@@ -230,7 +230,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
     bytes32 constant CONTRACT_DOMAIN =
         keccak256(
-            "ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 defaultRoyaltyMintSchedule,uint32 defaultRoyaltyBPS,address defaultRoyaltyRecipient)"
         );
 
     function _hashContract(ContractCreationConfig calldata contractConfig) private pure returns (bytes32) {
@@ -241,9 +241,9 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
                     contractConfig.contractAdmin,
                     stringHash(contractConfig.contractURI),
                     stringHash(contractConfig.contractName),
-                    contractConfig.royaltyMintSchedule,
-                    contractConfig.royaltyBPS,
-                    contractConfig.royaltyRecipient
+                    contractConfig.defaultRoyaltyMintSchedule,
+                    contractConfig.defaultRoyaltyBPS,
+                    contractConfig.defaultRoyaltyRecipient
                 )
             );
     }

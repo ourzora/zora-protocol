@@ -56,9 +56,9 @@ contract ZoraCreator1155PreminterTest is Test {
             contractAdmin: creator,
             contractName: "blah",
             contractURI: "blah.contract",
-            royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
-            royaltyBPS: defaultRoyaltyConfig.royaltyBPS,
-            royaltyRecipient: defaultRoyaltyConfig.royaltyRecipient
+            defaultRoyaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
+            defaultRoyaltyBPS: defaultRoyaltyConfig.royaltyBPS,
+            defaultRoyaltyRecipient: defaultRoyaltyConfig.royaltyRecipient
         });
 
         // configuration of token to create
@@ -123,9 +123,9 @@ contract ZoraCreator1155PreminterTest is Test {
             contractAdmin: creator,
             contractName: "blah",
             contractURI: "blah.contract",
-            royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
-            royaltyBPS: defaultRoyaltyConfig.royaltyBPS,
-            royaltyRecipient: defaultRoyaltyConfig.royaltyRecipient
+            defaultRoyaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
+            defaultRoyaltyBPS: defaultRoyaltyConfig.royaltyBPS,
+            defaultRoyaltyRecipient: defaultRoyaltyConfig.royaltyRecipient
         });
 
         // configuration of token to create

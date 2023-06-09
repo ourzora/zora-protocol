@@ -43,9 +43,9 @@ contract EstimatePreminterGas is ZoraDeployerBase {
             contractAdmin: deployer,
             contractName: "blah",
             contractURI: "blah.contract",
-            royaltyBPS: 10,
-            royaltyRecipient: deployer,
-            royaltyMintSchedule: 20
+            defaultRoyaltyBPS: 10,
+            defaultRoyaltyRecipient: deployer,
+            defaultRoyaltyMintSchedule: 20
         });
         // configuration of token to create
         ZoraCreator1155Preminter.TokenCreationConfig memory tokenConfig = ZoraCreator1155Preminter.TokenCreationConfig({
