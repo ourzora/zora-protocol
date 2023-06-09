@@ -208,6 +208,8 @@ describe("ZoraCreator1155Preminter", () => {
       const contractUri = "ipfs://contracturl";
       const contractName = "my contract";
 
+      // setup token creation parameters, assuming that
+      // they have auto incrementing ids
       const createToken1Params: CreateTokenParams = {
         maxSupply: 100n,
         mintLimit: 100n,
@@ -219,7 +221,7 @@ describe("ZoraCreator1155Preminter", () => {
         royaltyBPS: 10,
         royaltyRecipient: creatorAccount,
         saleStart: 0n,
-        saleEnd: 10000000000000n
+        saleEnd: 10000000000000n,
       };
 
       const createToken2Params: CreateTokenParams = {
@@ -235,12 +237,14 @@ describe("ZoraCreator1155Preminter", () => {
         price: parseEther("0.0001"),
       };
 
+      // build setup actions to create tokens when contract is created
       const setupActions = [
         ...constructCreate1155Calls(createToken1Params),
         ...constructCreate1155Calls(createToken2Params),
         ...constructCreate1155Calls(createToken3Params),
       ];
 
+      // have the factory create the contract
       const createContractCall = await walletClient.writeContract({
         abi: zoraCreator1155FactoryImplConfig.abi,
         address: zoraCreator1155FactoryImplConfig.address[mainnet.id],
@@ -265,6 +269,7 @@ describe("ZoraCreator1155Preminter", () => {
 
       expect(receipt.status).toBe("success");
 
+      // parse the receipt to get the contract address and last token id
       const { contractAddress, tokenId: lastTokenId } =
         parseCreate1155Receipt(receipt);
 
@@ -284,7 +289,7 @@ describe("ZoraCreator1155Preminter", () => {
       // make sure the collector has enough balance
       await testClient.setBalance({
         address: collectorAccount,
-        value: parseEther('100'),
+        value: parseEther("100"),
       });
 
       const mintCall = await walletClient.writeContract({
@@ -306,13 +311,13 @@ describe("ZoraCreator1155Preminter", () => {
           .status
       ).toBe("success");
 
-        // check balance of token
+      // check balance of token
       const tokenBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
         address: contractAddress!,
         functionName: "balanceOf",
         args: [collectorAccount, lastTokenId!],
-      })
+      });
 
       expect(tokenBalance).toBe(quantityToMint);
     },
