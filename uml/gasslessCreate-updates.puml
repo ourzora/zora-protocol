@@ -1,0 +1,42 @@
+@startuml
+
+title Updating token parameters before token has been created
+
+actor Collector
+actor Creator
+entity CreatePage
+entity UpdatePage
+boundary SignatureAPI
+entity PremintContract
+entity SignatureDB
+
+Creator -> CreatePage: create new contract + token 
+activate CreatePage
+CreatePage -> Creator: request signature of\n data hash
+deactivate CreatePage
+Creator -> SignatureAPI: Submit signature + contract + token params
+activate SignatureAPI
+SignatureAPI -> SignatureDB: store signature + \ncontract creation + \ntoken creation params
+activate SignatureDB
+
+Creator -> UpdatePage: load existing premint token by hash
+activate UpdatePage
+UpdatePage -> SignatureAPI: fetch contract & token params\nby hash
+SignatureAPI -> SignatureDB: get contract & token params
+SignatureDB --> SignatureAPI: return contract & token params\nof hash
+deactivate SignatureDB
+SignatureAPI --> UpdatePage: contract & token params
+
+Creator -> UpdatePage: update token
+UpdatePage -> Creator: sign update
+deactivate UpdatePage
+
+Creator -> PremintContract: fetch nonce for creator
+activate PremintContract
+PremintContract --> Creator: nonce
+Creator -> SignatureAPI: Submit update signature containing token hash id,\ntoken params, nonce
+SignatureAPI -> PremintContract: Verify update signature\n& store pending update
+
+
+
+@enduml
