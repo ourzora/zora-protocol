@@ -6,34 +6,15 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-      - name: Use Node.js
+
+      - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: "16.13.2"
+          node-version: 16
+          cache: "yarn"
 
-      - uses: pnpm/action-setup@v2
-        name: Install pnpm
-        id: pnpm-install
-        with:
-          version: 7
-          run_install: false
-
-      - name: Get pnpm store directory
-        id: pnpm-cache
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path)" >> $GITHUB_OUTPUT
-
-      - uses: actions/cache@v3
-        name: Setup pnpm cache
-        with:
-          path: ${{ steps.pnpm-cache.outputs.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install
+      - name: Install project dependencies
+        run: yarn
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
@@ -45,4 +26,4 @@ jobs:
         id: storage-inspect-check
         run: |
           forge build
-          pnpm storage-inspect:check
+          yarn run storage-inspect:check
