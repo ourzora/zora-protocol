@@ -7,13 +7,13 @@ entity PreminterContract
 entity 1155FactoryContract
 entity 1155Contract
 
-Collector -> PremintCollectPage: Open, param is \nsignature hash
+Collector -> PremintCollectPage: Open, param is \ncontract hash + token uid
 Activate PremintCollectPage
-PremintCollectPage -> SignatureAPI: Fetch by signature hash 
-SignatureAPI -> SignatureDB: Fetch signature by hash\nthat isn't deleted
+PremintCollectPage -> SignatureAPI: Fetch by contract hash + token uid
+SignatureAPI -> SignatureDB: Fetch most recent signature\nby contract hash token uid
 SignatureDB --> SignatureAPI: contract + token creation params\n+ signature
 SignatureAPI --> PremintCollectPage: contract + token creation params\n+ signature
-PremintCollectPage -> PreminterContract: Check if signature has been used
+PremintCollectPage -> PreminterContract: Check if signature has been used (by contract hash + token uid)
 PreminterContract --> PremintCollectPage: Signature has been used or not
 
 Group signature has been used
