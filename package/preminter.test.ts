@@ -111,9 +111,7 @@ describe("ZoraCreator1155Preminter", () => {
       contractAdmin: creatorAccount,
       contractURI: "ipfs://asdfasdfasdf",
       contractName: "My fun NFT",
-      defaultRoyaltyMintSchedule: 30,
-      defaultRoyaltyBPS: 200,
-      defaultRoyaltyRecipient: creatorAccount,
+ 
     };
 
     const tokenConfig: TokenCreationConfig = {
@@ -122,6 +120,9 @@ describe("ZoraCreator1155Preminter", () => {
       maxTokensPerAddress: 10n,
       pricePerToken: parseEther("0.1"),
       saleDuration: 100n,
+      royaltyMintSchedule: 30,
+      royaltyBPS: 200,
+      royaltyRecipient: creatorAccount,
       uid: 1n
     };
 
@@ -154,9 +155,7 @@ describe("ZoraCreator1155Preminter", () => {
         contractAdmin: creatorAccount,
         contractURI: "ipfs://asdfasdfasdf",
         contractName: "My fun NFT",
-        defaultRoyaltyMintSchedule: 30,
-        defaultRoyaltyBPS: 200,
-        defaultRoyaltyRecipient: creatorAccount,
+        
       };
 
       const tokenConfig: TokenCreationConfig = {
@@ -165,6 +164,9 @@ describe("ZoraCreator1155Preminter", () => {
         maxTokensPerAddress: 10n,
         pricePerToken: parseEther("0.1"),
         saleDuration: 100n,
+        royaltyMintSchedule: 30,
+        royaltyBPS: 200,
+        royaltyRecipient: creatorAccount,
         uid: 1n
       };
 
@@ -235,11 +237,9 @@ describe("ZoraCreator1155Preminter", () => {
       // create a signature to create a second token,
       // with different ipfs url and price per token
       const tokenConfig2: TokenCreationConfig = {
+        ...tokenConfig,
         tokenURI: "ipfs://tokenIpfsId2",
-        maxSupply: 100n,
-        maxTokensPerAddress: 10n,
         pricePerToken: parseEther("0.05"),
-        saleDuration: 100n,
         uid: 2n
       };
 

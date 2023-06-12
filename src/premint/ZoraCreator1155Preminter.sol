@@ -50,12 +50,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         string contractURI;
         /// @notice Name of the created contract
         string contractName;
-        /// @notice Default royaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
-        uint32 defaultRoyaltyMintSchedule;
-        /// @notice Default royaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
-        uint32 defaultRoyaltyBPS;
-        /// @notice Default royaltyRecipient for created tokens. The address that will receive the royalty payments.
-        address defaultRoyaltyRecipient;
     }
 
     struct TokenCreationConfig {
@@ -69,6 +63,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         uint96 pricePerToken;
         /// @notice The duration of the sale, starting from the first mint of this token. 0 for infinite
         uint64 saleDuration;
+        /// @notice RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
+        uint32 royaltyMintSchedule;
+        /// @notice RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+        uint32 royaltyBPS;
+        /// @notice RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
+        address royaltyRecipient;
         /// @notice Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token, in the case
         /// that a signature is updated for a token, and the old signature is executed, two tokens for the same original intended token could be created.
         /// Only one signature per token id, scoped to the contract hash can be executed.
@@ -128,17 +128,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         bytes[] memory setupActions = new bytes[](1);
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, CONTRACT_BASE_ID, address(this), PERMISSION_BIT_MINTER);
 
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
-            royaltyBPS: contractConfig.defaultRoyaltyBPS,
-            royaltyRecipient: contractConfig.defaultRoyaltyRecipient,
-            royaltyMintSchedule: contractConfig.defaultRoyaltyMintSchedule
-        });
-
         // create the contract via the factory.
         address newContractAddresss = factory.createContract(
             contractConfig.contractURI,
             contractConfig.contractName,
-            royaltyConfig,
+            // default royalty config is empty, since we set it on a token level
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
             payable(contractConfig.contractAdmin),
             setupActions
         );
@@ -165,6 +160,14 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
                 newTokenId,
                 _buildNewSalesConfig(contractAdmin, tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.saleDuration)
             )
+        );
+        tokenContract.updateRoyaltiesForToken(
+            newTokenId,
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({
+                royaltyBPS: tokenConfig.royaltyBPS,
+                royaltyRecipient: tokenConfig.royaltyRecipient,
+                royaltyMintSchedule: tokenConfig.royaltyMintSchedule
+            })
         );
         // this contract is the admin of that token, and the creator isn't, so
         // make the creator the admin of that token, and remove this contracts admin rights on that token.
@@ -203,7 +206,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "ContractAndToken(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig)ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 defaultRoyaltyMintSchedule,uint32 defaultRoyaltyBPS,address defaultRoyaltyRecipient)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint256 uid)"
+            "ContractAndToken(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,uint256 uid)"
         );
 
     function _hashContractAndToken(ContractCreationConfig calldata contractConfig, TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
@@ -211,7 +214,9 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     bytes32 constant TOKEN_DOMAIN =
-        keccak256("TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint256 uid)");
+        keccak256(
+            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,uint256 uid)"
+        );
 
     function _hashToken(TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
         return
@@ -223,28 +228,20 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
                     tokenConfig.maxTokensPerAddress,
                     tokenConfig.pricePerToken,
                     tokenConfig.saleDuration,
+                    tokenConfig.royaltyMintSchedule,
+                    tokenConfig.royaltyBPS,
+                    tokenConfig.royaltyRecipient,
                     tokenConfig.uid
                 )
             );
     }
 
-    bytes32 constant CONTRACT_DOMAIN =
-        keccak256(
-            "ContractCreationConfig(address contractAdmin,string contractURI,string contractName,uint32 defaultRoyaltyMintSchedule,uint32 defaultRoyaltyBPS,address defaultRoyaltyRecipient)"
-        );
+    bytes32 constant CONTRACT_DOMAIN = keccak256("ContractCreationConfig(address contractAdmin,string contractURI,string contractName)");
 
     function _hashContract(ContractCreationConfig calldata contractConfig) private pure returns (bytes32) {
         return
             keccak256(
-                abi.encode(
-                    CONTRACT_DOMAIN,
-                    contractConfig.contractAdmin,
-                    stringHash(contractConfig.contractURI),
-                    stringHash(contractConfig.contractName),
-                    contractConfig.defaultRoyaltyMintSchedule,
-                    contractConfig.defaultRoyaltyBPS,
-                    contractConfig.defaultRoyaltyRecipient
-                )
+                abi.encode(CONTRACT_DOMAIN, contractConfig.contractAdmin, stringHash(contractConfig.contractURI), stringHash(contractConfig.contractName))
             );
     }
 

@@ -40,10 +40,7 @@ export const preminterTypedDataDefinition = ({
     ContractCreationConfig: [
       { name: "contractAdmin", type: "address" },
       { name: "contractURI", type: "string" },
-      { name: "contractName", type: "string" },
-      { name: "defaultRoyaltyMintSchedule", type: "uint32" },
-      { name: "defaultRoyaltyBPS", type: "uint32" },
-      { name: "defaultRoyaltyRecipient", type: "address" },
+      { name: "contractName", type: "string" }
     ],
     TokenCreationConfig: [
       { name: "tokenURI", type: "string" },
@@ -51,6 +48,9 @@ export const preminterTypedDataDefinition = ({
       { name: "maxTokensPerAddress", type: "uint64" },
       { name: "pricePerToken", type: "uint96" },
       { name: "saleDuration", type: "uint64" },
+      { name: "royaltyMintSchedule", type: "uint32" },
+      { name: "royaltyBPS", type: "uint32" },
+      { name: "royaltyRecipient", type: "address" },
       { name: 'uid', type: 'uint256'}
     ],
   };

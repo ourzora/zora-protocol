@@ -42,10 +42,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
         ZoraCreator1155Preminter.ContractCreationConfig memory contractConfig = ZoraCreator1155Preminter.ContractCreationConfig({
             contractAdmin: deployer,
             contractName: "blah",
-            contractURI: "blah.contract",
-            defaultRoyaltyBPS: 10,
-            defaultRoyaltyRecipient: deployer,
-            defaultRoyaltyMintSchedule: 20
+            contractURI: "blah.contract"
         });
         // configuration of token to create
         ZoraCreator1155Preminter.TokenCreationConfig memory tokenConfig = ZoraCreator1155Preminter.TokenCreationConfig({
@@ -54,6 +51,9 @@ contract EstimatePreminterGas is ZoraDeployerBase {
             maxTokensPerAddress: 5,
             pricePerToken: 0,
             saleDuration: 365 days,
+            royaltyBPS: 10,
+            royaltyRecipient: deployer,
+            royaltyMintSchedule: 20,
             uid: 1
         });
         // how many tokens are minted to the executor

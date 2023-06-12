@@ -55,10 +55,7 @@ contract ZoraCreator1155PreminterTest is Test {
         ZoraCreator1155Preminter.ContractCreationConfig memory contractConfig = ZoraCreator1155Preminter.ContractCreationConfig({
             contractAdmin: creator,
             contractName: "blah",
-            contractURI: "blah.contract",
-            defaultRoyaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
-            defaultRoyaltyBPS: defaultRoyaltyConfig.royaltyBPS,
-            defaultRoyaltyRecipient: defaultRoyaltyConfig.royaltyRecipient
+            contractURI: "blah.contract"
         });
 
         // configuration of token to create
@@ -68,6 +65,9 @@ contract ZoraCreator1155PreminterTest is Test {
             maxTokensPerAddress: 5,
             pricePerToken: 0,
             saleDuration: 0,
+            royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
+            royaltyBPS: defaultRoyaltyConfig.royaltyBPS,
+            royaltyRecipient: defaultRoyaltyConfig.royaltyRecipient,
             uid: 1
         });
 
@@ -122,10 +122,7 @@ contract ZoraCreator1155PreminterTest is Test {
         ZoraCreator1155Preminter.ContractCreationConfig memory contractConfig = ZoraCreator1155Preminter.ContractCreationConfig({
             contractAdmin: creator,
             contractName: "blah",
-            contractURI: "blah.contract",
-            defaultRoyaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
-            defaultRoyaltyBPS: defaultRoyaltyConfig.royaltyBPS,
-            defaultRoyaltyRecipient: defaultRoyaltyConfig.royaltyRecipient
+            contractURI: "blah.contract"
         });
 
         // configuration of token to create
@@ -135,6 +132,9 @@ contract ZoraCreator1155PreminterTest is Test {
             maxTokensPerAddress: 5,
             pricePerToken: 0,
             saleDuration: 0,
+            royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
+            royaltyBPS: defaultRoyaltyConfig.royaltyBPS,
+            royaltyRecipient: defaultRoyaltyConfig.royaltyRecipient,
             uid: 1
         });
 
