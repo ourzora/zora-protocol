@@ -1,11 +1,8 @@
-import { Address, parseAbiParameters } from "abitype";
+import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
 import { zoraCreator1155PreminterABI as preminterAbi } from "./wagmiGenerated";
 import {
   TypedDataDefinition,
-  encodeAbiParameters,
-  hexToBigInt,
-  keccak256,
 } from "viem";
 
 type PreminterHashInputs = ExtractAbiFunction<
