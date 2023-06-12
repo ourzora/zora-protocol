@@ -7,6 +7,7 @@ import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/con
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
+import {ZoraCreator1155StorageV1} from "../nft/ZoraCreator1155StorageV1.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
@@ -147,12 +148,32 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     ) private returns (uint256 newTokenId) {
         // mint a new token, and get its token id
         // this contract has admin rights on that token
+
         newTokenId = tokenContract.setupNewToken(tokenConfig.tokenURI, tokenConfig.maxSupply);
+
+        // now setup multicalls - to avoid cross contract calls
         // set up the sales strategy
         // first, grant the fixed price sale strategy minting capabilities on the token
-        tokenContract.addPermission(newTokenId, address(fixedPriceMinter), PERMISSION_BIT_MINTER);
+
+        bytes[] memory setupTokenActions = new bytes[](5);
+
+        // tokenContract.addPermission(newTokenId, address(fixedPriceMinter), PERMISSION_BIT_MINTER);
+        // abi encoded version of above is:
+        setupTokenActions[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, newTokenId, address(fixedPriceMinter), PERMISSION_BIT_MINTER);
+
         // set the sales config on that token
-        tokenContract.callSale(
+        // normally called with:
+        // tokenContract.callSale(
+        //     newTokenId,
+        //     fixedPriceMinter,
+        //     abi.encodeWithSelector(
+        //         ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+        //         newTokenId,
+        //         _buildNewSalesConfig(contractAdmin, tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.saleDuration)
+        //     )
+        // );
+        setupTokenActions[1] = abi.encodeWithSelector(
+            IZoraCreator1155.callSale.selector,
             newTokenId,
             fixedPriceMinter,
             abi.encodeWithSelector(
@@ -161,7 +182,18 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
                 _buildNewSalesConfig(contractAdmin, tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.saleDuration)
             )
         );
-        tokenContract.updateRoyaltiesForToken(
+
+        // set the royalty config on that token:
+        // tokenContract.updateRoyaltiesForToken(
+        //     newTokenId,
+        //     ICreatorRoyaltiesControl.RoyaltyConfiguration({
+        //         royaltyBPS: tokenConfig.royaltyBPS,
+        //         royaltyRecipient: tokenConfig.royaltyRecipient,
+        //         royaltyMintSchedule: tokenConfig.royaltyMintSchedule
+        //     })
+        // );
+        setupTokenActions[2] = abi.encodeWithSelector(
+            IZoraCreator1155.updateRoyaltiesForToken.selector,
             newTokenId,
             ICreatorRoyaltiesControl.RoyaltyConfiguration({
                 royaltyBPS: tokenConfig.royaltyBPS,
@@ -169,10 +201,20 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
                 royaltyMintSchedule: tokenConfig.royaltyMintSchedule
             })
         );
+
         // this contract is the admin of that token, and the creator isn't, so
         // make the creator the admin of that token, and remove this contracts admin rights on that token.
-        tokenContract.addPermission(newTokenId, tokenContract.owner(), PERMISSION_BIT_ADMIN);
-        tokenContract.removePermission(newTokenId, address(this), PERMISSION_BIT_ADMIN);
+
+        // set the owner as admin:
+        // tokenContract.addPermission(newTokenId, tokenContract.owner(), PERMISSION_BIT_ADMIN);
+        setupTokenActions[3] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, newTokenId, tokenContract.owner(), PERMISSION_BIT_ADMIN);
+
+        // remove this contract as admin:
+        // tokenContract.removePermission(newTokenId, address(this), PERMISSION_BIT_ADMIN);
+        setupTokenActions[4] = abi.encodeWithSelector(IZoraCreator1155.removePermission.selector, newTokenId, address(this), PERMISSION_BIT_ADMIN);
+
+        // now multicall using these
+        ZoraCreator1155Impl(address(tokenContract)).multicall(setupTokenActions);
     }
 
     function recoverSigner(
