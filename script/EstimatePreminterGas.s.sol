@@ -61,7 +61,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
 
         uint256 valueToSend = quantityToMint * ZoraCreator1155Impl(address(factory.implementation())).mintFee();
 
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, chainId());
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId());
 
         uint256 privateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 

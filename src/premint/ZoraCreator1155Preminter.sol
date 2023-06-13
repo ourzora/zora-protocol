@@ -247,25 +247,34 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
             contractConfig,
             tokenConfig,
             uid,
-            // here we pass the current chain id, ensuring that the message
-            // only works for the current chain id
+            // here we pass the current contract and chain id, ensuring that the message
+            // only works for the current chain and contract id
+            address(this),
             block.chainid
         );
 
         signatory = ECDSAUpgradeable.recover(digest, signature);
     }
 
+    /// Gets hash data to sign for a premint.  Allows specifying a different chain id and contract address so that the signature
+    /// can be verified on a different chain.
+    /// @param contractConfig Contract parameters
+    /// @param tokenConfig Token parameters
+    /// @param uid Unique id for the signature, scoped to the contract.  Ensures a token is only created once per intended signature
+    /// @param verifyingContract Contract address that signature is to be verified against
+    /// @param chainId Chain id that signature is to be verified on
     function premintHashData(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
         uint256 uid,
+        address verifyingContract,
         uint256 chainId
     ) public view returns (bytes32) {
         bytes32 encoded = _hashContractAndToken(contractConfig, tokenConfig, uid);
 
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
-        return _hashTypedDataV4(encoded, chainId);
+        return _hashTypedDataV4(encoded, verifyingContract, chainId);
     }
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =

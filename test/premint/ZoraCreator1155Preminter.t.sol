@@ -94,7 +94,7 @@ contract ZoraCreator1155PreminterTest is Test {
         string memory comment = "hi";
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -122,7 +122,7 @@ contract ZoraCreator1155PreminterTest is Test {
         tokenConfig.tokenURI = "blah2.token";
         uid++;
 
-        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, chainId);
+        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature
@@ -149,7 +149,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 uid = 1;
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -166,7 +166,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // create a sig for another token with same uid, it should revert
         tokenConfig.tokenURI = "blah2.token";
-        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, chainId);
+        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature - it should revert
@@ -194,7 +194,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 uid = 10;
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params

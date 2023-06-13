@@ -44,12 +44,18 @@ abstract contract EIP712UpgradeableWithChainId is Initializable {
     /**
      * @dev Returns the domain separator for the specified chain.
      */
-    function _domainSeparatorV4(uint256 chainId) internal view returns (bytes32) {
-        return _buildDomainSeparator(_TYPE_HASH, _EIP712NameHash(), _EIP712VersionHash(), chainId);
+    function _domainSeparatorV4(uint256 chainId, address verifyingContract) internal view returns (bytes32) {
+        return _buildDomainSeparator(_TYPE_HASH, _EIP712NameHash(), _EIP712VersionHash(), verifyingContract, chainId);
     }
 
-    function _buildDomainSeparator(bytes32 typeHash, bytes32 nameHash, bytes32 versionHash, uint256 chainId) private view returns (bytes32) {
-        return keccak256(abi.encode(typeHash, nameHash, versionHash, chainId, address(this)));
+    function _buildDomainSeparator(
+        bytes32 typeHash,
+        bytes32 nameHash,
+        bytes32 versionHash,
+        address verifyingContract,
+        uint256 chainId
+    ) private pure returns (bytes32) {
+        return keccak256(abi.encode(typeHash, nameHash, versionHash, chainId, verifyingContract));
     }
 
     /**
@@ -67,8 +73,8 @@ abstract contract EIP712UpgradeableWithChainId is Initializable {
      * address signer = ECDSA.recover(digest, signature);
      * ```
      */
-    function _hashTypedDataV4(bytes32 structHash, uint256 chainId) internal view virtual returns (bytes32) {
-        return ECDSAUpgradeable.toTypedDataHash(_domainSeparatorV4(chainId), structHash);
+    function _hashTypedDataV4(bytes32 structHash, address verifyingContract, uint256 chainId) internal view virtual returns (bytes32) {
+        return ECDSAUpgradeable.toTypedDataHash(_domainSeparatorV4(chainId, verifyingContract), structHash);
     }
 
     /**
