@@ -34,3 +34,6 @@ dist/
 .env
 .env*
 !.env.example
+
+package/wagmiGenerated.ts
+package/chainConfigs.ts
