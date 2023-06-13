@@ -23,13 +23,13 @@ contract DeployPreminter is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
 
-        address deployer = vm.envAddress("DEPLOYER");
+        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
         ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
 
         IMinter1155 fixedPricedMinter = factory.fixedPriceMinter();
 
-        vm.startBroadcast(deployer);
+        vm.startBroadcast(deployerPrivateKey);
 
         ZoraCreator1155Preminter preminter = new ZoraCreator1155Preminter();
         preminter.initialize(factory, fixedPricedMinter);

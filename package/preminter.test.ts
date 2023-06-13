@@ -111,7 +111,6 @@ describe("ZoraCreator1155Preminter", () => {
       contractAdmin: creatorAccount,
       contractURI: "ipfs://asdfasdfasdf",
       contractName: "My fun NFT",
- 
     };
 
     const tokenConfig: TokenCreationConfig = {
@@ -123,7 +122,7 @@ describe("ZoraCreator1155Preminter", () => {
       royaltyMintSchedule: 30,
       royaltyBPS: 200,
       royaltyRecipient: creatorAccount,
-      uid: 1n
+      uid: 1n,
     };
 
     const signedMessage = await walletClient.signTypedData({
@@ -149,13 +148,11 @@ describe("ZoraCreator1155Preminter", () => {
   it<TestContext>(
     "can sign and mint multiple tokens",
     async ({ preminterAddress, zoraMintFee }) => {
-      
       // setup contract and token creation parameters
       const contractConfig: ContractCreationConfig = {
         contractAdmin: creatorAccount,
         contractURI: "ipfs://asdfasdfasdf",
         contractName: "My fun NFT",
-        
       };
 
       const tokenConfig: TokenCreationConfig = {
@@ -167,7 +164,7 @@ describe("ZoraCreator1155Preminter", () => {
         royaltyMintSchedule: 30,
         royaltyBPS: 200,
         royaltyRecipient: creatorAccount,
-        uid: 1n
+        uid: 1n,
       };
 
       // have creator sign the message to create the contract
@@ -188,7 +185,7 @@ describe("ZoraCreator1155Preminter", () => {
       const valueToSend =
         (zoraMintFee + tokenConfig.pricePerToken) * quantityToMint;
 
-      const comment = 'I love this!';
+      const comment = "I love this!";
 
       // now have the collector execute the first signed message;
       // it should create the contract, the token,
@@ -200,7 +197,13 @@ describe("ZoraCreator1155Preminter", () => {
         functionName: "premint",
         account: collectorAccount,
         address: preminterAddress,
-        args: [contractConfig, tokenConfig, signedMessage, quantityToMint, comment],
+        args: [
+          contractConfig,
+          tokenConfig,
+          signedMessage,
+          quantityToMint,
+          comment,
+        ],
         value: valueToSend,
       });
 
@@ -216,8 +219,8 @@ describe("ZoraCreator1155Preminter", () => {
         abi: preminterAbi,
         address: preminterAddress,
         functionName: "contractDataHash",
-        args: [contractConfig]
-      })
+        args: [contractConfig],
+      });
 
       const createdContractAddress = await publicClient.readContract({
         abi: preminterAbi,
@@ -242,7 +245,7 @@ describe("ZoraCreator1155Preminter", () => {
         ...tokenConfig,
         tokenURI: "ipfs://tokenIpfsId2",
         pricePerToken: parseEther("0.05"),
-        uid: 2n
+        uid: 2n,
       };
 
       const signedMessage2 = await walletClient.signTypedData({
@@ -266,7 +269,13 @@ describe("ZoraCreator1155Preminter", () => {
         functionName: "premint",
         account: collectorAccount,
         address: preminterAddress,
-        args: [contractConfig, tokenConfig2, signedMessage2, quantityToMint2, comment],
+        args: [
+          contractConfig,
+          tokenConfig2,
+          signedMessage2,
+          quantityToMint2,
+          comment,
+        ],
         value: valueToSend2,
       });
 

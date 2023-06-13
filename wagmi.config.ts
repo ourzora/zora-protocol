@@ -37,8 +37,9 @@ const getAddresses = () => {
   const addAddress = (
     contractName: ContractNames,
     chainId: number,
-    address: Address
+    address?: Address
   ) => {
+    if (!address) return;
     if (!addresses[contractName]) {
       addresses[contractName] = {};
     }
@@ -56,7 +57,7 @@ const getAddresses = () => {
       "1155_IMPL": Address;
       FACTORY_IMPL: Address;
       FACTORY_PROXY: Address;
-      PREMINTER: Address;
+      PREMINTER?: Address;
     };
 
     const chainId = parseInt(addressesFile.split(".")[0]);
@@ -81,6 +82,7 @@ const getAddresses = () => {
       chainId,
       jsonAddress.REDEEM_MINTER_FACTORY
     );
+    addAddress("ZoraCreator1155Preminter", chainId, jsonAddress.PREMINTER);
   }
 
   return addresses;

@@ -1,9 +1,7 @@
 import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
 import { zoraCreator1155PreminterABI as preminterAbi } from "./wagmiGenerated";
-import {
-  TypedDataDefinition,
-} from "viem";
+import { TypedDataDefinition } from "viem";
 
 type PreminterHashInputs = ExtractAbiFunction<
   typeof preminterAbi,
@@ -37,7 +35,7 @@ export const preminterTypedDataDefinition = ({
     ContractCreationConfig: [
       { name: "contractAdmin", type: "address" },
       { name: "contractURI", type: "string" },
-      { name: "contractName", type: "string" }
+      { name: "contractName", type: "string" },
     ],
     TokenCreationConfig: [
       { name: "tokenURI", type: "string" },
@@ -48,7 +46,7 @@ export const preminterTypedDataDefinition = ({
       { name: "royaltyMintSchedule", type: "uint32" },
       { name: "royaltyBPS", type: "uint32" },
       { name: "royaltyRecipient", type: "address" },
-      { name: 'uid', type: 'uint256'}
+      { name: "uid", type: "uint256" },
     ],
   };
 
