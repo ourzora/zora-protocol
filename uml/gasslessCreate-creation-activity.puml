@@ -7,6 +7,10 @@ start
 if (new token) then (yes)
   if (new contract) then (yes)
     :Ask creator for new\ncontract creation params;
+    if (contract exists\nwith same params) then (yes)
+      :switch ui to create token\non existing contract;
+    else (no)
+    endif
   else (no)
     :load existing\ncontract creation parameters\nby hash id;
   endif
@@ -16,7 +20,7 @@ else (no)
 endif
 :Ask creator for new\ntoken creation params;
 :Request signature with:\ncontract + token params + uid;
-:Submit:\ncontract + token params + uid + signature\n to backend server;
+:Submit to backend server:\ncontract + token params + uid + signature\n;
 
 stop
 

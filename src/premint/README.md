@@ -40,11 +40,13 @@ Functions:
 
 Creating a new contract + token:
 
-![Preminter creation flow](../../uml/generated/gasslessCreate-creation.svg)
+![Preminter creation flow](../../uml/generated/gasslessCreate-creation-sequence.svg)
+![Preminter creation flow](../../uml/generated/gasslessCreate-creation-activity.svg)
 
 Collecting:
 
-![Preminter collection flow](../../uml/generated/gasslessCreate-collecting.svg)
+![Preminter collection flow](../../uml/generated/gasslessCreate-collecting-sequence.svg)
+![Preminter collection flow](../../uml/generated/gasslessCreate-collecting-activity.svg)
 
 * In the front-end a creator creates a signature for contract and token creation.  The signature is created off-chain by the creator's account on a hash of the above said parameters. It there are additional tokens to be created, signatures are created for each token to be created. There must be some validation that a signature with the same parameters has not already been created (see constraints above).  This can be done by checking against the uniqueness of the created signature.
 * Once the creator has signed the message, a backend service (another db or blockchain) must store these signatures which can be retreived later by a collector.  This backend must store both the contract + token creation parameters and the signature. 
