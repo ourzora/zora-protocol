@@ -36,7 +36,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     /// @dev hash of contract creation config + token uid -> if token has been created
     mapping(uint256 => bool) tokenCreated;
 
-    error TokenAlreadyCreated(uint256 contractHash, uint256 tokenUid);
+    error TokenAlreadyCreated(address creatorAddress, string contractURI, string contractName, uint256 tokenUid);
 
     function initialize(IZoraCreator1155Factory _factory, IMinter1155 _fixedPriceMinter) public initializer {
         __EIP712_init("Preminter", "0.0.1");
@@ -76,6 +76,18 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         uint256 uid;
     }
 
+    event Preminted(
+        address indexed contractAddress,
+        uint256 indexed tokenId,
+        bool indexed createdNewContract,
+        uint256 contractHashId,
+        uint256 uid,
+        ContractCreationConfig contractConfig,
+        TokenCreationConfig tokenConfig,
+        address minter,
+        uint256 quantiyMinted
+    );
+
     // same signature should work whether or not there is an existing contract
     // so it is unaware of order, it just takes the token uri and creates the next token with it
     // this could include creating the contract.
@@ -86,7 +98,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         bytes calldata signature,
         uint256 quantityToMint,
         string calldata mintComment
-    ) public payable returns (uint256 newTokenId) {
+    ) public payable returns (address contractAddress, uint256 newTokenId) {
         // 1. Validate the signature, and mark it as used.
         // 2. Create an erc1155 contract with the given name and uri and the creator as the admin/owner
         // 3. Allow this contract to create new new tokens on the contract
@@ -95,31 +107,37 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         // 6. Make the creator an admin of that token (and remove this contracts admin rights)
         // 7. Mint x tokens, as configured, to the executor of this transaction.
 
+        // get or create the contract with the given params
+        (IZoraCreator1155 tokenContract, uint256 contractHash, bool isNewContract) = _getOrCreateContract(contractConfig);
+        contractAddress = address(tokenContract);
+
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
         _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, signature);
 
-        // get or create the contract with the given params
-        IZoraCreator1155 tokenContract = _getOrCreateContract(contractConfig);
-
         // setup the new token, and its sales config
         newTokenId = _setupNewTokenAndSale(tokenContract, contractConfig.contractAdmin, tokenConfig);
+
+        emit Preminted(contractAddress, newTokenId, isNewContract, contractHash, tokenConfig.uid, contractConfig, tokenConfig, msg.sender, quantityToMint);
 
         // mint the initial x tokens for this new token id to the executor.
         address tokenRecipient = msg.sender;
         tokenContract.mint{value: msg.value}(fixedPriceMinter, newTokenId, quantityToMint, abi.encode(tokenRecipient, mintComment));
     }
 
-    function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
-        uint256 contractHash = contractDataHash(contractConfig);
+    function _getOrCreateContract(
+        ContractCreationConfig calldata contractConfig
+    ) private returns (IZoraCreator1155 tokenContract, uint256 contractHash, bool isNewContract) {
+        contractHash = contractDataHash(contractConfig);
         address contractAddress = contractAddresses[contractHash];
-        // if address already exists for hash, return it
-        if (contractAddress != address(0)) {
-            tokenContract = IZoraCreator1155(contractAddress);
-        } else {
-            // otherwise, create the contract and update the created contracts
+        // first we see if the address exists for the contract
+        isNewContract = contractAddress == address(0);
+        if (isNewContract) {
+            // if address doesnt exist for hash, createi t
             tokenContract = _createContract(contractConfig);
             contractAddresses[contractHash] = address(tokenContract);
+        } else {
+            tokenContract = IZoraCreator1155(contractAddress);
         }
     }
 
@@ -289,18 +307,21 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     }
 
     function tokenHasBeenCreated(ContractCreationConfig calldata contractConfig, uint256 tokenUid) public view returns (bool) {
-        return tokenCreated[contractAndTokenHash(contractDataHash(contractConfig), tokenUid)];
+        return tokenCreated[contractAndTokenHash(contractConfig, tokenUid)];
     }
 
-    function contractAndTokenHash(uint256 contractHash, uint256 tokenUid) public pure returns (uint256) {
-        return uint256(keccak256(abi.encode(contractHash, tokenUid)));
+    function contractAndTokenHash(ContractCreationConfig calldata contractConfig, uint256 tokenUid) public pure returns (uint256) {
+        return
+            uint256(
+                keccak256(abi.encode(contractConfig.contractAdmin, stringHash(contractConfig.contractURI), stringHash(contractConfig.contractName), tokenUid))
+            );
     }
 
     function _validateSignatureAndEnsureNotUsed(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
         bytes calldata signature
-    ) private {
+    ) private returns (uint256 tokenHash) {
         // first validate the signature - the creator must match the signer of the message
         address signatory = recoverSigner(contractConfig, tokenConfig, signature);
 
@@ -310,12 +331,13 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
         // make sure that this signature hasn't been used
         // token hash includes the contract hash, so we can check uniqueness of contract + token pair
-        uint256 contractHash = contractDataHash(contractConfig);
-        uint256 tokenHash = contractAndTokenHash(contractHash, tokenConfig.uid);
+        tokenHash = contractAndTokenHash(contractConfig, tokenConfig.uid);
         if (tokenCreated[tokenHash]) {
-            revert TokenAlreadyCreated(contractHash, tokenConfig.uid);
+            revert TokenAlreadyCreated(contractConfig.contractAdmin, contractConfig.contractURI, contractConfig.contractName, tokenConfig.uid);
         }
         tokenCreated[tokenHash] = true;
+
+        return tokenHash;
     }
 
     /// Returns a unique hash for the contract data, useful to uniquely identify a contract based on creation params
