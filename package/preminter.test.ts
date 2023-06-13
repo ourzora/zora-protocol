@@ -188,6 +188,8 @@ describe("ZoraCreator1155Preminter", () => {
       const valueToSend =
         (zoraMintFee + tokenConfig.pricePerToken) * quantityToMint;
 
+      const comment = 'I love this!';
+
       // now have the collector execute the first signed message;
       // it should create the contract, the token,
       // and min the quantity to mint tokens to the collector
@@ -198,7 +200,7 @@ describe("ZoraCreator1155Preminter", () => {
         functionName: "premint",
         account: collectorAccount,
         address: preminterAddress,
-        args: [contractConfig, tokenConfig, quantityToMint, signedMessage],
+        args: [contractConfig, tokenConfig, signedMessage, quantityToMint, comment],
         value: valueToSend,
       });
 
@@ -264,7 +266,7 @@ describe("ZoraCreator1155Preminter", () => {
         functionName: "premint",
         account: collectorAccount,
         address: preminterAddress,
-        args: [contractConfig, tokenConfig2, quantityToMint2, signedMessage2],
+        args: [contractConfig, tokenConfig2, signedMessage2, quantityToMint2, comment],
         value: valueToSend2,
       });
 

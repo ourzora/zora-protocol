@@ -69,11 +69,13 @@ contract EstimatePreminterGas is ZoraDeployerBase {
 
         bytes memory signature = abi.encodePacked(r, s, v);
 
+        string memory comment = "we love it!";
+
         console.log("executing premint");
         // now do an on-chain premint
         vm.startBroadcast(deployer);
 
-        preminter.premint{value: valueToSend}(contractConfig, tokenConfig, quantityToMint, signature);
+        preminter.premint{value: valueToSend}(contractConfig, tokenConfig, signature, quantityToMint, comment);
 
         vm.stopBroadcast();
     }

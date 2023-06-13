@@ -83,8 +83,9 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     function premint(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
+        bytes calldata signature,
         uint256 quantityToMint,
-        bytes calldata signature
+        string calldata mintComment
     ) public payable returns (uint256 newTokenId) {
         // 1. Validate the signature, and mark it as used.
         // 2. Create an erc1155 contract with the given name and uri and the creator as the admin/owner
@@ -106,7 +107,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
 
         // mint the initial x tokens for this new token id to the executor.
         address tokenRecipient = msg.sender;
-        tokenContract.mint{value: msg.value}(fixedPriceMinter, newTokenId, quantityToMint, abi.encode(tokenRecipient, ""));
+        tokenContract.mint{value: msg.value}(fixedPriceMinter, newTokenId, quantityToMint, abi.encode(tokenRecipient, mintComment));
     }
 
     function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract) {
