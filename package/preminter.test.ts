@@ -107,6 +107,7 @@ describe("ZoraCreator1155Preminter", () => {
   it<TestContext>("can sign and recover a signature", async ({
     preminterAddress,
   }) => {
+    // create token and contract creation config:
     const contractConfig: ContractCreationConfig = {
       contractAdmin: creatorAccount,
       contractURI: "ipfs://asdfasdfasdf",
@@ -126,6 +127,7 @@ describe("ZoraCreator1155Preminter", () => {
 
     const uid = 105n;
 
+    // sign message containing contract and token creation config and uid
     const signedMessage = await walletClient.signTypedData({
       ...preminterTypedDataDefinition({
         preminterAddress,
@@ -137,6 +139,7 @@ describe("ZoraCreator1155Preminter", () => {
       account: creatorAccount,
     });
 
+    // recover and verify address is correct
     const recoveredAddress = await publicClient.readContract({
       abi: preminterAbi,
       address: preminterAddress,
@@ -254,6 +257,7 @@ describe("ZoraCreator1155Preminter", () => {
         pricePerToken: parseEther("0.05"),
       };
 
+      // sign the message to create the second token
       const signedMessage2 = await walletClient.signTypedData({
         ...preminterTypedDataDefinition({
           preminterAddress,
@@ -270,7 +274,8 @@ describe("ZoraCreator1155Preminter", () => {
       const valueToSend2 =
         (zoraMintFee + tokenConfig2.pricePerToken) * quantityToMint2;
 
-      // now have the collector execute the second signed message
+      // now have the collector execute the second signed message.
+      // it should create a new token against the existing contract
       const mintHash2 = await walletClient.writeContract({
         abi: preminterAbi,
         functionName: "premint",
