@@ -20,17 +20,20 @@ export const preminterTypedDataDefinition = ({
   preminterAddress,
   contractConfig,
   tokenConfig,
+  uid,
   chainId,
 }: {
   preminterAddress: Address;
   contractConfig: ContractCreationConfig;
   tokenConfig: TokenCreationConfig;
+  uid: bigint,
   chainId: number;
 }) => {
   const types = {
     ContractAndToken: [
       { name: "contractConfig", type: "ContractCreationConfig" },
       { name: "tokenConfig", type: "TokenCreationConfig" },
+      { name: 'uid', type: 'uint256'}
     ],
     ContractCreationConfig: [
       { name: "contractAdmin", type: "address" },
@@ -46,7 +49,6 @@ export const preminterTypedDataDefinition = ({
       { name: "royaltyMintSchedule", type: "uint32" },
       { name: "royaltyBPS", type: "uint32" },
       { name: "royaltyRecipient", type: "address" },
-      { name: "uid", type: "uint256" },
     ],
   };
 
@@ -61,6 +63,7 @@ export const preminterTypedDataDefinition = ({
     message: {
       contractConfig,
       tokenConfig,
+      uid
     },
     primaryType: "ContractAndToken",
   };

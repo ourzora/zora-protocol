@@ -122,14 +122,16 @@ describe("ZoraCreator1155Preminter", () => {
       royaltyMintSchedule: 30,
       royaltyBPS: 200,
       royaltyRecipient: creatorAccount,
-      uid: 1n,
     };
+
+    const uid = 105n;
 
     const signedMessage = await walletClient.signTypedData({
       ...preminterTypedDataDefinition({
         preminterAddress,
         chainId: foundry.id,
         contractConfig,
+        uid,
         tokenConfig,
       }),
       account: creatorAccount,
@@ -139,7 +141,7 @@ describe("ZoraCreator1155Preminter", () => {
       abi: preminterAbi,
       address: preminterAddress,
       functionName: "recoverSigner",
-      args: [contractConfig, tokenConfig, signedMessage],
+      args: [contractConfig, tokenConfig, uid, signedMessage],
     });
 
     expect(recoveredAddress).to.equal(creatorAccount);
@@ -155,6 +157,8 @@ describe("ZoraCreator1155Preminter", () => {
         contractName: "My fun NFT",
       };
 
+      const uid = 1n;
+
       const tokenConfig: TokenCreationConfig = {
         tokenURI: "ipfs://tokenIpfsId0",
         maxSupply: 100n,
@@ -164,7 +168,6 @@ describe("ZoraCreator1155Preminter", () => {
         royaltyMintSchedule: 30,
         royaltyBPS: 200,
         royaltyRecipient: creatorAccount,
-        uid: 1n,
       };
 
       // have creator sign the message to create the contract
@@ -175,6 +178,7 @@ describe("ZoraCreator1155Preminter", () => {
           chainId: foundry.id,
           contractConfig,
           tokenConfig,
+          uid
         }),
         // signer account is the creator
         account: creatorAccount,
@@ -200,6 +204,7 @@ describe("ZoraCreator1155Preminter", () => {
         args: [
           contractConfig,
           tokenConfig,
+          uid,
           signedMessage,
           quantityToMint,
           comment,
@@ -239,13 +244,14 @@ describe("ZoraCreator1155Preminter", () => {
       // get token balance - should be amount that was created
       expect(tokenBalance).toBe(quantityToMint);
 
+      const uid2 = uid + 1n;
+
       // create a signature to create a second token,
       // with different ipfs url and price per token
       const tokenConfig2: TokenCreationConfig = {
         ...tokenConfig,
         tokenURI: "ipfs://tokenIpfsId2",
         pricePerToken: parseEther("0.05"),
-        uid: 2n,
       };
 
       const signedMessage2 = await walletClient.signTypedData({
@@ -254,6 +260,7 @@ describe("ZoraCreator1155Preminter", () => {
           chainId: foundry.id,
           contractConfig,
           tokenConfig: tokenConfig2,
+          uid: uid2
         }),
         account: creatorAccount,
       });
@@ -272,6 +279,7 @@ describe("ZoraCreator1155Preminter", () => {
         args: [
           contractConfig,
           tokenConfig2,
+          uid2,
           signedMessage2,
           quantityToMint2,
           comment,

@@ -53,15 +53,15 @@ contract EstimatePreminterGas is ZoraDeployerBase {
             saleDuration: 365 days,
             royaltyBPS: 10,
             royaltyRecipient: deployer,
-            royaltyMintSchedule: 20,
-            uid: 1
+            royaltyMintSchedule: 20
         });
         // how many tokens are minted to the executor
         uint256 quantityToMint = 1;
+        uint256 uid = 100;
 
         uint256 valueToSend = quantityToMint * ZoraCreator1155Impl(address(factory.implementation())).mintFee();
 
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, chainId());
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, chainId());
 
         uint256 privateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
@@ -75,7 +75,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
         // now do an on-chain premint
         vm.startBroadcast(deployer);
 
-        preminter.premint{value: valueToSend}(contractConfig, tokenConfig, signature, quantityToMint, comment);
+        preminter.premint{value: valueToSend}(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
 
         vm.stopBroadcast();
     }
