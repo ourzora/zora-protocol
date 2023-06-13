@@ -13,7 +13,7 @@ else (no)
   if (contract already created) then (yes)
     :Show contract address;
   endif
-  :Submit premint containing:\ncontract & token params, uid, signature\nquantity, comment;
+  :Mint on premint contract. Submit:\ncontract & token params, uid, signature\nquantity, comment;
 endif
 stop
 
