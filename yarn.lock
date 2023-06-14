@@ -302,10 +302,10 @@
   resolved "https://registry.yarnpkg.com/@zoralabs/openzeppelin-contracts-upgradeable/-/openzeppelin-contracts-upgradeable-4.8.4.tgz#130b69cd5ff70b1f67da11fe53fe8b2323464b84"
   integrity sha512-5vhL88tz00Gv2+NUhLdYBRqb9RRekfyQAodXTQxJU2LYxxy6jr1mPycTZempQ1kmw5wIwFbSIoYzpaxOx6UK6Q==
 
-"@zoralabs/zora-rewards@^0.1.3":
-  version "0.1.3"
-  resolved "https://registry.yarnpkg.com/@zoralabs/zora-rewards/-/zora-rewards-0.1.3.tgz#51f4eb646c7f0348f7fc059b2ae438cf5cbd8d90"
-  integrity sha512-sUliv5KGvUN7tJ4zVsPz2t7QRMncpQG+vRoejaZ6Psxm7V2gQEVQS3bY/+pPo7C0rGZcXgeEJgwGWPXmOLVIfQ==
+"@zoralabs/zora-rewards@^0.1.4":
+  version "0.1.4"
+  resolved "https://registry.yarnpkg.com/@zoralabs/zora-rewards/-/zora-rewards-0.1.4.tgz#fc3ccf924b2ee05231af4fec7aa06e572585eb5d"
+  integrity sha512-3ZTDZ+1zTsjmd+wbQkzifhiHrlkYq268a0C+ZmixXsEBeBWEzxZwIXVoUCTZxTPguWlddN16rRrg2bumyvsQQA==
   dependencies:
     "@openzeppelin/contracts" "^4.9.0"
 
