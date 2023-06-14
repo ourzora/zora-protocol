@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
+import {ZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/ZoraRewards.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
@@ -13,9 +14,12 @@ import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
     ZoraCreator1155FactoryImpl internal factory;
+    address internal zora;
 
     function setUp() external {
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
+        zora = makeAddr("zora");
+        ZoraRewards zoraRewards = new ZoraRewards("", "");
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards));
         factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
     }
 

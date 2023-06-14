@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
+import {ZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/ZoraRewards.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -16,10 +17,12 @@ import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
 
 contract ZoraCreator1155Test is Test {
     using stdJson for string;
+    ZoraRewards internal zoraRewards;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
     MockUpgradeGate internal upgradeGate;
     address payable internal admin;
+    address internal zora;
     address internal recipient;
     uint256 internal adminRole;
     uint256 internal minterRole;
@@ -29,9 +32,11 @@ contract ZoraCreator1155Test is Test {
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
     function setUp() external {
+        zora = makeAddr("zora");
+        zoraRewards = new ZoraRewards("", "");
         upgradeGate = new MockUpgradeGate();
         upgradeGate.initialize(admin);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(upgradeGate));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(zoraRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
@@ -785,7 +790,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_unauthorizedUpgradeFails() external {
-        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards)));
 
         vm.expectRevert();
         target.upgradeTo(new1155Impl);
@@ -797,7 +802,7 @@ contract ZoraCreator1155Test is Test {
 
         oldImpls[0] = address(zoraCreator1155Impl);
 
-        address new1155Impl = address(new ZoraCreator1155Impl(0, address(0), address(0)));
+        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards)));
 
         vm.prank(upgradeGate.owner());
         upgradeGate.registerUpgradePath(oldImpls, new1155Impl);
