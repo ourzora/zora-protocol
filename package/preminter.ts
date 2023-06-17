@@ -17,13 +17,13 @@ export type TokenCreationConfig = PreminterHashDataTypes[1];
 // Convenience method to create the structured typed data
 // needed to sign for a premint contract and token
 export const preminterTypedDataDefinition = ({
-  preminterAddress,
+  verifyingContract,
   contractConfig,
   tokenConfig,
   uid,
   chainId,
 }: {
-  preminterAddress: Address;
+  verifyingContract: Address;
   contractConfig: ContractCreationConfig;
   tokenConfig: TokenCreationConfig;
   uid: bigint,
@@ -57,7 +57,7 @@ export const preminterTypedDataDefinition = ({
       chainId,
       name: "Preminter",
       version: "0.0.1",
-      verifyingContract: preminterAddress,
+      verifyingContract: verifyingContract,
     },
     types,
     message: {

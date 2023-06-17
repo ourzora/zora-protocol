@@ -32,7 +32,6 @@ lcov.info
 dist/
 
 .env
-.env*
 !.env.example
 
 package/wagmiGenerated.ts

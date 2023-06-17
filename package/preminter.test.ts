@@ -4,13 +4,14 @@ import {
   createWalletClient,
   createPublicClient,
 } from "viem";
-import { foundry, mainnet } from "viem/chains";
+import { foundry } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
 import { parseEther } from "viem";
 import {
   zoraCreator1155FactoryImplConfig,
   zoraCreator1155PreminterABI as preminterAbi,
   zoraCreator1155ImplABI,
+  zoraCreator1155PreminterAddress,
 } from "./wagmiGenerated";
 import { chainConfigs } from "./chainConfigs";
 import preminter from "../out/ZoraCreator1155Preminter.sol/ZoraCreator1155Preminter.json";
@@ -41,6 +42,8 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
+
+
 type Address = `0x${string}`;
 
 // JSON-RPC Account
@@ -52,9 +55,13 @@ type TestContext = {
   zoraMintFee: bigint;
 };
 
+const fork_chain_id = 999; 
+
 const deployPreminterContract = async () => {
+  // hardcode to zora fork
+
   const factoryProxyAddress = zoraCreator1155FactoryImplConfig.address[
-    mainnet.id
+    fork_chain_id
   ].toLowerCase() as `0x${string}`;
 
   const fixedPriceMinterAddress = await publicClient.readContract({
@@ -90,6 +97,24 @@ const deployPreminterContract = async () => {
   };
 };
 
+// create token and contract creation config:
+const defaultContractConfig: ContractCreationConfig = {
+  contractAdmin: creatorAccount,
+  contractURI: "ipfs://asdfasdfasdf",
+  contractName: "My fun NFT",
+};
+
+const defaultTokenConfig: TokenCreationConfig = {
+  tokenURI: "ipfs://tokenIpfsId0",
+  maxSupply: 100n,
+  maxTokensPerAddress: 10n,
+  pricePerToken: parseEther("0.1"),
+  saleDuration: 100n,
+  royaltyMintSchedule: 30,
+  royaltyBPS: 200,
+  royaltyRecipient: creatorAccount,
+};
+
 describe("ZoraCreator1155Preminter", () => {
   beforeEach<TestContext>(async (ctx) => {
     // deploy signature minter contract
@@ -98,53 +123,55 @@ describe("ZoraCreator1155Preminter", () => {
       value: parseEther("10"),
     });
 
-    const { contractAddress } = await deployPreminterContract();
+    // const { contractAddress } = await deployPreminterContract();
 
-    ctx.preminterAddress = contractAddress;
-    ctx.zoraMintFee = BigInt(chainConfigs[mainnet.id].MINT_FEE_AMOUNT);
+    ctx.preminterAddress = zoraCreator1155PreminterAddress[fork_chain_id];
+    ctx.zoraMintFee = BigInt(chainConfigs[fork_chain_id].MINT_FEE_AMOUNT);
   });
 
+  it<TestContext>("can sign for another chain", async ({ preminterAddress }) => {
+    const uid = 105n;
+
+    const signedMessage = await walletClient.signTypedData({
+      ...preminterTypedDataDefinition({
+        verifyingContract: preminterAddress,
+        chainId: 999,
+        contractConfig: defaultContractConfig,
+        uid,
+        tokenConfig: defaultTokenConfig,
+      }),
+      account: creatorAccount,
+    });
+
+    console.log({ creatorAccount, signedMessage });
+
+  })
   it<TestContext>("can sign and recover a signature", async ({
     preminterAddress,
   }) => {
-    // create token and contract creation config:
-    const contractConfig: ContractCreationConfig = {
-      contractAdmin: creatorAccount,
-      contractURI: "ipfs://asdfasdfasdf",
-      contractName: "My fun NFT",
-    };
 
-    const tokenConfig: TokenCreationConfig = {
-      tokenURI: "ipfs://tokenIpfsId0",
-      maxSupply: 100n,
-      maxTokensPerAddress: 10n,
-      pricePerToken: parseEther("0.1"),
-      saleDuration: 100n,
-      royaltyMintSchedule: 30,
-      royaltyBPS: 200,
-      royaltyRecipient: creatorAccount,
-    };
 
     const uid = 105n;
 
     // sign message containing contract and token creation config and uid
     const signedMessage = await walletClient.signTypedData({
       ...preminterTypedDataDefinition({
-        preminterAddress,
+        verifyingContract: preminterAddress,
         chainId: foundry.id,
-        contractConfig,
+        contractConfig: defaultContractConfig,
         uid,
-        tokenConfig,
+        tokenConfig: defaultTokenConfig,
       }),
       account: creatorAccount,
     });
+
 
     // recover and verify address is correct
     const recoveredAddress = await publicClient.readContract({
       abi: preminterAbi,
       address: preminterAddress,
       functionName: "recoverSigner",
-      args: [contractConfig, tokenConfig, uid, signedMessage],
+      args: [defaultContractConfig, defaultTokenConfig, uid, signedMessage],
     });
 
     expect(recoveredAddress).to.equal(creatorAccount);
@@ -177,7 +204,7 @@ describe("ZoraCreator1155Preminter", () => {
       // and the token
       const signedMessage = await walletClient.signTypedData({
         ...preminterTypedDataDefinition({
-          preminterAddress,
+          verifyingContract: preminterAddress,
           chainId: foundry.id,
           contractConfig,
           tokenConfig,
@@ -260,7 +287,7 @@ describe("ZoraCreator1155Preminter", () => {
       // sign the message to create the second token
       const signedMessage2 = await walletClient.signTypedData({
         ...preminterTypedDataDefinition({
-          preminterAddress,
+          verifyingContract: preminterAddress,
           chainId: foundry.id,
           contractConfig,
           tokenConfig: tokenConfig2,

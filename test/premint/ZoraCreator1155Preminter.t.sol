@@ -111,6 +111,11 @@ contract ZoraCreator1155PreminterTest is Test {
         // retreive the address created for a contract
         uint256 contractHash = preminter.contractDataHash(contractConfig);
 
+        console.log(contractConfig.contractAdmin);
+        console.log(contractConfig.contractName);
+        console.log(contractConfig.contractURI);
+        console.log(contractHash);
+
         // get the contract address from the preminter based on the contract hash id.
         IZoraCreator1155 created1155Contract = IZoraCreator1155(preminter.contractAddresses(contractHash));
 
