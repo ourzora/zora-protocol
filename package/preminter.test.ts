@@ -57,7 +57,7 @@ type TestContext = {
 
 const fork_chain_id = 999; 
 
-const deployPreminterContract = async () => {
+export const deployPreminterContract = async () => {
   // hardcode to zora fork
 
   const factoryProxyAddress = zoraCreator1155FactoryImplConfig.address[
@@ -98,13 +98,13 @@ const deployPreminterContract = async () => {
 };
 
 // create token and contract creation config:
-const defaultContractConfig: ContractCreationConfig = {
+const defaultContractConfig =(): ContractCreationConfig => ({
   contractAdmin: creatorAccount,
   contractURI: "ipfs://asdfasdfasdf",
   contractName: "My fun NFT",
-};
+});
 
-const defaultTokenConfig: TokenCreationConfig = {
+const defaultTokenConfig = (): TokenCreationConfig => ({
   tokenURI: "ipfs://tokenIpfsId0",
   maxSupply: 100n,
   maxTokensPerAddress: 10n,
@@ -113,7 +113,7 @@ const defaultTokenConfig: TokenCreationConfig = {
   royaltyMintSchedule: 30,
   royaltyBPS: 200,
   royaltyRecipient: creatorAccount,
-};
+});
 
 describe("ZoraCreator1155Preminter", () => {
   beforeEach<TestContext>(async (ctx) => {
@@ -136,14 +136,21 @@ describe("ZoraCreator1155Preminter", () => {
       ...preminterTypedDataDefinition({
         verifyingContract: preminterAddress,
         chainId: 999,
-        contractConfig: defaultContractConfig,
+        contractConfig: defaultContractConfig(),
         uid,
-        tokenConfig: defaultTokenConfig,
+        tokenConfig: defaultTokenConfig(),
       }),
       account: creatorAccount,
     });
 
-    console.log({ creatorAccount, signedMessage });
+    console.log({
+      creatorAccount, signedMessage, contractConfig: defaultContractConfig(), tokenConfig: defaultTokenConfig(), contractHashId: await publicClient.readContract({
+        abi: preminterAbi,
+        address: preminterAddress,
+        functionName: 'contractDataHash',
+        args: [defaultContractConfig()]
+      })
+     });
 
   })
   it<TestContext>("can sign and recover a signature", async ({
@@ -158,9 +165,9 @@ describe("ZoraCreator1155Preminter", () => {
       ...preminterTypedDataDefinition({
         verifyingContract: preminterAddress,
         chainId: foundry.id,
-        contractConfig: defaultContractConfig,
+        contractConfig: defaultContractConfig(),
         uid,
-        tokenConfig: defaultTokenConfig,
+        tokenConfig: defaultTokenConfig(),
       }),
       account: creatorAccount,
     });
@@ -171,7 +178,7 @@ describe("ZoraCreator1155Preminter", () => {
       abi: preminterAbi,
       address: preminterAddress,
       functionName: "recoverSigner",
-      args: [defaultContractConfig, defaultTokenConfig, uid, signedMessage],
+      args: [defaultContractConfig(), defaultTokenConfig(), uid, signedMessage],
     });
 
     expect(recoveredAddress).to.equal(creatorAccount);
@@ -181,24 +188,11 @@ describe("ZoraCreator1155Preminter", () => {
     "can sign and mint multiple tokens",
     async ({ preminterAddress, zoraMintFee }) => {
       // setup contract and token creation parameters
-      const contractConfig: ContractCreationConfig = {
-        contractAdmin: creatorAccount,
-        contractURI: "ipfs://asdfasdfasdf",
-        contractName: "My fun NFT",
-      };
+      const contractConfig = defaultContractConfig();
 
       const uid = 1n;
 
-      const tokenConfig: TokenCreationConfig = {
-        tokenURI: "ipfs://tokenIpfsId0",
-        maxSupply: 100n,
-        maxTokensPerAddress: 10n,
-        pricePerToken: parseEther("0.1"),
-        saleDuration: 100n,
-        royaltyMintSchedule: 30,
-        royaltyBPS: 200,
-        royaltyRecipient: creatorAccount,
-      };
+      const tokenConfig = defaultTokenConfig()
 
       // have creator sign the message to create the contract
       // and the token
@@ -220,6 +214,11 @@ describe("ZoraCreator1155Preminter", () => {
         (zoraMintFee + tokenConfig.pricePerToken) * quantityToMint;
 
       const comment = "I love this!";
+
+      await testClient.setBalance({
+        address: collectorAccount,
+        value: 10n * 10n**18n,
+      })
 
       // now have the collector execute the first signed message;
       // it should create the contract, the token,
