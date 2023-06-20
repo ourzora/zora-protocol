@@ -11,7 +11,6 @@ import {
   zoraCreator1155FactoryImplConfig,
   zoraCreator1155PreminterABI as preminterAbi,
   zoraCreator1155ImplABI,
-  zoraCreator1155PreminterAddress,
 } from "./wagmiGenerated";
 import { chainConfigs } from "./chainConfigs";
 import preminter from "../out/ZoraCreator1155Preminter.sol/ZoraCreator1155Preminter.json";
@@ -125,7 +124,9 @@ describe("ZoraCreator1155Preminter", () => {
 
     // const { contractAddress } = await deployPreminterContract();
 
-    ctx.preminterAddress = zoraCreator1155PreminterAddress[fork_chain_id];
+    const preminter = await deployPreminterContract();
+
+    ctx.preminterAddress = preminter.contractAddress;
     ctx.zoraMintFee = BigInt(chainConfigs[fork_chain_id].MINT_FEE_AMOUNT);
   });
 
