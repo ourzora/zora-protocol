@@ -27,12 +27,10 @@ contract DeployPreminter is ZoraDeployerBase {
 
         ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
 
-        IMinter1155 fixedPricedMinter = factory.fixedPriceMinter();
-
         vm.startBroadcast(deployerPrivateKey);
 
         ZoraCreator1155Preminter preminter = new ZoraCreator1155Preminter();
-        preminter.initialize(factory, fixedPricedMinter);
+        preminter.initialize(factory);
 
         vm.stopBroadcast();
 

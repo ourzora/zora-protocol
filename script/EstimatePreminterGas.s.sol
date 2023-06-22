@@ -27,13 +27,11 @@ contract EstimatePreminterGas is ZoraDeployerBase {
 
         ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
 
-        IMinter1155 fixedPricedMinter = factory.fixedPriceMinter();
-
         console.log("deploying preminter contract");
         vm.startBroadcast(deployer);
 
         ZoraCreator1155Preminter preminter = new ZoraCreator1155Preminter();
-        preminter.initialize(factory, fixedPricedMinter);
+        preminter.initialize(factory);
 
         vm.stopBroadcast();
 

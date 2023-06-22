@@ -7,6 +7,7 @@ import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/con
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
+import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
@@ -18,7 +19,6 @@ import {ZoraCreator1155Preminter} from "../../src/premint/ZoraCreator1155Premint
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 
 contract ZoraCreator1155PreminterTest is Test {
-    ZoraCreatorFixedPriceSaleStrategy internal fixedPrice;
     ZoraCreator1155Preminter internal preminter;
     ZoraCreator1155FactoryImpl internal factory;
     // setup contract config
@@ -32,17 +32,17 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 indexed tokenId,
         bool indexed createdNewContract,
         uint256 contractHashId,
-        uint256 uid,
+        uint32 uid,
         ZoraCreator1155Preminter.ContractCreationConfig contractConfig,
         ZoraCreator1155Preminter.TokenCreationConfig tokenConfig,
         address minter,
-        uint256 quantiyMinted
+        uint256 quantityMinted
     );
 
     function setUp() external {
         ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0));
         ZoraCreatorFixedPriceSaleStrategy fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
-        factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
+        factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), fixedPriceMinter, IMinter1155(address(3)));
         uint32 royaltyBPS = 2;
         uint32 royaltyMintSchedule = 20;
         address royaltyRecipient = vm.addr(4);
@@ -54,7 +54,7 @@ contract ZoraCreator1155PreminterTest is Test {
         });
 
         preminter = new ZoraCreator1155Preminter();
-        preminter.initialize(factory, fixedPriceMinter);
+        preminter.initialize(factory);
 
         creatorPrivateKey = 0xA11CE;
         creator = vm.addr(creatorPrivateKey);
@@ -110,11 +110,6 @@ contract ZoraCreator1155PreminterTest is Test {
         // get contract hash, which is unique per contract creation config, and can be used
         // retreive the address created for a contract
         uint256 contractHash = preminter.contractDataHash(contractConfig);
-
-        console.log(contractConfig.contractAdmin);
-        console.log(contractConfig.contractName);
-        console.log(contractConfig.contractURI);
-        console.log(contractHash);
 
         // get the contract address from the preminter based on the contract hash id.
         IZoraCreator1155 created1155Contract = IZoraCreator1155(preminter.contractAddresses(contractHash));
@@ -234,6 +229,89 @@ contract ZoraCreator1155PreminterTest is Test {
             quantityToMint
         );
         preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+    }
+
+    function test_onlyOwner_hasAdminRights_onCreatedToken() public {
+        // configuration of contract to create
+        ZoraCreator1155Preminter.ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+
+        // configuration of token to create
+        ZoraCreator1155Preminter.TokenCreationConfig memory tokenConfig = makeDefaultTokenCreationConfig();
+
+        // how many tokens are minted to the executor
+        uint256 quantityToMint = 4;
+        uint256 chainId = block.chainid;
+        uint32 uid = 1;
+
+        // 2. Call smart contract to get digest to sign for creation params.
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
+
+        // 3. Sign the digest
+        // create a signature with the digest for the params
+        bytes memory signature = _sign(creatorPrivateKey, digest);
+
+        // this account will be used to execute the premint, and should result in a contract being created
+        address premintExecutor = vm.addr(701);
+
+        string memory comment = "I love it";
+
+        // now call the premint function, using the same config that was used to generate the digest, and the signature
+        vm.prank(premintExecutor);
+        (address createdContractAddress, uint256 newTokenId) = preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+
+        // get the contract address from the preminter based on the contract hash id.
+        IZoraCreator1155 created1155Contract = IZoraCreator1155(createdContractAddress);
+
+        ZoraCreatorFixedPriceSaleStrategy.SalesConfig memory newSalesConfig = ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+            pricePerToken: 5 ether,
+            saleStart: 0,
+            saleEnd: 0,
+            maxTokensPerAddress: 5,
+            fundsRecipient: creator
+        });
+
+        IMinter1155 fixedPrice = factory.fixedPriceMinter();
+
+        // have the premint contract try to set the sales config - it should revert with
+        // the expected UserMissingRole error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IZoraCreator1155.UserMissingRoleForToken.selector,
+                address(preminter),
+                newTokenId,
+                ZoraCreator1155Impl(address(created1155Contract)).PERMISSION_BIT_SALES()
+            )
+        );
+        vm.prank(address(preminter));
+        created1155Contract.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(ZoraCreatorFixedPriceSaleStrategy.setSale.selector, newTokenId, newSalesConfig)
+        );
+
+        // have admin/creator try to set the sales config - it should succeed
+        vm.prank(creator);
+        created1155Contract.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(ZoraCreatorFixedPriceSaleStrategy.setSale.selector, newTokenId, newSalesConfig)
+        );
+
+        // have the premint contract try to set royalties config - it should revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                IZoraCreator1155.UserMissingRoleForToken.selector,
+                address(preminter),
+                newTokenId,
+                ZoraCreator1155Impl(address(created1155Contract)).PERMISSION_BIT_FUNDS_MANAGER()
+            )
+        );
+        vm.prank(address(preminter));
+        created1155Contract.updateRoyaltiesForToken(newTokenId, defaultRoyaltyConfig);
+
+        // have admin/creator try to set royalties config - it should succeed
+        vm.prank(creator);
+        created1155Contract.updateRoyaltiesForToken(newTokenId, defaultRoyaltyConfig);
     }
 
     function _sign(uint256 privateKey, bytes32 digest) private pure returns (bytes memory) {
