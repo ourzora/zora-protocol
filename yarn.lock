@@ -319,6 +319,11 @@
   resolved "https://registry.yarnpkg.com/@wagmi/chains/-/chains-1.0.0.tgz#41710941f2c2a699a246c4e3a6112b4efd996171"
   integrity sha512-eNbqRWyHbivcMNq5tbXJks4NaOzVLHnNQauHPeE/EDT9AlpqzcrMc+v2T1/2Iw8zN4zgqB86NCsxeJHJs7+xng==
 
+"@wagmi/chains@1.1.0":
+  version "1.1.0"
+  resolved "https://registry.yarnpkg.com/@wagmi/chains/-/chains-1.1.0.tgz#d351b3dc6f472b167f180721f46f6098b6c1585b"
+  integrity sha512-pWZlxBk0Ql8E7DV8DwqlbBpOyUdaG9UDlQPBxJNALuEK1I0tbQ3AVvSDnlsEIt06UPmPo5o27gzs3hwPQ/A+UA==
+
 "@wagmi/cli@^1.0.1":
   version "1.1.0"
   resolved "https://registry.yarnpkg.com/@wagmi/cli/-/cli-1.1.0.tgz#1cab43d71d5290230e211549ed53d7acae2f7ae8"
@@ -2059,17 +2064,17 @@ util-deprecate@^1.0.1:
   resolved "https://registry.yarnpkg.com/util-deprecate/-/util-deprecate-1.0.2.tgz#450d4dc9fa70de732762fbd2d4a28981419a0ccf"
   integrity sha512-EPD5q1uXyFxJpCrLnCc1nHnq3gOa6DZBocAIiI2TaSCA7VCJ1UJDMagCzIkXNsUYfD1daK//LTEQ8xiIbrHtcw==
 
-viem@^0.3.49:
-  version "0.3.49"
-  resolved "https://registry.yarnpkg.com/viem/-/viem-0.3.49.tgz#d19642b7891aa1e18046e6fb4c51f61cf6c52385"
-  integrity sha512-YW8bMtuaBm5aaYJUVM4aCOjUmmjaOpg2UZOze3A4gDgmYoz0De1Q5I9GE48waPPKVZig9iCgwLFdq8/mSvuGNg==
+viem@^1.0.7:
+  version "1.0.7"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-1.0.7.tgz#522a01c1e1402de953f1d55e4cbefcc772891517"
+  integrity sha512-P/T2Zn8+V74kxO2e2NdhNR/MBtldovssigvc36+7g3DgTeETKnSS1fMQdBl0jE+Atlal+M6cuJ2HcFY7U45o0Q==
   dependencies:
     "@adraffy/ens-normalize" "1.9.0"
     "@noble/curves" "1.0.0"
     "@noble/hashes" "1.3.0"
     "@scure/bip32" "1.3.0"
     "@scure/bip39" "1.2.0"
-    "@wagmi/chains" "1.0.0"
+    "@wagmi/chains" "1.1.0"
     abitype "0.8.7"
     isomorphic-ws "5.0.0"
     ws "8.12.0"

@@ -90,7 +90,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
-        uint256 uid = 1;
+        uint32 uid = 1;
         string memory comment = "hi";
 
         // 2. Call smart contract to get digest to sign for creation params.
@@ -151,7 +151,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
-        uint256 uid = 1;
+        uint32 uid = 1;
 
         // 2. Call smart contract to get digest to sign for creation params.
         bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
@@ -196,7 +196,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
-        uint256 uid = 10;
+        uint32 uid = 10;
 
         // 2. Call smart contract to get digest to sign for creation params.
         bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);

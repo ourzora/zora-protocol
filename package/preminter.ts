@@ -26,14 +26,14 @@ export const preminterTypedDataDefinition = ({
   verifyingContract: Address;
   contractConfig: ContractCreationConfig;
   tokenConfig: TokenCreationConfig;
-  uid: bigint,
+  uid: number,
   chainId: number;
 }) => {
   const types = {
     ContractAndToken: [
       { name: "contractConfig", type: "ContractCreationConfig" },
       { name: "tokenConfig", type: "TokenCreationConfig" },
-      { name: 'uid', type: 'uint256'}
+      { name: 'uid', type: 'uint32'}
     ],
     ContractCreationConfig: [
       { name: "contractAdmin", type: "address" },

@@ -77,7 +77,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         uint256 indexed tokenId,
         bool indexed createdNewContract,
         uint256 contractHashId,
-        uint256 uid,
+        uint32 uid,
         ContractCreationConfig contractConfig,
         TokenCreationConfig tokenConfig,
         address minter,
@@ -94,7 +94,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
         /// @notice Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token, in the case
         /// that a signature is updated for a token, and the old signature is executed, two tokens for the same original intended token could be created.
         /// Only one signature per token id, scoped to the contract hash can be executed.
-        uint256 uid,
+        uint32 uid,
         bytes calldata signature,
         uint256 quantityToMint,
         string calldata mintComment
@@ -239,7 +239,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     function recoverSigner(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
-        uint256 uid,
+        uint32 uid,
         bytes calldata signature
     ) public view returns (address signatory) {
         // first validate the signature - the creator must match the signer of the message
@@ -335,7 +335,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId {
     function _validateSignatureAndEnsureNotUsed(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
-        uint256 uid,
+        uint32 uid,
         bytes calldata signature
     ) private returns (uint256 tokenHash) {
         // first validate the signature - the creator must match the signer of the message

@@ -4,13 +4,14 @@ import {
   createWalletClient,
   createPublicClient,
 } from "viem";
-import { foundry } from "viem/chains";
+import { zoraTestnet, foundry } from 'viem/chains'
 import { describe, it, beforeEach, expect } from "vitest";
 import { parseEther } from "viem";
 import {
   zoraCreator1155FactoryImplConfig,
   zoraCreator1155PreminterABI as preminterAbi,
   zoraCreator1155ImplABI,
+  zoraCreator1155PreminterAddress,
 } from "./wagmiGenerated";
 import { chainConfigs } from "./chainConfigs";
 import preminter from "../out/ZoraCreator1155Preminter.sol/ZoraCreator1155Preminter.json";
@@ -19,6 +20,7 @@ import {
   TokenCreationConfig,
   preminterTypedDataDefinition,
 } from "./preminter";
+
 
 const walletClient = createWalletClient({
   chain: foundry,
@@ -41,8 +43,6 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-
-
 type Address = `0x${string}`;
 
 // JSON-RPC Account
@@ -50,17 +50,17 @@ const [deployerAccount, creatorAccount, collectorAccount] =
   (await walletClient.getAddresses()) as [Address, Address, Address];
 
 type TestContext = {
-  preminterAddress: `0x${string}`;
+  forkedPreminterAddress: `0x${string}`;
+  forkedChainId: keyof typeof zoraCreator1155PreminterAddress;
+  anvilChainId: number;
   zoraMintFee: bigint;
 };
 
-const fork_chain_id = 999; 
 
-export const deployPreminterContract = async () => {
+export const deployPreminterContract = async (forkChainId: keyof typeof zoraCreator1155FactoryImplConfig.address) => {
   // hardcode to zora fork
-
   const factoryProxyAddress = zoraCreator1155FactoryImplConfig.address[
-    fork_chain_id
+    forkChainId 
   ].toLowerCase() as `0x${string}`;
 
   const fixedPriceMinterAddress = await publicClient.readContract({
@@ -91,9 +91,8 @@ export const deployPreminterContract = async () => {
 
   await publicClient.waitForTransactionReceipt({ hash: initializeHash });
 
-  return {
-    contractAddress,
-  };
+  
+  return contractAddress;
 };
 
 // create token and contract creation config:
@@ -122,30 +121,32 @@ describe("ZoraCreator1155Preminter", () => {
       value: parseEther("10"),
     });
 
-    // const { contractAddress } = await deployPreminterContract();
+    ctx.forkedChainId = zoraTestnet.id;
+    ctx.anvilChainId = foundry.id;
 
-    const preminter = await deployPreminterContract();
-
-    ctx.preminterAddress = preminter.contractAddress;
-    ctx.zoraMintFee = BigInt(chainConfigs[fork_chain_id].MINT_FEE_AMOUNT);
+    ctx.forkedPreminterAddress = zoraCreator1155PreminterAddress[ctx.forkedChainId];
+    ctx.zoraMintFee = BigInt(chainConfigs[ctx.forkedChainId].MINT_FEE_AMOUNT);
   });
 
-  it<TestContext>("can sign for another chain", async ({ preminterAddress }) => {
-    const uid = 105n;
+  it<TestContext>("can sign for another chain", async ({ forkedPreminterAddress: preminterAddress }) => {
+    const uid = 105;
+
+    const contractConfig = defaultContractConfig();
+    const tokenConfig =  defaultTokenConfig();
 
     const signedMessage = await walletClient.signTypedData({
       ...preminterTypedDataDefinition({
         verifyingContract: preminterAddress,
         chainId: 999,
-        contractConfig: defaultContractConfig(),
+        contractConfig,
         uid,
-        tokenConfig: defaultTokenConfig(),
+        tokenConfig,
       }),
       account: creatorAccount,
     });
 
     console.log({
-      creatorAccount, signedMessage, contractConfig: defaultContractConfig(), tokenConfig: defaultTokenConfig(), contractHashId: await publicClient.readContract({
+      creatorAccount, signedMessage, contractConfig, tokenConfig, contractHashId: await publicClient.readContract({
         abi: preminterAbi,
         address: preminterAddress,
         functionName: 'contractDataHash',
@@ -155,17 +156,17 @@ describe("ZoraCreator1155Preminter", () => {
 
   })
   it<TestContext>("can sign and recover a signature", async ({
-    preminterAddress,
+    forkedPreminterAddress: preminterAddress,
+    anvilChainId
   }) => {
-
-
-    const uid = 105n;
+    const uid = 105;
 
     // sign message containing contract and token creation config and uid
     const signedMessage = await walletClient.signTypedData({
       ...preminterTypedDataDefinition({
         verifyingContract: preminterAddress,
-        chainId: foundry.id,
+        // we need to sign here for the anvil chain, cause thats where it is run on
+        chainId: anvilChainId,
         contractConfig: defaultContractConfig(),
         uid,
         tokenConfig: defaultTokenConfig(),
@@ -187,20 +188,22 @@ describe("ZoraCreator1155Preminter", () => {
 
   it<TestContext>(
     "can sign and mint multiple tokens",
-    async ({ preminterAddress, zoraMintFee }) => {
+    async ({ zoraMintFee, anvilChainId, forkedChainId }) => {
       // setup contract and token creation parameters
       const contractConfig = defaultContractConfig();
 
-      const uid = 1n;
+      const uid = 1;
 
       const tokenConfig = defaultTokenConfig()
+
+      const preminterAddress = await deployPreminterContract(forkedChainId);
 
       // have creator sign the message to create the contract
       // and the token
       const signedMessage = await walletClient.signTypedData({
         ...preminterTypedDataDefinition({
           verifyingContract: preminterAddress,
-          chainId: foundry.id,
+          chainId: anvilChainId,
           contractConfig,
           tokenConfig,
           uid
@@ -274,7 +277,7 @@ describe("ZoraCreator1155Preminter", () => {
       // get token balance - should be amount that was created
       expect(tokenBalance).toBe(quantityToMint);
 
-      const uid2 = uid + 1n;
+      const uid2 = uid + 1;
 
       // create a signature to create a second token,
       // with different ipfs url and price per token

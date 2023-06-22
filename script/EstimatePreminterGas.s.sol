@@ -57,7 +57,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
         });
         // how many tokens are minted to the executor
         uint256 quantityToMint = 1;
-        uint256 uid = 100;
+        uint32 uid = 100;
 
         uint256 valueToSend = quantityToMint * ZoraCreator1155Impl(address(factory.implementation())).mintFee();
 
