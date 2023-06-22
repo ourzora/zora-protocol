@@ -11,32 +11,27 @@ type PreminterHashInputs = ExtractAbiFunction<
 type PreminterHashDataTypes =
   AbiParametersToPrimitiveTypes<PreminterHashInputs>;
 
-export type ContractCreationConfig = PreminterHashDataTypes[0];
-export type TokenCreationConfig = PreminterHashDataTypes[1];
+export type PremintConfig = PreminterHashDataTypes[0];
+export type ContractCreationConfig = PremintConfig["contractConfig"];
+export type TokenCreationConfig = PremintConfig["tokenConfig"];
 
 // Convenience method to create the structured typed data
 // needed to sign for a premint contract and token
 export const preminterTypedDataDefinition = ({
   verifyingContract,
-  contractConfig,
-  tokenConfig,
-  uid,
-  version,
+  premintConfig: { contractConfig, tokenConfig, uid, version },
   chainId,
 }: {
   verifyingContract: Address;
-  contractConfig: ContractCreationConfig;
-  tokenConfig: TokenCreationConfig;
-  uid: number,
-  version: number;
+  premintConfig: PremintConfig;
   chainId: number;
 }) => {
   const types = {
-    ContractAndToken: [
+    Premint: [
       { name: "contractConfig", type: "ContractCreationConfig" },
       { name: "tokenConfig", type: "TokenCreationConfig" },
-      { name: 'uid', type: 'uint32'},
-      { name: 'version', type: 'uint32'}
+      { name: "uid", type: "uint32" },
+      { name: "version", type: "uint32" },
     ],
     ContractCreationConfig: [
       { name: "contractAdmin", type: "address" },
@@ -67,9 +62,9 @@ export const preminterTypedDataDefinition = ({
       contractConfig,
       tokenConfig,
       uid,
-      version
+      version,
     },
-    primaryType: "ContractAndToken",
+    primaryType: "Premint",
   };
 
   return result;
