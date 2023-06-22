@@ -63,12 +63,6 @@ export const deployPreminterContract = async (forkChainId: keyof typeof zoraCrea
     forkChainId 
   ].toLowerCase() as `0x${string}`;
 
-  const fixedPriceMinterAddress = await publicClient.readContract({
-    abi: zoraCreator1155FactoryImplConfig.abi,
-    address: factoryProxyAddress,
-    functionName: "fixedPriceMinter",
-  });
-
   const deployPreminterHash = await walletClient.deployContract({
     abi: preminter.abi,
     bytecode: preminter.bytecode.object as `0x${string}`,
@@ -86,7 +80,7 @@ export const deployPreminterContract = async (forkChainId: keyof typeof zoraCrea
     address: contractAddress,
     functionName: "initialize",
     account: deployerAccount,
-    args: [factoryProxyAddress, fixedPriceMinterAddress],
+    args: [factoryProxyAddress],
   });
 
   await publicClient.waitForTransactionReceipt({ hash: initializeHash });
@@ -124,7 +118,7 @@ describe("ZoraCreator1155Preminter", () => {
     ctx.forkedChainId = zoraTestnet.id;
     ctx.anvilChainId = foundry.id;
 
-    ctx.forkedPreminterAddress = zoraCreator1155PreminterAddress[ctx.forkedChainId];
+    ctx.forkedPreminterAddress = await deployPreminterContract(ctx.forkedChainId);// zoraCreator1155PreminterAddress[ctx.forkedChainId];
     ctx.zoraMintFee = BigInt(chainConfigs[ctx.forkedChainId].MINT_FEE_AMOUNT);
   });
 
@@ -140,6 +134,7 @@ describe("ZoraCreator1155Preminter", () => {
         chainId: 999,
         contractConfig,
         uid,
+        version: 2,
         tokenConfig,
       }),
       account: creatorAccount,
@@ -160,6 +155,7 @@ describe("ZoraCreator1155Preminter", () => {
     anvilChainId
   }) => {
     const uid = 105;
+    const version = 2;
 
     // sign message containing contract and token creation config and uid
     const signedMessage = await walletClient.signTypedData({
@@ -169,6 +165,7 @@ describe("ZoraCreator1155Preminter", () => {
         chainId: anvilChainId,
         contractConfig: defaultContractConfig(),
         uid,
+        version,
         tokenConfig: defaultTokenConfig(),
       }),
       account: creatorAccount,
@@ -180,7 +177,7 @@ describe("ZoraCreator1155Preminter", () => {
       abi: preminterAbi,
       address: preminterAddress,
       functionName: "recoverSigner",
-      args: [defaultContractConfig(), defaultTokenConfig(), uid, signedMessage],
+      args: [defaultContractConfig(), defaultTokenConfig(), uid, version, signedMessage],
     });
 
     expect(recoveredAddress).to.equal(creatorAccount);
@@ -193,6 +190,7 @@ describe("ZoraCreator1155Preminter", () => {
       const contractConfig = defaultContractConfig();
 
       const uid = 1;
+      const version = 2;
 
       const tokenConfig = defaultTokenConfig()
 
@@ -206,7 +204,8 @@ describe("ZoraCreator1155Preminter", () => {
           chainId: anvilChainId,
           contractConfig,
           tokenConfig,
-          uid
+          uid,
+          version
         }),
         // signer account is the creator
         account: creatorAccount,
@@ -238,6 +237,7 @@ describe("ZoraCreator1155Preminter", () => {
           contractConfig,
           tokenConfig,
           uid,
+          version,
           signedMessage,
           quantityToMint,
           comment,
@@ -278,6 +278,7 @@ describe("ZoraCreator1155Preminter", () => {
       expect(tokenBalance).toBe(quantityToMint);
 
       const uid2 = uid + 1;
+      const version2 = 5;
 
       // create a signature to create a second token,
       // with different ipfs url and price per token
@@ -294,7 +295,8 @@ describe("ZoraCreator1155Preminter", () => {
           chainId: foundry.id,
           contractConfig,
           tokenConfig: tokenConfig2,
-          uid: uid2
+          uid: uid2,
+          version: version2
         }),
         account: creatorAccount,
       });
@@ -315,6 +317,7 @@ describe("ZoraCreator1155Preminter", () => {
           contractConfig,
           tokenConfig2,
           uid2,
+          version2,
           signedMessage2,
           quantityToMint2,
           comment,
@@ -338,6 +341,6 @@ describe("ZoraCreator1155Preminter", () => {
       expect(tokenBalance2).toBe(quantityToMint2);
     },
     // 10 second timeout
-    10 * 1000
+    20 * 1000
   );
 });

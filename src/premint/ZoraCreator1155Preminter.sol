@@ -97,6 +97,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         /// that a signature is updated for a token, and the old signature is executed, two tokens for the same original intended token could be created.
         /// Only one signature per token id, scoped to the contract hash can be executed.
         uint32 uid,
+        uint32 version,
         bytes calldata signature,
         uint256 quantityToMint,
         string calldata mintComment
@@ -108,14 +109,13 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         // 5. Setup fixed price minting rules for the new token
         // 6. Make the creator an admin of that token (and remove this contracts admin rights)
         // 7. Mint x tokens, as configured, to the executor of this transaction.
+        // validate the signature for the current chain id, and make sure it hasn't been used, marking
+        // that it has been used
+        _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, uid, version, signature);
 
         // get or create the contract with the given params
         (IZoraCreator1155 tokenContract, uint256 contractHash, bool isNewContract) = _getOrCreateContract(contractConfig);
         contractAddress = address(tokenContract);
-
-        // validate the signature for the current chain id, and make sure it hasn't been used, marking
-        // that it has been used
-        _validateSignatureAndEnsureNotUsed(contractConfig, tokenConfig, uid, signature);
 
         // setup the new token, and its sales config
         newTokenId = _setupNewTokenAndSale(tokenContract, contractConfig.contractAdmin, tokenConfig);
@@ -205,6 +205,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
         uint32 uid,
+        uint32 version,
         bytes calldata signature
     ) public view returns (address signatory) {
         // first validate the signature - the creator must match the signer of the message
@@ -212,6 +213,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
             contractConfig,
             tokenConfig,
             uid,
+            version,
             // here we pass the current contract and chain id, ensuring that the message
             // only works for the current chain and contract id
             address(this),
@@ -231,11 +233,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
     function premintHashData(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
-        uint256 uid,
+        uint32 uid,
+        uint32 version,
         address verifyingContract,
         uint256 chainId
     ) public view returns (bytes32) {
-        bytes32 encoded = _hashContractAndToken(contractConfig, tokenConfig, uid);
+        bytes32 encoded = _hashContractAndToken(contractConfig, tokenConfig, uid, version);
 
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
@@ -244,15 +247,16 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "ContractAndToken(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig,uint256 uid)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "ContractAndToken(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig,uint32 uid,uint32 version)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
         );
 
     function _hashContractAndToken(
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
-        uint256 uid
+        uint32 uid,
+        uint32 version
     ) private pure returns (bytes32) {
-        return keccak256(abi.encode(CONTRACT_AND_TOKEN_DOMAIN, _hashContract(contractConfig), _hashToken(tokenConfig), uid));
+        return keccak256(abi.encode(CONTRACT_AND_TOKEN_DOMAIN, _hashContract(contractConfig), _hashToken(tokenConfig), uid, version));
     }
 
     bytes32 constant TOKEN_DOMAIN =
@@ -301,10 +305,11 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         ContractCreationConfig calldata contractConfig,
         TokenCreationConfig calldata tokenConfig,
         uint32 uid,
+        uint32 version,
         bytes calldata signature
     ) private returns (uint256 tokenHash) {
         // first validate the signature - the creator must match the signer of the message
-        address signatory = recoverSigner(contractConfig, tokenConfig, uid, signature);
+        address signatory = recoverSigner(contractConfig, tokenConfig, uid, version, signature);
 
         if (signatory != contractConfig.contractAdmin) {
             revert("Invalid signature");

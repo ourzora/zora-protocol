@@ -91,10 +91,11 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
         uint32 uid = 1;
+        uint32 version = 0;
         string memory comment = "hi";
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, version, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -105,7 +106,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.prank(premintExecutor);
-        (, uint256 tokenId) = preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+        (, uint256 tokenId) = preminter.premint(contractConfig, tokenConfig, uid, version, signature, quantityToMint, comment);
 
         // get contract hash, which is unique per contract creation config, and can be used
         // retreive the address created for a contract
@@ -122,19 +123,19 @@ contract ZoraCreator1155PreminterTest is Test {
         tokenConfig.tokenURI = "blah2.token";
         uid++;
 
-        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
+        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, version, address(preminter), chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature
         vm.prank(premintExecutor);
-        (, tokenId) = preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+        (, tokenId) = preminter.premint(contractConfig, tokenConfig, uid, version, signature, quantityToMint, comment);
 
         // a new token shoudl have been created, with x tokens minted to the executor, on the same contract address
         // as before since the contract config didnt change
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
     }
 
-    function test_sameSignature_cannotBeExecutedTwice() external {
+    function test_signatureForSameContractandUid_cannotBeExecutedTwice() external {
         // 1. Make contract creation params
 
         // configuration of contract to create
@@ -147,9 +148,10 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
         uint32 uid = 1;
+        uint32 version = 0;
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, version, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -162,11 +164,11 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.startPrank(premintExecutor);
-        preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+        preminter.premint(contractConfig, tokenConfig, uid, version, signature, quantityToMint, comment);
 
         // create a sig for another token with same uid, it should revert
         tokenConfig.tokenURI = "blah2.token";
-        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
+        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, version, address(preminter), chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature - it should revert
@@ -179,7 +181,29 @@ contract ZoraCreator1155PreminterTest is Test {
                 uid
             )
         );
-        preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+        preminter.premint(contractConfig, tokenConfig, uid, version, signature, quantityToMint, comment);
+
+        // change the version, it should still revert
+        digest = preminter.premintHashData(contractConfig, tokenConfig, uid, version + 1, address(preminter), chainId);
+        signature = _sign(creatorPrivateKey, digest);
+
+        // premint with new token config and signature - it should revert
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZoraCreator1155Preminter.TokenAlreadyCreated.selector,
+                contractConfig.contractAdmin,
+                contractConfig.contractURI,
+                contractConfig.contractName,
+                uid
+            )
+        );
+        preminter.premint(contractConfig, tokenConfig, uid, version + 1, signature, quantityToMint, comment);
+
+        // change the uid, it should not revert
+        digest = preminter.premintHashData(contractConfig, tokenConfig, uid + 1, version, address(preminter), chainId);
+        signature = _sign(creatorPrivateKey, digest);
+
+        preminter.premint(contractConfig, tokenConfig, uid + 1, version, signature, quantityToMint, comment);
     }
 
     function test_emitsPremint_whenNewContract() external {
@@ -192,9 +216,10 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
         uint32 uid = 10;
+        uint32 version = 0;
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, version, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -209,7 +234,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // we need the contract address to assert the emitted event, so lets premint, get the contract address, rollback, and premint again
         uint256 snapshot = vm.snapshot();
-        (address contractAddress, uint256 tokenId) = preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+        (address contractAddress, uint256 tokenId) = preminter.premint(contractConfig, tokenConfig, uid, version, signature, quantityToMint, comment);
         vm.revertTo(snapshot);
 
         // vm.roll(currentBlock + 1);
@@ -228,7 +253,7 @@ contract ZoraCreator1155PreminterTest is Test {
             premintExecutor,
             quantityToMint
         );
-        preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+        preminter.premint(contractConfig, tokenConfig, uid, version, signature, quantityToMint, comment);
     }
 
     function test_onlyOwner_hasAdminRights_onCreatedToken() public {
@@ -242,9 +267,10 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 quantityToMint = 4;
         uint256 chainId = block.chainid;
         uint32 uid = 1;
+        uint32 version = 0;
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, address(preminter), chainId);
+        bytes32 digest = preminter.premintHashData(contractConfig, tokenConfig, uid, version, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -257,7 +283,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.prank(premintExecutor);
-        (address createdContractAddress, uint256 newTokenId) = preminter.premint(contractConfig, tokenConfig, uid, signature, quantityToMint, comment);
+        (address createdContractAddress, uint256 newTokenId) = preminter.premint(contractConfig, tokenConfig, uid, version, signature, quantityToMint, comment);
 
         // get the contract address from the preminter based on the contract hash id.
         IZoraCreator1155 created1155Contract = IZoraCreator1155(createdContractAddress);
@@ -313,6 +339,8 @@ contract ZoraCreator1155PreminterTest is Test {
         vm.prank(creator);
         created1155Contract.updateRoyaltiesForToken(newTokenId, defaultRoyaltyConfig);
     }
+
+    // TODO: test that the signature must match the params
 
     function _sign(uint256 privateKey, bytes32 digest) private pure returns (bytes memory) {
         // sign the message
