@@ -14,8 +14,8 @@
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "coverage": "forge coverage --report lcov",
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
-    "prepack": "node script/copy-deployed-contracts.mjs && yarn wagmi && yarn bundle-configs && yarn build-ts",
-    "build-ts": "tsup package/index.ts --format cjs --dts --sourcemap",
+    "prepack": "node script/copy-deployed-contracts.mjs && yarn wagmi && yarn bundle-configs && yarn build",
+    "build": "tsup",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "wagmi": "wagmi generate",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
@@ -25,11 +25,9 @@
     "dist/",
     "src/",
     "addresses/",
-    "chainConfigs/"
+    "chainConfigs/",
+    "package/"
   ],
-  "exports": {
-    "./contracts": "./src"
-  },
   "dependencies": {
     "@openzeppelin/contracts": "4.8.3",
     "@zoralabs/openzeppelin-contracts-upgradeable": "^4.8.4",
