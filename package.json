@@ -27,6 +27,9 @@
     "addresses/",
     "chainConfigs/"
   ],
+  "exports": {
+    "./contracts": "./src"
+  },
   "dependencies": {
     "@openzeppelin/contracts": "4.8.3",
     "@zoralabs/openzeppelin-contracts-upgradeable": "^4.8.4",
