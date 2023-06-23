@@ -18,7 +18,7 @@
     "strictNullChecks": true,
     "target": "es2021",
     "types": ["node"],
-  "outDir": "dist"
+    "outDir": "dist"
   },
   "exclude": ["node_modules/**", "dist/**"],
   "include": [
