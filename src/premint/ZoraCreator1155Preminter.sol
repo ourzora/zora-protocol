@@ -7,9 +7,6 @@ import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/con
 import {Ownable2StepUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/access/Ownable2StepUpgradeable.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
-import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155StorageV1} from "../nft/ZoraCreator1155StorageV1.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
@@ -40,10 +37,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
     error TokenAlreadyCreated();
 
-    function initialize(ZoraCreator1155FactoryImpl _factory) public initializer {
+    function initialize(IZoraCreator1155Factory _factory) public initializer {
         __EIP712_init("Preminter", "0.0.1");
         factory = _factory;
-        fixedPriceMinter = _factory.fixedPriceMinter();
+        fixedPriceMinter = _factory.defaultMinters()[0];
     }
 
     struct ContractCreationConfig {
