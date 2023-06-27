@@ -643,7 +643,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward, uint256 creatorReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computeFreeMintRewards(quantity);
 
         address buyer = makeAddr("buyer");
@@ -656,7 +656,8 @@ contract ZoraCreator1155Test is Test {
 
         (,, address fundsRecipient,,,) = target.config();
 
-        assertEq(fundsRecipient.balance, creatorReward);
+        // assertEq(fundsRecipient.balance, creatorReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
         assertEq(zoraRewards.balanceOf(zora), zoraReward + finderReward + listerReward);
     }
 
@@ -671,7 +672,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward, uint256 creatorReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computeFreeMintRewards(quantity);
 
         address buyer = makeAddr("buyer");
@@ -686,7 +687,8 @@ contract ZoraCreator1155Test is Test {
 
         (,, address fundsRecipient,,,) = target.config();
 
-        assertEq(fundsRecipient.balance, creatorReward);
+        // assertEq(fundsRecipient.balance, creatorReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
         assertEq(zoraRewards.balanceOf(finder), finderReward);
         assertEq(zoraRewards.balanceOf(zora), zoraReward + listerReward);
     }
@@ -702,7 +704,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward, uint256 creatorReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computeFreeMintRewards(quantity);
 
         address buyer = makeAddr("buyer");
@@ -717,7 +719,8 @@ contract ZoraCreator1155Test is Test {
 
         (,, address fundsRecipient,,,) = target.config();
 
-        assertEq(fundsRecipient.balance, creatorReward);
+        // assertEq(fundsRecipient.balance, creatorReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
         assertEq(zoraRewards.balanceOf(lister), listerReward);
         assertEq(zoraRewards.balanceOf(zora), zoraReward + finderReward);
     }
@@ -733,7 +736,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward, uint256 creatorReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computeFreeMintRewards(quantity);
 
         address buyer = makeAddr("buyer");
@@ -749,7 +752,8 @@ contract ZoraCreator1155Test is Test {
 
         (,, address fundsRecipient,,,) = target.config();
 
-        assertEq(fundsRecipient.balance, creatorReward);
+        // assertEq(fundsRecipient.balance, creatorReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
         assertEq(zoraRewards.balanceOf(finder), finderReward);
         assertEq(zoraRewards.balanceOf(lister), listerReward);
         assertEq(zoraRewards.balanceOf(zora), zoraReward);
@@ -804,7 +808,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
         uint256 totalSale = quantity * salePrice;
@@ -850,7 +854,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
         uint256 totalSale = quantity * salePrice;
@@ -898,7 +902,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
         uint256 totalSale = quantity * salePrice;
@@ -946,7 +950,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 zoraReward, uint256 finderReward, uint256 listerReward) =
+        (uint256 totalReward, uint256 finderReward, uint256 listerReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
         uint256 totalSale = quantity * salePrice;
