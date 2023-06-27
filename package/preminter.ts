@@ -19,19 +19,21 @@ export type TokenCreationConfig = PremintConfig["tokenConfig"];
 // needed to sign for a premint contract and token
 export const preminterTypedDataDefinition = ({
   verifyingContract,
-  premintConfig: { contractConfig, tokenConfig, uid, version },
+  premintConfig,
   chainId,
 }: {
   verifyingContract: Address;
   premintConfig: PremintConfig;
   chainId: number;
 }) => {
+  const { contractConfig, tokenConfig, uid, version, deleted } = premintConfig;
   const types = {
     Premint: [
       { name: "contractConfig", type: "ContractCreationConfig" },
       { name: "tokenConfig", type: "TokenCreationConfig" },
       { name: "uid", type: "uint32" },
       { name: "version", type: "uint32" },
+      { name: "deleted", type: "bool"}
     ],
     ContractCreationConfig: [
       { name: "contractAdmin", type: "address" },
@@ -63,9 +65,12 @@ export const preminterTypedDataDefinition = ({
       tokenConfig,
       uid,
       version,
+      deleted
     },
     primaryType: "Premint",
   };
+
+  // console.log({ result, deleted });
 
   return result;
 };

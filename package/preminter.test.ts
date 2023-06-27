@@ -110,8 +110,9 @@ const defaultTokenConfig = (): TokenCreationConfig => ({
 const defaultPremintConfig = (): PremintConfig => ({
   contractConfig: defaultContractConfig(),
   tokenConfig: defaultTokenConfig(),
+  deleted: false,
   uid: 105,
-  version: 2,
+  version: 0,
 });
 
 describe("ZoraCreator1155Preminter", () => {
@@ -125,9 +126,9 @@ describe("ZoraCreator1155Preminter", () => {
     ctx.forkedChainId = zoraTestnet.id;
     ctx.anvilChainId = foundry.id;
 
-    ctx.forkedPreminterAddress = await deployPreminterContract(
-      ctx.forkedChainId
-    ); // zoraCreator1155PreminterAddress[ctx.forkedChainId];
+    // ctx.forkedPreminterAddress =
+    //   zoraCreator1155PreminterAddress[ctx.forkedChainId];
+    ctx.forkedPreminterAddress = await deployPreminterContract(ctx.forkedChainId);
     ctx.zoraMintFee = BigInt(chainConfigs[ctx.forkedChainId].MINT_FEE_AMOUNT);
   });
 
@@ -162,6 +163,10 @@ describe("ZoraCreator1155Preminter", () => {
     anvilChainId,
   }) => {
     const premintConfig = defaultPremintConfig();
+
+    console.log({
+      defaultMind: defaultPremintConfig()
+    })
 
     // sign message containing contract and token creation config and uid
     const signedMessage = await walletClient.signTypedData({

@@ -61,6 +61,7 @@ contract EstimatePreminterGas is ZoraDeployerBase {
             contractConfig: contractConfig,
             tokenConfig: tokenConfig,
             uid: uid,
+            deleted: false,
             version: version
         });
 

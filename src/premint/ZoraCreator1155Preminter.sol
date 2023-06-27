@@ -32,10 +32,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
     /// @notice Contract creation parameters unique hash => created contract address
     mapping(uint256 => address) public contractAddresses;
-    /// @dev hash of contract creation config + token uid -> if token has been created
-    mapping(uint256 => bool) tokenCreated;
+    /// @dev signature for contract + token uid -> if signature has been executed
+    mapping(uint256 => bool) premintExecuted;
 
-    error TokenAlreadyCreated();
+    error PremintAlreadyExecuted();
 
     function initialize(IZoraCreator1155Factory _factory) public initializer {
         __EIP712_init("Preminter", "0.0.1");
@@ -44,43 +44,45 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
     }
 
     struct ContractCreationConfig {
-        /// @notice Creator/admin of the created contract.  Must match the account that signed the message
+        // Creator/admin of the created contract.  Must match the account that signed the message
         address contractAdmin;
-        /// @notice Metadata URI for the created contract
+        // Metadata URI for the created contract
         string contractURI;
-        /// @notice Name of the created contract
+        // Name of the created contract
         string contractName;
     }
 
     struct TokenCreationConfig {
-        /// @notice Metadata URI for the created token
+        // Metadata URI for the created token
         string tokenURI;
-        /// @notice Max supply of the created token
+        // Max supply of the created token
         uint256 maxSupply;
-        /// @notice Max tokens that can be minted for an address, 0 if unlimited
+        // Max tokens that can be minted for an address, 0 if unlimited
         uint64 maxTokensPerAddress;
-        /// @notice Price per token in eth wei. 0 for a free mint.
+        // Price per token in eth wei. 0 for a free mint.
         uint96 pricePerToken;
-        /// @notice The duration of the sale, starting from the first mint of this token. 0 for infinite
+        // The duration of the sale, starting from the first mint of this token. 0 for infinite
         uint64 saleDuration;
-        /// @notice RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
+        // RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
         uint32 royaltyMintSchedule;
-        /// @notice RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+        // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
         uint32 royaltyBPS;
-        /// @notice RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
+        // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
         address royaltyRecipient;
     }
 
     struct PremintConfig {
-        /// @notice The config for the contract to be created
+        // The config for the contract to be created
         ContractCreationConfig contractConfig;
-        /// @notice The config for the token to be created
+        // The config for the token to be created
         TokenCreationConfig tokenConfig;
-        /// @notice Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
-        /// only one signature per token id, scoped to the contract hash can be executed.
+        // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
+        // only one signature per token id, scoped to the contract hash can be executed.
         uint32 uid;
-        /// @notice Version of this config, scoped to the uid.  Not used for logic in the contract.
+        // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
         uint32 version;
+        // If executing this signature results in preventing any signature with this uid from being minted.
+        bool deleted;
     }
 
     event Preminted(
@@ -115,9 +117,15 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         // 5. Setup fixed price minting rules for the new token
         // 6. Make the creator an admin of that token (and remove this contracts admin rights)
         // 7. Mint x tokens, as configured, to the executor of this transaction.
+
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
         _validateSignatureAndEnsureNotUsed(premintConfig, signature);
+
+        if (premintConfig.deleted) {
+            // if the signature says to be deleted, then dont execute any further minting logic
+            return (address(0), 0);
+        }
 
         ContractCreationConfig calldata contractConfig = premintConfig.contractConfig;
         TokenCreationConfig calldata tokenConfig = premintConfig.tokenConfig;
@@ -238,7 +246,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "Premint(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig,uint32 uid,uint32 version)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "Premint(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
         );
 
     function _hashPremintConfig(PremintConfig calldata premintConfig) private pure returns (bytes32) {
@@ -249,7 +257,8 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
                     _hashContract(premintConfig.contractConfig),
                     _hashToken(premintConfig.tokenConfig),
                     premintConfig.uid,
-                    premintConfig.version
+                    premintConfig.version,
+                    premintConfig.deleted
                 )
             );
     }
@@ -285,8 +294,8 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
             );
     }
 
-    function tokenHasBeenCreated(ContractCreationConfig calldata contractConfig, uint256 tokenUid) public view returns (bool) {
-        return tokenCreated[contractAndTokenHash(contractConfig, tokenUid)];
+    function premintHasBeenExecuted(ContractCreationConfig calldata contractConfig, uint256 tokenUid) public view returns (bool) {
+        return premintExecuted[contractAndTokenHash(contractConfig, tokenUid)];
     }
 
     function contractAndTokenHash(ContractCreationConfig calldata contractConfig, uint256 tokenUid) public pure returns (uint256) {
@@ -296,6 +305,9 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
             );
     }
 
+    /// Validates that the signer of the signature matches the contract admin
+    /// Checks if the signature is used; if it is, reverts.
+    /// If it isn't mark that it has been used.
     function _validateSignatureAndEnsureNotUsed(PremintConfig calldata premintConfig, bytes calldata signature) private returns (uint256 tokenHash) {
         // first validate the signature - the creator must match the signer of the message
         address signatory = recoverSigner(premintConfig, signature);
@@ -309,10 +321,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         // make sure that this signature hasn't been used
         // token hash includes the contract hash, so we can check uniqueness of contract + token pair
         tokenHash = contractAndTokenHash(contractConfig, premintConfig.uid);
-        if (tokenCreated[tokenHash]) {
-            revert TokenAlreadyCreated();
+        if (premintExecuted[tokenHash]) {
+            revert PremintAlreadyExecuted();
         }
-        tokenCreated[tokenHash] = true;
+        premintExecuted[tokenHash] = true;
 
         return tokenHash;
     }
