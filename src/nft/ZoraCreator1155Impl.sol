@@ -480,9 +480,11 @@ contract ZoraCreator1155Impl is
             // If we still have no schedule, return 0 supply royalty.
             return 0;
         }
+        uint256 maxSupply = tokens[tokenId].maxSupply;
+        uint256 totalMinted = tokens[tokenId].totalMinted;
 
-        totalRoyaltyMints = (mintAmount + (tokens[tokenId].totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
-        totalRoyaltyMints = MathUpgradeable.min(totalRoyaltyMints, tokens[tokenId].maxSupply - (mintAmount + tokens[tokenId].totalMinted));
+        totalRoyaltyMints = (mintAmount + (totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
+        totalRoyaltyMints = MathUpgradeable.min(totalRoyaltyMints, maxSupply - (mintAmount + totalMinted));
         if (totalRoyaltyMints > 0) {
             address royaltyRecipient = royalties[tokenId].royaltyRecipient;
             if (royaltyRecipient == address(0)) {
