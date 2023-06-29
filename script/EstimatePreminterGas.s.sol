@@ -48,7 +48,8 @@ contract EstimatePreminterGas is ZoraDeployerBase {
             maxSupply: 10,
             maxTokensPerAddress: 5,
             pricePerToken: 0,
-            saleDuration: 365 days,
+            mintStart: 0,
+            mintDuration: 365 days,
             royaltyBPS: 10,
             royaltyRecipient: deployer,
             royaltyMintSchedule: 20

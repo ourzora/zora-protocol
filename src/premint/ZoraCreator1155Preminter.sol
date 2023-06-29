@@ -34,8 +34,15 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
     mapping(uint256 => address) public contractAddresses;
     /// @dev signature for contract + token uid -> if signature has been executed
     mapping(uint256 => bool) premintExecuted;
+    /// @dev The resulting token id created for a permint.  Normally
+    /// we wouldn't store this to save gas, but we can get away with storing it on an L2
+    /// as storing it provides an easy way to get the resulting token id for a premint
+    /// without needing to index events.
+    mapping(uint256 => uint256) public premintTokenId;
 
     error PremintAlreadyExecuted();
+    error MintNotYetStarted();
+    error InvalidSignature();
 
     function initialize(IZoraCreator1155Factory _factory) public initializer {
         __EIP712_init("Preminter", "0.0.1");
@@ -61,8 +68,10 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         uint64 maxTokensPerAddress;
         // Price per token in eth wei. 0 for a free mint.
         uint96 pricePerToken;
-        // The duration of the sale, starting from the first mint of this token. 0 for infinite
-        uint64 saleDuration;
+        // The start time of the mint, 0 for immediate.  Prevents signatures from being used until the start time.
+        uint64 mintStart;
+        // The duration of the mint, starting from the first mint of this token. 0 for infinite
+        uint64 mintDuration;
         // RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
         uint32 royaltyMintSchedule;
         // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
@@ -118,9 +127,14 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         // 6. Make the creator an admin of that token (and remove this contracts admin rights)
         // 7. Mint x tokens, as configured, to the executor of this transaction.
 
+        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
+            // if the mint start is in the future, then revert
+            revert MintNotYetStarted();
+        }
+
         // validate the signature for the current chain id, and make sure it hasn't been used, marking
         // that it has been used
-        _validateSignatureAndEnsureNotUsed(premintConfig, signature);
+        uint256 tokenHash = _validateSignatureAndEnsureNotUsed(premintConfig, signature);
 
         if (premintConfig.deleted) {
             // if the signature says to be deleted, then dont execute any further minting logic
@@ -136,6 +150,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
         // setup the new token, and its sales config
         newTokenId = _setupNewTokenAndSale(tokenContract, contractConfig.contractAdmin, tokenConfig);
+        premintTokenId[tokenHash] = newTokenId;
 
         emit Preminted(contractAddress, newTokenId, isNewContract, contractHash, premintConfig.uid, contractConfig, tokenConfig, msg.sender, quantityToMint);
 
@@ -200,7 +215,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
             abi.encodeWithSelector(
                 ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                _buildNewSalesConfig(contractAdmin, tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.saleDuration)
+                _buildNewSalesConfig(contractAdmin, tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.mintDuration)
             )
         );
 
@@ -246,7 +261,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "Premint(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "Premint(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
         );
 
     function _hashPremintConfig(PremintConfig calldata premintConfig) private pure returns (bytes32) {
@@ -265,7 +280,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
     bytes32 constant TOKEN_DOMAIN =
         keccak256(
-            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 saleDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
         );
 
     function _hashToken(TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
@@ -273,11 +288,12 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
             keccak256(
                 abi.encode(
                     TOKEN_DOMAIN,
-                    stringHash(tokenConfig.tokenURI),
+                    _stringHash(tokenConfig.tokenURI),
                     tokenConfig.maxSupply,
                     tokenConfig.maxTokensPerAddress,
                     tokenConfig.pricePerToken,
-                    tokenConfig.saleDuration,
+                    tokenConfig.mintStart,
+                    tokenConfig.mintDuration,
                     tokenConfig.royaltyMintSchedule,
                     tokenConfig.royaltyBPS,
                     tokenConfig.royaltyRecipient
@@ -290,7 +306,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
     function _hashContract(ContractCreationConfig calldata contractConfig) private pure returns (bytes32) {
         return
             keccak256(
-                abi.encode(CONTRACT_DOMAIN, contractConfig.contractAdmin, stringHash(contractConfig.contractURI), stringHash(contractConfig.contractName))
+                abi.encode(CONTRACT_DOMAIN, contractConfig.contractAdmin, _stringHash(contractConfig.contractURI), _stringHash(contractConfig.contractName))
             );
     }
 
@@ -301,7 +317,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
     function contractAndTokenHash(ContractCreationConfig calldata contractConfig, uint256 tokenUid) public pure returns (uint256) {
         return
             uint256(
-                keccak256(abi.encode(contractConfig.contractAdmin, stringHash(contractConfig.contractURI), stringHash(contractConfig.contractName), tokenUid))
+                keccak256(abi.encode(contractConfig.contractAdmin, _stringHash(contractConfig.contractURI), _stringHash(contractConfig.contractName), tokenUid))
             );
     }
 
@@ -315,7 +331,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         ContractCreationConfig calldata contractConfig = premintConfig.contractConfig;
 
         if (signatory != contractConfig.contractAdmin) {
-            revert("Invalid signature");
+            revert InvalidSignature();
         }
 
         // make sure that this signature hasn't been used
@@ -336,7 +352,19 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         return uint256(_hashContract(contractConfig));
     }
 
-    function stringHash(string calldata value) private pure returns (bytes32) {
+    function premintStatus(
+        ContractCreationConfig calldata contractConfig,
+        uint256 uid
+    ) external view returns (bool minted, address contractAddress, uint256 tokenId) {
+        uint256 tokenHash = contractAndTokenHash(contractConfig, uid);
+        minted = premintExecuted[tokenHash];
+        if (minted) {
+            contractAddress = contractAddresses[contractDataHash(contractConfig)];
+            tokenId = premintTokenId[tokenHash];
+        }
+    }
+
+    function _stringHash(string calldata value) private pure returns (bytes32) {
         return keccak256(bytes(value));
     }
 

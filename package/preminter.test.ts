@@ -101,7 +101,8 @@ const defaultTokenConfig = (): TokenCreationConfig => ({
   maxSupply: 100n,
   maxTokensPerAddress: 10n,
   pricePerToken: parseEther("0.1"),
-  saleDuration: 100n,
+  mintStart: 0n,
+  mintDuration: 100n,
   royaltyMintSchedule: 30,
   royaltyBPS: 200,
   royaltyRecipient: creatorAccount,
@@ -126,8 +127,8 @@ describe("ZoraCreator1155Preminter", () => {
     ctx.forkedChainId = zoraTestnet.id;
     ctx.anvilChainId = foundry.id;
 
-    // ctx.forkedPreminterAddress =
-    //   zoraCreator1155PreminterAddress[ctx.forkedChainId];
+    ctx.forkedPreminterAddress =
+      zoraCreator1155PreminterAddress[ctx.forkedChainId];
     ctx.forkedPreminterAddress = await deployPreminterContract(ctx.forkedChainId);
     ctx.zoraMintFee = BigInt(chainConfigs[ctx.forkedChainId].MINT_FEE_AMOUNT);
   });

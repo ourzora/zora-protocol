@@ -33,7 +33,7 @@ export const preminterTypedDataDefinition = ({
       { name: "tokenConfig", type: "TokenCreationConfig" },
       { name: "uid", type: "uint32" },
       { name: "version", type: "uint32" },
-      { name: "deleted", type: "bool"}
+      { name: "deleted", type: "bool" },
     ],
     ContractCreationConfig: [
       { name: "contractAdmin", type: "address" },
@@ -45,14 +45,15 @@ export const preminterTypedDataDefinition = ({
       { name: "maxSupply", type: "uint256" },
       { name: "maxTokensPerAddress", type: "uint64" },
       { name: "pricePerToken", type: "uint96" },
-      { name: "saleDuration", type: "uint64" },
+      { name: "mintStart", type: "uint64" },
+      { name: "mintDuration", type: "uint64" },
       { name: "royaltyMintSchedule", type: "uint32" },
       { name: "royaltyBPS", type: "uint32" },
       { name: "royaltyRecipient", type: "address" },
     ],
   };
 
-  const result: TypedDataDefinition<typeof types, "TokenCreationConfig"> = {
+  const result: TypedDataDefinition<typeof types, "Premint"> = {
     domain: {
       chainId,
       name: "Preminter",
@@ -65,7 +66,7 @@ export const preminterTypedDataDefinition = ({
       tokenConfig,
       uid,
       version,
-      deleted
+      deleted,
     },
     primaryType: "Premint",
   };
