@@ -45,6 +45,8 @@ const publicClient = createPublicClient({
 
 type Address = `0x${string}`;
 
+const zeroAddress: Address = '0x0000000000000000000000000000000000000000';
+
 // JSON-RPC Account
 const [deployerAccount, creatorAccount, collectorAccount] =
   (await walletClient.getAddresses()) as [Address, Address, Address];
@@ -224,6 +226,17 @@ describe("ZoraCreator1155Preminter", () => {
         value: 10n * 10n ** 18n,
       });
 
+      // get the premint status - it should not be minted
+      let [minted, contractAddress, tokenId]= await publicClient.readContract({
+        abi: preminterAbi,
+        address: preminterAddress,
+        functionName: 'premintStatus',
+        args: [premintConfig.contractConfig, premintConfig.uid]
+      })
+
+      expect(minted).toBe(false);
+      expect(contractAddress).toBe(zeroAddress);
+
       // now have the collector execute the first signed message;
       // it should create the contract, the token,
       // and min the quantity to mint tokens to the collector
@@ -244,27 +257,24 @@ describe("ZoraCreator1155Preminter", () => {
           .status
       ).toBe("success");
 
-      // get contract hash which acts as a unique identifier for contract
-      // creation parametesr, and can be used to look up the contract address
-      const contractHash = await publicClient.readContract({
+      // fetch the status, it should show that it's minted
+      [minted, contractAddress, tokenId] = await publicClient.readContract({
         abi: preminterAbi,
         address: preminterAddress,
-        functionName: "contractDataHash",
-        args: [premintConfig.contractConfig],
-      });
+        functionName: 'premintStatus',
+        args: [premintConfig.contractConfig, premintConfig.uid]
+      })
 
-      const createdContractAddress = await publicClient.readContract({
-        abi: preminterAbi,
-        address: preminterAddress,
-        functionName: "contractAddresses",
-        args: [contractHash],
-      });
+      expect(minted).toBe(true);
+      expect(contractAddress).not.toBe(zeroAddress);
+      expect(tokenId).not.toBe(0n);
 
+      // now use what was created, to get the balance from the created contract
       const tokenBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
-        address: createdContractAddress,
+        address: contractAddress,
         functionName: "balanceOf",
-        args: [collectorAccount, 1n],
+        args: [collectorAccount, tokenId],
       });
 
       // get token balance - should be amount that was created
@@ -312,12 +322,22 @@ describe("ZoraCreator1155Preminter", () => {
           .status
       ).toBe("success");
 
+      // now premint status for the second mint, it should be minted
+      [minted, contractAddress, tokenId] = await publicClient.readContract({
+        abi: preminterAbi,
+        address: preminterAddress,
+        functionName: 'premintStatus',
+        args: [premintConfig2.contractConfig, premintConfig2.uid]
+      })
+
+      expect(minted).toBe(true);
+
       // get balance of second token
       const tokenBalance2 = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
-        address: createdContractAddress,
+        address: contractAddress,
         functionName: "balanceOf",
-        args: [collectorAccount, 2n],
+        args: [collectorAccount, tokenId],
       });
 
       expect(tokenBalance2).toBe(quantityToMint2);

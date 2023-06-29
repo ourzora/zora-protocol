@@ -94,6 +94,15 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         bool deleted;
     }
 
+    struct PremintStatus {
+        // If the signature has been executed
+        bool executed;
+        // If premint has been executed, the contract address
+        address contractAddress;
+        // If premint has been executed, the created token id
+        uint256 tokenId;
+    }
+
     event Preminted(
         address indexed contractAddress,
         uint256 indexed tokenId,
@@ -354,7 +363,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
 
     function premintStatus(
         ContractCreationConfig calldata contractConfig,
-        uint256 uid
+        uint32 uid
     ) external view returns (bool minted, address contractAddress, uint256 tokenId) {
         uint256 tokenHash = contractAndTokenHash(contractConfig, uid);
         minted = premintExecuted[tokenHash];
