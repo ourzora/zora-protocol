@@ -298,9 +298,9 @@
   integrity sha512-5vhL88tz00Gv2+NUhLdYBRqb9RRekfyQAodXTQxJU2LYxxy6jr1mPycTZempQ1kmw5wIwFbSIoYzpaxOx6UK6Q==
 
 "@zoralabs/zora-rewards@^0.1.5":
-  version "0.1.5"
-  resolved "https://registry.yarnpkg.com/@zoralabs/zora-rewards/-/zora-rewards-0.1.5.tgz#af3c7e4b99f1f56907bb666b68388c6ff80b2e73"
-  integrity sha512-sM3tjVKEF2nDGxGGejOdNvSNGMCt2toFw9iaPmU4hNHBcRVueS7/lzb4Qi142oMiiv8VqinTcsdZfTbk4KDs7g==
+  version "0.1.7"
+  resolved "https://registry.yarnpkg.com/@zoralabs/zora-rewards/-/zora-rewards-0.1.7.tgz#02808ab65ac8454a22e933e6fe691db23fb6e008"
+  integrity sha512-irihibZtg99ihMlWPhuEc0j1s68Gm2Y1uLRyS3sOxm85L1JoaFRlvuDLnFjFvWGvXruOPGbjRymrLPpFOTiHNg==
   dependencies:
     "@openzeppelin/contracts" "^4.9.2"
 
