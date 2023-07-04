@@ -392,26 +392,26 @@ contract ZoraCreator1155Impl is
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
-    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, a finder, and a lister
+    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, a finder, and a origin
     /// @param minter The minter contract to use
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
     /// @param finder The finder of the mint
-    /// @param lister The lister of the mint
+    /// @param origin The origin of the collection
     function mintWithRewards(
         IMinter1155 minter,
         uint256 tokenId,
         uint256 quantity,
         bytes calldata minterArguments,
         address finder,
-        address lister
+        address origin
     ) external payable nonReentrant {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, config.fundsRecipient, finder, lister);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, config.fundsRecipient, finder, origin);
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
