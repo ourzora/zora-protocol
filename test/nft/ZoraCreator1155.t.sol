@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
+import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -810,5 +811,131 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(admin);
         target.adminMint(address(0x1234), tokenId, 1, "");
+    }
+
+    function test_SupplyRoyaltyScheduleCannotBeOne() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 100);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.prank(admin);
+        vm.expectRevert(ICreatorRoyaltiesControl.InvalidMintSchedule.selector);
+        target.updateRoyaltiesForToken(
+            tokenId,
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 1, royaltyBPS: 0, royaltyRecipient: admin})
+        );
+    }
+
+    function test_SupplyRoyaltyMint(uint32 royaltyMintSchedule, uint32 editionSize, uint256 mintQuantity) external {
+        vm.assume(royaltyMintSchedule > 1 && royaltyMintSchedule <= editionSize && editionSize <= 100000 && mintQuantity > 0 && mintQuantity <= editionSize);
+        uint256 totalRoyaltyMintsForSale = editionSize / royaltyMintSchedule;
+        vm.assume(mintQuantity <= editionSize - totalRoyaltyMintsForSale);
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", editionSize);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.startPrank(admin);
+        target.updateRoyaltiesForToken(
+            tokenId,
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: royaltyMintSchedule, royaltyBPS: 0, royaltyRecipient: admin})
+        );
+        address recipient = address(456);
+        target.mint(minter, tokenId, mintQuantity, abi.encode(recipient));
+
+        uint256 totalRoyaltyMintsForPurchase = mintQuantity / (royaltyMintSchedule - 1);
+        totalRoyaltyMintsForPurchase = MathUpgradeable.min(totalRoyaltyMintsForPurchase, editionSize - mintQuantity);
+
+        assertEq(target.balanceOf(recipient, tokenId), mintQuantity);
+        assertEq(target.balanceOf(admin, tokenId), totalRoyaltyMintsForPurchase);
+
+        vm.stopPrank();
+    }
+
+    function test_SupplyRoyaltyMintCleanNumbers() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 100);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.startPrank(admin);
+        target.updateRoyaltiesForToken(
+            tokenId,
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 5, royaltyBPS: 0, royaltyRecipient: admin})
+        );
+        address recipient = address(456);
+        target.mint(minter, tokenId, 80, abi.encode(recipient));
+
+        assertEq(target.balanceOf(recipient, tokenId), 80);
+        assertEq(target.balanceOf(admin, tokenId), 20);
+
+        vm.stopPrank();
+    }
+
+    function test_SupplyRoyaltyMintEdgeCaseNumbers() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", 137);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.startPrank(admin);
+        target.updateRoyaltiesForToken(
+            tokenId,
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 3, royaltyBPS: 0, royaltyRecipient: admin})
+        );
+        address recipient = address(456);
+        target.mint(minter, tokenId, 92, abi.encode(recipient));
+
+        assertEq(target.balanceOf(recipient, tokenId), 92);
+        assertEq(target.balanceOf(admin, tokenId), 45);
+
+        vm.stopPrank();
+    }
+
+    function test_SupplyRoyaltyMintEdgeCaseNumbersOpenEdition() external {
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", type(uint256).max);
+
+        SimpleMinter minter = new SimpleMinter();
+        vm.prank(admin);
+        target.addPermission(tokenId, address(minter), adminRole);
+
+        vm.startPrank(admin);
+        target.updateRoyaltiesForToken(
+            tokenId,
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 3, royaltyBPS: 0, royaltyRecipient: admin})
+        );
+        address recipient = address(456);
+        target.mint(minter, tokenId, 92, abi.encode(recipient));
+
+        assertEq(target.balanceOf(recipient, tokenId), 92);
+        assertEq(target.balanceOf(admin, tokenId), 46);
+
+        target.mint(minter, tokenId, 1, abi.encode(recipient));
+
+        assertEq(target.balanceOf(recipient, tokenId), 93);
+        assertEq(target.balanceOf(admin, tokenId), 46);
+
+        vm.stopPrank();
     }
 }
