@@ -45,7 +45,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         address factoryAddress = getDeployment().factoryProxy;
         IZoraCreator1155Factory factory = IZoraCreator1155Factory(factoryAddress);
 
-        assertEq(IOwnable(factoryAddress).owner(), getChainConfig().factoryOwner, string.concat("owner: ", chainName));
+        assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), string.concat("configured owner incorrect on: ", chainName));
 
         address admin = creator;
         uint32 royaltyMintSchedule = 10;
@@ -63,7 +63,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         IMinter1155 fixedPrice = factory.defaultMinters()[0];
 
         // make sure that the address from the factory matches the stored fixed price address
-        assertEq(address(fixedPrice), getDeployment().fixedPriceSaleStrategy, string.concat("fixed price address: ", chainName));
+        assertEq(getDeployment().fixedPriceSaleStrategy, address(fixedPrice), string.concat("configured fixed price address incorrect on: ", chainName));
 
         // ** 1. Create the erc1155 contract **
 
