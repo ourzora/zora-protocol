@@ -73,7 +73,7 @@ abstract contract ZoraDeployerBase is Script {
 
     /// @notice Returns the chain configuration struct from the JSON configuration file
     /// @return chainConfig structure
-    function getChainConfig() internal returns (ChainConfig memory chainConfig) {
+    function getChainConfig() internal view returns (ChainConfig memory chainConfig) {
         string memory json = vm.readFile(string.concat("chainConfigs/", Strings.toString(chainId()), ".json"));
         chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
         chainConfig.mintFeeAmount = json.readUint(getKeyPrefix(MINT_FEE_AMOUNT));
@@ -82,7 +82,7 @@ abstract contract ZoraDeployerBase is Script {
 
     /// @notice Get the deployment configuration struct from the JSON configuration file
     /// @return deployment deployment configuration structure
-    function getDeployment() internal returns (Deployment memory deployment) {
+    function getDeployment() internal view returns (Deployment memory deployment) {
         string memory json = vm.readFile(string.concat("addresses/", Strings.toString(chainId()), ".json"));
         deployment.fixedPriceSaleStrategy = json.readAddress(getKeyPrefix(FIXED_PRICE_SALE_STRATEGY));
         deployment.merkleMintSaleStrategy = json.readAddress(getKeyPrefix(MERKLE_MINT_SALE_STRATEGY));
