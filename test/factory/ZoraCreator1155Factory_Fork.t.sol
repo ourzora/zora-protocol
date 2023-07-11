@@ -78,6 +78,8 @@ contract ZoraCreator1155FactoryForkTest is ForkTesterBase {
         collector = vm.addr(2);
     }
 
+    /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
+    /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
     function getForkTestChains() public view returns (string[] memory result) {
         try vm.envString("FORK_TEST_CHAINS", ",") returns (string[] memory forkTestChains) {
             result = forkTestChains;
