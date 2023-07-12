@@ -1,11 +1,13 @@
 name: fork tests
 
 on:
-  push
-  # push:
-  #   paths:
-  #     - "addresses/**"
-  #     - "chainConfigs/**"
+  push:
+    paths:
+      - "addresses/**"
+      - "chainConfigs/**"
+    branches:
+      - main
+      - fork-tests
 
 env:
   FOUNDRY_PROFILE: ci
@@ -39,6 +41,7 @@ jobs:
       - name: Run fork tests
         env:
           FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         run: |
           forge test -vvv --match-test fork
         id: test
