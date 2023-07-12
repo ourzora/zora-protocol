@@ -5,6 +5,7 @@ on:
     branches:
       - main
       - fork-tests
+      - version-packages
 
 env:
   FOUNDRY_PROFILE: ci
