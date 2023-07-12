@@ -27,11 +27,12 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
     /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
     /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
-    function getForkTestChains() public view returns (string[] memory result) {
+    function getForkTestChains() private view returns (string[] memory result) {
         try vm.envString("FORK_TEST_CHAINS", ",") returns (string[] memory forkTestChains) {
             result = forkTestChains;
         } catch {
             console.log("could not get fork test chains - make sure the environment variable FORK_TEST_CHAINS is set");
+            result = new string[](0);
         }
     }
 
@@ -128,7 +129,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         assertEq(target.balanceOf(collector, tokenId), quantityToMint, chainName);
     }
 
-    function test_canCreateContractAndMint() external {
+    function test_fork_canCreateContractAndMint() external {
         string[] memory forkTestChains = getForkTestChains();
         for (uint256 i = 0; i < forkTestChains.length; i++) {
             testTheFork(forkTestChains[i]);

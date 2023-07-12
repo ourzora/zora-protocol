@@ -19,8 +19,8 @@ test = 'src'
 via_ir = true
 
 [rpc_endpoints]
-mainnet = "https://eth-mainnet.g.alchemy.com/v2/${MAINNET_ALCHEMY_KEY}"
-goerli = "https://eth-goerli.g.alchemy.com/v2/${GOERLI_ALCHEMY_KEY}"
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+goerli = "https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
 # for optimism, since we are just using this for deployment/fork testing,
 # we can use these since they're lower volume.
 optimism = "https://mainnet.optimism.io"
@@ -28,12 +28,5 @@ optimism_goerli = "https://goerli.optimism.io"
 zora = "https://rpc.zora.energy"
 zora_goerli = "https://testnet.rpc.zora.energy"
 
-# [profile.fork]
-# src = 'src'
-# out = 'out'
-# libs = ['_imagine', 'node_modules', 'script']
-# solc_version = '0.8.17'
-# fs_permissions = [{ access = "read", path = "./addresses"}, { access = "read", path = "./chainConfigs"}, { access = "read", path = "./package.json" }]
-# test = 'test_fork'
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
