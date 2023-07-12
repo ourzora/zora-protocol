@@ -2,9 +2,6 @@ name: fork tests
 
 on:
   push:
-    paths:
-      - "addresses/**"
-      - "chainConfigs/**"
     branches:
       - main
       - fork-tests
@@ -39,9 +36,9 @@ jobs:
           version: nightly
 
       - name: Run fork tests
+        run: |
+          forge test -vvv --match-test fork
         env:
           FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
-        run: |
-          forge test -vvv --match-test fork
         id: test
