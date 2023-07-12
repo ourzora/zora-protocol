@@ -23,7 +23,7 @@ contract UpgradeScript is ZoraDeployerBase {
 
     string configFile;
 
-    function run() public {
+    function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
         ChainConfig memory chainConfig = getChainConfig();
 
@@ -75,5 +75,7 @@ contract UpgradeScript is ZoraDeployerBase {
         if (isNewNFTImpl) {
             deployTestContractForVerification(deployment.factoryProxy, chainConfig.factoryOwner);
         }
+
+        return getDeploymentJSON(deployment);
     }
 }
