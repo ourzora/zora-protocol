@@ -1,10 +1,11 @@
 name: fork tests
 
 on:
-  push:
-    paths:
-      - "addresses/**"
-      - "chainConfigs/**"
+  push
+  # push:
+  #   paths:
+  #     - "addresses/**"
+  #     - "chainConfigs/**"
 
 env:
   FOUNDRY_PROFILE: ci
