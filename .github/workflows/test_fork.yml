@@ -40,6 +40,6 @@ jobs:
         run: |
           forge test -vvv --match-test fork
         env:
-          FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli
+          FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         id: test
