@@ -1,0 +1,48 @@
+@startuml
+actor Developer
+actor AnotherDeveloper
+actor Reviewer
+entity LocalBranch
+entity RemotePR
+entity main
+participant  ReleaseGithubAction
+entity VersionPackagesPR
+participant blockchain
+participant npm
+
+Activate LocalBranch
+Developer -> LocalBranch: Change smart contracts \nand commit
+Developer -> LocalBranch: npx changeset - create a changeset \n& commit 
+Developer -> LocalBranch: Git push & open PR
+LocalBranch --> RemotePR: Deltas and changeset
+activate RemotePR
+Reviewer -> RemotePR: Approve PR
+Developer -> LocalBranch: Deploy to all chains
+LocalBranch --> blockchain: Updated or new smart contracts
+LocalBranch --> LocalBranch: Update addresses json files
+Developer -> LocalBranch: push updated addresses json files
+LocalBranch --> RemotePR: Updated addresses json files
+deactivate LocalBranch
+Developer -> RemotePR: Merge to main
+RemotePR --> main: Code Deltas + Changesets + \nUpdated addresses
+deactivate RemotePR
+activate main
+main --> ReleaseGithubAction: Changes to main \nincluding changeset
+deactivate main
+ReleaseGithubAction -> VersionPackagesPR: Create a PR with new versions \napplied to package.jsons from \ninstrucitons in new changesets
+activate VersionPackagesPR
+AnotherDeveloper -> main: Push a new changeset
+activate main
+main --> ReleaseGithubAction: new changeset
+deactivate main
+ReleaseGithubAction -> VersionPackagesPR: Update PR with new versions \napplied to package.jsons from \ninstrucitons in new changests
+Developer -> VersionPackagesPR: merge to main
+VersionPackagesPR --> main: Updated versions in packages.
+deactivate VersionPackagesPR
+activate main
+main -> ReleaseGithubAction: new versions in package.jsons
+ReleaseGithubAction -> npm: Build and publish packages
+deactivate main
+activate npm
+
+@enduml
