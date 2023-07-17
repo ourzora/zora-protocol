@@ -27,6 +27,7 @@ optimism = "https://mainnet.optimism.io"
 optimism_goerli = "https://goerli.optimism.io"
 zora = "https://rpc.zora.energy"
 zora_goerli = "https://testnet.rpc.zora.energy"
+base_goerli = "https://goerli.base.org"
 
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
