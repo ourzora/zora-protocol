@@ -30,8 +30,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
     uint256 constant PERMISSION_BIT_SALES = 2 ** 3;
 
-    /// @notice Contract creation parameters unique hash => created contract address
-    mapping(uint256 => address) public contractAddresses;
     /// @dev signature for contract + token uid -> if signature has been executed
     mapping(uint256 => bool) premintExecuted;
     /// @dev The resulting token id created for a permint.  Normally
@@ -107,7 +105,6 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         address indexed contractAddress,
         uint256 indexed tokenId,
         bool indexed createdNewContract,
-        uint256 contractHashId,
         uint32 uid,
         ContractCreationConfig contractConfig,
         TokenCreationConfig tokenConfig,
@@ -154,31 +151,28 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         TokenCreationConfig calldata tokenConfig = premintConfig.tokenConfig;
 
         // get or create the contract with the given params
-        (IZoraCreator1155 tokenContract, uint256 contractHash, bool isNewContract) = _getOrCreateContract(contractConfig);
+        (IZoraCreator1155 tokenContract, bool isNewContract) = _getOrCreateContract(contractConfig);
         contractAddress = address(tokenContract);
 
         // setup the new token, and its sales config
         newTokenId = _setupNewTokenAndSale(tokenContract, contractConfig.contractAdmin, tokenConfig);
         premintTokenId[tokenHash] = newTokenId;
 
-        emit Preminted(contractAddress, newTokenId, isNewContract, contractHash, premintConfig.uid, contractConfig, tokenConfig, msg.sender, quantityToMint);
+        emit Preminted(contractAddress, newTokenId, isNewContract, premintConfig.uid, contractConfig, tokenConfig, msg.sender, quantityToMint);
 
         // mint the initial x tokens for this new token id to the executor.
         address tokenRecipient = msg.sender;
         tokenContract.mint{value: msg.value}(fixedPriceMinter, newTokenId, quantityToMint, abi.encode(tokenRecipient, mintComment));
     }
 
-    function _getOrCreateContract(
-        ContractCreationConfig calldata contractConfig
-    ) private returns (IZoraCreator1155 tokenContract, uint256 contractHash, bool isNewContract) {
-        contractHash = contractDataHash(contractConfig);
-        address contractAddress = contractAddresses[contractHash];
-        // first we see if the address exists for the contract
-        isNewContract = contractAddress == address(0);
+    function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract, bool isNewContract) {
+        address contractAddress = getContractAddress(contractConfig);
+        // first we see if the code is already deployed for the contract
+        isNewContract = contractAddress.code.length == 0;
+
         if (isNewContract) {
             // if address doesnt exist for hash, createi t
             tokenContract = _createContract(contractConfig);
-            contractAddresses[contractHash] = address(tokenContract);
         } else {
             tokenContract = IZoraCreator1155(contractAddress);
         }
@@ -192,7 +186,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, CONTRACT_BASE_ID, address(this), PERMISSION_BIT_MINTER);
 
         // create the contract via the factory.
-        address newContractAddresss = factory.createContract(
+        address newContractAddresss = factory.createContractDeterministic(
             contractConfig.contractURI,
             contractConfig.contractName,
             // default royalty config is empty, since we set it on a token level
@@ -354,11 +348,8 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         return tokenHash;
     }
 
-    /// Returns a unique hash for the contract data, useful to uniquely identify a contract based on creation params
-    /// and determining what contract address has been created for this hash.  Also used to scope
-    /// unique unique ids associated with signatures, the uid field on TokenCreationConfig
-    function contractDataHash(ContractCreationConfig calldata contractConfig) public pure returns (uint256) {
-        return uint256(_hashContract(contractConfig));
+    function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
+        return factory.deterministicContractAddress(contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
     }
 
     function premintStatus(
@@ -368,7 +359,7 @@ contract ZoraCreator1155Preminter is EIP712UpgradeableWithChainId, Ownable2StepU
         uint256 tokenHash = contractAndTokenHash(contractConfig, uid);
         minted = premintExecuted[tokenHash];
         if (minted) {
-            contractAddress = contractAddresses[contractDataHash(contractConfig)];
+            contractAddress = getContractAddress(contractConfig);
             tokenId = premintTokenId[tokenHash];
         }
     }

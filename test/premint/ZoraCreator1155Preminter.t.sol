@@ -31,7 +31,6 @@ contract ZoraCreator1155PreminterTest is Test {
         address indexed contractAddress,
         uint256 indexed tokenId,
         bool indexed createdNewContract,
-        uint256 contractHashId,
         uint32 uid,
         ZoraCreator1155Preminter.ContractCreationConfig contractConfig,
         ZoraCreator1155Preminter.TokenCreationConfig tokenConfig,
@@ -117,10 +116,10 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // get contract hash, which is unique per contract creation config, and can be used
         // retreive the address created for a contract
-        uint256 contractHash = preminter.contractDataHash(premintConfig.contractConfig);
+        address contractAddress = preminter.getContractAddress(premintConfig.contractConfig);
 
         // get the contract address from the preminter based on the contract hash id.
-        IZoraCreator1155 created1155Contract = IZoraCreator1155(preminter.contractAddresses(contractHash));
+        IZoraCreator1155 created1155Contract = IZoraCreator1155(contractAddress);
 
         // get the created contract, and make sure that tokens have been minted to the address
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
@@ -203,7 +202,7 @@ contract ZoraCreator1155PreminterTest is Test {
         assertEq(tokenId, 0);
 
         // make sure no contract was created
-        assertEq(preminter.contractAddresses(preminter.contractDataHash(premintConfig.contractConfig)), address(0));
+        assertEq(preminter.getContractAddress(premintConfig.contractConfig).code.length, 0);
 
         // try to turn off deleted and mint again with same uid, and modify the token a bit, it should not allow to mint the token
         premintConfig.deleted = false;
@@ -247,7 +246,6 @@ contract ZoraCreator1155PreminterTest is Test {
             contractAddress,
             tokenId,
             createdNewContract,
-            preminter.contractDataHash(premintConfig.contractConfig),
             premintConfig.uid,
             premintConfig.contractConfig,
             premintConfig.tokenConfig,
