@@ -1,12 +1,10 @@
 name: fork tests
 
 on:
-  push:
+  - push:
     branches:
       - main
-      - fork-tests
-      - changeset
-      - adding_base_testnet
+  - pull_request
 
 env:
   FOUNDRY_PROFILE: ci
