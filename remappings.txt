@@ -3,3 +3,4 @@ forge-std/=node_modules/forge-std/src/
 @zoralabs/openzeppelin-contracts-upgradeable/=node_modules/@zoralabs/openzeppelin-contracts-upgradeable/
 @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
 _imagine=_imagine/
+solemate/=/node_modules/solemate/src/

@@ -13,6 +13,7 @@ import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.
 import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {Zora1155} from "../proxies/Zora1155.sol";
 import {Create2Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/Create2Upgradeable.sol";
+import {CREATE3} from "solmate/src/utils/CREATE3.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
@@ -89,7 +90,9 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     ) external returns (address) {
         bytes32 digest = _hashContract(newContractURI, name, defaultAdmin);
 
-        Zora1155 newContract = new Zora1155{salt: digest}(address(implementation));
+        address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(implementation)), 0);
+
+        Zora1155 newContract = Zora1155(payable(createdContract));
 
         _initializeContract(newContract, newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
@@ -99,11 +102,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     function deterministicContractAddress(string calldata newContractURI, string calldata name, address contractAdmin) external view returns (address) {
         bytes32 digest = _hashContract(newContractURI, name, contractAdmin);
 
-        bytes memory bytecode = type(Zora1155).creationCode;
-
-        bytes32 contractCodeHash = keccak256(abi.encodePacked(bytecode, abi.encode(address(implementation))));
-
-        return Create2Upgradeable.computeAddress(digest, contractCodeHash);
+        return CREATE3.getDeployed(digest);
     }
 
     function _initializeContract(
