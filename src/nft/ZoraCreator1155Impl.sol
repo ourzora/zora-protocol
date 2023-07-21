@@ -471,7 +471,8 @@ contract ZoraCreator1155Impl is
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, config.fundsRecipient, mintReferral);
+        uint256 ethValueSent =
+            _handleRewardsAndGetValueSent(msg.value, tokenId, quantity, config.fundsRecipient, mintReferral);
 
         // Execute commands returned from minter
         _executeCommands(
