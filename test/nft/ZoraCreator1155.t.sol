@@ -1319,7 +1319,7 @@ contract ZoraCreator1155Test is Test {
                 royaltyRecipient: admin
             })
         );
-        address recipient = address(456);
+
         target.mint(minter, tokenId, mintQuantity, abi.encode(recipient));
 
         uint256 totalRoyaltyMintsForPurchase = mintQuantity / (royaltyMintSchedule - 1);
@@ -1350,7 +1350,6 @@ contract ZoraCreator1155Test is Test {
                 royaltyRecipient: admin
             })
         );
-        address recipient = address(456);
         target.mint(minter, tokenId, 80, abi.encode(recipient));
 
         assertEq(target.balanceOf(recipient, tokenId), 80);
@@ -1378,7 +1377,7 @@ contract ZoraCreator1155Test is Test {
                 royaltyRecipient: admin
             })
         );
-        address recipient = address(456);
+
         target.mint(minter, tokenId, 92, abi.encode(recipient));
 
         assertEq(target.balanceOf(recipient, tokenId), 92);
@@ -1406,7 +1405,7 @@ contract ZoraCreator1155Test is Test {
                 royaltyRecipient: admin
             })
         );
-        address recipient = address(456);
+
         target.mint(minter, tokenId, 92, abi.encode(recipient));
 
         assertEq(target.balanceOf(recipient, tokenId), 92);

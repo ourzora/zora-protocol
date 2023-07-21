@@ -13,6 +13,8 @@ struct ChainConfig {
     uint256 mintFeeAmount;
     /// @notice Mint fee recipient user
     address mintFeeRecipient;
+    /// @notice Zora rewards contract address
+    address zoraRewards;
 }
 
 /// @notice Deployment addresses – set to new deployed addresses by the scripts.
