@@ -3,3 +3,4 @@
 ---
 
 Added pgn sepolia
+Added pgn mainnet
