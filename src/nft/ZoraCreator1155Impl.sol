@@ -735,6 +735,7 @@ contract ZoraCreator1155Impl is
     /// @notice Internal no-checks set funds recipient address
     /// @param fundsRecipient new funds recipient address
     function _setFundsRecipient(address payable fundsRecipient) internal {
+        if (fundsRecipient == address(0)) revert INVALID_ADDRESS_ZERO();
         config.fundsRecipient = fundsRecipient;
         emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
     }
