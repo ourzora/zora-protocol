@@ -7,94 +7,14 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
-
-/// @notice Chain configuration for constants set manually during deploy. Does not get written to after deploys.
-struct ChainConfig {
-    /// @notice The user that owns the factory proxy. Allows ability to upgrade for new implementations deployed.
-    address factoryOwner;
-    /// @notice Mint fee amount in WEI charged for each mint
-    uint256 mintFeeAmount;
-    /// @notice Mint fee recipient user
-    address mintFeeRecipient;
-    /// @notice Zora rewards contract
-    address zoraRewards;
-}
-
-/// @notice Deployment addresses – set to new deployed addresses by the scripts.
-struct Deployment {
-    /// @notice Fixed price minter strategy configuration contract
-    address fixedPriceSaleStrategy;
-    /// @notice Merkle minter strategy (formerly presale) configuration
-    address merkleMintSaleStrategy;
-    /// @notice Redeem minter factory contract for redeem sales configurations
-    address redeemMinterFactory;
-    /// @notice Implementation contract for the 1155 contract
-    address contract1155Impl;
-    /// @notice Factory implementation contract that is the impl for the above proxy.
-    address factoryImpl;
-    /// @notice Factory proxy contract that creates zora drops style NFT contracts
-    address factoryProxy;
-}
+import {ScriptDeploymentConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 
 /// @notice Deployment drops for base where
-abstract contract ZoraDeployerBase is Script {
+abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
     using stdJson for string;
-
-    /// @notice ChainID convenience getter
-    /// @return id chainId
-    function chainId() internal view returns (uint256 id) {
-        assembly {
-            id := chainid()
-        }
-    }
 
     /// @notice File used for demo metadata on verification test mint
     string constant DEMO_IPFS_METADATA_FILE = "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi";
-
-    ///
-    // These are the JSON key constants to standardize writing and reading configuration
-    ///
-
-    string constant FACTORY_OWNER = "FACTORY_OWNER";
-    string constant MINT_FEE_AMOUNT = "MINT_FEE_AMOUNT";
-    string constant MINT_FEE_RECIPIENT = "MINT_FEE_RECIPIENT";
-    string constant ZORA_REWARDS = "ZORA_REWARDS";
-
-    string constant FIXED_PRICE_SALE_STRATEGY = "FIXED_PRICE_SALE_STRATEGY";
-    string constant MERKLE_MINT_SALE_STRATEGY = "MERKLE_MINT_SALE_STRATEGY";
-    string constant REDEEM_MINTER_FACTORY = "REDEEM_MINTER_FACTORY";
-    string constant CONTRACT_1155_IMPL = "CONTRACT_1155_IMPL";
-    string constant FACTORY_IMPL = "FACTORY_IMPL";
-    string constant FACTORY_PROXY = "FACTORY_PROXY";
-
-    /// @notice Return a prefixed key for reading with a ".".
-    /// @param key key to prefix
-    /// @return prefixed key
-    function getKeyPrefix(string memory key) internal pure returns (string memory) {
-        return string.concat(".", key);
-    }
-
-    /// @notice Returns the chain configuration struct from the JSON configuration file
-    /// @return chainConfig structure
-    function getChainConfig() internal returns (ChainConfig memory chainConfig) {
-        string memory json = vm.readFile(string.concat("chainConfigs/", Strings.toString(chainId()), ".json"));
-        chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
-        chainConfig.mintFeeAmount = json.readUint(getKeyPrefix(MINT_FEE_AMOUNT));
-        chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
-        chainConfig.zoraRewards = json.readAddress(getKeyPrefix(ZORA_REWARDS));
-    }
-
-    /// @notice Get the deployment configuration struct from the JSON configuration file
-    /// @return deployment deployment configuration structure
-    function getDeployment() internal returns (Deployment memory deployment) {
-        string memory json = vm.readFile(string.concat("addresses/", Strings.toString(chainId()), ".json"));
-        deployment.fixedPriceSaleStrategy = json.readAddress(getKeyPrefix(FIXED_PRICE_SALE_STRATEGY));
-        deployment.merkleMintSaleStrategy = json.readAddress(getKeyPrefix(MERKLE_MINT_SALE_STRATEGY));
-        deployment.redeemMinterFactory = json.readAddress(getKeyPrefix(REDEEM_MINTER_FACTORY));
-        deployment.contract1155Impl = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL));
-        deployment.factoryImpl = json.readAddress(getKeyPrefix(FACTORY_IMPL));
-        deployment.factoryProxy = json.readAddress(getKeyPrefix(FACTORY_PROXY));
-    }
 
     /// @notice Get deployment configuration struct as JSON
     /// @param deployment deploymet struct
@@ -124,7 +44,11 @@ abstract contract ZoraDeployerBase is Script {
             IZoraCreator1155Factory(factoryProxy).createContract(
                 "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
                 unicode"🪄",
-                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
+                ICreatorRoyaltiesControl.RoyaltyConfiguration({
+                    royaltyBPS: 0,
+                    royaltyRecipient: address(0),
+                    royaltyMintSchedule: 0
+                }),
                 payable(admin),
                 initUpdate
             )

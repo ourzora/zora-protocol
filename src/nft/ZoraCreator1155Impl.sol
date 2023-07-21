@@ -1,14 +1,22 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ERC1155Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
+import {ERC1155Upgradeable} from
+    "@zoralabs/openzeppelin-contracts-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
+import {ReentrancyGuardUpgradeable} from
+    "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ERC1155Rewards} from "@zoralabs/zora-rewards/dist/contracts/ERC1155/ERC1155Rewards.sol";
-import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
-import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
+import {IERC1155MetadataURIUpgradeable} from
+    "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
+import {IERC165Upgradeable} from
+    "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
+import {ReentrancyGuardUpgradeable} from
+    "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
@@ -61,12 +69,11 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IFactoryManagedUpgradeGate internal immutable factory;
 
-    constructor(
-        uint256 _mintFeeAmount,
-        address _mintFeeRecipient,
-        address _factory,
-        address _zoraRewards
-    ) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) ERC1155Rewards(_zoraRewards, _mintFeeRecipient) initializer {
+    constructor(uint256 _mintFeeAmount, address _mintFeeRecipient, address _factory, address _zoraRewards)
+        MintFeeManager(_mintFeeAmount, _mintFeeRecipient)
+        ERC1155Rewards(_zoraRewards, _mintFeeRecipient)
+        initializer
+    {
         factory = IFactoryManagedUpgradeGate(_factory);
     }
 
@@ -120,7 +127,11 @@ contract ZoraCreator1155Impl is
     /// @notice sets up the global configuration for the 1155 contract
     /// @param newContractURI The contract URI
     /// @param defaultRoyaltyConfiguration The default royalty configuration
-    function _setupDefaultToken(address defaultAdmin, string memory newContractURI, RoyaltyConfiguration memory defaultRoyaltyConfiguration) internal {
+    function _setupDefaultToken(
+        address defaultAdmin,
+        string memory newContractURI,
+        RoyaltyConfiguration memory defaultRoyaltyConfiguration
+    ) internal {
         // Add admin permission to default admin to manage contract
         _addPermission(CONTRACT_BASE_ID, defaultAdmin, PERMISSION_BIT_ADMIN);
 
@@ -134,10 +145,10 @@ contract ZoraCreator1155Impl is
     /// @notice Updates the royalty configuration for a token
     /// @param tokenId The token ID to update
     /// @param newConfiguration The new royalty configuration
-    function updateRoyaltiesForToken(
-        uint256 tokenId,
-        RoyaltyConfiguration memory newConfiguration
-    ) external onlyAdminOrRole(tokenId, PERMISSION_BIT_FUNDS_MANAGER) {
+    function updateRoyaltiesForToken(uint256 tokenId, RoyaltyConfiguration memory newConfiguration)
+        external
+        onlyAdminOrRole(tokenId, PERMISSION_BIT_FUNDS_MANAGER)
+    {
         _updateRoyalties(tokenId, newConfiguration);
     }
 
@@ -188,7 +199,12 @@ contract ZoraCreator1155Impl is
     /// @param tokenId tokenId to check
     /// @param role role to check for admin
     function _requireAdminOrRole(address user, uint256 tokenId, uint256 role) internal view {
-        if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN | role) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
+        if (
+            !(
+                _hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN | role)
+                    || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)
+            )
+        ) {
             revert UserMissingRoleForToken(user, tokenId, role);
         }
     }
@@ -198,7 +214,12 @@ contract ZoraCreator1155Impl is
     /// @param user user to check
     /// @param tokenId tokenId to check
     function _requireAdmin(address user, uint256 tokenId) internal view {
-        if (!(_hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN) || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN))) {
+        if (
+            !(
+                _hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN)
+                    || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)
+            )
+        ) {
             revert UserMissingRoleForToken(user, tokenId, PERMISSION_BIT_ADMIN);
         }
     }
@@ -253,10 +274,12 @@ contract ZoraCreator1155Impl is
     /// @notice Set up a new token
     /// @param newURI The URI for the token
     /// @param maxSupply The maximum supply of the token
-    function setupNewToken(
-        string memory newURI,
-        uint256 maxSupply
-    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
+    function setupNewToken(string memory newURI, uint256 maxSupply)
+        public
+        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
+        nonReentrant
+        returns (uint256)
+    {
         uint256 tokenId = _setupNewToken(newURI, maxSupply);
         // Allow the token creator to administrate this token
         _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
@@ -272,7 +295,10 @@ contract ZoraCreator1155Impl is
     /// @notice Update the token URI for a token
     /// @param tokenId The token ID to update the URI for
     /// @param _newURI The new URI
-    function updateTokenURI(uint256 tokenId, string memory _newURI) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+    function updateTokenURI(uint256 tokenId, string memory _newURI)
+        external
+        onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA)
+    {
         if (tokenId == CONTRACT_BASE_ID) {
             revert();
         }
@@ -283,7 +309,10 @@ contract ZoraCreator1155Impl is
     /// @notice Update the global contract metadata
     /// @param _newURI The new contract URI
     /// @param _newName The new contract name
-    function updateContractMetadata(string memory _newURI, string memory _newName) external onlyAdminOrRole(0, PERMISSION_BIT_METADATA) {
+    function updateContractMetadata(string memory _newURI, string memory _newName)
+        external
+        onlyAdminOrRole(0, PERMISSION_BIT_METADATA)
+    {
         tokens[CONTRACT_BASE_ID].uri = _newURI;
         _setName(_newName);
         emit ContractMetadataUpdated(msg.sender, _newURI, _newName);
@@ -312,7 +341,10 @@ contract ZoraCreator1155Impl is
         _removePermission(tokenId, user, permissionBits);
 
         // Clear owner field
-        if (tokenId == CONTRACT_BASE_ID && user == config.owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
+        if (
+            tokenId == CONTRACT_BASE_ID && user == config.owner
+                && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)
+        ) {
             _setOwner(address(0));
         }
     }
@@ -348,12 +380,11 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param data The data to pass to the onERC1155Received function
-    function adminMint(
-        address recipient,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes memory data
-    ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
+    function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data)
+        external
+        nonReentrant
+        onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER)
+    {
         // Call internal admin mint
         _adminMint(recipient, tokenId, quantity, data);
     }
@@ -363,7 +394,12 @@ contract ZoraCreator1155Impl is
     /// @param tokenIds The token IDs to mint
     /// @param quantities The quantities of tokens to mint
     /// @param data The data to pass to the onERC1155BatchReceived function
-    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external nonReentrant {
+    function adminMintBatch(
+        address recipient,
+        uint256[] memory tokenIds,
+        uint256[] memory quantities,
+        bytes memory data
+    ) external nonReentrant {
         bool isGlobalAdminOrMinter = _isAdminOrRole(msg.sender, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         for (uint256 i = 0; i < tokenIds.length; ++i) {
@@ -379,7 +415,11 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable nonReentrant {
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments)
+        external
+        payable
+        nonReentrant
+    {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
@@ -387,7 +427,11 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleFeeAndGetValueSent(quantity);
 
         // Execute commands returned from minter
-        _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+        _executeCommands(
+            minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands,
+            ethValueSent,
+            tokenId
+        );
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
@@ -414,7 +458,11 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, config.fundsRecipient, finder, origin);
 
         // Execute commands returned from minter
-        _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
+        _executeCommands(
+            minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands,
+            ethValueSent,
+            tokenId
+        );
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
@@ -422,7 +470,11 @@ contract ZoraCreator1155Impl is
     /// @notice Set a metadata renderer for a token
     /// @param tokenId The token ID to set the renderer for
     /// @param renderer The renderer to set
-    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+    function setTokenMetadataRenderer(uint256 tokenId, IRenderer1155 renderer)
+        external
+        nonReentrant
+        onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA)
+    {
         _setRenderer(tokenId, renderer);
 
         if (tokenId == 0) {
@@ -439,7 +491,9 @@ contract ZoraCreator1155Impl is
     /// @param commands list of command structs
     /// @param ethValueSent the ethereum value sent in the mint transaction into the contract
     /// @param tokenId the token id the user requested to mint (0 if the token id is set by the minter itself across the whole contract)
-    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId) internal {
+    function _executeCommands(ICreatorCommands.Command[] memory commands, uint256 ethValueSent, uint256 tokenId)
+        internal
+    {
         for (uint256 i = 0; i < commands.length; ++i) {
             ICreatorCommands.CreatorActions method = commands[i].method;
             if (method == ICreatorCommands.CreatorActions.SEND_ETH) {
@@ -447,11 +501,14 @@ contract ZoraCreator1155Impl is
                 if (ethValueSent > amount) {
                     revert Mint_InsolventSaleTransfer();
                 }
-                if (!TransferHelperUtils.safeSendETH(recipient, amount, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
+                if (
+                    !TransferHelperUtils.safeSendETH(recipient, amount, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)
+                ) {
                     revert Mint_ValueTransferFail();
                 }
             } else if (method == ICreatorCommands.CreatorActions.MINT) {
-                (address recipient, uint256 mintTokenId, uint256 quantity) = abi.decode(commands[i].args, (address, uint256, uint256));
+                (address recipient, uint256 mintTokenId, uint256 quantity) =
+                    abi.decode(commands[i].args, (address, uint256, uint256));
                 if (tokenId != 0 && mintTokenId != tokenId) {
                     revert Mint_TokenIDMintNotAllowed();
                 }
@@ -473,7 +530,10 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the sale contract with
     /// @param salesConfig The sales config contract to call
     /// @param data The data to pass to the sales config contract
-    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
+    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data)
+        external
+        onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES)
+    {
         _requireAdminOrRole(address(salesConfig), tokenId, PERMISSION_BIT_MINTER);
         if (!salesConfig.supportsInterface(type(IMinter1155).interfaceId)) {
             revert Sale_CannotCallNonSalesContract(address(salesConfig));
@@ -487,7 +547,10 @@ contract ZoraCreator1155Impl is
     /// @notice Proxy setter for renderer contracts (only callable by METADATA permission or admin)
     /// @param tokenId The token ID to call the renderer contract with
     /// @param data The data to pass to the renderer contract
-    function callRenderer(uint256 tokenId, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA) {
+    function callRenderer(uint256 tokenId, bytes memory data)
+        external
+        onlyAdminOrRole(tokenId, PERMISSION_BIT_METADATA)
+    {
         // We assume any renderers set are checked for EIP165 signature during write stage.
         (bool success, bytes memory why) = address(getCustomRenderer(tokenId)).call(data);
         if (!success) {
@@ -498,13 +561,21 @@ contract ZoraCreator1155Impl is
     /// @notice Returns true if the contract implements the interface defined by interfaceId
     /// @param interfaceId The interface to check for
     /// @return if the interfaceId is marked as supported
-    function supportsInterface(
-        bytes4 interfaceId
-    ) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
-        return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId || ERC1155Upgradeable.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable)
+        returns (bool)
+    {
+        return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId
+            || ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
-    function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount, bytes memory data) internal returns (uint256 totalRoyaltyMints) {
+    function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount, bytes memory data)
+        internal
+        returns (uint256 totalRoyaltyMints)
+    {
         uint256 royaltyMintSchedule = royalties[tokenId].royaltyMintSchedule;
         if (royaltyMintSchedule == 0) {
             royaltyMintSchedule = royalties[CONTRACT_BASE_ID].royaltyMintSchedule;
@@ -513,9 +584,11 @@ contract ZoraCreator1155Impl is
             // If we still have no schedule, return 0 supply royalty.
             return 0;
         }
+        uint256 maxSupply = tokens[tokenId].maxSupply;
+        uint256 totalMinted = tokens[tokenId].totalMinted;
 
-        totalRoyaltyMints = (mintAmount + (tokens[tokenId].totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
-
+        totalRoyaltyMints = (mintAmount + (totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
+        totalRoyaltyMints = MathUpgradeable.min(totalRoyaltyMints, maxSupply - (mintAmount + totalMinted));
         if (totalRoyaltyMints > 0) {
             address royaltyRecipient = royalties[tokenId].royaltyRecipient;
             if (royaltyRecipient == address(0)) {
@@ -549,7 +622,11 @@ contract ZoraCreator1155Impl is
     /// @param ids token ids to mint
     /// @param amounts of tokens to mint
     /// @param data as specified by 1155 standard
-    function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
+    function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data)
+        internal
+        virtual
+        override
+    {
         super._mintBatch(to, ids, amounts, data);
 
         for (uint256 i = 0; i < ids.length; ++i) {
@@ -600,7 +677,15 @@ contract ZoraCreator1155Impl is
     ) internal override {
         super._beforeBatchTokenTransfer(operator, from, to, ids, amounts, data);
         if (address(config.transferHook) != address(0)) {
-            config.transferHook.onTokenTransferBatch({target: address(this), operator: operator, from: from, to: to, ids: ids, amounts: amounts, data: data});
+            config.transferHook.onTokenTransferBatch({
+                target: address(this),
+                operator: operator,
+                from: from,
+                to: to,
+                ids: ids,
+                amounts: amounts,
+                data: data
+            });
         }
     }
 
@@ -615,7 +700,12 @@ contract ZoraCreator1155Impl is
 
     /// @notice Returns the URI for a token
     /// @param tokenId The token ID to return the URI for
-    function uri(uint256 tokenId) public view override(ERC1155Upgradeable, IERC1155MetadataURIUpgradeable) returns (string memory) {
+    function uri(uint256 tokenId)
+        public
+        view
+        override(ERC1155Upgradeable, IERC1155MetadataURIUpgradeable)
+        returns (string memory)
+    {
         if (bytes(tokens[tokenId].uri).length > 0) {
             return tokens[tokenId].uri;
         }
@@ -634,7 +724,10 @@ contract ZoraCreator1155Impl is
 
     /// @notice Set funds recipient address
     /// @param fundsRecipient new funds recipient address
-    function setFundsRecipient(address payable fundsRecipient) external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+    function setFundsRecipient(address payable fundsRecipient)
+        external
+        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER)
+    {
         config.fundsRecipient = fundsRecipient;
         emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
     }
@@ -649,7 +742,11 @@ contract ZoraCreator1155Impl is
     /// @notice Withdraws all ETH from the contract to the funds recipient address
     function withdraw() public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
         uint256 contractValue = address(this).balance;
-        if (!TransferHelperUtils.safeSendETH(config.fundsRecipient, contractValue, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
+        if (
+            !TransferHelperUtils.safeSendETH(
+                config.fundsRecipient, contractValue, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT
+            )
+        ) {
             revert ETHWithdrawFailed(config.fundsRecipient, contractValue);
         }
     }

@@ -4,7 +4,8 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
-import {ZoraDeployerBase, ChainConfig, Deployment} from "./ZoraDeployerBase.sol";
+import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
+import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
@@ -25,6 +26,7 @@ contract DeployScript is ZoraDeployerBase {
 
         console2.log("zoraFeeAmount", chainConfig.mintFeeAmount);
         console2.log("zoraFeeRecipient", chainConfig.mintFeeRecipient);
+        console2.log("factoryOwner", chainConfig.factoryOwner);
 
         address deployer = vm.envAddress("DEPLOYER");
 
