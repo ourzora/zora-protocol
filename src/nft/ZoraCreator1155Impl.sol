@@ -292,6 +292,24 @@ contract ZoraCreator1155Impl is
         return tokenId;
     }
 
+    /// @notice Set up a new token with a create referral
+    /// @param newURI The URI for the token
+    /// @param maxSupply The maximum supply of the token
+    /// @param createReferral The address of the create referral
+    function setupNewTokenWithCreateReferral(string calldata newURI, uint256 maxSupply, address createReferral)
+        public
+        onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
+        nonReentrant
+        returns (uint256)
+    {
+        uint256 tokenId = setupNewToken(newURI, maxSupply);
+
+        // Set the create referral for the token id
+        createReferrals[tokenId] = createReferral;
+
+        return tokenId;
+    }
+
     /// @notice Update the token URI for a token
     /// @param tokenId The token ID to update the URI for
     /// @param _newURI The new URI
@@ -441,21 +459,19 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
-    /// @param finder The finder of the mint
-    /// @param origin The origin of the collection
+    /// @param mintReferral The referrer of the mint
     function mintWithRewards(
         IMinter1155 minter,
         uint256 tokenId,
         uint256 quantity,
         bytes calldata minterArguments,
-        address finder,
-        address origin
+        address mintReferral
     ) external payable nonReentrant {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, config.fundsRecipient, finder, origin);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, config.fundsRecipient, mintReferral);
 
         // Execute commands returned from minter
         _executeCommands(
