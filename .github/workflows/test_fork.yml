@@ -1,11 +1,6 @@
 name: fork tests
 
-on:
-  push:
-    branches:
-      - main
-      - fork-tests
-      - changeset
+on: push
 
 env:
   FOUNDRY_PROFILE: ci
@@ -41,6 +36,6 @@ jobs:
           forge test -vvv --match-test fork
         env:
           FOUNDRY_PROFILE: fast_compilation
-          FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli
+          FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli,base,pgn_sepolia,pgn
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
         id: test

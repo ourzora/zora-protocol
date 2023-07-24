@@ -15,11 +15,14 @@
     "coverage": "forge coverage --report lcov",
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
     "prepack": "node script/copy-deployed-contracts.mjs && yarn wagmi && yarn bundle-configs && yarn build",
+    "update-new-deployment-addresses": "node script/copy-deployed-contracts.mjs deploy",
     "build": "tsup",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "wagmi": "wagmi generate",
+    "publish-packages": "yarn prepack && changeset publish",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
-    "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl"
+    "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
+    "release": "yarn run prepack && changeset publish"
   },
   "files": [
     "dist/",
@@ -35,6 +38,7 @@
     "forge-std": "https://github.com/foundry-rs/forge-std#cd7d533f9a0ee0ec02ad81e0a8f262bc4203c653"
   },
   "devDependencies": {
+    "@changesets/cli": "^2.26.1",
     "@types/node": "^20.1.2",
     "@wagmi/cli": "^1.0.1",
     "es-main": "^1.2.0",
