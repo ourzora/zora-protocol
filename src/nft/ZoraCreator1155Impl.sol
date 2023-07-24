@@ -274,20 +274,13 @@ contract ZoraCreator1155Impl is
     /// @notice Set up a new token
     /// @param newURI The URI for the token
     /// @param maxSupply The maximum supply of the token
-    function setupNewToken(string memory newURI, uint256 maxSupply)
+    function setupNewToken(string calldata newURI, uint256 maxSupply)
         public
         onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
         nonReentrant
         returns (uint256)
     {
-        uint256 tokenId = _setupNewToken(newURI, maxSupply);
-        // Allow the token creator to administrate this token
-        _addPermission(tokenId, msg.sender, PERMISSION_BIT_ADMIN);
-        if (bytes(newURI).length > 0) {
-            emit URI(newURI, tokenId);
-        }
-
-        emit SetupNewToken(tokenId, msg.sender, newURI, maxSupply);
+        uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
         return tokenId;
     }
@@ -302,10 +295,26 @@ contract ZoraCreator1155Impl is
         nonReentrant
         returns (uint256)
     {
-        uint256 tokenId = setupNewToken(newURI, maxSupply);
+        uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
-        // Set the create referral for the token id
         createReferrals[tokenId] = createReferral;
+
+        return tokenId;
+    }
+
+    function _setupNewTokenAndPermission(string calldata newURI, uint256 maxSupply, address user, uint256 permission)
+        internal
+        returns (uint256)
+    {
+        uint256 tokenId = _setupNewToken(newURI, maxSupply);
+
+        _addPermission(tokenId, user, permission);
+
+        if (bytes(newURI).length > 0) {
+            emit URI(newURI, tokenId);
+        }
+
+        emit SetupNewToken(tokenId, user, newURI, maxSupply);
 
         return tokenId;
     }
