@@ -31,13 +31,9 @@ jobs:
         with:
           version: nightly
 
-      - name: Run Forge build
-        run: |
-          forge --version
-          forge build --sizes
-        id: build
-
       - name: Run Forge tests
         run: |
           forge test -vvv
         id: test
+        env:
+          FOUNDRY_PROFILE: fast_compilation
