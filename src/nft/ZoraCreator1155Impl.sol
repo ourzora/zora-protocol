@@ -6,11 +6,12 @@ import {ERC1155Upgradeable} from
 import {ReentrancyGuardUpgradeable} from
     "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {ERC1155Rewards} from "@zoralabs/zora-rewards/dist/contracts/ERC1155/ERC1155Rewards.sol";
 import {IERC1155MetadataURIUpgradeable} from
     "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from
     "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
+import {IZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/interfaces/IZoraRewards.sol";
+import {ERC1155Rewards} from "@zoralabs/zora-rewards/dist/contracts/ERC1155/ERC1155Rewards.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from
@@ -463,6 +464,12 @@ contract ZoraCreator1155Impl is
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
+    /// @notice Get the creator reward recipient address
+    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
+    function getCreatorRewardRecipient() public view returns (address payable) {
+        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
+    }
+
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, a finder, and a origin
     /// @param minter The minter contract to use
     /// @param tokenId The token ID to mint
@@ -481,7 +488,7 @@ contract ZoraCreator1155Impl is
 
         // Get value sent and handle mint rewards
         uint256 ethValueSent =
-            _handleRewardsAndGetValueSent(msg.value, tokenId, quantity, config.fundsRecipient, mintReferral);
+            _handleRewardsAndGetValueSent(msg.value, tokenId, quantity, getCreatorRewardRecipient(), mintReferral);
 
         // Execute commands returned from minter
         _executeCommands(
@@ -754,14 +761,12 @@ contract ZoraCreator1155Impl is
         external
         onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER)
     {
-        config.fundsRecipient = fundsRecipient;
-        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
+        _setFundsRecipient(fundsRecipient);
     }
 
     /// @notice Internal no-checks set funds recipient address
     /// @param fundsRecipient new funds recipient address
     function _setFundsRecipient(address payable fundsRecipient) internal {
-        if (fundsRecipient == address(0)) revert INVALID_ADDRESS_ZERO();
         config.fundsRecipient = fundsRecipient;
         emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
     }
@@ -775,6 +780,27 @@ contract ZoraCreator1155Impl is
             )
         ) {
             revert ETHWithdrawFailed(config.fundsRecipient, contractValue);
+        }
+    }
+
+    /// @notice Withdraws ETH from the Zora Rewards contract
+    function withdrawRewards(uint256 amount) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+        bytes memory data = abi.encodeWithSelector(IZoraRewards.withdraw.selector, amount);
+
+        (bool success,) = address(ZORA_REWARDS).call(data);
+
+        if (!success) {
+            revert();
+        }
+
+        address fundsRecipient = config.fundsRecipient;
+
+        if (fundsRecipient != address(0)) {
+            if (
+                !TransferHelperUtils.safeSendETH(fundsRecipient, amount, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)
+            ) {
+                revert ETHWithdrawFailed(fundsRecipient, amount);
+            }
         }
     }
 
