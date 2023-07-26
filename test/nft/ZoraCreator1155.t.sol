@@ -195,7 +195,20 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.totalMinted, 0);
     }
 
-    function xtest_setupNewToken_asMinter(string memory newURI, uint256 _maxSupply) external {}
+    function test_setupNewToken_asMinter() external {
+        init();
+
+        address minterUser = address(0x999ab9);
+        vm.startPrank(admin);
+        target.addPermission(target.CONTRACT_BASE_ID(), minterUser, target.PERMISSION_BIT_MINTER());
+        vm.stopPrank();
+
+        vm.startPrank(minterUser);
+        uint256 newToken = target.setupNewToken("test", 1);
+
+        target.adminMint(minterUser, newToken, 1, "");
+        assertEq(target.uri(1), "test");
+    }
 
     function test_setupNewToken_revertOnlyAdminOrRole() external {
         init();

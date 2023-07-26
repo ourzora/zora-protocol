@@ -203,7 +203,7 @@ contract ZoraCreator1155Impl is
         if (
             !(
                 _hasAnyPermission(tokenId, user, PERMISSION_BIT_ADMIN | role)
-                    || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)
+                    || _hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN | role)
             )
         ) {
             revert UserMissingRoleForToken(user, tokenId, role);
