@@ -47,6 +47,7 @@ abstract contract DeploymentConfig is CommonBase {
     string constant FACTORY_OWNER = "FACTORY_OWNER";
     string constant MINT_FEE_AMOUNT = "MINT_FEE_AMOUNT";
     string constant MINT_FEE_RECIPIENT = "MINT_FEE_RECIPIENT";
+    string constant ZORA_REWARDS = "ZORA_REWARDS";
 
     string constant FIXED_PRICE_SALE_STRATEGY = "FIXED_PRICE_SALE_STRATEGY";
     string constant MERKLE_MINT_SALE_STRATEGY = "MERKLE_MINT_SALE_STRATEGY";
@@ -69,6 +70,7 @@ abstract contract DeploymentConfig is CommonBase {
         chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
         chainConfig.mintFeeAmount = json.readUint(getKeyPrefix(MINT_FEE_AMOUNT));
         chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
+        chainConfig.zoraRewards = json.readAddress(getKeyPrefix(ZORA_REWARDS));
     }
 
     /// @notice Get the deployment configuration struct from the JSON configuration file
