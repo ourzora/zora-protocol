@@ -18,9 +18,10 @@ contract ZoraCreator1155FactoryTest is Test {
 
     function setUp() external {
         zora = makeAddr("zora");
-        ZoraRewards zoraRewards = new ZoraRewards("", "");
+        ZoraRewards zoraRewards = new ZoraRewards();
         ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards));
-        factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
+        factory =
+        new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
     }
 
     function test_contractVersion() external {
@@ -38,7 +39,9 @@ contract ZoraCreator1155FactoryTest is Test {
     function test_initialize(address initialOwner) external {
         vm.assume(initialOwner != address(0));
         address payable proxyAddress = payable(
-            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(
+                new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner))
+            )
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         assertEq(proxy.owner(), initialOwner);
@@ -103,7 +106,9 @@ contract ZoraCreator1155FactoryTest is Test {
         );
 
         address payable proxyAddress = payable(
-            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(
+                new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner))
+            )
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         vm.prank(initialOwner);
@@ -117,11 +122,17 @@ contract ZoraCreator1155FactoryTest is Test {
         MockContractMetadata mockContractMetadata = new MockContractMetadata("ipfs://asdfadsf", "name");
 
         address payable proxyAddress = payable(
-            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(
+                new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner))
+            )
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         vm.prank(initialOwner);
-        vm.expectRevert(abi.encodeWithSignature("UpgradeToMismatchedContractName(string,string)", "ZORA 1155 Contract Factory", "name"));
+        vm.expectRevert(
+            abi.encodeWithSignature(
+                "UpgradeToMismatchedContractName(string,string)", "ZORA 1155 Contract Factory", "name"
+            )
+        );
         proxy.upgradeTo(address(mockContractMetadata));
     }
 }

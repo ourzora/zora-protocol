@@ -32,20 +32,30 @@ contract ZoraCreator1155Test is Test {
     MockUpgradeGate internal upgradeGate;
 
     address payable internal admin;
-    address internal zora;
     address internal recipient;
     uint256 internal adminRole;
     uint256 internal minterRole;
     uint256 internal fundsManagerRole;
     uint256 internal metadataRole;
 
+    address internal creator;
+    address internal collector;
+    address internal mintReferral;
+    address internal createReferral;
+    address internal zora;
+
     event Purchased(
         address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value
     );
 
     function setUp() external {
+        creator = makeAddr("creator");
+        collector = makeAddr("collector");
+        mintReferral = makeAddr("mintReferral");
+        createReferral = makeAddr("createReferral");
         zora = makeAddr("zora");
-        zoraRewards = new ZoraRewards("", "");
+
+        zoraRewards = new ZoraRewards();
         upgradeGate = new MockUpgradeGate();
         upgradeGate.initialize(admin);
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(zoraRewards));
@@ -644,25 +654,59 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
-            target.computeFreeMintRewards(quantity);
+        (
+            uint256 creatorReward,
+            uint256 mintReferralReward,
+            uint256 createReferralReward,
+            uint256 firstMinterReward,
+            uint256 zoraReward
+        ) = target.computeFreeMintRewards(quantity);
 
-        address buyer = makeAddr("buyer");
-        vm.deal(buyer, totalReward);
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
 
-        vm.prank(buyer);
-        target.mintWithRewards{value: totalReward}(
-            simpleMinter, tokenId, quantity, abi.encode(recipient), address(0), address(0)
-        );
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
 
         (,, address fundsRecipient,,,) = target.config();
 
-        // assertEq(fundsRecipient.balance, creatorReward);
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + finderReward + originReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
     }
 
-    function test_FreeMintRewardsWithFinder(uint256 quantity) public {
+    function test_FreeMintRewardsWithCreateReferral(uint256 quantity) public {
+        vm.assume(quantity > 0 && quantity < type(uint200).max);
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        (
+            uint256 creatorReward,
+            uint256 mintReferralReward,
+            uint256 createReferralReward,
+            uint256 firstMinterReward,
+            uint256 zoraReward
+        ) = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+
+        (,, address fundsRecipient,,,) = target.config();
+
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
+        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward);
+    }
+
+    function test_FreeMintRewardsWithMintReferral(uint256 quantity) public {
         vm.assume(quantity > 0 && quantity < type(uint200).max);
 
         init();
@@ -673,90 +717,57 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
-            target.computeFreeMintRewards(quantity);
+        (
+            uint256 creatorReward,
+            uint256 mintReferralReward,
+            uint256 createReferralReward,
+            uint256 firstMinterReward,
+            uint256 zoraReward
+        ) = target.computeFreeMintRewards(quantity);
 
-        address buyer = makeAddr("buyer");
-        address finder = makeAddr("finder");
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
 
-        vm.deal(buyer, totalReward);
-
-        vm.prank(buyer);
-        target.mintWithRewards{value: totalReward}(
-            simpleMinter, tokenId, quantity, abi.encode(recipient), finder, address(0)
-        );
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), mintReferral);
 
         (,, address fundsRecipient,,,) = target.config();
 
-        // assertEq(fundsRecipient.balance, creatorReward);
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
-        assertEq(zoraRewards.balanceOf(finder), finderReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + originReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
+        assertEq(zoraRewards.balanceOf(zora), zoraReward + createReferralReward);
     }
 
-    function test_FreeMintRewardsWithLister(uint256 quantity) public {
+    function test_FreeMintRewardsWithCreateAndMintReferral(uint256 quantity) public {
         vm.assume(quantity > 0 && quantity < type(uint200).max);
 
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
-            target.computeFreeMintRewards(quantity);
+        (
+            uint256 creatorReward,
+            uint256 mintReferralReward,
+            uint256 createReferralReward,
+            uint256 firstMinterReward,
+            uint256 zoraReward
+        ) = target.computeFreeMintRewards(quantity);
 
-        address buyer = makeAddr("buyer");
-        address origin = makeAddr("origin");
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
 
-        vm.deal(buyer, totalReward);
-
-        vm.prank(buyer);
-        target.mintWithRewards{value: totalReward}(
-            simpleMinter, tokenId, quantity, abi.encode(recipient), address(0), origin
-        );
-
-        (,, address fundsRecipient,,,) = target.config();
-
-        // assertEq(fundsRecipient.balance, creatorReward);
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
-        assertEq(zoraRewards.balanceOf(origin), originReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + finderReward);
-    }
-
-    function test_FreeMintRewardsWithFinderAndLister(uint256 quantity) public {
-        vm.assume(quantity > 0 && quantity < type(uint200).max);
-
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
-
-        vm.prank(admin);
-        target.addPermission(tokenId, address(simpleMinter), adminRole);
-
-        (uint256 totalReward, uint256 creatorReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
-            target.computeFreeMintRewards(quantity);
-
-        address buyer = makeAddr("buyer");
-        address finder = makeAddr("finder");
-        address origin = makeAddr("origin");
-
-        vm.deal(buyer, totalReward);
-
-        vm.prank(buyer);
-        target.mintWithRewards{value: totalReward}(
-            simpleMinter, tokenId, quantity, abi.encode(recipient), finder, origin
-        );
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), mintReferral);
 
         (,, address fundsRecipient,,,) = target.config();
 
-        // assertEq(fundsRecipient.balance, creatorReward);
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward);
-        assertEq(zoraRewards.balanceOf(finder), finderReward);
-        assertEq(zoraRewards.balanceOf(origin), originReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
+        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
         assertEq(zoraRewards.balanceOf(zora), zoraReward);
     }
 
@@ -771,14 +782,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 totalReward,,,,) = target.computeFreeMintRewards(quantity);
-
-        address buyer = makeAddr("buyer");
-        vm.deal(buyer, totalReward);
-
-        vm.prank(buyer);
-        vm.expectRevert(abi.encodeWithSignature("INSUFFICIENT_ETH_FOR_REWARDS()"));
-        target.mintWithRewards(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0), address(0));
+        vm.prank(collector);
+        vm.expectRevert(abi.encodeWithSignature("INVALID_ETH_AMOUNT()"));
+        target.mintWithRewards(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
     }
 
     function test_PaidMintRewards(uint256 quantity, uint256 salePrice) public {
@@ -809,25 +815,29 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
+        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
+        uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
-        address buyer = makeAddr("buyer");
-        vm.deal(buyer, totalValue);
+        vm.deal(collector, totalValue);
 
-        vm.prank(buyer);
+        vm.prank(collector);
         target.mintWithRewards{value: totalValue}(
-            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0), address(0)
+            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0)
         );
 
+        (,, address fundsRecipient,,,) = target.config();
+
         assertEq(address(target).balance, totalSale);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + finderReward + originReward);
+
+        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
     }
 
-    function test_PaidMintRewardsWithFinder(uint256 quantity, uint256 salePrice) public {
+    function test_PaidMintRewardsWithMintReferral(uint256 quantity, uint256 salePrice) public {
         vm.assume(quantity > 0 && quantity < 1_000_000);
         vm.assume(salePrice > 0 && salePrice < 10 ether);
 
@@ -855,35 +865,38 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
+        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
+        uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
-        address finder = makeAddr("finder");
-        address buyer = makeAddr("buyer");
-        vm.deal(buyer, totalValue);
+        vm.deal(collector, totalValue);
 
-        vm.prank(buyer);
+        vm.prank(collector);
         target.mintWithRewards{value: totalValue}(
-            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), finder, address(0)
+            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), mintReferral
         );
 
+        (,, address fundsRecipient,,,) = target.config();
+
         assertEq(address(target).balance, totalSale);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + originReward);
-        assertEq(zoraRewards.balanceOf(finder), finderReward);
+
+        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(zoraRewards.balanceOf(zora), zoraReward + createReferralReward);
     }
 
-    function test_PaidMintRewardsWithLister(uint256 quantity, uint256 salePrice) public {
+    function test_PaidMintRewardsWithCreateReferral(uint256 quantity, uint256 salePrice) public {
         vm.assume(quantity > 0 && quantity < 1_000_000);
         vm.assume(salePrice > 0 && salePrice < 10 ether);
 
         init();
 
         vm.startPrank(admin);
+        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
 
-        uint256 tokenId = target.setupNewToken("test", quantity);
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
             tokenId,
@@ -903,27 +916,29 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
+        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
+        uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
-        address origin = makeAddr("origin");
-        address buyer = makeAddr("buyer");
-        vm.deal(buyer, totalValue);
+        vm.deal(collector, totalValue);
 
-        vm.prank(buyer);
+        vm.prank(collector);
         target.mintWithRewards{value: totalValue}(
-            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0), origin
+            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0)
         );
 
+        (,, address fundsRecipient,,,) = target.config();
+
         assertEq(address(target).balance, totalSale);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + finderReward);
-        assertEq(zoraRewards.balanceOf(origin), originReward);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
+        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward);
     }
 
-    function test_PaidMintRewardsWithFinderAndLister(uint256 quantity, uint256 salePrice) public {
+    function test_PaidMintRewardsWithCreateAndMintReferral(uint256 quantity, uint256 salePrice) public {
         vm.assume(quantity > 0 && quantity < 1_000_000);
         vm.assume(salePrice > 0 && salePrice < 10 ether);
 
@@ -931,7 +946,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
             tokenId,
@@ -951,26 +966,27 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward, uint256 finderReward, uint256 originReward, uint256 zoraReward) =
+        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) =
             target.computePaidMintRewards(quantity);
 
+        uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
-        address finder = makeAddr("finder");
-        address origin = makeAddr("origin");
-        address buyer = makeAddr("buyer");
-        vm.deal(buyer, totalValue);
+        vm.deal(collector, totalValue);
 
-        vm.prank(buyer);
+        vm.prank(collector);
         target.mintWithRewards{value: totalValue}(
-            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), finder, origin
+            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), mintReferral
         );
 
+        (,, address fundsRecipient,,,) = target.config();
+
         assertEq(address(target).balance, totalSale);
+        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
+        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
         assertEq(zoraRewards.balanceOf(zora), zoraReward);
-        assertEq(zoraRewards.balanceOf(finder), finderReward);
-        assertEq(zoraRewards.balanceOf(origin), originReward);
     }
 
     function testRevert_InsufficientEthForPaidMintRewards(uint256 quantity, uint256 salePrice) public {
@@ -1001,11 +1017,9 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        address buyer = makeAddr("buyer");
-
-        vm.prank(buyer);
-        vm.expectRevert(abi.encodeWithSignature("INSUFFICIENT_ETH_FOR_REWARDS()"));
-        target.mintWithRewards(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0), address(0));
+        vm.prank(collector);
+        vm.expectRevert(abi.encodeWithSignature("INVALID_ETH_AMOUNT()"));
+        target.mintWithRewards(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
     }
 
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {
@@ -1036,11 +1050,11 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 totalReward,,,) = target.computePaidMintRewards(quantity);
+        uint256 totalReward = target.computeTotalReward(quantity);
 
         vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
         target.mintWithRewards{value: totalReward}(
-            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0), address(0)
+            fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0)
         );
     }
 

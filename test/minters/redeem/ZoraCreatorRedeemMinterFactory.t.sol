@@ -3,7 +3,8 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
-import {ERC721PresetMinterPauserAutoId} from "@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
+import {ERC721PresetMinterPauserAutoId} from
+    "@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
 import {ERC1155PresetMinterPauser} from "@openzeppelin/contracts/token/ERC1155/presets/ERC1155PresetMinterPauser.sol";
 import {ZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/ZoraRewards.sol";
 import {ZoraCreator1155Impl} from "../../../src/nft/ZoraCreator1155Impl.sol";
@@ -29,11 +30,13 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
     function setUp() public {
         zora = makeAddr("zora");
         bytes[] memory emptyData = new bytes[](0);
-        zoraRewards = new ZoraRewards("", "");
+        zoraRewards = new ZoraRewards();
         ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
-        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);
+        target.initialize(
+            "test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData
+        );
 
         minterFactory = new ZoraCreatorRedeemMinterFactory();
     }
@@ -48,7 +51,9 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         address predictedAddress = minterFactory.predictMinterAddress(address(target));
         vm.expectEmit(false, false, false, false);
         emit RedeemMinterDeployed(address(target), predictedAddress);
-        target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinterIfNoneExists.selector));
+        target.callSale(
+            0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinterIfNoneExists.selector)
+        );
         vm.stopPrank();
 
         ZoraCreatorRedeemMinterStrategy minter = ZoraCreatorRedeemMinterStrategy(predictedAddress);

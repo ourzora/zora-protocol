@@ -24,7 +24,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
     function setUp() external {
         zora = makeAddr("zora");
         bytes[] memory emptyData = new bytes[](0);
-        zoraRewards = new ZoraRewards("", "");
+        zoraRewards = new ZoraRewards();
         ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
