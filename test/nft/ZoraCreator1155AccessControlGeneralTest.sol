@@ -28,9 +28,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(address(0x9));
-        target.initialize(
-            "", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData()
-        );
+        target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
         vm.prank(admin);
         target.setupNewToken("test_uri", 100);
     }
@@ -41,9 +39,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
 
     function test_openAccessFails_initialize() public {
         vm.expectRevert();
-        target.initialize(
-            "", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData()
-        );
+        target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
     }
 
     function test_openAccessFails_updateRoyaltiesForToken() public {

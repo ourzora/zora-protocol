@@ -38,13 +38,7 @@ contract CreatorRoyaltiesControlTest is Test {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(zoraRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize(
-            "",
-            "test",
-            ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)),
-            admin,
-            _emptyInitData()
-        );
+        target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)), admin, _emptyInitData());
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 100);
@@ -61,21 +55,13 @@ contract CreatorRoyaltiesControlTest is Test {
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(zoraRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
-        target.initialize(
-            "",
-            "test",
-            ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)),
-            admin,
-            _emptyInitData()
-        );
+        target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)), admin, _emptyInitData());
 
         vm.startPrank(admin);
         uint256 tokenIdFirst = target.setupNewToken("test", 100);
         uint256 tokenIdSecond = target.setupNewToken("test", 100);
 
-        target.updateRoyaltiesForToken(
-            tokenIdSecond, ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 100, address(0x992))
-        );
+        target.updateRoyaltiesForToken(tokenIdSecond, ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 100, address(0x992)));
 
         vm.stopPrank();
 
