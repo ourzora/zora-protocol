@@ -32,6 +32,7 @@
     "package/"
   ],
   "dependencies": {
+    "@openzeppelin/contracts": "^4.9.2",
     "@zoralabs/openzeppelin-contracts-upgradeable": "^4.8.4",
     "@zoralabs/zora-rewards": "^0.1.14",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
