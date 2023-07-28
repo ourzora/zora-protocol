@@ -464,11 +464,6 @@
     "@nodelib/fs.scandir" "2.1.5"
     fastq "^1.6.0"
 
-"@openzeppelin/contracts@^4.9.2":
-  version "4.9.2"
-  resolved "https://registry.yarnpkg.com/@openzeppelin/contracts/-/contracts-4.9.2.tgz#1cb2d5e4d3360141a17dbc45094a8cad6aac16c1"
-  integrity sha512-mO+y6JaqXjWeMh9glYVzVu8HYPGknAAnWyxTRhGeckOruyXQMNnlcW6w/Dx9ftLeIQk6N+ZJFuVmTwF7lEIFrg==
-
 "@pkgjs/parseargs@^0.11.0":
   version "0.11.0"
   resolved "https://registry.yarnpkg.com/@pkgjs/parseargs/-/parseargs-0.11.0.tgz#a77ea742fab25775145434eb1d2328cf5013ac33"
@@ -579,12 +574,10 @@
   resolved "https://registry.yarnpkg.com/@zoralabs/openzeppelin-contracts-upgradeable/-/openzeppelin-contracts-upgradeable-4.8.4.tgz#130b69cd5ff70b1f67da11fe53fe8b2323464b84"
   integrity sha512-5vhL88tz00Gv2+NUhLdYBRqb9RRekfyQAodXTQxJU2LYxxy6jr1mPycTZempQ1kmw5wIwFbSIoYzpaxOx6UK6Q==
 
-"@zoralabs/zora-rewards@^0.1.10":
-  version "0.1.10"
-  resolved "https://registry.yarnpkg.com/@zoralabs/zora-rewards/-/zora-rewards-0.1.10.tgz#23f9df041be6c22417116c825d46a16f6a8b5910"
-  integrity sha512-lWcDi2sliyFGclgDl9bnyVQ5/9dzR1Ov2yZoMh6b4eGvB7Z/Ty9cydveokK+X844MWxrEuthJbKXkFhn+bjRwQ==
-  dependencies:
-    "@openzeppelin/contracts" "^4.9.2"
+"@zoralabs/zora-rewards@^0.1.14":
+  version "0.1.14"
+  resolved "https://registry.yarnpkg.com/@zoralabs/zora-rewards/-/zora-rewards-0.1.14.tgz#ce4f75c681517893b529504cc1a4c59be0fd975b"
+  integrity sha512-2TVD3/RbYtnsS1b88u83Qa1SuPLmmDOeIBTLl6ZE0oHvowAFfLJTX6lv7Hrkvljd4dYuSuxKfUFrQMK3RulgRg==
 
 abitype@0.8.7:
   version "0.8.7"
