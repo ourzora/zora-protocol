@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {ZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/ZoraRewards.sol";
+import {ProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/ProtocolRewards.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -13,7 +13,7 @@ import {IMintFeeManager} from "../../src/interfaces/IMintFeeManager.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 
 contract CreatorRoyaltiesControlTest is Test {
-    ZoraRewards internal zoraRewards;
+    ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
     address payable internal admin;
@@ -23,7 +23,7 @@ contract CreatorRoyaltiesControlTest is Test {
     uint256 internal fundsManagerRole;
 
     function setUp() external {
-        zoraRewards = new ZoraRewards();
+        protocolRewards = new ProtocolRewards();
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
     }
@@ -35,7 +35,7 @@ contract CreatorRoyaltiesControlTest is Test {
     function test_GetsRoyaltiesInfoGlobalDefault() external {
         address royaltyPayout = address(0x999);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(zoraRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)), admin, _emptyInitData());
@@ -52,7 +52,7 @@ contract CreatorRoyaltiesControlTest is Test {
 
     function test_GetsRoyaltiesInfoSpecificToken() external {
         address royaltyPayout = address(0x999);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(zoraRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)), admin, _emptyInitData());

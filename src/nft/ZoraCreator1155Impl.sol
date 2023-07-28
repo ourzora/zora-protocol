@@ -6,8 +6,8 @@ import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgra
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
-import {IZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/interfaces/IZoraRewards.sol";
-import {ERC1155Rewards, ERC1155RewardsStorage} from "@zoralabs/zora-rewards/dist/contracts/abstract/ERC1155/ERC1155Rewards.sol";
+import {IProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/interfaces/IProtocolRewards.sol";
+import {ERC1155Rewards, ERC1155RewardsStorage} from "@zoralabs/protocol-rewards/dist/contracts/abstract/ERC1155/ERC1155Rewards.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -70,8 +70,8 @@ contract ZoraCreator1155Impl is
         uint256 _mintFeeAmount,
         address _mintFeeRecipient,
         address _factory,
-        address _zoraRewards
-    ) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) ERC1155Rewards(_zoraRewards, _mintFeeRecipient) initializer {
+        address _protocolRewards
+    ) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
         factory = IFactoryManagedUpgradeGate(_factory);
     }
 
@@ -700,9 +700,9 @@ contract ZoraCreator1155Impl is
 
     /// @notice Withdraws ETH from the Zora Rewards contract
     function withdrawRewards(uint256 amount) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
-        bytes memory data = abi.encodeWithSelector(IZoraRewards.withdraw.selector, amount);
+        bytes memory data = abi.encodeWithSelector(IProtocolRewards.withdraw.selector, amount);
 
-        (bool success, ) = address(ZORA_REWARDS).call(data);
+        (bool success, ) = address(PROTOCOL_REWARDS).call(data);
 
         if (!success) {
             revert();

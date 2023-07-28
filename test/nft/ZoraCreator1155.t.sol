@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 
-import {ZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/ZoraRewards.sol";
+import {ProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/ProtocolRewards.sol";
 import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
@@ -23,7 +23,7 @@ import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
 contract ZoraCreator1155Test is Test {
     using stdJson for string;
 
-    ZoraRewards internal zoraRewards;
+    ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
 
@@ -53,10 +53,10 @@ contract ZoraCreator1155Test is Test {
         createReferral = makeAddr("createReferral");
         zora = makeAddr("zora");
 
-        zoraRewards = new ZoraRewards();
+        protocolRewards = new ProtocolRewards();
         upgradeGate = new MockUpgradeGate();
         upgradeGate.initialize(admin);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(zoraRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         simpleMinter = new SimpleMinter();
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
@@ -641,8 +641,8 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
     }
 
     function test_FreeMintRewardsWithCreateReferral(uint256 quantity) public {
@@ -667,9 +667,9 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward);
     }
 
     function test_FreeMintRewardsWithMintReferral(uint256 quantity) public {
@@ -694,9 +694,9 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward + createReferralReward);
     }
 
     function test_FreeMintRewardsWithCreateAndMintReferral(uint256 quantity) public {
@@ -721,10 +721,10 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(zoraRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
+        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward);
     }
 
     function testRevert_InsufficientEthForFreeMintRewards(uint256 quantity) public {
@@ -786,8 +786,8 @@ contract ZoraCreator1155Test is Test {
 
         assertEq(address(target).balance, totalSale);
 
-        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
     }
 
     function test_PaidMintRewardsWithMintReferral(uint256 quantity, uint256 salePrice) public {
@@ -833,9 +833,9 @@ contract ZoraCreator1155Test is Test {
 
         assertEq(address(target).balance, totalSale);
 
-        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward + createReferralReward);
     }
 
     function test_PaidMintRewardsWithCreateReferral(uint256 quantity, uint256 salePrice) public {
@@ -880,9 +880,9 @@ contract ZoraCreator1155Test is Test {
         (, , address fundsRecipient, , , ) = target.config();
 
         assertEq(address(target).balance, totalSale);
-        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward + mintReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward);
     }
 
     function test_PaidMintRewardsWithCreateAndMintReferral(uint256 quantity, uint256 salePrice) public {
@@ -927,10 +927,10 @@ contract ZoraCreator1155Test is Test {
         (, , address fundsRecipient, , , ) = target.config();
 
         assertEq(address(target).balance, totalSale);
-        assertEq(zoraRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(zoraRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(zoraRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(zoraRewards.balanceOf(zora), zoraReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
+        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), zoraReward);
     }
 
     function testRevert_InsufficientEthForPaidMintRewards(uint256 quantity, uint256 salePrice) public {
@@ -1200,7 +1200,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_unauthorizedUpgradeFails() external {
-        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards)));
 
         vm.expectRevert();
         target.upgradeTo(new1155Impl);
@@ -1212,7 +1212,7 @@ contract ZoraCreator1155Test is Test {
 
         oldImpls[0] = address(zoraCreator1155Impl);
 
-        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(zoraRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards)));
 
         vm.prank(upgradeGate.owner());
         upgradeGate.registerUpgradePath(oldImpls, new1155Impl);
