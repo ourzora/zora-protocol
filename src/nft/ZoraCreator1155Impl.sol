@@ -7,7 +7,7 @@ import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/cont
 import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IZoraRewards} from "@zoralabs/zora-rewards/dist/contracts/interfaces/IZoraRewards.sol";
-import {ERC1155Rewards} from "@zoralabs/zora-rewards/dist/contracts/ERC1155/ERC1155Rewards.sol";
+import {ERC1155Rewards, ERC1155RewardsStorage} from "@zoralabs/zora-rewards/dist/contracts/abstract/ERC1155/ERC1155Rewards.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -49,7 +49,8 @@ contract ZoraCreator1155Impl is
     ZoraCreator1155StorageV1,
     CreatorPermissionControl,
     CreatorRoyaltiesControl,
-    ERC1155Rewards
+    ERC1155Rewards,
+    ERC1155RewardsStorage
 {
     /// @notice This user role allows for any action to be performed
     uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
@@ -277,7 +278,7 @@ contract ZoraCreator1155Impl is
     ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
-        createReferrals[tokenId] = createReferral;
+        _setCreateReferral(tokenId, createReferral);
 
         return tokenId;
     }
@@ -442,7 +443,7 @@ contract ZoraCreator1155Impl is
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, tokenId, quantity, getCreatorRewardRecipient(), mintReferral);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, getCreatorRewardRecipient(), mintReferral, createReferrals[tokenId]);
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
@@ -676,6 +677,17 @@ contract ZoraCreator1155Impl is
     function _setFundsRecipient(address payable fundsRecipient) internal {
         config.fundsRecipient = fundsRecipient;
         emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
+    }
+
+    /// @notice Allows the create referral to update the address that can claim their rewards
+    function updateCreateReferral(uint256 tokenId, address recipient) external {
+        if (msg.sender != createReferrals[tokenId]) revert ONLY_CREATE_REFERRAL();
+
+        _setCreateReferral(tokenId, recipient);
+    }
+
+    function _setCreateReferral(uint256 tokenId, address recipient) internal {
+        createReferrals[tokenId] = recipient;
     }
 
     /// @notice Withdraws all ETH from the contract to the funds recipient address
