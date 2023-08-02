@@ -7,7 +7,8 @@ import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/cont
 import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/interfaces/IProtocolRewards.sol";
-import {ERC1155Rewards, ERC1155RewardsStorage} from "@zoralabs/protocol-rewards/dist/contracts/abstract/ERC1155/ERC1155Rewards.sol";
+import {ERC1155Rewards} from "@zoralabs/protocol-rewards/dist/contracts/abstract/ERC1155/ERC1155Rewards.sol";
+import {ERC1155RewardsStorageV1} from "@zoralabs/protocol-rewards/dist/contracts/abstract/ERC1155/ERC1155RewardsStorageV1.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -50,7 +51,7 @@ contract ZoraCreator1155Impl is
     CreatorPermissionControl,
     CreatorRoyaltiesControl,
     ERC1155Rewards,
-    ERC1155RewardsStorage
+    ERC1155RewardsStorageV1
 {
     /// @notice This user role allows for any action to be performed
     uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
@@ -443,7 +444,7 @@ contract ZoraCreator1155Impl is
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, getCreatorRewardRecipient(), mintReferral, createReferrals[tokenId]);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, getCreatorRewardRecipient(), createReferrals[tokenId], mintReferral);
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
@@ -699,21 +700,13 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Withdraws ETH from the Zora Rewards contract
-    function withdrawRewards(uint256 amount) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
-        bytes memory data = abi.encodeWithSelector(IProtocolRewards.withdraw.selector, amount);
+    function withdrawRewards(address to, uint256 amount) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+        bytes memory data = abi.encodeWithSelector(IProtocolRewards.withdraw.selector, to, amount);
 
-        (bool success, ) = address(PROTOCOL_REWARDS).call(data);
+        (bool success, ) = address(protocolRewards).call(data);
 
         if (!success) {
-            revert();
-        }
-
-        address fundsRecipient = config.fundsRecipient;
-
-        if (fundsRecipient != address(0)) {
-            if (!TransferHelperUtils.safeSendETH(fundsRecipient, amount, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
-                revert ETHWithdrawFailed(fundsRecipient, amount);
-            }
+            revert ProtocolRewardsWithdrawFailed(msg.sender, to, amount);
         }
     }
 
