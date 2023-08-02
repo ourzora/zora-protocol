@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "forge-std/Test.sol";
 
 import {ProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/ProtocolRewards.sol";
+import {RewardsSettings} from "@zoralabs/protocol-rewards/dist/contracts/abstract/RewardSplits.sol";
 import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
@@ -630,8 +631,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 creatorReward, uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target
-            .computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
@@ -641,8 +641,8 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
     function test_FreeMintRewardsWithCreateReferral(uint256 quantity) public {
@@ -656,8 +656,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 creatorReward, uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target
-            .computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
@@ -667,9 +666,9 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward);
     }
 
     function test_FreeMintRewardsWithMintReferral(uint256 quantity) public {
@@ -683,8 +682,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 creatorReward, uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target
-            .computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
@@ -694,9 +692,9 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
     function test_FreeMintRewardsWithCreateAndMintReferral(uint256 quantity) public {
@@ -710,8 +708,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        (uint256 creatorReward, uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target
-            .computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
@@ -721,10 +718,10 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(fundsRecipient), creatorReward + firstMinterReward);
-        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
     }
 
     function testRevert_InsufficientEthForFreeMintRewards(uint256 quantity) public {
@@ -771,7 +768,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
@@ -786,8 +783,8 @@ contract ZoraCreator1155Test is Test {
 
         assertEq(address(target).balance, totalSale);
 
-        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
     function test_PaidMintRewardsWithMintReferral(uint256 quantity, uint256 salePrice) public {
@@ -818,7 +815,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
@@ -833,9 +830,9 @@ contract ZoraCreator1155Test is Test {
 
         assertEq(address(target).balance, totalSale);
 
-        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward + createReferralReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
     function test_PaidMintRewardsWithCreateReferral(uint256 quantity, uint256 salePrice) public {
@@ -866,7 +863,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
@@ -880,9 +877,9 @@ contract ZoraCreator1155Test is Test {
         (, , address fundsRecipient, , , ) = target.config();
 
         assertEq(address(target).balance, totalSale);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward + mintReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward);
     }
 
     function test_PaidMintRewardsWithCreateAndMintReferral(uint256 quantity, uint256 salePrice) public {
@@ -913,7 +910,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        (uint256 mintReferralReward, uint256 createReferralReward, uint256 firstMinterReward, uint256 zoraReward) = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
@@ -927,10 +924,10 @@ contract ZoraCreator1155Test is Test {
         (, , address fundsRecipient, , , ) = target.config();
 
         assertEq(address(target).balance, totalSale);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), firstMinterReward);
-        assertEq(protocolRewards.balanceOf(mintReferral), mintReferralReward);
-        assertEq(protocolRewards.balanceOf(createReferral), createReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), zoraReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
+        assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
     }
 
     function testRevert_InsufficientEthForPaidMintRewards(uint256 quantity, uint256 salePrice) public {
