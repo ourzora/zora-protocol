@@ -81,6 +81,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
 
     error ETHWithdrawFailed(address recipient, uint256 amount);
     error FundsWithdrawInsolvent(uint256 amount, uint256 contractValue);
+    error ProtocolRewardsWithdrawFailed(address caller, address recipient, uint256 amount);
 
     error CannotMintMoreTokens(uint256 tokenId, uint256 quantity, uint256 totalMinted, uint256 maxSupply);
 
