@@ -31,6 +31,7 @@ import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
+import {ZoraCreator1155Attribution, TokenSetup, PremintConfig} from "../premint/ZoraCreator1155Delegation.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -721,5 +722,68 @@ contract ZoraCreator1155Impl is
         if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
+    }
+
+    /* start eip712 functionality */
+    bytes32 private constant _HASHED_NAME = keccak256(bytes("Preminter"));
+    bytes32 private constant _HASHED_VERSION = keccak256(bytes("1"));
+    bytes32 private constant _TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+
+    mapping(uint32 => bool) public uidUsed;
+
+    // todo: move to its own contract
+    error PremintAlreadyExecuted();
+    error MintNotYetStarted();
+    error PremintDeleted();
+
+    event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, bytes signature);
+
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public returns (uint256 newTokenId) {
+        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
+            // if the mint start is in the future, then revert
+            revert MintNotYetStarted();
+        }
+
+        // check that uid hasn't been used
+        if (uidUsed[premintConfig.uid]) {
+            revert PremintAlreadyExecuted();
+        } else {
+            uidUsed[premintConfig.uid] = true;
+        }
+
+        if (premintConfig.deleted) {
+            // if the signature says to be deleted, then dont execute any further minting logic;
+            // return 0
+            revert PremintDeleted();
+        }
+
+        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.hashPremint(premintConfig);
+
+        // this is what attributes this token to have been created by the original creator
+        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, signature);
+
+        // recover the signer from the data
+        address recoveredSigner = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
+
+        // require that the signer can create new tokens (is a valid creator)
+        _requireAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+
+        // temporarily grant msg sender admin permission to create new tokens
+        _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_MINTER);
+
+        // get the new token id - it will fail if the recovered signer does not have PERMISSION_BIT_MINTER permission
+        newTokenId = setupNewToken(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply);
+        // msg.sender should now have admin role on that token (lets make sure to remove it at the end of this call!!!)
+
+        // invoke setup actions for new token, to save contract size, first get them from an external lib
+        bytes[] memory tokenSetupActions = TokenSetup.makeSetupNewTokenCalls(newTokenId, recoveredSigner, premintConfig.tokenConfig);
+
+        // then invoke them, calling account should be original msg.sender
+        _multicallInternal(tokenSetupActions);
+
+        // remove the token creator as admin of the newly created token:
+        _removePermission(newTokenId, msg.sender, PERMISSION_BIT_ADMIN);
+        // grant the token creator as admin of the newly created token
+        _addPermission(newTokenId, recoveredSigner, PERMISSION_BIT_ADMIN);
     }
 }

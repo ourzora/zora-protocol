@@ -9,6 +9,7 @@ import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
+import {PremintConfig} from "../premint/ZoraCreator1155Delegation.sol";
 
 /*
 
@@ -103,6 +104,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     /// @param tokenURI URI for the token
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory tokenURI, uint256 maxSupply) external returns (uint256 tokenId);
+
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) external returns (uint256 newTokenId);
 
     function updateTokenURI(uint256 tokenId, string memory _newURI) external;
 
