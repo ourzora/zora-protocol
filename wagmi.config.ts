@@ -9,7 +9,7 @@ type ContractNames =
   | "ZoraCreatorMerkleMinterStrategy"
   | "ZoraCreatorRedeemMinterFactory"
   | "ZoraCreatorRedeemMinterStrategy"
-  | "ZoraCreator1155Preminter";
+  | "ZoraCreator1155PremintExecutor";
 
 type Address = `0x${string}`;
 
@@ -20,7 +20,7 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorMerkleMinterStrategy",
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
-  "ZoraCreator1155Preminter",
+  "ZoraCreator1155PremintExecutor",
 ];
 
 type Addresses = {
@@ -82,7 +82,11 @@ const getAddresses = () => {
       chainId,
       jsonAddress.REDEEM_MINTER_FACTORY
     );
-    addAddress("ZoraCreator1155Preminter", chainId, jsonAddress.PREMINTER);
+    addAddress(
+      "ZoraCreator1155PremintExecutor",
+      chainId,
+      jsonAddress.PREMINTER
+    );
   }
 
   return addresses;
