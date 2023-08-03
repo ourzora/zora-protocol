@@ -17,6 +17,7 @@ import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155Preminter} from "../../src/premint/ZoraCreator1155Preminter.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
+import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/premint/ZoraCreator1155Delegation.sol";
 
 contract ZoraCreator1155PreminterTest is Test {
     ZoraCreator1155Preminter internal preminter;
@@ -32,8 +33,8 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 indexed tokenId,
         bool indexed createdNewContract,
         uint32 uid,
-        ZoraCreator1155Preminter.ContractCreationConfig contractConfig,
-        ZoraCreator1155Preminter.TokenCreationConfig tokenConfig,
+        ContractCreationConfig contractConfig,
+        TokenCreationConfig tokenConfig,
         address minter,
         uint256 quantityMinted
     );
@@ -59,13 +60,13 @@ contract ZoraCreator1155PreminterTest is Test {
         creator = vm.addr(creatorPrivateKey);
     }
 
-    function makeDefaultContractCreationConfig() internal view returns (ZoraCreator1155Preminter.ContractCreationConfig memory) {
-        return ZoraCreator1155Preminter.ContractCreationConfig({contractAdmin: creator, contractName: "blah", contractURI: "blah.contract"});
+    function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
+        return ContractCreationConfig({contractAdmin: creator, contractName: "blah", contractURI: "blah.contract"});
     }
 
-    function makeDefaultTokenCreationConfig() internal view returns (ZoraCreator1155Preminter.TokenCreationConfig memory) {
+    function makeDefaultTokenCreationConfig() internal view returns (TokenCreationConfig memory) {
         return
-            ZoraCreator1155Preminter.TokenCreationConfig({
+            TokenCreationConfig({
                 tokenURI: "blah.token",
                 maxSupply: 10,
                 maxTokensPerAddress: 5,
@@ -78,9 +79,9 @@ contract ZoraCreator1155PreminterTest is Test {
             });
     }
 
-    function makeDefaultPremintConfig() internal view returns (ZoraCreator1155Preminter.PremintConfig memory) {
+    function makeDefaultPremintConfig() internal view returns (PremintConfig memory) {
         return
-            ZoraCreator1155Preminter.PremintConfig({
+            PremintConfig({
                 contractConfig: makeDefaultContractCreationConfig(),
                 tokenConfig: makeDefaultTokenCreationConfig(),
                 uid: 100,
@@ -93,7 +94,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // 1. Make contract creation params
 
         // configuration of contract to create
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -101,7 +102,8 @@ contract ZoraCreator1155PreminterTest is Test {
         string memory comment = "hi";
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = preminter.premintHashData(premintConfig, address(preminter), chainId);
+        bytes32 hashed = ZoraCreator1155Attribution.hashPremintConfig(premintConfig);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashData(hashed, address(preminter), chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -129,7 +131,7 @@ contract ZoraCreator1155PreminterTest is Test {
         premintConfig.tokenConfig.tokenURI = "blah2.token";
         premintConfig.uid++;
 
-        digest = preminter.premintHashData(premintConfig, address(preminter), chainId);
+        digest = ZoraCreator1155Attribution.premintHashData(ZoraCreator1155Attribution.hashPremintConfig(premintConfig), address(preminter), chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         // premint with new token config and signature
@@ -145,7 +147,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // 1. Make contract creation params
 
         // configuration of contract to create
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -180,7 +182,7 @@ contract ZoraCreator1155PreminterTest is Test {
     }
 
     function test_deleted_preventsTokenFromBeingMinted() external {
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
 
         premintConfig.deleted = true;
         uint chainId = block.chainid;
@@ -206,7 +208,7 @@ contract ZoraCreator1155PreminterTest is Test {
     }
 
     function test_emitsPremint_whenNewContract() external {
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -246,7 +248,7 @@ contract ZoraCreator1155PreminterTest is Test {
     }
 
     function test_onlyOwner_hasAdminRights_onCreatedToken() public {
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -320,7 +322,7 @@ contract ZoraCreator1155PreminterTest is Test {
     }
 
     function test_premintStatus_getsStatus() external {
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -332,8 +334,8 @@ contract ZoraCreator1155PreminterTest is Test {
         uint32 firstUid = premintConfig.uid;
         uint32 secondUid = firstUid + 1;
 
-        ZoraCreator1155Preminter.ContractCreationConfig memory firstContractConfig = premintConfig.contractConfig;
-        ZoraCreator1155Preminter.ContractCreationConfig memory secondContractConfig = ZoraCreator1155Preminter.ContractCreationConfig(
+        ContractCreationConfig memory firstContractConfig = premintConfig.contractConfig;
+        ContractCreationConfig memory secondContractConfig = ContractCreationConfig(
             firstContractConfig.contractAdmin,
             firstContractConfig.contractURI,
             string.concat(firstContractConfig.contractName, "4")
@@ -380,7 +382,7 @@ contract ZoraCreator1155PreminterTest is Test {
         }
         vm.warp(currentTime);
 
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
         premintConfig.tokenConfig.mintStart = startDate;
 
         uint256 quantityToMint = 4;
@@ -411,7 +413,7 @@ contract ZoraCreator1155PreminterTest is Test {
         }
 
         // build a premint with a token that has the given start date and duration
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
         premintConfig.tokenConfig.mintStart = startDate;
         premintConfig.tokenConfig.mintDuration = duration;
 
@@ -440,7 +442,7 @@ contract ZoraCreator1155PreminterTest is Test {
     }
 
     function _signAndExecutePremint(
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig,
+        PremintConfig memory premintConfig,
         uint256 privateKey,
         uint256 chainId,
         address executor,
@@ -454,11 +456,7 @@ contract ZoraCreator1155PreminterTest is Test {
         return preminter.premint(premintConfig, signature, quantityToMint, comment);
     }
 
-    function _signPremint(
-        ZoraCreator1155Preminter.PremintConfig memory premintConfig,
-        uint256 privateKey,
-        uint256 chainId
-    ) private view returns (bytes memory) {
+    function _signPremint(PremintConfig memory premintConfig, uint256 privateKey, uint256 chainId) private view returns (bytes memory) {
         bytes32 digest = preminter.premintHashData(premintConfig, address(preminter), chainId);
 
         // 3. Sign the digest
