@@ -123,7 +123,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
         // mint the token
         vm.deal(collector, valueToSend);
-        vm.prank(collector);
+        vm.startPrank(collector);
         target.mint{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector));
 
         assertEq(target.balanceOf(collector, tokenId), quantityToMint, chainName);

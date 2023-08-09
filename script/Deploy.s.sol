@@ -27,6 +27,7 @@ contract DeployScript is ZoraDeployerBase {
         console2.log("zoraFeeAmount", chainConfig.mintFeeAmount);
         console2.log("zoraFeeRecipient", chainConfig.mintFeeRecipient);
         console2.log("factoryOwner", chainConfig.factoryOwner);
+        console2.log("protocolRewards", chainConfig.protocolRewards);
 
         address deployer = vm.envAddress("DEPLOYER");
 
@@ -45,7 +46,8 @@ contract DeployScript is ZoraDeployerBase {
 
         deployment.factoryProxy = address(factoryProxy);
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, address(factoryProxy));
+        ZoraCreator1155Impl creatorImpl =
+        new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, address(factoryProxy), chainConfig.protocolRewards);
 
         deployment.contract1155Impl = address(creatorImpl);
 

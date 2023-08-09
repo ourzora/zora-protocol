@@ -44,7 +44,11 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
             IZoraCreator1155Factory(factoryProxy).createContract(
                 "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
                 unicode"🪄",
-                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
+                ICreatorRoyaltiesControl.RoyaltyConfiguration({
+                    royaltyBPS: 0,
+                    royaltyRecipient: address(0),
+                    royaltyMintSchedule: 0
+                }),
                 payable(admin),
                 initUpdate
             )
