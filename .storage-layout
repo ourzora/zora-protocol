@@ -32,6 +32,7 @@
 | __gap                    | uint256[50]                                                              | 460  | 0      | 1600  | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 | permissions              | mapping(uint256 => mapping(address => uint256))                          | 510  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 | __gap                    | uint256[50]                                                              | 511  | 0      | 1600  | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
+| createReferrals          | mapping(uint256 => address)                                              | 561  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 
 =======================
 ➡ ZoraCreator1155FactoryImpl
