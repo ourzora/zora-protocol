@@ -1,5 +1,6 @@
 ds-test/=node_modules/ds-test/src/
 forge-std/=node_modules/forge-std/src/
 @zoralabs/openzeppelin-contracts-upgradeable/=node_modules/@zoralabs/openzeppelin-contracts-upgradeable/
+@zoralabs/protocol-rewards/=node_modules/@zoralabs/protocol-rewards/
 @openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
 _imagine=_imagine/

@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
+import {ProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/ProtocolRewards.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -14,6 +15,7 @@ import {SimpleMinter} from "../mock/SimpleMinter.sol";
 contract MintFeeManagerTest is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
+    ProtocolRewards internal protocolRewards;
     address payable internal admin;
     address internal recipient;
     uint256 internal adminRole;
@@ -21,6 +23,7 @@ contract MintFeeManagerTest is Test {
     uint256 internal fundsManagerRole;
 
     function setUp() external {
+        protocolRewards = new ProtocolRewards();
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
     }
@@ -33,7 +36,7 @@ contract MintFeeManagerTest is Test {
         vm.assume(quantity < 100);
         vm.assume(mintFee < 0.1 ether);
         uint256 mintPrice = mintFee * quantity;
-        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient, address(0));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
@@ -67,7 +70,7 @@ contract MintFeeManagerTest is Test {
         _recip.setReceiveETH(false);
         address _recipient = address(_recip);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, _recipient, address(0));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, _recipient, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());

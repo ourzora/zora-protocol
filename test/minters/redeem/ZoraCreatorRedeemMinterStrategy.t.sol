@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 import {ERC721PresetMinterPauserAutoId} from "@openzeppelin/contracts/token/ERC721/presets/ERC721PresetMinterPauserAutoId.sol";
 import {ERC1155PresetMinterPauser} from "@openzeppelin/contracts/token/ERC1155/presets/ERC1155PresetMinterPauser.sol";
-
+import {ProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/ProtocolRewards.sol";
 import {ZoraCreator1155Impl} from "../../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
@@ -15,18 +15,22 @@ import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155F
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 
 contract ZoraCreatorRedeemMinterStrategyTest is Test {
+    ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal target;
     ZoraCreatorRedeemMinterStrategy internal redeemMinter;
     address payable internal admin = payable(address(0x999));
     uint256 internal newTokenId;
+    address internal zora;
 
     event RedeemSet(address indexed target, bytes32 indexed redeemsInstructionsHash, ZoraCreatorRedeemMinterStrategy.RedeemInstructions data);
     event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash, address sender, uint256[][] tokenIds, uint256[][] amounts);
     event RedeemsCleared(address indexed target, bytes32[] indexed redeemInstructionsHashes);
 
     function setUp() external {
+        zora = makeAddr("zora");
         bytes[] memory emptyData = new bytes[](0);
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, address(0), address(0));
+        protocolRewards = new ProtocolRewards();
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
