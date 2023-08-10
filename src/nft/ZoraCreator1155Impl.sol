@@ -13,7 +13,6 @@ import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
@@ -30,6 +29,7 @@ import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
+import {CreatorRoyaltiesCalc} from "../royalties/CreatorRoyaltiesCalc.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -219,25 +219,6 @@ contract ZoraCreator1155Impl is
         _;
     }
 
-    /// @notice Modifier checking if the requested quantity of tokens can be minted for the tokenId
-    /// @dev This reverts if the number that can be minted is exceeded
-    /// @param tokenId token id to check available allowed quantity
-    /// @param quantity requested to be minted
-    modifier canMintQuantity(uint256 tokenId, uint256 quantity) {
-        _requireCanMintQuantity(tokenId, quantity);
-        _;
-    }
-
-    /// @notice Only from approved address for burn
-    /// @param from address that the tokens will be burned from, validate that this is msg.sender or that msg.sender is approved
-    modifier onlyFromApprovedForBurn(address from) {
-        if (from != msg.sender && !isApprovedForAll(from, msg.sender)) {
-            revert Burn_NotOwnerOrApproved(msg.sender, from);
-        }
-
-        _;
-    }
-
     /// @notice Checks if a user can mint a quantity of a token
     /// @dev Reverts if the mint exceeds the allowed quantity (or if the token does not exist)
     /// @param tokenId The token ID to check
@@ -255,7 +236,7 @@ contract ZoraCreator1155Impl is
     function setupNewToken(
         string calldata newURI,
         uint256 maxSupply
-    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
+    ) external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
         return tokenId;
@@ -269,7 +250,7 @@ contract ZoraCreator1155Impl is
         string calldata newURI,
         uint256 maxSupply,
         address createReferral
-    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
+    ) external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
         _setCreateReferral(tokenId, createReferral);
@@ -522,28 +503,9 @@ contract ZoraCreator1155Impl is
     }
 
     function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount, bytes memory data) internal returns (uint256 totalRoyaltyMints) {
-        uint256 royaltyMintSchedule = royalties[tokenId].royaltyMintSchedule;
-        if (royaltyMintSchedule == 0) {
-            royaltyMintSchedule = royalties[CONTRACT_BASE_ID].royaltyMintSchedule;
-        }
-        if (royaltyMintSchedule == 0) {
-            // If we still have no schedule, return 0 supply royalty.
-            return 0;
-        }
-        uint256 maxSupply = tokens[tokenId].maxSupply;
-        uint256 totalMinted = tokens[tokenId].totalMinted;
+        (uint256 totalRoyaltyMints, address royaltyRecipient) = CreatorRoyaltiesCalc.calculateSupplyRoyalty(tokenId, mintAmount, royalties, tokens);
 
-        totalRoyaltyMints = (mintAmount + (totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
-        totalRoyaltyMints = MathUpgradeable.min(totalRoyaltyMints, maxSupply - (mintAmount + totalMinted));
         if (totalRoyaltyMints > 0) {
-            address royaltyRecipient = royalties[tokenId].royaltyRecipient;
-            if (royaltyRecipient == address(0)) {
-                royaltyRecipient = royalties[CONTRACT_BASE_ID].royaltyRecipient;
-            }
-            // If we have no recipient set, return 0 supply royalty.
-            if (royaltyRecipient == address(0)) {
-                return 0;
-            }
             super._mint(royaltyRecipient, tokenId, totalRoyaltyMints, data);
         }
     }
@@ -676,7 +638,7 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Withdraws all ETH from the contract to the funds recipient address
-    function withdraw() public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+    function withdraw() external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
         uint256 contractValue = address(this).balance;
         if (!TransferHelperUtils.safeSendETH(config.fundsRecipient, contractValue, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
             revert ETHWithdrawFailed(config.fundsRecipient, contractValue);
@@ -684,7 +646,7 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Withdraws ETH from the Zora Rewards contract
-    function withdrawRewards(address to, uint256 amount) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
+    function withdrawRewards(address to, uint256 amount) external onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
         bytes memory data = abi.encodeWithSelector(IProtocolRewards.withdraw.selector, to, amount);
 
         (bool success, ) = address(protocolRewards).call(data);
