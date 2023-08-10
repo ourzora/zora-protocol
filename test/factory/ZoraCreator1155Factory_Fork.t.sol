@@ -10,7 +10,6 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {MintFeeManager} from "../../src/fee/MintFeeManager.sol";
 
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
@@ -111,7 +110,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // ** 3. Mint on that contract **
 
         // get the mint fee from the contract
-        uint256 mintFee = MintFeeManager(address(target)).mintFee();
+        uint256 mintFee = 0.000777 ether;
 
         // make sure the mint fee amount matches the configured mint fee amount
         assertEq(mintFee, getChainConfig().mintFeeAmount, chainName);

@@ -26,7 +26,6 @@ import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
 import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
-import {MintFeeManager} from "../fee/MintFeeManager.sol";
 import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";

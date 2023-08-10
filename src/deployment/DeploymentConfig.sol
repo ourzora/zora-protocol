@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {MintFeeManager} from "../../src/fee/MintFeeManager.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @notice Chain configuration for constants set manually during deploy. Does not get written to after deploys.
