@@ -9,7 +9,7 @@ import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
-import {PremintConfig} from "../premint/ZoraCreator1155Delegation.sol";
+import {PremintConfig} from "../premint/ZoraCreator1155Attribution.sol";
 
 /*
 
