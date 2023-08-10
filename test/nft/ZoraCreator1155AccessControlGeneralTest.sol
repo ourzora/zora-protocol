@@ -25,7 +25,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function setUp() external {
         zora = makeAddr("zora");
         protocolRewards = new ProtocolRewards();
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());

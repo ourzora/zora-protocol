@@ -43,7 +43,6 @@ contract ZoraCreator1155Impl is
     ReentrancyGuardUpgradeable,
     PublicMulticall,
     ERC1155Upgradeable,
-    MintFeeManager,
     UUPSUpgradeable,
     CreatorRendererControl,
     LegacyNamingControl,
@@ -67,12 +66,7 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IFactoryManagedUpgradeGate internal immutable factory;
 
-    constructor(
-        uint256 _mintFeeAmount,
-        address _mintFeeRecipient,
-        address _factory,
-        address _protocolRewards
-    ) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
+    constructor(address _mintFeeRecipient, address _factory, address _protocolRewards) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
         factory = IFactoryManagedUpgradeGate(_factory);
     }
 
@@ -409,16 +403,7 @@ contract ZoraCreator1155Impl is
     /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
     function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable nonReentrant {
-        // Require admin from the minter to mint
-        _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
-
-        // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleFeeAndGetValueSent(quantity);
-
-        // Execute commands returned from minter
-        _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
-
-        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
+        _mintWithRewards(minter, tokenId, quantity, minterArguments, address(0));
     }
 
     /// @notice Get the creator reward recipient address
@@ -440,6 +425,10 @@ contract ZoraCreator1155Impl is
         bytes calldata minterArguments,
         address mintReferral
     ) external payable nonReentrant {
+        _mintWithRewards(minter, tokenId, quantity, minterArguments, mintReferral);
+    }
+
+    function _mintWithRewards(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address mintReferral) private {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 

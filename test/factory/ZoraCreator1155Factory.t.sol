@@ -19,7 +19,7 @@ contract ZoraCreator1155FactoryTest is Test {
     function setUp() external {
         zora = makeAddr("zora");
         ProtocolRewards protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
         factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
     }
 
