@@ -173,9 +173,27 @@ library ZoraCreator1155Attribution {
     function _stringHash(string calldata value) private pure returns (bytes32) {
         return keccak256(bytes(value));
     }
+
+    // todo: move to its own contract
+    error MintNotYetStarted();
+    error PremintDeleted();
+
+    function validateAndHashPremint(PremintConfig calldata premintConfig) external view returns (bytes32) {
+        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
+            // if the mint start is in the future, then revert
+            revert MintNotYetStarted();
+        }
+        if (premintConfig.deleted) {
+            // if the signature says to be deleted, then dont execute any further minting logic;
+            // return 0
+            revert PremintDeleted();
+        }
+
+        return hashPremint(premintConfig);
+    }
 }
 
-library TokenSetup {
+library PremintTokenSetup {
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
     function makeSetupNewTokenCalls(

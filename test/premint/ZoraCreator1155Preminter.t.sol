@@ -16,12 +16,12 @@ import {ILimitedMintPerAddress} from "../../src/interfaces/ILimitedMintPerAddres
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155Preminter} from "../../src/premint/ZoraCreator1155Preminter.sol";
+import {ZoraCreator1155PremintExecutor} from "../../src/premint/ZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/premint/ZoraCreator1155Delegation.sol";
+import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/premint/ZoraCreator1155Attribution.sol";
 
 contract ZoraCreator1155PreminterTest is Test {
-    ZoraCreator1155Preminter internal preminter;
+    ZoraCreator1155PremintExecutor internal preminter;
     ZoraCreator1155FactoryImpl internal factory;
     // setup contract config
     uint256 creatorPrivateKey = 0xA11CE;
@@ -55,7 +55,7 @@ contract ZoraCreator1155PreminterTest is Test {
             royaltyMintSchedule: royaltyMintSchedule
         });
 
-        preminter = new ZoraCreator1155Preminter();
+        preminter = new ZoraCreator1155PremintExecutor();
         preminter.initialize(factory);
 
         creatorPrivateKey = 0xA11CE;

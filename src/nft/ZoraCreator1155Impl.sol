@@ -31,7 +31,7 @@ import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
-import {ZoraCreator1155Attribution, TokenSetup, PremintConfig} from "../premint/ZoraCreator1155Delegation.sol";
+import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../premint/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -731,18 +731,12 @@ contract ZoraCreator1155Impl is
 
     mapping(uint32 => bool) public uidUsed;
 
-    // todo: move to its own contract
-    error PremintAlreadyExecuted();
-    error MintNotYetStarted();
-    error PremintDeleted();
-
     event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, bytes signature);
 
+    error PremintAlreadyExecuted();
+
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public returns (uint256 newTokenId) {
-        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
-            // if the mint start is in the future, then revert
-            revert MintNotYetStarted();
-        }
+        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.validateAndHashPremint(premintConfig);
 
         // check that uid hasn't been used
         if (uidUsed[premintConfig.uid]) {
@@ -750,14 +744,6 @@ contract ZoraCreator1155Impl is
         } else {
             uidUsed[premintConfig.uid] = true;
         }
-
-        if (premintConfig.deleted) {
-            // if the signature says to be deleted, then dont execute any further minting logic;
-            // return 0
-            revert PremintDeleted();
-        }
-
-        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
         // this is what attributes this token to have been created by the original creator
         emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, signature);
@@ -768,21 +754,18 @@ contract ZoraCreator1155Impl is
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
-        // temporarily grant msg sender admin permission to create new tokens
-        _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_MINTER);
-
-        // get the new token id - it will fail if the recovered signer does not have PERMISSION_BIT_MINTER permission
-        newTokenId = setupNewToken(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply);
-        // msg.sender should now have admin role on that token (lets make sure to remove it at the end of this call!!!)
+        // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
+        newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
         // invoke setup actions for new token, to save contract size, first get them from an external lib
-        bytes[] memory tokenSetupActions = TokenSetup.makeSetupNewTokenCalls(newTokenId, recoveredSigner, premintConfig.tokenConfig);
+        bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, recoveredSigner, premintConfig.tokenConfig);
 
-        // then invoke them, calling account should be original msg.sender
+        // then invoke them, calling account should be original msg.sender, which has admin on the new token
         _multicallInternal(tokenSetupActions);
 
         // remove the token creator as admin of the newly created token:
         _removePermission(newTokenId, msg.sender, PERMISSION_BIT_ADMIN);
+
         // grant the token creator as admin of the newly created token
         _addPermission(newTokenId, recoveredSigner, PERMISSION_BIT_ADMIN);
     }
