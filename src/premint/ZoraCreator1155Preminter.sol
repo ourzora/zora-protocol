@@ -53,28 +53,22 @@ contract ZoraCreator1155Preminter {
         string calldata mintComment
     ) public payable returns (uint256 newTokenId) {
         // 1. Validate the signature.
-        // 2. Create an erc1155 contract with the given name and uri and the creator as the admin/owner
-        // 3. Allow this contract to create new new tokens on the contract
-        // 4. Mint a new token, and get the new token id
-        // 5. Setup fixed price minting rules for the new token
-        // 6. Make the creator an admin of that token (and remove this contracts admin rights)
-        // 7. Mint x tokens, as configured, to the executor of this transaction.
+        // 2. get or create an erc1155 contract with the same determinsitic address as that from the contract config
+        // 3. Have the erc1155 contract create a new token.  the signer must have permission to do mint new tokens
+        // (that role enforcement is expected to be in the tokenContract).
+        // 4. The erc1155 will sedtup the token with the signign address as the creator, and follow the creator rewards standard.
+        // 5. Mint x tokens, as configured, to the executor of this transaction.
+        // 6. Future: First minter gets rewards
 
         // get or create the contract with the given params
         (IZoraCreator1155 tokenContract, bool isNewContract) = _getOrCreateContract(premintConfig.contractConfig);
         address contractAddress = address(tokenContract);
 
-        newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature);
+        // have the address setup the new token.  The signer must have permission to do this.
+        // (that role enforcement is expected to be in the tokenContract).
+        // the token contract will:
 
-        // mint the initial x tokens for this new token id to the executor.
-        address tokenRecipient = msg.sender;
-        tokenContract.mint{value: msg.value}(
-            IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
-            newTokenId,
-            quantityToMint,
-            abi.encode(tokenRecipient, mintComment)
-        );
-
+        // emit event early to have a cleaner log
         emit Preminted(
             contractAddress,
             newTokenId,
@@ -84,6 +78,23 @@ contract ZoraCreator1155Preminter {
             premintConfig.tokenConfig,
             msg.sender,
             quantityToMint
+        );
+
+        // * setup the token with the signer as the creator, and follow the creator rewards standard.
+        // * will revert if the token in the contract with the same uid already exists.
+        // * will make sure creator has admin rights to the token.
+        // * setup the token with the given token config.
+        // * return the new token id.
+        newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature);
+
+        // mint the initial x tokens for this new token id to the executor.
+        address tokenRecipient = msg.sender;
+
+        tokenContract.mint{value: msg.value}(
+            IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
+            newTokenId,
+            quantityToMint,
+            abi.encode(tokenRecipient, mintComment)
         );
     }
 
