@@ -6,9 +6,9 @@ import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgra
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
-import {IProtocolRewards} from "@zoralabs/protocol-rewards/dist/contracts/interfaces/IProtocolRewards.sol";
-import {ERC1155Rewards} from "@zoralabs/protocol-rewards/dist/contracts/abstract/ERC1155/ERC1155Rewards.sol";
-import {ERC1155RewardsStorageV1} from "@zoralabs/protocol-rewards/dist/contracts/abstract/ERC1155/ERC1155RewardsStorageV1.sol";
+import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
+import {ERC1155Rewards} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155Rewards.sol";
+import {ERC1155RewardsStorageV1} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155RewardsStorageV1.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
