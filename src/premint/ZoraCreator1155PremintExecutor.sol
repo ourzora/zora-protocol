@@ -9,14 +9,14 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
-import {PremintConfig, ContractCreationConfig, TokenCreationConfig} from "./ZoraCreator1155Delegation.sol";
+import {PremintConfig, ContractCreationConfig, TokenCreationConfig} from "./ZoraCreator1155Attribution.sol";
 
 /// @title Enables a creator to signal intent to create a Zora erc1155 contract or new token on that
 /// contract by signing a transaction but not paying gas, and have a third party/collector pay the gas
 /// by executing the transaction.  Incentivizes the third party to execute the transaction by offering
 /// a reward in the form of minted tokens.
 /// @author @oveddan
-contract ZoraCreator1155Preminter {
+contract ZoraCreator1155PremintExecutor {
     IZoraCreator1155Factory factory;
 
     /// @notice copied from SharedBaseConstants

@@ -18,7 +18,7 @@ import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
-import {ZoraCreator1155Preminter} from "../src/premint/ZoraCreator1155Preminter.sol";
+import {ZoraCreator1155PremintExecutor} from "../src/premint/ZoraCreator1155PremintExecutor.sol";
 
 contract DeployPreminter is ZoraDeployerBase {
     function run() public returns (string memory) {
@@ -30,7 +30,7 @@ contract DeployPreminter is ZoraDeployerBase {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        ZoraCreator1155Preminter preminter = new ZoraCreator1155Preminter();
+        ZoraCreator1155PremintExecutor preminter = new ZoraCreator1155PremintExecutor();
         preminter.initialize(factory);
 
         vm.stopBroadcast();
