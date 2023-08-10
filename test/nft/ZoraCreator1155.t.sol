@@ -45,6 +45,8 @@ contract ZoraCreator1155Test is Test {
     address internal createReferral;
     address internal zora;
 
+    uint256 constant TOTAL_REWARD_PER_MINT = 0.000777 ether;
+
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
     function setUp() external {
@@ -68,6 +70,10 @@ contract ZoraCreator1155Test is Test {
         minterRole = target.PERMISSION_BIT_MINTER();
         fundsManagerRole = target.PERMISSION_BIT_FUNDS_MANAGER();
         metadataRole = target.PERMISSION_BIT_METADATA();
+    }
+
+    function rewardsValue(uint256 quantity) private pure returns (uint256) {
+        return quantity * TOTAL_REWARD_PER_MINT;
     }
 
     function _emptyInitData() internal pure returns (bytes[] memory response) {
@@ -577,7 +583,7 @@ contract ZoraCreator1155Test is Test {
         target.adminMintBatch(address(0), tokenIds, quantities, "");
     }
 
-    function test_mint(uint256 quantity) external {
+    function test_mint(uint128 quantity) external {
         init();
 
         vm.prank(admin);
@@ -586,10 +592,12 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
+        uint256 valueToSend = rewardsValue(quantity);
+        vm.deal(admin, valueToSend);
         vm.prank(admin);
         vm.expectEmit(true, true, true, true);
-        emit Purchased(admin, address(simpleMinter), tokenId, quantity, 0);
-        target.mint(simpleMinter, tokenId, quantity, abi.encode(recipient));
+        emit Purchased(admin, address(simpleMinter), tokenId, quantity, valueToSend);
+        target.mint{value: valueToSend}(simpleMinter, tokenId, quantity, abi.encode(recipient));
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
         assertEq(tokenData.totalMinted, quantity);
@@ -615,9 +623,10 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
+        vm.deal(admin, 100 ether);
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
         vm.prank(admin);
-        target.mint(simpleMinter, tokenId, 1001, abi.encode(recipient));
+        target.mint{value: rewardsValue(1001)}(simpleMinter, tokenId, 1001, abi.encode(recipient));
     }
 
     function test_FreeMintRewards(uint256 quantity) public {
@@ -1115,8 +1124,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
+        vm.deal(admin, 100 ether);
         vm.prank(admin);
-        target.mint(simpleMinter, tokenId, 5, abi.encode(recipient));
+        target.mint{value: rewardsValue(5)}(simpleMinter, tokenId, 5, abi.encode(recipient));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -1136,8 +1146,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
+        vm.deal(admin, 100 ether);
         vm.prank(admin);
-        target.mint(simpleMinter, tokenId, 5, abi.encode(recipient));
+        target.mint{value: rewardsValue(5)}(simpleMinter, tokenId, 5, abi.encode(recipient));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -1159,9 +1170,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), minterRole);
 
-        vm.deal(admin, 1 ether);
+        vm.deal(admin, 1 ether + rewardsValue(1000));
         vm.prank(admin);
-        target.mint{value: 1 ether}(simpleMinter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: 1 ether + rewardsValue(1000)}(simpleMinter, tokenId, 1000, abi.encode(recipient));
 
         vm.prank(admin);
         target.withdraw();
@@ -1187,9 +1198,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(0, address(simpleMinter), fundsManagerRole);
 
-        vm.deal(admin, 1 ether);
+        vm.deal(admin, 1 ether + rewardsValue(1000));
         vm.prank(admin);
-        target.mint{value: 1 ether}(simpleMinter, tokenId, 1000, abi.encode(recipient));
+        target.mint{value: 1 ether + rewardsValue(1000)}(simpleMinter, tokenId, 1000, abi.encode(recipient));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, simpleMinter, 1 ether));
         vm.prank(address(simpleMinter));
@@ -1256,13 +1267,14 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
+        vm.deal(admin, 100 ether);
         vm.startPrank(admin);
         target.updateRoyaltiesForToken(
             tokenId,
             ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: royaltyMintSchedule, royaltyBPS: 0, royaltyRecipient: admin})
         );
 
-        target.mint(minter, tokenId, mintQuantity, abi.encode(recipient));
+        target.mint{value: rewardsValue(mintQuantity)}(minter, tokenId, mintQuantity, abi.encode(recipient));
 
         uint256 totalRoyaltyMintsForPurchase = mintQuantity / (royaltyMintSchedule - 1);
         totalRoyaltyMintsForPurchase = MathUpgradeable.min(totalRoyaltyMintsForPurchase, editionSize - mintQuantity);
@@ -1283,12 +1295,13 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
+        vm.deal(admin, 100 ether);
         vm.startPrank(admin);
         target.updateRoyaltiesForToken(
             tokenId,
             ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 5, royaltyBPS: 0, royaltyRecipient: admin})
         );
-        target.mint(minter, tokenId, 80, abi.encode(recipient));
+        target.mint{value: rewardsValue(80)}(minter, tokenId, 80, abi.encode(recipient));
 
         assertEq(target.balanceOf(recipient, tokenId), 80);
         assertEq(target.balanceOf(admin, tokenId), 20);
@@ -1306,13 +1319,14 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
+        vm.deal(admin, 100 ether);
         vm.startPrank(admin);
         target.updateRoyaltiesForToken(
             tokenId,
             ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 3, royaltyBPS: 0, royaltyRecipient: admin})
         );
 
-        target.mint(minter, tokenId, 92, abi.encode(recipient));
+        target.mint{value: rewardsValue(92)}(minter, tokenId, 92, abi.encode(recipient));
 
         assertEq(target.balanceOf(recipient, tokenId), 92);
         assertEq(target.balanceOf(admin, tokenId), 45);
@@ -1330,18 +1344,19 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(minter), adminRole);
 
+        vm.deal(admin, 100 ether);
         vm.startPrank(admin);
         target.updateRoyaltiesForToken(
             tokenId,
             ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 3, royaltyBPS: 0, royaltyRecipient: admin})
         );
 
-        target.mint(minter, tokenId, 92, abi.encode(recipient));
+        target.mint{value: rewardsValue(92)}(minter, tokenId, 92, abi.encode(recipient));
 
         assertEq(target.balanceOf(recipient, tokenId), 92);
         assertEq(target.balanceOf(admin, tokenId), 46);
 
-        target.mint(minter, tokenId, 1, abi.encode(recipient));
+        target.mint{value: rewardsValue(1)}(minter, tokenId, 1, abi.encode(recipient));
 
         assertEq(target.balanceOf(recipient, tokenId), 93);
         assertEq(target.balanceOf(admin, tokenId), 46);
