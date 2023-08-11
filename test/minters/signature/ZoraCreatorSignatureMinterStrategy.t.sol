@@ -51,11 +51,11 @@ contract ZoraSignatureMinterStategyTest is Test {
         bytes[] memory emptyData = new bytes[](0);
         mintFeeRecipient = vm.addr(1231231231);
         factoryAddress = address(0);
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient, factoryAddress);
+        signatureMinter = new ZoraCreatorSignatureMinterStrategy();
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(mintFeeAmount, mintFeeRecipient, factoryAddress, address(signatureMinter));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test2", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
-        signatureMinter = new ZoraCreatorSignatureMinterStrategy();
         authRegistry = new MockAuthRegistry();
         MockAuthRegistry(address(authRegistry)).addAuthorized(authorizedSigner);
         // set the time to be the current time
