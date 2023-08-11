@@ -9,7 +9,7 @@ import {
   parseEther,
   createTestClient,
 } from "viem";
-import { foundry, mainnet } from "viem/chains";
+import { foundry, zora } from "viem/chains";
 import { describe, it, expect } from "vitest";
 import {
   zoraCreator1155FactoryImplConfig,
@@ -42,11 +42,11 @@ const publicClient = createPublicClient({
 type Address = `0x${string}`;
 
 // JSON-RPC Account
-const [creatorAccount, ] =
+const [creatorAccount, collectorAccount] =
   (await walletClient.getAddresses()) as [Address, Address, Address];
 
 const factoryProxyAddress = zoraCreator1155FactoryImplConfig.address[
-  mainnet.id
+  zora.id
 ].toLowerCase() as `0x${string}`;
 
 const AddressZero = "0x0000000000000000000000000000000000000000";
@@ -247,7 +247,7 @@ describe("ZoraCreator1155Preminter", () => {
       // have the factory create the contract
       const createContractCall = await walletClient.writeContract({
         abi: zoraCreator1155FactoryImplConfig.abi,
-        address: zoraCreator1155FactoryImplConfig.address[mainnet.id],
+        address: zoraCreator1155FactoryImplConfig.address[zora.id],
         functionName: "createContract",
         args: [
           contractUri,
@@ -281,7 +281,7 @@ describe("ZoraCreator1155Preminter", () => {
         [collectorAccount]
       );
 
-      const zoraMintFee = chainConfigs[mainnet.id].MINT_FEE_AMOUNT;
+      const zoraMintFee = chainConfigs[zora.id].MINT_FEE_AMOUNT;
 
       const valueToSend =
         (BigInt(zoraMintFee) + createToken3Params.price) * quantityToMint;
