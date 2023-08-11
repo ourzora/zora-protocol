@@ -57,6 +57,10 @@ contract DeployPreminter is ZoraDeployerBase {
                 _fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
             });
 
+            // Upgrade to "real" factory address
+            ZoraCreator1155FactoryImpl(address(factoryProxy)).upgradeTo(address(factoryImpl));
+            ZoraCreator1155FactoryImpl(address(factoryProxy)).initialize(chainConfig.factoryOwner);
+
             deployment.factoryImpl = address(factoryImpl);
         } else {
             factoryProxy = ZoraCreator1155FactoryImpl(deployment.factoryProxy);

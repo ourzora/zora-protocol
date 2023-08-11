@@ -10,7 +10,6 @@ import { parseEther } from "viem";
 import {
   zoraCreator1155PremintExecutorABI as preminterAbi,
   zoraCreator1155ImplABI,
-  zoraCreator1155FactoryImplConfig,
   zoraCreator1155PremintExecutorAddress,
   zoraCreator1155FactoryImplAddress,
 } from "./wagmiGenerated";
@@ -26,7 +25,6 @@ import {
   TokenCreationConfig,
   preminterTypedDataDefinition,
 } from "./preminter";
-import { chainConfigs } from "./chainConfigs";
 
 const walletClient = createWalletClient({
   chain: foundry,
@@ -142,16 +140,6 @@ export const deployPreminterContract = async () => {
   });
 
   const preminterAddress = receipt.contractAddress!;
-
-  const initializeHash = await walletClient.writeContract({
-    abi: preminterAbi,
-    address: preminterAddress,
-    functionName: "initialize",
-    account: deployerAccount,
-    args: [factoryProxyAddress],
-  });
-
-  await publicClient.waitForTransactionReceipt({ hash: initializeHash });
 
   return { preminterAddress, factoryProxyAddress };
 };
