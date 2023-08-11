@@ -196,7 +196,7 @@ contract ZoraCreator1155PreminterTest is Test {
         bytes memory signature = _signPremint(premintConfig, creatorPrivateKey, chainId);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
-        vm.expectRevert(ZoraCreator1155Impl.PremintDeleted.selector);
+        vm.expectRevert(ZoraCreator1155Attribution.PremintDeleted.selector);
         vm.prank(premintExecutor);
         uint256 newTokenId = preminter.premint(premintConfig, signature, quantityToMint, comment);
 
@@ -399,7 +399,7 @@ contract ZoraCreator1155PreminterTest is Test {
         bytes memory signature = _signPremint(premintConfig, creatorPrivateKey, chainId);
 
         if (shouldRevert) {
-            vm.expectRevert(ZoraCreator1155Preminter.MintNotYetStarted.selector);
+            vm.expectRevert(ZoraCreator1155Attribution.MintNotYetStarted.selector);
         }
         vm.prank(premintExecutor);
         preminter.premint(premintConfig, signature, quantityToMint, comment);
