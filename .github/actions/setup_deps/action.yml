@@ -1,0 +1,19 @@
+name: 'Setup Node and Foundry'
+description: 'Setups up node and foundry'
+runs:
+  using: "composite"
+  steps:
+    - name: Install Node.js
+      uses: actions/setup-node@v3
+      with:
+        node-version: 16
+        cache: "yarn"
+
+    - name: Install project dependencies
+      shell: bash
+      run: yarn
+
+    - name: Install Foundry
+      uses: foundry-rs/foundry-toolchain@v1
+      with:
+        version: nightly
