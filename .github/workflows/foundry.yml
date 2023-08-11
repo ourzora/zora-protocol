@@ -114,6 +114,4 @@ jobs:
 
       - name: "Inspect Storage Layout"
         continue-on-error: false
-        run: |
-          forge build
-          yarn run storage-inspect:check
+        run: yarn run storage-inspect:check
