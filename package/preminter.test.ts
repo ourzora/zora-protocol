@@ -182,7 +182,7 @@ describe("ZoraCreator1155Preminter", () => {
       value: parseEther("10"),
     });
 
-    ctx.forkedChainId = zoraTestnet.id;
+    // ctx.forkedChainId = zoraTestnet.id;
     ctx.anvilChainId = foundry.id;
 
     let preminterAddress: Address;
@@ -276,7 +276,11 @@ describe("ZoraCreator1155Preminter", () => {
 
   it<TestContext>(
     "can sign and mint multiple tokens",
-    async ({ zoraMintFee, anvilChainId, preminterAddress: preminterAddress }) => {
+    async ({
+      zoraMintFee,
+      anvilChainId,
+      preminterAddress: preminterAddress,
+    }) => {
       // setup contract and token creation parameters
       const premintConfig = defaultPremintConfig();
 
