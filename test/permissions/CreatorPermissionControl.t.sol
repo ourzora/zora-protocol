@@ -12,38 +12,40 @@ contract CreatorPermissionControlTest is Test {
     }
 
     function test_showsNoPermission(uint256 tokenId, address user, uint256 permissionBits) public {
-        assertFalse(creatorPermissions.hasAnyPermission(tokenId, user, permissionBits));
+        bool hasAnyPermission = creatorPermissions.permissions(tokenId, user) & permissionBits > 0;
+        assertFalse(hasAnyPermission);
     }
 
     function test_addPermissions(uint256 tokenId, address user) public {
         creatorPermissions.addPermission(tokenId, user, 0x1);
         creatorPermissions.addPermission(tokenId, user, 0x2);
-        assertEq(creatorPermissions.getPermissions(tokenId, user), 0x3);
+        assertEq(creatorPermissions.permissions(tokenId, user), 0x3);
     }
 
     function test_addPermissionOtherExists(uint256 tokenId, address user, uint256 id) public {
         vm.assume(id != 0x1);
         vm.assume(id != 0x0);
         creatorPermissions.addPermission(tokenId, user, 0x1);
-        assertFalse(creatorPermissions.hasPermissions(tokenId, user, id));
+        bool hasPermission = creatorPermissions.permissions(tokenId, user) & id == id;
+        assertFalse(hasPermission);
     }
 
     function test_hasAllPermissions(uint256 tokenId, address user) public {
         creatorPermissions.addPermission(tokenId, user, type(uint256).max);
-        assertEq(creatorPermissions.getPermissions(tokenId, user), type(uint256).max);
+        assertEq(creatorPermissions.permissions(tokenId, user), type(uint256).max);
     }
 
     function test_clearPermissions(uint256 tokenId, address user) public {
         creatorPermissions.addPermission(tokenId, user, type(uint256).max);
-        assertEq(creatorPermissions.getPermissions(tokenId, user), type(uint256).max);
+        assertEq(creatorPermissions.permissions(tokenId, user), type(uint256).max);
         creatorPermissions.clearPermissions(tokenId, user);
-        assertEq(creatorPermissions.getPermissions(tokenId, user), 0);
+        assertEq(creatorPermissions.permissions(tokenId, user), 0);
     }
 
     function test_removePermission(uint256 tokenId, address user) public {
         creatorPermissions.addPermission(tokenId, user, type(uint256).max);
-        assertEq(creatorPermissions.getPermissions(tokenId, user), type(uint256).max);
+        assertEq(creatorPermissions.permissions(tokenId, user), type(uint256).max);
         creatorPermissions.clearPermissions(tokenId, user);
-        assertEq(creatorPermissions.getPermissions(tokenId, user), 0);
+        assertEq(creatorPermissions.permissions(tokenId, user), 0);
     }
 }

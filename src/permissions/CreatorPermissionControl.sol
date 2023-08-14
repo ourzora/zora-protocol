@@ -7,25 +7,12 @@ import {ICreatorPermissionControl} from "../interfaces/ICreatorPermissionControl
 /// Imagine. Mint. Enjoy.
 /// @author @iainnash / @tbtstl
 contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermissionControl {
-    /// @notice Check if the user has the given permissions
-    /// @dev if multiple permissions are passed in this checks for all the permissions requested
-    /// @return true or false if all of the passed in permissions apply
-    function _hasPermissions(uint256 tokenId, address user, uint256 permissionBits) internal view returns (bool) {
-        // Does a bitwise and and checks if any of those permissions match
-        return permissions[tokenId][user] & permissionBits == permissionBits;
-    }
-
     /// @notice Check if the user has any of the given permissions
     /// @dev if multiple permissions are passed in this checks for any one of those permissions
     /// @return true or false if any of the passed in permissions apply
     function _hasAnyPermission(uint256 tokenId, address user, uint256 permissionBits) internal view returns (bool) {
         // Does a bitwise and and checks if any of those permissions match
         return permissions[tokenId][user] & permissionBits > 0;
-    }
-
-    /// @return raw permission bits for the given user
-    function getPermissions(uint256 tokenId, address user) external view returns (uint256) {
-        return permissions[tokenId][user];
     }
 
     /// @notice addPermission – internal function to add a set of permission bits to a user
