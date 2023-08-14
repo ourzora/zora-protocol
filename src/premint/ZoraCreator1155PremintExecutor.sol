@@ -47,6 +47,7 @@ contract ZoraCreator1155PremintExecutor {
     // so it is unaware of order, it just takes the token uri and creates the next token with it
     // this could include creating the contract.
     function premint(
+        ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
         bytes calldata signature,
         uint256 quantityToMint,
@@ -61,24 +62,12 @@ contract ZoraCreator1155PremintExecutor {
         // 6. Future: First minter gets rewards
 
         // get or create the contract with the given params
-        (IZoraCreator1155 tokenContract, bool isNewContract) = _getOrCreateContract(premintConfig.contractConfig);
+        (IZoraCreator1155 tokenContract, bool isNewContract) = _getOrCreateContract(contractConfig);
         address contractAddress = address(tokenContract);
 
         // have the address setup the new token.  The signer must have permission to do this.
         // (that role enforcement is expected to be in the tokenContract).
         // the token contract will:
-
-        // emit event early to have a cleaner log
-        emit Preminted(
-            contractAddress,
-            newTokenId,
-            isNewContract,
-            premintConfig.uid,
-            premintConfig.contractConfig,
-            premintConfig.tokenConfig,
-            msg.sender,
-            quantityToMint
-        );
 
         // * setup the token with the signer as the creator, and follow the creator rewards standard.
         // * will revert if the token in the contract with the same uid already exists.
@@ -96,6 +85,9 @@ contract ZoraCreator1155PremintExecutor {
             quantityToMint,
             abi.encode(tokenRecipient, mintComment)
         );
+
+        // emit Preminted event
+        emit Preminted(contractAddress, newTokenId, isNewContract, premintConfig.uid, contractConfig, premintConfig.tokenConfig, msg.sender, quantityToMint);
     }
 
     function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract, bool isNewContract) {
