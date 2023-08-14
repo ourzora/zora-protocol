@@ -401,8 +401,8 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param minterArguments The arguments to pass to the minter
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable nonReentrant {
-        _mintWithRewards(minter, tokenId, quantity, minterArguments, address(0));
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable {
+        mintWithRewards(minter, tokenId, quantity, minterArguments, address(0));
     }
 
     /// @notice Get the creator reward recipient address
@@ -423,11 +423,7 @@ contract ZoraCreator1155Impl is
         uint256 quantity,
         bytes calldata minterArguments,
         address mintReferral
-    ) external payable nonReentrant {
-        _mintWithRewards(minter, tokenId, quantity, minterArguments, mintReferral);
-    }
-
-    function _mintWithRewards(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address mintReferral) private {
+    ) public payable nonReentrant {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
