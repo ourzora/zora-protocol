@@ -4,11 +4,11 @@ pragma solidity 0.8.17;
 import "forge-std/Test.sol";
 
 import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.sol";
-import {RewardsSettings} from "@zoralabs/protocol-rewards/src/abstract/RewardSplits.sol";
 import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {RewardSplits, RewardsSettings} from "../../src/rewards/ERC1155Rewards.sol";
 
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../src/interfaces/IRenderer1155.sol";
@@ -640,9 +640,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computeFreeMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
@@ -665,9 +665,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computeFreeMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
@@ -691,9 +691,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computeFreeMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
@@ -717,9 +717,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computeFreeMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
@@ -777,9 +777,9 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computePaidMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
@@ -824,9 +824,9 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computePaidMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
@@ -872,9 +872,9 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computePaidMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
@@ -919,9 +919,9 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
+        RewardsSettings memory settings = RewardSplits.computePaidMintRewards(quantity);
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
         uint256 totalSale = quantity * salePrice;
         uint256 totalValue = totalReward + totalSale;
 
@@ -1000,7 +1000,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.stopPrank();
 
-        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalReward = RewardSplits.computeTotalReward(quantity);
 
         vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
         target.mintWithRewards{value: totalReward}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));

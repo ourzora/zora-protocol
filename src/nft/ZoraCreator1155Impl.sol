@@ -7,8 +7,9 @@ import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/cont
 import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
-import {ERC1155Rewards} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155Rewards.sol";
+import {ERC1155Rewards} from "../rewards/ERC1155Rewards.sol";
 import {ERC1155RewardsStorageV1} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155RewardsStorageV1.sol";
+import {RewardSplits, RewardsSettings} from "@zoralabs/protocol-rewards/src/abstract/RewardSplits.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -48,7 +49,6 @@ contract ZoraCreator1155Impl is
     ZoraCreator1155StorageV1,
     CreatorPermissionControl,
     CreatorRoyaltiesControl,
-    ERC1155Rewards,
     ERC1155RewardsStorageV1
 {
     /// @notice This user role allows for any action to be performed
@@ -65,8 +65,14 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IFactoryManagedUpgradeGate internal immutable factory;
 
-    constructor(address _mintFeeRecipient, address _factory, address _protocolRewards) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
+    address internal immutable mintFeeRecipient;
+    address internal immutable protocolRewards;
+
+    constructor(address _mintFeeRecipient, address _factory, address _protocolRewards) {
         factory = IFactoryManagedUpgradeGate(_factory);
+
+        mintFeeRecipient = _mintFeeRecipient;
+        protocolRewards = _protocolRewards;
     }
 
     /// @notice Initializes the contract
@@ -428,7 +434,15 @@ contract ZoraCreator1155Impl is
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, getCreatorRewardRecipient(), createReferrals[tokenId], mintReferral);
+        uint256 ethValueSent = ERC1155Rewards.handleRewardsAndGetValueSent(
+            IProtocolRewards(protocolRewards),
+            mintFeeRecipient,
+            msg.value,
+            quantity,
+            getCreatorRewardRecipient(),
+            createReferrals[tokenId],
+            mintReferral
+        );
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
@@ -666,7 +680,7 @@ contract ZoraCreator1155Impl is
 
     /// @notice Allows the create referral to update the address that can claim their rewards
     function updateCreateReferral(uint256 tokenId, address recipient) external {
-        if (msg.sender != createReferrals[tokenId]) revert ONLY_CREATE_REFERRAL();
+        if (msg.sender != createReferrals[tokenId]) revert RewardSplits.ONLY_CREATE_REFERRAL();
 
         _setCreateReferral(tokenId, recipient);
     }
