@@ -40,8 +40,6 @@ struct TokenCreationConfig {
 }
 
 struct PremintConfig {
-    // The config for the contract to be created
-    ContractCreationConfig contractConfig;
     // The config for the token to be created
     TokenCreationConfig tokenConfig;
     // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
@@ -121,20 +119,13 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "Premint(ContractCreationConfig contractConfig,TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "Premint(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
         );
 
     function hashPremint(PremintConfig calldata premintConfig) public pure returns (bytes32) {
         return
             keccak256(
-                abi.encode(
-                    CONTRACT_AND_TOKEN_DOMAIN,
-                    _hashContract(premintConfig.contractConfig),
-                    _hashToken(premintConfig.tokenConfig),
-                    premintConfig.uid,
-                    premintConfig.version,
-                    premintConfig.deleted
-                )
+                abi.encode(CONTRACT_AND_TOKEN_DOMAIN, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted)
             );
     }
 
@@ -158,15 +149,6 @@ library ZoraCreator1155Attribution {
                     tokenConfig.royaltyBPS,
                     tokenConfig.royaltyRecipient
                 )
-            );
-    }
-
-    bytes32 constant CONTRACT_DOMAIN = keccak256("ContractCreationConfig(address contractAdmin,string contractURI,string contractName)");
-
-    function _hashContract(ContractCreationConfig calldata contractConfig) private pure returns (bytes32) {
-        return
-            keccak256(
-                abi.encode(CONTRACT_DOMAIN, contractConfig.contractAdmin, _stringHash(contractConfig.contractURI), _stringHash(contractConfig.contractName))
             );
     }
 
