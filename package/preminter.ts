@@ -1,18 +1,17 @@
 import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
-import { zoraCreator1155PreminterABI as preminterAbi } from "./wagmiGenerated";
+import { zoraCreator1155PremintExecutorABI as preminterAbi } from "./wagmiGenerated";
 import { TypedDataDefinition } from "viem";
 
-type PreminterHashInputs = ExtractAbiFunction<
+type PremintInputs = ExtractAbiFunction<
   typeof preminterAbi,
-  "premintHashData"
+  "premint"
 >["inputs"];
 
-type PreminterHashDataTypes =
-  AbiParametersToPrimitiveTypes<PreminterHashInputs>;
+type PreminterHashDataTypes = AbiParametersToPrimitiveTypes<PremintInputs>;
 
-export type PremintConfig = PreminterHashDataTypes[0];
-export type ContractCreationConfig = PremintConfig["contractConfig"];
+export type ContractCreationConfig = PreminterHashDataTypes[0];
+export type PremintConfig = PreminterHashDataTypes[1];
 export type TokenCreationConfig = PremintConfig["tokenConfig"];
 
 // Convenience method to create the structured typed data
@@ -26,10 +25,9 @@ export const preminterTypedDataDefinition = ({
   premintConfig: PremintConfig;
   chainId: number;
 }) => {
-  const { contractConfig, tokenConfig, uid, version, deleted } = premintConfig;
+  const { tokenConfig, uid, version, deleted } = premintConfig;
   const types = {
     Premint: [
-      { name: "contractConfig", type: "ContractCreationConfig" },
       { name: "tokenConfig", type: "TokenCreationConfig" },
       { name: "uid", type: "uint32" },
       { name: "version", type: "uint32" },
@@ -62,7 +60,6 @@ export const preminterTypedDataDefinition = ({
     },
     types,
     message: {
-      contractConfig,
       tokenConfig,
       uid,
       version,

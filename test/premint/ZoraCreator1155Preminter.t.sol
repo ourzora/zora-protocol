@@ -19,8 +19,9 @@ import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155Facto
 import {ZoraCreator1155PremintExecutor} from "../../src/premint/ZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/premint/ZoraCreator1155Attribution.sol";
+import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
-contract ZoraCreator1155PreminterTest is Test {
+contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     ZoraCreator1155PremintExecutor internal preminter;
     ZoraCreator1155FactoryImpl internal factory;
     // setup contract config
@@ -109,11 +110,16 @@ contract ZoraCreator1155PreminterTest is Test {
         // create a signature with the digest for the params
         bytes memory signature = _sign(creatorPrivateKey, digest);
 
+        uint256 mintFee = 0;
+
+        uint256 mintCost = mintFee * quantityToMint;
+
         // this account will be used to execute the premint, and should result in a contract being created
         address premintExecutor = vm.addr(701);
+        vm.deal(premintExecutor, mintCost);
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.prank(premintExecutor);
-        uint256 tokenId = preminter.premint(contractConfig, premintConfig, signature, quantityToMint, comment);
+        uint256 tokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
 
         // get the contract address from the preminter based on the contract hash id.
         IZoraCreator1155 created1155Contract = IZoraCreator1155(contractAddress);
@@ -131,11 +137,80 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // premint with new token config and signature
         vm.prank(premintExecutor);
-        tokenId = preminter.premint(contractConfig, premintConfig, signature, quantityToMint, comment);
+        tokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
 
         // a new token shoudl have been created, with x tokens minted to the executor, on the same contract address
         // as before since the contract config didnt change
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
+    }
+
+    /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
+    /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
+    function getForkTestChains() private view returns (string[] memory result) {
+        try vm.envString("FORK_TEST_CHAINS", ",") returns (string[] memory forkTestChains) {
+            result = forkTestChains;
+        } catch {
+            console.log("could not get fork test chains - make sure the environment variable FORK_TEST_CHAINS is set");
+            result = new string[](0);
+        }
+    }
+
+    function testTheForkPremint(string memory chainName) private {
+        console.log("testing on fork: ", chainName);
+
+        // create and select the fork, which will be used for all subsequent calls
+        // it will also affect the current block chain id based on the rpc url returned
+        vm.createSelectFork(vm.rpcUrl(chainName));
+
+        // get contract hash, which is unique per contract creation config, and can be used
+        // retreive the address created for a contract
+        preminter = ZoraCreator1155PremintExecutor(getDeployment().preminter);
+        factory = ZoraCreator1155FactoryImpl(getDeployment().factoryImpl);
+
+        console.log("building defaults");
+
+        // configuration of contract to create
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
+
+        // how many tokens are minted to the executor
+        uint256 quantityToMint = 4;
+        uint256 chainId = block.chainid;
+        string memory comment = "hi";
+
+        console.log("loading preminter");
+
+        address contractAddress = preminter.getContractAddress(contractConfig);
+
+        console.log(contractAddress);
+
+        // 2. Call smart contract to get digest to sign for creation params.
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
+
+        // 3. Sign the digest
+        // create a signature with the digest for the params
+        bytes memory signature = _sign(creatorPrivateKey, digest);
+
+        // this account will be used to execute the premint, and should result in a contract being created
+        address premintExecutor = vm.addr(701);
+        uint256 mintCost = quantityToMint * 0.000777 ether;
+        // now call the premint function, using the same config that was used to generate the digest, and the signature
+        vm.deal(premintExecutor, mintCost);
+        vm.prank(premintExecutor);
+        uint256 tokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
+
+        // get the contract address from the preminter based on the contract hash id.
+        IZoraCreator1155 created1155Contract = IZoraCreator1155(contractAddress);
+
+        // get the created contract, and make sure that tokens have been minted to the address
+        assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
+    }
+
+    function test_fork_successfullyMintsTokens() external {
+        string[] memory forkTestChains = getForkTestChains();
+        for (uint256 i = 0; i < forkTestChains.length; i++) {
+            testTheForkPremint(forkTestChains[i]);
+        }
     }
 
     function test_signatureForSameContractandUid_cannotBeExecutedTwice() external {
