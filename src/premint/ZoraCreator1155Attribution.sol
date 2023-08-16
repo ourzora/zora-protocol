@@ -117,21 +117,19 @@ library ZoraCreator1155Attribution {
         return _hashTypedDataV4(hashPremint(premintConfig), erc1155Contract, chainId);
     }
 
-    bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
+    bytes32 constant ATTRIBUTION_DOMAIN =
         keccak256(
-            "Premint(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPricedMinter)"
+            "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter)"
         );
 
     function hashPremint(PremintConfig calldata premintConfig) public pure returns (bytes32) {
         return
-            keccak256(
-                abi.encode(CONTRACT_AND_TOKEN_DOMAIN, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted)
-            );
+            keccak256(abi.encode(ATTRIBUTION_DOMAIN, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted));
     }
 
     bytes32 constant TOKEN_DOMAIN =
         keccak256(
-            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPricedMinter)"
+            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter)"
         );
 
     function _hashToken(TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
