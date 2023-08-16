@@ -100,9 +100,6 @@ contract ZoraCreator1155Impl is
         // Setup re-entracy guard
         __ReentrancyGuard_init();
 
-        // Setup contract-default token ID
-        _setupDefaultToken(defaultAdmin, newContractURI, defaultRoyaltyConfiguration);
-
         _setName(contractName);
     }
 
