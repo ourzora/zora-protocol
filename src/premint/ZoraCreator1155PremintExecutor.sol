@@ -9,7 +9,7 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
-import {PremintConfig, ContractCreationConfig, TokenCreationConfig} from "./ZoraCreator1155Attribution.sol";
+import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1155Attribution} from "./ZoraCreator1155Attribution.sol";
 
 /// @title Enables a creator to signal intent to create a Zora erc1155 contract or new token on that
 /// contract by signing a transaction but not paying gas, and have a third party/collector pay the gas
@@ -121,5 +121,14 @@ contract ZoraCreator1155PremintExecutor {
 
     function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
         return factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
+    }
+
+    function recoverSigner(
+        PremintConfig calldata premintConfig,
+        address zor1155Address,
+        bytes calldata signature,
+        uint256 chainId
+    ) public pure returns (address) {
+        return ZoraCreator1155Attribution.recoverSigner(premintConfig, signature, zor1155Address, chainId);
     }
 }
