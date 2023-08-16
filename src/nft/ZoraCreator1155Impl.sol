@@ -103,8 +103,6 @@ contract ZoraCreator1155Impl is
         // Setup contract-default token ID
         _setupDefaultToken(defaultAdmin, newContractURI, defaultRoyaltyConfiguration);
 
-        _setFundsRecipient(defaultAdmin);
-
         _setName(contractName);
     }
 
