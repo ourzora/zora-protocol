@@ -103,24 +103,9 @@ contract ZoraCreator1155Impl is
         // Setup contract-default token ID
         _setupDefaultToken(defaultAdmin, newContractURI, defaultRoyaltyConfiguration);
 
-        // Set owner to default admin
-        _setOwner(defaultAdmin);
-
         _setFundsRecipient(defaultAdmin);
 
         _setName(contractName);
-
-        // Run Setup actions
-        if (setupActions.length > 0) {
-            // Temporarily make sender admin
-            _addPermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
-
-            // Make calls
-            multicall(setupActions);
-
-            // Remove admin
-            _removePermission(CONTRACT_BASE_ID, msg.sender, PERMISSION_BIT_ADMIN);
-        }
     }
 
     /// @notice sets up the global configuration for the 1155 contract
