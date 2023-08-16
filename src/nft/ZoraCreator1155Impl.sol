@@ -729,21 +729,14 @@ contract ZoraCreator1155Impl is
     bytes32 private constant _HASHED_VERSION = keccak256(bytes("1"));
     bytes32 private constant _TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
-    mapping(uint32 => bool) public uidUsed;
+    mapping(uint32 => uint256) public delegatedTokenId;
 
     event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, bytes signature);
 
     error PremintAlreadyExecuted();
 
-    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public returns (uint256 newTokenId) {
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
         bytes32 hashedPremintConfig = ZoraCreator1155Attribution.validateAndHashPremint(premintConfig);
-
-        // check that uid hasn't been used
-        if (uidUsed[premintConfig.uid]) {
-            revert PremintAlreadyExecuted();
-        } else {
-            uidUsed[premintConfig.uid] = true;
-        }
 
         // this is what attributes this token to have been created by the original creator
         emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, signature);
@@ -754,8 +747,15 @@ contract ZoraCreator1155Impl is
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
+        // check that uid hasn't been used
+        if (delegatedTokenId[premintConfig.uid] != 0) {
+            revert PremintAlreadyExecuted();
+        }
+
         // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
         newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
+
+        delegatedTokenId[premintConfig.uid] = newTokenId;
 
         // invoke setup actions for new token, to save contract size, first get them from an external lib
         bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, recoveredSigner, premintConfig.tokenConfig);
