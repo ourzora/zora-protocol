@@ -512,20 +512,12 @@ contract ZoraCreator1155Impl is
             revert Sale_CannotCallNonSalesContract(address(salesConfig));
         }
         
-        // Get the selector of the sales config call
-        bytes4 selector = bytes4(data[:4]);
+        // Get the token id encoded in the call
+        (uint256 encodedTokenId) = abi.decode(data, (uint256));
 
-        // If the call is to ZoraCreatorFixedPriceSaleStrategy `setSale` or `resetSale`:
-        // TODO can create interface for ^ and specify selector instead of hardcoding
-        // TODO can add preliminary check `if address(salesConfig) == address(ZoraCreatorFixedPriceSaleStrategy)`
-        if (selector == 0x34db7eee || selector == 0x19b45c4f) {
-            // Get the token id that was specified in the encoded call
-            (uint256 decodedTokenId) = abi.decode(data, (uint256));
-
-            // Ensure the decoded token id matches the token id that was authorized
-            if (decodedTokenId != tokenId) {
-                revert();
-            }
+        // Ensure the encoded token id matches the expected token id
+        if (encodedTokenId != tokenId) {
+            revert Sale_TokenIdMismatch(tokenId, encodedTokenId);
         }
 
         (bool success, bytes memory why) = address(salesConfig).call(data);
