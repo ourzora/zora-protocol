@@ -506,11 +506,28 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the sale contract with
     /// @param salesConfig The sales config contract to call
     /// @param data The data to pass to the sales config contract
-    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
+    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes calldata data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
         _requireAdminOrRole(address(salesConfig), tokenId, PERMISSION_BIT_MINTER);
         if (!salesConfig.supportsInterface(type(IMinter1155).interfaceId)) {
             revert Sale_CannotCallNonSalesContract(address(salesConfig));
         }
+        
+        // Get the selector of the sales config call
+        bytes4 selector = bytes4(data[:4]);
+
+        // If the call is to ZoraCreatorFixedPriceSaleStrategy `setSale` or `resetSale`:
+        // TODO can create interface for ^ and specify selector instead of hardcoding
+        // TODO can add preliminary check `if address(salesConfig) == address(ZoraCreatorFixedPriceSaleStrategy)`
+        if (selector == 0x34db7eee || selector == 0x19b45c4f) {
+            // Get the token id that was specified in the encoded call
+            (uint256 decodedTokenId) = abi.decode(data, (uint256));
+
+            // Ensure the decoded token id matches the token id that was authorized
+            if (decodedTokenId != tokenId) {
+                revert();
+            }
+        }
+
         (bool success, bytes memory why) = address(salesConfig).call(data);
         if (!success) {
             revert CallFailed(why);
