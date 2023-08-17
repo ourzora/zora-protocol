@@ -1,18 +1,17 @@
 import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
-import { zoraCreator1155PreminterABI as preminterAbi } from "./wagmiGenerated";
+import { zoraCreator1155PremintExecutorABI as preminterAbi } from "./wagmiGenerated";
 import { TypedDataDefinition } from "viem";
 
-type PreminterHashInputs = ExtractAbiFunction<
+type PremintInputs = ExtractAbiFunction<
   typeof preminterAbi,
-  "premintHashData"
+  "premint"
 >["inputs"];
 
-type PreminterHashDataTypes =
-  AbiParametersToPrimitiveTypes<PreminterHashInputs>;
+type PreminterHashDataTypes = AbiParametersToPrimitiveTypes<PremintInputs>;
 
-export type PremintConfig = PreminterHashDataTypes[0];
-export type ContractCreationConfig = PremintConfig["contractConfig"];
+export type ContractCreationConfig = PreminterHashDataTypes[0];
+export type PremintConfig = PreminterHashDataTypes[1];
 export type TokenCreationConfig = PremintConfig["tokenConfig"];
 
 // Convenience method to create the structured typed data
@@ -26,19 +25,13 @@ export const preminterTypedDataDefinition = ({
   premintConfig: PremintConfig;
   chainId: number;
 }) => {
-  const { contractConfig, tokenConfig, uid, version, deleted } = premintConfig;
+  const { tokenConfig, uid, version, deleted } = premintConfig;
   const types = {
-    Premint: [
-      { name: "contractConfig", type: "ContractCreationConfig" },
+    CreatorAttribution: [
       { name: "tokenConfig", type: "TokenCreationConfig" },
       { name: "uid", type: "uint32" },
       { name: "version", type: "uint32" },
       { name: "deleted", type: "bool" },
-    ],
-    ContractCreationConfig: [
-      { name: "contractAdmin", type: "address" },
-      { name: "contractURI", type: "string" },
-      { name: "contractName", type: "string" },
     ],
     TokenCreationConfig: [
       { name: "tokenURI", type: "string" },
@@ -50,25 +43,25 @@ export const preminterTypedDataDefinition = ({
       { name: "royaltyMintSchedule", type: "uint32" },
       { name: "royaltyBPS", type: "uint32" },
       { name: "royaltyRecipient", type: "address" },
+      { name: "fixedPriceMinter", type: "address" },
     ],
   };
 
-  const result: TypedDataDefinition<typeof types, "Premint"> = {
+  const result: TypedDataDefinition<typeof types, "CreatorAttribution"> = {
     domain: {
       chainId,
       name: "Preminter",
-      version: "0.0.1",
+      version: "1",
       verifyingContract: verifyingContract,
     },
     types,
     message: {
-      contractConfig,
       tokenConfig,
       uid,
       version,
       deleted,
     },
-    primaryType: "Premint",
+    primaryType: "CreatorAttribution",
   };
 
   // console.log({ result, deleted });
