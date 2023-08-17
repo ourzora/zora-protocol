@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
+import {console2} from "forge-std/console2.sol";
+
 import {ERC1155Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/token/ERC1155/ERC1155Upgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -512,12 +514,13 @@ contract ZoraCreator1155Impl is
             revert Sale_CannotCallNonSalesContract(address(salesConfig));
         }
         
-        // Get the token id encoded in the call
-        (uint256 encodedTokenId) = abi.decode(data, (uint256));
+        // Get the token id encoded in the calldata for the sales config.
+        // Assume that the 32 bytes after the function selector are the encoded token id.
+        uint256 encodedTokenId = uint256(bytes32(data[4:36]));
 
-        // Ensure the encoded token id matches the expected token id
+        // Ensure the encoded token id matches the passed token id
         if (encodedTokenId != tokenId) {
-            revert Sale_TokenIdMismatch(tokenId, encodedTokenId);
+            revert Call_TokenIdMismatch();
         }
 
         (bool success, bytes memory why) = address(salesConfig).call(data);
