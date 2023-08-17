@@ -28,7 +28,7 @@ contract ZoraCreator1155PremintExecutor {
     error InvalidSignature();
 
     // todo: make a constructor
-    function initialize(IZoraCreator1155Factory _factory) public {
+    constructor(IZoraCreator1155Factory _factory) {
         factory = _factory;
     }
 

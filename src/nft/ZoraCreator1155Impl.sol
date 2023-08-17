@@ -725,10 +725,6 @@ contract ZoraCreator1155Impl is
     }
 
     /* start eip712 functionality */
-    bytes32 private constant _HASHED_NAME = keccak256(bytes("Preminter"));
-    bytes32 private constant _HASHED_VERSION = keccak256(bytes("1"));
-    bytes32 private constant _TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-
     mapping(uint32 => uint256) public delegatedTokenId;
 
     event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, bytes signature);

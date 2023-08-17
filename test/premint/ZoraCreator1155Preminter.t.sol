@@ -55,8 +55,7 @@ contract ZoraCreator1155PreminterTest is Test {
             royaltyMintSchedule: royaltyMintSchedule
         });
 
-        preminter = new ZoraCreator1155PremintExecutor();
-        preminter.initialize(factory);
+        preminter = new ZoraCreator1155PremintExecutor(factory);
 
         creatorPrivateKey = 0xA11CE;
         creator = vm.addr(creatorPrivateKey);

@@ -84,7 +84,7 @@ library ZoraCreator1155Attribution {
         bytes calldata signature,
         address erc1155Contract,
         uint256 chainId
-    ) public pure returns (address signatory) {
+    ) internal pure returns (address signatory) {
         // first validate the signature - the creator must match the signer of the message
         return recoverSignerHashed(hashPremint(premintConfig), signature, erc1155Contract, chainId);
     }
@@ -119,7 +119,7 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant CONTRACT_AND_TOKEN_DOMAIN =
         keccak256(
-            "Premint(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)ContractCreationConfig(address contractAdmin,string contractURI,string contractName)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "Premint(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPricedMinter)"
         );
 
     function hashPremint(PremintConfig calldata premintConfig) public pure returns (bytes32) {
@@ -131,7 +131,7 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant TOKEN_DOMAIN =
         keccak256(
-            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient)"
+            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPricedMinter)"
         );
 
     function _hashToken(TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
@@ -147,7 +147,8 @@ library ZoraCreator1155Attribution {
                     tokenConfig.mintDuration,
                     tokenConfig.royaltyMintSchedule,
                     tokenConfig.royaltyBPS,
-                    tokenConfig.royaltyRecipient
+                    tokenConfig.royaltyRecipient,
+                    tokenConfig.fixedPriceMinter
                 )
             );
     }
