@@ -513,9 +513,9 @@ contract ZoraCreator1155Impl is
         if (!salesConfig.supportsInterface(type(IMinter1155).interfaceId)) {
             revert Sale_CannotCallNonSalesContract(address(salesConfig));
         }
-        
-        // Get the token id encoded in the calldata for the sales config.
-        // Assume that the 32 bytes after the function selector are the encoded token id.
+
+        // Get the token id encoded in the calldata for the sales config
+        // Assume that it is the first 32 bytes following the function selector
         uint256 encodedTokenId = uint256(bytes32(data[4:36]));
 
         // Ensure the encoded token id matches the passed token id
