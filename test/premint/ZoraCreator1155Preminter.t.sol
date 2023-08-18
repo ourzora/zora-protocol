@@ -519,6 +519,87 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         IZoraCreator1155(contractAddress).mint(fixedPriceMinter, tokenId, quantityToMint, abi.encode(premintExecutor, comment));
     }
 
+    function test_premintStatus_getsIfContractHasBeenCreatedAndTokenIdForPremint() external {
+        // build a premint
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
+
+        // get premint status
+        (bool contractCreated, uint256 tokenId) = preminter.premintStatus(preminter.getContractAddress(contractConfig), premintConfig.uid);
+        // contract should not be created and token id should be 0
+        assertEq(contractCreated, false);
+        assertEq(tokenId, 0);
+
+        // sign and execute premint
+        uint256 newTokenId = _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, vm.addr(701), 1, "hi");
+
+        // get status
+        (contractCreated, tokenId) = preminter.premintStatus(preminter.getContractAddress(contractConfig), premintConfig.uid);
+        // contract should be created and token id should be same as one that was created
+        assertEq(contractCreated, true);
+        assertEq(tokenId, newTokenId);
+
+        // get status for another uid
+        (contractCreated, tokenId) = preminter.premintStatus(preminter.getContractAddress(contractConfig), premintConfig.uid + 1);
+        // contract should be created and token id should be 0
+        assertEq(contractCreated, true);
+        assertEq(tokenId, 0);
+    }
+
+    // todo: pull from elsewhere
+    uint256 constant CONTRACT_BASE_ID = 0;
+    uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
+
+    function test_premint_whenContractCreated_premintCanOnlyBeExecutedByPermissionBitMinter() external {
+        // build a premint
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
+
+        address executor = vm.addr(701);
+
+        // sign and execute premint
+        bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, block.chainid);
+
+        (bool isValidSignature, address contractAddress, ) = preminter.isValidSignature(contractConfig, premintConfig, signature);
+
+        assertTrue(isValidSignature);
+
+        _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, executor, 1, "hi");
+
+        // contract has been created
+
+        // have another creator sign a premint
+        uint256 newCreatorPrivateKey = 0xA11CF;
+        address newCreator = vm.addr(newCreatorPrivateKey);
+        PremintConfig memory premintConfig2 = premintConfig;
+        premintConfig2.uid++;
+
+        // have new creator sign a premint, isValidSignature should be false, and premint should revert
+        bytes memory newCreatorSignature = _signPremint(contractAddress, premintConfig2, newCreatorPrivateKey, block.chainid);
+
+        // it should not be considered a valid signature
+        (isValidSignature, , ) = preminter.isValidSignature(contractConfig, premintConfig2, newCreatorSignature);
+
+        assertFalse(isValidSignature);
+
+        // try to mint, it should revert
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, newCreator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER));
+        vm.prank(executor);
+        preminter.premint(contractConfig, premintConfig2, newCreatorSignature, 1, "yo");
+
+        // now grant the new creator permission to mint
+        vm.prank(creator);
+        IZoraCreator1155(contractAddress).addPermission(CONTRACT_BASE_ID, newCreator, PERMISSION_BIT_MINTER);
+
+        // should now be considered a valid signature
+        (isValidSignature, , ) = preminter.isValidSignature(contractConfig, premintConfig2, newCreatorSignature);
+        assertTrue(isValidSignature);
+
+        // try to mint again, should not revert
+        vm.prank(executor);
+        preminter.premint(contractConfig, premintConfig2, newCreatorSignature, 1, "yo");
+    }
+
     function _signAndExecutePremint(
         ContractCreationConfig memory contractConfig,
         PremintConfig memory premintConfig,
@@ -540,7 +621,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         PremintConfig memory premintConfig,
         uint256 privateKey,
         uint256 chainId
-    ) private view returns (bytes memory) {
+    ) private pure returns (bytes memory) {
         bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
 
         // 3. Sign the digest

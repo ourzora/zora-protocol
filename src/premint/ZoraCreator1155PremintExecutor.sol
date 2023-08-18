@@ -123,12 +123,41 @@ contract ZoraCreator1155PremintExecutor {
         return factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
     }
 
-    function recoverSigner(
+    function recoverSigner(PremintConfig calldata premintConfig, address zor1155Address, bytes calldata signature) public view returns (address) {
+        return ZoraCreator1155Attribution.recoverSigner(premintConfig, signature, zor1155Address, block.chainid);
+    }
+
+    /// @notice Utility function to determine if a premint contract has been created for a uid of a premint, and if so,
+    /// What is the token id that was created for the uid.
+    function premintStatus(address contractAddress, uint32 uid) public view returns (bool contractCreated, uint256 tokenIdForPremint) {
+        if (contractAddress.code.length == 0) {
+            return (false, 0);
+        }
+        return (true, IZoraCreator1155(contractAddress).delegatedTokenId(uid));
+    }
+
+    /// @notice Utility function to check if the signature is valid; i.e. the signature can be used to
+    /// mint a token with the given config.  If contract hasn't been created, then the signer
+    /// must match the contract admin on the premint config.
+    /// If it has been created, the signer must have permission to mint new tokens on the erc1155 contract.
+    function isValidSignature(
+        ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
-        address zor1155Address,
-        bytes calldata signature,
-        uint256 chainId
-    ) public pure returns (address) {
-        return ZoraCreator1155Attribution.recoverSigner(premintConfig, signature, zor1155Address, chainId);
+        bytes calldata signature
+    ) public view returns (bool isValid, address contractAddress, address recoveredSigner) {
+        contractAddress = getContractAddress(contractConfig);
+        recoveredSigner = recoverSigner(premintConfig, contractAddress, signature);
+
+        if (recoveredSigner == address(0)) {
+            return (false, contractAddress, address(0));
+        }
+
+        // if contract hasn't been created, signer must be the contract admin on the config
+        if (contractAddress.code.length == 0) {
+            isValid = recoveredSigner == contractConfig.contractAdmin;
+        } else {
+            // if contract has been created, signer must have mint new token permission
+            isValid = IZoraCreator1155(contractAddress).isAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+        }
     }
 }
