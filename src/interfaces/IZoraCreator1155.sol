@@ -75,7 +75,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     error NewOwnerNeedsToBeAdmin();
 
     error Sale_CannotCallNonSalesContract(address targetContract);
-    
+
     error Call_TokenIdMismatch();
     error CallFailed(bytes reason);
     error Renderer_NotValidRendererContract();
