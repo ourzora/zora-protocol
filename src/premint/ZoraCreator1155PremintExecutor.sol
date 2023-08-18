@@ -11,10 +11,9 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCrea
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1155Attribution} from "./ZoraCreator1155Attribution.sol";
 
-/// @title Enables a creator to signal intent to create a Zora erc1155 contract or new token on that
-/// contract by signing a transaction but not paying gas, and have a third party/collector pay the gas
-/// by executing the transaction.  Incentivizes the third party to execute the transaction by offering
-/// a reward in the form of minted tokens.
+/// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
+/// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
+/// Mints the first x tokens to the executor of the transaction.
 /// @author @oveddan
 contract ZoraCreator1155PremintExecutor {
     IZoraCreator1155Factory factory;
@@ -27,7 +26,6 @@ contract ZoraCreator1155PremintExecutor {
     error MintNotYetStarted();
     error InvalidSignature();
 
-    // todo: make a constructor
     constructor(IZoraCreator1155Factory _factory) {
         factory = _factory;
     }
@@ -43,9 +41,11 @@ contract ZoraCreator1155PremintExecutor {
         uint256 quantityMinted
     );
 
-    // same signature should work whether or not there is an existing contract
-    // so it is unaware of order, it just takes the token uri and creates the next token with it
-    // this could include creating the contract.
+    /// Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.
+    /// If the erc1155 contract hasn't been created yet, it will be created with the given config within this same transaction.
+    /// The creator must sign the intent to create the token, and must have mint new token permission on the erc1155 contract,
+    /// or match the contract admin on the contract creation config if the contract hasn't been created yet.
+    /// Contract address of the created contract is deterministically generated from the contract config and this contract's address.
     function premint(
         ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
@@ -53,27 +53,14 @@ contract ZoraCreator1155PremintExecutor {
         uint256 quantityToMint,
         string calldata mintComment
     ) public payable returns (uint256 newTokenId) {
-        // 1. Validate the signature.
-        // 2. get or create an erc1155 contract with the same determinsitic address as that from the contract config
-        // 3. Have the erc1155 contract create a new token.  the signer must have permission to do mint new tokens
-        // (that role enforcement is expected to be in the tokenContract).
-        // 4. The erc1155 will sedtup the token with the signign address as the creator, and follow the creator rewards standard.
-        // 5. Mint x tokens, as configured, to the executor of this transaction.
-        // 6. Future: First minter gets rewards
-
         // get or create the contract with the given params
+        // contract address is deterministic.
         (IZoraCreator1155 tokenContract, bool isNewContract) = _getOrCreateContract(contractConfig);
         address contractAddress = address(tokenContract);
 
-        // have the address setup the new token.  The signer must have permission to do this.
-        // (that role enforcement is expected to be in the tokenContract).
-        // the token contract will:
-
-        // * setup the token with the signer as the creator, and follow the creator rewards standard.
-        // * will revert if the token in the contract with the same uid already exists.
-        // * will make sure creator has admin rights to the token.
-        // * setup the token with the given token config.
-        // * return the new token id.
+        // pass the signature and the premint config to the token contract to create the token.
+        // The token contract will verify the signature and that the signer has permission to create a new token.
+        // and then create and setup the token using the given token config.
         newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature);
 
         // mint the initial x tokens for this new token id to the executor.
@@ -119,10 +106,14 @@ contract ZoraCreator1155PremintExecutor {
         tokenContract = IZoraCreator1155(newContractAddresss);
     }
 
+    /// Gets the deterministic contract address for the given contract creation config.
+    /// Contract address is generated deterministically from a hash based onthe contract uri, contract name,
+    /// contract admin, and the msg.sender, which is this contract's address.
     function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
         return factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
     }
 
+    /// Recovers the signer of the given premint config created against the specified zora1155 contract address.
     function recoverSigner(PremintConfig calldata premintConfig, address zor1155Address, bytes calldata signature) public view returns (address) {
         return ZoraCreator1155Attribution.recoverSigner(premintConfig, signature, zor1155Address, block.chainid);
     }
@@ -137,9 +128,9 @@ contract ZoraCreator1155PremintExecutor {
     }
 
     /// @notice Utility function to check if the signature is valid; i.e. the signature can be used to
-    /// mint a token with the given config.  If contract hasn't been created, then the signer
-    /// must match the contract admin on the premint config.
-    /// If it has been created, the signer must have permission to mint new tokens on the erc1155 contract.
+    /// mint a token with the given config.  If the contract hasn't been created, then the signer
+    /// must match the contract admin on the premint config. If it has been created, the signer
+    /// must have permission to create new tokens on the erc1155 contract.
     function isValidSignature(
         ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
