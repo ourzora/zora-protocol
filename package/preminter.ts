@@ -29,8 +29,12 @@ export const preminterTypedDataDefinition = ({
   const types = {
     CreatorAttribution: [
       { name: "tokenConfig", type: "TokenCreationConfig" },
+      // unique id scoped to the contract and token to create.
+      // ensure that a signature can be replaced, as long as the replacement
+      // has the same uid, and a newer version.
       { name: "uid", type: "uint32" },
       { name: "version", type: "uint32" },
+      // if this update should result in the signature being deleted.
       { name: "deleted", type: "bool" },
     ],
     TokenCreationConfig: [
