@@ -285,12 +285,7 @@ describe("ZoraCreator1155Preminter", () => {
         abi: preminterAbi,
         address: preminterAddress,
         functionName: "recoverSigner",
-        args: [
-          premintConfig,
-          contractAddress,
-          signedMessage,
-          BigInt(anvilChainId),
-        ],
+        args: [premintConfig, contractAddress, signedMessage],
       });
 
       expect(recoveredAddress).to.equal(creatorAccount);
@@ -349,7 +344,16 @@ describe("ZoraCreator1155Preminter", () => {
       });
 
       // get the premint status - it should not be minted
-      let tokenId: bigint;
+      let [contractCreated, tokenId] = await publicClient.readContract({
+        abi: preminterAbi,
+        address: preminterAddress,
+        functionName: "premintStatus",
+        args: [contractAddress, premintConfig.uid],
+      });
+
+      expect(contractCreated).toBe(false);
+      expect(tokenId).toBe(0n);
+
       // now have the collector execute the first signed message;
       // it should create the contract, the token,
       // and min the quantity to mint tokens to the collector
@@ -378,21 +382,21 @@ describe("ZoraCreator1155Preminter", () => {
       expect(receipt.status).toBe("success");
 
       // fetch the premint token id
-      let newTokenId = await publicClient.readContract({
-        abi: zoraCreator1155ImplABI,
-        address: contractAddress,
-        functionName: "delegatedTokenId",
-        args: [premintConfig.uid],
+      [contractCreated, tokenId] = await publicClient.readContract({
+        abi: preminterAbi,
+        address: preminterAddress,
+        functionName: "premintStatus",
+        args: [contractAddress, premintConfig.uid],
       });
 
-      expect(newTokenId).not.toBe(0n);
+      expect(tokenId).not.toBe(0n);
 
       // now use what was created, to get the balance from the created contract
       const tokenBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
         address: contractAddress,
         functionName: "balanceOf",
-        args: [collectorAccount, newTokenId],
+        args: [collectorAccount, tokenId],
       });
 
       // get token balance - should be amount that was created
@@ -447,11 +451,11 @@ describe("ZoraCreator1155Preminter", () => {
       ).toBe("success");
 
       // now premint status for the second mint, it should be minted
-      tokenId = await publicClient.readContract({
-        abi: zoraCreator1155ImplABI,
-        address: contractAddress,
-        functionName: "delegatedTokenId",
-        args: [premintConfig2.uid],
+      [, tokenId] = await publicClient.readContract({
+        abi: preminterAbi,
+        address: preminterAddress,
+        functionName: "premintStatus",
+        args: [contractAddress, premintConfig2.uid],
       });
 
       expect(tokenId).not.toBe(0n);
