@@ -9,6 +9,7 @@ import { describe, it, beforeEach, expect } from "vitest";
 import { parseEther } from "viem";
 import {
   zoraCreator1155PremintExecutorABI as preminterAbi,
+  zoraCreator1155PremintExecutorAddress,
   zoraCreator1155ImplABI,
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155FactoryImplConfig,
@@ -211,14 +212,15 @@ describe("ZoraCreator1155Preminter", () => {
 
     ctx.preminterAddress = preminterAddress;
   }, 20 * 1000);
-
   it<TestContext>(
-    "can sign for another chain",
-    async ({ preminterAddress: preminterAddress, fixedPriceMinterAddress }) => {
+    "can sign on the forked premint contract",
+    async ({ fixedPriceMinterAddress, forkedChainId }) => {
       const premintConfig = defaultPremintConfig(fixedPriceMinterAddress);
       const contractConfig = defaultContractConfig({
         contractAdmin: creatorAccount,
       });
+
+      const preminterAddress = zoraCreator1155PremintExecutorAddress[forkedChainId as keyof typeof zoraCreator1155PremintExecutorAddress] as Address;
 
       const contractAddress = await publicClient.readContract({
         abi: preminterAbi,
@@ -239,14 +241,10 @@ describe("ZoraCreator1155Preminter", () => {
       console.log({
         creatorAccount,
         signedMessage,
+        contractConfig,
         premintConfig,
-        contractAddress: await publicClient.readContract({
-          abi: preminterAbi,
-          address: preminterAddress,
-          functionName: "getContractAddress",
-          args: [contractConfig],
-        }),
-      });
+        contractAddress
+     });
     },
     20 * 1000
   );
@@ -293,7 +291,6 @@ describe("ZoraCreator1155Preminter", () => {
 
     20 * 1000
   );
-
   it<TestContext>(
     "can sign and mint multiple tokens",
     async ({
@@ -473,4 +470,5 @@ describe("ZoraCreator1155Preminter", () => {
     // 10 second timeout
     40 * 1000
   );
+    
 });
