@@ -16,7 +16,7 @@ import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155F
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
-/// @notice v1.4.1 will not support burn to redeem
+/// @notice Contract versions after v1.4.0 will not support burn to redeem
 // contract ZoraCreatorRedeemMinterFactoryTest is Test {
 //     ProtocolRewards internal protocolRewards;
 //     ZoraCreator1155Impl internal target;
