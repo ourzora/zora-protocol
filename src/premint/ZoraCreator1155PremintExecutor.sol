@@ -46,6 +46,11 @@ contract ZoraCreator1155PremintExecutor {
     /// The creator must sign the intent to create the token, and must have mint new token permission on the erc1155 contract,
     /// or match the contract admin on the contract creation config if the contract hasn't been created yet.
     /// Contract address of the created contract is deterministically generated from the contract config and this contract's address.
+    /// @param contractConfig Parameters for creating a new contract, if one doesn't exist yet.  Used to resolve the deterministic contract address.
+    /// @param premintConfig Parameters for creating the token, and minting the initial x tokens to the executor.
+    /// @param signature Signature of the creator of the token, which must match the signer of the premint config, or have permission to create new tokens on the erc1155 contract if it's already been created
+    /// @param quantityToMint How many tokens to mint to the executor of this transaction once the token is created
+    /// @param mintComment A comment to associate with the mint action
     function premint(
         ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
