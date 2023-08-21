@@ -12,15 +12,15 @@ if (new token) then (yes)
     else (no)
     endif
   else (no)
-    :load existing\ncontract creation parameters\nby hash id;
+    :load existing\ncontract creation parameters\nby collection address;
   endif
   :Get new uid\nfrom backend server;
 else (no)
-  :load existing\ncontract + token creation parameters\nby contract hash + uid;
+  :load existing\ncontract + token creation parameters\nby collection address + uid;
 endif
 :Ask creator for new\ntoken creation params;
-:Request signature with:\ncontract + token params + uid;
-:Submit to backend server:\ncontract + token params + uid + signature\n;
+:Request signature with:\ncollection address + token params + uid;
+:Submit to backend server:\ncollection + token params + uid + signature\n;
 
 stop
 
