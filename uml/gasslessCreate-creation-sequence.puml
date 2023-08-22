@@ -5,6 +5,7 @@ title Creating a signature for a new erc1155 contract + token
 actor Creator
 entity CreatePage
 boundary SignatureAPI
+boundary PremintContract
 entity SignatureDB
 
 
@@ -20,22 +21,31 @@ end
 
 Group Signature has been created for contract
 
-  Creator -> CreatePage: load page by contract hash
-  CreatePage -> SignatureAPI: load contract creation params
-  SignatureAPI -> SignatureDB: fetch contract creation params\nby hash
+  Creator -> CreatePage: load page by determinstic collection address 
+  CreatePage -> SignatureAPI: load collection creation params
+  SignatureAPI -> SignatureDB: fetch collection creation params\nby hash
   SignatureAPI --> CreatePage: contract creation params
 
 end
 
 Creator -> CreatePage: setup new token
-Creator -> CreatePage: submit contract & token creation params
-CreatePage -> SignatureAPI: get new uid for token
-SignatureAPI -> SignatureDB: get next token uid\nscoped to contract hash
+CreatePage -> PremintContract: get determnistic collection address
+PremintContract --> CreatePage: determinstic collection address
+CreatePage -> SignatureAPI: get new uid for collection address
+SignatureAPI -> SignatureDB: get next token uid\nscoped to collection address
 SignatureDB --> SignatureAPI: next token uid
 SignatureAPI --> CreatePage: next token uid
+Creator -> CreatePage: Submit new token creation params
 CreatePage -> Creator: request signature of\n contract + token creation params + token uid 
 deactivate CreatePage
 Creator -> SignatureAPI: Submit signature + contract + token params + token uid
-SignatureAPI -> SignatureDB: store signature + \ncontract creation + \ntoken creation params +\ntoken uid
+SignatureAPI -> PremintContract: validate signature
+PremintContract --> SignatureAPI: validation results (true/false & recovered signer)
+
+Group Signature is valid
+
+  SignatureAPI -> SignatureDB: store signature + \ncontract creation + \ntoken creation params + \ncollection address + \ntoken uid
+
+end
 
 @enduml
