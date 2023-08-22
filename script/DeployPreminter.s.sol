@@ -18,7 +18,7 @@ import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
-import {ZoraCreator1155Preminter} from "../src/premint/ZoraCreator1155Preminter.sol";
+import {ZoraCreator1155PremintExecutor} from "../src/premint/ZoraCreator1155PremintExecutor.sol";
 
 contract DeployPreminter is ZoraDeployerBase {
     function run() public returns (string memory) {
@@ -26,12 +26,50 @@ contract DeployPreminter is ZoraDeployerBase {
 
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
 
-        ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
+        // bool deployFactory = vm.envBool("DEPLOY_FACTORY");
+        bool deployFactory = vm.envBool("DEPLOY_FACTORY");
 
+        IZoraCreator1155Factory factoryProxy;
         vm.startBroadcast(deployerPrivateKey);
 
-        ZoraCreator1155Preminter preminter = new ZoraCreator1155Preminter();
-        preminter.initialize(factory);
+        if (deployFactory) {
+            address deployer = vm.envAddress("DEPLOYER");
+            address factoryShimAddress = address(new ProxyShim(deployer));
+            ChainConfig memory chainConfig = getChainConfig();
+
+            factoryProxy = IZoraCreator1155Factory(address(new Zora1155Factory(factoryShimAddress, "")));
+
+            deployment.factoryProxy = address(factoryProxy);
+
+            ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(
+                chainConfig.mintFeeAmount,
+                chainConfig.mintFeeRecipient,
+                address(factoryProxy),
+                chainConfig.protocolRewards
+            );
+
+            deployment.contract1155Impl = address(creatorImpl);
+
+            ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
+                _implementation: creatorImpl,
+                _merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
+                _redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
+                _fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
+            });
+
+            // Upgrade to "real" factory address
+            ZoraCreator1155FactoryImpl(address(factoryProxy)).upgradeTo(address(factoryImpl));
+            ZoraCreator1155FactoryImpl(address(factoryProxy)).initialize(chainConfig.factoryOwner);
+
+            deployment.factoryImpl = address(factoryImpl);
+        } else {
+            factoryProxy = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
+        }
+
+        console.log("!!!factory proxy!!!");
+        // console.log(factoryProxy);
+
+        ZoraCreator1155PremintExecutor preminter = new ZoraCreator1155PremintExecutor(factoryProxy);
 
         vm.stopBroadcast();
 
