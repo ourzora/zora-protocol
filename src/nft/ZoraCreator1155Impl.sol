@@ -31,6 +31,7 @@ import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
+import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../premint/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -721,5 +722,47 @@ contract ZoraCreator1155Impl is
         if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
+    }
+
+    /* start eip712 functionality */
+    mapping(uint32 => uint256) public delegatedTokenId;
+
+    event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, bytes signature);
+
+    error PremintAlreadyExecuted();
+
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
+        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.validateAndHashPremint(premintConfig);
+
+        // this is what attributes this token to have been created by the original creator
+        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, signature);
+
+        // recover the signer from the data
+        address recoveredSigner = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
+
+        // require that the signer can create new tokens (is a valid creator)
+        _requireAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+
+        // check that uid hasn't been used
+        if (delegatedTokenId[premintConfig.uid] != 0) {
+            revert PremintAlreadyExecuted();
+        }
+
+        // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
+        newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
+
+        delegatedTokenId[premintConfig.uid] = newTokenId;
+
+        // invoke setup actions for new token, to save contract size, first get them from an external lib
+        bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, recoveredSigner, premintConfig.tokenConfig);
+
+        // then invoke them, calling account should be original msg.sender, which has admin on the new token
+        _multicallInternal(tokenSetupActions);
+
+        // remove the token creator as admin of the newly created token:
+        _removePermission(newTokenId, msg.sender, PERMISSION_BIT_ADMIN);
+
+        // grant the token creator as admin of the newly created token
+        _addPermission(newTokenId, recoveredSigner, PERMISSION_BIT_ADMIN);
     }
 }
