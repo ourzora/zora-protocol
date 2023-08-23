@@ -222,7 +222,9 @@ describe("ZoraCreator1155Preminter", () => {
         contractAdmin: creatorAccount,
       });
 
-      const preminterAddress = zoraCreator1155PremintExecutorAddress[forkedChainId as keyof typeof zoraCreator1155PremintExecutorAddress] as Address;
+      const preminterAddress = zoraCreator1155PremintExecutorAddress[
+        forkedChainId as keyof typeof zoraCreator1155PremintExecutorAddress
+      ] as Address;
 
       const contractAddress = await publicClient.readContract({
         abi: preminterAbi,
@@ -245,8 +247,8 @@ describe("ZoraCreator1155Preminter", () => {
         signedMessage,
         contractConfig,
         premintConfig,
-        contractAddress
-     });
+        contractAddress,
+      });
     },
     20 * 1000
   );
@@ -472,5 +474,4 @@ describe("ZoraCreator1155Preminter", () => {
     // 10 second timeout
     40 * 1000
   );
-    
 });
