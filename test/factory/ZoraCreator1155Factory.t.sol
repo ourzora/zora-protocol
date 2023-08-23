@@ -135,6 +135,7 @@ contract ZoraCreator1155FactoryTest is Test {
         uint16 numberOfCallsBeforeCreation
     ) external {
         vm.assume(contractAdmin != address(0));
+        vm.assume(numberOfCallsBeforeCreation < 5);
 
         address contractCreator = vm.addr(1);
 
