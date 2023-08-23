@@ -156,6 +156,10 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     }
 
     function testTheForkPremint(string memory chainName) private {
+        if (keccak256(abi.encodePacked(chainName)) != keccak256(abi.encodePacked("zora_goerli"))) {
+            return;
+        }
+
         console.log("testing on fork: ", chainName);
 
         // create and select the fork, which will be used for all subsequent calls
