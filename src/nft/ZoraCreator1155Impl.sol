@@ -732,6 +732,12 @@ contract ZoraCreator1155Impl is
     error PremintAlreadyExecuted();
 
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
+        // if a token has already been created for a premint config with this uid:
+        if (delegatedTokenId[premintConfig.uid] != 0) {
+            // return its token id
+            return delegatedTokenId[premintConfig.uid];
+        }
+
         bytes32 hashedPremintConfig = ZoraCreator1155Attribution.validateAndHashPremint(premintConfig);
 
         // this is what attributes this token to have been created by the original creator
@@ -742,11 +748,6 @@ contract ZoraCreator1155Impl is
 
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
-
-        // check that uid hasn't been used
-        if (delegatedTokenId[premintConfig.uid] != 0) {
-            revert PremintAlreadyExecuted();
-        }
 
         // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
         newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
