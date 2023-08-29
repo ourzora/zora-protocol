@@ -16,7 +16,7 @@ import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1
 /// Mints the first x tokens to the executor of the transaction.
 /// @author @oveddan
 contract ZoraCreator1155PremintExecutor {
-    IZoraCreator1155Factory factory;
+    IZoraCreator1155Factory public immutable zora1155Factory;
 
     /// @notice copied from SharedBaseConstants
     uint256 constant CONTRACT_BASE_ID = 0;
@@ -27,7 +27,7 @@ contract ZoraCreator1155PremintExecutor {
     error InvalidSignature();
 
     constructor(IZoraCreator1155Factory _factory) {
-        factory = _factory;
+        zora1155Factory = _factory;
     }
 
     event Preminted(
@@ -61,25 +61,21 @@ contract ZoraCreator1155PremintExecutor {
         // get or create the contract with the given params
         // contract address is deterministic.
         (IZoraCreator1155 tokenContract, bool isNewContract) = _getOrCreateContract(contractConfig);
-        address contractAddress = address(tokenContract);
 
         // pass the signature and the premint config to the token contract to create the token.
         // The token contract will verify the signature and that the signer has permission to create a new token.
         // and then create and setup the token using the given token config.
         newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature);
 
-        // mint the initial x tokens for this new token id to the executor.
-        address tokenRecipient = msg.sender;
-
         tokenContract.mint{value: msg.value}(
             IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
             newTokenId,
             quantityToMint,
-            abi.encode(tokenRecipient, mintComment)
+            abi.encode(msg.sender, mintComment)
         );
 
         // emit Preminted event
-        emit Preminted(contractAddress, newTokenId, isNewContract, premintConfig.uid, contractConfig, premintConfig.tokenConfig, msg.sender, quantityToMint);
+        emit Preminted(address(tokenContract), newTokenId, isNewContract, premintConfig.uid, contractConfig, premintConfig.tokenConfig, msg.sender, quantityToMint);
     }
 
     function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract, bool isNewContract) {
@@ -100,7 +96,7 @@ contract ZoraCreator1155PremintExecutor {
         bytes[] memory setupActions = new bytes[](0);
 
         // create the contract via the factory.
-        address newContractAddresss = factory.createContractDeterministic(
+        address newContractAddresss = zora1155Factory.createContractDeterministic(
             contractConfig.contractURI,
             contractConfig.contractName,
             // default royalty config is empty, since we set it on a token level
@@ -115,7 +111,7 @@ contract ZoraCreator1155PremintExecutor {
     /// Contract address is generated deterministically from a hash based onthe contract uri, contract name,
     /// contract admin, and the msg.sender, which is this contract's address.
     function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
-        return factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
+        return zora1155Factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
     }
 
     /// Recovers the signer of the given premint config created against the specified zora1155 contract address.
