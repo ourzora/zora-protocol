@@ -12,16 +12,32 @@ import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
+import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
-    ZoraCreator1155FactoryImpl internal factory;
     address internal zora;
+    uint256 internal mintFeeAmount;
+
+    ZoraCreator1155FactoryImpl internal factoryImpl;
+    ZoraCreator1155FactoryImpl internal factory;
 
     function setUp() external {
         zora = makeAddr("zora");
+        mintFeeAmount = 0.000777 ether;
+
+        address factoryShimAddress = address(new ProxyShim(zora));
+        Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
+
         ProtocolRewards protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
-        factory = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(protocolRewards));
+
+        factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
+        factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
+
+        vm.startPrank(zora);
+        factory.upgradeTo(address(factoryImpl));
+        factory.initialize(zora);
+        vm.stopPrank();
     }
 
     function test_contractVersion() external {
@@ -39,7 +55,7 @@ contract ZoraCreator1155FactoryTest is Test {
     function test_initialize(address initialOwner) external {
         vm.assume(initialOwner != address(0));
         address payable proxyAddress = payable(
-            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(new Zora1155Factory(address(factoryImpl), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         assertEq(proxy.owner(), initialOwner);
@@ -104,7 +120,7 @@ contract ZoraCreator1155FactoryTest is Test {
         );
 
         address payable proxyAddress = payable(
-            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(new Zora1155Factory(address(factoryImpl), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         vm.prank(initialOwner);
@@ -118,7 +134,7 @@ contract ZoraCreator1155FactoryTest is Test {
         MockContractMetadata mockContractMetadata = new MockContractMetadata("ipfs://asdfadsf", "name");
 
         address payable proxyAddress = payable(
-            address(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
+            address(new Zora1155Factory(address(factoryImpl), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, initialOwner)))
         );
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         vm.prank(initialOwner);
@@ -126,7 +142,7 @@ contract ZoraCreator1155FactoryTest is Test {
         proxy.upgradeTo(address(mockContractMetadata));
     }
 
-    function test_createContractDeterminisitc_createsContractAtSameAddressForNameAndUri(
+    function test_createContractDeterministic_createsContractAtSameAddressForNameAndUri(
         string calldata nameA,
         string calldata uri,
         address contractAdmin,
@@ -167,27 +183,18 @@ contract ZoraCreator1155FactoryTest is Test {
         string memory uri = "ipfs://asdfadsf";
         string memory nameA = "nameA";
         address contractAdmin = vm.addr(1);
-
-        address factoryOwner = vm.addr(10);
-
         // account that creates the contract (not necessarily the owner/admin)
         address contractCreator = vm.addr(2);
 
-        // 1. create the proxy, pointing it to the factory implentation and setting the owner
-        ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(
-            payable(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, factoryOwner)))
-        );
-
-        // get the deterministic address of the contract before its created
-        address expectedContractAddress = proxy.deterministicContractAddress(contractCreator, uri, nameA, contractAdmin);
-
-        uint256 newMintFeeAmount = 1 ether;
+        // 1. get the deterministic address of the contract before its created, from the existing factory proxy
+        address expectedContractAddress = factory.deterministicContractAddress(contractCreator, uri, nameA, contractAdmin);
 
         // 2. update the erc1155 implementation:
         // * create a new version of the erc1155 implementation
         // * create a new factory that points to that new erc1155 implementation,
         // * upgrade the proxy to point to the new factory
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, address(0), address(0), address(new ProtocolRewards()));
+        uint256 newMintFeeAmount = 0.000888 ether;
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, zora, address(factory), address(new ProtocolRewards()));
 
         ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(
             newZoraCreator,
@@ -196,11 +203,11 @@ contract ZoraCreator1155FactoryTest is Test {
             IMinter1155(address(0))
         );
 
-        vm.prank(factoryOwner);
-        proxy.upgradeTo(address(newFactoryImpl));
+        vm.prank(zora);
+        factory.upgradeTo(address(newFactoryImpl));
 
         // sanity check - make sure that the proxy erc1155 implementation is pointing to the new implementation
-        assertEq(address(proxy.implementation()), address(newZoraCreator));
+        assertEq(address(factory.implementation()), address(newZoraCreator));
 
         // 3. Create a contract with a deterministic address, it should match the address from before the upgrade
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
@@ -213,7 +220,7 @@ contract ZoraCreator1155FactoryTest is Test {
 
         // now create deterministically, address should match expected address
         vm.prank(contractCreator);
-        address createdAddress = proxy.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
+        address createdAddress = factory.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
 
         assertEq(createdAddress, expectedContractAddress);
     }
@@ -238,8 +245,14 @@ contract ZoraCreator1155FactoryTest is Test {
         ZoraCreator1155Impl creatorProxy = ZoraCreator1155Impl(createdAddress);
 
         // 2. upgrade the created contract by creating a new contract and upgrading the existing one to point to it.
-        uint256 newMintFeeAmount = 1 ether;
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, address(0), address(0), address(new ProtocolRewards()));
+        uint256 newMintFeeAmount = 0.000888 ether;
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, zora, address(0), address(new ProtocolRewards()));
+
+        address[] memory baseImpls = new address[](1);
+        baseImpls[0] = address(factory.implementation());
+
+        vm.prank(zora);
+        factory.registerUpgradePath(baseImpls, address(newZoraCreator));
 
         vm.prank(creatorProxy.owner());
         creatorProxy.upgradeTo(address(newZoraCreator));
