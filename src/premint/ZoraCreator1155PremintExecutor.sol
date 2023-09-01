@@ -75,7 +75,16 @@ contract ZoraCreator1155PremintExecutor {
         );
 
         // emit Preminted event
-        emit Preminted(address(tokenContract), newTokenId, isNewContract, premintConfig.uid, contractConfig, premintConfig.tokenConfig, msg.sender, quantityToMint);
+        emit Preminted(
+            address(tokenContract),
+            newTokenId,
+            isNewContract,
+            premintConfig.uid,
+            contractConfig,
+            premintConfig.tokenConfig,
+            msg.sender,
+            quantityToMint
+        );
     }
 
     function _getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (IZoraCreator1155 tokenContract, bool isNewContract) {
@@ -111,7 +120,8 @@ contract ZoraCreator1155PremintExecutor {
     /// Contract address is generated deterministically from a hash based onthe contract uri, contract name,
     /// contract admin, and the msg.sender, which is this contract's address.
     function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
-        return zora1155Factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
+        return
+            zora1155Factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
     }
 
     /// Recovers the signer of the given premint config created against the specified zora1155 contract address.
