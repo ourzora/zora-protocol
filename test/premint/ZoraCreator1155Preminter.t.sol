@@ -156,17 +156,6 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
     }
 
-    // function testMintsTokensToConsecutiveExecutor(uint256 numTokens) public {
-    //     ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-    //     PremintConfig memory premintConfig = makeDefaultPremintConfig();
-
-    //     vm.prank(collector);
-    //     uint256 shouldBeSameTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
-
-    //     assertEq(tokenId, shouldBeSameTokenId);
-    //     assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
-    // }
-
     /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
     /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
     function getForkTestChains() private view returns (string[] memory result) {
@@ -263,14 +252,14 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
 
         uint256 mintCost = mintFeeAmount * quantityToMint;
         vm.deal(collector, mintCost);
-        
-        uint256 returnedTokenId;
+
+        uint256 nextTokenId;
 
         vm.startPrank(collector);
         // premint with new token config and signature, but same uid - it should mint tokens for the first token
-        returnedTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
+        nextTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
 
-        assertEq(returnedTokenId, firstTokenId);
+        assertEq(nextTokenId, firstTokenId);
         assertEq(created1155Contract.balanceOf(collector, firstTokenId), quantityToMint);
 
         // change the version, it should still point to the first token
@@ -280,18 +269,38 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         vm.deal(collector, mintCost);
 
         // premint with new token config and signature - it should mint tokens for the first token
-        returnedTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
+        nextTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
         vm.stopPrank();
 
-        assertEq(returnedTokenId, firstTokenId);
-        assertEq(created1155Contract.balanceOf(collector, firstTokenId), quantityToMint*2);
+        assertEq(nextTokenId, firstTokenId);
+        assertEq(created1155Contract.balanceOf(collector, firstTokenId), quantityToMint * 2);
+    }
+
+    function testCreateTokenPerUid() public {
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
+
+        uint256 quantityToMint = 2;
+        uint256 chainId = block.chainid;
+        string memory comment = "I love it";
+
+        address contractAddress = preminter.getContractAddress(contractConfig);
+
+        uint256 firstTokenId = _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, chainId, premintExecutor, quantityToMint, comment);
 
         // creator signs a new uid, it should create a new token
         premintConfig.uid++;
-        signature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, chainId);
+        bytes memory signature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, chainId);
 
-        // preminter.premint(contractConfig, premintConfig, signature, quantityToMint, comment);
+        uint256 mintCost = mintFeeAmount * quantityToMint;
+        vm.deal(collector, mintCost);
 
+        vm.startPrank(collector);
+        // premint with new token config and signature, but same uid - it should mint tokens for the first token
+        uint256 nextTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
+
+        assertEq(firstTokenId, 1);
+        assertEq(nextTokenId, 2);
     }
 
     function test_deleted_preventsTokenFromBeingMinted() external {
