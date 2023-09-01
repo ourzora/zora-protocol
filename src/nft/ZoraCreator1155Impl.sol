@@ -422,12 +422,6 @@ contract ZoraCreator1155Impl is
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
-    /// @notice Get the creator reward recipient address
-    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
-    function getCreatorRewardRecipient() public view returns (address payable) {
-        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
-    }
-
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, a finder, and a origin
     /// @param minter The minter contract to use
     /// @param tokenId The token ID to mint
@@ -444,13 +438,36 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
+        _handleFirstMinter(tokenId, minterArguments);
+
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, getCreatorRewardRecipient(), createReferrals[tokenId], mintReferral);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(
+            msg.value,
+            quantity,
+            getCreatorRewardRecipient(),
+            createReferrals[tokenId],
+            mintReferral,
+            firstMinters[tokenId]
+        );
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
+    }
+
+    function _handleFirstMinter(uint256 tokenId, bytes calldata data) internal {
+        if (firstMinters[tokenId] == address(0)) {
+            address rewardRecipient = abi.decode(data, (address));
+
+            firstMinters[tokenId] = rewardRecipient;
+        }
+    }
+
+    /// @notice Get the creator reward recipient address
+    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
+    function getCreatorRewardRecipient() public view returns (address payable) {
+        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
     }
 
     /// @notice Set a metadata renderer for a token
