@@ -26,7 +26,6 @@ import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
 import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
-import {MintFeeManager} from "../fee/MintFeeManager.sol";
 import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
@@ -44,7 +43,6 @@ contract ZoraCreator1155Impl is
     ReentrancyGuardUpgradeable,
     PublicMulticall,
     ERC1155Upgradeable,
-    MintFeeManager,
     UUPSUpgradeable,
     CreatorRendererControl,
     LegacyNamingControl,
@@ -69,11 +67,11 @@ contract ZoraCreator1155Impl is
     IFactoryManagedUpgradeGate internal immutable factory;
 
     constructor(
-        uint256 _mintFeeAmount,
+        uint256, // TODO remove 
         address _mintFeeRecipient,
         address _factory,
         address _protocolRewards
-    ) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
+    ) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
         factory = IFactoryManagedUpgradeGate(_factory);
     }
 
@@ -413,19 +411,22 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
+        _handleFirstMinter(tokenId, minterArguments);
+
         // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleFeeAndGetValueSent(quantity);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(
+            msg.value,
+            quantity,
+            getCreatorRewardRecipient(),
+            createReferrals[tokenId],
+            address(0),
+            firstMinters[tokenId]
+        );
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
-    }
-
-    /// @notice Get the creator reward recipient address
-    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
-    function getCreatorRewardRecipient() public view returns (address payable) {
-        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
     }
 
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, a finder, and a origin
@@ -444,13 +445,36 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
+        _handleFirstMinter(tokenId, minterArguments);
+
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, getCreatorRewardRecipient(), createReferrals[tokenId], mintReferral);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(
+            msg.value,
+            quantity,
+            getCreatorRewardRecipient(),
+            createReferrals[tokenId],
+            mintReferral,
+            firstMinters[tokenId]
+        );
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
+    }
+
+    function _handleFirstMinter(uint256 tokenId, bytes calldata data) internal {
+        if (firstMinters[tokenId] == address(0)) {
+            address rewardRecipient = abi.decode(data, (address));
+
+            firstMinters[tokenId] = rewardRecipient;
+        }
+    }
+
+    /// @notice Get the creator reward recipient address
+    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
+    function getCreatorRewardRecipient() public view returns (address payable) {
+        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
     }
 
     /// @notice Set a metadata renderer for a token
