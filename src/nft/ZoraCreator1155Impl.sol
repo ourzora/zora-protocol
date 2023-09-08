@@ -31,7 +31,8 @@ import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
-import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../premint/ZoraCreator1155Attribution.sol";
+import {IZoraCreator1155DelegatedCreation} from "../premint/ZoraCreator1155DelegatedCreation.sol";
+import {PremintTokenSetup, PremintConfig} from "../premint/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -67,14 +68,18 @@ contract ZoraCreator1155Impl is
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
     /// @notice Factory contract
     IFactoryManagedUpgradeGate internal immutable factory;
+    /// @notice Attribution contract
+    IZoraCreator1155DelegatedCreation internal immutable delegator;
 
     constructor(
         uint256 _mintFeeAmount,
         address _mintFeeRecipient,
         address _factory,
-        address _protocolRewards
+        address _protocolRewards,
+        IZoraCreator1155DelegatedCreation _delegator
     ) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
         factory = IFactoryManagedUpgradeGate(_factory);
+        delegator = _delegator;
     }
 
     /// @notice Initializes the contract
@@ -738,13 +743,13 @@ contract ZoraCreator1155Impl is
             return delegatedTokenId[premintConfig.uid];
         }
 
-        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.validateAndHashPremint(premintConfig);
+        bytes32 hashedPremintConfig = delegator.validateAndHashPremint(premintConfig);
 
         // this is what attributes this token to have been created by the original creator
-        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, signature);
+        emit CreatorAttribution(hashedPremintConfig, delegator.HASHED_NAME(), delegator.HASHED_VERSION(), signature);
 
         // recover the signer from the data
-        address recoveredSigner = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
+        address recoveredSigner = delegator.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
 
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);

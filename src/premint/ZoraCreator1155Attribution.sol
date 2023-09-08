@@ -94,7 +94,7 @@ library ZoraCreator1155Attribution {
         bytes calldata signature,
         address erc1155Contract,
         uint256 chainId
-    ) public pure returns (address signatory) {
+    ) internal pure returns (address signatory) {
         // first validate the signature - the creator must match the signer of the message
         bytes32 digest = _hashTypedDataV4(
             hashedPremintConfig,
@@ -111,7 +111,7 @@ library ZoraCreator1155Attribution {
     /// can be verified on a different chain.
     /// @param erc1155Contract Contract address that signature is to be verified against
     /// @param chainId Chain id that signature is to be verified on
-    function premintHashedTypeDataV4(PremintConfig calldata premintConfig, address erc1155Contract, uint256 chainId) external pure returns (bytes32) {
+    function premintHashedTypeDataV4(PremintConfig calldata premintConfig, address erc1155Contract, uint256 chainId) internal pure returns (bytes32) {
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
         return _hashTypedDataV4(hashPremint(premintConfig), erc1155Contract, chainId);
@@ -159,7 +159,7 @@ library ZoraCreator1155Attribution {
     error MintNotYetStarted();
     error PremintDeleted();
 
-    function validateAndHashPremint(PremintConfig calldata premintConfig) external view returns (bytes32) {
+    function validateAndHashPremint(PremintConfig calldata premintConfig) internal view returns (bytes32) {
         if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
             // if the mint start is in the future, then revert
             revert MintNotYetStarted();
