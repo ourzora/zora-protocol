@@ -727,7 +727,7 @@ contract ZoraCreator1155Impl is
     /* start eip712 functionality */
     mapping(uint32 => uint256) public delegatedTokenId;
 
-    event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, bytes signature);
+    event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, address creator, bytes signature);
 
     error PremintAlreadyExecuted();
 
@@ -740,14 +740,14 @@ contract ZoraCreator1155Impl is
 
         bytes32 hashedPremintConfig = ZoraCreator1155Attribution.validateAndHashPremint(premintConfig);
 
-        // this is what attributes this token to have been created by the original creator
-        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, signature);
-
         // recover the signer from the data
-        address recoveredSigner = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
+        address creator = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
+
+        // this is what attributes this token to have been created by the original creator
+        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, creator, signature);
 
         // require that the signer can create new tokens (is a valid creator)
-        _requireAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+        _requireAdminOrRole(creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
         newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
@@ -755,7 +755,7 @@ contract ZoraCreator1155Impl is
         delegatedTokenId[premintConfig.uid] = newTokenId;
 
         // invoke setup actions for new token, to save contract size, first get them from an external lib
-        bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, recoveredSigner, premintConfig.tokenConfig);
+        bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, creator, premintConfig.tokenConfig);
 
         // then invoke them, calling account should be original msg.sender, which has admin on the new token
         _multicallInternal(tokenSetupActions);
@@ -764,6 +764,6 @@ contract ZoraCreator1155Impl is
         _removePermission(newTokenId, msg.sender, PERMISSION_BIT_ADMIN);
 
         // grant the token creator as admin of the newly created token
-        _addPermission(newTokenId, recoveredSigner, PERMISSION_BIT_ADMIN);
+        _addPermission(newTokenId, creator, PERMISSION_BIT_ADMIN);
     }
 }
