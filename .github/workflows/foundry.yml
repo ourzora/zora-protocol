@@ -1,0 +1,117 @@
+name: Foundry
+
+on: push
+
+jobs:
+  build:
+    name: Build and cache
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Build contracts
+        run: |
+          forge build
+
+      - name: Archive built artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: foundry-built-artifacts
+          path: |
+            cache
+            out
+          retention-days: 1
+
+  contract_size_check:
+    needs: build
+    strategy:
+      fail-fast: true
+
+    name: Contract Size Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Download foundry artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: foundry-built-artifacts
+
+      - name: Check contract sizes
+        run: |
+          forge build --sizes
+
+  test:
+    needs: build
+    strategy:
+      fail-fast: true
+
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Download foundry artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: foundry-built-artifacts
+
+      - name: Run Forge tests
+        run: |
+          forge test -vvv
+
+  test_fork:
+    needs: build
+    strategy:
+      fail-fast: true
+
+    name: Fork Tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Download foundry artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: foundry-built-artifacts
+
+      - name: Run fork tests
+        run: |
+          forge test -vvv --match-test fork
+        env:
+          FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli,base
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+  storage_layout:
+    needs: build
+    strategy:
+      fail-fast: true
+
+    name: Inpect storage layout
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Download foundry artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: foundry-built-artifacts
+
+      - name: "Inspect Storage Layout"
+        continue-on-error: false
+        run: yarn run storage-inspect:check
