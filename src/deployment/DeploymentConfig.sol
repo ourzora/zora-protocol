@@ -84,7 +84,7 @@ abstract contract DeploymentConfig is CommonBase {
         deployment.merkleMintSaleStrategy = json.readAddress(getKeyPrefix(MERKLE_MINT_SALE_STRATEGY));
         deployment.redeemMinterFactory = json.readAddress(getKeyPrefix(REDEEM_MINTER_FACTORY));
         deployment.contract1155Impl = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL));
-        deployment.contract1155ImplVersion = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL_VERSION));
+        deployment.contract1155ImplVersion = json.readString(getKeyPrefix(CONTRACT_1155_IMPL_VERSION));
         deployment.factoryImpl = json.readAddress(getKeyPrefix(FACTORY_IMPL));
         deployment.factoryProxy = json.readAddress(getKeyPrefix(FACTORY_PROXY));
     }
