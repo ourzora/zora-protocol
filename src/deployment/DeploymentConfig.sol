@@ -55,7 +55,7 @@ abstract contract DeploymentConfig is CommonBase {
     string constant MERKLE_MINT_SALE_STRATEGY = "MERKLE_MINT_SALE_STRATEGY";
     string constant REDEEM_MINTER_FACTORY = "REDEEM_MINTER_FACTORY";
     string constant CONTRACT_1155_IMPL = "CONTRACT_1155_IMPL";
-    string constant CONTRACT_1155_IMPl_VERSION = "CONTRACT_1155_IMPl_VERSION";
+    string constant CONTRACT_1155_IMPL_VERSION = "CONTRACT_1155_IMPL_VERSION";
     string constant FACTORY_IMPL = "FACTORY_IMPL";
     string constant FACTORY_PROXY = "FACTORY_PROXY";
 
@@ -84,7 +84,7 @@ abstract contract DeploymentConfig is CommonBase {
         deployment.merkleMintSaleStrategy = json.readAddress(getKeyPrefix(MERKLE_MINT_SALE_STRATEGY));
         deployment.redeemMinterFactory = json.readAddress(getKeyPrefix(REDEEM_MINTER_FACTORY));
         deployment.contract1155Impl = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL));
-        deployment.contract1155ImplVersion = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPl_VERSION));
+        deployment.contract1155ImplVersion = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL_VERSION));
         deployment.factoryImpl = json.readAddress(getKeyPrefix(FACTORY_IMPL));
         deployment.factoryProxy = json.readAddress(getKeyPrefix(FACTORY_PROXY));
     }
