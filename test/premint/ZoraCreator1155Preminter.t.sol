@@ -21,6 +21,7 @@ import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/premint/ZoraCreator1155Attribution.sol";
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
+import {ZoraCreator1155DelegatedCreation, IZoraCreator1155DelegatedCreation} from "../../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     uint256 internal constant CONTRACT_BASE_ID = 0;
@@ -39,6 +40,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     address internal zora;
     address internal premintExecutor;
     address internal collector;
+    IZoraCreator1155DelegatedCreation delegatedCreation;
 
     event Preminted(
         address indexed contractAddress,
@@ -62,7 +64,8 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         address factoryShimAddress = address(new ProxyShim(zora));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
         ProtocolRewards rewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(rewards));
+        delegatedCreation = new ZoraCreator1155DelegatedCreation();
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(rewards), delegatedCreation);
         ZoraCreatorFixedPriceSaleStrategy fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), fixedPriceMinter, IMinter1155(address(3)));
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -117,7 +120,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
+        bytes32 digest = delegatedCreation.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -142,7 +145,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         premintConfig.tokenConfig.tokenURI = "blah2.token";
         premintConfig.uid++;
 
-        digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
+        digest = delegatedCreation.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         vm.deal(premintExecutor, mintCost);
@@ -203,7 +206,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
+        bytes32 digest = delegatedCreation.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -657,6 +660,10 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         preminter.premint{value: mintCost}(contractConfig, premintConfig2, newCreatorSignature, quantityToMint, "yo");
     }
 
+    // function premintHashedTypeDataV4(PremintConfig calldata premintConfig, address erc1155Contract, uint256 chainId) public pure returns (bytes32) {
+    //     return ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, erc1155Contract, chainId);
+    // }
+
     function _signAndExecutePremint(
         ContractCreationConfig memory contractConfig,
         PremintConfig memory premintConfig,
@@ -681,8 +688,8 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         PremintConfig memory premintConfig,
         uint256 privateKey,
         uint256 chainId
-    ) private pure returns (bytes memory) {
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
+    ) private view returns (bytes memory) {
+        bytes32 digest = delegatedCreation.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params

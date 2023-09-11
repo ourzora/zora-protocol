@@ -18,6 +18,7 @@ import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ZoraCreator1155DelegatedCreation} from "../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract DeployScript is ZoraDeployerBase {
     function run() public returns (string memory) {
@@ -36,6 +37,7 @@ contract DeployScript is ZoraDeployerBase {
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
         ZoraCreatorRedeemMinterFactory redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
+        ZoraCreator1155DelegatedCreation delegatedCreation = new ZoraCreator1155DelegatedCreation();
 
         deployment.fixedPriceSaleStrategy = address(fixedPricedMinter);
         deployment.merkleMintSaleStrategy = address(merkleMinter);
@@ -46,8 +48,13 @@ contract DeployScript is ZoraDeployerBase {
 
         deployment.factoryProxy = address(factoryProxy);
 
-        ZoraCreator1155Impl creatorImpl =
-        new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, address(factoryProxy), chainConfig.protocolRewards);
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(
+            chainConfig.mintFeeAmount,
+            chainConfig.mintFeeRecipient,
+            address(factoryProxy),
+            chainConfig.protocolRewards,
+            delegatedCreation
+        );
 
         deployment.contract1155Impl = address(creatorImpl);
 

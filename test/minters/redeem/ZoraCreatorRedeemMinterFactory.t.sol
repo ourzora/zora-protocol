@@ -15,6 +15,7 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ZoraCreator1155DelegatedCreation} from "../../../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract ZoraCreatorRedeemMinterFactoryTest is Test {
     ProtocolRewards internal protocolRewards;
@@ -30,7 +31,7 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         zora = makeAddr("zora");
         bytes[] memory emptyData = new bytes[](0);
         protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation());
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(address(proxy));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);

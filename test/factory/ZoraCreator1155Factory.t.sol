@@ -13,6 +13,7 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
+import {ZoraCreator1155DelegatedCreation} from "../../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
     address internal zora;
@@ -29,7 +30,13 @@ contract ZoraCreator1155FactoryTest is Test {
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
 
         ProtocolRewards protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(protocolRewards));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(
+            mintFeeAmount,
+            zora,
+            address(factoryProxy),
+            address(protocolRewards),
+            new ZoraCreator1155DelegatedCreation()
+        );
 
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -194,7 +201,13 @@ contract ZoraCreator1155FactoryTest is Test {
         // * create a new factory that points to that new erc1155 implementation,
         // * upgrade the proxy to point to the new factory
         uint256 newMintFeeAmount = 0.000888 ether;
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, zora, address(factory), address(new ProtocolRewards()));
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(
+            newMintFeeAmount,
+            zora,
+            address(factory),
+            address(new ProtocolRewards()),
+            new ZoraCreator1155DelegatedCreation()
+        );
 
         ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(
             newZoraCreator,
@@ -246,7 +259,13 @@ contract ZoraCreator1155FactoryTest is Test {
 
         // 2. upgrade the created contract by creating a new contract and upgrading the existing one to point to it.
         uint256 newMintFeeAmount = 0.000888 ether;
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, zora, address(0), address(new ProtocolRewards()));
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(
+            newMintFeeAmount,
+            zora,
+            address(0),
+            address(new ProtocolRewards()),
+            new ZoraCreator1155DelegatedCreation()
+        );
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = address(factory.implementation());

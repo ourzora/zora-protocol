@@ -13,6 +13,8 @@ interface IZoraCreator1155DelegatedCreation {
         uint256 chainId
     ) external pure returns (address signatory);
 
+    function premintHashedTypeDataV4(PremintConfig calldata premintConfig, address erc1155Contract, uint256 chainId) external pure returns (bytes32);
+
     function HASHED_NAME() external returns (bytes32);
 
     function HASHED_VERSION() external returns (bytes32);
@@ -38,5 +40,9 @@ contract ZoraCreator1155DelegatedCreation is IZoraCreator1155DelegatedCreation {
 
     function HASHED_VERSION() external pure override returns (bytes32) {
         return ZoraCreator1155Attribution.HASHED_VERSION;
+    }
+
+    function premintHashedTypeDataV4(PremintConfig calldata premintConfig, address erc1155Contract, uint256 chainId) external pure returns (bytes32) {
+        return ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, erc1155Contract, chainId);
     }
 }

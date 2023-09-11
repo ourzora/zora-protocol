@@ -16,6 +16,7 @@ import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
+import {ZoraCreator1155DelegatedCreation} from "../../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
@@ -57,7 +58,7 @@ contract ZoraCreator1155Test is Test {
         protocolRewards = new ProtocolRewards();
         upgradeGate = new MockUpgradeGate();
         upgradeGate.initialize(admin);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards), new ZoraCreator1155DelegatedCreation());
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         simpleMinter = new SimpleMinter();
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
@@ -1197,7 +1198,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_unauthorizedUpgradeFails() external {
-        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation()));
 
         vm.expectRevert();
         target.upgradeTo(new1155Impl);
@@ -1209,7 +1210,7 @@ contract ZoraCreator1155Test is Test {
 
         oldImpls[0] = address(zoraCreator1155Impl);
 
-        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation()));
 
         vm.prank(upgradeGate.owner());
         upgradeGate.registerUpgradePath(oldImpls, new1155Impl);

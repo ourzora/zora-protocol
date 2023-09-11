@@ -14,6 +14,7 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
+import {ZoraCreator1155DelegatedCreation} from "../../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract ZoraCreator1155AccessControlGeneralTest is Test {
     ProtocolRewards internal protocolRewards;
@@ -25,7 +26,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function setUp() external {
         zora = makeAddr("zora");
         protocolRewards = new ProtocolRewards();
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation());
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());

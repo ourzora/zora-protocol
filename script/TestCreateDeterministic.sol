@@ -19,6 +19,7 @@ import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ZoraCreator1155DelegatedCreation} from "../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract DeployScript is ZoraDeployerBase {
     function run() public {
@@ -43,7 +44,13 @@ contract DeployScript is ZoraDeployerBase {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0), address(new ProtocolRewards()));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(
+            0,
+            address(0),
+            address(0),
+            address(new ProtocolRewards()),
+            new ZoraCreator1155DelegatedCreation()
+        );
         // get above constructor args encoded for verification later:
         ZoraCreator1155FactoryImpl factory = new ZoraCreator1155FactoryImpl(
             zoraCreator1155Impl,

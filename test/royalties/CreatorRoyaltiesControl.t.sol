@@ -11,6 +11,7 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 import {IMintFeeManager} from "../../src/interfaces/IMintFeeManager.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
+import {ZoraCreator1155DelegatedCreation} from "../../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract CreatorRoyaltiesControlTest is Test {
     ProtocolRewards internal protocolRewards;
@@ -35,7 +36,7 @@ contract CreatorRoyaltiesControlTest is Test {
     function test_GetsRoyaltiesInfoGlobalDefault() external {
         address royaltyPayout = address(0x999);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation());
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)), admin, _emptyInitData());
@@ -52,7 +53,7 @@ contract CreatorRoyaltiesControlTest is Test {
 
     function test_GetsRoyaltiesInfoSpecificToken() external {
         address royaltyPayout = address(0x999);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation());
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)), admin, _emptyInitData());

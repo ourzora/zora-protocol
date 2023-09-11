@@ -17,6 +17,7 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/Zora
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {ZoraCreator1155DelegatedCreation} from "../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract UpgradeScript is ZoraDeployerBase {
     using Strings for uint256;
@@ -56,7 +57,15 @@ contract UpgradeScript is ZoraDeployerBase {
             console2.log("mintFeeAmount", chainConfig.mintFeeAmount);
             console2.log("minFeeRecipient", chainConfig.mintFeeRecipient);
             console2.log("protocolRewards", chainConfig.protocolRewards);
-            deployment.contract1155Impl = address(new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, deployment.factoryProxy, chainConfig.protocolRewards));
+            deployment.contract1155Impl = address(
+                new ZoraCreator1155Impl(
+                    chainConfig.mintFeeAmount,
+                    chainConfig.mintFeeRecipient,
+                    deployment.factoryProxy,
+                    chainConfig.protocolRewards,
+                    new ZoraCreator1155DelegatedCreation()
+                )
+            );
             console2.log("New NFT_IMPL", deployment.contract1155Impl);
         } else {
             console2.log("Existing NFT_IMPL", deployment.contract1155Impl);

@@ -11,6 +11,7 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 import {IMintFeeManager} from "../../src/interfaces/IMintFeeManager.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
+import {ZoraCreator1155DelegatedCreation} from "../../src/premint/ZoraCreator1155DelegatedCreation.sol";
 
 contract MintFeeManagerTest is Test {
     ZoraCreator1155Impl internal zoraCreator1155Impl;
@@ -36,7 +37,7 @@ contract MintFeeManagerTest is Test {
         vm.assume(quantity < 100);
         vm.assume(mintFee < 0.1 ether);
         uint256 mintPrice = mintFee * quantity;
-        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, recipient, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation());
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
@@ -70,7 +71,7 @@ contract MintFeeManagerTest is Test {
         _recip.setReceiveETH(false);
         address _recipient = address(_recip);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, _recipient, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(mintFee, _recipient, address(0), address(protocolRewards), new ZoraCreator1155DelegatedCreation());
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());

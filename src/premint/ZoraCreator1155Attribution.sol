@@ -73,7 +73,7 @@ library ZoraCreator1155Attribution {
         return keccak256(abi.encode(TYPE_HASH, nameHash, versionHash, chainId, verifyingContract));
     }
 
-    function _hashTypedDataV4(bytes32 structHash, address verifyingContract, uint256 chainId) private pure returns (bytes32) {
+    function _hashTypedDataV4(bytes32 structHash, address verifyingContract, uint256 chainId) internal pure returns (bytes32) {
         return ECDSAUpgradeable.toTypedDataHash(_domainSeparatorV4(chainId, verifyingContract), structHash);
     }
 
