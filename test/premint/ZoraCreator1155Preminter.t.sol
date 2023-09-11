@@ -168,10 +168,6 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     }
 
     function testTheForkPremint(string memory chainName) private {
-        if (keccak256(abi.encodePacked(chainName)) != keccak256(abi.encodePacked("zora_goerli"))) {
-            return;
-        }
-
         console.log("testing on fork: ", chainName);
 
         // create and select the fork, which will be used for all subsequent calls
@@ -180,7 +176,15 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
 
         // get contract hash, which is unique per contract creation config, and can be used
         // retreive the address created for a contract
-        preminter = ZoraCreator1155PremintExecutor(getDeployment().preminter);
+        address preminterAddress = getDeployment().preminter;
+
+        if (preminterAddress == address(0)) {
+            console.log("preminter not configured for chain...skipping");
+            return;
+        }
+
+        preminter = ZoraCreator1155PremintExecutor(preminterAddress);
+
         factoryImpl = ZoraCreator1155FactoryImpl(getDeployment().factoryImpl);
 
         console.log("building defaults");
@@ -197,8 +201,6 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         console.log("loading preminter");
 
         address contractAddress = preminter.getContractAddress(contractConfig);
-
-        console.log(contractAddress);
 
         // 2. Call smart contract to get digest to sign for creation params.
         bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
