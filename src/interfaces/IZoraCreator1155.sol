@@ -60,6 +60,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     event ContractRendererUpdated(IRenderer1155 renderer);
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
+    event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
 
     error TokenIdMismatch(uint256 expected, uint256 actual);
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
