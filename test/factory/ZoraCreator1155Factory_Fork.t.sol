@@ -111,13 +111,13 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         assertEq(getDeployment().fixedPriceSaleStrategy, address(fixedPrice), string.concat("configured fixed price address incorrect on: ", chainName));
 
         // ** 1. Create the erc1155 contract **
-        uint96 tokenPrice = 1 ether;
-
-        // ** 3. Mint on that contract **
-
         IZoraCreator1155 target = _createErc1155Contract(factory);
 
+        // ** 2. Setup a new token with the fixed price sales strategy and the token price **
+        uint96 tokenPrice = 1 ether;
         uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
+
+        // ** 3. Mint on that contract **
 
         // get the mint fee from the contract
         uint256 mintFee = MintFeeManager(address(target)).mintFee();
