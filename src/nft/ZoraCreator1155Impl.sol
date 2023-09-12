@@ -727,10 +727,6 @@ contract ZoraCreator1155Impl is
     /* start eip712 functionality */
     mapping(uint32 => uint256) public delegatedTokenId;
 
-    event CreatorAttribution(bytes32 structHash, bytes32 domainName, bytes32 version, address creator, bytes signature);
-
-    error PremintAlreadyExecuted();
-
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
         if (delegatedTokenId[premintConfig.uid] != 0) {
@@ -744,7 +740,7 @@ contract ZoraCreator1155Impl is
         address creator = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
 
         // this is what attributes this token to have been created by the original creator
-        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.HASHED_NAME, ZoraCreator1155Attribution.HASHED_VERSION, creator, signature);
+        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION, creator, signature);
 
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
