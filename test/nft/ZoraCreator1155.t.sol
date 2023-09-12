@@ -968,6 +968,34 @@ contract ZoraCreator1155Test is Test {
         target.mintWithRewards(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
     }
 
+    function test_AssumeFirstMinterRecipientIsAddress(uint256 quantity) public {
+        vm.assume(quantity > 0 && quantity < type(uint200).max);
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        uint256 rewardRecipient = 1234;
+
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(rewardRecipient), address(0));
+
+        (, , address fundsRecipient, , , ) = target.config();
+
+        assertEq(protocolRewards.balanceOf(address(uint160(rewardRecipient))), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
+    }
+
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {
         vm.assume(quantity > 0 && quantity < 1_000_000);
         vm.assume(salePrice > 0 && salePrice < 10 ether);
