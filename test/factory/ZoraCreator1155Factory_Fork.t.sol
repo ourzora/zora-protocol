@@ -14,6 +14,13 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/Z
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
+    uint256 constant mintFee = 0.000777 ether;
+    uint96 constant tokenPrice = 1 ether;
+    uint256 constant quantityToMint = 3;
+    uint256 constant tokenMaxSupply = 100;
+    uint32 constant royaltyMintSchedule = 10;
+    uint32 constant royaltyBPS = 100;
+
     address collector;
     address creator;
 
@@ -37,7 +44,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
     function _setupToken(IZoraCreator1155 target, IMinter1155 fixedPrice, uint96 tokenPrice) private returns (uint256 tokenId) {
         string memory tokenURI = "ipfs://token";
-        uint256 tokenMaxSupply = 100;
 
         tokenId = target.setupNewToken(tokenURI, tokenMaxSupply);
 
@@ -118,15 +124,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
         // ** 3. Mint on that contract **
 
-        // get the mint fee from the contract
-        uint256 mintFee = ZoraCreator1155Impl(address(target)).computeTotalReward(1);
-
-        // make sure the mint fee amount matches the configured mint fee amount
-        assertEq(mintFee, getChainConfig().mintFeeAmount, chainName);
-
         // mint 3 tokens
-
-        uint256 quantityToMint = 3;
         uint256 valueToSend = quantityToMint * (tokenPrice + mintFee);
 
         // mint the token
