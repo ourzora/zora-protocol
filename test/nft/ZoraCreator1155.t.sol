@@ -790,8 +790,6 @@ contract ZoraCreator1155Test is Test {
         vm.prank(collector);
         target.mintWithRewards{value: totalValue}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
 
-        (, , address fundsRecipient, , , ) = target.config();
-
         assertEq(address(target).balance, totalSale);
 
         assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
