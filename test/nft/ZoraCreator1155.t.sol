@@ -966,6 +966,38 @@ contract ZoraCreator1155Test is Test {
         target.mintWithRewards(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
     }
 
+    function test_FirstMinterRewardReceivedOnConsecutiveMints(uint256 quantity) public {
+        vm.assume(quantity > 0 && quantity < type(uint200).max);
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity * 2);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        address firstMinter = makeAddr("firstMinter");
+
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(firstMinter), address(0));
+
+        assertEq(protocolRewards.balanceOf(firstMinter), settings.firstMinterReward);
+
+        address collector2 = makeAddr("collector2");
+        vm.deal(collector2, totalReward);
+
+        vm.prank(collector2);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(collector2), address(0));
+
+        assertEq(protocolRewards.balanceOf(firstMinter), settings.firstMinterReward * 2);
+    }
+
     function test_AssumeFirstMinterRecipientIsAddress(uint256 quantity) public {
         vm.assume(quantity > 0 && quantity < type(uint200).max);
 
