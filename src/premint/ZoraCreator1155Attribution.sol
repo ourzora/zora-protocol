@@ -58,9 +58,11 @@ struct PremintConfig {
 /// @author @oveddan
 library ZoraCreator1155Attribution {
     /* start eip712 functionality */
-    bytes32 public constant HASHED_NAME = keccak256(bytes("Preminter"));
-    bytes32 public constant HASHED_VERSION = keccak256(bytes("1"));
-    bytes32 public constant TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    string internal constant NAME = "Preminter";
+    string internal constant VERSION = "1";
+    bytes32 internal constant HASHED_NAME = keccak256(bytes(NAME));
+    bytes32 internal constant HASHED_VERSION = keccak256(bytes(VERSION));
+    bytes32 internal constant TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     /**
      * @dev Returns the domain separator for the specified chain.
