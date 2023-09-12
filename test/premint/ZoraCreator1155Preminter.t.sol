@@ -485,43 +485,19 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         );
 
         address firstContractAddress = preminter.getContractAddress(firstContractConfig);
-        uint256 firstResultTokenId = _signAndExecutePremint(
-            firstContractConfig,
-            premintConfig,
-            creatorPrivateKey,
-            chainId,
-            premintExecutor,
-            quantityToMint,
-            comment
-        );
+        uint256 tokenId = _signAndExecutePremint(firstContractConfig, premintConfig, creatorPrivateKey, chainId, premintExecutor, quantityToMint, comment);
 
-        assertEq(IZoraCreator1155(firstContractAddress).balanceOf(premintExecutor, firstResultTokenId), quantityToMint);
+        assertEq(IZoraCreator1155(firstContractAddress).balanceOf(premintExecutor, tokenId), quantityToMint);
 
         premintConfig.uid = secondUid;
-        uint256 secondResultTokenId = _signAndExecutePremint(
-            firstContractConfig,
-            premintConfig,
-            creatorPrivateKey,
-            chainId,
-            premintExecutor,
-            quantityToMint,
-            comment
-        );
+        tokenId = _signAndExecutePremint(firstContractConfig, premintConfig, creatorPrivateKey, chainId, premintExecutor, quantityToMint, comment);
 
-        assertEq(IZoraCreator1155(firstContractAddress).balanceOf(premintExecutor, secondResultTokenId), quantityToMint);
+        assertEq(IZoraCreator1155(firstContractAddress).balanceOf(premintExecutor, tokenId), quantityToMint);
 
         address secondContractAddress = preminter.getContractAddress(secondContractConfig);
-        uint256 thirdResultTokenId = _signAndExecutePremint(
-            secondContractConfig,
-            premintConfig,
-            creatorPrivateKey,
-            chainId,
-            premintExecutor,
-            quantityToMint,
-            comment
-        );
+        tokenId = _signAndExecutePremint(secondContractConfig, premintConfig, creatorPrivateKey, chainId, premintExecutor, quantityToMint, comment);
 
-        assertEq(IZoraCreator1155(secondContractAddress).balanceOf(premintExecutor, thirdResultTokenId), quantityToMint);
+        assertEq(IZoraCreator1155(secondContractAddress).balanceOf(premintExecutor, tokenId), quantityToMint);
     }
 
     function test_premintCanOnlyBeExecutedAfterStartDate(uint8 startDate, uint8 currentTime) external {
