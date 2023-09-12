@@ -69,7 +69,7 @@ contract ZoraCreator1155Impl is
     IFactoryManagedUpgradeGate internal immutable factory;
 
     constructor(
-        uint256 _mintFeeAmount,
+        uint256, // TODO remove
         address _mintFeeRecipient,
         address _factory,
         address _protocolRewards
