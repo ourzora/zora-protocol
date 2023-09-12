@@ -156,6 +156,36 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
     }
 
+    event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
+
+    function test_premint_emitsCreatorAttribution_fromErc1155Contract() external {
+        // build a premint
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
+
+        // sign and execute premint
+        uint256 chainId = block.chainid;
+
+        address deterministicAddress = preminter.getContractAddress(contractConfig);
+        bytes32 structHash = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, deterministicAddress, chainId);
+        bytes memory signature = _sign(creatorPrivateKey, structHash);
+
+        uint256 quantityToMint = 4;
+        string memory comment = "hi";
+        uint256 mintCost = mintFeeAmount * quantityToMint;
+        // this account will be used to execute the premint, and should result in a contract being created
+        vm.deal(collector, mintCost);
+
+        vm.prank(collector);
+
+        // verify CreatorAttribution was emitted from the erc1155 contract
+        vm.expectEmit(true, false, false, false, deterministicAddress);
+        emit CreatorAttribution(structHash, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION, creator, signature);
+
+        // create contract and token via premint
+        preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
+    }
+
     /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
     /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
     function getForkTestChains() private view returns (string[] memory result) {
