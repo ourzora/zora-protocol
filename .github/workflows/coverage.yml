@@ -40,9 +40,9 @@ jobs:
 
       - name: Filter files to ignore
         run: |
-         lcov --rc lcov_branch_coverage=1 \
-         --remove lcov.info \
-         --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*"
+          lcov --rc lcov_branch_coverage=1 \
+          --remove lcov.info \
+          --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*"
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v2
