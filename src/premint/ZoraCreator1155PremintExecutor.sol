@@ -27,6 +27,8 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
     error MintNotYetStarted();
     error InvalidSignature();
 
+    error Erc1155CallReverted(bytes errorReverted);
+
     constructor(IZoraCreator1155Factory _factory) {
         zora1155Factory = _factory;
     }
@@ -70,15 +72,35 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
 
         // pass the signature and the premint config to the token contract to create the token.
         // The token contract will verify the signature and that the signer has permission to create a new token.
-        // and then create and setup the token using the given token config.
-        newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature);
-
-        tokenContract.mint{value: msg.value}(
-            IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
-            newTokenId,
-            quantityToMint,
-            abi.encode(msg.sender, mintComment)
+        // and then create and setup token using the given token config.
+        (bool success, bytes memory data) = address(tokenContract).call(
+            abi.encodeWithSelector(IZoraCreator1155.delegateSetupNewToken.selector, premintConfig, signature)
         );
+
+        if (!success) {
+            // revert with original error that can be decoded later
+            revert Erc1155CallReverted(data);
+        }
+
+        // decode new token id from the token contract call
+        newTokenId = abi.decode(data, (uint256));
+
+        // now execute mint
+        (success, data) = address(tokenContract).call{value: msg.value}(
+            abi.encodeWithSelector(
+                IZoraCreator1155.mint.selector,
+                IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
+                newTokenId,
+                quantityToMint,
+                abi.encode(msg.sender, mintComment)
+            )
+        );
+
+        // if failed to call erc1155, revert with original error
+        if (!success) {
+            // revert with original error that can be decoded later
+            revert Erc1155CallReverted(data);
+        }
 
         // emit Preminted event
         emit Preminted(

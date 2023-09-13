@@ -337,7 +337,12 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         bytes memory signature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, chainId);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
-        vm.expectRevert(ZoraCreator1155Attribution.PremintDeleted.selector);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZoraCreator1155PremintExecutor.Erc1155CallReverted.selector,
+                abi.encodeWithSelector(ZoraCreator1155Attribution.PremintDeleted.selector)
+            )
+        );
         vm.prank(premintExecutor);
         uint256 newTokenId = preminter.premint(contractConfig, premintConfig, signature, quantityToMint, comment);
 
@@ -509,7 +514,12 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, chainId);
 
         if (shouldRevert) {
-            vm.expectRevert(ZoraCreator1155Attribution.MintNotYetStarted.selector);
+            vm.expectRevert(
+                abi.encodeWithSelector(
+                    ZoraCreator1155PremintExecutor.Erc1155CallReverted.selector,
+                    abi.encodeWithSelector(ZoraCreator1155Attribution.MintNotYetStarted.selector)
+                )
+            );
         }
 
         uint256 mintCost = mintFeeAmount * quantityToMint;
@@ -631,7 +641,12 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         vm.deal(premintExecutor, mintCost);
 
         // try to mint, it should revert
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, newCreator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZoraCreator1155PremintExecutor.Erc1155CallReverted.selector,
+                abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, newCreator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER)
+            )
+        );
         vm.prank(premintExecutor);
         preminter.premint{value: mintCost}(contractConfig, premintConfig2, newCreatorSignature, quantityToMint, "yo");
 
@@ -648,6 +663,38 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         // try to mint again, should not revert
         vm.prank(premintExecutor);
         preminter.premint{value: mintCost}(contractConfig, premintConfig2, newCreatorSignature, quantityToMint, "yo");
+    }
+
+    function test_premint_mintCallFails_revertsWithOriginalErrorInMessage() external {
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
+
+        // how many tokens are minted to the executor
+        uint256 quantityToMint = 4;
+        uint256 chainId = block.chainid;
+        string memory comment = "hi";
+
+        // get contract hash, which is unique per contract creation config, and can be used
+        // retreive the address created for a contract
+        address contractAddress = preminter.getContractAddress(contractConfig);
+
+        bytes memory signature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, chainId);
+
+        uint256 mintCost = mintFeeAmount * quantityToMint;
+
+        uint256 valueToSend = mintCost + 1 ether;
+        vm.deal(premintExecutor, valueToSend);
+
+        // execute premint
+        vm.prank(premintExecutor);
+        // it should revert with ZoraCreatorFixedPriceSaleStrategy.WrongValueSent error in the data field of the wrapped error
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZoraCreator1155PremintExecutor.Erc1155CallReverted.selector,
+                abi.encodeWithSelector(ZoraCreatorFixedPriceSaleStrategy.WrongValueSent.selector)
+            )
+        );
+        preminter.premint{value: valueToSend}(contractConfig, premintConfig, signature, quantityToMint, comment);
     }
 
     function _signAndExecutePremint(
