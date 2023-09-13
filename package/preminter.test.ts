@@ -3,6 +3,8 @@ import {
   http,
   createWalletClient,
   createPublicClient,
+  BaseError,
+  ContractFunctionRevertedError,
 } from "viem";
 import { foundry, zoraTestnet } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
@@ -24,6 +26,7 @@ import {
   ContractCreationConfig,
   PremintConfig,
   TokenCreationConfig,
+  decodeErc1155ErrorResult,
   preminterTypedDataDefinition,
 } from "./preminter";
 
@@ -295,6 +298,91 @@ describe("ZoraCreator1155Preminter", () => {
 
     20 * 1000
   );
+  it.only<TestContext>("can decode the original erc1155 error from a premint error result", async ({
+    zoraMintFee,
+    anvilChainId,
+    preminterAddress: preminterAddress,
+    fixedPriceMinterAddress,
+  }) => {
+    // setup contract and token creation parameters
+    const premintConfig = defaultPremintConfig(fixedPriceMinterAddress);
+    const contractConfig = defaultContractConfig({
+      contractAdmin: creatorAccount,
+    });
+
+    // lets make it a random number to not break the existing tests that expect fresh data
+    premintConfig.uid = Math.round(Math.random() * 1000000);
+
+    let contractAddress = await publicClient.readContract({
+      abi: preminterAbi,
+      address: preminterAddress,
+      functionName: "getContractAddress",
+      args: [contractConfig],
+    });
+
+    // have creator sign the message to create the contract
+    // and the token
+    const signedMessage = await walletClient.signTypedData({
+      ...preminterTypedDataDefinition({
+        verifyingContract: contractAddress,
+        // we need to sign here for the anvil chain, cause thats where it is run on
+        chainId: anvilChainId,
+        premintConfig,
+      }),
+      account: creatorAccount,
+    });
+
+    const quantityToMint = 2n;
+
+    const valueToSend =
+      (zoraMintFee + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
+
+    // send extra money, mint call should revert.
+    const wrongValueToSend = valueToSend + parseEther("1");
+
+    const comment = "";
+
+    await testClient.setBalance({
+      address: collectorAccount,
+      value: parseEther("10"),
+    });
+
+    // get the premint status - it should not be minted
+    try {
+      const { result } = await publicClient.simulateContract({
+        abi: preminterAbi,
+        functionName: "premint",
+        account: collectorAccount,
+        address: preminterAddress,
+        args: [
+          contractConfig,
+          premintConfig,
+          signedMessage,
+          quantityToMint,
+          comment,
+        ],
+        value: wrongValueToSend,
+      });
+    } catch (err) {
+      if (err instanceof BaseError) {
+        const revertError = err.walk(
+          (err) => err instanceof ContractFunctionRevertedError
+        );
+        if (revertError instanceof ContractFunctionRevertedError) {
+          // do something with `errorName`
+
+          const errorName = revertError.data!.errorName;
+          expect(errorName).toBe("Erc1155CallReverted");
+
+          const errorData = revertError.data!.args![0] as `0x${string}`;
+
+          const decodedError = decodeErc1155ErrorResult(errorData);
+
+          expect(decodedError.errorName).toBe("WrongValueSent");
+        }
+      }
+    }
+  });
   it<TestContext>(
     "can sign and mint multiple tokens",
     async ({

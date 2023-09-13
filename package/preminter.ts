@@ -1,7 +1,11 @@
 import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
-import { zoraCreator1155PremintExecutorABI as preminterAbi } from "./wagmiGenerated";
-import { TypedDataDefinition } from "viem";
+import {
+  zoraCreator1155PremintExecutorABI as preminterAbi,
+  zoraCreator1155ImplABI,
+  zoraCreatorFixedPriceSaleStrategyABI,
+} from "./wagmiGenerated";
+import { TypedDataDefinition, decodeErrorResult } from "viem";
 
 type PremintInputs = ExtractAbiFunction<
   typeof preminterAbi,
@@ -71,4 +75,16 @@ export const preminterTypedDataDefinition = ({
   // console.log({ result, deleted });
 
   return result;
+};
+
+export const decodeErc1155ErrorResult = (result: `0x${string}`) => {
+  const combinedAbi = [
+    ...zoraCreator1155ImplABI.filter((x) => x.type === "error"),
+    ...zoraCreatorFixedPriceSaleStrategyABI.filter((x) => x.type === "error"),
+  ];
+
+  return decodeErrorResult({
+    abi: combinedAbi,
+    data: result,
+  });
 };

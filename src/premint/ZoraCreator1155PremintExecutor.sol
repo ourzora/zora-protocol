@@ -27,7 +27,7 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
     error MintNotYetStarted();
     error InvalidSignature();
 
-    error Erc1155CallReverted(bytes errorReverted);
+    error Erc1155CallReverted(bytes errorRevertedData);
 
     constructor(IZoraCreator1155Factory _factory) {
         zora1155Factory = _factory;
