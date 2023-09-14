@@ -176,6 +176,7 @@ library ZoraCreator1155Attribution {
     }
 }
 
+// todo: make it consistent.
 library PremintTokenSetup {
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
