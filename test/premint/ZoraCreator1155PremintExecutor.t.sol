@@ -2,22 +2,18 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
+import {Zora1155FactoryFixtures} from "../fixtures/Zora1155FactoryFixtures.sol";
 import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.sol";
-import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
-import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
-import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
-import {ILimitedMintPerAddress} from "../../src/interfaces/ILimitedMintPerAddress.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutor} from "../../src/premint/ZoraCreator1155PremintExecutor.sol";
-import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/premint/ZoraCreator1155Attribution.sol";
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
@@ -27,11 +23,11 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     uint256 internal constant PERMISSION_BIT_MINTER = 2 ** 2;
 
     ZoraCreator1155PremintExecutor internal preminter;
-    ZoraCreator1155FactoryImpl internal factoryImpl;
-    ZoraCreator1155FactoryImpl internal factory;
+    Zora1155Factory factoryProxy;
+    ZoraCreator1155FactoryImpl factoryImpl;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
-    uint256 internal mintFeeAmount;
+    uint256 internal mintFeeAmount = 0.000777 ether;
 
     // setup contract config
     uint256 internal creatorPrivateKey;
@@ -52,27 +48,18 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     );
 
     function setUp() external {
-        mintFeeAmount = 0.000777 ether;
-
         (creator, creatorPrivateKey) = makeAddrAndKey("creator");
         zora = makeAddr("zora");
         premintExecutor = makeAddr("premintExecutor");
         collector = makeAddr("collector");
 
-        address factoryShimAddress = address(new ProxyShim(zora));
-        Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
-        ProtocolRewards rewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(rewards));
-        ZoraCreatorFixedPriceSaleStrategy fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
-        factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), fixedPriceMinter, IMinter1155(address(3)));
-        factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
-
         vm.startPrank(zora);
-        factory.upgradeTo(address(factoryImpl));
-        factory.initialize(zora);
+        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(mintFeeAmount, zora, zora);
         vm.stopPrank();
 
-        preminter = new ZoraCreator1155PremintExecutor(factory);
+        factoryImpl = ZoraCreator1155FactoryImpl(address(factoryProxy));
+
+        preminter = new ZoraCreator1155PremintExecutor(factoryImpl);
     }
 
     function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
