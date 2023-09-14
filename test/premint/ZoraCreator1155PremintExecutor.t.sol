@@ -7,6 +7,7 @@ import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.so
 
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
+import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
@@ -415,7 +416,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         // the expected UserMissingRole error
         vm.expectRevert(
             abi.encodeWithSelector(
-                IZoraCreator1155.UserMissingRoleForToken.selector,
+                IZoraCreator1155Errors.UserMissingRoleForToken.selector,
                 address(preminter),
                 newTokenId,
                 ZoraCreator1155Impl(address(created1155Contract)).PERMISSION_BIT_SALES()
@@ -439,7 +440,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         // have the premint contract try to set royalties config - it should revert
         vm.expectRevert(
             abi.encodeWithSelector(
-                IZoraCreator1155.UserMissingRoleForToken.selector,
+                IZoraCreator1155Errors.UserMissingRoleForToken.selector,
                 address(preminter),
                 newTokenId,
                 ZoraCreator1155Impl(address(created1155Contract)).PERMISSION_BIT_FUNDS_MANAGER()
@@ -631,7 +632,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         vm.deal(premintExecutor, mintCost);
 
         // try to mint, it should revert
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, newCreator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, newCreator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER));
         vm.prank(premintExecutor);
         preminter.premint{value: mintCost}(contractConfig, premintConfig2, newCreatorSignature, quantityToMint, "yo");
 
