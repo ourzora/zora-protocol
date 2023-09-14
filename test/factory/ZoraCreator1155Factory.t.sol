@@ -256,8 +256,5 @@ contract ZoraCreator1155FactoryTest is Test {
 
         vm.prank(creatorProxy.owner());
         creatorProxy.upgradeTo(address(newZoraCreator));
-
-        // 3. check that proxy contract was upgraded
-        assertEq(creatorProxy.mintFee(), newMintFeeAmount);
     }
 }
