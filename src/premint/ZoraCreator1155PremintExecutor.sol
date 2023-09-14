@@ -2,8 +2,9 @@
 pragma solidity 0.8.17;
 
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
-import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
+import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
+import {IHasContractName} from "../interfaces/IContractMetadata.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
@@ -15,7 +16,7 @@ import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
 /// Mints the first x tokens to the executor of the transaction.
 /// @author @oveddan
-contract ZoraCreator1155PremintExecutor {
+contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradeable, IHasContractName {
     IZoraCreator1155Factory public immutable zora1155Factory;
 
     /// @notice copied from SharedBaseConstants
@@ -28,6 +29,11 @@ contract ZoraCreator1155PremintExecutor {
 
     constructor(IZoraCreator1155Factory _factory) {
         zora1155Factory = _factory;
+    }
+
+    function initialize(address _initialOwner) public initializer {
+        __Ownable_init(_initialOwner);
+        __UUPSUpgradeable_init();
     }
 
     event Preminted(
@@ -161,5 +167,28 @@ contract ZoraCreator1155PremintExecutor {
             // if contract has been created, signer must have mint new token permission
             isValid = IZoraCreator1155(contractAddress).isAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
         }
+    }
+
+    // upgrade related functionality
+
+    /// @notice The name of the contract for upgrade purposes
+    function contractName() external pure returns (string memory) {
+        return "ZORA 1155 Premint Executor";
+    }
+
+    // upgrade functionality
+    error UpgradeToMismatchedContractName(string expected, string actual);
+
+    /// @notice Ensures the caller is authorized to upgrade the contract
+    /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
+    /// @param _newImpl The new implementation address
+    function _authorizeUpgrade(address _newImpl) internal override onlyOwner {
+        if (!_equals(IHasContractName(_newImpl).contractName(), this.contractName())) {
+            revert UpgradeToMismatchedContractName(this.contractName(), IHasContractName(_newImpl).contractName());
+        }
+    }
+
+    function _equals(string memory a, string memory b) internal pure returns (bool) {
+        return (keccak256(bytes(a)) == keccak256(bytes(b)));
     }
 }
