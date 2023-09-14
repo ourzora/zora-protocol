@@ -33,7 +33,8 @@
 | permissions              | mapping(uint256 => mapping(address => uint256))                          | 510  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 | __gap                    | uint256[50]                                                              | 511  | 0      | 1600  | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 | createReferrals          | mapping(uint256 => address)                                              | 561  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
-| delegatedTokenId         | mapping(uint32 => uint256)                                               | 562  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
+| firstMinters             | mapping(uint256 => address)                                              | 562  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
+| delegatedTokenId         | mapping(uint32 => uint256)                                               | 563  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 
 =======================
 ➡ ZoraCreator1155FactoryImpl
