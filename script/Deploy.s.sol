@@ -12,9 +12,7 @@ import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
-import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
-import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
@@ -41,33 +39,9 @@ contract DeployScript is ZoraDeployerBase {
         deployment.merkleMintSaleStrategy = address(merkleMinter);
         deployment.redeemMinterFactory = address(redeemMinterFactory);
 
-        address factoryShimAddress = address(new ProxyShim(deployer));
-        Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
+        deployNew1155AndFactoryProxy(deployment, deployer);
 
-        deployment.factoryProxy = address(factoryProxy);
-
-        ZoraCreator1155Impl creatorImpl =
-        new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, address(factoryProxy), chainConfig.protocolRewards);
-
-        deployment.contract1155Impl = address(creatorImpl);
-
-        ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
-            _implementation: creatorImpl,
-            _merkleMinter: merkleMinter,
-            _redeemMinterFactory: redeemMinterFactory,
-            _fixedPriceMinter: fixedPricedMinter
-        });
-
-        deployment.factoryImpl = address(factoryImpl);
-
-        // Upgrade to "real" factory address
-        ZoraCreator1155FactoryImpl(address(factoryProxy)).upgradeTo(address(factoryImpl));
-        ZoraCreator1155FactoryImpl(address(factoryProxy)).initialize(chainConfig.factoryOwner);
-
-        console2.log("Factory Proxy", address(factoryProxy));
-        console2.log("Implementation Address", address(creatorImpl));
-
-        deployTestContractForVerification(address(factoryProxy), chainConfig.factoryOwner);
+        deployTestContractForVerification(deployment.factoryProxy, chainConfig.factoryOwner);
 
         return getDeploymentJSON(deployment);
     }
