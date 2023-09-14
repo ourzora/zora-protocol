@@ -44,7 +44,7 @@ if (esMain(import.meta)) {
   if (command === "upgrade"){
     scriptName = 'Upgrade.s.sol';
   } else if (command === 'deploy-premint') {
-    scriptName = 'DeployPreminter.s.sol'
+    scriptName = 'DeployNewPreminterAndFactoryProxy.s.sol'
   }
 
   await copyEnvironmentRunFiles(scriptName);
