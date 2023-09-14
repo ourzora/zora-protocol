@@ -77,12 +77,18 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
         console2.log("Factory Proxy", address(factoryProxy));
     }
 
-    function deployNewPreminterProxy(Deployment memory deployment) internal {
+    function deployNewPreminterImplementation(Deployment memory deployment) internal returns (address) {
         // create preminter implementation
         ZoraCreator1155PremintExecutor preminterImplementation = new ZoraCreator1155PremintExecutor(ZoraCreator1155FactoryImpl(deployment.factoryProxy));
 
+        return address(preminterImplementation);
+    }
+
+    function deployNewPreminterProxy(Deployment memory deployment) internal {
+        address preminterImplementation = deployNewPreminterImplementation(deployment);
+
         // build the proxy
-        Zora1155PremintExecutorProxy proxy = new Zora1155PremintExecutorProxy(address(preminterImplementation), "");
+        Zora1155PremintExecutorProxy proxy = new Zora1155PremintExecutorProxy(preminterImplementation, "");
 
         deployment.preminter = address(proxy);
 
