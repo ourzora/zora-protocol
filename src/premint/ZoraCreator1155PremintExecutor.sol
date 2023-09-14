@@ -6,6 +6,7 @@ import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/cont
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
 import {IHasContractName} from "../interfaces/IContractMetadata.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
@@ -16,7 +17,7 @@ import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
 /// Mints the first x tokens to the executor of the transaction.
 /// @author @oveddan
-contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradeable, IHasContractName {
+contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradeable, IHasContractName, IZoraCreator1155Errors {
     IZoraCreator1155Factory public immutable zora1155Factory;
 
     /// @notice copied from SharedBaseConstants

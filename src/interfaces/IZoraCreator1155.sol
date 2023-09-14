@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
+import {IZoraCreator1155Errors} from "./IZoraCreator1155Errors.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IOwnable} from "../interfaces/IOwnable.sol";
@@ -35,7 +36,7 @@ import {PremintConfig} from "../premint/ZoraCreator1155Attribution.sol";
 
 /// @notice Main interface for the ZoraCreator1155 contract
 /// @author @iainnash / @tbtstl
-interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
+interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
     function PERMISSION_BIT_MINTER() external returns (uint256);

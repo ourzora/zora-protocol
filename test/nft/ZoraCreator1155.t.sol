@@ -10,6 +10,7 @@ import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 
+import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../src/interfaces/IRenderer1155.sol";
 import {IZoraCreator1155TypesV1} from "../../src/nft/IZoraCreator1155TypesV1.sol";
@@ -209,7 +210,7 @@ contract ZoraCreator1155Test is Test {
     function test_setupNewToken_revertOnlyAdminOrRole() external {
         init();
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_MINTER()));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_MINTER()));
         target.setupNewToken("test", 1);
     }
 
@@ -254,7 +255,7 @@ contract ZoraCreator1155Test is Test {
     function test_setTokenMetadataRenderer_revertOnlyAdminOrRole() external {
         init();
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_METADATA()));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_METADATA()));
         target.setTokenMetadataRenderer(0, IRenderer1155(address(0)));
     }
 
@@ -275,7 +276,7 @@ contract ZoraCreator1155Test is Test {
         vm.assume(tokenId != 0);
         init();
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, recipient, tokenId, adminRole));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, recipient, tokenId, adminRole));
         vm.prank(recipient);
         target.addPermission(tokenId, recipient, adminRole);
     }
@@ -326,7 +327,7 @@ contract ZoraCreator1155Test is Test {
         vm.assume(tokenId != 0);
         init();
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, recipient, tokenId, adminRole));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, recipient, tokenId, adminRole));
         vm.prank(recipient);
         target.removePermission(tokenId, address(0), adminRole);
     }
@@ -407,7 +408,9 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER()));
+        vm.expectRevert(
+            abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER())
+        );
         target.adminMint(address(0), tokenId, 0, "");
     }
 
@@ -418,7 +421,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity - 1);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
     }
@@ -534,7 +537,9 @@ contract ZoraCreator1155Test is Test {
         tokenIds[0] = tokenId;
         quantities[0] = 0;
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER()));
+        vm.expectRevert(
+            abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER())
+        );
         target.adminMintBatch(address(0), tokenIds, quantities, "");
     }
 
@@ -550,7 +555,7 @@ contract ZoraCreator1155Test is Test {
         tokenIds[0] = tokenId;
         quantities[0] = quantity;
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
         vm.prank(admin);
         target.adminMintBatch(recipient, tokenIds, quantities, "");
     }
@@ -599,7 +604,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
         target.mint(SimpleMinter(payable(address(0))), tokenId, 0, "");
     }
 
@@ -615,7 +620,7 @@ contract ZoraCreator1155Test is Test {
 
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
         target.mint{value: totalReward}(simpleMinter, tokenId, 1001, abi.encode(recipient));
 
         vm.stopPrank();
@@ -1065,7 +1070,7 @@ contract ZoraCreator1155Test is Test {
         target.callSale(tokenId, simpleMinter, abi.encodeWithSignature("setNum(uint256)", 1));
         assertEq(simpleMinter.num(), 1);
 
-        vm.expectRevert(abi.encodeWithSignature("Call_TokenIdMismatch()"));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CallFailed.selector, ""));
         target.callSale(tokenId, simpleMinter, abi.encodeWithSignature("setNum(uint256)", 0));
 
         vm.stopPrank();
@@ -1087,7 +1092,7 @@ contract ZoraCreator1155Test is Test {
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, "callRender successful"));
         assertEq(target.uri(tokenId), "callRender successful");
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CallFailed.selector, ""));
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, ""));
 
         vm.stopPrank();
@@ -1142,7 +1147,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("", 1);
         target.setTokenMetadataRenderer(tokenId, renderer);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CallFailed.selector, ""));
         target.callRenderer(tokenId, "0xfoobar");
     }
 
@@ -1262,7 +1267,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.mint{value: totalValue}(simpleMinter, tokenId, 1000, abi.encode(recipient));
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.ETHWithdrawFailed.selector, simpleMinter, 1 ether));
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.ETHWithdrawFailed.selector, simpleMinter, 1 ether));
         vm.prank(address(simpleMinter));
         target.withdraw();
     }
