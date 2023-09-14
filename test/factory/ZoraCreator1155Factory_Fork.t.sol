@@ -15,7 +15,6 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/Z
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
-    uint256 constant mintFee = 0.000777 ether;
     uint96 constant tokenPrice = 1 ether;
     uint256 constant quantityToMint = 3;
     uint256 constant tokenMaxSupply = 100;
@@ -120,10 +119,10 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         IZoraCreator1155 target = _createErc1155Contract(factory);
 
         // ** 2. Setup a new token with the fixed price sales strategy and the token price **
-        uint96 tokenPrice = 1 ether;
         uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
 
         // ** 3. Mint on that contract **
+        uint256 mintFee = getChainConfig().mintFeeAmount;
 
         // mint 3 tokens
         uint256 valueToSend = quantityToMint * (tokenPrice + mintFee);
