@@ -2,4 +2,4 @@
 "@zoralabs/zora-1155-contracts": minor
 ---
 
-Premint with Delegated Minting
+Added the PremintExecutor contract, and updated erc1155 to support delegated minting
