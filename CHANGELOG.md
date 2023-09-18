@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 1.5.0-gasless.1
+
+### Patch Changes
+
+- 4a67eee: Export preminter from package.json
+
 ## 1.5.0-gasless.0
 
 ### Minor Changes
