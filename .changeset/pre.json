@@ -4,5 +4,10 @@
   "initialVersions": {
     "@zoralabs/zora-1155-contracts": "1.4.0"
   },
-  "changesets": []
+  "changesets": [
+    "happy-socks-melt",
+    "long-avocados-visit",
+    "spotty-horses-battle",
+    "twelve-comics-sniff"
+  ]
 }
