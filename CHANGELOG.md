@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 1.5.0-gasless.1
+
+### Patch Changes
+
+- ebb50fd: test patch
+
 ## 1.5.0-gasless.0
 
 ### Minor Changes
