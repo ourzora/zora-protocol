@@ -1,5 +1,17 @@
 # @zoralabs/zora-1155-contracts
 
+## 1.5.0-gasless.0
+
+### Minor Changes
+
+- bb8069e: Adds first minter rewards to zora 1155 contracts.
+- f3c86d8: Added deterministic contract creation from the Zora1155 factory
+- 91db21c: Added the PremintExecutor contract, and updated erc1155 to support delegated minting
+
+### Patch Changes
+
+- bb8069e: Deprecate ZoraCreatorRedeemMinterStrategy at v1.0.1, a newer version will soon be released
+
 ## 1.4.0
 
 ### Minor Changes
