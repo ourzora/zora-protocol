@@ -1,0 +1,50 @@
+name: Release
+
+on:
+  push:
+    branches:
+      - "*prerelease*"
+
+concurrency: ${{ github.workflow }}-${{ github.ref }}
+
+jobs:
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v3
+
+      - name: Check pre.json existence
+        id: check_pre
+        uses: andstor/file-existence-action@v1
+        with:
+          files: ".changeset/pre.json"
+
+      - name: Ensure pre.json exists
+        if: steps.check_pre.outputs.files_exists != 'true'
+        run: echo "pre.json does not exist, enter prerelease mode with 'yarn changeset pre enter {prereleaseName}'"; exit 1
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: 16
+          cache: "yarn"
+
+      - name: Install project dependencies
+        run: yarn
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
+
+      - name: Create Release Pull Request or Publish to npm
+        id: changesets
+        uses: changesets/action@v1
+        with:
+          # This expects you to have a script called release which does a build for your packages and calls changeset publish
+          publish: yarn release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
