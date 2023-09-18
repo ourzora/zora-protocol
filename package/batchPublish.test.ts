@@ -9,7 +9,7 @@ import {
   parseEther,
   createTestClient,
 } from "viem";
-import { foundry, zora } from "viem/chains";
+import { foundry, zora, zoraTestnet } from "viem/chains";
 import { describe, it, expect } from "vitest";
 import {
   zoraCreator1155FactoryImplConfig,

@@ -3,18 +3,24 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
+import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
+import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {IOwnable} from "../../src/interfaces/IOwnable.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {MintFeeManager} from "../../src/fee/MintFeeManager.sol";
-
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
+    uint96 constant tokenPrice = 1 ether;
+    uint256 constant quantityToMint = 3;
+    uint256 constant tokenMaxSupply = 100;
+    uint32 constant royaltyMintSchedule = 10;
+    uint32 constant royaltyBPS = 100;
+
     address collector;
     address creator;
 
@@ -38,7 +44,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
     function _setupToken(IZoraCreator1155 target, IMinter1155 fixedPrice, uint96 tokenPrice) private returns (uint256 tokenId) {
         string memory tokenURI = "ipfs://token";
-        uint256 tokenMaxSupply = 100;
 
         tokenId = target.setupNewToken(tokenURI, tokenMaxSupply);
 
@@ -114,20 +119,12 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         IZoraCreator1155 target = _createErc1155Contract(factory);
 
         // ** 2. Setup a new token with the fixed price sales strategy and the token price **
-        uint96 tokenPrice = 1 ether;
         uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
 
         // ** 3. Mint on that contract **
-
-        // get the mint fee from the contract
-        uint256 mintFee = MintFeeManager(address(target)).mintFee();
-
-        // make sure the mint fee amount matches the configured mint fee amount
-        assertEq(mintFee, getChainConfig().mintFeeAmount, chainName);
+        uint256 mintFee = getChainConfig().mintFeeAmount;
 
         // mint 3 tokens
-
-        uint256 quantityToMint = 3;
         uint256 valueToSend = quantityToMint * (tokenPrice + mintFee);
 
         // mint the token

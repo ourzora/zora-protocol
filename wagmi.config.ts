@@ -8,7 +8,8 @@ type ContractNames =
   | "ZoraCreatorFixedPriceSaleStrategy"
   | "ZoraCreatorMerkleMinterStrategy"
   | "ZoraCreatorRedeemMinterFactory"
-  | "ZoraCreatorRedeemMinterStrategy";
+  | "ZoraCreatorRedeemMinterStrategy"
+  | "ZoraCreator1155PremintExecutor";
 
 type Address = `0x${string}`;
 
@@ -19,6 +20,7 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorMerkleMinterStrategy",
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
+  "ZoraCreator1155PremintExecutor",
 ];
 
 type Addresses = {
@@ -35,8 +37,9 @@ const getAddresses = () => {
   const addAddress = (
     contractName: ContractNames,
     chainId: number,
-    address: Address
+    address?: Address
   ) => {
+    if (!address) return;
     if (!addresses[contractName]) {
       addresses[contractName] = {};
     }
@@ -54,6 +57,7 @@ const getAddresses = () => {
       "1155_IMPL": Address;
       FACTORY_IMPL: Address;
       FACTORY_PROXY: Address;
+      PREMINTER?: Address;
     };
 
     const chainId = parseInt(addressesFile.split(".")[0]);
@@ -77,6 +81,11 @@ const getAddresses = () => {
       "ZoraCreatorRedeemMinterFactory",
       chainId,
       jsonAddress.REDEEM_MINTER_FACTORY
+    );
+    addAddress(
+      "ZoraCreator1155PremintExecutor",
+      chainId,
+      jsonAddress.PREMINTER
     );
   }
 
