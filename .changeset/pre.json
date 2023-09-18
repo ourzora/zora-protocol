@@ -1,0 +1,8 @@
+{
+  "mode": "pre",
+  "tag": "gasless",
+  "initialVersions": {
+    "@zoralabs/zora-1155-contracts": "1.4.0"
+  },
+  "changesets": []
+}
