@@ -2,4 +2,4 @@
 "@zoralabs/zora-1155-contracts": patch
 ---
 
-test patch
+Export preminter from package.json
