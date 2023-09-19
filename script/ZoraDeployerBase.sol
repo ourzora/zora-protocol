@@ -9,10 +9,7 @@ import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {ScriptDeploymentConfig, Deployment, ChainConfig} from "../src/deployment/DeploymentConfig.sol";
-import {ProxyShim} from "../src/utils/ProxyShim.sol";
-import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {Zora1155PremintExecutorProxy} from "../src/proxies/Zora1155PremintExecutorProxy.sol";
-import {ZoraCreator1155PremintExecutor} from "../src/delegation/ZoraCreator1155PremintExecutor.sol";
+import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 
 /// @notice Deployment drops for base where
@@ -41,60 +38,23 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
     function deployNew1155AndFactoryImpl(Deployment memory deployment, Zora1155Factory factoryProxy) internal {
         ChainConfig memory chainConfig = getChainConfig();
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(
-            chainConfig.mintFeeAmount,
-            chainConfig.mintFeeRecipient,
-            address(factoryProxy),
-            chainConfig.protocolRewards
-        );
-
-        console2.log("Implementation Address", address(creatorImpl));
-
-        deployment.contract1155Impl = address(creatorImpl);
-
-        ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
-            _implementation: creatorImpl,
-            _merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
-            _redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
-            _fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
+        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployer.deployNew1155AndFactoryImpl({
+            factoryProxyAddress: address(factoryProxy),
+            mintFeeRecipient: chainConfig.mintFeeRecipient,
+            protocolRewards: chainConfig.protocolRewards,
+            merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
+            redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
+            fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
         });
 
-        deployment.factoryImpl = address(factoryImpl);
-    }
-
-    function deployNew1155AndFactoryProxy(Deployment memory deployment, address deployer) internal {
-        address factoryShimAddress = address(new ProxyShim(deployer));
-        Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
-
-        deployment.factoryProxy = address(factoryProxy);
-
-        // deploy new 1155 and factory impl, and udpdate deployment config with it
-        deployNew1155AndFactoryImpl(deployment, factoryProxy);
-
-        ZoraCreator1155FactoryImpl(address(factoryProxy)).upgradeTo(deployment.factoryImpl);
-        ZoraCreator1155FactoryImpl(address(factoryProxy)).initialize(getChainConfig().factoryOwner);
-
-        console2.log("Factory Proxy", address(factoryProxy));
-    }
-
-    function deployNewPreminterImplementation(Deployment memory deployment) internal returns (address) {
-        // create preminter implementation
-        ZoraCreator1155PremintExecutor preminterImplementation = new ZoraCreator1155PremintExecutor(ZoraCreator1155FactoryImpl(deployment.factoryProxy));
-
-        return address(preminterImplementation);
+        deployment.contract1155Impl = contract1155ImplAddress;
+        deployment.factoryImpl = factoryImplAddress;
     }
 
     function deployNewPreminterProxy(Deployment memory deployment) internal {
-        address preminterImplementation = deployNewPreminterImplementation(deployment);
+        address proxyOwner = getChainConfig().factoryOwner;
 
-        // build the proxy
-        Zora1155PremintExecutorProxy proxy = new Zora1155PremintExecutorProxy(preminterImplementation, "");
-
-        deployment.preminter = address(proxy);
-
-        // access the executor implementation via the proxy, and initialize the admin
-        ZoraCreator1155PremintExecutor preminterAtProxy = ZoraCreator1155PremintExecutor(address(proxy));
-        preminterAtProxy.initialize(getChainConfig().factoryOwner);
+        deployment.preminter = ZoraDeployer.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
     }
 
     /// @notice Deploy a test contract for etherscan auto-verification

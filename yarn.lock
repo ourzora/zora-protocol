@@ -3160,6 +3160,11 @@ snake-case@^3.0.4:
     dot-case "^3.0.4"
     tslib "^2.0.3"
 
+solady@^0.0.123:
+  version "0.0.123"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.123.tgz#7ef95767c1570e3efde7550da2a8b439b2f413d2"
+  integrity sha512-F/B8OMCplGsS4FrdPrnEG0xdg8HKede5PwC+Rum8soj/LWxfKckA0p+Uwnlbgey2iI82IHvmSOCNhsdbA+lUrw==
+
 solidity-comments-extractor@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"

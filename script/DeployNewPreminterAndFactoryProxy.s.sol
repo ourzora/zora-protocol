@@ -12,11 +12,11 @@ contract DeployNewPreminterAndFactoryProxy is ZoraDeployerBase {
         Deployment memory deployment = getDeployment();
 
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-        address deployer = vm.envAddress("DEPLOYER");
+        // address deployer = vm.envAddress("DEPLOYER");
 
         vm.startBroadcast(deployerPrivateKey);
 
-        deployNew1155AndFactoryProxy(deployment, deployer);
+        // deployNew1155AndFactoryProxy(deployment, deployer);
 
         deployNewPreminterProxy(deployment);
 

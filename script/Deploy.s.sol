@@ -39,9 +39,9 @@ contract DeployScript is ZoraDeployerBase {
         deployment.merkleMintSaleStrategy = address(merkleMinter);
         deployment.redeemMinterFactory = address(redeemMinterFactory);
 
-        deployNew1155AndFactoryProxy(deployment, deployer);
+        // deployNew1155AndFactoryProxy(deployment, deployer);
 
-        deployTestContractForVerification(deployment.factoryProxy, chainConfig.factoryOwner);
+        // deployTestContractForVerification(deployment.factoryProxy, chainConfig.factoryOwner);
 
         return getDeploymentJSON(deployment);
     }
