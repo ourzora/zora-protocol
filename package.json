@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/zora-1155-contracts",
-  "version": "1.4.0",
+  "version": "1.4.1",
   "repository": "git@github.com:ourzora/creator-contracts.git",
   "author": "Iain <iain@zora.co>",
   "license": "MIT",
@@ -25,7 +25,8 @@
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "release": "yarn run prepack && changeset publish",
     "js-test:watch": "vitest dev",
-    "anvil": "anvil --fork-url https://rpc.zora.energy --fork-block-number 2550000 --chain-id 31337"
+    "anvil": "anvil --fork-url https://rpc.zora.energy --fork-block-number 2550000 --chain-id 31337",
+    "update-version": "changeset version && yarn update-contract-version"
   },
   "files": [
     "dist/",
