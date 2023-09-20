@@ -5,7 +5,7 @@
   "author": "Iain <iain@zora.co>",
   "license": "MIT",
   "main": "./dist/index.cjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/package/index.d.ts",
   "type": "module",
   "scripts": {
     "test": "forge test",
@@ -50,7 +50,7 @@
     "listr2": "^6.4.2",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
-    "tsup": "^6.7.0",
+    "tsup": "^7.2.0",
     "typescript": "^5.0.4",
     "viem": "^1.6.0",
     "vite": "^4.1.4",
