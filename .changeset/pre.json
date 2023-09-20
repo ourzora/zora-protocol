@@ -5,10 +5,6 @@
     "@zoralabs/zora-1155-contracts": "1.4.0"
   },
   "changesets": [
-    "happy-socks-melt",
-    "long-avocados-visit",
-    "mighty-kiwis-compete",
-    "spotty-horses-battle",
-    "twelve-comics-sniff"
+    "modern-coins-roll"
   ]
 }
