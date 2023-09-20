@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 1.5.0-gasless.2
+
+### Patch Changes
+
+- 0862fc8: Fix types reference for package export
+
 ## 1.5.0-gasless.1
 
 ### Patch Changes
