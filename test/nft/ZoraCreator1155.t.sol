@@ -626,6 +626,10 @@ contract ZoraCreator1155Test is Test {
         vm.stopPrank();
     }
 
+    function test_mintFee_returnsMintFee() public {
+        assertEq(target.mintFee(), 0.000777 ether);
+    }
+
     function test_FreeMintRewards(uint256 quantity) public {
         vm.assume(quantity > 0 && quantity < type(uint200).max);
 

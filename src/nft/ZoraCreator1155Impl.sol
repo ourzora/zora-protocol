@@ -483,6 +483,10 @@ contract ZoraCreator1155Impl is
         return firstMinters[tokenId];
     }
 
+    function mintFee() external view returns (uint256) {
+        return TOTAL_REWARD_PER_MINT;
+    }
+
     /// @notice Get the creator reward recipient address
     /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
     function getCreatorRewardRecipient() public view returns (address payable) {
