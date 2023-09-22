@@ -138,6 +138,10 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
 
     /// @notice Utility function to determine if a premint contract has been created for a uid of a premint, and if so,
     /// What is the token id that was created for the uid.
+    /// @param contractAddress address of contract to get status for
+    /// @param uid of premint to check status for
+    /// @return contractCreated if the 1155 contract has been created
+    /// @return tokenIdForPremint If the token has been created for the premint, the token id, otherwise 0
     function premintStatus(address contractAddress, uint32 uid) public view returns (bool contractCreated, uint256 tokenIdForPremint) {
         if (contractAddress.code.length == 0) {
             return (false, 0);
