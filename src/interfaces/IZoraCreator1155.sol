@@ -109,4 +109,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     function callRenderer(uint256 tokenId, bytes memory data) external;
 
     function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external;
+
+    function mintFee() external view returns (uint256);
 }
