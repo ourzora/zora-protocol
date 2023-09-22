@@ -16,6 +16,7 @@ import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
 /// Mints the first x tokens to the executor of the transaction.
+/// Stateless contract that just executes atomic transactions for delegated contract and token creation and minting.
 /// @author @oveddan
 contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradeable, IHasContractName, IZoraCreator1155Errors {
     IZoraCreator1155Factory public immutable zora1155Factory;
@@ -32,11 +33,22 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
         zora1155Factory = _factory;
     }
 
+    /// Initialized the upgradeable contract
+    /// @param _initialOwner The owner of the contract
     function initialize(address _initialOwner) public initializer {
         __Ownable_init(_initialOwner);
         __UUPSUpgradeable_init();
     }
 
+    /// @notice Emitted when a new token is created and minted to the executor of the transaction
+    /// @param contractAddress address of erc1155 contract that premint was executed against.  This contract would have been created by the premint call if it didn't already exist.
+    /// @param tokenId Created token id as a result of the premint action
+    /// @param createdNewContract If a new contract was created as a result of the premint action
+    /// @param uid uid of the signed premint
+    /// @param contractConfig Configuration of contract that was created, if one was created
+    /// @param tokenConfig Configuration of token that was created
+    /// @param minter Address of the minter that executed the premint action
+    /// @param quantityMinted Quantity of tokens that were minted to the executor of the transaction
     event Preminted(
         address indexed contractAddress,
         uint256 indexed tokenId,
@@ -48,14 +60,14 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
         uint256 quantityMinted
     );
 
-    /// Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.
+    /// @notice Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.
     /// If the erc1155 contract hasn't been created yet, it will be created with the given config within this same transaction.
     /// The creator must sign the intent to create the token, and must have mint new token permission on the erc1155 contract,
     /// or match the contract admin on the contract creation config if the contract hasn't been created yet.
-    /// Contract address of the created contract is deterministically generated from the contract config and this contract's address.
-    /// @param contractConfig Parameters for creating a new contract, if one doesn't exist yet.  Used to resolve the deterministic contract address.
+    /// Contract address of the created contract is deterministically generated from the contract config, this contract's address, and the erc1155 factory contract's address.
+    /// @param contractConfig Parameters for creating a new erc1155 contract, if one doesn't exist yet.  Used to resolve the deterministic contract address.
     /// @param premintConfig Parameters for creating the token, and minting the initial x tokens to the executor.
-    /// @param signature Signature of the creator of the token, which must match the signer of the premint config, or have permission to create new tokens on the erc1155 contract if it's already been created
+    /// @param signature Signature of the creator of the premint.
     /// @param quantityToMint How many tokens to mint to the executor of this transaction once the token is created
     /// @param mintComment A comment to associate with the mint action
     function premint(
@@ -123,9 +135,10 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
         tokenContract = IZoraCreator1155(newContractAddresss);
     }
 
-    /// Gets the deterministic contract address for the given contract creation config.
-    /// Contract address is generated deterministically from a hash based onthe contract uri, contract name,
-    /// contract admin, and the msg.sender, which is this contract's address.
+    /// @notice Gets the deterministic contract address for the given contract creation config.
+    /// Contract address is generated deterministically from this premint contract's address, the factory's address, and a hash based on the contract uri, contract name,
+    /// contract admin.
+    /// @param contractConfig Configuration of the contract to get the address for
     function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
         return
             zora1155Factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
@@ -174,7 +187,7 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
         }
     }
 
-    // upgrade related functionality
+    // begin upgrade related functionality
 
     /// @notice The name of the contract for upgrade purposes
     function contractName() external pure returns (string memory) {
