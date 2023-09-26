@@ -35,6 +35,8 @@ struct Deployment {
     address factoryProxy;
     /// @notice Preminter contract address
     address preminter;
+    /// @notice UpgradeGate
+    address upgradeGate;
 }
 
 abstract contract DeploymentConfig is CommonBase {
@@ -61,6 +63,7 @@ abstract contract DeploymentConfig is CommonBase {
     string constant FACTORY_IMPL = "FACTORY_IMPL";
     string constant FACTORY_PROXY = "FACTORY_PROXY";
     string constant PREMINTER = "PREMINTER";
+    string constant UPGRADE_GATE = "UPGRADE_GATE"; 
 
     /// @notice Return a prefixed key for reading with a ".".
     /// @param key key to prefix
@@ -101,6 +104,7 @@ abstract contract DeploymentConfig is CommonBase {
         deployment.factoryImpl = readAddressOrDefaultToZero(json, FACTORY_IMPL);
         deployment.factoryProxy = readAddressOrDefaultToZero(json, FACTORY_PROXY);
         deployment.preminter = readAddressOrDefaultToZero(json, PREMINTER);
+        deployment.upgradeGate = readAddressOrDefaultToZero(json, UPGRADE_GATE);
     }
 }
 

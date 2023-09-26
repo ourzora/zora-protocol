@@ -34,6 +34,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
         vm.serializeAddress(deploymentJsonKey, CONTRACT_1155_IMPL, deployment.contract1155Impl);
         vm.serializeAddress(deploymentJsonKey, FACTORY_IMPL, deployment.factoryImpl);
         vm.serializeAddress(deploymentJsonKey, PREMINTER, deployment.preminter);
+        vm.serializeAddress(deploymentJsonKey, UPGRADE_GATE, deployment.upgradeGate);
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
         console2.log(deploymentJson);
     }
@@ -41,12 +42,12 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
     function deployNew1155AndFactoryImpl(Deployment memory deployment, Zora1155Factory factoryProxy) internal {
         ChainConfig memory chainConfig = getChainConfig();
 
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(
-            chainConfig.mintFeeAmount,
-            chainConfig.mintFeeRecipient,
-            address(factoryProxy),
-            chainConfig.protocolRewards
-        );
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl({
+            _mintFeeRecipient: chainConfig.mintFeeRecipient,
+            // TODO(iain): should this be a part of chainConfig not deployment?
+            _upgradeGate: deployment.upgradeGate,
+            _protocolRewards: chainConfig.protocolRewards
+        });
 
         console2.log("Implementation Address", address(creatorImpl));
 

@@ -34,10 +34,12 @@ contract DeployScript is ZoraDeployerBase {
         ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
         ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
         ZoraCreatorRedeemMinterFactory redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
+        UpgradeGate upgradeGate = new UpgradeGate(chainConfig.factoryOwner);
 
         deployment.fixedPriceSaleStrategy = address(fixedPricedMinter);
         deployment.merkleMintSaleStrategy = address(merkleMinter);
         deployment.redeemMinterFactory = address(redeemMinterFactory);
+        deployment.upgradeGate = address(upgradeGate);
 
         deployNew1155AndFactoryProxy(deployment, deployer);
 
