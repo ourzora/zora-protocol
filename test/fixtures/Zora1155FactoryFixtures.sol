@@ -13,10 +13,10 @@ import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.so
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 
 library Zora1155FactoryFixtures {
-    function setupZora1155Impl(uint256 mintFeeAmount, address zora, Zora1155Factory factoryProxy) internal returns (ZoraCreator1155Impl) {
+    function setupZora1155Impl(address zora, Zora1155Factory factoryProxy) internal returns (ZoraCreator1155Impl) {
         ProtocolRewards rewards = new ProtocolRewards();
         UpgradeGate upgradeGate = new UpgradeGate(zora);
-        return new ZoraCreator1155Impl(mintFeeAmount, zora, address(upgradeGate), address(rewards));
+        return new ZoraCreator1155Impl(zora, address(upgradeGate), address(rewards));
     }
 
     function upgradeFactoryProxyToUse1155(
@@ -39,13 +39,12 @@ library Zora1155FactoryFixtures {
     }
 
     function setup1155AndFactoryProxy(
-        uint256 mintFeeAmount,
         address zora,
         address deployer
     ) internal returns (ZoraCreator1155Impl zoraCreator1155Impl, IMinter1155 fixedPriceMinter, Zora1155Factory factoryProxy) {
         factoryProxy = setupFactoryProxy(deployer);
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
-        zoraCreator1155Impl = setupZora1155Impl(mintFeeAmount, zora, factoryProxy);
+        zoraCreator1155Impl = setupZora1155Impl(zora, factoryProxy);
         upgradeFactoryProxyToUse1155(factoryProxy, zoraCreator1155Impl, fixedPriceMinter, deployer);
     }
 }

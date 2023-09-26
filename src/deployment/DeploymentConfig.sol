@@ -9,8 +9,6 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 struct ChainConfig {
     /// @notice The user that owns the factory proxy. Allows ability to upgrade for new implementations deployed.
     address factoryOwner;
-    /// @notice Mint fee amount in WEI charged for each mint
-    uint256 mintFeeAmount;
     /// @notice Mint fee recipient user
     address mintFeeRecipient;
     /// @notice Protocol rewards contract address
@@ -77,7 +75,6 @@ abstract contract DeploymentConfig is CommonBase {
     function getChainConfig() internal view returns (ChainConfig memory chainConfig) {
         string memory json = vm.readFile(string.concat("chainConfigs/", Strings.toString(chainId()), ".json"));
         chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
-        chainConfig.mintFeeAmount = json.readUint(getKeyPrefix(MINT_FEE_AMOUNT));
         chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
         chainConfig.protocolRewards = json.readAddress(getKeyPrefix(PROTOCOL_REWARDS));
     }

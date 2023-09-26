@@ -23,7 +23,6 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     address internal zora;
     Zora1155Factory internal factoryProxy;
     ZoraCreator1155FactoryImpl factoryAtProxy;
-    uint256 internal mintFeeAmount = 0.000777 ether;
     ZoraCreator1155PremintExecutor preminterAtProxy;
 
     function setUp() external {
@@ -33,7 +32,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         (creator, creatorPrivateKey) = makeAddrAndKey("creator");
 
         vm.startPrank(zora);
-        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(mintFeeAmount, zora, zora);
+        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         factoryAtProxy = ZoraCreator1155FactoryImpl(address(factoryProxy));
         vm.stopPrank();
 
@@ -73,9 +72,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         // execute the premint
-        vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
-        uint256 tokenId = preminterAtProxy.premint{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, "");
+        uint256 tokenId = preminterAtProxy.premint{value: 0.000777 ether}(contractConfig, premintConfig, signature, quantityToMint, "");
 
         assertEq(ZoraCreator1155Impl(deterministicAddress).balanceOf(collector, tokenId), 1);
     }

@@ -48,7 +48,7 @@ contract CreatorRoyaltiesControlTest is Test {
     function test_GetsRoyaltiesInfoGlobalDefault() external {
         address royaltyPayout = address(0x999);
 
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(recipient, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 10, address(royaltyPayout)), admin, _emptyInitData());
@@ -65,7 +65,7 @@ contract CreatorRoyaltiesControlTest is Test {
 
     function test_GetsRoyaltiesInfoSpecificToken() external {
         address royaltyPayout = address(0x999);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, recipient, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(recipient, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         adminRole = target.PERMISSION_BIT_ADMIN();
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(100, 10, address(royaltyPayout)), admin, _emptyInitData());

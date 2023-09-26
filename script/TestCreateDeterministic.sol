@@ -43,7 +43,7 @@ contract DeployScript is ZoraDeployerBase {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(0, address(0), address(0), address(new ProtocolRewards()));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(address(0), address(0), address(new ProtocolRewards()));
         // get above constructor args encoded for verification later:
         ZoraCreator1155FactoryImpl factory = new ZoraCreator1155FactoryImpl(
             zoraCreator1155Impl,

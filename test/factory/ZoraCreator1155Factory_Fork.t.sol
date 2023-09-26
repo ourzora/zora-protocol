@@ -121,7 +121,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
 
         // ** 3. Mint on that contract **
-        uint256 mintFee = getChainConfig().mintFeeAmount;
+        uint256 mintFee = 0.000777 ether;
 
         // mint 3 tokens
         uint256 valueToSend = quantityToMint * (tokenPrice + mintFee);

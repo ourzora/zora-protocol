@@ -16,13 +16,13 @@ import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {UpgradeGate} from "../src/upgrades/UpgradeGate.sol";
 
 contract DeployScript is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment;
         ChainConfig memory chainConfig = getChainConfig();
 
-        console2.log("zoraFeeAmount", chainConfig.mintFeeAmount);
         console2.log("zoraFeeRecipient", chainConfig.mintFeeRecipient);
         console2.log("factoryOwner", chainConfig.factoryOwner);
         console2.log("protocolRewards", chainConfig.protocolRewards);

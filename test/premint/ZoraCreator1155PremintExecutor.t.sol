@@ -22,13 +22,13 @@ import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     uint256 internal constant CONTRACT_BASE_ID = 0;
     uint256 internal constant PERMISSION_BIT_MINTER = 2 ** 2;
+    uint256 internal mintFeeAmount = 0.000777 ether;
 
     ZoraCreator1155PremintExecutor internal preminter;
     Zora1155Factory factoryProxy;
     ZoraCreator1155FactoryImpl factoryImpl;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
-    uint256 internal mintFeeAmount = 0.000777 ether;
 
     // setup contract config
     uint256 internal creatorPrivateKey;
@@ -55,7 +55,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         collector = makeAddr("collector");
 
         vm.startPrank(zora);
-        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(mintFeeAmount, zora, zora);
+        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
         factoryImpl = ZoraCreator1155FactoryImpl(address(factoryProxy));
