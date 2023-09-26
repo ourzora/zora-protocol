@@ -2,7 +2,7 @@
 fs_permissions = [{access = "read", path = "./addresses"}, {access = "read", path = "./chainConfigs"}, {access = "read", path = "./package.json"}]
 libs = ['_imagine', 'node_modules', 'script']
 optimizer = true
-optimizer_runs = 3000
+optimizer_runs = 500
 out = 'out'
 solc_version = '0.8.17'
 src = 'src'

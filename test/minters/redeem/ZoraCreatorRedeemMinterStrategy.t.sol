@@ -14,6 +14,7 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 
+/// @notice Contract versions after v1.4.0 will not support burn to redeem
 contract ZoraCreatorRedeemMinterStrategyTest is Test {
     ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal target;
@@ -51,7 +52,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
     }
 
     function test_Version() external {
-        assertEq(redeemMinter.contractVersion(), "1.0.1");
+        assertEq(redeemMinter.contractVersion(), "1.1.0");
     }
 
     function test_OnlyDropContractCanCallWriteFunctions() external {
@@ -59,11 +60,11 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         vm.startPrank(address(admin));
 
         vm.expectRevert(abi.encodeWithSignature("CallerNotCreatorContract()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(0, redeemInstructions);
 
         bytes32[] memory hashes = new bytes32[](0);
         vm.expectRevert(abi.encodeWithSignature("CallerNotCreatorContract()"));
-        redeemMinter.clearRedeem(hashes);
+        redeemMinter.clearRedeem(0, hashes);
 
         vm.expectRevert(abi.encodeWithSignature("CallerNotCreatorContract()"));
         redeemMinter.requestMint(address(0), 0, 0, 0, bytes(""));
@@ -85,6 +86,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         ERC20PresetMinterPauser burnToken = new ERC20PresetMinterPauser("Random Token", "RAND");
         burnToken.mint(address(tokenRecipient), 1000);
 
+        console2.log("NEW TOKEN ID", newTokenId);
         ZoraCreatorRedeemMinterStrategy.MintToken memory mintToken = ZoraCreatorRedeemMinterStrategy.MintToken({
             tokenContract: address(target),
             tokenId: newTokenId,
@@ -114,12 +116,12 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         vm.expectEmit(true, true, false, true);
         emit RedeemSet(address(target), keccak256(abi.encode(redeemInstructions)), redeemInstructions);
         vm.startPrank(address(target));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         vm.expectRevert(abi.encodeWithSignature("RedeemInstructionAlreadySet()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         vm.stopPrank();
 
-        assertTrue(redeemMinter.redeemInstructionsHashIsAllowed(keccak256(abi.encode(redeemInstructions))));
+        assertTrue(redeemMinter.redeemInstructionsHashIsAllowed(newTokenId, keccak256(abi.encode(redeemInstructions))));
     }
 
     function test_SetRedeemInstructionValidation() external {
@@ -161,54 +163,54 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         redeemInstructions.instructions[0].tokenIdStart = 1;
         redeemInstructions.instructions[0].tokenIdEnd = 0;
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenIdsForTokenType()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.instructions[0].tokenIdStart = 0;
         redeemInstructions.instructions[0].tokenIdEnd = 1;
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenIdsForTokenType()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
 
         // InvalidTokenIdsForTokenType: non ERC20 w/ tokenID start > end
         redeemInstructions.instructions[0].tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC721;
         redeemInstructions.instructions[0].tokenIdStart = 4;
         redeemInstructions.instructions[0].tokenIdEnd = 2;
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenIdsForTokenType()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.mintToken.tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155;
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenIdsForTokenType()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.instructions[0].tokenIdStart = 0;
         redeemInstructions.instructions[0].tokenIdEnd = 0;
 
         // InvalidTokenType: tokenType is NULL
         redeemInstructions.instructions[0].tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.NULL;
         vm.expectRevert(abi.encodeWithSignature("InvalidTokenType()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.instructions[0].tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC1155;
 
         // MustBurnOrTransfer: both transferRecipient and burnFunction are 0
         redeemInstructions.instructions[0].transferRecipient = address(0);
         redeemInstructions.instructions[0].burnFunction = bytes4(0);
         vm.expectRevert(abi.encodeWithSignature("MustBurnOrTransfer()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
 
         // MustBurnOrTransfer: both transferRecipient and burnFunction are non-zero
         redeemInstructions.instructions[0].transferRecipient = address(1);
         redeemInstructions.instructions[0].burnFunction = bytes4(keccak256(bytes("burnFrom(address,uint256)")));
         vm.expectRevert(abi.encodeWithSignature("MustBurnOrTransfer()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.instructions[0].transferRecipient = address(0);
 
         // IncorrectMintAmount
         redeemInstructions.instructions[0].amount = 0;
         vm.expectRevert(abi.encodeWithSignature("IncorrectMintAmount()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.instructions[0].amount = 500;
 
         // InvalidSaleEndOrStart: start > end
         redeemInstructions.saleStart = 1;
         redeemInstructions.saleEnd = 0;
         vm.expectRevert(abi.encodeWithSignature("InvalidSaleEndOrStart()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.saleStart = 0;
         redeemInstructions.saleEnd = type(uint64).max;
 
@@ -217,25 +219,25 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         redeemInstructions.saleEnd = 1 days;
         vm.warp(2 days);
         vm.expectRevert(abi.encodeWithSignature("InvalidSaleEndOrStart()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.saleEnd = type(uint64).max;
 
         // EmptyRedeemInstructions();
         redeemInstructions.instructions = new ZoraCreatorRedeemMinterStrategy.RedeemInstruction[](0);
         vm.expectRevert(abi.encodeWithSignature("EmptyRedeemInstructions()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.instructions = instructions;
 
         // MintTokenContractMustBeCreatorContract
         redeemInstructions.mintToken.tokenContract = address(0);
         vm.expectRevert(abi.encodeWithSignature("MintTokenContractMustBeCreatorContract()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
         redeemInstructions.mintToken.tokenContract = address(target);
 
         // MintTokenTypeMustBeERC1155:
         redeemInstructions.mintToken.tokenType = ZoraCreatorRedeemMinterStrategy.TokenType.ERC721;
         vm.expectRevert(abi.encodeWithSignature("MintTokenTypeMustBeERC1155()"));
-        redeemMinter.setRedeem(redeemInstructions);
+        redeemMinter.setRedeem(newTokenId, redeemInstructions);
     }
 
     ///////// REQUEST MINT /////////
@@ -274,7 +276,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -327,7 +329,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -380,7 +382,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -457,7 +459,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -547,7 +549,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -634,7 +636,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -719,7 +721,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -768,7 +770,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.warp(2 days);
@@ -818,7 +820,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -871,7 +873,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: fundsRecipient
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -920,7 +922,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -969,7 +971,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         // instructions length != tokenIds length
@@ -1038,7 +1040,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -1120,7 +1122,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -1178,7 +1180,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -1238,7 +1240,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.prank(actualTokenOwner);
@@ -1299,7 +1301,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -1357,7 +1359,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -1417,7 +1419,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);
@@ -1477,12 +1479,12 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
             ethRecipient: address(0)
         });
 
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, redeemInstructions));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.setRedeem.selector, newTokenId, redeemInstructions));
         bytes32[] memory hashes = new bytes32[](1);
         hashes[0] = keccak256(abi.encode(redeemInstructions));
         vm.expectEmit(true, false, false, true);
         emit RedeemsCleared(address(target), hashes);
-        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.clearRedeem.selector, hashes));
+        target.callSale(newTokenId, redeemMinter, abi.encodeWithSelector(ZoraCreatorRedeemMinterStrategy.clearRedeem.selector, newTokenId, hashes));
         vm.stopPrank();
 
         vm.startPrank(tokenRecipient);

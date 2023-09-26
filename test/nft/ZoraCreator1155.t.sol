@@ -88,12 +88,6 @@ contract ZoraCreator1155Test is Test {
         );
     }
 
-    // NOTE: This won't work on PRs that update the contract version bc package.json is updated via changesets
-    // function test_packageJsonVersion() public {
-    //     string memory package = vm.readFile("./package.json");
-    //     assertEq(package.readString(".version"), target.contractVersion());
-    // }
-
     function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin) external {
         vm.assume(royaltySchedule != 1);
         vm.assume(royaltyRecipient != address(0) && royaltySchedule != 0 && royaltyBPS != 0);
@@ -1008,7 +1002,7 @@ contract ZoraCreator1155Test is Test {
         target.callSale(tokenId, simpleMinter, abi.encodeWithSignature("setNum(uint256)", 1));
         assertEq(simpleMinter.num(), 1);
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155.CallFailed.selector, ""));
+        vm.expectRevert(abi.encodeWithSignature("Call_TokenIdMismatch()"));
         target.callSale(tokenId, simpleMinter, abi.encodeWithSignature("setNum(uint256)", 0));
 
         vm.stopPrank();
