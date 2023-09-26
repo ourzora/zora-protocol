@@ -67,15 +67,15 @@ contract ZoraCreator1155Impl is
     /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
     /// @notice Factory contract
-    IFactoryManagedUpgradeGate internal immutable factory;
+    IFactoryManagedUpgradeGate internal immutable upgradeGate;
 
     constructor(
         uint256, // TODO remove
         address _mintFeeRecipient,
-        address _factory,
+        address _upgradeGate,
         address _protocolRewards
     ) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
-        factory = IFactoryManagedUpgradeGate(_factory);
+        upgradeGate = IFactoryManagedUpgradeGate(_upgradeGate);
     }
 
     /// @notice Initializes the contract
@@ -771,7 +771,7 @@ contract ZoraCreator1155Impl is
     /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
     /// @param _newImpl The new implementation address
     function _authorizeUpgrade(address _newImpl) internal view override onlyAdmin(CONTRACT_BASE_ID) {
-        if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
+        if (!upgradeGate.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
     }

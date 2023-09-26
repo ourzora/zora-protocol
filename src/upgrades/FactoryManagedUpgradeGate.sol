@@ -7,7 +7,23 @@ import {FactoryManagedUpgradeGateStorageV1} from "./FactoryManagedUpgradeGateSto
 
 /// @title FactoryManagedUpgradeGate
 /// @notice Contract for managing upgrades and safe upgrade paths for 1155 contracts
-abstract contract FactoryManagedUpgradeGate is IFactoryManagedUpgradeGate, Ownable2StepUpgradeable, FactoryManagedUpgradeGateStorageV1 {
+contract FactoryManagedUpgradeGate is IFactoryManagedUpgradeGate, Ownable2StepUpgradeable, FactoryManagedUpgradeGateStorageV1 {
+    /// @notice Constructor for deployment pathway 
+    constructor(address _defaultOwner) {
+        __Ownable_init(_defaultOwner);
+        emit UpgradeGateSetup();
+    }
+
+    /// @notice ContractURI for contract information with the strategy
+    function contractURI() external pure returns (string memory) {
+        return "https://github.com/ourzora/zora-1155-contracts/";
+    }
+
+    /// @notice The name of the sale strategy
+    function contractName() external pure returns (string memory) {
+        return "ZORA 1155 Factory Managed Upgrade Gate";
+    }
+
     ///                                                          ///
     ///                CREATOR TOKEN UPGRADES                    ///
     ///                                                          ///
