@@ -506,11 +506,21 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to call the sale contract with
     /// @param salesConfig The sales config contract to call
     /// @param data The data to pass to the sales config contract
-    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
+    function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes calldata data) external onlyAdminOrRole(tokenId, PERMISSION_BIT_SALES) {
         _requireAdminOrRole(address(salesConfig), tokenId, PERMISSION_BIT_MINTER);
         if (!salesConfig.supportsInterface(type(IMinter1155).interfaceId)) {
             revert Sale_CannotCallNonSalesContract(address(salesConfig));
         }
+
+        // Get the token id encoded in the calldata for the sales config
+        // Assume that it is the first 32 bytes following the function selector
+        uint256 encodedTokenId = uint256(bytes32(data[4:36]));
+
+        // Ensure the encoded token id matches the passed token id
+        if (encodedTokenId != tokenId) {
+            revert Call_TokenIdMismatch();
+        }
+
         (bool success, bytes memory why) = address(salesConfig).call(data);
         if (!success) {
             revert CallFailed(why);

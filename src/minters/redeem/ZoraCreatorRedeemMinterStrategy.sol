@@ -120,8 +120,8 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     error MintTokenContractMustBeCreatorContract();
     error SenderIsNotTokenOwner();
 
-    /// @notice keccak256(abi.encode(RedeemInstructions)) => redeem instructions are allowed
-    mapping(bytes32 => bool) public redeemInstructionsHashIsAllowed;
+    /// @notice tokenId, keccak256(abi.encode(RedeemInstructions)) => redeem instructions are allowed
+    mapping(uint256 => mapping(bytes32 => bool)) public redeemInstructionsHashIsAllowed;
 
     /// @notice Zora creator contract
     address public creatorContract;
@@ -152,7 +152,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
 
     /// @notice Redeem Minter Strategy contract version
     function contractVersion() external pure override returns (string memory) {
-        return "1.0.1";
+        return "1.1.0";
     }
 
     /// @notice Redeem instructions object hash
@@ -210,27 +210,33 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
     }
 
     /// @notice Set redeem instructions
+    /// @param tokenId The token id to set redeem instructions for
     /// @param _redeemInstructions The redeem instructions object
-    function setRedeem(RedeemInstructions calldata _redeemInstructions) external onlyCreatorContract {
+    function setRedeem(uint256 tokenId, RedeemInstructions calldata _redeemInstructions) external onlyCreatorContract {
+        if (_redeemInstructions.mintToken.tokenId != tokenId) {
+            revert InvalidTokenIdsForTokenType();
+        }
+
         validateRedeemInstructions(_redeemInstructions);
 
         bytes32 hash = redeemInstructionsHash(_redeemInstructions);
-        if (redeemInstructionsHashIsAllowed[hash]) {
+        if (redeemInstructionsHashIsAllowed[tokenId][hash]) {
             revert RedeemInstructionAlreadySet();
         }
-        redeemInstructionsHashIsAllowed[hash] = true;
+        redeemInstructionsHashIsAllowed[tokenId][hash] = true;
 
         emit RedeemSet(creatorContract, hash, _redeemInstructions);
     }
 
     /// @notice Clear redeem instructions
+    /// @param tokenId The token id to clear redeem instructions for
     /// @param hashes Array of redeem instructions hashes to clear
-    function clearRedeem(bytes32[] calldata hashes) external onlyCreatorContract {
+    function clearRedeem(uint256 tokenId, bytes32[] calldata hashes) external onlyCreatorContract {
         uint256 numHashes = hashes.length;
 
         unchecked {
             for (uint256 i; i < numHashes; ++i) {
-                redeemInstructionsHashIsAllowed[hashes[i]] = false;
+                redeemInstructionsHashIsAllowed[tokenId][hashes[i]] = false;
             }
         }
 
@@ -254,7 +260,11 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
             (RedeemInstructions, uint256[][], uint256[][])
         );
         bytes32 hash = redeemInstructionsHash(redeemInstructions);
-        if (!redeemInstructionsHashIsAllowed[hash]) {
+
+        if (tokenId != redeemInstructions.mintToken.tokenId) {
+            revert InvalidTokenIdsForTokenType();
+        }
+        if (!redeemInstructionsHashIsAllowed[tokenId][hash]) {
             revert RedeemInstructionNotAllowed();
         }
         if (redeemInstructions.saleStart > block.timestamp) {

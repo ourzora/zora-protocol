@@ -420,4 +420,44 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         assertTrue(fixedPrice.supportsInterface(0x01ffc9a7));
         assertFalse(fixedPrice.supportsInterface(0x0));
     }
+
+    function testRevert_CannotSetSaleOfDifferentTokenId() public {
+        vm.startPrank(admin);
+        uint256 tokenId1 = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 tokenId2 = target.setupNewToken("https://zora.co/testing/token.json", 5);
+
+        target.addPermission(tokenId1, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+        target.addPermission(tokenId2, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+
+        vm.expectRevert(abi.encodeWithSignature("Call_TokenIdMismatch()"));
+        target.callSale(
+            tokenId1,
+            fixedPrice,
+            abi.encodeWithSelector(
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+                tokenId2,
+                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+        vm.stopPrank();
+    }
+
+    function testRevert_CannotResetSaleOfDifferentTokenId() public {
+        vm.startPrank(admin);
+        uint256 tokenId1 = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 tokenId2 = target.setupNewToken("https://zora.co/testing/token.json", 5);
+
+        target.addPermission(tokenId1, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+        target.addPermission(tokenId2, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+
+        vm.expectRevert(abi.encodeWithSignature("Call_TokenIdMismatch()"));
+        target.callSale(tokenId1, fixedPrice, abi.encodeWithSelector(ZoraCreatorFixedPriceSaleStrategy.resetSale.selector, tokenId2));
+        vm.stopPrank();
+    }
 }

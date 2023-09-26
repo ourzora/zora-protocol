@@ -16,6 +16,7 @@ import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155F
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
+/// @notice Contract versions after v1.4.0 will not support burn to redeem
 contract ZoraCreatorRedeemMinterFactoryTest is Test {
     ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal target;
@@ -39,7 +40,7 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
     }
 
     function test_contractVersion() public {
-        assertEq(minterFactory.contractVersion(), "1.0.1");
+        assertEq(minterFactory.contractVersion(), "1.1.0");
     }
 
     function test_createMinterIfNoneExists() public {
@@ -48,7 +49,7 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         address predictedAddress = minterFactory.predictMinterAddress(address(target));
         vm.expectEmit(false, false, false, false);
         emit RedeemMinterDeployed(address(target), predictedAddress);
-        target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinterIfNoneExists.selector));
+        target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinterIfNoneExists.selector, 0));
         vm.stopPrank();
 
         ZoraCreatorRedeemMinterStrategy minter = ZoraCreatorRedeemMinterStrategy(predictedAddress);
