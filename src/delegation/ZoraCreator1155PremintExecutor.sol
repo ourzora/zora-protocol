@@ -11,6 +11,7 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1155Attribution} from "./ZoraCreator1155Attribution.sol";
 
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
@@ -24,9 +25,6 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
     uint256 constant CONTRACT_BASE_ID = 0;
     /// @dev copied from ZoraCreator1155Impl
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
-
-    error MintNotYetStarted();
-    error InvalidSignature();
 
     constructor(IZoraCreator1155Factory _factory) {
         zora1155Factory = _factory;
@@ -142,7 +140,7 @@ contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradea
         if (contractAddress.code.length == 0) {
             return (false, 0);
         }
-        return (true, IZoraCreator1155(contractAddress).delegatedTokenId(uid));
+        return (true, ERC1155DelegationStorageV1(contractAddress).delegatedTokenId(uid));
     }
 
     /// @notice Utility function to check if the signature is valid; i.e. the signature can be used to

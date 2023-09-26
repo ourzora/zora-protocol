@@ -31,7 +31,8 @@ import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
-import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../premint/ZoraCreator1155Attribution.sol";
+import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
+import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -51,7 +52,8 @@ contract ZoraCreator1155Impl is
     CreatorPermissionControl,
     CreatorRoyaltiesControl,
     ERC1155Rewards,
-    ERC1155RewardsStorageV1
+    ERC1155RewardsStorageV1,
+    ERC1155DelegationStorageV1
 {
     /// @notice This user role allows for any action to be performed
     uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
@@ -774,9 +776,6 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    /* start eip712 functionality */
-    mapping(uint32 => uint256) public delegatedTokenId;
-
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
         if (delegatedTokenId[premintConfig.uid] != 0) {
@@ -784,7 +783,9 @@ contract ZoraCreator1155Impl is
             return delegatedTokenId[premintConfig.uid];
         }
 
-        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.validateAndHashPremint(premintConfig);
+        validatePremint(premintConfig);
+
+        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
         // recover the signer from the data
         address creator = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
@@ -811,5 +812,17 @@ contract ZoraCreator1155Impl is
 
         // grant the token creator as admin of the newly created token
         _addPermission(newTokenId, creator, PERMISSION_BIT_ADMIN);
+    }
+
+    function validatePremint(PremintConfig calldata premintConfig) private view {
+        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
+            // if the mint start is in the future, then revert
+            revert MintNotYetStarted();
+        }
+        if (premintConfig.deleted) {
+            // if the signature says to be deleted, then dont execute any further minting logic;
+            // return 0
+            revert PremintDeleted();
+        }
     }
 }

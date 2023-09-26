@@ -12,7 +12,7 @@ import {ScriptDeploymentConfig, Deployment, ChainConfig} from "../src/deployment
 import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155PremintExecutorProxy} from "../src/proxies/Zora1155PremintExecutorProxy.sol";
-import {ZoraCreator1155PremintExecutor} from "../src/premint/ZoraCreator1155PremintExecutor.sol";
+import {ZoraCreator1155PremintExecutor} from "../src/delegation/ZoraCreator1155PremintExecutor.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 
 /// @notice Deployment drops for base where

@@ -14,8 +14,8 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155PremintExecutor} from "../../src/premint/ZoraCreator1155PremintExecutor.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/premint/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155PremintExecutor} from "../../src/delegation/ZoraCreator1155PremintExecutor.sol";
+import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 
@@ -338,7 +338,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         bytes memory signature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, chainId);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
-        vm.expectRevert(ZoraCreator1155Attribution.PremintDeleted.selector);
+        vm.expectRevert(IZoraCreator1155Errors.PremintDeleted.selector);
         vm.prank(premintExecutor);
         uint256 newTokenId = preminter.premint(contractConfig, premintConfig, signature, quantityToMint, comment);
 
@@ -510,7 +510,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, chainId);
 
         if (shouldRevert) {
-            vm.expectRevert(ZoraCreator1155Attribution.MintNotYetStarted.selector);
+            vm.expectRevert(IZoraCreator1155Errors.MintNotYetStarted.selector);
         }
 
         uint256 mintCost = mintFeeAmount * quantityToMint;
