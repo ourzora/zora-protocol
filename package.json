@@ -5,7 +5,7 @@
   "author": "Iain <iain@zora.co>",
   "license": "MIT",
   "main": "./dist/index.cjs",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/package/index.d.ts",
   "type": "module",
   "scripts": {
     "test": "forge test",
@@ -22,7 +22,9 @@
     "publish-packages": "yarn prepack && changeset publish",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
-    "release": "yarn run prepack && changeset publish"
+    "release": "yarn run prepack && changeset publish",
+    "js-test:watch": "vitest dev",
+    "anvil": "anvil --fork-url https://rpc.zora.energy --fork-block-number 2550000 --chain-id 31337"
   },
   "files": [
     "dist/",
@@ -42,12 +44,16 @@
     "@changesets/cli": "^2.26.1",
     "@types/node": "^20.1.2",
     "@wagmi/cli": "^1.0.1",
+    "abitype": "^0.8.7",
     "es-main": "^1.2.0",
     "glob": "^10.2.2",
     "listr2": "^6.4.2",
     "prettier": "^2.8.8",
     "prettier-plugin-solidity": "^1.1.3",
-    "tsup": "^6.7.0",
-    "typescript": "^5.0.4"
+    "tsup": "^7.2.0",
+    "typescript": "^5.0.4",
+    "viem": "^1.6.0",
+    "vite": "^4.1.4",
+    "vitest": "~0.30.1"
   }
 }

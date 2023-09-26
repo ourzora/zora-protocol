@@ -86,7 +86,7 @@ contract ZoraCreator1155FactoryTest is Test {
         assertEq(config.royaltyMintSchedule, royaltyMintSchedule);
         assertEq(config.royaltyBPS, royaltyBPS);
         assertEq(config.royaltyRecipient, royaltyRecipient);
-        assertEq(target.getPermissions(0, admin), target.PERMISSION_BIT_ADMIN());
+        assertEq(target.permissions(0, admin), target.PERMISSION_BIT_ADMIN());
         assertEq(target.uri(1), "ipfs://asdfadsf");
     }
 
