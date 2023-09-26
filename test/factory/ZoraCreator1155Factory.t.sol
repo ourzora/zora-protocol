@@ -6,6 +6,7 @@ import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.so
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
+import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
@@ -245,15 +246,17 @@ contract ZoraCreator1155FactoryTest is Test {
 
         ZoraCreator1155Impl creatorProxy = ZoraCreator1155Impl(createdAddress);
 
+        UpgradeGate upgradeGate = new UpgradeGate(zora);
+
         // 2. upgrade the created contract by creating a new contract and upgrading the existing one to point to it.
         uint256 newMintFeeAmount = 0.000888 ether;
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, zora, address(0), address(new ProtocolRewards()));
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, zora, address(upgradeGate), address(new ProtocolRewards()));
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = address(factory.implementation());
 
         vm.prank(zora);
-        factory.registerUpgradePath(baseImpls, address(newZoraCreator));
+        upgradeGate.registerUpgradePath(baseImpls, address(newZoraCreator));
 
         vm.prank(creatorProxy.owner());
         creatorProxy.upgradeTo(address(newZoraCreator));
