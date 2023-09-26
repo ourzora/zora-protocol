@@ -8,6 +8,7 @@ import {RewardsSettings} from "@zoralabs/protocol-rewards/src/abstract/RewardSpl
 import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
+import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
@@ -20,7 +21,6 @@ import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererCont
 
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
-import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
 
 contract ZoraCreator1155Test is Test {
     using stdJson for string;
@@ -31,7 +31,7 @@ contract ZoraCreator1155Test is Test {
 
     SimpleMinter simpleMinter;
     ZoraCreatorFixedPriceSaleStrategy internal fixedPriceMinter;
-    MockUpgradeGate internal upgradeGate;
+    UpgradeGate internal upgradeGate;
 
     address payable internal admin;
     address internal recipient;
@@ -55,20 +55,19 @@ contract ZoraCreator1155Test is Test {
         createReferral = makeAddr("createReferral");
         zora = makeAddr("zora");
 
-        protocolRewards = new ProtocolRewards();
-        upgradeGate = new MockUpgradeGate();
-        upgradeGate.initialize(admin);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards));
-        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
-        simpleMinter = new SimpleMinter();
-        fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
-
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
         adminRole = target.PERMISSION_BIT_ADMIN();
         minterRole = target.PERMISSION_BIT_MINTER();
         fundsManagerRole = target.PERMISSION_BIT_FUNDS_MANAGER();
         metadataRole = target.PERMISSION_BIT_METADATA();
+
+        protocolRewards = new ProtocolRewards();
+        upgradeGate = new UpgradeGate(admin);
+        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards));
+        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
+        simpleMinter = new SimpleMinter();
+        fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
     }
 
     function _emptyInitData() internal pure returns (bytes[] memory response) {

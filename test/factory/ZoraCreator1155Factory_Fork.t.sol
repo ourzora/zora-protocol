@@ -15,11 +15,8 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/Z
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
-    uint96 constant tokenPrice = 1 ether;
     uint256 constant quantityToMint = 3;
     uint256 constant tokenMaxSupply = 100;
-    uint32 constant royaltyMintSchedule = 10;
-    uint32 constant royaltyBPS = 100;
 
     address collector;
     address creator;
@@ -70,8 +67,8 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // create the contract, with no toekns
         bytes[] memory initSetup = new bytes[](0);
 
-        uint32 royaltyMintSchedule = 10;
-        uint32 royaltyBPS = 100;
+        uint32 thisTestRoyaltyMintSchedule = 10;
+        uint32 thisTestRoyaltyBPS = 100;
 
         address admin = creator;
         string memory contractURI = "ipfs://asdfasdf";
@@ -82,9 +79,9 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
             contractURI,
             name,
             ICreatorRoyaltiesControl.RoyaltyConfiguration({
-                royaltyBPS: royaltyBPS,
+                royaltyBPS: thisTestRoyaltyBPS,
                 royaltyRecipient: royaltyRecipient,
-                royaltyMintSchedule: royaltyMintSchedule
+                royaltyMintSchedule: thisTestRoyaltyMintSchedule
             }),
             payable(admin),
             initSetup
@@ -97,6 +94,8 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
     function testTheFork(string memory chainName) private {
         console.log("testing on fork: ", chainName);
+
+        uint96 tokenPrice = 1 ether;
 
         // create and select the fork, which will be used for all subsequent calls
         // it will also affect the current block chain id based on the rpc url returned

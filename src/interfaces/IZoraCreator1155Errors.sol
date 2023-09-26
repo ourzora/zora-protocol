@@ -7,6 +7,7 @@ interface IZoraCreator1155Errors {
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 
     error Config_TransferHookNotSupported(address proposedAddress);
+    error Call_TokenIdMismatch();
 
     error Mint_InsolventSaleTransfer();
     error Mint_ValueTransferFail();

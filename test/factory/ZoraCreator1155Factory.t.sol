@@ -6,6 +6,7 @@ import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.so
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
+import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
@@ -21,6 +22,7 @@ contract ZoraCreator1155FactoryTest is Test {
 
     ZoraCreator1155FactoryImpl internal factoryImpl;
     ZoraCreator1155FactoryImpl internal factory;
+    UpgradeGate internal upgradeGate;
 
     function setUp() external {
         zora = makeAddr("zora");
@@ -34,6 +36,8 @@ contract ZoraCreator1155FactoryTest is Test {
 
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
+
+        upgradeGate = new UpgradeGate(zora);
 
         vm.startPrank(zora);
         factory.upgradeTo(address(factoryImpl));
@@ -253,7 +257,7 @@ contract ZoraCreator1155FactoryTest is Test {
         baseImpls[0] = address(factory.implementation());
 
         vm.prank(zora);
-        factory.registerUpgradePath(baseImpls, address(newZoraCreator));
+        upgradeGate.registerUpgradePath(baseImpls, address(newZoraCreator));
 
         vm.prank(creatorProxy.owner());
         creatorProxy.upgradeTo(address(newZoraCreator));
