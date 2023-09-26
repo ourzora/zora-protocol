@@ -27,4 +27,7 @@ interface IZoraCreator1155Errors {
     error ProtocolRewardsWithdrawFailed(address caller, address recipient, uint256 amount);
 
     error CannotMintMoreTokens(uint256 tokenId, uint256 quantity, uint256 totalMinted, uint256 maxSupply);
+
+    error MintNotYetStarted();
+    error PremintDeleted();
 }
