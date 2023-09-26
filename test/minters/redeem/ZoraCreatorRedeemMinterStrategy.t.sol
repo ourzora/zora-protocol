@@ -52,7 +52,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
     }
 
     function test_Version() external {
-        assertEq(redeemMinter.contractVersion(), "1.0.1");
+        assertEq(redeemMinter.contractVersion(), "1.1.0");
     }
 
     function test_OnlyDropContractCanCallWriteFunctions() external {

@@ -67,7 +67,7 @@ contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseC
 
     /// @notice Factory contract version
     function contractVersion() external pure override returns (string memory) {
-        return "1.0.1";
+        return "1.1.0";
     }
 
     /// @notice No-op function for IMinter1155 compatibility
