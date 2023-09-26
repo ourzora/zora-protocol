@@ -10,7 +10,7 @@ import {UpgradeGateStorageV1} from "./UpgradeGateStorageV1.sol";
 contract UpgradeGate is IUpgradeGate, Ownable2StepUpgradeable, UpgradeGateStorageV1 {
     /// @notice Singleton admin upgrade gate for token implementation upgrades
     /// @param initialAdmin Initial administrator for the contract
-    constructor(address initialAdmin) {
+    constructor(address initialAdmin) initializer {
         __Ownable_init(initialAdmin);
     }
 

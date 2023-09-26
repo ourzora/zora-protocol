@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
+import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -14,7 +15,8 @@ import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 library Zora1155FactoryFixtures {
     function setupZora1155Impl(uint256 mintFeeAmount, address zora, Zora1155Factory factoryProxy) internal returns (ZoraCreator1155Impl) {
         ProtocolRewards rewards = new ProtocolRewards();
-        return new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(rewards));
+        UpgradeGate upgradeGate = new UpgradeGate(zora);
+        return new ZoraCreator1155Impl(mintFeeAmount, zora, address(upgradeGate), address(rewards));
     }
 
     function upgradeFactoryProxyToUse1155(

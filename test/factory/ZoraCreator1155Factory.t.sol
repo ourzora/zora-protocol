@@ -28,16 +28,16 @@ contract ZoraCreator1155FactoryTest is Test {
         zora = makeAddr("zora");
         mintFeeAmount = 0.000777 ether;
 
+        upgradeGate = new UpgradeGate(zora);
+
         address factoryShimAddress = address(new ProxyShim(zora));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
 
         ProtocolRewards protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(protocolRewards));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(upgradeGate), address(protocolRewards));
 
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
-
-        upgradeGate = new UpgradeGate(zora);
 
         vm.startPrank(zora);
         factory.upgradeTo(address(factoryImpl));

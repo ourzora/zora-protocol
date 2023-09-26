@@ -2,7 +2,6 @@
 pragma solidity 0.8.17;
 
 interface IZoraCreator1155Errors {
-    error Call_TokenIdMismatch();
     error TokenIdMismatch(uint256 expected, uint256 actual);
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
 

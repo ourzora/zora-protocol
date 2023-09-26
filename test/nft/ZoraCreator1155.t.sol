@@ -57,17 +57,18 @@ contract ZoraCreator1155Test is Test {
 
         admin = payable(vm.addr(0x1));
         recipient = vm.addr(0x2);
-        adminRole = target.PERMISSION_BIT_ADMIN();
-        minterRole = target.PERMISSION_BIT_MINTER();
-        fundsManagerRole = target.PERMISSION_BIT_FUNDS_MANAGER();
-        metadataRole = target.PERMISSION_BIT_METADATA();
 
         protocolRewards = new ProtocolRewards();
-        upgradeGate = new UpgradeGate(admin);
+        upgradeGate = new UpgradeGate(zora);
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         simpleMinter = new SimpleMinter();
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
+
+        adminRole = target.PERMISSION_BIT_ADMIN();
+        minterRole = target.PERMISSION_BIT_MINTER();
+        fundsManagerRole = target.PERMISSION_BIT_FUNDS_MANAGER();
+        metadataRole = target.PERMISSION_BIT_METADATA();
     }
 
     function _emptyInitData() internal pure returns (bytes[] memory response) {
