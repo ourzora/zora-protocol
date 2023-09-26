@@ -644,14 +644,35 @@ contract ZoraCreator1155Impl is
     }
 
     function setTransferHook(ITransferHookReceiver transferHook) external onlyAdmin(CONTRACT_BASE_ID) {
-        if (address(transferHook) != address(0)) {
-            if (!transferHook.supportsInterface(type(ITransferHookReceiver).interfaceId)) {
-                revert Config_TransferHookNotSupported(address(transferHook));
-            }
-        }
+        // if (address(transferHook) != address(0)) {
+        //     if (!transferHook.supportsInterface(type(ITransferHookReceiver).interfaceId)) {
+        //         revert Config_TransferHookNotSupported(address(transferHook));
+        //     }
+        // }
 
         config.transferHook = transferHook;
         emit ConfigUpdated(msg.sender, ConfigUpdate.TRANSFER_HOOK, config);
+    }
+
+    /// @notice Hook before token transfer that checks for a transfer hook integration
+    /// @param operator operator moving the tokens
+    /// @param from from address
+    /// @param to to address
+    /// @param id token id to move
+    /// @param amount amount of token
+    /// @param data data of token
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) internal override {
+        super._beforeTokenTransfer(operator, from, to, id, amount, data);
+        if (address(config.transferHook) != address(0)) {
+            config.transferHook.onTokenTransfer(address(this), operator, from, to, id, amount, data);
+        }
     }
 
     /// @notice Hook before token transfer that checks for a transfer hook integration

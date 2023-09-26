@@ -22,5 +22,23 @@ interface ITransferHookReceiver is IERC165Upgradeable {
         bytes memory data
     ) external;
 
+    /// @notice Token transfer batch callback
+    /// @param target target contract for transfer
+    /// @param operator operator address for transfer
+    /// @param from user address for amount transferred
+    /// @param to user address for amount transferred
+    /// @param id token id transferred
+    /// @param amount value transferred
+    /// @param data data as perscribed by 1155 standard
+    function onTokenTransfer(
+        address target,
+        address operator,
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) external;
+
     // IERC165 type required
 }
