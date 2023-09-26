@@ -10,7 +10,6 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
-import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {Zora1155} from "../proxies/Zora1155.sol";
 import {Create2Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/Create2Upgradeable.sol";
 import {CREATE3} from "solmate/src/utils/CREATE3.sol";
@@ -19,7 +18,7 @@ import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
-contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable, IContractMetadata {
+contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgradeable, ContractVersionBase, UUPSUpgradeable, IContractMetadata {
     IZoraCreator1155 public immutable implementation;
 
     IMinter1155 public immutable merkleMinter;

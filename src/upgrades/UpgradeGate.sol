@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
+import {IUpgradeGate} from "../interfaces/IUpgradeGate.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
-import {FactoryManagedUpgradeGateStorageV1} from "./FactoryManagedUpgradeGateStorageV1.sol";
+import {UpgradeGateStorageV1} from "./UpgradeGateStorageV1.sol";
 
-/// @title FactoryManagedUpgradeGate
+/// @title UpgradeGate
 /// @notice Contract for managing upgrades and safe upgrade paths for 1155 contracts
-contract FactoryManagedUpgradeGate is IFactoryManagedUpgradeGate, Ownable2StepUpgradeable, FactoryManagedUpgradeGateStorageV1 {
+contract UpgradeGate is IUpgradeGate, Ownable2StepUpgradeable, UpgradeGateStorageV1 {
     /// @notice Constructor for deployment pathway 
     constructor(address _defaultOwner) {
         __Ownable_init(_defaultOwner);

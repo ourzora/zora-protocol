@@ -16,7 +16,7 @@ import {ZoraCreator1155PremintExecutor} from "../src/delegation/ZoraCreator1155P
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 
 /// @notice Deployment drops for base where
-abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
+abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
     using stdJson for string;
 
     /// @notice File used for demo metadata on verification test mint

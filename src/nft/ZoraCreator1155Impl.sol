@@ -23,7 +23,7 @@ import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
-import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
+import {IUpgradeGate} from "../interfaces/IUpgradeGate.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {PublicMulticall} from "../utils/PublicMulticall.sol";
@@ -67,7 +67,7 @@ contract ZoraCreator1155Impl is
     /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
     /// @notice Factory contract
-    IFactoryManagedUpgradeGate internal immutable upgradeGate;
+    IUpgradeGate internal immutable upgradeGate;
 
     constructor(
         uint256, // TODO remove
@@ -75,7 +75,7 @@ contract ZoraCreator1155Impl is
         address _upgradeGate,
         address _protocolRewards
     ) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
-        upgradeGate = IFactoryManagedUpgradeGate(_upgradeGate);
+        upgradeGate = IUpgradeGate(_upgradeGate);
     }
 
     /// @notice Initializes the contract

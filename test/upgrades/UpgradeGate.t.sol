@@ -2,15 +2,14 @@
 pragma solidity 0.8.17;
 
 import {Test} from "forge-std/Test.sol";
-import {MockUpgradeGateBase} from "../mock/MockUpgradeGateBase.sol";
+import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 
-contract FactoryManagedUpgradeGateTest is Test {
-    MockUpgradeGateBase upgradeGate;
+contract UpgradeGateTest is Test {
+    UpgradeGate upgradeGate;
     address constant admin = address(0x123);
 
     function setUp() public {
-        upgradeGate = new MockUpgradeGateBase();
-        upgradeGate.setup(admin);
+        upgradeGate = new UpgradeGate(admin);
     }
 
     function test_AdminOnly() public {
