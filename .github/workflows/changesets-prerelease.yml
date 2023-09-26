@@ -1,9 +1,9 @@
-name: Changesets Version and Release
+name: Release
 
 on:
   push:
     branches:
-      - main
+      - "*prerelease*"
 
 concurrency: ${{ github.workflow }}-${{ github.ref }}
 
@@ -14,6 +14,16 @@ jobs:
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v3
+
+      - name: Check pre.json existence
+        id: check_pre
+        uses: andstor/file-existence-action@v1
+        with:
+          files: ".changeset/pre.json"
+
+      - name: Ensure pre.json exists
+        if: steps.check_pre.outputs.files_exists != 'true'
+        run: echo "pre.json does not exist, enter prerelease mode with 'yarn changeset pre enter {prereleaseName}'"; exit 1
 
       - name: Install Node.js
         uses: actions/setup-node@v3

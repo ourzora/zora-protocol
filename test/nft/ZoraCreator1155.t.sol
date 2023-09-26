@@ -268,7 +268,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.addPermission(tokenId, user, permission);
 
-        assertEq(target.getPermissions(tokenId, user), permission);
+        assertEq(target.permissions(tokenId, user), permission);
     }
 
     function test_addPermission_revertOnlyAdminOrRole(uint256 tokenId) external {
@@ -293,7 +293,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.removePermission(tokenId, user, permission);
 
-        assertEq(target.getPermissions(tokenId, user), 0);
+        assertEq(target.permissions(tokenId, user), 0);
     }
 
     function test_removePermissionRevokeOwnership() external {

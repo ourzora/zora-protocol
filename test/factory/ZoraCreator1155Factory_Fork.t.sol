@@ -36,61 +36,13 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         }
     }
 
-    function testTheFork(string memory chainName) private {
-        console.log("testing on fork: ", chainName);
-
-        // create and select the fork, which will be used for all subsequent calls
-        // it will also affect the current block chain id based on the rpc url returned
-        vm.createSelectFork(vm.rpcUrl(chainName));
-
-        address factoryAddress = getDeployment().factoryProxy;
-        IZoraCreator1155Factory factory = IZoraCreator1155Factory(factoryAddress);
-
-        assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), string.concat("configured owner incorrect on: ", chainName));
-
-        address admin = creator;
-        uint32 royaltyMintSchedule = 10;
-        uint32 royaltyBPS = 100;
-        string memory contractURI = "ipfs://asdfasdf";
-        string memory name = "Test";
-        address royaltyRecipient = creator;
-
+    function _setupToken(IZoraCreator1155 target, IMinter1155 fixedPrice, uint96 tokenPrice) private returns (uint256 tokenId) {
         string memory tokenURI = "ipfs://token";
         uint256 tokenMaxSupply = 100;
 
-        // now create a contract with the factory
-        vm.startPrank(creator);
-
-        IMinter1155 fixedPrice = factory.defaultMinters()[0];
-
-        // make sure that the address from the factory matches the stored fixed price address
-        assertEq(getDeployment().fixedPriceSaleStrategy, address(fixedPrice), string.concat("configured fixed price address incorrect on: ", chainName));
-
-        // ** 1. Create the erc1155 contract **
-
-        // create the contract, with no toekns
-        bytes[] memory initSetup = new bytes[](0);
-        address deployedAddress = factory.createContract(
-            contractURI,
-            name,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({
-                royaltyBPS: royaltyBPS,
-                royaltyRecipient: royaltyRecipient,
-                royaltyMintSchedule: royaltyMintSchedule
-            }),
-            payable(admin),
-            initSetup
-        );
-
-        IZoraCreator1155 target = IZoraCreator1155(deployedAddress);
-
-        // ** 2. Setup a new token with the fixed price sales strategy **
-
-        uint256 tokenId = target.setupNewToken(tokenURI, tokenMaxSupply);
+        tokenId = target.setupNewToken(tokenURI, tokenMaxSupply);
 
         target.addPermission(tokenId, address(fixedPrice), PERMISSION_BIT_MINTER);
-
-        uint96 tokenPrice = 1 ether;
 
         target.callSale(
             tokenId,
@@ -107,6 +59,63 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
                 })
             )
         );
+    }
+
+    function _createErc1155Contract(IZoraCreator1155Factory factory) private returns (IZoraCreator1155 target) {
+        // create the contract, with no toekns
+        bytes[] memory initSetup = new bytes[](0);
+
+        uint32 royaltyMintSchedule = 10;
+        uint32 royaltyBPS = 100;
+
+        address admin = creator;
+        string memory contractURI = "ipfs://asdfasdf";
+        string memory name = "Test";
+        address royaltyRecipient = creator;
+
+        address deployedAddress = factory.createContract(
+            contractURI,
+            name,
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({
+                royaltyBPS: royaltyBPS,
+                royaltyRecipient: royaltyRecipient,
+                royaltyMintSchedule: royaltyMintSchedule
+            }),
+            payable(admin),
+            initSetup
+        );
+
+        target = IZoraCreator1155(deployedAddress);
+
+        // ** 2. Setup a new token with the fixed price sales strategy **
+    }
+
+    function testTheFork(string memory chainName) private {
+        console.log("testing on fork: ", chainName);
+
+        // create and select the fork, which will be used for all subsequent calls
+        // it will also affect the current block chain id based on the rpc url returned
+        vm.createSelectFork(vm.rpcUrl(chainName));
+
+        address factoryAddress = getDeployment().factoryProxy;
+        IZoraCreator1155Factory factory = IZoraCreator1155Factory(factoryAddress);
+
+        assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), string.concat("configured owner incorrect on: ", chainName));
+
+        // now create a contract with the factory
+        vm.startPrank(creator);
+
+        IMinter1155 fixedPrice = factory.defaultMinters()[0];
+
+        // make sure that the address from the factory matches the stored fixed price address
+        assertEq(getDeployment().fixedPriceSaleStrategy, address(fixedPrice), string.concat("configured fixed price address incorrect on: ", chainName));
+
+        // ** 1. Create the erc1155 contract **
+        IZoraCreator1155 target = _createErc1155Contract(factory);
+
+        // ** 2. Setup a new token with the fixed price sales strategy and the token price **
+        uint96 tokenPrice = 1 ether;
+        uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
 
         // ** 3. Mint on that contract **
 
