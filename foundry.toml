@@ -1,5 +1,5 @@
 [profile.default]
-fs_permissions = [{access = "read", path = "./addresses"}, {access = "read", path = "./chainConfigs"}, {access = "read", path = "./package.json"}]
+fs_permissions = [{access = "read", path = "./addresses"}, {access = "read", path = "./chainConfigs"}, {access = "read", path = "./package.json"}, {access = "read", path = "./determinsticConfig"}]
 libs = ['_imagine', 'node_modules', 'script']
 optimizer = true
 optimizer_runs = 250
