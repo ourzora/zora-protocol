@@ -365,15 +365,6 @@ contract ZoraCreator1155Impl is
         return config.owner;
     }
 
-    /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
-    /// @param recipient recipient for admin minted tokens
-    /// @param tokenId token id to mint
-    /// @param quantity quantity to mint
-    /// @param data callback data as specified by the 1155 spec
-    function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal {
-        _mint(recipient, tokenId, quantity, data);
-    }
-
     /// @notice Mint a token to a user as the admin or minter
     /// @param recipient The recipient of the token
     /// @param tokenId The token ID to mint
@@ -385,8 +376,15 @@ contract ZoraCreator1155Impl is
         uint256 quantity,
         bytes memory data
     ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
-        // Call internal admin mint
-        _adminMint(recipient, tokenId, quantity, data);
+        // If this is the token's first mint:
+        if (firstMinters[tokenId] == address(0)) {
+            // Store the recipient address as the first minter
+            // Note: If the recipient is address(0) the tx will revert in the `_mint` call below
+            firstMinters[tokenId] = recipient;
+        }
+
+        // Mint the specified tokens
+       _mint(recipient, tokenId, quantity, data);
     }
 
     /// @notice Batch mint tokens to a user as the admin or minter
