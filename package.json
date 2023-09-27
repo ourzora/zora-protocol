@@ -31,7 +31,8 @@
     "src/",
     "addresses/",
     "chainConfigs/",
-    "package/"
+    "package/",
+    "_imagine/"
   ],
   "dependencies": {
     "@openzeppelin/contracts": "4.9.2",
