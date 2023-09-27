@@ -12,6 +12,7 @@ import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Error
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
+import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 
@@ -21,16 +22,19 @@ contract ZoraCreator1155FactoryTest is Test {
 
     ZoraCreator1155FactoryImpl internal factoryImpl;
     ZoraCreator1155FactoryImpl internal factory;
+    UpgradeGate internal upgradeGate;
 
     function setUp() external {
         zora = makeAddr("zora");
         mintFeeAmount = 0.000777 ether;
 
+        upgradeGate = new UpgradeGate(zora);
+
         address factoryShimAddress = address(new ProxyShim(zora));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
 
         ProtocolRewards protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(factoryProxy), address(protocolRewards));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeAmount, zora, address(upgradeGate), address(protocolRewards));
 
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -253,7 +257,7 @@ contract ZoraCreator1155FactoryTest is Test {
         baseImpls[0] = address(factory.implementation());
 
         vm.prank(zora);
-        factory.registerUpgradePath(baseImpls, address(newZoraCreator));
+        upgradeGate.registerUpgradePath(baseImpls, address(newZoraCreator));
 
         vm.prank(creatorProxy.owner());
         creatorProxy.upgradeTo(address(newZoraCreator));

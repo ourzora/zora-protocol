@@ -40,14 +40,12 @@
 ➡ ZoraCreator1155FactoryImpl
 =======================
 
-| Name             | Type                                         | Slot | Offset | Bytes | Contract                                                              |
-|------------------|----------------------------------------------|------|--------|-------|-----------------------------------------------------------------------|
-| _owner           | address                                      | 0    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| _pendingOwner    | address                                      | 1    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 2    | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| _initialized     | uint8                                        | 52   | 0      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| _initializing    | bool                                         | 52   | 1      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| isAllowedUpgrade | mapping(address => mapping(address => bool)) | 53   | 0      | 32    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 54   | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 104  | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 154  | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| Name          | Type        | Slot | Offset | Bytes | Contract                                                              |
+|---------------|-------------|------|--------|-------|-----------------------------------------------------------------------|
+| _owner        | address     | 0    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| _pendingOwner | address     | 1    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| __gap         | uint256[50] | 2    | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| _initialized  | uint8       | 52   | 0      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| _initializing | bool        | 52   | 1      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| __gap         | uint256[50] | 53   | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| __gap         | uint256[50] | 103  | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
