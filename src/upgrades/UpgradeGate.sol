@@ -9,7 +9,7 @@ import {UpgradeGateStorageV1} from "./UpgradeGateStorageV1.sol";
 /// @notice Contract for managing upgrades and safe upgrade paths for 1155 contracts
 contract UpgradeGate is IUpgradeGate, Ownable2StepUpgradeable, UpgradeGateStorageV1 {
     /// @notice Constructor for deployment pathway 
-    constructor(address _defaultOwner) {
+    constructor(address _defaultOwner) initializer {
         __Ownable_init(_defaultOwner);
         emit UpgradeGateSetup();
     }
