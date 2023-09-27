@@ -59,8 +59,6 @@ contract DeployNewFactoryProxy is ZoraDeployerBase {
             signature
         );
 
-        factoryDeployer.initializeFactoryProxy(proxyShimSalt, factoryProxySalt, expectedFactoryProxyAddress, factoryImplAddress, owner, signature);
-
         vm.stopBroadcast();
 
         deployment.factoryProxy = factoryProxyAddress;

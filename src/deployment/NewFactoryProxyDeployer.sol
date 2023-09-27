@@ -22,10 +22,12 @@ contract NewFactoryProxyDeployer is EIP712 {
     /// Upgrades the proxy to the factory implementation, and sets the new owner as the owner.
     /// @param proxyShimSalt Salt for deterministic proxy shim address
     /// @param factoryProxySalt Salt for deterministic factory proxy address
-    function _createNewFactoryProxyDeterminstic(
+    function _createAndInitializeNewFactoryProxyDeterminstic(
         bytes32 proxyShimSalt,
         bytes32 factoryProxySalt,
-        address expectedFactoryProxyAddress
+        address expectedFactoryProxyAddress,
+        address factoryImplAddress,
+        address newOwner
     ) internal returns (address factoryProxyAddress) {
         // create proxy shim and factory proxy deterministically
         ProxyShim proxyShim = new ProxyShim{salt: proxyShimSalt}({_canUpgrade: address(this)});
@@ -34,6 +36,11 @@ contract NewFactoryProxyDeployer is EIP712 {
         if (address(factoryProxy) != expectedFactoryProxyAddress) {
             revert FactoryProxyAddressMismatch(expectedFactoryProxyAddress, address(factoryProxy));
         }
+
+        factoryProxyAddress = address(factoryProxy);
+        IUpgradeableProxy proxy = IUpgradeableProxy(address(factoryProxy));
+        proxy.upgradeTo(factoryImplAddress);
+        proxy.initialize(newOwner);
 
         return factoryProxyAddress;
     }
@@ -78,27 +85,6 @@ contract NewFactoryProxyDeployer is EIP712 {
 
         requireContainsCaller(signer, proxyShimSalt);
 
-        return _createNewFactoryProxyDeterminstic(proxyShimSalt, factoryProxySalt, expectedFactoryProxyAddress);
-    }
-
-    /// Creates a new factory proxy at a determinstic address, with this address as the owner
-    /// Upgrades the proxy to the factory implementation, and sets the new owner as the owner.
-    /// @param proxyShimSalt Salt for deterministic proxy shim address
-    /// @param factoryProxySalt Salt for deterministic factory proxy address
-    function initializeFactoryProxy(
-        bytes32 proxyShimSalt,
-        bytes32 factoryProxySalt,
-        address expectedFactoryProxyAddress,
-        address factoryImplAddress,
-        address owner,
-        bytes calldata signature
-    ) external {
-        address signer = recoverSignature(proxyShimSalt, factoryProxySalt, factoryImplAddress, owner, signature);
-
-        requireContainsCaller(signer, proxyShimSalt);
-
-        IUpgradeableProxy proxy = IUpgradeableProxy(address(expectedFactoryProxyAddress));
-        proxy.upgradeTo(factoryImplAddress);
-        proxy.initialize(owner);
+        return _createAndInitializeNewFactoryProxyDeterminstic(proxyShimSalt, factoryProxySalt, expectedFactoryProxyAddress, factoryImplAddress, owner);
     }
 }
