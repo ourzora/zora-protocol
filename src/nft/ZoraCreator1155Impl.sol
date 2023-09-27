@@ -69,11 +69,7 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IUpgradeGate internal immutable upgradeGate;
 
-    constructor(
-        address _mintFeeRecipient,
-        address _upgradeGate,
-        address _protocolRewards
-    ) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
+    constructor(address _mintFeeRecipient, address _upgradeGate, address _protocolRewards) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
         upgradeGate = IUpgradeGate(_upgradeGate);
     }
 
@@ -383,7 +379,7 @@ contract ZoraCreator1155Impl is
         }
 
         // Mint the specified tokens
-       _mint(recipient, tokenId, quantity, data);
+        _mint(recipient, tokenId, quantity, data);
     }
 
     /// @notice Batch mint tokens to a user as the admin or minter
