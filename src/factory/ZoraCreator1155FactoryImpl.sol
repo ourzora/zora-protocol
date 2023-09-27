@@ -24,11 +24,11 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     IMinter1155 public immutable fixedPriceMinter;
     IMinter1155 public immutable redeemMinterFactory;
 
-    constructor(IZoraCreator1155 _zora1155impl, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
-        if (address(_zora1155impl) == address(0)) {
+    constructor(IZoraCreator1155 _zora1155Impl, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
+        if (address(_zora1155Impl) == address(0)) {
             revert Constructor_ImplCannotBeZero();
         }
-        zora1155impl = _zora1155impl;
+        zora1155impl = _zora1155Impl;
         merkleMinter = _merkleMinter;
         fixedPriceMinter = _fixedPriceMinter;
         redeemMinterFactory = _redeemMinterFactory;
