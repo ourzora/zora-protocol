@@ -7,6 +7,7 @@ import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.so
 import {RewardsSettings} from "@zoralabs/protocol-rewards/src/abstract/RewardSplits.sol";
 import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
+import {ITransferHookReceiver} from "../../src/interfaces/ITransferHookReceiver.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 
@@ -21,6 +22,39 @@ import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererCont
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 import {MockUpgradeGate} from "../mock/MockUpgradeGate.sol";
+
+
+contract MockTransferHookReceiver is ITransferHookReceiver {
+    mapping(uint256 => bool) public hasTransfer;
+    function onTokenTransferBatch(
+        address target,
+        address operator,
+        address from,
+        address to,
+        uint256[] memory ids,
+        uint256[] memory amounts,
+        bytes memory data
+    ) external {
+        for (uint256 i = 0; i < ids.length; i++) {
+            hasTransfer[ids[i]] = true;
+        }
+    } 
+    function onTokenTransfer(
+        address target,
+        address operator,
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) external {  
+        hasTransfer[id] = true;
+    } 
+    function supportsInterface(bytes4 testInterface) external override view returns (bool) {
+        return testInterface == type(ITransferHookReceiver).interfaceId;
+    }
+}
+
 
 contract ZoraCreator1155Test is Test {
     using stdJson for string;
@@ -465,6 +499,70 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData2.totalMinted, quantity2);
         assertEq(target.balanceOf(recipient, tokenId1), quantity1);
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
+    }
+
+
+    function test_adminMintBatchWithHook(uint256 quantity1, uint256 quantity2) external {
+        vm.assume(quantity1 < 1000);
+        vm.assume(quantity2 < 1000);
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId1 = target.setupNewToken("test", 1000);
+
+        vm.prank(admin);
+        uint256 tokenId2 = target.setupNewToken("test", 1000);
+
+        uint256[] memory tokenIds = new uint256[](2);
+        uint256[] memory quantities = new uint256[](2);
+        tokenIds[0] = tokenId1;
+        tokenIds[1] = tokenId2;
+        quantities[0] = quantity1;
+        quantities[1] = quantity2;
+
+        MockTransferHookReceiver testHook = new MockTransferHookReceiver();
+
+        vm.prank(admin);
+        target.setTransferHook(testHook);
+
+        vm.prank(admin);
+        target.adminMintBatch(recipient, tokenIds, quantities, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData1 = target.getTokenInfo(tokenId1);
+        IZoraCreator1155TypesV1.TokenData memory tokenData2 = target.getTokenInfo(tokenId2);
+
+        assertEq(testHook.hasTransfer(tokenId1), true);
+        assertEq(testHook.hasTransfer(tokenId2), true);
+        assertEq(testHook.hasTransfer(1000), false);
+
+        assertEq(tokenData1.totalMinted, quantity1);
+        assertEq(tokenData2.totalMinted, quantity2);
+        assertEq(target.balanceOf(recipient, tokenId1), quantity1);
+        assertEq(target.balanceOf(recipient, tokenId2), quantity2);
+    }
+
+    function test_adminMintWithHook(uint256 quantity1) external {
+        vm.assume(quantity1 < 1000);
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId1 = target.setupNewToken("test", 1000);
+
+        MockTransferHookReceiver testHook = new MockTransferHookReceiver();
+
+        vm.prank(admin);
+        target.setTransferHook(testHook);
+
+        vm.prank(admin);
+        target.adminMint(recipient, tokenId1, quantity1, "");
+
+        IZoraCreator1155TypesV1.TokenData memory tokenData1 = target.getTokenInfo(tokenId1);
+
+        assertEq(testHook.hasTransfer(tokenId1), true);
+        assertEq(testHook.hasTransfer(1000), false);
+
+        assertEq(tokenData1.totalMinted, quantity1);
+        assertEq(target.balanceOf(recipient, tokenId1), quantity1);
     }
 
     function test_adminMintBatchWithSchedule(uint256 quantity1, uint256 quantity2) external {
