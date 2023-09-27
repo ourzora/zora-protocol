@@ -485,7 +485,7 @@ contract ZoraCreator1155Impl is
         return firstMinters[tokenId];
     }
 
-    function mintFee() external view returns (uint256) {
+    function mintFee() external pure returns (uint256) {
         return TOTAL_REWARD_PER_MINT;
     }
 
@@ -678,14 +678,7 @@ contract ZoraCreator1155Impl is
     /// @param id token id to move
     /// @param amount amount of token
     /// @param data data of token
-    function _beforeTokenTransfer(
-        address operator,
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) internal override {
+    function _beforeTokenTransfer(address operator, address from, address to, uint256 id, uint256 amount, bytes memory data) internal override {
         super._beforeTokenTransfer(operator, from, to, id, amount, data);
         if (address(config.transferHook) != address(0)) {
             config.transferHook.onTokenTransfer(address(this), operator, from, to, id, amount, data);
@@ -795,6 +788,11 @@ contract ZoraCreator1155Impl is
         if (!upgradeGate.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
+    }
+
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
     }
 
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {

@@ -23,9 +23,9 @@ import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererCont
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 
-
 contract MockTransferHookReceiver is ITransferHookReceiver {
     mapping(uint256 => bool) public hasTransfer;
+
     function onTokenTransferBatch(
         address target,
         address operator,
@@ -38,23 +38,16 @@ contract MockTransferHookReceiver is ITransferHookReceiver {
         for (uint256 i = 0; i < ids.length; i++) {
             hasTransfer[ids[i]] = true;
         }
-    } 
-    function onTokenTransfer(
-        address target,
-        address operator,
-        address from,
-        address to,
-        uint256 id,
-        uint256 amount,
-        bytes memory data
-    ) external {  
+    }
+
+    function onTokenTransfer(address target, address operator, address from, address to, uint256 id, uint256 amount, bytes memory data) external {
         hasTransfer[id] = true;
-    } 
-    function supportsInterface(bytes4 testInterface) external override view returns (bool) {
+    }
+
+    function supportsInterface(bytes4 testInterface) external view override returns (bool) {
         return testInterface == type(ITransferHookReceiver).interfaceId;
     }
 }
-
 
 contract ZoraCreator1155Test is Test {
     using stdJson for string;
@@ -500,7 +493,6 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.balanceOf(recipient, tokenId1), quantity1);
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
     }
-
 
     function test_adminMintBatchWithHook(uint256 quantity1, uint256 quantity2) external {
         vm.assume(quantity1 < 1000);
