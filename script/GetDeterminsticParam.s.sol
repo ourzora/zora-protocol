@@ -91,14 +91,12 @@ contract GetDeterminsticParam is ZoraDeployerBase {
         console.log("init code hash: ", LibString.toHexStringNoPrefix(uint256(creationCodeHash), 32));
 
         console2.log("mining for salt");
-
-        // call cast create2 to mine for the address
-        (factoryProxySalt, determinsticFactoryProxyAddress) = mineSalt(expectedFactoryDeployerAddress, creationCodeHash, "0x7777777");
     }
 
     function run()
         public
         returns (
+            bytes memory newFactoryDeployerCreationCode,
             address deployerAddress,
             bytes32 newFactoryProxyDeployerSalt,
             bytes32 proxyShimSalt,
@@ -110,7 +108,10 @@ contract GetDeterminsticParam is ZoraDeployerBase {
 
         (newFactoryProxyDeployerSalt, proxyShimSalt, factoryProxySalt, determinsticFactoryProxyAddress) = getDeterminsticParams(deployerAddress);
 
+        newFactoryDeployerCreationCode = type(NewFactoryProxyDeployer).creationCode;
+
         // extract results
+        // console2.log("creation code:", vm.toString(newFactoryDeployerCreationCode));
         console2.log("deployer address: ", deployerAddress);
         console2.log("new factory proxy deployer salt:", vm.toString(newFactoryProxyDeployerSalt));
         console2.log("proxy shim bytes32 salt:", vm.toString(proxyShimSalt));
