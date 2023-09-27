@@ -53,7 +53,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
         deployment.contract1155Impl = address(creatorImpl);
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
-            _implementation: creatorImpl,
+            _zora1155Impl: creatorImpl,
             _merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
             _redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
             _fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)

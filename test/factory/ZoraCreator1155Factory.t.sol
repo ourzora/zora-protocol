@@ -130,7 +130,7 @@ contract ZoraCreator1155FactoryTest is Test {
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(proxyAddress);
         vm.prank(initialOwner);
         proxy.upgradeTo(address(newFactoryImpl));
-        assertEq(address(proxy.implementation()), address(mockNewContract));
+        assertEq(address(proxy.zora1155impl()), address(mockNewContract));
     }
 
     function test_upgradeFailsWithDifferentContractName(address initialOwner) external {
@@ -212,7 +212,7 @@ contract ZoraCreator1155FactoryTest is Test {
         factory.upgradeTo(address(newFactoryImpl));
 
         // sanity check - make sure that the proxy erc1155 implementation is pointing to the new implementation
-        assertEq(address(factory.implementation()), address(newZoraCreator));
+        assertEq(address(factory.zora1155impl()), address(newZoraCreator));
 
         // 3. Create a contract with a deterministic address, it should match the address from before the upgrade
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
@@ -254,7 +254,7 @@ contract ZoraCreator1155FactoryTest is Test {
         IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(newMintFeeAmount, zora, address(0), address(new ProtocolRewards()));
 
         address[] memory baseImpls = new address[](1);
-        baseImpls[0] = address(factory.implementation());
+        baseImpls[0] = address(factory.zora1155impl());
 
         vm.prank(zora);
         upgradeGate.registerUpgradePath(baseImpls, address(newZoraCreator));

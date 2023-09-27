@@ -64,7 +64,7 @@ contract UpgradeScript is ZoraDeployerBase {
 
         deployment.factoryProxy = address(
             new ZoraCreator1155FactoryImpl({
-                _implementation: IZoraCreator1155(deployment.contract1155Impl),
+                _zora1155Impl: IZoraCreator1155(deployment.contract1155Impl),
                 _merkleMinter: ZoraCreatorMerkleMinterStrategy(deployment.merkleMintSaleStrategy),
                 _redeemMinterFactory: ZoraCreatorRedeemMinterFactory(deployment.redeemMinterFactory),
                 _fixedPriceMinter: ZoraCreatorFixedPriceSaleStrategy(deployment.fixedPriceSaleStrategy)
