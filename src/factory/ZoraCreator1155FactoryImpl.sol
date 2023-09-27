@@ -18,7 +18,7 @@ import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
-contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable, IContractMetadata {
+contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgradeable, ContractVersionBase, UUPSUpgradeable, IContractMetadata {
     IZoraCreator1155 public immutable zora1155impl;
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
