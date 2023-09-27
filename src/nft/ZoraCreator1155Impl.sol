@@ -675,6 +675,27 @@ contract ZoraCreator1155Impl is
     /// @param operator operator moving the tokens
     /// @param from from address
     /// @param to to address
+    /// @param id token id to move
+    /// @param amount amount of token
+    /// @param data data of token
+    function _beforeTokenTransfer(
+        address operator,
+        address from,
+        address to,
+        uint256 id,
+        uint256 amount,
+        bytes memory data
+    ) internal override {
+        super._beforeTokenTransfer(operator, from, to, id, amount, data);
+        if (address(config.transferHook) != address(0)) {
+            config.transferHook.onTokenTransfer(address(this), operator, from, to, id, amount, data);
+        }
+    }
+
+    /// @notice Hook before token transfer that checks for a transfer hook integration
+    /// @param operator operator moving the tokens
+    /// @param from from address
+    /// @param to to address
     /// @param ids token ids to move
     /// @param amounts amounts of tokens
     /// @param data data of tokens
