@@ -84,8 +84,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
 
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) external returns (uint256 newTokenId);
 
-    function delegatedTokenId(uint32 uid) external view returns (uint256 tokenId);
-
     function updateTokenURI(uint256 tokenId, string memory _newURI) external;
 
     function updateContractMetadata(string memory _newURI, string memory _newName) external;
