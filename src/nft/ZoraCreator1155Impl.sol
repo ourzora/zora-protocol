@@ -485,7 +485,7 @@ contract ZoraCreator1155Impl is
         return firstMinters[tokenId];
     }
 
-    function mintFee() external view returns (uint256) {
+    function mintFee() external pure returns (uint256) {
         return TOTAL_REWARD_PER_MINT;
     }
 
@@ -774,6 +774,11 @@ contract ZoraCreator1155Impl is
         if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
+    }
+
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
     }
 
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
