@@ -9,7 +9,7 @@ import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.so
 import {ZoraCreator1155Impl} from "../../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155} from "../../../src/proxies/Zora1155.sol";
 import {IMinter1155} from "../../../src/interfaces/IMinter1155.sol";
-import {IZoraCreator1155Errors} from "../../../src/interfaces/IZoraCreator1155Errors.sol";
+import {IZoraCreator1155} from "../../../src/interfaces/IZoraCreator1155.sol";
 import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
@@ -25,19 +25,19 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
     address payable internal factoryAdmin = payable(address(0x888));
     address internal zora;
 
-//     event RedeemMinterDeployed(address indexed creatorContract, address indexed minterContract);
+    event RedeemMinterDeployed(address indexed creatorContract, address indexed minterContract);
 
-//     function setUp() public {
-//         zora = makeAddr("zora");
-//         bytes[] memory emptyData = new bytes[](0);
-//         protocolRewards = new ProtocolRewards();
-//         ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
-//         Zora1155 proxy = new Zora1155(address(targetImpl));
-//         target = ZoraCreator1155Impl(address(proxy));
-//         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);
+    function setUp() public {
+        zora = makeAddr("zora");
+        bytes[] memory emptyData = new bytes[](0);
+        protocolRewards = new ProtocolRewards();
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards));
+        Zora1155 proxy = new Zora1155(address(targetImpl));
+        target = ZoraCreator1155Impl(address(proxy));
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);
 
-//         minterFactory = new ZoraCreatorRedeemMinterFactory();
-//     }
+        minterFactory = new ZoraCreatorRedeemMinterFactory();
+    }
 
     function test_contractVersion() public {
         assertEq(minterFactory.contractVersion(), "1.1.0");
@@ -51,32 +51,30 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         emit RedeemMinterDeployed(address(target), predictedAddress);
         target.callSale(0, minterFactory, abi.encodeWithSelector(ZoraCreatorRedeemMinterFactory.createMinterIfNoneExists.selector, 0));
         vm.stopPrank();
+
+        ZoraCreatorRedeemMinterStrategy minter = ZoraCreatorRedeemMinterStrategy(predictedAddress);
+        assertTrue(address(minter).code.length > 0);
+    }
+
+    function test_createMinterRequiresIZoraCreator1155Caller() public {
+        ERC1155PresetMinterPauser randomToken = new ERC1155PresetMinterPauser("https://uri.com");
+
+        vm.expectRevert(abi.encodeWithSignature("CallerNotZoraCreator1155()"));
+        vm.prank(address(randomToken));
+        minterFactory.createMinterIfNoneExists();
+    }
+
+    function test_getDeployedMinterForCreatorContract() public {
+        vm.prank(address(target));
+        minterFactory.createMinterIfNoneExists();
+        address minterAddress = minterFactory.predictMinterAddress(address(target));
+
+        assertEq(minterAddress, minterFactory.getDeployedRedeemMinterForCreatorContract(address(target)));
+    }
+
+    function test_supportsInterface() public {
+        assertTrue(minterFactory.supportsInterface(0x01ffc9a7)); // ERC165
+        assertTrue(minterFactory.supportsInterface(type(IMinter1155).interfaceId));
+        assertTrue(!minterFactory.supportsInterface(0x6467a6fc)); // old IMinter1155
     }
 }
-
-//         ZoraCreatorRedeemMinterStrategy minter = ZoraCreatorRedeemMinterStrategy(predictedAddress);
-//         assertTrue(address(minter).code.length > 0);
-//     }
-
-//     function test_createMinterRequiresIZoraCreator1155Caller() public {
-//         ERC1155PresetMinterPauser randomToken = new ERC1155PresetMinterPauser("https://uri.com");
-
-//         vm.expectRevert(abi.encodeWithSignature("CallerNotZoraCreator1155()"));
-//         vm.prank(address(randomToken));
-//         minterFactory.createMinterIfNoneExists();
-//     }
-
-//     function test_getDeployedMinterForCreatorContract() public {
-//         vm.prank(address(target));
-//         minterFactory.createMinterIfNoneExists();
-//         address minterAddress = minterFactory.predictMinterAddress(address(target));
-
-//         assertEq(minterAddress, minterFactory.getDeployedRedeemMinterForCreatorContract(address(target)));
-//     }
-
-//     function test_supportsInterface() public {
-//         assertTrue(minterFactory.supportsInterface(0x01ffc9a7)); // ERC165
-//         assertTrue(minterFactory.supportsInterface(type(IMinter1155).interfaceId));
-//         assertTrue(!minterFactory.supportsInterface(0x6467a6fc)); // old IMinter1155
-//     }
-// }
