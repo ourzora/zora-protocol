@@ -10,7 +10,6 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
-import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {Zora1155} from "../proxies/Zora1155.sol";
 import {Create2Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/Create2Upgradeable.sol";
 import {CREATE3} from "solmate/src/utils/CREATE3.sol";

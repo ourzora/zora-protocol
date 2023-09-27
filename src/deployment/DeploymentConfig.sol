@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import "forge-std/Test.sol";
 import {CommonBase} from "forge-std/Base.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Script} from "forge-std/Script.sol";
 
 /// @notice Chain configuration for constants set manually during deploy. Does not get written to after deploys.
 struct ChainConfig {
@@ -37,7 +38,7 @@ struct Deployment {
     address preminter;
 }
 
-abstract contract DeploymentConfig is CommonBase {
+abstract contract DeploymentConfig is Script {
     using stdJson for string;
 
     /// @notice ChainID convenience getter

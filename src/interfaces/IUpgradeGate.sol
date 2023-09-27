@@ -2,7 +2,10 @@
 pragma solidity 0.8.17;
 
 /// @notice Factory Upgrade Gate Admin Factory Implementation – Allows specific contract upgrades as a safety measure
-interface IFactoryManagedUpgradeGate {
+interface IUpgradeGate {
+    /// @notice Event emitted when upgrade gate is emitted
+    event UpgradeGateSetup();
+
     /// @notice If an implementation is registered by the Builder DAO as an optional upgrade
     /// @param baseImpl The base implementation address
     /// @param upgradeImpl The upgrade implementation address
