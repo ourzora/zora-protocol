@@ -384,7 +384,7 @@ contract ZoraCreator1155Impl is
         }
 
         // Mint the specified tokens
-       _mint(recipient, tokenId, quantity, data);
+        _mint(recipient, tokenId, quantity, data);
     }
 
     /// @notice Batch mint tokens to a user as the admin or minter
