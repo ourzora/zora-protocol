@@ -70,7 +70,6 @@ contract ZoraCreator1155Impl is
     IUpgradeGate internal immutable upgradeGate;
 
     constructor(
-        uint256, // TODO remove
         address _mintFeeRecipient,
         address _upgradeGate,
         address _protocolRewards

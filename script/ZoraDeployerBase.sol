@@ -42,7 +42,6 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
         ChainConfig memory chainConfig = getChainConfig();
 
         ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(
-            chainConfig.mintFeeAmount,
             chainConfig.mintFeeRecipient,
             address(factoryProxy),
             chainConfig.protocolRewards

@@ -70,9 +70,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // create the contract, with no toekns
         bytes[] memory initSetup = new bytes[](0);
 
-        uint32 royaltyMintSchedule = 10;
-        uint32 royaltyBPS = 100;
-
         address admin = creator;
         string memory contractURI = "ipfs://asdfasdf";
         string memory name = "Test";
@@ -122,7 +119,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
 
         // ** 3. Mint on that contract **
-        uint256 mintFee = getChainConfig().mintFeeAmount;
+        uint256 mintFee = block.chainid == 5 ? 10000 : 777000000000000;
 
         // mint 3 tokens
         uint256 valueToSend = quantityToMint * (tokenPrice + mintFee);

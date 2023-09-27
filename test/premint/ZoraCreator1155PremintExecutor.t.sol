@@ -55,7 +55,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         collector = makeAddr("collector");
 
         vm.startPrank(zora);
-        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(mintFeeAmount, zora, zora);
+        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
         factoryImpl = ZoraCreator1155FactoryImpl(address(factoryProxy));

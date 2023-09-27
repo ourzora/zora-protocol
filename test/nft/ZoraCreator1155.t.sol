@@ -87,7 +87,7 @@ contract ZoraCreator1155Test is Test {
 
         protocolRewards = new ProtocolRewards();
         upgradeGate = new UpgradeGate(admin);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         simpleMinter = new SimpleMinter();
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
@@ -1367,7 +1367,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_unauthorizedUpgradeFails() external {
-        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(zora, address(0), address(protocolRewards)));
 
         vm.expectRevert();
         target.upgradeTo(new1155Impl);
@@ -1379,7 +1379,7 @@ contract ZoraCreator1155Test is Test {
 
         oldImpls[0] = address(zoraCreator1155Impl);
 
-        address new1155Impl = address(new ZoraCreator1155Impl(0, zora, address(0), address(protocolRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(zora, address(0), address(protocolRewards)));
 
         vm.prank(upgradeGate.owner());
         upgradeGate.registerUpgradePath(oldImpls, new1155Impl);
