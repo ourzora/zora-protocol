@@ -54,9 +54,9 @@ contract GetDeterminsticParam is ZoraDeployerBase {
 
         // replace first 20 characters of salt with deployer address, so that the salt can be used with
         // ImmutableCreate2Factory.safeCreate2 when called by this deployer's account:
-        newFactoryProxyDeployerSalt = saltWithAddressInFirst20Bytes(deployerAddress);
+        newFactoryProxyDeployerSalt = (new NewFactoryProxyDeployer()).DEPLOYMENT_SALT();
 
-        bytes memory newFactoryProxyDeployerInitCode = abi.encodePacked(type(NewFactoryProxyDeployer).creationCode, abi.encode(deployerAddress));
+        bytes memory newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
 
         // we can know determinstically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
@@ -74,7 +74,7 @@ contract GetDeterminsticParam is ZoraDeployerBase {
         bytes memory proxyShimInitCode = abi.encodePacked(type(ProxyShim).creationCode, abi.encode(expectedFactoryDeployerAddress));
 
         // create any arbitrary salt for proxy shim (this can be anything, we just care about the resulting address)
-        proxyShimSalt = bytes32(uint256(62346208396652897063492731691608857170835463900531367942131212401663701090882));
+        proxyShimSalt = saltWithAddressInFirst20Bytes(deployerAddress);
 
         // now get determinstic proxy shim address based on salt, deployer address, which will be NewFactoryProxyDeployer address and init code
         address proxyShimAddress = Create2.computeAddress(proxyShimSalt, keccak256(proxyShimInitCode), expectedFactoryDeployerAddress);
@@ -90,7 +90,7 @@ contract GetDeterminsticParam is ZoraDeployerBase {
 
         console.log("init code hash: ", LibString.toHexStringNoPrefix(uint256(creationCodeHash), 32));
 
-        console2.log("mining for salt");
+        (factoryProxySalt, determinsticFactoryProxyAddress) = mineSalt(expectedFactoryDeployerAddress, creationCodeHash, "777777");
     }
 
     function run()
@@ -104,15 +104,18 @@ contract GetDeterminsticParam is ZoraDeployerBase {
             address determinsticFactoryProxyAddress
         )
     {
-        deployerAddress = vm.envAddress("DEPLOYER");
+        uint256 deployerPrivateKey;
+        (deployerAddress, deployerPrivateKey) = makeAddrAndKey("deployer");
+        // deployerAddress = vm.envAddress("DEPLOYER");
 
         (newFactoryProxyDeployerSalt, proxyShimSalt, factoryProxySalt, determinsticFactoryProxyAddress) = getDeterminsticParams(deployerAddress);
 
         newFactoryDeployerCreationCode = type(NewFactoryProxyDeployer).creationCode;
 
         // extract results
-        // console2.log("creation code:", vm.toString(newFactoryDeployerCreationCode));
         console2.log("deployer address: ", deployerAddress);
+        // only used for test purposes
+        console2.log("deployer pivate key", deployerPrivateKey);
         console2.log("new factory proxy deployer salt:", vm.toString(newFactoryProxyDeployerSalt));
         console2.log("proxy shim bytes32 salt:", vm.toString(proxyShimSalt));
         console2.log("factory proxy bytes32 salt: ", vm.toString(factoryProxySalt));

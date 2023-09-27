@@ -50,8 +50,8 @@ library ZoraDeployer {
         return address(preminterImplementation);
     }
 
-    function determinsticFactoryDeployerAddress(address deployerAddress, bytes32 salt) internal view returns (address) {
-        bytes memory newFactoryProxyDeployerInitCode = abi.encodePacked(type(NewFactoryProxyDeployer).creationCode, abi.encode(deployerAddress));
+    function determinsticFactoryDeployerAddress(bytes32 salt) internal view returns (address) {
+        bytes memory newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
 
         // we can know determinstically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
@@ -74,12 +74,11 @@ library ZoraDeployer {
     }
 
     function determinsticFactoryDeployerAndFactoryProxyAddress(
-        address deployerAddress,
         bytes32 factoryDeloyerSalt,
         bytes32 proxyShimSalt,
         bytes32 factoryProxySalt
     ) internal view returns (address factoryDeployerAddress, address factoryProxyAddress) {
-        factoryDeployerAddress = determinsticFactoryDeployerAddress(deployerAddress, factoryDeloyerSalt);
+        factoryDeployerAddress = determinsticFactoryDeployerAddress(factoryDeloyerSalt);
         factoryProxyAddress = determinsticFactoryProxyAddress(proxyShimSalt, factoryProxySalt, factoryDeployerAddress);
     }
 

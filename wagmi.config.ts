@@ -24,7 +24,7 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorRedeemMinterStrategy",
   "ZoraCreator1155PremintExecutor",
   "NewFactoryProxyDeployer",
-  "IImmutableCreate2Factory"
+  "IImmutableCreate2Factory",
 ];
 
 type Addresses = {
@@ -94,8 +94,8 @@ const getAddresses = () => {
       addAddress(
         "IImmutableCreate2Factory",
         chainId,
-        '0x0000000000FFe8B47B3e2130213B802212439497'
-      )
+        "0x0000000000FFe8B47B3e2130213B802212439497"
+      );
   }
 
   return addresses;
@@ -108,7 +108,7 @@ export default defineConfig({
       deployments: getAddresses(),
       include: contractFilesToInclude.map(
         (contractName) => `${contractName}.json`
-      )
+      ),
     }),
   ],
 });
