@@ -19,7 +19,7 @@ import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
 contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgradeable, ContractVersionBase, UUPSUpgradeable, IContractMetadata {
-    IZoraCreator1155 public immutable zora1155impl;
+    IZoraCreator1155 public immutable zora1155Impl;
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
     IMinter1155 public immutable redeemMinterFactory;
@@ -28,7 +28,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
         if (address(_zora1155Impl) == address(0)) {
             revert Constructor_ImplCannotBeZero();
         }
-        zora1155impl = _zora1155Impl;
+        zora1155Impl = _zora1155Impl;
         merkleMinter = _merkleMinter;
         fixedPriceMinter = _fixedPriceMinter;
         redeemMinterFactory = _redeemMinterFactory;
@@ -72,7 +72,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
-        Zora1155 newContract = new Zora1155(address(zora1155impl));
+        Zora1155 newContract = new Zora1155(address(zora1155Impl));
 
         _initializeContract(Zora1155(newContract), newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
@@ -88,7 +88,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
     ) external returns (address) {
         bytes32 digest = _hashContract(msg.sender, newContractURI, name, defaultAdmin);
 
-        address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(zora1155impl)), 0);
+        address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(zora1155Impl)), 0);
 
         Zora1155 newContract = Zora1155(payable(createdContract));
 
