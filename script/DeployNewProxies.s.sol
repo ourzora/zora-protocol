@@ -8,9 +8,9 @@ import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
-import {DeterminsticDeployerScript, DeterminsticParams} from "../src/deployment/DeterminsticDeployerScript.sol";
+import {DeterministicDeployerScript, DeterministicParams} from "../src/deployment/DeterministicDeployerScript.sol";
 
-contract DeployNewProxies is ZoraDeployerBase, DeterminsticDeployerScript {
+contract DeployNewProxies is ZoraDeployerBase, DeterministicDeployerScript {
     using stdJson for string;
 
     function run() public returns (string memory) {
@@ -25,14 +25,14 @@ contract DeployNewProxies is ZoraDeployerBase, DeterminsticDeployerScript {
         // get signing instructions
         vm.startBroadcast(deployerPrivateKey);
 
-        address factoryProxyAddress = deployDeterminsticProxy({
+        address factoryProxyAddress = deployDeterministicProxy({
             proxyName: "factoryProxy",
             implementation: deployment.factoryImpl,
             owner: chainConfig.factoryOwner,
             chain: chain
         });
 
-        address preminterProxyAddress = deployDeterminsticProxy({
+        address preminterProxyAddress = deployDeterministicProxy({
             proxyName: "premintExecutorProxy",
             implementation: deployment.preminterImpl,
             owner: chainConfig.factoryOwner,

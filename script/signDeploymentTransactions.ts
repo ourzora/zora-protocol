@@ -2,22 +2,20 @@ import { createAccount } from "@turnkey/viem";
 import { TurnkeyClient } from "@turnkey/http";
 import { Address, LocalAccount } from "viem";
 import { ApiKeyStamper } from "@turnkey/api-key-stamper";
-import factoryProxyDeployConfig from '../determinsticConfig/factoryProxy/params.json';
 import { glob } from "glob";
 import * as path from "path";
 import * as dotenv from "dotenv";
-import { promisify } from 'util';
-import { writeFile, readFile } from 'fs';
-import { ConfiguredSalt, DeterminsticDeploymentConfig, signDeployFactory } from "../package/deployment";
-import { fileURLToPath } from 'url';
-import { dirname } from 'path';
-import { config } from "process";
+import { writeFile, readFile } from "fs/promises";
+import {
+  ConfiguredSalt,
+  DeterministicDeploymentConfig,
+  signDeployFactory,
+} from "../package/deployment";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-const writeFileAsync = promisify(writeFile);
-const readFileAsync = promisify(readFile);
 
 // Load environment variables from `.env.local`
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
@@ -37,15 +35,15 @@ async function signAndSaveSignatures({
   chainConfigs: ChainConfig[],
   proxyName: "factoryProxy" | "premintExecutorProxy"
 }) {
-  const configFolder = path.resolve(__dirname, `../determinsticConfig/${proxyName}/`);
+  const configFolder = path.resolve(__dirname, `../deterministicConfig/${proxyName}/`);
   const configFile = path.join(configFolder, 'params.json');
-  const determinsticDeployConfig = JSON.parse(await readFileAsync(configFile, 'utf-8'));
+  const deterministicDeployConfig = JSON.parse(await readFile(configFile, 'utf-8'));
 
-  const deploymentConfig: DeterminsticDeploymentConfig = {
-    proxyDeployerAddress: determinsticDeployConfig.proxyDeployerAddress as Address,
-    proxySalt: determinsticDeployConfig.proxySalt as ConfiguredSalt,
-    proxyShimSalt: determinsticDeployConfig.proxyShimSalt as ConfiguredSalt,
-    proxyCreationCode: determinsticDeployConfig.proxyCreationCode as Address
+  const deploymentConfig: DeterministicDeploymentConfig = {
+    proxyDeployerAddress: deterministicDeployConfig.proxyDeployerAddress as Address,
+    proxySalt: deterministicDeployConfig.proxySalt as ConfiguredSalt,
+    proxyShimSalt: deterministicDeployConfig.proxyShimSalt as ConfiguredSalt,
+    proxyCreationCode: deterministicDeployConfig.proxyCreationCode as Address
   }
 
   const signedConfigs = await Promise.all(chainConfigs.map(async chainConfig => {
@@ -56,7 +54,7 @@ async function signAndSaveSignatures({
           implementationAddress: chainConfig.implementationAddress,
           owner: chainConfig.owner,
           chainId: chainConfig.chainId,
-          determinsticDeploymentConfig: deploymentConfig
+          deterministicDeploymentConfig: deploymentConfig
         }),
     }
   }));
@@ -67,8 +65,8 @@ async function signAndSaveSignatures({
     return acc;
   }, {} as { [key: number]: string } );
 
-  // write as json to ../determinsticConfig/factoryDeploySignatures.json:
-  await writeFileAsync(path.join(configFolder, "signatures.json"), JSON.stringify(byChainId, null, 2));
+  // write as json to ../deterministicConfig/factoryDeploySignatures.json:
+  await writeFile(path.join(configFolder, "signatures.json"), JSON.stringify(byChainId, null, 2));
 }
 
 const getFactoryImplConfigs = async () => {
@@ -77,7 +75,7 @@ const getFactoryImplConfigs = async () => {
   );
 
   const chainConfigs = await Promise.all(addresseFiles.map(async addressConfigFile => {
-    const chainId = parseInt(path.basename(addressConfigFile).split(".")[0]);
+    const chainId = parseInt(path.basename(addressConfigFile).split(".")[0]!);
 
     // read file and process JSON contents: 
     const fileContents = await import(addressConfigFile);
@@ -101,7 +99,7 @@ const getPreminterImplConfigs = async () => {
   );
 
   const chainConfigs = await Promise.all(addresseFiles.map(async addressConfigFile => {
-    const chainId = parseInt(path.basename(addressConfigFile).split(".")[0]);
+    const chainId = parseInt(path.basename(addressConfigFile).split(".")[0]!);
 
     // read file and process JSON contents: 
     const fileContents = await import(addressConfigFile);
@@ -130,18 +128,18 @@ async function main() {
     // This uses API key credentials.
     // If you're using passkeys, use `@turnkey/webauthn-stamper` to collect webauthn signatures:
     new ApiKeyStamper({
-      apiPublicKey: process.env.API_PUBLIC_KEY!,
-      apiPrivateKey: process.env.API_PRIVATE_KEY!,
+      apiPublicKey: process.env.TURNKEY_API_PUBLIC_KEY!,
+      apiPrivateKey: process.env.TURNKEY_API_PRIVATE_KEY!,
     })
   );
 
   // Create the Viem custom account
   const turnkeyAccount = await createAccount({
     client: httpClient,
-    organizationId: "f7e5bec5-b7f9-486a-a8c3-cd1ec7362709",
-    privateKeyId: "3e3c5029-7ad7-4559-936f-93d21763143b",
+    organizationId: process.env.TURNKEY_ORGANIZATION_ID!,
+    privateKeyId: process.env.TURNKEY_PRIVATE_KEY_ID!,
     // optional; will be fetched from Turnkey if not provided
-    ethereumAddress: "0x4F9991C82C76aE04CC39f23aB909AA919886ba12"
+    ethereumAddress: process.env.TURNKEY_TARGET_ADDRESS!,
   });
 
   await signAndSaveSignatures({

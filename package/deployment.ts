@@ -2,7 +2,7 @@ import { Address, LocalAccount } from "viem";
 
 export type ConfiguredSalt = `0x${string}`;
 // Load environment variables from `.env.local`
-export type DeterminsticDeploymentConfig = {
+export type DeterministicDeploymentConfig = {
   proxyDeployerAddress: Address;
   proxyShimSalt: ConfiguredSalt;
   proxySalt: ConfiguredSalt;
@@ -15,13 +15,13 @@ export type DeployedContracts = {
 
 export const signDeployFactory = ({
   account,
-  determinsticDeploymentConfig: config,
+  deterministicDeploymentConfig: config,
   implementationAddress,
   owner,
   chainId,
 }: {
   account: LocalAccount;
-  determinsticDeploymentConfig: DeterminsticDeploymentConfig;
+  deterministicDeploymentConfig: DeterministicDeploymentConfig;
   implementationAddress: Address;
   owner: Address;
   chainId: number;
@@ -31,7 +31,7 @@ export const signDeployFactory = ({
       createProxy: [
         { name: "proxyShimSalt", type: "bytes32" },
         { name: "proxySalt", type: "bytes32" },
-        { name: "proxyCreationCode", type: "bytes"},
+        { name: "proxyCreationCode", type: "bytes" },
         { name: "implementationAddress", type: "address" },
         { name: "owner", type: "address" },
       ],

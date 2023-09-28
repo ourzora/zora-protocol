@@ -10,7 +10,7 @@ import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
-import {DeterminsticDeployerScript, DeterminsticParams} from "../src/deployment/DeterminsticDeployerScript.sol";
+import {DeterministicDeployerScript, DeterministicParams} from "../src/deployment/DeterministicDeployerScript.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -18,13 +18,13 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 /// Example usage: DEPLOYER=0xf69fEc6d858c77e969509843852178bd24CAd2B6 forge script script/GetDeterminsticParam.s.sol --rpc-url https://testnet.rpc.zora.energy --ffi
 /// @author
 /// @notice
-contract PremintProxyDeterminsticParams is ZoraDeployerBase, DeterminsticDeployerScript {
-    function run() public returns (DeterminsticParams memory determinsticParams) {
+contract PremintProxyDeterminsticParams is ZoraDeployerBase, DeterministicDeployerScript {
+    function run() public returns (DeterministicParams memory determinsticParams) {
         address deployerAddress = 0x4F9991C82C76aE04CC39f23aB909AA919886ba12;
 
         bytes memory proxyCreationCode = type(Zora1155PremintExecutor).creationCode;
 
-        determinsticParams = getDeterminsticDeploymentParams(deployerAddress, proxyCreationCode, 200);
+        determinsticParams = getDeterministicDeploymentParams(deployerAddress, proxyCreationCode, 200);
 
         serializeAndSaveOutput(determinsticParams, "premintExecutorProxy");
     }
