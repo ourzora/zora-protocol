@@ -10,7 +10,7 @@ import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
-import {DeterminsticDeployer, DeterminsticParams} from "../src/deployment/DeterminsticDeployer.sol";
+import {DeterminsticDeployerScript, DeterminsticParams} from "../src/deployment/DeterminsticDeployerScript.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
@@ -18,7 +18,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 /// Example usage: DEPLOYER=0xf69fEc6d858c77e969509843852178bd24CAd2B6 forge script script/GetDeterminsticParam.s.sol --rpc-url https://testnet.rpc.zora.energy --ffi
 /// @author
 /// @notice
-contract GetDeterminsticParam is ZoraDeployerBase, DeterminsticDeployer {
+contract GetDeterminsticParam is ZoraDeployerBase, DeterminsticDeployerScript {
     function run() public {
         address deployerAddress = 0x4F9991C82C76aE04CC39f23aB909AA919886ba12;
 

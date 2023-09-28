@@ -8,9 +8,9 @@ import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
-import {DeterminsticDeployer, DeterminsticParams} from "../src/deployment/DeterminsticDeployer.sol";
+import {DeterminsticDeployerScript, DeterminsticParams} from "../src/deployment/DeterminsticDeployerScript.sol";
 
-contract DeployNewFactoryProxy is ZoraDeployerBase, DeterminsticDeployer {
+contract DeployNewFactoryProxy is ZoraDeployerBase, DeterminsticDeployerScript {
     using stdJson for string;
 
     error MismatchedAddress(address expected, address actual);

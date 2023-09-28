@@ -20,7 +20,7 @@ struct DeterminsticParams {
     address determinsticProxyAddress;
 }
 
-contract DeterminsticDeployer is Script {
+contract DeterminsticDeployerScript is Script {
     using stdJson for string;
 
     // copied from: https://github.com/karmacoma-eth/foundry-playground/blob/main/script/MineSaltScript.sol#L17C1-L36C9
