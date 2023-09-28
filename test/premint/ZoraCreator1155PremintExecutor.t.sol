@@ -194,7 +194,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
 
         // get contract hash, which is unique per contract creation config, and can be used
         // retreive the address created for a contract
-        address preminterAddress = getDeployment().preminter;
+        address preminterAddress = getDeployment().preminterImpl;
 
         if (preminterAddress == address(0)) {
             console.log("preminter not configured for chain...skipping");

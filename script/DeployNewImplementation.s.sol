@@ -44,6 +44,7 @@ contract DeployNewImplementations is ZoraDeployerBase {
 
         deployment.factoryImpl = factoryImplAddress;
         deployment.contract1155Impl = contract1155ImplAddress;
+        deployment.preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementation(address(deployment.factoryProxy));
 
         return getDeploymentJSON(deployment);
     }

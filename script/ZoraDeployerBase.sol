@@ -30,7 +30,8 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
         vm.serializeString(deploymentJsonKey, CONTRACT_1155_IMPL_VERSION, deployment.contract1155ImplVersion);
         vm.serializeAddress(deploymentJsonKey, CONTRACT_1155_IMPL, deployment.contract1155Impl);
         vm.serializeAddress(deploymentJsonKey, FACTORY_IMPL, deployment.factoryImpl);
-        vm.serializeAddress(deploymentJsonKey, PREMINTER, deployment.preminter);
+        vm.serializeAddress(deploymentJsonKey, PREMINTER_PROXY, deployment.preminterImpl);
+        vm.serializeAddress(deploymentJsonKey, PREMINTER_IMPL, deployment.preminterImpl);
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
         console2.log(deploymentJson);
     }

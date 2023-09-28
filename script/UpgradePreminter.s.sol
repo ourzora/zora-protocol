@@ -23,7 +23,7 @@ contract UpgradePreminter is ZoraDeployerBase {
 
         upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, preminterImplementation);
 
-        upgradeTarget = deployment.preminter;
+        upgradeTarget = deployment.preminterImpl;
 
         console2.log("Upgrade PremintExecutor target and implementatin:", upgradeTarget, preminterImplementation);
         console2.log("To upgrade, use this calldata:");
