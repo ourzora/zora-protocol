@@ -1,12 +1,20 @@
-import { Address, LocalAccount } from "viem";
+import { Address, LocalAccount, Hex } from "viem";
 
 export type ConfiguredSalt = `0x${string}`;
 // Load environment variables from `.env.local`
-export type DeterminsticDeploymentConfig = {
+export type DeterministicDeploymentConfig = {
   proxyDeployerAddress: Address;
   proxyShimSalt: ConfiguredSalt;
   proxySalt: ConfiguredSalt;
-  proxyCreationCode: `0x${string}`;
+  proxyCreationCode: Hex;
+};
+
+export type GenericDeploymentConfiguration = {
+  creationCode: Hex;
+  salt: Hex;
+  deployerAddress: Address;
+  upgradeGateAddress: Address;
+  proxyDeployerAddress: Address;
 };
 
 export type DeployedContracts = {
@@ -15,13 +23,13 @@ export type DeployedContracts = {
 
 export const signDeployFactory = ({
   account,
-  determinsticDeploymentConfig: config,
+  deterministicDeploymentConfig: config,
   implementationAddress,
   owner,
   chainId,
 }: {
   account: LocalAccount;
-  determinsticDeploymentConfig: DeterminsticDeploymentConfig;
+  deterministicDeploymentConfig: DeterministicDeploymentConfig;
   implementationAddress: Address;
   owner: Address;
   chainId: number;
@@ -31,7 +39,7 @@ export const signDeployFactory = ({
       createProxy: [
         { name: "proxyShimSalt", type: "bytes32" },
         { name: "proxySalt", type: "bytes32" },
-        { name: "proxyCreationCode", type: "bytes"},
+        { name: "proxyCreationCode", type: "bytes" },
         { name: "implementationAddress", type: "address" },
         { name: "owner", type: "address" },
       ],
@@ -46,7 +54,40 @@ export const signDeployFactory = ({
     primaryType: "createProxy",
     domain: {
       chainId,
-      name: "NewFactoryProxyDeployer",
+      name: "DeterministicProxyDeployer",
+      version: "1",
+      verifyingContract: config.proxyDeployerAddress,
+    },
+  });
+
+export const signGenericDeploy = ({
+  account,
+  config,
+  chainId,
+  initCall,
+}: {
+  account: LocalAccount;
+  config: GenericDeploymentConfiguration;
+  initCall: Hex;
+  chainId: number;
+}) =>
+  account.signTypedData({
+    types: {
+      createGenericContract: [
+        { name: "salt", type: "bytes32" },
+        { name: "creationCode", type: "bytes" },
+        { name: "initCall", type: "bytes" },
+      ],
+    },
+    message: {
+      salt: config.salt,
+      creationCode: config.creationCode,
+      initCall,
+    },
+    primaryType: "createGenericContract",
+    domain: {
+      chainId,
+      name: "DeterministicProxyDeployer",
       version: "1",
       verifyingContract: config.proxyDeployerAddress,
     },

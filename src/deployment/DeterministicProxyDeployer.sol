@@ -12,16 +12,20 @@ interface IUpgradeableProxy {
     function initialize(address newOwner) external;
 }
 
-contract NewFactoryProxyDeployer is EIP712 {
+/// @notice Deterministic proxy deployer for deploying zora 1155 contract suite
+/// @dev Supports both generic contracts and the UUPS shim proxy pattern used for ZORA 1155
+/// @dev Requires approved signatures depending on the salt hashes (pattern from IMMUTABLE_CREATE2_FACTORY)
+contract DeterministicProxyDeployer is EIP712 {
     error FactoryProxyAddressMismatch(address expected, address actual);
+    error FailedToInitGenericDeployedContract();
 
-    constructor() EIP712("NewFactoryProxyDeployer", "1") {}
+    constructor() EIP712("DeterministicProxyDeployer", "1") {}
 
-    /// Creates a new factory proxy at a determinstic address, with this address as the owner
+    /// Creates a new factory proxy at a Deterministic address, with this address as the owner
     /// Upgrades the proxy to the factory implementation, and sets the new owner as the owner.
     /// @param proxyShimSalt Salt for deterministic proxy shim address
     /// @param factoryProxySalt Salt for deterministic factory proxy address
-    function _createAndInitializeNewFactoryProxyDeterminstic(
+    function _createAndInitializeNewFactoryProxyDeterministic(
         bytes32 proxyShimSalt,
         bytes32 factoryProxySalt,
         bytes calldata proxyCreationCode,
@@ -48,30 +52,42 @@ contract NewFactoryProxyDeployer is EIP712 {
         return factoryProxyAddress;
     }
 
-    bytes32 constant DOMAIN =
+    function _createAndInitGenericContractDeterministic(
+        bytes32 genericCreationSalt,
+        bytes calldata creationCode,
+        bytes calldata initCall
+    ) internal returns (address resultAddress) {
+        resultAddress = Create2.deploy(0, genericCreationSalt, creationCode);
+
+        (bool success, ) = resultAddress.call(initCall);
+        if (!success) {
+            revert FailedToInitGenericDeployedContract();
+        }
+    }
+
+    bytes32 constant DOMAIN_UPGRADEABLE_PROXY =
         keccak256("createProxy(bytes32 proxyShimSalt,bytes32 proxySalt,bytes proxyCreationCode,address implementationAddress,address owner)");
+    bytes32 constant DOMAIN_GENERIC_CREATION = keccak256("createGenericContract(bytes32 salt,bytes creationCode,bytes initCall)");
 
-    function recoverSignature(
-        bytes32 proxyShimSalt,
-        bytes32 proxySalt,
-        bytes calldata proxyCreationCode,
-        address implementationAddress,
-        address owner,
-        bytes calldata signature
-    ) public view returns (address) {
-        bytes32 digest = hashedDigest(proxyShimSalt, proxySalt, proxyCreationCode, implementationAddress, owner);
-
+    function recoverSignature(bytes32 digest, bytes calldata signature) public pure returns (address) {
         return ECDSA.recover(digest, signature);
     }
 
-    function hashedDigest(
+    function hashedDigestFactoryProxy(
         bytes32 proxyShimSalt,
         bytes32 proxySalt,
         bytes calldata proxyCreationCode,
         address implementationAddress,
         address newOwner
     ) public view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(DOMAIN, proxyShimSalt, proxySalt, keccak256(bytes(proxyCreationCode)), implementationAddress, newOwner)));
+        return
+            _hashTypedDataV4(
+                keccak256(abi.encode(DOMAIN_UPGRADEABLE_PROXY, proxyShimSalt, proxySalt, keccak256(proxyCreationCode), implementationAddress, newOwner))
+            );
+    }
+
+    function hashedDigestGenericCreation(bytes32 salt, bytes calldata creationCode, bytes calldata initCall) public view returns (bytes32) {
+        return _hashTypedDataV4(keccak256(abi.encode(DOMAIN_GENERIC_CREATION, salt, keccak256(creationCode), keccak256(initCall))));
     }
 
     function requireContainsCaller(address caller, bytes32 salt) private pure {
@@ -80,11 +96,11 @@ contract NewFactoryProxyDeployer is EIP712 {
         require((address(bytes20(salt)) == caller) || (bytes20(salt) == bytes20(0)), "Invalid salt - first 20 bytes of the salt must match calling address.");
     }
 
-    /// Creates a new factory proxy at a determinstic address, with this address as the owner
+    /// Creates a new factory proxy at a Deterministic address, with this address as the owner
     /// Upgrades the proxy to the factory implementation, and sets the new owner as the owner.
     /// @param proxyShimSalt Salt for deterministic proxy shim address
     /// @param proxySalt Salt for deterministic factory proxy address
-    function createFactoryProxyDeterminstic(
+    function createFactoryProxyDeterministic(
         bytes32 proxyShimSalt,
         bytes32 proxySalt,
         bytes calldata proxyCreationCode,
@@ -93,12 +109,12 @@ contract NewFactoryProxyDeployer is EIP712 {
         address owner,
         bytes calldata signature
     ) external returns (address factoryProxyAddress) {
-        address signer = recoverSignature(proxyShimSalt, proxySalt, proxyCreationCode, implementationAddress, owner, signature);
+        address signer = recoverSignature(hashedDigestFactoryProxy(proxyShimSalt, proxySalt, proxyCreationCode, implementationAddress, owner), signature);
 
         requireContainsCaller(signer, proxyShimSalt);
 
         return
-            _createAndInitializeNewFactoryProxyDeterminstic(
+            _createAndInitializeNewFactoryProxyDeterministic(
                 proxyShimSalt,
                 proxySalt,
                 proxyCreationCode,
@@ -106,5 +122,18 @@ contract NewFactoryProxyDeployer is EIP712 {
                 implementationAddress,
                 owner
             );
+    }
+
+    function createAndInitGenericContractDeterministic(
+        bytes32 genericCreationSalt,
+        bytes calldata creationCode,
+        bytes calldata initCall,
+        bytes calldata signature
+    ) external returns (address resultAddress) {
+        address signer = recoverSignature(hashedDigestGenericCreation(genericCreationSalt, creationCode, initCall), signature);
+
+        requireContainsCaller(signer, genericCreationSalt);
+
+        return _createAndInitGenericContractDeterministic(genericCreationSalt, creationCode, initCall);
     }
 }

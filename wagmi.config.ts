@@ -10,7 +10,7 @@ type ContractNames =
   | "ZoraCreatorRedeemMinterFactory"
   | "ZoraCreatorRedeemMinterStrategy"
   | "ZoraCreator1155PremintExecutor"
-  | "NewFactoryProxyDeployer"
+  | "DeterministicProxyDeployer"
   | "IImmutableCreate2Factory";
 
 type Address = `0x${string}`;
@@ -23,7 +23,7 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
   "ZoraCreator1155PremintExecutor",
-  "NewFactoryProxyDeployer",
+  "DeterministicProxyDeployer",
   "IImmutableCreate2Factory",
 ];
 

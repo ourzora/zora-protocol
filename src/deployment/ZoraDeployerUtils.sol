@@ -10,7 +10,7 @@ import {Deployment, ChainConfig} from "./DeploymentConfig.sol";
 import {ProxyShim} from "../utils/ProxyShim.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "../delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IImmutableCreate2Factory} from "./IImmutableCreate2Factory.sol";
-import {NewFactoryProxyDeployer} from "./NewFactoryProxyDeployer.sol";
+import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 library ZoraDeployerUtils {
@@ -42,8 +42,9 @@ library ZoraDeployerUtils {
     // so that anyone can deploy it
     bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
 
-    function createDeterminsticFactoryProxyDeployer() internal returns (NewFactoryProxyDeployer) {
-        return NewFactoryProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(NewFactoryProxyDeployer).creationCode));
+    function createDeterministicFactoryProxyDeployer() internal returns (DeterministicProxyDeployer) {
+        return
+            DeterministicProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(DeterministicProxyDeployer).creationCode));
     }
 
     function deployNewPreminterImplementation(address factoryProxyAddress) internal returns (address) {
@@ -53,13 +54,13 @@ library ZoraDeployerUtils {
         return address(preminterImplementation);
     }
 
-    function determinsticFactoryDeployerAddress() internal view returns (address) {
-        // we can know determinstically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
+    function deterministicFactoryDeployerAddress() internal view returns (address) {
+        // we can know deterministically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
-        return IMMUTABLE_CREATE2_FACTORY.findCreate2Address(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(NewFactoryProxyDeployer).creationCode);
+        return IMMUTABLE_CREATE2_FACTORY.findCreate2Address(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(DeterministicProxyDeployer).creationCode);
     }
 
-    function determinsticFactoryProxyAddress(bytes32 proxyShimSalt, bytes32 factoryProxySalt, address proxyDeployerAddress) internal pure returns (address) {
+    function deterministicFactoryProxyAddress(bytes32 proxyShimSalt, bytes32 factoryProxySalt, address proxyDeployerAddress) internal pure returns (address) {
         address proxyShimAddress = Create2.computeAddress(
             proxyShimSalt,
             keccak256(abi.encodePacked(type(ProxyShim).creationCode, abi.encode(proxyDeployerAddress))),
