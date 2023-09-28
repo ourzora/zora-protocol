@@ -99,62 +99,79 @@ contract DeterministicDeployerScript is Script {
         signature = signatures.readBytes(string.concat(".", string.concat(vm.toString(chain))));
     }
 
+    function getProxyDeployerParams() internal returns (bytes32 proxyDeployerSalt, bytes memory proxyDeployerCreationCode, address proxyDeployerAddress) {
+        proxyDeployerSalt = ZoraDeployerUtils.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
+
+        proxyDeployerCreationCode = type(DeterministicProxyDeployer).creationCode;
+
+        // we can know deterministically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
+        // from the ImmutableCreate2Factory
+        proxyDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(proxyDeployerSalt, proxyDeployerCreationCode);
+    }
+
+    function getProxyShimParams(
+        address proxyDeployerAddress,
+        address deployerAddress,
+        uint256 proxyShimSaltSuffix
+    ) internal returns (bytes memory proxyShimInitCode, bytes32 proxyShimSalt, address proxyShimAddress) {
+        proxyShimInitCode = abi.encodePacked(type(ProxyShim).creationCode, abi.encode(proxyDeployerAddress));
+
+        // create any arbitrary salt for proxy shim (this can be anything, we just care about the resulting address)
+        proxyShimSalt = saltWithAddressInFirst20Bytes(deployerAddress, proxyShimSaltSuffix);
+
+        // now get deterministic proxy shim address based on salt, deployer address, which will be DeterministicProxyDeployer address and init code
+        proxyShimAddress = Create2.computeAddress(proxyShimSalt, keccak256(proxyShimInitCode), proxyDeployerAddress);
+    }
+
+    function getProxyParams(
+        bytes memory proxyCreationCode,
+        address proxyShimAddress,
+        address proxyDeployerAddress
+    ) internal returns (bytes32 proxySalt, address deterministicProxyAddress) {
+        bytes memory factoryProxyInitCode = abi.encodePacked(proxyCreationCode, abi.encode(proxyShimAddress, ""));
+        bytes32 creationCodeHash = keccak256(factoryProxyInitCode);
+
+        (proxySalt, deterministicProxyAddress) = mineSalt(proxyDeployerAddress, creationCodeHash, "777777");
+    }
+
     function getDeterministicDeploymentParams(
         address deployerAddress,
         bytes memory proxyCreationCode,
         uint256 proxyShimSaltSuffix
     ) internal returns (DeterministicParams memory) {
         // 1. Get salt with first bytes that match address, and resulting determinisitic factory proxy deployer address
-
+        (bytes32 proxyDeployerSalt, bytes memory proxyDeployerCreationCode, address proxyDeployerAddress) = getProxyDeployerParams();
         // replace first 20 characters of salt with deployer address, so that the salt can be used with
         // ImmutableCreate2Factory.safeCreate2 when called by this deployer's account:
-        bytes32 proxyDeployerSalt = ZoraDeployerUtils.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
-
-        bytes memory proxyDeployerCreationCode = type(DeterministicProxyDeployer).creationCode;
-
-        // we can know deterministically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
-        // from the ImmutableCreate2Factory
-        address proxyDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(proxyDeployerSalt, proxyDeployerCreationCode);
-
-        console2.log("expected factory deployer address:", proxyDeployerAddress);
 
         // 2. Get random proxy shim salt, and resulting deterministic address
-
         // Proxy shim will be initialized with the factory deployer address as the owner, allowing only the factory deployer to upgrade the proxy,
         // to the eventual factory implementation
-        bytes memory proxyShimInitCode = abi.encodePacked(type(ProxyShim).creationCode, abi.encode(proxyDeployerAddress));
-
-        // create any arbitrary salt for proxy shim (this can be anything, we just care about the resulting address)
-        bytes32 proxyShimSalt = saltWithAddressInFirst20Bytes(deployerAddress, proxyShimSaltSuffix);
-
-        // now get deterministic proxy shim address based on salt, deployer address, which will be DeterministicProxyDeployer address and init code
-        address proxyShimAddress = Create2.computeAddress(proxyShimSalt, keccak256(proxyShimInitCode), proxyDeployerAddress);
-
-        console2.log("proxy shim address:");
-        console2.log(proxyShimAddress);
+        (bytes memory proxyShimInitCode, bytes32 proxyShimSalt, address proxyShimAddress) = getProxyShimParams({
+            proxyDeployerAddress: proxyDeployerAddress,
+            deployerAddress: deployerAddress,
+            proxyShimSaltSuffix: proxyShimSaltSuffix
+        });
 
         // 3. Mine for a salt that can be used to deterministically create the factory proxy, given the proxy shim address, which is passed as the
         // constructor argument, and the deployer, which is the new factory proxy deployer, which we know the address of deterministically
-
-        bytes memory factoryProxyInitCode = abi.encodePacked(proxyCreationCode, abi.encode(proxyShimAddress, ""));
-        bytes32 creationCodeHash = keccak256(factoryProxyInitCode);
-
-        console.log("init code hash: ", LibString.toHexStringNoPrefix(uint256(creationCodeHash), 32));
-
-        (bytes32 proxySalt, address deterministicProxyAddress) = mineSalt(proxyDeployerAddress, creationCodeHash, "777777");
-
-        DeterministicParams memory result = DeterministicParams({
-            proxyDeployerCreationCode: proxyDeployerCreationCode,
+        (bytes32 proxySalt, address deterministicProxyAddress) = getProxyParams({
             proxyCreationCode: proxyCreationCode,
-            deployerAddress: deployerAddress,
-            proxyDeployerAddress: proxyDeployerAddress,
-            proxyDeployerSalt: proxyDeployerSalt,
-            proxyShimSalt: proxyShimSalt,
-            proxySalt: proxySalt,
-            deterministicProxyAddress: deterministicProxyAddress
+            proxyShimAddress: proxyShimAddress,
+            proxyDeployerAddress: proxyDeployerAddress
         });
 
-        return result;
+        return
+            DeterministicParams({
+                proxyDeployerCreationCode: proxyDeployerCreationCode,
+                proxyCreationCode: proxyCreationCode,
+                deployerAddress: deployerAddress,
+                proxyDeployerAddress: proxyDeployerAddress,
+                proxyDeployerSalt: proxyDeployerSalt,
+                proxyShimSalt: proxyShimSalt,
+                proxySalt: proxySalt,
+                deterministicProxyAddress: deterministicProxyAddress
+            });
     }
 
     error MismatchedAddress(address expected, address actual);
