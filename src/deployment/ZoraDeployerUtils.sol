@@ -8,8 +8,7 @@ import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {Deployment, ChainConfig} from "./DeploymentConfig.sol";
 import {ProxyShim} from "../utils/ProxyShim.sol";
-import {ZoraCreator1155PremintExecutor} from "../delegation/ZoraCreator1155PremintExecutor.sol";
-import {Zora1155PremintExecutorProxy} from "../proxies/Zora1155PremintExecutorProxy.sol";
+import {ZoraCreator1155PremintExecutorImpl} from "../delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IImmutableCreate2Factory} from "./IImmutableCreate2Factory.sol";
 import {NewFactoryProxyDeployer} from "./NewFactoryProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
@@ -41,7 +40,7 @@ library ZoraDeployerUtils {
 
     // we dont care what this salt is, as long as it's the same for all deployments and it has first 20 bytes of 0
     // so that anyone can deploy it
-    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaba0e);
+    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
 
     function createDeterminsticFactoryProxyDeployer() internal returns (NewFactoryProxyDeployer) {
         return NewFactoryProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(NewFactoryProxyDeployer).creationCode));
@@ -49,7 +48,7 @@ library ZoraDeployerUtils {
 
     function deployNewPreminterImplementation(address factoryProxyAddress) internal returns (address) {
         // create preminter implementation
-        ZoraCreator1155PremintExecutor preminterImplementation = new ZoraCreator1155PremintExecutor(ZoraCreator1155FactoryImpl(factoryProxyAddress));
+        ZoraCreator1155PremintExecutorImpl preminterImplementation = new ZoraCreator1155PremintExecutorImpl(ZoraCreator1155FactoryImpl(factoryProxyAddress));
 
         return address(preminterImplementation);
     }
@@ -73,18 +72,5 @@ library ZoraDeployerUtils {
                 keccak256(abi.encodePacked(type(Zora1155Factory).creationCode, abi.encode(proxyShimAddress, ""))),
                 proxyDeployerAddress
             );
-    }
-
-    function deployNewPreminterProxy(address factoryProxyAddress, address premintOwner) internal returns (address preminterProxyAddress) {
-        address preminterImplementation = deployNewPreminterImplementation(factoryProxyAddress);
-
-        // build the proxy
-        Zora1155PremintExecutorProxy proxy = new Zora1155PremintExecutorProxy(preminterImplementation, "");
-
-        // access the executor implementation via the proxy, and initialize the admin
-        ZoraCreator1155PremintExecutor preminterAtProxy = ZoraCreator1155PremintExecutor(address(proxy));
-        preminterAtProxy.initialize(premintOwner);
-
-        preminterProxyAddress = address(proxy);
     }
 }

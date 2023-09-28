@@ -30,7 +30,8 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
         vm.serializeString(deploymentJsonKey, CONTRACT_1155_IMPL_VERSION, deployment.contract1155ImplVersion);
         vm.serializeAddress(deploymentJsonKey, CONTRACT_1155_IMPL, deployment.contract1155Impl);
         vm.serializeAddress(deploymentJsonKey, FACTORY_IMPL, deployment.factoryImpl);
-        vm.serializeAddress(deploymentJsonKey, PREMINTER, deployment.preminter);
+        vm.serializeAddress(deploymentJsonKey, PREMINTER_PROXY, deployment.preminterImpl);
+        vm.serializeAddress(deploymentJsonKey, PREMINTER_IMPL, deployment.preminterImpl);
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
         console2.log(deploymentJson);
     }
@@ -51,11 +52,11 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
         deployment.factoryImpl = factoryImplAddress;
     }
 
-    function deployNewPreminterProxy(Deployment memory deployment) internal {
-        address proxyOwner = getChainConfig().factoryOwner;
+    // function deployNewPreminterProxy(Deployment memory deployment) internal {
+    //     address proxyOwner = getChainConfig().factoryOwner;
 
-        deployment.preminter = ZoraDeployerUtils.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
-    }
+    //     deployment.preminter = ZoraDeployerUtils.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
+    // }
 
     /// @notice Deploy a test contract for etherscan auto-verification
     /// @param factoryProxy Factory address to use

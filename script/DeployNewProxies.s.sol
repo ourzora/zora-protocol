@@ -10,10 +10,8 @@ import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
 import {DeterminsticDeployerScript, DeterminsticParams} from "../src/deployment/DeterminsticDeployerScript.sol";
 
-contract DeployNewFactoryProxy is ZoraDeployerBase, DeterminsticDeployerScript {
+contract DeployNewProxies is ZoraDeployerBase, DeterminsticDeployerScript {
     using stdJson for string;
-
-    error MismatchedAddress(address expected, address actual);
 
     function run() public returns (string memory) {
         uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
@@ -25,33 +23,26 @@ contract DeployNewFactoryProxy is ZoraDeployerBase, DeterminsticDeployerScript {
         Deployment memory deployment = getDeployment();
 
         // get signing instructions
-
-        (DeterminsticParams memory params, bytes memory signature) = readDeterminsticParams("factoryProxy", chain);
-
         vm.startBroadcast(deployerPrivateKey);
 
-        NewFactoryProxyDeployer factoryDeployer = NewFactoryProxyDeployer(
-            ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(params.proxyDeployerSalt, params.proxyDeployerCreationCode)
-        );
+        address factoryProxyAddress = deployDeterminsticProxy({
+            proxyName: "factoryProxy",
+            implementation: deployment.factoryImpl,
+            owner: chainConfig.factoryOwner,
+            chain: chain
+        });
 
-        console2.log(address(factoryDeployer));
-        console2.log(params.proxyDeployerAddress);
-
-        if (address(factoryDeployer) != params.proxyDeployerAddress) revert MismatchedAddress(params.proxyDeployerAddress, address(factoryDeployer));
-
-        address factoryProxyAddress = factoryDeployer.createFactoryProxyDeterminstic(
-            params.proxyShimSalt,
-            params.proxySalt,
-            params.proxyCreationCode,
-            params.determinsticProxyAddress,
-            deployment.factoryImpl,
-            chainConfig.factoryOwner,
-            signature
-        );
+        address preminterProxyAddress = deployDeterminsticProxy({
+            proxyName: "premintExecutorProxy",
+            implementation: deployment.preminterImpl,
+            owner: chainConfig.factoryOwner,
+            chain: chain
+        });
 
         vm.stopBroadcast();
 
         deployment.factoryProxy = factoryProxyAddress;
+        deployment.preminterProxy = preminterProxyAddress;
 
         return getDeploymentJSON(deployment);
     }
