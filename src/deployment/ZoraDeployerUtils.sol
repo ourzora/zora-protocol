@@ -43,7 +43,8 @@ library ZoraDeployerUtils {
     bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
 
     function createDeterministicFactoryProxyDeployer() internal returns (DeterministicProxyDeployer) {
-        return DeterministicProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(DeterministicProxyDeployer).creationCode));
+        return
+            DeterministicProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(DeterministicProxyDeployer).creationCode));
     }
 
     function deployNewPreminterImplementation(address factoryProxyAddress) internal returns (address) {

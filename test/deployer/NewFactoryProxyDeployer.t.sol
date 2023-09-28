@@ -109,7 +109,13 @@ contract DeterministicProxyDeployerTest is Test {
 
         bytes memory factoryProxyCreationCode = type(Zora1155Factory).creationCode;
 
-        bytes32 digest = factoryProxyDeployer.hashedDigestFactoryProxy(proxyShimSalt, factoryProxySalt, factoryProxyCreationCode, factoryImplAddress, factoryOwner);
+        bytes32 digest = factoryProxyDeployer.hashedDigestFactoryProxy(
+            proxyShimSalt,
+            factoryProxySalt,
+            factoryProxyCreationCode,
+            factoryImplAddress,
+            factoryOwner
+        );
 
         // sign the message
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, digest);
@@ -148,16 +154,12 @@ contract DeterministicProxyDeployerTest is Test {
 
         bytes memory upgradeGateDeployCode = type(UpgradeGate).creationCode;
 
-        bytes memory initCall = abi.encodeWithSignature('initialize(address)', gateAdmin);
+        bytes memory initCall = abi.encodeWithSignature("initialize(address)", gateAdmin);
 
-        bytes32 genericTestDeploySalt = bytes32(0x0000000000000000000000000000000000000000baaaaaacafeaaaaaacafef00) & 
+        bytes32 genericTestDeploySalt = bytes32(0x0000000000000000000000000000000000000000baaaaaacafeaaaaaacafef00) &
             bytes32(uint256(uint160(address(deployerAddress))) << 96);
 
-        bytes32 digest = factoryProxyDeployer.hashedDigestGenericCreation(
-            genericTestDeploySalt,
-            upgradeGateDeployCode,
-            initCall
-        );
+        bytes32 digest = factoryProxyDeployer.hashedDigestGenericCreation(genericTestDeploySalt, upgradeGateDeployCode, initCall);
 
         // sign the message
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, digest);
@@ -166,6 +168,5 @@ contract DeterministicProxyDeployerTest is Test {
         bytes memory signature = abi.encodePacked(r, s, v);
 
         factoryProxyDeployer.createAndInitGenericContractDeterministic(genericTestDeploySalt, upgradeGateDeployCode, initCall, signature);
-
     }
 }

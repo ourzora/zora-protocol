@@ -19,7 +19,7 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/Zora
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 
-contract DeployScript is ZoraDeployerBase {
+contract DeployerMintersScript is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment;
         ChainConfig memory chainConfig = getChainConfig();

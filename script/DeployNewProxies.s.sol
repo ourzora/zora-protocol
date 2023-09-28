@@ -25,6 +25,14 @@ contract DeployNewProxies is ZoraDeployerBase, DeterministicDeployerScript {
         // get signing instructions
         vm.startBroadcast(deployerPrivateKey);
 
+        // Sanity check to make sure that the factory owner is a smart contract.
+        // This may catch cross-chain data copy mistakes where there is no safe at the desired admin address.
+        if (
+            address(chainConfig.factoryOwner).code.length == 0
+        ) {
+            revert("FactoryOwner should be a contract. See DeployNewProxies:31.");
+        }
+
         address factoryProxyAddress = deployDeterministicProxy({
             proxyName: "factoryProxy",
             implementation: deployment.factoryImpl,
@@ -39,10 +47,16 @@ contract DeployNewProxies is ZoraDeployerBase, DeterministicDeployerScript {
             chain: chain
         });
 
+        address upgradeGateAddress = deployUpgradeGate({
+            chain: chain,
+            upgradeGateOwner: chainConfig.factoryOwner
+        });
+
         vm.stopBroadcast();
 
         deployment.factoryProxy = factoryProxyAddress;
         deployment.preminterProxy = preminterProxyAddress;
+        deployment.upgradeGate = upgradeGateAddress;
 
         return getDeploymentJSON(deployment);
     }

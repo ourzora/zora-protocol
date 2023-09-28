@@ -6,6 +6,7 @@ import {Deployment, ChainConfig} from "./DeploymentConfig.sol";
 import {ProxyShim} from "../utils/ProxyShim.sol";
 import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {UpgradeGate} from "../upgrades/UpgradeGate.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
 
@@ -186,5 +187,30 @@ contract DeterministicDeployerScript is Script {
                 owner,
                 signature
             );
+    }
+
+    function deployUpgradeGate(uint256 chain, address upgradeGateOwner) internal returns (address) {
+        string memory signatures = vm.readFile(signaturesFilePath("upgradeGate"));
+        bytes memory signature = signatures.readBytes(string.concat(".", string.concat(vm.toString(chain))));
+
+        string memory upgradeGateParams = vm.readFile("./deployDeterministic/upgradeGate/params.json");
+
+        address proxyDeployerAddress = vm.parseJsonAddress(upgradeGateParams, ".proxyDeployerAddress");
+        bytes32 genericCreationSalt = vm.parseJsonBytes32(upgradeGateParams, ".salt");
+        bytes memory creationCode = vm.parseJsonBytes(upgradeGateParams, ".creationCode");
+
+        if (!ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(proxyDeployerAddress)) {
+            revert("The main proxy deployer needs to be deployed first");
+        }
+
+        DeterministicProxyDeployer factoryDeployer = DeterministicProxyDeployer(proxyDeployerAddress);
+
+        return
+            factoryDeployer.createAndInitGenericContractDeterministic({
+                genericCreationSalt: genericCreationSalt,
+                creationCode: creationCode,
+                initCall: abi.encodeWithSelector(UpgradeGate.initialize.selector, upgradeGateOwner),
+                signature: signature
+            });
     }
 }

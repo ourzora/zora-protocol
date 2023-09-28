@@ -32,6 +32,13 @@ contract DeployNewImplementations is ZoraDeployerBase {
         console2.log("factoryOwner", chainConfig.factoryOwner);
         console2.log("protocolRewards", chainConfig.protocolRewards);
 
+        deployment.upgradeGate = vm.parseJsonAddress(
+            vm.readFile("./deterministicDeployments/upgradeGate/params.json"),
+            ".upgradeGateAddress"
+        );
+
+        console2.log("upgradeGateAddress", deployment.upgradeGate);
+
         vm.startBroadcast();
 
         (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(

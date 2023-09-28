@@ -1,4 +1,4 @@
-import { Address, LocalAccount } from "viem";
+import { Address, LocalAccount, Hex } from "viem";
 
 export type ConfiguredSalt = `0x${string}`;
 // Load environment variables from `.env.local`
@@ -6,7 +6,15 @@ export type DeterministicDeploymentConfig = {
   proxyDeployerAddress: Address;
   proxyShimSalt: ConfiguredSalt;
   proxySalt: ConfiguredSalt;
-  proxyCreationCode: `0x${string}`;
+  proxyCreationCode: Hex;
+};
+
+export type GenericDeploymentConfiguration = {
+  creationCode: Hex;
+  salt: Hex;
+  deployerAddress: Address;
+  upgradeGateAddress: Address;
+  proxyDeployerAddress: Address;
 };
 
 export type DeployedContracts = {
@@ -44,6 +52,39 @@ export const signDeployFactory = ({
       owner: owner,
     },
     primaryType: "createProxy",
+    domain: {
+      chainId,
+      name: "DeterministicProxyDeployer",
+      version: "1",
+      verifyingContract: config.proxyDeployerAddress,
+    },
+  });
+
+export const signGenericDeploy = ({
+  account,
+  config,
+  chainId,
+  initCall,
+}: {
+  account: LocalAccount;
+  config: GenericDeploymentConfiguration;
+  initCall: Hex;
+  chainId: number;
+}) =>
+  account.signTypedData({
+    types: {
+      createGenericContract: [
+        { name: "salt", type: "bytes32" },
+        { name: "creationCode", type: "bytes" },
+        { name: "initCall", type: "bytes" },
+      ],
+    },
+    message: {
+      salt: config.salt,
+      creationCode: config.creationCode,
+      initCall,
+    },
+    primaryType: "createGenericContract",
     domain: {
       chainId,
       name: "DeterministicProxyDeployer",
