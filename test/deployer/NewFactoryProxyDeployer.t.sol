@@ -20,11 +20,11 @@ contract NewFactoryProxyDeployerTest is Test {
     bytes32 proxyShimSalt = bytes32(0xf69fec6d858c77e969509843852178bd24cad2b6000000000000000000000000);
     bytes32 factoryProxySalt = bytes32(0xe06d3223ede55655f68ce124bc16c9c311a20c31806ca2b04056664a574e2f1d);
 
-    function setUp() {
-        string memory deployConfig = vm.readFile(string.concat(string.concat(vm.projectRoot(), "/determinsiticConfig/"), proxyName, "/params.json"));
+    function setUp() public {
+        string memory deployConfig = vm.readFile(string.concat(string.concat(vm.projectRoot(), "/deterministicConfig/factoryProxy", "/params.json")));
 
-        proxyDeployerSalt = deployConfig.readBytes32(".proxyDeployerSalt");
-        proxyShimSale = deployConfig.readBytes32(".proxyShimSalt");
+        newFactoryProxyDeployerCreationSalt = deployConfig.readBytes32(".proxyDeployerSalt");
+        proxyShimSalt = deployConfig.readBytes32(".proxyShimSalt");
         factoryProxySalt = deployConfig.readBytes32(".proxyDeployerSalt");
     }
 
