@@ -69,12 +69,7 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IUpgradeGate internal immutable upgradeGate;
 
-    constructor(
-        uint256, // TODO remove
-        address _mintFeeRecipient,
-        address _upgradeGate,
-        address _protocolRewards
-    ) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
+    constructor(address _mintFeeRecipient, address _upgradeGate, address _protocolRewards) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
         upgradeGate = IUpgradeGate(_upgradeGate);
     }
 

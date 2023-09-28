@@ -53,10 +53,9 @@ contract UpgradeScript is ZoraDeployerBase {
 
         bool isNewNFTImpl = deployment.contract1155Impl == address(0);
         if (isNewNFTImpl) {
-            console2.log("mintFeeAmount", chainConfig.mintFeeAmount);
-            console2.log("minFeeRecipient", chainConfig.mintFeeRecipient);
+            console2.log("mintFeeRecipient", chainConfig.mintFeeRecipient);
             console2.log("protocolRewards", chainConfig.protocolRewards);
-            deployment.contract1155Impl = address(new ZoraCreator1155Impl(chainConfig.mintFeeAmount, chainConfig.mintFeeRecipient, deployment.factoryProxy, chainConfig.protocolRewards));
+            deployment.contract1155Impl = address(new ZoraCreator1155Impl(chainConfig.mintFeeRecipient, deployment.factoryProxy, chainConfig.protocolRewards));
             console2.log("New NFT_IMPL", deployment.contract1155Impl);
         } else {
             console2.log("Existing NFT_IMPL", deployment.contract1155Impl);

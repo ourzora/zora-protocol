@@ -20,6 +20,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     uint256 constant tokenMaxSupply = 100;
     uint32 constant royaltyMintSchedule = 10;
     uint32 constant royaltyBPS = 100;
+    uint256 constant mintFee = 0.000777 ether;
 
     address collector;
     address creator;
@@ -70,9 +71,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // create the contract, with no toekns
         bytes[] memory initSetup = new bytes[](0);
 
-        uint32 royaltyMintSchedule = 10;
-        uint32 royaltyBPS = 100;
-
         address admin = creator;
         string memory contractURI = "ipfs://asdfasdf";
         string memory name = "Test";
@@ -122,7 +120,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
 
         // ** 3. Mint on that contract **
-        uint256 mintFee = getChainConfig().mintFeeAmount;
 
         // mint 3 tokens
         uint256 valueToSend = quantityToMint * (tokenPrice + mintFee);
@@ -130,7 +127,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // mint the token
         vm.deal(collector, valueToSend);
         vm.startPrank(collector);
-        target.mint{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector));
+        ZoraCreator1155Impl(address(target)).mintWithRewards{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector), address(0));
 
         assertEq(target.balanceOf(collector, tokenId), quantityToMint, chainName);
     }
