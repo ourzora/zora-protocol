@@ -20,9 +20,9 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 /// @notice
 contract GetDeterminsticParam is ZoraDeployerBase, DeterminsticDeployer {
     function run() public {
-        deployerAddress = 0x4F9991C82C76aE04CC39f23aB909AA919886ba12;
+        address deployerAddress = 0x4F9991C82C76aE04CC39f23aB909AA919886ba12;
 
-        proxyCreationCode = type(Zora1155Factory).creationCode;
+        bytes memory proxyCreationCode = type(Zora1155Factory).creationCode;
 
         (
             bytes32 proxyDeployerSalt,

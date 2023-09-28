@@ -2,19 +2,12 @@
 pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
-import {Zora1155Factory} from "../proxies/Zora1155Factory.sol";
-import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
-import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
-import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
-import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {Deployment, ChainConfig} from "./DeploymentConfig.sol";
 import {ProxyShim} from "../utils/ProxyShim.sol";
-import {ZoraCreator1155PremintExecutor} from "../delegation/ZoraCreator1155PremintExecutor.sol";
-import {Zora1155PremintExecutorProxy} from "../proxies/Zora1155PremintExecutorProxy.sol";
-import {IImmutableCreate2Factory} from "./IImmutableCreate2Factory.sol";
 import {NewFactoryProxyDeployer} from "./NewFactoryProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {LibString} from "solady/utils/LibString.sol";
+import {ZoraDeployer} from "./ZoraDeployer.sol";
 
 struct DeterminsticParams {
     bytes proxyDeployerCreationCode;
