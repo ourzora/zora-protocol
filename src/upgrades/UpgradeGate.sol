@@ -9,10 +9,9 @@ import {UpgradeGateStorageV1} from "./UpgradeGateStorageV1.sol";
 /// @notice Contract for managing upgrades and safe upgrade paths for 1155 contracts
 contract UpgradeGate is IUpgradeGate, Ownable2StepUpgradeable, UpgradeGateStorageV1 {
     /// @notice Constructor for deployment pathway. This contract needs to be atomically initialized to be safe.
-    constructor()  {
-    }
+    constructor() {}
 
-    /// @notice Default owner initializer. Allows for shared deterministic addresses. 
+    /// @notice Default owner initializer. Allows for shared deterministic addresses.
     /// @param _initialOwner initial owner for the contract
     function initialize(address _initialOwner) external initializer {
         __Ownable_init(_initialOwner);
