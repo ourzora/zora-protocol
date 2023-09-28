@@ -7,7 +7,7 @@ import "forge-std/console2.sol";
 import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
-import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 
 contract UpgradePreminter is ZoraDeployerBase {
     function run() public returns (string memory, bytes memory upgradeCalldata, address upgradeTarget) {
@@ -17,7 +17,7 @@ contract UpgradePreminter is ZoraDeployerBase {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        address preminterImplementation = ZoraDeployer.deployNewPreminterImplementation(deployment.factoryProxy);
+        address preminterImplementation = ZoraDeployerUtils.deployNewPreminterImplementation(deployment.factoryProxy);
 
         vm.stopBroadcast();
 

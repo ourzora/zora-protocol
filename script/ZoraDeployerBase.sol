@@ -9,7 +9,7 @@ import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {ScriptDeploymentConfig, Deployment, ChainConfig} from "../src/deployment/DeploymentConfig.sol";
-import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 
 /// @notice Deployment drops for base where
@@ -38,7 +38,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
     function deployNew1155AndFactoryImpl(Deployment memory deployment, Zora1155Factory factoryProxy) internal {
         ChainConfig memory chainConfig = getChainConfig();
 
-        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployer.deployNew1155AndFactoryImpl({
+        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
             factoryProxyAddress: address(factoryProxy),
             mintFeeRecipient: chainConfig.mintFeeRecipient,
             protocolRewards: chainConfig.protocolRewards,
@@ -54,7 +54,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
     function deployNewPreminterProxy(Deployment memory deployment) internal {
         address proxyOwner = getChainConfig().factoryOwner;
 
-        deployment.preminter = ZoraDeployer.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
+        deployment.preminter = ZoraDeployerUtils.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
     }
 
     /// @notice Deploy a test contract for etherscan auto-verification

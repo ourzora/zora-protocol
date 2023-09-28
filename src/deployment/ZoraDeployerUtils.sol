@@ -14,7 +14,7 @@ import {IImmutableCreate2Factory} from "./IImmutableCreate2Factory.sol";
 import {NewFactoryProxyDeployer} from "./NewFactoryProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-library ZoraDeployer {
+library ZoraDeployerUtils {
     IImmutableCreate2Factory constant IMMUTABLE_CREATE2_FACTORY = IImmutableCreate2Factory(0x0000000000FFe8B47B3e2130213B802212439497);
 
     function deployNew1155AndFactoryImpl(

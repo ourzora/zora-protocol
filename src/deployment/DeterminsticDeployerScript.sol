@@ -7,7 +7,7 @@ import {ProxyShim} from "../utils/ProxyShim.sol";
 import {NewFactoryProxyDeployer} from "./NewFactoryProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {LibString} from "solady/utils/LibString.sol";
-import {ZoraDeployer} from "./ZoraDeployer.sol";
+import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
 
 struct DeterminsticParams {
     bytes proxyDeployerCreationCode;
@@ -108,13 +108,16 @@ contract DeterminsticDeployerScript is Script {
 
         // replace first 20 characters of salt with deployer address, so that the salt can be used with
         // ImmutableCreate2Factory.safeCreate2 when called by this deployer's account:
-        newFactoryProxyDeployerSalt = ZoraDeployer.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
+        newFactoryProxyDeployerSalt = ZoraDeployerUtils.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
 
         newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
 
         // we can know determinstically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
-        proxyDeployerContractAddress = ZoraDeployer.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(newFactoryProxyDeployerSalt, newFactoryProxyDeployerInitCode);
+        proxyDeployerContractAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(
+            newFactoryProxyDeployerSalt,
+            newFactoryProxyDeployerInitCode
+        );
 
         console2.log("expected factory deployer address:", proxyDeployerContractAddress);
 

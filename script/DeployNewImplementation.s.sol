@@ -17,7 +17,7 @@ import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
-import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 
 contract DeployNewImplementations is ZoraDeployerBase {
     function run() public returns (string memory) {
@@ -33,7 +33,7 @@ contract DeployNewImplementations is ZoraDeployerBase {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployer.deployNew1155AndFactoryImpl(
+        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
             address(deployment.factoryProxy),
             chainConfig.mintFeeRecipient,
             chainConfig.protocolRewards,

@@ -9,7 +9,7 @@ import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ProxyShim} from "../src/utils/ProxyShim.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {DeterminsticDeployerScript, DeterminsticParams} from "../src/deployment/DeterminsticDeployerScript.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";

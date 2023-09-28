@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
-import {ZoraDeployer} from "../../src/deployment/ZoraDeployer.sol";
+import {ZoraDeployerUtils} from "../../src/deployment/ZoraDeployerUtils.sol";
 import {NewFactoryProxyDeployer} from "../../src/deployment/NewFactoryProxyDeployer.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {Deployment, ChainConfig} from "../../src/deployment/DeploymentConfig.sol";
@@ -33,14 +33,14 @@ contract NewFactoryProxyDeployerTest is Test {
 
         bytes memory newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
 
-        address computedFactoryDeployerAddress = ZoraDeployer.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(
+        address computedFactoryDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(
             newFactoryProxyDeployerCreationSalt,
             newFactoryProxyDeployerInitCode
         );
 
         assertEq(computedFactoryDeployerAddress, expectedFactoryDeployerAddress, "determinstic factory deployer address wrong");
 
-        address computedFactoryProxyAddress = ZoraDeployer.determinsticFactoryProxyAddress({
+        address computedFactoryProxyAddress = ZoraDeployerUtils.determinsticFactoryProxyAddress({
             proxyShimSalt: proxyShimSalt,
             factoryProxySalt: factoryProxySalt,
             proxyDeployerAddress: computedFactoryDeployerAddress
@@ -51,7 +51,7 @@ contract NewFactoryProxyDeployerTest is Test {
         // 1. Create implementation contracts based on determinstic factory proxy address
 
         // create 1155 and factory impl, we can know the determinstic factor proxy address ahead of time:
-        (address factoryImplAddress, ) = ZoraDeployer.deployNew1155AndFactoryImpl({
+        (address factoryImplAddress, ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
             factoryProxyAddress: expectedFactoryProxyAddress,
             mintFeeRecipient: mintFeeRecipient,
             protocolRewards: protocolRewards,
@@ -67,7 +67,7 @@ contract NewFactoryProxyDeployerTest is Test {
         // 2. Create factory deployer at determinstic address
 
         // create new factory deployer using ImmutableCreate2Factory
-        address newFactoryProxyDeployerAddress = ZoraDeployer.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+        address newFactoryProxyDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
             newFactoryProxyDeployerCreationSalt,
             newFactoryProxyDeployerInitCode
         );

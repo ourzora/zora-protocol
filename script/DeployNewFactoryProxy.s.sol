@@ -6,7 +6,7 @@ import "forge-std/console2.sol";
 
 import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
-import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
 import {DeterminsticDeployerScript, DeterminsticParams} from "../src/deployment/DeterminsticDeployerScript.sol";
 
@@ -31,7 +31,7 @@ contract DeployNewFactoryProxy is ZoraDeployerBase, DeterminsticDeployerScript {
         vm.startBroadcast(deployerPrivateKey);
 
         NewFactoryProxyDeployer factoryDeployer = NewFactoryProxyDeployer(
-            ZoraDeployer.IMMUTABLE_CREATE2_FACTORY.safeCreate2(params.proxyDeployerSalt, params.proxyDeployerCreationCode)
+            ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(params.proxyDeployerSalt, params.proxyDeployerCreationCode)
         );
 
         console2.log(address(factoryDeployer));
