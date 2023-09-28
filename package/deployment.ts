@@ -16,14 +16,14 @@ export type DeployedContracts = {
 export const signDeployFactory = ({
   account,
   determinsticDeploymentConfig: config,
-  factoryImplAddress,
-  factoryOwner,
+  implementationAddress,
+  owner,
   chainId,
 }: {
   account: LocalAccount;
   determinsticDeploymentConfig: DeterminsticDeploymentConfig;
-  factoryImplAddress: Address;
-  factoryOwner: Address;
+  implementationAddress: Address;
+  owner: Address;
   chainId: number;
 }) =>
   account.signTypedData({
@@ -38,10 +38,10 @@ export const signDeployFactory = ({
     },
     message: {
       proxyShimSalt: config.proxyShimSalt,
-      implementationAddress: factoryImplAddress,
+      implementationAddress,
       proxyCreationCode: config.proxyCreationCode,
       proxySalt: config.proxySalt,
-      owner: factoryOwner,
+      owner: owner,
     },
     primaryType: "createProxy",
     domain: {

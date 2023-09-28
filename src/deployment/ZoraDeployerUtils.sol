@@ -40,7 +40,7 @@ library ZoraDeployerUtils {
 
     // we dont care what this salt is, as long as it's the same for all deployments and it has first 20 bytes of 0
     // so that anyone can deploy it
-    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaba0e);
+    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
 
     function createDeterminsticFactoryProxyDeployer() internal returns (NewFactoryProxyDeployer) {
         return NewFactoryProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(NewFactoryProxyDeployer).creationCode));

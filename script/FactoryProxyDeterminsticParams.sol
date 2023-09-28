@@ -24,7 +24,7 @@ contract FactoryProxyDeterminsticParams is ZoraDeployerBase, DeterminsticDeploye
 
         bytes memory proxyCreationCode = type(Zora1155Factory).creationCode;
 
-        determinsticParams = getDeterminsticDeploymentParams(deployerAddress, proxyCreationCode);
+        determinsticParams = getDeterminsticDeploymentParams(deployerAddress, proxyCreationCode, 100);
 
         serializeAndSaveOutput(determinsticParams, "factoryProxy");
     }

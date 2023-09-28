@@ -24,8 +24,8 @@ contract PremintProxyDeterminsticParams is ZoraDeployerBase, DeterminsticDeploye
 
         bytes memory proxyCreationCode = type(Zora1155PremintExecutor).creationCode;
 
-        determinsticParams = getDeterminsticDeploymentParams(deployerAddress, proxyCreationCode);
+        determinsticParams = getDeterminsticDeploymentParams(deployerAddress, proxyCreationCode, 200);
 
-        serializeAndSaveOutput(determinsticParams, "premintExecutor");
+        serializeAndSaveOutput(determinsticParams, "premintExecutorProxy");
     }
 }
