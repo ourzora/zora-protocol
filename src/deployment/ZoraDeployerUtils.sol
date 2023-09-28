@@ -30,7 +30,7 @@ library ZoraDeployerUtils {
         contract1155ImplAddress = address(creatorImpl);
 
         ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
-            _implementation: creatorImpl,
+            _zora1155Impl: creatorImpl,
             _merkleMinter: merkleMinter,
             _redeemMinterFactory: redeemMinterFactory,
             _fixedPriceMinter: fixedPriceMinter

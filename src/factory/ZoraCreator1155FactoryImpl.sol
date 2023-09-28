@@ -10,7 +10,6 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
-import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {Zora1155} from "../proxies/Zora1155.sol";
 import {Create2Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/Create2Upgradeable.sol";
 import {CREATE3} from "solmate/src/utils/CREATE3.sol";
@@ -19,18 +18,17 @@ import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
-contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable, IContractMetadata {
-    IZoraCreator1155 public immutable implementation;
-
+contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgradeable, ContractVersionBase, UUPSUpgradeable, IContractMetadata {
+    IZoraCreator1155 public immutable zora1155Impl;
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
     IMinter1155 public immutable redeemMinterFactory;
 
-    constructor(IZoraCreator1155 _implementation, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
-        implementation = _implementation;
-        if (address(implementation) == address(0)) {
+    constructor(IZoraCreator1155 _zora1155Impl, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
+        if (address(_zora1155Impl) == address(0)) {
             revert Constructor_ImplCannotBeZero();
         }
+        zora1155Impl = _zora1155Impl;
         merkleMinter = _merkleMinter;
         fixedPriceMinter = _fixedPriceMinter;
         redeemMinterFactory = _redeemMinterFactory;
@@ -74,7 +72,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
-        Zora1155 newContract = new Zora1155(address(implementation));
+        Zora1155 newContract = new Zora1155(address(zora1155Impl));
 
         _initializeContract(Zora1155(newContract), newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
@@ -90,7 +88,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     ) external returns (address) {
         bytes32 digest = _hashContract(msg.sender, newContractURI, name, defaultAdmin);
 
-        address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(implementation)), 0);
+        address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(zora1155Impl)), 0);
 
         Zora1155 newContract = Zora1155(payable(createdContract));
 
@@ -149,6 +147,11 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         if (!_equals(IContractMetadata(_newImpl).contractName(), this.contractName())) {
             revert UpgradeToMismatchedContractName(this.contractName(), IContractMetadata(_newImpl).contractName());
         }
+    }
+
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
     }
 
     function _equals(string memory a, string memory b) internal pure returns (bool) {

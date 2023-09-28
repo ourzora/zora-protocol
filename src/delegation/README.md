@@ -14,8 +14,7 @@ A Preminter contract validates signatures and executes actions to 1. deploy cont
 `Preminter`: Executes commands on the 1155 contract factory, and created 1155 contracts
 
 Constraints:
-  * **Contract creation params must be unique**  - the combination of creator + metadata uri + name must be unique.   The Preminter can only create a single contract for each combination of creator, metadat uri, and name.  There must be some sort of validation in the create flow that ensures a contract has not been created with those parameters.
-  * **For each contract, token parameters must be unique.** The combination of parameters for the token to be created, including metadata uri, max supply, duration, etc **must be unique within each contract.**  i.e. a contract cannot have two tokens with the same parameters.  This is because we use this combination to ensure that a signature to create the token can only be executed once.  An alternative design is to require a unique nonce to be appended to the parameters, which would ensure uniqueness; this would need to be provided by the backend.
+  * **Contract creation params must be unique**  - the combination of creator + metadata uri + name must be unique.   The Preminter can only create a single contract for each combination of creator, metadat uri, and name, as that combination is used to determinstically determine the contract address.  
 
 Functions:
   * `premint`: takes an [EIP712 signature](https://eips.ethereum.org/EIPS/eip-712) created by a creator, contract and token creation params, and creates a contract if the contract doesn’t exist and creates a new token, or creates a new token on an existing contract if it exists.  It then mints a specified quantity of tokens to the executor as a reward.   These parameters are the same both if a new contract is created or a token is created on an existing contract.  The signature must have been previously created from a hash built from all of the input parameters; the hash can be generated using `premintHashData`.  **Each signature can only be executed against once**; this is enforced through uniqueness of the contract creation params, the token creation params, and quantity to mint.
@@ -41,17 +40,11 @@ Functions:
 Creating a new contract + token:
 
 ![Preminter creation flow](../../uml/generated/gasslessCreate-creation-sequence.svg)
-![Preminter creation flow](../../uml/generated/gasslessCreate-creation-activity.svg)
 
 Collecting:
 
 ![Preminter collection flow](../../uml/generated/gasslessCreate-collecting-sequence.svg)
-![Preminter collection flow](../../uml/generated/gasslessCreate-collecting-activity.svg)
 
-* In the front-end a creator creates a signature for contract and token creation.  The signature is created off-chain by the creator's account on a hash of the above said parameters. It there are additional tokens to be created, signatures are created for each token to be created. There must be some validation that a signature with the same parameters has not already been created (see constraints above).  This can be done by checking against the uniqueness of the created signature.
-* Once the creator has signed the message, a backend service (another db or blockchain) must store these signatures which can be retreived later by a collector.  This backend must store both the contract + token creation parameters and the signature. 
-* A collector lands on a page that loads the signature and contract creation params based on the bytes32 signature.  The contract + token creation parameters and signature are loaded from the backend service or a subgraph which loads the previously stored signature.
-* The collector account executs the function `premint`, passing the corresponding signature and contract creation params.  If the contract has not been created, it is created.  A new token is created on that contract, and `quantityToMint` tokens are minted to the executor.
 
 ## Additional caveats
 

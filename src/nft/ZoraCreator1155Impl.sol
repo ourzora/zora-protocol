@@ -23,7 +23,7 @@ import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
-import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
+import {IUpgradeGate} from "../interfaces/IUpgradeGate.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
 import {PublicMulticall} from "../utils/PublicMulticall.sol";
@@ -67,15 +67,15 @@ contract ZoraCreator1155Impl is
     /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
     /// @notice Factory contract
-    IFactoryManagedUpgradeGate internal immutable factory;
+    IUpgradeGate internal immutable upgradeGate;
 
     constructor(
         uint256, // TODO remove
         address _mintFeeRecipient,
-        address _factory,
+        address _upgradeGate,
         address _protocolRewards
     ) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
-        factory = IFactoryManagedUpgradeGate(_factory);
+        upgradeGate = IUpgradeGate(_upgradeGate);
     }
 
     /// @notice Initializes the contract
@@ -485,7 +485,7 @@ contract ZoraCreator1155Impl is
         return firstMinters[tokenId];
     }
 
-    function mintFee() external view returns (uint256) {
+    function mintFee() external pure returns (uint256) {
         return TOTAL_REWARD_PER_MINT;
     }
 
@@ -675,6 +675,20 @@ contract ZoraCreator1155Impl is
     /// @param operator operator moving the tokens
     /// @param from from address
     /// @param to to address
+    /// @param id token id to move
+    /// @param amount amount of token
+    /// @param data data of token
+    function _beforeTokenTransfer(address operator, address from, address to, uint256 id, uint256 amount, bytes memory data) internal override {
+        super._beforeTokenTransfer(operator, from, to, id, amount, data);
+        if (address(config.transferHook) != address(0)) {
+            config.transferHook.onTokenTransfer(address(this), operator, from, to, id, amount, data);
+        }
+    }
+
+    /// @notice Hook before token transfer that checks for a transfer hook integration
+    /// @param operator operator moving the tokens
+    /// @param from from address
+    /// @param to to address
     /// @param ids token ids to move
     /// @param amounts amounts of tokens
     /// @param data data of tokens
@@ -771,11 +785,20 @@ contract ZoraCreator1155Impl is
     /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
     /// @param _newImpl The new implementation address
     function _authorizeUpgrade(address _newImpl) internal view override onlyAdmin(CONTRACT_BASE_ID) {
-        if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
+        if (!upgradeGate.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
     }
 
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
+    }
+
+    /// Sets up a new token using a token configuration and a signature created for the token creation parameters.
+    /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
+    /// @param premintConfig configuration of token to be created
+    /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
         if (delegatedTokenId[premintConfig.uid] != 0) {
