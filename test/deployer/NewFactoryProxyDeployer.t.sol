@@ -12,11 +12,21 @@ import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 contract NewFactoryProxyDeployerTest is Test {
+    using stdJson for string;
+
     // the values in this test can be determined by running the script GetDeterministicParam.s.sol,
     // and copying the output values here.
-    bytes32 constant newFactoryProxyDeployerCreationSalt = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaaa0f);
-    bytes32 constant proxyShimSalt = bytes32(0xae0bdc4eeac5e950b67c6819b118761caaf61946000000000000000000000000);
-    bytes32 constant factoryProxySalt = bytes32(0x2c135805a7432c4994ef7201eabab468a4ec8b4cd5e57cf7f35d0474b19a06e5);
+    bytes32 newFactoryProxyDeployerCreationSalt = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaba0e);
+    bytes32 proxyShimSalt = bytes32(0xf69fec6d858c77e969509843852178bd24cad2b6000000000000000000000000);
+    bytes32 factoryProxySalt = bytes32(0xe06d3223ede55655f68ce124bc16c9c311a20c31806ca2b04056664a574e2f1d);
+
+    function setUp() {
+        string memory deployConfig = vm.readFile(string.concat(string.concat(vm.projectRoot(), "/determinsiticConfig/"), proxyName, "/params.json"));
+
+        proxyDeployerSalt = deployConfig.readBytes32(".proxyDeployerSalt");
+        proxyShimSale = deployConfig.readBytes32(".proxyShimSalt");
+        factoryProxySalt = deployConfig.readBytes32(".proxyDeployerSalt");
+    }
 
     function _deployKnownZoraFactoryProxy() internal returns (NewFactoryProxyDeployer factoryProxyDeployer) {
         bytes memory newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
@@ -57,7 +67,6 @@ contract NewFactoryProxyDeployerTest is Test {
         // ensure nonce is greater than current account's nonce
 
         (address deployerAddress, uint256 deployerPrivateKey) = makeAddrAndKey("deployer");
-
 
         // address expectedFactoryDeployerAddress = 0x9868a3FFe92C44c4Ce1db8033C6f55a674D511D8;
         address expectedFactoryProxyAddress = 0x77777718F04F2f9d9082a5AC853cBA682b19fB48;
