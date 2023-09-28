@@ -5,7 +5,9 @@ import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
 import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
+
 
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
@@ -31,18 +33,29 @@ contract DeployScript is ZoraDeployerBase {
 
         vm.startBroadcast(deployer);
 
-        ZoraCreatorFixedPriceSaleStrategy fixedPricedMinter = new ZoraCreatorFixedPriceSaleStrategy();
-        ZoraCreatorMerkleMinterStrategy merkleMinter = new ZoraCreatorMerkleMinterStrategy();
-        ZoraCreatorRedeemMinterFactory redeemMinterFactory = new ZoraCreatorRedeemMinterFactory();
+        address fixedPriceMinter = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            type(ZoraCreatorFixedPriceSaleStrategy).creationCode
+        );
 
-        deployment.fixedPriceSaleStrategy = address(fixedPricedMinter);
+        address merkleMinter = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            type(ZoraCreatorMerkleMinterStrategy).creationCode
+        );
+
+        address redeemMinterFactory = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            type(ZoraCreatorRedeemMinterFactory).creationCode
+        );
+
+        deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
         deployment.merkleMintSaleStrategy = address(merkleMinter);
         deployment.redeemMinterFactory = address(redeemMinterFactory);
 
-        // deployNew1155AndFactoryProxy(deployment, deployer);
+        string memory json = getDeploymentJSON(deployment);
 
-        // deployTestContractForVerification(deployment.factoryProxy, chainConfig.factoryOwner);
+        vm.writeFile(string.concat("addresses/", vm.toString(chainId()), ".json"), json);
 
-        return getDeploymentJSON(deployment);
+        return json;
     }
 }

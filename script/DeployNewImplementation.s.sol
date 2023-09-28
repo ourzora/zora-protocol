@@ -19,6 +19,9 @@ import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreator
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 
+/// @dev Deploys implementation contracts for 1155 contracts.
+/// @notice Run after deploying the minters
+/// @notice This  
 contract DeployNewImplementations is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
@@ -29,12 +32,10 @@ contract DeployNewImplementations is ZoraDeployerBase {
         console2.log("factoryOwner", chainConfig.factoryOwner);
         console2.log("protocolRewards", chainConfig.protocolRewards);
 
-        uint256 deployerPrivateKey = vm.envUint("DEPLOYER_PRIVATE_KEY");
-
-        vm.startBroadcast(deployerPrivateKey);
+        vm.startBroadcast();
 
         (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
-            address(deployment.factoryProxy),
+            address(deployment.upgradeGate),
             chainConfig.mintFeeRecipient,
             chainConfig.protocolRewards,
             IMinter1155(deployment.merkleMintSaleStrategy),

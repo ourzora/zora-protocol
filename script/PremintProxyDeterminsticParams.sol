@@ -11,7 +11,7 @@ import {LibString} from "solady/utils/LibString.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {DeterministicDeployerScript, DeterministicParams} from "../src/deployment/DeterministicDeployerScript.sol";
-import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
+import {DeterministicProxyDeployer} from "../src/deployment/DeterministicProxyDeployer.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title Gets parameters for determinstically deploying a new 1155 factory proxy at an address starting with 0x777777, regardless of the chain.

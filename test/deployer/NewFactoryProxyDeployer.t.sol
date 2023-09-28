@@ -4,36 +4,36 @@ pragma solidity 0.8.17;
 import "forge-std/Test.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraDeployerUtils} from "../../src/deployment/ZoraDeployerUtils.sol";
-import {NewFactoryProxyDeployer} from "../../src/deployment/NewFactoryProxyDeployer.sol";
+import {DeterministicProxyDeployer} from "../../src/deployment/DeterministicProxyDeployer.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {Deployment, ChainConfig} from "../../src/deployment/DeploymentConfig.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
-contract NewFactoryProxyDeployerTest is Test {
+contract DeterministicProxyDeployerTest is Test {
     using stdJson for string;
 
     // the values in this test can be determined by running the script GetDeterministicParam.s.sol,
     // and copying the output values here.
-    bytes32 newFactoryProxyDeployerCreationSalt = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaba0e);
+    bytes32 DeterministicProxyDeployerCreationSalt = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaba0e);
     bytes32 proxyShimSalt = bytes32(0xf69fec6d858c77e969509843852178bd24cad2b6000000000000000000000000);
     bytes32 factoryProxySalt = bytes32(0xe06d3223ede55655f68ce124bc16c9c311a20c31806ca2b04056664a574e2f1d);
 
     function setUp() public {
         string memory deployConfig = vm.readFile(string.concat(string.concat(vm.projectRoot(), "/deterministicConfig/factoryProxy", "/params.json")));
 
-        newFactoryProxyDeployerCreationSalt = deployConfig.readBytes32(".proxyDeployerSalt");
+        DeterministicProxyDeployerCreationSalt = deployConfig.readBytes32(".proxyDeployerSalt");
         proxyShimSalt = deployConfig.readBytes32(".proxyShimSalt");
         factoryProxySalt = deployConfig.readBytes32(".proxyDeployerSalt");
     }
 
-    function _deployKnownZoraFactoryProxy() internal returns (NewFactoryProxyDeployer factoryProxyDeployer) {
-        bytes memory newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
+    function _deployKnownZoraFactoryProxy() internal returns (DeterministicProxyDeployer factoryProxyDeployer) {
+        bytes memory DeterministicProxyDeployerInitCode = type(DeterministicProxyDeployer).creationCode;
 
         address computedFactoryDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(
-            newFactoryProxyDeployerCreationSalt,
-            newFactoryProxyDeployerInitCode
+            DeterministicProxyDeployerCreationSalt,
+            DeterministicProxyDeployerInitCode
         );
 
         address expectedFactoryDeployerAddress = 0x9868a3FFe92C44c4Ce1db8033C6f55a674D511D8;
@@ -49,17 +49,17 @@ contract NewFactoryProxyDeployerTest is Test {
         assertEq(computedFactoryProxyAddress, expectedFactoryProxyAddress, "deterministic factory proxy address wrong");
 
         // create new factory deployer using ImmutableCreate2Factory
-        address newFactoryProxyDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            newFactoryProxyDeployerCreationSalt,
-            newFactoryProxyDeployerInitCode
+        address DeterministicProxyDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            DeterministicProxyDeployerCreationSalt,
+            DeterministicProxyDeployerInitCode
         );
 
-        assertEq(newFactoryProxyDeployerAddress, computedFactoryDeployerAddress, "factory deployer address wrong");
+        assertEq(DeterministicProxyDeployerAddress, computedFactoryDeployerAddress, "factory deployer address wrong");
 
         assertEq(computedFactoryDeployerAddress, address(0x77777718F04F2f9d9082a5AC853cBA682b19fB48));
 
         // create factory proxy at deterministic address:
-        factoryProxyDeployer = NewFactoryProxyDeployer(newFactoryProxyDeployerAddress);
+        factoryProxyDeployer = DeterministicProxyDeployer(DeterministicProxyDeployerAddress);
     }
 
     function test_proxyCanByDeployedAtDesiredAddress(uint32 nonce) external {
@@ -93,7 +93,7 @@ contract NewFactoryProxyDeployerTest is Test {
         vm.setNonce(deployerAddress, nonce);
 
         // 2. Create factory deployer at deterministic address
-        NewFactoryProxyDeployer factoryProxyDeployer = _deployKnownZoraFactoryProxy();
+        DeterministicProxyDeployer factoryProxyDeployer = _deployKnownZoraFactoryProxy();
 
         // // try to create and initialize factory proxy as another account, it should revert, as only original deployer should be
         // // able to call this:
@@ -142,7 +142,7 @@ contract NewFactoryProxyDeployerTest is Test {
         // we set the nonce to a random value, to prove this doesn't affect the deterministic addrss
         vm.setNonce(deployerAddress, nonce);
 
-        NewFactoryProxyDeployer factoryProxyDeployer = _deployKnownZoraFactoryProxy();
+        DeterministicProxyDeployer factoryProxyDeployer = _deployKnownZoraFactoryProxy();
 
         address gateAdmin = makeAddr("gateAdmin");
 
@@ -165,7 +165,7 @@ contract NewFactoryProxyDeployerTest is Test {
         // combine into a single bytes array
         bytes memory signature = abi.encodePacked(r, s, v);
 
-        factoryProxyDeployer.createAndInitContractDeterministic(genericTestDeploySalt, upgradeGateDeployCode, initCall, signature);
+        factoryProxyDeployer.createAndInitGenericContractDeterministic(genericTestDeploySalt, upgradeGateDeployCode, initCall, signature);
 
     }
 }

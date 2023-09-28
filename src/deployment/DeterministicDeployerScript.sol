@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import {Deployment, ChainConfig} from "./DeploymentConfig.sol";
 import {ProxyShim} from "../utils/ProxyShim.sol";
-import {NewFactoryProxyDeployer} from "./NewFactoryProxyDeployer.sol";
+import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
@@ -55,11 +55,11 @@ contract DeterministicDeployerScript is Script {
     }
 
     function paramsFilePath(string memory proxyName) internal pure returns (string memory) {
-        return string.concat(string.concat("deterministicConfig/", proxyName), "/params.json");
+        return string.concat("deterministicConfig/", proxyName, "/params.json");
     }
 
     function signaturesFilePath(string memory proxyName) internal pure returns (string memory) {
-        return string.concat(string.concat("deterministicConfig/", proxyName), "/signatures.json");
+        return string.concat("deterministicConfig/", proxyName, "/signatures.json");
     }
 
     function serializeAndSaveOutput(DeterministicParams memory params, string memory proxyName) internal {
@@ -109,7 +109,7 @@ contract DeterministicDeployerScript is Script {
         // ImmutableCreate2Factory.safeCreate2 when called by this deployer's account:
         bytes32 proxyDeployerSalt = ZoraDeployerUtils.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
 
-        bytes memory proxyDeployerCreationCode = type(NewFactoryProxyDeployer).creationCode;
+        bytes memory proxyDeployerCreationCode = type(DeterministicProxyDeployer).creationCode;
 
         // we can know deterministically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
@@ -126,7 +126,7 @@ contract DeterministicDeployerScript is Script {
         // create any arbitrary salt for proxy shim (this can be anything, we just care about the resulting address)
         bytes32 proxyShimSalt = saltWithAddressInFirst20Bytes(deployerAddress, proxyShimSaltSuffix);
 
-        // now get deterministic proxy shim address based on salt, deployer address, which will be NewFactoryProxyDeployer address and init code
+        // now get deterministic proxy shim address based on salt, deployer address, which will be DeterministicProxyDeployer address and init code
         address proxyShimAddress = Create2.computeAddress(proxyShimSalt, keccak256(proxyShimInitCode), proxyDeployerAddress);
 
         console2.log("proxy shim address:");
@@ -161,12 +161,12 @@ contract DeterministicDeployerScript is Script {
     function deployDeterministicProxy(string memory proxyName, address implementation, address owner, uint256 chain) internal returns (address) {
         (DeterministicParams memory params, bytes memory signature) = readDeterministicParams(proxyName, chain);
 
-        NewFactoryProxyDeployer factoryDeployer;
+        DeterministicProxyDeployer factoryDeployer;
 
         if (ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(params.proxyDeployerAddress)) {
-            factoryDeployer = NewFactoryProxyDeployer(params.proxyDeployerAddress);
+            factoryDeployer = DeterministicProxyDeployer(params.proxyDeployerAddress);
         } else {
-            factoryDeployer = NewFactoryProxyDeployer(
+            factoryDeployer = DeterministicProxyDeployer(
                 ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(params.proxyDeployerSalt, params.proxyDeployerCreationCode)
             );
         }

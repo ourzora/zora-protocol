@@ -12,11 +12,14 @@ interface IUpgradeableProxy {
     function initialize(address newOwner) external;
 }
 
-contract NewFactoryProxyDeployer is EIP712 {
+/// @notice Deterministic proxy deployer for deploying zora 1155 contract suite
+/// @dev Supports both generic contracts and the UUPS shim proxy pattern used for ZORA 1155
+/// @dev Requires approved signatures depending on the salt hashes (pattern from IMMUTABLE_CREATE2_FACTORY)
+contract DeterministicProxyDeployer is EIP712 {
     error FactoryProxyAddressMismatch(address expected, address actual);
     error FailedToInitGenericDeployedContract();
 
-    constructor() EIP712("NewFactoryProxyDeployer", "1") {}
+    constructor() EIP712("DeterministicProxyDeployer", "1") {}
 
     /// Creates a new factory proxy at a Deterministic address, with this address as the owner
     /// Upgrades the proxy to the factory implementation, and sets the new owner as the owner.
@@ -50,7 +53,7 @@ contract NewFactoryProxyDeployer is EIP712 {
     }
 
 
-    function _createAndInitContractDeterministic(
+    function _createAndInitGenericContractDeterministic(
         bytes32 genericCreationSalt,
         bytes calldata creationCode,
         bytes calldata initCall
@@ -63,13 +66,15 @@ contract NewFactoryProxyDeployer is EIP712 {
         }
     }
 
-    bytes32 constant DOMAIN =
+    bytes32 constant DOMAIN_UPGRADEABLE_PROXY =
         keccak256("createProxy(bytes32 proxyShimSalt,bytes32 proxySalt,bytes proxyCreationCode,address implementationAddress,address owner)");
+    bytes32 constant DOMAIN_GENERIC_CREATION =
+        keccak256("createGenericContract(bytes32 salt,bytes creationCode,bytes initCall)");
 
     function recoverSignature(
         bytes32 digest,
         bytes calldata signature
-    ) public view returns (address) {
+    ) public pure returns (address) {
         return ECDSA.recover(digest, signature);
     }
 
@@ -80,7 +85,7 @@ contract NewFactoryProxyDeployer is EIP712 {
         address implementationAddress,
         address newOwner
     ) public view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(DOMAIN, proxyShimSalt, proxySalt, keccak256(bytes(proxyCreationCode)), implementationAddress, newOwner)));
+        return _hashTypedDataV4(keccak256(abi.encode(DOMAIN_UPGRADEABLE_PROXY, proxyShimSalt, proxySalt, keccak256(proxyCreationCode), implementationAddress, newOwner)));
     }
 
     function hashedDigestGenericCreation(
@@ -88,7 +93,7 @@ contract NewFactoryProxyDeployer is EIP712 {
         bytes calldata creationCode,
         bytes calldata initCall
     ) public view returns (bytes32) {
-        return _hashTypedDataV4(keccak256(abi.encode(DOMAIN, salt, keccak256(bytes(creationCode)), initCall)));
+        return _hashTypedDataV4(keccak256(abi.encode(DOMAIN_GENERIC_CREATION, salt, keccak256(creationCode), keccak256(initCall))));
     }
 
     function requireContainsCaller(address caller, bytes32 salt) private pure {
@@ -128,7 +133,7 @@ contract NewFactoryProxyDeployer is EIP712 {
             );
     }
 
-    function createAndInitContractDeterministic(
+    function createAndInitGenericContractDeterministic(
         bytes32 genericCreationSalt,
         bytes calldata creationCode,
         bytes calldata initCall,
@@ -141,6 +146,6 @@ contract NewFactoryProxyDeployer is EIP712 {
 
         requireContainsCaller(signer, genericCreationSalt);
 
-        return _createAndInitContractDeterministic(genericCreationSalt, creationCode, initCall);
+        return _createAndInitGenericContractDeterministic(genericCreationSalt, creationCode, initCall);
     }
 }

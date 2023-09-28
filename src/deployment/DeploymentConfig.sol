@@ -38,6 +38,8 @@ struct Deployment {
     address preminterImpl;
     /// @notice Preminter implementation contract address
     address preminterProxy;
+    /// @notice Upgrade gate
+    address upgradeGate;
 }
 
 abstract contract DeploymentConfig is Script {
@@ -65,6 +67,7 @@ abstract contract DeploymentConfig is Script {
     string constant FACTORY_PROXY = "FACTORY_PROXY";
     string constant PREMINTER_PROXY = "PREMINTER_PROXY";
     string constant PREMINTER_IMPL = "PREMINTER_IMPL";
+    string constant UPGRADE_GATE = "UPGRADE_GATE";
 
     /// @notice Return a prefixed key for reading with a ".".
     /// @param key key to prefix
@@ -106,6 +109,7 @@ abstract contract DeploymentConfig is Script {
         deployment.factoryProxy = readAddressOrDefaultToZero(json, FACTORY_PROXY);
         deployment.preminterImpl = readAddressOrDefaultToZero(json, PREMINTER_IMPL);
         deployment.preminterProxy = readAddressOrDefaultToZero(json, PREMINTER_PROXY);
+        deployment.upgradeGate = readAddressOrDefaultToZero(json, UPGRADE_GATE);
     }
 }
 

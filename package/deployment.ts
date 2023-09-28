@@ -46,7 +46,7 @@ export const signDeployFactory = ({
     primaryType: "createProxy",
     domain: {
       chainId,
-      name: "NewFactoryProxyDeployer",
+      name: "DeterministicProxyDeployer",
       version: "1",
       verifyingContract: config.proxyDeployerAddress,
     },
