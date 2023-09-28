@@ -10,7 +10,7 @@ export const testConfig: DeterminsticDeploymentConfig = {
     "0xf69fec6d858c77e969509843852178bd24cad2b6000000000000000000000000",
   proxyShimSalt:
     "0x89d6b41491ad0d71482f348ec72c10d6136989b1538d35513f4de605f2870242",
-  factoryProxySalt:
+  proxySalt:
     "0x75e385b83ee33131a9819dae53d14965755511550cd440e95966440231121260",
   expectedFactoryProxyAddress: "0x7777777f9F0980A03C5a14dc81A17D0391b5b7D5",
 };

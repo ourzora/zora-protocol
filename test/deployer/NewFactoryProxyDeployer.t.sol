@@ -89,7 +89,9 @@ contract NewFactoryProxyDeployerTest is Test {
         //     factoryOwner
         // );
 
-        bytes32 digest = factoryProxyDeployer.hashedDigest(proxyShimSalt, factoryProxySalt, factoryImplAddress, factoryOwner);
+        bytes memory factoryProxyCreationCode = type(Zora1155Factory).creationCode;
+
+        bytes32 digest = factoryProxyDeployer.hashedDigest(proxyShimSalt, factoryProxySalt, factoryProxyCreationCode, factoryImplAddress, factoryOwner);
 
         // sign the message
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, digest);
@@ -101,6 +103,7 @@ contract NewFactoryProxyDeployerTest is Test {
         address factoryProxyAddress = factoryProxyDeployer.createFactoryProxyDeterminstic(
             proxyShimSalt,
             factoryProxySalt,
+            factoryProxyCreationCode,
             expectedFactoryProxyAddress,
             factoryImplAddress,
             factoryOwner,

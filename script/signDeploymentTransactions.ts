@@ -4,7 +4,7 @@ import { Address } from "viem";
 import { ApiKeyStamper } from "@turnkey/api-key-stamper";
 // import { getDeployFactoryProxyDeterminsticTx } from '../package/deployment';
 // import { testConfig } from "../package/deploymentConfig";
-import deployConfig from '../determinsticConfig/deployConfig.json';
+import deployConfig from '../determinsticConfig/factoryProxy/params.json';
 import { glob } from "glob";
 import * as path from "path";
 import * as dotenv from "dotenv";
@@ -69,15 +69,15 @@ async function main() {
   }));
 
   const deploymentConfig: DeterminsticDeploymentConfig = {
-    factoryDeployerAddress: deployConfig.determinsticDeployerAddress as Address,
-    factoryProxySalt: deployConfig.factoryProxySalt as ConfiguredSalt,
-    proxyShimSalt: deployConfig.proxyShimSalt as ConfiguredSalt
+    proxyDeployerAddress: deployConfig.proxyDeployerAddress as Address,
+    proxySalt: deployConfig.proxySalt as ConfiguredSalt,
+    proxyShimSalt: deployConfig.proxyShimSalt as ConfiguredSalt,
+    proxyCreationCode: deployConfig.proxyCreationCode as Address
   }
 
   const signedConfigs = await Promise.all(chainConfigs.map(async chainConfig => {
     return {
       chainId: chainConfig.chainId,
-      signedConfig: {
         signature: await signDeployFactory({
           account: turnkeyAccount,
           factoryImplAddress: chainConfig.factoryImpl,
@@ -85,20 +85,18 @@ async function main() {
           chainId: chainConfig.chainId,
           determinsticDeploymentConfig: deploymentConfig
         }),
-        ...deploymentConfig
-      }
     }
   }));
 
 
   // aggregate above to object of key value pair indexed by chain id as number:
-  const byChainId = signedConfigs.reduce((acc, { chainId, signedConfig }) => {
-    acc[chainId] = signedConfig;
+  const byChainId = signedConfigs.reduce((acc, { chainId, signature }) => {
+    acc[chainId] = signature;
     return acc;
-  }, {} as { [key: number]: typeof signedConfigs[0]['signedConfig'] } );
+  }, {} as { [key: number]: string } );
 
   // write as json to ../determinsticConfig/factoryDeploySignatures.json:
-  await writeFileAsync(path.resolve(__dirname, "../determinsticConfig/factoryDeploySignatures.json"), JSON.stringify(byChainId, null, 2));
+  await writeFileAsync(path.resolve(__dirname, "../determinsticConfig/factoryProxy/signatures.json"), JSON.stringify(byChainId, null, 2));
 }
 
 main().catch((error) => {

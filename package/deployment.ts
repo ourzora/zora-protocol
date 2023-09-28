@@ -3,9 +3,10 @@ import { Address, LocalAccount } from "viem";
 export type ConfiguredSalt = `0x${string}`;
 // Load environment variables from `.env.local`
 export type DeterminsticDeploymentConfig = {
-  factoryDeployerAddress: Address;
+  proxyDeployerAddress: Address;
   proxyShimSalt: ConfiguredSalt;
-  factoryProxySalt: ConfiguredSalt;
+  proxySalt: ConfiguredSalt;
+  proxyCreationCode: `0x${string}`;
 };
 
 export type DeployedContracts = {
@@ -27,24 +28,26 @@ export const signDeployFactory = ({
 }) =>
   account.signTypedData({
     types: {
-      createFactoryProxy: [
+      createProxy: [
         { name: "proxyShimSalt", type: "bytes32" },
-        { name: "factoryProxySalt", type: "bytes32" },
-        { name: "factoryImplAddress", type: "address" },
+        { name: "proxySalt", type: "bytes32" },
+        { name: "proxyCreationCode", type: "bytes"},
+        { name: "implementationAddress", type: "address" },
         { name: "owner", type: "address" },
       ],
     },
     message: {
       proxyShimSalt: config.proxyShimSalt,
-      factoryImplAddress,
-      factoryProxySalt: config.factoryProxySalt,
+      implementationAddress: factoryImplAddress,
+      proxyCreationCode: config.proxyCreationCode,
+      proxySalt: config.proxySalt,
       owner: factoryOwner,
     },
-    primaryType: "createFactoryProxy",
+    primaryType: "createProxy",
     domain: {
       chainId,
       name: "NewFactoryProxyDeployer",
       version: "1",
-      verifyingContract: config.factoryDeployerAddress,
+      verifyingContract: config.proxyDeployerAddress,
     },
   });

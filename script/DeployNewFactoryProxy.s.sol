@@ -8,8 +8,9 @@ import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 import {ZoraDeployer} from "../src/deployment/ZoraDeployer.sol";
 import {NewFactoryProxyDeployer} from "../src/deployment/NewFactoryProxyDeployer.sol";
+import {DeterminsticDeployer, DeterminsticParams} from "../src/deployment/DeterminsticDeployer.sol";
 
-contract DeployNewFactoryProxy is ZoraDeployerBase {
+contract DeployNewFactoryProxy is ZoraDeployerBase, DeterminsticDeployer {
     using stdJson for string;
 
     error MismatchedAddress(address expected, address actual);
@@ -25,37 +26,26 @@ contract DeployNewFactoryProxy is ZoraDeployerBase {
 
         // get signing instructions
 
-        string memory root = vm.projectRoot();
-        string memory deployConfig = vm.readFile(string.concat(root, "/determinsticConfig/deployConfig.json"));
-        string memory signatures = vm.readFile(string.concat(root, "/determinsticConfig/factoryDeploySignatures.json"));
-
-        address expectedFactoryDeployerAddress = deployConfig.readAddress(".determinsticDeployerAddress");
-        bytes32 proxyShimSalt = deployConfig.readBytes32(".proxyShimSalt");
-        bytes32 factoryProxySalt = deployConfig.readBytes32(".factoryProxySalt");
-        address expectedFactoryProxyAddress = deployConfig.readAddress(".factoryProxyAddress");
-        address factoryImplAddress = deployment.factoryImpl;
-        address owner = chainConfig.factoryOwner;
-
-        bytes memory signature = signatures.readBytes(string.concat(".", string.concat(vm.toString(chain), ".signature")));
-
-        console2.log(vm.toString(signature));
-        // console2.log(vm.toString(proxyShimSalt));
+        (DeterminsticParams memory params, bytes memory signature) = readDeterminsticParams("factoryProxy", chain);
 
         vm.startBroadcast(deployerPrivateKey);
 
-        NewFactoryProxyDeployer factoryDeployer = ZoraDeployer.createDeterminsticFactoryProxyDeployer();
+        NewFactoryProxyDeployer factoryDeployer = NewFactoryProxyDeployer(
+            ZoraDeployer.IMMUTABLE_CREATE2_FACTORY.safeCreate2(params.proxyDeployerSalt, params.proxyDeployerCreationCode)
+        );
 
         console2.log(address(factoryDeployer));
-        console2.log(expectedFactoryDeployerAddress);
+        console2.log(params.proxyDeployerAddress);
 
-        if (address(factoryDeployer) != expectedFactoryDeployerAddress) revert MismatchedAddress(expectedFactoryDeployerAddress, address(factoryDeployer));
+        if (address(factoryDeployer) != params.proxyDeployerAddress) revert MismatchedAddress(params.proxyDeployerAddress, address(factoryDeployer));
 
         address factoryProxyAddress = factoryDeployer.createFactoryProxyDeterminstic(
-            proxyShimSalt,
-            factoryProxySalt,
-            expectedFactoryProxyAddress,
-            factoryImplAddress,
-            owner,
+            params.proxyShimSalt,
+            params.proxySalt,
+            params.proxyCreationCode,
+            params.determinsticProxyAddress,
+            deployment.factoryImpl,
+            chainConfig.factoryOwner,
             signature
         );
 
