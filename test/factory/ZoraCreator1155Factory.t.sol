@@ -28,7 +28,8 @@ contract ZoraCreator1155FactoryTest is Test {
         zora = makeAddr("zora");
         mintFeeAmount = 0.000777 ether;
 
-        upgradeGate = new UpgradeGate(zora);
+        upgradeGate = new UpgradeGate();
+        upgradeGate.initialize(zora);
 
         address factoryShimAddress = address(new ProxyShim(zora));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
