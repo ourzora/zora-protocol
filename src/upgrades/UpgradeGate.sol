@@ -8,9 +8,13 @@ import {UpgradeGateStorageV1} from "./UpgradeGateStorageV1.sol";
 /// @title UpgradeGate
 /// @notice Contract for managing upgrades and safe upgrade paths for 1155 contracts
 contract UpgradeGate is IUpgradeGate, Ownable2StepUpgradeable, UpgradeGateStorageV1 {
-    /// @notice Constructor for deployment pathway
-    constructor(address _defaultOwner) initializer {
-        __Ownable_init(_defaultOwner);
+    /// @notice Constructor for deployment pathway. This contract needs to be atomically initialized to be safe.
+    constructor() {}
+
+    /// @notice Default owner initializer. Allows for shared deterministic addresses.
+    /// @param _initialOwner initial owner for the contract
+    function initialize(address _initialOwner) external initializer {
+        __Ownable_init(_initialOwner);
         emit UpgradeGateSetup();
     }
 
@@ -21,7 +25,7 @@ contract UpgradeGate is IUpgradeGate, Ownable2StepUpgradeable, UpgradeGateStorag
 
     /// @notice The name of the upgrade gate contract
     function contractName() external pure returns (string memory) {
-        return "ZORA 1155 Factory Managed Upgrade Gate";
+        return "ZORA 1155 Upgrade Gate";
     }
 
     ///                                                          ///

@@ -788,6 +788,10 @@ contract ZoraCreator1155Impl is
         return _getImplementation();
     }
 
+    /// Sets up a new token using a token configuration and a signature created for the token creation parameters.
+    /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
+    /// @param premintConfig configuration of token to be created
+    /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
         if (delegatedTokenId[premintConfig.uid] != 0) {

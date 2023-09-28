@@ -1,46 +1,38 @@
 @startuml
 actor Collector
-entity PremintCollectPage 
+entity CollectUI 
+entity Wallet
 boundary SignatureAPI
-entity SignatureDB
-entity PreminterContract
+entity PremintExecutorContract
 entity 1155FactoryContract
 entity 1155Contract
 
-Collector -> PremintCollectPage: Open, param is \ndeterministic collection address\n+ token uid
-Activate PremintCollectPage
-PremintCollectPage -> SignatureAPI: Fetch by collection address\n+ token uid
-SignatureAPI -> SignatureDB: Fetch most recent signature\nby contract hash token uid
-SignatureDB --> SignatureAPI: contract + token creation params\n+ signature
-SignatureAPI --> PremintCollectPage: contract + token creation params\n+ signature
-PremintCollectPage -> PreminterContract: Check if signature has been used (by contract hash + token uid)
-PreminterContract --> PremintCollectPage: Signature has been used or not
+Collector -> CollectUI: Open, param is \ndeterministic collection address\n+ token uid
+Activate CollectUI
+CollectUI -> SignatureAPI: Fetch by:\ncollection address, premint uid
+SignatureAPI --> CollectUI: contract creation params,\ntoken creation params,\nsignature
 
-Group signature has been used
-
-    PremintCollectPage -> Collector: Redirect to \nstandard collect page
-
-end
-
-Collector -> PremintCollectPage: mint
-PremintCollectPage -> Collector: Submit transaction
-deactivate PremintCollectPage
-Collector -> PreminterContract: Submit premint transaction containing \nsignature, contract creation & token creation params
-activate PreminterContract
-PreminterContract -> PreminterContract: record signature used;\nrevert if already used
+Collector -> CollectUI: mint
+CollectUI -> Wallet: Submit premint transaction
+deactivate CollectUI
+Wallet -> PremintExecutorContract: premint(collectionConfig, tokenConfig, uid, signature)
+activate PremintExecutorContract
 
 Group contract doesnt exist
   
-    PreminterContract -> 1155FactoryContract: create contract
+    PremintExecutorContract -> 1155FactoryContract: create contract
+    activate 1155FactoryContract
     1155FactoryContract -> 1155Contract: create
+    deactivate 1155FactoryContract
     activate 1155Contract
 
 end
 
 PreminterContract -> 1155Contract: create new token\nwith signature
+PreminterContract -> 1155Contract: set new token sale parameters
 PreminterContract -> 1155Contract: mint tokens to collector
 
-deactivate PreminterContract
+deactivate PremintExecutorContract
 1155Contract --> Collector: Minted tokens
 deactivate 1155Contract
 

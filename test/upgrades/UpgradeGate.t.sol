@@ -9,7 +9,8 @@ contract UpgradeGateTest is Test {
     address constant admin = address(0x123);
 
     function setUp() public {
-        upgradeGate = new UpgradeGate(admin);
+        upgradeGate = new UpgradeGate();
+        upgradeGate.initialize(admin);
     }
 
     function test_AdminOnly() public {

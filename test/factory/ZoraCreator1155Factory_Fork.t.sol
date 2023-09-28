@@ -15,7 +15,6 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/Z
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
-    uint96 constant tokenPrice = 1 ether;
     uint256 constant quantityToMint = 3;
     uint256 constant tokenMaxSupply = 100;
     uint32 constant royaltyMintSchedule = 10;
@@ -94,6 +93,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     }
 
     function testTheFork(string memory chainName) private {
+        uint96 tokenPrice = 1 ether;
         console.log("testing on fork: ", chainName);
 
         // create and select the fork, which will be used for all subsequent calls
