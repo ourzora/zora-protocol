@@ -14,7 +14,7 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155PremintExecutor} from "../../src/delegation/ZoraCreator1155PremintExecutor.sol";
+import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
@@ -23,7 +23,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     uint256 internal constant CONTRACT_BASE_ID = 0;
     uint256 internal constant PERMISSION_BIT_MINTER = 2 ** 2;
 
-    ZoraCreator1155PremintExecutor internal preminter;
+    ZoraCreator1155PremintExecutorImpl internal preminter;
     Zora1155Factory factoryProxy;
     ZoraCreator1155FactoryImpl factoryImpl;
 
@@ -60,7 +60,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
 
         factoryImpl = ZoraCreator1155FactoryImpl(address(factoryProxy));
 
-        preminter = new ZoraCreator1155PremintExecutor(factoryImpl);
+        preminter = new ZoraCreator1155PremintExecutorImpl(factoryImpl);
     }
 
     function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
@@ -201,7 +201,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
             return;
         }
 
-        preminter = ZoraCreator1155PremintExecutor(preminterAddress);
+        preminter = ZoraCreator1155PremintExecutorImpl(preminterAddress);
 
         factoryImpl = ZoraCreator1155FactoryImpl(getDeployment().factoryImpl);
 

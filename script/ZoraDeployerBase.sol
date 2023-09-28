@@ -51,11 +51,11 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
         deployment.factoryImpl = factoryImplAddress;
     }
 
-    function deployNewPreminterProxy(Deployment memory deployment) internal {
-        address proxyOwner = getChainConfig().factoryOwner;
+    // function deployNewPreminterProxy(Deployment memory deployment) internal {
+    //     address proxyOwner = getChainConfig().factoryOwner;
 
-        deployment.preminter = ZoraDeployerUtils.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
-    }
+    //     deployment.preminter = ZoraDeployerUtils.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
+    // }
 
     /// @notice Deploy a test contract for etherscan auto-verification
     /// @param factoryProxy Factory address to use

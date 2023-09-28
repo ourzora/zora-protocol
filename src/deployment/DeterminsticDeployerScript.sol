@@ -52,7 +52,15 @@ contract DeterminsticDeployerScript is Script {
         return bytes32(shifted);
     }
 
-    function serializeAndSaveOutput(DeterminsticParams memory params) internal {
+    function paramsFilePath(string memory proxyName) internal pure returns (string memory) {
+        return string.concat(string.concat("determinsticConfig/", proxyName), "/params.json");
+    }
+
+    function signaturesFilePath(string memory proxyName) internal pure returns (string memory) {
+        return string.concat(string.concat("determinsticConfig/", proxyName), "/signatures.json");
+    }
+
+    function serializeAndSaveOutput(DeterminsticParams memory params, string memory proxyName) internal {
         string memory result = "determinsitc_key";
 
         vm.serializeBytes(result, "proxyDeployerCreationCode", params.proxyDeployerCreationCode);
@@ -67,14 +75,13 @@ contract DeterminsticDeployerScript is Script {
 
         console2.log(finalOutput);
 
-        vm.writeJson(finalOutput, "determinsticConfig/factoryProxy/params.json");
+        vm.writeJson(finalOutput, paramsFilePath(proxyName));
     }
 
     function readDeterminsticParams(string memory proxyName, uint256 chain) internal returns (DeterminsticParams memory params, bytes memory signature) {
         string memory root = vm.projectRoot();
-        string memory folder = string.concat(string.concat(root, "/determinsticConfig/"), proxyName);
-        string memory deployConfig = vm.readFile(string.concat(folder, "/params.json"));
-        string memory signatures = vm.readFile(string.concat(folder, "/signatures.json"));
+        string memory deployConfig = vm.readFile(paramsFilePath(proxyName));
+        string memory signatures = vm.readFile(signaturesFilePath(proxyName));
 
         params = DeterminsticParams({
             proxyDeployerCreationCode: deployConfig.readBytes(".proxyDeployerCreationCode"),
@@ -90,48 +97,32 @@ contract DeterminsticDeployerScript is Script {
         signature = signatures.readBytes(string.concat(".", string.concat(vm.toString(chain))));
     }
 
-    function getDeterminsticDeploymentParams(
-        address deployerAddress,
-        bytes memory proxyCreationCode
-    )
-        internal
-        returns (
-            bytes32 newFactoryProxyDeployerSalt,
-            bytes memory newFactoryProxyDeployerInitCode,
-            address proxyDeployerContractAddress,
-            bytes32 proxyShimSalt,
-            bytes32 proxySalt,
-            address determinsticProxyAddress
-        )
-    {
+    function getDeterminsticDeploymentParams(address deployerAddress, bytes memory proxyCreationCode) internal returns (DeterminsticParams memory) {
         // 1. Get salt with first bytes that match address, and resulting determinsitic factory proxy deployer address
 
         // replace first 20 characters of salt with deployer address, so that the salt can be used with
         // ImmutableCreate2Factory.safeCreate2 when called by this deployer's account:
-        newFactoryProxyDeployerSalt = ZoraDeployerUtils.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
+        bytes32 proxyDeployerSalt = ZoraDeployerUtils.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
 
-        newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
+        bytes memory proxyDeployerCreationCode = type(NewFactoryProxyDeployer).creationCode;
 
         // we can know determinstically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
-        proxyDeployerContractAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(
-            newFactoryProxyDeployerSalt,
-            newFactoryProxyDeployerInitCode
-        );
+        address proxyDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(proxyDeployerSalt, proxyDeployerCreationCode);
 
-        console2.log("expected factory deployer address:", proxyDeployerContractAddress);
+        console2.log("expected factory deployer address:", proxyDeployerAddress);
 
         // 2. Get random proxy shim salt, and resulting determinstic address
 
         // Proxy shim will be initialized with the factory deployer address as the owner, allowing only the factory deployer to upgrade the proxy,
         // to the eventual factory implementation
-        bytes memory proxyShimInitCode = abi.encodePacked(type(ProxyShim).creationCode, abi.encode(proxyDeployerContractAddress));
+        bytes memory proxyShimInitCode = abi.encodePacked(type(ProxyShim).creationCode, abi.encode(proxyDeployerAddress));
 
         // create any arbitrary salt for proxy shim (this can be anything, we just care about the resulting address)
-        proxyShimSalt = saltWithAddressInFirst20Bytes(deployerAddress);
+        bytes32 proxyShimSalt = saltWithAddressInFirst20Bytes(deployerAddress);
 
         // now get determinstic proxy shim address based on salt, deployer address, which will be NewFactoryProxyDeployer address and init code
-        address proxyShimAddress = Create2.computeAddress(proxyShimSalt, keccak256(proxyShimInitCode), proxyDeployerContractAddress);
+        address proxyShimAddress = Create2.computeAddress(proxyShimSalt, keccak256(proxyShimInitCode), proxyDeployerAddress);
 
         console2.log("proxy shim address:");
         console2.log(proxyShimAddress);
@@ -144,6 +135,19 @@ contract DeterminsticDeployerScript is Script {
 
         console.log("init code hash: ", LibString.toHexStringNoPrefix(uint256(creationCodeHash), 32));
 
-        (proxySalt, determinsticProxyAddress) = mineSalt(proxyDeployerContractAddress, creationCodeHash, "777777");
+        (bytes32 proxySalt, address determinsticProxyAddress) = mineSalt(proxyDeployerAddress, creationCodeHash, "777777");
+
+        DeterminsticParams memory result = DeterminsticParams({
+            proxyDeployerCreationCode: proxyDeployerCreationCode,
+            proxyCreationCode: proxyCreationCode,
+            deployerAddress: deployerAddress,
+            proxyDeployerAddress: proxyDeployerAddress,
+            proxyDeployerSalt: proxyDeployerSalt,
+            proxyShimSalt: proxyShimSalt,
+            proxySalt: proxySalt,
+            determinsticProxyAddress: determinsticProxyAddress
+        });
+
+        return result;
     }
 }
