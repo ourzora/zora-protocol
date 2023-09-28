@@ -111,7 +111,8 @@ contract NewFactoryProxyDeployer is EIP712 {
         bytes calldata signature
     ) external returns (address factoryProxyAddress) {
         address signer = recoverSignature(
-            hashedDigestFactoryProxy(proxyShimSalt, proxySalt, proxyCreationCode, implementationAddress, owner)
+            hashedDigestFactoryProxy(proxyShimSalt, proxySalt, proxyCreationCode, implementationAddress, owner),
+            signature
         );
 
         requireContainsCaller(signer, proxyShimSalt);
@@ -134,7 +135,8 @@ contract NewFactoryProxyDeployer is EIP712 {
         bytes calldata signature
     ) external returns (address resultAddress) {
         address signer = recoverSignature(
-            hashedDigestGenericCreation(genericCreationSalt, creationCode, initCall)
+            hashedDigestGenericCreation(genericCreationSalt, creationCode, initCall),
+            signature
         );
 
         requireContainsCaller(signer, genericCreationSalt);
