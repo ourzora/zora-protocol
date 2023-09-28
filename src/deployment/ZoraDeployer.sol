@@ -39,8 +39,12 @@ library ZoraDeployer {
         factoryImplAddress = address(factoryImpl);
     }
 
-    function newFactoryProxyDeployerCreationCode(address owner) internal pure returns (bytes memory) {
-        return abi.encodePacked(type(NewFactoryProxyDeployer).creationCode, abi.encode(owner));
+    // we dont care what this salt is, as long as it's the same for all deployments and it has first 20 bytes of 0
+    // so that anyone can deploy it
+    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaba0e);
+
+    function createDeterminsticFactoryProxyDeployer() internal returns (NewFactoryProxyDeployer) {
+        return NewFactoryProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(NewFactoryProxyDeployer).creationCode));
     }
 
     function deployNewPreminterImplementation(address factoryProxyAddress) internal returns (address) {
@@ -50,12 +54,10 @@ library ZoraDeployer {
         return address(preminterImplementation);
     }
 
-    function determinsticFactoryDeployerAddress(address deployerAddress, bytes32 salt) internal view returns (address) {
-        bytes memory newFactoryProxyDeployerInitCode = abi.encodePacked(type(NewFactoryProxyDeployer).creationCode, abi.encode(deployerAddress));
-
+    function determinsticFactoryDeployerAddress() internal view returns (address) {
         // we can know determinstically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
-        return IMMUTABLE_CREATE2_FACTORY.findCreate2Address(salt, newFactoryProxyDeployerInitCode);
+        return IMMUTABLE_CREATE2_FACTORY.findCreate2Address(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(NewFactoryProxyDeployer).creationCode);
     }
 
     function determinsticFactoryProxyAddress(bytes32 proxyShimSalt, bytes32 factoryProxySalt, address proxyDeployerAddress) internal pure returns (address) {
@@ -71,16 +73,6 @@ library ZoraDeployer {
                 keccak256(abi.encodePacked(type(Zora1155Factory).creationCode, abi.encode(proxyShimAddress, ""))),
                 proxyDeployerAddress
             );
-    }
-
-    function determinsticFactoryDeployerAndFactoryProxyAddress(
-        address deployerAddress,
-        bytes32 factoryDeloyerSalt,
-        bytes32 proxyShimSalt,
-        bytes32 factoryProxySalt
-    ) internal view returns (address factoryDeployerAddress, address factoryProxyAddress) {
-        factoryDeployerAddress = determinsticFactoryDeployerAddress(deployerAddress, factoryDeloyerSalt);
-        factoryProxyAddress = determinsticFactoryProxyAddress(proxyShimSalt, factoryProxySalt, factoryDeployerAddress);
     }
 
     function deployNewPreminterProxy(address factoryProxyAddress, address premintOwner) internal returns (address preminterProxyAddress) {

@@ -44,6 +44,10 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.26.1",
+    "@turnkey/api-key-stamper": "^0.1.1",
+    "@turnkey/http": "^1.2.0",
+    "@turnkey/viem": "^0.2.4",
+    "@turnkey/webauthn-stamper": "^0.1.0",
     "@types/node": "^20.1.2",
     "@wagmi/cli": "^1.0.1",
     "abitype": "^0.8.7",

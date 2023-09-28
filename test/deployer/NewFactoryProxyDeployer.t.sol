@@ -15,36 +15,44 @@ contract NewFactoryProxyDeployerTest is Test {
         vm.createSelectFork("zora_goerli", 1252119);
         // ensure nonce is greater than current account's nonce
 
+        (address deployerAddress, uint256 deployerPrivateKey) = makeAddrAndKey("deployer");
+
         // the values in this test can be determined by running the script GetDeterminsticParam.s.sol,
         // and copying the output values here.
-        address deployerAddress = 0xf69fEc6d858c77e969509843852178bd24CAd2B6;
-        bytes32 newFactoryProxyDeployerCreationSalt = bytes32(0xf69fec6d858c77e969509843852178bd24cad2b6000000000000000000000000);
-        bytes32 proxyShimSalt = bytes32(0x89d6b41491ad0d71482f348ec72c10d6136989b1538d35513f4de605f2870242);
-        bytes32 factoryProxySalt = bytes32(0x75e385b83ee33131a9819dae53d14965755511550cd440e95966440231121260);
+        bytes32 newFactoryProxyDeployerCreationSalt = bytes32(0x0000000000000000000000000000000000000000668d7f9eb18e35000dbaaa0f);
+        bytes32 proxyShimSalt = bytes32(0xae0bdc4eeac5e950b67c6819b118761caaf61946000000000000000000000000);
+        bytes32 factoryProxySalt = bytes32(0x2c135805a7432c4994ef7201eabab468a4ec8b4cd5e57cf7f35d0474b19a06e5);
 
-        address expectedFactoryDeployeAddress = 0x29240D422C821A871A16CcAB88abeb2889180146;
-        address expectedAddress = 0x7777777f9F0980A03C5a14dc81A17D0391b5b7D5;
+        address expectedFactoryDeployerAddress = 0x9868a3FFe92C44c4Ce1db8033C6f55a674D511D8;
+        address expectedFactoryProxyAddress = 0x77777718F04F2f9d9082a5AC853cBA682b19fB48;
 
         // now we can create the implementation, pointing it to the expected determinstic address:
         address mintFeeRecipient = makeAddr("mintFeeRecipient");
         address factoryOwner = makeAddr("factorOwner");
         address protocolRewards = makeAddr("protocolRewards");
 
-        (address determinsticFactoryDeployerAddress, address determinsticFactoryProxyAddress) = ZoraDeployer.determinsticFactoryDeployerAndFactoryProxyAddress({
-            deployerAddress: deployerAddress,
-            factoryDeloyerSalt: newFactoryProxyDeployerCreationSalt,
+        bytes memory newFactoryProxyDeployerInitCode = type(NewFactoryProxyDeployer).creationCode;
+
+        address computedFactoryDeployerAddress = ZoraDeployer.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(
+            newFactoryProxyDeployerCreationSalt,
+            newFactoryProxyDeployerInitCode
+        );
+
+        assertEq(computedFactoryDeployerAddress, expectedFactoryDeployerAddress, "determinstic factory deployer address wrong");
+
+        address computedFactoryProxyAddress = ZoraDeployer.determinsticFactoryProxyAddress({
             proxyShimSalt: proxyShimSalt,
-            factoryProxySalt: factoryProxySalt
+            factoryProxySalt: factoryProxySalt,
+            proxyDeployerAddress: computedFactoryDeployerAddress
         });
 
-        assertEq(determinsticFactoryDeployerAddress, expectedFactoryDeployeAddress, "determinstic factory deployer address wrong");
-        assertEq(determinsticFactoryProxyAddress, expectedAddress, "determinstic factory proxy address wrong");
+        assertEq(computedFactoryProxyAddress, expectedFactoryProxyAddress, "determinstic factory proxy address wrong");
 
         // 1. Create implementation contracts based on determinstic factory proxy address
 
         // create 1155 and factory impl, we can know the determinstic factor proxy address ahead of time:
         (address factoryImplAddress, ) = ZoraDeployer.deployNew1155AndFactoryImpl({
-            factoryProxyAddress: determinsticFactoryProxyAddress,
+            factoryProxyAddress: expectedFactoryProxyAddress,
             mintFeeRecipient: mintFeeRecipient,
             protocolRewards: protocolRewards,
             merkleMinter: IMinter1155(address(0)),
@@ -56,46 +64,54 @@ contract NewFactoryProxyDeployerTest is Test {
         // we set the nonce to a random value, to prove this doesn't affect the determinstic addrss
         vm.setNonce(deployerAddress, nonce);
 
-        bytes memory newFactoryProxyDeployerInitCode = abi.encodePacked(type(NewFactoryProxyDeployer).creationCode, abi.encode(deployerAddress));
-
         // 2. Create factory deployer at determinstic address
 
         // create new factory deployer using ImmutableCreate2Factory
-        vm.prank(deployerAddress);
         address newFactoryProxyDeployerAddress = ZoraDeployer.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
             newFactoryProxyDeployerCreationSalt,
             newFactoryProxyDeployerInitCode
         );
 
-        assertEq(newFactoryProxyDeployerAddress, determinsticFactoryDeployerAddress, "factory deployer address wrong");
+        assertEq(newFactoryProxyDeployerAddress, computedFactoryDeployerAddress, "factory deployer address wrong");
 
         // create factory proxy at determinstic address:
         NewFactoryProxyDeployer factoryProxyDeployer = NewFactoryProxyDeployer(newFactoryProxyDeployerAddress);
 
-        // try to create and initialize factory proxy as another account, it should revert, as only original deployer should be
-        // able to call this:
-        vm.prank(makeAddr("other"));
-        vm.expectRevert();
-        factoryProxyDeployer.createAndInitializeNewFactoryProxyDeterminstic(
-            proxyShimSalt,
-            factoryProxySalt,
-            determinsticFactoryProxyAddress,
-            factoryImplAddress,
-            factoryOwner
-        );
+        // // try to create and initialize factory proxy as another account, it should revert, as only original deployer should be
+        // // able to call this:
+        // vm.prank(makeAddr("other"));
+        // vm.expectRevert();
+        // factoryProxyDeployer.createAndInitializeNewFactoryProxyDeterminstic(
+        //     proxyShimSalt,
+        //     factoryProxySalt,
+        //     determinsticFactoryProxyAddress,
+        //     factoryImplAddress,
+        //     factoryOwner
+        // );
+
+        bytes memory factoryProxyCreationCode = type(Zora1155Factory).creationCode;
+
+        bytes32 digest = factoryProxyDeployer.hashedDigest(proxyShimSalt, factoryProxySalt, factoryProxyCreationCode, factoryImplAddress, factoryOwner);
+
+        // sign the message
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(deployerPrivateKey, digest);
+
+        // combine into a single bytes array
+        bytes memory signature = abi.encodePacked(r, s, v);
 
         // now do it as original deployer, it should succeed:
-        vm.prank(deployerAddress);
-        address factoryProxyAddress = factoryProxyDeployer.createAndInitializeNewFactoryProxyDeterminstic(
+        address factoryProxyAddress = factoryProxyDeployer.createFactoryProxyDeterminstic(
             proxyShimSalt,
             factoryProxySalt,
-            determinsticFactoryProxyAddress,
+            factoryProxyCreationCode,
+            expectedFactoryProxyAddress,
             factoryImplAddress,
-            factoryOwner
+            factoryOwner,
+            signature
         );
 
         // we know this salt from a script we ran that will generated
         // create factory proxy, using determinstic address and known salt to get proper expected address:
-        assertEq(factoryProxyAddress, expectedAddress, "factory proxy address wrong");
+        assertEq(factoryProxyAddress, expectedFactoryProxyAddress, "factory proxy address wrong");
     }
 }
