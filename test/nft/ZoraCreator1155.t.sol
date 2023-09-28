@@ -86,7 +86,8 @@ contract ZoraCreator1155Test is Test {
         recipient = vm.addr(0x2);
 
         protocolRewards = new ProtocolRewards();
-        upgradeGate = new UpgradeGate(admin);
+        upgradeGate = new UpgradeGate();
+        upgradeGate.initialize(admin);
         zoraCreator1155Impl = new ZoraCreator1155Impl(0, zora, address(upgradeGate), address(protocolRewards));
         target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
         simpleMinter = new SimpleMinter();
