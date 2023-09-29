@@ -205,16 +205,17 @@ contract DeterministicDeployerScript is Script {
 
         DeterministicProxyDeployer factoryDeployer = getOrCreateProxyDeployer();
 
-        return
-            factoryDeployer.createFactoryProxyDeterministic(
-                params.proxyShimSalt,
-                params.proxySalt,
-                params.proxyCreationCode,
-                params.deterministicProxyAddress,
-                implementation,
-                owner,
-                signature
-            );
+        address resultAddress = factoryDeployer.createFactoryProxyDeterministic(
+            params.proxyShimSalt,
+            params.proxySalt,
+            params.proxyCreationCode,
+            params.deterministicProxyAddress,
+            implementation,
+            owner,
+            signature
+        );
+
+        require(resultAddress == params.deterministicProxyAddress, "DeterministicDeployerScript: proxy address mismatch");
     }
 
     function deployUpgradeGate(uint256 chain, address upgradeGateOwner) internal returns (address) {
@@ -228,12 +229,13 @@ contract DeterministicDeployerScript is Script {
 
         DeterministicProxyDeployer factoryDeployer = getOrCreateProxyDeployer();
 
-        return
-            factoryDeployer.createAndInitGenericContractDeterministic({
-                genericCreationSalt: genericCreationSalt,
-                creationCode: creationCode,
-                initCall: abi.encodeWithSelector(UpgradeGate.initialize.selector, upgradeGateOwner),
-                signature: signature
-            });
+        address resultAddress = factoryDeployer.createAndInitGenericContractDeterministic({
+            genericCreationSalt: genericCreationSalt,
+            creationCode: creationCode,
+            initCall: abi.encodeWithSelector(UpgradeGate.initialize.selector, upgradeGateOwner),
+            signature: signature
+        });
+
+        require(resultAddress == vm.parseJsonAddress(upgradeGateParams, ".upgradeGateAddress"), "DeterministicDeployerScript: upgrade gate address mismatch");
     }
 }
