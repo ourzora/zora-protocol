@@ -61,7 +61,7 @@ const getAddresses = () => {
       "1155_IMPL": Address;
       FACTORY_IMPL: Address;
       FACTORY_PROXY: Address;
-      PREMINTER?: Address;
+      PREMINTER_PROXY?: Address;
     };
 
     const chainId = parseInt(addressesFile.split(".")[0]);
@@ -89,7 +89,7 @@ const getAddresses = () => {
     addAddress(
       "ZoraCreator1155PremintExecutor",
       chainId,
-      jsonAddress.PREMINTER
+      jsonAddress.PREMINTER_PROXY
     ),
       addAddress(
         "IImmutableCreate2Factory",
