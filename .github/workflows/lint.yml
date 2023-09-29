@@ -13,7 +13,7 @@ jobs:
           cache: "yarn"
 
       - name: Install project dependencies
-        run: yarn --production
+        run: yarn
 
       - name: Run prettier
         run: yarn run prettier:check
