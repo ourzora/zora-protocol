@@ -144,6 +144,43 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
     }
 
+    function test_createsContractWithoutMinting() external {
+        // 1. Make contract creation params
+
+        // configuration of contract to create
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfig();
+
+        // how many tokens are minted to the executor
+        uint256 chainId = block.chainid;
+        string memory comment = "hi";
+
+        // get contract hash, which is unique per contract creation config, and can be used
+        // retreive the address created for a contract
+        address contractAddress = preminter.getContractAddress(contractConfig);
+
+        // 2. Call smart contract to get digest to sign for creation params.
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
+
+        // 3. Sign the digest
+        // create a signature with the digest for the params
+        bytes memory signature = _sign(creatorPrivateKey, digest);
+
+        uint256 quantityToMint = 0;
+
+        // now call the premint function, using the same config that was used to generate the digest, and the signature
+        vm.prank(premintExecutor);
+        uint256 tokenId = preminter.premint(contractConfig, premintConfig, signature, quantityToMint, comment);
+
+        // get the contract address from the preminter based on the contract hash id.
+        IZoraCreator1155 created1155Contract = IZoraCreator1155(contractAddress);
+
+        // get the created contract, and make sure that tokens have been minted to the address
+        assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), 0);
+
+        assertEq(ZoraCreator1155Impl(contractAddress).firstMinters(tokenId), address(0));
+    }
+
     event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
 
     function test_premint_emitsCreatorAttribution_fromErc1155Contract() external {
