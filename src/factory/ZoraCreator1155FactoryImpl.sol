@@ -10,25 +10,25 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IContractMetadata} from "../interfaces/IContractMetadata.sol";
 import {Ownable2StepUpgradeable} from "../utils/ownable/Ownable2StepUpgradeable.sol";
-import {FactoryManagedUpgradeGate} from "../upgrades/FactoryManagedUpgradeGate.sol";
 import {Zora1155} from "../proxies/Zora1155.sol";
+import {Create2Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/Create2Upgradeable.sol";
+import {CREATE3} from "solmate/src/utils/CREATE3.sol";
 
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraCreator1155FactoryImpl
 /// @notice Factory contract for creating new ZoraCreator1155 contracts
-contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionBase, FactoryManagedUpgradeGate, UUPSUpgradeable, IContractMetadata {
-    IZoraCreator1155 public immutable implementation;
-
+contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgradeable, ContractVersionBase, UUPSUpgradeable, IContractMetadata {
+    IZoraCreator1155 public immutable zora1155Impl;
     IMinter1155 public immutable merkleMinter;
     IMinter1155 public immutable fixedPriceMinter;
     IMinter1155 public immutable redeemMinterFactory;
 
-    constructor(IZoraCreator1155 _implementation, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
-        implementation = _implementation;
-        if (address(implementation) == address(0)) {
+    constructor(IZoraCreator1155 _zora1155Impl, IMinter1155 _merkleMinter, IMinter1155 _fixedPriceMinter, IMinter1155 _redeemMinterFactory) initializer {
+        if (address(_zora1155Impl) == address(0)) {
             revert Constructor_ImplCannotBeZero();
         }
+        zora1155Impl = _zora1155Impl;
         merkleMinter = _merkleMinter;
         fixedPriceMinter = _fixedPriceMinter;
         redeemMinterFactory = _redeemMinterFactory;
@@ -66,14 +66,56 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
     /// @param defaultAdmin The default admin for the contract
     /// @param setupActions The actions to perform on the new contract upon initialization
     function createContract(
-        string memory newContractURI,
+        string calldata newContractURI,
         string calldata name,
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address) {
-        address newContract = address(new Zora1155(address(implementation)));
+        Zora1155 newContract = new Zora1155(address(zora1155Impl));
 
+        _initializeContract(Zora1155(newContract), newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+
+        return address(newContract);
+    }
+
+    function createContractDeterministic(
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) external returns (address) {
+        bytes32 digest = _hashContract(msg.sender, newContractURI, name, defaultAdmin);
+
+        address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(zora1155Impl)), 0);
+
+        Zora1155 newContract = Zora1155(payable(createdContract));
+
+        _initializeContract(newContract, newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+
+        return address(newContract);
+    }
+
+    function deterministicContractAddress(
+        address msgSender,
+        string calldata newContractURI,
+        string calldata name,
+        address contractAdmin
+    ) external view returns (address) {
+        bytes32 digest = _hashContract(msgSender, newContractURI, name, contractAdmin);
+
+        return CREATE3.getDeployed(digest);
+    }
+
+    function _initializeContract(
+        Zora1155 newContract,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) private {
         emit SetupNewContract({
             newContract: address(newContract),
             creator: msg.sender,
@@ -83,9 +125,15 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
             defaultRoyaltyConfiguration: defaultRoyaltyConfiguration
         });
 
-        IZoraCreator1155Initializer(newContract).initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+        IZoraCreator1155Initializer(address(newContract)).initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+    }
 
-        return address(newContract);
+    function _hashContract(address msgSender, string calldata newContractURI, string calldata name, address contractAdmin) private pure returns (bytes32) {
+        return keccak256(abi.encode(msgSender, contractAdmin, _stringHash(newContractURI), _stringHash(name)));
+    }
+
+    function _stringHash(string calldata value) private pure returns (bytes32) {
+        return keccak256(bytes(value));
     }
 
     ///                                                          ///
@@ -99,6 +147,11 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, ContractVersionB
         if (!_equals(IContractMetadata(_newImpl).contractName(), this.contractName())) {
             revert UpgradeToMismatchedContractName(this.contractName(), IContractMetadata(_newImpl).contractName());
         }
+    }
+
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
     }
 
     function _equals(string memory a, string memory b) internal pure returns (bool) {

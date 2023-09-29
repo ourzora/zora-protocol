@@ -23,14 +23,16 @@ import {ICreatorCommands} from "../interfaces/ICreatorCommands.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {ITransferHookReceiver} from "../interfaces/ITransferHookReceiver.sol";
-import {IFactoryManagedUpgradeGate} from "../interfaces/IFactoryManagedUpgradeGate.sol";
+import {IUpgradeGate} from "../interfaces/IUpgradeGate.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {LegacyNamingControl} from "../legacy-naming/LegacyNamingControl.sol";
-import {MintFeeManager} from "../fee/MintFeeManager.sol";
 import {PublicMulticall} from "../utils/PublicMulticall.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
+import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
+import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
+import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -43,7 +45,6 @@ contract ZoraCreator1155Impl is
     ReentrancyGuardUpgradeable,
     PublicMulticall,
     ERC1155Upgradeable,
-    MintFeeManager,
     UUPSUpgradeable,
     CreatorRendererControl,
     LegacyNamingControl,
@@ -51,7 +52,8 @@ contract ZoraCreator1155Impl is
     CreatorPermissionControl,
     CreatorRoyaltiesControl,
     ERC1155Rewards,
-    ERC1155RewardsStorageV1
+    ERC1155RewardsStorageV1,
+    ERC1155DelegationStorageV1
 {
     /// @notice This user role allows for any action to be performed
     uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
@@ -65,15 +67,10 @@ contract ZoraCreator1155Impl is
     /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
     /// @notice Factory contract
-    IFactoryManagedUpgradeGate internal immutable factory;
+    IUpgradeGate internal immutable upgradeGate;
 
-    constructor(
-        uint256 _mintFeeAmount,
-        address _mintFeeRecipient,
-        address _factory,
-        address _protocolRewards
-    ) MintFeeManager(_mintFeeAmount, _mintFeeRecipient) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
-        factory = IFactoryManagedUpgradeGate(_factory);
+    constructor(address _mintFeeRecipient, address _upgradeGate, address _protocolRewards) ERC1155Rewards(_protocolRewards, _mintFeeRecipient) initializer {
+        upgradeGate = IUpgradeGate(_upgradeGate);
     }
 
     /// @notice Initializes the contract
@@ -159,7 +156,7 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Ensure that the next token ID is correct
-    /// @dev This reverts if the invariant doesn't match. This is used for multicall token id assumptions
+    /// @dev This reverts if the invariant doesn't match. This is used for multil token id assumptions
     /// @param lastTokenId The last token ID
     function assumeLastTokenIdMatches(uint256 lastTokenId) external view {
         unchecked {
@@ -363,15 +360,6 @@ contract ZoraCreator1155Impl is
         return config.owner;
     }
 
-    /// @notice AdminMint that only checks if the requested quantity can be minted and has a re-entrant guard
-    /// @param recipient recipient for admin minted tokens
-    /// @param tokenId token id to mint
-    /// @param quantity quantity to mint
-    /// @param data callback data as specified by the 1155 spec
-    function _adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) internal {
-        _mint(recipient, tokenId, quantity, data);
-    }
-
     /// @notice Mint a token to a user as the admin or minter
     /// @param recipient The recipient of the token
     /// @param tokenId The token ID to mint
@@ -383,8 +371,15 @@ contract ZoraCreator1155Impl is
         uint256 quantity,
         bytes memory data
     ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
-        // Call internal admin mint
-        _adminMint(recipient, tokenId, quantity, data);
+        // If this is the token's first mint:
+        if (firstMinters[tokenId] == address(0)) {
+            // Store the recipient address as the first minter
+            // Note: If the recipient is address(0) the tx will revert in the `_mint` call below
+            firstMinters[tokenId] = recipient;
+        }
+
+        // Mint the specified tokens
+        _mint(recipient, tokenId, quantity, data);
     }
 
     /// @notice Batch mint tokens to a user as the admin or minter
@@ -412,8 +407,18 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
+        // Get the token's first minter
+        address firstMinter = _handleFirstMinter(tokenId, minterArguments);
+
         // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleFeeAndGetValueSent(quantity);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(
+            msg.value,
+            quantity,
+            getCreatorRewardRecipient(),
+            createReferrals[tokenId],
+            address(0),
+            firstMinter
+        );
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
@@ -421,13 +426,7 @@ contract ZoraCreator1155Impl is
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
     }
 
-    /// @notice Get the creator reward recipient address
-    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
-    function getCreatorRewardRecipient() public view returns (address payable) {
-        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
-    }
-
-    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, a finder, and a origin
+    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and a mint referral
     /// @param minter The minter contract to use
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
@@ -443,13 +442,50 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
+        // Get the token's first minter
+        address firstMinter = _handleFirstMinter(tokenId, minterArguments);
+
         // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(msg.value, quantity, getCreatorRewardRecipient(), createReferrals[tokenId], mintReferral);
+        uint256 ethValueSent = _handleRewardsAndGetValueSent(
+            msg.value,
+            quantity,
+            getCreatorRewardRecipient(),
+            createReferrals[tokenId],
+            mintReferral,
+            firstMinter
+        );
 
         // Execute commands returned from minter
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
+    }
+
+    /// @dev Get and/or set the first minter a token
+    function _handleFirstMinter(uint256 tokenId, bytes calldata data) internal returns (address) {
+        // If this is the first mint for the token:
+        if (firstMinters[tokenId] == address(0)) {
+            // Decode the address of the reward recipient
+            // Assume the first argument is an address
+            address rewardRecipient = abi.decode(data, (address));
+
+            // Store the address to lookup for future mints
+            firstMinters[tokenId] = rewardRecipient;
+
+            return rewardRecipient;
+        }
+
+        return firstMinters[tokenId];
+    }
+
+    function mintFee() external pure returns (uint256) {
+        return TOTAL_REWARD_PER_MINT;
+    }
+
+    /// @notice Get the creator reward recipient address
+    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
+    function getCreatorRewardRecipient() public view returns (address payable) {
+        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
     }
 
     /// @notice Set a metadata renderer for a token
@@ -518,7 +554,7 @@ contract ZoraCreator1155Impl is
 
         // Ensure the encoded token id matches the passed token id
         if (encodedTokenId != tokenId) {
-            revert Call_TokenIdMismatch();
+            revert IZoraCreator1155Errors.Call_TokenIdMismatch();
         }
 
         (bool success, bytes memory why) = address(salesConfig).call(data);
@@ -632,6 +668,20 @@ contract ZoraCreator1155Impl is
     /// @param operator operator moving the tokens
     /// @param from from address
     /// @param to to address
+    /// @param id token id to move
+    /// @param amount amount of token
+    /// @param data data of token
+    function _beforeTokenTransfer(address operator, address from, address to, uint256 id, uint256 amount, bytes memory data) internal override {
+        super._beforeTokenTransfer(operator, from, to, id, amount, data);
+        if (address(config.transferHook) != address(0)) {
+            config.transferHook.onTokenTransfer(address(this), operator, from, to, id, amount, data);
+        }
+    }
+
+    /// @notice Hook before token transfer that checks for a transfer hook integration
+    /// @param operator operator moving the tokens
+    /// @param from from address
+    /// @param to to address
     /// @param ids token ids to move
     /// @param amounts amounts of tokens
     /// @param data data of tokens
@@ -728,8 +778,67 @@ contract ZoraCreator1155Impl is
     /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
     /// @param _newImpl The new implementation address
     function _authorizeUpgrade(address _newImpl) internal view override onlyAdmin(CONTRACT_BASE_ID) {
-        if (!factory.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
+        if (!upgradeGate.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
+        }
+    }
+
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
+    }
+
+    /// Sets up a new token using a token configuration and a signature created for the token creation parameters.
+    /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
+    /// @param premintConfig configuration of token to be created
+    /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
+        // if a token has already been created for a premint config with this uid:
+        if (delegatedTokenId[premintConfig.uid] != 0) {
+            // return its token id
+            return delegatedTokenId[premintConfig.uid];
+        }
+
+        validatePremint(premintConfig);
+
+        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.hashPremint(premintConfig);
+
+        // recover the signer from the data
+        address creator = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
+
+        // this is what attributes this token to have been created by the original creator
+        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION, creator, signature);
+
+        // require that the signer can create new tokens (is a valid creator)
+        _requireAdminOrRole(creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+
+        // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
+        newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
+
+        delegatedTokenId[premintConfig.uid] = newTokenId;
+
+        // invoke setup actions for new token, to save contract size, first get them from an external lib
+        bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, creator, premintConfig.tokenConfig);
+
+        // then invoke them, calling account should be original msg.sender, which has admin on the new token
+        _multicallInternal(tokenSetupActions);
+
+        // remove the token creator as admin of the newly created token:
+        _removePermission(newTokenId, msg.sender, PERMISSION_BIT_ADMIN);
+
+        // grant the token creator as admin of the newly created token
+        _addPermission(newTokenId, creator, PERMISSION_BIT_ADMIN);
+    }
+
+    function validatePremint(PremintConfig calldata premintConfig) private view {
+        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
+            // if the mint start is in the future, then revert
+            revert MintNotYetStarted();
+        }
+        if (premintConfig.deleted) {
+            // if the signature says to be deleted, then dont execute any further minting logic;
+            // return 0
+            revert PremintDeleted();
         }
     }
 }

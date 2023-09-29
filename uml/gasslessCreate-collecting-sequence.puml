@@ -1,0 +1,39 @@
+@startuml
+actor Collector
+entity CollectUI 
+entity Wallet
+boundary SignatureAPI
+entity PremintExecutorContract
+entity 1155FactoryContract
+entity 1155Contract
+
+Collector -> CollectUI: Open, param is \ndeterministic collection address\n+ token uid
+Activate CollectUI
+CollectUI -> SignatureAPI: Fetch by:\ncollection address, premint uid
+SignatureAPI --> CollectUI: contract creation params,\ntoken creation params,\nsignature
+
+Collector -> CollectUI: mint
+CollectUI -> Wallet: Submit premint transaction
+deactivate CollectUI
+Wallet -> PremintExecutorContract: premint(collectionConfig, tokenConfig, uid, signature)
+activate PremintExecutorContract
+
+Group contract doesnt exist
+  
+    PremintExecutorContract -> 1155FactoryContract: create contract
+    activate 1155FactoryContract
+    1155FactoryContract -> 1155Contract: create
+    deactivate 1155FactoryContract
+    activate 1155Contract
+
+end
+
+PreminterContract -> 1155Contract: create new token\nwith signature
+PreminterContract -> 1155Contract: set new token sale parameters
+PreminterContract -> 1155Contract: mint tokens to collector
+
+deactivate PremintExecutorContract
+1155Contract --> Collector: Minted tokens
+deactivate 1155Contract
+
+@enduml

@@ -33,19 +33,19 @@
 | permissions              | mapping(uint256 => mapping(address => uint256))                          | 510  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 | __gap                    | uint256[50]                                                              | 511  | 0      | 1600  | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 | createReferrals          | mapping(uint256 => address)                                              | 561  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
+| firstMinters             | mapping(uint256 => address)                                              | 562  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
+| delegatedTokenId         | mapping(uint32 => uint256)                                               | 563  | 0      | 32    | src/nft/ZoraCreator1155Impl.sol:ZoraCreator1155Impl |
 
 =======================
 ➡ ZoraCreator1155FactoryImpl
 =======================
 
-| Name             | Type                                         | Slot | Offset | Bytes | Contract                                                              |
-|------------------|----------------------------------------------|------|--------|-------|-----------------------------------------------------------------------|
-| _owner           | address                                      | 0    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| _pendingOwner    | address                                      | 1    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 2    | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| _initialized     | uint8                                        | 52   | 0      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| _initializing    | bool                                         | 52   | 1      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| isAllowedUpgrade | mapping(address => mapping(address => bool)) | 53   | 0      | 32    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 54   | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 104  | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
-| __gap            | uint256[50]                                  | 154  | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| Name          | Type        | Slot | Offset | Bytes | Contract                                                              |
+|---------------|-------------|------|--------|-------|-----------------------------------------------------------------------|
+| _owner        | address     | 0    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| _pendingOwner | address     | 1    | 0      | 20    | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| __gap         | uint256[50] | 2    | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| _initialized  | uint8       | 52   | 0      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| _initializing | bool        | 52   | 1      | 1     | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| __gap         | uint256[50] | 53   | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |
+| __gap         | uint256[50] | 103  | 0      | 1600  | src/factory/ZoraCreator1155FactoryImpl.sol:ZoraCreator1155FactoryImpl |

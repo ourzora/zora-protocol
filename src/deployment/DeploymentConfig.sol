@@ -2,15 +2,14 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {MintFeeManager} from "../../src/fee/MintFeeManager.sol";
+import {CommonBase} from "forge-std/Base.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
+import {Script} from "forge-std/Script.sol";
 
 /// @notice Chain configuration for constants set manually during deploy. Does not get written to after deploys.
 struct ChainConfig {
     /// @notice The user that owns the factory proxy. Allows ability to upgrade for new implementations deployed.
     address factoryOwner;
-    /// @notice Mint fee amount in WEI charged for each mint
-    uint256 mintFeeAmount;
     /// @notice Mint fee recipient user
     address mintFeeRecipient;
     /// @notice Protocol rewards contract address
@@ -33,9 +32,15 @@ struct Deployment {
     address factoryImpl;
     /// @notice Factory proxy contract that creates zora drops style NFT contracts
     address factoryProxy;
+    /// @notice Preminter proxy contract address
+    address preminterImpl;
+    /// @notice Preminter implementation contract address
+    address preminterProxy;
+    /// @notice Upgrade gate
+    address upgradeGate;
 }
 
-abstract contract DeploymentConfig is CommonBase {
+abstract contract DeploymentConfig is Script {
     using stdJson for string;
 
     /// @notice ChainID convenience getter
@@ -47,7 +52,6 @@ abstract contract DeploymentConfig is CommonBase {
     ///
 
     string constant FACTORY_OWNER = "FACTORY_OWNER";
-    string constant MINT_FEE_AMOUNT = "MINT_FEE_AMOUNT";
     string constant MINT_FEE_RECIPIENT = "MINT_FEE_RECIPIENT";
     string constant PROTOCOL_REWARDS = "PROTOCOL_REWARDS";
 
@@ -58,6 +62,9 @@ abstract contract DeploymentConfig is CommonBase {
     string constant CONTRACT_1155_IMPL_VERSION = "CONTRACT_1155_IMPL_VERSION";
     string constant FACTORY_IMPL = "FACTORY_IMPL";
     string constant FACTORY_PROXY = "FACTORY_PROXY";
+    string constant PREMINTER_PROXY = "PREMINTER_PROXY";
+    string constant PREMINTER_IMPL = "PREMINTER_IMPL";
+    string constant UPGRADE_GATE = "UPGRADE_GATE";
 
     /// @notice Return a prefixed key for reading with a ".".
     /// @param key key to prefix
@@ -71,22 +78,34 @@ abstract contract DeploymentConfig is CommonBase {
     function getChainConfig() internal view returns (ChainConfig memory chainConfig) {
         string memory json = vm.readFile(string.concat("chainConfigs/", Strings.toString(chainId()), ".json"));
         chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
-        chainConfig.mintFeeAmount = json.readUint(getKeyPrefix(MINT_FEE_AMOUNT));
         chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
         chainConfig.protocolRewards = json.readAddress(getKeyPrefix(PROTOCOL_REWARDS));
+    }
+
+    function readAddressOrDefaultToZero(string memory json, string memory key) internal view returns (address addr) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            addr = json.readAddress(keyPrefix);
+        } else {
+            addr = address(0);
+        }
     }
 
     /// @notice Get the deployment configuration struct from the JSON configuration file
     /// @return deployment deployment configuration structure
     function getDeployment() internal view returns (Deployment memory deployment) {
         string memory json = vm.readFile(string.concat("addresses/", Strings.toString(chainId()), ".json"));
-        deployment.fixedPriceSaleStrategy = json.readAddress(getKeyPrefix(FIXED_PRICE_SALE_STRATEGY));
-        deployment.merkleMintSaleStrategy = json.readAddress(getKeyPrefix(MERKLE_MINT_SALE_STRATEGY));
-        deployment.redeemMinterFactory = json.readAddress(getKeyPrefix(REDEEM_MINTER_FACTORY));
-        deployment.contract1155Impl = json.readAddress(getKeyPrefix(CONTRACT_1155_IMPL));
+        deployment.fixedPriceSaleStrategy = readAddressOrDefaultToZero(json, FIXED_PRICE_SALE_STRATEGY);
+        deployment.merkleMintSaleStrategy = readAddressOrDefaultToZero(json, MERKLE_MINT_SALE_STRATEGY);
+        deployment.redeemMinterFactory = readAddressOrDefaultToZero(json, REDEEM_MINTER_FACTORY);
+        deployment.contract1155Impl = readAddressOrDefaultToZero(json, CONTRACT_1155_IMPL);
         deployment.contract1155ImplVersion = json.readString(getKeyPrefix(CONTRACT_1155_IMPL_VERSION));
-        deployment.factoryImpl = json.readAddress(getKeyPrefix(FACTORY_IMPL));
-        deployment.factoryProxy = json.readAddress(getKeyPrefix(FACTORY_PROXY));
+        deployment.factoryImpl = readAddressOrDefaultToZero(json, FACTORY_IMPL);
+        deployment.factoryProxy = readAddressOrDefaultToZero(json, FACTORY_PROXY);
+        deployment.preminterImpl = readAddressOrDefaultToZero(json, PREMINTER_IMPL);
+        deployment.preminterProxy = readAddressOrDefaultToZero(json, PREMINTER_PROXY);
+        deployment.upgradeGate = readAddressOrDefaultToZero(json, UPGRADE_GATE);
     }
 }
 
