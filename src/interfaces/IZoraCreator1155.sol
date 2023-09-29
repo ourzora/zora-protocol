@@ -82,7 +82,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory tokenURI, uint256 maxSupply) external returns (uint256 tokenId);
 
-    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) external returns (uint256 newTokenId);
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
 
     function updateTokenURI(uint256 tokenId, string memory _newURI) external;
 

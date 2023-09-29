@@ -20,6 +20,7 @@ via_ir = true
 
 [profile.fast_compilation]
 optimizer_runs = 50
+via_ir = false
 solc_version = '0.8.17'
 
 [rpc_endpoints]
