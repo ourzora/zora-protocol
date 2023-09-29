@@ -14,9 +14,6 @@ import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
-import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
-import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
 
 contract DeployerMintersAndUpgradeGate is ZoraDeployerBase, DeterministicDeployerScript {
@@ -28,20 +25,7 @@ contract DeployerMintersAndUpgradeGate is ZoraDeployerBase, DeterministicDeploye
 
         vm.startBroadcast(deployer);
 
-        address fixedPriceMinter = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
-            type(ZoraCreatorFixedPriceSaleStrategy).creationCode
-        );
-
-        address merkleMinter = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
-            type(ZoraCreatorMerkleMinterStrategy).creationCode
-        );
-
-        address redeemMinterFactory = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
-            type(ZoraCreatorRedeemMinterFactory).creationCode
-        );
+        (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
 
         address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
 

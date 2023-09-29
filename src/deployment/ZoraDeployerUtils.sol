@@ -11,6 +11,9 @@ import {ProxyShim} from "../utils/ProxyShim.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "../delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IImmutableCreate2Factory} from "./IImmutableCreate2Factory.sol";
 import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
+import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {ZoraCreatorMerkleMinterStrategy} from "../minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+import {ZoraCreatorRedeemMinterFactory} from "../minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 
 library ZoraDeployerUtils {
@@ -38,6 +41,23 @@ library ZoraDeployerUtils {
         factoryImplAddress = address(factoryImpl);
     }
 
+    function deployMinters() returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {
+        fixedPriceMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            type(ZoraCreatorFixedPriceSaleStrategy).creationCode
+        );
+
+        merkleMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            type(ZoraCreatorMerkleMinterStrategy).creationCode
+        );
+
+        redeemMinterFactory = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            type(ZoraCreatorRedeemMinterFactory).creationCode
+        );
+    }
+
     // we dont care what this salt is, as long as it's the same for all deployments and it has first 20 bytes of 0
     // so that anyone can deploy it
     bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
@@ -47,9 +67,14 @@ library ZoraDeployerUtils {
             DeterministicProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(DeterministicProxyDeployer).creationCode));
     }
 
-    function deployNewPreminterImplementation(address factoryProxyAddress) internal returns (address) {
+    function deployNewPreminterImplementationDeterminstic(address factoryProxyAddress) internal returns (address) {
         // create preminter implementation
-        ZoraCreator1155PremintExecutorImpl preminterImplementation = new ZoraCreator1155PremintExecutorImpl(ZoraCreator1155FactoryImpl(factoryProxyAddress));
+        bytes memory creationCode = abi.encodePacked(type(ZoraCreator1155PremintExecutorImpl).creationCode, abi.encode(factoryProxyAddress));
+
+        ZoraCreator1155PremintExecutorImpl preminterImplementation = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e),
+            creationCode
+        );
 
         return address(preminterImplementation);
     }
