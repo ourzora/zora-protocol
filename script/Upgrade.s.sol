@@ -16,6 +16,7 @@ import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract UpgradeScript is ZoraDeployerBase {
@@ -74,7 +75,7 @@ contract UpgradeScript is ZoraDeployerBase {
         console2.log("Upgrade to this new factory impl on the proxy:", deployment.factoryProxy);
 
         if (isNewNFTImpl) {
-            deployTestContractForVerification(deployment.factoryProxy, chainConfig.factoryOwner);
+            ZoraDeployerUtils.deployTestContractForVerification(deployment.factoryProxy, makeAddr("admin"));
         }
 
         return getDeploymentJSON(deployment);

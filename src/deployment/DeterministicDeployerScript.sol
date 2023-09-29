@@ -81,25 +81,34 @@ contract DeterministicDeployerScript is Script {
         vm.writeJson(finalOutput, paramsFilePath(proxyName));
     }
 
-    function readDeterministicParams(string memory proxyName, uint256 chain) internal view returns (DeterministicParams memory params, bytes memory signature) {
+    function readDeterministicParams(string memory proxyName) internal view returns (DeterministicParams memory params) {
         string memory deployConfig = vm.readFile(paramsFilePath(proxyName));
+
+        return
+            DeterministicParams({
+                proxyDeployerCreationCode: deployConfig.readBytes(".proxyDeployerCreationCode"),
+                proxyCreationCode: deployConfig.readBytes(".proxyCreationCode"),
+                deployerAddress: deployConfig.readAddress(".deployerAddress"),
+                proxyDeployerAddress: deployConfig.readAddress(".proxyDeployerAddress"),
+                proxyDeployerSalt: deployConfig.readBytes32(".proxyDeployerSalt"),
+                proxyShimSalt: deployConfig.readBytes32(".proxyShimSalt"),
+                proxySalt: deployConfig.readBytes32(".proxySalt"),
+                deterministicProxyAddress: deployConfig.readAddress(".deterministicProxyAddress")
+            });
+    }
+
+    function readDeterministicParamsAndSig(
+        string memory proxyName,
+        uint256 chain
+    ) internal view returns (DeterministicParams memory params, bytes memory signature) {
         string memory signatures = vm.readFile(signaturesFilePath(proxyName));
 
-        params = DeterministicParams({
-            proxyDeployerCreationCode: deployConfig.readBytes(".proxyDeployerCreationCode"),
-            proxyCreationCode: deployConfig.readBytes(".proxyCreationCode"),
-            deployerAddress: deployConfig.readAddress(".deployerAddress"),
-            proxyDeployerAddress: deployConfig.readAddress(".proxyDeployerAddress"),
-            proxyDeployerSalt: deployConfig.readBytes32(".proxyDeployerSalt"),
-            proxyShimSalt: deployConfig.readBytes32(".proxyShimSalt"),
-            proxySalt: deployConfig.readBytes32(".proxySalt"),
-            deterministicProxyAddress: deployConfig.readAddress(".deterministicProxyAddress")
-        });
+        params = readDeterministicParams(proxyName);
 
         signature = signatures.readBytes(string.concat(".", string.concat(vm.toString(chain))));
     }
 
-    function getProxyDeployerParams() internal returns (bytes32 proxyDeployerSalt, bytes memory proxyDeployerCreationCode, address proxyDeployerAddress) {
+    function getProxyDeployerParams() internal view returns (bytes32 proxyDeployerSalt, bytes memory proxyDeployerCreationCode, address proxyDeployerAddress) {
         proxyDeployerSalt = ZoraDeployerUtils.FACTORY_DEPLOYER_DEPLOYMENT_SALT;
 
         proxyDeployerCreationCode = type(DeterministicProxyDeployer).creationCode;
@@ -113,7 +122,7 @@ contract DeterministicDeployerScript is Script {
         address proxyDeployerAddress,
         address deployerAddress,
         uint256 proxyShimSaltSuffix
-    ) internal returns (bytes memory proxyShimInitCode, bytes32 proxyShimSalt, address proxyShimAddress) {
+    ) internal pure returns (bytes memory proxyShimInitCode, bytes32 proxyShimSalt, address proxyShimAddress) {
         proxyShimInitCode = abi.encodePacked(type(ProxyShim).creationCode, abi.encode(proxyDeployerAddress));
 
         // create any arbitrary salt for proxy shim (this can be anything, we just care about the resulting address)
@@ -147,7 +156,7 @@ contract DeterministicDeployerScript is Script {
         // 2. Get random proxy shim salt, and resulting deterministic address
         // Proxy shim will be initialized with the factory deployer address as the owner, allowing only the factory deployer to upgrade the proxy,
         // to the eventual factory implementation
-        (bytes memory proxyShimInitCode, bytes32 proxyShimSalt, address proxyShimAddress) = getProxyShimParams({
+        (, bytes32 proxyShimSalt, address proxyShimAddress) = getProxyShimParams({
             proxyDeployerAddress: proxyDeployerAddress,
             deployerAddress: deployerAddress,
             proxyShimSaltSuffix: proxyShimSaltSuffix
@@ -176,58 +185,61 @@ contract DeterministicDeployerScript is Script {
 
     error MismatchedAddress(address expected, address actual);
 
-    function deployDeterministicProxy(string memory proxyName, address implementation, address owner, uint256 chain) internal returns (address) {
-        (DeterministicParams memory params, bytes memory signature) = readDeterministicParams(proxyName, chain);
+    function getOrCreateProxyDeployer() internal returns (DeterministicProxyDeployer factoryDeployer) {
+        DeterministicParams memory params = readDeterministicParams("factoryProxy");
+        address proxyDeployerAddress = params.proxyDeployerAddress;
+        bytes32 proxyDeployerSalt = params.proxyDeployerSalt;
+        bytes memory proxyDeployerCreationCode = params.proxyDeployerCreationCode;
 
-        DeterministicProxyDeployer factoryDeployer;
-
-        if (ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(params.proxyDeployerAddress)) {
-            factoryDeployer = DeterministicProxyDeployer(params.proxyDeployerAddress);
+        if (ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(proxyDeployerAddress)) {
+            factoryDeployer = DeterministicProxyDeployer(proxyDeployerAddress);
         } else {
-            factoryDeployer = DeterministicProxyDeployer(
-                ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(params.proxyDeployerSalt, params.proxyDeployerCreationCode)
-            );
+            factoryDeployer = DeterministicProxyDeployer(ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(proxyDeployerSalt, proxyDeployerCreationCode));
         }
 
-        console2.log(address(factoryDeployer));
-        console2.log(params.proxyDeployerAddress);
-
         if (address(factoryDeployer) != params.proxyDeployerAddress) revert MismatchedAddress(params.proxyDeployerAddress, address(factoryDeployer));
+    }
 
-        return
-            factoryDeployer.createFactoryProxyDeterministic(
-                params.proxyShimSalt,
-                params.proxySalt,
-                params.proxyCreationCode,
-                params.deterministicProxyAddress,
-                implementation,
-                owner,
-                signature
-            );
+    function deployDeterministicProxy(string memory proxyName, address implementation, address owner, uint256 chain) internal returns (address) {
+        (DeterministicParams memory params, bytes memory signature) = readDeterministicParamsAndSig(proxyName, chain);
+
+        DeterministicProxyDeployer factoryDeployer = getOrCreateProxyDeployer();
+
+        address resultAddress = factoryDeployer.createFactoryProxyDeterministic(
+            params.proxyShimSalt,
+            params.proxySalt,
+            params.proxyCreationCode,
+            params.deterministicProxyAddress,
+            implementation,
+            owner,
+            signature
+        );
+
+        require(resultAddress == params.deterministicProxyAddress, "DeterministicDeployerScript: proxy address mismatch");
+
+        return resultAddress;
     }
 
     function deployUpgradeGate(uint256 chain, address upgradeGateOwner) internal returns (address) {
         string memory signatures = vm.readFile(signaturesFilePath("upgradeGate"));
         bytes memory signature = signatures.readBytes(string.concat(".", string.concat(vm.toString(chain))));
 
-        string memory upgradeGateParams = vm.readFile("./deployDeterministic/upgradeGate/params.json");
+        string memory upgradeGateParams = vm.readFile("./deterministicConfig/upgradeGate/params.json");
 
-        address proxyDeployerAddress = vm.parseJsonAddress(upgradeGateParams, ".proxyDeployerAddress");
         bytes32 genericCreationSalt = vm.parseJsonBytes32(upgradeGateParams, ".salt");
         bytes memory creationCode = vm.parseJsonBytes(upgradeGateParams, ".creationCode");
 
-        if (!ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(proxyDeployerAddress)) {
-            revert("The main proxy deployer needs to be deployed first");
-        }
+        DeterministicProxyDeployer factoryDeployer = getOrCreateProxyDeployer();
 
-        DeterministicProxyDeployer factoryDeployer = DeterministicProxyDeployer(proxyDeployerAddress);
+        address resultAddress = factoryDeployer.createAndInitGenericContractDeterministic({
+            genericCreationSalt: genericCreationSalt,
+            creationCode: creationCode,
+            initCall: abi.encodeWithSelector(UpgradeGate.initialize.selector, upgradeGateOwner),
+            signature: signature
+        });
 
-        return
-            factoryDeployer.createAndInitGenericContractDeterministic({
-                genericCreationSalt: genericCreationSalt,
-                creationCode: creationCode,
-                initCall: abi.encodeWithSelector(UpgradeGate.initialize.selector, upgradeGateOwner),
-                signature: signature
-            });
+        require(resultAddress == vm.parseJsonAddress(upgradeGateParams, ".upgradeGateAddress"), "DeterministicDeployerScript: upgrade gate address mismatch");
+
+        return resultAddress;
     }
 }
