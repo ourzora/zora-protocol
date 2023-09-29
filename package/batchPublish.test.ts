@@ -280,7 +280,7 @@ describe("ZoraCreator1155Preminter", () => {
         [collectorAccount]
       );
 
-      const zoraMintFee = parseEther("0.0007");
+      const zoraMintFee = parseEther("0.000777");
 
       const valueToSend =
         (BigInt(zoraMintFee) + createToken3Params.price) * quantityToMint;
