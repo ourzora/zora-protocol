@@ -1,6 +1,6 @@
 import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
-import { zoraCreator1155PremintExecutorABI as preminterAbi } from "./wagmiGenerated";
+import { zoraCreator1155PremintExecutorImplABI as preminterAbi } from "./wagmiGenerated";
 import { TypedDataDefinition } from "viem";
 
 type PremintInputs = ExtractAbiFunction<
