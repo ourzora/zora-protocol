@@ -115,3 +115,25 @@ jobs:
       - name: "Inspect Storage Layout"
         continue-on-error: false
         run: yarn run storage-inspect:check
+
+  build_js:
+    needs: build
+    strategy:
+      fail-fast: true
+
+    name: Build JS Package
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Download foundry artifacts
+        uses: actions/download-artifact@v3
+        with:
+          name: foundry-built-artifacts
+
+      - name: Build js package
+        run: |
+          yarn prepack
