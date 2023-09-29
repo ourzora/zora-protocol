@@ -400,9 +400,6 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
-        // Get the token's first minter
-        address firstMinter = _handleFirstMinter(tokenId, minterArguments);
-
         // Get value sent and handle mint fee
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
             msg.value,
@@ -434,9 +431,6 @@ contract ZoraCreator1155Impl is
     ) external payable nonReentrant {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
-
-        // Get the token's first minter
-        address firstMinter = _handleFirstMinter(tokenId, minterArguments);
 
         // Get value sent and handle mint rewards
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
