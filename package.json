@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/zora-1155-contracts",
-  "version": "1.4.0",
+  "version": "1.5.0",
   "repository": "git@github.com:ourzora/creator-contracts.git",
   "author": "Iain <iain@zora.co>",
   "license": "MIT",
@@ -16,6 +16,7 @@
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
     "prepack": "yarn wagmi && yarn bundle-configs && yarn build",
     "update-new-deployment-addresses": "node script/copy-deployed-contracts.mjs deploy",
+    "update-contract-version": "node script/update-contract-version.mjs",
     "build": "tsup",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "wagmi": "wagmi generate",
@@ -24,7 +25,7 @@
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "js-test:watch": "vitest dev",
     "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337",
-    "release": "yarn run prepack && changeset publish"
+    "update-version": "changeset version && yarn update-contract-version"
   },
   "files": [
     "dist/",
