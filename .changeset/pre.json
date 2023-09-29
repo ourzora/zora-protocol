@@ -4,5 +4,16 @@
   "initialVersions": {
     "@zoralabs/zora-1155-contracts": "1.5.0"
   },
-  "changesets": []
+  "changesets": [
+    "chilly-ties-stare",
+    "curly-days-reflect",
+    "curly-dolphins-sneeze",
+    "happy-socks-melt",
+    "long-avocados-visit",
+    "popular-cows-grin",
+    "slow-hats-turn",
+    "spotty-horses-battle",
+    "twelve-comics-sniff",
+    "witty-beds-travel"
+  ]
 }
