@@ -26,15 +26,7 @@ import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 contract MockTransferHookReceiver is ITransferHookReceiver {
     mapping(uint256 => bool) public hasTransfer;
 
-    function onTokenTransferBatch(
-        address,
-        address,
-        address,
-        address,
-        uint256[] memory ids,
-        uint256[] memory,
-        bytes memory
-    ) external {
+    function onTokenTransferBatch(address, address, address, address, uint256[] memory ids, uint256[] memory, bytes memory) external {
         for (uint256 i = 0; i < ids.length; i++) {
             hasTransfer[ids[i]] = true;
         }
