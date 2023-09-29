@@ -216,6 +216,8 @@ contract DeterministicDeployerScript is Script {
         );
 
         require(resultAddress == params.deterministicProxyAddress, "DeterministicDeployerScript: proxy address mismatch");
+
+        return resultAddress;
     }
 
     function deployUpgradeGate(uint256 chain, address upgradeGateOwner) internal returns (address) {
@@ -237,5 +239,7 @@ contract DeterministicDeployerScript is Script {
         });
 
         require(resultAddress == vm.parseJsonAddress(upgradeGateParams, ".upgradeGateAddress"), "DeterministicDeployerScript: upgrade gate address mismatch");
+
+        return resultAddress;
     }
 }

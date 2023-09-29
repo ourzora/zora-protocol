@@ -54,6 +54,8 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
             chain: chain
         });
 
+        console2.log("create test contract for verification");
+
         ZoraDeployerUtils.deployTestContractForVerification(factoryProxyAddress, makeAddr("admin"));
 
         console2.log("Deployed new contract for verification purposes");
@@ -77,11 +79,13 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
         deployment.preminterImpl = preminterImpl;
         deployment.preminterProxy = preminterProxyAddress;
 
+        console2.log("testing premint");
+
+        signAndExecutePremint(preminterProxyAddress);
+
         vm.stopBroadcast();
 
         // now test signing and executing premint
-
-        signAndExecutePremint(preminterProxyAddress);
 
         return getDeploymentJSON(deployment);
     }
