@@ -34,30 +34,6 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
 
         vm.startBroadcast(deployer);
 
-        // (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
-
-        // console.log("deploy upgrade gate");
-
-        // address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
-
-        // console.log("impl contracts");
-
-        // (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
-        //     upgradeGateAddress,
-        //     chainConfig.mintFeeRecipient,
-        //     chainConfig.protocolRewards,
-        //     IMinter1155(merkleMinter),
-        //     IMinter1155(redeemMinterFactory),
-        //     IMinter1155(fixedPriceMinter)
-        // );
-
-        // deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
-        // deployment.merkleMintSaleStrategy = address(merkleMinter);
-        // deployment.redeemMinterFactory = address(redeemMinterFactory);
-        // deployment.upgradeGate = upgradeGateAddress;
-        // deployment.factoryImpl = factoryImplAddress;
-        // deployment.contract1155Impl = contract1155ImplAddress;
-
         console.log("deploy factory proxy");
 
         address factoryProxyAddress = deployDeterministicProxy({
