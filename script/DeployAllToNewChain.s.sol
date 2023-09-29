@@ -54,7 +54,7 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript {
             chain: chain
         });
 
-        deployTestContractForVerification(factoryProxyAddress, makeAddr("admin"));
+        ZoraDeployerUtils.deployTestContractForVerification(factoryProxyAddress, makeAddr("admin"));
 
         address preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(address(factoryProxyAddress));
 

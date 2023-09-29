@@ -99,4 +99,26 @@ library ZoraDeployerUtils {
                 proxyDeployerAddress
             );
     }
+
+    /// @notice Deploy a test contract for etherscan auto-verification
+    /// @param factoryProxy Factory address to use
+    /// @param admin Admin owner address to use
+    function deployTestContractForVerification(address factoryProxy, address admin) internal {
+        bytes[] memory initUpdate = new bytes[](1);
+        initUpdate[0] = abi.encodeWithSelector(
+            ZoraCreator1155Impl.setupNewToken.selector,
+            "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
+            100
+        );
+        address newContract = address(
+            IZoraCreator1155Factory(factoryProxy).createContract(
+                "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
+                unicode"🪄",
+                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
+                payable(admin),
+                initUpdate
+            )
+        );
+        console2.log("Deployed new contract for verification purposes", newContract);
+    }
 }
