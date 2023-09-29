@@ -72,12 +72,16 @@ contract ZoraCreator1155PremintExecutorImpl is Ownable2StepUpgradeable, UUPSUpgr
         // and then create and setup the token using the given token config.
         newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature);
 
-        tokenContract.mint{value: msg.value}(
-            IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
-            newTokenId,
-            quantityToMint,
-            abi.encode(msg.sender, mintComment)
-        );
+        // if the executor would also like to mint:
+        if (quantityToMint != 0) {
+            // mint the number of specified tokens to the executor
+            tokenContract.mint{value: msg.value}(
+                IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
+                newTokenId,
+                quantityToMint,
+                abi.encode(msg.sender, mintComment)
+            );
+        }
 
         // emit Preminted event
         emit Preminted(

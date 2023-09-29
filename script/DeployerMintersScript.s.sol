@@ -24,7 +24,6 @@ contract DeployerMintersScript is ZoraDeployerBase {
         Deployment memory deployment;
         ChainConfig memory chainConfig = getChainConfig();
 
-        console2.log("zoraFeeAmount", chainConfig.mintFeeAmount);
         console2.log("zoraFeeRecipient", chainConfig.mintFeeRecipient);
         console2.log("factoryOwner", chainConfig.factoryOwner);
         console2.log("protocolRewards", chainConfig.protocolRewards);

@@ -21,21 +21,17 @@ import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 
 /// @dev Deploys implementation contracts for 1155 contracts.
 /// @notice Run after deploying the minters
-/// @notice This  
+/// @notice This
 contract DeployNewImplementations is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
         ChainConfig memory chainConfig = getChainConfig();
 
-        console2.log("zoraFeeAmount", chainConfig.mintFeeAmount);
         console2.log("zoraFeeRecipient", chainConfig.mintFeeRecipient);
         console2.log("factoryOwner", chainConfig.factoryOwner);
         console2.log("protocolRewards", chainConfig.protocolRewards);
 
-        deployment.upgradeGate = vm.parseJsonAddress(
-            vm.readFile("./deterministicDeployments/upgradeGate/params.json"),
-            ".upgradeGateAddress"
-        );
+        deployment.upgradeGate = vm.parseJsonAddress(vm.readFile("./deterministicDeployments/upgradeGate/params.json"), ".upgradeGateAddress");
 
         console2.log("upgradeGateAddress", deployment.upgradeGate);
 

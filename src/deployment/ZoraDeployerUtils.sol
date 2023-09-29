@@ -24,7 +24,7 @@ library ZoraDeployerUtils {
         IMinter1155 redeemMinterFactory,
         IMinter1155 fixedPriceMinter
     ) internal returns (address factoryImplAddress, address contract1155ImplAddress) {
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(0, mintFeeRecipient, factoryProxyAddress, protocolRewards);
+        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(mintFeeRecipient, factoryProxyAddress, protocolRewards);
 
         contract1155ImplAddress = address(creatorImpl);
 

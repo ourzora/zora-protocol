@@ -33,7 +33,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         (creator, creatorPrivateKey) = makeAddrAndKey("creator");
 
         vm.startPrank(zora);
-        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(mintFeeAmount, zora, zora);
+        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         factoryAtProxy = ZoraCreator1155FactoryImpl(address(factoryProxy));
         vm.stopPrank();
 
