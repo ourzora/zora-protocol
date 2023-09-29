@@ -11,13 +11,13 @@ import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
-import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
 import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
+import {DeploymentTestingUtils} from "../src/deployment/DeploymentTestingUtils.sol";
 
-contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript {
+contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, DeploymentTestingUtils {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
         ChainConfig memory chainConfig = getChainConfig();
@@ -56,6 +56,8 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript {
 
         ZoraDeployerUtils.deployTestContractForVerification(factoryProxyAddress, makeAddr("admin"));
 
+        console2.log("Deployed new contract for verification purposes");
+
         address preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(address(factoryProxyAddress));
 
         address preminterProxyAddress = deployDeterministicProxy({
@@ -74,6 +76,12 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript {
         deployment.factoryProxy = factoryProxyAddress;
         deployment.preminterImpl = preminterImpl;
         deployment.preminterProxy = preminterProxyAddress;
+
+        vm.stopBroadcast();
+
+        // now test signing and executing premint
+
+        signAndExecutePremint(preminterProxyAddress);
 
         return getDeploymentJSON(deployment);
     }
