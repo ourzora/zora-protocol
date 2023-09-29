@@ -8,14 +8,14 @@ import { foundry, zoraTestnet } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
 import { parseEther } from "viem";
 import {
-  zoraCreator1155PremintExecutorABI as preminterAbi,
-  zoraCreator1155PremintExecutorAddress,
+  zoraCreator1155PremintExecutorImplABI as preminterAbi,
+  zoraCreator1155PremintExecutorImplAddress as zoraCreator1155PremintExecutorAddress,
   zoraCreator1155ImplABI,
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155FactoryImplConfig,
 } from "./wagmiGenerated";
 import ZoraCreator1155Attribution from "../out/ZoraCreator1155Attribution.sol/ZoraCreator1155Attribution.json";
-import zoraCreator1155PremintExecutor from "../out/ZoraCreator1155PremintExecutor.sol/ZoraCreator1155PremintExecutor.json";
+import zoraCreator1155PremintExecutor from "../out/ZoraCreator1155PremintExecutorImpl.sol/ZoraCreator1155PremintExecutorImpl.json";
 import zoraCreator1155Impl from "../out/ZoraCreator1155Impl.sol/ZoraCreator1155Impl.json";
 import zoraCreator1155FactoryImpl from "../out/ZoraCreator1155FactoryImpl.sol/ZoraCreator1155FactoryImpl.json";
 import zoraCreatorFixedPriceSaleStrategy from "../out/ZoraCreatorFixedPriceSaleStrategy.sol/ZoraCreatorFixedPriceSaleStrategy.json";

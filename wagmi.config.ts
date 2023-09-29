@@ -9,7 +9,7 @@ type ContractNames =
   | "ZoraCreatorMerkleMinterStrategy"
   | "ZoraCreatorRedeemMinterFactory"
   | "ZoraCreatorRedeemMinterStrategy"
-  | "ZoraCreator1155PremintExecutor"
+  | "ZoraCreator1155PremintExecutorImpl"
   | "DeterministicProxyDeployer"
   | "IImmutableCreate2Factory";
 
@@ -22,7 +22,7 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorMerkleMinterStrategy",
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
-  "ZoraCreator1155PremintExecutor",
+  "ZoraCreator1155PremintExecutorImpl",
   "DeterministicProxyDeployer",
   "IImmutableCreate2Factory",
 ];
@@ -87,7 +87,7 @@ const getAddresses = () => {
       jsonAddress.REDEEM_MINTER_FACTORY
     );
     addAddress(
-      "ZoraCreator1155PremintExecutor",
+      "ZoraCreator1155PremintExecutorImpl",
       chainId,
       jsonAddress.PREMINTER_PROXY
     ),
