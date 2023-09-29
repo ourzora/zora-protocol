@@ -762,7 +762,11 @@ contract ZoraCreator1155Impl is
     /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
     /// @param premintConfig configuration of token to be created
     /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
-    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) public nonReentrant returns (uint256 newTokenId) {
+    function delegateSetupNewToken(
+        PremintConfig calldata premintConfig,
+        bytes calldata signature,
+        address sender
+    ) public nonReentrant returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
         if (delegatedTokenId[premintConfig.uid] != 0) {
             // return its token id

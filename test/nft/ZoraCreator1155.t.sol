@@ -1075,7 +1075,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         PremintConfig memory premintConfig = PremintConfig({
-             tokenConfig: TokenCreationConfig({
+            tokenConfig: TokenCreationConfig({
                 // Metadata URI for the created token
                 tokenURI: "",
                 // Max supply of the created token
@@ -1096,7 +1096,7 @@ contract ZoraCreator1155Test is Test {
                 royaltyRecipient: address(0),
                 // Fixed price minter address
                 fixedPriceMinter: address(fixedPriceMinter)
-             }),
+            }),
             // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
             // only one signature per token id, scoped to the contract hash can be executed.
             uid: 1,
