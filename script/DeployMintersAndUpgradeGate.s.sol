@@ -8,7 +8,6 @@ import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
 import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 
-
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
@@ -18,15 +17,12 @@ import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
 
-contract DeployerMintersScript is ZoraDeployerBase {
+contract DeployerMintersAndUpgradeGate is ZoraDeployerBase, DeterministicDeployerScript {
     function run() public returns (string memory) {
-        Deployment memory deployment;
+        Deployment memory deployment = getDeployment();
         ChainConfig memory chainConfig = getChainConfig();
-
-        console2.log("zoraFeeRecipient", chainConfig.mintFeeRecipient);
-        console2.log("factoryOwner", chainConfig.factoryOwner);
-        console2.log("protocolRewards", chainConfig.protocolRewards);
 
         address deployer = vm.envAddress("DEPLOYER");
 
@@ -47,14 +43,13 @@ contract DeployerMintersScript is ZoraDeployerBase {
             type(ZoraCreatorRedeemMinterFactory).creationCode
         );
 
+        address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
+
         deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
         deployment.merkleMintSaleStrategy = address(merkleMinter);
         deployment.redeemMinterFactory = address(redeemMinterFactory);
+        deployment.upgradeGate = upgradeGateAddress;
 
-        string memory json = getDeploymentJSON(deployment);
-
-        vm.writeFile(string.concat("addresses/", vm.toString(chainId()), ".json"), json);
-
-        return json;
+        return getDeploymentJSON(deployment);
     }
 }
