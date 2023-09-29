@@ -1,5 +1,13 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.0.0
+
+### Major Changes
+
+- 82f6506: Premint with Delegated Minting
+  Determinstic Proxy Addresses
+  Premint deployed to zora and zora goerli
+
 ## 1.6.1
 
 ### Patch Changes
