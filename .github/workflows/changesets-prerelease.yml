@@ -25,19 +25,8 @@ jobs:
         if: steps.check_pre.outputs.files_exists != 'true'
         run: echo "pre.json does not exist, enter prerelease mode with 'yarn changeset pre enter {prereleaseName}'"; exit 1
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: "yarn"
-
-      - name: Install project dependencies
-        run: yarn --production
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
 
       - name: Create Release Pull Request or Publish to npm
         id: changesets

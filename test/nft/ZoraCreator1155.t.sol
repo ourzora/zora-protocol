@@ -11,6 +11,8 @@ import {ITransferHookReceiver} from "../../src/interfaces/ITransferHookReceiver.
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
+import {PremintConfig, TokenCreationConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -61,6 +63,7 @@ contract ZoraCreator1155Test is Test {
     UpgradeGate internal upgradeGate;
 
     address payable internal admin;
+    uint256 internal adminKey;
     address internal recipient;
     uint256 internal adminRole;
     uint256 internal minterRole;
@@ -82,7 +85,9 @@ contract ZoraCreator1155Test is Test {
         createReferral = makeAddr("createReferral");
         zora = makeAddr("zora");
 
-        admin = payable(vm.addr(0x1));
+        address adminAddress;
+        (adminAddress, adminKey) = makeAddrAndKey("admin");
+        admin = payable(adminAddress);
         recipient = vm.addr(0x2);
 
         protocolRewards = new ProtocolRewards();
@@ -747,8 +752,8 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward);
+        assertEq(protocolRewards.balanceOf(recipient), 0);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
@@ -773,8 +778,7 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward);
     }
@@ -800,8 +804,8 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward);
+        assertEq(protocolRewards.balanceOf(recipient), 0);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
@@ -827,8 +831,8 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward);
+        assertEq(protocolRewards.balanceOf(recipient), 0);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
@@ -891,7 +895,7 @@ contract ZoraCreator1155Test is Test {
 
         assertEq(address(target).balance, totalSale);
 
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
@@ -937,7 +941,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(address(target).balance, totalSale);
 
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
@@ -981,7 +985,7 @@ contract ZoraCreator1155Test is Test {
         target.mintWithRewards{value: totalValue}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
 
         assertEq(address(target).balance, totalSale);
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward);
     }
@@ -1026,7 +1030,7 @@ contract ZoraCreator1155Test is Test {
         target.mintWithRewards{value: totalValue}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), mintReferral);
 
         assertEq(address(target).balance, totalSale);
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
@@ -1065,36 +1069,75 @@ contract ZoraCreator1155Test is Test {
         target.mintWithRewards(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
     }
 
-    function test_FirstMinterRewardReceivedOnConsecutiveMints(uint256 quantity) public {
+    function test_FirstMinterRewardReceivedOnConsecutiveMints(uint32 quantity) public {
         vm.assume(quantity > 0 && quantity < type(uint200).max);
 
         init();
 
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity * 2);
+        PremintConfig memory premintConfig = PremintConfig({
+             tokenConfig: TokenCreationConfig({
+                // Metadata URI for the created token
+                tokenURI: "",
+                // Max supply of the created token
+                maxSupply: type(uint64).max,
+                // Max tokens that can be minted for an address, 0 if unlimited
+                maxTokensPerAddress: type(uint64).max,
+                // Price per token in eth wei. 0 for a free mint.
+                pricePerToken: 0,
+                // The start time of the mint, 0 for immediate.  Prevents signatures from being used until the start time.
+                mintStart: 0,
+                // The duration of the mint, starting from the first mint of this token. 0 for infinite
+                mintDuration: type(uint64).max - 1,
+                // RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
+                royaltyMintSchedule: 0,
+                // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+                royaltyBPS: 0,
+                // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
+                royaltyRecipient: address(0),
+                // Fixed price minter address
+                fixedPriceMinter: address(fixedPriceMinter)
+             }),
+            // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
+            // only one signature per token id, scoped to the contract hash can be executed.
+            uid: 1,
+            // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
+            version: 1,
+            // If executing this signature results in preventing any signature with this uid from being minted.
+            deleted: false
+        });
 
-        vm.prank(admin);
-        target.addPermission(tokenId, address(simpleMinter), adminRole);
+        address[] memory collectors = new address[](3);
+        collectors[0] = makeAddr("firstMinter");
+        collectors[1] = makeAddr("collector1");
+        collectors[2] = makeAddr("collector2");
+
+        uint256 chainId;
+        assembly {
+            chainId := chainid()
+        }
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(adminKey, ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, address(target), chainId));
+
+        bytes memory signature = abi.encodePacked(r, s, v);
+
+        vm.prank(collector);
+        uint256 tokenId = target.delegateSetupNewToken(premintConfig, signature, collectors[0]);
 
         RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
 
         uint256 totalReward = target.computeTotalReward(quantity);
-        vm.deal(collector, totalReward);
+        vm.deal(collectors[1], totalReward);
+        vm.prank(collectors[1]);
+        target.mintWithRewards{value: totalReward}(fixedPriceMinter, tokenId, quantity, abi.encode(collectors[1]), address(0));
 
-        address firstMinter = makeAddr("firstMinter");
+        assertEq(protocolRewards.balanceOf(collectors[0]), settings.firstMinterReward);
 
-        vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(firstMinter), address(0));
+        vm.deal(collectors[2], totalReward);
 
-        assertEq(protocolRewards.balanceOf(firstMinter), settings.firstMinterReward);
+        vm.prank(collectors[2]);
+        target.mintWithRewards{value: totalReward}(fixedPriceMinter, tokenId, quantity, abi.encode(collectors[2]), address(0));
 
-        address collector2 = makeAddr("collector2");
-        vm.deal(collector2, totalReward);
-
-        vm.prank(collector2);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(collector2), address(0));
-
-        assertEq(protocolRewards.balanceOf(firstMinter), settings.firstMinterReward * 2);
+        assertEq(protocolRewards.balanceOf(collectors[0]), settings.firstMinterReward * 2);
     }
 
     function test_AssumeFirstMinterRecipientIsAddress(uint256 quantity) public {
@@ -1113,16 +1156,19 @@ contract ZoraCreator1155Test is Test {
         uint256 totalReward = target.computeTotalReward(quantity);
         vm.deal(collector, totalReward);
 
-        uint256 rewardRecipient = 1234;
+        uint256 mintRecipient = 1234;
+
+        address rewardRecipient = makeAddr("rewardRecipient");
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(rewardRecipient), address(0));
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(mintRecipient), rewardRecipient);
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(address(uint160(rewardRecipient))), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
+        assertEq(protocolRewards.balanceOf(address(uint160(mintRecipient))), 0);
+        assertEq(protocolRewards.balanceOf(rewardRecipient), settings.mintReferralReward);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {

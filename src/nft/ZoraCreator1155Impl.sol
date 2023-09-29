@@ -286,9 +286,6 @@ contract ZoraCreator1155Impl is
 
         _addPermission(tokenId, user, permission);
 
-        // Sender is firstMinter here.
-        firstMinter[tokenId] = msg.sender;
-
         if (bytes(newURI).length > 0) {
             emit URI(newURI, tokenId);
         }
@@ -410,7 +407,7 @@ contract ZoraCreator1155Impl is
             getCreatorRewardRecipient(),
             createReferrals[tokenId],
             address(0),
-            firstMinter[tokenId]
+            firstMinters[tokenId]
         );
 
         // Execute commands returned from minter
@@ -449,19 +446,6 @@ contract ZoraCreator1155Impl is
         _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
 
         emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
-    }
-
-    /// @dev Get and/or set the first minter a token
-    function _setFirstMinter(uint256 tokenId, address minter) internal returns (address) {
-        // If this is the first mint for the token:
-        if (firstMinters[tokenId] == address(0)) {
-            // Store the address to lookup for future mints
-            firstMinters[tokenId] = minter;
-
-            return rewardRecipient;
-        }
-
-        return firstMinters[tokenId];
     }
 
     function mintFee() external pure returns (uint256) {
@@ -803,7 +787,7 @@ contract ZoraCreator1155Impl is
 
         delegatedTokenId[premintConfig.uid] = newTokenId;
 
-        firstMinter[newTokenId] = sender;
+        firstMinters[newTokenId] = sender;
 
         // invoke setup actions for new token, to save contract size, first get them from an external lib
         bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, creator, premintConfig.tokenConfig);

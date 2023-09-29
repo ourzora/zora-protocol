@@ -17,19 +17,8 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Node.js
-        uses: actions/setup-node@v3
-        with:
-          node-version: 18
-          cache: "yarn"
-
-      - name: Install project dependencies
-        run: yarn --production
-
-      - name: Install Foundry
-        uses: foundry-rs/foundry-toolchain@v1
-        with:
-          version: nightly
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
 
       - name: Run Forge coverage
         run: yarn run coverage
