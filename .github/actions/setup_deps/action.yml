@@ -11,7 +11,7 @@ runs:
 
     - name: Install project dependencies
       shell: bash
-      run: yarn --production
+      run: yarn
 
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
