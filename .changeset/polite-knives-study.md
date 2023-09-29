@@ -4,3 +4,4 @@
 
 Premint with Delegated Minting
 Determinstic Proxy Addresses
+Premint deployed to zora and zora goerli
