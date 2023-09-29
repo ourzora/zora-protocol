@@ -7,6 +7,7 @@ import "forge-std/console2.sol";
 import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 
 contract UpgradePreminter is ZoraDeployerBase {
     function run() public returns (string memory, bytes memory upgradeCalldata, address upgradeTarget) {
@@ -16,13 +17,13 @@ contract UpgradePreminter is ZoraDeployerBase {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        address preminterImplementation = deployNewPreminterImplementation(deployment);
+        address preminterImplementation = ZoraDeployerUtils.deployNewPreminterImplementation(deployment.factoryProxy);
 
         vm.stopBroadcast();
 
         upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, preminterImplementation);
 
-        upgradeTarget = deployment.preminter;
+        upgradeTarget = deployment.preminterImpl;
 
         console2.log("Upgrade PremintExecutor target and implementatin:", upgradeTarget, preminterImplementation);
         console2.log("To upgrade, use this calldata:");

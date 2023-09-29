@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 import {Zora1155FactoryFixtures} from "../fixtures/Zora1155FactoryFixtures.sol";
 import {Zora1155PremintFixtures} from "../fixtures/Zora1155PremintFixtures.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {Zora1155PremintExecutorProxy} from "../../src/proxies/Zora1155PremintExecutorProxy.sol";
+import {Zora1155PremintExecutor} from "../../src/proxies/Zora1155PremintExecutor.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155PremintExecutor} from "../../src/delegation/ZoraCreator1155PremintExecutor.sol";
+import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
@@ -24,7 +24,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     Zora1155Factory internal factoryProxy;
     ZoraCreator1155FactoryImpl factoryAtProxy;
     uint256 internal mintFeeAmount = 0.000777 ether;
-    ZoraCreator1155PremintExecutor preminterAtProxy;
+    ZoraCreator1155PremintExecutorImpl preminterAtProxy;
 
     function setUp() external {
         zora = makeAddr("zora");
@@ -38,13 +38,13 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         vm.stopPrank();
 
         // create preminter implementation
-        ZoraCreator1155PremintExecutor preminterImplementation = new ZoraCreator1155PremintExecutor(ZoraCreator1155FactoryImpl(address(factoryProxy)));
+        ZoraCreator1155PremintExecutorImpl preminterImplementation = new ZoraCreator1155PremintExecutorImpl(ZoraCreator1155FactoryImpl(address(factoryProxy)));
 
         // build the proxy
-        Zora1155PremintExecutorProxy proxy = new Zora1155PremintExecutorProxy(address(preminterImplementation), "");
+        Zora1155PremintExecutor proxy = new Zora1155PremintExecutor(address(preminterImplementation), "");
 
         // access the executor implementation via the proxy, and initialize the admin
-        preminterAtProxy = ZoraCreator1155PremintExecutor(address(proxy));
+        preminterAtProxy = ZoraCreator1155PremintExecutorImpl(address(proxy));
         preminterAtProxy.initialize(owner);
     }
 
@@ -82,7 +82,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
     function test_onlyOwnerCanUpgrade() external {
         // try to upgrade as non-owner
-        ZoraCreator1155PremintExecutor newImplementation = new ZoraCreator1155PremintExecutor(factoryAtProxy);
+        ZoraCreator1155PremintExecutorImpl newImplementation = new ZoraCreator1155PremintExecutorImpl(factoryAtProxy);
 
         vm.expectRevert(IOwnable2StepUpgradeable.ONLY_OWNER.selector);
         vm.prank(creator);
@@ -97,13 +97,13 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     function test_canOnlyBeUpgradedToContractWithSameName() external {
         // upgrade to bad contract with has wrong name (this contract has mismatched name)
         vm.expectRevert(
-            abi.encodeWithSelector(ZoraCreator1155PremintExecutor.UpgradeToMismatchedContractName.selector, preminterAtProxy.contractName(), contractName())
+            abi.encodeWithSelector(ZoraCreator1155PremintExecutorImpl.UpgradeToMismatchedContractName.selector, preminterAtProxy.contractName(), contractName())
         );
         vm.prank(owner);
         preminterAtProxy.upgradeTo(address(this));
 
         // upgrade to good contract which has correct name - it shouldn't revert
-        ZoraCreator1155PremintExecutor newImplementation = new ZoraCreator1155PremintExecutor(ZoraCreator1155FactoryImpl(address(factoryProxy)));
+        ZoraCreator1155PremintExecutorImpl newImplementation = new ZoraCreator1155PremintExecutorImpl(ZoraCreator1155FactoryImpl(address(factoryProxy)));
 
         vm.prank(owner);
         preminterAtProxy.upgradeTo(address(newImplementation));

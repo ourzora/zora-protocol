@@ -12,9 +12,9 @@ Group New premint token on new contract
   
   Creator -> CreateUI: setup NEW contract name + image
   activate CreateUI
-  CreateUI -> PremintContract: get determnistic collection address\nfor contract creation params
+  CreateUI -> PremintContract: get deterministic collection address\nfor contract creation params
   activate PremintContract
-  PremintContract --> CreateUI: determinstic collection address
+  PremintContract --> CreateUI: deterministic collection address
   deactivate CreateUI
   deactivate PremintContract
 
@@ -22,32 +22,26 @@ end
 
 Group New premint token on existing premint contract
 
-  Creator -> CreateUI: load page to create new token for\npremint at determinstic\ncollection address 
-  activate CreateUI
-  CreateUI -> PremintAPI: load collection creation params\nby determinstic address
-  activate PremintAPI
-
-  Group Premint exists
-    PremintAPI --> CreateUI: collection creation params\n(from premint)
-    deactivate CreateUI
-    deactivate PremintAPI
-  end
+  Creator -> CreatePage: load page by deterministic collection address 
+  CreatePage -> SignatureAPI: load collection creation params
+  SignatureAPI -> SignatureDB: fetch collection creation params\nby hash
+  SignatureAPI --> CreatePage: contract creation params
 
 end
 
-CreateUI -> PremintAPI: get next uid for\ncollection address
-activate CreateUI
-activate PremintAPI
-PremintAPI --> CreateUI: next uid for collection
-
-Creator -> CreateUI: configure new token parameters
-Creator -> CreateUI: Submit
-CreateUI -> Creator: request Premint EIP-712 signature containing:\n token creation params, token uid, version
-Creator -> Wallet: sign message
-Wallet -> CreateUI: Signed message by creator of\ntoken creation params, token uid, version
-CreateUI -> PremintAPI: validate and store signature
-PremintAPI -> PremintContract: validate signature
-PremintContract --> PremintAPI: validation results (true/false & recovered signer)
+Creator -> CreatePage: setup new token
+CreatePage -> PremintContract: get deterministic collection address
+PremintContract --> CreatePage: deterministic collection address
+CreatePage -> SignatureAPI: get new uid for collection address
+SignatureAPI -> SignatureDB: get next token uid\nscoped to collection address
+SignatureDB --> SignatureAPI: next token uid
+SignatureAPI --> CreatePage: next token uid
+Creator -> CreatePage: Submit new token creation params
+CreatePage -> Creator: request signature of\n contract + token creation params + token uid 
+deactivate CreatePage
+Creator -> SignatureAPI: Submit signature + contract + token params + token uid
+SignatureAPI -> PremintContract: validate signature
+PremintContract --> SignatureAPI: validation results (true/false & recovered signer)
 
 Group Signature is valid
   PremintAPI -> PremintAPI: store premint and signature

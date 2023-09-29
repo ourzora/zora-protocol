@@ -9,7 +9,9 @@ type ContractNames =
   | "ZoraCreatorMerkleMinterStrategy"
   | "ZoraCreatorRedeemMinterFactory"
   | "ZoraCreatorRedeemMinterStrategy"
-  | "ZoraCreator1155PremintExecutor";
+  | "ZoraCreator1155PremintExecutor"
+  | "DeterministicProxyDeployer"
+  | "IImmutableCreate2Factory";
 
 type Address = `0x${string}`;
 
@@ -21,6 +23,8 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
   "ZoraCreator1155PremintExecutor",
+  "DeterministicProxyDeployer",
+  "IImmutableCreate2Factory",
 ];
 
 type Addresses = {
@@ -86,7 +90,12 @@ const getAddresses = () => {
       "ZoraCreator1155PremintExecutor",
       chainId,
       jsonAddress.PREMINTER
-    );
+    ),
+      addAddress(
+        "IImmutableCreate2Factory",
+        chainId,
+        "0x0000000000FFe8B47B3e2130213B802212439497"
+      );
   }
 
   return addresses;

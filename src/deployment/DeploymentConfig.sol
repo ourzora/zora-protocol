@@ -32,8 +32,12 @@ struct Deployment {
     address factoryImpl;
     /// @notice Factory proxy contract that creates zora drops style NFT contracts
     address factoryProxy;
-    /// @notice Preminter contract address
-    address preminter;
+    /// @notice Preminter proxy contract address
+    address preminterImpl;
+    /// @notice Preminter implementation contract address
+    address preminterProxy;
+    /// @notice Upgrade gate
+    address upgradeGate;
 }
 
 abstract contract DeploymentConfig is Script {
@@ -58,7 +62,9 @@ abstract contract DeploymentConfig is Script {
     string constant CONTRACT_1155_IMPL_VERSION = "CONTRACT_1155_IMPL_VERSION";
     string constant FACTORY_IMPL = "FACTORY_IMPL";
     string constant FACTORY_PROXY = "FACTORY_PROXY";
-    string constant PREMINTER = "PREMINTER";
+    string constant PREMINTER_PROXY = "PREMINTER_PROXY";
+    string constant PREMINTER_IMPL = "PREMINTER_IMPL";
+    string constant UPGRADE_GATE = "UPGRADE_GATE";
 
     /// @notice Return a prefixed key for reading with a ".".
     /// @param key key to prefix
@@ -97,7 +103,9 @@ abstract contract DeploymentConfig is Script {
         deployment.contract1155ImplVersion = json.readString(getKeyPrefix(CONTRACT_1155_IMPL_VERSION));
         deployment.factoryImpl = readAddressOrDefaultToZero(json, FACTORY_IMPL);
         deployment.factoryProxy = readAddressOrDefaultToZero(json, FACTORY_PROXY);
-        deployment.preminter = readAddressOrDefaultToZero(json, PREMINTER);
+        deployment.preminterImpl = readAddressOrDefaultToZero(json, PREMINTER_IMPL);
+        deployment.preminterProxy = readAddressOrDefaultToZero(json, PREMINTER_PROXY);
+        deployment.upgradeGate = readAddressOrDefaultToZero(json, UPGRADE_GATE);
     }
 }
 

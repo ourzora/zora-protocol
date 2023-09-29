@@ -18,7 +18,7 @@ import {PremintConfig, ContractCreationConfig, TokenCreationConfig, ZoraCreator1
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
 /// Mints the first x tokens to the executor of the transaction.
 /// @author @oveddan
-contract ZoraCreator1155PremintExecutor is Ownable2StepUpgradeable, UUPSUpgradeable, IHasContractName, IZoraCreator1155Errors {
+contract ZoraCreator1155PremintExecutorImpl is Ownable2StepUpgradeable, UUPSUpgradeable, IHasContractName, IZoraCreator1155Errors {
     IZoraCreator1155Factory public immutable zora1155Factory;
 
     /// @notice copied from SharedBaseConstants
