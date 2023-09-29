@@ -41,7 +41,7 @@ library ZoraDeployerUtils {
         factoryImplAddress = address(factoryImpl);
     }
 
-    function deployMinters() returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {
+    function deployMinters() internal returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {
         fixedPriceMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
             bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
             type(ZoraCreatorFixedPriceSaleStrategy).creationCode
@@ -71,12 +71,12 @@ library ZoraDeployerUtils {
         // create preminter implementation
         bytes memory creationCode = abi.encodePacked(type(ZoraCreator1155PremintExecutorImpl).creationCode, abi.encode(factoryProxyAddress));
 
-        ZoraCreator1155PremintExecutorImpl preminterImplementation = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+        address preminterImplementation = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
             bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e),
             creationCode
         );
 
-        return address(preminterImplementation);
+        return preminterImplementation;
     }
 
     function deterministicFactoryDeployerAddress() internal view returns (address) {
