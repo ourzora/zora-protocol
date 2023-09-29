@@ -1,5 +1,12 @@
 # @zoralabs/zora-1155-contracts
 
+## 1.6.0-gasless.2
+
+### Patch Changes
+
+- 80092cb: Version bump to test
+- 3dc2146: test version bump
+
 ## 1.6.0-gasless.1
 
 ### Patch Changes
