@@ -286,6 +286,9 @@ contract ZoraCreator1155Impl is
 
         _addPermission(tokenId, user, permission);
 
+        // Sender is firstMinter here.
+        firstMinter[tokenId] = msg.sender;
+
         if (bytes(newURI).length > 0) {
             emit URI(newURI, tokenId);
         }
@@ -371,13 +374,6 @@ contract ZoraCreator1155Impl is
         uint256 quantity,
         bytes memory data
     ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
-        // If this is the token's first mint:
-        if (firstMinters[tokenId] == address(0)) {
-            // Store the recipient address as the first minter
-            // Note: If the recipient is address(0) the tx will revert in the `_mint` call below
-            firstMinters[tokenId] = recipient;
-        }
-
         // Mint the specified tokens
         _mint(recipient, tokenId, quantity, data);
     }
@@ -407,9 +403,6 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
-        // Get the token's first minter
-        address firstMinter = _handleFirstMinter(tokenId, minterArguments);
-
         // Get value sent and handle mint fee
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
             msg.value,
@@ -417,7 +410,7 @@ contract ZoraCreator1155Impl is
             getCreatorRewardRecipient(),
             createReferrals[tokenId],
             address(0),
-            firstMinter
+            firstMinter[tokenId]
         );
 
         // Execute commands returned from minter
@@ -442,9 +435,6 @@ contract ZoraCreator1155Impl is
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
-        // Get the token's first minter
-        address firstMinter = _handleFirstMinter(tokenId, minterArguments);
-
         // Get value sent and handle mint rewards
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
             msg.value,
@@ -452,7 +442,7 @@ contract ZoraCreator1155Impl is
             getCreatorRewardRecipient(),
             createReferrals[tokenId],
             mintReferral,
-            firstMinter
+            firstMinters[tokenId]
         );
 
         // Execute commands returned from minter
@@ -462,15 +452,11 @@ contract ZoraCreator1155Impl is
     }
 
     /// @dev Get and/or set the first minter a token
-    function _handleFirstMinter(uint256 tokenId, bytes calldata data) internal returns (address) {
+    function _setFirstMinter(uint256 tokenId, address minter) internal returns (address) {
         // If this is the first mint for the token:
         if (firstMinters[tokenId] == address(0)) {
-            // Decode the address of the reward recipient
-            // Assume the first argument is an address
-            address rewardRecipient = abi.decode(data, (address));
-
             // Store the address to lookup for future mints
-            firstMinters[tokenId] = rewardRecipient;
+            firstMinters[tokenId] = minter;
 
             return rewardRecipient;
         }
@@ -792,7 +778,7 @@ contract ZoraCreator1155Impl is
     /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
     /// @param premintConfig configuration of token to be created
     /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
-    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) public nonReentrant returns (uint256 newTokenId) {
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) public nonReentrant returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
         if (delegatedTokenId[premintConfig.uid] != 0) {
             // return its token id
@@ -816,6 +802,8 @@ contract ZoraCreator1155Impl is
         newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
         delegatedTokenId[premintConfig.uid] = newTokenId;
+
+        firstMinter[newTokenId] = sender;
 
         // invoke setup actions for new token, to save contract size, first get them from an external lib
         bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, creator, premintConfig.tokenConfig);

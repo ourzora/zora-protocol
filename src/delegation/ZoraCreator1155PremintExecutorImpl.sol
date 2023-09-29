@@ -70,7 +70,7 @@ contract ZoraCreator1155PremintExecutorImpl is Ownable2StepUpgradeable, UUPSUpgr
         // pass the signature and the premint config to the token contract to create the token.
         // The token contract will verify the signature and that the signer has permission to create a new token.
         // and then create and setup the token using the given token config.
-        newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature);
+        newTokenId = tokenContract.delegateSetupNewToken(premintConfig, signature, msg.sender);
 
         // if the executor would also like to mint:
         if (quantityToMint != 0) {
