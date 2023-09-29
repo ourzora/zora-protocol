@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 1.6.1
+
+### Patch Changes
+
+- b83e1b6: Add first minter payouts as chain sponsor
+
 ## 1.6.0
 
 ### Minor Changes
@@ -7,6 +13,7 @@
 - 399b8e6: Adds first minter rewards to zora 1155 contracts.
 - 399b8e6: Added deterministic contract creation from the Zora1155 factory, Preminter, and Upgrade Gate
 - 399b8e6: Added the PremintExecutor contract, and updated erc1155 to support delegated minting
+
 * Add first minter rewards
 * [Separate upgrade gate into new contract](https://github.com/ourzora/zora-1155-contracts/pull/204)
 
