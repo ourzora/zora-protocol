@@ -12,6 +12,8 @@ import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
 
 contract DeploymentTestingUtils is Script {
     function signAndExecutePremint(address premintExecutorProxyAddress) internal {
+        console2.log("preminter proxy", premintExecutorProxyAddress);
+
         (address creator, uint256 creatorPrivateKey) = makeAddrAndKey("creator");
         ZoraCreator1155PremintExecutorImpl preminterAtProxy = ZoraCreator1155PremintExecutorImpl(premintExecutorProxyAddress);
 

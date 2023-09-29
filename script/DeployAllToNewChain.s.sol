@@ -34,22 +34,29 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
 
         vm.startBroadcast(deployer);
 
-        (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
+        // (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
 
-        console.log("deploy upgrade gate");
+        // console.log("deploy upgrade gate");
 
-        address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
+        // address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
 
-        console.log("impl contracts");
+        // console.log("impl contracts");
 
-        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
-            upgradeGateAddress,
-            chainConfig.mintFeeRecipient,
-            chainConfig.protocolRewards,
-            IMinter1155(merkleMinter),
-            IMinter1155(redeemMinterFactory),
-            IMinter1155(fixedPriceMinter)
-        );
+        // (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
+        //     upgradeGateAddress,
+        //     chainConfig.mintFeeRecipient,
+        //     chainConfig.protocolRewards,
+        //     IMinter1155(merkleMinter),
+        //     IMinter1155(redeemMinterFactory),
+        //     IMinter1155(fixedPriceMinter)
+        // );
+
+        // deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
+        // deployment.merkleMintSaleStrategy = address(merkleMinter);
+        // deployment.redeemMinterFactory = address(redeemMinterFactory);
+        // deployment.upgradeGate = upgradeGateAddress;
+        // deployment.factoryImpl = factoryImplAddress;
+        // deployment.contract1155Impl = contract1155ImplAddress;
 
         console.log("deploy factory proxy");
 
@@ -59,6 +66,22 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
             owner: chainConfig.factoryOwner,
             chain: chain
         });
+
+        console2.log("factory proxy address:", factoryProxyAddress);
+
+        require(
+            keccak256(abi.encodePacked(ZoraCreator1155FactoryImpl(factoryProxyAddress).contractName())) ==
+                keccak256(abi.encodePacked("ZORA 1155 Contract Factory"))
+        );
+
+        console2.log("implementation", ZoraCreator1155FactoryImpl(factoryProxyAddress).implementation());
+
+        address hi = makeAddr("hi");
+        address adsdfasd = makeAddr("admin");
+        console2.log(
+            "get da contract address",
+            ZoraCreator1155FactoryImpl(factoryProxyAddress).deterministicContractAddress(hi, "asdfasf", "asdfasdf", adsdfasd)
+        );
 
         console2.log("create test contract for verification");
 
@@ -70,19 +93,17 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
 
         address preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(address(factoryProxyAddress));
 
+        console2.log("preminter impl", preminterImpl);
+
         address preminterProxyAddress = deployDeterministicProxy({
             proxyName: "premintExecutorProxy",
-            implementation: deployment.preminterImpl,
+            implementation: preminterImpl,
             owner: chainConfig.factoryOwner,
             chain: chain
         });
 
-        deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
-        deployment.merkleMintSaleStrategy = address(merkleMinter);
-        deployment.redeemMinterFactory = address(redeemMinterFactory);
-        deployment.upgradeGate = upgradeGateAddress;
-        deployment.factoryImpl = factoryImplAddress;
-        deployment.contract1155Impl = contract1155ImplAddress;
+        console2.log("preminter proxy", preminterProxyAddress);
+
         deployment.factoryProxy = factoryProxyAddress;
         deployment.preminterImpl = preminterImpl;
         deployment.preminterProxy = preminterProxyAddress;
