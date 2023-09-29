@@ -178,7 +178,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         // get the created contract, and make sure that tokens have been minted to the address
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), 0);
 
-        assertEq(ZoraCreator1155Impl(contractAddress).firstMinters(tokenId), address(0));
+        assertEq(ZoraCreator1155Impl(contractAddress).firstMinters(tokenId), address(premintExecutor));
     }
 
     event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);

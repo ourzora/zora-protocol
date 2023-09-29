@@ -778,8 +778,8 @@ contract ZoraCreator1155Test is Test {
 
         (, , address fundsRecipient, , , ) = target.config();
 
-        assertEq(protocolRewards.balanceOf(recipient), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward);
+        assertEq(protocolRewards.balanceOf(recipient), 0);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward);
     }
