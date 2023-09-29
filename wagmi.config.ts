@@ -8,7 +8,10 @@ type ContractNames =
   | "ZoraCreatorFixedPriceSaleStrategy"
   | "ZoraCreatorMerkleMinterStrategy"
   | "ZoraCreatorRedeemMinterFactory"
-  | "ZoraCreatorRedeemMinterStrategy";
+  | "ZoraCreatorRedeemMinterStrategy"
+  | "ZoraCreator1155PremintExecutorImpl"
+  | "DeterministicProxyDeployer"
+  | "IImmutableCreate2Factory";
 
 type Address = `0x${string}`;
 
@@ -19,6 +22,9 @@ const contractFilesToInclude: ContractNames[] = [
   "ZoraCreatorMerkleMinterStrategy",
   "ZoraCreatorRedeemMinterFactory",
   "ZoraCreatorRedeemMinterStrategy",
+  "ZoraCreator1155PremintExecutorImpl",
+  "DeterministicProxyDeployer",
+  "IImmutableCreate2Factory",
 ];
 
 type Addresses = {
@@ -35,8 +41,9 @@ const getAddresses = () => {
   const addAddress = (
     contractName: ContractNames,
     chainId: number,
-    address: Address
+    address?: Address
   ) => {
+    if (!address) return;
     if (!addresses[contractName]) {
       addresses[contractName] = {};
     }
@@ -54,6 +61,7 @@ const getAddresses = () => {
       "1155_IMPL": Address;
       FACTORY_IMPL: Address;
       FACTORY_PROXY: Address;
+      PREMINTER_PROXY?: Address;
     };
 
     const chainId = parseInt(addressesFile.split(".")[0]);
@@ -78,6 +86,16 @@ const getAddresses = () => {
       chainId,
       jsonAddress.REDEEM_MINTER_FACTORY
     );
+    addAddress(
+      "ZoraCreator1155PremintExecutorImpl",
+      chainId,
+      jsonAddress.PREMINTER_PROXY
+    ),
+      addAddress(
+        "IImmutableCreate2Factory",
+        chainId,
+        "0x0000000000FFe8B47B3e2130213B802212439497"
+      );
   }
 
   return addresses;

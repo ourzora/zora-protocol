@@ -6,11 +6,14 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
+import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesControl.sol";
-import {ScriptDeploymentConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
+import {ScriptDeploymentConfig, Deployment, ChainConfig} from "../src/deployment/DeploymentConfig.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
+import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 
 /// @notice Deployment drops for base where
-abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
+abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
     using stdJson for string;
 
     /// @notice File used for demo metadata on verification test mint
@@ -27,9 +30,33 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
         vm.serializeString(deploymentJsonKey, CONTRACT_1155_IMPL_VERSION, deployment.contract1155ImplVersion);
         vm.serializeAddress(deploymentJsonKey, CONTRACT_1155_IMPL, deployment.contract1155Impl);
         vm.serializeAddress(deploymentJsonKey, FACTORY_IMPL, deployment.factoryImpl);
+        vm.serializeAddress(deploymentJsonKey, PREMINTER_PROXY, deployment.preminterImpl);
+        vm.serializeAddress(deploymentJsonKey, PREMINTER_IMPL, deployment.preminterImpl);
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
         console2.log(deploymentJson);
     }
+
+    function deployNew1155AndFactoryImpl(Deployment memory deployment, Zora1155Factory factoryProxy) internal {
+        ChainConfig memory chainConfig = getChainConfig();
+
+        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
+            factoryProxyAddress: address(factoryProxy),
+            mintFeeRecipient: chainConfig.mintFeeRecipient,
+            protocolRewards: chainConfig.protocolRewards,
+            merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
+            redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
+            fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
+        });
+
+        deployment.contract1155Impl = contract1155ImplAddress;
+        deployment.factoryImpl = factoryImplAddress;
+    }
+
+    // function deployNewPreminterProxy(Deployment memory deployment) internal {
+    //     address proxyOwner = getChainConfig().factoryOwner;
+
+    //     deployment.preminter = ZoraDeployerUtils.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
+    // }
 
     /// @notice Deploy a test contract for etherscan auto-verification
     /// @param factoryProxy Factory address to use
@@ -45,11 +72,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, Script {
             IZoraCreator1155Factory(factoryProxy).createContract(
                 "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
                 unicode"🪄",
-                ICreatorRoyaltiesControl.RoyaltyConfiguration({
-                    royaltyBPS: 0,
-                    royaltyRecipient: address(0),
-                    royaltyMintSchedule: 0
-                }),
+                ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
                 payable(admin),
                 initUpdate
             )

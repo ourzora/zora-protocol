@@ -32,8 +32,11 @@ lcov.info
 dist/
 
 .env
-.env*
+.env.*
 !.env.example
 
 package/wagmiGenerated.ts
 package/chainConfigs.ts
+
+# not currently using pnpm
+pnpm-lock.yaml

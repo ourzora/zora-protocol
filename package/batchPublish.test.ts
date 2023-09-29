@@ -16,7 +16,6 @@ import {
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyABI,
 } from "./wagmiGenerated";
-import { chainConfigs } from "./chainConfigs";
 
 const walletClient = createWalletClient({
   chain: foundry,
@@ -281,7 +280,7 @@ describe("ZoraCreator1155Preminter", () => {
         [collectorAccount]
       );
 
-      const zoraMintFee = chainConfigs[zora.id].MINT_FEE_AMOUNT;
+      const zoraMintFee = parseEther("0.0007777");
 
       const valueToSend =
         (BigInt(zoraMintFee) + createToken3Params.price) * quantityToMint;

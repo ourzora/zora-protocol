@@ -4,11 +4,13 @@ pragma solidity 0.8.17;
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
 import {IERC1155MetadataURIUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC1155MetadataURIUpgradeable.sol";
 import {IZoraCreator1155TypesV1} from "../nft/IZoraCreator1155TypesV1.sol";
+import {IZoraCreator1155Errors} from "./IZoraCreator1155Errors.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
+import {PremintConfig} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /*
 
@@ -34,7 +36,7 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 
 /// @notice Main interface for the ZoraCreator1155 contract
 /// @author @iainnash / @tbtstl
-interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
+interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
     function PERMISSION_BIT_MINTER() external returns (uint256);
@@ -59,32 +61,7 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     event ContractRendererUpdated(IRenderer1155 renderer);
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
-
-    error TokenIdMismatch(uint256 expected, uint256 actual);
-    error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
-
-    error Config_TransferHookNotSupported(address proposedAddress);
-
-    error Mint_InsolventSaleTransfer();
-    error Mint_ValueTransferFail();
-    error Mint_TokenIDMintNotAllowed();
-    error Mint_UnknownCommand();
-
-    error Burn_NotOwnerOrApproved(address operator, address user);
-
-    error NewOwnerNeedsToBeAdmin();
-
-    error Sale_CannotCallNonSalesContract(address targetContract);
-
-    error Call_TokenIdMismatch();
-    error CallFailed(bytes reason);
-    error Renderer_NotValidRendererContract();
-
-    error ETHWithdrawFailed(address recipient, uint256 amount);
-    error FundsWithdrawInsolvent(uint256 amount, uint256 contractValue);
-    error ProtocolRewardsWithdrawFailed(address caller, address recipient, uint256 amount);
-
-    error CannotMintMoreTokens(uint256 tokenId, uint256 quantity, uint256 totalMinted, uint256 maxSupply);
+    event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
 
     /// @notice Only allow minting one token id at time
     /// @dev Mint contract function that calls the underlying sales function for commands
@@ -104,6 +81,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     /// @param tokenURI URI for the token
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory tokenURI, uint256 maxSupply) external returns (uint256 tokenId);
+
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature) external returns (uint256 newTokenId);
 
     function updateTokenURI(uint256 tokenId, string memory _newURI) external;
 
@@ -128,4 +107,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IVersionedContract, IOwna
     function callRenderer(uint256 tokenId, bytes memory data) external;
 
     function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external;
+
+    function mintFee() external view returns (uint256);
 }

@@ -2,11 +2,9 @@ import { writeFile, readFile } from "fs/promises";
 import esMain from "es-main";
 import { glob } from "glob";
 
-async function copyEnvironmentRunFiles(isDeploy) {
+async function copyEnvironmentRunFiles(scriptName) {
   const latestFiles = await glob(
-    isDeploy
-      ? "broadcast/Deploy.s.sol/*/run-latest.json"
-      : "broadcast/Upgrade.s.sol/*/run-latest.json"
+    `broadcast/${scriptName}/*/run-latest.json`
   );
 
   for (const file of latestFiles) {
@@ -41,9 +39,13 @@ async function copyEnvironmentRunFiles(isDeploy) {
 
 if (esMain(import.meta)) {
   const command = process.argv[2];
-  let deploy = false;
-  if (command === "deploy") {
-    deploy = true;
+  let scriptName = 'DeployNewImplementation.s.sol';
+    
+  if (command === "upgrade"){
+    scriptName = 'Upgrade.s.sol';
+  } else if (command === 'deploy-premint') {
+    scriptName = 'DeployNewPreminterAndFactoryProxy.s.sol'
   }
-  await copyEnvironmentRunFiles(deploy);
+
+  await copyEnvironmentRunFiles(scriptName);
 }

@@ -3,18 +3,24 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
+import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
+import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {IOwnable} from "../../src/interfaces/IOwnable.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {MintFeeManager} from "../../src/fee/MintFeeManager.sol";
-
 import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
+    uint256 constant quantityToMint = 3;
+    uint256 constant tokenMaxSupply = 100;
+    uint32 constant royaltyMintSchedule = 10;
+    uint32 constant royaltyBPS = 100;
+    uint256 constant mintFee = 0.000777 ether;
+
     address collector;
     address creator;
 
@@ -38,7 +44,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
     function _setupToken(IZoraCreator1155 target, IMinter1155 fixedPrice, uint96 tokenPrice) private returns (uint256 tokenId) {
         string memory tokenURI = "ipfs://token";
-        uint256 tokenMaxSupply = 100;
 
         tokenId = target.setupNewToken(tokenURI, tokenMaxSupply);
 
@@ -65,9 +70,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // create the contract, with no toekns
         bytes[] memory initSetup = new bytes[](0);
 
-        uint32 royaltyMintSchedule = 10;
-        uint32 royaltyBPS = 100;
-
         address admin = creator;
         string memory contractURI = "ipfs://asdfasdf";
         string memory name = "Test";
@@ -91,6 +93,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     }
 
     function testTheFork(string memory chainName) private {
+        uint96 tokenPrice = 1 ether;
         console.log("testing on fork: ", chainName);
 
         // create and select the fork, which will be used for all subsequent calls
@@ -114,26 +117,17 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         IZoraCreator1155 target = _createErc1155Contract(factory);
 
         // ** 2. Setup a new token with the fixed price sales strategy and the token price **
-        uint96 tokenPrice = 1 ether;
         uint256 tokenId = _setupToken(target, fixedPrice, tokenPrice);
 
         // ** 3. Mint on that contract **
 
-        // get the mint fee from the contract
-        uint256 mintFee = MintFeeManager(address(target)).mintFee();
-
-        // make sure the mint fee amount matches the configured mint fee amount
-        assertEq(mintFee, getChainConfig().mintFeeAmount, chainName);
-
         // mint 3 tokens
-
-        uint256 quantityToMint = 3;
         uint256 valueToSend = quantityToMint * (tokenPrice + mintFee);
 
         // mint the token
         vm.deal(collector, valueToSend);
         vm.startPrank(collector);
-        target.mint{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector));
+        ZoraCreator1155Impl(address(target)).mintWithRewards{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector), address(0));
 
         assertEq(target.balanceOf(collector, tokenId), quantityToMint, chainName);
     }

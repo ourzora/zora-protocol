@@ -20,7 +20,7 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: 16
+          node-version: 18
           cache: "yarn"
 
       - name: Install project dependencies
@@ -40,9 +40,9 @@ jobs:
 
       - name: Filter files to ignore
         run: |
-         lcov --rc lcov_branch_coverage=1 \
-         --remove lcov.info \
-         --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*"
+          lcov --rc lcov_branch_coverage=1 \
+          --remove lcov.info \
+          --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*" "*Redeem*" "*deployment*"
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v2
