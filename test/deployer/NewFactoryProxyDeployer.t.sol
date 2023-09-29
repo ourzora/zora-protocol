@@ -24,7 +24,6 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
 
     function create1155FactoryImpl() internal returns (address) {
         address mintFeeRecipient = makeAddr("mintFeeRecipient");
-        address factoryOwner = makeAddr("factorOwner");
         address protocolRewards = makeAddr("protocolRewards");
 
         (address factoryImplAddress, ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
@@ -89,7 +88,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
         assertEq(factoryProxyAddress, expectedFactoryProxyAddress, "factory proxy address wrong");
     }
 
-    function signAndMakeBytes(bytes32 digest, uint256 privateKey) internal returns (bytes memory) {
+    function signAndMakeBytes(bytes32 digest, uint256 privateKey) internal pure returns (bytes memory) {
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
 
         // combine into a single bytes array

@@ -51,10 +51,10 @@ struct PremintConfig {
     bool deleted;
 }
 
-/// @title Enables a creator to signal intent to create a Zora erc1155 contract or new token on that
+/// @title Library for enables a creator to signal intent to create a Zora erc1155 contract or new token on that
 /// contract by signing a transaction but not paying gas, and have a third party/collector pay the gas
-/// by executing the transaction.  Incentivizes the third party to execute the transaction by offering
-/// a reward in the form of minted tokens.
+/// by executing the transaction.  Functions are exposed as external to allow contracts to import this lib and not increase their
+/// size.
 /// @author @oveddan
 library ZoraCreator1155Attribution {
     /* start eip712 functionality */
@@ -158,7 +158,8 @@ library ZoraCreator1155Attribution {
     }
 }
 
-// todo: make it consistent.
+/// @notice Utilitiy library to setup tokens created via premint.  Functions exposed as external to not increase contract size in calling contract.
+/// @author oveddan
 library PremintTokenSetup {
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 

@@ -17,7 +17,7 @@ contract UpgradePreminter is ZoraDeployerBase {
 
         vm.startBroadcast(deployerPrivateKey);
 
-        address preminterImplementation = ZoraDeployerUtils.deployNewPreminterImplementation(deployment.factoryProxy);
+        address preminterImplementation = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(deployment.factoryProxy);
 
         vm.stopBroadcast();
 

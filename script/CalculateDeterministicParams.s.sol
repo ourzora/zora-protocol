@@ -24,7 +24,7 @@ contract FactoryProxyDeterministicParams is ZoraDeployerBase, DeterministicDeplo
     address deployerAddress;
     // Set in step 2
     address proxyDeployerAddress;
-    
+
     function run() public {
         vm.createSelectFork("zora_goerli", 1252119);
 
@@ -32,7 +32,7 @@ contract FactoryProxyDeterministicParams is ZoraDeployerBase, DeterministicDeplo
 
         calculateForFactoryProxy();
         calculateForPremintExecutorProxy();
-        
+
         // Note: relies on proxyDeployerAddress
         calculateUpgradeGateAddress();
     }
@@ -57,10 +57,10 @@ contract FactoryProxyDeterministicParams is ZoraDeployerBase, DeterministicDeplo
         serializeAndSaveOutput(deterministicParams, "premintExecutorProxy");
     }
 
-    // @notice Since this doesn't 
+    // @notice Since this doesn't
     function calculateUpgradeGateAddress() internal {
         bytes memory creationCodeUpgradeGate = type(UpgradeGate).creationCode;
-        bytes32 salt = saltWithAddressInFirst20Bytes(deployerAddress, 10);
+        bytes32 salt = saltWithAddressInFirst20Bytes(deployerAddress, 20);
         address resultAddress = Create2.computeAddress(salt, keccak256(creationCodeUpgradeGate), proxyDeployerAddress);
 
         vm.serializeAddress("UPGRADE_GATE_JSON", "deployerAddress", deployerAddress);

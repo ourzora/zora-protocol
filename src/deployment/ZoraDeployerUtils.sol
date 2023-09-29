@@ -11,7 +11,11 @@ import {ProxyShim} from "../utils/ProxyShim.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "../delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IImmutableCreate2Factory} from "./IImmutableCreate2Factory.sol";
 import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
+import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {ZoraCreatorMerkleMinterStrategy} from "../minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+import {ZoraCreatorRedeemMinterFactory} from "../minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
 library ZoraDeployerUtils {
     IImmutableCreate2Factory constant IMMUTABLE_CREATE2_FACTORY = IImmutableCreate2Factory(0x0000000000FFe8B47B3e2130213B802212439497);
@@ -38,20 +42,42 @@ library ZoraDeployerUtils {
         factoryImplAddress = address(factoryImpl);
     }
 
+    function deployMinters() internal returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {
+        fixedPriceMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
+            type(ZoraCreatorFixedPriceSaleStrategy).creationCode
+        );
+
+        merkleMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
+            type(ZoraCreatorMerkleMinterStrategy).creationCode
+        );
+
+        redeemMinterFactory = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
+            type(ZoraCreatorRedeemMinterFactory).creationCode
+        );
+    }
+
     // we dont care what this salt is, as long as it's the same for all deployments and it has first 20 bytes of 0
     // so that anyone can deploy it
-    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
+    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ed18e35000dbaba0f);
 
     function createDeterministicFactoryProxyDeployer() internal returns (DeterministicProxyDeployer) {
         return
             DeterministicProxyDeployer(IMMUTABLE_CREATE2_FACTORY.safeCreate2(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(DeterministicProxyDeployer).creationCode));
     }
 
-    function deployNewPreminterImplementation(address factoryProxyAddress) internal returns (address) {
+    function deployNewPreminterImplementationDeterminstic(address factoryProxyAddress) internal returns (address) {
         // create preminter implementation
-        ZoraCreator1155PremintExecutorImpl preminterImplementation = new ZoraCreator1155PremintExecutorImpl(ZoraCreator1155FactoryImpl(factoryProxyAddress));
+        bytes memory creationCode = abi.encodePacked(type(ZoraCreator1155PremintExecutorImpl).creationCode, abi.encode(factoryProxyAddress));
 
-        return address(preminterImplementation);
+        address preminterImplementation = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e),
+            creationCode
+        );
+
+        return preminterImplementation;
     }
 
     function deterministicFactoryDeployerAddress() internal view returns (address) {
@@ -74,4 +100,28 @@ library ZoraDeployerUtils {
                 proxyDeployerAddress
             );
     }
+
+    /// @notice Deploy a test contract for etherscan auto-verification
+    /// @param factoryProxy Factory address to use
+    /// @param admin Admin owner address to use
+    function deployTestContractForVerification(address factoryProxy, address admin) internal returns (address) {
+        bytes[] memory initUpdate = new bytes[](1);
+        initUpdate[0] = abi.encodeWithSelector(
+            ZoraCreator1155Impl.setupNewToken.selector,
+            "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi",
+            100
+        );
+        return
+            address(
+                IZoraCreator1155Factory(factoryProxy).createContract(
+                    "ipfs://bafybeicgolwqpozsc7iwgytavete56a2nnytzix2nb2rxefdvbtwwtnnoe/metadata",
+                    unicode"🪄",
+                    ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 0, royaltyRecipient: address(0), royaltyMintSchedule: 0}),
+                    payable(admin),
+                    initUpdate
+                )
+            );
+    }
+
+    function testPremintSigningAndExecution(address preminterProxyAddress, address creatorAddress, uint256 creatorPrivateKey) internal {}
 }
