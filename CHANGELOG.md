@@ -5,14 +5,10 @@
 ### Minor Changes
 
 - 399b8e6: Adds first minter rewards to zora 1155 contracts.
-- 399b8e6: Added deterministic contract creation from the Zora1155 factory
+- 399b8e6: Added deterministic contract creation from the Zora1155 factory, Preminter, and Upgrade Gate
 - 399b8e6: Added the PremintExecutor contract, and updated erc1155 to support delegated minting
-
-### Patch Changes
-
-- 399b8e6: Add back `mintFee` getter
-- 399b8e6: Move delegated token creation state to its own contract
-- 399b8e6: Deprecate ZoraCreatorRedeemMinterStrategy at v1.0.1, a newer version will soon be released
+* Add first minter rewards
+* [Separate upgrade gate into new contract](https://github.com/ourzora/zora-1155-contracts/pull/204)
 
 ## 1.5.0
 
