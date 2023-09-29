@@ -44,24 +44,24 @@ library ZoraDeployerUtils {
 
     function deployMinters() internal returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {
         fixedPriceMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorFixedPriceSaleStrategy).creationCode
         );
 
         merkleMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorMerkleMinterStrategy).creationCode
         );
 
         redeemMinterFactory = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            bytes32(0x0000000000000000000000000000000000000000000000000000000000000000),
+            bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorRedeemMinterFactory).creationCode
         );
     }
 
     // we dont care what this salt is, as long as it's the same for all deployments and it has first 20 bytes of 0
     // so that anyone can deploy it
-    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
+    bytes32 constant FACTORY_DEPLOYER_DEPLOYMENT_SALT = bytes32(0x0000000000000000000000000000000000000000668d7f9ed18e35000dbaba0f);
 
     function createDeterministicFactoryProxyDeployer() internal returns (DeterministicProxyDeployer) {
         return

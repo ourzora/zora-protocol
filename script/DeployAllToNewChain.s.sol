@@ -36,7 +36,11 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
 
         (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
 
+        console.log("deploy upgrade gate");
+
         address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
+
+        console.log("impl contracts");
 
         (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
             upgradeGateAddress,
@@ -46,6 +50,8 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
             IMinter1155(redeemMinterFactory),
             IMinter1155(fixedPriceMinter)
         );
+
+        console.log("deploy factory proxy");
 
         address factoryProxyAddress = deployDeterministicProxy({
             proxyName: "factoryProxy",
@@ -59,6 +65,8 @@ contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, D
         ZoraDeployerUtils.deployTestContractForVerification(factoryProxyAddress, makeAddr("admin"));
 
         console2.log("Deployed new contract for verification purposes");
+
+        console2.log("deploy preminter and proxy");
 
         address preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(address(factoryProxyAddress));
 

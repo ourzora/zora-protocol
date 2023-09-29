@@ -39,7 +39,7 @@ async function copyEnvironmentRunFiles(scriptName) {
 
 if (esMain(import.meta)) {
   const command = process.argv[2];
-  let scriptName = 'DeployNewImplementation.s.sol';
+  let scriptName = 'DeployAllToNewChain.s.sol';
     
   if (command === "upgrade"){
     scriptName = 'Upgrade.s.sol';
