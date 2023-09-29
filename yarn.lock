@@ -750,10 +750,10 @@
   resolved "https://registry.yarnpkg.com/@zoralabs/openzeppelin-contracts-upgradeable/-/openzeppelin-contracts-upgradeable-4.8.4.tgz#130b69cd5ff70b1f67da11fe53fe8b2323464b84"
   integrity sha512-5vhL88tz00Gv2+NUhLdYBRqb9RRekfyQAodXTQxJU2LYxxy6jr1mPycTZempQ1kmw5wIwFbSIoYzpaxOx6UK6Q==
 
-"@zoralabs/protocol-rewards@1.1.2":
-  version "1.1.2"
-  resolved "https://registry.yarnpkg.com/@zoralabs/protocol-rewards/-/protocol-rewards-1.1.2.tgz#bc151601b44a74c508f5bf376a7eac355a3a468c"
-  integrity sha512-VLNaGth3AWNi8ehJM2eoIdWzzJIKSYqxQmlFpsjtOgBi2YnKJTJQPxrCk4Hlh/T3BBEGa1auSkGk1ynOCW0dUg==
+"@zoralabs/protocol-rewards@1.2.1":
+  version "1.2.1"
+  resolved "https://registry.yarnpkg.com/@zoralabs/protocol-rewards/-/protocol-rewards-1.2.1.tgz#fe7f011748b036a1a3c8f3b43811307794d1c89a"
+  integrity sha512-Jf2aIHhyAsybCCv1byV5uP/YiwA/ZB3zTywDO6d15796Bf58zzC3D1ptKuh+z1Nba3dU2Hzqz0K7EEQOjoq+1A==
 
 abitype@0.8.7:
   version "0.8.7"
