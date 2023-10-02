@@ -23,30 +23,16 @@ import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeploy
 /// @dev Deploys implementation contracts for 1155 contracts.
 /// @notice Run after deploying the minters
 /// @notice This
-contract DeployNewImplementations is ZoraDeployerBase, DeterministicDeployerScript {
+contract DeployPreminterDeterminstic is ZoraDeployerBase, DeterministicDeployerScript {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
         ChainConfig memory chainConfig = getChainConfig();
 
-        deployment.upgradeGate = determinsticUpgradeGateAddress();
-
         vm.startBroadcast();
-
-        (address factoryImplDeployment, address contract1155ImplDeployment) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
-            address(deployment.upgradeGate),
-            chainConfig.mintFeeRecipient,
-            chainConfig.protocolRewards,
-            IMinter1155(deployment.merkleMintSaleStrategy),
-            IMinter1155(deployment.redeemMinterFactory),
-            IMinter1155(deployment.fixedPriceSaleStrategy)
-        );
 
         address factoryProxyAddress = readDeterministicParams("factoryProxy").deterministicProxyAddress;
 
         deployment.preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(factoryProxyAddress);
-
-        deployment.factoryImpl = factoryImplDeployment;
-        deployment.contract1155Impl = contract1155ImplDeployment;
 
         return getDeploymentJSON(deployment);
     }
