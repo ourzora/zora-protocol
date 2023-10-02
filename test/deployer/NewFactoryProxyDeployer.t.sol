@@ -26,7 +26,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
         address mintFeeRecipient = makeAddr("mintFeeRecipient");
         address protocolRewards = makeAddr("protocolRewards");
 
-        (address factoryImplAddress, ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
+        (address factoryImplAddress, ) = ZoraDeployerUtils.deployNew1155AndFactoryImplDeterminstic({
             factoryProxyAddress: address(0),
             mintFeeRecipient: mintFeeRecipient,
             protocolRewards: protocolRewards,

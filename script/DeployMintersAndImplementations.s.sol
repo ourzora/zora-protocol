@@ -38,11 +38,11 @@ contract DeployMintersAndImplementations is ZoraDeployerBase, DeterministicDeplo
 
         console.log("deploy upgrade gate");
 
-        address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
+        address upgradeGateAddress = deployUpgradeGate({chain: chain, upgradeGateOwner: chainConfig.factoryOwner});
 
         console.log("impl contracts");
 
-        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
+        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImplDeterminstic(
             upgradeGateAddress,
             chainConfig.mintFeeRecipient,
             chainConfig.protocolRewards,

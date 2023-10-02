@@ -20,7 +20,9 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 library ZoraDeployerUtils {
     IImmutableCreate2Factory constant IMMUTABLE_CREATE2_FACTORY = IImmutableCreate2Factory(0x0000000000FFe8B47B3e2130213B802212439497);
 
-    function deployNew1155AndFactoryImpl(
+    bytes32 constant IMMUTABLE_CREATE_2_FRIENDLY_SALT = bytes32(0x0000000000000000000000000000000000000000000000000000000000000001);
+
+    function deployNew1155AndFactoryImplDeterminstic(
         address factoryProxyAddress,
         address mintFeeRecipient,
         address protocolRewards,
@@ -28,18 +30,18 @@ library ZoraDeployerUtils {
         IMinter1155 redeemMinterFactory,
         IMinter1155 fixedPriceMinter
     ) internal returns (address factoryImplAddress, address contract1155ImplAddress) {
-        ZoraCreator1155Impl creatorImpl = new ZoraCreator1155Impl(mintFeeRecipient, factoryProxyAddress, protocolRewards);
+        contract1155ImplAddress = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            IMMUTABLE_CREATE_2_FRIENDLY_SALT,
+            abi.encodePacked(type(ZoraCreator1155Impl).creationCode, abi.encode(mintFeeRecipient, factoryProxyAddress, protocolRewards))
+        );
 
-        contract1155ImplAddress = address(creatorImpl);
-
-        ZoraCreator1155FactoryImpl factoryImpl = new ZoraCreator1155FactoryImpl({
-            _zora1155Impl: creatorImpl,
-            _merkleMinter: merkleMinter,
-            _redeemMinterFactory: redeemMinterFactory,
-            _fixedPriceMinter: fixedPriceMinter
-        });
-
-        factoryImplAddress = address(factoryImpl);
+        factoryImplAddress = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+            IMMUTABLE_CREATE_2_FRIENDLY_SALT,
+            abi.encodePacked(
+                type(ZoraCreator1155FactoryImpl).creationCode,
+                abi.encode(contract1155ImplAddress, merkleMinter, redeemMinterFactory, fixedPriceMinter)
+            )
+        );
     }
 
     function deployMinters() internal returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {

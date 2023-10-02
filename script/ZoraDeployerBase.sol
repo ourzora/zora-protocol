@@ -39,7 +39,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
     function deployNew1155AndFactoryImpl(Deployment memory deployment, Zora1155Factory factoryProxy) internal {
         ChainConfig memory chainConfig = getChainConfig();
 
-        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
+        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImplDeterminstic({
             factoryProxyAddress: address(factoryProxy),
             mintFeeRecipient: chainConfig.mintFeeRecipient,
             protocolRewards: chainConfig.protocolRewards,
@@ -50,6 +50,10 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
 
         deployment.contract1155Impl = contract1155ImplAddress;
         deployment.factoryImpl = factoryImplAddress;
+    }
+
+    function determinsticUpgradeGateAddress() internal view returns (address) {
+        return vm.parseJsonAddress(vm.readFile("./deterministicConfig/upgradeGate/params.json"), ".upgradeGateAddress");
     }
 
     // function deployNewPreminterProxy(Deployment memory deployment) internal {
