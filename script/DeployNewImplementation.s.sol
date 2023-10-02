@@ -17,7 +17,7 @@ import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
-import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
+import {Create2Deployment, ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 
 /// @dev Deploys implementation contracts for 1155 contracts.
 /// @notice Run after deploying the minters
@@ -35,7 +35,7 @@ contract DeployNewImplementations is ZoraDeployerBase {
 
         vm.startBroadcast();
 
-        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImplDeterminstic(
+        (address factoryImplDeployment, address contract1155ImplDeployment) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
             address(deployment.upgradeGate),
             chainConfig.mintFeeRecipient,
             chainConfig.protocolRewards,
@@ -44,9 +44,8 @@ contract DeployNewImplementations is ZoraDeployerBase {
             IMinter1155(deployment.fixedPriceSaleStrategy)
         );
 
-        deployment.factoryImpl = factoryImplAddress;
-        deployment.contract1155Impl = contract1155ImplAddress;
-        deployment.preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(address(deployment.factoryProxy));
+        deployment.factoryImpl = factoryImplDeployment;
+        deployment.contract1155Impl = contract1155ImplDeployment;
 
         return getDeploymentJSON(deployment);
     }

@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
 import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
-import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
+import {ZoraDeployerUtils, Create2Deployment} from "../src/deployment/ZoraDeployerUtils.sol";
 import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 
 import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
@@ -30,20 +30,16 @@ contract DeployMintersAndImplementations is ZoraDeployerBase, DeterministicDeplo
             revert("FactoryOwner should be a contract. See DeployNewProxies:31.");
         }
 
-        uint256 chain = chainId();
-
         vm.startBroadcast(deployer);
 
         (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
 
         console.log("deploy upgrade gate");
 
-        address upgradeGateAddress = deployUpgradeGate({chain: chain, upgradeGateOwner: chainConfig.factoryOwner});
-
         console.log("impl contracts");
 
-        (address factoryImplAddress, address contract1155ImplAddress) = ZoraDeployerUtils.deployNew1155AndFactoryImplDeterminstic(
-            upgradeGateAddress,
+        (address factoryImplDeployment, address contract1155ImplDeployment) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
+            determinsticUpgradeGateAddress(),
             chainConfig.mintFeeRecipient,
             chainConfig.protocolRewards,
             IMinter1155(merkleMinter),
@@ -54,9 +50,8 @@ contract DeployMintersAndImplementations is ZoraDeployerBase, DeterministicDeplo
         deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
         deployment.merkleMintSaleStrategy = address(merkleMinter);
         deployment.redeemMinterFactory = address(redeemMinterFactory);
-        deployment.upgradeGate = upgradeGateAddress;
-        deployment.factoryImpl = factoryImplAddress;
-        deployment.contract1155Impl = contract1155ImplAddress;
+        deployment.factoryImpl = factoryImplDeployment;
+        deployment.contract1155Impl = contract1155ImplDeployment;
 
         vm.stopBroadcast();
 

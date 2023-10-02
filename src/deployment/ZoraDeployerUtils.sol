@@ -17,45 +17,69 @@ import {ZoraCreatorRedeemMinterFactory} from "../minters/redeem/ZoraCreatorRedee
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 
+struct Create2Deployment {
+    address deployerAddress;
+    bytes32 salt;
+    bytes constructorArguments;
+    address deployedAddress;
+}
+
 library ZoraDeployerUtils {
     IImmutableCreate2Factory constant IMMUTABLE_CREATE2_FACTORY = IImmutableCreate2Factory(0x0000000000FFe8B47B3e2130213B802212439497);
 
     bytes32 constant IMMUTABLE_CREATE_2_FRIENDLY_SALT = bytes32(0x0000000000000000000000000000000000000000000000000000000000000001);
 
-    function deployNew1155AndFactoryImplDeterminstic(
-        address factoryProxyAddress,
+    function deployWithImmutableCreate2(
+        bytes32 salt,
+        bytes memory creationCode,
+        bytes memory constructorArguments
+    ) internal returns (Create2Deployment memory) {
+        address deployedAddress = IMMUTABLE_CREATE2_FACTORY.safeCreate2(salt, abi.encodePacked(creationCode, constructorArguments));
+
+        return
+            Create2Deployment({
+                deployerAddress: address(IMMUTABLE_CREATE2_FACTORY),
+                salt: salt,
+                constructorArguments: constructorArguments,
+                deployedAddress: deployedAddress
+            });
+    }
+
+    function deployNew1155AndFactoryImpl(
+        address upgradeGateAddress,
         address mintFeeRecipient,
         address protocolRewards,
         IMinter1155 merkleMinter,
         IMinter1155 redeemMinterFactory,
         IMinter1155 fixedPriceMinter
     ) internal returns (address factoryImplAddress, address contract1155ImplAddress) {
-        contract1155ImplAddress = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            IMMUTABLE_CREATE_2_FRIENDLY_SALT,
-            abi.encodePacked(type(ZoraCreator1155Impl).creationCode, abi.encode(mintFeeRecipient, factoryProxyAddress, protocolRewards))
-        );
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeRecipient, upgradeGateAddress, protocolRewards);
 
-        factoryImplAddress = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            IMMUTABLE_CREATE_2_FRIENDLY_SALT,
-            abi.encodePacked(
-                type(ZoraCreator1155FactoryImpl).creationCode,
-                abi.encode(contract1155ImplAddress, merkleMinter, redeemMinterFactory, fixedPriceMinter)
-            )
-        );
+        contract1155ImplAddress = address(zoraCreator1155Impl);
+        factoryImplAddress = address(new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, merkleMinter, redeemMinterFactory, fixedPriceMinter));
+    }
+
+    function deployImmutableOrGetAddress(bytes32 salt, bytes memory creationCode) internal returns (address) {
+        address deployedAddress = Create2.computeAddress(salt, keccak256(creationCode), address(IMMUTABLE_CREATE2_FACTORY));
+        if (IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(deployedAddress)) {
+            return deployedAddress;
+        }
+
+        return IMMUTABLE_CREATE2_FACTORY.safeCreate2(salt, creationCode);
     }
 
     function deployMinters() internal returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {
-        fixedPriceMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+        fixedPriceMinter = deployImmutableOrGetAddress(
             bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorFixedPriceSaleStrategy).creationCode
         );
 
-        merkleMinter = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+        merkleMinter = deployImmutableOrGetAddress(
             bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorMerkleMinterStrategy).creationCode
         );
 
-        redeemMinterFactory = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
+        redeemMinterFactory = deployImmutableOrGetAddress(
             bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorRedeemMinterFactory).creationCode
         );
@@ -88,17 +112,23 @@ library ZoraDeployerUtils {
         return IMMUTABLE_CREATE2_FACTORY.findCreate2Address(FACTORY_DEPLOYER_DEPLOYMENT_SALT, type(DeterministicProxyDeployer).creationCode);
     }
 
-    function deterministicFactoryProxyAddress(bytes32 proxyShimSalt, bytes32 factoryProxySalt, address proxyDeployerAddress) internal pure returns (address) {
+    function factoryProxyConstructorArguments(bytes32 proxyShimSalt, address proxyDeployerAddress) internal pure returns (bytes memory) {
         address proxyShimAddress = Create2.computeAddress(
             proxyShimSalt,
             keccak256(abi.encodePacked(type(ProxyShim).creationCode, abi.encode(proxyDeployerAddress))),
             proxyDeployerAddress
         );
 
+        return abi.encode(proxyShimAddress, "");
+    }
+
+    function deterministicFactoryProxyAddress(bytes32 proxyShimSalt, bytes32 factoryProxySalt, address proxyDeployerAddress) internal pure returns (address) {
+        bytes memory constructorArguments = factoryProxyConstructorArguments(proxyShimSalt, proxyDeployerAddress);
+
         return
             Create2.computeAddress(
                 factoryProxySalt,
-                keccak256(abi.encodePacked(type(Zora1155Factory).creationCode, abi.encode(proxyShimAddress, ""))),
+                keccak256(abi.encodePacked(type(Zora1155Factory).creationCode, constructorArguments)),
                 proxyDeployerAddress
             );
     }
@@ -124,6 +154,4 @@ library ZoraDeployerUtils {
                 )
             );
     }
-
-    function testPremintSigningAndExecution(address preminterProxyAddress, address creatorAddress, uint256 creatorPrivateKey) internal {}
 }

@@ -78,11 +78,14 @@ contract DeployProxiesToNewChain is ZoraDeployerBase, DeterministicDeployerScrip
             chain: chain
         });
 
+        address upgradeGateAddress = deployUpgradeGate({chain: chain, upgradeGateOwner: chainConfig.factoryOwner});
+
         console2.log("preminter proxy", preminterProxyAddress);
 
         deployment.factoryProxy = factoryProxyAddress;
         deployment.preminterImpl = preminterImpl;
         deployment.preminterProxy = preminterProxyAddress;
+        deployment.upgradeGate = upgradeGateAddress;
 
         console2.log("testing premint");
 
