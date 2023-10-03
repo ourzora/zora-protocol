@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
+import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
@@ -12,7 +13,7 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
+import {ForkDeploymentConfig, Deployment} from "../../src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     uint256 constant quantityToMint = 3;
@@ -92,26 +93,11 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // ** 2. Setup a new token with the fixed price sales strategy **
     }
 
-    function testTheFork(string memory chainName) private {
+    function mintTokenAtFork(IZoraCreator1155Factory factory) internal {
         uint96 tokenPrice = 1 ether;
-        console.log("testing on fork: ", chainName);
-
-        // create and select the fork, which will be used for all subsequent calls
-        // it will also affect the current block chain id based on the rpc url returned
-        vm.createSelectFork(vm.rpcUrl(chainName));
-
-        address factoryAddress = getDeployment().factoryProxy;
-        IZoraCreator1155Factory factory = IZoraCreator1155Factory(factoryAddress);
-
-        assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), string.concat("configured owner incorrect on: ", chainName));
-
+        IMinter1155 fixedPrice = factory.defaultMinters()[0];
         // now create a contract with the factory
         vm.startPrank(creator);
-
-        IMinter1155 fixedPrice = factory.defaultMinters()[0];
-
-        // make sure that the address from the factory matches the stored fixed price address
-        assertEq(getDeployment().fixedPriceSaleStrategy, address(fixedPrice), string.concat("configured fixed price address incorrect on: ", chainName));
 
         // ** 1. Create the erc1155 contract **
         IZoraCreator1155 target = _createErc1155Contract(factory);
@@ -134,10 +120,57 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         assertEq(balance, quantityToMint, "balance mismatch");
     }
 
+    function testTheFork(string memory chainName) private {
+        console.log("testing on fork: ", chainName);
+
+        // create and select the fork, which will be used for all subsequent calls
+        // it will also affect the current block chain id based on the rpc url returned
+        vm.createSelectFork(vm.rpcUrl(chainName));
+
+        Deployment memory deployment = getDeployment();
+
+        address factoryAddress = deployment.factoryProxy;
+        ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(factoryAddress);
+
+        assertEq(factory.implementation(), deployment.factoryImpl, "factory implementation incorrect");
+
+        assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), string.concat("configured owner incorrect on: ", chainName));
+
+        // make sure that the address from the factory matches the stored fixed price address
+        // sanity check - check minters match config
+        assertEq(address(factory.merkleMinter()), deployment.merkleMintSaleStrategy);
+        assertEq(address(factory.fixedPriceMinter()), deployment.fixedPriceSaleStrategy);
+        assertEq(address(factory.redeemMinterFactory()), deployment.redeemMinterFactory);
+    }
+
     function test_fork_canCreateContractAndMint() external {
         string[] memory forkTestChains = getForkTestChains();
         for (uint256 i = 0; i < forkTestChains.length; i++) {
             testTheFork(forkTestChains[i]);
         }
+    }
+
+    // this is a temporary test to simulate the upgrade to the correct factory implementation
+    // on zora goerli. it can be deleted post upgrade
+    function test_fork_zoraGoerli_factoryUpgradeCanMint() external {
+        // create and select the fork, which will be used for all subsequent calls
+        // it will also affect the current block chain id based on the rpc url returned
+        vm.createSelectFork(vm.rpcUrl("zora_goerli"));
+
+        Deployment memory deployment = getDeployment();
+
+        address factoryAddress = deployment.factoryProxy;
+        ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(factoryAddress);
+
+        vm.prank(factory.owner());
+
+        factory.upgradeTo(deployment.factoryImpl);
+
+        // sanity check - check minters match config
+        assertEq(address(factory.merkleMinter()), deployment.merkleMintSaleStrategy);
+        assertEq(address(factory.fixedPriceMinter()), deployment.fixedPriceSaleStrategy);
+        assertEq(address(factory.redeemMinterFactory()), deployment.redeemMinterFactory);
+
+        mintTokenAtFork(factory);
     }
 }

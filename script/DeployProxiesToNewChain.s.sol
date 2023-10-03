@@ -17,7 +17,7 @@ import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeploy
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {DeploymentTestingUtils} from "../src/deployment/DeploymentTestingUtils.sol";
 
-contract DeployAllToNewChain is ZoraDeployerBase, DeterministicDeployerScript, DeploymentTestingUtils {
+contract DeployProxiesToNewChain is ZoraDeployerBase, DeterministicDeployerScript, DeploymentTestingUtils {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
         ChainConfig memory chainConfig = getChainConfig();
