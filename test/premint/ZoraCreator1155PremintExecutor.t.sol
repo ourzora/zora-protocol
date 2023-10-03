@@ -16,7 +16,8 @@ import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {ForkDeploymentConfig} from "../../src/deployment/DeploymentConfig.sol";
+import {ForkDeploymentConfig, Deployment} from "../../src/deployment/DeploymentConfig.sol";
+import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 
 contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
@@ -25,7 +26,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
 
     ZoraCreator1155PremintExecutorImpl internal preminter;
     Zora1155Factory factoryProxy;
-    ZoraCreator1155FactoryImpl factoryImpl;
+    ZoraCreator1155FactoryImpl factory;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
     uint256 internal mintFeeAmount = 0.000777 ether;
@@ -58,9 +59,9 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
-        factoryImpl = ZoraCreator1155FactoryImpl(address(factoryProxy));
+        factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
 
-        preminter = new ZoraCreator1155PremintExecutorImpl(factoryImpl);
+        preminter = new ZoraCreator1155PremintExecutorImpl(factory);
     }
 
     function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
@@ -68,7 +69,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     }
 
     function makeDefaultTokenCreationConfig() internal view returns (TokenCreationConfig memory) {
-        IMinter1155 fixedPriceMinter = factoryImpl.defaultMinters()[0];
+        IMinter1155 fixedPriceMinter = factory.defaultMinters()[0];
         return
             TokenCreationConfig({
                 tokenURI: "blah.token",
@@ -222,27 +223,8 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         }
     }
 
-    function testTheForkPremint(string memory chainName) private {
-        console.log("testing on fork: ", chainName);
-
-        // create and select the fork, which will be used for all subsequent calls
-        // it will also affect the current block chain id based on the rpc url returned
-        vm.createSelectFork(vm.rpcUrl(chainName));
-
-        // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
-        address preminterAddress = getDeployment().preminterProxy;
-
-        if (preminterAddress == address(0)) {
-            console.log("preminter not configured for chain...skipping");
-            return;
-        }
-
-        preminter = ZoraCreator1155PremintExecutorImpl(preminterAddress);
-
-        factoryImpl = ZoraCreator1155FactoryImpl(getDeployment().factoryProxy);
-
-        console.log("building defaults");
+    function preminterCanMintTokens() internal {
+        // we are for now upgrading to correct preminter impl
 
         // configuration of contract to create
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
@@ -275,8 +257,32 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         // get the contract address from the preminter based on the contract hash id.
         IZoraCreator1155 created1155Contract = IZoraCreator1155(contractAddress);
 
+        // console.log("getting balance");
         // get the created contract, and make sure that tokens have been minted to the address
-        assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
+        uint256 balance = created1155Contract.balanceOf(premintExecutor, tokenId);
+
+        assertEq(balance, quantityToMint, "balance");
+    }
+
+    function testTheForkPremint(string memory chainName) private {
+        console.log("testing on fork: ", chainName);
+
+        // create and select the fork, which will be used for all subsequent calls
+        // it will also affect the current block chain id based on the rpc url returned
+        vm.createSelectFork(vm.rpcUrl(chainName));
+
+        // get contract hash, which is unique per contract creation config, and can be used
+        // retreive the address created for a contract
+        address preminterAddress = getDeployment().preminterProxy;
+
+        if (preminterAddress == address(0)) {
+            console.log("preminter not configured for chain...skipping");
+            return;
+        }
+
+        // override local preminter to use the addresses from the chain
+        factory = ZoraCreator1155FactoryImpl(getDeployment().factoryProxy);
+        preminter = ZoraCreator1155PremintExecutorImpl(preminterAddress);
     }
 
     function test_fork_successfullyMintsTokens() external {
@@ -284,6 +290,40 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         for (uint256 i = 0; i < forkTestChains.length; i++) {
             testTheForkPremint(forkTestChains[i]);
         }
+    }
+
+    // this is a temporary test to simulate the upcoming upgrade
+    function test_fork_zoraGoerli_afterUpgradeCanPremint() external {
+        vm.createSelectFork(vm.rpcUrl("zora_goerli"));
+
+        Deployment memory deployment = getDeployment();
+
+        factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
+
+        console2.log("factory upgrade target:", deployment.factoryProxy);
+        bytes memory factoryProxyUpgradeCall = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, deployment.factoryImpl);
+        console2.log("factory upgrade call:", vm.toString(factoryProxyUpgradeCall));
+
+        console2.log("preminter upgrade target:", deployment.preminterProxy);
+        bytes memory preminterProxyUpgradeCall = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, deployment.preminterImpl);
+        console2.log("preminter upgrade call:", vm.toString(preminterProxyUpgradeCall));
+
+        vm.prank(factory.owner());
+        // lets call it as if we were calling from a safe:
+        deployment.factoryProxy.call(factoryProxyUpgradeCall);
+
+        // override test storage to point to proxy
+        preminter = ZoraCreator1155PremintExecutorImpl(deployment.preminterProxy);
+
+        vm.prank(preminter.owner());
+        // preminter impl was already created with correct factory, were just upgrading it now
+        deployment.preminterProxy.call(preminterProxyUpgradeCall);
+
+        assertEq(address(preminter.zora1155Factory()), address(factory));
+
+        preminterCanMintTokens();
+
+        // lets console.log these upgrades
     }
 
     function test_signatureForSameContractandUid_shouldMintExistingToken() external {
@@ -447,7 +487,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
             fundsRecipient: creator
         });
 
-        IMinter1155 fixedPrice = factoryImpl.fixedPriceMinter();
+        IMinter1155 fixedPrice = factory.fixedPriceMinter();
 
         // have the premint contract try to set the sales config - it should revert with
         // the expected UserMissingRole error
@@ -596,7 +636,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         vm.warp(timeOfSecondMint);
 
         // execute mint directly on the contract - and check make sure it reverts if minted after sale start
-        IMinter1155 fixedPriceMinter = factoryImpl.defaultMinters()[0];
+        IMinter1155 fixedPriceMinter = factory.defaultMinters()[0];
         if (shouldRevert) {
             vm.expectRevert(ZoraCreatorFixedPriceSaleStrategy.SaleEnded.selector);
         }
