@@ -20,7 +20,7 @@ contract DeployNewImplementations is ZoraDeployerBase {
 
         deployNew1155AndFactoryImpl(deployment);
 
-        // deployNewPreminterImplementationDeterminstic(deployment);
+        deployNewPreminterImplementationDeterminstic(deployment);
 
         return getDeploymentJSON(deployment);
     }
