@@ -71,11 +71,11 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, DeterministicDeplo
     }
 
     function determinticFactoryProxyAddress() internal view returns (address) {
-        return readDeterministicParams("factoryProxy").deterministicProxyAddress;
+        return readFactoryProxyDeterminsticParams().deterministicProxyAddress;
     }
 
     function determinsticPreminterProxyAddress() internal view returns (address) {
-        return readDeterministicParams("preminterProxy").deterministicProxyAddress;
+        return readPreminterProxyDeterminsticParams().deterministicProxyAddress;
     }
 
     function deployFactoryProxyDeterminstic(Deployment memory deployment) internal {
@@ -106,7 +106,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, DeterministicDeplo
         ensureCanOwn(chainConfig.factoryOwner);
 
         address preminterProxyAddress = deployDeterministicProxy({
-            proxyName: "preminterProxy",
+            proxyName: "premintExecutorProxy",
             implementation: deployment.preminterImpl,
             owner: chainConfig.factoryOwner,
             chain: chainId()
