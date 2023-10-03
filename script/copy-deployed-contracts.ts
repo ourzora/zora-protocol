@@ -23,12 +23,13 @@ async function copyEnvironmentRunFiles() {
   );
 
   const groupedByChainId = allFileContents.reduce((acc, file) => {
-    if (isNaN(Number(file.chainId))) return acc;
+    const chainId = file.chainId!;
+    if (isNaN(Number(chainId))) return acc;
 
-    if (!acc[file.chainId]) {
-      acc[file.chainId] = [];
+    if (!acc[chainId]) {
+      acc[chainId] = [];
     }
-    acc[file.chainId].push(file.contents);
+    acc[chainId]!.push(file.contents);
     return acc;
   }, {} as Record<string, Deploy[]>);
 
@@ -49,9 +50,9 @@ async function copyEnvironmentRunFiles() {
       filePath,
       JSON.stringify(
         {
-          ...JSON.parse(latest.returns["0"].value),
-          timestamp: latest.timestamp,
-          commit: latest.commit,
+          ...JSON.parse(latest!.returns["0"]!.value),
+          timestamp: latest!.timestamp,
+          commit: latest!.commit,
         },
         null,
         2
