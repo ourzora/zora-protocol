@@ -20,7 +20,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 /// @dev Example usage: DEPLOYER=0xf69fEc6d858c77e969509843852178bd24CAd2B6 forge script script/GetDeterminsticParam.s.sol --rpc-url https://testnet.rpc.zora.energy --ffi
 /// @author doved
 /// @notice Ensure to set env variable for DEPLOYER
-contract FactoryProxyDeterministicParams is ZoraDeployerBase, DeterministicDeployerScript {
+contract FactoryProxyDeterministicParams is ZoraDeployerBase {
     address deployerAddress;
     // Set in step 2
     address proxyDeployerAddress;

@@ -5,22 +5,22 @@ import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
 import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
-import {Deployment} from "../src/deployment/DeploymentConfig.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
+import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
 
 import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
 
-/// @dev Deploys implementation contracts for 1155 contracts.
-/// @notice Run after deploying the minters
-/// @notice This
-contract DeployNewImplementations is ZoraDeployerBase {
+contract DeployUpgradeGate is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
 
         vm.startBroadcast();
 
-        deployNew1155AndFactoryImpl(deployment);
+        deployUpgradeGateDeterminstic(deployment);
 
-        deployNewPreminterImplementationDeterminstic(deployment);
+        vm.stopBroadcast();
+
+        // now test signing and executing premint
 
         return getDeploymentJSON(deployment);
     }

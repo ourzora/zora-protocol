@@ -11,9 +11,11 @@ import {ICreatorRoyaltiesControl} from "../src/interfaces/ICreatorRoyaltiesContr
 import {ScriptDeploymentConfig, Deployment, ChainConfig} from "../src/deployment/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
+import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
+import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
 
 /// @notice Deployment drops for base where
-abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
+abstract contract ZoraDeployerBase is ScriptDeploymentConfig, DeterministicDeployerScript {
     using stdJson for string;
 
     /// @notice File used for demo metadata on verification test mint
@@ -36,13 +38,104 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig {
         console2.log(deploymentJson);
     }
 
+    function deployMinters(Deployment memory deployment) internal {
+        (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
+        deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
+        deployment.merkleMintSaleStrategy = address(merkleMinter);
+        deployment.redeemMinterFactory = address(redeemMinterFactory);
+    }
+
+    function deployNew1155AndFactoryImpl(Deployment memory deployment) internal {
+        ChainConfig memory chainConfig = getChainConfig();
+
+        ensureCanOwn(chainConfig.factoryOwner);
+
+        (address factoryImplDeployment, address contract1155ImplDeployment) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
+            upgradeGateAddress: determinsticUpgradeGateAddress(),
+            mintFeeRecipient: chainConfig.mintFeeRecipient,
+            protocolRewards: chainConfig.protocolRewards,
+            merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
+            redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
+            fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
+        });
+
+        deployment.factoryImpl = factoryImplDeployment;
+        deployment.contract1155Impl = contract1155ImplDeployment;
+    }
+
+    function deployNewPreminterImplementationDeterminstic(Deployment memory deployment) internal {
+        address factoryProxyAddress = determinticFactoryProxyAddress();
+        deployment.preminterImpl = ZoraDeployerUtils.deployNewPreminterImplementationDeterminstic(factoryProxyAddress);
+    }
+
+    function determinticFactoryProxyAddress() internal view returns (address) {
+        return readDeterministicParams("factoryProxy").deterministicProxyAddress;
+    }
+
+    function determinsticPreminterProxyAddress() internal view returns (address) {
+        return readDeterministicParams("preminterProxy").deterministicProxyAddress;
+    }
+
+    function deployFactoryProxyDeterminstic(Deployment memory deployment) internal {
+        ChainConfig memory chainConfig = getChainConfig();
+
+        ensureCanOwn(chainConfig.factoryOwner);
+
+        address factoryProxyAddress = deployDeterministicProxy({
+            proxyName: "factoryProxy",
+            implementation: deployment.factoryImpl,
+            owner: chainConfig.factoryOwner,
+            chain: chainId()
+        });
+
+        require(factoryProxyAddress == determinticFactoryProxyAddress(), "address not expected deterministic address");
+
+        require(
+            keccak256(abi.encodePacked(ZoraCreator1155FactoryImpl(factoryProxyAddress).contractName())) ==
+                keccak256(abi.encodePacked("ZORA 1155 Contract Factory"))
+        );
+
+        deployment.factoryProxy = factoryProxyAddress;
+    }
+
+    function deployPreminterProxyDeterminstic(Deployment memory deployment) internal {
+        ChainConfig memory chainConfig = getChainConfig();
+
+        ensureCanOwn(chainConfig.factoryOwner);
+
+        address preminterProxyAddress = deployDeterministicProxy({
+            proxyName: "preminterProxy",
+            implementation: deployment.preminterImpl,
+            owner: chainConfig.factoryOwner,
+            chain: chainId()
+        });
+
+        require(preminterProxyAddress == determinsticPreminterProxyAddress(), "address not expected deterministic address");
+
+        deployment.preminterProxy = preminterProxyAddress;
+    }
+
+    function deployUpgradeGateDeterminstic(Deployment memory deployment) internal {
+        ChainConfig memory chainConfig = getChainConfig();
+
+        ensureCanOwn(chainConfig.factoryOwner);
+
+        address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
+
+        require(upgradeGateAddress == determinsticUpgradeGateAddress(), "address not expected deterministic address");
+
+        deployment.upgradeGate = upgradeGateAddress;
+    }
+
+    function ensureCanOwn(address account) internal view {
+        // Sanity check to make sure that the factory owner is a smart contract.
+        // This may catch cross-chain data copy mistakes where there is no safe at the desired admin address.
+        if (account.code.length == 0) {
+            revert("FactoryOwner should be a contract. See DeployNewProxies:31.");
+        }
+    }
+
     function determinsticUpgradeGateAddress() internal view returns (address) {
         return vm.parseJsonAddress(vm.readFile("./deterministicConfig/upgradeGate/params.json"), ".upgradeGateAddress");
     }
-
-    // function deployNewPreminterProxy(Deployment memory deployment) internal {
-    //     address proxyOwner = getChainConfig().factoryOwner;
-
-    //     deployment.preminter = ZoraDeployerUtils.deployNewPreminterProxy(deployment.factoryProxy, proxyOwner);
-    // }
 }

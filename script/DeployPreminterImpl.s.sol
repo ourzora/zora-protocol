@@ -9,16 +9,13 @@ import {Deployment} from "../src/deployment/DeploymentConfig.sol";
 
 import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
 
-/// @dev Deploys implementation contracts for 1155 contracts.
+/// @dev Deploys preminter implementation contract.
 /// @notice Run after deploying the minters
-/// @notice This
-contract DeployNewImplementations is ZoraDeployerBase {
+contract DeployPreminterImpl is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
 
         vm.startBroadcast();
-
-        deployNew1155AndFactoryImpl(deployment);
 
         deployNewPreminterImplementationDeterminstic(deployment);
 

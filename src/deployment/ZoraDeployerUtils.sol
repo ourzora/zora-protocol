@@ -16,6 +16,7 @@ import {ZoraCreatorMerkleMinterStrategy} from "../minters/merkle/ZoraCreatorMerk
 import {ZoraCreatorRedeemMinterFactory} from "../minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
+import {UpgradeGate} from "../upgrades/UpgradeGate.sol";
 
 struct Create2Deployment {
     address deployerAddress;
@@ -45,6 +46,13 @@ library ZoraDeployerUtils {
             });
     }
 
+    function ensureValidUpgradeGate(address upgradeGateAddress) internal pure {
+        require(
+            keccak256(abi.encodePacked(UpgradeGate(upgradeGateAddress).contractName())) == keccak256(abi.encodePacked("ZORA 1155 Upgrade Gate")),
+            "INVALID_UPGRADE_GATE"
+        );
+    }
+
     function deployNew1155AndFactoryImpl(
         address upgradeGateAddress,
         address mintFeeRecipient,
@@ -53,10 +61,19 @@ library ZoraDeployerUtils {
         IMinter1155 redeemMinterFactory,
         IMinter1155 fixedPriceMinter
     ) internal returns (address factoryImplAddress, address contract1155ImplAddress) {
+        ensureValidUpgradeGate(upgradeGateAddress);
+
         ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeRecipient, upgradeGateAddress, protocolRewards);
 
         contract1155ImplAddress = address(zoraCreator1155Impl);
-        factoryImplAddress = address(new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, merkleMinter, redeemMinterFactory, fixedPriceMinter));
+        factoryImplAddress = address(
+            new ZoraCreator1155FactoryImpl({
+                _zora1155Impl: zoraCreator1155Impl,
+                _merkleMinter: merkleMinter,
+                _redeemMinterFactory: redeemMinterFactory,
+                _fixedPriceMinter: fixedPriceMinter
+            })
+        );
     }
 
     function deployImmutableOrGetAddress(bytes32 salt, bytes memory creationCode) internal returns (address) {

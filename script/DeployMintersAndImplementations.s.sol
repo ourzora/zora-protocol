@@ -5,57 +5,24 @@ import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
 import {ZoraDeployerBase} from "./ZoraDeployerBase.sol";
-import {ZoraDeployerUtils, Create2Deployment} from "../src/deployment/ZoraDeployerUtils.sol";
-import {ChainConfig, Deployment} from "../src/deployment/DeploymentConfig.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
+import {Deployment} from "../src/deployment/DeploymentConfig.sol";
 
-import {ZoraCreator1155FactoryImpl} from "../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
-import {ZoraCreator1155Impl} from "../src/nft/ZoraCreator1155Impl.sol";
-import {IZoraCreator1155Factory} from "../src/interfaces/IZoraCreator1155Factory.sol";
-import {IZoraCreator1155} from "../src/interfaces/IZoraCreator1155.sol";
-import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
-import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
-import {DeploymentTestingUtils} from "../src/deployment/DeploymentTestingUtils.sol";
-
-contract DeployMintersAndImplementations is ZoraDeployerBase, DeterministicDeployerScript, DeploymentTestingUtils {
+contract DeployMintersAndImplementations is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
-        ChainConfig memory chainConfig = getChainConfig();
 
         address deployer = vm.envAddress("DEPLOYER");
 
-        // Sanity check to make sure that the factory owner is a smart contract.
-        // This may catch cross-chain data copy mistakes where there is no safe at the desired admin address.
-        if (address(chainConfig.factoryOwner).code.length == 0) {
-            revert("FactoryOwner should be a contract. See DeployNewProxies:31.");
-        }
-
         vm.startBroadcast(deployer);
 
-        (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
+        deployMinters(deployment);
 
-        console.log("deploy upgrade gate");
+        deployNew1155AndFactoryImpl(deployment);
 
-        console.log("impl contracts");
-
-        (address factoryImplDeployment, address contract1155ImplDeployment) = ZoraDeployerUtils.deployNew1155AndFactoryImpl(
-            determinsticUpgradeGateAddress(),
-            chainConfig.mintFeeRecipient,
-            chainConfig.protocolRewards,
-            IMinter1155(merkleMinter),
-            IMinter1155(redeemMinterFactory),
-            IMinter1155(fixedPriceMinter)
-        );
-
-        deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
-        deployment.merkleMintSaleStrategy = address(merkleMinter);
-        deployment.redeemMinterFactory = address(redeemMinterFactory);
-        deployment.factoryImpl = factoryImplDeployment;
-        deployment.contract1155Impl = contract1155ImplDeployment;
+        deployNewPreminterImplementationDeterminstic(deployment);
 
         vm.stopBroadcast();
-
-        // now test signing and executing premint
 
         return getDeploymentJSON(deployment);
     }
