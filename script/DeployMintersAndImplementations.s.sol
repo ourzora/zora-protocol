@@ -16,6 +16,8 @@ contract DeployMintersAndImplementations is ZoraDeployerBase {
 
         vm.startBroadcast(deployer);
 
+        deployUpgradeGateDeterminstic(deployment);
+
         deployMinters(deployment);
 
         deployNew1155AndFactoryImpl(deployment);

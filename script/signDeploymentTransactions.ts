@@ -241,7 +241,7 @@ async function main() {
 
   await signAndSaveGenericSignatures({
     turnkeyAccount,
-    chainConfigs: await getPreminterImplConfigs(),
+    chainConfigs: await getFactoryImplConfigs(),
     proxyName: "upgradeGate",
   });
 }
