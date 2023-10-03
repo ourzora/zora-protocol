@@ -50,17 +50,19 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, DeterministicDeplo
 
         ensureCanOwn(chainConfig.factoryOwner);
 
-        (address factoryImplDeployment, address contract1155ImplDeployment) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
-            upgradeGateAddress: determinsticUpgradeGateAddress(),
-            mintFeeRecipient: chainConfig.mintFeeRecipient,
-            protocolRewards: chainConfig.protocolRewards,
-            merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
-            redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
-            fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
-        });
+        (address factoryImplDeployment, address contract1155ImplDeployment, string memory contract1155ImplVersion) = ZoraDeployerUtils
+            .deployNew1155AndFactoryImpl({
+                upgradeGateAddress: determinsticUpgradeGateAddress(),
+                mintFeeRecipient: chainConfig.mintFeeRecipient,
+                protocolRewards: chainConfig.protocolRewards,
+                merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
+                redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
+                fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
+            });
 
         deployment.factoryImpl = factoryImplDeployment;
         deployment.contract1155Impl = contract1155ImplDeployment;
+        deployment.contract1155ImplVersion = contract1155ImplVersion;
     }
 
     function deployNewPreminterImplementationDeterminstic(Deployment memory deployment) internal {

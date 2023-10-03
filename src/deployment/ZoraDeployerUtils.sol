@@ -60,10 +60,12 @@ library ZoraDeployerUtils {
         IMinter1155 merkleMinter,
         IMinter1155 redeemMinterFactory,
         IMinter1155 fixedPriceMinter
-    ) internal returns (address factoryImplAddress, address contract1155ImplAddress) {
+    ) internal returns (address factoryImplAddress, address contract1155ImplAddress, string memory contract1155ImplVersion) {
         ensureValidUpgradeGate(upgradeGateAddress);
 
         ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeRecipient, upgradeGateAddress, protocolRewards);
+
+        contract1155ImplVersion = zoraCreator1155Impl.contractVersion();
 
         contract1155ImplAddress = address(zoraCreator1155Impl);
         factoryImplAddress = address(
