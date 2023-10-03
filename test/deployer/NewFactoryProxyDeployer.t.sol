@@ -27,7 +27,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
         address protocolRewards = makeAddr("protocolRewards");
 
         (address factoryImplDeployment, , ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
-            upgradeGateAddress: address(0),
+            upgradeGateAddress: address(new UpgradeGate()),
             mintFeeRecipient: mintFeeRecipient,
             protocolRewards: protocolRewards,
             merkleMinter: IMinter1155(address(0)),
