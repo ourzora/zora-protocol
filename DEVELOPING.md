@@ -3,12 +3,29 @@
 ## Deploying to a new chain
 
 1. Setup new `chainConfigs` file setting 1. fee recipient, and 2. owner for factory contracts
-2. Run forge/foundry deploy script
-3. Update deployed addresses file `yarn run update-new-deployment-addresses`
-4. Verify `addresses/CHAINID.json` exists.
-5. Ensure contracts are verified on block explorer.
-7. Add a changeset with `npx changeset`
-6. Make PR with new addresses json files and changeset.
+2. Generate signatures for deploying upgrade gate at a deterministic address and trasfering ownership to the factory owner:
+
+    npx tsx script/signDeploymentTransactions.ts
+
+3. Deploy upgrade gate and implementation contracts:
+
+    forge script script/DeployMintersAndImplementations.s.sol  $(chains {CHAINNAME} --deploy) --interactives 1 --broadcast --verify
+
+4. Copy deployed addresses to `addresses/{CHAINID}.json`:
+
+    npx tsx script/copy-deployed-contracts.ts
+
+5. Generate signatures to deploy proxy contracts at determinstic address:
+
+    npx tsx script/signDeploymentTransactions.ts
+
+6. Deploy proxy contracts:
+
+    forge script script/DeployProxiesToNewChain.s.sol  $(chains {CHAINNAME} --deploy) --interactives 1 --broadcast --verify
+
+7. Ensure contracts are verified on block explorer.
+8. Add a changeset with `npx changeset`
+9. Make PR with new addresses json files and changeset.
 
 # Whats bundled in the published package
 
