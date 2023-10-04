@@ -5,8 +5,27 @@
       "dependsOn": ["^build"],
       "outputs": [".dist/**"]
     },
+    "build:contracts": {
+      "dependsOn": ["^build:contracts"],
+      "outputs": [".dist/**"]
+    },
+    "check-contract-size": {
+      "dependsOn": ["^check-contract-size"]
+    },
+    "check-storage-layout": {
+      "dependsOn": ["^check-storage-layout"]
+    },
     "test": {
       "dependsOn": ["^test"]
+    },
+    "test:fork": {
+      "dependsOn": ["^test:fork"]
+    },
+    "storage-inspect:check": {
+      "dependsOn": ["^storage-inspect:check"]
+    },
+    "prepack": {
+      "dependsOn": ["^prepack"]
     },
     "lint": {
       "dependsOn": ["^lint"]

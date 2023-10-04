@@ -34,6 +34,7 @@ jobs:
           working-directory: ./$package_folder
 
       - name: Filter files to ignore
+        working-directory: ./${{ env.package_folder }}
         run: |
           cd $package_folder && lcov --rc lcov_branch_coverage=1 \
           --remove lcov.info \
@@ -46,4 +47,4 @@ jobs:
           minimum-coverage: 89
           artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: ./$package_folder
+          working-directory: ./${{ env.package_folder }}

@@ -1,14 +1,17 @@
-name: Foundry
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
 
-on: push
+env:
+  # Setting an environment variable with the value of a configuration variable
+  package_folder: packages/${{ inputs.package }}
 
 jobs:
   # we need to prepend _ to conform to 1155 standards
-  _1155:
-    uses: ./.github/workflows/foundry-base.yml
+  coverage:
+    uses: ./.github/workflows/coverage.yml
     with:
-      package: "1155-contracts"
-  protocol-rewards:
-    uses: ./.github/workflows/foundry-base.yml
-    with:
-      package: "protocol-rewards"
+      package: ${{ inputs.package }}

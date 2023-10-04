@@ -10,6 +10,7 @@
   "scripts": {
     "build": "forge build",
     "test": "forge test",
+    "build:contracts": "forge build",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "lint": "yarn run prettier"

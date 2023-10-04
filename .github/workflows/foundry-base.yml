@@ -1,14 +1,10 @@
-on:
-  workflow_call:
-    inputs:
-      package:
-        required: true
-        type: string
+name: "Foundry"
+
+on: "push"
 
 env:
   # Setting an environment variable with the value of a configuration variable
-  package_folder: packages/${{ inputs.package }}
-  build_artifact: foundry-built-artifacts-${{ inputs.package }}
+  $build_artifact: foundry_artifact
 
 jobs:
   build:
@@ -22,15 +18,15 @@ jobs:
 
       - name: Build contracts
         run: |
-          cd $package_folder && forge build
+          npx turbo run build:contracts
 
       - name: Archive built artifacts
         uses: actions/upload-artifact@v3
         with:
           name: $build_artifact
           path: |
-            packages/${{ inputs.package }}/cache
-            packages/${{ inputs.package }}/out
+            **/*/cache
+            **/*/out
           retention-days: 1
 
   coverage:
@@ -58,7 +54,7 @@ jobs:
 
       - name: Check contract sizes
         run: |
-          cd $package_folder && forge build --sizes
+          npx turbo run check-contract-sizes
 
   test:
     needs: build
@@ -78,9 +74,9 @@ jobs:
         with:
           name: $build_artifact
 
-      - name: Run Forge tests
+      - name: Run tests
         run: |
-          cd $package_folder && forge test -vvv
+          npx turbo run test
 
   test_fork:
     needs: build
@@ -102,7 +98,7 @@ jobs:
 
       - name: Run fork tests
         run: |
-          cd $package_folder && forge test -vvv --match-test fork
+          npx turbo run test:fork
         env:
           FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli,base
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
@@ -127,7 +123,7 @@ jobs:
 
       - name: "Inspect Storage Layout"
         continue-on-error: false
-        run: cd $package_folder && yarn run storage-inspect:check
+        run: npx turbo run storage-inspect:check
 
   build_js:
     needs: build
@@ -149,4 +145,14 @@ jobs:
 
       - name: Build js package
         run: |
-          cd $package_folder && yarn prepack
+          npx turbo run prepack
+
+  coverage-1155:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "1155-contracts"
+
+  coverage-protocol-rewards:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "protocol-rewards"

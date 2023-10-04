@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "test": "forge test",
+    "test:fork": "forge test -vvv --match-test fork",
     "test-gas": "forge test --gas-report",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",
