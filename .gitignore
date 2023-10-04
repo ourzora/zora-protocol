@@ -40,3 +40,6 @@ package/chainConfigs.ts
 
 # not currently using pnpm
 pnpm-lock.yaml
+
+# turbo
+.turbo

@@ -1,0 +1,36 @@
+{
+  "private": true,
+  "repository": "git@github.com:ourzora/zora-contracts.git",
+  "scripts": {
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "prettier --write \"**/*.{ts,tsx,md}\""
+  },
+  "devDependencies": {
+    "eslint": "^8.48.0",
+    "prettier": "^3.0.3",
+    "prettier-plugin-solidity": "^1.1.3",
+    "tsconfig": "*",
+    "turbo": "latest"
+  },
+  "name": "turborepo-example",
+  "packageManager": "yarn@1.22.19",
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ],
+    "nohoist": [
+      "**/@openzeppelin/**",
+      "**/@zoralabs/*",
+      "**/ds-test",
+      "**/erc721a-upgradeable",
+      "**/forge-std",
+      "**/solady",
+      "**/solmate"
+    ]
+  },
+  "dependencies": {
+    "@changesets/cli": "^2.26.2"
+  }
+}
