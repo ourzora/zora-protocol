@@ -34,9 +34,8 @@ jobs:
           working-directory: ./$package_folder
 
       - name: Filter files to ignore
-        working-directory: ./${{ env.package_folder }}
         run: |
-          cd $package_folder && lcov --rc lcov_branch_coverage=1 \
+          cd ./${{ env.package_folder }} && lcov --rc lcov_branch_coverage=1 \
           --remove lcov.info \
           --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*" "*Redeem*" "*deployment*"
 

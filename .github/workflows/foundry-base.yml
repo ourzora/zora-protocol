@@ -54,7 +54,7 @@ jobs:
 
       - name: Check contract sizes
         run: |
-          npx turbo run check-contract-sizes
+          npx turbo run check-contract-size
 
   test:
     needs: build
