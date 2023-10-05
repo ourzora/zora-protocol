@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
-import {ZoraDeployerUtils} from "../../src/deployment/ZoraDeployerUtils.sol";
+import {ZoraDeployerUtils, Create2Deployment} from "../../src/deployment/ZoraDeployerUtils.sol";
 import {DeterministicProxyDeployer} from "../../src/deployment/DeterministicProxyDeployer.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
@@ -26,8 +26,8 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
         address mintFeeRecipient = makeAddr("mintFeeRecipient");
         address protocolRewards = makeAddr("protocolRewards");
 
-        (address factoryImplAddress, ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
-            factoryProxyAddress: address(0),
+        (address factoryImplDeployment, , ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
+            upgradeGateAddress: address(new UpgradeGate()),
             mintFeeRecipient: mintFeeRecipient,
             protocolRewards: protocolRewards,
             merkleMinter: IMinter1155(address(0)),
@@ -35,7 +35,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
             fixedPriceMinter: IMinter1155(address(0))
         });
 
-        return factoryImplAddress;
+        return factoryImplDeployment;
     }
 
     function test_proxyCanByDeployedAtDesiredAddress(bytes32 proxySalt) external {

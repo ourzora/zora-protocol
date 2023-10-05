@@ -185,8 +185,16 @@ contract DeterministicDeployerScript is Script {
 
     error MismatchedAddress(address expected, address actual);
 
+    function readFactoryProxyDeterminsticParams() internal view returns (DeterministicParams memory) {
+        return readDeterministicParams("factoryProxy");
+    }
+
+    function readPreminterProxyDeterminsticParams() internal view returns (DeterministicParams memory) {
+        return readDeterministicParams("premintExecutorProxy");
+    }
+
     function getOrCreateProxyDeployer() internal returns (DeterministicProxyDeployer factoryDeployer) {
-        DeterministicParams memory params = readDeterministicParams("factoryProxy");
+        DeterministicParams memory params = readFactoryProxyDeterminsticParams();
         address proxyDeployerAddress = params.proxyDeployerAddress;
         bytes32 proxyDeployerSalt = params.proxyDeployerSalt;
         bytes memory proxyDeployerCreationCode = params.proxyDeployerCreationCode;
