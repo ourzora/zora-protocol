@@ -1,0 +1,9 @@
+name: "1155-contracts"
+
+on: push
+
+jobs:
+  foundry-tasks:
+    uses: ./.github/workflows/foundry.yml
+    with:
+      package: "1155-contracts"

@@ -1,6 +1,13 @@
-name: Foundry
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
 
-on: push
+env:
+  # Setting an environment variable with the value of a configuration variable
+  package_folder: packages/${{ inputs.package }}
 
 jobs:
   build:
@@ -14,15 +21,15 @@ jobs:
 
       - name: Build contracts
         run: |
-          forge build
+          cd $package_folder && forge build
 
       - name: Archive built artifacts
         uses: actions/upload-artifact@v3
         with:
           name: foundry-built-artifacts
           path: |
-            cache
-            out
+            ${package_folder}/cache
+            ${package_folder}/out
           retention-days: 1
 
   contract_size_check:
@@ -45,7 +52,7 @@ jobs:
 
       - name: Check contract sizes
         run: |
-          forge build --sizes
+          cd $package_folder && forge build --sizes
 
   test:
     needs: build
@@ -67,7 +74,7 @@ jobs:
 
       - name: Run Forge tests
         run: |
-          forge test -vvv
+          cd $package_folder && forge test -vvv
 
   test_fork:
     needs: build
@@ -89,7 +96,7 @@ jobs:
 
       - name: Run fork tests
         run: |
-          forge test -vvv --match-test fork
+          cd $package_folder && forge test -vvv --match-test fork
         env:
           FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli,base
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
@@ -114,7 +121,7 @@ jobs:
 
       - name: "Inspect Storage Layout"
         continue-on-error: false
-        run: yarn run storage-inspect:check
+        run: cd $package_folder && yarn run storage-inspect:check
 
   build_js:
     needs: build
@@ -136,4 +143,4 @@ jobs:
 
       - name: Build js package
         run: |
-          yarn prepack
+          cd $package_folder && yarn prepack

@@ -16,6 +16,7 @@
     "prepack": "yarn wagmi && yarn bundle-configs && yarn build",
     "update-new-deployment-addresses": "node script/copy-deployed-contracts.mjs deploy",
     "update-contract-version": "node script/update-contract-version.mjs",
+    "build:contracts": "forge build",
     "build": "tsup",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "wagmi": "wagmi generate",
