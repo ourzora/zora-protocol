@@ -29,11 +29,6 @@ jobs:
             **/*/out
           retention-days: 1
 
-  coverage:
-    uses: ./.github/workflows/coverage.yml
-    with:
-      package: ${{ inputs.package }}
-
   contract_size_check:
     needs: build
     strategy:
