@@ -3,11 +3,11 @@ name: "1155-contracts"
 on: push
 
 jobs:
-  foundry-tasks:
-    uses: ./.github/workflows/foundry.yml
+  contracts-1155:
+    uses: ./.github/workflows/foundry-base.yml
     with:
       package: "1155-contracts"
-  coverage:
-    uses: ./.github/workflows/coverage.yml
+  contracts-protocol-rewards:
+    uses: ./.github/workflows/foundry-base.yml
     with:
-      package: "1155-contracts"
+      package: "protocol-rewards"
