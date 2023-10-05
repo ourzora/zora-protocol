@@ -17,6 +17,7 @@ import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
+    using stdJson for string;
     address internal zora;
     uint256 internal mintFeeAmount;
 
