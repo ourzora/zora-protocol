@@ -21,6 +21,7 @@
     "update-contract-version": "node script/update-contract-version.mjs",
     "build:contracts": "forge build",
     "build": "tsup",
+    "build:sizes": "forge build --sizes",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "wagmi": "wagmi generate",
     "publish-packages": "yarn prepack && changeset publish",
