@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.0.3
+
+### Patch Changes
+
+- d3ddfbb: fix version packages tests
+
 ## 2.0.2
 
 ### Patch Changes
