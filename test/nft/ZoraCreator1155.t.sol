@@ -189,7 +189,8 @@ contract ZoraCreator1155Test is Test {
     function test_contractVersion() external {
         init();
 
-        assertEq(target.contractVersion(), "2.0.0");
+        string memory package = vm.readFile("./package.json");
+        assertEq(package.readString(".version"), target.contractVersion());
     }
 
     function test_assumeLastTokenIdMatches() external {
