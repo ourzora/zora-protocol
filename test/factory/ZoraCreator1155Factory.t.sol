@@ -47,7 +47,8 @@ contract ZoraCreator1155FactoryTest is Test {
     }
 
     function test_contractVersion() external {
-        assertEq(factory.contractVersion(), "2.0.0");
+        string memory package = vm.readFile("./package.json");
+        assertEq(package.readString(".version"), factory.contractVersion());
     }
 
     function test_contractName() external {
