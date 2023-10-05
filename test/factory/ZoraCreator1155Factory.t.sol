@@ -47,7 +47,7 @@ contract ZoraCreator1155FactoryTest is Test {
     }
 
     function test_contractVersion() external {
-        assertEq(factory.contractVersion(), "2.0.0");
+        assertEq(factory.contractVersion(), "2.0.1");
     }
 
     function test_contractName() external {
