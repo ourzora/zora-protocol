@@ -4,6 +4,7 @@ libs = ['_imagine', 'node_modules', 'script']
 optimizer = true
 optimizer_runs = 50
 out = 'out'
+extra_output_files = ['abi']
 solc_version = '0.8.17'
 src = 'src'
 via_ir = true
