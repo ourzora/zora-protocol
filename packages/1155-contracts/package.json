@@ -11,6 +11,7 @@
     "test-gas": "forge test --gas-report",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",
+    "lint": "yarn run prettier:check",
     "coverage": "forge coverage --report lcov",
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
     "prepack": "yarn wagmi && yarn bundle-configs && yarn build",
