@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.0.2
+
+### Patch Changes
+
+- 9207e8f: Deployed determinstic proxies and latest versions to mainnet, goerli, base, base goerli, optimism, optimism goerli
+
 ## 2.0.1
 
 ### Patch Changes
