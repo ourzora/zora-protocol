@@ -29,8 +29,8 @@ jobs:
         with:
           name: $build_artifact
           path: |
-            ${package_folder}/cache
-            ${package_folder}/out
+            ${{ $package_folder }}/cache
+            ${{ $package_folder }}/out
           retention-days: 1
 
   coverage:

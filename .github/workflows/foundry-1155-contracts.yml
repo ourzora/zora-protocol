@@ -3,11 +3,13 @@ name: "1155-contracts"
 on: push
 
 jobs:
-  contracts-1155:
+  # we need to append a c as to not
+  # allow an integer here
+  c1155:
     uses: ./.github/workflows/foundry-base.yml
     with:
       package: "1155-contracts"
-  contracts-protocol-rewards:
+  protocol-rewards:
     uses: ./.github/workflows/foundry-base.yml
     with:
       package: "protocol-rewards"
