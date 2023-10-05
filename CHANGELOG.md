@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.0.1
+
+### Patch Changes
+
+- 35db763: Adding in built artifacts to package
+
 ## 2.0.0
 
 ### Major Changes
