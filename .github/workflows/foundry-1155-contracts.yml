@@ -1,4 +1,4 @@
-name: "protocol-rewards"
+name: "1155-contracts"
 
 on: push
 
@@ -6,4 +6,8 @@ jobs:
   foundry-tasks:
     uses: ./.github/workflows/foundry.yml
     with:
-      package: "protocol-rewards"
+      package: "1155-contracts"
+  coverage:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "1155-contracts"
