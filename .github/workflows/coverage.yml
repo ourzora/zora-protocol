@@ -30,8 +30,6 @@ jobs:
 
       - name: Setup LCOV
         uses: hrishikesh-kadam/setup-lcov@v1
-        with:
-          working-directory: ./${{ env.package_folder }}
 
       - name: Filter files to ignore
         run: |
