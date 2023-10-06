@@ -9,6 +9,7 @@
   ],
   "scripts": {
     "build": "forge build",
+    "build:sizes": "forge build --sizes",
     "test": "forge test",
     "build:contracts": "forge build",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
