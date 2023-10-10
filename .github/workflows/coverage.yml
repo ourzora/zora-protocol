@@ -35,7 +35,7 @@ jobs:
         run: |
           cd ./${{ env.package_folder }} && lcov --rc lcov_branch_coverage=1 \
           --remove lcov.info \
-          --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*" "*Redeem*" "*deployment*"
+          --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*"
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v2
