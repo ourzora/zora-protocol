@@ -5,5 +5,7 @@
     "@zoralabs/zora-1155-contracts": "2.0.3",
     "@zoralabs/protocol-rewards": "1.2.1"
   },
-  "changesets": []
+  "changesets": [
+    "clever-hairs-battle"
+  ]
 }

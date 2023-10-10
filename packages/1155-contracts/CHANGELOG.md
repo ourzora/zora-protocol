@@ -1,5 +1,13 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.0.4-monorepo-test.0
+
+### Patch Changes
+
+- ae045e7: Test version bump
+- Updated dependencies [ae045e7]
+  - @zoralabs/protocol-rewards@1.2.2-monorepo-test.0
+
 ## 2.0.3
 
 ### Patch Changes
