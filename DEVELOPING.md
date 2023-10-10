@@ -2,6 +2,8 @@
 
 ## Deploying to a new chain
 
+Within a contracts package folder (i.e. `packages/1155-contracts`):
+
 1. Setup new `chainConfigs` file setting 1. fee recipient, and 2. owner for factory contracts
 2. Generate signatures for deploying upgrade gate at a deterministic address and trasfering ownership to the factory owner:
 
@@ -27,15 +29,7 @@
 8. Add a changeset with `npx changeset`
 9. Make PR with new addresses json files and changeset.
 
-# Whats bundled in the published package
-
-* `/package/wagmiGenerated.ts` - smart contract abis and deployment addresses
-* `./package/chainConfigs.ts` - configuration of smart contracts by chainId
-
 # Publishing the package; Generating changesets, versioning, building and Publishing.
-
-Diagram of the deploying + publishing workflow:
-![Deploying & Publishing Workflow](uml/generated/deployment.svg)
 
 Publishing happens in the following steps:
 
@@ -53,12 +47,3 @@ Publishing happens in the following steps:
 8. The package is the published to npm with the command: `yarn publish-packages` and the package is published.
 
 In a future version, the when the version branch is merged into main, it can publish the new repos to github.
-
-Some active questions:
-
-* How do we ensure the contract version matches the package version?  Or does it need to match?  Sometimes there is a js package update without a smart contract update.
-
-Future ideas:
-
-* Allow deployment to happen via github actions:
-* Deployments can be added to changesets through some command.  If a changeset is pushed to main and a deployment is detected in it, a deployment task is added to the PR that's created.  When that PR is merged, the deployment happens, and a new package is built and publised to npm with the new versions.
