@@ -25,12 +25,10 @@
     "build:sizes": "forge build --sizes",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "wagmi": "wagmi generate",
-    "publish-packages": "yarn prepack && changeset publish",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "js-test:watch": "vitest dev",
     "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337",
-    "release": "yarn run prepack && changeset publish",
     "update-version": "changeset version && yarn update-contract-version"
   },
   "files": [
@@ -43,7 +41,6 @@
     "_imagine/"
   ],
   "dependencies": {
-    "@changesets/cli": "^2.26.2",
     "@openzeppelin/contracts": "4.9.2",
     "@wagmi/cli": "^1.0.1",
     "@zoralabs/openzeppelin-contracts-upgradeable": "4.8.4",

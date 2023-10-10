@@ -18,6 +18,9 @@
     "test:fork": {
       "dependsOn": ["^test:fork"]
     },
+    "format": {
+      "dependsOn": ["^prettier"]
+    },
     "storage-inspect:check": {
       "dependsOn": ["^storage-inspect:check"]
     },
