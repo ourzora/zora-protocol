@@ -28,8 +28,7 @@
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "js-test:watch": "vitest dev",
-    "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337",
-    "update-version": "changeset version && yarn update-contract-version"
+    "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
   },
   "files": [
     "dist/",
