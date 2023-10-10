@@ -9,7 +9,7 @@
       "dependsOn": ["^build:contracts"],
       "outputs": [".dist/**"]
     },
-    "check-contract-size": {
+    "build:sizes": {
       "dependsOn": ["^build:sizes"]
     },
     "test": {
