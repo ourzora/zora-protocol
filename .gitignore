@@ -43,3 +43,5 @@ pnpm-lock.yaml
 
 # turbo
 .turbo
+
+**/*wagmiGenerated.ts

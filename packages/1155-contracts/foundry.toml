@@ -1,6 +1,7 @@
 [profile.default]
 fs_permissions = [{access = "read", path = "./addresses"}, {access = "read", path = "./chainConfigs"}, {access = "read", path = "./package.json"}, {access = "readwrite", path = "./deterministicConfig"}]
 libs = ['_imagine', 'node_modules', 'script']
+allow_paths = ["node_modules/@zoralabs/protocol-rewards"]
 optimizer = true
 optimizer_runs = 50
 out = 'out'

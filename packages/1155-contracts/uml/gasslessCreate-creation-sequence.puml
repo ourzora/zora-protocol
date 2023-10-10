@@ -1,0 +1,54 @@
+@startuml
+
+title Creating a signature for a Premint Erc1155 contract + New token
+
+actor Creator
+entity Wallet
+entity CreateUI
+boundary PremintAPI
+boundary PremintContract
+
+Group New premint token on new contract
+  
+  Creator -> CreateUI: setup NEW contract name + image
+  activate CreateUI
+  CreateUI -> PremintContract: get deterministic collection address\nfor contract creation params
+  activate PremintContract
+  PremintContract --> CreateUI: deterministic collection address
+  deactivate CreateUI
+  deactivate PremintContract
+
+end
+
+Group New premint token on existing premint contract
+
+  Creator -> CreatePage: load page by deterministic collection address 
+  CreatePage -> SignatureAPI: load collection creation params
+  SignatureAPI -> SignatureDB: fetch collection creation params\nby hash
+  SignatureAPI --> CreatePage: contract creation params
+
+end
+
+Creator -> CreatePage: setup new token
+CreatePage -> PremintContract: get deterministic collection address
+PremintContract --> CreatePage: deterministic collection address
+CreatePage -> SignatureAPI: get new uid for collection address
+SignatureAPI -> SignatureDB: get next token uid\nscoped to collection address
+SignatureDB --> SignatureAPI: next token uid
+SignatureAPI --> CreatePage: next token uid
+Creator -> CreatePage: Submit new token creation params
+CreatePage -> Creator: request signature of\n contract + token creation params + token uid 
+deactivate CreatePage
+Creator -> SignatureAPI: Submit signature + contract + token params + token uid
+SignatureAPI -> PremintContract: validate signature
+PremintContract --> SignatureAPI: validation results (true/false & recovered signer)
+
+Group Signature is valid
+  PremintAPI -> PremintAPI: store premint and signature
+
+end
+
+PremintAPI -> CreateUI: validation & storage status
+deactivate CreateUI
+
+@enduml

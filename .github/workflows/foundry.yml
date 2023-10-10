@@ -1,6 +1,10 @@
-name: Foundry
+name: "Foundry"
 
-on: push
+on: "push"
+
+env:
+  # Setting an environment variable with the value of a configuration variable
+  $build_artifact: foundry_artifact
 
 jobs:
   build:
@@ -14,15 +18,15 @@ jobs:
 
       - name: Build contracts
         run: |
-          forge build
+          npx turbo run build:contracts
 
       - name: Archive built artifacts
         uses: actions/upload-artifact@v3
         with:
-          name: foundry-built-artifacts
+          name: $build_artifact
           path: |
-            cache
-            out
+            **/*/cache
+            **/*/out
           retention-days: 1
 
   contract_size_check:
@@ -41,11 +45,11 @@ jobs:
       - name: Download foundry artifacts
         uses: actions/download-artifact@v3
         with:
-          name: foundry-built-artifacts
+          name: $build_artifact
 
       - name: Check contract sizes
         run: |
-          forge build --sizes
+          npx turbo run check-contract-size
 
   test:
     needs: build
@@ -63,11 +67,11 @@ jobs:
       - name: Download foundry artifacts
         uses: actions/download-artifact@v3
         with:
-          name: foundry-built-artifacts
+          name: $build_artifact
 
-      - name: Run Forge tests
+      - name: Run tests
         run: |
-          forge test -vvv
+          npx turbo run test
 
   test_fork:
     needs: build
@@ -85,11 +89,11 @@ jobs:
       - name: Download foundry artifacts
         uses: actions/download-artifact@v3
         with:
-          name: foundry-built-artifacts
+          name: $build_artifact
 
       - name: Run fork tests
         run: |
-          forge test -vvv --match-test fork
+          npx turbo run test:fork
         env:
           FORK_TEST_CHAINS: mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli,base
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
@@ -110,11 +114,11 @@ jobs:
       - name: Download foundry artifacts
         uses: actions/download-artifact@v3
         with:
-          name: foundry-built-artifacts
+          name: $build_artifact
 
       - name: "Inspect Storage Layout"
         continue-on-error: false
-        run: yarn run storage-inspect:check
+        run: npx turbo run storage-inspect:check
 
   build_js:
     needs: build
@@ -132,8 +136,13 @@ jobs:
       - name: Download foundry artifacts
         uses: actions/download-artifact@v3
         with:
-          name: foundry-built-artifacts
+          name: $build_artifact
 
       - name: Build js package
         run: |
-          yarn prepack
+          npx turbo run prepack
+
+  coverage-1155:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "1155-contracts"
