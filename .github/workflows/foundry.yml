@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Contract Size Check
+    name: Check contract sizes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -56,7 +56,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Test
+    name: Tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -78,7 +78,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Fork Tests
+    name: Fork tests
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -125,7 +125,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Build JS Package
+    name: Build js package
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -144,5 +144,6 @@ jobs:
 
   coverage-1155:
     uses: ./.github/workflows/coverage.yml
+    name: "1155 contracts coverage"
     with:
       package: "1155-contracts"
