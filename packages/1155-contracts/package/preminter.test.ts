@@ -3,6 +3,17 @@ import {
   http,
   createWalletClient,
   createPublicClient,
+  parseAbiItem,
+  getAbiItem,
+  decodeEventLog,
+  encodeAbiParameters,
+  keccak256,
+  getTypesForEIP712Domain,
+  Hex,
+  hashDomain,
+  TypedDataDomain,
+  concat,
+  recoverAddress,
 } from "viem";
 import { foundry, zoraTestnet } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
@@ -46,11 +57,8 @@ const publicClient = createPublicClient({
 type Address = `0x${string}`;
 
 // JSON-RPC Account
-const [
-  deployerAccount,
-  creatorAccount,
-  collectorAccount,
-] = (await walletClient.getAddresses()) as [Address, Address, Address, Address];
+const [deployerAccount, creatorAccount, collectorAccount] =
+  (await walletClient.getAddresses()) as [Address, Address, Address, Address];
 
 type TestContext = {
   preminterAddress: `0x${string}`;
@@ -375,4 +383,129 @@ describe("ZoraCreator1155Preminter", () => {
     // 10 second timeout
     40 * 1000
   );
+
+  it.only<TestContext>("can decode the CREATOR_ATTRIBUTION event", async ({
+    zoraMintFee,
+    anvilChainId,
+    preminterAddress: preminterAddress,
+    fixedPriceMinterAddress,
+  }) => {
+    const premintConfig = defaultPremintConfig(fixedPriceMinterAddress);
+    const contractConfig = defaultContractConfig({
+      contractAdmin: creatorAccount,
+    });
+
+    // lets make it a random number to not break the existing tests that expect fresh data
+    premintConfig.uid = Math.round(Math.random() * 1000000);
+
+    let contractAddress = await publicClient.readContract({
+      abi: preminterAbi,
+      address: preminterAddress,
+      functionName: "getContractAddress",
+      args: [contractConfig],
+    });
+
+    // have creator sign the message to create the contract
+    // and the token
+    const signedMessage = await walletClient.signTypedData({
+      ...preminterTypedDataDefinition({
+        verifyingContract: contractAddress,
+        // we need to sign here for the anvil chain, cause thats where it is run on
+        chainId: anvilChainId,
+        premintConfig,
+      }),
+      account: creatorAccount,
+    });
+
+    const quantityToMint = 2n;
+
+    const valueToSend =
+      (zoraMintFee + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
+
+    const comment = "I love this!";
+
+    await testClient.setBalance({
+      address: collectorAccount,
+      value: parseEther("10"),
+    });
+
+    // now have the collector execute the first signed message;
+    // it should create the contract, the token,
+    // and min the quantity to mint tokens to the collector
+    // the signature along with contract + token creation
+    // parameters are required to call this function
+    const mintHash = await walletClient.writeContract({
+      abi: preminterAbi,
+      functionName: "premint",
+      account: collectorAccount,
+      address: preminterAddress,
+      args: [
+        contractConfig,
+        premintConfig,
+        signedMessage,
+        quantityToMint,
+        comment,
+      ],
+      value: valueToSend,
+    });
+
+    // ensure it succeeded
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash: mintHash,
+    });
+
+    expect(receipt.status).toBe("success");
+
+    // get the CreatorAttribution event from the erc1155 contract:
+    const topics = await publicClient.getContractEvents({
+      abi: zoraCreator1155ImplABI,
+      address: contractAddress,
+      eventName: "CreatorAttribution",
+    });
+
+    expect(topics.length).toBe(1);
+
+    const creatorAttributionEvent = topics[0]!;
+
+    const { creator, domainName, signature, structHash, version } =
+      creatorAttributionEvent.args;
+
+    const chainId = anvilChainId;
+
+    // hash the eip712 domain based on the parameters emitted from the event:
+    const hashedDomain = hashDomain({
+      domain: {
+        chainId,
+        name: domainName,
+        verifyingContract: contractAddress,
+        version,
+      },
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          {
+            name: "chainId",
+            type: "uint256",
+          },
+          {
+            name: "verifyingContract",
+            type: "address",
+          },
+        ],
+      },
+    });
+
+    // re-build the eip-712 typed data hash, consisting of the hashed domain and the structHash emitted from the event:
+    const parts: Hex[] = ["0x1901", hashedDomain, structHash!];
+
+    const hashedTypedData = keccak256(concat(parts));
+
+    const recoveredSigner = await recoverAddress({
+      hash: hashedTypedData,
+      signature: signature!,
+    });
+
+    expect(recoveredSigner).toBe(creator);
+  });
 });
