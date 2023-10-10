@@ -4,6 +4,10 @@ on:
       package:
         required: true
         type: string
+      files_to_ignore:
+        required: false
+        type: string
+        default: ""
 
 env:
   # Setting an environment variable with the value of a configuration variable
@@ -35,7 +39,7 @@ jobs:
         run: |
           cd ./${{ env.package_folder }} && lcov --rc lcov_branch_coverage=1 \
           --remove lcov.info \
-          --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*"
+          --output-file lcov.info "*node_modules*" "*test*" "*script*" ${{ inputs.files_to_ignore }}
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v2
