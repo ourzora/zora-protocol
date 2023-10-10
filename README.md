@@ -5,6 +5,7 @@ This repository is a monorepo for the Zora Creator Contracts
 In it you will find:
 
 - [Zora 1155 Contracts](./packages/1155-contracts)
+- [Protocol Rewards](./packages/protocol-rewards)
 
 ## Official docs
 
