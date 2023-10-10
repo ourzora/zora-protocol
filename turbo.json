@@ -30,8 +30,8 @@
     "lint": {
       "dependsOn": ["^lint"]
     },
-    "update-version": {
-      "dependsOn": ["^update-version"]
+    "update-contract-version": {
+      "dependsOn": ["^update-contract-version"]
     },
     "dev": {
       "cache": false,

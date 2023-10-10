@@ -5,7 +5,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "dev": "turbo run dev",
-    "update-version": "changeset version && turbo run update-version",
+    "update-version": "changeset version && turbo run update-contract-version",
     "lint": "turbo run lint",
     "format": "turbo run format",
     "release": "turbo run prepack && changeset publish"
