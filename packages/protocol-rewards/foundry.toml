@@ -1,0 +1,37 @@
+[profile.default]
+auto_detect_solc = true
+fs_permissions = [{access = "read", path = "./addresses"}, {access = "read", path = "./package.json"}]
+fuzz_runs = 500
+libs = ['_imagine', 'node_modules', 'script']
+optimizer = true
+optimizer_runs = 500000
+out = 'out'
+script = 'script'
+src = 'src'
+via_ir = true
+
+[profile.optimized]
+auto_detect_solc = true
+optimizer = true
+optimizer_runs = 500000
+out = 'out'
+script = 'src'
+src = 'src'
+test = 'src'
+via_ir = true
+
+[fmt]
+bracket_spacing = true
+func_attrs_with_params_multiline = true
+int_types = "long"
+line_length = 120
+quote_style = "double"
+tab_width = 4
+
+[invariant]
+call_override = false
+depth = 20
+fail_on_revert = true
+runs = 1000
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
