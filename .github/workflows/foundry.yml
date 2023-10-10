@@ -144,13 +144,13 @@ jobs:
 
   coverage-1155:
     uses: ./.github/workflows/coverage.yml
-    name: "1155 contracts coverage"
+    name: "Test coverage - 1155"
     with:
       package: "1155-contracts"
 
   coverage-protocol-rewards:
     uses: ./.github/workflows/coverage.yml
-    name: "Protocol rewards coverage"
+    name: "Test coverage - protocol rewards"
     with:
       package: "protocol-rewards"
 
