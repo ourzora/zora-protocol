@@ -147,12 +147,12 @@ jobs:
     name: "Test coverage - 1155"
     with:
       package: "1155-contracts"
-      files_to_ignore: "\"*DeploymentConfig*\" \"*Redeem*\" \"*deployment*\" \"*packages*\""
+      files_to_ignore: '"*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*"'
 
   coverage-protocol-rewards:
     uses: ./.github/workflows/coverage.yml
     name: "Test coverage - protocol rewards"
     with:
       package: "protocol-rewards"
-      files_to_ignore: "\"*lib*\"
+      files_to_ignore: '"*lib*"'
 
