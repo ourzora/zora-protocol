@@ -3,17 +3,11 @@ import {
   http,
   createWalletClient,
   createPublicClient,
-  parseAbiItem,
-  getAbiItem,
-  decodeEventLog,
-  encodeAbiParameters,
   keccak256,
-  getTypesForEIP712Domain,
   Hex,
-  hashDomain,
-  TypedDataDomain,
   concat,
   recoverAddress,
+  hashDomain,
 } from "viem";
 import { foundry, zoraTestnet } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
