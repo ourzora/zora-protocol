@@ -86,8 +86,30 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
             });
     }
 
+    function makeTokenCreationConfigWithCreateReferral(address createReferral) internal view returns (TokenCreationConfig memory) {
+        IMinter1155 fixedPriceMinter = factory.defaultMinters()[0];
+        return
+            TokenCreationConfig({
+                tokenURI: "blah.token",
+                maxSupply: 10,
+                maxTokensPerAddress: 5,
+                pricePerToken: 0,
+                mintStart: 0,
+                mintDuration: 0,
+                royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
+                royaltyBPS: defaultRoyaltyConfig.royaltyBPS,
+                royaltyRecipient: defaultRoyaltyConfig.royaltyRecipient,
+                fixedPriceMinter: address(fixedPriceMinter),
+                createReferral: createReferral
+            });
+    }
+
     function makeDefaultPremintConfig() internal view returns (PremintConfig memory) {
         return PremintConfig({tokenConfig: makeDefaultTokenCreationConfig(), uid: 100, version: 0, deleted: false});
+    }
+
+    function makePremintConfigWithCreateReferral(address createReferral) internal view returns (PremintConfig memory) {
+        return PremintConfig({tokenConfig: makeTokenCreationConfigWithCreateReferral(createReferral), uid: 100, version: 0, deleted: false});
     }
 
     function test_successfullyMintsTokens() external {
@@ -693,6 +715,21 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         // try to mint again, should not revert
         vm.prank(premintExecutor);
         preminter.premint{value: mintCost}(contractConfig, premintConfig2, newCreatorSignature, quantityToMint, "yo");
+    }
+
+    function testPremintWithCreateReferral() public {
+        address createReferral = makeAddr('createReferral');
+
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfig memory premintConfig = makePremintConfigWithCreateReferral(createReferral);
+
+        uint256 createdTokenId = _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, premintExecutor, 1, "hi");
+
+        ZoraCreator1155Impl createdContract = ZoraCreator1155Impl(preminter.getContractAddress(contractConfig));
+
+        address storedCreateReferral = createdContract.createReferrals(createdTokenId);
+
+        assertEq(storedCreateReferral, createReferral);
     }
 
     function _signAndExecutePremint(
