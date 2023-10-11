@@ -1,0 +1,88 @@
+---
+"@zoralabs/zora-1155-contracts": minor
+---
+
+Premint v2 - adding a new signature, where `createReferral` can be specified.  `ZoraCreator1155PremintExecutor` recognizes new version of the signature, and still works with the v1 (legacy) version of the signature.  1155 contract has been updated to now take abi encoded premint config, premint config version, and send it to an external library to decode the config, the signer, and setup actions.
+
+
+
+`PremintConfigV2` are updated to containe `createReferral`, and now look like:
+```solidity
+struct PremintConfigV2 {
+    // The config for the token to be created
+    TokenCreationConfigV2 tokenConfig;
+    // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
+    // only one signature per token id, scoped to the contract hash can be executed.
+    uint32 uid;
+    // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
+    uint32 version;
+    // If executing this signature results in preventing any signature with this uid from being minted.
+    bool deleted;
+}
+
+struct TokenCreationConfigV2 {
+    // Metadata URI for the created token
+    string tokenURI;
+    // Max supply of the created token
+    uint256 maxSupply;
+    // Max tokens that can be minted for an address, 0 if unlimited
+    uint64 maxTokensPerAddress;
+    // Price per token in eth wei. 0 for a free mint.
+    uint96 pricePerToken;
+    // The start time of the mint, 0 for immediate.  Prevents signatures from being used until the start time.
+    uint64 mintStart;
+    // The duration of the mint, starting from the first mint of this token. 0 for infinite
+    uint64 mintDuration;
+    // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+    uint32 royaltyBPS;
+    // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
+    address royaltyRecipient;
+    // Fixed price minter address
+    address fixedPriceMinter;
+    // create referral
+    address createReferral;
+}
+```
+`PremintConfig` fields are **the same as they were before, but are treated as a version 1**:
+
+```solidity
+struct PremintConfig {
+    // The config for the token to be created
+    TokenCreationConfig tokenConfig;
+    // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
+    // only one signature per token id, scoped to the contract hash can be executed.
+    uint32 uid;
+    // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
+    uint32 version;
+    // If executing this signature results in preventing any signature with this uid from being minted.
+    bool deleted;
+}
+
+struct TokenCreationConfig {
+    // Metadata URI for the created token
+    string tokenURI;
+    // Max supply of the created token
+    uint256 maxSupply;
+    // Max tokens that can be minted for an address, 0 if unlimited
+    uint64 maxTokensPerAddress;
+    // Price per token in eth wei. 0 for a free mint.
+    uint96 pricePerToken;
+    // The start time of the mint, 0 for immediate.  Prevents signatures from being used until the start time.
+    uint64 mintStart;
+    // The duration of the mint, starting from the first mint of this token. 0 for infinite
+    uint64 mintDuration;
+    // RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
+    uint32 royaltyMintSchedule;
+    // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+    uint32 royaltyBPS;
+    // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
+    address royaltyRecipient;
+    // Fixed price minter address
+    address fixedPriceMinter;
+}
+```
+
+changes to `ZoraCreator1155PremintExecutorImpl`:
+* new function `premintV1` - takes a `PremintConfig`, and premint v1 signature, and executes a premint, with added functionality of being able to specify mint referral and mint recipient
+* new function `premintV2` - takes a `PremintConfigV2` signature and executes a premint, with being able to specify mint referral and mint recipient
+* deprecated function `premint` - call `premintV1` instead
