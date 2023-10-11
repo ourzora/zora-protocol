@@ -34,7 +34,8 @@ library Zora1155PremintFixtures {
                 royaltyMintSchedule: royaltyConfig.royaltyMintSchedule,
                 royaltyBPS: royaltyConfig.royaltyBPS,
                 royaltyRecipient: royaltyConfig.royaltyRecipient,
-                fixedPriceMinter: address(fixedPriceMinter)
+                fixedPriceMinter: address(fixedPriceMinter),
+                createReferral: address(0)
             });
     }
 }
