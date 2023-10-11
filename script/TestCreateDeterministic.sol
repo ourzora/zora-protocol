@@ -53,7 +53,7 @@ contract DeployScript is ZoraDeployerBase {
 
         address factoryOwner = deployer;
 
-        // 1. create the proxy, pointing it to the factory implentation and setting the owner
+        // 1. create the proxy, pointing it to the factory implementation and setting the owner
         ZoraCreator1155FactoryImpl proxy = ZoraCreator1155FactoryImpl(
             payable(new Zora1155Factory(address(factory), abi.encodeWithSelector(ZoraCreator1155FactoryImpl.initialize.selector, factoryOwner)))
         );
