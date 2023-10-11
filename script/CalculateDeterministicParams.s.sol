@@ -16,7 +16,7 @@ import {DeterministicDeployerScript, DeterministicParams} from "../src/deploymen
 import {DeterministicProxyDeployer} from "../src/deployment/DeterministicProxyDeployer.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-/// @title Gets parameters for determinstically deploying a new 1155 factory proxy at an address starting with 0x777777, regardless of the chain.
+/// @title Gets parameters for deterministically deploying a new 1155 factory proxy at an address starting with 0x777777, regardless of the chain.
 /// @dev Example usage: DEPLOYER=0xf69fEc6d858c77e969509843852178bd24CAd2B6 forge script script/GetDeterminsticParam.s.sol --rpc-url https://testnet.rpc.zora.energy --ffi
 /// @author doved
 /// @notice Ensure to set env variable for DEPLOYER

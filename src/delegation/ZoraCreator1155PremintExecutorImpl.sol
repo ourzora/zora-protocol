@@ -102,7 +102,7 @@ contract ZoraCreator1155PremintExecutorImpl is Ownable2StepUpgradeable, UUPSUpgr
         isNewContract = contractAddress.code.length == 0;
 
         if (isNewContract) {
-            // if address doesnt exist for hash, createi t
+            // if address doesn't exist for hash, create it
             tokenContract = _createContract(contractConfig);
         } else {
             tokenContract = IZoraCreator1155(contractAddress);
@@ -126,7 +126,7 @@ contract ZoraCreator1155PremintExecutorImpl is Ownable2StepUpgradeable, UUPSUpgr
     }
 
     /// Gets the deterministic contract address for the given contract creation config.
-    /// Contract address is generated deterministically from a hash based onthe contract uri, contract name,
+    /// Contract address is generated deterministically from a hash based on the contract uri, contract name,
     /// contract admin, and the msg.sender, which is this contract's address.
     function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
         return

@@ -3,7 +3,7 @@
 ## Deploying to a new chain
 
 1. Setup new `chainConfigs` file setting 1. fee recipient, and 2. owner for factory contracts
-2. Generate signatures for deploying upgrade gate at a deterministic address and trasfering ownership to the factory owner:
+2. Generate signatures for deploying upgrade gate at a deterministic address and transfering ownership to the factory owner:
 
     npx tsx script/signDeploymentTransactions.ts
 
@@ -15,7 +15,7 @@
 
     npx tsx script/copy-deployed-contracts.ts
 
-5. Generate signatures to deploy proxy contracts at determinstic address:
+5. Generate signatures to deploy proxy contracts at deterministic address:
 
     npx tsx script/signDeploymentTransactions.ts
 
@@ -46,11 +46,11 @@ Publishing happens in the following steps:
 * *If there are changes to the smart contracts that should be deployed*: the contract should be. Deploying the contract results in the addresses of the deployed contracts being updated in the corresponding `./addresses/{chainId}.json` file. This file should be committed and pushed to github.
 * Running the command `npx changeset` will generate **a new changeset** in the `./changesets` directory. This changeset will be used to determine the next version of the bundled packages; this commit should then be pushed.
 * The changeset and smart contract addresses are pushed to the branch.
-* The pr is merged into main - any changesets in the PR are detected by a github action `release`, which will then **open a new PR** with proper the versions and readme updated in each each package.   If more changesets are pushed to main before this branch is merged, the PR will continuously update the version of the packages according to the changeset specifiction.
+* The pr is merged into main - any changesets in the PR are detected by a github action `release`, which will then **open a new PR** with proper versions and readme updated in each each package.   If more changesets are pushed to main before this branch is merged, the PR will continuously update the version of the packages according to the changeset specification.
 
 7. That version is merged into main along with the new versions.
 
-8. The package is the published to npm with the command: `yarn publish-packages` and the package is published.
+8. The package is then published to npm with the command: `yarn publish-packages` and the package is published.
 
 In a future version, the when the version branch is merged into main, it can publish the new repos to github.
 
@@ -61,4 +61,4 @@ Some active questions:
 Future ideas:
 
 * Allow deployment to happen via github actions:
-* Deployments can be added to changesets through some command.  If a changeset is pushed to main and a deployment is detected in it, a deployment task is added to the PR that's created.  When that PR is merged, the deployment happens, and a new package is built and publised to npm with the new versions.
+* Deployments can be added to changesets through some command.  If a changeset is pushed to main and a deployment is detected in it, a deployment task is added to the PR that's created.  When that PR is merged, the deployment happens, and a new package is built and published to npm with the new versions.

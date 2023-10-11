@@ -22,7 +22,7 @@ abstract contract ZoraDeployerBase is ScriptDeploymentConfig, DeterministicDeplo
     string constant DEMO_IPFS_METADATA_FILE = "ipfs://bafkreigu544g6wjvqcysurpzy5pcskbt45a5f33m6wgythpgb3rfqi3lzi";
 
     /// @notice Get deployment configuration struct as JSON
-    /// @param deployment deploymet struct
+    /// @param deployment deployment struct
     /// @return deploymentJson string JSON of the deployment info
     function getDeploymentJSON(Deployment memory deployment) internal returns (string memory deploymentJson) {
         string memory deploymentJsonKey = "deployment_json_file_key";
