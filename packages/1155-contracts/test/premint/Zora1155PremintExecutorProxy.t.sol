@@ -11,9 +11,11 @@ import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreat
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfigV2, PremintConfigV2} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {IOwnable2StepUpgradeable} from "../../src/utils/ownable/IOwnable2StepUpgradeable.sol";
 import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
+import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
+import {IZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     address internal owner;
@@ -25,6 +27,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     ZoraCreator1155FactoryImpl factoryAtProxy;
     uint256 internal mintFeeAmount = 0.000777 ether;
     ZoraCreator1155PremintExecutorImpl preminterAtProxy;
+
+    IZoraCreator1155PremintExecutor.MintArguments defaultMintArguments;
 
     function setUp() external {
         zora = makeAddr("zora");
@@ -46,14 +50,16 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // access the executor implementation via the proxy, and initialize the admin
         preminterAtProxy = ZoraCreator1155PremintExecutorImpl(address(proxy));
         preminterAtProxy.initialize(owner);
+
+        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: collector, mintComment: "blah", mintReferral: address(0)});
     }
 
     function test_canInvokeImplementationMethods() external {
         // create premint config
         IMinter1155 fixedPriceMinter = ZoraCreator1155FactoryImpl(address(factoryProxy)).fixedPriceMinter();
 
-        PremintConfig memory premintConfig = PremintConfig({
-            tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfig(fixedPriceMinter, creator),
+        PremintConfigV2 memory premintConfig = PremintConfigV2({
+            tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfigV2(fixedPriceMinter, creator),
             uid: 100,
             version: 0,
             deleted: false
@@ -64,7 +70,13 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         address deterministicAddress = preminterAtProxy.getContractAddress(contractConfig);
 
         // sign the premint
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, deterministicAddress, block.chainid);
+        bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(
+            structHash,
+            deterministicAddress,
+            ZoraCreator1155Attribution.HASHED_VERSION_2,
+            block.chainid
+        );
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(creatorPrivateKey, digest);
 
@@ -75,7 +87,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // execute the premint
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
-        uint256 tokenId = preminterAtProxy.premint{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, "");
+        uint256 tokenId = preminterAtProxy
+        .premintV2{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments).tokenId;
 
         assertEq(ZoraCreator1155Impl(deterministicAddress).balanceOf(collector, tokenId), 1);
     }
