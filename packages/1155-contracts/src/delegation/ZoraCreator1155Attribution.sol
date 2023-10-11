@@ -37,6 +37,8 @@ struct TokenCreationConfig {
     address royaltyRecipient;
     // Fixed price minter address
     address fixedPriceMinter;
+    // Create referral
+    address createReferral;
 }
 
 struct PremintConfig {
