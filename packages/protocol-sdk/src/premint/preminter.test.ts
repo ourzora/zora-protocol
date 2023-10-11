@@ -174,12 +174,13 @@ describe("ZoraCreator1155Preminter", () => {
         account: creatorAccount,
       });
 
+      const preminterAddress = zoraCreator1155FactoryImplAddress[999];
       // recover and verify address is correct
-      const recoveredAddress = await viemClients.publicClient.readContract({
+      const [,,recoveredAddress] = await viemClients.publicClient.readContract({
         abi: preminterAbi,
-        address: PREMINTER_ADDRESS,
-        functionName: "recoverSigner",
-        args: [premintConfig, contractAddress, signedMessage],
+        address: preminterAddress,
+        functionName: "isValidSignature",
+        args: [contractConfig, premintConfig, signedMessage],
       });
 
       expect(recoveredAddress).to.equal(creatorAccount);
@@ -286,6 +287,7 @@ describe("ZoraCreator1155Preminter", () => {
         args: [contractAddress, premintConfig.uid],
       });
 
+      expect(contractCreated).toBe(true);
       expect(tokenId).not.toBe(0n);
 
       // now use what was created, to get the balance from the created contract
