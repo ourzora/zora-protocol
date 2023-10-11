@@ -113,7 +113,8 @@ describe("ZoraCreator1155Preminter", () => {
     });
     ctx.zoraMintFee = parseEther("0.000777");
 
-    ctx.preminterAddress = zoraCreator1155PremintExecutorAddress[ctx.forkedChainId];
+    ctx.preminterAddress =
+      zoraCreator1155PremintExecutorAddress[ctx.forkedChainId];
   }, 20 * 1000);
 
   // skip for now - we need to make this work on zora testnet chain too
