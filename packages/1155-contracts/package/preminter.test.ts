@@ -9,7 +9,7 @@ import {
   recoverAddress,
   hashDomain,
 } from "viem";
-import { foundry, zoraTestnet } from "viem/chains";
+import { foundry, zora } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
 import { parseEther } from "viem";
 import {
@@ -103,7 +103,7 @@ describe("ZoraCreator1155Preminter", () => {
       value: parseEther("10"),
     });
 
-    ctx.forkedChainId = zoraTestnet.id;
+    ctx.forkedChainId = zora.id;
     ctx.anvilChainId = foundry.id;
 
     ctx.fixedPriceMinterAddress = await publicClient.readContract({
@@ -113,7 +113,7 @@ describe("ZoraCreator1155Preminter", () => {
     });
     ctx.zoraMintFee = parseEther("0.000777");
 
-    ctx.preminterAddress = zoraCreator1155PremintExecutorAddress[999];
+    ctx.preminterAddress = zoraCreator1155PremintExecutorAddress[ctx.forkedChainId];
   }, 20 * 1000);
 
   // skip for now - we need to make this work on zora testnet chain too
@@ -378,7 +378,7 @@ describe("ZoraCreator1155Preminter", () => {
     40 * 1000
   );
 
-  it.only<TestContext>("can decode the CREATOR_ATTRIBUTION event", async ({
+  it<TestContext>("can decode the CreatorAttribution event", async ({
     zoraMintFee,
     anvilChainId,
     preminterAddress: preminterAddress,
