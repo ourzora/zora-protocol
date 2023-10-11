@@ -14,7 +14,7 @@ import {
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { foundry, zora, zoraTestnet } from "viem/chains";
-import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
+import { PremintConfigV1 as PremintConfig, preminterTypedDataDefinitionV1 as preminterTypedDataDefinition } from "./preminter";
 import type {
   BackendChainNames as BackendChainNamesType,
   PremintSignatureGetResponse,
