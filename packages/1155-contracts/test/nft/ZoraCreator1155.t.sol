@@ -1064,7 +1064,9 @@ contract ZoraCreator1155Test is Test {
                 // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
                 royaltyRecipient: address(0),
                 // Fixed price minter address
-                fixedPriceMinter: address(fixedPriceMinter)
+                fixedPriceMinter: address(fixedPriceMinter),
+                // Default create referral
+                createReferral: address(0)
             }),
             // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
             // only one signature per token id, scoped to the contract hash can be executed.

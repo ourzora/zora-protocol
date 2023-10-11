@@ -81,7 +81,8 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
                 royaltyMintSchedule: defaultRoyaltyConfig.royaltyMintSchedule,
                 royaltyBPS: defaultRoyaltyConfig.royaltyBPS,
                 royaltyRecipient: defaultRoyaltyConfig.royaltyRecipient,
-                fixedPriceMinter: address(fixedPriceMinter)
+                fixedPriceMinter: address(fixedPriceMinter),
+                createReferral: address(0)
             });
     }
 
