@@ -778,6 +778,8 @@ contract ZoraCreator1155Impl is
         // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
         newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
+        _setCreateReferral(newTokenId, premintConfig.tokenConfig.createReferral);
+
         delegatedTokenId[premintConfig.uid] = newTokenId;
 
         firstMinters[newTokenId] = sender;
