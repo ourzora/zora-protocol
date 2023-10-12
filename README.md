@@ -1,6 +1,6 @@
-# Zora Creator Contracts
+# Zora Protcool
 
-This repository is a monorepo for the Zora Creator Contracts
+This repository is a monorepo for the Protcol
 
 In it you will find:
 
