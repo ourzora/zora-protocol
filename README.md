@@ -1,6 +1,6 @@
 # Zora Protcool
 
-This repository is a monorepo for the Zora Protcol
+This repository is a monorepo for the Zora Protocol
 
 In it you will find:
 
