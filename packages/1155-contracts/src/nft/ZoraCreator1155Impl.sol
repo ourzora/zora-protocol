@@ -372,7 +372,7 @@ contract ZoraCreator1155Impl is
         bytes memory data
     ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
         // Mint the specified tokens
-        super._mint(recipient, tokenId, quantity, data);
+        _mint(recipient, tokenId, quantity, data);
     }
 
     /// @notice Batch mint tokens to a user as the admin or minter
@@ -389,7 +389,7 @@ contract ZoraCreator1155Impl is
             }
         }
 
-        super._mintBatch(recipient, tokenIds, quantities, data);
+        _mintBatch(recipient, tokenIds, quantities, data);
     }
 
     /// @notice Mint tokens given a minter contract and minter arguments
@@ -495,7 +495,7 @@ contract ZoraCreator1155Impl is
                 if (tokenId != 0 && mintTokenId != tokenId) {
                     revert Mint_TokenIDMintNotAllowed();
                 }
-                super._mint(recipient, tokenId, quantity, "");
+                _mint(recipient, tokenId, quantity, "");
             } else {
                 // no-op
             }
@@ -555,6 +555,36 @@ contract ZoraCreator1155Impl is
     }
 
     /// Generic 1155 function overrides ///
+
+    /// @notice Mint function that 1) checks quantity 2) keeps track of allowed tokens
+    /// @param to to mint to
+    /// @param id token id to mint
+    /// @param amount of tokens to mint
+    /// @param data as specified by 1155 standard
+    function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
+        _requireCanMintQuantity(id, amount);
+
+        tokens[id].totalMinted += amount;
+
+        super._mint(to, id, amount, data);
+    }
+
+    /// @notice Mint batch function that 1) checks quantity and 2) keeps track of allowed tokens
+    /// @param to to mint to
+    /// @param ids token ids to mint
+    /// @param amounts of tokens to mint
+    /// @param data as specified by 1155 standard
+    function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
+        uint256 numTokens = ids.length;
+
+        for (uint256 i; i < numTokens; ++i) {
+            _requireCanMintQuantity(ids[i], amounts[i]);
+
+            tokens[ids[i]].totalMinted += amounts[i];
+        }
+
+        super._mintBatch(to, ids, amounts, data);
+    }
 
     /// @notice Burns a batch of tokens
     /// @dev Only the current owner is allowed to burn
