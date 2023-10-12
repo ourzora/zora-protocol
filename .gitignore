@@ -1,8 +1,8 @@
 # Compiler files
 cache/
 out/
-!artifacts/.gitinclude
-artifacts/
+!abis/.gitinclude
+abis/
 
 # Ignores development broadcast logs
 # !/broadcast
