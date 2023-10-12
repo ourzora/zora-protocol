@@ -1,4 +1,4 @@
-# Zora Protcool
+# Zora Protocol
 
 This repository is a monorepo for the Zora Protocol
 
@@ -14,8 +14,8 @@ In it you will find:
 
 Install prerequisites:
 
-* [Node.js and yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable)
-* [Foundry](https://book.getfoundry.sh/getting-started/installation)
+- [Node.js and yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable)
+- [Foundry](https://book.getfoundry.sh/getting-started/installation)
 
 Install dependencies:
 
