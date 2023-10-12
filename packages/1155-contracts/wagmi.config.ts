@@ -1,6 +1,7 @@
 import { defineConfig } from "@wagmi/cli";
 import { foundry } from "@wagmi/cli/plugins";
 import { readdirSync, readFileSync } from "fs";
+import { publishAbisJson } from "./publishAbisPlugin";
 
 type ContractNames =
   | "ZoraCreator1155FactoryImpl"
