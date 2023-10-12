@@ -1,33 +1,42 @@
-# ZORA 1155 Contracts
+# Zora Protcool
 
-The Zora Creator 1155 Contracts are the 1155 complement to the Zora 721 Drops Contracts. While the 721 Drops Contracts enable creators to mint unique, non-fungible tokens (NFTs), the 1155 Contracts allow creators to mint semi-fungible tokens with a set of flexible properties.
+This repository is a monorepo for the Protcol
 
-The main implementation of the Zora Creator 1155 Contracts includes the following modules:
+In it you will find:
 
-- Metadata Control
-- Royalties Control
-- Minting Control
-- Permissions Control
-- Royalties Controls
-
-Most controls exist on a per-contract and per-token level. Per contract level is defined as any configuration existing in the pre-reserved 0 token space.
+- [Zora 1155 Contracts](./packages/1155-contracts)
 
 ## Official docs
 
-[View the official docs](https://docs.zora.co/docs/smart-contracts/creator-tools/Deploy1155Contract)
+[View the official docs](https://docs.zora.co/docs/smart-contracts/creator-tools/intro)
+
+## Setup
+
+Install prerequisites:
+
+* [Node.js and yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable)
+* [Foundry](https://book.getfoundry.sh/getting-started/installation)
+
+Install dependencies:
+
+    yarn
+
+Build contracts:
+
+    yarn build
+
+Run tests:
+
+    yarn test
+
+Run in development mode (watch tests):
+
+    yarn dev
 
 ## Bug Bounty
 
 5 ETH for any critical bugs that could result in loss of funds. Rewards will be given for smaller bugs or ideas.
 
-## Publishing a new version to npm
+## Development workflow
 
-Generate a new changeset in your branch with:
-
-    npx changeset
-
-When the branch is merged to main, the versions will be automatically updated in the corresponding packages.
-
-To publish the updated version:
-
-    yarn publish-packages
+See [DEVELOPMENT.md](./DEVELOPMENT.md)

@@ -1,8 +1,13 @@
-name: coverage
-
-on: push
+on:
+  workflow_call:
+    inputs:
+      package:
+        required: true
+        type: string
 
 env:
+  # Setting an environment variable with the value of a configuration variable
+  package_folder: packages/${{ inputs.package }}
   FOUNDRY_PROFILE: ci
 
 jobs:
@@ -21,23 +26,22 @@ jobs:
         uses: ./.github/actions/setup_deps
 
       - name: Run Forge coverage
-        run: yarn run coverage
-        id: build
+        run: cd $package_folder && forge coverage --report lcov
 
       - name: Setup LCOV
         uses: hrishikesh-kadam/setup-lcov@v1
 
       - name: Filter files to ignore
         run: |
-          lcov --rc lcov_branch_coverage=1 \
+          cd ./${{ env.package_folder }} && lcov --rc lcov_branch_coverage=1 \
           --remove lcov.info \
           --output-file lcov.info "*node_modules*" "*test*" "*script*" "*DeploymentConfig*" "*Redeem*" "*deployment*"
 
       - name: Report code coverage
         uses: zgosalvez/github-actions-report-lcov@v2
         with:
-          coverage-files: lcov.info
+          coverage-files: ./${{ env.package_folder }}/lcov.info
           minimum-coverage: 89
           artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
-          working-directory: ./
+          working-directory: ./${{ env.package_folder }}
