@@ -43,7 +43,7 @@
     "@openzeppelin/contracts": "4.9.2",
     "@wagmi/cli": "^1.0.1",
     "@zoralabs/openzeppelin-contracts-upgradeable": "4.8.4",
-    "@zoralabs/protocol-rewards": "1.2.1",
+    "@zoralabs/protocol-rewards": "*",
     "abitype": "^0.8.7",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
     "es-main": "^1.2.0",
