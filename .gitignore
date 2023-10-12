@@ -1,7 +1,6 @@
 # Compiler files
 cache/
 out/
-!abis/.gitinclude
 abis/
 
 # Ignores development broadcast logs
