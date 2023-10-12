@@ -11,4 +11,4 @@ jobs:
         uses: ./.github/actions/setup_deps
 
       - name: Run prettier
-        run: yarn run prettier:check
+        run: yarn lint

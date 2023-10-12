@@ -14,7 +14,7 @@ out/
 docs/
 
 # Dotenv file
-.env
+**/*.env
 
 # yarn error
 yarn-error.log
@@ -23,7 +23,7 @@ yarn-error.log
 .DS_Store
 
 # npm
-node_modules/
+**/*node_modules/
 
 # coverage info
 lcov.info
@@ -40,3 +40,8 @@ package/chainConfigs.ts
 
 # not currently using pnpm
 pnpm-lock.yaml
+
+# turbo
+.turbo
+
+**/*wagmiGenerated.ts
