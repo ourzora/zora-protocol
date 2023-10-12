@@ -1,4 +1,4 @@
-# Zora Protcool
+# Zora Protocol
 
 This repository is a monorepo for the Zora Protocol
 
