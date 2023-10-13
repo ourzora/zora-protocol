@@ -258,27 +258,19 @@ contract ZoraCreator1155Impl is
     /// @notice Set up a new token
     /// @param newURI The URI for the token
     /// @param maxSupply The maximum supply of the token
+    /// @param creatorRewardRecipient The address of the creator reward recipient
+    /// @param createReferralRewardRecipient The address of the create referral reward recipient
     function setupNewToken(
         string calldata newURI,
-        uint256 maxSupply
-    ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
-        uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
-
-        return tokenId;
-    }
-
-    /// @notice Set up a new token with a create referral
-    /// @param newURI The URI for the token
-    /// @param maxSupply The maximum supply of the token
-    /// @param createReferral The address of the create referral
-    function setupNewTokenWithCreateReferral(
-        string calldata newURI,
         uint256 maxSupply,
-        address createReferral
+        address creatorRewardRecipient,
+        address createReferralRewardRecipient
     ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
-        _setCreateReferral(tokenId, createReferral);
+        _setCreatorRewardRecipient(tokenId, creatorRewardRecipient);
+
+        _setCreateReferral(tokenId, createReferralRewardRecipient);
 
         return tokenId;
     }
