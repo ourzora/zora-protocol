@@ -407,7 +407,7 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
             msg.value,
             quantity,
-            getCreatorRewardRecipient(),
+            getCreatorRewardRecipient(tokenId),
             createReferrals[tokenId],
             address(0),
             firstMinters[tokenId]
@@ -439,7 +439,7 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
             msg.value,
             quantity,
-            getCreatorRewardRecipient(),
+            getCreatorRewardRecipient(tokenId),
             createReferrals[tokenId],
             mintReferral,
             firstMinters[tokenId]
@@ -456,9 +456,18 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Get the creator reward recipient address
-    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
-    function getCreatorRewardRecipient() public view returns (address payable) {
-        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
+    /// @param tokenId The token id to get the creator reward recipient for
+    /// @dev The creator is not enforced to set a funds recipient address for a specific token or contract-wide, 
+    ///      so in the case of both the reward recipient is set to the creator's contract, 
+    ///      which can be withdrawn by the creator via the `withdrawRewards` function.
+    function getCreatorRewardRecipient(uint256 tokenId) public view returns (address payable) {
+        if (creatorRewardRecipients[tokenId] != address(0)) {
+            return payable(creatorRewardRecipients[tokenId]);
+        } else if (config.fundsRecipient != address(0)) {
+            return payable(config.fundsRecipient);
+        } else {
+            return payable(address(this));
+        }
     }
 
     /// @notice Set a metadata renderer for a token
