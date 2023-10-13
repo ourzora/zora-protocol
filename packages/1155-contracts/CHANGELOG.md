@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.0.4
+
+### Patch Changes
+
+- 64da698: Exporting abi
+
 ## 2.0.3
 
 ### Patch Changes
