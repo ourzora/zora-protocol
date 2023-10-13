@@ -80,7 +80,14 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     /// @notice Contract call to setupNewToken
     /// @param tokenURI URI for the token
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
-    function setupNewToken(string memory tokenURI, uint256 maxSupply) external returns (uint256 tokenId);
+    /// @param creatorRewardRecipient The address of the creator reward recipient
+    /// @param createReferralRewardRecipient The address of the create referral reward recipient
+    function setupNewToken(
+        string calldata tokenURI,
+        uint256 maxSupply,
+        address creatorRewardRecipient,
+        address createReferralRewardRecipient
+    ) external returns (uint256 tokenId);
 
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
 
