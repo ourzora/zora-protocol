@@ -38,7 +38,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         redeemMinter = new ZoraCreatorRedeemMinterStrategy();
         redeemMinter.initialize(address(target));
         vm.startPrank(admin);
-        newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(redeemMinter), target.PERMISSION_BIT_MINTER());
         vm.stopPrank();
     }

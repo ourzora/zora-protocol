@@ -47,7 +47,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function test_MintFlow() external {
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         vm.expectEmit(true, true, true, true);
         emit SaleSet(
@@ -95,7 +95,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function test_MintWithCommentBackwardsCompatible() external {
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         vm.expectEmit(true, true, true, true);
         emit SaleSet(
@@ -143,7 +143,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function test_MintWithComment() external {
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         vm.expectEmit(true, true, true, true);
         emit SaleSet(
@@ -193,7 +193,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function test_SaleStart() external {
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.callSale(
             newTokenId,
@@ -223,7 +223,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.warp(2 days);
 
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.callSale(
             newTokenId,
@@ -253,7 +253,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.warp(2 days);
 
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.callSale(
             newTokenId,
@@ -285,7 +285,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function testFail_setupMint() external {
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.callSale(
             newTokenId,
@@ -319,7 +319,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.warp(2 days);
 
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.callSale(
             newTokenId,
@@ -352,7 +352,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         uint256 numTokens = 10;
 
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.callSale(
             newTokenId,
@@ -384,7 +384,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function test_MintedPerRecipientGetter() external {
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.callSale(
             newTokenId,
@@ -416,7 +416,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function test_ResetSale() external {
         vm.startPrank(admin);
-        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
         target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         vm.expectEmit(false, false, false, false);
         emit SaleSet(
@@ -443,8 +443,8 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function testRevert_CannotSetSaleOfDifferentTokenId() public {
         vm.startPrank(admin);
-        uint256 tokenId1 = target.setupNewToken("https://zora.co/testing/token.json", 10);
-        uint256 tokenId2 = target.setupNewToken("https://zora.co/testing/token.json", 5);
+        uint256 tokenId1 = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
+        uint256 tokenId2 = target.setupNewToken("https://zora.co/testing/token.json", 5, address(0), address(0));
 
         target.addPermission(tokenId1, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.addPermission(tokenId2, address(fixedPrice), target.PERMISSION_BIT_MINTER());
@@ -470,8 +470,8 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
     function testRevert_CannotResetSaleOfDifferentTokenId() public {
         vm.startPrank(admin);
-        uint256 tokenId1 = target.setupNewToken("https://zora.co/testing/token.json", 10);
-        uint256 tokenId2 = target.setupNewToken("https://zora.co/testing/token.json", 5);
+        uint256 tokenId1 = target.setupNewToken("https://zora.co/testing/token.json", 10, address(0), address(0));
+        uint256 tokenId2 = target.setupNewToken("https://zora.co/testing/token.json", 5, address(0), address(0));
 
         target.addPermission(tokenId1, address(fixedPrice), target.PERMISSION_BIT_MINTER());
         target.addPermission(tokenId2, address(fixedPrice), target.PERMISSION_BIT_MINTER());

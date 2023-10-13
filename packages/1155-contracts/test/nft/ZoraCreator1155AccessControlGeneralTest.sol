@@ -30,7 +30,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
         vm.prank(admin);
-        target.setupNewToken("test_uri", 100);
+        target.setupNewToken("test_uri", 100, address(0), address(0));
     }
 
     function _emptyInitData() internal pure returns (bytes[] memory response) {
@@ -58,7 +58,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
 
     function test_openAccessFails_setupNewToken() public {
         vm.expectRevert();
-        target.setupNewToken("", 100);
+        target.setupNewToken("", 100, address(0), address(0));
     }
 
     function test_openAccessFails_updateTokenURI() public {

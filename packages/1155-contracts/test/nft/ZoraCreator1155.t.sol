@@ -137,7 +137,7 @@ contract ZoraCreator1155Test is Test {
         vm.assume(royaltyRecipient != address(0) && royaltyBPS != 0);
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, royaltyBPS, royaltyRecipient);
         bytes[] memory setupActions = new bytes[](1);
-        setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply);
+        setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply, address(0), address(0));
         target.initialize("", "test", config, defaultAdmin, setupActions);
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(1);
@@ -164,7 +164,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1);
+        uint256 tokenId = target.setupNewToken("test", 1, address(0), address(0));
         assertEq(tokenId, 1);
         target.assumeLastTokenIdMatches(tokenId);
 
@@ -176,7 +176,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1);
+        uint256 tokenId = target.setupNewToken("test", 1, address(0), address(0));
 
         assertEq(target.isAdminOrRole(admin, tokenId, adminRole), true);
         assertEq(target.isAdminOrRole(admin, tokenId, minterRole), true);
@@ -189,7 +189,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken(newURI, _maxSupply);
+        uint256 tokenId = target.setupNewToken(newURI, _maxSupply, address(0), address(0));
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
 
@@ -207,7 +207,7 @@ contract ZoraCreator1155Test is Test {
         vm.stopPrank();
 
         vm.startPrank(minterUser);
-        uint256 newToken = target.setupNewToken("test", 1);
+        uint256 newToken = target.setupNewToken("test", 1, address(0), address(0));
 
         target.adminMint(minterUser, newToken, 1, "");
         assertEq(target.uri(1), "test");
@@ -217,14 +217,14 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(this), 0, target.PERMISSION_BIT_MINTER()));
-        target.setupNewToken("test", 1);
+        target.setupNewToken("test", 1, address(0), address(0));
     }
 
     function test_updateTokenURI() external {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1);
+        uint256 tokenId = target.setupNewToken("test", 1, address(0), address(0));
         assertEq(target.uri(tokenId), "test");
 
         vm.prank(admin);
@@ -242,7 +242,7 @@ contract ZoraCreator1155Test is Test {
         vm.startPrank(admin);
         target.setTokenMetadataRenderer(0, contractRenderer);
         target.callRenderer(0, abi.encodeWithSelector(SimpleRenderer.setup.selector, "fallback renderer"));
-        uint256 tokenId = target.setupNewToken("", 1);
+        uint256 tokenId = target.setupNewToken("", 1, address(0), address(0));
         target.setTokenMetadataRenderer(tokenId, singletonRenderer);
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, "singleton renderer"));
         vm.stopPrank();
@@ -270,7 +270,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        target.setupNewToken("test", 1000);
+        target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, user, permission);
@@ -292,7 +292,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        target.setupNewToken("test", 1000);
+        target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, user, permission);
@@ -343,7 +343,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
@@ -358,7 +358,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
         // 2 = permission bit minter
@@ -379,7 +379,7 @@ contract ZoraCreator1155Test is Test {
         init(0, royaltyRecipient);
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
 
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
@@ -396,7 +396,7 @@ contract ZoraCreator1155Test is Test {
         init(0, royaltyRecipient);
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
         target.adminMint(recipient, tokenId, quantity, "");
@@ -410,7 +410,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.expectRevert(
             abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(this), tokenId, target.PERMISSION_BIT_MINTER())
@@ -423,7 +423,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity - 1);
+        uint256 tokenId = target.setupNewToken("test", quantity - 1, address(0), address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CannotMintMoreTokens.selector, tokenId, quantity, 0, quantity - 1));
         vm.prank(admin);
@@ -434,7 +434,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.expectRevert();
         vm.prank(admin);
@@ -447,10 +447,10 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId1 = target.setupNewToken("test", 1000);
+        uint256 tokenId1 = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
-        uint256 tokenId2 = target.setupNewToken("test", 1000);
+        uint256 tokenId2 = target.setupNewToken("test", 1000, address(0), address(0));
 
         uint256[] memory tokenIds = new uint256[](2);
         uint256[] memory quantities = new uint256[](2);
@@ -477,10 +477,10 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId1 = target.setupNewToken("test", 1000);
+        uint256 tokenId1 = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
-        uint256 tokenId2 = target.setupNewToken("test", 1000);
+        uint256 tokenId2 = target.setupNewToken("test", 1000, address(0), address(0));
 
         uint256[] memory tokenIds = new uint256[](2);
         uint256[] memory quantities = new uint256[](2);
@@ -515,7 +515,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId1 = target.setupNewToken("test", 1000);
+        uint256 tokenId1 = target.setupNewToken("test", 1000, address(0), address(0));
 
         MockTransferHookReceiver testHook = new MockTransferHookReceiver();
 
@@ -543,10 +543,10 @@ contract ZoraCreator1155Test is Test {
         init(0, royaltyRecipient);
 
         vm.prank(admin);
-        uint256 tokenId1 = target.setupNewToken("test", 1000);
+        uint256 tokenId1 = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
-        uint256 tokenId2 = target.setupNewToken("test", 1000);
+        uint256 tokenId2 = target.setupNewToken("test", 1000, address(0), address(0));
 
         uint256[] memory tokenIds = new uint256[](2);
         uint256[] memory quantities = new uint256[](2);
@@ -577,7 +577,7 @@ contract ZoraCreator1155Test is Test {
         init(0, address(0x99a));
 
         vm.prank(admin);
-        uint256 tokenId1 = target.setupNewToken("test", 1000);
+        uint256 tokenId1 = target.setupNewToken("test", 1000, address(0), address(0));
 
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory quantities = new uint256[](1);
@@ -594,7 +594,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory quantities = new uint256[](1);
@@ -612,7 +612,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity - 1);
+        uint256 tokenId = target.setupNewToken("test", quantity - 1, address(0), address(0));
 
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory quantities = new uint256[](1);
@@ -628,7 +628,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         uint256[] memory tokenIds = new uint256[](1);
         uint256[] memory quantities = new uint256[](1);
@@ -646,7 +646,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), minterRole);
@@ -666,7 +666,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
         target.mint(SimpleMinter(payable(address(0))), tokenId, 0, "");
@@ -680,7 +680,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
@@ -700,7 +700,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -726,7 +726,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), createReferral);
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -753,7 +753,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -780,7 +780,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), createReferral);
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -808,7 +808,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -826,7 +826,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
             tokenId,
@@ -871,7 +871,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
             tokenId,
@@ -916,7 +916,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.startPrank(admin);
-        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), createReferral);
 
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
@@ -962,7 +962,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewTokenWithCreateReferral("test", quantity, createReferral);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), createReferral);
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
             tokenId,
@@ -1008,7 +1008,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
             tokenId,
@@ -1110,7 +1110,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -1143,7 +1143,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("test", quantity);
+        uint256 tokenId = target.setupNewToken("test", quantity, address(0), address(0));
         target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
         target.callSale(
             tokenId,
@@ -1174,7 +1174,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("", 1);
+        uint256 tokenId = target.setupNewToken("", 1, address(0), address(0));
         target.addPermission(tokenId, address(simpleMinter), minterRole);
 
         target.callSale(tokenId, simpleMinter, abi.encodeWithSignature("setNum(uint256)", 1));
@@ -1193,7 +1193,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.startPrank(admin);
 
-        uint256 tokenId = target.setupNewToken("", 1);
+        uint256 tokenId = target.setupNewToken("", 1, address(0), address(0));
         target.setTokenMetadataRenderer(tokenId, renderer);
         assertEq(target.uri(tokenId), "");
         target.callRenderer(tokenId, abi.encodeWithSelector(SimpleRenderer.setup.selector, "renderer"));
@@ -1233,7 +1233,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("mockuri", 1);
+        uint256 tokenId = target.setupNewToken("mockuri", 1, address(0), address(0));
         assertEq(target.uri(tokenId), "mockuri");
     }
 
@@ -1243,7 +1243,7 @@ contract ZoraCreator1155Test is Test {
         SimpleRenderer renderer = SimpleRenderer(address(new SimpleMinter()));
 
         vm.startPrank(admin);
-        uint256 tokenId = target.setupNewToken("", 1);
+        uint256 tokenId = target.setupNewToken("", 1, address(0), address(0));
         vm.expectRevert(abi.encodeWithSelector(ICreatorRendererControl.RendererNotValid.selector, address(renderer)));
         target.setTokenMetadataRenderer(tokenId, renderer);
     }
@@ -1254,7 +1254,7 @@ contract ZoraCreator1155Test is Test {
         SimpleRenderer renderer = new SimpleRenderer();
 
         vm.startPrank(admin);
-        uint256 tokenId = target.setupNewToken("", 1);
+        uint256 tokenId = target.setupNewToken("", 1, address(0), address(0));
         target.setTokenMetadataRenderer(tokenId, renderer);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CallFailed.selector, ""));
@@ -1282,7 +1282,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 10);
+        uint256 tokenId = target.setupNewToken("test", 10, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -1306,7 +1306,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 10);
+        uint256 tokenId = target.setupNewToken("test", 10, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), adminRole);
@@ -1332,7 +1332,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
         target.addPermission(tokenId, address(simpleMinter), minterRole);
@@ -1356,7 +1356,7 @@ contract ZoraCreator1155Test is Test {
         init();
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         SimpleMinter(payable(simpleMinter)).setReceiveETH(false);
 
@@ -1404,7 +1404,7 @@ contract ZoraCreator1155Test is Test {
         target.upgradeTo(new1155Impl);
 
         vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 1000);
+        uint256 tokenId = target.setupNewToken("test", 1000, address(0), address(0));
 
         vm.prank(admin);
         target.adminMint(address(0x1234), tokenId, 1, "");

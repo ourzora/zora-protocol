@@ -85,7 +85,7 @@ contract ZoraCreator1155FactoryTest is Test {
         // Assume royalty recipient is not 0
         vm.assume(royaltyRecipient != payable(address(0)));
         bytes[] memory initSetup = new bytes[](1);
-        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100, address(0), address(0));
         address deployedAddress = factory.createContract(
             contractURI,
             name,
@@ -161,7 +161,7 @@ contract ZoraCreator1155FactoryTest is Test {
             royaltyMintSchedule: 0
         });
         bytes[] memory initSetup = new bytes[](1);
-        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100, address(0), address(0));
 
         // create x number of contracts via the factory, this should affect the nonce.
         for (uint256 i = 0; i < numberOfCallsBeforeCreation; i++) {
@@ -211,7 +211,7 @@ contract ZoraCreator1155FactoryTest is Test {
             royaltyMintSchedule: 0
         });
         bytes[] memory initSetup = new bytes[](1);
-        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100, address(0), address(0));
 
         // now create deterministically, address should match expected address
         vm.prank(contractCreator);
@@ -232,7 +232,7 @@ contract ZoraCreator1155FactoryTest is Test {
             royaltyMintSchedule: 0
         });
         bytes[] memory initSetup = new bytes[](1);
-        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100, address(0), address(0));
 
         // now create deterministically, address should match expected address
         address createdAddress = factory.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);

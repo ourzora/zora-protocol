@@ -46,7 +46,7 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     function _setupToken(IZoraCreator1155 target, IMinter1155 fixedPrice, uint96 tokenPrice) private returns (uint256 tokenId) {
         string memory tokenURI = "ipfs://token";
 
-        tokenId = target.setupNewToken(tokenURI, tokenMaxSupply);
+        tokenId = target.setupNewToken(tokenURI, tokenMaxSupply, address(0), address(0));
 
         target.addPermission(tokenId, address(fixedPrice), PERMISSION_BIT_MINTER);
 
@@ -148,29 +148,5 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         for (uint256 i = 0; i < forkTestChains.length; i++) {
             testTheFork(forkTestChains[i]);
         }
-    }
-
-    // this is a temporary test to simulate the upgrade to the correct factory implementation
-    // on zora goerli. it can be deleted post upgrade
-    function test_fork_zoraGoerli_factoryUpgradeCanMint() external {
-        // create and select the fork, which will be used for all subsequent calls
-        // it will also affect the current block chain id based on the rpc url returned
-        vm.createSelectFork(vm.rpcUrl("zora_goerli"));
-
-        Deployment memory deployment = getDeployment();
-
-        address factoryAddress = deployment.factoryProxy;
-        ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(factoryAddress);
-
-        vm.prank(factory.owner());
-
-        factory.upgradeTo(deployment.factoryImpl);
-
-        // sanity check - check minters match config
-        assertEq(address(factory.merkleMinter()), deployment.merkleMintSaleStrategy);
-        assertEq(address(factory.fixedPriceMinter()), deployment.fixedPriceSaleStrategy);
-        assertEq(address(factory.redeemMinterFactory()), deployment.redeemMinterFactory);
-
-        mintTokenAtFork(factory);
     }
 }
