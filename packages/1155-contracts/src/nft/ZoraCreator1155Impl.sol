@@ -9,6 +9,7 @@ import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/c
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {ERC1155Rewards} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155Rewards.sol";
 import {ERC1155RewardsStorageV1} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155RewardsStorageV1.sol";
+import {ERC1155RewardsStorageV2} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155RewardsStorageV2.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
@@ -53,7 +54,8 @@ contract ZoraCreator1155Impl is
     CreatorRoyaltiesControl,
     ERC1155Rewards,
     ERC1155RewardsStorageV1,
-    ERC1155DelegationStorageV1
+    ERC1155DelegationStorageV1,
+    ERC1155RewardsStorageV2
 {
     /// @notice This user role allows for any action to be performed
     uint256 public constant PERMISSION_BIT_ADMIN = 2 ** 1;
