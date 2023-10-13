@@ -77,19 +77,11 @@ contract ZoraCreator1155FactoryTest is Test {
         assertEq(address(minters[2]), address(3));
     }
 
-    function test_createContract(
-        string memory contractURI,
-        string memory name,
-        uint32 royaltyBPS,
-        uint32 royaltyMintSchedule,
-        address royaltyRecipient,
-        address payable admin
-    ) external {
+    function test_createContract(string memory contractURI, string memory name, uint32 royaltyBPS, address royaltyRecipient, address payable admin) external {
         // If the factory is the admin, the admin flag is cleared
         // during multicall breaking a further test assumption.
         // Additionally, this case makes no sense from a user perspective.
         vm.assume(admin != payable(address(factory)));
-        vm.assume(royaltyMintSchedule != 1);
         // Assume royalty recipient is not 0
         vm.assume(royaltyRecipient != payable(address(0)));
         bytes[] memory initSetup = new bytes[](1);
@@ -97,18 +89,14 @@ contract ZoraCreator1155FactoryTest is Test {
         address deployedAddress = factory.createContract(
             contractURI,
             name,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({
-                royaltyBPS: royaltyBPS,
-                royaltyRecipient: royaltyRecipient,
-                royaltyMintSchedule: royaltyMintSchedule
-            }),
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: royaltyBPS, royaltyRecipient: royaltyRecipient, royaltyMintSchedule: 0}),
             admin,
             initSetup
         );
         ZoraCreator1155Impl target = ZoraCreator1155Impl(deployedAddress);
 
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = target.getRoyalties(0);
-        assertEq(config.royaltyMintSchedule, royaltyMintSchedule);
+        assertEq(config.royaltyMintSchedule, 0);
         assertEq(config.royaltyBPS, royaltyBPS);
         assertEq(config.royaltyRecipient, royaltyRecipient);
         assertEq(target.permissions(0, admin), target.PERMISSION_BIT_ADMIN());
@@ -170,7 +158,7 @@ contract ZoraCreator1155FactoryTest is Test {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
             royaltyBPS: 10,
             royaltyRecipient: vm.addr(5),
-            royaltyMintSchedule: 100
+            royaltyMintSchedule: 0
         });
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
@@ -220,7 +208,7 @@ contract ZoraCreator1155FactoryTest is Test {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
             royaltyBPS: 10,
             royaltyRecipient: vm.addr(5),
-            royaltyMintSchedule: 100
+            royaltyMintSchedule: 0
         });
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
@@ -241,7 +229,7 @@ contract ZoraCreator1155FactoryTest is Test {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
             royaltyBPS: 10,
             royaltyRecipient: vm.addr(5),
-            royaltyMintSchedule: 100
+            royaltyMintSchedule: 0
         });
         bytes[] memory initSetup = new bytes[](1);
         initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "ipfs://asdfadsf", 100);
