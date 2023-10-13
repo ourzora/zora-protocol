@@ -30,4 +30,6 @@ interface IZoraCreator1155Errors {
 
     error MintNotYetStarted();
     error PremintDeleted();
+
+    error InvalidPermission();
 }

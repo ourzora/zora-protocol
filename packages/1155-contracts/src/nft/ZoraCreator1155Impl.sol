@@ -457,8 +457,8 @@ contract ZoraCreator1155Impl is
 
     /// @notice Get the creator reward recipient address
     /// @param tokenId The token id to get the creator reward recipient for
-    /// @dev The creator is not enforced to set a funds recipient address for a specific token or contract-wide, 
-    ///      so in the case of both the reward recipient is set to the creator's contract, 
+    /// @dev The creator is not enforced to set a funds recipient address for a specific token or contract-wide,
+    ///      so in the case of both the reward recipient is set to the creator's contract,
     ///      which can be withdrawn by the creator via the `withdrawRewards` function.
     function getCreatorRewardRecipient(uint256 tokenId) public view returns (address payable) {
         if (creatorRewardRecipients[tokenId] != address(0)) {
@@ -695,6 +695,17 @@ contract ZoraCreator1155Impl is
     function _setFundsRecipient(address payable fundsRecipient) internal {
         config.fundsRecipient = fundsRecipient;
         emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
+    }
+
+    /// @notice Allows the creator reward recipient, token admin, or contract admin to update the address that can claim the token's creator rewards
+    function updateCreatorRewardRecipient(uint256 tokenId, address recipient) external {
+        if (msg.sender != getCreatorRewardRecipient(tokenId) || !_isAdminOrRole(msg.sender, tokenId, PERMISSION_BIT_MINTER)) revert InvalidPermission();
+
+        _setCreatorRewardRecipient(tokenId, recipient);
+    }
+
+    function _setCreatorRewardRecipient(uint256 tokenId, address recipient) internal {
+        creatorRewardRecipients[tokenId] = recipient;
     }
 
     /// @notice Allows the create referral to update the address that can claim their rewards
