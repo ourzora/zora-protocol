@@ -11,7 +11,7 @@ import {ITransferHookReceiver} from "../../src/interfaces/ITransferHookReceiver.
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
-import {PremintConfig, TokenCreationConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {PremintConfigV2, TokenCreationConfigV2} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {ZoraCreator1155Attribution} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
@@ -1043,8 +1043,8 @@ contract ZoraCreator1155Test is Test {
 
         init();
 
-        PremintConfig memory premintConfig = PremintConfig({
-            tokenConfig: TokenCreationConfig({
+        PremintConfigV2 memory premintConfig = PremintConfigV2({
+            tokenConfig: TokenCreationConfigV2({
                 // Metadata URI for the created token
                 tokenURI: "",
                 // Max supply of the created token
@@ -1057,12 +1057,8 @@ contract ZoraCreator1155Test is Test {
                 mintStart: 0,
                 // The duration of the mint, starting from the first mint of this token. 0 for infinite
                 mintDuration: type(uint64).max - 1,
-                // RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
-                royaltyMintSchedule: 0,
-                // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+                royaltyRecipient: admin,
                 royaltyBPS: 0,
-                // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
-                royaltyRecipient: address(0),
                 // Fixed price minter address
                 fixedPriceMinter: address(fixedPriceMinter),
                 // Default create referral
@@ -1087,7 +1083,15 @@ contract ZoraCreator1155Test is Test {
             chainId := chainid()
         }
 
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(adminKey, ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, address(target), chainId));
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(
+            adminKey,
+            ZoraCreator1155Attribution.premintHashedTypeDataV4(
+                ZoraCreator1155Attribution.hashPremint(premintConfig),
+                address(target),
+                ZoraCreator1155Attribution.HASHED_VERSION_2,
+                chainId
+            )
+        );
 
         bytes memory signature = abi.encodePacked(r, s, v);
 

@@ -32,7 +32,7 @@ import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
-import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfigV2} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -752,7 +752,7 @@ contract ZoraCreator1155Impl is
     /// @param premintConfig configuration of token to be created
     /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
     function delegateSetupNewToken(
-        PremintConfig calldata premintConfig,
+        PremintConfigV2 calldata premintConfig,
         bytes calldata signature,
         address sender
     ) public nonReentrant returns (uint256 newTokenId) {
@@ -767,10 +767,16 @@ contract ZoraCreator1155Impl is
         bytes32 hashedPremintConfig = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
         // recover the signer from the data
-        address creator = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
+        address creator = ZoraCreator1155Attribution.recoverSignerHashed(
+            hashedPremintConfig,
+            signature,
+            address(this),
+            ZoraCreator1155Attribution.HASHED_VERSION_2,
+            block.chainid
+        );
 
         // this is what attributes this token to have been created by the original creator
-        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION, creator, signature);
+        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION_2, creator, signature);
 
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
@@ -797,7 +803,7 @@ contract ZoraCreator1155Impl is
         _addPermission(newTokenId, creator, PERMISSION_BIT_ADMIN);
     }
 
-    function validatePremint(PremintConfig calldata premintConfig) private view {
+    function validatePremint(PremintConfigV2 calldata premintConfig) private view {
         if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
             // if the mint start is in the future, then revert
             revert MintNotYetStarted();
