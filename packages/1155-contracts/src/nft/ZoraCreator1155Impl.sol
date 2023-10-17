@@ -268,9 +268,15 @@ contract ZoraCreator1155Impl is
     ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256) {
         uint256 tokenId = _setupNewTokenAndPermission(newURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
-        _setCreatorRewardRecipient(tokenId, creatorRewardRecipient);
+        if (creatorRewardRecipient != address(0)) {
+            _addPermission(tokenId, creatorRewardRecipient, PERMISSION_BIT_ADMIN);
 
-        _setCreateReferral(tokenId, createReferralRewardRecipient);
+            _setCreatorRewardRecipient(tokenId, creatorRewardRecipient);
+        }
+
+        if (createReferralRewardRecipient != address(0)) {
+            _setCreateReferralRewardRecipient(tokenId, createReferralRewardRecipient);
+        }
 
         return tokenId;
     }
@@ -689,10 +695,8 @@ contract ZoraCreator1155Impl is
         emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
     }
 
-    /// @notice Allows the creator reward recipient, token admin, or contract admin to update the address that can claim the token's creator rewards
-    function updateCreatorRewardRecipient(uint256 tokenId, address recipient) external {
-        if (msg.sender != getCreatorRewardRecipient(tokenId) || !_isAdminOrRole(msg.sender, tokenId, PERMISSION_BIT_MINTER)) revert InvalidPermission();
-
+    /// @notice Allows a token admin to update the address of its creator rewards recipient
+    function setCreatorRewardRecipient(uint256 tokenId, address recipient) external onlyAdminOrRole(tokenId, PERMISSION_BIT_ADMIN) {
         _setCreatorRewardRecipient(tokenId, recipient);
     }
 
@@ -700,14 +704,14 @@ contract ZoraCreator1155Impl is
         creatorRewardRecipients[tokenId] = recipient;
     }
 
-    /// @notice Allows the create referral to update the address that can claim their rewards
-    function updateCreateReferral(uint256 tokenId, address recipient) external {
+    /// @notice Allows a token's create referral reward recipient to update the address eligible to claim their rewards
+    function setCreateReferralRewardRecipient(uint256 tokenId, address recipient) external {
         if (msg.sender != createReferrals[tokenId]) revert ONLY_CREATE_REFERRAL();
 
-        _setCreateReferral(tokenId, recipient);
+        _setCreateReferralRewardRecipient(tokenId, recipient);
     }
 
-    function _setCreateReferral(uint256 tokenId, address recipient) internal {
+    function _setCreateReferralRewardRecipient(uint256 tokenId, address recipient) internal {
         createReferrals[tokenId] = recipient;
     }
 
