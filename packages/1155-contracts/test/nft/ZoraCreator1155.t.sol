@@ -1135,6 +1135,91 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
+    function test_SetCollaboratorAsCreatorRewardRecipient() public {
+        address collaborator = makeAddr("collaborator");
+        uint256 quantity = 100;
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity, collaborator, createReferral);
+
+        address payable creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        assertEq(creatorRewardRecipient, collaborator);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+
+        (, , address fundsRecipient, , , ) = target.config();
+
+        assertEq(protocolRewards.balanceOf(fundsRecipient), 0);
+        assertEq(protocolRewards.balanceOf(collaborator), settings.creatorReward + settings.firstMinterReward);
+    }
+
+    function test_UpdateCreatorRewardRecipient() public {
+        address collaborator = makeAddr("collaborator");
+        uint256 quantity = 100;
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity, collaborator, createReferral);
+
+        address payable creatorRewardRecipient;
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        assertEq(creatorRewardRecipient, collaborator);
+
+        address collaboratorAlt = makeAddr("collaboratorAlt");
+
+        vm.prank(collaborator);
+        target.setCreatorRewardRecipient(tokenId, collaboratorAlt);
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        assertEq(creatorRewardRecipient, collaboratorAlt);
+    }
+
+    function test_CreatorRewardRecipientConditions() public {
+        address collaborator = makeAddr("collaborator");
+        uint256 quantity = 100;
+
+        init();
+
+        address payable creatorRewardRecipient;
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity, collaborator, createReferral);
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        assertEq(creatorRewardRecipient, collaborator);
+
+        vm.prank(admin);
+        target.setCreatorRewardRecipient(tokenId, address(0));
+
+        (, , address contractFundsRecipient, , , ) = target.config();
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, contractFundsRecipient);
+
+        vm.prank(admin);
+        target.setFundsRecipient(payable(address(0)));
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, address(target));
+    }
+
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {
         vm.assume(quantity > 0 && quantity < 1_000_000);
         vm.assume(salePrice > 0 && salePrice < 10 ether);
