@@ -10,15 +10,10 @@ script = 'script'
 src = 'src'
 via_ir = true
 
-[profile.optimized]
-auto_detect_solc = true
-optimizer = true
-optimizer_runs = 500000
-out = 'out'
-script = 'src'
-src = 'src'
-test = 'src'
-via_ir = true
+[profile.dev]
+optimizer = false 
+optimizer_runs = 0  
+via_ir = false
 
 [fmt]
 bracket_spacing = true
