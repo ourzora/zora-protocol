@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "test": "forge test",
-    "dev": "forge test --watch -vvv",
+    "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test:fork": "forge test -vvv --match-test fork",
     "test-gas": "forge test --gas-report",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
