@@ -76,10 +76,10 @@ describe("ZoraCreator1155Preminter", () => {
         collection: {
           contractAdmin: deployerAccount,
           contractName: "Testing Contract",
-          contractURI: "https://zora.co/testing/contract.json",
+          contractURI: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
-        mint: {
-          tokenURI: "https://zora.co/testing/token.json",
+        token: {
+          tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
         },
       });
 
@@ -90,7 +90,7 @@ describe("ZoraCreator1155Preminter", () => {
           collection: {
             contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
             contractName: "Testing Contract",
-            contractURI: "https://zora.co/testing/contract.json",
+            contractURI: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
           },
           premint: {
             deleted: false,
@@ -104,13 +104,13 @@ describe("ZoraCreator1155Preminter", () => {
               royaltyBPS: 1000,
               royaltyMintSchedule: 0,
               royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-              tokenURI: "https://zora.co/testing/token.json",
+              tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
             },
             uid: 3,
             version: 1,
           },
           signature:
-            "0xf92fd57eaee15534d994775c77194b0640f2ce999ff3de2b780c17dfbc4a322a0e1472086d665f76de99bab7542d6c2c8406d791c80c97d0a90cf0a351f7b4a41b",
+            "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
         }
       );
 
@@ -126,7 +126,7 @@ describe("ZoraCreator1155Preminter", () => {
       collection: {
         contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
         contractName: "Testing Contract",
-        contractURI: "https://zora.co/testing/contract.json",
+        contractURI: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
       },
       premint: {
         uid: 3,
@@ -142,12 +142,12 @@ describe("ZoraCreator1155Preminter", () => {
           royaltyBPS: 1000,
           fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
           royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          tokenURI: "https://zora.co/testing/token.json",
+          tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
         },
       },
       chain_name: "ZORA-TESTNET",
       signature:
-        "0xf92fd57eaee15534d994775c77194b0640f2ce999ff3de2b780c17dfbc4a322a0e1472086d665f76de99bab7542d6c2c8406d791c80c97d0a90cf0a351f7b4a41b",
+        "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
     } as const;
     const publicClient = createPublicClient({
       chain: foundry,
@@ -171,7 +171,7 @@ describe("ZoraCreator1155Preminter", () => {
         collection: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
           contractName: "Testing Contract",
-          contractURI: "https://zora.co/testing/contract.json",
+          contractURI: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
         premint: {
           deleted: false,
@@ -185,13 +185,13 @@ describe("ZoraCreator1155Preminter", () => {
             royaltyBPS: 1000,
             royaltyMintSchedule: 0,
             royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-            tokenURI: "https://zora.co/testing/token.json",
+            tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
           },
           uid: 3,
           version: 1,
         },
         signature:
-          "0xf92fd57eaee15534d994775c77194b0640f2ce999ff3de2b780c17dfbc4a322a0e1472086d665f76de99bab7542d6c2c8406d791c80c97d0a90cf0a351f7b4a41b",
+          "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
       });
       preminterApi.post = vi.fn();
 
@@ -199,7 +199,7 @@ describe("ZoraCreator1155Preminter", () => {
 
       const premint = await preminterApi.executePremintWithWallet({
         data: await preminterApi.getPremintData(
-          "0x0bdD2Fcb03912403c0B4699EDBB6bDAd65dACf62",
+          "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
           3
         ),
         account: deployerAccount,
@@ -212,11 +212,11 @@ describe("ZoraCreator1155Preminter", () => {
       });
 
       expect(premint.log).toEqual({
-        contractAddress: "0x0bdD2Fcb03912403c0B4699EDBB6bDAd65dACf62",
+        contractAddress: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
         contractConfig: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
           contractName: "Testing Contract",
-          contractURI: "https://zora.co/testing/contract.json",
+          contractURI: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
         createdNewContract: false,
         minter: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -231,7 +231,7 @@ describe("ZoraCreator1155Preminter", () => {
           royaltyBPS: 1000,
           royaltyMintSchedule: 0,
           royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          tokenURI: "https://zora.co/testing/token.json",
+          tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
         },
         tokenId: 1n,
         uid: 3,

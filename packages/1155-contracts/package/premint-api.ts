@@ -83,7 +83,9 @@ function getLogFromReceipt(receipt: TransactionReceipt) {
         eventName: "Preminted",
         ...data,
       });
-      return decodedLog.args;
+      if (decodedLog.eventName === "Preminted") {
+        return decodedLog.args;
+      }
     } catch (err: any) {}
   }
 }
@@ -258,7 +260,7 @@ export class PreminterAPI {
    * @param settings Settings for the new premint
    * @param settings.account Account to sign the premint with. Taken from walletClient if none passed in.
    * @param settings.collection Collection information for the mint
-   * @param settings.mint Mint argument settings, optional settings are overridden with sensible defaults.
+   * @param settings.token Mint argument settings, optional settings are overridden with sensible defaults.
    * @param settings.publicClient Public client (optional) – instantiated if not passed in with defaults.
    * @param settings.walletClient Required wallet client for signing the premint message.
    * @param settings.executionSettings Execution settings for premint options
@@ -270,7 +272,7 @@ export class PreminterAPI {
   async createPremint({
     account,
     collection,
-    mint,
+    token,
     publicClient,
     walletClient,
     executionSettings,
@@ -280,7 +282,7 @@ export class PreminterAPI {
     checkSignature?: boolean;
     walletClient: WalletClient;
     collection: PremintResponse["collection"];
-    mint: MintArgumentsSettings;
+    token: MintArgumentsSettings;
     publicClient?: PublicClient;
     executionSettings?: {
       deleted?: boolean;
@@ -300,7 +302,7 @@ export class PreminterAPI {
       ...DefaultMintArguments,
       fixedPriceMinter: this.getFixedPriceMinterAddress(),
       royaltyRecipient: account,
-      ...mint,
+      ...token,
     };
 
     let uid = executionSettings?.uid;
