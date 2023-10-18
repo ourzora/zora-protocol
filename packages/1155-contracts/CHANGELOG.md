@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.1.0-premint-api.1
+
+### Patch Changes
+
+- 8395b8e: Fix release code
+
 ## 2.1.0-premint-api.0
 
 ### Minor Changes
