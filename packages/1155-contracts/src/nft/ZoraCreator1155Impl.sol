@@ -458,16 +458,16 @@ contract ZoraCreator1155Impl is
     /// @dev The creator is not enforced to set a funds recipient address for a specific token or contract-wide,
     ///      so in the case of both the reward recipient is set to the creator's contract,
     ///      which can be withdrawn by the creator via the `withdrawRewards` function.
-    function getCreatorRewardRecipient(uint256 tokenId) public view returns (address payable) {
+    function getCreatorRewardRecipient(uint256 tokenId) public view returns (address) {
         if (getRoyalties(tokenId).royaltyRecipient != address(0)) {
-            return payable(getRoyalties(tokenId).royaltyRecipient);
+            return getRoyalties(tokenId).royaltyRecipient;
         }
 
         if (config.fundsRecipient != address(0)) {
-            return payable(config.fundsRecipient);
+            return config.fundsRecipient;
         }
 
-        return payable(address(this));
+        return address(this);
     }
 
     /// @notice Set a metadata renderer for a token
