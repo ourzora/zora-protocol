@@ -77,6 +77,19 @@ contract ZoraCreator1155Test is Test {
     address internal zora;
 
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
+    event RewardsDeposit(
+        address indexed creator,
+        address indexed createReferral,
+        address indexed mintReferral,
+        address firstMinter,
+        address zora,
+        address from,
+        uint256 creatorReward,
+        uint256 createReferralReward,
+        uint256 mintReferralReward,
+        uint256 firstMinterReward,
+        uint256 zoraReward
+    );
 
     function setUp() external {
         creator = makeAddr("creator");
@@ -1144,7 +1157,7 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity);
 
-        address payable creatorRewardRecipient;
+        address creatorRewardRecipient;
 
         creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
 
@@ -1166,6 +1179,20 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDeposit(
+            collaborator,
+            zora,
+            zora,
+            collaborator,
+            zora,
+            address(target),
+            settings.creatorReward,
+            settings.createReferralReward,
+            settings.mintReferralReward,
+            settings.firstMinterReward,
+            settings.zoraReward
+        );
         target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
 
         assertEq(protocolRewards.balanceOf(collaborator), settings.creatorReward + settings.firstMinterReward);
@@ -1173,7 +1200,7 @@ contract ZoraCreator1155Test is Test {
 
     function test_CreatorRewardRecipientConditionalAddress() public {
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig;
-        address payable creatorRewardRecipient;
+        address creatorRewardRecipient;
 
         address collaborator = makeAddr("collaborator");
         uint256 quantity = 100;
@@ -1204,6 +1231,33 @@ contract ZoraCreator1155Test is Test {
 
         creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
         assertEq(creatorRewardRecipient, address(target));
+    }
+
+    function test_ContractAsCreatorRewardRecipientFallback() public {
+        uint256 quantity = 100;
+
+        init();
+
+        vm.startPrank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        target.setFundsRecipient(payable(address(0)));
+
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+        vm.stopPrank();
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        address creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+
+        assertEq(creatorRewardRecipient, address(target));
+        assertEq(protocolRewards.balanceOf(address(target)), settings.creatorReward + settings.firstMinterReward);
     }
 
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {
