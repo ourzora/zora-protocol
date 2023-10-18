@@ -1,5 +1,15 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.1.0-premint-api.0
+
+### Minor Changes
+
+- 9495c34: Supply royalties are no longer supported
+
+### Patch Changes
+
+- 22157fd: Add SDK
+
 ## 2.0.4
 
 ### Patch Changes
