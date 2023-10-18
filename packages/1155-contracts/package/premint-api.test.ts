@@ -206,7 +206,7 @@ describe("ZoraCreator1155Preminter", () => {
         walletClient,
         publicClient,
         mintArguments: {
-          quantityToMint: 1n,
+          quantityToMint: 1,
           mintComment: "",
         },
       });

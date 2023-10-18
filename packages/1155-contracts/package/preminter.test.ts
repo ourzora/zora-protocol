@@ -199,7 +199,7 @@ describe("ZoraCreator1155Preminter", () => {
         address: zoraCreator1155FactoryImplAddress[ctx.forkedChainId],
         functionName: "fixedPriceMinter",
       });
-      ctx.preminterAddress = zoraCreator1155PremintExecutorAddress;
+      ctx.preminterAddress = zoraCreator1155PremintExecutorAddress[999];
       const deployed = await deployPreminterContract(factoryProxyAddress);
       preminterAddress = deployed.preminterAddress;
     } else {
