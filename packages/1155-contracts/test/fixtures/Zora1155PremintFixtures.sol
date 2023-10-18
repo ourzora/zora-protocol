@@ -18,7 +18,7 @@ library Zora1155PremintFixtures {
     }
 
     function defaultRoyaltyConfig(address royaltyRecipient) internal pure returns (ICreatorRoyaltiesControl.RoyaltyConfiguration memory) {
-        return ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 10, royaltyRecipient: royaltyRecipient, royaltyMintSchedule: 100});
+        return ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: 10, royaltyRecipient: royaltyRecipient, royaltyMintSchedule: 0});
     }
 
     function makeDefaultTokenCreationConfig(IMinter1155 fixedPriceMinter, address royaltyRecipient) internal pure returns (TokenCreationConfig memory) {

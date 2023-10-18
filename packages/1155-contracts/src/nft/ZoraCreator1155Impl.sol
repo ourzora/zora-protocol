@@ -388,6 +388,7 @@ contract ZoraCreator1155Impl is
                 _requireAdminOrRole(msg.sender, tokenIds[i], PERMISSION_BIT_MINTER);
             }
         }
+
         _mintBatch(recipient, tokenIds, quantities, data);
     }
 
@@ -553,61 +554,36 @@ contract ZoraCreator1155Impl is
         return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId || ERC1155Upgradeable.supportsInterface(interfaceId);
     }
 
-    function _handleSupplyRoyalty(uint256 tokenId, uint256 mintAmount, bytes memory data) internal returns (uint256 totalRoyaltyMints) {
-        uint256 royaltyMintSchedule = royalties[tokenId].royaltyMintSchedule;
-        if (royaltyMintSchedule == 0) {
-            royaltyMintSchedule = royalties[CONTRACT_BASE_ID].royaltyMintSchedule;
-        }
-        if (royaltyMintSchedule == 0) {
-            // If we still have no schedule, return 0 supply royalty.
-            return 0;
-        }
-        uint256 maxSupply = tokens[tokenId].maxSupply;
-        uint256 totalMinted = tokens[tokenId].totalMinted;
-
-        totalRoyaltyMints = (mintAmount + (totalMinted % royaltyMintSchedule)) / (royaltyMintSchedule - 1);
-        totalRoyaltyMints = MathUpgradeable.min(totalRoyaltyMints, maxSupply - (mintAmount + totalMinted));
-        if (totalRoyaltyMints > 0) {
-            address royaltyRecipient = royalties[tokenId].royaltyRecipient;
-            if (royaltyRecipient == address(0)) {
-                royaltyRecipient = royalties[CONTRACT_BASE_ID].royaltyRecipient;
-            }
-            // If we have no recipient set, return 0 supply royalty.
-            if (royaltyRecipient == address(0)) {
-                return 0;
-            }
-            super._mint(royaltyRecipient, tokenId, totalRoyaltyMints, data);
-        }
-    }
-
     /// Generic 1155 function overrides ///
 
-    /// @notice Mint function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
+    /// @notice Mint function that 1) checks quantity 2) keeps track of allowed tokens
     /// @param to to mint to
     /// @param id token id to mint
     /// @param amount of tokens to mint
     /// @param data as specified by 1155 standard
     function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
-        uint256 supplyRoyaltyMints = _handleSupplyRoyalty(id, amount, data);
-        _requireCanMintQuantity(id, amount + supplyRoyaltyMints);
+        _requireCanMintQuantity(id, amount);
+
+        tokens[id].totalMinted += amount;
 
         super._mint(to, id, amount, data);
-        tokens[id].totalMinted += amount + supplyRoyaltyMints;
     }
 
-    /// @notice Mint batch function that 1) checks quantity and 2) handles supply royalty 3) keeps track of allowed tokens
+    /// @notice Mint batch function that 1) checks quantity and 2) keeps track of allowed tokens
     /// @param to to mint to
     /// @param ids token ids to mint
     /// @param amounts of tokens to mint
     /// @param data as specified by 1155 standard
     function _mintBatch(address to, uint256[] memory ids, uint256[] memory amounts, bytes memory data) internal virtual override {
-        super._mintBatch(to, ids, amounts, data);
+        uint256 numTokens = ids.length;
 
-        for (uint256 i = 0; i < ids.length; ++i) {
-            uint256 supplyRoyaltyMints = _handleSupplyRoyalty(ids[i], amounts[i], data);
-            _requireCanMintQuantity(ids[i], amounts[i] + supplyRoyaltyMints);
-            tokens[ids[i]].totalMinted += amounts[i] + supplyRoyaltyMints;
+        for (uint256 i; i < numTokens; ++i) {
+            _requireCanMintQuantity(ids[i], amounts[i]);
+
+            tokens[ids[i]].totalMinted += amounts[i];
         }
+
+        super._mintBatch(to, ids, amounts, data);
     }
 
     /// @notice Burns a batch of tokens
