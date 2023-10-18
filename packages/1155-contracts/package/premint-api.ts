@@ -1,10 +1,11 @@
-import { createPublicClient, http, isAddressEqual } from "viem";
+import { createPublicClient, decodeEventLog, http } from "viem";
 import type {
   Account,
   Address,
   Chain,
   Hex,
   PublicClient,
+  TransactionReceipt,
   WalletClient,
 } from "viem";
 import {
@@ -74,6 +75,22 @@ const DefaultMintArguments = {
   royaltyBPS: 1000, // 10%,
 };
 
+function getLogFromReceipt(receipt: TransactionReceipt) {
+  for (const data of receipt.logs) {
+    try {
+      const decodedLog = decodeEventLog({
+        abi: zoraCreator1155PremintExecutorImplABI,
+        eventName: "Preminted",
+        ...data,
+      });
+      return decodedLog.args;
+    } catch (err: any) {}
+  }
+}
+
+/**
+ * Premint server response type.
+ */
 export type PremintResponse = {
   collection: {
     contractAdmin: Address;
@@ -101,6 +118,11 @@ export type PremintResponse = {
   signature: Hex;
 };
 
+/**
+ * Convert server to on-chain types for a premint
+ * @param premint Premint object from the server to convert to one that's compatible with viem
+ * @returns Viem type-compatible premint object
+ */
 export const convertPremint = (premint: PremintResponse["premint"]) => ({
   ...premint,
   tokenConfig: {
@@ -113,6 +135,11 @@ export const convertPremint = (premint: PremintResponse["premint"]) => ({
   },
 });
 
+/**
+ * Convert on-chain types for a premint to a server safe type
+ * @param premint Premint object from viem to convert to a JSON compatible type.
+ * @returns JSON compatible premint
+ */
 export const encodePremintForAPI = ({
   tokenConfig,
   ...premint
@@ -128,8 +155,15 @@ export const encodePremintForAPI = ({
   },
 });
 
+/**
+ * Zora API Server base URL
+ */
 const ZORA_PREMINT_API_BASE = "https://api.zora.co/premint/";
 
+/**
+ * Preminter API to access ZORA Premint functionality.
+ * Currently only supports V1 premints.
+ */
 export class PreminterAPI {
   network: NetworkConfig;
   chain: Chain;
@@ -144,19 +178,52 @@ export class PreminterAPI {
     this.network = networkConfig;
   }
 
+  /**
+   * The premint executor address is deployed to the same address across all chains.
+   * Can be overridden as needed by making a parent class.
+   *
+   * @returns Executor address for premints
+   */
   getExecutorAddress() {
     return zoraCreator1155PremintExecutorImplAddress[999];
   }
 
+  /**
+   * The fixed price minter address is the same across all chains for our current
+   * deployer strategy.
+   * Can be overridden as needed by making a parent class.
+   *
+   * @returns Fixed price sale strategy
+   */
   getFixedPriceMinterAddress() {
     return zoraCreatorFixedPriceSaleStrategyAddress[999];
   }
 
+  /**
+   * A simple fetch() wrapper for HTTP gets.
+   * Can be overridden as needed.
+   *
+   * @param path Path to run HTTP JSON get against
+   * @returns JSON object response
+   * @throws Error when HTTP response fails
+   */
   async get(path: string) {
     const response = await fetch(path, { method: "GET" });
+    if (response.status !== 200) {
+      throw new Error(`Invalid response, status ${response.status}`);
+    }
     return await response.json();
   }
 
+  /**
+   * A simple fetch() wrapper for HTTP post.
+   * Can be overridden as needed.
+   *
+   * @param path Path to run HTTP JSON POST against
+   * @param data Data to POST to the server, converted to JSON
+   * @returns JSON object response
+   * @throws Error when HTTP response fails
+   */
   async post(path: string, data: any) {
     const response = await fetch(path, {
       method: "POST",
@@ -172,6 +239,34 @@ export class PreminterAPI {
     return await response.json();
   }
 
+  /**
+   * Getter for public client that instantiates a publicClient as needed
+   *
+   * @param publicClient Optional viem public client
+   * @returns Existing public client or makes a new one for the given chain as needed.
+   */
+  getPublicClient(publicClient?: PublicClient) {
+    if (publicClient) {
+      return publicClient;
+    }
+    return createPublicClient({ chain: this.chain, transport: http() });
+  }
+
+  /**
+   * Create premint
+   *
+   * @param settings Settings for the new premint
+   * @param settings.account Account to sign the premint with. Taken from walletClient if none passed in.
+   * @param settings.collection Collection information for the mint
+   * @param settings.mint Mint argument settings, optional settings are overridden with sensible defaults.
+   * @param settings.publicClient Public client (optional) – instantiated if not passed in with defaults.
+   * @param settings.walletClient Required wallet client for signing the premint message.
+   * @param settings.executionSettings Execution settings for premint options
+   * @param settings.executionSettings.deleted If this UID should be deleted. If omitted, set to false.
+   * @param settings.executionSettings.uid the UID to use – optional and retrieved as a fresh UID from ZORA by default.
+   * @param settings.checkSignature if the signature should have a pre-flight check. Not required but helpful for debugging.
+   * @returns premint url, uid, newContractAddress, and premint object
+   */
   async createPremint({
     account,
     collection,
@@ -179,7 +274,7 @@ export class PreminterAPI {
     publicClient,
     walletClient,
     executionSettings,
-    checkSignature = true,
+    checkSignature = false,
   }: {
     account: Address;
     checkSignature?: boolean;
@@ -192,12 +287,8 @@ export class PreminterAPI {
       uid?: number;
     };
   }) {
-    if (!publicClient) {
-      publicClient = createPublicClient({
-        chain: this.chain,
-        transport: http(),
-      });
-    }
+    publicClient = this.getPublicClient(publicClient);
+
     const newContractAddress = await publicClient.readContract({
       address: this.getExecutorAddress(),
       abi: zoraCreator1155PremintExecutorImplABI,
@@ -277,6 +368,13 @@ export class PreminterAPI {
     };
   }
 
+  /**
+   * Fetches given premint data from the ZORA API.
+   *
+   * @param address Address for the premint contract
+   * @param uid UID for the desired premint
+   * @returns PremintResponse of premint data from the API
+   */
   async getPremintData(address: string, uid: number): Promise<PremintResponse> {
     const response = await this.get(
       `${ZORA_PREMINT_API_BASE}signature/${this.network.zoraBackendChainName}/${address}/${uid}`
@@ -284,17 +382,25 @@ export class PreminterAPI {
     return response as PremintResponse;
   }
 
+  /**
+   * Check user signature for v1
+   *
+   * @param data Signature data from the API
+   * @returns isValid = signature is valid or not, contractAddress = assumed contract address, recoveredSigner = signer from contract
+   */
   async isValidSignature({
     data,
     publicClient,
   }: {
     data: PremintResponse;
-    publicClient: PublicClient;
+    publicClient?: PublicClient;
   }): Promise<{
     isValid: boolean;
     contractAddress: Address;
     recoveredSigner: Address;
   }> {
+    publicClient = this.getPublicClient(publicClient);
+
     const [isValid, contractAddress, recoveredSigner] =
       await publicClient.readContract({
         abi: zoraCreator1155PremintExecutorImplABI,
@@ -306,6 +412,17 @@ export class PreminterAPI {
     return { isValid, contractAddress, recoveredSigner };
   }
 
+  /**
+   *
+   * @param settings.data Data from the API for the mint
+   * @param settings.account Optional account (if omitted taken from wallet client) for the account executing the premint.
+   * @param settings.walletClient WalletClient to send execution from.
+   * @param settings.mintArguments User minting arguments.
+   * @param settings.mintArguments.quantityToMint Quantity to mint, optional, defaults to 1.
+   * @param settings.mintArguments.mintComment Optional mint comment, optional, omits when not included.
+   * @param settings.publicClient Optional public client for preflight checks.
+   * @returns receipt, log, zoraURL
+   */
   async executePremintWithWallet({
     data,
     account,
@@ -316,47 +433,58 @@ export class PreminterAPI {
     data: PremintResponse;
     walletClient: WalletClient;
     account?: Account | Address;
-    mintArguments: {
-      quantityToMint: bigint;
-      mintComment: string;
+    mintArguments?: {
+      quantityToMint: number;
+      mintComment?: string;
     };
     publicClient?: PublicClient;
   }) {
+    publicClient = this.getPublicClient(publicClient);
+
+    if (mintArguments && mintArguments?.quantityToMint < 1) {
+      throw new Error("Quantity to mint cannot be below 1");
+    }
+
     const targetAddress = this.getExecutorAddress();
+    const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
     const args = [
       data.collection,
       convertPremint(data.premint),
       data.signature,
-      mintArguments.quantityToMint,
-      mintArguments.mintComment,
+      numberToMint,
+      mintArguments?.mintComment || "",
     ] as const;
 
     if (!account) {
-      account = walletClient.account!;
+      account = walletClient.account;
     }
 
-    const value = mintArguments.quantityToMint * this.rewardPerToken;
-
-    if (publicClient) {
-      const { request } = await publicClient.simulateContract({
-        account,
-        abi: zoraCreator1155PremintExecutorImplABI,
-        functionName: "premint",
-        value,
-        address: targetAddress,
-        args,
-      });
-      return await walletClient.writeContract(request);
+    if (!account) {
+      throw new Error("Wallet not passed in");
     }
 
-    return await walletClient.writeContract({
-      abi: zoraCreator1155PremintExecutorImplABI,
+    const value = numberToMint * this.rewardPerToken;
+
+    const { request } = await publicClient.simulateContract({
       account,
-      value,
-      chain: this.chain,
+      abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "premint",
+      value,
       address: targetAddress,
       args,
     });
+    const hash = await walletClient.writeContract(request);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+    const log = getLogFromReceipt(receipt);
+
+    return {
+      receipt,
+      log,
+      zoraUrl: log
+        ? `https://${this.network.isTestnet ? "testnet." : ""}zora.co/collect/${
+            this.network.zoraPathChainName
+          }:${log.contractAddress}/${log.tokenId}`
+        : null,
+    };
   }
 }

@@ -5,28 +5,12 @@ import {
   createPublicClient,
   Address,
 } from "viem";
-import { foundry, zoraTestnet } from "viem/chains";
+import { foundry } from "viem/chains";
 import { describe, it, beforeEach, expect, vi } from "vitest";
 import { parseEther } from "viem";
 import {
-  zoraCreator1155PremintExecutorImplABI as preminterAbi,
-  zoraCreator1155PremintExecutorImplAddress as zoraCreator1155PremintExecutorAddress,
-  zoraCreator1155ImplABI,
   zoraCreator1155FactoryImplAddress,
-  zoraCreator1155FactoryImplConfig,
 } from "./wagmiGenerated";
-import ZoraCreator1155Attribution from "../out/ZoraCreator1155Attribution.sol/ZoraCreator1155Attribution.json";
-import zoraCreator1155PremintExecutor from "../out/ZoraCreator1155PremintExecutorImpl.sol/ZoraCreator1155PremintExecutorImpl.json";
-import zoraCreator1155Impl from "../out/ZoraCreator1155Impl.sol/ZoraCreator1155Impl.json";
-import zoraCreator1155FactoryImpl from "../out/ZoraCreator1155FactoryImpl.sol/ZoraCreator1155FactoryImpl.json";
-import zoraCreatorFixedPriceSaleStrategy from "../out/ZoraCreatorFixedPriceSaleStrategy.sol/ZoraCreatorFixedPriceSaleStrategy.json";
-import protocolRewards from "../out/ProtocolRewards.sol/ProtocolRewards.json";
-import {
-  ContractCreationConfig,
-  PremintConfig,
-  TokenCreationConfig,
-  preminterTypedDataDefinition,
-} from "./preminter";
 import { BackendChainNames, PreminterAPI } from "./premint-api";
 
 const chain = foundry;
@@ -48,8 +32,10 @@ const publicClient = createPublicClient({
 });
 
 // JSON-RPC Account
-const [deployerAccount, creatorAccount, collectorAccount] =
-  (await walletClient.getAddresses()) as [Address, Address, Address];
+const [deployerAccount, secondWallet] = (await walletClient.getAddresses()) as [
+  Address,
+  Address
+];
 
 type TestContext = {
   preminterAddress: `0x${string}`;
@@ -60,36 +46,23 @@ type TestContext = {
 };
 
 describe("ZoraCreator1155Preminter", () => {
-  beforeEach<TestContext>(async (ctx) => {
+  beforeEach<TestContext>(async () => {
     // deploy signature minter contract
     await testClient.setBalance({
       address: deployerAccount,
-      value: parseEther("10"),
+      value: parseEther("1"),
     });
 
-    ctx.forkedChainId = zoraTestnet.id;
-    ctx.anvilChainId = foundry.id;
-
-    let preminterAddress: Address;
-
-    const factoryProxyAddress =
-      zoraCreator1155FactoryImplAddress[ctx.forkedChainId];
-    // ctx.fixedPriceMinterAddress = await publicClient.readContract({
-    //   abi: zoraCreator1155FactoryImplConfig.abi,
-    //   address: zoraCreator1155FactoryImplAddress[ctx.forkedChainId],
-    //   functionName: "fixedPriceMinter",
-    // });
-    preminterAddress = zoraCreator1155PremintExecutorAddress[ctx.forkedChainId];
-
-    ctx.zoraMintFee = parseEther("0.000777");
-
-    ctx.preminterAddress = preminterAddress;
+    await testClient.setBalance({
+      address: secondWallet,
+      value: parseEther("1"),
+    });
   }, 20 * 1000);
 
   // skip for now - we need to make this work on zora testnet chain too
   it<TestContext>(
     "can sign on the forked premint contract",
-    async ({ fixedPriceMinterAddress, forkedChainId, anvilChainId }) => {
+    async () => {
       const preminterApi = new PreminterAPI(chain);
 
       preminterApi.get = vi.fn().mockResolvedValue({ next_uid: 3 });
@@ -181,6 +154,7 @@ describe("ZoraCreator1155Preminter", () => {
       transport: http(),
     });
     const signatureValid = await preminter.isValidSignature({
+      // @ts-ignore: Fix enum type
       data: premintData,
       publicClient,
     });
@@ -237,7 +211,31 @@ describe("ZoraCreator1155Preminter", () => {
         },
       });
 
-      console.log({ premint });
+      expect(premint.log).toEqual({
+        contractAddress: "0x0bdD2Fcb03912403c0B4699EDBB6bDAd65dACf62",
+        contractConfig: {
+          contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          contractName: "Testing Contract",
+          contractURI: "https://zora.co/testing/contract.json",
+        },
+        createdNewContract: false,
+        minter: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        quantityMinted: 1n,
+        tokenConfig: {
+          fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
+          maxSupply: 18446744073709551615n,
+          maxTokensPerAddress: 0n,
+          mintDuration: 604800n,
+          mintStart: 0n,
+          pricePerToken: 0n,
+          royaltyBPS: 1000,
+          royaltyMintSchedule: 0,
+          royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          tokenURI: "https://zora.co/testing/token.json",
+        },
+        tokenId: 1n,
+        uid: 3,
+      });
     },
     20 * 1000
   );
