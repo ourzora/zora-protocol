@@ -32,7 +32,7 @@ import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
-import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig, PremintConfigV2, DelegatedTokenCreation, CreatorAttributionParams} from "../delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig, PremintConfigV2, DelegatedTokenCreation, DelegatedTokenSetup} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -281,7 +281,7 @@ contract ZoraCreator1155Impl is
         return tokenId;
     }
 
-    function _setupNewTokenAndPermission(string calldata newURI, uint256 maxSupply, address user, uint256 permission) internal returns (uint256) {
+    function _setupNewTokenAndPermission(string memory newURI, uint256 maxSupply, address user, uint256 permission) internal returns (uint256) {
         uint256 tokenId = _setupNewToken(newURI, maxSupply);
 
         _addPermission(tokenId, user, permission);
@@ -756,22 +756,14 @@ contract ZoraCreator1155Impl is
         bytes calldata signature,
         address sender
     ) external nonReentrant returns (uint256 newTokenId) {
-        (CreatorAttributionParams memory creatorAttribution, bytes[] memory tokenSetupActions) = DelegatedTokenCreation.recoverDelegatedToken(
+        (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) = DelegatedTokenCreation.recoverDelegatedToken(
             premintConfig,
             signature,
             address(this),
             nextTokenId
         );
 
-        return _delegateSetupNewToken(
-            premintConfig.uid,
-            creatorAttribution,
-            tokenSetupActions,
-            premintConfig.tokenConfig.tokenURI,
-            premintConfig.tokenConfig.maxSupply,
-            address(0),
-            sender
-        );
+        return _delegateSetupNewToken(params, tokenSetupActions, sender);
     }
 
     function delegateSetupNewToken(
@@ -779,57 +771,35 @@ contract ZoraCreator1155Impl is
         bytes calldata signature,
         address sender
     ) external nonReentrant returns (uint256 newTokenId) {
-        (CreatorAttributionParams memory creatorAttribution, bytes[] memory tokenSetupActions) = DelegatedTokenCreation.recoverDelegatedToken(
+        (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) = DelegatedTokenCreation.recoverDelegatedToken(
             premintConfig,
             signature,
             address(this),
             nextTokenId
         );
 
-        return _delegateSetupNewToken(
-            premintConfig.uid,
-            creatorAttribution,
-            tokenSetupActions,
-            premintConfig.tokenConfig.tokenURI,
-            premintConfig.tokenConfig.maxSupply,
-            premintConfig.tokenConfig.createReferral,
-            sender
-        );
+        return _delegateSetupNewToken(params, tokenSetupActions, sender);
     }
 
-    function _delegateSetupNewToken(
-        uint32 uid,
-        CreatorAttributionParams memory creatorAttribution,
-        bytes[] memory tokenSetupActions,
-        string calldata tokenURI,
-        uint256 maxSupply,
-        address createReferral,
-        address sender
-    ) internal returns (uint256 newTokenId) {
+    function _delegateSetupNewToken(DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions, address sender) internal returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
-        if (delegatedTokenId[uid] != 0) {
+        if (delegatedTokenId[params.uid] != 0) {
             // return its token id
-            return delegatedTokenId[uid];
+            return delegatedTokenId[params.uid];
         }
 
         // this is what attributes this token to have been created by the original creator
-        emit CreatorAttribution(
-            creatorAttribution.structHash,
-            creatorAttribution.name,
-            creatorAttribution.version,
-            creatorAttribution.creator,
-            creatorAttribution.signature
-        );
+        emit CreatorAttribution(params.structHash, params.name, params.version, params.creator, params.signature);
 
         // require that the signer can create new tokens (is a valid creator)
-        _requireAdminOrRole(creatorAttribution.creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+        _requireAdminOrRole(params.creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
-        newTokenId = _setupNewTokenAndPermission(tokenURI, maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
+        newTokenId = _setupNewTokenAndPermission(params.tokenURI, params.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
-        _setCreateReferral(newTokenId, createReferral);
+        _setCreateReferral(newTokenId, params.createReferral);
 
-        delegatedTokenId[uid] = newTokenId;
+        delegatedTokenId[params.uid] = newTokenId;
 
         firstMinters[newTokenId] = sender;
 
@@ -840,18 +810,6 @@ contract ZoraCreator1155Impl is
         _removePermission(newTokenId, msg.sender, PERMISSION_BIT_ADMIN);
 
         // grant the token creator as admin of the newly created token
-        _addPermission(newTokenId, creatorAttribution.creator, PERMISSION_BIT_ADMIN);
-    }
-
-    function validatePremint(PremintConfigV2 calldata premintConfig) private view {
-        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
-            // if the mint start is in the future, then revert
-            revert MintNotYetStarted();
-        }
-        if (premintConfig.deleted) {
-            // if the signature says to be deleted, then dont execute any further minting logic;
-            // return 0
-            revert PremintDeleted();
-        }
+        _addPermission(newTokenId, params.creator, PERMISSION_BIT_ADMIN);
     }
 }

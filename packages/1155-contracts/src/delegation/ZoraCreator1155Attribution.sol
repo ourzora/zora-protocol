@@ -352,12 +352,16 @@ library PremintTokenSetup {
     }
 }
 
-struct CreatorAttributionParams {
+struct DelegatedTokenSetup {
     bytes32 structHash;
     string name;
     string version;
     address creator;
     bytes signature;
+    uint32 uid;
+    string tokenURI;
+    uint256 maxSupply;
+    address createReferral;
 }
 
 library DelegatedTokenCreation {
@@ -366,25 +370,31 @@ library DelegatedTokenCreation {
         bytes calldata signature,
         address tokenContract,
         uint256 nextTokenId
-    ) external returns (CreatorAttributionParams memory creatorAttribution, bytes[] memory tokenSetupActions) {
+    ) external returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
         validatePremint(premintConfig);
 
-        creatorAttribution.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
+        params.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
-        creatorAttribution.version = ZoraCreator1155Attribution.VERSION_2;
+        params.version = ZoraCreator1155Attribution.VERSION_2;
 
-        creatorAttribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(
-            creatorAttribution.structHash,
+        params.creator = ZoraCreator1155Attribution.recoverSignerHashed(
+            params.structHash,
             signature,
             tokenContract,
             ZoraCreator1155Attribution.HASHED_VERSION_2,
             block.chainid
         );
 
-        creatorAttribution.signature = signature;
-        creatorAttribution.name = ZoraCreator1155Attribution.NAME;
+        params.signature = signature;
+        params.name = ZoraCreator1155Attribution.NAME;
 
-        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, creatorAttribution.creator, premintConfig.tokenConfig);
+        params.uid = premintConfig.uid;
+
+        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, params.creator, premintConfig.tokenConfig);
+
+        params.tokenURI = premintConfig.tokenConfig.tokenURI;
+        params.maxSupply = premintConfig.tokenConfig.maxSupply;
+        params.createReferral = premintConfig.tokenConfig.createReferral;
     }
 
     function recoverDelegatedToken(
@@ -392,23 +402,26 @@ library DelegatedTokenCreation {
         bytes calldata signature,
         address tokenContract,
         uint256 nextTokenId
-    ) external returns (CreatorAttributionParams memory creatorAttribution, bytes[] memory tokenSetupActions) {
-        creatorAttribution.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
+    ) external returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
+        params.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
-        creatorAttribution.version = ZoraCreator1155Attribution.VERSION_1;
+        params.version = ZoraCreator1155Attribution.VERSION_1;
 
-        creatorAttribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(
-            creatorAttribution.structHash,
+        params.creator = ZoraCreator1155Attribution.recoverSignerHashed(
+            params.structHash,
             signature,
             tokenContract,
             ZoraCreator1155Attribution.HASHED_VERSION_1,
             block.chainid
         );
 
-        creatorAttribution.signature = signature;
-        creatorAttribution.name = ZoraCreator1155Attribution.NAME;
+        params.signature = signature;
+        params.name = ZoraCreator1155Attribution.NAME;
 
-        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, creatorAttribution.creator, premintConfig.tokenConfig);
+        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, params.creator, premintConfig.tokenConfig);
+
+        params.tokenURI = premintConfig.tokenConfig.tokenURI;
+        params.maxSupply = premintConfig.tokenConfig.maxSupply;
     }
 
     function validatePremint(PremintConfigV2 calldata premintConfig) private view {
