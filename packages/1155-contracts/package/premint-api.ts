@@ -1,4 +1,4 @@
-import { createPublicClient, http } from "viem";
+import { createPublicClient, http, isAddressEqual } from "viem";
 import type {
   Account,
   Address,
@@ -15,21 +15,21 @@ import {
 import { foundry, zora, zoraTestnet } from "viem/chains";
 import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
 
-type NetworkConfig = {
+export type NetworkConfig = {
   chainId: number;
   zoraPathChainName: string;
   zoraBackendChainName: string;
   isTestnet: boolean;
 };
 
-enum BackendChainNames {
+export const enum BackendChainNames {
   ZORA_MAINNET = "ZORA-MAINNET",
   ZORA_TESTNET = "ZORA-TESTNET",
 }
 
 const ZORA_API_BASE = "https://api.zora.co/premint/";
 
-const networkConfigByChain: Record<number, NetworkConfig> = {
+export const networkConfigByChain: Record<number, NetworkConfig> = {
   [zora.id]: {
     chainId: zora.id,
     isTestnet: false,
@@ -47,7 +47,7 @@ const networkConfigByChain: Record<number, NetworkConfig> = {
     isTestnet: true,
     zoraPathChainName: "zora",
     zoraBackendChainName: BackendChainNames.ZORA_TESTNET,
-  }
+  },
 };
 
 type MintArgumentsSettings = {
@@ -74,7 +74,7 @@ const DefaultMintArguments = {
   royaltyBPS: 1000, // 10%,
 };
 
-type PremintResponse = {
+export type PremintResponse = {
   collection: {
     contractAdmin: Address;
     contractURI: string;
@@ -101,7 +101,7 @@ type PremintResponse = {
   signature: Hex;
 };
 
-const convertPremint = (premint: PremintResponse["premint"]) => ({
+export const convertPremint = (premint: PremintResponse["premint"]) => ({
   ...premint,
   tokenConfig: {
     ...premint.tokenConfig,
@@ -113,12 +113,15 @@ const convertPremint = (premint: PremintResponse["premint"]) => ({
   },
 });
 
-const encodePremintForAPI = ({ tokenConfig, ...premint }: PremintConfig) => ({
+export const encodePremintForAPI = ({
+  tokenConfig,
+  ...premint
+}: PremintConfig) => ({
   ...premint,
   tokenConfig: {
     ...tokenConfig,
     maxSupply: tokenConfig.maxSupply.toString(),
-    pricePerToken: tokenConfig.maxSupply.toString(),
+    pricePerToken: tokenConfig.pricePerToken.toString(),
     mintStart: tokenConfig.mintStart.toString(),
     mintDuration: tokenConfig.mintDuration.toString(),
     maxTokensPerAddress: tokenConfig.maxTokensPerAddress.toString(),
@@ -130,15 +133,23 @@ const ZORA_PREMINT_API_BASE = "https://api.zora.co/premint/";
 export class PreminterAPI {
   network: NetworkConfig;
   chain: Chain;
-  mintFee: BigInt;
+  rewardPerToken: bigint;
   constructor(chain: Chain) {
+    this.rewardPerToken = BigInt("777000000000000");
     this.chain = chain;
     const networkConfig = networkConfigByChain[chain.id];
     if (!networkConfig) {
       throw new Error(`Not configured for chain ${chain.id}`);
     }
     this.network = networkConfig;
-    this.mintFee = BigInt("777000000000000");
+  }
+
+  getExecutorAddress() {
+    return zoraCreator1155PremintExecutorImplAddress[999];
+  }
+
+  getFixedPriceMinterAddress() {
+    return zoraCreatorFixedPriceSaleStrategyAddress[999];
   }
 
   async get(path: string) {
@@ -181,10 +192,6 @@ export class PreminterAPI {
       uid?: number;
     };
   }) {
-    const executor = (zoraCreator1155PremintExecutorImplAddress as any)[
-      this.chain.id
-    ] as Address;
-
     if (!publicClient) {
       publicClient = createPublicClient({
         chain: this.chain,
@@ -192,7 +199,7 @@ export class PreminterAPI {
       });
     }
     const newContractAddress = await publicClient.readContract({
-      address: executor,
+      address: this.getExecutorAddress(),
       abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "getContractAddress",
       args: [collection],
@@ -200,9 +207,7 @@ export class PreminterAPI {
 
     const tokenConfig = {
       ...DefaultMintArguments,
-      fixedPriceMinter: (zoraCreatorFixedPriceSaleStrategyAddress as any)[
-        this.chain.id
-      ] as Address,
+      fixedPriceMinter: this.getFixedPriceMinterAddress(),
       royaltyRecipient: account,
       ...mint,
     };
@@ -216,16 +221,20 @@ export class PreminterAPI {
       );
       uid = uidResponse["next_uid"];
     }
+
+    if (!uid) {
+      throw new Error("UID is missing but required");
+    }
+
     let deleted = executionSettings?.deleted || false;
 
     const premintConfig = {
       tokenConfig: tokenConfig,
-      uid: uid!,
+      uid,
       version: 1,
       deleted,
     };
 
-    console.log('chainid', this.chain.id);
     const signature = await walletClient.signTypedData({
       account,
       ...preminterTypedDataDefinition({
@@ -238,7 +247,7 @@ export class PreminterAPI {
     if (checkSignature) {
       const [isValidSignature] = await publicClient.readContract({
         abi: zoraCreator1155PremintExecutorImplABI,
-        address: executor,
+        address: this.getExecutorAddress(),
         functionName: "isValidSignature",
         args: [collection, premintConfig, signature],
       });
@@ -275,6 +284,28 @@ export class PreminterAPI {
     return response as PremintResponse;
   }
 
+  async isValidSignature({
+    data,
+    publicClient,
+  }: {
+    data: PremintResponse;
+    publicClient: PublicClient;
+  }): Promise<{
+    isValid: boolean;
+    contractAddress: Address;
+    recoveredSigner: Address;
+  }> {
+    const [isValid, contractAddress, recoveredSigner] =
+      await publicClient.readContract({
+        abi: zoraCreator1155PremintExecutorImplABI,
+        address: this.getExecutorAddress(),
+        functionName: "isValidSignature",
+        args: [data.collection, convertPremint(data.premint), data.signature],
+      });
+
+    return { isValid, contractAddress, recoveredSigner };
+  }
+
   async executePremintWithWallet({
     data,
     account,
@@ -291,9 +322,7 @@ export class PreminterAPI {
     };
     publicClient?: PublicClient;
   }) {
-    const targetAddress: Address = (
-      zoraCreator1155PremintExecutorImplAddress as any
-    )[this.network.chainId];
+    const targetAddress = this.getExecutorAddress();
     const args = [
       data.collection,
       convertPremint(data.premint),
@@ -306,21 +335,24 @@ export class PreminterAPI {
       account = walletClient.account!;
     }
 
+    const value = mintArguments.quantityToMint * this.rewardPerToken;
+
     if (publicClient) {
       const { request } = await publicClient.simulateContract({
         account,
         abi: zoraCreator1155PremintExecutorImplABI,
         functionName: "premint",
+        value,
         address: targetAddress,
         args,
       });
-      console.log({request})
       return await walletClient.writeContract(request);
     }
 
     return await walletClient.writeContract({
       abi: zoraCreator1155PremintExecutorImplABI,
       account,
+      value,
       chain: this.chain,
       functionName: "premint",
       address: targetAddress,

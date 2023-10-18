@@ -3,6 +3,7 @@ import {
   http,
   createWalletClient,
   createPublicClient,
+  Address,
 } from "viem";
 import { foundry, zoraTestnet } from "viem/chains";
 import { describe, it, beforeEach, expect, vi } from "vitest";
@@ -26,36 +27,29 @@ import {
   TokenCreationConfig,
   preminterTypedDataDefinition,
 } from "./preminter";
-import { PreminterAPI } from "./premint-api";
+import { BackendChainNames, PreminterAPI } from "./premint-api";
+
+const chain = foundry;
 
 const walletClient = createWalletClient({
-  chain: foundry,
-  transport: http(),
-});
-
-export const walletClientWithAccount = createWalletClient({
-  chain: foundry,
+  chain,
   transport: http(),
 });
 
 const testClient = createTestClient({
-  chain: foundry,
+  chain,
   mode: "anvil",
   transport: http(),
 });
 
 const publicClient = createPublicClient({
-  chain: foundry,
+  chain,
   transport: http(),
 });
 
-type Address = `0x${string}`;
-
-const zeroAddress: Address = "0x0000000000000000000000000000000000000000";
-
 // JSON-RPC Account
 const [deployerAccount, creatorAccount, collectorAccount] =
-  (await walletClient.getAddresses()) as [Address, Address, Address, Address];
+  (await walletClient.getAddresses()) as [Address, Address, Address];
 
 type TestContext = {
   preminterAddress: `0x${string}`;
@@ -96,9 +90,7 @@ describe("ZoraCreator1155Preminter", () => {
   it<TestContext>(
     "can sign on the forked premint contract",
     async ({ fixedPriceMinterAddress, forkedChainId, anvilChainId }) => {
-      const preminterApi = new PreminterAPI(foundry);
-      
-      (zoraTestnet as any).id = anvilChainId;
+      const preminterApi = new PreminterAPI(chain);
 
       preminterApi.get = vi.fn().mockResolvedValue({ next_uid: 3 });
       preminterApi.post = vi.fn().mockResolvedValue({ ok: true });
@@ -121,7 +113,7 @@ describe("ZoraCreator1155Preminter", () => {
       expect(preminterApi.post).toHaveBeenCalledWith(
         "https://api.zora.co/premint/signature",
         {
-          chain_name: "ZORA-TESTNET",
+          chain_name: BackendChainNames.ZORA_TESTNET,
           collection: {
             contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
             contractName: "Testing Contract",
@@ -135,7 +127,7 @@ describe("ZoraCreator1155Preminter", () => {
               maxTokensPerAddress: "0",
               mintDuration: "604800",
               mintStart: "0",
-              pricePerToken: "18446744073709551615",
+              pricePerToken: "0",
               royaltyBPS: 1000,
               royaltyMintSchedule: 0,
               royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -145,7 +137,7 @@ describe("ZoraCreator1155Preminter", () => {
             version: 1,
           },
           signature:
-            "0x1560c8bd247c7432c1e53049fd0ccb1287df6e7cad4649718417ed7f08db45c87f6ba03aafb61dcbfbbd66fafddaa63bbe303bb9bcd7abd30ebc49becda5952f1c",
+            "0xf92fd57eaee15534d994775c77194b0640f2ce999ff3de2b780c17dfbc4a322a0e1472086d665f76de99bab7542d6c2c8406d791c80c97d0a90cf0a351f7b4a41b",
         }
       );
 
@@ -154,10 +146,51 @@ describe("ZoraCreator1155Preminter", () => {
     20 * 1000
   );
 
+  it<TestContext>("can validate premint on network", async () => {
+    const preminter = new PreminterAPI(chain);
+
+    const premintData = {
+      collection: {
+        contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+        contractName: "Testing Contract",
+        contractURI: "https://zora.co/testing/contract.json",
+      },
+      premint: {
+        uid: 3,
+        version: 1,
+        deleted: false,
+        tokenConfig: {
+          maxSupply: "18446744073709551615",
+          maxTokensPerAddress: "0",
+          pricePerToken: "0",
+          mintDuration: "604800",
+          mintStart: "0",
+          royaltyMintSchedule: 0,
+          royaltyBPS: 1000,
+          fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
+          royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          tokenURI: "https://zora.co/testing/token.json",
+        },
+      },
+      chain_name: "ZORA-TESTNET",
+      signature:
+        "0xf92fd57eaee15534d994775c77194b0640f2ce999ff3de2b780c17dfbc4a322a0e1472086d665f76de99bab7542d6c2c8406d791c80c97d0a90cf0a351f7b4a41b",
+    } as const;
+    const publicClient = createPublicClient({
+      chain: foundry,
+      transport: http(),
+    });
+    const signatureValid = await preminter.isValidSignature({
+      data: premintData,
+      publicClient,
+    });
+    console.log({ signatureValid });
+  });
+
   it<TestContext>(
     "can execute premint on network",
-    async ({ fixedPriceMinterAddress, forkedChainId, anvilChainId }) => {
-      const preminterApi = new PreminterAPI(foundry);
+    async () => {
+      const preminterApi = new PreminterAPI(chain);
 
       preminterApi.get = vi.fn().mockResolvedValue({
         chain_name: "ZORA-TESTNET",
@@ -174,7 +207,7 @@ describe("ZoraCreator1155Preminter", () => {
             maxTokensPerAddress: "0",
             mintDuration: "604800",
             mintStart: "0",
-            pricePerToken: "18446744073709551615",
+            pricePerToken: "0",
             royaltyBPS: 1000,
             royaltyMintSchedule: 0,
             royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -184,20 +217,23 @@ describe("ZoraCreator1155Preminter", () => {
           version: 1,
         },
         signature:
-          "0x1560c8bd247c7432c1e53049fd0ccb1287df6e7cad4649718417ed7f08db45c87f6ba03aafb61dcbfbbd66fafddaa63bbe303bb9bcd7abd30ebc49becda5952f1c",
+          "0xf92fd57eaee15534d994775c77194b0640f2ce999ff3de2b780c17dfbc4a322a0e1472086d665f76de99bab7542d6c2c8406d791c80c97d0a90cf0a351f7b4a41b",
       });
       preminterApi.post = vi.fn();
 
-      console.log({deployerAccount})
+      console.log({ deployerAccount });
 
       const premint = await preminterApi.executePremintWithWallet({
-        data: await preminterApi.getPremintData('0x0bdD2Fcb03912403c0B4699EDBB6bDAd65dACf62', 3),
+        data: await preminterApi.getPremintData(
+          "0x0bdD2Fcb03912403c0B4699EDBB6bDAd65dACf62",
+          3
+        ),
         account: deployerAccount,
         walletClient,
         publicClient,
         mintArguments: {
           quantityToMint: 1n,
-          mintComment: '',
+          mintComment: "",
         },
       });
 
