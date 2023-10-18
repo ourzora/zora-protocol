@@ -3,6 +3,7 @@ pragma solidity 0.8.17;
 
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
@@ -104,14 +105,14 @@ library ZoraCreator1155Attribution {
             "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter,address createReferral)"
         );
 
-    function hashPremint(PremintConfig calldata premintConfig) public pure returns (bytes32) {
+    function hashPremint(PremintConfig calldata premintConfig) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(ATTRIBUTION_DOMAIN_V1, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted)
             );
     }
 
-    function hashPremint(PremintConfigV2 calldata premintConfig) public pure returns (bytes32) {
+    function hashPremint(PremintConfigV2 calldata premintConfig) external pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(ATTRIBUTION_DOMAIN_V2, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted)
@@ -261,9 +262,49 @@ library PremintTokenSetup {
         address contractAdmin,
         TokenCreationConfigV2 calldata tokenConfig
     ) external view returns (bytes[] memory calls) {
+        return
+            buildCalls({
+                newTokenId: newTokenId,
+                contractAdmin: contractAdmin,
+                fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
+                pricePerToken: tokenConfig.pricePerToken,
+                maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
+                mintDuration: tokenConfig.mintDuration,
+                royaltyBPS: tokenConfig.royaltyBPS,
+                royaltyRecipient: tokenConfig.royaltyRecipient
+            });
+    }
+
+    function makeSetupNewTokenCalls(
+        uint256 newTokenId,
+        address contractAdmin,
+        TokenCreationConfig calldata tokenConfig
+    ) external view returns (bytes[] memory calls) {
+        return
+            buildCalls({
+                newTokenId: newTokenId,
+                contractAdmin: contractAdmin,
+                fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
+                pricePerToken: tokenConfig.pricePerToken,
+                maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
+                mintDuration: tokenConfig.mintDuration,
+                royaltyBPS: tokenConfig.royaltyBPS,
+                royaltyRecipient: tokenConfig.royaltyRecipient
+            });
+    }
+
+    function buildCalls(
+        uint256 newTokenId,
+        address contractAdmin,
+        address fixedPriceMinterAddress,
+        uint96 pricePerToken,
+        uint64 maxTokensPerAddress,
+        uint64 mintDuration,
+        uint32 royaltyBPS,
+        address royaltyRecipient
+    ) internal view returns (bytes[] memory calls) {
         calls = new bytes[](3);
 
-        address fixedPriceMinterAddress = tokenConfig.fixedPriceMinter;
         // build array of the calls to make
         // get setup actions and invoke them
         // set up the sales strategy
@@ -279,7 +320,7 @@ library PremintTokenSetup {
             abi.encodeWithSelector(
                 ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                _buildNewSalesConfig(contractAdmin, tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.mintDuration)
+                _buildNewSalesConfig(contractAdmin, pricePerToken, maxTokensPerAddress, mintDuration)
             )
         );
 
@@ -287,16 +328,12 @@ library PremintTokenSetup {
         calls[2] = abi.encodeWithSelector(
             IZoraCreator1155.updateRoyaltiesForToken.selector,
             newTokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({
-                royaltyBPS: tokenConfig.royaltyBPS,
-                royaltyRecipient: tokenConfig.royaltyRecipient,
-                royaltyMintSchedule: 0
-            })
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: royaltyBPS, royaltyRecipient: royaltyRecipient, royaltyMintSchedule: 0})
         );
     }
 
     function _buildNewSalesConfig(
-        address creator,
+        address royaltyRecipient,
         uint96 pricePerToken,
         uint64 maxTokensPerAddress,
         uint64 duration
@@ -310,7 +347,79 @@ library PremintTokenSetup {
                 saleStart: saleStart,
                 saleEnd: saleEnd,
                 maxTokensPerAddress: maxTokensPerAddress,
-                fundsRecipient: creator
+                fundsRecipient: royaltyRecipient
             });
+    }
+}
+
+struct CreatorAttributionParams {
+    bytes32 structHash;
+    string name;
+    string version;
+    address creator;
+    bytes signature;
+}
+
+library DelegatedTokenCreation {
+    function recoverDelegatedToken(
+        PremintConfigV2 calldata premintConfig,
+        bytes calldata signature,
+        address tokenContract,
+        uint256 nextTokenId
+    ) external returns (CreatorAttributionParams memory creatorAttribution, bytes[] memory tokenSetupActions) {
+        validatePremint(premintConfig);
+
+        creatorAttribution.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
+
+        creatorAttribution.version = ZoraCreator1155Attribution.VERSION_2;
+
+        creatorAttribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(
+            creatorAttribution.structHash,
+            signature,
+            tokenContract,
+            ZoraCreator1155Attribution.HASHED_VERSION_2,
+            block.chainid
+        );
+
+        creatorAttribution.signature = signature;
+        creatorAttribution.name = ZoraCreator1155Attribution.NAME;
+
+        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, creatorAttribution.creator, premintConfig.tokenConfig);
+    }
+
+    function recoverDelegatedToken(
+        PremintConfig calldata premintConfig,
+        bytes calldata signature,
+        address tokenContract,
+        uint256 nextTokenId
+    ) external returns (CreatorAttributionParams memory creatorAttribution, bytes[] memory tokenSetupActions) {
+        creatorAttribution.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
+
+        creatorAttribution.version = ZoraCreator1155Attribution.VERSION_1;
+
+        creatorAttribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(
+            creatorAttribution.structHash,
+            signature,
+            tokenContract,
+            ZoraCreator1155Attribution.HASHED_VERSION_1,
+            block.chainid
+        );
+
+        creatorAttribution.signature = signature;
+        creatorAttribution.name = ZoraCreator1155Attribution.NAME;
+
+        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, creatorAttribution.creator, premintConfig.tokenConfig);
+    }
+
+    function validatePremint(PremintConfigV2 calldata premintConfig) private view {
+        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
+            // if the mint start is in the future, then revert
+            revert IZoraCreator1155Errors.MintNotYetStarted();
+        }
+        if (premintConfig.deleted) {
+            // if the signature says to be deleted, then dont execute any further minting logic;
+            // return 0
+            revert IZoraCreator1155Errors.PremintDeleted();
+        }
     }
 }
