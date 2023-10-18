@@ -33,12 +33,12 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
     }
 
     function _updateRoyalties(uint256 tokenId, RoyaltyConfiguration memory configuration) internal {
-        // Don't allow 100% supply royalties
-        if (configuration.royaltyMintSchedule == 1) {
+        // Deprecate supply royalty support
+        if (configuration.royaltyMintSchedule != 0) {
             revert InvalidMintSchedule();
         }
         // Don't allow setting royalties to burn address
-        if (configuration.royaltyRecipient == address(0) && (configuration.royaltyMintSchedule > 0 || configuration.royaltyBPS > 0)) {
+        if (configuration.royaltyRecipient == address(0) && configuration.royaltyBPS > 0) {
             revert InvalidMintSchedule();
         }
         royalties[tokenId] = configuration;

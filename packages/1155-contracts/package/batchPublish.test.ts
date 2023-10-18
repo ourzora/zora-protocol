@@ -193,7 +193,7 @@ function parseCreate1155Receipt(receipt: TransactionReceipt): {
   return { tokenId, contractAddress };
 }
 
-describe("ZoraCreator1155Preminter", () => {
+describe("Zora1155", () => {
   it(
     "can batch publish tokens",
     async () => {

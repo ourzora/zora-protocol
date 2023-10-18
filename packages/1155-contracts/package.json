@@ -9,7 +9,7 @@
   "type": "module",
   "scripts": {
     "test": "forge test",
-    "dev": "forge test --watch -vvv",
+    "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test:fork": "forge test -vvv --match-test fork",
     "test-gas": "forge test --gas-report",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
@@ -58,7 +58,7 @@
     "tsup": "^7.2.0",
     "tsx": "^3.13.0",
     "typescript": "^5.0.4",
-    "viem": "^1.6.0",
+    "viem": "^1.16.2",
     "vite": "^4.1.4",
     "vitest": "~0.30.1"
   },
