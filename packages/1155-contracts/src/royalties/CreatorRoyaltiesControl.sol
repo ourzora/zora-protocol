@@ -38,7 +38,7 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
             revert InvalidMintSchedule();
         }
         // Don't allow setting royalties to burn address
-        if (configuration.royaltyRecipient == address(0) && (configuration.royaltyMintSchedule > 0 || configuration.royaltyBPS > 0)) {
+        if (configuration.royaltyRecipient == address(0) && configuration.royaltyBPS > 0) {
             revert InvalidMintSchedule();
         }
         royalties[tokenId] = configuration;
