@@ -461,11 +461,13 @@ contract ZoraCreator1155Impl is
     function getCreatorRewardRecipient(uint256 tokenId) public view returns (address payable) {
         if (getRoyalties(tokenId).royaltyRecipient != address(0)) {
             return payable(getRoyalties(tokenId).royaltyRecipient);
-        } else if (config.fundsRecipient != address(0)) {
+        } 
+        
+        if (config.fundsRecipient != address(0)) {
             return payable(config.fundsRecipient);
-        } else {
-            return payable(address(this));
         }
+
+        return payable(address(this));
     }
 
     /// @notice Set a metadata renderer for a token
