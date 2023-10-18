@@ -1257,7 +1257,15 @@ contract ZoraCreator1155Test is Test {
         target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
 
         assertEq(creatorRewardRecipient, address(target));
-        assertEq(protocolRewards.balanceOf(address(target)), settings.creatorReward + settings.firstMinterReward);
+
+        uint256 creatorRewardBalance = settings.creatorReward + settings.firstMinterReward;
+        assertEq(protocolRewards.balanceOf(address(target)), creatorRewardBalance);
+
+        vm.prank(admin);
+        target.withdrawRewards(admin, creatorRewardBalance);
+
+        assertEq(admin.balance, creatorRewardBalance);
+        assertEq(protocolRewards.balanceOf(address(target)), 0);
     }
 
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {
