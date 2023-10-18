@@ -459,8 +459,10 @@ contract ZoraCreator1155Impl is
     ///      so in the case of both the reward recipient is set to the creator's contract,
     ///      which can be withdrawn by the creator via the `withdrawRewards` function.
     function getCreatorRewardRecipient(uint256 tokenId) public view returns (address) {
-        if (getRoyalties(tokenId).royaltyRecipient != address(0)) {
-            return getRoyalties(tokenId).royaltyRecipient;
+        address royaltyRecipient = getRoyalties(tokenId).royaltyRecipient;
+
+        if (royaltyRecipient != address(0)) {
+            return royaltyRecipient;
         }
 
         if (config.fundsRecipient != address(0)) {
