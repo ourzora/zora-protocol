@@ -489,4 +489,6 @@ export class PreminterAPI {
         : null,
     };
   }
+
+  async updatePremint()
 }
