@@ -247,7 +247,7 @@ export class PreminterAPI {
    * @param publicClient Optional viem public client
    * @returns Existing public client or makes a new one for the given chain as needed.
    */
-  getPublicClient(publicClient?: PublicClient) {
+  getPublicClient(publicClient?: PublicClient): PublicClient {
     if (publicClient) {
       return publicClient;
     }
