@@ -1135,6 +1135,77 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
+    function test_SetCreatorRewardRecipientForToken() public {
+        address collaborator = makeAddr("collaborator");
+        uint256 quantity = 100;
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        address payable creatorRewardRecipient;
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory newRoyaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, collaborator);
+
+        vm.prank(admin);
+        target.updateRoyaltiesForToken(tokenId, newRoyaltyConfig);
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        assertEq(creatorRewardRecipient, collaborator);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+
+        assertEq(protocolRewards.balanceOf(collaborator), settings.creatorReward + settings.firstMinterReward);
+    }
+
+    function test_CreatorRewardRecipientConditionalAddress() public {
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig;
+        address payable creatorRewardRecipient;
+
+        address collaborator = makeAddr("collaborator");
+        uint256 quantity = 100;
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        (, , address contractFundsRecipient, , , ) = target.config();
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, contractFundsRecipient);
+
+        royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, collaborator);
+        vm.prank(admin);
+        target.updateRoyaltiesForToken(tokenId, royaltyConfig);
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, collaborator);
+
+        royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0));
+        vm.prank(admin);
+        target.updateRoyaltiesForToken(tokenId, royaltyConfig);
+
+        vm.prank(admin);
+        target.setFundsRecipient(payable(address(0)));
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, address(target));
+    }
+
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {
         vm.assume(quantity > 0 && quantity < 1_000_000);
         vm.assume(salePrice > 0 && salePrice < 10 ether);
