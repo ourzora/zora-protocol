@@ -112,14 +112,8 @@ contract ZoraCreator1155Test is Test {
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
     }
 
-    function init(uint32 royaltySchedule, uint32 royaltyBps, address royaltyRecipient) internal {
-        target.initialize(
-            "test",
-            "test",
-            ICreatorRoyaltiesControl.RoyaltyConfiguration(royaltySchedule, royaltyBps, royaltyRecipient),
-            admin,
-            _emptyInitData()
-        );
+    function init(uint32 royaltyBps, address royaltyRecipient) internal {
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, royaltyBps, royaltyRecipient), admin, _emptyInitData());
     }
 
     function test_packageJsonVersion() public {
@@ -127,38 +121,21 @@ contract ZoraCreator1155Test is Test {
         assertEq(package.readString(".version"), target.contractVersion());
     }
 
-    function test_initialize(uint32 royaltySchedule, uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin) external {
-        vm.assume(royaltySchedule != 1);
-        vm.assume(royaltyRecipient != address(0) && royaltySchedule != 0 && royaltyBPS != 0);
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
-            royaltySchedule,
-            royaltyBPS,
-            royaltyRecipient
-        );
+    function test_initialize(uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin) external {
+        vm.assume(royaltyRecipient != address(0) && royaltyBPS != 0);
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, royaltyBPS, royaltyRecipient);
         target.initialize("contract name", "test", config, defaultAdmin, _emptyInitData());
 
         assertEq(target.contractURI(), "test");
         assertEq(target.name(), "contract name");
-        (uint32 fetchedSchedule, uint256 fetchedBps, address fetchedRecipient) = target.royalties(0);
-        assertEq(fetchedSchedule, royaltySchedule);
+        (, uint256 fetchedBps, address fetchedRecipient) = target.royalties(0);
         assertEq(fetchedBps, royaltyBPS);
         assertEq(fetchedRecipient, royaltyRecipient);
     }
 
-    function test_initialize_withSetupActions(
-        uint32 royaltySchedule,
-        uint32 royaltyBPS,
-        address royaltyRecipient,
-        address payable defaultAdmin,
-        uint256 maxSupply
-    ) external {
-        vm.assume(royaltySchedule != 1);
-        vm.assume(royaltyRecipient != address(0) && royaltySchedule != 0 && royaltyBPS != 0);
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
-            royaltySchedule,
-            royaltyBPS,
-            royaltyRecipient
-        );
+    function test_initialize_withSetupActions(uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin, uint256 maxSupply) external {
+        vm.assume(royaltyRecipient != address(0) && royaltyBPS != 0);
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, royaltyBPS, royaltyRecipient);
         bytes[] memory setupActions = new bytes[](1);
         setupActions[0] = abi.encodeWithSelector(IZoraCreator1155.setupNewToken.selector, "test", maxSupply);
         target.initialize("", "test", config, defaultAdmin, setupActions);
@@ -167,19 +144,9 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.maxSupply, maxSupply);
     }
 
-    function test_initialize_revertAlreadyInitialized(
-        uint32 royaltySchedule,
-        uint32 royaltyBPS,
-        address royaltyRecipient,
-        address payable defaultAdmin
-    ) external {
-        vm.assume(royaltySchedule != 1);
-        vm.assume(royaltyRecipient != address(0) && royaltySchedule != 0 && royaltyBPS != 0);
-        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(
-            royaltySchedule,
-            royaltyBPS,
-            royaltyRecipient
-        );
+    function test_initialize_revertAlreadyInitialized(uint32 royaltyBPS, address royaltyRecipient, address payable defaultAdmin) external {
+        vm.assume(royaltyRecipient != address(0) && royaltyBPS != 0);
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, royaltyBPS, royaltyRecipient);
         target.initialize("test", "test", config, defaultAdmin, _emptyInitData());
 
         vm.expectRevert();
@@ -408,37 +375,35 @@ contract ZoraCreator1155Test is Test {
     function test_adminMintWithScheduleSmall() external {
         uint256 quantity = 100;
         address royaltyRecipient = address(0x3334);
-        // every 10 royalty 100/10 = 10 tokens minted
-        init(10, 0, royaltyRecipient);
+
+        init(0, royaltyRecipient);
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", quantity);
 
         vm.prank(admin);
-        target.adminMint(recipient, tokenId, 90, "");
+        target.adminMint(recipient, tokenId, quantity, "");
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
-        assertEq(tokenData.totalMinted, 100);
-        assertEq(target.balanceOf(recipient, tokenId), (quantity * 9) / 10);
-        assertEq(target.balanceOf(royaltyRecipient, tokenId), (quantity * 1) / 10);
+        assertEq(tokenData.totalMinted, quantity);
+        assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
     function test_adminMintWithSchedule() external {
         uint256 quantity = 1000;
         address royaltyRecipient = address(0x3334);
-        // every 10 tokens, mint 1 to  royalty 1000/10 = 100 tokens minted to royalty recipient
-        init(10, 0, royaltyRecipient);
+
+        init(0, royaltyRecipient);
 
         vm.prank(admin);
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.prank(admin);
-        target.adminMint(recipient, tokenId, (quantity * 9) / 10, "");
+        target.adminMint(recipient, tokenId, quantity, "");
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
         assertEq(tokenData.totalMinted, 1000);
-        assertEq(target.balanceOf(recipient, tokenId), (quantity * 9) / 10);
-        assertEq(target.balanceOf(royaltyRecipient, tokenId), (quantity * 1) / 10);
+        assertEq(target.balanceOf(recipient, tokenId), quantity);
     }
 
     function test_adminMint_revertOnlyAdminOrRole() external {
@@ -574,8 +539,8 @@ contract ZoraCreator1155Test is Test {
         vm.assume(quantity2 < 900);
 
         address royaltyRecipient = address(0x3334);
-        // every 10th token is a token for the royalty recipient
-        init(10, 0, royaltyRecipient);
+
+        init(0, royaltyRecipient);
 
         vm.prank(admin);
         uint256 tokenId1 = target.setupNewToken("test", 1000);
@@ -596,12 +561,10 @@ contract ZoraCreator1155Test is Test {
         IZoraCreator1155TypesV1.TokenData memory tokenData1 = target.getTokenInfo(tokenId1);
         IZoraCreator1155TypesV1.TokenData memory tokenData2 = target.getTokenInfo(tokenId2);
 
-        assertEq(tokenData1.totalMinted, quantity1 + (quantity1 / 9));
-        assertEq(tokenData2.totalMinted, quantity2 + (quantity2 / 9));
+        assertEq(tokenData1.totalMinted, quantity1);
+        assertEq(tokenData2.totalMinted, quantity2);
         assertEq(target.balanceOf(recipient, tokenId1), quantity1);
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
-        assertEq(target.balanceOf(royaltyRecipient, tokenId1), quantity1 / 9);
-        assertEq(target.balanceOf(royaltyRecipient, tokenId2), quantity2 / 9);
     }
 
     function test_adminMintWithInvalidScheduleSkipsSchedule() external {
@@ -611,8 +574,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_adminMintWithEmptyScheduleSkipsSchedule() external {
-        // every 0th token is sent so no tokens
-        init(0, 0, address(0x99a));
+        init(0, address(0x99a));
 
         vm.prank(admin);
         uint256 tokenId1 = target.setupNewToken("test", 1000);
@@ -1446,144 +1408,5 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(admin);
         target.adminMint(address(0x1234), tokenId, 1, "");
-    }
-
-    function test_SupplyRoyaltyScheduleCannotBeOne() external {
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 100);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), adminRole);
-
-        vm.prank(admin);
-        vm.expectRevert(ICreatorRoyaltiesControl.InvalidMintSchedule.selector);
-        target.updateRoyaltiesForToken(
-            tokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 1, royaltyBPS: 0, royaltyRecipient: admin})
-        );
-    }
-
-    function test_SupplyRoyaltyMint(uint32 royaltyMintSchedule, uint32 editionSize, uint256 mintQuantity) external {
-        vm.assume(royaltyMintSchedule > 1 && royaltyMintSchedule <= editionSize && editionSize <= 100000 && mintQuantity > 0 && mintQuantity <= editionSize);
-        uint256 totalRoyaltyMintsForSale = editionSize / royaltyMintSchedule;
-        vm.assume(mintQuantity <= editionSize - totalRoyaltyMintsForSale);
-
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", editionSize);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), adminRole);
-
-        vm.startPrank(admin);
-        target.updateRoyaltiesForToken(
-            tokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: royaltyMintSchedule, royaltyBPS: 0, royaltyRecipient: admin})
-        );
-
-        uint256 totalReward = target.computeTotalReward(mintQuantity);
-        vm.deal(admin, totalReward);
-
-        target.mint{value: totalReward}(minter, tokenId, mintQuantity, abi.encode(recipient));
-
-        uint256 totalRoyaltyMintsForPurchase = mintQuantity / (royaltyMintSchedule - 1);
-        totalRoyaltyMintsForPurchase = MathUpgradeable.min(totalRoyaltyMintsForPurchase, editionSize - mintQuantity);
-
-        assertEq(target.balanceOf(recipient, tokenId), mintQuantity);
-        assertEq(target.balanceOf(admin, tokenId), totalRoyaltyMintsForPurchase);
-
-        vm.stopPrank();
-    }
-
-    function test_SupplyRoyaltyMintCleanNumbers() external {
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 100);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), adminRole);
-
-        uint256 totalReward = target.computeTotalReward(80);
-        vm.deal(admin, totalReward);
-
-        vm.startPrank(admin);
-        target.updateRoyaltiesForToken(
-            tokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 5, royaltyBPS: 0, royaltyRecipient: admin})
-        );
-        target.mint{value: totalReward}(minter, tokenId, 80, abi.encode(recipient));
-
-        assertEq(target.balanceOf(recipient, tokenId), 80);
-        assertEq(target.balanceOf(admin, tokenId), 20);
-
-        vm.stopPrank();
-    }
-
-    function test_SupplyRoyaltyMintEdgeCaseNumbers() external {
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", 137);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), adminRole);
-
-        uint256 totalReward = target.computeTotalReward(92);
-        vm.deal(admin, totalReward);
-
-        vm.startPrank(admin);
-        target.updateRoyaltiesForToken(
-            tokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 3, royaltyBPS: 0, royaltyRecipient: admin})
-        );
-
-        target.mint{value: totalReward}(minter, tokenId, 92, abi.encode(recipient));
-
-        assertEq(target.balanceOf(recipient, tokenId), 92);
-        assertEq(target.balanceOf(admin, tokenId), 45);
-
-        vm.stopPrank();
-    }
-
-    function test_SupplyRoyaltyMintEdgeCaseNumbersOpenEdition() external {
-        init();
-
-        vm.prank(admin);
-        uint256 tokenId = target.setupNewToken("test", type(uint256).max);
-
-        SimpleMinter minter = new SimpleMinter();
-        vm.prank(admin);
-        target.addPermission(tokenId, address(minter), adminRole);
-
-        uint256 totalReward = target.computeTotalReward(92);
-        vm.deal(admin, totalReward);
-
-        vm.startPrank(admin);
-        target.updateRoyaltiesForToken(
-            tokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyMintSchedule: 3, royaltyBPS: 0, royaltyRecipient: admin})
-        );
-
-        target.mint{value: totalReward}(minter, tokenId, 92, abi.encode(recipient));
-
-        assertEq(target.balanceOf(recipient, tokenId), 92);
-        assertEq(target.balanceOf(admin, tokenId), 46);
-
-        vm.deal(admin, 0.000777 ether);
-
-        target.mint{value: 0.000777 ether}(minter, tokenId, 1, abi.encode(recipient));
-
-        assertEq(target.balanceOf(recipient, tokenId), 93);
-        assertEq(target.balanceOf(admin, tokenId), 46);
-
-        vm.stopPrank();
     }
 }
