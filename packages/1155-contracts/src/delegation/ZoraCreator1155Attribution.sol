@@ -105,14 +105,14 @@ library ZoraCreator1155Attribution {
             "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter,address createReferral)"
         );
 
-    function hashPremint(PremintConfig calldata premintConfig) internal pure returns (bytes32) {
+    function hashPremint(PremintConfig memory premintConfig) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(ATTRIBUTION_DOMAIN_V1, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted)
             );
     }
 
-    function hashPremint(PremintConfigV2 calldata premintConfig) external pure returns (bytes32) {
+    function hashPremint(PremintConfigV2 memory premintConfig) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(ATTRIBUTION_DOMAIN_V2, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted)
@@ -124,7 +124,7 @@ library ZoraCreator1155Attribution {
             "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter)"
         );
 
-    function _hashToken(TokenCreationConfig calldata tokenConfig) private pure returns (bytes32) {
+    function _hashToken(TokenCreationConfig memory tokenConfig) private pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
@@ -148,7 +148,7 @@ library ZoraCreator1155Attribution {
             "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter,address createReferral)"
         );
 
-    function _hashToken(TokenCreationConfigV2 calldata tokenConfig) private pure returns (bytes32) {
+    function _hashToken(TokenCreationConfigV2 memory tokenConfig) private pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
@@ -220,7 +220,7 @@ library ZoraCreator1155Attribution {
         (signatory, ) = ECDSAUpgradeable.tryRecover(digest, signature);
     }
 
-    function _stringHash(string calldata value) private pure returns (bytes32) {
+    function _stringHash(string memory value) private pure returns (bytes32) {
         return keccak256(bytes(value));
     }
 
@@ -370,7 +370,7 @@ library DelegatedTokenCreation {
         bytes calldata signature,
         address tokenContract,
         uint256 nextTokenId
-    ) external returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
+    ) external view returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
         validatePremint(premintConfig);
 
         params.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
@@ -402,7 +402,7 @@ library DelegatedTokenCreation {
         bytes calldata signature,
         address tokenContract,
         uint256 nextTokenId
-    ) external returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
+    ) external view returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
         params.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
         params.version = ZoraCreator1155Attribution.VERSION_1;

@@ -16,7 +16,7 @@ library Zora1155PremintFixtures {
         return ContractCreationConfig({contractAdmin: contractAdmin, contractName: "blah", contractURI: "blah.contract"});
     }
 
-    function makeDefaultTokenCreationConfig(IMinter1155 fixedPriceMinter) internal pure returns (TokenCreationConfigV2 memory) {
+    function makeDefaultTokenCreationConfigV2(IMinter1155 fixedPriceMinter, address royaltyRecipient) internal pure returns (TokenCreationConfigV2 memory) {
         return
             TokenCreationConfigV2({
                 tokenURI: "blah.token",
@@ -26,9 +26,29 @@ library Zora1155PremintFixtures {
                 mintStart: 0,
                 mintDuration: 0,
                 fixedPriceMinter: address(fixedPriceMinter),
-                royaltyRecipient: address(0),
+                royaltyRecipient: royaltyRecipient,
                 royaltyBPS: 0,
                 createReferral: address(0)
+            });
+    }
+
+    function makeTokenCreationConfigV2WithCreateReferral(
+        IMinter1155 fixedPriceMinter,
+        address createReferral,
+        address royaltyRecipient
+    ) internal pure returns (TokenCreationConfigV2 memory) {
+        return
+            TokenCreationConfigV2({
+                tokenURI: "blah.token",
+                maxSupply: 10,
+                maxTokensPerAddress: 5,
+                pricePerToken: 0,
+                mintStart: 0,
+                mintDuration: 0,
+                fixedPriceMinter: address(fixedPriceMinter),
+                royaltyRecipient: royaltyRecipient,
+                royaltyBPS: 10,
+                createReferral: createReferral
             });
     }
 }

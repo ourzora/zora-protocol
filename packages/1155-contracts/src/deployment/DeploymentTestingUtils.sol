@@ -12,7 +12,7 @@ import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 
 contract DeploymentTestingUtils is Script {
-    function signAndExecutePremint(address premintExecutorProxyAddress) internal {
+    function signAndExecutePremint(address premintExecutorProxyAddress, address fundsRecipient) internal {
         console2.log("preminter proxy", premintExecutorProxyAddress);
 
         (address creator, uint256 creatorPrivateKey) = makeAddrAndKey("creator");
@@ -21,7 +21,7 @@ contract DeploymentTestingUtils is Script {
         IMinter1155 fixedPriceMinter = ZoraCreator1155FactoryImpl(address(preminterAtProxy.zora1155Factory())).fixedPriceMinter();
 
         PremintConfigV2 memory premintConfig = PremintConfigV2({
-            tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfig(fixedPriceMinter),
+            tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfigV2(fixedPriceMinter, fundsRecipient),
             uid: 100,
             version: 0,
             deleted: false

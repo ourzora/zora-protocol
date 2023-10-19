@@ -32,7 +32,7 @@ contract DeployProxiesToNewChain is ZoraDeployerBase, DeploymentTestingUtils {
 
         console2.log("testing premint");
 
-        signAndExecutePremint(deployment.preminterProxy);
+        signAndExecutePremint(deployment.preminterProxy, vm.envAddress("TEST_PREMINT_FUNDS_RECIPIENT"));
 
         vm.stopBroadcast();
 
