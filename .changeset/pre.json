@@ -6,7 +6,8 @@
     "@zoralabs/protocol-rewards": "1.2.1"
   },
   "changesets": [
-    "great-camels-impress",
-    "strong-bears-fail"
+    "afraid-spoons-wait",
+    "strong-bears-fail",
+    "wicked-rivers-mix"
   ]
 }
