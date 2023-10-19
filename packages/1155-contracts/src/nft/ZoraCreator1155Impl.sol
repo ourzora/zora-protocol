@@ -453,11 +453,11 @@ contract ZoraCreator1155Impl is
         return TOTAL_REWARD_PER_MINT;
     }
 
-    /// @notice Get the creator reward recipient address
+    /// @notice Get the creator reward recipient address for a specific token.
     /// @param tokenId The token id to get the creator reward recipient for
-    /// @dev The creator is not enforced to set a funds recipient address for a specific token or contract-wide,
-    ///      so in the case of both the reward recipient is set to the creator's contract,
-    ///      which can be withdrawn by the creator via the `withdrawRewards` function.
+    /// @dev Returns the royalty recipient address for the token if set; otherwise uses the fundsRecipient.
+    /// If both are not set, this contract will be set as the recipient, and an account with
+    /// `PERMISSION_BIT_FUNDS_MANAGER` will be able to withdraw via the `withdrawRewards` function.
     function getCreatorRewardRecipient(uint256 tokenId) public view returns (address) {
         address royaltyRecipient = getRoyalties(tokenId).royaltyRecipient;
 
