@@ -54,7 +54,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         IMinter1155 fixedPriceMinter = ZoraCreator1155FactoryImpl(address(factoryProxy)).fixedPriceMinter();
 
         PremintConfigV2 memory premintConfig = PremintConfigV2({
-            tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfig(fixedPriceMinter),
+            tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfigV2(fixedPriceMinter, creator),
             uid: 100,
             version: 0,
             deleted: false
