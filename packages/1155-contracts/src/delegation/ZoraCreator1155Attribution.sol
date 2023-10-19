@@ -194,7 +194,7 @@ library ZoraCreator1155Attribution {
     /// can be verified on a different chain.
     /// @param erc1155Contract Contract address that signature is to be verified against
     /// @param chainId Chain id that signature is to be verified on
-    function premintHashedTypeDataV4(bytes32 structHash, address erc1155Contract, bytes32 signatureVersion, uint256 chainId) public pure returns (bytes32) {
+    function premintHashedTypeDataV4(bytes32 structHash, address erc1155Contract, bytes32 signatureVersion, uint256 chainId) internal pure returns (bytes32) {
         // build the struct hash to be signed
         // here we pass the chain id, allowing the message to be signed for another chain
         return hashTypedDataV4(structHash, HASHED_NAME, signatureVersion, erc1155Contract, chainId);
@@ -206,7 +206,7 @@ library ZoraCreator1155Attribution {
         address erc1155Contract,
         bytes32 signatureVersion,
         uint256 chainId
-    ) public pure returns (address signatory) {
+    ) internal pure returns (address signatory) {
         // first validate the signature - the creator must match the signer of the message
         bytes32 digest = premintHashedTypeDataV4(
             hashedPremintConfig,
@@ -261,9 +261,9 @@ library PremintTokenSetup {
         uint256 newTokenId,
         address contractAdmin,
         TokenCreationConfigV2 calldata tokenConfig
-    ) external view returns (bytes[] memory calls) {
+    ) internal view returns (bytes[] memory calls) {
         return
-            buildCalls({
+            _buildCalls({
                 newTokenId: newTokenId,
                 contractAdmin: contractAdmin,
                 fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
@@ -279,9 +279,9 @@ library PremintTokenSetup {
         uint256 newTokenId,
         address contractAdmin,
         TokenCreationConfig calldata tokenConfig
-    ) external view returns (bytes[] memory calls) {
+    ) internal view returns (bytes[] memory calls) {
         return
-            buildCalls({
+            _buildCalls({
                 newTokenId: newTokenId,
                 contractAdmin: contractAdmin,
                 fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
@@ -293,7 +293,7 @@ library PremintTokenSetup {
             });
     }
 
-    function buildCalls(
+    function _buildCalls(
         uint256 newTokenId,
         address contractAdmin,
         address fixedPriceMinterAddress,
@@ -302,7 +302,7 @@ library PremintTokenSetup {
         uint64 mintDuration,
         uint32 royaltyBPS,
         address royaltyRecipient
-    ) internal view returns (bytes[] memory calls) {
+    ) private view returns (bytes[] memory calls) {
         calls = new bytes[](3);
 
         // build array of the calls to make
@@ -371,7 +371,7 @@ library DelegatedTokenCreation {
         address tokenContract,
         uint256 nextTokenId
     ) external view returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
-        validatePremint(premintConfig);
+        validatePremint(premintConfig.tokenConfig.mintStart, premintConfig.deleted);
 
         params.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
@@ -403,6 +403,8 @@ library DelegatedTokenCreation {
         address tokenContract,
         uint256 nextTokenId
     ) external view returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
+        validatePremint(premintConfig.tokenConfig.mintStart, premintConfig.deleted);
+
         params.structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
 
         params.version = ZoraCreator1155Attribution.VERSION_1;
@@ -424,12 +426,12 @@ library DelegatedTokenCreation {
         params.maxSupply = premintConfig.tokenConfig.maxSupply;
     }
 
-    function validatePremint(PremintConfigV2 calldata premintConfig) private view {
-        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
+    function validatePremint(uint64 mintStart, bool deleted) private view {
+        if (mintStart != 0 && mintStart > block.timestamp) {
             // if the mint start is in the future, then revert
             revert IZoraCreator1155Errors.MintNotYetStarted();
         }
-        if (premintConfig.deleted) {
+        if (deleted) {
             // if the signature says to be deleted, then dont execute any further minting logic;
             // return 0
             revert IZoraCreator1155Errors.PremintDeleted();
