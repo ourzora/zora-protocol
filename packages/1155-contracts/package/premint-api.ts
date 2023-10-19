@@ -166,7 +166,7 @@ const ZORA_PREMINT_API_BASE = "https://api.zora.co/premint/";
  * Preminter API to access ZORA Premint functionality.
  * Currently only supports V1 premints.
  */
-export class PreminterAPI {
+export class PremintAPI {
   network: NetworkConfig;
   chain: Chain;
   rewardPerToken: bigint;
@@ -415,6 +415,7 @@ export class PreminterAPI {
   }
 
   /**
+   * Execute premint
    *
    * @param settings.data Data from the API for the mint
    * @param settings.account Optional account (if omitted taken from wallet client) for the account executing the premint.
