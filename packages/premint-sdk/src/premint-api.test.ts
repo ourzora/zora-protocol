@@ -77,7 +77,7 @@ describe("ZoraCreator1155Premint", () => {
       expect(premintApi.post).toHaveBeenCalledWith(
         "https://api.zora.co/premint/signature",
         {
-          chain_name: BackendChainNames.ZORA_TESTNET,
+          chain_name: BackendChainNames.ZORA_GOERLI,
           collection: {
             contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
             contractName: "Testing Contract",

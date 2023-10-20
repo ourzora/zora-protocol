@@ -18,6 +18,16 @@
       "types": "./dist/package/index.d.ts"
     }
   },
+  "typesVersions": {
+    "*": {
+      ".": [
+        "./dist/package/index.d.ts"
+      ],
+      "./premint-api": [
+        "./dist/package/premint-api.d.ts"
+      ]
+    }
+  },
   "type": "module",
   "scripts": {
     "test": "forge test",

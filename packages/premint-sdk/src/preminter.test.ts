@@ -13,13 +13,13 @@ import {
   zoraCreator1155ImplABI,
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155FactoryImplConfig,
-} from "./wagmiGenerated";
-import ZoraCreator1155Attribution from "../out/ZoraCreator1155Attribution.sol/ZoraCreator1155Attribution.json";
-import zoraCreator1155PremintExecutor from "../out/ZoraCreator1155PremintExecutorImpl.sol/ZoraCreator1155PremintExecutorImpl.json";
-import zoraCreator1155Impl from "../out/ZoraCreator1155Impl.sol/ZoraCreator1155Impl.json";
-import zoraCreator1155FactoryImpl from "../out/ZoraCreator1155FactoryImpl.sol/ZoraCreator1155FactoryImpl.json";
-import zoraCreatorFixedPriceSaleStrategy from "../out/ZoraCreatorFixedPriceSaleStrategy.sol/ZoraCreatorFixedPriceSaleStrategy.json";
-import protocolRewards from "../out/ProtocolRewards.sol/ProtocolRewards.json";
+} from "@zoralabs/zora-1155-contracts";
+import ZoraCreator1155Attribution from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155Attribution.sol/ZoraCreator1155Attribution.json";
+import zoraCreator1155PremintExecutor from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155PremintExecutorImpl.sol/ZoraCreator1155PremintExecutorImpl.json";
+import zoraCreator1155Impl from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155Impl.sol/ZoraCreator1155Impl.json";
+import zoraCreator1155FactoryImpl from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155FactoryImpl.sol/ZoraCreator1155FactoryImpl.json";
+import zoraCreatorFixedPriceSaleStrategy from "@zoralabs/zora-1155-contracts/out/ZoraCreatorFixedPriceSaleStrategy.sol/ZoraCreatorFixedPriceSaleStrategy.json";
+import protocolRewards from "@zoralabs/zora-1155-contracts/out/ProtocolRewards.sol/ProtocolRewards.json";
 import {
   ContractCreationConfig,
   PremintConfig,

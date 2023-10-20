@@ -12,7 +12,7 @@ import {
   zoraCreator1155PremintExecutorImplABI,
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
-} from "./wagmiGenerated";
+} from "@zoralabs/zora-1155-contracts";
 import { foundry, zora, zoraTestnet } from "viem/chains";
 import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
 
@@ -25,7 +25,7 @@ export type NetworkConfig = {
 
 export const enum BackendChainNames {
   ZORA_MAINNET = "ZORA-MAINNET",
-  ZORA_TESTNET = "ZORA-TESTNET",
+  ZORA_GOERLI = "ZORA-GOERLI",
 }
 
 const ZORA_API_BASE = "https://api.zora.co/premint/";
@@ -41,13 +41,13 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     chainId: zora.id,
     isTestnet: true,
     zoraPathChainName: "zora",
-    zoraBackendChainName: BackendChainNames.ZORA_TESTNET,
+    zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
   },
   [foundry.id]: {
     chainId: foundry.id,
     isTestnet: true,
     zoraPathChainName: "zora",
-    zoraBackendChainName: BackendChainNames.ZORA_TESTNET,
+    zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
   },
 };
 
