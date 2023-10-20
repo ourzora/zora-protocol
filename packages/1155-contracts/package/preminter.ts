@@ -86,6 +86,31 @@ export const preminterTypedDataDefinitionV2 = ({
   return result;
 };
 
+const premintV1Types = {
+  CreatorAttribution: [
+    { name: "tokenConfig", type: "TokenCreationConfig" },
+    // unique id scoped to the contract and token to create.
+    // ensure that a signature can be replaced, as long as the replacement
+    // has the same uid, and a newer version.
+    { name: "uid", type: "uint32" },
+    { name: "version", type: "uint32" },
+    // if this update should result in the signature being deleted.
+    { name: "deleted", type: "bool" },
+  ],
+  TokenCreationConfig: [
+    { name: "tokenURI", type: "string" },
+    { name: "maxSupply", type: "uint256" },
+    { name: "maxTokensPerAddress", type: "uint64" },
+    { name: "pricePerToken", type: "uint96" },
+    { name: "mintStart", type: "uint64" },
+    { name: "mintDuration", type: "uint64" },
+    { name: "royaltyMintSchedule", type: "uint32" },
+    { name: "royaltyBPS", type: "uint32" },
+    { name: "royaltyRecipient", type: "address" },
+    { name: "fixedPriceMinter", type: "address" },
+  ],
+};
+
 // Convenience method to create the structured typed data
 // needed to sign for a premint contract and token
 export const preminterTypedDataDefinitionV1 = ({
@@ -98,39 +123,18 @@ export const preminterTypedDataDefinitionV1 = ({
   chainId: number;
 }) => {
   const { tokenConfig, uid, version, deleted } = premintConfig;
-  const types = {
-    CreatorAttribution: [
-      { name: "tokenConfig", type: "TokenCreationConfig" },
-      // unique id scoped to the contract and token to create.
-      // ensure that a signature can be replaced, as long as the replacement
-      // has the same uid, and a newer version.
-      { name: "uid", type: "uint32" },
-      { name: "version", type: "uint32" },
-      // if this update should result in the signature being deleted.
-      { name: "deleted", type: "bool" },
-    ],
-    TokenCreationConfig: [
-      { name: "tokenURI", type: "string" },
-      { name: "maxSupply", type: "uint256" },
-      { name: "maxTokensPerAddress", type: "uint64" },
-      { name: "pricePerToken", type: "uint96" },
-      { name: "mintStart", type: "uint64" },
-      { name: "mintDuration", type: "uint64" },
-      { name: "royaltyMintSchedule", type: "uint32" },
-      { name: "royaltyBPS", type: "uint32" },
-      { name: "royaltyRecipient", type: "address" },
-      { name: "fixedPriceMinter", type: "address" },
-    ],
-  };
 
-  const result: TypedDataDefinition<typeof types, "CreatorAttribution"> = {
+  const result: TypedDataDefinition<
+    typeof premintV1Types,
+    "CreatorAttribution"
+  > = {
     domain: {
       chainId,
       name: "Preminter",
       version: "1",
       verifyingContract: verifyingContract,
     },
-    types,
+    types: premintV1Types,
     message: {
       tokenConfig,
       uid,

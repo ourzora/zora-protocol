@@ -57,7 +57,6 @@ const [
   creatorAccount,
   collectorAccount,
   createReferralAccount,
-  mintReferral,
 ] = (await walletClient.getAddresses()) as [
   Address,
   Address,
