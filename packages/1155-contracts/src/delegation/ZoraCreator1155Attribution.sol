@@ -257,15 +257,10 @@ library ZoraCreator1155Attribution {
 library PremintTokenSetup {
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
-    function makeSetupNewTokenCalls(
-        uint256 newTokenId,
-        address contractAdmin,
-        TokenCreationConfigV2 calldata tokenConfig
-    ) internal view returns (bytes[] memory calls) {
+    function makeSetupNewTokenCalls(uint256 newTokenId, TokenCreationConfigV2 calldata tokenConfig) internal view returns (bytes[] memory calls) {
         return
             _buildCalls({
                 newTokenId: newTokenId,
-                contractAdmin: contractAdmin,
                 fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
                 pricePerToken: tokenConfig.pricePerToken,
                 maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
@@ -275,15 +270,10 @@ library PremintTokenSetup {
             });
     }
 
-    function makeSetupNewTokenCalls(
-        uint256 newTokenId,
-        address contractAdmin,
-        TokenCreationConfig calldata tokenConfig
-    ) internal view returns (bytes[] memory calls) {
+    function makeSetupNewTokenCalls(uint256 newTokenId, TokenCreationConfig calldata tokenConfig) internal view returns (bytes[] memory calls) {
         return
             _buildCalls({
                 newTokenId: newTokenId,
-                contractAdmin: contractAdmin,
                 fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
                 pricePerToken: tokenConfig.pricePerToken,
                 maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
@@ -295,7 +285,6 @@ library PremintTokenSetup {
 
     function _buildCalls(
         uint256 newTokenId,
-        address contractAdmin,
         address fixedPriceMinterAddress,
         uint96 pricePerToken,
         uint64 maxTokensPerAddress,
@@ -320,7 +309,7 @@ library PremintTokenSetup {
             abi.encodeWithSelector(
                 ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                _buildNewSalesConfig(contractAdmin, pricePerToken, maxTokensPerAddress, mintDuration)
+                _buildNewSalesConfig(pricePerToken, maxTokensPerAddress, mintDuration)
             )
         );
 
@@ -333,7 +322,6 @@ library PremintTokenSetup {
     }
 
     function _buildNewSalesConfig(
-        address royaltyRecipient,
         uint96 pricePerToken,
         uint64 maxTokensPerAddress,
         uint64 duration
@@ -347,7 +335,7 @@ library PremintTokenSetup {
                 saleStart: saleStart,
                 saleEnd: saleEnd,
                 maxTokensPerAddress: maxTokensPerAddress,
-                fundsRecipient: royaltyRecipient
+                fundsRecipient: address(0)
             });
     }
 }
@@ -390,7 +378,7 @@ library DelegatedTokenCreation {
 
         params.uid = premintConfig.uid;
 
-        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, params.creator, premintConfig.tokenConfig);
+        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, premintConfig.tokenConfig);
 
         params.tokenURI = premintConfig.tokenConfig.tokenURI;
         params.maxSupply = premintConfig.tokenConfig.maxSupply;
@@ -420,7 +408,7 @@ library DelegatedTokenCreation {
         params.signature = signature;
         params.name = ZoraCreator1155Attribution.NAME;
 
-        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, params.creator, premintConfig.tokenConfig);
+        tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, premintConfig.tokenConfig);
 
         params.tokenURI = premintConfig.tokenConfig.tokenURI;
         params.maxSupply = premintConfig.tokenConfig.maxSupply;
