@@ -3,8 +3,13 @@ import {
   http,
   createWalletClient,
   createPublicClient,
+  keccak256,
+  Hex,
+  concat,
+  recoverAddress,
+  hashDomain,
 } from "viem";
-import { foundry, zoraTestnet } from "viem/chains";
+import { foundry, zora } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
 import { parseEther } from "viem";
 import {
@@ -14,12 +19,7 @@ import {
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155FactoryImplConfig,
 } from "@zoralabs/zora-1155-contracts";
-import ZoraCreator1155Attribution from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155Attribution.sol/ZoraCreator1155Attribution.json";
-import zoraCreator1155PremintExecutor from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155PremintExecutorImpl.sol/ZoraCreator1155PremintExecutorImpl.json";
-import zoraCreator1155Impl from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155Impl.sol/ZoraCreator1155Impl.json";
-import zoraCreator1155FactoryImpl from "@zoralabs/zora-1155-contracts/out/ZoraCreator1155FactoryImpl.sol/ZoraCreator1155FactoryImpl.json";
-import zoraCreatorFixedPriceSaleStrategy from "@zoralabs/zora-1155-contracts/out/ZoraCreatorFixedPriceSaleStrategy.sol/ZoraCreatorFixedPriceSaleStrategy.json";
-import protocolRewards from "@zoralabs/zora-1155-contracts/out/ProtocolRewards.sol/ProtocolRewards.json";
+
 import {
   ContractCreationConfig,
   PremintConfig,
@@ -50,15 +50,9 @@ const publicClient = createPublicClient({
 
 type Address = `0x${string}`;
 
-const zeroAddress: Address = "0x0000000000000000000000000000000000000000";
-
 // JSON-RPC Account
-const [
-  deployerAccount,
-  creatorAccount,
-  collectorAccount,
-  mintFeeRecipientAccount,
-] = (await walletClient.getAddresses()) as [Address, Address, Address, Address];
+const [deployerAccount, creatorAccount, collectorAccount] =
+  (await walletClient.getAddresses()) as [Address, Address, Address, Address];
 
 type TestContext = {
   preminterAddress: `0x${string}`;
@@ -66,81 +60,6 @@ type TestContext = {
   anvilChainId: number;
   zoraMintFee: bigint;
   fixedPriceMinterAddress: Address;
-};
-
-const deployContractAndGetAddress = async (
-  args: Parameters<typeof walletClient.deployContract>[0]
-) => {
-  const hash = await walletClient.deployContract(args);
-  return (
-    await publicClient.waitForTransactionReceipt({
-      hash,
-    })
-  ).contractAddress!;
-};
-
-export const deployFactoryProxy = async () => {
-  console.log("deploying protocol rewards");
-  const protocolRewardsAddress = await deployContractAndGetAddress({
-    abi: protocolRewards.abi,
-    bytecode: protocolRewards.bytecode.object as `0x${string}`,
-    account: deployerAccount,
-    args: [],
-  });
-
-  console.log("deploying attribution lib");
-  const attributionAddress = await deployContractAndGetAddress({
-    abi: ZoraCreator1155Attribution.abi,
-    bytecode: ZoraCreator1155Attribution.bytecode.object as `0x${string}`,
-    account: deployerAccount,
-  });
-
-  console.log("attribution address is ", attributionAddress);
-
-  console.log("deploying 1155");
-  const zora1155Address = await deployContractAndGetAddress({
-    abi: zoraCreator1155Impl.abi,
-    bytecode: zoraCreator1155Impl.bytecode.object as `0x${string}`,
-    account: deployerAccount,
-    args: [0n, mintFeeRecipientAccount, zeroAddress, protocolRewardsAddress],
-  });
-
-  console.log("deploying fixed priced minter");
-  const fixedPriceMinterAddress = await deployContractAndGetAddress({
-    abi: zoraCreatorFixedPriceSaleStrategy.abi,
-    bytecode: zoraCreatorFixedPriceSaleStrategy.bytecode
-      .object as `0x${string}`,
-    account: deployerAccount,
-  });
-
-  console.log("deploying factory impl");
-  const factoryImplAddress = await deployContractAndGetAddress({
-    abi: zoraCreator1155FactoryImpl.abi,
-    bytecode: zoraCreator1155FactoryImpl.bytecode.object as `0x${string}`,
-    account: deployerAccount,
-    args: [zora1155Address, zeroAddress, fixedPriceMinterAddress, zeroAddress],
-  });
-
-  const factoryProxyAddress = factoryImplAddress!;
-
-  return { factoryProxyAddress, zora1155Address, fixedPriceMinterAddress };
-};
-
-export const deployPreminterContract = async (factoryProxyAddress: Address) => {
-  const deployPreminterHash = await walletClient.deployContract({
-    abi: zoraCreator1155PremintExecutor.abi,
-    bytecode: zoraCreator1155PremintExecutor.bytecode.object as `0x${string}`,
-    account: deployerAccount,
-    args: [factoryProxyAddress],
-  });
-
-  const receipt = await publicClient.waitForTransactionReceipt({
-    hash: deployPreminterHash,
-  });
-
-  const preminterAddress = receipt.contractAddress!;
-
-  return { preminterAddress, factoryProxyAddress };
 };
 
 // create token and contract creation config:
@@ -155,7 +74,7 @@ const defaultContractConfig = ({
 });
 
 const defaultTokenConfig = (
-  fixedPriceMinterAddress: Address
+  fixedPriceMinterAddress: Address,
 ): TokenCreationConfig => ({
   tokenURI: "ipfs://tokenIpfsId0",
   maxSupply: 100n,
@@ -176,8 +95,6 @@ const defaultPremintConfig = (fixedPriceMinter: Address): PremintConfig => ({
   version: 0,
 });
 
-const useForkContract = true;
-
 describe("ZoraCreator1155Preminter", () => {
   beforeEach<TestContext>(async (ctx) => {
     // deploy signature minter contract
@@ -186,36 +103,22 @@ describe("ZoraCreator1155Preminter", () => {
       value: parseEther("10"),
     });
 
-    ctx.forkedChainId = zoraTestnet.id;
+    ctx.forkedChainId = zora.id;
     ctx.anvilChainId = foundry.id;
 
-    let preminterAddress: Address;
-
-    if (useForkContract) {
-      const factoryProxyAddress =
-        zoraCreator1155FactoryImplAddress[ctx.forkedChainId];
-      ctx.fixedPriceMinterAddress = await publicClient.readContract({
-        abi: zoraCreator1155FactoryImplConfig.abi,
-        address: zoraCreator1155FactoryImplAddress[ctx.forkedChainId],
-        functionName: "fixedPriceMinter",
-      });
-      ctx.preminterAddress = zoraCreator1155PremintExecutorAddress[999];
-      const deployed = await deployPreminterContract(factoryProxyAddress);
-      preminterAddress = deployed.preminterAddress;
-    } else {
-      const factoryProxyAddress = (await deployFactoryProxy())
-        .factoryProxyAddress;
-      const deployed = await deployPreminterContract(factoryProxyAddress);
-      preminterAddress = deployed.preminterAddress;
-    }
-
+    ctx.fixedPriceMinterAddress = await publicClient.readContract({
+      abi: zoraCreator1155FactoryImplConfig.abi,
+      address: zoraCreator1155FactoryImplAddress[ctx.forkedChainId],
+      functionName: "fixedPriceMinter",
+    });
     ctx.zoraMintFee = parseEther("0.000777");
 
-    ctx.preminterAddress = preminterAddress;
+    ctx.preminterAddress =
+      zoraCreator1155PremintExecutorAddress[ctx.forkedChainId];
   }, 20 * 1000);
 
   // skip for now - we need to make this work on zora testnet chain too
-  it.skip<TestContext>(
+  it<TestContext>(
     "can sign on the forked premint contract",
     async ({ fixedPriceMinterAddress, forkedChainId }) => {
       const premintConfig = defaultPremintConfig(fixedPriceMinterAddress);
@@ -251,7 +154,7 @@ describe("ZoraCreator1155Preminter", () => {
         contractAddress,
       });
     },
-    20 * 1000
+    20 * 1000,
   );
   it<TestContext>(
     "can sign and recover a signature",
@@ -294,7 +197,7 @@ describe("ZoraCreator1155Preminter", () => {
       expect(recoveredAddress).to.equal(creatorAccount);
     },
 
-    20 * 1000
+    20 * 1000,
   );
   it<TestContext>(
     "can sign and mint multiple tokens",
@@ -449,7 +352,7 @@ describe("ZoraCreator1155Preminter", () => {
 
       expect(
         (await publicClient.waitForTransactionReceipt({ hash: mintHash2 }))
-          .status
+          .status,
       ).toBe("success");
 
       // now premint status for the second mint, it should be minted
@@ -473,6 +376,131 @@ describe("ZoraCreator1155Preminter", () => {
       expect(tokenBalance2).toBe(quantityToMint2);
     },
     // 10 second timeout
-    40 * 1000
+    40 * 1000,
   );
+
+  it<TestContext>("can decode the CreatorAttribution event", async ({
+    zoraMintFee,
+    anvilChainId,
+    preminterAddress: preminterAddress,
+    fixedPriceMinterAddress,
+  }) => {
+    const premintConfig = defaultPremintConfig(fixedPriceMinterAddress);
+    const contractConfig = defaultContractConfig({
+      contractAdmin: creatorAccount,
+    });
+
+    // lets make it a random number to not break the existing tests that expect fresh data
+    premintConfig.uid = Math.round(Math.random() * 1000000);
+
+    let contractAddress = await publicClient.readContract({
+      abi: preminterAbi,
+      address: preminterAddress,
+      functionName: "getContractAddress",
+      args: [contractConfig],
+    });
+
+    // have creator sign the message to create the contract
+    // and the token
+    const signedMessage = await walletClient.signTypedData({
+      ...preminterTypedDataDefinition({
+        verifyingContract: contractAddress,
+        // we need to sign here for the anvil chain, cause thats where it is run on
+        chainId: anvilChainId,
+        premintConfig,
+      }),
+      account: creatorAccount,
+    });
+
+    const quantityToMint = 2n;
+
+    const valueToSend =
+      (zoraMintFee + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
+
+    const comment = "I love this!";
+
+    await testClient.setBalance({
+      address: collectorAccount,
+      value: parseEther("10"),
+    });
+
+    // now have the collector execute the first signed message;
+    // it should create the contract, the token,
+    // and min the quantity to mint tokens to the collector
+    // the signature along with contract + token creation
+    // parameters are required to call this function
+    const mintHash = await walletClient.writeContract({
+      abi: preminterAbi,
+      functionName: "premint",
+      account: collectorAccount,
+      address: preminterAddress,
+      args: [
+        contractConfig,
+        premintConfig,
+        signedMessage,
+        quantityToMint,
+        comment,
+      ],
+      value: valueToSend,
+    });
+
+    // ensure it succeeded
+    const receipt = await publicClient.waitForTransactionReceipt({
+      hash: mintHash,
+    });
+
+    expect(receipt.status).toBe("success");
+
+    // get the CreatorAttribution event from the erc1155 contract:
+    const topics = await publicClient.getContractEvents({
+      abi: zoraCreator1155ImplABI,
+      address: contractAddress,
+      eventName: "CreatorAttribution",
+    });
+
+    expect(topics.length).toBe(1);
+
+    const creatorAttributionEvent = topics[0]!;
+
+    const { creator, domainName, signature, structHash, version } =
+      creatorAttributionEvent.args;
+
+    const chainId = anvilChainId;
+
+    // hash the eip712 domain based on the parameters emitted from the event:
+    const hashedDomain = hashDomain({
+      domain: {
+        chainId,
+        name: domainName,
+        verifyingContract: contractAddress,
+        version,
+      },
+      types: {
+        EIP712Domain: [
+          { name: "name", type: "string" },
+          { name: "version", type: "string" },
+          {
+            name: "chainId",
+            type: "uint256",
+          },
+          {
+            name: "verifyingContract",
+            type: "address",
+          },
+        ],
+      },
+    });
+
+    // re-build the eip-712 typed data hash, consisting of the hashed domain and the structHash emitted from the event:
+    const parts: Hex[] = ["0x1901", hashedDomain, structHash!];
+
+    const hashedTypedData = keccak256(concat(parts));
+
+    const recoveredSigner = await recoverAddress({
+      hash: hashedTypedData,
+      signature: signature!,
+    });
+
+    expect(recoveredSigner).toBe(creator);
+  });
 });

@@ -1,7 +1,7 @@
 import { defineConfig } from "tsup";
 
 export default defineConfig({
-  entry: ["package/index.ts", "package/premint-api.ts"],
+  entry: ["src/index.ts"],
   sourcemap: true,
   clean: true,
   dts: false,

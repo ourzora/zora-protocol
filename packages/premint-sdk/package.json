@@ -1,16 +1,20 @@
 {
-  "name": "premint-sdk",
-  "version": "1.0.0",
-  "main": "index.js",
+  "name": "@zoralabs/premint-sdk",
+  "version": "0.0.1",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
   "scripts": {
     "build": "tsup",
     "prepack": "yarn build",
-    "test": "vitest src"
+    "test": "vitest src",
+    "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
   },
   "dependencies": {
-    "@zoralabs/zora-1155-contracts": "*"
+    "@zoralabs/zora-1155-contracts": "*",
+    "abitype": "^0.8.7"
   },
   "devDependencies": {
     "typescript": "^5.2.2",
