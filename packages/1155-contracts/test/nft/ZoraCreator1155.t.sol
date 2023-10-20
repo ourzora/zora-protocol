@@ -1057,7 +1057,7 @@ contract ZoraCreator1155Test is Test {
                 mintStart: 0,
                 // The duration of the mint, starting from the first mint of this token. 0 for infinite
                 mintDuration: type(uint64).max - 1,
-                royaltyRecipient: admin,
+                payoutAddress: admin,
                 royaltyBPS: 0,
                 // Fixed price minter address
                 fixedPriceMinter: address(fixedPriceMinter),
