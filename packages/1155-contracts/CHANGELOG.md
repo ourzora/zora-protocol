@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.1.1-premint-api.1
+
+### Patch Changes
+
+- aae756b: update package export style
+
 ## 2.1.1-premint-api.0
 
 ### Patch Changes
