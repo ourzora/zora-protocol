@@ -1,5 +1,12 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.1.1-premint-api.0
+
+### Patch Changes
+
+- 8395b8e: Fix release code
+- cf184b3: Update export/import pattern
+
 ## 2.1.0
 
 ### Minor Changes
