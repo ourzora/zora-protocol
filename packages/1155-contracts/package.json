@@ -4,8 +4,20 @@
   "repository": "git@github.com:ourzora/zora-protocol.git",
   "author": "Iain <iain@zora.co>",
   "license": "MIT",
-  "main": "./dist/index.cjs",
+  "main": "./dist/index.js",
   "types": "./dist/package/index.d.ts",
+  "exports": {
+    "./premint-api": {
+      "require": "./dist/premint-api.cjs",
+      "import": "./dist/premint-api.js",
+      "types": "./dist/package/premint-api.d.ts"
+    },
+    ".": {
+      "require": "./dist/index.cjs",
+      "import": "./dist/index.js",
+      "types": "./dist/package/index.d.ts"
+    }
+  },
   "type": "module",
   "scripts": {
     "test": "forge test",
