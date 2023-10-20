@@ -65,7 +65,7 @@ type MintArgumentsSettings = {
 };
 
 const OPEN_EDITION_MINT_SIZE = "18446744073709551615";
-const DefaultMintArguments = {
+export const DefaultMintArguments = {
   maxSupply: BigInt(OPEN_EDITION_MINT_SIZE),
   maxTokensPerAddress: 0n,
   pricePerToken: 0n,
@@ -497,7 +497,7 @@ export class PremintAPI {
       deleted,
     };
 
-    this.signAndSubmitPremint({
+    return await this.signAndSubmitPremint({
       uid,
       verifyingContract: newContractAddress,
       premintConfig,
