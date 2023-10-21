@@ -28,6 +28,12 @@ export const enum BackendChainNames {
   ZORA_GOERLI = "ZORA-GOERLI",
 }
 
+async function wait(delayMs: number) {
+  return new Promise((resolve) => {
+    setTimeout(resolve, delayMs);
+  });
+}
+
 const ZORA_API_BASE = "https://api.zora.co/premint/";
 
 export const networkConfigByChain: Record<number, NetworkConfig> = {
@@ -50,6 +56,15 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
   },
 };
+
+export class BadResponse extends Error {
+  status: number;
+  constructor(message: string, status: number) {
+    super(message);
+    this.name = "BadResponse";
+    this.status = status;
+  }
+}
 
 type MintArgumentsSettings = {
   tokenURI: string;
@@ -409,7 +424,9 @@ export class PremintAPI {
       signature: signature,
     };
 
-    const premint = await this.post(`${ZORA_API_BASE}signature`, apiData);
+    let premint = await this.retries(() =>
+      this.post(`${ZORA_API_BASE}signature`, apiData),
+    );
 
     return {
       zoraUrl: `https://${
@@ -421,6 +438,24 @@ export class PremintAPI {
       verifyingContract,
       premint,
     };
+  }
+
+  private async retries<T>(
+    tryFn: () => T,
+    maxTries: number = 3,
+    atTry: number = 1,
+  ): Promise<T> {
+    try {
+      return await tryFn();
+    } catch (err: any) {
+      if (err instanceof BadResponse) {
+        if (atTry >= maxTries) {
+          await wait(500);
+          return await this.retries(tryFn, maxTries, atTry++);
+        }
+      }
+      throw err;
+    }
   }
 
   /**
