@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/premint-sdk",
-  "version": "0.0.1",
+  "version": "0.0.2-premint-api.0",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -13,7 +13,7 @@
     "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
   },
   "dependencies": {
-    "@zoralabs/zora-1155-contracts": "*",
+    "@zoralabs/zora-1155-contracts": "2.1.1-premint-api.0",
     "abitype": "^0.8.7"
   },
   "peerDependencies": {
