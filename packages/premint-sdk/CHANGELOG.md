@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.2-premint-api.1
+
+### Patch Changes
+
+- 6eaf7bb: add retries
+
 ## 0.0.2-premint-api.0
 
 ### Patch Changes
