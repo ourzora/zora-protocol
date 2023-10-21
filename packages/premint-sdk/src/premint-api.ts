@@ -40,13 +40,13 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
   [zoraTestnet.id]: {
     chainId: zora.id,
     isTestnet: true,
-    zoraPathChainName: "zora",
+    zoraPathChainName: "zgor",
     zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
   },
   [foundry.id]: {
     chainId: foundry.id,
     isTestnet: true,
-    zoraPathChainName: "zora",
+    zoraPathChainName: "zgor",
     zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
   },
 };
@@ -412,9 +412,9 @@ export class PremintAPI {
     const premint = await this.post(`${ZORA_API_BASE}signature`, apiData);
 
     return {
-      url: `https://${
+      zoraUrl: `https://${
         this.network.isTestnet ? "testnet." : ""
-      }zora.co/collect:${
+      }zora.co/collect/${
         this.network.zoraPathChainName
       }:${verifyingContract}/premint-${uid}`,
       uid,
