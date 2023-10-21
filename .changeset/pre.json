@@ -2,14 +2,11 @@
   "mode": "pre",
   "tag": "premint-api",
   "initialVersions": {
-    "@zoralabs/zora-1155-contracts": "2.0.4",
-    "@zoralabs/protocol-rewards": "1.2.1",
-    "@zoralabs/premint-sdk": "0.0.1"
+    "@zoralabs/zora-1155-contracts": "2.1.0",
+    "@zoralabs/premint-sdk": "0.0.1",
+    "@zoralabs/protocol-rewards": "1.2.1"
   },
   "changesets": [
-    "afraid-spoons-wait",
-    "short-zebras-flow",
-    "strong-bears-fail",
-    "wicked-rivers-mix"
+    "proud-days-retire"
   ]
 }

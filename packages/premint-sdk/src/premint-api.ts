@@ -40,13 +40,13 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
   [zoraTestnet.id]: {
     chainId: zora.id,
     isTestnet: true,
-    zoraPathChainName: "zora",
+    zoraPathChainName: "zgor",
     zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
   },
   [foundry.id]: {
     chainId: foundry.id,
     isTestnet: true,
-    zoraPathChainName: "zora",
+    zoraPathChainName: "zgor",
     zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
   },
 };
@@ -65,7 +65,7 @@ type MintArgumentsSettings = {
 };
 
 const OPEN_EDITION_MINT_SIZE = "18446744073709551615";
-const DefaultMintArguments = {
+export const DefaultMintArguments = {
   maxSupply: BigInt(OPEN_EDITION_MINT_SIZE),
   maxTokensPerAddress: 0n,
   pricePerToken: 0n,
@@ -255,6 +255,175 @@ export class PremintAPI {
   }
 
   /**
+   * Update premint
+   *
+   * Updates existing premint
+   * @param settings Settings for the new premint
+   * @param settings.account Account to sign the premint update from. Taken from walletClient if none passed in.
+   * @param settings.collection Collection information for the mint
+   * @param settings.walletClient viem wallet client to use to sign
+   * @param settings.uid UID
+   * @param settings.token Mint argument settings, optional settings are overridden with sensible defaults.
+   *
+   */
+  async updatePremint({
+    walletClient,
+    uid,
+    collection,
+    token,
+    account,
+  }: {
+    walletClient: WalletClient;
+    uid: number;
+    token: MintArgumentsSettings;
+    account?: Account | Address;
+    collection: Address;
+  }) {
+    const signatureResponse = (await this.get(
+      `${ZORA_API_BASE}signature/${
+        this.network.zoraBackendChainName
+      }/${collection.toLowerCase()}/${uid}`,
+    )) as PremintResponse;
+
+    const convertedPremint = convertPremint(signatureResponse.premint);
+    const signerData = {
+      ...signatureResponse,
+      premint: {
+        ...convertedPremint,
+        tokenConfig: {
+          ...convertedPremint.tokenConfig,
+          ...token,
+        },
+      },
+    };
+
+    return await this.signAndSubmitPremint({
+      walletClient,
+      account,
+      checkSignature: false,
+      verifyingContract: collection,
+      publicClient: this.getPublicClient(),
+      uid: uid,
+      collection: signerData.collection,
+      premintConfig: signerData.premint,
+    });
+  }
+
+  /**
+   * Delete premint
+   *
+   * Deletes existing premint
+   * @param settings.collection collection address
+   * @param settings.uid UID
+   * @param settings.walletClient viem wallet client to use to sign
+   *
+   */
+  async deletePremint({
+    walletClient,
+    uid,
+    account,
+    collection,
+  }: {
+    walletClient: WalletClient;
+    uid: number;
+    account?: Account | Address;
+    collection: Address;
+  }) {
+    const signatureResponse = (await this.get(
+      `${ZORA_API_BASE}signature/${
+        this.network.zoraBackendChainName
+      }/${collection.toLowerCase()}/${uid}`,
+    )) as PremintResponse;
+
+    const signerData = {
+      ...signatureResponse,
+      premint: {
+        ...convertPremint(signatureResponse.premint),
+        deleted: true,
+      },
+    };
+
+    return await this.signAndSubmitPremint({
+      walletClient,
+      account,
+      checkSignature: false,
+      verifyingContract: collection,
+      publicClient: this.getPublicClient(),
+      uid: uid,
+      collection: signerData.collection,
+      premintConfig: signerData.premint,
+    });
+  }
+
+  private async signAndSubmitPremint({
+    walletClient,
+    publicClient,
+    verifyingContract,
+    premintConfig,
+    uid,
+    account,
+    checkSignature,
+    collection,
+  }: {
+    publicClient: PublicClient;
+    uid: number;
+    walletClient: WalletClient;
+    verifyingContract: Address;
+    checkSignature: boolean;
+    account?: Address | Account;
+    premintConfig: PremintConfig;
+    collection: PremintResponse["collection"];
+  }) {
+    if (!account) {
+      account = walletClient.account;
+    }
+    if (!account) {
+      throw new Error("No account provided");
+    }
+
+    const signature = await walletClient.signTypedData({
+      account,
+      ...preminterTypedDataDefinition({
+        verifyingContract,
+        premintConfig,
+        chainId: this.chain.id,
+      }),
+    });
+
+    if (checkSignature) {
+      const [isValidSignature] = await publicClient.readContract({
+        abi: zoraCreator1155PremintExecutorImplABI,
+        address: this.getExecutorAddress(),
+        functionName: "isValidSignature",
+        args: [collection, premintConfig, signature],
+      });
+      if (!isValidSignature) {
+        throw new Error("Invalid signature");
+      }
+    }
+
+    const apiData = {
+      collection,
+      premint: encodePremintForAPI(premintConfig),
+      chain_name: this.network.zoraBackendChainName,
+      signature: signature,
+    };
+
+    const premint = await this.post(`${ZORA_API_BASE}signature`, apiData);
+
+    return {
+      zoraUrl: `https://${
+        this.network.isTestnet ? "testnet." : ""
+      }zora.co/collect/${
+        this.network.zoraPathChainName
+      }:${verifyingContract}/premint-${uid}`,
+      uid,
+      verifyingContract,
+      premint,
+    };
+  }
+
+  /**
    * Create premint
    *
    * @param settings Settings for the new premint
@@ -310,7 +479,7 @@ export class PremintAPI {
       const uidResponse = await this.get(
         `${ZORA_API_BASE}signature/${
           this.network.zoraBackendChainName
-        }/${newContractAddress.toLowerCase()}/next_uid`
+        }/${newContractAddress.toLowerCase()}/next_uid`,
       );
       uid = uidResponse["next_uid"];
     }
@@ -328,46 +497,15 @@ export class PremintAPI {
       deleted,
     };
 
-    const signature = await walletClient.signTypedData({
-      account,
-      ...preminterTypedDataDefinition({
-        verifyingContract: newContractAddress,
-        premintConfig,
-        chainId: this.chain.id,
-      }),
-    });
-
-    if (checkSignature) {
-      const [isValidSignature] = await publicClient.readContract({
-        abi: zoraCreator1155PremintExecutorImplABI,
-        address: this.getExecutorAddress(),
-        functionName: "isValidSignature",
-        args: [collection, premintConfig, signature],
-      });
-      if (!isValidSignature) {
-        throw new Error("Invalid signature");
-      }
-    }
-
-    const apiData = {
-      collection,
-      premint: encodePremintForAPI(premintConfig),
-      chain_name: this.network.zoraBackendChainName,
-      signature: signature,
-    };
-
-    const premint = await this.post(`${ZORA_API_BASE}signature`, apiData);
-
-    return {
-      url: `https://${
-        this.network.isTestnet ? "testnet." : ""
-      }zora.co/collect:${
-        this.network.zoraPathChainName
-      }:${newContractAddress}/premint-${uid}`,
+    return await this.signAndSubmitPremint({
       uid,
-      newContractAddress,
-      premint,
-    };
+      verifyingContract: newContractAddress,
+      premintConfig,
+      checkSignature,
+      publicClient,
+      walletClient,
+      collection,
+    });
   }
 
   /**
@@ -379,7 +517,7 @@ export class PremintAPI {
    */
   async getPremintData(address: string, uid: number): Promise<PremintResponse> {
     const response = await this.get(
-      `${ZORA_PREMINT_API_BASE}signature/${this.network.zoraBackendChainName}/${address}/${uid}`
+      `${ZORA_PREMINT_API_BASE}signature/${this.network.zoraBackendChainName}/${address}/${uid}`,
     );
     return response as PremintResponse;
   }
@@ -415,7 +553,7 @@ export class PremintAPI {
   }
 
   /**
-   * Execute premint
+   * Execute premint on-chain
    *
    * @param settings.data Data from the API for the mint
    * @param settings.account Optional account (if omitted taken from wallet client) for the account executing the premint.

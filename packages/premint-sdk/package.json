@@ -16,6 +16,9 @@
     "@zoralabs/zora-1155-contracts": "2.1.1-premint-api.0",
     "abitype": "^0.8.7"
   },
+  "peerDependencies": {
+    "viem": "^1.16.6"
+  },
   "devDependencies": {
     "typescript": "^5.2.2",
     "vite": "^4.5.0",
