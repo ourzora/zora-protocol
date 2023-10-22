@@ -59,10 +59,12 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
 
 export class BadResponse extends Error {
   status: number;
-  constructor(message: string, status: number) {
+  json: any;
+  constructor(message: string, status: number, json: any) {
     super(message);
     this.name = "BadResponse";
     this.status = status;
+    this.json = json;
   }
 }
 
@@ -227,7 +229,15 @@ export class PremintAPI {
   async get(path: string) {
     const response = await fetch(path, { method: "GET" });
     if (response.status !== 200) {
-      throw new Error(`Invalid response, status ${response.status}`);
+      let json;
+      try {
+        json = await response.json();
+      } catch (e: any) {}
+      throw new BadResponse(
+        `Invalid response, status ${response.status}`,
+        response.status,
+        json,
+      );
     }
     return await response.json();
   }
@@ -251,7 +261,15 @@ export class PremintAPI {
       body: JSON.stringify(data),
     });
     if (response.status !== 200) {
-      throw new Error(`Bad response: ${response.status}`);
+      let json;
+      try {
+        json = await response.json();
+      } catch (e: any) {}
+      throw new BadResponse(
+        `Bad response: ${response.status}`,
+        response.status,
+        json,
+      );
     }
     return await response.json();
   }
