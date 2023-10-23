@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.2-premint-api.2
+
+### Patch Changes
+
+- c29e080: Update retry and error reporting
+
 ## 0.0.2-premint-api.1
 
 ### Patch Changes
