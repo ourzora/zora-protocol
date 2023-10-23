@@ -198,14 +198,19 @@ describe("ZoraCreator1155Preminter", () => {
       });
 
       // recover and verify address is correct
-      const [, , recoveredAddress] = await publicClient.readContract({
+      const [isValidSignature] = await publicClient.readContract({
         abi: preminterAbi,
         address: preminterAddress,
-        functionName: "isValidSignature",
-        args: [contractConfig, premintConfig, signedMessage],
+        functionName: "isValidSignatureV2",
+        args: [
+          contractConfig.contractAdmin,
+          contractAddress,
+          premintConfig,
+          signedMessage,
+        ],
       });
 
-      expect(recoveredAddress).to.equal(creatorAccount);
+      expect(isValidSignature).toBe(true);
     },
 
     20 * 1000
@@ -277,7 +282,7 @@ describe("ZoraCreator1155Preminter", () => {
       // parameters are required to call this function
       const mintHash = await walletClient.writeContract({
         abi: preminterAbi,
-        functionName: "premint",
+        functionName: "premintV2",
         account: collectorAccount,
         address: preminterAddress,
         args: [
@@ -352,7 +357,7 @@ describe("ZoraCreator1155Preminter", () => {
       // it should create a new token against the existing contract
       const mintHash2 = await walletClient.writeContract({
         abi: preminterAbi,
-        functionName: "premint",
+        functionName: "premintV2",
         account: collectorAccount,
         address: preminterAddress,
         args: [
@@ -450,7 +455,7 @@ describe("ZoraCreator1155Preminter", () => {
     // parameters are required to call this function
     const mintHash = await walletClient.writeContract({
       abi: preminterAbi,
-      functionName: "premint",
+      functionName: "premintV2",
       account: collectorAccount,
       address: preminterAddress,
       args: [

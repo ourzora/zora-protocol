@@ -749,8 +749,10 @@ contract ZoraCreator1155Impl is
 
     /// Sets up a new token using a token configuration and a signature created for the token creation parameters.
     /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
-    /// @param premintConfig configuration of token to be created
+    /// @param premintConfig abi encoded configuration of token to be created
+    /// @param premintVersion version of the premint configuration
     /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
+    /// @param sender original sender of the transaction, used to set the firstMinter
     function delegateSetupNewToken(
         bytes memory premintConfig,
         bytes32 premintVersion,

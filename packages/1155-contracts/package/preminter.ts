@@ -3,26 +3,24 @@ import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
 import { zoraCreator1155PremintExecutorImplABI as preminterAbi } from "./wagmiGenerated";
 import { TypedDataDefinition } from "viem";
 
-type PremintInputs = ExtractAbiFunction<
+type PremintV1Inputs = ExtractAbiFunction<
   typeof preminterAbi,
-  "premint"
+  "premintV1"
 >["inputs"];
 
-type PreminterHashDataTypes = AbiParametersToPrimitiveTypes<PremintInputs>;
+type PremintV2Inputs = ExtractAbiFunction<
+  typeof preminterAbi,
+  "premintV2"
+>["inputs"];
 
-export type ContractCreationConfig = PreminterHashDataTypes[0];
-export type PremintConfigs = PreminterHashDataTypes[1];
+type PreminterV1HashDataTypes = AbiParametersToPrimitiveTypes<PremintV1Inputs>;
+type PreminterV2HashDataTypes = AbiParametersToPrimitiveTypes<PremintV2Inputs>;
+
+export type ContractCreationConfig = PreminterV2HashDataTypes[0];
+export type PremintConfigV1 = PreminterV1HashDataTypes[1];
+export type PremintConfigV2 = PreminterV2HashDataTypes[1];
 
 export type TokenCreationConfigV1 = PremintConfigV2["tokenConfig"];
-export type PremintConfigV2 = Extract<
-  PremintConfigs,
-  {
-    tokenConfig: {
-      createReferral: string;
-    };
-  }
->;
-export type PremintConfigV1 = Exclude<PremintConfigs, PremintConfigV2>;
 export type TokenCreationConfigV2 = PremintConfigV2["tokenConfig"];
 
 const premintV2Types = {

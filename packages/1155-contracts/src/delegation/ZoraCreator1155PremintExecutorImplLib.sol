@@ -6,6 +6,7 @@ import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 
 library ZoraCreator1155PremintExecutorImplLib {
     function getOrCreateContract(
@@ -57,5 +58,42 @@ library ZoraCreator1155PremintExecutorImplLib {
 
     function decodeMintArguments(bytes memory mintArguments) internal pure returns (address mintRecipient, string memory mintComment) {
         return abi.decode(mintArguments, (address, string));
+    }
+
+    function premint(
+        IZoraCreator1155Factory zora1155Factory,
+        ContractCreationConfig calldata contractConfig,
+        bytes memory encodedPremintConfig,
+        bytes32 premintVersion,
+        bytes calldata signature,
+        uint256 quantityToMint,
+        address fixedPriceMinter,
+        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments
+    ) internal returns (IZoraCreator1155PremintExecutor.PremintResult memory) {
+        // get or create the contract with the given params
+        // contract address is deterministic.
+        (IZoraCreator1155 tokenContract, bool isNewContract) = getOrCreateContract(zora1155Factory, contractConfig);
+
+        // pass the signature and the premint config to the token contract to create the token.
+        // The token contract will verify the signature and that the signer has permission to create a new token.
+        // and then create and setup the token using the given token config.
+        uint256 newTokenId = tokenContract.delegateSetupNewToken(encodedPremintConfig, premintVersion, signature, msg.sender);
+
+        _performMint(tokenContract, fixedPriceMinter, newTokenId, quantityToMint, mintArguments);
+
+        return IZoraCreator1155PremintExecutor.PremintResult({contractAddress: address(tokenContract), tokenId: newTokenId, createdNewContract: isNewContract});
+    }
+
+    function _performMint(
+        IZoraCreator1155 tokenContract,
+        address fixedPriceMinter,
+        uint256 tokenId,
+        uint256 quantityToMint,
+        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments
+    ) internal {
+        bytes memory mintSettings = abi.encode(mintArguments.mintRecipient, mintArguments.mintComment);
+        if (quantityToMint != 0)
+            // mint the number of specified tokens to the executor
+            tokenContract.mintWithRewards{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintSettings, mintArguments.mintReferral);
     }
 }
