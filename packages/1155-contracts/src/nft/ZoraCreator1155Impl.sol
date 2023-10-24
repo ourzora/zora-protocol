@@ -760,6 +760,12 @@ contract ZoraCreator1155Impl is
         (DelegatedTokenSetup memory params, DecodedCreatorAttribution memory attribution, bytes[] memory tokenSetupActions) = DelegatedTokenCreation
             .decodeAndRecoverDelegatedTokenSetup(premintConfig, premintVersion, signature, address(this), nextTokenId);
 
+        // if a token has already been created for a premint config with this uid:
+        if (delegatedTokenId[params.uid] != 0) {
+            // return its token id
+            return delegatedTokenId[params.uid];
+        }
+
         // this is what attributes this token to have been created by the original creator
         emit CreatorAttribution(attribution.structHash, attribution.domainName, attribution.version, attribution.creator, attribution.signature);
 
@@ -772,12 +778,6 @@ contract ZoraCreator1155Impl is
         bytes[] memory tokenSetupActions,
         address sender
     ) internal returns (uint256 newTokenId) {
-        // if a token has already been created for a premint config with this uid:
-        if (delegatedTokenId[params.uid] != 0) {
-            // return its token id
-            return delegatedTokenId[params.uid];
-        }
-
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 

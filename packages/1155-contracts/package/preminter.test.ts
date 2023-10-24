@@ -8,6 +8,7 @@ import {
   concat,
   recoverAddress,
   hashDomain,
+  zeroAddress,
 } from "viem";
 import { foundry, zora } from "viem/chains";
 import { describe, it, beforeEach, expect } from "vitest";
@@ -24,7 +25,6 @@ import {
   ContractCreationConfig,
   PremintConfigV2,
   TokenCreationConfigV2,
-  encodeMintArguments,
   preminterTypedDataDefinitionV2,
 } from "./preminter";
 
@@ -285,7 +285,11 @@ describe("ZoraCreator1155Preminter", () => {
           premintConfig,
           signedMessage,
           quantityToMint,
-          encodeMintArguments({ mintComment: comment }),
+          {
+            mintComment: comment,
+            mintRecipient: collectorAccount,
+            mintReferral: zeroAddress,
+          },
         ],
         value: valueToSend,
       });
@@ -356,7 +360,11 @@ describe("ZoraCreator1155Preminter", () => {
           premintConfig2,
           signedMessage2,
           quantityToMint2,
-          encodeMintArguments({ mintComment: comment }),
+          {
+            mintComment: comment,
+            mintRecipient: collectorAccount,
+            mintReferral: zeroAddress,
+          },
         ],
         value: valueToSend2,
       });
@@ -450,7 +458,11 @@ describe("ZoraCreator1155Preminter", () => {
         premintConfig,
         signedMessage,
         quantityToMint,
-        encodeMintArguments({ mintComment: comment }),
+        {
+          mintComment: comment,
+          mintRecipient: collectorAccount,
+          mintReferral: zeroAddress,
+        },
       ],
       value: valueToSend,
     });

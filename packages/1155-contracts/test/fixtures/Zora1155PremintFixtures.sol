@@ -20,8 +20,8 @@ library Zora1155PremintFixtures {
         return
             TokenCreationConfigV2({
                 tokenURI: "blah.token",
-                maxSupply: 10,
-                maxTokensPerAddress: 5,
+                maxSupply: 20,
+                maxTokensPerAddress: 10,
                 pricePerToken: 0,
                 mintStart: 0,
                 mintDuration: 0,

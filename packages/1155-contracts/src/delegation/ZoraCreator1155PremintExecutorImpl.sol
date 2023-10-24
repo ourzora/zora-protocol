@@ -43,6 +43,15 @@ interface ILegacyZoraCreator1155PremintExecutor {
     ) external payable returns (uint256 newTokenId);
 }
 
+struct MintArguments {
+    // which account should receive the tokens minted.  If set to address(0), then defaults to the msg.sender
+    address mintRecipient;
+    // comment to add to the mint
+    string mintComment;
+    // account that referred the minter to mint the tokens, this account will receive a mint referral award.  If set to address(0), no account will get the mint referral reward
+    address mintReferral;
+}
+
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
 /// Mints the first x tokens to the executor of the transaction.
@@ -71,8 +80,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         bool indexed createdNewContract,
         uint32 uid,
         address minter,
-        uint256 quantityMinted,
-        bytes mintArgumets
+        uint256 quantityMinted
     );
 
     /// Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.
@@ -90,7 +98,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         PremintConfigV2 calldata premintConfig,
         bytes calldata signature,
         uint256 quantityToMint,
-        bytes calldata mintArguments
+        MintArguments calldata mintArguments
     ) external payable returns (uint256 newTokenId) {
         (bytes memory encodedPremint, bytes32 premintVersion) = PremintEncoding.encodePremintV2(premintConfig);
         address fixedPriceMinter = premintConfig.tokenConfig.fixedPriceMinter;
@@ -126,7 +134,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         PremintConfig calldata premintConfig,
         bytes calldata signature,
         uint256 quantityToMint,
-        bytes memory mintArguments
+        MintArguments memory mintArguments
     ) public payable returns (uint256 newTokenId) {
         (bytes memory encodedPremint, bytes32 premintVersion) = PremintEncoding.encodePremintV1(premintConfig);
 
@@ -151,7 +159,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         uint256 quantityToMint,
         address fixedPriceMinter,
         uint32 uid,
-        bytes memory mintArguments
+        MintArguments memory mintArguments
     ) private returns (uint256 newTokenId) {
         // get or create the contract with the given params
         // contract address is deterministic.
@@ -165,7 +173,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         _performMint(tokenContract, fixedPriceMinter, newTokenId, quantityToMint, mintArguments);
 
         // emit Preminted event
-        emit PremintedV2(address(tokenContract), newTokenId, isNewContract, uid, msg.sender, quantityToMint, mintArguments);
+        emit PremintedV2(address(tokenContract), newTokenId, isNewContract, uid, msg.sender, quantityToMint);
     }
 
     function _performMint(
@@ -173,19 +181,12 @@ contract ZoraCreator1155PremintExecutorImpl is
         address fixedPriceMinter,
         uint256 tokenId,
         uint256 quantityToMint,
-        bytes memory mintArguments
+        MintArguments memory mintArguments
     ) internal {
-        (address mintReferral, string memory mintComment) = ZoraCreator1155PremintExecutorImplLib.decodeMintArguments(mintArguments);
-
+        bytes memory mintSettings = abi.encode(mintArguments.mintRecipient, mintArguments.mintComment);
         if (quantityToMint != 0)
             // mint the number of specified tokens to the executor
-            tokenContract.mintWithRewards{value: msg.value}(
-                IMinter1155(fixedPriceMinter),
-                tokenId,
-                quantityToMint,
-                abi.encode(msg.sender, mintComment),
-                mintReferral
-            );
+            tokenContract.mintWithRewards{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintSettings, mintArguments.mintReferral);
     }
 
     function isValidSignature(
@@ -284,7 +285,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         string calldata mintComment
     ) external payable returns (uint256 newTokenId) {
         // encode legacy mint arguments to call current function:
-        bytes memory mintArguments = ZoraCreator1155PremintExecutorImplLib.encodeMintArguments(address(0), mintComment);
+        MintArguments memory mintArguments = MintArguments({mintRecipient: msg.sender, mintComment: mintComment, mintReferral: address(0)});
 
         return premint(contractConfig, premintConfig, signature, quantityToMint, mintArguments);
     }

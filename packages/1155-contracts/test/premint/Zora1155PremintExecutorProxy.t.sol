@@ -7,7 +7,7 @@ import {Zora1155PremintFixtures} from "../fixtures/Zora1155PremintFixtures.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155PremintExecutor} from "../../src/proxies/Zora1155PremintExecutor.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
+import {ZoraCreator1155PremintExecutorImpl, MintArguments} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
@@ -26,6 +26,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     ZoraCreator1155FactoryImpl factoryAtProxy;
     uint256 internal mintFeeAmount = 0.000777 ether;
     ZoraCreator1155PremintExecutorImpl preminterAtProxy;
+
+    MintArguments defaultMintArguments;
 
     function setUp() external {
         zora = makeAddr("zora");
@@ -47,6 +49,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // access the executor implementation via the proxy, and initialize the admin
         preminterAtProxy = ZoraCreator1155PremintExecutorImpl(address(proxy));
         preminterAtProxy.initialize(owner);
+
+        defaultMintArguments = MintArguments({mintRecipient: collector, mintComment: "blah", mintReferral: address(0)});
     }
 
     function test_canInvokeImplementationMethods() external {
@@ -82,13 +86,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // execute the premint
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
-        uint256 tokenId = preminterAtProxy.premint{value: mintFeeAmount}(
-            contractConfig,
-            premintConfig,
-            signature,
-            quantityToMint,
-            ZoraCreator1155PremintExecutorImplLib.encodeMintArguments(address(0), "")
-        );
+        uint256 tokenId = preminterAtProxy.premint{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
 
         assertEq(ZoraCreator1155Impl(deterministicAddress).balanceOf(collector, tokenId), 1);
     }

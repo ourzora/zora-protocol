@@ -1,7 +1,7 @@
 import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
 import { zoraCreator1155PremintExecutorImplABI as preminterAbi } from "./wagmiGenerated";
-import { TypedDataDefinition, encodeAbiParameters } from "viem";
+import { TypedDataDefinition } from "viem";
 
 type PremintInputs = ExtractAbiFunction<
   typeof preminterAbi,
@@ -141,22 +141,4 @@ export const preminterTypedDataDefinitionV1 = ({
   };
 
   return result;
-};
-
-const zeroAddress: Address = "0x0000000000000000000000000000000000000000";
-
-export const encodeMintArguments = ({
-  mintComment = "",
-  mintReferral = zeroAddress,
-}: {
-  mintComment?: string;
-  mintReferral?: Address;
-}) => {
-  return encodeAbiParameters(
-    [
-      { name: "mintReferral", type: "address" },
-      { name: "mintComment", type: "string" },
-    ],
-    [mintReferral, mintComment]
-  );
 };

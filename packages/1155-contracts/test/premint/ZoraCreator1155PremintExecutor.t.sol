@@ -14,7 +14,7 @@ import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesCo
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
+import {ZoraCreator1155PremintExecutorImpl, MintArguments} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {ForkDeploymentConfig, Deployment} from "../../src/deployment/DeploymentConfig.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
@@ -40,7 +40,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     address internal premintExecutor;
     address internal collector;
 
-    bytes defaultMintArguments;
+    MintArguments defaultMintArguments;
 
     event PremintedV2(
         address indexed contractAddress,
@@ -48,8 +48,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         bool indexed createdNewContract,
         uint32 uid,
         address minter,
-        uint256 quantityMinted,
-        bytes mintArgumets
+        uint256 quantityMinted
     );
 
     function setUp() external {
@@ -66,7 +65,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
 
         preminter = new ZoraCreator1155PremintExecutorImpl(factory);
 
-        defaultMintArguments = ZoraCreator1155PremintExecutorImplLib.encodeMintArguments(address(0), "");
+        defaultMintArguments = MintArguments({mintRecipient: premintExecutor, mintComment: "blah", mintReferral: address(0)});
     }
 
     function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
@@ -391,12 +390,18 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
 
         uint256 nextTokenId;
 
+        uint256 beforeTokenBalance = created1155Contract.balanceOf(defaultMintArguments.mintRecipient, firstTokenId);
+
         vm.startPrank(collector);
         // premint with new token config and signature, but same uid - it should mint tokens for the first token
         nextTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
 
         assertEq(nextTokenId, firstTokenId);
-        assertEq(created1155Contract.balanceOf(collector, firstTokenId), quantityToMint);
+        assertEq(
+            created1155Contract.balanceOf(defaultMintArguments.mintRecipient, firstTokenId) - beforeTokenBalance,
+            quantityToMint,
+            "balance after first mint"
+        );
 
         // change the version, it should still point to the first token
         premintConfig.version++;
@@ -409,7 +414,11 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         vm.stopPrank();
 
         assertEq(nextTokenId, firstTokenId);
-        assertEq(created1155Contract.balanceOf(collector, firstTokenId), quantityToMint * 2);
+        assertEq(
+            created1155Contract.balanceOf(defaultMintArguments.mintRecipient, firstTokenId) - beforeTokenBalance,
+            quantityToMint * 2,
+            "balance after second mint"
+        );
     }
 
     function testCreateTokenPerUid() public {
@@ -481,14 +490,12 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         // this account will be used to execute the premint, and should result in a contract being created
         vm.deal(premintExecutor, mintCost);
 
-        bytes memory mintArguments = defaultMintArguments;
-
         vm.startPrank(premintExecutor);
 
         bool createdNewContract = true;
         vm.expectEmit(true, true, true, true);
-        emit PremintedV2(contractAddress, expectedTokenId, createdNewContract, premintConfig.uid, premintExecutor, quantityToMint, mintArguments);
-        preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments);
+        emit PremintedV2(contractAddress, expectedTokenId, createdNewContract, premintConfig.uid, premintExecutor, quantityToMint);
+        preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
     }
 
     function test_onlyOwner_hasAdminRights_onCreatedToken() public {
@@ -803,7 +810,7 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
     ) private returns (uint256 newTokenId) {
         bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, privateKey, chainId);
 
-        bytes memory mintArguments = ZoraCreator1155PremintExecutorImplLib.encodeMintArguments(address(0), comment);
+        MintArguments memory mintArguments = MintArguments({mintRecipient: executor, mintComment: comment, mintReferral: address(0)});
 
         uint256 mintCost = mintFeeAmount * quantityToMint;
         vm.deal(executor, mintCost);

@@ -51,11 +51,11 @@ library ZoraCreator1155PremintExecutorImplLib {
             zora1155Factory.deterministicContractAddress(address(this), contractConfig.contractURI, contractConfig.contractName, contractConfig.contractAdmin);
     }
 
-    function encodeMintArguments(address mintReferral, string memory mintComment) internal pure returns (bytes memory) {
-        return abi.encode(mintReferral, mintComment);
+    function encodeMintArguments(address mintRecipient, string memory mintComment) internal pure returns (bytes memory) {
+        return abi.encode(mintRecipient, mintComment);
     }
 
-    function decodeMintArguments(bytes memory mintArguments) internal pure returns (address mintReferral, string memory mintComment) {
+    function decodeMintArguments(bytes memory mintArguments) internal pure returns (address mintRecipient, string memory mintComment) {
         return abi.decode(mintArguments, (address, string));
     }
 }
