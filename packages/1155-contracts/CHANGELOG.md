@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.2.0-collaborators.0
+
+### Minor Changes
+
+- fc24b3a: Add support for multiple creator reward recipients on a shared contract
+
 ## 2.1.0
 
 ### Minor Changes
