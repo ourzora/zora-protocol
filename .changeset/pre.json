@@ -1,0 +1,9 @@
+{
+  "mode": "pre",
+  "tag": "collaborators",
+  "initialVersions": {
+    "@zoralabs/zora-1155-contracts": "2.1.0",
+    "@zoralabs/protocol-rewards": "1.2.1"
+  },
+  "changesets": []
+}
