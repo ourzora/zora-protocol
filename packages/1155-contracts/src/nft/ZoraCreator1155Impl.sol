@@ -405,7 +405,7 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
             msg.value,
             quantity,
-            getCreatorRewardRecipient(),
+            getCreatorRewardRecipient(tokenId),
             createReferrals[tokenId],
             address(0),
             firstMinters[tokenId]
@@ -437,7 +437,7 @@ contract ZoraCreator1155Impl is
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
             msg.value,
             quantity,
-            getCreatorRewardRecipient(),
+            getCreatorRewardRecipient(tokenId),
             createReferrals[tokenId],
             mintReferral,
             firstMinters[tokenId]
@@ -453,10 +453,23 @@ contract ZoraCreator1155Impl is
         return TOTAL_REWARD_PER_MINT;
     }
 
-    /// @notice Get the creator reward recipient address
-    /// @dev The creator is not enforced to set a funds recipient address, so in that case the reward would be claimable by creator's contract
-    function getCreatorRewardRecipient() public view returns (address payable) {
-        return config.fundsRecipient != address(0) ? config.fundsRecipient : payable(address(this));
+    /// @notice Get the creator reward recipient address for a specific token.
+    /// @param tokenId The token id to get the creator reward recipient for
+    /// @dev Returns the royalty recipient address for the token if set; otherwise uses the fundsRecipient.
+    /// If both are not set, this contract will be set as the recipient, and an account with
+    /// `PERMISSION_BIT_FUNDS_MANAGER` will be able to withdraw via the `withdrawRewards` function.
+    function getCreatorRewardRecipient(uint256 tokenId) public view returns (address) {
+        address royaltyRecipient = getRoyalties(tokenId).royaltyRecipient;
+
+        if (royaltyRecipient != address(0)) {
+            return royaltyRecipient;
+        }
+
+        if (config.fundsRecipient != address(0)) {
+            return config.fundsRecipient;
+        }
+
+        return address(this);
     }
 
     /// @notice Set a metadata renderer for a token
