@@ -25,7 +25,7 @@
     "build": "tsup",
     "build:sizes": "forge build --sizes",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
-    "wagmi": "wagmi generate",
+    "wagmi": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "js-test:watch": "vitest dev",

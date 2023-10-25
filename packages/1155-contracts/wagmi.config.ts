@@ -107,6 +107,9 @@ export default defineConfig({
   plugins: [
     foundry({
       deployments: getAddresses(),
+      forge: {
+        build: false,
+      },
       include: contractFilesToInclude.map(
         (contractName) => `${contractName}.json`
       ),
