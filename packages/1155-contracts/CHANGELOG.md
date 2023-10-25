@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.2.0-collaborators.1
+
+### Patch Changes
+
+- e288ef8: Update zora testnet deployment for collaborators
+
 ## 2.2.0-collaborators.0
 
 ### Minor Changes

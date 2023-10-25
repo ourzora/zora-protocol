@@ -6,6 +6,7 @@
     "@zoralabs/protocol-rewards": "1.2.1"
   },
   "changesets": [
+    "gorgeous-cups-listen",
     "weak-planets-love"
   ]
 }
