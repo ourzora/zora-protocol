@@ -28,25 +28,17 @@ import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
 contract MockTransferHookReceiver is ITransferHookReceiver {
     mapping(uint256 => bool) public hasTransfer;
 
-    function onTokenTransferBatch(
-        address target,
-        address operator,
-        address from,
-        address to,
-        uint256[] memory ids,
-        uint256[] memory amounts,
-        bytes memory data
-    ) external {
+    function onTokenTransferBatch(address, address, address, address, uint256[] memory ids, uint256[] memory, bytes memory) external {
         for (uint256 i = 0; i < ids.length; i++) {
             hasTransfer[ids[i]] = true;
         }
     }
 
-    function onTokenTransfer(address target, address operator, address from, address to, uint256 id, uint256 amount, bytes memory data) external {
+    function onTokenTransfer(address, address, address, address, uint256 id, uint256, bytes memory) external {
         hasTransfer[id] = true;
     }
 
-    function supportsInterface(bytes4 testInterface) external view override returns (bool) {
+    function supportsInterface(bytes4 testInterface) external pure override returns (bool) {
         return testInterface == type(ITransferHookReceiver).interfaceId;
     }
 }
