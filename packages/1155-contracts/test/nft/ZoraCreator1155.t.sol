@@ -77,6 +77,19 @@ contract ZoraCreator1155Test is Test {
     address internal zora;
 
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
+    event RewardsDeposit(
+        address indexed creator,
+        address indexed createReferral,
+        address indexed mintReferral,
+        address firstMinter,
+        address zora,
+        address from,
+        uint256 creatorReward,
+        uint256 createReferralReward,
+        uint256 mintReferralReward,
+        uint256 firstMinterReward,
+        uint256 zoraReward
+    );
 
     function setUp() external {
         creator = makeAddr("creator");
@@ -1133,6 +1146,126 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(rewardRecipient), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
+    }
+
+    function test_SetCreatorRewardRecipientForToken() public {
+        address collaborator = makeAddr("collaborator");
+        uint256 quantity = 100;
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        address creatorRewardRecipient;
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory newRoyaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, collaborator);
+
+        vm.prank(admin);
+        target.updateRoyaltiesForToken(tokenId, newRoyaltyConfig);
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        assertEq(creatorRewardRecipient, collaborator);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        vm.prank(collector);
+        vm.expectEmit(true, true, true, true);
+        emit RewardsDeposit(
+            collaborator,
+            zora,
+            zora,
+            collaborator,
+            zora,
+            address(target),
+            settings.creatorReward,
+            settings.createReferralReward,
+            settings.mintReferralReward,
+            settings.firstMinterReward,
+            settings.zoraReward
+        );
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+
+        assertEq(protocolRewards.balanceOf(collaborator), settings.creatorReward + settings.firstMinterReward);
+    }
+
+    function test_CreatorRewardRecipientConditionalAddress() public {
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig;
+        address creatorRewardRecipient;
+
+        address collaborator = makeAddr("collaborator");
+        uint256 quantity = 100;
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        (, , address contractFundsRecipient, , , ) = target.config();
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, contractFundsRecipient);
+
+        royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, collaborator);
+        vm.prank(admin);
+        target.updateRoyaltiesForToken(tokenId, royaltyConfig);
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, collaborator);
+
+        royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0));
+        vm.prank(admin);
+        target.updateRoyaltiesForToken(tokenId, royaltyConfig);
+
+        vm.prank(admin);
+        target.setFundsRecipient(payable(address(0)));
+
+        creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+        assertEq(creatorRewardRecipient, address(target));
+    }
+
+    function test_ContractAsCreatorRewardRecipientFallback() public {
+        uint256 quantity = 100;
+
+        init();
+
+        vm.startPrank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        target.setFundsRecipient(payable(address(0)));
+
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+        vm.stopPrank();
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        address creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
+
+        vm.prank(collector);
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+
+        assertEq(creatorRewardRecipient, address(target));
+
+        uint256 creatorRewardBalance = settings.creatorReward + settings.firstMinterReward;
+        assertEq(protocolRewards.balanceOf(address(target)), creatorRewardBalance);
+
+        vm.prank(admin);
+        target.withdrawRewards(admin, creatorRewardBalance);
+
+        assertEq(admin.balance, creatorRewardBalance);
+        assertEq(protocolRewards.balanceOf(address(target)), 0);
     }
 
     function testRevert_WrongValueForSale(uint256 quantity, uint256 salePrice) public {
