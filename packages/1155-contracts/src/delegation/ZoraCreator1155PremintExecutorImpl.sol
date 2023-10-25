@@ -15,6 +15,7 @@ import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorage
 import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExecutorImplLib.sol";
 import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
+import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 
 struct MintArguments {
     // which account should receive the tokens minted.
@@ -211,6 +212,24 @@ contract ZoraCreator1155PremintExecutorImpl is
             ZoraCreator1155Attribution.HASHED_VERSION_2,
             signature
         );
+    }
+
+    /// @notice Returns the version of the premint signature that the contract supports
+    /// @param contractAddress The address of the contract to check
+    /// @return The version of the premint signature that the contract supports.  If it doesn't support premint
+    /// returns 0
+    function supportedPremintSignatureVersion(address contractAddress) external view returns (string memory) {
+        IZoraCreator1155 creatorContract = IZoraCreator1155(contractAddress);
+        if (creatorContract.supportsInterface(type(IZoraCreator1155DelegatedCreation).interfaceId)) {
+            return IZoraCreator1155DelegatedCreation(contractAddress).supportedPremintSignatureVersion();
+        }
+
+        // try get token id for uid 0 - if call fails, we know this didn't support premint
+        try ERC1155DelegationStorageV1(contractAddress).delegatedTokenId(uint32(0)) returns (uint256) {
+            return "1";
+        } catch {
+            return "0";
+        }
     }
 
     // upgrade related functionality
