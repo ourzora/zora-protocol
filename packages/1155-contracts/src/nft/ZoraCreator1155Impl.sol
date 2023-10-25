@@ -752,6 +752,10 @@ contract ZoraCreator1155Impl is
         return _getImplementation();
     }
 
+    function supportedPremintSignatureVersion() external pure returns (string memory) {
+        return ZoraCreator1155Attribution.VERSION_2;
+    }
+
     /// Sets up a new token using a token configuration and a signature created for the token creation parameters.
     /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
     /// @param premintConfig abi encoded configuration of token to be created

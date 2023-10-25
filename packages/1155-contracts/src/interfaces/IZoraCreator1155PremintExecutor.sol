@@ -93,4 +93,6 @@ interface IZoraCreator1155PremintExecutor is
     function zora1155Factory() external view returns (IZoraCreator1155Factory);
 
     function getContractAddress(ContractCreationConfig calldata contractConfig) external view returns (address);
+
+    function supportedPremintSignatureVersion(address contractAddress) external view returns (string memory);
 }

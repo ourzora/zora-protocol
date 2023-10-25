@@ -723,6 +723,28 @@ contract ZoraCreator1155PreminterTest is Test {
         preminter.premintV2{value: mintCost}(contractConfig, premintConfig2, newCreatorSignature, quantityToMint, defaultMintArguments);
     }
 
+    function test_premintVersion_whenCreatedBeforePremint_returnsZero() external {
+        vm.createSelectFork("zora", 5_789_193);
+
+        // create preminter on fork
+        vm.startPrank(zora);
+        (, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        vm.stopPrank();
+
+        factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
+
+        preminter = new ZoraCreator1155PremintExecutorImpl(factory);
+
+        // this is a known contract deployed from the legacy factory proxy on zora mainnet
+        // that does not support getting the uid or premint sig version (it is prior to version 2)
+        address erc1155BeforePremint = 0xcACBbee9C2C703274BE026B62860cF56361410f3;
+        assertFalse(erc1155BeforePremint.code.length == 0);
+
+        // if contract is not a known 1155 contract that supports getting uid or premint sig version,
+        // this should return 0
+        assertEq(preminter.supportedPremintSignatureVersion(erc1155BeforePremint), "0");
+    }
+
     function testPremintWithCreateReferral() public {
         address createReferral = makeAddr("createReferral");
 
