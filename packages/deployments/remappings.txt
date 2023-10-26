@@ -1,0 +1,9 @@
+ds-test/=node_modules/ds-test/src/
+forge-std/=node_modules/forge-std/src/
+@zoralabs/openzeppelin-contracts-upgradeable/=node_modules/@zoralabs/openzeppelin-contracts-upgradeable/
+@zoralabs/protocol-rewards/src/=node_modules/@zoralabs/protocol-rewards/src/
+@zoralabs/zora-1155-contracts/src/=node_modules/@zoralabs/zora-1155-contracts/src/
+@openzeppelin/contracts/=node_modules/@openzeppelin/contracts/
+_imagine=node_modules/@zoralabs/zora-1155-contracts/_imagine
+solemate/=/node_modules/solemate/src/
+solady/=node_modules/solady/src/

@@ -18,7 +18,7 @@ import {
   zoraCreator1155ImplABI,
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155FactoryImplConfig,
-} from "@zoralabs/zora-1155-contracts";
+} from "@zoralabs/protocol-deployments";
 
 import {
   ContractCreationConfig,
