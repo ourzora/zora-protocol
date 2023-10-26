@@ -218,10 +218,10 @@ contract ZoraCreator1155PremintExecutorImpl is
     /// @param contractAddress The address of the contract to check
     /// @return The version of the premint signature that the contract supports.  If it doesn't support premint
     /// returns 0
-    function supportedPremintSignatureVersion(address contractAddress) external view returns (string memory) {
+    function supportedPremintSignatureVersions(address contractAddress) external view returns (string memory) {
         IZoraCreator1155 creatorContract = IZoraCreator1155(contractAddress);
         if (creatorContract.supportsInterface(type(IZoraCreator1155DelegatedCreation).interfaceId)) {
-            return IZoraCreator1155DelegatedCreation(contractAddress).supportedPremintSignatureVersion();
+            return IZoraCreator1155DelegatedCreation(contractAddress).supportedPremintSignatureVersions();
         }
 
         // try get token id for uid 0 - if call fails, we know this didn't support premint

@@ -752,7 +752,7 @@ contract ZoraCreator1155Impl is
         return _getImplementation();
     }
 
-    function supportedPremintSignatureVersion() external pure returns (string memory) {
+    function supportedPremintSignatureVersions() external pure returns (string memory) {
         return ZoraCreator1155Attribution.VERSION_2;
     }
 
