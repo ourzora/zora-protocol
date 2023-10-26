@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/premint-sdk",
-  "version": "0.0.2-premint-api.1",
+  "version": "0.0.2-premint-api.2",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "main": "./dist/index.js",
