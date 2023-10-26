@@ -1,4 +1,4 @@
-import { createPublicClient, decodeEventLog, http } from "viem";
+import { createPublicClient, decodeEventLog, http, parseEther } from "viem";
 import type {
   Account,
   Address,
@@ -15,26 +15,27 @@ import {
 } from "@zoralabs/zora-1155-contracts";
 import { foundry, zora, zoraTestnet } from "viem/chains";
 import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
+import type {
+  BackendChainNames as BackendChainNamesType,
+  PremintSignatureGetResponse,
+  PremintSignatureResponse,
+} from "./premint-api-client";
+import { PremintAPIClient } from "./premint-api-client";
+import type { DecodeEventLogReturnType } from "viem";
+
+export const BackendChainNames = {
+  ZORA_MAINNET: "ZORA-MAINNET",
+  ZORA_GOERLI: "ZORA-GOERLI",
+} as const;
 
 export type NetworkConfig = {
   chainId: number;
   zoraPathChainName: string;
-  zoraBackendChainName: string;
+  zoraBackendChainName: BackendChainNamesType;
   isTestnet: boolean;
 };
 
-export const enum BackendChainNames {
-  ZORA_MAINNET = "ZORA-MAINNET",
-  ZORA_GOERLI = "ZORA-GOERLI",
-}
-
-async function wait(delayMs: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, delayMs);
-  });
-}
-
-const ZORA_API_BASE = "https://api.zora.co/premint/";
+export const REWARD_PER_TOKEN = parseEther("0.000777");
 
 export const networkConfigByChain: Record<number, NetworkConfig> = {
   [zora.id]: {
@@ -57,17 +58,6 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
   },
 };
 
-export class BadResponse extends Error {
-  status: number;
-  json: any;
-  constructor(message: string, status: number, json: any) {
-    super(message);
-    this.name = "BadResponse";
-    this.status = status;
-    this.json = json;
-  }
-}
-
 type MintArgumentsSettings = {
   tokenURI: string;
   maxSupply?: bigint;
@@ -81,9 +71,33 @@ type MintArgumentsSettings = {
   fixedPriceMinter?: Address;
 };
 
-const OPEN_EDITION_MINT_SIZE = "18446744073709551615";
+type PremintedLogType = DecodeEventLogReturnType<
+  typeof zoraCreator1155PremintExecutorImplABI,
+  "Preminted"
+>["args"];
+
+type URLSReturnType = {
+  explorer: null | string;
+  zoraCollect: null | string;
+  zoraManage: null | string;
+};
+
+type SignedPremintResponse = {
+  urls: URLSReturnType;
+  uid: number;
+  verifyingContract: Address;
+  premint: PremintSignatureResponse;
+};
+
+type ExecutedPremintResponse = {
+  receipt: TransactionReceipt;
+  premintedLog?: PremintedLogType;
+  urls: URLSReturnType;
+};
+
+const OPEN_EDITION_MINT_SIZE = BigInt("18446744073709551615");
 export const DefaultMintArguments = {
-  maxSupply: BigInt(OPEN_EDITION_MINT_SIZE),
+  maxSupply: OPEN_EDITION_MINT_SIZE,
   maxTokensPerAddress: 0n,
   pricePerToken: 0n,
   mintDuration: BigInt(60 * 60 * 24 * 7), // 1 week
@@ -92,7 +106,9 @@ export const DefaultMintArguments = {
   royaltyBPS: 1000, // 10%,
 };
 
-function getLogFromReceipt(receipt: TransactionReceipt) {
+function getPremintedLogFromReceipt(
+  receipt: TransactionReceipt
+): PremintedLogType | undefined {
   for (const data of receipt.logs) {
     try {
       const decodedLog = decodeEventLog({
@@ -108,50 +124,31 @@ function getLogFromReceipt(receipt: TransactionReceipt) {
 }
 
 /**
- * Premint server response type.
- */
-export type PremintResponse = {
-  collection: {
-    contractAdmin: Address;
-    contractURI: string;
-    contractName: string;
-  };
-  premint: {
-    tokenConfig: {
-      tokenURI: string;
-      maxSupply: string;
-      maxTokensPerAddress: string;
-      pricePerToken: string;
-      mintStart: string;
-      mintDuration: string;
-      royaltyMintSchedule: number;
-      royaltyBPS: number;
-      royaltyRecipient: Address;
-      fixedPriceMinter: Address;
-    };
-    uid: number;
-    version: number;
-    deleted: boolean;
-  };
-  chain_name: BackendChainNames;
-  signature: Hex;
-};
-
-/**
  * Convert server to on-chain types for a premint
  * @param premint Premint object from the server to convert to one that's compatible with viem
  * @returns Viem type-compatible premint object
  */
-export const convertPremint = (premint: PremintResponse["premint"]) => ({
+export const convertPremint = (
+  premint: PremintSignatureGetResponse["premint"]
+) => ({
   ...premint,
   tokenConfig: {
     ...premint.tokenConfig,
+    fixedPriceMinter: premint.tokenConfig.fixedPriceMinter as Address,
+    royaltyRecipient: premint.tokenConfig.royaltyRecipient as Address,
     maxSupply: BigInt(premint.tokenConfig.maxSupply),
     pricePerToken: BigInt(premint.tokenConfig.pricePerToken),
     mintStart: BigInt(premint.tokenConfig.mintStart),
     mintDuration: BigInt(premint.tokenConfig.mintDuration),
     maxTokensPerAddress: BigInt(premint.tokenConfig.maxTokensPerAddress),
   },
+});
+
+export const convertCollection = (
+  collection: PremintSignatureGetResponse["collection"]
+) => ({
+  ...collection,
+  contractAdmin: collection.contractAdmin as Address,
 });
 
 /**
@@ -175,21 +172,17 @@ export const encodePremintForAPI = ({
 });
 
 /**
- * Zora API Server base URL
- */
-const ZORA_PREMINT_API_BASE = "https://api.zora.co/premint/";
-
-/**
  * Preminter API to access ZORA Premint functionality.
  * Currently only supports V1 premints.
  */
 export class PremintAPI {
   network: NetworkConfig;
   chain: Chain;
-  rewardPerToken: bigint;
-  constructor(chain: Chain) {
-    this.rewardPerToken = BigInt("777000000000000");
+  premintAPIClient: typeof PremintAPIClient;
+
+  constructor(chain: Chain, premintAPIClient: typeof PremintAPIClient) {
     this.chain = chain;
+    this.premintAPIClient = premintAPIClient;
     const networkConfig = networkConfigByChain[chain.id];
     if (!networkConfig) {
       throw new Error(`Not configured for chain ${chain.id}`);
@@ -219,68 +212,12 @@ export class PremintAPI {
   }
 
   /**
-   * A simple fetch() wrapper for HTTP gets.
-   * Can be overridden as needed.
-   *
-   * @param path Path to run HTTP JSON get against
-   * @returns JSON object response
-   * @throws Error when HTTP response fails
-   */
-  async get(path: string) {
-    const response = await fetch(path, { method: "GET" });
-    if (response.status !== 200) {
-      let json;
-      try {
-        json = await response.json();
-      } catch (e: any) {}
-      throw new BadResponse(
-        `Invalid response, status ${response.status}`,
-        response.status,
-        json,
-      );
-    }
-    return await response.json();
-  }
-
-  /**
-   * A simple fetch() wrapper for HTTP post.
-   * Can be overridden as needed.
-   *
-   * @param path Path to run HTTP JSON POST against
-   * @param data Data to POST to the server, converted to JSON
-   * @returns JSON object response
-   * @throws Error when HTTP response fails
-   */
-  async post(path: string, data: any) {
-    const response = await fetch(path, {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        accept: "application/json",
-      },
-      body: JSON.stringify(data),
-    });
-    if (response.status !== 200) {
-      let json;
-      try {
-        json = await response.json();
-      } catch (e: any) {}
-      throw new BadResponse(
-        `Bad response: ${response.status}`,
-        response.status,
-        json,
-      );
-    }
-    return await response.json();
-  }
-
-  /**
    * Getter for public client that instantiates a publicClient as needed
    *
    * @param publicClient Optional viem public client
    * @returns Existing public client or makes a new one for the given chain as needed.
    */
-  getPublicClient(publicClient?: PublicClient): PublicClient {
+  protected getPublicClient(publicClient?: PublicClient): PublicClient {
     if (publicClient) {
       return publicClient;
     }
@@ -288,7 +225,13 @@ export class PremintAPI {
   }
 
   /**
-   * Update premint
+   * Update existing premint given collection address and UID of existing premint.
+   *
+   * 1. Loads existing premint token
+   * 2. Updates with settings passed into function
+   * 3. Increments the version field
+   * 4. Re-signs the premint
+   * 5. Uploads the premint to the ZORA API
    *
    * Updates existing premint
    * @param settings Settings for the new premint
@@ -311,12 +254,12 @@ export class PremintAPI {
     token: MintArgumentsSettings;
     account?: Account | Address;
     collection: Address;
-  }) {
-    const signatureResponse = (await this.get(
-      `${ZORA_API_BASE}signature/${
-        this.network.zoraBackendChainName
-      }/${collection.toLowerCase()}/${uid}`,
-    )) as PremintResponse;
+  }): Promise<SignedPremintResponse> {
+    const signatureResponse = await getSignature({
+      chain_name: this.network.zoraBackendChainName,
+      collection_address: collection.toLowerCase(),
+      uid: uid,
+    });
 
     const convertedPremint = convertPremint(signatureResponse.premint);
     const signerData = {
@@ -337,13 +280,21 @@ export class PremintAPI {
       verifyingContract: collection,
       publicClient: this.getPublicClient(),
       uid: uid,
-      collection: signerData.collection,
+      collection: {
+        ...signerData.collection,
+        contractAdmin: signerData.collection.contractAdmin as Address,
+      },
       premintConfig: signerData.premint,
     });
   }
 
   /**
-   * Delete premint
+   * Delete premint.
+   *
+   * 1. Loads current premint from collection address with UID
+   * 2. Increments version and marks as deleted
+   * 3. Signs new premint version
+   * 4. Sends to ZORA Premint API
    *
    * Deletes existing premint
    * @param settings.collection collection address
@@ -356,20 +307,23 @@ export class PremintAPI {
     uid,
     account,
     collection,
+    publicClient,
   }: {
     walletClient: WalletClient;
+    publicClient: PublicClient;
     uid: number;
     account?: Account | Address;
     collection: Address;
   }) {
-    const signatureResponse = (await this.get(
-      `${ZORA_API_BASE}signature/${
-        this.network.zoraBackendChainName
-      }/${collection.toLowerCase()}/${uid}`,
-    )) as PremintResponse;
+    const signatureResponse = await getSignature({
+      chain_name: this.network.zoraBackendChainName,
+      collection_address: collection.toLowerCase(),
+      uid: uid,
+    });
 
     const signerData = {
       ...signatureResponse,
+      collection: convertCollection(signatureResponse.collection),
       premint: {
         ...convertPremint(signatureResponse.premint),
         deleted: true,
@@ -381,13 +335,18 @@ export class PremintAPI {
       account,
       checkSignature: false,
       verifyingContract: collection,
-      publicClient: this.getPublicClient(),
+      publicClient: this.getPublicClient(publicClient),
       uid: uid,
       collection: signerData.collection,
       premintConfig: signerData.premint,
     });
   }
 
+  /**
+   *
+   * @param premintArguments Arguments to premint
+   * @returns
+   */
   private async signAndSubmitPremint({
     walletClient,
     publicClient,
@@ -405,7 +364,7 @@ export class PremintAPI {
     checkSignature: boolean;
     account?: Address | Account;
     premintConfig: PremintConfig;
-    collection: PremintResponse["collection"];
+    collection: PremintSignatureGetResponse["collection"];
   }) {
     if (!account) {
       account = walletClient.account;
@@ -428,7 +387,7 @@ export class PremintAPI {
         abi: zoraCreator1155PremintExecutorImplABI,
         address: this.getExecutorAddress(),
         functionName: "isValidSignature",
-        args: [collection, premintConfig, signature],
+        args: [convertCollection(collection), premintConfig, signature],
       });
       if (!isValidSignature) {
         throw new Error("Invalid signature");
@@ -442,38 +401,14 @@ export class PremintAPI {
       signature: signature,
     };
 
-    let premint = await this.retries(() =>
-      this.post(`${ZORA_API_BASE}signature`, apiData),
-    );
+    const premint = await postSignature(apiData);
 
     return {
-      zoraUrl: `https://${
-        this.network.isTestnet ? "testnet." : ""
-      }zora.co/collect/${
-        this.network.zoraPathChainName
-      }:${verifyingContract}/premint-${uid}`,
+      urls: this.makeUrls({ address: verifyingContract, uid }),
       uid,
       verifyingContract,
       premint,
     };
-  }
-
-  private async retries<T>(
-    tryFn: () => T,
-    maxTries: number = 3,
-    atTry: number = 1,
-  ): Promise<T> {
-    try {
-      return await tryFn();
-    } catch (err: any) {
-      if (err instanceof BadResponse) {
-        if (atTry >= maxTries) {
-          await wait(500);
-          return await this.retries(tryFn, maxTries, atTry++);
-        }
-      }
-      throw err;
-    }
   }
 
   /**
@@ -503,7 +438,7 @@ export class PremintAPI {
     account: Address;
     checkSignature?: boolean;
     walletClient: WalletClient;
-    collection: PremintResponse["collection"];
+    collection: PremintSignatureGetResponse["collection"];
     token: MintArgumentsSettings;
     publicClient?: PublicClient;
     executionSettings?: {
@@ -517,7 +452,7 @@ export class PremintAPI {
       address: this.getExecutorAddress(),
       abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "getContractAddress",
-      args: [collection],
+      args: [convertCollection(collection)],
     });
 
     const tokenConfig = {
@@ -529,12 +464,11 @@ export class PremintAPI {
 
     let uid = executionSettings?.uid;
     if (!uid) {
-      const uidResponse = await this.get(
-        `${ZORA_API_BASE}signature/${
-          this.network.zoraBackendChainName
-        }/${newContractAddress.toLowerCase()}/next_uid`,
-      );
-      uid = uidResponse["next_uid"];
+      const uidResponse = await getNextUID({
+        chain_name: this.network.zoraBackendChainName,
+        collection_address: newContractAddress.toLowerCase(),
+      });
+      uid = uidResponse.next_uid;
     }
 
     if (!uid) {
@@ -566,13 +500,20 @@ export class PremintAPI {
    *
    * @param address Address for the premint contract
    * @param uid UID for the desired premint
-   * @returns PremintResponse of premint data from the API
+   * @returns PremintSignatureGetResponse of premint data from the API
    */
-  async getPremintData(address: string, uid: number): Promise<PremintResponse> {
-    const response = await this.get(
-      `${ZORA_PREMINT_API_BASE}signature/${this.network.zoraBackendChainName}/${address}/${uid}`,
-    );
-    return response as PremintResponse;
+  async getPremintData({
+    address,
+    uid,
+  }: {
+    address: string;
+    uid: number;
+  }): Promise<PremintSignatureGetResponse> {
+    return await getSignature({
+      chain_name: this.network.zoraBackendChainName,
+      collection_address: address,
+      uid,
+    });
   }
 
   /**
@@ -585,7 +526,7 @@ export class PremintAPI {
     data,
     publicClient,
   }: {
-    data: PremintResponse;
+    data: PremintSignatureGetResponse;
     publicClient?: PublicClient;
   }): Promise<{
     isValid: boolean;
@@ -599,10 +540,46 @@ export class PremintAPI {
         abi: zoraCreator1155PremintExecutorImplABI,
         address: this.getExecutorAddress(),
         functionName: "isValidSignature",
-        args: [data.collection, convertPremint(data.premint), data.signature],
+        args: [
+          convertCollection(data.collection),
+          convertPremint(data.premint),
+          data.signature as Hex,
+        ],
       });
 
     return { isValid, contractAddress, recoveredSigner };
+  }
+
+  protected makeUrls({
+    uid,
+    address,
+    tokenId,
+  }: {
+    uid?: number;
+    tokenId?: bigint;
+    address?: Address;
+  }): URLSReturnType {
+    if ((!uid || !tokenId) && !address) {
+      return { explorer: null, zoraCollect: null, zoraManage: null };
+    }
+
+    const zoraTokenPath = uid ? `premint-${uid}` : tokenId;
+
+    return {
+      explorer: tokenId
+        ? `https://${this.chain.blockExplorers?.default.url}/token/${address}/instance/${tokenId}`
+        : null,
+      zoraCollect: `https://${
+        this.network.isTestnet ? "testnet." : ""
+      }zora.co/collect/${
+        this.network.zoraPathChainName
+      }:${address}/${zoraTokenPath}`,
+      zoraManage: `https://${
+        this.network.isTestnet ? "testnet." : ""
+      }zora.co/collect/${
+        this.network.zoraPathChainName
+      }:${address}/${zoraTokenPath}`,
+    };
   }
 
   /**
@@ -624,7 +601,7 @@ export class PremintAPI {
     mintArguments,
     publicClient,
   }: {
-    data: PremintResponse;
+    data: PremintSignatureGetResponse;
     walletClient: WalletClient;
     account?: Account | Address;
     mintArguments?: {
@@ -632,7 +609,7 @@ export class PremintAPI {
       mintComment?: string;
     };
     publicClient?: PublicClient;
-  }) {
+  }): Promise<ExecutedPremintResponse> {
     publicClient = this.getPublicClient(publicClient);
 
     if (mintArguments && mintArguments?.quantityToMint < 1) {
@@ -642,9 +619,9 @@ export class PremintAPI {
     const targetAddress = this.getExecutorAddress();
     const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
     const args = [
-      data.collection,
+      convertCollection(data.collection),
       convertPremint(data.premint),
-      data.signature,
+      data.signature as Hex,
       numberToMint,
       mintArguments?.mintComment || "",
     ] as const;
@@ -657,7 +634,7 @@ export class PremintAPI {
       throw new Error("Wallet not passed in");
     }
 
-    const value = numberToMint * this.rewardPerToken;
+    const value = numberToMint * REWARD_PER_TOKEN;
 
     const { request } = await publicClient.simulateContract({
       account,
@@ -669,16 +646,15 @@ export class PremintAPI {
     });
     const hash = await walletClient.writeContract(request);
     const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    const log = getLogFromReceipt(receipt);
+    const premintedLog = getPremintedLogFromReceipt(receipt);
 
     return {
       receipt,
-      log,
-      zoraUrl: log
-        ? `https://${this.network.isTestnet ? "testnet." : ""}zora.co/collect/${
-            this.network.zoraPathChainName
-          }:${log.contractAddress}/${log.tokenId}`
-        : null,
+      premintedLog,
+      urls: this.makeUrls({
+        address: premintedLog?.contractAddress,
+        tokenId: premintedLog?.tokenId,
+      }),
     };
   }
 }

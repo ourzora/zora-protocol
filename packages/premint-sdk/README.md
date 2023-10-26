@@ -6,6 +6,7 @@ Premint SDK allows users to manage zora premints
 
 ```js
 import {PremintAPI} from '@zoralabs/premint-sdk';
+import type {Address, WalletClient} from 'viem';
 
 async function makePremint(walletClient: WalletClient) {
     // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
@@ -40,6 +41,7 @@ async function makePremint(walletClient: WalletClient) {
 
 ```js
 import {PremintAPI} from '@zoralabs/premint-sdk';
+import type {Address, WalletClient} from 'viem';
 
 async function executePremint(walletClient: WalletClient, premintAddress: Address, premintUID: number) {
     const premintAPI = new PremintAPI(walletClient.chain);
@@ -59,6 +61,7 @@ async function executePremint(walletClient: WalletClient, premintAddress: Addres
 
 ```js
 import {PremintAPI} from '@zoralabs/premint-sdk';
+import type {Address, WalletClient} from 'viem';
 
 async function deletePremint(walletClient: WalletClient, collection: Address, uid: number) {
     const premintAPI = new PremintAPI(walletClient.chain);

@@ -8,7 +8,7 @@ import {
 import { foundry } from "viem/chains";
 import { describe, it, beforeEach, expect, vi } from "vitest";
 import { parseEther } from "viem";
-import { BackendChainNames, PremintAPI } from "./premint-api";
+import { BackendChainNames, PremintAPI } from "./premint-client";
 
 const chain = foundry;
 
@@ -106,8 +106,6 @@ describe("ZoraCreator1155Premint", () => {
             "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
         }
       );
-
-      console.log({ premint });
     },
     20 * 1000
   );
@@ -153,7 +151,6 @@ describe("ZoraCreator1155Premint", () => {
       data: premintData,
       publicClient,
     });
-    console.log({ signatureValid });
   });
 
   it(
@@ -192,13 +189,11 @@ describe("ZoraCreator1155Premint", () => {
       });
       premintApi.post = vi.fn();
 
-      console.log({ deployerAccount });
-
       const premint = await premintApi.executePremintWithWallet({
-        data: await premintApi.getPremintData(
-          "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
-          3
-        ),
+        data: await premintApi.getPremintData({
+          address: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
+          uid: 3,
+        }),
         account: deployerAccount,
         walletClient,
         publicClient,
