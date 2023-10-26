@@ -13,9 +13,9 @@ import { foundry, zora } from "viem/chains";
 import { describe, it, expect } from "vitest";
 import {
   zoraCreator1155FactoryImplConfig,
-  zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyABI,
 } from "./wagmiGenerated";
+import { zoraCreator1155ImplABI } from "@zoralabs/zora-1155-contracts";
 
 const walletClient = createWalletClient({
   chain: foundry,

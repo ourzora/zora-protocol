@@ -14,10 +14,9 @@
     "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
   },
   "dependencies": {
-    "@zoralabs/zora-1155-contracts": "*",
+    "@zoralabs/protocol-deployments": "*",
     "abitype": "^0.8.7",
-    "vite": "4.5.0",
-    "vitest": "0.34.6"
+    "vite": "4.5.0"
   },
   "peerDependencies": {
     "viem": "^1.16.6"
