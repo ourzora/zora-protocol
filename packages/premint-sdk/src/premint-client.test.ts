@@ -8,7 +8,7 @@ import {
 import { foundry } from "viem/chains";
 import { describe, it, beforeEach, expect, vi } from "vitest";
 import { parseEther } from "viem";
-import { BackendChainNames, PremintAPI } from "./premint-client";
+import { BackendChainNames, PremintClient } from "./premint-client";
 
 const chain = foundry;
 
@@ -48,16 +48,19 @@ describe("ZoraCreator1155Premint", () => {
     });
   }, 20 * 1000);
 
-  // skip for now - we need to make this work on zora testnet chain too
   it(
     "can sign on the forked premint contract",
     async () => {
-      const premintApi = new PremintAPI(chain);
+      const premintClient = new PremintClient(chain);
 
-      premintApi.get = vi.fn().mockResolvedValue({ next_uid: 3 });
-      premintApi.post = vi.fn().mockResolvedValue({ ok: true });
+      premintClient.premintAPIClient.getNextUID = vi
+        .fn()
+        .mockResolvedValue({ next_uid: 3 });
+      premintClient.premintAPIClient.postSignature = vi
+        .fn()
+        .mockResolvedValue({ ok: true });
 
-      const premint = await premintApi.createPremint({
+      const premint = await premintClient.createPremint({
         walletClient,
         publicClient,
         account: deployerAccount,
@@ -74,8 +77,7 @@ describe("ZoraCreator1155Premint", () => {
         },
       });
 
-      expect(premintApi.post).toHaveBeenCalledWith(
-        "https://api.zora.co/premint/signature",
+      expect(premintClient.premintAPIClient.postSignature).toHaveBeenCalledWith(
         {
           chain_name: BackendChainNames.ZORA_GOERLI,
           collection: {
@@ -111,7 +113,7 @@ describe("ZoraCreator1155Premint", () => {
   );
 
   it("can validate premint on network", async () => {
-    const premint = new PremintAPI(chain);
+    const premintClient = new PremintClient(chain);
 
     const premintData = {
       collection: {
@@ -146,19 +148,20 @@ describe("ZoraCreator1155Premint", () => {
       chain: foundry,
       transport: http(),
     });
-    const signatureValid = await premint.isValidSignature({
+    const signatureValid = await premintClient.isValidSignature({
       // @ts-ignore: Fix enum type
       data: premintData,
       publicClient,
     });
+    expect(signatureValid.isValid).toBe(true);
   });
 
   it(
     "can execute premint on network",
     async () => {
-      const premintApi = new PremintAPI(chain);
+      const premintClient = new PremintClient(chain);
 
-      premintApi.get = vi.fn().mockResolvedValue({
+      premintClient.premintAPIClient.getSignature = vi.fn().mockResolvedValue({
         chain_name: "ZORA-TESTNET",
         collection: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -187,10 +190,10 @@ describe("ZoraCreator1155Premint", () => {
         signature:
           "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
       });
-      premintApi.post = vi.fn();
+      premintClient.premintAPIClient.postSignature = vi.fn();
 
-      const premint = await premintApi.executePremintWithWallet({
-        data: await premintApi.getPremintData({
+      const premint = await premintClient.executePremintWithWallet({
+        data: await premintClient.getPremintData({
           address: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
           uid: 3,
         }),
@@ -203,7 +206,7 @@ describe("ZoraCreator1155Premint", () => {
         },
       });
 
-      expect(premint.log).toEqual({
+      expect(premint.premintedLog).toEqual({
         contractAddress: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
         contractConfig: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",

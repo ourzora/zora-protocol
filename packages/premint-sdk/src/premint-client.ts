@@ -106,7 +106,13 @@ export const DefaultMintArguments = {
   royaltyBPS: 1000, // 10%,
 };
 
-function getPremintedLogFromReceipt(
+/**
+ * Gets the preminted log from receipt
+ *
+ * @param receipt Preminted log from receipt
+ * @returns Premint event arguments
+ */
+export function getPremintedLogFromReceipt(
   receipt: TransactionReceipt
 ): PremintedLogType | undefined {
   for (const data of receipt.logs) {
@@ -125,6 +131,7 @@ function getPremintedLogFromReceipt(
 
 /**
  * Convert server to on-chain types for a premint
+ *
  * @param premint Premint object from the server to convert to one that's compatible with viem
  * @returns Viem type-compatible premint object
  */
@@ -153,6 +160,7 @@ export const convertCollection = (
 
 /**
  * Convert on-chain types for a premint to a server safe type
+ *
  * @param premint Premint object from viem to convert to a JSON compatible type.
  * @returns JSON compatible premint
  */
@@ -175,13 +183,16 @@ export const encodePremintForAPI = ({
  * Preminter API to access ZORA Premint functionality.
  * Currently only supports V1 premints.
  */
-export class PremintAPI {
+export class PremintClient {
   network: NetworkConfig;
   chain: Chain;
   premintAPIClient: typeof PremintAPIClient;
 
-  constructor(chain: Chain, premintAPIClient: typeof PremintAPIClient) {
+  constructor(chain: Chain, premintAPIClient?: typeof PremintAPIClient) {
     this.chain = chain;
+    if (!premintAPIClient) {
+      premintAPIClient = PremintAPIClient;
+    }
     this.premintAPIClient = premintAPIClient;
     const networkConfig = networkConfigByChain[chain.id];
     if (!networkConfig) {
@@ -255,7 +266,7 @@ export class PremintAPI {
     account?: Account | Address;
     collection: Address;
   }): Promise<SignedPremintResponse> {
-    const signatureResponse = await getSignature({
+    const signatureResponse = await this.premintAPIClient.getSignature({
       chain_name: this.network.zoraBackendChainName,
       collection_address: collection.toLowerCase(),
       uid: uid,
@@ -315,7 +326,7 @@ export class PremintAPI {
     account?: Account | Address;
     collection: Address;
   }) {
-    const signatureResponse = await getSignature({
+    const signatureResponse = await this.premintAPIClient.getSignature({
       chain_name: this.network.zoraBackendChainName,
       collection_address: collection.toLowerCase(),
       uid: uid,
@@ -343,6 +354,7 @@ export class PremintAPI {
   }
 
   /**
+   * Internal function to sign and submit a premint request.
    *
    * @param premintArguments Arguments to premint
    * @returns
@@ -401,7 +413,7 @@ export class PremintAPI {
       signature: signature,
     };
 
-    const premint = await postSignature(apiData);
+    const premint = await this.premintAPIClient.postSignature(apiData);
 
     return {
       urls: this.makeUrls({ address: verifyingContract, uid }),
@@ -464,7 +476,7 @@ export class PremintAPI {
 
     let uid = executionSettings?.uid;
     if (!uid) {
-      const uidResponse = await getNextUID({
+      const uidResponse = await this.premintAPIClient.getNextUID({
         chain_name: this.network.zoraBackendChainName,
         collection_address: newContractAddress.toLowerCase(),
       });
@@ -489,6 +501,7 @@ export class PremintAPI {
       verifyingContract: newContractAddress,
       premintConfig,
       checkSignature,
+      account,
       publicClient,
       walletClient,
       collection,
@@ -509,7 +522,7 @@ export class PremintAPI {
     address: string;
     uid: number;
   }): Promise<PremintSignatureGetResponse> {
-    return await getSignature({
+    return await this.premintAPIClient.getSignature({
       chain_name: this.network.zoraBackendChainName,
       collection_address: address,
       uid,

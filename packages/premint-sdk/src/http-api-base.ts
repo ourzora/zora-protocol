@@ -1,9 +1,9 @@
-export class BadResponse<T = any> extends Error {
+export class BadResponseError<T = any> extends Error {
   status: number;
   json: T;
   constructor(message: string, status: number, json: any) {
     super(message);
-    this.name = "BadResponse";
+    this.name = "BadResponseError";
     this.status = status;
     this.json = json;
   }
@@ -30,7 +30,7 @@ export const get = async <T>(url: string) => {
     try {
       json = await response.json();
     } catch (e: any) {}
-    throw new BadResponse(
+    throw new BadResponseError(
       `Invalid response, status ${response.status}`,
       response.status,
       json
@@ -62,7 +62,7 @@ export const post = async <T>(url: string, data: any) => {
     try {
       json = await response.json();
     } catch (e: any) {}
-    throw new BadResponse(
+    throw new BadResponseError(
       `Bad response: ${response.status}`,
       response.status,
       json
@@ -74,14 +74,15 @@ export const post = async <T>(url: string, data: any) => {
 export const retries = async <T>(
   tryFn: () => T,
   maxTries: number = 3,
-  atTry: number = 1
+  atTry: number = 1,
+  linearBackoffMS: number = 200
 ): Promise<T> => {
   try {
     return await tryFn();
   } catch (err: any) {
-    if (err instanceof BadResponse) {
+    if (err instanceof BadResponseError) {
       if (atTry <= maxTries) {
-        await wait(500);
+        await wait(atTry * linearBackoffMS);
         return await retries(tryFn, maxTries, atTry++);
       }
     }

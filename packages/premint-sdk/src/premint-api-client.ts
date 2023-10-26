@@ -34,15 +34,19 @@ const postSignature = async (
 const getNextUID = async (
   path: PremintNextUIDGetPathParameters
 ): Promise<PremintNextUIDGetResponse> =>
-  get<PremintNextUIDGetResponse>(
-    `${ZORA_API_BASE}signature/${path.chain_name}/${path.collection_address}/next_uid`
+  retries(() =>
+    get<PremintNextUIDGetResponse>(
+      `${ZORA_API_BASE}signature/${path.chain_name}/${path.collection_address}/next_uid`
+    )
   );
 
 const getSignature = async (
   path: PremintSignatureGetPathParameters
 ): Promise<PremintSignatureGetResponse> =>
-  get<PremintSignatureGetResponse>(
-    `signature/${path.chain_name}/${path.collection_address}/${path.uid}`
+  retries(() =>
+    get<PremintSignatureGetResponse>(
+      `signature/${path.chain_name}/${path.collection_address}/${path.uid}`
+    )
   );
 
 export const PremintAPIClient = {
