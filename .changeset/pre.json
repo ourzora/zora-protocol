@@ -1,5 +1,5 @@
 {
-  "mode": "pre",
+  "mode": "exit",
   "tag": "premint-api",
   "initialVersions": {
     "@zoralabs/zora-1155-contracts": "2.1.0",
