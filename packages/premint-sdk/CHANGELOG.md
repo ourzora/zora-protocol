@@ -1,5 +1,15 @@
 # @zoralabs/premint-sdk
 
+## 0.0.2
+
+### Patch Changes
+
+- 6eaf7bb: add retries
+- f4a997b: Releasing first version of the premint-sdk
+- c29e080: Update retry and error reporting
+- Updated dependencies [f4a997b]
+  - @zoralabs/zora-1155-contracts@2.1.1
+
 ## 0.0.2-premint-api.2
 
 ### Patch Changes

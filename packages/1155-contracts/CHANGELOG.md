@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.1.1
+
+### Patch Changes
+
+- f4a997b: Releasing first version of the premint-sdk
+
 ## 2.1.1-premint-api.0
 
 ### Patch Changes
