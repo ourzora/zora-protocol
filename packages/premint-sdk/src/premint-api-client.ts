@@ -25,6 +25,7 @@ export type PremintSignatureGetResponse =
 
 export type BackendChainNames = components["schemas"]["ChainName"];
 
+
 const postSignature = async (
   data: PremintSignatureRequestBody
 ): Promise<PremintSignatureResponse> => {

@@ -186,14 +186,14 @@ export const encodePremintForAPI = ({
 export class PremintClient {
   network: NetworkConfig;
   chain: Chain;
-  premintAPIClient: typeof PremintAPIClient;
+  apiClient: typeof PremintAPIClient;
 
-  constructor(chain: Chain, premintAPIClient?: typeof PremintAPIClient) {
+  constructor(chain: Chain, apiClient?: typeof PremintAPIClient) {
     this.chain = chain;
-    if (!premintAPIClient) {
-      premintAPIClient = PremintAPIClient;
+    if (!apiClient) {
+      apiClient = PremintAPIClient;
     }
-    this.premintAPIClient = premintAPIClient;
+    this.apiClient = apiClient;
     const networkConfig = networkConfigByChain[chain.id];
     if (!networkConfig) {
       throw new Error(`Not configured for chain ${chain.id}`);
@@ -266,7 +266,7 @@ export class PremintClient {
     account?: Account | Address;
     collection: Address;
   }): Promise<SignedPremintResponse> {
-    const signatureResponse = await this.premintAPIClient.getSignature({
+    const signatureResponse = await this.apiClient.getSignature({
       chain_name: this.network.zoraBackendChainName,
       collection_address: collection.toLowerCase(),
       uid: uid,
@@ -326,7 +326,7 @@ export class PremintClient {
     account?: Account | Address;
     collection: Address;
   }) {
-    const signatureResponse = await this.premintAPIClient.getSignature({
+    const signatureResponse = await this.apiClient.getSignature({
       chain_name: this.network.zoraBackendChainName,
       collection_address: collection.toLowerCase(),
       uid: uid,
@@ -413,7 +413,7 @@ export class PremintClient {
       signature: signature,
     };
 
-    const premint = await this.premintAPIClient.postSignature(apiData);
+    const premint = await this.apiClient.postSignature(apiData);
 
     return {
       urls: this.makeUrls({ address: verifyingContract, uid }),
@@ -476,7 +476,7 @@ export class PremintClient {
 
     let uid = executionSettings?.uid;
     if (!uid) {
-      const uidResponse = await this.premintAPIClient.getNextUID({
+      const uidResponse = await this.apiClient.getNextUID({
         chain_name: this.network.zoraBackendChainName,
         collection_address: newContractAddress.toLowerCase(),
       });
@@ -522,7 +522,7 @@ export class PremintClient {
     address: string;
     uid: number;
   }): Promise<PremintSignatureGetResponse> {
-    return await this.premintAPIClient.getSignature({
+    return await this.apiClient.getSignature({
       chain_name: this.network.zoraBackendChainName,
       collection_address: address,
       uid,

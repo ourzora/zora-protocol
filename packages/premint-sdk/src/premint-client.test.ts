@@ -53,10 +53,10 @@ describe("ZoraCreator1155Premint", () => {
     async () => {
       const premintClient = new PremintClient(chain);
 
-      premintClient.premintAPIClient.getNextUID = vi
+      premintClient.apiClient.getNextUID = vi
         .fn()
         .mockResolvedValue({ next_uid: 3 });
-      premintClient.premintAPIClient.postSignature = vi
+      premintClient.apiClient.postSignature = vi
         .fn()
         .mockResolvedValue({ ok: true });
 
@@ -77,37 +77,35 @@ describe("ZoraCreator1155Premint", () => {
         },
       });
 
-      expect(premintClient.premintAPIClient.postSignature).toHaveBeenCalledWith(
-        {
-          chain_name: BackendChainNames.ZORA_GOERLI,
-          collection: {
-            contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-            contractName: "Testing Contract",
-            contractURI:
-              "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+      expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith({
+        chain_name: BackendChainNames.ZORA_GOERLI,
+        collection: {
+          contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          contractName: "Testing Contract",
+          contractURI:
+            "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+        },
+        premint: {
+          deleted: false,
+          tokenConfig: {
+            fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
+            maxSupply: "18446744073709551615",
+            maxTokensPerAddress: "0",
+            mintDuration: "604800",
+            mintStart: "0",
+            pricePerToken: "0",
+            royaltyBPS: 1000,
+            royaltyMintSchedule: 0,
+            royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            tokenURI:
+              "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
           },
-          premint: {
-            deleted: false,
-            tokenConfig: {
-              fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
-              maxSupply: "18446744073709551615",
-              maxTokensPerAddress: "0",
-              mintDuration: "604800",
-              mintStart: "0",
-              pricePerToken: "0",
-              royaltyBPS: 1000,
-              royaltyMintSchedule: 0,
-              royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-              tokenURI:
-                "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
-            },
-            uid: 3,
-            version: 1,
-          },
-          signature:
-            "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
-        }
-      );
+          uid: 3,
+          version: 1,
+        },
+        signature:
+          "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
+      });
     },
     20 * 1000
   );
@@ -161,7 +159,7 @@ describe("ZoraCreator1155Premint", () => {
     async () => {
       const premintClient = new PremintClient(chain);
 
-      premintClient.premintAPIClient.getSignature = vi.fn().mockResolvedValue({
+      premintClient.apiClient.getSignature = vi.fn().mockResolvedValue({
         chain_name: "ZORA-TESTNET",
         collection: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -190,7 +188,7 @@ describe("ZoraCreator1155Premint", () => {
         signature:
           "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
       });
-      premintClient.premintAPIClient.postSignature = vi.fn();
+      premintClient.apiClient.postSignature = vi.fn();
 
       const premint = await premintClient.executePremintWithWallet({
         data: await premintClient.getPremintData({
