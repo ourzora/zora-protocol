@@ -6,9 +6,9 @@ import {
   Address,
 } from "viem";
 import { foundry } from "viem/chains";
-import { describe, it, beforeEach, expect, vi, vitest, afterEach } from "vitest";
+import { describe, it, beforeEach, expect, vi, afterEach } from "vitest";
 import { parseEther } from "viem";
-import { BackendChainNames, PremintClient } from "./premint-client";
+import { BackendChainNamesLookup, PremintClient } from "./premint-client";
 
 const chain = foundry;
 
@@ -64,7 +64,7 @@ describe("ZoraCreator1155Premint", () => {
         .fn()
         .mockResolvedValue({ ok: true });
 
-      const premint = await premintClient.createPremint({
+      await premintClient.createPremint({
         walletClient,
         publicClient,
         account: deployerAccount,
@@ -82,7 +82,7 @@ describe("ZoraCreator1155Premint", () => {
       });
 
       expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith({
-        chain_name: BackendChainNames.ZORA_GOERLI,
+        chain_name: BackendChainNamesLookup.ZORA_GOERLI,
         collection: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
           contractName: "Testing Contract",

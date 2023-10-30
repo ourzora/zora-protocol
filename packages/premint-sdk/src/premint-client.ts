@@ -23,7 +23,7 @@ import type {
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 
-export const BackendChainNames = {
+export const BackendChainNamesLookup = {
   ZORA_MAINNET: "ZORA-MAINNET",
   ZORA_GOERLI: "ZORA-GOERLI",
 } as const;
@@ -42,19 +42,19 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     chainId: zora.id,
     isTestnet: false,
     zoraPathChainName: "zora",
-    zoraBackendChainName: BackendChainNames.ZORA_MAINNET,
+    zoraBackendChainName: BackendChainNamesLookup.ZORA_MAINNET,
   },
   [zoraTestnet.id]: {
     chainId: zora.id,
     isTestnet: true,
     zoraPathChainName: "zgor",
-    zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
+    zoraBackendChainName: BackendChainNamesLookup.ZORA_GOERLI,
   },
   [foundry.id]: {
     chainId: foundry.id,
     isTestnet: true,
     zoraPathChainName: "zgor",
-    zoraBackendChainName: BackendChainNames.ZORA_GOERLI,
+    zoraBackendChainName: BackendChainNamesLookup.ZORA_GOERLI,
   },
 };
 
