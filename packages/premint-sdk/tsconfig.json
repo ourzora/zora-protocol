@@ -5,7 +5,7 @@
     "downlevelIteration": true,
     "esModuleInterop": true,
     "isolatedModules": true,
-    "lib": ["es2021"],
+    "lib": ["es2021", "DOM"],
     "module": "esnext",
     "moduleResolution": "node",
     "noImplicitAny": true,
@@ -21,5 +21,5 @@
     "outDir": "dist"
   },
   "exclude": ["node_modules/**", "dist/**"],
-  "include": ["package/**/*.ts", "script/*.ts"]
+  "include": ["src/**/*.ts"]
 }

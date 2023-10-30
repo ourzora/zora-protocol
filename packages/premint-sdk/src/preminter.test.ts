@@ -10,7 +10,7 @@ import {
   hashDomain,
 } from "viem";
 import { foundry, zora } from "viem/chains";
-import { describe, it, beforeEach, expect } from "vitest";
+import { describe, it, beforeEach, expect, afterEach } from "vitest";
 import { parseEther } from "viem";
 import {
   zoraCreator1155PremintExecutorImplABI as preminterAbi,
@@ -18,7 +18,7 @@ import {
   zoraCreator1155ImplABI,
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155FactoryImplConfig,
-} from "./wagmiGenerated";
+} from "@zoralabs/zora-1155-contracts";
 
 import {
   ContractCreationConfig,
@@ -74,7 +74,7 @@ const defaultContractConfig = ({
 });
 
 const defaultTokenConfig = (
-  fixedPriceMinterAddress: Address
+  fixedPriceMinterAddress: Address,
 ): TokenCreationConfig => ({
   tokenURI: "ipfs://tokenIpfsId0",
   maxSupply: 100n,
@@ -117,6 +117,10 @@ describe("ZoraCreator1155Preminter", () => {
       zoraCreator1155PremintExecutorAddress[ctx.forkedChainId];
   }, 20 * 1000);
 
+  afterEach(() => {
+    testClient.reset();
+  }, 4 * 1000);
+
   // skip for now - we need to make this work on zora testnet chain too
   it<TestContext>(
     "can sign on the forked premint contract",
@@ -154,7 +158,7 @@ describe("ZoraCreator1155Preminter", () => {
         contractAddress,
       });
     },
-    20 * 1000
+    20 * 1000,
   );
   it<TestContext>(
     "can sign and recover a signature",
@@ -197,7 +201,7 @@ describe("ZoraCreator1155Preminter", () => {
       expect(recoveredAddress).to.equal(creatorAccount);
     },
 
-    20 * 1000
+    20 * 1000,
   );
   it<TestContext>(
     "can sign and mint multiple tokens",
@@ -352,7 +356,7 @@ describe("ZoraCreator1155Preminter", () => {
 
       expect(
         (await publicClient.waitForTransactionReceipt({ hash: mintHash2 }))
-          .status
+          .status,
       ).toBe("success");
 
       // now premint status for the second mint, it should be minted
@@ -376,7 +380,7 @@ describe("ZoraCreator1155Preminter", () => {
       expect(tokenBalance2).toBe(quantityToMint2);
     },
     // 10 second timeout
-    40 * 1000
+    40 * 1000,
   );
 
   it<TestContext>("can decode the CreatorAttribution event", async ({
