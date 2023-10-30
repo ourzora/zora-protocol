@@ -5,6 +5,6 @@ export default defineConfig({
   sourcemap: true,
   clean: true,
   dts: false,
-  format: ['cjs'],
+  format: ['cjs', 'esm'],
   onSuccess: 'tsc --emitDeclarationOnly --declaration --declarationMap'
 })

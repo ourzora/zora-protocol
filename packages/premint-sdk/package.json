@@ -1,0 +1,30 @@
+{
+  "name": "@zoralabs/premint-sdk",
+  "version": "0.0.2-premint-api.2",
+  "repository": "https://github.com/ourzora/zora-protocol",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "type": "module",
+  "scripts": {
+    "build": "tsup",
+    "prepack": "yarn build",
+    "test": "vitest src",
+    "generate-types": "npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && npx openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts",
+    "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
+  },
+  "dependencies": {
+    "@zoralabs/zora-1155-contracts": "*",
+    "abitype": "^0.8.7",
+    "vite": "4.5.0",
+    "vitest": "0.34.6"
+  },
+  "peerDependencies": {
+    "viem": "^1.16.6"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "4.5.0",
+    "vitest": "0.34.6"
+  }
+}
