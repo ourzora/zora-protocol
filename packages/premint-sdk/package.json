@@ -9,7 +9,7 @@
   "scripts": {
     "build": "tsup",
     "prepack": "yarn build",
-    "test": "vitest src",
+    "test:js": "vitest src",
     "generate-types": "npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && npx openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts",
     "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
   },
