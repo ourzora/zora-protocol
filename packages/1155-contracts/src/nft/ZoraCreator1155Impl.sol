@@ -752,8 +752,8 @@ contract ZoraCreator1155Impl is
         return _getImplementation();
     }
 
-    function supportedPremintSignatureVersions() external pure returns (string memory) {
-        return ZoraCreator1155Attribution.VERSION_2;
+    function supportedPremintSignatureVersions() external pure returns (string[] memory) {
+        return DelegatedTokenCreation.supportedPremintSignatureVersions();
     }
 
     /// Sets up a new token using a token configuration and a signature created for the token creation parameters.

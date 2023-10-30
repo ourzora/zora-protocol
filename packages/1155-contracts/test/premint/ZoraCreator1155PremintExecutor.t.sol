@@ -742,7 +742,33 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // if contract is not a known 1155 contract that supports getting uid or premint sig version,
         // this should return 0
-        assertEq(preminter.supportedPremintSignatureVersion(erc1155BeforePremint), "0");
+        assertEq(preminter.supportedPremintSignatureVersions(erc1155BeforePremint).length, 0);
+    }
+
+    function test_premintVersion_beforeCreated_returnsAllVersion() external {
+        // build a premint
+        string[] memory supportedVersions = preminter.supportedPremintSignatureVersions(makeAddr("randomContract"));
+
+        assertEq(supportedVersions.length, 2);
+        assertEq(supportedVersions[0], "1");
+        assertEq(supportedVersions[1], "2");
+    }
+
+    function test_premintVersion_whenCreated_returnsAllVersion() external {
+        // build a premint
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+
+        // sign and execute premint
+        address deterministicAddress = preminter.getContractAddress(contractConfig);
+
+        _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, premintExecutor, 1, "hi");
+
+        string[] memory supportedVersions = preminter.supportedPremintSignatureVersions(deterministicAddress);
+
+        assertEq(supportedVersions.length, 2);
+        assertEq(supportedVersions[0], "1");
+        assertEq(supportedVersions[1], "2");
     }
 
     function testPremintWithCreateReferral() public {

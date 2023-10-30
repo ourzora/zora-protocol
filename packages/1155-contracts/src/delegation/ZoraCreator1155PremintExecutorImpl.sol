@@ -214,11 +214,17 @@ contract ZoraCreator1155PremintExecutorImpl is
         );
     }
 
-    /// @notice Returns the version of the premint signature that the contract supports
+    /// @notice Returns the versions of the premint signature that the contract supports
     /// @param contractAddress The address of the contract to check
-    /// @return The version of the premint signature that the contract supports.  If it doesn't support premint
-    /// returns 0
-    function supportedPremintSignatureVersions(address contractAddress) external view returns (string memory) {
+    /// @return versions The versions of the premint signature that the contract supports.  If contract hasn't been created yet,
+    /// assumes that when it will be created it will support the latest versions of the signatures, so the function returns all versions.
+    function supportedPremintSignatureVersions(address contractAddress) external view returns (string[] memory versions) {
+        // if contract hasn't been created yet, assume it will be created with the latest version
+        // and thus supports all versions of the signature
+        if (contractAddress.code.length == 0) {
+            return ZoraCreator1155Attribution.allVersions();
+        }
+
         IZoraCreator1155 creatorContract = IZoraCreator1155(contractAddress);
         if (creatorContract.supportsInterface(type(IZoraCreator1155DelegatedCreation).interfaceId)) {
             return IZoraCreator1155DelegatedCreation(contractAddress).supportedPremintSignatureVersions();
@@ -226,9 +232,10 @@ contract ZoraCreator1155PremintExecutorImpl is
 
         // try get token id for uid 0 - if call fails, we know this didn't support premint
         try ERC1155DelegationStorageV1(contractAddress).delegatedTokenId(uint32(0)) returns (uint256) {
-            return "1";
+            versions = new string[](1);
+            versions[0] = ZoraCreator1155Attribution.VERSION_1;
         } catch {
-            return "0";
+            versions = new string[](0);
         }
     }
 
