@@ -20,7 +20,7 @@
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
     "build:contracts": "forge build",
     "build": "yarn wagmi && yarn copy-abis && tsup",
-    "wagmi": "wagmi generate",
+    "wagmi": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
     "build:sizes": "forge build --sizes",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
