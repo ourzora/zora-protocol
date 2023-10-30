@@ -292,40 +292,6 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         }
     }
 
-    // this is a temporary test to simulate the upcoming upgrade
-    function test_fork_zoraGoerli_afterUpgradeCanPremint() external {
-        vm.createSelectFork(vm.rpcUrl("zora_goerli"));
-
-        Deployment memory deployment = getDeployment();
-
-        factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
-
-        console2.log("factory upgrade target:", deployment.factoryProxy);
-        bytes memory factoryProxyUpgradeCall = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, deployment.factoryImpl);
-        console2.log("factory upgrade call:", vm.toString(factoryProxyUpgradeCall));
-
-        console2.log("preminter upgrade target:", deployment.preminterProxy);
-        bytes memory preminterProxyUpgradeCall = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, deployment.preminterImpl);
-        console2.log("preminter upgrade call:", vm.toString(preminterProxyUpgradeCall));
-
-        vm.prank(factory.owner());
-        // lets call it as if we were calling from a safe:
-        deployment.factoryProxy.call(factoryProxyUpgradeCall);
-
-        // override test storage to point to proxy
-        preminter = ZoraCreator1155PremintExecutorImpl(deployment.preminterProxy);
-
-        vm.prank(preminter.owner());
-        // preminter impl was already created with correct factory, were just upgrading it now
-        deployment.preminterProxy.call(preminterProxyUpgradeCall);
-
-        assertEq(address(preminter.zora1155Factory()), address(factory));
-
-        preminterCanMintTokens();
-
-        // lets console.log these upgrades
-    }
-
     function test_signatureForSameContractandUid_shouldMintExistingToken() external {
         // 1. Make contract creation params
 
