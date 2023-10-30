@@ -22,7 +22,8 @@
     "@zoralabs/zora-1155-contracts": "*",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
     "forge-std": "https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80",
-    "solmate": "^6.1.0"
+    "solmate": "^6.1.0",
+    "tsdoc-markdown": "^0.1.0"
   },
   "devDependencies": {
     "@turnkey/api-key-stamper": "^0.1.1",
