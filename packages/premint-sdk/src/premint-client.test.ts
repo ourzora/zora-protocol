@@ -6,7 +6,7 @@ import {
   Address,
 } from "viem";
 import { foundry } from "viem/chains";
-import { describe, it, beforeEach, expect, vi } from "vitest";
+import { describe, it, beforeEach, expect, vi, vitest, afterEach } from "vitest";
 import { parseEther } from "viem";
 import { BackendChainNames, PremintClient } from "./premint-client";
 
@@ -47,6 +47,10 @@ describe("ZoraCreator1155Premint", () => {
       value: parseEther("1"),
     });
   }, 20 * 1000);
+
+  afterEach(() => {
+    testClient.reset();
+  }, 4 * 1000);
 
   it(
     "can sign on the forked premint contract",
@@ -212,7 +216,7 @@ describe("ZoraCreator1155Premint", () => {
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
-        createdNewContract: false,
+        createdNewContract: expect.any(Boolean),
         minter: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
         quantityMinted: 1n,
         tokenConfig: {

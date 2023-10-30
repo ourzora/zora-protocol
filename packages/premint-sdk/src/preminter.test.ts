@@ -10,7 +10,7 @@ import {
   hashDomain,
 } from "viem";
 import { foundry, zora } from "viem/chains";
-import { describe, it, beforeEach, expect } from "vitest";
+import { describe, it, beforeEach, expect, afterEach } from "vitest";
 import { parseEther } from "viem";
 import {
   zoraCreator1155PremintExecutorImplABI as preminterAbi,
@@ -116,6 +116,10 @@ describe("ZoraCreator1155Preminter", () => {
     ctx.preminterAddress =
       zoraCreator1155PremintExecutorAddress[ctx.forkedChainId];
   }, 20 * 1000);
+
+  afterEach(() => {
+    testClient.reset();
+  }, 4 * 1000);
 
   // skip for now - we need to make this work on zora testnet chain too
   it<TestContext>(
