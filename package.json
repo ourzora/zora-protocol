@@ -9,7 +9,7 @@
     "update-version": "changeset version && turbo run update-contract-version",
     "lint": "turbo run lint",
     "format": "turbo run format",
-    "release": "turbo run prepack && changeset publish"
+    "release": "turbo run build && changeset publish"
   },
   "devDependencies": {
     "eslint": "^8.48.0",
