@@ -122,15 +122,12 @@ contract Zora1155PremintExecutorProxyTest is Test, ForkDeploymentConfig, IHasCon
         vm.createSelectFork("zora", 5_000_000);
 
         // 1. execute premint using older version of proxy, this will create 1155 contract using the legacy interface
-        Deployment memory deployment = getDeployment();
-        ChainConfig memory chainConfig = getChainConfig();
-
+        address preminterProxy = 0x7777773606e7e46C8Ba8B98C08f5cD218e31d340;
+        address upgradeGate = 0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900;
         // get premint and factory proxies from forked deployments
-        ZoraCreator1155PremintExecutorImpl forkedPreminterProxy = ZoraCreator1155PremintExecutorImpl(deployment.preminterProxy);
+        ZoraCreator1155PremintExecutorImpl forkedPreminterProxy = ZoraCreator1155PremintExecutorImpl(preminterProxy);
         ZoraCreator1155FactoryImpl forkedFactoryAtProxy = ZoraCreator1155FactoryImpl(address(forkedPreminterProxy.zora1155Factory()));
         IMinter1155 fixedPriceMinter = forkedFactoryAtProxy.fixedPriceMinter();
-
-        assertFalse(deployment.factoryProxy.code.length == 0, "factory proxy code should be deployed");
 
         // build and sign v1 premint config
         ContractCreationConfig memory contractConfig = Zora1155PremintFixtures.makeDefaultContractCreationConfig(creator);
@@ -161,14 +158,10 @@ contract Zora1155PremintExecutorProxyTest is Test, ForkDeploymentConfig, IHasCon
 
         // 2. upgrade premint executor and factory to current version
         // create new factory proxy implementation
-        (, ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(
-            zora,
-            IUpgradeGate(deployment.upgradeGate),
-            fixedPriceMinter
-        );
+        (, ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(upgradeGate), fixedPriceMinter);
 
         // upgrade factory proxy
-        address upgradeOwner = chainConfig.factoryOwner;
+        address upgradeOwner = forkedPreminterProxy.owner();
         vm.prank(upgradeOwner);
         forkedFactoryAtProxy.upgradeTo(address(newFactoryVersion));
         // upgrade preminter
