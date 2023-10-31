@@ -1,16 +1,5 @@
 # @zoralabs/premint-sdk
 
-## 0.1.0
-
-### Minor Changes
-
-- cf3be8f: Added new premint api that abstracts out calls to the chain signature and submission logic around submitting a premint. This change also incorporates test helpers for premints and introduces docs and an api client for the zora api's premint module.
-
-### Patch Changes
-
-- Updated dependencies [f00bd85]
-  - @zoralabs/zora-1155-contracts@2.3.0
-
 ## 0.0.2-premint-api.2
 
 ### Patch Changes
