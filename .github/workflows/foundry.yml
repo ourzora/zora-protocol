@@ -132,11 +132,6 @@ jobs:
       - name: Install node deps and founry
         uses: ./.github/actions/setup_deps
 
-      - name: Download foundry artifacts
-        uses: actions/download-artifact@v3
-        with:
-          name: $build_artifact
-
       - name: Build js package
         run: |
           npx turbo run build
