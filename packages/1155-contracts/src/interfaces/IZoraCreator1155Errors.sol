@@ -36,4 +36,6 @@ interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddres
     error PremintDeleted();
 
     error InvalidSignatureVersion();
+
+    error ERC1155_MINT_TO_ZERO_ADDRESS();
 }
