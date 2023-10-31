@@ -8,9 +8,7 @@
   "types": "./dist/package/index.d.ts",
   "type": "module",
   "scripts": {
-    "test": "forge test",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
-    "test:fork": "forge test -vvv --match-test fork",
     "test-gas": "forge test --gas-report",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",
