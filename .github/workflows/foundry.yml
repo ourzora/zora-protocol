@@ -121,7 +121,6 @@ jobs:
         run: npx turbo run storage-inspect:check
 
   build_js:
-    needs: build
     strategy:
       fail-fast: true
 
@@ -140,7 +139,7 @@ jobs:
 
       - name: Build js package
         run: |
-          npx turbo run prepack
+          npx turbo run build
 
   coverage-1155:
     uses: ./.github/workflows/coverage.yml
@@ -155,4 +154,3 @@ jobs:
     with:
       package: "protocol-rewards"
       files_to_ignore: '"*lib*"'
-
