@@ -9,7 +9,7 @@ import {IZoraCreator1155Errors} from "../../../src/interfaces/IZoraCreator1155Er
 import {IMinter1155} from "../../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
-import {ILimitedMintPerAddress} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
+import {ILimitedMintPerAddressErrors} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 
 contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
@@ -279,7 +279,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
         vm.deal(tokenRecipient, totalValue);
 
         vm.prank(tokenRecipient);
-        vm.expectRevert(abi.encodeWithSelector(ILimitedMintPerAddress.UserExceedsMintLimit.selector, tokenRecipient, 5, 6));
+        vm.expectRevert(abi.encodeWithSelector(ILimitedMintPerAddressErrors.UserExceedsMintLimit.selector, tokenRecipient, 5, 6));
         target.mint{value: totalValue}(fixedPrice, newTokenId, numTokens, abi.encode(tokenRecipient, ""));
     }
 
