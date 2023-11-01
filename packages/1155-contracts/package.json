@@ -9,6 +9,7 @@
   "type": "module",
   "scripts": {
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
+    "test": "forge test -vv",
     "test-gas": "forge test --gas-report",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",
