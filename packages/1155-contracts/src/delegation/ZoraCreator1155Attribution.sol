@@ -60,9 +60,9 @@ library ZoraCreator1155Attribution {
     /* start eip712 functionality */
     string internal constant NAME = "Preminter";
     string internal constant VERSION = "1";
-    bytes32 internal constant HASHED_NAME = keccak256(bytes(NAME));
-    bytes32 internal constant HASHED_VERSION = keccak256(bytes(VERSION));
-    bytes32 internal constant TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 internal immutable HASHED_NAME = keccak256(bytes(NAME));
+    bytes32 internal immutable HASHED_VERSION = keccak256(bytes(VERSION));
+    bytes32 internal immutable TYPE_HASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
 
     /**
      * @dev Returns the domain separator for the specified chain.
@@ -119,7 +119,7 @@ library ZoraCreator1155Attribution {
         return _hashTypedDataV4(hashPremint(premintConfig), erc1155Contract, chainId);
     }
 
-    bytes32 constant ATTRIBUTION_DOMAIN =
+    bytes32 immutable ATTRIBUTION_DOMAIN =
         keccak256(
             "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter)"
         );
@@ -129,7 +129,7 @@ library ZoraCreator1155Attribution {
             keccak256(abi.encode(ATTRIBUTION_DOMAIN, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted));
     }
 
-    bytes32 constant TOKEN_DOMAIN =
+    bytes32 immutable TOKEN_DOMAIN =
         keccak256(
             "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyMintSchedule,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter)"
         );
