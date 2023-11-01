@@ -9,14 +9,14 @@ import { readdirSync, readFileSync, writeFileSync } from 'fs';
 //}
 function makeConfig() {
   // read all files in the chainConfigs folder
-  const files = readdirSync('chainConfigs');
+  const files = readdirSync('1155/chainConfigs');
 
   // combine them into a single mapping
   const chainConfigsInner = files
     .map((fileName) => {
       const chainId = fileName.split('.')[0];
 
-      const fileContents = JSON.parse(readFileSync(`chainConfigs/${fileName}`));
+      const fileContents = JSON.parse(readFileSync(`1155/chainConfigs/${fileName}`));
 
       return `[${chainId}]: ${JSON.stringify(fileContents, null, 2)}`;
     })

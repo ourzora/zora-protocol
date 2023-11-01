@@ -2,13 +2,15 @@
 fs_permissions = [
   { access = "read", path = "./addresses" },
   { access = "read", path = "./chainConfigs" },
+  { access = "read", path = "../chainConfigs" },
   { access = "read", path = "./package.json" },
   { access = "readwrite", path = "./deterministicConfig" },
 ]
-libs = ['_imagine', 'node_modules', 'script']
+libs = ['_imagine', '../node_modules', 'script']
 allow_paths = [
-  "node_modules/@zoralabs/protocol-rewards",
-  "node_modules/@zoralabs/zora-1155-contracts",
+  "../node_modules/@zoralabs/protocol-rewards",
+  "../node_modules/@zoralabs/zora-1155-contracts",
+  "../chainConfigs",
 ]
 optimizer = true
 optimizer_runs = 50

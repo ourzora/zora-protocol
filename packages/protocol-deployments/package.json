@@ -11,7 +11,6 @@
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "prettier": "prettier --write 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",
     "update-new-deployment-addresses": "node script/copy-deployed-contracts.mjs deploy",
-    "update-contract-version": "node script/update-contract-version.mjs",
     "wagmi": "wagmi generate",
     "unlink-protocol-rewards": "rm -rf ./node_modules/@zoralabs/protocol-rewards && cp -r ../protocol-rewards ./node_modules/@zoralabs/protocol-rewards",
     "unlink-1155": "rm -rf ./node_modules/@zoralabs/zora-1155-contracts && cp -r ../1155-contracts ./node_modules/@zoralabs/zora-1155-contracts",

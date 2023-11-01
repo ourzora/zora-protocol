@@ -17,7 +17,7 @@ type Addresses = {
 const getAddresses = () => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("./addresses");
+  const addressFiles1155 = readdirSync("./1155/addresses");
 
   const addAddress = ({
     contractName,
@@ -41,9 +41,9 @@ const getAddresses = () => {
     addresses[contractName]!.address[chainId] = address;
   };
 
-  for (const addressesFile of addressesFiles) {
+  for (const addressesFile of addressFiles1155) {
     const jsonAddress = JSON.parse(
-      readFileSync(`./addresses/${addressesFile}`, "utf-8")
+      readFileSync(`./1155/addresses/${addressesFile}`, "utf-8")
     ) as {
       FIXED_PRICE_SALE_STRATEGY: Address;
       MERKLE_MINT_SALE_STRATEGY: Address;
