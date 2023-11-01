@@ -3497,6 +3497,11 @@ solady@^0.0.123:
   resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.123.tgz#7ef95767c1570e3efde7550da2a8b439b2f413d2"
   integrity sha512-F/B8OMCplGsS4FrdPrnEG0xdg8HKede5PwC+Rum8soj/LWxfKckA0p+Uwnlbgey2iI82IHvmSOCNhsdbA+lUrw==
 
+solady@^0.0.132:
+  version "0.0.132"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.132.tgz#5e81ec342990f334055db8e8f319786fcedb6b1a"
+  integrity sha512-qMdj/Y5fgPmxcis3eTs1Z03Qt/DVt1VJmlugRNjw7DySkrMOW/rHNyUVqqvevsYaGXgbPT54z68chDNesFnH+Q==
+
 solidity-comments-extractor@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"

@@ -12,7 +12,7 @@ import {
   zoraCreator1155PremintExecutorImplABI,
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
-} from "@zoralabs/zora-1155-contracts";
+} from "@zoralabs/protocol-deployments";
 import { foundry, zora, zoraTestnet } from "viem/chains";
 import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
 import type {

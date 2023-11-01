@@ -8,7 +8,6 @@
     "_imagine"
   ],
   "scripts": {
-    "build": "forge build",
     "build:sizes": "forge build --sizes",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test": "forge test",
