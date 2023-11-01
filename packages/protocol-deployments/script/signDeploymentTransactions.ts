@@ -82,13 +82,15 @@ async function signAndSaveSignatures({
   );
 }
 
-async function signAndSaveGenericSignatures({
+async function signAndSaveUpgradeGate({
   turnkeyAccount,
   chainConfigs,
   proxyName,
 }: {
   turnkeyAccount: LocalAccount;
-  chainConfigs: ChainConfig[];
+    chainConfigs: {
+      chainId: number; owner: Address
+    }[];
   proxyName: "upgradeGate";
 }) {
   const configFolder = path.resolve(
@@ -147,6 +149,28 @@ async function signAndSaveGenericSignatures({
     JSON.stringify(byChainId, null, 2)
   );
 }
+
+const getChainConfigs = async () => {
+  const chainConfigsFiles = await glob(
+    path.resolve(__dirname, "../chainConfigs/*.json")
+  );
+
+  const chainConfigs = await Promise.all(
+    chainConfigsFiles.map(async (chainConfigFile) => {
+      const chainId = parseInt(path.basename(chainConfigFile).split(".")[0]!);
+
+      // read file and process JSON contents:
+      const fileContents = await import(chainConfigFile);
+
+      return {
+        chainId,
+        owner: fileContents["FACTORY_OWNER"]! as Address,
+      };
+    })
+  );
+
+  return chainConfigs;
+};
 
 const getFactoryImplConfigs = async () => {
   const addresseFiles = await glob(
@@ -239,9 +263,9 @@ async function main() {
     proxyName: "premintExecutorProxy",
   });
 
-  await signAndSaveGenericSignatures({
+  await signAndSaveUpgradeGate({
     turnkeyAccount,
-    chainConfigs: await getFactoryImplConfigs(),
+    chainConfigs: await getChainConfigs(),
     proxyName: "upgradeGate",
   });
 }
