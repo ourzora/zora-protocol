@@ -138,9 +138,9 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
 
         // make sure that the address from the factory matches the stored fixed price address
         // sanity check - check minters match config
-        assertEq(address(factory.merkleMinter()), deployment.merkleMintSaleStrategy);
-        assertEq(address(factory.fixedPriceMinter()), deployment.fixedPriceSaleStrategy);
-        assertEq(address(factory.redeemMinterFactory()), deployment.redeemMinterFactory);
+        assertEq(address(factory.merkleMinter()), deployment.merkleMintSaleStrategy, "merkle minter incorrect");
+        assertEq(address(factory.fixedPriceMinter()), deployment.fixedPriceSaleStrategy, "fixed priced minter incorrect");
+        assertEq(address(factory.redeemMinterFactory()), deployment.redeemMinterFactory, "redeem minter not correct");
     }
 
     function test_fork_canCreateContractAndMint() external {
