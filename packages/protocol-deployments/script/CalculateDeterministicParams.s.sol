@@ -13,7 +13,6 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ZoraDeployerUtils} from "@zoralabs/zora-1155-contracts/src/deployment/ZoraDeployerUtils.sol";
 import {Zora1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155PremintExecutor.sol";
 import {DeterministicDeployerScript, DeterministicParams} from "@zoralabs/zora-1155-contracts/src/deployment/DeterministicDeployerScript.sol";
-import {DeterministicProxyDeployer} from "@zoralabs/zora-1155-contracts/src/deployment/DeterministicProxyDeployer.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title Gets parameters for deterministically deploying a new 1155 factory proxy at an address starting with 0x777777, regardless of the chain.

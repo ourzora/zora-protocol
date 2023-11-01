@@ -2,15 +2,15 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
-import {ZoraDeployerUtils, Create2Deployment} from "../../src/deployment/ZoraDeployerUtils.sol";
-import {DeterministicProxyDeployer} from "../../src/deployment/DeterministicProxyDeployer.sol";
-import {ProxyShim} from "../../src/utils/ProxyShim.sol";
-import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
-import {Deployment, ChainConfig} from "../../src/deployment/DeploymentConfig.sol";
-import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
+import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
+import {ZoraDeployerUtils, Create2Deployment} from "@zoralabs/zora-1155-contracts/src/deployment/ZoraDeployerUtils.sol";
+import {DeterministicProxyDeployer} from "@zoralabs/zora-1155-contracts/src/deployment/DeterministicProxyDeployer.sol";
+import {ProxyShim} from "@zoralabs/zora-1155-contracts/src/utils/ProxyShim.sol";
+import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
+import {Deployment, ChainConfig} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentConfig.sol";
+import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {DeterministicDeployerScript, DeterministicParams} from "../../src/deployment/DeterministicDeployerScript.sol";
+import {DeterministicDeployerScript, DeterministicParams} from "@zoralabs/zora-1155-contracts/src/deployment/DeterministicDeployerScript.sol";
 
 contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
     using stdJson for string;
