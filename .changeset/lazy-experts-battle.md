@@ -1,5 +1,4 @@
 ---
-"@zoralabs/zora-1155-contracts": patch
 "@zoralabs/protocol-deployments": patch
 "@zoralabs/premint-sdk": patch
 ---
