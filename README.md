@@ -6,6 +6,7 @@ In it you will find:
 
 - [Zora 1155 Contracts](./packages/1155-contracts)
 - [Protocol Rewards](./packages/protocol-rewards)
+- [Procotol Deployments](./packages/protocol-deployments)
 
 ## Official docs
 
