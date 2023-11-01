@@ -9,7 +9,7 @@ abis/
 # /broadcast/**/dry-run/
 
 # Remove broadcast logs
-/broadcast/
+**/*/broadcast
 
 # Docs
 docs/
