@@ -2,18 +2,17 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Factory.sol";
-import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
-import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
-import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
-import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
-import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
-import {IOwnable} from "../../src/interfaces/IOwnable.sol";
-import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
-import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
+import {IZoraCreator1155Factory} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155Factory.sol";
+import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
+import {IZoraCreator1155Errors} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155Errors.sol";
+import {IZoraCreator1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155.sol";
+import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
+import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
+import {IOwnable} from "@zoralabs/zora-1155-contracts/src/interfaces/IOwnable.sol";
+import {ICreatorRoyaltiesControl} from "@zoralabs/zora-1155-contracts/src/interfaces/ICreatorRoyaltiesControl.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
-import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {ForkDeploymentConfig, Deployment} from "../../src/deployment/DeploymentConfig.sol";
+import {ZoraCreatorFixedPriceSaleStrategy} from "@zoralabs/zora-1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {ForkDeploymentConfig, Deployment} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     uint256 constant quantityToMint = 3;

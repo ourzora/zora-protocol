@@ -16,11 +16,10 @@ import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {ForkDeploymentConfig, Deployment} from "../../src/deployment/DeploymentConfig.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 
-contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
+contract ZoraCreator1155PreminterTest is Test {
     uint256 internal constant CONTRACT_BASE_ID = 0;
     uint256 internal constant PERMISSION_BIT_MINTER = 2 ** 2;
 
@@ -212,17 +211,6 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
     }
 
-    /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
-    /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
-    function getForkTestChains() private view returns (string[] memory result) {
-        try vm.envString("FORK_TEST_CHAINS", ",") returns (string[] memory forkTestChains) {
-            result = forkTestChains;
-        } catch {
-            console.log("could not get fork test chains - make sure the environment variable FORK_TEST_CHAINS is set");
-            result = new string[](0);
-        }
-    }
-
     function preminterCanMintTokens() internal {
         // we are for now upgrading to correct preminter impl
 
@@ -262,34 +250,6 @@ contract ZoraCreator1155PreminterTest is ForkDeploymentConfig, Test {
         uint256 balance = created1155Contract.balanceOf(premintExecutor, tokenId);
 
         assertEq(balance, quantityToMint, "balance");
-    }
-
-    function testTheForkPremint(string memory chainName) private {
-        console.log("testing on fork: ", chainName);
-
-        // create and select the fork, which will be used for all subsequent calls
-        // it will also affect the current block chain id based on the rpc url returned
-        vm.createSelectFork(vm.rpcUrl(chainName));
-
-        // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
-        address preminterAddress = getDeployment().preminterProxy;
-
-        if (preminterAddress == address(0)) {
-            console.log("preminter not configured for chain...skipping");
-            return;
-        }
-
-        // override local preminter to use the addresses from the chain
-        factory = ZoraCreator1155FactoryImpl(getDeployment().factoryProxy);
-        preminter = ZoraCreator1155PremintExecutorImpl(preminterAddress);
-    }
-
-    function test_fork_successfullyMintsTokens() external {
-        string[] memory forkTestChains = getForkTestChains();
-        for (uint256 i = 0; i < forkTestChains.length; i++) {
-            testTheForkPremint(forkTestChains[i]);
-        }
     }
 
     function test_signatureForSameContractandUid_shouldMintExistingToken() external {
