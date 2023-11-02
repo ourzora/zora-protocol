@@ -1,5 +1,19 @@
 # @zoralabs/premint-sdk
 
+## 0.1.1
+
+### Patch Changes
+
+- b62e471: created new package `protocol-deployments` that includes the deployed contract addresses.
+
+  - 1155-contracts js no longer exports deployed addresses, just the abis
+  - premint-sdk imports deployed addresses from `protocol-deployments
+
+- Updated dependencies [4d79b49]
+- Updated dependencies [b62e471]
+- Updated dependencies [7d1a4c1]
+  - @zoralabs/protocol-deployments@0.0.2
+
 ## 0.1.0
 
 ### Minor Changes
