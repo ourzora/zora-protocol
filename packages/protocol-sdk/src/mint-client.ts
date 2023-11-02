@@ -4,7 +4,6 @@ import {
   PublicClient,
   WalletClient,
   encodeAbiParameters,
-  formatEther,
   parseAbi,
   parseAbiParameters,
   zeroAddress,
