@@ -8,7 +8,8 @@ import {
 import { foundry } from "viem/chains";
 import { describe, it, beforeEach, expect, vi, afterEach } from "vitest";
 import { parseEther } from "viem";
-import { BackendChainNamesLookup, PremintClient } from "./premint-client";
+import { PremintClient } from "./premint-client";
+import { BackendChainNamesLookup } from "./client-base";
 
 const chain = foundry;
 

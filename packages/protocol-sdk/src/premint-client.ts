@@ -1,4 +1,4 @@
-import { createPublicClient, decodeEventLog, http, parseEther } from "viem";
+import { decodeEventLog } from "viem";
 import type {
   Account,
   Address,
@@ -13,50 +13,15 @@ import {
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import { foundry, zora, zoraTestnet } from "viem/chains";
 import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
 import type {
-  BackendChainNames as BackendChainNamesType,
   PremintSignatureGetResponse,
   PremintSignatureResponse,
 } from "./premint-api-client";
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
-
-export const BackendChainNamesLookup = {
-  ZORA_MAINNET: "ZORA-MAINNET",
-  ZORA_GOERLI: "ZORA-GOERLI",
-} as const;
-
-export type NetworkConfig = {
-  chainId: number;
-  zoraPathChainName: string;
-  zoraBackendChainName: BackendChainNamesType;
-  isTestnet: boolean;
-};
-
-export const REWARD_PER_TOKEN = parseEther("0.000777");
-
-export const networkConfigByChain: Record<number, NetworkConfig> = {
-  [zora.id]: {
-    chainId: zora.id,
-    isTestnet: false,
-    zoraPathChainName: "zora",
-    zoraBackendChainName: BackendChainNamesLookup.ZORA_MAINNET,
-  },
-  [zoraTestnet.id]: {
-    chainId: zora.id,
-    isTestnet: true,
-    zoraPathChainName: "zgor",
-    zoraBackendChainName: BackendChainNamesLookup.ZORA_GOERLI,
-  },
-  [foundry.id]: {
-    chainId: foundry.id,
-    isTestnet: true,
-    zoraPathChainName: "zgor",
-    zoraBackendChainName: BackendChainNamesLookup.ZORA_GOERLI,
-  },
-};
+import { ClientBase, REWARD_PER_TOKEN } from "./client-base";
+import { OPEN_EDITION_MINT_SIZE } from "./constants";
 
 type MintArgumentsSettings = {
   tokenURI: string;
@@ -95,7 +60,6 @@ type ExecutedPremintResponse = {
   urls: URLSReturnType;
 };
 
-const OPEN_EDITION_MINT_SIZE = BigInt("18446744073709551615");
 export const DefaultMintArguments = {
   maxSupply: OPEN_EDITION_MINT_SIZE,
   maxTokensPerAddress: 0n,
@@ -113,7 +77,7 @@ export const DefaultMintArguments = {
  * @returns Premint event arguments
  */
 export function getPremintedLogFromReceipt(
-  receipt: TransactionReceipt
+  receipt: TransactionReceipt,
 ): PremintedLogType | undefined {
   for (const data of receipt.logs) {
     try {
@@ -136,7 +100,7 @@ export function getPremintedLogFromReceipt(
  * @returns Viem type-compatible premint object
  */
 export const convertPremint = (
-  premint: PremintSignatureGetResponse["premint"]
+  premint: PremintSignatureGetResponse["premint"],
 ) => ({
   ...premint,
   tokenConfig: {
@@ -152,7 +116,7 @@ export const convertPremint = (
 });
 
 export const convertCollection = (
-  collection: PremintSignatureGetResponse["collection"]
+  collection: PremintSignatureGetResponse["collection"],
 ) => ({
   ...collection,
   contractAdmin: collection.contractAdmin as Address,
@@ -183,22 +147,16 @@ export const encodePremintForAPI = ({
  * Preminter API to access ZORA Premint functionality.
  * Currently only supports V1 premints.
  */
-export class PremintClient {
-  network: NetworkConfig;
-  chain: Chain;
+export class PremintClient extends ClientBase {
   apiClient: typeof PremintAPIClient;
 
   constructor(chain: Chain, apiClient?: typeof PremintAPIClient) {
-    this.chain = chain;
+    super(chain);
+
     if (!apiClient) {
       apiClient = PremintAPIClient;
     }
     this.apiClient = apiClient;
-    const networkConfig = networkConfigByChain[chain.id];
-    if (!networkConfig) {
-      throw new Error(`Not configured for chain ${chain.id}`);
-    }
-    this.network = networkConfig;
   }
 
   /**
@@ -220,19 +178,6 @@ export class PremintClient {
    */
   getFixedPriceMinterAddress() {
     return zoraCreatorFixedPriceSaleStrategyAddress[999];
-  }
-
-  /**
-   * Getter for public client that instantiates a publicClient as needed
-   *
-   * @param publicClient Optional viem public client
-   * @returns Existing public client or makes a new one for the given chain as needed.
-   */
-  protected getPublicClient(publicClient?: PublicClient): PublicClient {
-    if (publicClient) {
-      return publicClient;
-    }
-    return createPublicClient({ chain: this.chain, transport: http() });
   }
 
   /**
