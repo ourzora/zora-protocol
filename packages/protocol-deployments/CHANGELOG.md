@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.3
+
+### Patch Changes
+
+- 85bdd23: Update Zora Network addresses to v2.3.0
+
 ## 0.0.2
 
 ### Patch Changes
