@@ -4,13 +4,14 @@ pragma solidity 0.8.17;
 import {CreatorRoyaltiesStorageV1} from "./CreatorRoyaltiesStorageV1.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
+import {ICreatorRoyaltyErrors} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title CreatorRoyaltiesControl
 /// @author ZORA @iainnash / @tbtstl
 /// @notice Contract for managing the royalties of an 1155 contract
-abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBaseConstants {
+abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBaseConstants, ICreatorRoyaltyErrors {
     uint256 immutable ROYALTY_BPS_TO_PERCENT = 10_000;
 
     /// @notice The royalty information for a given token.
