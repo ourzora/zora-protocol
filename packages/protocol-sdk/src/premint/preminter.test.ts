@@ -1,16 +1,6 @@
-import {
-  createTestClient,
-  http,
-  createWalletClient,
-  createPublicClient,
-  keccak256,
-  Hex,
-  concat,
-  recoverAddress,
-  hashDomain,
-} from "viem";
-import { foundry, zora } from "viem/chains";
-import { describe, it, beforeEach, expect, afterEach } from "vitest";
+import { keccak256, Hex, concat, recoverAddress, hashDomain, Address } from "viem";
+import { foundry } from "viem/chains";
+import { describe, expect } from "vitest";
 import { parseEther } from "viem";
 import {
   zoraCreator1155PremintExecutorImplABI as preminterAbi,
@@ -27,16 +17,6 @@ import {
   preminterTypedDataDefinition,
 } from "./preminter";
 import { AnvilViemClientsTest, anvilTest } from "src/anvil";
-
-type Address = `0x${string}`;
-
-type TestContext = {
-  preminterAddress: `0x${string}`;
-  forkedChainId: keyof typeof zoraCreator1155FactoryImplAddress;
-  anvilChainId: number;
-  zoraMintFee: bigint;
-  fixedPriceMinterAddress: Address;
-};
 
 // create token and contract creation config:
 const defaultContractConfig = ({
