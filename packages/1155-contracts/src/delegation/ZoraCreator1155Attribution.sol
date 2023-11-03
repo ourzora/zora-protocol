@@ -95,12 +95,6 @@ library ZoraCreator1155Attribution {
     string internal constant VERSION_2 = "2";
     bytes32 internal constant HASHED_VERSION_2 = keccak256(bytes(VERSION_2));
 
-    function allVersions() internal pure returns (string[] memory versions) {
-        versions = new string[](2);
-        versions[0] = VERSION_1;
-        versions[1] = VERSION_2;
-    }
-
     /**
      * @dev Returns the domain separator for the specified chain.
      */
@@ -423,7 +417,9 @@ library DelegatedTokenCreation {
     }
 
     function supportedPremintSignatureVersions() external pure returns (string[] memory versions) {
-        return ZoraCreator1155Attribution.allVersions();
+        versions = new string[](2);
+        versions[0] = ZoraCreator1155Attribution.VERSION_1;
+        versions[1] = ZoraCreator1155Attribution.VERSION_2;
     }
 
     function _recoverCreatorAttribution(
