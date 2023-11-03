@@ -22,6 +22,24 @@ optimizer = false
 optimizer_runs = 0
 via_ir = false
 
+[profile.deploy]
+fs_permissions = [
+  { access = "read", path = "./addresses" },
+  { access = "read", path = "./chainConfigs" },
+  { access = "read", path = "./package.json" },
+  { access = "readwrite", path = "./deterministicConfig" },
+]
+libs = ['_imagine', 'node_modules', 'script']
+allow_paths = ["node_modules/@zoralabs/protocol-rewards"]
+optimizer = true
+optimizer_runs = 50
+via_ir = true
+solc_version = '0.8.17'
+out = 'out'
+src = 'src'
+script = 'script'
+test = 'script' # ignore test compilation
+
 [rpc_endpoints]
 goerli = "https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
 mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
