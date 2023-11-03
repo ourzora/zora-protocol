@@ -411,9 +411,9 @@ library DelegatedTokenCreation {
             );
 
             (params, tokenSetupActions) = _recoverDelegatedTokenSetup(premintConfig, newTokenId);
-        } else {
-            revert IZoraCreator1155Errors.InvalidSignatureVersion();
         }
+
+        revert IZoraCreator1155Errors.InvalidSignatureVersion();
     }
 
     function _recoverCreatorAttribution(
