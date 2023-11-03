@@ -29,8 +29,7 @@ async function waitForAnvilInit(anvil: any) {
 }
 
 export const anvilTest = test.extend<AnvilViemClientsTest>({
-  viemClients: async ({task}, use) => {
-    console.log('setting up clients for ', task.name);
+  viemClients: async ({ task }, use) => {
     const port = Math.floor(Math.random() * 2000) + 4000;
     const anvil = spawn(
       "anvil",
