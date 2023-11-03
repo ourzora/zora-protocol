@@ -1,5 +1,5 @@
 import { parseEther } from "viem";
-import { describe, it, expect } from "vitest";
+import { describe, expect } from "vitest";
 import {
   createNew1155Token,
   getTokenIdFromCreateReceipt,
