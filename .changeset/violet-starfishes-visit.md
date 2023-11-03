@@ -39,7 +39,7 @@ struct TokenCreationConfigV2 {
     uint64 mintDuration;
     // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
     uint32 royaltyBPS;
-    // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
+    // funds for created tokens. The address that will receive creatorRewards, secondary royalties, and paid mint funds.
     address royaltyRecipient;
     // Fixed price minter address
     address fixedPriceMinter;
