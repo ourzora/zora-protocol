@@ -400,7 +400,7 @@ library DelegatedTokenCreation {
             );
 
             (params, tokenSetupActions) = _recoverDelegatedTokenSetup(premintConfig, newTokenId);
-        } else {
+        } else if (premintVersion == ZoraCreator1155Attribution.HASHED_VERSION_2) {
             PremintConfigV2 memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfigV2));
 
             creatorAttribution = _recoverCreatorAttribution(
@@ -411,6 +411,8 @@ library DelegatedTokenCreation {
             );
 
             (params, tokenSetupActions) = _recoverDelegatedTokenSetup(premintConfig, newTokenId);
+        } else {
+            revert IZoraCreator1155Errors.InvalidSignatureVersion();
         }
     }
 

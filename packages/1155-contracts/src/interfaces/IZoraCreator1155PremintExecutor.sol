@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "../delegation/ZoraCreator1155Attribution.sol";
+import {IOwnable2StepUpgradeable} from "../utils/ownable/IOwnable2StepUpgradeable.sol";
 import {IZoraCreator1155Factory} from "./IZoraCreator1155Factory.sol";
 
 // interface for legacy v1 of premint executor methods
@@ -62,7 +63,12 @@ interface IZoraCreator1155PremintExecutorV2 {
     ) external view returns (bool isValid, address recoveredSigner);
 }
 
-interface IZoraCreator1155PremintExecutor is IZoraCreator1155PremintExecutorV1, IZoraCreator1155PremintExecutorV2 {
+interface IZoraCreator1155PremintExecutor is
+    ILegacyZoraCreator1155PremintExecutor,
+    IZoraCreator1155PremintExecutorV1,
+    IZoraCreator1155PremintExecutorV2,
+    IOwnable2StepUpgradeable
+{
     struct MintArguments {
         address mintRecipient;
         string mintComment;

@@ -34,4 +34,6 @@ interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddres
 
     error MintNotYetStarted();
     error PremintDeleted();
+
+    error InvalidSignatureVersion();
 }
