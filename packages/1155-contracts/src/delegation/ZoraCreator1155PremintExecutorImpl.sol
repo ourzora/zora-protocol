@@ -14,7 +14,7 @@ import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExecutorImplLib.sol";
 import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
-import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
+import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 
 struct MintArguments {
     // which account should receive the tokens minted.  If set to address(0), then defaults to the msg.sender
@@ -30,7 +30,6 @@ struct MintArguments {
 /// Mints the first x tokens to the executor of the transaction.
 /// @author @oveddan
 contract ZoraCreator1155PremintExecutorImpl is
-    ILegacyZoraCreator1155PremintExecutor,
     IZoraCreator1155PremintExecutor,
     Ownable2StepUpgradeable,
     UUPSUpgradeable,

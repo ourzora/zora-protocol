@@ -9,7 +9,7 @@ import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
-import {ContractCreationConfig, TokenCreationConfigV2} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {PremintConfig, ContractCreationConfig, TokenCreationConfigV2, TokenCreationConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 
 library Zora1155PremintFixtures {
     function makeDefaultContractCreationConfig(address contractAdmin) internal pure returns (ContractCreationConfig memory) {
@@ -49,6 +49,28 @@ library Zora1155PremintFixtures {
                 payoutRecipient: royaltyRecipient,
                 royaltyBPS: 10,
                 createReferral: createReferral
+            });
+    }
+
+    function makeDefaultV1PremintConfig(IMinter1155 fixedPriceMinter, address royaltyRecipient) internal pure returns (PremintConfig memory) {
+        // make a v1 premint config
+        return
+            PremintConfig({
+                tokenConfig: TokenCreationConfig({
+                    tokenURI: "blah.token",
+                    maxSupply: 10,
+                    maxTokensPerAddress: 5,
+                    pricePerToken: 0,
+                    mintStart: 0,
+                    mintDuration: 0,
+                    fixedPriceMinter: address(fixedPriceMinter),
+                    royaltyRecipient: royaltyRecipient,
+                    royaltyBPS: 10,
+                    royaltyMintSchedule: 0
+                }),
+                uid: 100,
+                version: 0,
+                deleted: false
             });
     }
 }
