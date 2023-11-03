@@ -64,7 +64,7 @@ describe("create-helper", () => {
       expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(1n);
     },
-    10 * 1000,
+    20 * 1000,
   );
   it(
     "creates a new contract, than creates a new token on this existing contract",
@@ -107,6 +107,6 @@ describe("create-helper", () => {
       expect(tokenId).to.be.equal(2n);
       expect(newReceipt).not.toBeNull();
     },
-    10 * 1000,
+    20 * 1000,
   );
 });

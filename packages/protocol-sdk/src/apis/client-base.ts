@@ -1,5 +1,5 @@
 import { foundry, zora, zoraTestnet } from "viem/chains";
-import type { BackendChainNames as BackendChainNamesType } from "./premint-api-client";
+import type { BackendChainNames as BackendChainNamesType } from "../premint/premint-api-client";
 import {
   Chain,
   PublicClient,

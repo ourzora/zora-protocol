@@ -1,53 +1,27 @@
 import {
-  Address,
-  createPublicClient,
-  createTestClient,
-  createWalletClient,
-  http,
   parseAbi,
   parseEther,
 } from "viem";
-import { foundry, zora } from "viem/chains";
-import { describe, it, beforeEach, expect, afterEach } from "vitest";
+import { zora } from "viem/chains";
+import { describe, expect } from "vitest";
 import { MintClient } from "./mint-client";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
-
-const chain = foundry;
-
-const walletClient = createWalletClient({
-  chain,
-  transport: http(),
-});
-
-const testClient = createTestClient({
-  chain,
-  mode: "anvil",
-  transport: http(),
-});
-
-const publicClient = createPublicClient({
-  chain,
-  transport: http(),
-});
-
-const [creatorAccount] = (await walletClient.getAddresses()) as [Address];
+import { anvilTest } from "src/anvil";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
 ] as const);
 
 describe("mint-helper", () => {
-  beforeEach(async () => {
-    await testClient.setBalance({
-      address: creatorAccount,
-      value: parseEther("2000"),
-    });
-  });
-  afterEach(() => testClient.reset());
-
-  it(
+  anvilTest(
     "mints a new 1155 token",
-    async () => {
+    async ({ viemClients }) => {
+      const { testClient, walletClient, publicClient } = viemClients;
+      const creatorAccount = (await walletClient.getAddresses())[0]!;
+      await testClient.setBalance({
+        address: creatorAccount,
+        value: parseEther("2000"),
+      });
       const targetContract = "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
       const targetTokenId = 1n;
       const minter = new MintClient(zora);
@@ -84,9 +58,16 @@ describe("mint-helper", () => {
     12 * 1000,
   );
 
-  it(
+  anvilTest(
     "mints a new 721 token",
-    async () => {
+    async ({ viemClients }) => {
+      const { testClient, walletClient, publicClient } = viemClients;
+      const creatorAccount = (await walletClient.getAddresses())[0]!;
+      await testClient.setBalance({
+        address: creatorAccount,
+        value: parseEther("2000"),
+      });
+
       const targetContract = "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
       const targetTokenId = undefined;
       const minter = new MintClient(zora);
