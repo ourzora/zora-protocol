@@ -135,18 +135,6 @@ jobs:
         run: |
           npx turbo run build
 
-  test_js:
-    strategy:
-      fail-fast: true
-
-    name: Test js package
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-
-      - name: Install node deps and founry
-        uses: ./.github/actions/setup_deps
-
       - name: Test js package
         run: |
           npx turbo run test:js
