@@ -572,10 +572,16 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.balanceOf(recipient, tokenId2), quantity2);
     }
 
-    function test_adminMintWithInvalidScheduleSkipsSchedule() external {
-        // This configuration is invalid
-        vm.expectRevert();
-        target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(10, 0, address(0)), admin, _emptyInitData());
+    function test_adminMintWithInvalidScheduleSkipsSchedule(uint32 supplyRoyaltySchedule) external {
+        vm.assume(supplyRoyaltySchedule != 0);
+
+        address supplyRoyaltyRecipient = makeAddr("supplyRoyaltyRecipient");
+
+        target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(supplyRoyaltySchedule, 0, supplyRoyaltyRecipient), admin, _emptyInitData());
+
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory storedConfig = target.getRoyalties(0);
+
+        assertEq(storedConfig.royaltyMintSchedule, 0);
     }
 
     function test_adminMintWithEmptyScheduleSkipsSchedule() external {
