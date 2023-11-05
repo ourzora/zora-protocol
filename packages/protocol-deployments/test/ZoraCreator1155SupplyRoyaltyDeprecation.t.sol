@@ -25,10 +25,6 @@ contract ZoraCreator1155SupplyRoyaltyDeprecationTest is Test, ForkDeploymentConf
 
         chains = new string[](1);
         chains[0] = "zora_goerli";
-
-        // chains = new string[](2);
-        // chains[0] = "zora";
-        // chains[1] = "zora_goerli";
     }
 
     function testFork_SupplyRoyaltyDeprecation() public {
