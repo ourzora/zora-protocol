@@ -36,7 +36,7 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
     function _updateRoyalties(uint256 tokenId, RoyaltyConfiguration memory configuration) internal {
         // If a nonzero royalty mint schedule is set:
         if (configuration.royaltyMintSchedule != 0) {
-            // Set the value to zero 
+            // Set the value to zero
             configuration.royaltyMintSchedule = 0;
         }
         // Don't allow setting royalties to burn address

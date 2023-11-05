@@ -574,7 +574,7 @@ contract ZoraCreator1155Test is Test {
 
     function test_adminMintWithInvalidScheduleSkipsSchedule(uint32 supplyRoyaltySchedule) external {
         vm.assume(supplyRoyaltySchedule != 0);
-        
+
         address supplyRoyaltyRecipient = makeAddr("supplyRoyaltyRecipient");
 
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(supplyRoyaltySchedule, 0, supplyRoyaltyRecipient), admin, _emptyInitData());
