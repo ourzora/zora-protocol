@@ -4,6 +4,8 @@
 
 Premint v2 - adding a new signature, where `createReferral` can be specified.  `ZoraCreator1155PremintExecutor` recognizes new version of the signature, and still works with the v1 (legacy) version of the signature.  1155 contract has been updated to now take abi encoded premint config, premint config version, and send it to an external library to decode the config, the signer, and setup actions.
 
+`mintReferral` and `mintRecipient` are now specified in the premint functions, via the `MintArguments mintArguments` param; new `premintV1` and `premintV2` function now take the `MintArguments` struct as an argument which contains `mintRecipient`, defining  which account will receive the minted tokens, `mintComment`, and `mintReferral`, defining which account will receive a mintReferral reward, if any.  `mintRecipient` must be specified or else it reverts.
+
 ZoraCreator1155PremintExecutor can now validate signatures by passing it the contract address, instead of needing to pass the full contract creation config, enabling it to validate signatures for 1155 contracts that were not created via the premint executor contract.  This allows premints signatures to be validated on contracts that have been upgrade to a version that supports premints, and allows premints to be created on contracts that were not created via the premint executor contract.
 
 1155 contract has been updated to now take abi encoded premint config, premint config version, and send it to an external library to decode the config, the signer, and setup actions.  
