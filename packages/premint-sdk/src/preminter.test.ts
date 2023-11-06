@@ -95,7 +95,7 @@ const defaultTokenConfig = (
   mintDuration: 100n,
   fixedPriceMinter: fixedPriceMinterAddress,
   royaltyBPS: 10,
-  royaltyRecipient: creatorAccount,
+  payoutRecipient: creatorAccount,
   createReferral: createReferralAccount,
 });
 

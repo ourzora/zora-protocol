@@ -39,8 +39,8 @@ struct TokenCreationConfigV2 {
     uint64 mintDuration;
     // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
     uint32 royaltyBPS;
-    // The address that will receive creatorRewards, secondary royalties, and paid mint funds.
-    address payoutAddress;
+    // The address that will receive creatorRewards, secondary royalties, and paid mint funds.  This is the address that will be set on the `royaltyRecipient` for the created token on the 1155 contract, which is the address that receives creator rewards and secondary royalties for the token, and on the `fundsRecipient` on the ZoraCreatorFixedPriceSaleStrategy contract for the token, which is the address that receives paid mint funds for the token.
+    address payoutRecipient;
     // Fixed price minter address
     address fixedPriceMinter;
     // create referral
