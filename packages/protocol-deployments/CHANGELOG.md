@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.4
+
+### Patch Changes
+
+- 6cfb6f9: Add Zora mainnet 1155 v2.3.1 deploy
+
 ## 0.0.3
 
 ### Patch Changes
