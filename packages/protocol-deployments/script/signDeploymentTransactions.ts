@@ -88,9 +88,10 @@ async function signAndSaveUpgradeGate({
   proxyName,
 }: {
   turnkeyAccount: LocalAccount;
-    chainConfigs: {
-      chainId: number; owner: Address
-    }[];
+  chainConfigs: {
+    chainId: number;
+    owner: Address;
+  }[];
   proxyName: "upgradeGate";
 }) {
   const configFolder = path.resolve(
