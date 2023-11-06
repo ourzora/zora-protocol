@@ -69,7 +69,7 @@ const defaultContractConfig = ({
   contractAdmin: Address;
 }): ContractCreationConfig => ({
   contractAdmin,
-  contractURI: "ipfs://asdfasdfasdf",
+  contractURI: "ipfs://asdfasdfasdfgh",
   contractName: "My fun NFT",
 });
 
@@ -298,6 +298,7 @@ describe("ZoraCreator1155Preminter", () => {
         args: [contractAddress, premintConfig.uid],
       });
 
+      expect(contractCreated).toBe(true);
       expect(tokenId).not.toBe(0n);
 
       // now use what was created, to get the balance from the created contract
