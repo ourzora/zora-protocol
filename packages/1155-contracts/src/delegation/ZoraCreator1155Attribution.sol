@@ -42,11 +42,14 @@ struct TokenCreationConfig {
     uint64 mintStart;
     // The duration of the mint, starting from the first mint of this token. 0 for infinite
     uint64 mintDuration;
-    // RoyaltyMintSchedule for created tokens. Every nth token will go to the royalty recipient.
+    // deperecated field; will be ignored.
     uint32 royaltyMintSchedule;
     // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
     uint32 royaltyBPS;
-    // RoyaltyRecipient for created tokens. The address that will receive the royalty payments.
+    // This is the address that will be set on the `royaltyRecipient` for the created token on the 1155 contract,
+    // which is the address that receives creator rewards and secondary royalties for the token,
+    // and on the `fundsRecipient` on the ZoraCreatorFixedPriceSaleStrategy contract for the token,
+    // which is the address that receives paid mint funds for the token.
     address royaltyRecipient;
     // Fixed price minter address
     address fixedPriceMinter;
