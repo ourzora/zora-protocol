@@ -171,7 +171,9 @@ contract Zora1155PremintExecutorProxyTest is Test, ForkDeploymentConfig, IHasCon
 
         // 3. create premint on old version of contract using new version of preminter
         // verify the 1155 supports up to version 1
-        assertEq(forkedPreminterProxy.supportedPremintSignatureVersion(deterministicAddress), "1");
+        string[] memory supportedVersions = forkedPreminterProxy.supportedPremintSignatureVersions(deterministicAddress);
+        assertEq(supportedVersions.length, 1);
+        assertEq(supportedVersions[0], "1");
 
         uint32 existingUid = premintConfig.uid;
         premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig(fixedPriceMinter, creator);

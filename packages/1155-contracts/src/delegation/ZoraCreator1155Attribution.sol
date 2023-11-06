@@ -420,6 +420,12 @@ library DelegatedTokenCreation {
         }
     }
 
+    function supportedPremintSignatureVersions() external pure returns (string[] memory versions) {
+        versions = new string[](2);
+        versions[0] = ZoraCreator1155Attribution.VERSION_1;
+        versions[1] = ZoraCreator1155Attribution.VERSION_2;
+    }
+
     function _recoverCreatorAttribution(
         string memory version,
         bytes32 structHash,
