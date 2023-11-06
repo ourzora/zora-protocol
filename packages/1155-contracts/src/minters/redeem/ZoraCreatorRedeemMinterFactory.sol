@@ -12,7 +12,6 @@ import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "./ZoraCreatorRedeemMinterStrategy.sol";
 import {IZoraCreator1155} from "../../interfaces/IZoraCreator1155.sol";
 import {SharedBaseConstants} from "../../shared/SharedBaseConstants.sol";
-import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
 
 /*
 
@@ -42,11 +41,15 @@ import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
 /// @title ZoraCreatorRedeemMinterFactory
 /// @notice A factory for ZoraCreatorRedeemMinterStrategy contracts
 /// @author @jgeary
-contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseConstants, IVersionedContract, IMinter1155, IMinterErrors {
+contract ZoraCreatorRedeemMinterFactory is Enjoy, IContractMetadata, SharedBaseConstants, IVersionedContract, IMinter1155 {
     bytes4 constant LEGACY_ZORA_IMINTER1155_INTERFACE_ID = 0x6467a6fc;
     address public immutable zoraRedeemMinterImplementation;
 
     event RedeemMinterDeployed(address indexed creatorContract, address indexed minterContract);
+
+    error CallerNotZoraCreator1155();
+    error MinterContractAlreadyExists();
+    error MinterContractDoesNotExist();
 
     constructor() {
         zoraRedeemMinterImplementation = address(new ZoraCreatorRedeemMinterStrategy());
