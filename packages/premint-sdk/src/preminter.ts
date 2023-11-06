@@ -42,7 +42,7 @@ const premintV2Types = {
     { name: "mintStart", type: "uint64" },
     { name: "mintDuration", type: "uint64" },
     { name: "royaltyBPS", type: "uint32" },
-    { name: "royaltyRecipient", type: "address" },
+    { name: "payoutRecipient", type: "address" },
     { name: "fixedPriceMinter", type: "address" },
     { name: "createReferral", type: "address" },
   ],

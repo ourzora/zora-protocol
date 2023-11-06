@@ -79,8 +79,11 @@ struct TokenCreationConfigV2 {
     uint64 mintDuration;
     // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
     uint32 royaltyBPS;
-    // The address that will receive creatorRewards, secondary royalties, and paid mint funds.
-    address payoutAddress;
+    // This is the address that will be set on the `royaltyRecipient` for the created token on the 1155 contract,
+    // which is the address that receives creator rewards and secondary royalties for the token,
+    // and on the `fundsRecipient` on the ZoraCreatorFixedPriceSaleStrategy contract for the token,
+    // which is the address that receives paid mint funds for the token.
+    address payoutRecipient;
     // Fixed price minter address
     address fixedPriceMinter;
     // create referral
@@ -195,7 +198,7 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant TOKEN_DOMAIN_V2 =
         keccak256(
-            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address payoutAddress,address fixedPriceMinter,address createReferral)"
+            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address payoutRecipient,address fixedPriceMinter,address createReferral)"
         );
 
     function _hashToken(TokenCreationConfigV2 memory tokenConfig) private pure returns (bytes32) {
@@ -210,7 +213,7 @@ library ZoraCreator1155Attribution {
                     tokenConfig.mintStart,
                     tokenConfig.mintDuration,
                     tokenConfig.royaltyBPS,
-                    tokenConfig.payoutAddress,
+                    tokenConfig.payoutRecipient,
                     tokenConfig.fixedPriceMinter,
                     tokenConfig.createReferral
                 )
@@ -266,7 +269,7 @@ library PremintTokenSetup {
                 maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
                 mintDuration: tokenConfig.mintDuration,
                 royaltyBPS: tokenConfig.royaltyBPS,
-                payoutAddress: tokenConfig.payoutAddress
+                payoutRecipient: tokenConfig.payoutRecipient
             });
     }
 
@@ -280,7 +283,7 @@ library PremintTokenSetup {
                 maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
                 mintDuration: tokenConfig.mintDuration,
                 royaltyBPS: tokenConfig.royaltyBPS,
-                payoutAddress: tokenConfig.royaltyRecipient
+                payoutRecipient: tokenConfig.royaltyRecipient
             });
     }
 
@@ -291,7 +294,7 @@ library PremintTokenSetup {
         uint64 maxTokensPerAddress,
         uint64 mintDuration,
         uint32 royaltyBPS,
-        address payoutAddress
+        address payoutRecipient
     ) private view returns (bytes[] memory calls) {
         calls = new bytes[](3);
 
@@ -318,7 +321,7 @@ library PremintTokenSetup {
         calls[2] = abi.encodeWithSelector(
             IZoraCreator1155.updateRoyaltiesForToken.selector,
             newTokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: royaltyBPS, royaltyRecipient: payoutAddress, royaltyMintSchedule: 0})
+            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: royaltyBPS, royaltyRecipient: payoutRecipient, royaltyMintSchedule: 0})
         );
     }
 
