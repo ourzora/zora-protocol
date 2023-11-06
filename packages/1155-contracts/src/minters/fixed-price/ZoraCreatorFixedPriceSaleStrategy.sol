@@ -7,7 +7,6 @@ import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
 import {LimitedMintPerAddress} from "../utils/LimitedMintPerAddress.sol";
-import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
 
 /*
 
@@ -37,7 +36,7 @@ import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
 /// @title ZoraCreatorFixedPriceSaleStrategy
 /// @notice A sale strategy for ZoraCreator that allows for fixed price sales over a given time period
 /// @author @iainnash / @tbtstl
-contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress, IMinterErrors {
+contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress {
     struct SalesConfig {
         /// @notice Unix timestamp for the sale start
         uint64 saleStart;
@@ -69,6 +68,10 @@ contract ZoraCreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPe
     function contractVersion() external pure override returns (string memory) {
         return "1.1.0";
     }
+
+    error WrongValueSent();
+    error SaleEnded();
+    error SaleHasNotStarted();
 
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig salesConfig);
     event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);

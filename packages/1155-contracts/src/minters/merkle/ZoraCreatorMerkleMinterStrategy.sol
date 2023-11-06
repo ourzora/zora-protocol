@@ -9,7 +9,6 @@ import {SaleStrategy} from "../SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
 import {LimitedMintPerAddress} from "../utils/LimitedMintPerAddress.sol";
-import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
 
 /*
 
@@ -39,7 +38,7 @@ import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
 /// @title ZoraCreatorMerkleMinterStrategy
 /// @notice Mints tokens based on a merkle tree, for presales for example
 /// @author @iainnash / @tbtstl
-contract ZoraCreatorMerkleMinterStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress, IMinterErrors {
+contract ZoraCreatorMerkleMinterStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 
     /// @notice General merkle sale settings
@@ -59,6 +58,12 @@ contract ZoraCreatorMerkleMinterStrategy is Enjoy, SaleStrategy, LimitedMintPerA
 
     /// @notice Storage for allowed merkle settings for the sales configuration
     mapping(address => mapping(uint256 => MerkleSaleSettings)) public allowedMerkles;
+    // target -> tokenId -> settings
+
+    error SaleEnded();
+    error SaleHasNotStarted();
+    error WrongValueSent();
+    error InvalidMerkleProof(address mintTo, bytes32[] merkleProof, bytes32 merkleRoot);
 
     /// @notice ContractURI for contract information with the strategy
     function contractURI() external pure override returns (string memory) {
