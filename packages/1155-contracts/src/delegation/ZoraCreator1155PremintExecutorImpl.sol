@@ -13,7 +13,7 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCrea
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExecutorImplLib.sol";
-import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
+import {PremintEncoding, ZoraCreator1155Attribution, DelegatedTokenCreation, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 
@@ -222,7 +222,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         // if contract hasn't been created yet, assume it will be created with the latest version
         // and thus supports all versions of the signature
         if (contractAddress.code.length == 0) {
-            return ZoraCreator1155Attribution.allVersions();
+            return DelegatedTokenCreation._supportedPremintSignatureVersions();
         }
 
         IZoraCreator1155 creatorContract = IZoraCreator1155(contractAddress);
