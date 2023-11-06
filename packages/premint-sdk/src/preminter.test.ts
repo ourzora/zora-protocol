@@ -8,7 +8,6 @@ import {
   concat,
   recoverAddress,
   hashDomain,
-  zeroAddress,
 } from "viem";
 import { foundry, zora } from "viem/chains";
 import { describe, it, beforeEach, expect, afterEach } from "vitest";
@@ -23,9 +22,9 @@ import {
 
 import {
   ContractCreationConfig,
-  PremintConfigV2,
-  TokenCreationConfigV2,
-  preminterTypedDataDefinitionV2,
+  PremintConfig,
+  TokenCreationConfig,
+  preminterTypedDataDefinition,
 } from "./preminter";
 
 const walletClient = createWalletClient({
@@ -52,18 +51,8 @@ const publicClient = createPublicClient({
 type Address = `0x${string}`;
 
 // JSON-RPC Account
-const [
-  deployerAccount,
-  creatorAccount,
-  collectorAccount,
-  createReferralAccount,
-] = (await walletClient.getAddresses()) as [
-  Address,
-  Address,
-  Address,
-  Address,
-  Address
-];
+const [deployerAccount, creatorAccount, collectorAccount] =
+  (await walletClient.getAddresses()) as [Address, Address, Address, Address];
 
 type TestContext = {
   preminterAddress: `0x${string}`;
@@ -85,21 +74,21 @@ const defaultContractConfig = ({
 });
 
 const defaultTokenConfig = (
-  fixedPriceMinterAddress: Address
-): TokenCreationConfigV2 => ({
+  fixedPriceMinterAddress: Address,
+): TokenCreationConfig => ({
   tokenURI: "ipfs://tokenIpfsId0",
   maxSupply: 100n,
   maxTokensPerAddress: 10n,
   pricePerToken: 0n,
   mintStart: 0n,
   mintDuration: 100n,
+  royaltyMintSchedule: 30,
+  royaltyBPS: 200,
+  royaltyRecipient: creatorAccount,
   fixedPriceMinter: fixedPriceMinterAddress,
-  royaltyBPS: 10,
-  payoutRecipient: creatorAccount,
-  createReferral: createReferralAccount,
 });
 
-const defaultPremintConfig = (fixedPriceMinter: Address): PremintConfigV2 => ({
+const defaultPremintConfig = (fixedPriceMinter: Address): PremintConfig => ({
   tokenConfig: defaultTokenConfig(fixedPriceMinter),
   deleted: false,
   uid: 105,
@@ -153,7 +142,7 @@ describe("ZoraCreator1155Preminter", () => {
       });
 
       const signedMessage = await walletClient.signTypedData({
-        ...preminterTypedDataDefinitionV2({
+        ...preminterTypedDataDefinition({
           verifyingContract: contractAddress,
           chainId: 999,
           premintConfig,
@@ -192,7 +181,7 @@ describe("ZoraCreator1155Preminter", () => {
 
       // sign message containing contract and token creation config and uid
       const signedMessage = await walletClient.signTypedData({
-        ...preminterTypedDataDefinitionV2({
+        ...preminterTypedDataDefinition({
           verifyingContract: contractAddress,
           // we need to sign here for the anvil chain, cause thats where it is run on
           chainId: anvilChainId,
@@ -202,19 +191,14 @@ describe("ZoraCreator1155Preminter", () => {
       });
 
       // recover and verify address is correct
-      const [isValidSignature] = await publicClient.readContract({
+      const [,,recoveredAddress] = await publicClient.readContract({
         abi: preminterAbi,
         address: preminterAddress,
-        functionName: "isValidSignatureV2",
-        args: [
-          contractConfig.contractAdmin,
-          contractAddress,
-          premintConfig,
-          signedMessage,
-        ],
+        functionName: "isValidSignature",
+        args: [contractConfig, premintConfig, signedMessage],
       });
 
-      expect(isValidSignature).toBe(true);
+      expect(recoveredAddress).to.equal(creatorAccount);
     },
 
     20 * 1000,
@@ -246,7 +230,7 @@ describe("ZoraCreator1155Preminter", () => {
       // have creator sign the message to create the contract
       // and the token
       const signedMessage = await walletClient.signTypedData({
-        ...preminterTypedDataDefinitionV2({
+        ...preminterTypedDataDefinition({
           verifyingContract: contractAddress,
           // we need to sign here for the anvil chain, cause thats where it is run on
           chainId: anvilChainId,
@@ -286,7 +270,7 @@ describe("ZoraCreator1155Preminter", () => {
       // parameters are required to call this function
       const mintHash = await walletClient.writeContract({
         abi: preminterAbi,
-        functionName: "premintV2",
+        functionName: "premint",
         account: collectorAccount,
         address: preminterAddress,
         args: [
@@ -294,11 +278,7 @@ describe("ZoraCreator1155Preminter", () => {
           premintConfig,
           signedMessage,
           quantityToMint,
-          {
-            mintComment: comment,
-            mintRecipient: collectorAccount,
-            mintReferral: zeroAddress,
-          },
+          comment,
         ],
         value: valueToSend,
       });
@@ -343,7 +323,7 @@ describe("ZoraCreator1155Preminter", () => {
 
       // sign the message to create the second token
       const signedMessage2 = await walletClient.signTypedData({
-        ...preminterTypedDataDefinitionV2({
+        ...preminterTypedDataDefinition({
           verifyingContract: contractAddress,
           chainId: foundry.id,
           premintConfig: premintConfig2,
@@ -361,7 +341,7 @@ describe("ZoraCreator1155Preminter", () => {
       // it should create a new token against the existing contract
       const mintHash2 = await walletClient.writeContract({
         abi: preminterAbi,
-        functionName: "premintV2",
+        functionName: "premint",
         account: collectorAccount,
         address: preminterAddress,
         args: [
@@ -369,11 +349,7 @@ describe("ZoraCreator1155Preminter", () => {
           premintConfig2,
           signedMessage2,
           quantityToMint2,
-          {
-            mintComment: comment,
-            mintRecipient: collectorAccount,
-            mintReferral: zeroAddress,
-          },
+          comment,
         ],
         value: valueToSend2,
       });
@@ -431,7 +407,7 @@ describe("ZoraCreator1155Preminter", () => {
     // have creator sign the message to create the contract
     // and the token
     const signedMessage = await walletClient.signTypedData({
-      ...preminterTypedDataDefinitionV2({
+      ...preminterTypedDataDefinition({
         verifyingContract: contractAddress,
         // we need to sign here for the anvil chain, cause thats where it is run on
         chainId: anvilChainId,
@@ -459,7 +435,7 @@ describe("ZoraCreator1155Preminter", () => {
     // parameters are required to call this function
     const mintHash = await walletClient.writeContract({
       abi: preminterAbi,
-      functionName: "premintV2",
+      functionName: "premint",
       account: collectorAccount,
       address: preminterAddress,
       args: [
@@ -467,11 +443,7 @@ describe("ZoraCreator1155Preminter", () => {
         premintConfig,
         signedMessage,
         quantityToMint,
-        {
-          mintComment: comment,
-          mintRecipient: collectorAccount,
-          mintReferral: zeroAddress,
-        },
+        comment,
       ],
       value: valueToSend,
     });
