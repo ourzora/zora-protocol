@@ -10,7 +10,8 @@ import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
 /// @notice Contract for managing the renderer of an 1155 contract
 abstract contract CreatorRendererControl is CreatorRendererStorageV1, SharedBaseConstants {
     function _setRenderer(uint256 tokenId, IRenderer1155 renderer) internal {
-        customRenderers[tokenId] = renderer;
+        
+        _get1155RendererStorage().customRenderers[tokenId] = renderer;
         if (address(renderer) != address(0)) {
             if (!renderer.supportsInterface(type(IRenderer1155).interfaceId)) {
                 revert RendererNotValid(address(renderer));
@@ -24,9 +25,9 @@ abstract contract CreatorRendererControl is CreatorRendererStorageV1, SharedBase
     /// @dev Returns address 0 for no results
     /// @param tokenId The token to get the renderer for
     function getCustomRenderer(uint256 tokenId) public view returns (IRenderer1155 customRenderer) {
-        customRenderer = customRenderers[tokenId];
+        customRenderer = _get1155RendererStorage().customRenderers[tokenId];
         if (address(customRenderer) == address(0)) {
-            customRenderer = customRenderers[CONTRACT_BASE_ID];
+            customRenderer = _get1155RendererStorage().customRenderers[CONTRACT_BASE_ID];
         }
     }
 

@@ -6,8 +6,18 @@ import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 
 /// @notice Creator Renderer Storage Configuration Contract V1
 abstract contract CreatorRendererStorageV1 is ICreatorRendererControl {
-    /// @notice Mapping for custom renderers
-    mapping(uint256 => IRenderer1155) public customRenderers;
+    struct CreatorRendererStorageV1Data {
+        /// @notice Mapping for custom renderers
+        mapping(uint256 => IRenderer1155) customRenderers;
+    }
 
-    uint256[50] private __gap;
+    function customRenderers(uint256 tokenId) public view returns (IRenderer1155) {
+        return _get1155RendererStorage().customRenderers[tokenId];
+    }
+
+    function _get1155RendererStorage() internal pure returns (CreatorRendererStorageV1Data storage $) {
+        assembly {
+            $.slot := 301
+        }
+    }
 }

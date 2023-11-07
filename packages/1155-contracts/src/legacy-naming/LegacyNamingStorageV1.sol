@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-contract LegacyNamingStorageV1 {
-    string internal _name;
+abstract contract LegacyNamingStorageV1 {
+    struct LegacyNamingStorageData {
+        string _name;
+    }
 
-    uint256[50] private __gap;
+    function _getLegacyNamingStorage() internal pure returns (LegacyNamingStorageData storage $) {
+        assembly {
+            $.slot := 403
+        }
+    }
 }

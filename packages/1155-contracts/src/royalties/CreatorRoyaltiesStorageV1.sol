@@ -8,7 +8,17 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 /// @author ZORA @iainnash / @tbtstl
 /// @notice Royalty storage contract pattern
 abstract contract CreatorRoyaltiesStorageV1 is ICreatorRoyaltiesControl {
-    mapping(uint256 => RoyaltyConfiguration) public royalties;
+    struct CreatorRoyaltiesStorageV1Data {
+        mapping(uint256 => RoyaltyConfiguration) royalties;
+    }
 
-    uint256[50] private __gap;
+    function _get1155CreatorRoyaltyV1() internal pure returns (CreatorRoyaltiesStorageV1Data storage $) {
+        assembly {
+            $.slot := 352 
+        }
+    }
+
+    function royalties(uint256 tokenId) public view returns () {
+       return _get1155CreatorRoyaltyV1().royalties[tokenId];
+    }
 }

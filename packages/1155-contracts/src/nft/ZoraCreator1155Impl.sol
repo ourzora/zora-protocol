@@ -151,7 +151,7 @@ contract ZoraCreator1155Impl is
     /// @notice This gets the next token in line to be minted when minting linearly (default behavior) and updates the counter
     function _getAndUpdateNextTokenId() internal returns (uint256) {
         unchecked {
-            return nextTokenId++;
+            return _get1155Storage().nextTokenId++;
         }
     }
 
@@ -160,8 +160,8 @@ contract ZoraCreator1155Impl is
     /// @param lastTokenId The last token ID
     function assumeLastTokenIdMatches(uint256 lastTokenId) external view {
         unchecked {
-            if (nextTokenId - 1 != lastTokenId) {
-                revert TokenIdMismatch(lastTokenId, nextTokenId - 1);
+            if (_get1155Storage().nextTokenId - 1 != lastTokenId) {
+                revert TokenIdMismatch(lastTokenId, _get1155Storage().nextTokenId - 1);
             }
         }
     }
@@ -247,7 +247,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to check
     /// @param quantity The quantity of tokens to mint to check
     function _requireCanMintQuantity(uint256 tokenId, uint256 quantity) internal view {
-        TokenData storage tokenInformation = tokens[tokenId];
+        TokenData storage tokenInformation = _get1155Storage().tokens[tokenId];
         if (tokenInformation.totalMinted + quantity > tokenInformation.maxSupply) {
             revert CannotMintMoreTokens(tokenId, quantity, tokenInformation.totalMinted, tokenInformation.maxSupply);
         }
@@ -303,14 +303,14 @@ contract ZoraCreator1155Impl is
             revert();
         }
         emit URI(_newURI, tokenId);
-        tokens[tokenId].uri = _newURI;
+        _get1155Storage().tokens[tokenId].uri = _newURI;
     }
 
     /// @notice Update the global contract metadata
     /// @param _newURI The new contract URI
     /// @param _newName The new contract name
     function updateContractMetadata(string memory _newURI, string memory _newName) external onlyAdminOrRole(0, PERMISSION_BIT_METADATA) {
-        tokens[CONTRACT_BASE_ID].uri = _newURI;
+        _get1155Storage().tokens[CONTRACT_BASE_ID].uri = _newURI;
         _setName(_newName);
         emit ContractMetadataUpdated(msg.sender, _newURI, _newName);
     }
@@ -318,7 +318,7 @@ contract ZoraCreator1155Impl is
     function _setupNewToken(string memory newURI, uint256 maxSupply) internal returns (uint256 tokenId) {
         tokenId = _getAndUpdateNextTokenId();
         TokenData memory tokenData = TokenData({uri: newURI, maxSupply: maxSupply, totalMinted: 0});
-        tokens[tokenId] = tokenData;
+        _get1155Storage().tokens[tokenId] = tokenData;
         emit UpdatedToken(msg.sender, tokenId, tokenData);
     }
 
@@ -338,7 +338,7 @@ contract ZoraCreator1155Impl is
         _removePermission(tokenId, user, permissionBits);
 
         // Clear owner field
-        if (tokenId == CONTRACT_BASE_ID && user == config.owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
+        if (tokenId == CONTRACT_BASE_ID && user == _get1155Storage().config.owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
             _setOwner(address(0));
         }
     }
@@ -357,7 +357,7 @@ contract ZoraCreator1155Impl is
     /// @notice Getter for the owner singleton of the contract for outside interfaces
     /// @return the owner of the contract singleton for compat.
     function owner() external view returns (address) {
-        return config.owner;
+        return _get1155Storage().config.owner;
     }
 
     /// @notice Mint a token to a user as the admin or minter
@@ -406,9 +406,9 @@ contract ZoraCreator1155Impl is
             msg.value,
             quantity,
             getCreatorRewardRecipient(tokenId),
-            createReferrals[tokenId],
+            _get1155RewardsStorageV1().createReferrals[tokenId],
             address(0),
-            firstMinters[tokenId]
+            _get1155RewardsStorageV1().firstMinters[tokenId]
         );
 
         // Execute commands returned from minter
@@ -438,9 +438,9 @@ contract ZoraCreator1155Impl is
             msg.value,
             quantity,
             getCreatorRewardRecipient(tokenId),
-            createReferrals[tokenId],
+            _get1155RewardsStorageV1().createReferrals[tokenId],
             mintReferral,
-            firstMinters[tokenId]
+            _get1155RewardsStorageV1().firstMinters[tokenId]
         );
 
         // Execute commands returned from minter
@@ -465,8 +465,8 @@ contract ZoraCreator1155Impl is
             return royaltyRecipient;
         }
 
-        if (config.fundsRecipient != address(0)) {
-            return config.fundsRecipient;
+        if (_get1155Storage().config.fundsRecipient != address(0)) {
+            return _get1155Storage().config.fundsRecipient;
         }
 
         return address(this);
@@ -519,7 +519,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId token id to get info for
     /// @return TokenData struct returned
     function getTokenInfo(uint256 tokenId) external view returns (TokenData memory) {
-        return tokens[tokenId];
+        return _get1155Storage().tokens[tokenId];
     }
 
     /// @notice Proxy setter for sale contracts (only callable by SALES permission or admin)
@@ -577,7 +577,7 @@ contract ZoraCreator1155Impl is
     function _mint(address to, uint256 id, uint256 amount, bytes memory data) internal virtual override {
         _requireCanMintQuantity(id, amount);
 
-        tokens[id].totalMinted += amount;
+        _get1155Storage().tokens[id].totalMinted += amount;
 
         super._mint(to, id, amount, data);
     }
@@ -593,7 +593,7 @@ contract ZoraCreator1155Impl is
         for (uint256 i; i < numTokens; ++i) {
             _requireCanMintQuantity(ids[i], amounts[i]);
 
-            tokens[ids[i]].totalMinted += amounts[i];
+            _get1155Storage().tokens[ids[i]].totalMinted += amounts[i];
         }
 
         super._mintBatch(to, ids, amounts, data);
@@ -619,8 +619,8 @@ contract ZoraCreator1155Impl is
             }
         }
 
-        config.transferHook = transferHook;
-        emit ConfigUpdated(msg.sender, ConfigUpdate.TRANSFER_HOOK, config);
+        _get1155Storage().config.transferHook = transferHook;
+        emit ConfigUpdated(msg.sender, ConfigUpdate.TRANSFER_HOOK, _get1155Storage().config);
     }
 
     /// @notice Hook before token transfer that checks for a transfer hook integration
@@ -632,8 +632,8 @@ contract ZoraCreator1155Impl is
     /// @param data data of token
     function _beforeTokenTransfer(address operator, address from, address to, uint256 id, uint256 amount, bytes memory data) internal override {
         super._beforeTokenTransfer(operator, from, to, id, amount, data);
-        if (address(config.transferHook) != address(0)) {
-            config.transferHook.onTokenTransfer(address(this), operator, from, to, id, amount, data);
+        if (address(_get1155Storage().config.transferHook) != address(0)) {
+            _get1155Storage().config.transferHook.onTokenTransfer(address(this), operator, from, to, id, amount, data);
         }
     }
 
@@ -653,8 +653,8 @@ contract ZoraCreator1155Impl is
         bytes memory data
     ) internal override {
         super._beforeBatchTokenTransfer(operator, from, to, ids, amounts, data);
-        if (address(config.transferHook) != address(0)) {
-            config.transferHook.onTokenTransferBatch({target: address(this), operator: operator, from: from, to: to, ids: ids, amounts: amounts, data: data});
+        if (address(_get1155Storage().config.transferHook) != address(0)) {
+            _get1155Storage().config.transferHook.onTokenTransferBatch({target: address(this), operator: operator, from: from, to: to, ids: ids, amounts: amounts, data: data});
         }
     }
 
@@ -670,8 +670,8 @@ contract ZoraCreator1155Impl is
     /// @notice Returns the URI for a token
     /// @param tokenId The token ID to return the URI for
     function uri(uint256 tokenId) public view override(ERC1155Upgradeable, IERC1155MetadataURIUpgradeable) returns (string memory) {
-        if (bytes(tokens[tokenId].uri).length > 0) {
-            return tokens[tokenId].uri;
+        if (bytes(_get1155Storage().tokens[tokenId].uri).length > 0) {
+            return _get1155Storage().tokens[tokenId].uri;
         }
         return _render(tokenId);
     }
@@ -679,11 +679,11 @@ contract ZoraCreator1155Impl is
     /// @notice Internal setter for contract admin with no access checks
     /// @param newOwner new owner address
     function _setOwner(address newOwner) internal {
-        address lastOwner = config.owner;
-        config.owner = newOwner;
+        address lastOwner = _get1155Storage().config.owner;
+        _get1155Storage().config.owner = newOwner;
 
         emit OwnershipTransferred(lastOwner, newOwner);
-        emit ConfigUpdated(msg.sender, ConfigUpdate.OWNER, config);
+        emit ConfigUpdated(msg.sender, ConfigUpdate.OWNER, _get1155Storage().config);
     }
 
     /// @notice Set funds recipient address
@@ -695,26 +695,26 @@ contract ZoraCreator1155Impl is
     /// @notice Internal no-checks set funds recipient address
     /// @param fundsRecipient new funds recipient address
     function _setFundsRecipient(address payable fundsRecipient) internal {
-        config.fundsRecipient = fundsRecipient;
-        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, config);
+        _get1155Storage().config.fundsRecipient = fundsRecipient;
+        emit ConfigUpdated(msg.sender, ConfigUpdate.FUNDS_RECIPIENT, _get1155Storage().config);
     }
 
     /// @notice Allows the create referral to update the address that can claim their rewards
     function updateCreateReferral(uint256 tokenId, address recipient) external {
-        if (msg.sender != createReferrals[tokenId]) revert ONLY_CREATE_REFERRAL();
+        if (msg.sender != _get1155RewardsStorageV1().createReferrals[tokenId]) revert ONLY_CREATE_REFERRAL();
 
         _setCreateReferral(tokenId, recipient);
     }
 
     function _setCreateReferral(uint256 tokenId, address recipient) internal {
-        createReferrals[tokenId] = recipient;
+        _get1155RewardsStorageV1().createReferrals[tokenId] = recipient;
     }
 
     /// @notice Withdraws all ETH from the contract to the funds recipient address
     function withdraw() public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
         uint256 contractValue = address(this).balance;
-        if (!TransferHelperUtils.safeSendETH(config.fundsRecipient, contractValue, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
-            revert ETHWithdrawFailed(config.fundsRecipient, contractValue);
+        if (!TransferHelperUtils.safeSendETH(_get1155Storage().config.fundsRecipient, contractValue, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
+            revert ETHWithdrawFailed(_get1155Storage().config.fundsRecipient, contractValue);
         }
     }
 
@@ -757,9 +757,9 @@ contract ZoraCreator1155Impl is
         address sender
     ) public nonReentrant returns (uint256 newTokenId) {
         // if a token has already been created for a premint config with this uid:
-        if (delegatedTokenId[premintConfig.uid] != 0) {
+        if (_get1155DelegationStorageV1().delegatedTokenId[premintConfig.uid] != 0) {
             // return its token id
-            return delegatedTokenId[premintConfig.uid];
+            return _get1155DelegationStorageV1().delegatedTokenId[premintConfig.uid];
         }
 
         validatePremint(premintConfig);
@@ -778,9 +778,9 @@ contract ZoraCreator1155Impl is
         // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
         newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
-        delegatedTokenId[premintConfig.uid] = newTokenId;
+        _get1155DelegationStorageV1().delegatedTokenId[premintConfig.uid] = newTokenId;
 
-        firstMinters[newTokenId] = sender;
+        _get1155RewardsStorageV1().firstMinters[newTokenId] = sender;
 
         // invoke setup actions for new token, to save contract size, first get them from an external lib
         bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, creator, premintConfig.tokenConfig);

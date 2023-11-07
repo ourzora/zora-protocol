@@ -16,11 +16,12 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
     /// @notice The royalty information for a given token.
     /// @param tokenId The token ID to get the royalty information for.
     function getRoyalties(uint256 tokenId) public view returns (RoyaltyConfiguration memory) {
-        if (royalties[tokenId].royaltyRecipient != address(0)) {
-            return royalties[tokenId];
+        CreatorRoyaltiesStorageV1.CreatorRoyaltiesStorageV1Data storage royaltiesStorage = _get1155CreatorRoyaltyV1();
+        if (royaltiesStorage.royalties[tokenId].royaltyRecipient != address(0)) {
+            return royaltiesStorage.royalties[tokenId];
         }
         // Otherwise, return default.
-        return royalties[CONTRACT_BASE_ID];
+        return royaltiesStorage.royalties[CONTRACT_BASE_ID];
     }
 
     /// @notice Returns the royalty information for a given token.
@@ -42,7 +43,7 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
         if (configuration.royaltyRecipient == address(0) && configuration.royaltyBPS > 0) {
             revert InvalidMintSchedule();
         }
-        royalties[tokenId] = configuration;
+        _get1155CreatorRoyaltyV1().royalties[tokenId] = configuration;
 
         emit UpdatedRoyalties(tokenId, msg.sender, configuration);
     }
