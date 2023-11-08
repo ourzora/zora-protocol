@@ -54,7 +54,7 @@ export class MintClient extends ClientBase {
     this.apiClient = apiClient;
   }
 
-  async prepareMintToken({
+  async makePrepareMintTokenParams({
     publicClient,
     sender,
     address,
@@ -67,7 +67,7 @@ export class MintClient extends ClientBase {
     tokenId?: bigint | number | string;
     mintArguments: MintArguments;
     }): Promise<{
-      prepared: SimulateContractParameters,
+      simulateContractParameters: SimulateContractParameters,
       mintable: any
     }> {
     if (tokenId) {
@@ -106,7 +106,7 @@ export class MintClient extends ClientBase {
       mintable.feed_item.mint_context.mint_context_type === "zora_create_1155"
     ) {
       return {
-        prepared: await this.prepareMintZora1155({
+        simulateContractParameters: await this.prepareMintZora1155({
           publicClient: thisPublicClient,
           mintArguments,
           sender,
@@ -117,7 +117,7 @@ export class MintClient extends ClientBase {
     }
     if (mintable.feed_item.mint_context.mint_context_type === "zora_create") {
       return {
-        prepared: await this.prepareMintZora721({
+        simulateContractParameters: await this.prepareMintZora721({
           publicClient: thisPublicClient,
           mintArguments,
           sender,

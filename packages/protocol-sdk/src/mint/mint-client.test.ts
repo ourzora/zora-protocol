@@ -26,7 +26,7 @@ describe("mint-helper", () => {
       const targetTokenId = 1n;
       const minter = new MintClient(zora);
 
-      const { prepared } = await minter.prepareMintToken({
+      const { simulateContractParameters: params } = await minter.makePrepareMintTokenParams({
         address: targetContract,
         tokenId: targetTokenId,
         publicClient,
@@ -44,7 +44,7 @@ describe("mint-helper", () => {
         args: [creatorAccount, targetTokenId],
       });
 
-      const simulationResult = await publicClient.simulateContract(prepared);
+      const simulationResult = await publicClient.simulateContract(params);
 
       const hash = await walletClient.writeContract(simulationResult.request);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -75,7 +75,7 @@ describe("mint-helper", () => {
       const targetTokenId = undefined;
       const minter = new MintClient(zora);
 
-      const { prepared } = await minter.prepareMintToken({
+      const { simulateContractParameters: prepared } = await minter.makePrepareMintTokenParams({
         address: targetContract,
         tokenId: targetTokenId,
         publicClient,
