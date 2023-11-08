@@ -29,6 +29,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
 
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, FixedPriceAllowedMintersStrategy.SalesConfig salesConfig);
     event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
+    event MinterSet(address indexed mediaContract, uint256 indexed tokenId, address indexed minter, bool allowed);
 
     function setUp() external {
         admin = payable(makeAddr("admin"));
@@ -190,5 +191,38 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
 
         vm.expectRevert(abi.encodeWithSignature("ONLY_MINTER()"));
         target.mint{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"));
+    }
+
+    function test_MintersSetEvents() external {
+        vm.startPrank(admin);
+
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+
+        target.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(
+                FixedPriceAllowedMintersStrategy.setSale.selector,
+                newTokenId,
+                FixedPriceAllowedMintersStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+
+        vm.expectEmit(true, true, true, true);
+        emit MinterSet(address(target), newTokenId, allowedMinter, true);
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters));
+
+        vm.expectEmit(true, true, true, true);
+        emit MinterSet(address(target), newTokenId, allowedMinter, false);
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.removeMinters.selector, newTokenId, minters));
+
+        vm.stopPrank();
     }
 }
