@@ -27,12 +27,8 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
     address internal allowedMinter;
     address[] internal minters;
 
-    event SaleSet(
-        address indexed mediaContract, uint256 indexed tokenId, FixedPriceAllowedMintersStrategy.SalesConfig salesConfig
-    );
-    event MintComment(
-        address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment
-    );
+    event SaleSet(address indexed mediaContract, uint256 indexed tokenId, FixedPriceAllowedMintersStrategy.SalesConfig salesConfig);
+    event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
 
     function setUp() external {
         admin = payable(makeAddr("admin"));
@@ -47,9 +43,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         targetImpl = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
         target = ZoraCreator1155Impl(address(new Zora1155(address(targetImpl))));
 
-        target.initialize(
-            "test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, new bytes[](0)
-        );
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, new bytes[](0));
         fixedPrice = new FixedPriceAllowedMintersStrategy();
     }
 
@@ -83,11 +77,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(
-            newTokenId,
-            fixedPrice,
-            abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters)
-        );
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters));
 
         vm.stopPrank();
 
@@ -147,9 +137,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(
-            0, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, 0, minters)
-        );
+        target.callSale(0, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, 0, minters));
 
         vm.stopPrank();
 
@@ -191,11 +179,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(
-            newTokenId,
-            fixedPrice,
-            abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters)
-        );
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters));
 
         vm.stopPrank();
 
