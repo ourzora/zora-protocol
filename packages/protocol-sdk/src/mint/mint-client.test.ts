@@ -1,7 +1,4 @@
-import {
-  parseAbi,
-  parseEther,
-} from "viem";
+import { parseAbi, parseEther } from "viem";
 import { zora } from "viem/chains";
 import { describe, expect } from "vitest";
 import { MintClient } from "./mint-client";
@@ -27,10 +24,12 @@ describe("mint-helper", () => {
       const minter = new MintClient(zora);
 
       const { simulateContractParameters: params } = await minter.makePrepareMintTokenParams({
-        tokenContract: targetContract,
-        tokenId: targetTokenId,
         publicClient,
         minterAccount: creatorAccount,
+        mintable: await minter.getMintable({
+          tokenId: targetTokenId,
+          tokenContract: targetContract,
+        }),
         mintArguments: {
           mintToAddress: creatorAccount,
           quantityToMint: 1,
@@ -76,8 +75,7 @@ describe("mint-helper", () => {
       const minter = new MintClient(zora);
 
       const { simulateContractParameters: prepared } = await minter.makePrepareMintTokenParams({
-        tokenContract: targetContract,
-        tokenId: targetTokenId,
+        mintable: await minter.getMintable({tokenContract: targetContract, tokenId: targetTokenId}),
         publicClient,
         minterAccount: creatorAccount,
         mintArguments: {
