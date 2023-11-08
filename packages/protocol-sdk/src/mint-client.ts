@@ -145,7 +145,7 @@ export class MintClient extends ClientBase {
       {
         contractAddress: mintable.feed_item.contract_address,
         tokenId: mintable.feed_item.token_id!,
-        chainId: this.network.chainId,
+        subgraphUrl: this.network.subgraphUrl,
       },
     );
 
