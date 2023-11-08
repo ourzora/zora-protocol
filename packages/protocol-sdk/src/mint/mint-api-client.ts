@@ -1,6 +1,6 @@
-import { retries, get, post } from "./http-api-base";
-import { paths } from "./generated/discover-api-types";
-import { ZORA_API_BASE } from "./premint-api-client";
+import { retries, get, post } from "../apis/http-api-base";
+import { paths } from "../apis/generated/discover-api-types";
+import { ZORA_API_BASE } from "../constants";
 
 export type MintableGetToken =
   paths["/mintables_v2/{chain_name}/{collection_address}"];
@@ -21,12 +21,11 @@ const getMintable = async (
 ): Promise<MintableGetTokenResponse> =>
   retries(() => {
     return get<MintableGetTokenResponse>(
-      `${ZORA_API_BASE}discover/mintables_v2/${path.chain_name}/${path.collection_address}${
-        query?.token_id ? `?${encodeQueryParameters(query)}` : ""
-      }`,
+      `${ZORA_API_BASE}discover/mintables_v2/${path.chain_name}/${
+        path.collection_address
+      }${query?.token_id ? `?${encodeQueryParameters(query)}` : ""}`,
     );
-  }
-  );
+  });
 
 export const getSalesConfigFixedPrice = async ({
   contractAddress,

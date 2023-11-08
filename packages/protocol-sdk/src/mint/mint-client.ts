@@ -8,7 +8,7 @@ import {
   parseAbiParameters,
   zeroAddress,
 } from "viem";
-import { ClientBase } from "./client-base";
+import { ClientBase } from "../apis/client-base";
 import { MintAPIClient, MintableGetTokenResponse } from "./mint-api-client";
 import {
   zoraCreator1155ImplABI,

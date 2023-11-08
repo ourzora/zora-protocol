@@ -9,7 +9,7 @@ import {
   zora,
   zoraTestnet,
 } from "viem/chains";
-import type { BackendChainNames as BackendChainNamesType } from "./premint-api-client";
+import type { components } from "./generated/premint-api-types";
 import {
   Chain,
   PublicClient,
@@ -17,12 +17,12 @@ import {
   http,
   parseEther,
 } from "viem";
-import { getSubgraph } from "./constants";
+import { getSubgraph } from "../constants";
 
 export type NetworkConfig = {
   chainId: number;
   zoraPathChainName: string;
-  zoraBackendChainName: BackendChainNamesType;
+  zoraBackendChainName: components['schemas']['ChainName'];
   isTestnet: boolean;
   subgraphUrl: string;
 };

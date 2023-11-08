@@ -1,9 +1,9 @@
-export * from "./premint-client";
+export * from "./premint/premint-client";
 
-export * from "./preminter";
+export * from "./premint/preminter";
 
-export * from "./premint-api-client";
+export * from "./premint/premint-api-client";
 
-export * from "./mint-api-client";
+export * from "./mint/mint-api-client";
 
-export * from "./1155-create-helper";
+export * from "./create/1155-create-helper";
