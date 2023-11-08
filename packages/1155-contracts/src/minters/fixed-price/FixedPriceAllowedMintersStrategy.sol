@@ -173,7 +173,6 @@ contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPer
         }
     }
 
-
     /// @notice Returns the sale config for a given token
     function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
         return salesConfigs[tokenContract][tokenId];
