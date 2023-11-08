@@ -20,8 +20,9 @@ import type {
 } from "./premint-api-client";
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
-import { ClientBase, REWARD_PER_TOKEN } from "../apis/client-base";
+import { ClientBase } from "../apis/client-base";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
+import { REWARD_PER_TOKEN } from "src/apis/chain-constants";
 
 type MintArgumentsSettings = {
   tokenURI: string;

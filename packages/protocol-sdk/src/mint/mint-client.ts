@@ -2,7 +2,6 @@ import {
   Address,
   Chain,
   PublicClient,
-  WalletClient,
   encodeAbiParameters,
   parseAbi,
   parseAbiParameters,
@@ -10,6 +9,7 @@ import {
 } from "viem";
 import { ClientBase } from "../apis/client-base";
 import { MintAPIClient, MintableGetTokenResponse } from "./mint-api-client";
+import { SimulateContractParameters } from "viem";
 import {
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyAddress,
@@ -70,7 +70,7 @@ export class MintClient extends ClientBase {
     );
   }
 
-  async mintToken({
+  async makePrepareMintTokenParams({
     publicClient,
     sender,
     mintable,
@@ -103,10 +103,12 @@ export class MintClient extends ClientBase {
       );
     }
 
+    const thisPublicClient = this.getPublicClient(publicClient);
+
     if (mintable.mint_context.mint_context_type === "zora_create_1155") {
       return {
-        send: await this.mintZora1155({
-          publicClient: this.getPublicClient(publicClient),
+        simulateContractParameters: await this.prepareMintZora1155({
+          publicClient: thisPublicClient,
           mintArguments,
           sender,
           mintable,
@@ -116,8 +118,8 @@ export class MintClient extends ClientBase {
     }
     if (mintable.mint_context.mint_context_type === "zora_create") {
       return {
-        send: await this.mintZora721({
-          publicClient: this.getPublicClient(publicClient),
+        simulateContractParameters: await this.prepareMintZora721({
+          publicClient: thisPublicClient,
           mintArguments,
           sender,
           mintable,
@@ -129,7 +131,7 @@ export class MintClient extends ClientBase {
     throw new Error("Mintable type not found or recognized.");
   }
 
-  private async mintZora1155({
+  private async prepareMintZora1155({
     mintable,
     sender,
     publicClient,
@@ -153,8 +155,10 @@ export class MintClient extends ClientBase {
       },
     );
 
-    return async (walletClient: WalletClient) => {
-      const { request } = await publicClient.simulateContract({
+    const result: SimulateContractParameters<
+     typeof zoraCreator1155ImplABI,
+     'mintWithRewards'
+      > = {
         abi: zoraCreator1155ImplABI,
         functionName: "mintWithRewards",
         account: sender,
@@ -173,12 +177,12 @@ export class MintClient extends ClientBase {
           ]),
           mintArguments.mintReferral || zeroAddress,
         ],
-      });
-      return await walletClient.writeContract(request);
-    };
+      }
+
+    return result;
   }
 
-  private async mintZora721({
+  private async prepareMintZora721({
     mintable,
     publicClient,
     sender,
@@ -191,8 +195,10 @@ export class MintClient extends ClientBase {
       args: [BigInt(mintArguments.quantityToMint)],
     });
 
-    return async (walletClient: WalletClient) => {
-      const { request } = await publicClient.simulateContract({
+    const result: SimulateContractParameters<
+     typeof zora721Abi,
+     'mintWithRewards'
+      > = {
         abi: zora721Abi,
         address: mintable.contract_address as Address,
         account: sender,
@@ -208,8 +214,8 @@ export class MintClient extends ClientBase {
           mintArguments.mintComment || "",
           mintArguments.mintReferral || zeroAddress,
         ],
-      });
-      return await walletClient.writeContract(request);
-    };
+    }
+
+    return result;
   }
 }
