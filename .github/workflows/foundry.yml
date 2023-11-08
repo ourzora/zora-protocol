@@ -135,6 +135,10 @@ jobs:
         run: |
           npx turbo run build
 
+      - name: Test js package
+        run: |
+          npx turbo run test:js
+
   coverage-1155:
     uses: ./.github/workflows/coverage.yml
     name: "Test coverage - 1155"

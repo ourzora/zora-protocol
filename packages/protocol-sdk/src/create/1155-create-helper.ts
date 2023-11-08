@@ -12,7 +12,7 @@ import type {
   WalletClient,
 } from "viem";
 import { decodeEventLog, encodeFunctionData, zeroAddress } from "viem";
-import { OPEN_EDITION_MINT_SIZE } from "./constants";
+import { OPEN_EDITION_MINT_SIZE } from "../constants";
 
 const saleEndForever = 18446744073709551615n;
 const royaltyBPSDefault = 1000;

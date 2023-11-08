@@ -1,6 +1,6 @@
-import { post, retries, get } from "./http-api-base";
-import { components, paths } from "./generated/premint-api-types";
-import { ZORA_API_BASE } from "./constants";
+import { post, retries, get } from "../apis/http-api-base";
+import { components, paths } from "../apis/generated/premint-api-types";
+import { ZORA_API_BASE } from "../constants";
 
 type SignaturePostType = paths["/signature"]["post"];
 type PremintSignatureRequestBody =

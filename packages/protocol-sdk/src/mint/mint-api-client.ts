@@ -1,7 +1,7 @@
-import { retries, get, post } from "./http-api-base";
-import { paths } from "./generated/discover-api-types";
-import { ZORA_API_BASE } from "./premint-api-client";
-import { ZORA_SUBGRAPH_URLS } from "./constants";
+import { retries, get, post } from "../apis/http-api-base";
+import { paths } from "../apis/generated/discover-api-types";
+import { ZORA_API_BASE } from "../premint/premint-api-client";
+import { ZORA_SUBGRAPH_URLS } from "../constants";
 
 export type MintableGetToken =
   paths["/mintables_v2/{chain_name}/{collection_address}"];
