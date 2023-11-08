@@ -27,10 +27,10 @@ describe("mint-helper", () => {
       const minter = new MintClient(zora);
 
       const { simulateContractParameters: params } = await minter.makePrepareMintTokenParams({
-        address: targetContract,
+        tokenContract: targetContract,
         tokenId: targetTokenId,
         publicClient,
-        sender: creatorAccount,
+        minterAccount: creatorAccount,
         mintArguments: {
           mintToAddress: creatorAccount,
           quantityToMint: 1,
@@ -76,10 +76,10 @@ describe("mint-helper", () => {
       const minter = new MintClient(zora);
 
       const { simulateContractParameters: prepared } = await minter.makePrepareMintTokenParams({
-        address: targetContract,
+        tokenContract: targetContract,
         tokenId: targetTokenId,
         publicClient,
-        sender: creatorAccount,
+        minterAccount: creatorAccount,
         mintArguments: {
           mintToAddress: creatorAccount,
           quantityToMint: 1,

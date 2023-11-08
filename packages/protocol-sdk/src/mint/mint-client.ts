@@ -56,14 +56,14 @@ export class MintClient extends ClientBase {
 
   async makePrepareMintTokenParams({
     publicClient,
-    sender,
-    address,
+    minterAccount,
+    tokenContract,
     tokenId,
     mintArguments,
   }: {
     publicClient: PublicClient;
-    address: Address;
-    sender: Address;
+    tokenContract: Address;
+    minterAccount: Address;
     tokenId?: bigint | number | string;
     mintArguments: MintArguments;
     }): Promise<{
@@ -77,7 +77,7 @@ export class MintClient extends ClientBase {
     const mintable = await this.apiClient.getMintable(
       {
         chain_name: this.network.zoraBackendChainName,
-        collection_address: address,
+        collection_address: tokenContract,
       },
       { token_id: tokenId?.toString() },
     );
@@ -109,7 +109,7 @@ export class MintClient extends ClientBase {
         simulateContractParameters: await this.prepareMintZora1155({
           publicClient: thisPublicClient,
           mintArguments,
-          sender,
+          sender: minterAccount,
           mintable,
         }),
         mintable,
@@ -120,7 +120,7 @@ export class MintClient extends ClientBase {
         simulateContractParameters: await this.prepareMintZora721({
           publicClient: thisPublicClient,
           mintArguments,
-          sender,
+          sender: minterAccount,
           mintable,
         }),
         mintable,
