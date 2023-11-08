@@ -80,9 +80,7 @@ export class MintClient extends ClientBase {
     mintable: MintableGetTokenResponse;
     minterAccount: Address;
     mintArguments: MintArguments;
-  }): Promise<{
-    simulateContractParameters: any;
-  }> {
+  }) {
     if (!mintable) {
       throw new MintError("No mintable found");
     }
