@@ -3,7 +3,7 @@ import { paths } from "../apis/generated/discover-api-types";
 import { ZORA_API_BASE } from "../constants";
 
 export type MintableGetToken =
-  paths["/mintables_v2/{chain_name}/{collection_address}"];
+  paths["/mintables/{chain_name}/{collection_address}"];
 type MintableGetTokenPathParameters =
   MintableGetToken["get"]["parameters"]["path"];
 type MintableGetTokenGetQueryParameters =
@@ -21,7 +21,7 @@ const getMintable = async (
 ): Promise<MintableGetTokenResponse> =>
   retries(() => {
     return get<MintableGetTokenResponse>(
-      `${ZORA_API_BASE}discover/mintables_v2/${path.chain_name}/${
+      `${ZORA_API_BASE}discover/mintables/${path.chain_name}/${
         path.collection_address
       }${query?.token_id ? `?${encodeQueryParameters(query)}` : ""}`,
     );
