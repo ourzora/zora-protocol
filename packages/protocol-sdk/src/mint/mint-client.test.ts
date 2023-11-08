@@ -26,7 +26,7 @@ describe("mint-helper", () => {
       const targetTokenId = 1n;
       const minter = new MintClient(zora);
 
-      const { send } = await minter.mintToken({
+      const { prepared } = await minter.prepareMintToken({
         address: targetContract,
         tokenId: targetTokenId,
         publicClient,
@@ -43,7 +43,10 @@ describe("mint-helper", () => {
         functionName: "balanceOf",
         args: [creatorAccount, targetTokenId],
       });
-      const hash = await send(walletClient);
+
+      const simulationResult = await publicClient.simulateContract(prepared);
+
+      const hash = await walletClient.writeContract(simulationResult.request);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       const newBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
@@ -72,7 +75,7 @@ describe("mint-helper", () => {
       const targetTokenId = undefined;
       const minter = new MintClient(zora);
 
-      const { send } = await minter.mintToken({
+      const { prepared } = await minter.prepareMintToken({
         address: targetContract,
         tokenId: targetTokenId,
         publicClient,
@@ -88,7 +91,11 @@ describe("mint-helper", () => {
         functionName: "balanceOf",
         args: [creatorAccount],
       });
-      const hash = await send(walletClient);
+      
+      const simulated = await publicClient.simulateContract(prepared);
+
+      const hash = await walletClient.writeContract(simulated.request);
+
       const receipt = await publicClient.getTransactionReceipt({ hash });
       expect(receipt).not.to.be.null;
 
