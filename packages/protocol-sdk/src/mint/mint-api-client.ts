@@ -1,10 +1,9 @@
 import { retries, get, post } from "../apis/http-api-base";
 import { paths } from "../apis/generated/discover-api-types";
-import { ZORA_API_BASE } from "../premint/premint-api-client";
-import { ZORA_SUBGRAPH_URLS } from "../constants";
+import { ZORA_API_BASE } from "../constants";
 
 export type MintableGetToken =
-  paths["/mintables_v2/{chain_name}/{collection_address}"];
+  paths["/mintables/{chain_name}/{collection_address}"];
 type MintableGetTokenPathParameters =
   MintableGetToken["get"]["parameters"]["path"];
 type MintableGetTokenGetQueryParameters =
@@ -22,24 +21,23 @@ const getMintable = async (
 ): Promise<MintableGetTokenResponse> =>
   retries(() => {
     return get<MintableGetTokenResponse>(
-      `${ZORA_API_BASE}discover/mintables_v2/${path.chain_name}/${path.collection_address}${
-        query?.token_id ? `?${encodeQueryParameters(query)}` : ""
-      }`,
+      `${ZORA_API_BASE}discover/mintables/${path.chain_name}/${
+        path.collection_address
+      }${query?.token_id ? `?${encodeQueryParameters(query)}` : ""}`,
     );
-  }
-  );
+  });
 
 export const getSalesConfigFixedPrice = async ({
   contractAddress,
   tokenId,
-  chainId,
+  subgraphUrl,
 }: {
   contractAddress: string;
   tokenId: string;
-  chainId: number;
+  subgraphUrl: string;
 }): Promise<undefined | string> =>
   retries(async () => {
-    const response = await post<any>(ZORA_SUBGRAPH_URLS[chainId]!, {
+    const response = await post<any>(subgraphUrl, {
       query:
         "query($id: ID!) {\n  zoraCreateToken(id: $id) {\n    id\n    salesStrategies{\n      fixedPrice {\n        address\n      }\n    }\n  }\n}",
       variables: { id: `${contractAddress.toLowerCase()}-${tokenId}` },

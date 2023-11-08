@@ -14,8 +14,11 @@ import type {
 import { decodeEventLog, encodeFunctionData, zeroAddress } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
 
-const saleEndForever = 18446744073709551615n;
-const royaltyBPSDefault = 1000;
+// Sales end forever amount (uint64 max)
+const SALE_END_FOREVER = 18446744073709551615n;
+
+// Default royalty bps
+const ROYALTY_BPS_DEFAULT = 1000;
 
 type SalesConfigParamsType = {
   // defaults to 0
@@ -24,17 +27,24 @@ type SalesConfigParamsType = {
   saleStart?: bigint;
   // defaults to forever, in seconds
   saleEnd?: bigint;
-  maxTokensPerAddress?: number;
+  // max tokens that can be minted per address
+  maxTokensPerAddress?: bigint;
   fundsRecipient?: Address;
 };
 
 export const DEFAULT_SALE_SETTINGS = {
   fundsRecipient: zeroAddress,
+  // Free Mint
   pricePerToken: 0n,
+  // Sale start time – defaults to beginning of unix time
   saleStart: 0n,
-  saleEnd: saleEndForever,
+  // This is the end of uint64, plenty of time
+  saleEnd: SALE_END_FOREVER,
+  // 0 Here means no limit
   maxTokensPerAddress: 0n,
 };
+
+// Hardcode the permission bit for the minter
 const PERMISSION_BIT_MINTER = 2n ** 2n;
 
 type ContractType =
@@ -52,11 +62,16 @@ type RoyaltySettingsType = {
 
 export function create1155TokenSetupArgs({
   nextTokenId,
+  // How many NFTs upon initialization to mint to the creator
   mintToCreatorCount,
   tokenMetadataURI,
+  // Fixed price minter address – required minter
   fixedPriceMinterAddress,
+  // Address to use as the create referral, optional.
   createReferral,
+  // Optional max supply of the token. Default unlimited
   maxSupply,
+  // wallet sending the transaction
   account,
   salesConfig,
   royaltySettings,
@@ -65,6 +80,7 @@ export function create1155TokenSetupArgs({
   createReferral?: Address;
   nextTokenId: bigint;
   mintToCreatorCount: bigint | number;
+  // wallet sending the transaction
   account: Address;
   tokenMetadataURI: string;
   fixedPriceMinterAddress: Address;
@@ -77,12 +93,12 @@ export function create1155TokenSetupArgs({
   maxSupply = BigInt(maxSupply);
   mintToCreatorCount = BigInt(mintToCreatorCount);
 
-  const salesConfigWithDefaults = Object.assign(
+  const salesConfigWithDefaults = {
     // Set static sales default.
-    DEFAULT_SALE_SETTINGS,
+    ...DEFAULT_SALE_SETTINGS,
     // Override with user settings.
-    salesConfig,
-  );
+    ...salesConfig,
+  };
 
   const setupActions = [
     encodeFunctionData({
@@ -140,7 +156,7 @@ export function create1155TokenSetupArgs({
           nextTokenId,
           {
             royaltyMintSchedule: 0,
-            royaltyBPS: royaltySettings?.royaltyBPS || royaltyBPSDefault,
+            royaltyBPS: royaltySettings?.royaltyBPS || ROYALTY_BPS_DEFAULT,
             royaltyRecipient: royaltySettings?.royaltyRecipient || account,
           },
         ],
@@ -171,6 +187,7 @@ export const getTokenIdFromCreateReceipt = (
 async function getContractExists(
   publicClient: PublicClient,
   contract: ContractType,
+  // Account that is the creator of the contract
   account: Address,
 ) {
   let contractAddress;
@@ -188,6 +205,7 @@ async function getContractExists(
         contract.defaultAdmin || account,
       ],
     });
+
     try {
       await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
@@ -208,6 +226,7 @@ async function getContractExists(
   };
 }
 
+// Create new 1155 token
 export async function createNew1155Token({
   publicClient,
   contract,
@@ -233,12 +252,15 @@ export async function createNew1155Token({
     contractAddress: Address;
   }) => Hex[];
 }) {
+  // Check if contract exists either from metadata or the static address passed in.
+  // If a static address is passed in, this fails if that contract does not exist.
   const { contractExists, contractAddress } = await getContractExists(
     publicClient,
     contract,
     account,
   );
 
+  // Assume the next token id is the first token available for a new contract.
   let nextTokenId = 1n;
 
   if (contractExists) {
@@ -249,6 +271,7 @@ export async function createNew1155Token({
     });
   }
 
+  // Get the fixed price minter to use within the new token to set the sales configuration.
   const fixedPriceMinterAddress = await publicClient.readContract({
     abi: zoraCreator1155FactoryImplABI,
     address: zoraCreator1155FactoryImplAddress[999],
@@ -287,7 +310,7 @@ export async function createNew1155Token({
         {
           // deprecated
           royaltyMintSchedule: 0,
-          royaltyBPS: royaltySettings?.royaltyBPS || royaltyBPSDefault,
+          royaltyBPS: royaltySettings?.royaltyBPS || ROYALTY_BPS_DEFAULT,
           royaltyRecipient: royaltySettings?.royaltyRecipient || account,
         },
         contract.defaultAdmin || account,
