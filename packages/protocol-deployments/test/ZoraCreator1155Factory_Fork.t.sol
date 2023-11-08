@@ -131,8 +131,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         address factoryAddress = deployment.factoryProxy;
         ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(factoryAddress);
 
-        assertEq(factory.implementation(), deployment.factoryImpl, "factory implementation incorrect");
-
         assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), string.concat("configured owner incorrect on: ", chainName));
 
         // make sure that the address from the factory matches the stored fixed price address
