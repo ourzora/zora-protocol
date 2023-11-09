@@ -1,0 +1,21 @@
+name: "1155"
+on:
+  workflow_call:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      package_folder: packages/1155-contracts
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+    with:
+      package_folder: packages/1155-contracts
+
+  coverage:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "1155-contracts"
+      files_to_ignore: '"*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*"'
