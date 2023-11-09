@@ -10,6 +10,6 @@ import {IVersionedContract} from "../interfaces/IVersionedContract.sol";
 contract ContractVersionBase is IVersionedContract {
     /// @notice The version of the contract
     function contractVersion() external pure override returns (string memory) {
-        return "2.3.2";
+        return "2.4.0";
     }
 }
