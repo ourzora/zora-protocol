@@ -1,0 +1,28 @@
+on:
+  workflow_call:
+    inputs:
+      package_folder:
+        required: true
+        type: string
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Cache build
+        uses: ./.github/actions/cache_foundry_build
+        with:
+          package_folder: ${{ inputs.package_folder }}
+
+      - name: Build contracts
+        run: |
+          cd ${{ inputs.package_folder}} && forge build
