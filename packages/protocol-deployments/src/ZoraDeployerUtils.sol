@@ -1,22 +1,22 @@
 // spdx-license-identifier: mit
 pragma solidity ^0.8.17;
 
-import {Zora1155Factory} from "../proxies/Zora1155Factory.sol";
-import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
-import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
-import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
-import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
+import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
+import {IZoraCreator1155Factory} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155Factory.sol";
+import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
+import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
 import {Deployment, ChainConfig} from "./DeploymentConfig.sol";
-import {ProxyShim} from "../utils/ProxyShim.sol";
-import {ZoraCreator1155PremintExecutorImpl} from "../delegation/ZoraCreator1155PremintExecutorImpl.sol";
+import {ProxyShim} from "@zoralabs/zora-1155-contracts/src/utils/ProxyShim.sol";
+import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IImmutableCreate2Factory} from "./IImmutableCreate2Factory.sol";
 import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
-import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {ZoraCreatorMerkleMinterStrategy} from "../minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
-import {ZoraCreatorRedeemMinterFactory} from "../minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ZoraCreatorFixedPriceSaleStrategy} from "@zoralabs/zora-1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {ZoraCreatorMerkleMinterStrategy} from "@zoralabs/zora-1155-contracts/src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
+import {ZoraCreatorRedeemMinterFactory} from "@zoralabs/zora-1155-contracts/src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
-import {UpgradeGate} from "../upgrades/UpgradeGate.sol";
+import {ICreatorRoyaltiesControl} from "@zoralabs/zora-1155-contracts/src/interfaces/ICreatorRoyaltiesControl.sol";
+import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
 
 struct Create2Deployment {
     address deployerAddress;

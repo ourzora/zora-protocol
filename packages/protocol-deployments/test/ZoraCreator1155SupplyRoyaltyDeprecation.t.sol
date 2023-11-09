@@ -3,12 +3,8 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 
-import {
-    ForkDeploymentConfig,
-    Deployment,
-    ChainConfig
-} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentConfig.sol";
-import {ZoraDeployerUtils} from "@zoralabs/zora-1155-contracts/src/deployment/ZoraDeployerUtils.sol";
+import {ForkDeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
+import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 
 import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
@@ -40,8 +36,7 @@ contract ZoraCreator1155SupplyRoyaltyDeprecationTest is Test, ForkDeploymentConf
 
             uint32 invalidRoyaltyMintSchedule = 10;
 
-            ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl
-                .RoyaltyConfiguration({
+            ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
                 royaltyBPS: 0,
                 royaltyRecipient: address(0),
                 royaltyMintSchedule: invalidRoyaltyMintSchedule
@@ -50,7 +45,7 @@ contract ZoraCreator1155SupplyRoyaltyDeprecationTest is Test, ForkDeploymentConf
             vm.expectRevert(abi.encodeWithSignature("InvalidMintSchedule()"));
             factory.createContract("mock uri", "mock name", royaltyConfig, payable(creator), new bytes[](0));
 
-            (address newFactoryImpl,,) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
+            (address newFactoryImpl, , ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
                 upgradeGateAddress: deployment.upgradeGate,
                 mintFeeRecipient: chainConfig.mintFeeRecipient,
                 protocolRewards: chainConfig.protocolRewards,
@@ -59,11 +54,9 @@ contract ZoraCreator1155SupplyRoyaltyDeprecationTest is Test, ForkDeploymentConf
                 fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
             });
 
-            ZoraCreator1155FactoryImpl newFactory =
-                ZoraCreator1155FactoryImpl(address(new Zora1155Factory(newFactoryImpl, "")));
+            ZoraCreator1155FactoryImpl newFactory = ZoraCreator1155FactoryImpl(address(new Zora1155Factory(newFactoryImpl, "")));
 
-            address tokenContractAddress =
-                newFactory.createContract("mock uri", "mock name", royaltyConfig, payable(creator), new bytes[](0));
+            address tokenContractAddress = newFactory.createContract("mock uri", "mock name", royaltyConfig, payable(creator), new bytes[](0));
 
             ZoraCreator1155Impl tokenContract = ZoraCreator1155Impl(tokenContractAddress);
 
