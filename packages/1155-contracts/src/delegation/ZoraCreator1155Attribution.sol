@@ -91,6 +91,8 @@ struct TokenCreationConfigV2 {
     address fixedPriceMinter;
     // create referral
     address createReferral;
+    // platform referral
+    address platformReferral;
 }
 
 library ZoraCreator1155Attribution {
@@ -201,7 +203,7 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant TOKEN_DOMAIN_V2 =
         keccak256(
-            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address payoutRecipient,address fixedPriceMinter,address createReferral)"
+            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address payoutRecipient,address fixedPriceMinter,address createReferral,address platformReferral)"
         );
 
     function _hashToken(TokenCreationConfigV2 memory tokenConfig) private pure returns (bytes32) {
@@ -218,7 +220,8 @@ library ZoraCreator1155Attribution {
                     tokenConfig.royaltyBPS,
                     tokenConfig.payoutRecipient,
                     tokenConfig.fixedPriceMinter,
-                    tokenConfig.createReferral
+                    tokenConfig.createReferral,
+                    tokenConfig.platformReferral
                 )
             );
     }

@@ -28,7 +28,8 @@ library Zora1155PremintFixtures {
                 fixedPriceMinter: address(fixedPriceMinter),
                 payoutRecipient: royaltyRecipient,
                 royaltyBPS: 0,
-                createReferral: address(0)
+                createReferral: address(0),
+                platformReferral: address(0)
             });
     }
 
@@ -48,7 +49,8 @@ library Zora1155PremintFixtures {
                 fixedPriceMinter: address(fixedPriceMinter),
                 payoutRecipient: royaltyRecipient,
                 royaltyBPS: 10,
-                createReferral: createReferral
+                createReferral: createReferral,
+                platformReferral: address(0)
             });
     }
 
