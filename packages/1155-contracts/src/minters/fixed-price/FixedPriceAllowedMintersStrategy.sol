@@ -66,11 +66,7 @@ contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPer
 
     /// @notice If a minter address is allowed to mint a token
     function isMinter(address tokenContract, uint256 tokenId, address minter) public view returns (bool) {
-        if (allowedMinters[tokenContract][tokenId][minter] || allowedMinters[tokenContract][0][minter]) {
-            return true;
-        }
-
-        return false;
+        return allowedMinters[tokenContract][tokenId][minter] || allowedMinters[tokenContract][0][minter];
     }
 
     /// @notice Sets the allowed addresses that can mint a given token
