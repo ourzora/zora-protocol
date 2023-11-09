@@ -12,10 +12,7 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ILimitedMintPerAddressErrors} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
 
-import {
-    IFixedPriceAllowedMintersStrategy,
-    FixedPriceAllowedMintersStrategy
-} from "../../../src/minters/fixed-price/FixedPriceAllowedMintersStrategy.sol";
+import {IFixedPriceAllowedMintersStrategy, FixedPriceAllowedMintersStrategy} from "../../../src/minters/fixed-price/FixedPriceAllowedMintersStrategy.sol";
 
 contract FixedPriceAllowedMintersStrategyTest is Test {
     ZoraCreator1155Impl internal targetImpl;
@@ -30,12 +27,8 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
     address internal allowedMinter;
     address[] internal minters;
 
-    event SaleSet(
-        address indexed mediaContract, uint256 indexed tokenId, FixedPriceAllowedMintersStrategy.SalesConfig salesConfig
-    );
-    event MintComment(
-        address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment
-    );
+    event SaleSet(address indexed mediaContract, uint256 indexed tokenId, FixedPriceAllowedMintersStrategy.SalesConfig salesConfig);
+    event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
     event MinterSet(address indexed mediaContract, uint256 indexed tokenId, address indexed minter, bool allowed);
 
     function setUp() external {
@@ -51,9 +44,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         targetImpl = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
         target = ZoraCreator1155Impl(address(new Zora1155(address(targetImpl))));
 
-        target.initialize(
-            "test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, new bytes[](0)
-        );
+        target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, new bytes[](0));
         fixedPrice = new FixedPriceAllowedMintersStrategy();
     }
 
@@ -87,11 +78,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(
-            newTokenId,
-            fixedPrice,
-            abi.encodeWithSelector(IFixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true)
-        );
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(IFixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true));
 
         vm.stopPrank();
 
@@ -151,11 +138,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(
-            0,
-            fixedPrice,
-            abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, 0, minters, true)
-        );
+        target.callSale(0, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, 0, minters, true));
 
         vm.stopPrank();
 
@@ -197,11 +180,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(
-            newTokenId,
-            fixedPrice,
-            abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true)
-        );
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true));
 
         vm.stopPrank();
 
@@ -238,19 +217,11 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
 
         vm.expectEmit(true, true, true, true);
         emit MinterSet(address(target), newTokenId, allowedMinter, true);
-        target.callSale(
-            newTokenId,
-            fixedPrice,
-            abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true)
-        );
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true));
 
         vm.expectEmit(true, true, true, true);
         emit MinterSet(address(target), newTokenId, allowedMinter, false);
-        target.callSale(
-            newTokenId,
-            fixedPrice,
-            abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, false)
-        );
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, false));
 
         vm.stopPrank();
     }
