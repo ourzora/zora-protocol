@@ -11,7 +11,7 @@ import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 /// @title CreatorRoyaltiesControl
 /// @author ZORA @iainnash / @tbtstl
 /// @notice Contract for managing the royalties of an 1155 contract
-abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBaseConstants, ICreatorRoyaltyErrors {
+abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBaseConstants {
     uint256 immutable ROYALTY_BPS_TO_PERCENT = 10_000;
 
     /// @notice The royalty information for a given token.
@@ -41,7 +41,7 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
         }
         // Don't allow setting royalties to burn address
         if (configuration.royaltyRecipient == address(0) && configuration.royaltyBPS > 0) {
-            revert InvalidMintSchedule();
+            revert ICreatorRoyaltyErrors.InvalidMintSchedule();
         }
         royalties[tokenId] = configuration;
 
