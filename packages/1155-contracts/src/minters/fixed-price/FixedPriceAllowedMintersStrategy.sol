@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {Enjoy} from "_imagine/mint/Enjoy.sol";
+import {IFixedPriceAllowedMintersStrategy} from "../../interfaces/IFixedPriceAllowedMintersStrategy.sol";
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
@@ -36,42 +37,29 @@ import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
 
 /// @title FixedPriceAllowedMintersStrategy
 /// @notice A sale strategy for fixed price sales from an allowed set of minters
-contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress, IMinterErrors {
+contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress, IMinterErrors, IFixedPriceAllowedMintersStrategy {
     using SaleCommandHelper for ICreatorCommands.CommandSet;
 
-    event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig salesConfig);
-    event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
-    event MinterSet(address indexed mediaContract, uint256 indexed tokenId, address indexed minter, bool allowed);
-
-    error ONLY_MINTER();
-
-    struct SalesConfig {
-        /// @notice Unix timestamp for the sale start
-        uint64 saleStart;
-        /// @notice Unix timestamp for the sale end
-        uint64 saleEnd;
-        /// @notice Max tokens that can be minted for an address, 0 if unlimited
-        uint64 maxTokensPerAddress;
-        /// @notice Price per token in eth wei
-        uint96 pricePerToken;
-        /// @notice Funds recipient (0 if no different funds recipient than the contract global)
-        address fundsRecipient;
-    }
-
-    // 1155 contract -> 1155 tokenId -> settings
+    /// @notice The sales configs for a given token
+    /// @dev 1155 contract -> 1155 tokenId -> settings
     mapping(address => mapping(uint256 => SalesConfig)) internal salesConfigs;
 
-    // 1155 contract => 1155 tokenId => minter address => allowed
+    /// @notice If an address is allowed to mint a given token
+    /// @dev 1155 contract => 1155 tokenId => minter address => allowed
     mapping(address => mapping(uint256 => mapping(address => bool))) internal allowedMinters;
 
     /// @notice If a minter address is allowed to mint a token
+    /// @param tokenContract The 1155 contract address
+    /// @param tokenId The 1155 token id
+    /// @param minter The minter address
     function isMinter(address tokenContract, uint256 tokenId, address minter) public view returns (bool) {
         return allowedMinters[tokenContract][tokenId][minter] || allowedMinters[tokenContract][0][minter];
     }
 
     /// @notice Sets the allowed addresses that can mint a given token
     /// @param tokenId The tokenId to set the minters for OR tokenId 0 to set the minters for all tokens contract-wide
-    /// @param allowed Whether allowing or removing permission for the given list of minters to mint
+    /// @param minters The list of addresses to set permissions for
+    /// @param allowed Whether allowing or removing permissions for the minters
     function setMinters(uint256 tokenId, address[] calldata minters, bool allowed) external {
         uint256 numMinters = minters.length;
 
@@ -83,6 +71,8 @@ contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPer
     }
 
     /// @notice Sets the sale config for a given token
+    /// @param tokenId The token id to set the sale config for
+    /// @param salesConfig The sales config to set
     function setSale(uint256 tokenId, SalesConfig calldata salesConfig) external {
         salesConfigs[msg.sender][tokenId] = salesConfig;
 
@@ -90,6 +80,7 @@ contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPer
     }
 
     /// @notice Deletes the sale config for a given token
+    /// @param tokenId The token id to delete the sale config for
     function resetSale(uint256 tokenId) external override {
         delete salesConfigs[msg.sender][tokenId];
 
