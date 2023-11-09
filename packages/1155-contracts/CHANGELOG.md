@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.3.2
+
+### Patch Changes
+
+- 366ac20: Fix broken storage layout by not including an interface on CreatorRoyaltiesControl
+
 ## 2.3.1
 
 ### Patch Changes
