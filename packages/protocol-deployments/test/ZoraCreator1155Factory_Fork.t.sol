@@ -12,7 +12,7 @@ import {IOwnable} from "@zoralabs/zora-1155-contracts/src/interfaces/IOwnable.so
 import {ICreatorRoyaltiesControl} from "@zoralabs/zora-1155-contracts/src/interfaces/ICreatorRoyaltiesControl.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "@zoralabs/zora-1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {ForkDeploymentConfig, Deployment} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentConfig.sol";
+import {ForkDeploymentConfig, Deployment} from "../src/DeploymentConfig.sol";
 
 contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     uint256 constant quantityToMint = 3;
