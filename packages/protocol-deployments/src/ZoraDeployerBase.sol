@@ -4,15 +4,15 @@ pragma solidity ^0.8.13;
 import "forge-std/Script.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
-import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
-import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
-import {Zora1155Factory} from "../proxies/Zora1155Factory.sol";
-import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
-import {ScriptDeploymentConfig, Deployment, ChainConfig} from "../deployment/DeploymentConfig.sol";
-import {ZoraDeployerUtils} from "../deployment/ZoraDeployerUtils.sol";
-import {IMinter1155} from "../interfaces/IMinter1155.sol";
-import {DeterministicDeployerScript} from "../deployment/DeterministicDeployerScript.sol";
-import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
+import {IZoraCreator1155Factory} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155Factory.sol";
+import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
+import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
+import {ICreatorRoyaltiesControl} from "@zoralabs/zora-1155-contracts/src/interfaces/ICreatorRoyaltiesControl.sol";
+import {ScriptDeploymentConfig, Deployment, ChainConfig} from "./DeploymentConfig.sol";
+import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
+import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
+import {DeterministicDeployerScript} from "./DeterministicDeployerScript.sol";
+import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 
 /// @notice Deployment drops for base where
 abstract contract ZoraDeployerBase is ScriptDeploymentConfig, DeterministicDeployerScript {
