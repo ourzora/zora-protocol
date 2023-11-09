@@ -5,6 +5,7 @@ import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
 import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
+import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {Deployment} from "../src/DeploymentConfig.sol";
 import {DeterministicDeployerScript} from "../src/DeterministicDeployerScript.sol";
 
