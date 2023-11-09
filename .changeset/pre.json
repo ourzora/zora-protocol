@@ -1,0 +1,11 @@
+{
+  "mode": "pre",
+  "tag": "prerelease",
+  "initialVersions": {
+    "@zoralabs/zora-1155-contracts": "2.4.0",
+    "@zoralabs/premint-sdk": "0.1.1",
+    "@zoralabs/protocol-deployments": "0.0.4",
+    "@zoralabs/protocol-rewards": "1.2.1"
+  },
+  "changesets": []
+}
