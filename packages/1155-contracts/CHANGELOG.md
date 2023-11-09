@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.4.1-prerelease.0
+
+### Patch Changes
+
+- 5d86660: Moved deployment related code from 1155 to protocol-deployments package
+
 ## 2.4.0
 
 ### Minor Changes

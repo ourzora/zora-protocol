@@ -1,5 +1,13 @@
 # @zoralabs/premint-sdk
 
+## 0.0.5-prerelease.0
+
+### Patch Changes
+
+- 5d86660: Moved deployment related code from 1155 to protocol-deployments package
+- Updated dependencies [5d86660]
+  - @zoralabs/zora-1155-contracts@2.4.1-prerelease.0
+
 ## 0.0.4
 
 ### Patch Changes
