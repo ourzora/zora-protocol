@@ -71,24 +71,14 @@ contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPer
 
     /// @notice Sets the allowed addresses that can mint a given token
     /// @param tokenId The tokenId to set the minters for OR tokenId 0 to set the minters for all tokens contract-wide
-    function setMinters(uint256 tokenId, address[] calldata minters) external {
+    /// @param allowed Whether allowing or removing permission for the given list of minters to mint
+    function setMinters(uint256 tokenId, address[] calldata minters, bool allowed) external {
         uint256 numMinters = minters.length;
 
         for (uint256 i; i < numMinters; ++i) {
-            allowedMinters[msg.sender][tokenId][minters[i]] = true;
+            allowedMinters[msg.sender][tokenId][minters[i]] = allowed;
 
-            emit MinterSet(msg.sender, tokenId, minters[i], true);
-        }
-    }
-
-    /// @notice Remove the given allowed addresses from being able to mint a given token
-    function removeMinters(uint256 tokenId, address[] calldata minters) external {
-        uint256 numMinters = minters.length;
-
-        for (uint256 i; i < numMinters; ++i) {
-            allowedMinters[msg.sender][tokenId][minters[i]] = false;
-
-            emit MinterSet(msg.sender, tokenId, minters[i], false);
+            emit MinterSet(msg.sender, tokenId, minters[i], allowed);
         }
     }
 

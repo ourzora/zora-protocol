@@ -78,7 +78,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters));
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true));
 
         vm.stopPrank();
 
@@ -138,7 +138,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(0, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, 0, minters));
+        target.callSale(0, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, 0, minters, true));
 
         vm.stopPrank();
 
@@ -180,7 +180,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
             )
         );
 
-        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters));
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true));
 
         vm.stopPrank();
 
@@ -217,11 +217,11 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
 
         vm.expectEmit(true, true, true, true);
         emit MinterSet(address(target), newTokenId, allowedMinter, true);
-        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters));
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true));
 
         vm.expectEmit(true, true, true, true);
         emit MinterSet(address(target), newTokenId, allowedMinter, false);
-        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.removeMinters.selector, newTokenId, minters));
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(FixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, false));
 
         vm.stopPrank();
     }
