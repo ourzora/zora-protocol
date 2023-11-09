@@ -170,7 +170,7 @@ contract FixedPriceAllowedMintersStrategy is Enjoy, SaleStrategy, LimitedMintPer
     }
 
     function contractURI() external pure override returns (string memory) {
-        return "https://github.com/ourzora/zora-1155-contracts/";
+        return "https://github.com/ourzora/zora-protocol/";
     }
 
     /// @notice The name of the sale strategy
