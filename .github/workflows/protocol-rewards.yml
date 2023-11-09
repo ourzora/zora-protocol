@@ -1,0 +1,21 @@
+name: "Protocol Rewards"
+on:
+  workflow_call:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      package_folder: packages/protocol-rewards
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+    with:
+      package_folder: packages/protocol-rewards
+
+  coverage:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "protocol-rewards"
+      files_to_ignore: '"*lib*"'

@@ -1,0 +1,30 @@
+on:
+  workflow_call:
+    inputs:
+      package_folder:
+        required: true
+        type: string
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Test
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Load foundry cache
+        uses: ./.github/actions/cache_foundry_build
+        with:
+          package_folder: ${{ inputs.package_folder }}
+
+      - name: Test
+        run: |
+          cd ${{ inputs.package_folder}} && yarn test
+        env:
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
