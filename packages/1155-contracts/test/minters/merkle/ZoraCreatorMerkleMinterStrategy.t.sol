@@ -8,7 +8,7 @@ import {Zora1155} from "../../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155Errors} from "../../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
-import {ILimitedMintPerAddress} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
+import {ILimitedMintPerAddressErrors} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../../../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 
@@ -290,7 +290,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
 
         vm.deal(mintTo, 1.000777 ether);
 
-        vm.expectRevert(abi.encodeWithSelector(ILimitedMintPerAddress.UserExceedsMintLimit.selector, mintTo, 10, 11));
+        vm.expectRevert(abi.encodeWithSelector(ILimitedMintPerAddressErrors.UserExceedsMintLimit.selector, mintTo, 10, 11));
         target.mint{value: 1.000777 ether}(merkleMinter, newTokenId, 1, abi.encode(mintTo, maxQuantity, pricePerToken, merkleProof));
 
         vm.stopPrank();

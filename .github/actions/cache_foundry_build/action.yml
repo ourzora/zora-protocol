@@ -1,0 +1,29 @@
+name: 'Cache foundry build'
+description: 'Caches foundry build by path'
+
+inputs:
+  package_folder:  # id of input
+    description: 'contracts package folder'
+    required: true
+  foundry_profile:
+    description: 'foundry profile for caching'
+
+runs:
+  using: "composite"
+
+  steps:
+    - name: Cache contracts build
+      uses: actions/cache@v3
+      with:
+        # npm cache files are stored in out and cache
+        path: |
+          ${{ inputs.package_folder }}/cache
+          ${{ inputs.package_folder }}/out
+        # cache key is based on foundry config, contracts source tests, and scripts
+        key: ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/test/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/script/**/*.sol', inputs.package_folder)) }}
+        # the following backups cache keys are searched, in case an exact match is not found
+        # see https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
+        restore-keys: |
+          ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/test/**/*.sol', inputs.package_folder)) }}-
+          ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-
+          ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-

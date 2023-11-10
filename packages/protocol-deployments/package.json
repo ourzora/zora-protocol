@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-deployments",
-  "version": "0.0.3",
+  "version": "0.0.4",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -8,8 +8,7 @@
   "type": "module",
   "scripts": {
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
-    "test:fork": "FORK_TEST_CHAINS=mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli,base,zora_sepolia forge test -vvv",
-    "test": "forge test -vvv",
+    "test": "FORK_TEST_CHAINS=mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,base_goerli,base,zora_sepolia forge test -vvv",
     "build": "yarn wagmi && yarn bundle-configs && tsup",
     "bundle-configs": "node script/bundle-chainConfigs.mjs && yarn prettier",
     "prettier": "prettier --write 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",

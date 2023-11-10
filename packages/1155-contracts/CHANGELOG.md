@@ -1,5 +1,18 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.4.0
+
+### Minor Changes
+
+- 366ac20: Fix broken storage layout by not including an interface on CreatorRoyaltiesControl
+- e25ac54: ignore nonzero supply royalty schedule
+
+## 2.3.1
+
+### Patch Changes
+
+- e6f61a9: Include all minter and royalty errors in erc1155 and premint executor abis
+
 ## 2.3.0
 
 ### Minor Changes

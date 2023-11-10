@@ -4,6 +4,7 @@ pragma solidity 0.8.17;
 import {CreatorRoyaltiesStorageV1} from "./CreatorRoyaltiesStorageV1.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {SharedBaseConstants} from "../shared/SharedBaseConstants.sol";
+import {ICreatorRoyaltyErrors} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IERC2981} from "@openzeppelin/contracts/interfaces/IERC2981.sol";
 
 /// Imagine. Mint. Enjoy.
@@ -33,13 +34,14 @@ abstract contract CreatorRoyaltiesControl is CreatorRoyaltiesStorageV1, SharedBa
     }
 
     function _updateRoyalties(uint256 tokenId, RoyaltyConfiguration memory configuration) internal {
-        // Deprecate supply royalty support
+        // If a nonzero royalty mint schedule is set:
         if (configuration.royaltyMintSchedule != 0) {
-            revert InvalidMintSchedule();
+            // Set the value to zero
+            configuration.royaltyMintSchedule = 0;
         }
         // Don't allow setting royalties to burn address
         if (configuration.royaltyRecipient == address(0) && configuration.royaltyBPS > 0) {
-            revert InvalidMintSchedule();
+            revert ICreatorRoyaltyErrors.InvalidMintSchedule();
         }
         royalties[tokenId] = configuration;
 
