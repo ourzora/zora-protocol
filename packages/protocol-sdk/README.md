@@ -177,7 +177,7 @@ async function executePremint(
 
 ### Deleting a premint:
 
-```js
+```ts
 import {PremintAPI} from '@zoralabs/premint-sdk';
 import type {Address, WalletClient} from 'viem';
 
