@@ -1,5 +1,12 @@
 # @zoralabs/premint-sdk
 
+## 0.0.5-prerelease.0
+
+### Patch Changes
+
+- 0a49450: \* Moved deployment related code from 1155 to protocol-deployments package
+  - Deployed 2.4.0 to zora-goerli (testnet)
+
 ## 0.0.4
 
 ### Patch Changes
