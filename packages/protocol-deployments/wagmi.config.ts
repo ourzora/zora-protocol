@@ -85,13 +85,7 @@ const getAddresses = () => {
       chainId,
       address: jsonAddress.PREMINTER_PROXY,
       abi: abis.zoraCreator1155PremintExecutorImplABI,
-    }),
-      addAddress({
-        contractName: "IImmutableCreate2Factory",
-        chainId,
-        address: "0x0000000000FFe8B47B3e2130213B802212439497",
-        abi: abis.iImmutableCreate2FactoryABI,
-      });
+    });
   }
 
   return addresses;
