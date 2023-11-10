@@ -7,5 +7,7 @@
     "@zoralabs/protocol-deployments": "0.0.4",
     "@zoralabs/protocol-rewards": "1.2.1"
   },
-  "changesets": []
+  "changesets": [
+    "cold-toys-agree"
+  ]
 }
