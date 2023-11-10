@@ -1,5 +1,12 @@
 # @zoralabs/premint-sdk
 
+## 0.1.2-prerelease.0
+
+### Patch Changes
+
+- Updated dependencies [a50ae1c]
+  - @zoralabs/protocol-deployments@0.0.5-prerelease.0
+
 ## 0.1.1
 
 ### Patch Changes
