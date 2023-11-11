@@ -31,7 +31,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
         vm.createSelectFork(vm.rpcUrl(chainName));
 
         // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
+        // retrieve the address created for a contract
         address preminterAddress = getDeployment().preminterProxy;
 
         if (preminterAddress == address(0)) {
