@@ -1,0 +1,16 @@
+name: "1155"
+on:
+  workflow_call:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      package_folder: packages/protocol-deployments
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+    with:
+      package_folder: packages/protocol-deployments
+    secrets: inherit
