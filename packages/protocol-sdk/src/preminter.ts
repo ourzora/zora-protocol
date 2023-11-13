@@ -76,8 +76,6 @@ export const preminterTypedDataDefinition = ({
     primaryType: "CreatorAttribution",
   };
 
-  // console.log({ result, deleted });
-
   return result;
 };
 
