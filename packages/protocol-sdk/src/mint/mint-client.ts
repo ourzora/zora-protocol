@@ -42,7 +42,7 @@ const zora721Abi = parseAbi([
   "function zoraFeeForAmount(uint256 amount) public view returns (address, uint256)",
 ] as const);
 
-export class MintClient extends ClientBase {
+class MintClient extends ClientBase {
   apiClient: typeof MintAPIClient;
 
   constructor(chain: Chain, apiClient?: typeof MintAPIClient) {
@@ -80,7 +80,7 @@ export class MintClient extends ClientBase {
     mintable: MintableGetTokenResponse;
     minterAccount: Address;
     mintArguments: MintArguments;
-  }): Promise<{simulateContractParameters: SimulateContractParameters}> {
+  }): Promise<{ simulateContractParameters: SimulateContractParameters }> {
     if (!mintable) {
       throw new MintError("No mintable found");
     }
@@ -215,4 +215,14 @@ export class MintClient extends ClientBase {
 
     return result;
   }
+}
+
+export function createMintClient({
+  chain,
+  mintAPIClient,
+}: {
+  chain: Chain;
+  mintAPIClient?: typeof MintAPIClient;
+}) {
+  return new MintClient(chain, mintAPIClient);
 }
