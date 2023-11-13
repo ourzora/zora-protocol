@@ -58,6 +58,8 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
 
     function setOwner(address newOwner) external;
 
+    function owner() external view returns (address);
+
     event ContractRendererUpdated(IRenderer1155 renderer);
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
@@ -71,6 +73,14 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     /// @param minterArguments calldata for the minter contracts
     function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
 
+    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and a mint referral
+    /// @param minter The minter contract to use
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param minterArguments The arguments to pass to the minter
+    /// @param mintReferral The referrer of the mint
+    function mintWithRewards(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address mintReferral) external payable;
+
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 
     function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external;
@@ -81,6 +91,10 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     /// @param tokenURI URI for the token
     /// @param maxSupply maxSupply for the token, set to 0 for open edition
     function setupNewToken(string memory tokenURI, uint256 maxSupply) external returns (uint256 tokenId);
+
+    function setupNewTokenWithCreateReferral(string calldata newURI, uint256 maxSupply, address createReferral) external returns (uint256);
+
+    function getCreatorRewardRecipient(uint256 tokenId) external view returns (address);
 
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
 
@@ -96,6 +110,13 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
 
     function updateRoyaltiesForToken(uint256 tokenId, ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfiguration) external;
 
+    /// @notice Set funds recipient address
+    /// @param fundsRecipient new funds recipient address
+    function setFundsRecipient(address payable fundsRecipient) external;
+
+    /// @notice Allows the create referral to update the address that can claim their rewards
+    function updateCreateReferral(uint256 tokenId, address recipient) external;
+
     function addPermission(uint256 tokenId, address user, uint256 permissionBits) external;
 
     function removePermission(uint256 tokenId, address user, uint256 permissionBits) external;
@@ -109,4 +130,13 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external;
 
     function mintFee() external view returns (uint256);
+
+    /// @notice Withdraws all ETH from the contract to the funds recipient address
+    function withdraw() external;
+
+    /// @notice Withdraws ETH from the Zora Rewards contract
+    function withdrawRewards(address to, uint256 amount) external;
+
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address);
 }
