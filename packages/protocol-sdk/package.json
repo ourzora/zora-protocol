@@ -1,6 +1,6 @@
 {
-  "name": "@zoralabs/premint-sdk",
-  "version": "0.1.1",
+  "name": "@zoralabs/protocol-sdk",
+  "version": "0.2.0",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -10,8 +10,7 @@
     "build": "tsup",
     "prepack": "yarn build",
     "test:js": "vitest src",
-    "generate-types": "npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && npx openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts",
-    "anvil": "source .env.anvil && anvil --fork-url $FORK_RPC_URL --fork-block-number $FORK_BLOCK_NUMBER --chain-id 31337"
+    "generate-types": "npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && npx openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts"
   },
   "dependencies": {
     "@zoralabs/protocol-deployments": "*",
