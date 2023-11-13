@@ -6,7 +6,10 @@ fs_permissions = [
   { access = "readwrite", path = "./deterministicConfig" },
 ]
 libs = ['_imagine', 'node_modules', 'script']
-allow_paths = ["node_modules/@zoralabs/protocol-rewards"]
+allow_paths = [
+  "node_modules/@zoralabs/protocol-rewards",
+  "node_modules/@zoralabs/openzeppelin-contracts-upgradeable",
+]
 optimizer = true
 optimizer_runs = 50
 via_ir = true

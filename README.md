@@ -19,6 +19,10 @@ Install prerequisites:
 - [Node.js and yarn](https://classic.yarnpkg.com/lang/en/docs/install/#mac-stable)
 - [Foundry](https://book.getfoundry.sh/getting-started/installation)
 
+Clone the repository recursively, to include submodules:
+
+    git clone --recurse-submodules -j8 git@github.com:ourzora/zora-protocol.git
+
 Install dependencies:
 
     yarn

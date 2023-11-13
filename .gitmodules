@@ -1,0 +1,3 @@
+[submodule "packages/openzeppelin-contracts-upgradeable"]
+	path = packages/openzeppelin-contracts-upgradeable
+	url = git@github.com:ourzora/openzeppelin-contracts-upgradeable.git
