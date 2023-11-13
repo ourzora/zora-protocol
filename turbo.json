@@ -15,6 +15,9 @@
     "test": {
       "dependsOn": ["^test"]
     },
+    "test:js": {
+      "dependsOn": ["^test:js"]
+    },
     "test:fork": {
       "dependsOn": ["^test:fork"]
     },

@@ -1,61 +1,15 @@
-import {
-  createTestClient,
-  http,
-  createWalletClient,
-  createPublicClient,
-  Address,
-} from "viem";
 import { foundry } from "viem/chains";
-import { describe, it, beforeEach, expect, vi, afterEach } from "vitest";
-import { parseEther } from "viem";
-import { BackendChainNamesLookup, PremintClient } from "./premint-client";
-
-const chain = foundry;
-
-const walletClient = createWalletClient({
-  chain,
-  transport: http(),
-});
-
-const testClient = createTestClient({
-  chain,
-  mode: "anvil",
-  transport: http(),
-});
-
-const publicClient = createPublicClient({
-  chain,
-  transport: http(),
-});
-
-// JSON-RPC Account
-const [deployerAccount, secondWallet] = (await walletClient.getAddresses()) as [
-  Address,
-  Address
-];
+import { describe, expect, vi } from "vitest";
+import { PremintClient } from "./premint-client";
+import { anvilTest } from "src/anvil";
+import { BackendChainNamesLookup } from "src/apis/chain-constants";
 
 describe("ZoraCreator1155Premint", () => {
-  beforeEach(async () => {
-    // deploy signature minter contract
-    await testClient.setBalance({
-      address: deployerAccount,
-      value: parseEther("1"),
-    });
-
-    await testClient.setBalance({
-      address: secondWallet,
-      value: parseEther("1"),
-    });
-  }, 20 * 1000);
-
-  afterEach(() => {
-    testClient.reset();
-  }, 4 * 1000);
-
-  it(
+  anvilTest(
     "can sign on the forked premint contract",
-    async () => {
-      const premintClient = new PremintClient(chain);
+    async ({ viemClients: { walletClient, publicClient } }) => {
+      const [deployerAccount] = await walletClient.getAddresses();
+      const premintClient = new PremintClient(foundry);
 
       premintClient.apiClient.getNextUID = vi
         .fn()
@@ -67,10 +21,10 @@ describe("ZoraCreator1155Premint", () => {
       await premintClient.createPremint({
         walletClient,
         publicClient,
-        account: deployerAccount,
+        account: deployerAccount!,
         checkSignature: true,
         collection: {
-          contractAdmin: deployerAccount,
+          contractAdmin: deployerAccount!,
           contractName: "Testing Contract",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
@@ -111,57 +65,58 @@ describe("ZoraCreator1155Premint", () => {
           "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
       });
     },
-    20 * 1000
+    20 * 1000,
   );
 
-  it("can validate premint on network", async () => {
-    const premintClient = new PremintClient(chain);
+  anvilTest(
+    "can validate premint on network",
+    async ({ viemClients: { publicClient } }) => {
+      const premintClient = new PremintClient(foundry);
 
-    const premintData = {
-      collection: {
-        contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-        contractName: "Testing Contract",
-        contractURI:
-          "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
-      },
-      premint: {
-        uid: 3,
-        version: 1,
-        deleted: false,
-        tokenConfig: {
-          maxSupply: "18446744073709551615",
-          maxTokensPerAddress: "0",
-          pricePerToken: "0",
-          mintDuration: "604800",
-          mintStart: "0",
-          royaltyMintSchedule: 0,
-          royaltyBPS: 1000,
-          fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
-          royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          tokenURI:
-            "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+      const premintData = {
+        collection: {
+          contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+          contractName: "Testing Contract",
+          contractURI:
+            "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
-      },
-      chain_name: "ZORA-TESTNET",
-      signature:
-        "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
-    } as const;
-    const publicClient = createPublicClient({
-      chain: foundry,
-      transport: http(),
-    });
-    const signatureValid = await premintClient.isValidSignature({
-      // @ts-ignore: Fix enum type
-      data: premintData,
-      publicClient,
-    });
-    expect(signatureValid.isValid).toBe(true);
-  });
+        premint: {
+          uid: 3,
+          version: 1,
+          deleted: false,
+          tokenConfig: {
+            maxSupply: "18446744073709551615",
+            maxTokensPerAddress: "0",
+            pricePerToken: "0",
+            mintDuration: "604800",
+            mintStart: "0",
+            royaltyMintSchedule: 0,
+            royaltyBPS: 1000,
+            fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
+            royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+            tokenURI:
+              "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+          },
+        },
+        chain_name: "ZORA-TESTNET",
+        signature:
+          "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
+      } as const;
 
-  it(
+      const signatureValid = await premintClient.isValidSignature({
+        // @ts-ignore: Fix enum type
+        data: premintData,
+        publicClient,
+      });
+      expect(signatureValid.isValid).toBe(true);
+    },
+  );
+
+  anvilTest(
     "can execute premint on network",
-    async () => {
-      const premintClient = new PremintClient(chain);
+    async ({ viemClients: { walletClient, publicClient } }) => {
+      const [deployerAccount] = await walletClient.getAddresses();
+      const premintClient = new PremintClient(foundry);
 
       premintClient.apiClient.getSignature = vi.fn().mockResolvedValue({
         chain_name: "ZORA-TESTNET",
@@ -236,6 +191,6 @@ describe("ZoraCreator1155Premint", () => {
         uid: 3,
       });
     },
-    20 * 1000
+    20 * 1000,
   );
 });
