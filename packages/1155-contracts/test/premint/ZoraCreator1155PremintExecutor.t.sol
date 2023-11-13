@@ -132,7 +132,7 @@ contract ZoraCreator1155PreminterTest is Test {
         assertTrue(isValid);
 
         // now check using new method
-        (isValid, ) = preminter.isValidSignatureV1(contractConfig.contractAdmin, contractAddress, premintConfig, signature);
+        isValid = preminter.isAuthorizedToCreatePremint(creator, contractConfig.contractAdmin, contractAddress);
         assertTrue(isValid);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
@@ -667,18 +667,13 @@ contract ZoraCreator1155PreminterTest is Test {
 
         address contractAddress = preminter.getContractAddress(contractConfig);
 
-        // sign and execute premint
-        bytes memory signature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, block.chainid);
+        bool isValidSignature = preminter.isAuthorizedToCreatePremint({
+            signer: creator,
+            premintContractConfigContractAdmin: contractConfig.contractAdmin,
+            contractAddress: contractAddress
+        });
 
-        (bool isValidSignature, address recoveredSigner) = preminter.isValidSignatureV2(
-            contractConfig.contractAdmin,
-            contractAddress,
-            premintConfig,
-            signature
-        );
-
-        assertEq(creator, recoveredSigner, "recovered the wrong signer");
-        assertTrue(isValidSignature, "signature should be valid");
+        assertTrue(isValidSignature, "creator should be allowed to create premint before contract created");
 
         _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, premintExecutor, 1, "hi");
 
@@ -694,9 +689,13 @@ contract ZoraCreator1155PreminterTest is Test {
         bytes memory newCreatorSignature = _signPremint(contractAddress, premintConfig2, newCreatorPrivateKey, block.chainid);
 
         // it should not be considered a valid signature
-        (isValidSignature, ) = preminter.isValidSignatureV2(contractConfig.contractAdmin, contractAddress, premintConfig2, newCreatorSignature);
+        isValidSignature = preminter.isAuthorizedToCreatePremint({
+            signer: newCreator,
+            premintContractConfigContractAdmin: contractConfig.contractAdmin,
+            contractAddress: contractAddress
+        });
 
-        assertFalse(isValidSignature, "signature should not be valid");
+        assertFalse(isValidSignature, "alternative creator should not be allowed to create a premint");
 
         uint256 quantityToMint = 1;
         uint256 mintCost = mintFeeAmount * quantityToMint;
@@ -712,7 +711,11 @@ contract ZoraCreator1155PreminterTest is Test {
         IZoraCreator1155(contractAddress).addPermission(CONTRACT_BASE_ID, newCreator, PERMISSION_BIT_MINTER);
 
         // should now be considered a valid signature
-        (isValidSignature, ) = preminter.isValidSignatureV2(contractConfig.contractAdmin, contractAddress, premintConfig2, newCreatorSignature);
+        isValidSignature = preminter.isAuthorizedToCreatePremint({
+            signer: newCreator,
+            premintContractConfigContractAdmin: contractConfig.contractAdmin,
+            contractAddress: contractAddress
+        });
         assertTrue(isValidSignature, "valid signature after granted permission");
 
         vm.deal(premintExecutor, mintCost);

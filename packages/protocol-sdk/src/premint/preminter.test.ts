@@ -22,6 +22,7 @@ import {
   PremintConfig,
   TokenCreationConfig,
   preminterTypedDataDefinition,
+  isValidSignatureV1,
 } from "./preminter";
 import {
   AnvilViemClientsTest,
@@ -182,15 +183,18 @@ describe("ZoraCreator1155Preminter", () => {
         account: creatorAccount,
       });
 
-      const preminterAddress = zoraCreator1155PremintExecutorAddress[999];
       // recover and verify address is correct
-      const [, , recoveredAddress] =
-        await viemClients.publicClient.readContract({
-          abi: preminterAbi,
-          address: preminterAddress,
-          functionName: "isValidSignature",
-          args: [contractConfig, premintConfig, signedMessage],
-        });
+      const { recoveredAddress, isAuthorized } = await isValidSignatureV1({
+        contractAddress,
+        chainId: viemClients.publicClient.chain!.id,
+        originalContractAdmin: contractConfig.contractAdmin,
+        premintConfig,
+        publicClient: viemClients.publicClient,
+        signature: signedMessage,
+      });
+
+      expect(recoveredAddress).to.equal(creatorAccount);
+      expect(isAuthorized).toBe(true);
 
       expect(recoveredAddress).to.equal(creatorAccount);
     },
