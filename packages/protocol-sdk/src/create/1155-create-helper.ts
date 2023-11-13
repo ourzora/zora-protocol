@@ -60,7 +60,6 @@ type RoyaltySettingsType = {
   royaltyRecipient: Address;
 };
 
-
 export function create1155TokenSetupArgs({
   nextTokenId,
   // How many NFTs upon initialization to mint to the creator
