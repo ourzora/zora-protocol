@@ -5,6 +5,7 @@ import type {
   Chain,
   Hex,
   PublicClient,
+  SimulateContractParameters,
   TransactionReceipt,
   WalletClient,
 } from "viem";
@@ -53,12 +54,6 @@ type SignedPremintResponse = {
   uid: number;
   verifyingContract: Address;
   premint: PremintSignatureResponse;
-};
-
-type ExecutedPremintResponse = {
-  receipt: TransactionReceipt;
-  premintedLog?: PremintedLogType;
-  urls: URLSReturnType;
 };
 
 export const DefaultMintArguments = {
@@ -148,7 +143,7 @@ export const encodePremintForAPI = ({
  * Preminter API to access ZORA Premint functionality.
  * Currently only supports V1 premints.
  */
-export class PremintClient extends ClientBase {
+class PremintClient extends ClientBase {
   apiClient: typeof PremintAPIClient;
 
   constructor(chain: Chain, apiClient?: typeof PremintAPIClient) {
@@ -179,6 +174,17 @@ export class PremintClient extends ClientBase {
    */
   getFixedPriceMinterAddress() {
     return zoraCreatorFixedPriceSaleStrategyAddress[999];
+  }
+
+  getDataFromPremintReceipt(receipt: TransactionReceipt) {
+    const premintedLog = getPremintedLogFromReceipt(receipt);
+    return {
+      premintedLog,
+      urls: this.makeUrls({
+        address: premintedLog?.contractAddress,
+        tokenId: premintedLog?.tokenId,
+      }),
+    };
   }
 
   /**
@@ -553,24 +559,18 @@ export class PremintClient extends ClientBase {
    * @param settings.publicClient Optional public client for preflight checks.
    * @returns receipt, log, zoraURL
    */
-  async executePremintWithWallet({
+  async executePremint({
     data,
     account,
-    walletClient,
     mintArguments,
-    publicClient,
   }: {
     data: PremintSignatureGetResponse;
-    walletClient: WalletClient;
-    account?: Account | Address;
+    account: Account | Address;
     mintArguments?: {
       quantityToMint: number;
       mintComment?: string;
     };
-    publicClient?: PublicClient;
-  }): Promise<ExecutedPremintResponse> {
-    publicClient = this.getPublicClient(publicClient);
-
+  }): Promise<{request: SimulateContractParameters}> {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
@@ -586,34 +586,32 @@ export class PremintClient extends ClientBase {
     ] as const;
 
     if (!account) {
-      account = walletClient.account;
-    }
-
-    if (!account) {
       throw new Error("Wallet not passed in");
     }
 
     const value = numberToMint * REWARD_PER_TOKEN;
 
-    const { request } = await publicClient.simulateContract({
+    const request = {
       account,
       abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "premint",
       value,
       address: targetAddress,
       args,
-    });
-    const hash = await walletClient.writeContract(request);
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-    const premintedLog = getPremintedLogFromReceipt(receipt);
+    };
 
     return {
-      receipt,
-      premintedLog,
-      urls: this.makeUrls({
-        address: premintedLog?.contractAddress,
-        tokenId: premintedLog?.tokenId,
-      }),
+      request,
     };
   }
+}
+
+export function createPremintClient({
+  chain,
+  premintAPIClient,
+}: {
+  chain: Chain;
+  premintAPIClient?: typeof PremintAPIClient;
+}) {
+  return new PremintClient(chain, premintAPIClient);
 }
