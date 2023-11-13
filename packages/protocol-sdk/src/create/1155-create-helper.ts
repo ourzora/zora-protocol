@@ -8,8 +8,8 @@ import type {
   Address,
   Hex,
   PublicClient,
+  SimulateContractParameters,
   TransactionReceipt,
-  WalletClient,
 } from "viem";
 import { decodeEventLog, encodeFunctionData, zeroAddress } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
@@ -103,11 +103,6 @@ export function create1155TokenSetupArgs({
   const setupActions = [
     encodeFunctionData({
       abi: zoraCreator1155ImplABI,
-      functionName: "addPermission",
-      args: [0n, fixedPriceMinterAddress, PERMISSION_BIT_MINTER],
-    }),
-    encodeFunctionData({
-      abi: zoraCreator1155ImplABI,
       functionName: "assumeLastTokenIdMatches",
       args: [nextTokenId - 1n],
     }),
@@ -122,6 +117,11 @@ export function create1155TokenSetupArgs({
           functionName: "setupNewToken",
           args: [tokenMetadataURI, maxSupply],
         }),
+    encodeFunctionData({
+      abi: zoraCreator1155ImplABI,
+      functionName: "addPermission",
+      args: [0n, fixedPriceMinterAddress, PERMISSION_BIT_MINTER],
+    }),
     encodeFunctionData({
       abi: zoraCreator1155ImplABI,
       functionName: "callSale",
@@ -226,117 +226,134 @@ async function getContractExists(
   };
 }
 
-// Create new 1155 token
-export async function createNew1155Token({
+type CreateNew1155TokenReturn = {
+  request: SimulateContractParameters;
+  tokenSetupActions: Hex[];
+  contractAddress: Address;
+  contractExists: boolean;
+};
+
+export function create1155CreatorClient({
   publicClient,
-  contract,
-  tokenMetadataURI,
-  mintToCreatorCount = 1,
-  salesConfig = {},
-  maxSupply,
-  account,
-  royaltySettings,
-  getAdditionalSetupActions,
 }: {
   publicClient: PublicClient;
-  account: Address;
-  maxSupply?: bigint | number;
-  royaltySettings?: RoyaltySettingsType;
-  royaltyBPS?: number;
-  contract: ContractType;
-  tokenMetadataURI: string;
-  mintToCreatorCount?: bigint | number;
-  salesConfig?: SalesConfigParamsType;
-  getAdditionalSetupActions?: (args: {
-    tokenId: bigint;
-    contractAddress: Address;
-  }) => Hex[];
 }) {
-  // Check if contract exists either from metadata or the static address passed in.
-  // If a static address is passed in, this fails if that contract does not exist.
-  const { contractExists, contractAddress } = await getContractExists(
-    publicClient,
+  async function createNew1155Token({
     contract,
-    account,
-  );
-
-  // Assume the next token id is the first token available for a new contract.
-  let nextTokenId = 1n;
-
-  if (contractExists) {
-    nextTokenId = await publicClient.readContract({
-      abi: zoraCreator1155ImplABI,
-      functionName: "nextTokenId",
-      address: contractAddress,
-    });
-  }
-
-  // Get the fixed price minter to use within the new token to set the sales configuration.
-  const fixedPriceMinterAddress = await publicClient.readContract({
-    abi: zoraCreator1155FactoryImplABI,
-    address: zoraCreator1155FactoryImplAddress[999],
-    functionName: "fixedPriceMinter",
-  });
-
-  let tokenSetupActions = create1155TokenSetupArgs({
     tokenMetadataURI,
-    nextTokenId,
-    salesConfig,
+    mintToCreatorCount = 1,
+    salesConfig = {},
     maxSupply,
-    fixedPriceMinterAddress,
     account,
-    mintToCreatorCount,
     royaltySettings,
-  });
-  if (getAdditionalSetupActions) {
-    tokenSetupActions = [
-      ...getAdditionalSetupActions({ tokenId: nextTokenId, contractAddress }),
-      ...tokenSetupActions,
-    ];
-  }
+    getAdditionalSetupActions,
+  }: {
+    account: Address;
+    maxSupply?: bigint | number;
+    royaltySettings?: RoyaltySettingsType;
+    royaltyBPS?: number;
+    contract: ContractType;
+    tokenMetadataURI: string;
+    mintToCreatorCount?: bigint | number;
+    salesConfig?: SalesConfigParamsType;
+    getAdditionalSetupActions?: (args: {
+      tokenId: bigint;
+      contractAddress: Address;
+    }) => Hex[];
+  }): Promise<CreateNew1155TokenReturn> {
+    // Check if contract exists either from metadata or the static address passed in.
+    // If a static address is passed in, this fails if that contract does not exist.
+    const { contractExists, contractAddress } = await getContractExists(
+      publicClient,
+      contract,
+      account,
+    );
 
-  if (!contractAddress && typeof contract === "string") {
-    throw new Error("Invariant: contract cannot be missing and an address");
-  }
-  if (!contractExists && typeof contract !== "string") {
-    const { request } = await publicClient.simulateContract({
+    // Assume the next token id is the first token available for a new contract.
+    let nextTokenId = 1n;
+
+    if (contractExists) {
+      nextTokenId = await publicClient.readContract({
+        abi: zoraCreator1155ImplABI,
+        functionName: "nextTokenId",
+        address: contractAddress,
+      });
+    }
+
+    // Get the fixed price minter to use within the new token to set the sales configuration.
+    const fixedPriceMinterAddress = await publicClient.readContract({
       abi: zoraCreator1155FactoryImplABI,
-      functionName: "createContractDeterministic",
-      account,
       address: zoraCreator1155FactoryImplAddress[999],
-      args: [
-        contract.uri,
-        contract.name,
-        {
-          // deprecated
-          royaltyMintSchedule: 0,
-          royaltyBPS: royaltySettings?.royaltyBPS || ROYALTY_BPS_DEFAULT,
-          royaltyRecipient: royaltySettings?.royaltyRecipient || account,
-        },
-        contract.defaultAdmin || account,
-        tokenSetupActions,
-      ],
+      functionName: "fixedPriceMinter",
     });
-    return {
-      send: (walletClient: WalletClient) => walletClient.writeContract(request),
-      tokenSetupActions,
-      contractAddress,
-      contractExists,
-    };
-  } else if (contractExists) {
-    const { request } = await publicClient.simulateContract({
-      abi: zoraCreator1155ImplABI,
-      functionName: "multicall",
+
+    let tokenSetupActions = create1155TokenSetupArgs({
+      tokenMetadataURI,
+      nextTokenId,
+      salesConfig,
+      maxSupply,
+      fixedPriceMinterAddress,
       account,
-      address: contractAddress,
-      args: [tokenSetupActions],
+      mintToCreatorCount,
+      royaltySettings,
     });
-    return {
-      send: (walletClient: WalletClient) => walletClient.writeContract(request),
-      tokenSetupActions,
-      contractAddress,
-      contractExists,
-    };
+    if (getAdditionalSetupActions) {
+      tokenSetupActions = [
+        ...getAdditionalSetupActions({ tokenId: nextTokenId, contractAddress }),
+        ...tokenSetupActions,
+      ];
+    }
+
+    if (!contractAddress && typeof contract === "string") {
+      throw new Error("Invariant: contract cannot be missing and an address");
+    }
+    if (!contractExists && typeof contract !== "string") {
+      const request: SimulateContractParameters<
+        typeof zoraCreator1155FactoryImplABI,
+        "createContractDeterministic"
+      > = {
+        abi: zoraCreator1155FactoryImplABI,
+        functionName: "createContractDeterministic",
+        account,
+        address: zoraCreator1155FactoryImplAddress[999],
+        args: [
+          contract.uri,
+          contract.name,
+          {
+            // deprecated
+            royaltyMintSchedule: 0,
+            royaltyBPS: royaltySettings?.royaltyBPS || ROYALTY_BPS_DEFAULT,
+            royaltyRecipient: royaltySettings?.royaltyRecipient || account,
+          },
+          contract.defaultAdmin || account,
+          tokenSetupActions,
+        ],
+      };
+      return {
+        request,
+        tokenSetupActions,
+        contractAddress,
+        contractExists,
+      };
+    } else if (contractExists) {
+      const request: SimulateContractParameters<
+        typeof zoraCreator1155ImplABI,
+        "multicall"
+      > = {
+        abi: zoraCreator1155ImplABI,
+        functionName: "multicall",
+        account,
+        address: contractAddress,
+        args: [tokenSetupActions],
+      };
+      return {
+        request,
+        tokenSetupActions,
+        contractAddress,
+        contractExists,
+      };
+    }
+    throw new Error("Unsupported contract argument type");
   }
-  throw new Error("Unsupported contract argument type");
+  return { createNew1155Token };
 }

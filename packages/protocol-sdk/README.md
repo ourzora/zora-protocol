@@ -12,7 +12,7 @@ Protocol SDK allows users to manage zora mints and collects.
 ### Creating a mint from an on-chain contract:
 
 ```ts
-import { MintAPI } from "@zoralabs/protocol-sdk";
+import { createMintClient } from "@zoralabs/protocol-sdk";
 import type { Address, WalletClient } from "viem";
 
 async function mintNFT(
@@ -20,7 +20,7 @@ async function mintNFT(
   address: Address,
   tokenId: bigint,
 ) {
-  const mintAPI = new MintAPI(walletClient.chain);
+  const mintAPI = createMintClient({ chain: walletClient.chain });
   await mintAPI.mintNFT({
     walletClient,
     address,
@@ -33,6 +33,40 @@ async function mintNFT(
 }
 ```
 
+### Creating an 1155 contract:
+
+If an object with {name, uri} is passed in to this helper, it uses the creatorAccount and those values to either 1) create or 2) mint to that existing contract.
+
+If you wish to mint on an existing contract, pass that contract in the contract field. The return value is the prepared transaction that you can use viem or wagmi to send.
+
+```ts
+import type { PublicClient } from "viem";
+import { create1155CreatorClient } from "@zoralabs/protocol-sdk";
+
+export async function createContract({
+  publicClient,
+  walletClient,
+}: {
+  publicClient: PublicClient;
+  walletClient: WalletClient;
+}) {
+  const creatorClient = create1155CreatorClient({ publicClient });
+  const { request } = await creatorClient.createNew1155Token({
+    contract: {
+      name: "testContract",
+      uri: demoContractMetadataURI,
+    },
+    tokenMetadataURI: demoTokenMetadataURI,
+    account: creatorAccount,
+    mintToCreatorCount: 1,
+  });
+  const { request: simulateRequest } = publicClient.simulateContract(request);
+  const hash = await walletClient.writeContract(simulateRequest);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+  return receipt;
+}
+```
+
 ### Creating a premint:
 
 ```ts
@@ -40,11 +74,8 @@ import { PremintAPI } from "@zoralabs/protocol-sdk";
 import type { Address, WalletClient } from "viem";
 
 async function makePremint(walletClient: WalletClient) {
-  // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
-  const premintAPI = new PremintAPI(walletClient.chain);
-
   // Create premint
-  const premint = await premintAPI.createPremint({
+  const premint = await createPremintAPI(walletClient.chain).createPremint({
     // Extra step to check the signature on-chain before attempting to sign
     checkSignature: true,
     // Collection information that this premint NFT will exist in once minted.
@@ -76,7 +107,7 @@ import type { Address, WalletClient } from "viem";
 
 async function updatePremint(walletClient: WalletClient) {
   // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
-  const premintAPI = new PremintAPI(walletClient.chain);
+  const premintAPI = createPremintAPI(walletClient.chain);
 
   // Create premint
   const premint = await premintAPI.updatePremint({
@@ -105,7 +136,7 @@ import type { Address, WalletClient } from "viem";
 
 async function deletePremint(walletClient: WalletClient) {
   // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
-  const premintAPI = new PremintAPI(walletClient.chain);
+  const premintAPI = createPremintClient({ chain: walletClient.chain });
 
   // Create premint
   const premint = await premintAPI.deletePremint({
@@ -132,7 +163,7 @@ async function executePremint(
   premintAddress: Address,
   premintUID: number,
 ) {
-  const premintAPI = new PremintAPI(walletClient.chain);
+  const premintAPI = createPremintClient({ chain: walletClient.chain });
 
   return await premintAPI.executePremintWithWallet({
     data: premintAPI.getPremintData(premintAddress, premintUID),
@@ -146,12 +177,12 @@ async function executePremint(
 
 ### Deleting a premint:
 
-```js
+```ts
 import {PremintAPI} from '@zoralabs/premint-sdk';
 import type {Address, WalletClient} from 'viem';
 
 async function deletePremint(walletClient: WalletClient, collection: Address, uid: number) {
-    const premintAPI = new PremintAPI(walletClient.chain);
+    const premintAPI = createPremintClient({chain: walletClient.chain});
 
     return await premintAPI.deletePremint({
         walletClient,
