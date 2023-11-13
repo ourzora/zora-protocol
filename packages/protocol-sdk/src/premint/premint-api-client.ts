@@ -1,7 +1,6 @@
-import { post, retries, get } from "./http-api-base";
-import { components, paths } from "./generated/premint-api-types";
-
-export const ZORA_API_BASE = "https://api.zora.co/premint/";
+import { post, retries, get } from "../apis/http-api-base";
+import { components, paths } from "../apis/generated/premint-api-types";
+import { ZORA_API_BASE } from "../constants";
 
 type SignaturePostType = paths["/signature"]["post"];
 type PremintSignatureRequestBody =
@@ -25,29 +24,29 @@ export type PremintSignatureGetResponse =
 
 export type BackendChainNames = components["schemas"]["ChainName"];
 
-
 const postSignature = async (
-  data: PremintSignatureRequestBody
-): Promise<PremintSignatureResponse> => {
-  return retries(() => post<PremintSignatureResponse>("signature", data));
-};
+  data: PremintSignatureRequestBody,
+): Promise<PremintSignatureResponse> =>
+  retries(() =>
+    post<PremintSignatureResponse>(`${ZORA_API_BASE}premint/signature`, data),
+  );
 
 const getNextUID = async (
-  path: PremintNextUIDGetPathParameters
+  path: PremintNextUIDGetPathParameters,
 ): Promise<PremintNextUIDGetResponse> =>
   retries(() =>
     get<PremintNextUIDGetResponse>(
-      `${ZORA_API_BASE}signature/${path.chain_name}/${path.collection_address}/next_uid`
-    )
+      `${ZORA_API_BASE}premint/signature/${path.chain_name}/${path.collection_address}/next_uid`,
+    ),
   );
 
 const getSignature = async (
-  path: PremintSignatureGetPathParameters
+  path: PremintSignatureGetPathParameters,
 ): Promise<PremintSignatureGetResponse> =>
   retries(() =>
     get<PremintSignatureGetResponse>(
-      `signature/${path.chain_name}/${path.collection_address}/${path.uid}`
-    )
+      `${ZORA_API_BASE}premint/signature/${path.chain_name}/${path.collection_address}/${path.uid}`,
+    ),
   );
 
 export const PremintAPIClient = {
@@ -55,3 +54,4 @@ export const PremintAPIClient = {
   getSignature,
   getNextUID,
 };
+export { ZORA_API_BASE };

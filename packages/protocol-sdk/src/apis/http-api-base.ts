@@ -33,7 +33,7 @@ export const get = async <T>(url: string) => {
     throw new BadResponseError(
       `Invalid response, status ${response.status}`,
       response.status,
-      json
+      json,
     );
   }
   return (await response.json()) as T;
@@ -65,7 +65,7 @@ export const post = async <T>(url: string, data: any) => {
     throw new BadResponseError(
       `Bad response: ${response.status}`,
       response.status,
-      json
+      json,
     );
   }
   return (await response.json()) as T;
@@ -75,15 +75,17 @@ export const retries = async <T>(
   tryFn: () => T,
   maxTries: number = 3,
   atTry: number = 1,
-  linearBackoffMS: number = 200
+  linearBackoffMS: number = 200,
 ): Promise<T> => {
   try {
     return await tryFn();
   } catch (err: any) {
     if (err instanceof BadResponseError) {
-      if (atTry <= maxTries) {
-        await wait(atTry * linearBackoffMS);
-        return await retries(tryFn, maxTries, atTry++);
+      if (err.status >= 500) {
+        if (atTry <= maxTries) {
+          await wait(atTry * linearBackoffMS);
+          return await retries(tryFn, maxTries, atTry + 1);
+        }
       }
     }
     throw err;
