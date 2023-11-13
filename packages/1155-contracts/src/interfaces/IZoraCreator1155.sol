@@ -37,13 +37,20 @@ import {PremintConfig} from "../delegation/ZoraCreator1155Attribution.sol";
 /// @notice Main interface for the ZoraCreator1155 contract
 /// @author @iainnash / @tbtstl
 interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
+    /// @notice This user role allows for any action to be performed
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
+    /// @notice This user role allows for only mint actions to be performed
     function PERMISSION_BIT_MINTER() external returns (uint256);
 
+    /// @notice This user role allows for only managing sales configurations
     function PERMISSION_BIT_SALES() external returns (uint256);
 
+    /// @notice This user role allows for only managing metadata configuration
     function PERMISSION_BIT_METADATA() external returns (uint256);
+
+    /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
+    function PERMISSION_BIT_FUNDS_MANAGER() external returns (uint256);
 
     /// @notice Used to label the configuration update type
     enum ConfigUpdate {
@@ -139,20 +146,4 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
 
     /// @notice Returns the current implementation address
     function implementation() external view returns (address);
-
-    // roles based constants
-    /// @notice This user role allows for any action to be performed
-    function PERMISSION_BIT_ADMIN() external returns (uint256);
-
-    /// @notice This user role allows for only mint actions to be performed
-    function PERMISSION_BIT_MINTER() external returns (uint256);
-
-    /// @notice This user role allows for only managing sales configurations
-    function PERMISSION_BIT_SALES() external returns (uint256);
-
-    /// @notice This user role allows for only managing metadata configuration
-    function PERMISSION_BIT_METADATA() external returns (uint256);
-
-    /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
-    function PERMISSION_BIT_FUNDS_MANAGER() external returns (uint256);
 }
