@@ -1,7 +1,7 @@
 import { parseAbi, parseEther } from "viem";
 import { zora } from "viem/chains";
 import { describe, expect } from "vitest";
-import { MintClient } from "./mint-client";
+import { createMintClient } from "./mint-client";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import { anvilTest } from "src/anvil";
 
@@ -21,7 +21,7 @@ describe("mint-helper", () => {
       });
       const targetContract = "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
       const targetTokenId = 1n;
-      const minter = new MintClient(zora);
+      const minter = createMintClient({ chain: zora });
 
       const { simulateContractParameters: params } =
         await minter.makePrepareMintTokenParams({
@@ -73,7 +73,7 @@ describe("mint-helper", () => {
 
       const targetContract = "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
       const targetTokenId = undefined;
-      const minter = new MintClient(zora);
+      const minter = createMintClient({ chain: zora });
 
       const { simulateContractParameters: prepared } =
         await minter.makePrepareMintTokenParams({
