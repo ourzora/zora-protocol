@@ -5,7 +5,7 @@
 Within a contracts package folder (i.e. `packages/1155-contracts`):
 
 1. Setup new `chainConfigs` file setting 1. fee recipient, and 2. owner for factory contracts
-2. Generate signatures for deploying upgrade gate at a deterministic address and transfering ownership to the factory owner:
+2. Generate signatures for deploying upgrade gate at a deterministic address and transferring ownership to the factory owner:
 
     npx tsx script/signDeploymentTransactions.ts
 
