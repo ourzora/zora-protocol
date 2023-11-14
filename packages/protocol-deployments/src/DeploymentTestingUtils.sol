@@ -2,13 +2,11 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
-import {IMinter1155} from "..//interfaces/IMinter1155.sol";
-import {Zora1155FactoryFixtures} from "../../test/fixtures/Zora1155FactoryFixtures.sol";
-import {Zora1155PremintFixtures} from "../../test/fixtures/Zora1155PremintFixtures.sol";
-import {ZoraCreator1155PremintExecutorImpl} from "../delegation/ZoraCreator1155PremintExecutorImpl.sol";
-import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig} from "../delegation/ZoraCreator1155Attribution.sol";
-import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
+import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
+import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
+import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
+import {ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, TokenCreationConfig} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
 
 contract DeploymentTestingUtils is Script {
     function signAndExecutePremint(address premintExecutorProxyAddress) internal {
@@ -20,14 +18,25 @@ contract DeploymentTestingUtils is Script {
         IMinter1155 fixedPriceMinter = ZoraCreator1155FactoryImpl(address(preminterAtProxy.zora1155Factory())).fixedPriceMinter();
 
         PremintConfig memory premintConfig = PremintConfig({
-            tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfig(fixedPriceMinter, creator),
+            tokenConfig: TokenCreationConfig({
+                tokenURI: "blah.token",
+                maxSupply: 10,
+                maxTokensPerAddress: 5,
+                pricePerToken: 0,
+                mintStart: 0,
+                mintDuration: 0,
+                royaltyMintSchedule: 0,
+                royaltyBPS: 100,
+                royaltyRecipient: creator,
+                fixedPriceMinter: address(fixedPriceMinter)
+            }),
             uid: 100,
             version: 0,
             deleted: false
         });
 
         // now interface with proxy preminter - sign and execute the premint
-        ContractCreationConfig memory contractConfig = Zora1155PremintFixtures.makeDefaultContractCreationConfig(creator);
+        ContractCreationConfig memory contractConfig = ContractCreationConfig({contractAdmin: creator, contractName: "blah", contractURI: "blah.contract"});
         address deterministicAddress = preminterAtProxy.getContractAddress(contractConfig);
 
         // sign the premint

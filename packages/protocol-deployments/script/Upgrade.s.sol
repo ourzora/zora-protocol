@@ -3,8 +3,8 @@ pragma solidity ^0.8.17;
 
 import "forge-std/Script.sol";
 
-import {ZoraDeployerBase} from "@zoralabs/zora-1155-contracts/src/deployment/ZoraDeployerBase.sol";
-import {ChainConfig, Deployment} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentConfig.sol";
+import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
+import {ChainConfig, Deployment} from "../src/DeploymentConfig.sol";
 
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
@@ -16,7 +16,7 @@ import {IZoraCreator1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IZo
 import {ZoraCreatorFixedPriceSaleStrategy} from "@zoralabs/zora-1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "@zoralabs/zora-1155-contracts/src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "@zoralabs/zora-1155-contracts/src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
-import {ZoraDeployerUtils} from "@zoralabs/zora-1155-contracts/src/deployment/ZoraDeployerUtils.sol";
+import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 contract UpgradeScript is ZoraDeployerBase {
