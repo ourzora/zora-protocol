@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {ForkDeploymentConfig} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentConfig.sol";
+import {ForkDeploymentConfig} from "../src/DeploymentConfig.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, TokenCreationConfig} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
