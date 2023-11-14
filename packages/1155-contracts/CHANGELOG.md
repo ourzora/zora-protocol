@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.4.1
+
+### Patch Changes
+
+- 63ef7f6: Added missing functions to IZoraCreator1155
+
 ## 2.4.0
 
 ### Minor Changes
