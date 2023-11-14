@@ -14,6 +14,11 @@ interface IFixedPriceAllowedMintersStrategy {
     /// @param allowed Whether allowing or removing permissions for the minters
     function setMinters(uint256 tokenId, address[] calldata minters, bool allowed) external;
 
+    /// @notice Sets the sale config for a given token
+    /// @param tokenId The token id to set the sale config for
+    /// @param salesConfig The sales config to set
+    function setSale(uint256 tokenId, SalesConfig calldata salesConfig) external;
+
     struct SalesConfig {
         /// @notice Unix timestamp for the sale start
         uint64 saleStart;
