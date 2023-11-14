@@ -1,4 +1,4 @@
-# @zoralabs/premint-sdk
+# @zoralabs/protocol-sdk
 
 ## 0.3.0
 
