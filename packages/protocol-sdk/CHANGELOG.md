@@ -1,4 +1,14 @@
-# @zoralabs/premint-sdk
+# @zoralabs/protocol-sdk
+
+## 0.3.0
+
+### Minor Changes
+
+- 40e0b32:
+  - rename premint-sdk to protocol-sdk
+  - added minting sdk, usable with `createMintClient`
+  - added 1155 creation sdk, usable with `create1155CreatorClient`
+  - premint sdk is now useable with `createPremintClient`
 
 ## 0.1.1
 
