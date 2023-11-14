@@ -570,7 +570,7 @@ class PremintClient extends ClientBase {
       quantityToMint: number;
       mintComment?: string;
     };
-  }): Promise<{request: SimulateContractParameters}> {
+  }): Promise<{ request: SimulateContractParameters }> {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
