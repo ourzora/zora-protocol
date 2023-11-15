@@ -17,7 +17,7 @@ import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, Pre
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 
 struct MintArguments {
-    // which account should receive the tokens minted.  If set to address(0), then defaults to the msg.sender
+    // which account should receive the tokens minted.
     address mintRecipient;
     // comment to add to the mint
     string mintComment;
