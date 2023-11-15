@@ -32,6 +32,7 @@ import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
+import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {ZoraCreator1155Attribution, DecodedCreatorAttribution, PremintTokenSetup, PremintConfig, PremintConfigV2, DelegatedTokenCreation, DelegatedTokenSetup} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
@@ -564,7 +565,11 @@ contract ZoraCreator1155Impl is
     function supportsInterface(
         bytes4 interfaceId
     ) public view virtual override(CreatorRoyaltiesControl, ERC1155Upgradeable, IERC165Upgradeable) returns (bool) {
-        return super.supportsInterface(interfaceId) || interfaceId == type(IZoraCreator1155).interfaceId || ERC1155Upgradeable.supportsInterface(interfaceId);
+        return
+            super.supportsInterface(interfaceId) ||
+            interfaceId == type(IZoraCreator1155).interfaceId ||
+            ERC1155Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == type(IZoraCreator1155DelegatedCreation).interfaceId;
     }
 
     /// Generic 1155 function overrides ///
