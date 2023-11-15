@@ -3,7 +3,6 @@
  * Do not make direct changes to the file.
  */
 
-
 export interface paths {
   "/signature": {
     /** Upsert Premint Signature */
@@ -36,7 +35,19 @@ export interface components {
      * @description An enumeration.
      * @enum {string}
      */
-    ChainName: "ETHEREUM-MAINNET" | "ETHEREUM-ROPSTEN" | "ETHEREUM-RINKEBY" | "ETHEREUM-GOERLI" | "ETHEREUM-SEPOLIA" | "OPTIMISM-MAINNET" | "OPTIMISM-GOERLI" | "ZORA-GOERLI" | "ZORA-MAINNET" | "BASE-MAINNET" | "BASE-GOERLI" | "PGN-MAINNET";
+    ChainName:
+      | "ETHEREUM-MAINNET"
+      | "ETHEREUM-ROPSTEN"
+      | "ETHEREUM-RINKEBY"
+      | "ETHEREUM-GOERLI"
+      | "ETHEREUM-SEPOLIA"
+      | "OPTIMISM-MAINNET"
+      | "OPTIMISM-GOERLI"
+      | "ZORA-GOERLI"
+      | "ZORA-MAINNET"
+      | "BASE-MAINNET"
+      | "BASE-GOERLI"
+      | "PGN-MAINNET";
     /**
      * CollectionCreationConfig
      * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
@@ -244,7 +255,6 @@ export type $defs = Record<string, never>;
 export type external = Record<string, never>;
 
 export interface operations {
-
   /** Upsert Premint Signature */
   upsert_premint_signature_signature_post: {
     requestBody: {
