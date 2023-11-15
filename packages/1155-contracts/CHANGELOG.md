@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.4.2
+
+### Patch Changes
+
+- 293e2c0: Moved deployment related code from 1155 to protocol-deployments package
+
 ## 2.4.1
 
 ### Patch Changes
