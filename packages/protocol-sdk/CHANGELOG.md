@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.3.1
+
+### Patch Changes
+
+- 92da3ed: Exporting mint client
+- Updated dependencies [293e2c0]
+  - @zoralabs/protocol-deployments@0.0.5
+
 ## 0.3.0
 
 ### Minor Changes
