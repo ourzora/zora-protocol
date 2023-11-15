@@ -15,9 +15,12 @@ import {
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import {
-  PremintConfig,
-  isValidSignatureV1,
-  preminterTypedDataDefinition,
+  PremintConfigAndVersion,
+  PremintConfigV1,
+  PremintConfigV2,
+  PremintConfigVersion,
+  isValidSignature,
+  premintTypedDataDefinition,
 } from "./preminter";
 import type {
   PremintSignatureGetResponse,
@@ -128,10 +131,10 @@ export const convertCollection = (
  * @param premint Premint object from viem to convert to a JSON compatible type.
  * @returns JSON compatible premint
  */
-export const encodePremintForAPI = ({
+export const encodePremintV1ForAPI = ({
   tokenConfig,
   ...premint
-}: PremintConfig) => ({
+}: PremintConfigV1) => ({
   ...premint,
   tokenConfig: {
     ...tokenConfig,
@@ -142,6 +145,35 @@ export const encodePremintForAPI = ({
     maxTokensPerAddress: tokenConfig.maxTokensPerAddress.toString(),
   },
 });
+
+export const encodePremintV2ForAPI = ({
+  tokenConfig,
+  ...premint
+}: PremintConfigV2) => ({
+  ...premint,
+  tokenConfig: {
+    ...tokenConfig,
+    maxSupply: tokenConfig.maxSupply.toString(),
+    pricePerToken: tokenConfig.pricePerToken.toString(),
+    mintStart: tokenConfig.mintStart.toString(),
+    mintDuration: tokenConfig.mintDuration.toString(),
+    maxTokensPerAddress: tokenConfig.maxTokensPerAddress.toString(),
+  },
+})
+
+export const encodePremintForAPI = ({
+  premintConfig,
+  premintConfigVersion 
+}: PremintConfigAndVersion) => {
+  if (premintConfigVersion === PremintConfigVersion.V1) {
+    return encodePremintV1ForAPI(premintConfig);
+  }
+  if (premintConfigVersion === PremintConfigVersion.V2) {
+    return encodePremintV2ForAPI(premintConfig);
+  }
+  throw new Error(`Invalid premint config version ${premintConfigVersion}`);
+}
+
 
 /**
  * Preminter API to access ZORA Premint functionality.
@@ -252,6 +284,7 @@ class PremintClient extends ClientBase {
         contractAdmin: signerData.collection.contractAdmin as Address,
       },
       premintConfig: signerData.premint,
+      premintConfigVersion: PremintConfigVersion.V1
     });
   }
 
@@ -306,6 +339,7 @@ class PremintClient extends ClientBase {
       uid: uid,
       collection: signerData.collection,
       premintConfig: signerData.premint,
+      premintConfigVersion: PremintConfigVersion.V1
     });
   }
 
@@ -319,11 +353,11 @@ class PremintClient extends ClientBase {
     walletClient,
     publicClient,
     verifyingContract,
-    premintConfig,
     uid,
     account,
     checkSignature,
     collection,
+    ...premintConfigAndVersion
   }: {
     publicClient: PublicClient;
     uid: number;
@@ -331,9 +365,8 @@ class PremintClient extends ClientBase {
     verifyingContract: Address;
     checkSignature: boolean;
     account?: Address | Account;
-    premintConfig: PremintConfig;
     collection: PremintSignatureGetResponse["collection"];
-  }) {
+  } & PremintConfigAndVersion) {
     if (!account) {
       account = walletClient.account;
     }
@@ -343,28 +376,34 @@ class PremintClient extends ClientBase {
 
     const signature = await walletClient.signTypedData({
       account,
-      ...preminterTypedDataDefinition({
+      ...premintTypedDataDefinition({
         verifyingContract,
-        premintConfig,
+        ...premintConfigAndVersion,
         chainId: this.chain.id,
       }),
     });
 
     if (checkSignature) {
-      const [isValidSignature] = await publicClient.readContract({
-        abi: zoraCreator1155PremintExecutorImplABI,
-        address: this.getExecutorAddress(),
-        functionName: "isValidSignature",
-        args: [convertCollection(collection), premintConfig, signature],
+      const { isAuthorized } = await isValidSignature({
+        chainId: this.chain.id,
+        contractAddress: verifyingContract,
+        originalContractAdmin: collection.contractAdmin as Address,
+        ...premintConfigAndVersion,
+        publicClient: this.getPublicClient(),
+        signature
       });
-      if (!isValidSignature) {
-        throw new Error("Invalid signature");
+      if (!isAuthorized) {
+        throw new Error("Not authorized to create premint");
       }
+    }
+
+    if (premintConfigAndVersion.premintConfigVersion === PremintConfigVersion.V2) {
+      throw new Error("premint config v2 not supported yet");
     }
 
     const apiData = {
       collection,
-      premint: encodePremintForAPI(premintConfig),
+      premint: encodePremintV1ForAPI(premintConfigAndVersion.premintConfig),
       chain_name: this.network.zoraBackendChainName,
       signature: signature,
     };
@@ -456,6 +495,7 @@ class PremintClient extends ClientBase {
       uid,
       verifyingContract: newContractAddress,
       premintConfig,
+      premintConfigVersion: PremintConfigVersion.V1,
       checkSignature,
       account,
       publicClient,
@@ -503,11 +543,12 @@ class PremintClient extends ClientBase {
   }> {
     publicClient = this.getPublicClient(publicClient);
 
-    const { isAuthorized, recoveredAddress } = await isValidSignatureV1({
+    const { isAuthorized, recoveredAddress } = await isValidSignature({
       contractAddress: data.collection_address as Address,
       chainId: this.chain.id,
       originalContractAdmin: data.collection.contractAdmin as Address,
       premintConfig: convertPremint(data.premint),
+      premintConfigVersion: PremintConfigVersion.V1,
       publicClient: this.getPublicClient(),
       signature: data.signature as Hex,
     });

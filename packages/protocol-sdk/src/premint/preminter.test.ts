@@ -5,6 +5,7 @@ import {
   recoverAddress,
   hashDomain,
   Address,
+  zeroAddress,
 } from "viem";
 import { foundry } from "viem/chains";
 import { describe, expect } from "vitest";
@@ -19,10 +20,13 @@ import {
 
 import {
   ContractCreationConfig,
-  PremintConfig,
-  TokenCreationConfig,
-  preminterTypedDataDefinition,
-  isValidSignatureV1,
+  PremintConfigV1,
+  TokenCreationConfigV1,
+  premintTypedDataDefinition,
+  isValidSignature,
+  PremintConfigVersion,
+  TokenCreationConfigV2,
+  PremintConfigV2,
 } from "./preminter";
 import {
   AnvilViemClientsTest,
@@ -42,10 +46,10 @@ const defaultContractConfig = ({
   contractName: "My fun NFT",
 });
 
-const defaultTokenConfig = (
+const defaultTokenConfigV1 = (
   fixedPriceMinterAddress: Address,
   creatorAccount: Address,
-): TokenCreationConfig => ({
+): TokenCreationConfigV1 => ({
   tokenURI: "ipfs://tokenIpfsId0",
   maxSupply: 100n,
   maxTokensPerAddress: 10n,
@@ -58,11 +62,36 @@ const defaultTokenConfig = (
   fixedPriceMinter: fixedPriceMinterAddress,
 });
 
-const defaultPremintConfig = (
+const defaultTokenConfigV2 = (
+  fixedPriceMinterAddress: Address,
+  creatorAccount: Address,
+  createReferral: Address
+): TokenCreationConfigV2 => ({
+  tokenURI: "ipfs://tokenIpfsId0",
+  maxSupply: 100n,
+  maxTokensPerAddress: 10n,
+  pricePerToken: 0n,
+  mintStart: 0n,
+  mintDuration: 100n,
+  royaltyBPS: 200,
+  payoutRecipient: creatorAccount,
+  fixedPriceMinter: fixedPriceMinterAddress,
+  createReferral
+});
+
+const defaultPremintConfigV1 = (
   fixedPriceMinter: Address,
   creatorAccount: Address,
-): PremintConfig => ({
-  tokenConfig: defaultTokenConfig(fixedPriceMinter, creatorAccount),
+): PremintConfigV1 => ({
+  tokenConfig: defaultTokenConfigV1(fixedPriceMinter, creatorAccount),
+  deleted: false,
+  uid: 105,
+  version: 0,
+});
+
+const defaultPremintConfigV2 = (
+{ fixedPriceMinter, creatorAccount, createReferral = zeroAddress }: { fixedPriceMinter: Address; creatorAccount: Address; createReferral?: Address; }): PremintConfigV2 => ({
+  tokenConfig: defaultTokenConfigV2(fixedPriceMinter, creatorAccount, createReferral),
   deleted: false,
   uid: 105,
   version: 0,
@@ -110,7 +139,7 @@ describe("ZoraCreator1155Preminter", () => {
         fixedPriceMinterAddress,
         accounts: { creatorAccount },
       } = await setupContracts({ viemClients });
-      const premintConfig = defaultPremintConfig(
+      const premintConfig = defaultPremintConfigV1(
         fixedPriceMinterAddress,
         creatorAccount,
       );
@@ -128,10 +157,11 @@ describe("ZoraCreator1155Preminter", () => {
       });
 
       const signedMessage = await viemClients.walletClient.signTypedData({
-        ...preminterTypedDataDefinition({
+        ...premintTypedDataDefinition({
           verifyingContract: contractAddress,
           chainId: 999,
           premintConfig,
+          premintConfigVersion: PremintConfigVersion.V1
         }),
         account: creatorAccount,
       });
@@ -150,14 +180,14 @@ describe("ZoraCreator1155Preminter", () => {
     forkUrl: forkUrls.zoraGoerli,
     forkBlockNumber: 1676105,
   })(
-    "can sign and recover a signature",
+    "can sign and recover a v1 premint config signature",
     async ({ viemClients }) => {
       const {
         fixedPriceMinterAddress,
         accounts: { creatorAccount },
       } = await setupContracts({ viemClients });
 
-      const premintConfig = defaultPremintConfig(
+      const premintConfig = defaultPremintConfigV1(
         fixedPriceMinterAddress,
         creatorAccount,
       );
@@ -174,21 +204,23 @@ describe("ZoraCreator1155Preminter", () => {
 
       // sign message containing contract and token creation config and uid
       const signedMessage = await viemClients.walletClient.signTypedData({
-        ...preminterTypedDataDefinition({
+        ...premintTypedDataDefinition({
           verifyingContract: contractAddress,
           // we need to sign here for the anvil chain, cause thats where it is run on
           chainId: foundry.id,
           premintConfig,
+          premintConfigVersion: PremintConfigVersion.V1
         }),
         account: creatorAccount,
       });
 
       // recover and verify address is correct
-      const { recoveredAddress, isAuthorized } = await isValidSignatureV1({
+      const { recoveredAddress, isAuthorized } = await isValidSignature({
         contractAddress,
         chainId: viemClients.publicClient.chain!.id,
         originalContractAdmin: contractConfig.contractAdmin,
         premintConfig,
+        premintConfigVersion: PremintConfigVersion.V1,
         publicClient: viemClients.publicClient,
         signature: signedMessage,
       });
@@ -209,7 +241,7 @@ describe("ZoraCreator1155Preminter", () => {
         accounts: { creatorAccount, collectorAccount },
       } = await setupContracts({ viemClients });
       // setup contract and token creation parameters
-      const premintConfig = defaultPremintConfig(
+      const premintConfig = defaultPremintConfigV1(
         fixedPriceMinterAddress,
         creatorAccount,
       );
@@ -230,11 +262,12 @@ describe("ZoraCreator1155Preminter", () => {
       // have creator sign the message to create the contract
       // and the token
       const signedMessage = await viemClients.walletClient.signTypedData({
-        ...preminterTypedDataDefinition({
+        ...premintTypedDataDefinition({
           verifyingContract: contractAddress,
           // we need to sign here for the anvil chain, cause thats where it is run on
           chainId: foundry.id,
           premintConfig,
+          premintConfigVersion: PremintConfigVersion.V1
         }),
         account: creatorAccount,
       });
@@ -326,10 +359,11 @@ describe("ZoraCreator1155Preminter", () => {
 
       // sign the message to create the second token
       const signedMessage2 = await viemClients.walletClient.signTypedData({
-        ...preminterTypedDataDefinition({
+        ...premintTypedDataDefinition({
           verifyingContract: contractAddress,
           chainId: foundry.id,
           premintConfig: premintConfig2,
+          premintConfigVersion: PremintConfigVersion.V1
         }),
         account: creatorAccount,
       });
@@ -397,7 +431,7 @@ describe("ZoraCreator1155Preminter", () => {
         fixedPriceMinterAddress,
         accounts: { creatorAccount, collectorAccount },
       } = await setupContracts({ viemClients });
-      const premintConfig = defaultPremintConfig(
+      const premintConfig = defaultPremintConfigV1(
         fixedPriceMinterAddress,
         creatorAccount,
       );
@@ -418,11 +452,12 @@ describe("ZoraCreator1155Preminter", () => {
       // have creator sign the message to create the contract
       // and the token
       const signedMessage = await viemClients.walletClient.signTypedData({
-        ...preminterTypedDataDefinition({
+        ...premintTypedDataDefinition({
           verifyingContract: contractAddress,
           // we need to sign here for the anvil chain, cause thats where it is run on
           chainId: foundry.id,
           premintConfig,
+          premintConfigVersion: PremintConfigVersion.V1
         }),
         account: creatorAccount,
       });
