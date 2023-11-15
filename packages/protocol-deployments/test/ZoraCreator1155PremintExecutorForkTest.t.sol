@@ -76,7 +76,12 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
         uint256 privateKey,
         uint256 chainId
     ) private pure returns (bytes memory) {
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(premintConfig, contractAddress, chainId);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(
+            ZoraCreator1155Attribution.hashPremint(premintConfig),
+            contractAddress,
+            ZoraCreator1155Attribution.HASHED_VERSION_1,
+            chainId
+        );
 
         // 3. Sign the digest
         // create a signature with the digest for the params
