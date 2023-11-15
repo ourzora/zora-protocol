@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.5
+
+### Patch Changes
+
+- 293e2c0: Moved deployment related code from 1155 to protocol-deployments package
+
 ## 0.0.4
 
 ### Patch Changes
