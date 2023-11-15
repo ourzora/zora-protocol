@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ContractCreationConfig} from "./ZoraCreator1155Attribution.sol";
+import {ContractCreationConfig, PremintConfig} from "./ZoraCreator1155Attribution.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
+import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+
+interface ILegacyZoraCreator1155DelegatedMinter {
+    function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
+}
 
 library ZoraCreator1155PremintExecutorImplLib {
     function getOrCreateContract(
@@ -60,6 +65,21 @@ library ZoraCreator1155PremintExecutorImplLib {
         return abi.decode(mintArguments, (address, string));
     }
 
+    function legacySetupNewToken(address contractAddress, bytes memory encodedPremintConfig, bytes calldata signature) private returns (uint256) {
+        // for use when the erc1155 contract does not support the new delegateSetupNewToken interface, where it expects
+        // a PremintConfig as an argument.
+
+        // decode the PremintConfig from the encoded bytes.
+        PremintConfig memory premintConfig = abi.decode(encodedPremintConfig, (PremintConfig));
+
+        // call the legacy version of the delegateSetupNewToken function.
+        return ILegacyZoraCreator1155DelegatedMinter(contractAddress).delegateSetupNewToken(premintConfig, signature, msg.sender);
+    }
+
+    function supportsNewPremintInterface(address contractAddress) internal view returns (bool) {
+        return IZoraCreator1155(contractAddress).supportsInterface(type(IZoraCreator1155DelegatedCreation).interfaceId);
+    }
+
     function premint(
         IZoraCreator1155Factory zora1155Factory,
         ContractCreationConfig calldata contractConfig,
@@ -74,10 +94,19 @@ library ZoraCreator1155PremintExecutorImplLib {
         // contract address is deterministic.
         (IZoraCreator1155 tokenContract, bool isNewContract) = getOrCreateContract(zora1155Factory, contractConfig);
 
-        // pass the signature and the premint config to the token contract to create the token.
-        // The token contract will verify the signature and that the signer has permission to create a new token.
-        // and then create and setup the token using the given token config.
-        uint256 newTokenId = tokenContract.delegateSetupNewToken(encodedPremintConfig, premintVersion, signature, msg.sender);
+        uint256 newTokenId;
+
+        if (supportsNewPremintInterface(address(tokenContract))) {
+            // if the contract supports the new interface, we can use it to create the token.
+
+            // pass the signature and the premint config to the token contract to create the token.
+            // The token contract will verify the signature and that the signer has permission to create a new token.
+            // and then create and setup the token using the given token config.
+            newTokenId = tokenContract.delegateSetupNewToken(encodedPremintConfig, premintVersion, signature, msg.sender);
+        } else {
+            // otherwise, we need to use the legacy interface.
+            newTokenId = legacySetupNewToken(address(tokenContract), encodedPremintConfig, signature);
+        }
 
         _performMint(tokenContract, fixedPriceMinter, newTokenId, quantityToMint, mintArguments);
 

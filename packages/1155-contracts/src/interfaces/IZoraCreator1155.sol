@@ -10,7 +10,7 @@ import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
-import {PremintConfigV2} from "../delegation/ZoraCreator1155Attribution.sol";
+import {IZoraCreator1155DelegatedCreation} from "./IZoraCreator1155DelegatedCreation.sol";
 
 /*
 
@@ -36,8 +36,14 @@ import {PremintConfigV2} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// @notice Main interface for the ZoraCreator1155 contract
 /// @author @iainnash / @tbtstl
-interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, IVersionedContract, IOwnable, IERC1155MetadataURIUpgradeable {
-    /// @notice This user role allows for any action to be performed
+interface IZoraCreator1155 is
+    IZoraCreator1155TypesV1,
+    IZoraCreator1155Errors,
+    IVersionedContract,
+    IOwnable,
+    IERC1155MetadataURIUpgradeable,
+    IZoraCreator1155DelegatedCreation
+{
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
     /// @notice This user role allows for only mint actions to be performed
@@ -70,7 +76,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     event ContractRendererUpdated(IRenderer1155 renderer);
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
-    event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
 
     /// @notice Only allow minting one token id at time
     /// @dev Mint contract function that calls the underlying sales function for commands
@@ -102,13 +107,6 @@ interface IZoraCreator1155 is IZoraCreator1155TypesV1, IZoraCreator1155Errors, I
     function setupNewTokenWithCreateReferral(string calldata newURI, uint256 maxSupply, address createReferral) external returns (uint256);
 
     function getCreatorRewardRecipient(uint256 tokenId) external view returns (address);
-
-    function delegateSetupNewToken(
-        bytes memory premintConfigEncoded,
-        bytes32 premintVersion,
-        bytes calldata signature,
-        address sender
-    ) external returns (uint256 newTokenId);
 
     function updateTokenURI(uint256 tokenId, string memory _newURI) external;
 
