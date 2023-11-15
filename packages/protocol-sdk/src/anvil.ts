@@ -28,57 +28,74 @@ async function waitForAnvilInit(anvil: any) {
   });
 }
 
-export const anvilTest = test.extend<AnvilViemClientsTest>({
-  viemClients: async ({ task }, use) => {
-    console.log("setting up clients for ", task.name);
-    const port = Math.floor(Math.random() * 2000) + 4000;
-    const anvil = spawn(
-      "anvil",
-      [
-        "--port",
-        `${port}`,
-        "--fork-url",
-        "https://rpc.zora.co/",
-        "--fork-block-number",
-        "6133407",
-        "--chain-id",
-        "31337",
-      ],
-      {
-        cwd: join(__dirname, ".."),
-        killSignal: "SIGINT",
-      },
-    );
-    const anvilHost = `http://0.0.0.0:${port}`;
-    await waitForAnvilInit(anvil);
+export const makeAnvilTest = ({
+  forkUrl,
+  forkBlockNumber,
+}: {
+  forkUrl: string;
+  forkBlockNumber: number;
+}) =>
+  test.extend<AnvilViemClientsTest>({
+    viemClients: async ({ task }, use) => {
+      console.log("setting up clients for ", task.name);
+      const port = Math.floor(Math.random() * 2000) + 4000;
+      const anvil = spawn(
+        "anvil",
+        [
+          "--port",
+          `${port}`,
+          "--fork-url",
+          forkUrl,
+          "--fork-block-number",
+          `${forkBlockNumber}`,
+          "--chain-id",
+          "31337",
+        ],
+        {
+          cwd: join(__dirname, ".."),
+          killSignal: "SIGINT",
+        },
+      );
+      const anvilHost = `http://0.0.0.0:${port}`;
+      await waitForAnvilInit(anvil);
 
-    const chain = {
-      ...foundry,
-    };
+      const chain = {
+        ...foundry,
+      };
 
-    const walletClient = createWalletClient({
-      chain,
-      transport: http(anvilHost),
-    });
+      const walletClient = createWalletClient({
+        chain,
+        transport: http(anvilHost),
+      });
 
-    const testClient = createTestClient({
-      chain,
-      mode: "anvil",
-      transport: http(anvilHost),
-    });
+      const testClient = createTestClient({
+        chain,
+        mode: "anvil",
+        transport: http(anvilHost),
+      });
 
-    const publicClient = createPublicClient({
-      chain,
-      transport: http(anvilHost),
-    });
+      const publicClient = createPublicClient({
+        chain,
+        transport: http(anvilHost),
+      });
 
-    await use({
-      publicClient,
-      walletClient,
-      testClient,
-    });
+      await use({
+        publicClient,
+        walletClient,
+        testClient,
+      });
 
-    // clean up function, called once after all tests run
-    anvil.kill("SIGINT");
-  },
+      // clean up function, called once after all tests run
+      anvil.kill("SIGINT");
+    },
+  });
+
+export const forkUrls = {
+  zoraMainnet: "https://rpc.zora.co/",
+  zoraGoerli: "https://testnet.rpc.zora.co",
+};
+
+export const anvilTest = makeAnvilTest({
+  forkUrl: forkUrls.zoraMainnet,
+  forkBlockNumber: 6133407,
 });
