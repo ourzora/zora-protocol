@@ -32,7 +32,7 @@ import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
-import {ZoraCreator1155Attribution, PremintTokenSetup, PremintConfig} from "../delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, DecodedCreatorAttribution, PremintTokenSetup, PremintConfig, PremintConfigV2, DelegatedTokenCreation, DelegatedTokenSetup} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
 /// @title ZoraCreator1155Impl
@@ -281,7 +281,7 @@ contract ZoraCreator1155Impl is
         return tokenId;
     }
 
-    function _setupNewTokenAndPermission(string calldata newURI, uint256 maxSupply, address user, uint256 permission) internal returns (uint256) {
+    function _setupNewTokenAndPermission(string memory newURI, uint256 maxSupply, address user, uint256 permission) internal returns (uint256) {
         uint256 tokenId = _setupNewToken(newURI, maxSupply);
 
         _addPermission(tokenId, user, permission);
@@ -749,41 +749,48 @@ contract ZoraCreator1155Impl is
 
     /// Sets up a new token using a token configuration and a signature created for the token creation parameters.
     /// The signature must be created by an account with the PERMISSION_BIT_MINTER role on the contract.
-    /// @param premintConfig configuration of token to be created
+    /// @param premintConfig abi encoded configuration of token to be created
+    /// @param premintVersion version of the premint configuration
     /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
+    /// @param sender original sender of the transaction, used to set the firstMinter
     function delegateSetupNewToken(
-        PremintConfig calldata premintConfig,
+        bytes memory premintConfig,
+        bytes32 premintVersion,
         bytes calldata signature,
         address sender
-    ) public nonReentrant returns (uint256 newTokenId) {
+    ) external nonReentrant returns (uint256 newTokenId) {
+        (DelegatedTokenSetup memory params, DecodedCreatorAttribution memory attribution, bytes[] memory tokenSetupActions) = DelegatedTokenCreation
+            .decodeAndRecoverDelegatedTokenSetup(premintConfig, premintVersion, signature, address(this), nextTokenId);
+
         // if a token has already been created for a premint config with this uid:
-        if (delegatedTokenId[premintConfig.uid] != 0) {
+        if (delegatedTokenId[params.uid] != 0) {
             // return its token id
-            return delegatedTokenId[premintConfig.uid];
+            return delegatedTokenId[params.uid];
         }
 
-        validatePremint(premintConfig);
-
-        bytes32 hashedPremintConfig = ZoraCreator1155Attribution.hashPremint(premintConfig);
-
-        // recover the signer from the data
-        address creator = ZoraCreator1155Attribution.recoverSignerHashed(hashedPremintConfig, signature, address(this), block.chainid);
-
         // this is what attributes this token to have been created by the original creator
-        emit CreatorAttribution(hashedPremintConfig, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION, creator, signature);
+        emit CreatorAttribution(attribution.structHash, attribution.domainName, attribution.version, attribution.creator, attribution.signature);
 
+        return _delegateSetupNewToken(params, attribution.creator, tokenSetupActions, sender);
+    }
+
+    function _delegateSetupNewToken(
+        DelegatedTokenSetup memory params,
+        address creator,
+        bytes[] memory tokenSetupActions,
+        address sender
+    ) internal returns (uint256 newTokenId) {
         // require that the signer can create new tokens (is a valid creator)
         _requireAdminOrRole(creator, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
 
         // create the new token; msg sender will have PERMISSION_BIT_ADMIN on the new token
-        newTokenId = _setupNewTokenAndPermission(premintConfig.tokenConfig.tokenURI, premintConfig.tokenConfig.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
+        newTokenId = _setupNewTokenAndPermission(params.tokenURI, params.maxSupply, msg.sender, PERMISSION_BIT_ADMIN);
 
-        delegatedTokenId[premintConfig.uid] = newTokenId;
+        _setCreateReferral(newTokenId, params.createReferral);
+
+        delegatedTokenId[params.uid] = newTokenId;
 
         firstMinters[newTokenId] = sender;
-
-        // invoke setup actions for new token, to save contract size, first get them from an external lib
-        bytes[] memory tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(newTokenId, creator, premintConfig.tokenConfig);
 
         // then invoke them, calling account should be original msg.sender, which has admin on the new token
         _multicallInternal(tokenSetupActions);
@@ -793,17 +800,5 @@ contract ZoraCreator1155Impl is
 
         // grant the token creator as admin of the newly created token
         _addPermission(newTokenId, creator, PERMISSION_BIT_ADMIN);
-    }
-
-    function validatePremint(PremintConfig calldata premintConfig) private view {
-        if (premintConfig.tokenConfig.mintStart != 0 && premintConfig.tokenConfig.mintStart > block.timestamp) {
-            // if the mint start is in the future, then revert
-            revert MintNotYetStarted();
-        }
-        if (premintConfig.deleted) {
-            // if the signature says to be deleted, then dont execute any further minting logic;
-            // return 0
-            revert PremintDeleted();
-        }
     }
 }
