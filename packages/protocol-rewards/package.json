@@ -14,7 +14,7 @@
     "build:contracts": "forge build",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
-    "lint": "yarn run prettier"
+    "lint": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'"
   },
   "dependencies": {
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",

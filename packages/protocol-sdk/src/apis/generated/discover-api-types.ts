@@ -3,7 +3,6 @@
  * Do not make direct changes to the file.
  */
 
-
 export interface paths {
   "/": {
     /** Root */
@@ -148,7 +147,19 @@ export interface components {
      * @description An enumeration.
      * @enum {string}
      */
-    ChainName: "ETHEREUM-MAINNET" | "ETHEREUM-ROPSTEN" | "ETHEREUM-RINKEBY" | "ETHEREUM-GOERLI" | "ETHEREUM-SEPOLIA" | "OPTIMISM-MAINNET" | "OPTIMISM-GOERLI" | "ZORA-GOERLI" | "ZORA-MAINNET" | "BASE-MAINNET" | "BASE-GOERLI" | "PGN-MAINNET";
+    ChainName:
+      | "ETHEREUM-MAINNET"
+      | "ETHEREUM-ROPSTEN"
+      | "ETHEREUM-RINKEBY"
+      | "ETHEREUM-GOERLI"
+      | "ETHEREUM-SEPOLIA"
+      | "OPTIMISM-MAINNET"
+      | "OPTIMISM-GOERLI"
+      | "ZORA-GOERLI"
+      | "ZORA-MAINNET"
+      | "BASE-MAINNET"
+      | "BASE-GOERLI"
+      | "PGN-MAINNET";
     /** Collection */
     Collection: {
       /** Address */
@@ -395,7 +406,12 @@ export interface components {
      * @description An enumeration.
      * @enum {string}
      */
-    FeedType: "curated" | "most_recent" | "heuristic" | "trending" | "recommendations";
+    FeedType:
+      | "curated"
+      | "most_recent"
+      | "heuristic"
+      | "trending"
+      | "recommendations";
     /**
      * FixedPrice
      * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
@@ -691,7 +707,13 @@ export interface components {
       /** Token Name */
       token_name?: string;
       /** Mint Context */
-      mint_context?: components["schemas"]["ManifoldMintContext"] | components["schemas"]["ZoraCreateMintContext"] | components["schemas"]["FoundationMintContext"] | components["schemas"]["ZoraCreate1155MintContext"] | components["schemas"]["ZoraCreatePremintContext"] | components["schemas"]["InferredMintContext"];
+      mint_context?:
+        | components["schemas"]["ManifoldMintContext"]
+        | components["schemas"]["ZoraCreateMintContext"]
+        | components["schemas"]["FoundationMintContext"]
+        | components["schemas"]["ZoraCreate1155MintContext"]
+        | components["schemas"]["ZoraCreatePremintContext"]
+        | components["schemas"]["InferredMintContext"];
       /** Is Active */
       is_active: boolean;
       cost: components["schemas"]["zora__collect__feed__models__price_at_time__PriceAtTime"];
@@ -729,13 +751,30 @@ export interface components {
      * @description An enumeration.
      * @enum {string}
      */
-    MintableStatus: "ACTIVE" | "BLOCKED" | "EXPIRED" | "INVALID_MEDIA" | "MINTED_OUT" | "DELETED";
+    MintableStatus:
+      | "ACTIVE"
+      | "BLOCKED"
+      | "EXPIRED"
+      | "INVALID_MEDIA"
+      | "MINTED_OUT"
+      | "DELETED";
     /**
      * MintableType
      * @description An enumeration.
      * @enum {string}
      */
-    MintableType: "FOUNDATION_DROP_COLLECTION" | "FOUNDATION_TIMED_EDITION" | "MANIFOLD_ERC1155" | "MANIFOLD_ERC721" | "ZORA_CREATE" | "ZORA_CREATE_1155" | "ZORA_CREATE_1155_B2R_REDEEM_TOKEN" | "ZORA_CREATE_1155_PREMINT_TOKEN" | "ZORA_EDITION" | "ZORA_DROP" | "INFERRED";
+    MintableType:
+      | "FOUNDATION_DROP_COLLECTION"
+      | "FOUNDATION_TIMED_EDITION"
+      | "MANIFOLD_ERC1155"
+      | "MANIFOLD_ERC721"
+      | "ZORA_CREATE"
+      | "ZORA_CREATE_1155"
+      | "ZORA_CREATE_1155_B2R_REDEEM_TOKEN"
+      | "ZORA_CREATE_1155_PREMINT_TOKEN"
+      | "ZORA_EDITION"
+      | "ZORA_DROP"
+      | "INFERRED";
     /**
      * Network
      * @description An enumeration.
@@ -743,7 +782,9 @@ export interface components {
      */
     Network: "MAINNET" | "GOERLI";
     /** Notification */
-    Notification: components["schemas"]["MintNotification"] | components["schemas"]["MintCommentNotification"];
+    Notification:
+      | components["schemas"]["MintNotification"]
+      | components["schemas"]["MintCommentNotification"];
     /**
      * NotificationsResponse
      * @description This is a generic model for pagination in an infitite scrolling context.
@@ -911,7 +952,9 @@ export interface components {
       description?: string;
       entity_type: components["schemas"]["EntityType"];
       /** Entity */
-      entity: components["schemas"]["SearchCollection"] | components["schemas"]["SearchToken"];
+      entity:
+        | components["schemas"]["SearchCollection"]
+        | components["schemas"]["SearchToken"];
       media?: components["schemas"]["Media"];
       /**
        * Rank
@@ -1377,7 +1420,6 @@ export type $defs = Record<string, never>;
 export type external = Record<string, never>;
 
 export interface operations {
-
   /** Root */
   root__get: {
     responses: {
