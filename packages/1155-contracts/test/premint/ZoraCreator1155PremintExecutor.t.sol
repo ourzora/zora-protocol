@@ -59,7 +59,7 @@ contract ZoraCreator1155PreminterTest is Test {
         collector = makeAddr("collector");
 
         vm.startPrank(zora);
-        (, , factoryProxy) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        (, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -97,34 +97,15 @@ contract ZoraCreator1155PreminterTest is Test {
             });
     }
 
-    function makeDefaultV1PremintConfig() private view returns (PremintConfig memory) {
-        // make a v1 premint config
-        return
-            PremintConfig({
-                tokenConfig: TokenCreationConfig({
-                    tokenURI: "blah.token",
-                    maxSupply: 10,
-                    maxTokensPerAddress: 5,
-                    pricePerToken: 0,
-                    mintStart: 0,
-                    mintDuration: 0,
-                    fixedPriceMinter: address(getFixedPriceMinter()),
-                    royaltyRecipient: creator,
-                    royaltyBPS: 10,
-                    royaltyMintSchedule: 0
-                }),
-                uid: 100,
-                version: 0,
-                deleted: false
-            });
-    }
-
     function test_v1Signatures_workOnV2Contract() external {
         // 1. Make contract creation params
 
         // configuration of contract to create
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfig memory premintConfig = makeDefaultV1PremintConfig();
+        PremintConfig memory premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig({
+            fixedPriceMinter: getFixedPriceMinter(),
+            royaltyRecipient: creator
+        });
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 1;
