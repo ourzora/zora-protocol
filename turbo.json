@@ -21,7 +21,7 @@
     "test:fork": {
       "dependsOn": ["^test:fork"]
     },
-    "format": {
+    "prettier": {
       "dependsOn": ["^prettier"]
     },
     "storage-inspect:check": {
