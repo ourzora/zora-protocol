@@ -14,7 +14,17 @@ import {
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
+import {
+  PremintConfigAndVersion,
+  PremintConfigV1,
+  PremintConfigV2,
+  PremintConfigVersion,
+  getPremintCollectionAddress,
+  premintTypedDataDefinition,
+  ContractCreationConfig,
+  recoverAndValidateSignature,
+  isAuthorizedToCreatePremint,
+} from "./preminter";
 import type {
   PremintSignatureGetResponse,
   PremintSignatureResponse,
@@ -96,7 +106,7 @@ export function getPremintedLogFromReceipt(
  * @param premint Premint object from the server to convert to one that's compatible with viem
  * @returns Viem type-compatible premint object
  */
-export const convertPremint = (
+export const convertPremintV1 = (
   premint: PremintSignatureGetResponse["premint"],
 ) => ({
   ...premint,
@@ -125,10 +135,10 @@ export const convertCollection = (
  * @param premint Premint object from viem to convert to a JSON compatible type.
  * @returns JSON compatible premint
  */
-export const encodePremintForAPI = ({
+export const encodePremintV1ForAPI = ({
   tokenConfig,
   ...premint
-}: PremintConfig) => ({
+}: PremintConfigV1) => ({
   ...premint,
   tokenConfig: {
     ...tokenConfig,
@@ -139,6 +149,34 @@ export const encodePremintForAPI = ({
     maxTokensPerAddress: tokenConfig.maxTokensPerAddress.toString(),
   },
 });
+
+export const encodePremintV2ForAPI = ({
+  tokenConfig,
+  ...premint
+}: PremintConfigV2) => ({
+  ...premint,
+  tokenConfig: {
+    ...tokenConfig,
+    maxSupply: tokenConfig.maxSupply.toString(),
+    pricePerToken: tokenConfig.pricePerToken.toString(),
+    mintStart: tokenConfig.mintStart.toString(),
+    mintDuration: tokenConfig.mintDuration.toString(),
+    maxTokensPerAddress: tokenConfig.maxTokensPerAddress.toString(),
+  },
+});
+
+export const encodePremintForAPI = ({
+  premintConfig,
+  premintConfigVersion,
+}: PremintConfigAndVersion) => {
+  if (premintConfigVersion === PremintConfigVersion.V1) {
+    return encodePremintV1ForAPI(premintConfig);
+  }
+  if (premintConfigVersion === PremintConfigVersion.V2) {
+    return encodePremintV2ForAPI(premintConfig);
+  }
+  throw new Error(`Invalid premint config version ${premintConfigVersion}`);
+};
 
 /**
  * Preminter API to access ZORA Premint functionality.
@@ -228,7 +266,7 @@ class PremintClient {
       uid: uid,
     });
 
-    const convertedPremint = convertPremint(signatureResponse.premint);
+    const convertedPremint = convertPremintV1(signatureResponse.premint);
     const signerData = {
       ...signatureResponse,
       premint: {
@@ -251,6 +289,7 @@ class PremintClient {
         contractAdmin: signerData.collection.contractAdmin as Address,
       },
       premintConfig: signerData.premint,
+      premintConfigVersion: PremintConfigVersion.V1,
     });
   }
 
@@ -288,7 +327,7 @@ class PremintClient {
       ...signatureResponse,
       collection: convertCollection(signatureResponse.collection),
       premint: {
-        ...convertPremint(signatureResponse.premint),
+        ...convertPremintV1(signatureResponse.premint),
         deleted: true,
       },
     };
@@ -301,6 +340,7 @@ class PremintClient {
       uid: uid,
       collection: signerData.collection,
       premintConfig: signerData.premint,
+      premintConfigVersion: PremintConfigVersion.V1,
     });
   }
 
@@ -313,20 +353,19 @@ class PremintClient {
   private async signAndSubmitPremint({
     walletClient,
     verifyingContract,
-    premintConfig,
     uid,
     account,
     checkSignature,
     collection,
+    ...premintConfigAndVersion
   }: {
     uid: number;
     walletClient: WalletClient;
     verifyingContract: Address;
     checkSignature: boolean;
     account?: Address | Account;
-    premintConfig: PremintConfig;
     collection: PremintSignatureGetResponse["collection"];
-  }) {
+  } & PremintConfigAndVersion) {
     if (!account) {
       account = walletClient.account;
     }
@@ -336,28 +375,37 @@ class PremintClient {
 
     const signature = await walletClient.signTypedData({
       account,
-      ...preminterTypedDataDefinition({
+      ...premintTypedDataDefinition({
         verifyingContract,
-        premintConfig,
+        ...premintConfigAndVersion,
         chainId: this.chain.id,
       }),
     });
 
     if (checkSignature) {
-      const [isValidSignature] = await this.publicClient.readContract({
-        abi: zoraCreator1155PremintExecutorImplABI,
-        address: this.getExecutorAddress(),
-        functionName: "isValidSignature",
-        args: [convertCollection(collection), premintConfig, signature],
+      const convertedCollection = convertCollection(collection);
+      const isAuthorized = await isAuthorizedToCreatePremint({
+        collection: convertCollection(collection),
+        signature,
+        publicClient: this.publicClient,
+        signer: typeof account === "string" ? account : account.address,
+        collectionAddress: await this.getCollectionAddres(convertedCollection),
+        ...premintConfigAndVersion,
       });
-      if (!isValidSignature) {
-        throw new Error("Invalid signature");
+      if (!isAuthorized) {
+        throw new Error("Not authorized to create premint");
       }
+    }
+
+    if (
+      premintConfigAndVersion.premintConfigVersion === PremintConfigVersion.V2
+    ) {
+      throw new Error("premint config v2 not supported yet");
     }
 
     const apiData = {
       collection,
-      premint: encodePremintForAPI(premintConfig),
+      premint: encodePremintV1ForAPI(premintConfigAndVersion.premintConfig),
       signature: signature,
     };
 
@@ -404,11 +452,9 @@ class PremintClient {
       uid?: number;
     };
   }) {
-    const newContractAddress = await this.publicClient.readContract({
-      address: this.getExecutorAddress(),
-      abi: zoraCreator1155PremintExecutorImplABI,
-      functionName: "getContractAddress",
-      args: [convertCollection(collection)],
+    const newContractAddress = await getPremintCollectionAddress({
+      publicClient: this.publicClient,
+      collection: convertCollection(collection),
     });
 
     const tokenConfig = {
@@ -432,7 +478,7 @@ class PremintClient {
 
     let deleted = executionSettings?.deleted || false;
 
-    const premintConfig = {
+    const premintConfig: PremintConfigV1 = {
       tokenConfig: tokenConfig,
       uid,
       version: 1,
@@ -443,6 +489,7 @@ class PremintClient {
       uid,
       verifyingContract: newContractAddress,
       premintConfig,
+      premintConfigVersion: PremintConfigVersion.V1,
       checkSignature,
       account,
       walletClient,
@@ -470,34 +517,33 @@ class PremintClient {
     });
   }
 
+  async getCollectionAddres(collection: ContractCreationConfig) {
+    return await getPremintCollectionAddress({
+      collection,
+      publicClient: this.publicClient,
+    });
+  }
+
   /**
    * Check user signature for v1
    *
    * @param data Signature data from the API
-   * @returns isValid = signature is valid or not, contractAddress = assumed contract address, recoveredSigner = signer from contract
+   * @returns isValid = signature is valid or not, recoveredSigner = signer from contract
    */
-  async isValidSignature({
-    data,
-  }: {
-    data: PremintSignatureGetResponse;
-  }): Promise<{
+  async isValidSignature(data: PremintSignatureResponse): Promise<{
     isValid: boolean;
-    contractAddress: Address;
-    recoveredSigner: Address;
+    recoveredSigner: Address | undefined;
   }> {
-    const [isValid, contractAddress, recoveredSigner] =
-      await this.publicClient.readContract({
-        abi: zoraCreator1155PremintExecutorImplABI,
-        address: this.getExecutorAddress(),
-        functionName: "isValidSignature",
-        args: [
-          convertCollection(data.collection),
-          convertPremint(data.premint),
-          data.signature as Hex,
-        ],
-      });
+    const {isAuthorized, recoveredAddress }= await recoverAndValidateSignature({
+      chainId: this.chain.id,
+      signature: data.signature as Hex,
+      premintConfig: convertPremintV1(data.premint),
+      premintConfigVersion: PremintConfigVersion.V1,
+      collection: convertCollection(data.collection),
+      publicClient: this.publicClient,
+    });
 
-    return { isValid, contractAddress, recoveredSigner };
+    return { isValid: isAuthorized, recoveredSigner: recoveredAddress };
   }
 
   protected makeUrls({
@@ -566,7 +612,7 @@ class PremintClient {
     const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
     const args = [
       convertCollection(data.collection),
-      convertPremint(data.premint),
+      convertPremintV1(data.premint),
       data.signature as Hex,
       numberToMint,
       mintArguments?.mintComment || "",
