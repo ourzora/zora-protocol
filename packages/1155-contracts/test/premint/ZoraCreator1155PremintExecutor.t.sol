@@ -722,6 +722,54 @@ contract ZoraCreator1155PreminterTest is Test {
         preminter.premintV2{value: mintCost}(contractConfig, premintConfig2, newCreatorSignature, quantityToMint, defaultMintArguments);
     }
 
+    function test_premintVersion_whenCreatedBeforePremint_returnsZero() external {
+        vm.createSelectFork("zora", 5_789_193);
+
+        // create preminter on fork
+        vm.startPrank(zora);
+        (, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        vm.stopPrank();
+
+        factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
+
+        preminter = new ZoraCreator1155PremintExecutorImpl(factory);
+
+        // this is a known contract deployed from the legacy factory proxy on zora mainnet
+        // that does not support getting the uid or premint sig version (it is prior to version 2)
+        address erc1155BeforePremint = 0xcACBbee9C2C703274BE026B62860cF56361410f3;
+        assertFalse(erc1155BeforePremint.code.length == 0);
+
+        // if contract is not a known 1155 contract that supports getting uid or premint sig version,
+        // this should return 0
+        assertEq(preminter.supportedPremintSignatureVersions(erc1155BeforePremint).length, 0);
+    }
+
+    function test_premintVersion_beforeCreated_returnsAllVersion() external {
+        // build a premint
+        string[] memory supportedVersions = preminter.supportedPremintSignatureVersions(makeAddr("randomContract"));
+
+        assertEq(supportedVersions.length, 2);
+        assertEq(supportedVersions[0], "1");
+        assertEq(supportedVersions[1], "2");
+    }
+
+    function test_premintVersion_whenCreated_returnsAllVersion() external {
+        // build a premint
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+
+        // sign and execute premint
+        address deterministicAddress = preminter.getContractAddress(contractConfig);
+
+        _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, premintExecutor, 1, "hi");
+
+        string[] memory supportedVersions = preminter.supportedPremintSignatureVersions(deterministicAddress);
+
+        assertEq(supportedVersions.length, 2);
+        assertEq(supportedVersions[0], "1");
+        assertEq(supportedVersions[1], "2");
+    }
+
     function testPremintWithCreateReferral() public {
         address createReferral = makeAddr("createReferral");
 

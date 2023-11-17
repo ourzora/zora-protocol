@@ -13,8 +13,9 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCrea
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExecutorImplLib.sol";
-import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
+import {PremintEncoding, ZoraCreator1155Attribution, DelegatedTokenCreation, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
+import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 
 struct MintArguments {
     // which account should receive the tokens minted.
@@ -211,6 +212,31 @@ contract ZoraCreator1155PremintExecutorImpl is
             ZoraCreator1155Attribution.HASHED_VERSION_2,
             signature
         );
+    }
+
+    /// @notice Returns the versions of the premint signature that the contract supports
+    /// @param contractAddress The address of the contract to check
+    /// @return versions The versions of the premint signature that the contract supports.  If contract hasn't been created yet,
+    /// assumes that when it will be created it will support the latest versions of the signatures, so the function returns all versions.
+    function supportedPremintSignatureVersions(address contractAddress) external view returns (string[] memory versions) {
+        // if contract hasn't been created yet, assume it will be created with the latest version
+        // and thus supports all versions of the signature
+        if (contractAddress.code.length == 0) {
+            return DelegatedTokenCreation._supportedPremintSignatureVersions();
+        }
+
+        IZoraCreator1155 creatorContract = IZoraCreator1155(contractAddress);
+        if (creatorContract.supportsInterface(type(IZoraCreator1155DelegatedCreation).interfaceId)) {
+            return IZoraCreator1155DelegatedCreation(contractAddress).supportedPremintSignatureVersions();
+        }
+
+        // try get token id for uid 0 - if call fails, we know this didn't support premint
+        try ERC1155DelegationStorageV1(contractAddress).delegatedTokenId(uint32(0)) returns (uint256) {
+            versions = new string[](1);
+            versions[0] = ZoraCreator1155Attribution.VERSION_1;
+        } catch {
+            versions = new string[](0);
+        }
     }
 
     // upgrade related functionality
