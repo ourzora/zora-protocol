@@ -120,4 +120,4 @@ isAuthorizedToCreatePremint(
 ``` 
 
 takes a signer, contractConfig.contractAdmin, and 1155 address, and determines if the signer is authorized to sign premints on the given contract.  Replaces `isValidSignature` - by putting the burden on clients to first decode the signature, then pass the recovered signer to this function to determine if the signer has premint authorization on the contract.
-* deprecated function `isValidSignature` - call `isValidSignatureV1` instead
+* deprecated function `isValidSignature` - call `isAuthorizedToCreatePremint` instead
