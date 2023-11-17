@@ -17,6 +17,7 @@ import {ZoraCreatorRedeemMinterFactory} from "@zoralabs/zora-1155-contracts/src/
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ICreatorRoyaltiesControl} from "@zoralabs/zora-1155-contracts/src/interfaces/ICreatorRoyaltiesControl.sol";
 import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
+import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 
 struct Create2Deployment {
     address deployerAddress;
@@ -117,12 +118,13 @@ library ZoraDeployerUtils {
         // create preminter implementation
         bytes memory creationCode = abi.encodePacked(type(ZoraCreator1155PremintExecutorImpl).creationCode, abi.encode(factoryProxyAddress));
 
-        address preminterImplementation = IMMUTABLE_CREATE2_FACTORY.safeCreate2(
-            bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e),
-            creationCode
-        );
+        bytes32 salt = bytes32(0x0000000000000000000000000000000000000000668d7f9ec18e35000dbaba0e);
 
-        return preminterImplementation;
+        address determinsticAddress = ZoraDeployerUtils.getImmutableCreate2Address(salt, creationCode);
+
+        ZoraDeployerUtils.getOrImmutable2Create(determinsticAddress, salt, creationCode);
+
+        return determinsticAddress;
     }
 
     function deterministicFactoryDeployerAddress() internal view returns (address) {
@@ -152,6 +154,24 @@ library ZoraDeployerUtils {
             );
     }
 
+    error MismatchedAddress(address expected, address actual);
+
+    function getImmutableCreate2Address(bytes32 salt, bytes memory creationCode) internal pure returns (address) {
+        return Create2.computeAddress(salt, keccak256(creationCode), address(IMMUTABLE_CREATE2_FACTORY));
+    }
+
+    function getOrImmutable2Create(address expectedAddress, bytes32 salt, bytes memory creationCode) internal returns (bool contractWasCreated) {
+        if (IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(expectedAddress)) {
+            return false;
+        } else {
+            address result = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(salt, creationCode);
+
+            if (result != expectedAddress) revert MismatchedAddress(expectedAddress, result);
+
+            return true;
+        }
+    }
+
     /// @notice Deploy a test contract for etherscan auto-verification
     /// @param factoryProxy Factory address to use
     /// @param admin Admin owner address to use
@@ -174,25 +194,19 @@ library ZoraDeployerUtils {
             );
     }
 
-    function getUpgradeCalldata(Deployment memory deployment) internal returns (bytes memory upgradeCalldata) {
-        // create 1155 proxy from deployment factory proxy address
-        ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
-
-        address owner = factory.owner();
-
+    function getUpgradeCalldata(address targetImpl) internal pure returns (bytes memory upgradeCalldata) {
         // simulate upgrade call
-        upgradeCalldata = abi.encodeWithSelector(factory.upgradeTo.selector, deployment.factoryImpl);
+        upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, targetImpl);
     }
 
-    function simulateUpgrade(Deployment memory deployment) internal returns (address target, bytes memory upgradeCalldata) {
+    function simulateUpgrade(address targetProxy, address targetImpl) internal returns (bytes memory upgradeCalldata) {
         // console log update information
 
-        upgradeCalldata = getUpgradeCalldata(deployment);
+        upgradeCalldata = getUpgradeCalldata(targetImpl);
 
-        target = deployment.factoryProxy;
         // upgrade the factory proxy to the new implementation
 
-        (bool success, ) = target.call(upgradeCalldata);
+        (bool success, ) = targetProxy.call(upgradeCalldata);
 
         require(success, "upgrade failed");
     }

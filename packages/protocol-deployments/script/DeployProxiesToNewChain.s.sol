@@ -9,7 +9,7 @@ import {Deployment} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
 
-contract DeployProxiesToNewChain is ZoraDeployerBase, DeploymentTestingUtils {
+contract DeployProxiesToNewChain is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
 
