@@ -109,6 +109,15 @@ struct TokenCreationConfig {
 * new function `premintV1` - takes a `PremintConfig`, and premint v1 signature, and executes a premint, with added functionality of being able to specify mint referral and mint recipient
 * new function `premintV2` - takes a `PremintConfigV2` signature and executes a premint, with being able to specify mint referral and mint recipient
 * deprecated function `premint` - call `premintV1` instead
-* new function `isValidSignatureV1` - takes an 1155 address, contract admin, premint v1 config and signature,  and validates the signature.  Can be used for 1155 contracts that were not created via the premint executor contract.
-* new function `isValidSignatureV2` - takes an 1155 address, contract admin, premint v2 config and signature,  and validates the signature.  Can be used for 1155 contracts that were not created via the premint executor contract.
+* new function
+
+```solidity
+isAuthorizedToCreatePremint(
+        address signer,
+        address premintContractConfigContractAdmin,
+        address contractAddress
+) public view returns (bool isAuthorized)
+``` 
+
+takes a signer, contractConfig.contractAdmin, and 1155 address, and determines if the signer is authorized to sign premints on the given contract.  Replaces `isValidSignature` - by putting the burden on clients to first decode the signature, then pass the recovered signer to this function to determine if the signer has premint authorization on the contract.
 * deprecated function `isValidSignature` - call `isValidSignatureV1` instead

@@ -234,25 +234,17 @@ library ZoraCreator1155Attribution {
     /// @dev copied from ZoraCreator1155Impl
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
-    function isValidSignature(
-        address originalPremintCreator,
-        address contractAddress,
-        bytes32 structHash,
-        bytes32 hashedVersion,
-        bytes calldata signature
-    ) internal view returns (bool isValid, address recoveredSigner) {
-        recoveredSigner = recoverSignerHashed(structHash, signature, contractAddress, hashedVersion, block.chainid);
-
-        if (recoveredSigner == address(0)) {
-            return (false, address(0));
-        }
-
-        // if contract hasn't been created, signer must be the contract admin on the config
+    function isAuthorizedToCreatePremint(
+        address signer,
+        address premintContractConfigContractAdmin,
+        address contractAddress
+    ) internal view returns (bool authorized) {
+        // if contract hasn't been created, signer must be the contract admin on the premint config
         if (contractAddress.code.length == 0) {
-            isValid = recoveredSigner == originalPremintCreator;
+            return signer == premintContractConfigContractAdmin;
         } else {
             // if contract has been created, signer must have mint new token permission
-            isValid = IZoraCreator1155(contractAddress).isAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+            authorized = IZoraCreator1155(contractAddress).isAdminOrRole(signer, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
         }
     }
 }
