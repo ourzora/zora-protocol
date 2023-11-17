@@ -224,6 +224,11 @@ contract ZoraCreator1155PremintExecutorImpl is
     }
 
     // upgrade functionality
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
+    }
+
     error UpgradeToMismatchedContractName(string expected, string actual);
 
     /// @notice Ensures the caller is authorized to upgrade the contract
