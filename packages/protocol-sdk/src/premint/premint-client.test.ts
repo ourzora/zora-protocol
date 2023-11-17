@@ -68,7 +68,7 @@ describe("ZoraCreator1155Premint", () => {
     20 * 1000,
   );
 
-  anvilTest.skip(
+  anvilTest(
     "can validate premint on network",
     async ({ viemClients: { publicClient } }) => {
       const premintClient = createPremintClient({ chain: foundry });

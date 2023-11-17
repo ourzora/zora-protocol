@@ -14,11 +14,7 @@ import {
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import {
-  PremintConfig,
-  isValidSignatureV1,
-  preminterTypedDataDefinition,
-} from "./preminter";
+import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
 import type {
   PremintSignatureGetResponse,
   PremintSignatureResponse,
@@ -499,20 +495,24 @@ class PremintClient extends ClientBase {
     publicClient?: PublicClient;
   }): Promise<{
     isValid: boolean;
-    recoveredSigner: Address | undefined;
+    contractAddress: Address;
+    recoveredSigner: Address;
   }> {
     publicClient = this.getPublicClient(publicClient);
 
-    const { isAuthorized, recoveredAddress } = await isValidSignatureV1({
-      contractAddress: data.collection_address as Address,
-      chainId: this.chain.id,
-      originalContractAdmin: data.collection.contractAdmin as Address,
-      premintConfig: convertPremint(data.premint),
-      publicClient: this.getPublicClient(),
-      signature: data.signature as Hex,
-    });
+    const [isValid, contractAddress, recoveredSigner] =
+      await publicClient.readContract({
+        abi: zoraCreator1155PremintExecutorImplABI,
+        address: this.getExecutorAddress(),
+        functionName: "isValidSignature",
+        args: [
+          convertCollection(data.collection),
+          convertPremint(data.premint),
+          data.signature as Hex,
+        ],
+      });
 
-    return { isValid: isAuthorized, recoveredSigner: recoveredAddress };
+    return { isValid, contractAddress, recoveredSigner };
   }
 
   protected makeUrls({

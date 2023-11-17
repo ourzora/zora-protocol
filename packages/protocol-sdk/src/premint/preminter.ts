@@ -1,15 +1,7 @@
 import { Address } from "abitype";
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
-import {
-  zoraCreator1155PremintExecutorImplABI as preminterAbi,
-  zoraCreator1155PremintExecutorImplAddress,
-} from "@zoralabs/protocol-deployments";
-import {
-  TypedDataDefinition,
-  recoverTypedDataAddress,
-  Hex,
-  PublicClient,
-} from "viem";
+import { zoraCreator1155PremintExecutorImplABI as preminterAbi } from "@zoralabs/protocol-deployments";
+import { TypedDataDefinition } from "viem";
 
 type PremintInputs = ExtractAbiFunction<
   typeof preminterAbi,
@@ -76,63 +68,5 @@ export const preminterTypedDataDefinition = ({
     primaryType: "CreatorAttribution",
   };
 
-  // console.log({ result, deleted });
-
   return result;
 };
-
-export async function isValidSignatureV1({
-  contractAddress,
-  originalContractAdmin,
-  premintConfig,
-  signature,
-  chainId,
-  publicClient,
-}: {
-  contractAddress: Address;
-  originalContractAdmin: Address;
-  premintConfig: PremintConfig;
-  signature: Hex;
-  chainId: number;
-  publicClient: PublicClient;
-}): Promise<{
-  isAuthorized: boolean;
-  recoveredAddress?: Address;
-}> {
-  const typedData = preminterTypedDataDefinition({
-    verifyingContract: contractAddress,
-    premintConfig,
-    chainId,
-  });
-
-  // recover the address from the signature
-  let recoveredAddress: Address;
-
-  try {
-    recoveredAddress = await recoverTypedDataAddress({
-      ...typedData,
-      signature,
-    });
-  } catch (error) {
-    console.error(error);
-
-    return {
-      isAuthorized: false,
-    };
-  }
-
-  // premint executor is same address on all chains
-  const premintExecutorAddress = zoraCreator1155PremintExecutorImplAddress[999];
-
-  const isAuthorized = await publicClient.readContract({
-    abi: preminterAbi,
-    address: premintExecutorAddress,
-    functionName: "isAuthorizedToCreatePremint",
-    args: [recoveredAddress, originalContractAdmin, contractAddress],
-  });
-
-  return {
-    isAuthorized,
-    recoveredAddress,
-  };
-}

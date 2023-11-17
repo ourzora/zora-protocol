@@ -22,11 +22,12 @@ import {
   PremintConfig,
   TokenCreationConfig,
   preminterTypedDataDefinition,
-  isValidSignatureV1,
 } from "./preminter";
 import {
   AnvilViemClientsTest,
   anvilTest,
+  forkUrls,
+  makeAnvilTest,
 } from "src/anvil";
 
 // create token and contract creation config:
@@ -144,7 +145,10 @@ describe("ZoraCreator1155Preminter", () => {
     },
     20 * 1000,
   );
-  anvilTest.skip(
+  makeAnvilTest({
+    forkUrl: forkUrls.zoraGoerli,
+    forkBlockNumber: 1676105,
+  })(
     "can sign and recover a signature",
     async ({ viemClients }) => {
       const {
@@ -178,18 +182,15 @@ describe("ZoraCreator1155Preminter", () => {
         account: creatorAccount,
       });
 
+      const preminterAddress = zoraCreator1155PremintExecutorAddress[999];
       // recover and verify address is correct
-      const { recoveredAddress, isAuthorized } = await isValidSignatureV1({
-        contractAddress,
-        chainId: viemClients.publicClient.chain!.id,
-        originalContractAdmin: contractConfig.contractAdmin,
-        premintConfig,
-        publicClient: viemClients.publicClient,
-        signature: signedMessage,
-      });
-
-      expect(recoveredAddress).to.equal(creatorAccount);
-      expect(isAuthorized).toBe(true);
+      const [, , recoveredAddress] =
+        await viemClients.publicClient.readContract({
+          abi: preminterAbi,
+          address: preminterAddress,
+          functionName: "isValidSignature",
+          args: [contractConfig, premintConfig, signedMessage],
+        });
 
       expect(recoveredAddress).to.equal(creatorAccount);
     },
