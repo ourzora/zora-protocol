@@ -13,9 +13,10 @@ import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
 import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
 import {DeterministicDeployerScript} from "./DeterministicDeployerScript.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
+import {DeploymentTestingUtils} from "./DeploymentTestingUtils.sol";
 
 /// @notice Deployment drops for base where
-abstract contract ZoraDeployerBase is ScriptDeploymentConfig, DeterministicDeployerScript {
+abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentConfig, DeterministicDeployerScript {
     using stdJson for string;
 
     /// @notice File used for demo metadata on verification test mint

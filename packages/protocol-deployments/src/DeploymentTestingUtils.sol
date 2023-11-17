@@ -7,6 +7,7 @@ import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src
 import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155Attribution, ContractCreationConfig, PremintConfigV2, TokenCreationConfigV2} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
+import {ScriptDeploymentConfig} from "./DeploymentConfig.sol";
 import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
 
 contract DeploymentTestingUtils is Script {

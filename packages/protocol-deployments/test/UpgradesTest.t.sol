@@ -3,10 +3,12 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
+import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ForkDeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
+import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
 
-contract UpgradesTest is ForkDeploymentConfig, Test {
+contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
     /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
     /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
     function getForkTestChains() private view returns (string[] memory result) {
@@ -18,8 +20,31 @@ contract UpgradesTest is ForkDeploymentConfig, Test {
         }
     }
 
+    function determine1155Upgrade(Deployment memory deployment) private view returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
+        targetProxy = deployment.factoryProxy;
+        targetImpl = deployment.factoryImpl;
+        address currentImplementation = ZoraCreator1155FactoryImpl(targetProxy).implementation();
+
+        upgradeNeeded = targetImpl != currentImplementation;
+    }
+
+    function determinePreminterUpgrade(Deployment memory deployment) private returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
+        targetProxy = deployment.preminterProxy;
+        targetImpl = deployment.preminterImpl;
+
+        // try getting implementation by using call (older implementations didnt support this function):
+        (bool success, bytes memory result) = targetProxy.call(abi.encodeWithSelector(ZoraCreator1155PremintExecutorImpl.implementation.selector));
+
+        address currentImplementation = address(0);
+        if (success) {
+            currentImplementation = abi.decode(result, (address));
+        }
+
+        upgradeNeeded = targetImpl != currentImplementation;
+    }
+
     /// @notice checks which chains need an upgrade, simulated the upgrade, and gets the upgrade calldata
-    function simulate1155UpgradeOnFork(string memory chainName) private {
+    function simulateUpgradeOnFork(string memory chainName) private {
         // create and select the fork, which will be used for all subsequent calls
         vm.createSelectFork(vm.rpcUrl(chainName));
 
@@ -31,30 +56,50 @@ contract UpgradesTest is ForkDeploymentConfig, Test {
 
         vm.startPrank(chainConfig.factoryOwner);
 
-        address currentImplementation = ZoraCreator1155FactoryImpl(deployment.factoryProxy).implementation();
+        (bool is1155UpgradeNeeded, address targetProxy1155, address targetImpl1155) = determine1155Upgrade(deployment);
+        (bool preminterUpgradeNeeded, address targetPreminterProxy, address targetPremintImpl) = determinePreminterUpgrade(deployment);
 
-        if (currentImplementation != deployment.factoryImpl) {
-            address targetImpl = deployment.factoryImpl;
-            (address target, bytes memory upgradeCalldata) = ZoraDeployerUtils.simulateUpgrade(deployment);
-
-            ZoraDeployerUtils.deployTestContractForVerification(deployment.factoryProxy, creator);
-
-            console2.log("=== 1155 upgrade needed ===");
-            console2.log("chain:", chainName);
-            console2.log("upgrade owner:", chainConfig.factoryOwner);
-            console2.log("upgrade target:", target);
-            console2.log("upgrade calldata:");
-            console.logBytes(upgradeCalldata);
-            console2.log("upgrade to address:", targetImpl);
-            console2.log("upgrade to version:", ZoraCreator1155FactoryImpl(targetImpl).contractVersion());
-            console2.log("=====================\n");
+        if (!is1155UpgradeNeeded && !preminterUpgradeNeeded) {
+            return;
         }
+
+        console2.log("====== upgrade needed ======");
+        console2.log("chain:", chainName);
+        console2.log("upgrade owner:", chainConfig.factoryOwner);
+
+        if (is1155UpgradeNeeded) {
+            bytes memory factory1155UpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(targetProxy1155, targetImpl1155);
+            ZoraDeployerUtils.deployTestContractForVerification(targetProxy1155, creator);
+
+            console2.log("-- 1155 upgrade needed --");
+            console2.log("1155 upgrade target:", targetProxy1155);
+            console2.log("upgrade calldata:");
+            console.logBytes(factory1155UpgradeCalldata);
+            console2.log("upgrade to address:", targetImpl1155);
+            console2.log("upgrade to version:", ZoraCreator1155FactoryImpl(targetImpl1155).contractVersion());
+            console2.log("------------------------");
+        }
+
+        if (preminterUpgradeNeeded) {
+            bytes memory preminterUpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(targetPreminterProxy, targetPremintImpl);
+
+            signAndExecutePremint(targetPreminterProxy, makeAddr("payoutRecipient"));
+
+            console2.log("-- preminter upgrade needed --");
+            console2.log("preminter upgrade target:", targetPreminterProxy);
+            console2.log("upgrade calldata:");
+            console.logBytes(preminterUpgradeCalldata);
+            console2.log("upgrade to address:", targetPremintImpl);
+            console2.log("------------------------");
+        }
+
+        console2.log("=================\n");
     }
 
     function test_fork_simulateUpgrades() external {
         string[] memory forkTestChains = getForkTestChains();
         for (uint256 i = 0; i < forkTestChains.length; i++) {
-            simulate1155UpgradeOnFork(forkTestChains[i]);
+            simulateUpgradeOnFork(forkTestChains[i]);
         }
     }
 }
