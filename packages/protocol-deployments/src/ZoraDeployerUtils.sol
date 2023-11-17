@@ -173,4 +173,27 @@ library ZoraDeployerUtils {
                 )
             );
     }
+
+    function getUpgradeCalldata(Deployment memory deployment) internal returns (bytes memory upgradeCalldata) {
+        // create 1155 proxy from deployment factory proxy address
+        ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(deployment.factoryProxy);
+
+        address owner = factory.owner();
+
+        // simulate upgrade call
+        upgradeCalldata = abi.encodeWithSelector(factory.upgradeTo.selector, deployment.factoryImpl);
+    }
+
+    function simulateUpgrade(Deployment memory deployment) internal returns (address target, bytes memory upgradeCalldata) {
+        // console log update information
+
+        upgradeCalldata = getUpgradeCalldata(deployment);
+
+        target = deployment.factoryProxy;
+        // upgrade the factory proxy to the new implementation
+
+        (bool success, ) = target.call(upgradeCalldata);
+
+        require(success, "upgrade failed");
+    }
 }
