@@ -153,7 +153,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         return (true, ERC1155DelegationStorageV1(contractAddress).delegatedTokenId(uid));
     }
 
-    // @custom:deprecated use isValidSignatureV1 instead
+    // @custom:deprecated use isAuthorizedToCreatePremint instead
     function isValidSignature(
         ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
@@ -161,57 +161,34 @@ contract ZoraCreator1155PremintExecutorImpl is
     ) public view returns (bool isValid, address contractAddress, address recoveredSigner) {
         contractAddress = getContractAddress(contractConfig);
 
-        (isValid, recoveredSigner) = isValidSignatureV1(contractConfig.contractAdmin, contractAddress, premintConfig, signature);
-    }
-
-    /// @notice Recovers the signer of a premint, and checks if the signer is authorized to sign the premint.
-    /// @dev for use with v1 of premint config, PremintConfig
-    /// @param premintContractConfigContractAdmin If this contract was created via premint, the original contractConfig.contractAdmin.  Otherwise, set to address(0)
-    /// @param contractAddress The determinstic 1155 contract address the premint is for
-    /// @param premintConfig The premint config
-    /// @param signature The signature of the premint
-    /// @return isValid Whether the signature is valid
-    /// @return recoveredSigner The signer of the premint
-    function isValidSignatureV1(
-        address premintContractConfigContractAdmin,
-        address contractAddress,
-        PremintConfig calldata premintConfig,
-        bytes calldata signature
-    ) public view returns (bool isValid, address recoveredSigner) {
-        bytes32 hashedPremint = ZoraCreator1155Attribution.hashPremint(premintConfig);
-
-        (isValid, recoveredSigner) = ZoraCreator1155Attribution.isValidSignature(
-            premintContractConfigContractAdmin,
+        recoveredSigner = ZoraCreator1155Attribution.recoverSignerHashed(
+            ZoraCreator1155Attribution.hashPremint(premintConfig),
+            signature,
             contractAddress,
-            hashedPremint,
             ZoraCreator1155Attribution.HASHED_VERSION_1,
-            signature
+            block.chainid
         );
+
+        if (recoveredSigner == address(0)) {
+            return (false, address(0), recoveredSigner);
+        }
+
+        isValid = isAuthorizedToCreatePremint(recoveredSigner, contractConfig.contractAdmin, contractAddress);
     }
 
-    /// @notice Recovers the signer of a premint, and checks if the signer is authorized to sign the premint.
-    /// @dev for use with v2 of premint config, PremintConfig
+    /// @notice Checks if the signer of a premint is authorized to sign a premint for a given contract.  If the contract hasn't been created yet,
+    /// then the signer is authorized if the signer's address matches contractConfig.contractAdmin.  Otherwise, the signer must have the PERMISSION_BIT_MINTER
+    /// role on the contract
+    /// @param signer The signer of the premint
     /// @param premintContractConfigContractAdmin If this contract was created via premint, the original contractConfig.contractAdmin.  Otherwise, set to address(0)
     /// @param contractAddress The determinstic 1155 contract address the premint is for
-    /// @param premintConfig The premint config
-    /// @param signature The signature of the premint
-    /// @return isValid Whether the signature is valid
-    /// @return recoveredSigner The signer of the premint
-    function isValidSignatureV2(
+    /// @return isAuthorized Whether the signer is authorized
+    function isAuthorizedToCreatePremint(
+        address signer,
         address premintContractConfigContractAdmin,
-        address contractAddress,
-        PremintConfigV2 calldata premintConfig,
-        bytes calldata signature
-    ) public view returns (bool isValid, address recoveredSigner) {
-        bytes32 hashedPremint = ZoraCreator1155Attribution.hashPremint(premintConfig);
-
-        (isValid, recoveredSigner) = ZoraCreator1155Attribution.isValidSignature(
-            premintContractConfigContractAdmin,
-            contractAddress,
-            hashedPremint,
-            ZoraCreator1155Attribution.HASHED_VERSION_2,
-            signature
-        );
+        address contractAddress
+    ) public view returns (bool isAuthorized) {
+        return ZoraCreator1155Attribution.isAuthorizedToCreatePremint(signer, premintContractConfigContractAdmin, contractAddress);
     }
 
     /// @notice Returns the versions of the premint signature that the contract supports
