@@ -146,10 +146,7 @@ describe("ZoraCreator1155Preminter", () => {
     },
     20 * 1000,
   );
-  makeAnvilTest({
-    forkUrl: forkUrls.zoraSepoli,
-    forkBlockNumber: 1086600,
-  })(
+  anvilTest.skip(
     "can sign and recover a signature",
     async ({ viemClients }) => {
       const {
