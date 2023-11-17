@@ -27,8 +27,6 @@ import {
 import {
   AnvilViemClientsTest,
   anvilTest,
-  forkUrls,
-  makeAnvilTest,
 } from "src/anvil";
 
 // create token and contract creation config:
