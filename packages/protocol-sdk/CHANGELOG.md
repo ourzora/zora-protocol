@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.3.2
+
+### Patch Changes
+
+- de0b0b7: `preminter` exposes new function isValidSignatureV1 that recovers a signer from a signed premint and determines if that signer is authorized to sign
+- Updated dependencies [f3b7df8]
+  - @zoralabs/protocol-deployments@0.0.6
+
 ## 0.3.1
 
 ### Patch Changes
