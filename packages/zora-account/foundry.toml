@@ -1,0 +1,15 @@
+[profile.default]
+solc = '0.8.19'
+evm_version = 'paris'
+via_ir = true
+src = 'src'
+out = 'out'
+test = 'test'
+libs = ['lib']
+optimizer = true
+optimizer_runs = 10_000_000
+
+[fuzz]
+runs = 5000
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
