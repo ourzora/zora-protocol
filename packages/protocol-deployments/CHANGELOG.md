@@ -1,5 +1,17 @@
 # @zoralabs/premint-sdk
 
+## 0.0.6
+
+### Patch Changes
+
+- f3b7df8: Deployed 2.4.0 with collaborators to zora-goerli, zora-sepolia, base, optimism, mainnet
+- Updated dependencies [885ffa4]
+- Updated dependencies [ffb5cb7]
+- Updated dependencies [ffb5cb7]
+- Updated dependencies [d84721a]
+- Updated dependencies [cacb543]
+  - @zoralabs/zora-1155-contracts@2.5.0
+
 ## 0.0.5
 
 ### Patch Changes
