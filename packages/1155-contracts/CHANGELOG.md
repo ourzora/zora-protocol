@@ -8,24 +8,34 @@
 
   ### New fields on signature
 
-  Adding a new `PremintConfigV2` struct that can be signed, that now contains a `createReferral`. `ZoraCreator1155PremintExecutor` recognizes new version of the `PremintConfig`, and still works with the v1 (legacy) version of the `PremintConfig`.
+  Adding a new `PremintConfigV2` struct that can be signed, that now contains a `createReferral`. `ZoraCreator1155PremintExecutor` recognizes new version of the premint config, and still works with the v1 (legacy) version of the `PremintConfig`.  Version one of the premint config still works and is still defined in the `PremintConfig` struct.
 
-  Additional changes to the `PremintConfigV2`:
+  Additional changes included in `PremintConfigV2`:
 
   - `tokenConfig.royaltyMintSchedule` has been removed as it is deprecated and no longer recognized by new versions of the 1155 contract
   - `tokenConfig.royaltyRecipient` has been renamed to `tokenConfig.payoutRecipient` to better reflect the fact that this address is used to receive creator rewards, secondary royalties, and paid mint funds. This is the address that will be set on the `royaltyRecipient` for the created token on the 1155 contract, which is the address that receives creator rewards and secondary royalties for the token, and on the `fundsRecipient` on the ZoraCreatorFixedPriceSaleStrategy contract for the token, which is the address that receives paid mint funds for the token.
 
   ### New MintArguments on premint functions, specifying `mintRecipient` and `mintReferral`
 
-  `mintReferral` and `mintRecipient` are now specified in the premint functions on the `ZoraCreator1155PremintExecutor`, via the `MintArguments mintArguments` param; new `premintV1` and `premintV2` function now take the `MintArguments` struct as an argument which contains `mintRecipient`, defining which account will receive the minted tokens, `mintComment`, and `mintReferral`, defining which account will receive a mintReferral reward, if any. `mintRecipient` must be specified or else it reverts.
+  `mintReferral` and `mintRecipient` are now specified in the premint functions on the `ZoraCreator1155PremintExecutor`, via the `MintArguments mintArguments` param; new `premintV1` and `premintV2` functions take a `MintArguments` struct as an argument which contains `mintRecipient`, defining which account will receive the minted tokens, `mintComment`, and `mintReferral`, defining which account will receive a mintReferral reward, if any. `mintRecipient` must be specified or else it reverts.
 
-  ### New signature validation methods
+  ### Replacing external signature validation and authorization check with just authorization check
 
-  ZoraCreator1155PremintExecutor can now validate signatures by passing it the contract address, instead of needing to pass the full contract creation config, enabling it to validate signatures for 1155 contracts that were not created via the premint executor contract. This allows premints signatures to be validated on contracts that have been upgraded to a version that supports premints, and allows premints to be created on contracts that were not created via the premint executor contract. These functions are called `isValidSignatureV1` and `isValidSignatureV2` for v1 and v2 of the premint config structs and signatures correspondingly.
+  `ZoraCreator1155PremintExecutor`'s function `isValidSignature(contractConfig, premintConfig)` is deprecated in favor of:
+  
+  ```solidity
+  isAuthorizedToCreatePremint(
+        address signer,
+        address premintContractConfigContractAdmin,
+        address contractAddress
+  ) public view returns (bool isAuthorized)
+  ```
+  which instead of validating signatures and checking if the signer is authorized to create premints, just checks if an signer is authorized to create premints on the contract.  This offloads signature decoding/validation to calling clients offchain, and reduces needing to create different signatures for this function on the contract for each version of the premint config. It also allows Premints to be validated on contracts that were not created using premints, such as contracts that are upgraded, and contracts created directly via the factory.
+  
+  
+   ### Changes to handling of setting of fundsRecipient
 
-  ### Changes to handling of setting of fundsRecipient
-
-  Previously the `fundsRecipient` on the fixeed priced minters sales config for the token was set to the signer of the premint. This has been changed to be set to the `payoutRecipient` of the premint config for v2 of premint config, and to the `royaltyRecipient` of the premint config for v1 of the premint config, for 1155 contracts that are to be newly created, and for existing 1155 contracts that are upgraded to the latest version and execute a v1 of the premint config.
+  Previously the `fundsRecipient` on the fixed priced minters' sales config for the token was set to the signer of the premint. This has been changed to be set to the `payoutRecipient` of the premint config on `PremintConfigV2`, and to the `royaltyRecipient` of the premint config for v1 of the premint config, for 1155 contracts that are to be newly created, and for existing 1155 contracts that are upgraded to the latest version.
 
   ### Changes to 1155's `delegateSetupNewToken`
 
@@ -127,7 +137,7 @@
   takes a signer, contractConfig.contractAdmin, and 1155 address, and determines if the signer is authorized to sign premints on the given contract. Replaces `isValidSignature` - by putting the burden on clients to first decode the signature, then pass the recovered signer to this function to determine if the signer has premint authorization on the contract.
 
   - deprecated function `isValidSignature` - call `isAuthorizedToCreatePremint` instead
-
+  
 ### Patch Changes
 
 - 885ffa4: Premint executor can still execute premint mints that were created with V1 signatures for `delegateSetupNewToken`
