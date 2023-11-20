@@ -31,7 +31,7 @@
 
   `delegateSetupNewToken` on 1155 contract has been updated to now take an abi encoded premint config, premint config version, and send it to an external library to decode the config, the signer, and setup actions. Previously it took a non-encoded PremintConfig. This new change allows this function signature to support multiple versions of a premint config, while offloading decoding of the config and the corresponding setup actions to the external library. This ultimately allows supporting multiple versions of a premint config and corresponding signature without increasing codespace.
 
-  `PremintConfigV2` are updated to containe `createReferral`, and now look like:
+  `PremintConfigV2` are updated to contain `createReferral`, and now look like:
 
   ```solidity
   struct PremintConfigV2 {
@@ -109,7 +109,7 @@
   }
   ```
 
-  ### changes to `ZoraCreator1155PremintExecutorImpl`:
+  ### Changes to `ZoraCreator1155PremintExecutorImpl`:
 
   - new function `premintV1` - takes a `PremintConfig`, and premint v1 signature, and executes a premint, with added functionality of being able to specify mint referral and mint recipient
   - new function `premintV2` - takes a `PremintConfigV2` signature and executes a premint, with being able to specify mint referral and mint recipient
@@ -130,7 +130,7 @@
 
 ### Patch Changes
 
-- 885ffa4: Premint executor can still execute premint mints on 1155 contracts that were created with the old signature for `delegateSetupNewToken`
+- 885ffa4: Premint executor can still execute premint mints that were created with V1 signatures for `delegateSetupNewToken`
 - ffb5cb7: Premint - added method getSupportedPremintSignatureVersions(contractAddress) that returns an array of the premint signature versions an 1155 contract supports. If the contract hasn't been created yet, assumes that when it will be created it will support the latest versions of the signatures, so the function returns all versions.
 - ffb5cb7: Added method `IZoraCreator1155PremintExecutor.supportedPremintSignatureVersions(contractAddress)` that tells what version of the premint signature the contract supports, and added corresponding method `ZoraCreator1155Impl.supportedPremintSignatureVersions()` to fetch supported version. If premint not supported, returns an empty array.
 - cacb543: Added impl getter to premint executor
