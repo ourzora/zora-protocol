@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.5.1
+
+### Patch Changes
+
+- 68566fce: Fixed setting uid when doing a premint v1
+
 ## 2.5.0
 
 ### Minor Changes
@@ -8,7 +14,7 @@
 
   ### New fields on signature
 
-  Adding a new `PremintConfigV2` struct that can be signed, that now contains a `createReferral`. `ZoraCreator1155PremintExecutor` recognizes new version of the premint config, and still works with the v1 (legacy) version of the `PremintConfig`.  Version one of the premint config still works and is still defined in the `PremintConfig` struct.
+  Adding a new `PremintConfigV2` struct that can be signed, that now contains a `createReferral`. `ZoraCreator1155PremintExecutor` recognizes new version of the premint config, and still works with the v1 (legacy) version of the `PremintConfig`. Version one of the premint config still works and is still defined in the `PremintConfig` struct.
 
   Additional changes included in `PremintConfigV2`:
 
@@ -22,7 +28,7 @@
   ### Replacing external signature validation and authorization check with just authorization check
 
   `ZoraCreator1155PremintExecutor`'s function `isValidSignature(contractConfig, premintConfig)` is deprecated in favor of:
-  
+
   ```solidity
   isAuthorizedToCreatePremint(
         address signer,
@@ -30,10 +36,10 @@
         address contractAddress
   ) public view returns (bool isAuthorized)
   ```
-  which instead of validating signatures and checking if the signer is authorized to create premints, just checks if an signer is authorized to create premints on the contract.  This offloads signature decoding/validation to calling clients offchain, and reduces needing to create different signatures for this function on the contract for each version of the premint config. It also allows Premints to be validated on contracts that were not created using premints, such as contracts that are upgraded, and contracts created directly via the factory.
-  
-  
-   ### Changes to handling of setting of fundsRecipient
+
+  which instead of validating signatures and checking if the signer is authorized to create premints, just checks if an signer is authorized to create premints on the contract. This offloads signature decoding/validation to calling clients offchain, and reduces needing to create different signatures for this function on the contract for each version of the premint config. It also allows Premints to be validated on contracts that were not created using premints, such as contracts that are upgraded, and contracts created directly via the factory.
+
+  ### Changes to handling of setting of fundsRecipient
 
   Previously the `fundsRecipient` on the fixed priced minters' sales config for the token was set to the signer of the premint. This has been changed to be set to the `payoutRecipient` of the premint config on `PremintConfigV2`, and to the `royaltyRecipient` of the premint config for v1 of the premint config, for 1155 contracts that are to be newly created, and for existing 1155 contracts that are upgraded to the latest version.
 
@@ -137,7 +143,7 @@
   takes a signer, contractConfig.contractAdmin, and 1155 address, and determines if the signer is authorized to sign premints on the given contract. Replaces `isValidSignature` - by putting the burden on clients to first decode the signature, then pass the recovered signer to this function to determine if the signer has premint authorization on the contract.
 
   - deprecated function `isValidSignature` - call `isAuthorizedToCreatePremint` instead
-  
+
 ### Patch Changes
 
 - 885ffa4: Premint executor can still execute premint mints that were created with V1 signatures for `delegateSetupNewToken`
