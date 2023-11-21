@@ -49,8 +49,6 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
                 address currentImplementation = abi.decode(data, (address));
                 upgradeNeeded = currentImplementation != targetImpl;
             }
-
-            console2.log(upgradeNeeded);
         }
     }
 
