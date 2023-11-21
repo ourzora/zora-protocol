@@ -20,10 +20,11 @@ runs:
           ${{ inputs.package_folder }}/cache
           ${{ inputs.package_folder }}/out
         # cache key is based on foundry config, contracts source tests, and scripts
-        key: ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/test/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/script/**/*.sol', inputs.package_folder)) }}
+        key: ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/test/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/script/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/package.json', inputs.package_folder)) }}
         # the following backups cache keys are searched, in case an exact match is not found
         # see https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
         restore-keys: |
+          ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/test/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/package.json', inputs.package_folder)) }}
           ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-${{ hashFiles(format('{0}/test/**/*.sol', inputs.package_folder)) }}-
           ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}-
           ${{ inputs.package_folder }}${{ inputs.foundry_profile}}-${{ hashFiles(format('{0}/foundry.toml', inputs.package_folder)) }}-
