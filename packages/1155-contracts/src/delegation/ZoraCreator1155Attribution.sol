@@ -165,7 +165,7 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant ATTRIBUTION_DOMAIN_V2 =
         keccak256(
-            "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter,address createReferral)"
+            "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address payoutRecipient,address fixedPriceMinter,address createReferral)"
         );
 
     function hashPremint(PremintConfigV2 memory premintConfig) internal pure returns (bytes32) {
@@ -208,7 +208,7 @@ library ZoraCreator1155Attribution {
         return
             keccak256(
                 abi.encode(
-                    TOKEN_DOMAIN_V1,
+                    TOKEN_DOMAIN_V2,
                     _stringHash(tokenConfig.tokenURI),
                     tokenConfig.maxSupply,
                     tokenConfig.maxTokensPerAddress,
