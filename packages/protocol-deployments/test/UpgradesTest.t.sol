@@ -97,6 +97,8 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             signAndExecutePremintV1(targetPreminterProxy, makeAddr("payoutRecipientA"), mintArguments);
             signAndExecutePremintV2(targetPreminterProxy, makeAddr("payoutRecipientB"), mintArguments);
 
+            vm.stopPrank();
+
             console2.log("upgrade calldata:");
             console.logBytes(preminterUpgradeCalldata);
             console2.log("upgrade to address:", targetPremintImpl);
