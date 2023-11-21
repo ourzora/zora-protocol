@@ -457,6 +457,8 @@ library DelegatedTokenCreation {
     ) private view returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
         validatePremint(premintConfig.tokenConfig.mintStart, premintConfig.deleted);
 
+        params.uid = premintConfig.uid;
+
         tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, premintConfig.tokenConfig);
 
         params.tokenURI = premintConfig.tokenConfig.tokenURI;
