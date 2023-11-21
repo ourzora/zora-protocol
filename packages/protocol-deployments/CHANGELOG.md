@@ -1,5 +1,12 @@
 # @zoralabs/premint-sdk
 
+## 0.0.7-prerelease.0
+
+### Patch Changes
+
+- dba9bb0: Updated determinstic preminter deployment script to not fail if already deployed
+- 4c4ae23: Deployed 2.5.1 to zora sepolia and zora goerli
+
 ## 0.0.6
 
 ### Patch Changes
