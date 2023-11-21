@@ -29,14 +29,29 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         upgradeNeeded = targetImpl != currentImplementation;
     }
 
-    function determinePreminterUpgrade(Deployment memory deployment) private pure returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
+    function determinePreminterUpgrade(Deployment memory deployment) private returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
         targetProxy = deployment.preminterProxy;
         targetImpl = deployment.preminterImpl;
 
         // right now we cannot call "implementation" on contract since it doesn't exist yet, so we check if deployed impl meets the v1 impl we know
         address preminterV1ImplAddress = 0x6E2AbBcd82935bFC68A1d5d2c96372b13b65eD9C;
 
-        upgradeNeeded = targetImpl != preminterV1ImplAddress;
+        // if the target impl is still the v1 impl, it didnt have a method to check impl so we can't call it, also we know its still v1 impl so we don't need to upgrade
+        if (targetImpl == preminterV1ImplAddress) {
+            upgradeNeeded = false;
+        } else {
+            // if doesnt have implementation method, then we know upgrade is needed
+            (bool success, bytes memory data) = deployment.preminterProxy.call(abi.encodePacked(ZoraCreator1155PremintExecutorImpl.implementation.selector));
+
+            if (!success) {
+                upgradeNeeded = true;
+            } else {
+                address currentImplementation = abi.decode(data, (address));
+                upgradeNeeded = currentImplementation != targetImpl;
+            }
+
+            console2.log(upgradeNeeded);
+        }
     }
 
     /// @notice checks which chains need an upgrade, simulated the upgrade, and gets the upgrade calldata
