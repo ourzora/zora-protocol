@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-sdk",
-  "version": "0.3.2",
+  "version": "0.3.3-prerelease.0",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -15,7 +15,7 @@
     "lint": "prettier --check 'src/**/*.ts'"
   },
   "dependencies": {
-    "@zoralabs/protocol-deployments": "*",
+    "@zoralabs/protocol-deployments": "0.0.7-prerelease.0",
     "abitype": "^0.8.7",
     "vite": "4.5.0"
   },
