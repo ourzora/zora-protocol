@@ -205,7 +205,6 @@ library ZoraDeployerUtils {
         upgradeCalldata = getUpgradeCalldata(targetImpl);
 
         // upgrade the factory proxy to the new implementation
-
         (bool success, ) = targetProxy.call(upgradeCalldata);
 
         require(success, "upgrade failed");
