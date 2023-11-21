@@ -74,8 +74,6 @@ contract DeploymentTestingUtils is Script {
             mintArguments
         );
 
-        console2.log(premintResult.tokenId);
-        console2.log(ZoraCreator1155Impl(premintResult.contractAddress).delegatedTokenId(premintConfig.uid));
         require(ZoraCreator1155Impl(premintResult.contractAddress).delegatedTokenId(premintConfig.uid) == premintResult.tokenId, "token id mismatch");
     }
 

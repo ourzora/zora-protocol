@@ -82,7 +82,6 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             console2.log("preminter upgrade target:", targetPreminterProxy);
             vm.prank(chainConfig.factoryOwner);
             bytes memory preminterUpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(deployment.preminterProxy, deployment.preminterImpl);
-            console2.log("upgraded");
 
             address collector = makeAddr("collector");
             address mintReferral = makeAddr("referral");
@@ -95,9 +94,7 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             });
 
             vm.startPrank(collector);
-            console2.log("sign and execute premint v1");
             signAndExecutePremintV1(targetPreminterProxy, makeAddr("payoutRecipientA"), mintArguments);
-            console2.log("sign and execute premint v2");
             signAndExecutePremintV2(targetPreminterProxy, makeAddr("payoutRecipientB"), mintArguments);
 
             console2.log("upgrade calldata:");
