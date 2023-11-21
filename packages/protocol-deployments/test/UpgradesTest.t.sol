@@ -7,6 +7,7 @@ import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/
 import {ForkDeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
+import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
     /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
@@ -28,19 +29,14 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         upgradeNeeded = targetImpl != currentImplementation;
     }
 
-    function determinePreminterUpgrade(Deployment memory deployment) private returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
+    function determinePreminterUpgrade(Deployment memory deployment) private pure returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
         targetProxy = deployment.preminterProxy;
         targetImpl = deployment.preminterImpl;
 
-        // try getting implementation by using call (older implementations didnt support this function):
-        (bool success, bytes memory result) = targetProxy.call(abi.encodeWithSelector(ZoraCreator1155PremintExecutorImpl.implementation.selector));
+        // right now we cannot call "implementation" on contract since it doesn't exist yet, so we check if deployed impl meets the v1 impl we know
+        address preminterV1ImplAddress = 0x6E2AbBcd82935bFC68A1d5d2c96372b13b65eD9C;
 
-        address currentImplementation = address(0);
-        if (success) {
-            currentImplementation = abi.decode(result, (address));
-        }
-
-        upgradeNeeded = targetImpl != currentImplementation;
+        upgradeNeeded = targetImpl != preminterV1ImplAddress;
     }
 
     /// @notice checks which chains need an upgrade, simulated the upgrade, and gets the upgrade calldata
@@ -54,8 +50,6 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
 
         address creator = makeAddr("creator");
 
-        vm.startPrank(chainConfig.factoryOwner);
-
         (bool is1155UpgradeNeeded, address targetProxy1155, address targetImpl1155) = determine1155Upgrade(deployment);
         (bool preminterUpgradeNeeded, address targetPreminterProxy, address targetPremintImpl) = determinePreminterUpgrade(deployment);
 
@@ -68,10 +62,12 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         console2.log("upgrade owner:", chainConfig.factoryOwner);
 
         if (is1155UpgradeNeeded) {
+            console2.log("-- 1155 upgrade needed --");
+            vm.prank(chainConfig.factoryOwner);
             bytes memory factory1155UpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(targetProxy1155, targetImpl1155);
+            vm.prank(creator);
             ZoraDeployerUtils.deployTestContractForVerification(targetProxy1155, creator);
 
-            console2.log("-- 1155 upgrade needed --");
             console2.log("1155 upgrade target:", targetProxy1155);
             console2.log("upgrade calldata:");
             console.logBytes(factory1155UpgradeCalldata);
@@ -80,13 +76,30 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             console2.log("------------------------");
         }
 
+        // hack - for now, only check on zora sepolia or goerli
         if (preminterUpgradeNeeded) {
-            bytes memory preminterUpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(targetPreminterProxy, targetPremintImpl);
-
-            signAndExecutePremint(targetPreminterProxy, makeAddr("payoutRecipient"));
-
             console2.log("-- preminter upgrade needed --");
             console2.log("preminter upgrade target:", targetPreminterProxy);
+            vm.prank(chainConfig.factoryOwner);
+            bytes memory preminterUpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(deployment.preminterProxy, deployment.preminterImpl);
+            console2.log("upgraded");
+
+            address collector = makeAddr("collector");
+            address mintReferral = makeAddr("referral");
+            vm.deal(collector, 10 ether);
+
+            IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
+                mintRecipient: collector,
+                mintComment: "",
+                mintReferral: mintReferral
+            });
+
+            vm.startPrank(collector);
+            console2.log("sign and execute premint v1");
+            signAndExecutePremintV1(targetPreminterProxy, makeAddr("payoutRecipientA"), mintArguments);
+            console2.log("sign and execute premint v2");
+            signAndExecutePremintV2(targetPreminterProxy, makeAddr("payoutRecipientB"), mintArguments);
+
             console2.log("upgrade calldata:");
             console.logBytes(preminterUpgradeCalldata);
             console2.log("upgrade to address:", targetPremintImpl);
