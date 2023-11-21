@@ -1,5 +1,14 @@
 # @zoralabs/premint-sdk
 
+## 0.0.7
+
+### Patch Changes
+
+- 128b05c9: Updated determinstic preminter deployment script to not fail if already deployed
+- 128b05c9: Deployed 2.5.1 to zora sepolia and zora goerli
+- Updated dependencies [e4edaac2]
+  - @zoralabs/zora-1155-contracts@2.5.2
+
 ## 0.0.6
 
 ### Patch Changes
