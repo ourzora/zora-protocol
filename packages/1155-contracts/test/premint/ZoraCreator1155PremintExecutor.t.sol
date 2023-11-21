@@ -143,6 +143,7 @@ contract ZoraCreator1155PreminterTest is Test {
         IZoraCreator1155 created1155Contract = IZoraCreator1155(contractAddress);
         // get the created contract, and make sure that tokens have been minted to the address
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
+        assertEq(ZoraCreator1155Impl(address(created1155Contract)).delegatedTokenId(premintConfig.uid), tokenId);
     }
 
     function test_successfullyMintsTokens() external {
