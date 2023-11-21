@@ -7,39 +7,24 @@ import "forge-std/console2.sol";
 import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
 import {Deployment} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
-import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
-contract DeployProxiesToNewChain is ZoraDeployerBase {
+contract DeployTestContracts is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
 
         vm.startBroadcast();
 
-        console.log("deploy factory proxy");
-
-        deployFactoryProxyDeterminstic(deployment);
-
-        console2.log("factory proxy address:", deployment.factoryProxy);
-
-        console2.log("create test contract for verification");
-
         ZoraDeployerUtils.deployTestContractForVerification(deployment.factoryProxy, makeAddr("admin"));
 
-        deployPreminterProxyDeterminstic(deployment);
-
-        console2.log("preminter proxy", deployment.preminterProxy);
-
-        console2.log("testing premint");
-
-        address fundsRecipient = vm.envAddress("TEST_PREMINT_FUNDS_RECIPIENT");
+        address fundsRecipient = vm.envAddress("DEPLOYER");
         IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
             mintRecipient: fundsRecipient,
             mintComment: "",
             mintReferral: fundsRecipient
         });
 
-        signAndExecutePremintV2(deployment.preminterProxy, vm.envAddress("TEST_PREMINT_FUNDS_RECIPIENT"), mintArguments);
+        signAndExecutePremintV2(deployment.preminterProxy, fundsRecipient, mintArguments);
 
         vm.stopBroadcast();
 

@@ -199,13 +199,9 @@ contract DeterministicDeployerScript is Script {
         bytes32 proxyDeployerSalt = params.proxyDeployerSalt;
         bytes memory proxyDeployerCreationCode = params.proxyDeployerCreationCode;
 
-        if (ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.hasBeenDeployed(proxyDeployerAddress)) {
-            factoryDeployer = DeterministicProxyDeployer(proxyDeployerAddress);
-        } else {
-            factoryDeployer = DeterministicProxyDeployer(ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(proxyDeployerSalt, proxyDeployerCreationCode));
-        }
+        ZoraDeployerUtils.getOrImmutable2Create(proxyDeployerAddress, proxyDeployerSalt, proxyDeployerCreationCode);
 
-        if (address(factoryDeployer) != params.proxyDeployerAddress) revert MismatchedAddress(params.proxyDeployerAddress, address(factoryDeployer));
+        factoryDeployer = DeterministicProxyDeployer(proxyDeployerAddress);
     }
 
     function deployDeterministicProxy(string memory proxyName, address implementation, address owner, uint256 chain) internal returns (address) {
