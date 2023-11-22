@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Inpect storage layout
+    name: Storage layout inspection
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3

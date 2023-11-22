@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Build
+    name: Contract sizes
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
