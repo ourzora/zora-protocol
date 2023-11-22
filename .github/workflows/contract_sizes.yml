@@ -10,7 +10,7 @@ jobs:
     strategy:
       fail-fast: true
 
-    name: Build
+    name: Contract sizes check
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -23,5 +23,5 @@ jobs:
         with:
           package_folder: ${{ inputs.package_folder }}
 
-      - name: Check contract sizes
-        run: cd ${{ inputs.package_folder }} && yarn build:sizes
+      - name: "Inspect Storage Layout"
+        run: cd ${{ inputs.package_folder}} && yarn storage-inspect:check
