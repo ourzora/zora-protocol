@@ -14,6 +14,18 @@ jobs:
     with:
       package_folder: packages/1155-contracts
 
+  storage_layout:
+    needs: build
+    uses: ./.github/workflows/storage_layout.yml
+    with:
+      package_folder: packages/1155-contracts
+
+  contract_sizes:
+    needs: build
+    uses: ./.github/workflows/contract_sizes.yml
+    with:
+      package_folder: packages/1155-contracts
+
   coverage:
     uses: ./.github/workflows/coverage.yml
     with:
