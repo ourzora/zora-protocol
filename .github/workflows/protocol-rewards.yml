@@ -14,6 +14,12 @@ jobs:
     with:
       package_folder: packages/protocol-rewards
 
+  contract_sizes:
+    needs: build
+    uses: ./.github/workflows/contract_sizes.yml
+    with:
+      package_folder: packages/protocol-rewards
+
   coverage:
     uses: ./.github/workflows/coverage.yml
     with:
