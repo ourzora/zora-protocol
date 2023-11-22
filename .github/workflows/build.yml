@@ -23,5 +23,6 @@ jobs:
         with:
           package_folder: ${{ inputs.package_folder }}
 
-      - name: Check contract sizes
-        run: cd ${{ inputs.package_folder }} && yarn build:sizes
+      - name: Build contracts
+        run: |
+          cd ${{ inputs.package_folder}} && forge build
