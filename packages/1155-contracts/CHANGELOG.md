@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.5.2
+
+### Patch Changes
+
+- e4edaac: fixed bug where premint config v2 did not have correct eip-712 domain. fixed bug in CreatorAttribution event where structHash was not included in it
+
 ## 2.5.1
 
 ### Patch Changes
