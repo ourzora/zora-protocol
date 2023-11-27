@@ -77,7 +77,7 @@ contract ZoraCreator1155PreminterTest is Test {
         return factory.defaultMinters()[0];
     }
 
-    function makeDefaultPremintConfig() internal view returns (PremintConfigV2 memory) {
+    function makeDefaultPremintConfigV2() internal view returns (PremintConfigV2 memory) {
         return
             PremintConfigV2({
                 tokenConfig: Zora1155PremintFixtures.makeDefaultTokenCreationConfigV2(getFixedPriceMinter(), creator),
@@ -85,6 +85,10 @@ contract ZoraCreator1155PreminterTest is Test {
                 version: 0,
                 deleted: false
             });
+    }
+
+    function makeDefaultPremintConfigV1() internal view returns (PremintConfig memory) {
+        return Zora1155PremintFixtures.makeDefaultV1PremintConfig(getFixedPriceMinter(), creator);
     }
 
     function makePremintConfigWithCreateReferral(address createReferral) internal view returns (PremintConfigV2 memory) {
@@ -151,7 +155,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // configuration of contract to create
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -208,7 +212,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // configuration of contract to create
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // how many tokens are minted to the executor
         uint256 chainId = block.chainid;
@@ -242,10 +246,43 @@ contract ZoraCreator1155PreminterTest is Test {
 
     event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
 
-    function test_premint_emitsCreatorAttribution_fromErc1155Contract() external {
+    function test_premintV1_emitsCreatorAttribution_fromErc1155Contract() external {
         // build a premint
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfig memory premintConfig = makeDefaultPremintConfigV1();
+
+        // sign and execute premint
+        uint256 chainId = block.chainid;
+
+        address deterministicAddress = preminter.getContractAddress(contractConfig);
+        bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(
+            structHash,
+            deterministicAddress,
+            ZoraCreator1155Attribution.HASHED_VERSION_1,
+            chainId
+        );
+        bytes memory signature = _sign(creatorPrivateKey, digest);
+
+        uint256 quantityToMint = 4;
+        uint256 mintCost = mintFeeAmount * quantityToMint;
+        // this account will be used to execute the premint, and should result in a contract being created
+        vm.deal(collector, mintCost);
+
+        vm.prank(collector);
+
+        // verify CreatorAttribution was emitted from the erc1155 contract
+        vm.expectEmit(true, true, true, true, deterministicAddress);
+        emit CreatorAttribution(structHash, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION_1, creator, signature);
+
+        // create contract and token via premint
+        preminter.premintV1{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
+    }
+
+    function test_premintV2_emitsCreatorAttribution_fromErc1155Contract() external {
+        // build a premint
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // sign and execute premint
         uint256 chainId = block.chainid;
@@ -268,7 +305,7 @@ contract ZoraCreator1155PreminterTest is Test {
         vm.prank(collector);
 
         // verify CreatorAttribution was emitted from the erc1155 contract
-        vm.expectEmit(true, false, false, false, deterministicAddress);
+        vm.expectEmit(true, true, true, true, deterministicAddress);
         emit CreatorAttribution(structHash, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION_2, creator, signature);
 
         // create contract and token via premint
@@ -280,7 +317,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // configuration of contract to create
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -321,7 +358,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // configuration of contract to create
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 2;
@@ -375,7 +412,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function testCreateTokenPerUid() public {
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         uint256 quantityToMint = 2;
         uint256 chainId = block.chainid;
@@ -402,7 +439,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_deleted_preventsTokenFromBeingMinted() external {
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         premintConfig.deleted = true;
         uint chainId = block.chainid;
@@ -426,7 +463,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_emitsPremint_whenNewContract() external {
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // how many tokens are minted to the executor
@@ -452,7 +489,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_onlyOwner_hasAdminRights_onCreatedToken() public {
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -520,7 +557,7 @@ contract ZoraCreator1155PreminterTest is Test {
     }
 
     function test_premintStatus_getsStatus() external {
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // how many tokens are minted to the executor
         uint256 quantityToMint = 4;
@@ -564,7 +601,7 @@ contract ZoraCreator1155PreminterTest is Test {
         vm.warp(currentTime);
 
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
         premintConfig.tokenConfig.mintStart = startDate;
 
         uint256 quantityToMint = 4;
@@ -598,7 +635,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // build a premint with a token that has the given start date and duration
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         premintConfig.tokenConfig.mintStart = startDate;
@@ -637,7 +674,7 @@ contract ZoraCreator1155PreminterTest is Test {
     function test_premintStatus_getsIfContractHasBeenCreatedAndTokenIdForPremint() external {
         // build a premint
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // get premint status
         (bool contractCreated, uint256 tokenId) = preminter.premintStatus(preminter.getContractAddress(contractConfig), premintConfig.uid);
@@ -664,7 +701,7 @@ contract ZoraCreator1155PreminterTest is Test {
     function test_premint_whenContractCreated_premintCanOnlyBeExecutedByPermissionBitMinter() external {
         // build a premint
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         address contractAddress = preminter.getContractAddress(contractConfig);
 
@@ -760,7 +797,7 @@ contract ZoraCreator1155PreminterTest is Test {
     function test_premintVersion_whenCreated_returnsAllVersion() external {
         // build a premint
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         // sign and execute premint
         address deterministicAddress = preminter.getContractAddress(contractConfig);
@@ -791,7 +828,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_premintWithNoMintRecipient_reverts() public {
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfig();
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
 
         address contractAddress = preminter.getContractAddress(contractConfig);
 

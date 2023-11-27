@@ -165,7 +165,7 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant ATTRIBUTION_DOMAIN_V2 =
         keccak256(
-            "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter,address createReferral)"
+            "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address payoutRecipient,address fixedPriceMinter,address createReferral)"
         );
 
     function hashPremint(PremintConfigV2 memory premintConfig) internal pure returns (bytes32) {
@@ -208,7 +208,7 @@ library ZoraCreator1155Attribution {
         return
             keccak256(
                 abi.encode(
-                    TOKEN_DOMAIN_V1,
+                    TOKEN_DOMAIN_V2,
                     _stringHash(tokenConfig.tokenURI),
                     tokenConfig.maxSupply,
                     tokenConfig.maxTokensPerAddress,
@@ -390,7 +390,7 @@ library DelegatedTokenCreation {
         if (premintVersion == ZoraCreator1155Attribution.HASHED_VERSION_1) {
             PremintConfig memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfig));
 
-            creatorAttribution = _recoverCreatorAttribution(
+            creatorAttribution = recoverCreatorAttribution(
                 ZoraCreator1155Attribution.VERSION_1,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
@@ -401,7 +401,7 @@ library DelegatedTokenCreation {
         } else {
             PremintConfigV2 memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfigV2));
 
-            creatorAttribution = _recoverCreatorAttribution(
+            creatorAttribution = recoverCreatorAttribution(
                 ZoraCreator1155Attribution.VERSION_2,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
@@ -422,12 +422,13 @@ library DelegatedTokenCreation {
         versions[1] = ZoraCreator1155Attribution.VERSION_2;
     }
 
-    function _recoverCreatorAttribution(
+    function recoverCreatorAttribution(
         string memory version,
         bytes32 structHash,
         address tokenContract,
         bytes calldata signature
-    ) private view returns (DecodedCreatorAttribution memory attribution) {
+    ) internal view returns (DecodedCreatorAttribution memory attribution) {
+        attribution.structHash = structHash;
         attribution.version = version;
 
         attribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(structHash, signature, tokenContract, keccak256(bytes(version)), block.chainid);
