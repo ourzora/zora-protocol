@@ -149,11 +149,15 @@ class PremintClient {
   readonly publicClient: PublicClient;
   readonly chain: Chain;
 
-  constructor(chain: Chain, publicClient?: PublicClient, httpClient?: IHttpClient) {
+  constructor(
+    chain: Chain,
+    publicClient?: PublicClient,
+    httpClient?: IHttpClient,
+  ) {
     this.chain = chain;
     this.apiClient = new PremintAPIClient(chain.id, httpClient);
     this.publicClient =
-    publicClient || createPublicClient({ chain, transport: http() });
+      publicClient || createPublicClient({ chain, transport: http() });
   }
 
   /**
@@ -590,9 +594,11 @@ class PremintClient {
 export function createPremintClient({
   chain,
   httpClient,
-  publicClient
+  publicClient,
 }: {
-  chain: Chain, publicClient?: PublicClient, httpClient?: IHttpClient
+  chain: Chain;
+  publicClient?: PublicClient;
+  httpClient?: IHttpClient;
 }) {
   return new PremintClient(chain, publicClient, httpClient);
 }

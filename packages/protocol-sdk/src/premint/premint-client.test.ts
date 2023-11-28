@@ -8,7 +8,10 @@ describe("ZoraCreator1155Premint", () => {
     "can sign on the forked premint contract",
     async ({ viemClients: { walletClient, publicClient } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
-      const premintClient = createPremintClient({ chain: foundry, publicClient });
+      const premintClient = createPremintClient({
+        chain: foundry,
+        publicClient,
+      });
 
       premintClient.apiClient.getNextUID = vi
         .fn()
@@ -68,7 +71,10 @@ describe("ZoraCreator1155Premint", () => {
   anvilTest(
     "can validate premint on network",
     async ({ viemClients: { publicClient } }) => {
-      const premintClient = createPremintClient({ chain: foundry, publicClient });
+      const premintClient = createPremintClient({
+        chain: foundry,
+        publicClient,
+      });
 
       const premintData = {
         collection: {
@@ -145,19 +151,22 @@ describe("ZoraCreator1155Premint", () => {
       });
       premintClient.apiClient.postSignature = vi.fn();
 
-      const simulateContractParameters = await premintClient.makeMintParameters({
-        account: deployerAccount!,
-        data: await premintClient.getPremintData({
-          address: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
-          uid: 3,
-        }),
-        mintArguments: {
-          quantityToMint: 1,
-          mintComment: "",
+      const simulateContractParameters = await premintClient.makeMintParameters(
+        {
+          account: deployerAccount!,
+          data: await premintClient.getPremintData({
+            address: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
+            uid: 3,
+          }),
+          mintArguments: {
+            quantityToMint: 1,
+            mintComment: "",
+          },
         },
-      });
-      const { request: simulateRequest } =
-        await publicClient.simulateContract(simulateContractParameters);
+      );
+      const { request: simulateRequest } = await publicClient.simulateContract(
+        simulateContractParameters,
+      );
       const hash = await walletClient.writeContract(simulateRequest);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       const { premintedLog, urls } =

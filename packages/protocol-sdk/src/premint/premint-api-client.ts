@@ -27,7 +27,7 @@ type PremintSignatureGetPathParameters =
 export type PremintSignatureGetResponse =
   SignaturePremintGetType["responses"][200]["content"]["application/json"];
 
-export type PremintCollection = PremintSignatureGetResponse['collection'];
+export type PremintCollection = PremintSignatureGetResponse["collection"];
 
 export type BackendChainNames = components["schemas"]["ChainName"];
 
