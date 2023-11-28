@@ -33,7 +33,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         _entryPoint = anEntryPoint;
     }
 
-    function _initialize(address defaultOwner) public virtual initializer {
+    function initialize(address defaultOwner) public virtual initializer {
         _setupWithAdmin(defaultOwner);
 
         emit ZoraAccountInitialized(_entryPoint, defaultOwner);
