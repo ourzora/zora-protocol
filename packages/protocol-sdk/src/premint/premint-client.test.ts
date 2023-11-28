@@ -145,7 +145,7 @@ describe("ZoraCreator1155Premint", () => {
       });
       premintClient.apiClient.postSignature = vi.fn();
 
-      const { request } = await premintClient.executePremint({
+      const simulateContractParameters = await premintClient.makeMintParameters({
         account: deployerAccount!,
         data: await premintClient.getPremintData({
           address: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
@@ -157,7 +157,7 @@ describe("ZoraCreator1155Premint", () => {
         },
       });
       const { request: simulateRequest } =
-        await publicClient.simulateContract(request);
+        await publicClient.simulateContract(simulateContractParameters);
       const hash = await walletClient.writeContract(simulateRequest);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       const { premintedLog, urls } =

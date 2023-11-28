@@ -542,7 +542,7 @@ class PremintClient {
    * @param settings.publicClient Optional public client for preflight checks.
    * @returns receipt, log, zoraURL
    */
-  async executePremint({
+  async makeMintParameters({
     data,
     account,
     mintArguments,
@@ -553,7 +553,7 @@ class PremintClient {
       quantityToMint: number;
       mintComment?: string;
     };
-  }): Promise<{ request: SimulateContractParameters }> {
+  }): Promise<SimulateContractParameters> {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
@@ -574,7 +574,7 @@ class PremintClient {
 
     const value = numberToMint * REWARD_PER_TOKEN;
 
-    const request = {
+    const request: SimulateContractParameters = {
       account,
       abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "premint",
@@ -583,9 +583,7 @@ class PremintClient {
       args,
     };
 
-    return {
-      request,
-    };
+    return request;
   }
 }
 
