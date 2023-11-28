@@ -53,9 +53,9 @@ class MintClient {
 
   /**
    * Gets mintable information for a given token
-   * @param param0.tokenContract The contract address of the token to mint. 
-   * @param param0.tokenId The token id to mint. 
-   * @returns 
+   * @param param0.tokenContract The contract address of the token to mint.
+   * @param param0.tokenId The token id to mint.
+   * @returns
    */
   async getMintable({
     tokenContract,
@@ -75,7 +75,7 @@ class MintClient {
    * @param param0.minterAccount The account that will mint the token.
    * @param param0.mintable The mintable token to mint.
    * @param param0.mintArguments The arguments for the mint (mint recipient, comment, mint referral, quantity to mint)
-   * @returns 
+   * @returns
    */
   async makePrepareMintTokenParams({
     ...rest
@@ -95,14 +95,14 @@ class MintClient {
    * Returns the mintFee, sale fee, and total cost of minting x quantities of a token.
    * @param param0.mintable The mintable token to mint.
    * @param param0.quantityToMint The quantity of tokens to mint.
-   * @returns 
+   * @returns
    */
   async getMintCosts({
     mintable,
-    quantityToMint
+    quantityToMint,
   }: {
-    mintable: Mintable,
-    quantityToMint: number | bigint
+    mintable: Mintable;
+    quantityToMint: number | bigint;
   }): Promise<MintCosts> {
     const mintContextType = validateMintableAndGetContextType(mintable);
 
@@ -132,7 +132,7 @@ class MintClient {
  * @param param0.chain The chain to use for the mint client.
  * @param param0.publicClient Optional viem public client
  * @param param0.httpClient Optional http client to override post, get, and retry methods
- * @returns 
+ * @returns
  */
 export function createMintClient({
   chain,
