@@ -23,19 +23,17 @@ describe("mint-helper", () => {
       const targetTokenId = 1n;
       const minter = createMintClient({ chain: zora });
 
-      const { simulateContractParameters: params } =
-        await minter.makePrepareMintTokenParams({
-          publicClient,
-          minterAccount: creatorAccount,
-          mintable: await minter.getMintable({
-            tokenId: targetTokenId,
-            tokenContract: targetContract,
-          }),
-          mintArguments: {
-            mintToAddress: creatorAccount,
-            quantityToMint: 1,
-          },
-        });
+      const params = await minter.makePrepareMintTokenParams({
+        minterAccount: creatorAccount,
+        mintable: await minter.getMintable({
+          tokenId: targetTokenId,
+          tokenContract: targetContract,
+        }),
+        mintArguments: {
+          mintToAddress: creatorAccount,
+          quantityToMint: 1,
+        },
+      });
 
       const oldBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
@@ -75,19 +73,17 @@ describe("mint-helper", () => {
       const targetTokenId = undefined;
       const minter = createMintClient({ chain: zora });
 
-      const { simulateContractParameters: prepared } =
-        await minter.makePrepareMintTokenParams({
-          mintable: await minter.getMintable({
-            tokenContract: targetContract,
-            tokenId: targetTokenId,
-          }),
-          publicClient,
-          minterAccount: creatorAccount,
-          mintArguments: {
-            mintToAddress: creatorAccount,
-            quantityToMint: 1,
-          },
-        });
+      const params = await minter.makePrepareMintTokenParams({
+        mintable: await minter.getMintable({
+          tokenContract: targetContract,
+          tokenId: targetTokenId,
+        }),
+        minterAccount: creatorAccount,
+        mintArguments: {
+          mintToAddress: creatorAccount,
+          quantityToMint: 1,
+        },
+      });
       const oldBalance = await publicClient.readContract({
         abi: erc721ABI,
         address: targetContract,
@@ -95,7 +91,7 @@ describe("mint-helper", () => {
         args: [creatorAccount],
       });
 
-      const simulated = await publicClient.simulateContract(prepared);
+      const simulated = await publicClient.simulateContract(params);
 
       const hash = await walletClient.writeContract(simulated.request);
 
