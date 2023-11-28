@@ -2,7 +2,6 @@ import { foundry } from "viem/chains";
 import { describe, expect, vi } from "vitest";
 import { createPremintClient } from "./premint-client";
 import { anvilTest } from "src/anvil";
-import { BackendChainNamesLookup } from "src/apis/chain-constants";
 
 describe("ZoraCreator1155Premint", () => {
   anvilTest(
