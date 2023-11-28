@@ -1,5 +1,5 @@
 [profile.default]
-solc = '0.8.19'
+solc = '0.8.20'
 evm_version = 'paris'
 via_ir = true
 src = 'src'
