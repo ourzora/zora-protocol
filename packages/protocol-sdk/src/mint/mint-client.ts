@@ -62,11 +62,11 @@ class MintClient {
     tokenId,
   }: {
     tokenContract: Address;
-    tokenId: bigint | number | string;
+    tokenId?: bigint | number | string;
   }) {
     return await this.apiClient.getMintableForToken({
       tokenContract,
-      tokenId: tokenId.toString(),
+      tokenId: tokenId?.toString(),
     });
   }
 
