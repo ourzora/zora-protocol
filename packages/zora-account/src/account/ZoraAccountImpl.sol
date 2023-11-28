@@ -1,13 +1,33 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.19;
+pragma solidity 0.8.20;
 
-contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, IERC1271, LightAccountStorage, ILightAccount, ZoraAccountOwnership {
+import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+
+import {IEntryPoint} from "account-abstraction/contracts/interfaces/IEntryPoint.sol";
+import {UserOperation} from "account-abstraction/contracts/interfaces/UserOperation.sol";
+import {BaseAccount} from "account-abstraction/contracts/core/BaseAccount.sol";
+import {TokenCallbackHandler} from "../utils/TokenCallbackHandler.sol";
+
+import {IZoraAccount} from "../interfaces/IZoraAccount.sol";
+import {ZoraAccountOwnership} from "../ownership/ZoraAccountOwnership.sol";
+
+import {Enjoy} from "../../_imagine/Enjoy.sol";
+
+contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, ZoraAccountOwnership, IZoraAccount {
     using ECDSA for bytes32;
 
-    bytes32 internal immutable _1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
-    IEntryPoint private immutable _entryPoint = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 private constant DOMAIN_SEPERATOR_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
-    bytes32 private immutable LA_MSG_TYPEHASH = keccak256("LightAccountMessage(bytes message)");
+    /// @dev bytes4(keccak256("isValidSignature(bytes32,bytes)"))
+    bytes4 internal immutable _1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
+
+    /// @dev keccak256("ZoraAccountMessage(bytes message)");
+    bytes32 private immutable ZA_MSG_TYPEHASH = keccak256("ZoraAccountMessage(bytes message)");
+
+    /// @dev keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
+    bytes32 private immutable DOMAIN_SEPARATOR_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+
+    /// @dev The entry point contract that can execute transactions
+    IEntryPoint private immutable _entryPoint;
 
     constructor(IEntryPoint anEntryPoint) initializer {
         _entryPoint = anEntryPoint;
@@ -15,17 +35,22 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
 
     function _initialize(address defaultOwner) public virtual initializer {
         _setupWithAdmin(defaultOwner);
+
+        emit ZoraAccountInitialized(_entryPoint, defaultOwner);
     }
 
     // Allows receiving native ETH
     receive() external payable {
-        // Should we emit here?
-        // emit ReceivedBalance(msg.sender, msg.value);
+        emit ZoraAccountReceivedEth(msg.sender, msg.value);
     }
 
-    function _requireFromEntryPointOrOwner() internal {
-        if (!isApprovedOwner(msg.sender) || msg.sender != _entryPoint) {
-            revert NotAllowed();
+    function entryPoint() public view override returns (IEntryPoint) {
+        return _entryPoint;
+    }
+
+    function _requireFromEntryPointOrOwner() internal view {
+        if (!isApprovedOwner(msg.sender) || msg.sender != address(_entryPoint)) {
+            revert NotAuthorized(msg.sender);
         }
     }
 
@@ -39,6 +64,15 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
     function execute(address dest, uint256 value, bytes calldata func) external {
         _requireFromEntryPointOrOwner();
         _call(dest, value, func);
+    }
+
+    function _call(address target, uint256 value, bytes memory data) internal {
+        (bool success, bytes memory result) = target.call{value: value}(data);
+        if (!success) {
+            assembly {
+                revert(add(result, 32), mload(result))
+            }
+        }
     }
 
     /**
@@ -84,22 +118,43 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         }
     }
 
-    /**
-     * @dev The signature is valid if it is signed by the owner's private key
-     * (if the owner is an EOA) or if it is a valid ERC-1271 signature from the
-     * owner (if the owner is a contract). Note that unlike the signature
-     * validation used in `validateUserOp`, this does **not** wrap the digest in
-     * an "Ethereum Signed Message" envelope before checking the signature in
-     * the EOA-owner case.
-     * @inheritdoc IERC1271
-     */
+    // TODO implement
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
+        internal
+        virtual
+        override(BaseAccount)
+        returns (uint256 validationData) {}
+
+
     function isValidSignature(bytes32 digest, bytes memory signature) public view override returns (bytes4) {
+        // TODO these two lines can be optimized
         bytes memory messageData = encodeMessageData(abi.encode(digest));
         bytes32 messageHash = keccak256(messageData);
-        if (SignatureChecker.isValidSignatureNow(owner(), messageHash, signature)) {
+
+        address recoveredAddress = recoverSigner(messageHash, signature);
+
+        if (isApprovedOwner(recoveredAddress)) {
             return _1271_MAGIC_VALUE;
         }
+
         return 0xffffffff;
+    }
+
+    function recoverSigner(bytes32 digest, bytes memory signature) private pure returns (address) {
+        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
+
+        address signer = ecrecover(digest, v, r, s);
+        require(signer != address(0), "INVALID_SIGNATURE"); // TODO custom error & add to IZoraAccount
+
+        return signer;
+    }
+
+    function splitSignature(bytes memory signature) private pure returns (uint8 v, bytes32 r, bytes32 s) {
+        assembly {
+            r := mload(add(signature, 0x20))
+            s := mload(add(signature, 0x40))
+            v := byte(0, mload(add(signature, 0x60)))
+        }
     }
 
         /**
@@ -110,7 +165,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         return keccak256(
             abi.encode(
                 DOMAIN_SEPARATOR_TYPEHASH,
-                abi.encode("LightAccount"), // name
+                abi.encode("ZoraAccount"), // name
                 abi.encode("1"), // version
                 block.chainid, // chainId
                 address(this) // verifying contract
@@ -124,7 +179,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
      * @return Encoded message.
      */
     function encodeMessageData(bytes memory message) public view returns (bytes memory) {
-        bytes32 messageHash = keccak256(abi.encode(LA_MSG_TYPEHASH, keccak256(message)));
+        bytes32 messageHash = keccak256(abi.encode(ZA_MSG_TYPEHASH, keccak256(message)));
         return abi.encodePacked("\x19\x01", domainSeparator(), messageHash);
     }
 
@@ -137,4 +192,10 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         return keccak256(encodeMessageData(message));
     }
 
+    // TODO add upgrade gate registered check
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner(msg.sender) {}
+
+    function supportsInterface(bytes4 interfaceId) public view virtual override(ZoraAccountOwnership, TokenCallbackHandler) returns (bool) {
+        return interfaceId == type(IZoraAccount).interfaceId || super.supportsInterface(interfaceId);
+    }
 }
