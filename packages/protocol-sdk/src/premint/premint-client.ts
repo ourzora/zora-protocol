@@ -1,4 +1,4 @@
-import { decodeEventLog } from "viem";
+import { createPublicClient, decodeEventLog, http } from "viem";
 import type {
   Account,
   Address,
@@ -21,9 +21,10 @@ import type {
 } from "./premint-api-client";
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
-import { ClientBase } from "../apis/client-base";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
 import { REWARD_PER_TOKEN } from "src/apis/chain-constants";
+import { IHttpClient } from "src/apis/http-api-base";
+import { getApiNetworkConfigForChain } from "src/mint/mint-api-client";
 
 type MintArgumentsSettings = {
   tokenURI: string;
@@ -143,16 +144,20 @@ export const encodePremintForAPI = ({
  * Preminter API to access ZORA Premint functionality.
  * Currently only supports V1 premints.
  */
-class PremintClient extends ClientBase {
-  apiClient: typeof PremintAPIClient;
+class PremintClient {
+  readonly apiClient: PremintAPIClient;
+  readonly publicClient: PublicClient;
+  readonly chain: Chain;
 
-  constructor(chain: Chain, apiClient?: typeof PremintAPIClient) {
-    super(chain);
-
-    if (!apiClient) {
-      apiClient = PremintAPIClient;
-    }
-    this.apiClient = apiClient;
+  constructor(
+    chain: Chain,
+    publicClient?: PublicClient,
+    httpClient?: IHttpClient,
+  ) {
+    this.chain = chain;
+    this.apiClient = new PremintAPIClient(chain.id, httpClient);
+    this.publicClient =
+      publicClient || createPublicClient({ chain, transport: http() });
   }
 
   /**
@@ -219,7 +224,6 @@ class PremintClient extends ClientBase {
     collection: Address;
   }): Promise<SignedPremintResponse> {
     const signatureResponse = await this.apiClient.getSignature({
-      chain_name: this.network.zoraBackendChainName,
       collection_address: collection.toLowerCase(),
       uid: uid,
     });
@@ -241,7 +245,6 @@ class PremintClient extends ClientBase {
       account,
       checkSignature: false,
       verifyingContract: collection,
-      publicClient: this.getPublicClient(),
       uid: uid,
       collection: {
         ...signerData.collection,
@@ -270,16 +273,13 @@ class PremintClient extends ClientBase {
     uid,
     account,
     collection,
-    publicClient,
   }: {
     walletClient: WalletClient;
-    publicClient: PublicClient;
     uid: number;
     account?: Account | Address;
     collection: Address;
   }) {
     const signatureResponse = await this.apiClient.getSignature({
-      chain_name: this.network.zoraBackendChainName,
       collection_address: collection.toLowerCase(),
       uid: uid,
     });
@@ -298,7 +298,6 @@ class PremintClient extends ClientBase {
       account,
       checkSignature: false,
       verifyingContract: collection,
-      publicClient: this.getPublicClient(publicClient),
       uid: uid,
       collection: signerData.collection,
       premintConfig: signerData.premint,
@@ -313,7 +312,6 @@ class PremintClient extends ClientBase {
    */
   private async signAndSubmitPremint({
     walletClient,
-    publicClient,
     verifyingContract,
     premintConfig,
     uid,
@@ -321,7 +319,6 @@ class PremintClient extends ClientBase {
     checkSignature,
     collection,
   }: {
-    publicClient: PublicClient;
     uid: number;
     walletClient: WalletClient;
     verifyingContract: Address;
@@ -347,7 +344,7 @@ class PremintClient extends ClientBase {
     });
 
     if (checkSignature) {
-      const [isValidSignature] = await publicClient.readContract({
+      const [isValidSignature] = await this.publicClient.readContract({
         abi: zoraCreator1155PremintExecutorImplABI,
         address: this.getExecutorAddress(),
         functionName: "isValidSignature",
@@ -361,7 +358,6 @@ class PremintClient extends ClientBase {
     const apiData = {
       collection,
       premint: encodePremintForAPI(premintConfig),
-      chain_name: this.network.zoraBackendChainName,
       signature: signature,
     };
 
@@ -394,7 +390,6 @@ class PremintClient extends ClientBase {
     account,
     collection,
     token,
-    publicClient,
     walletClient,
     executionSettings,
     checkSignature = false,
@@ -404,15 +399,12 @@ class PremintClient extends ClientBase {
     walletClient: WalletClient;
     collection: PremintSignatureGetResponse["collection"];
     token: MintArgumentsSettings;
-    publicClient?: PublicClient;
     executionSettings?: {
       deleted?: boolean;
       uid?: number;
     };
   }) {
-    publicClient = this.getPublicClient(publicClient);
-
-    const newContractAddress = await publicClient.readContract({
+    const newContractAddress = await this.publicClient.readContract({
       address: this.getExecutorAddress(),
       abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "getContractAddress",
@@ -429,7 +421,6 @@ class PremintClient extends ClientBase {
     let uid = executionSettings?.uid;
     if (!uid) {
       const uidResponse = await this.apiClient.getNextUID({
-        chain_name: this.network.zoraBackendChainName,
         collection_address: newContractAddress.toLowerCase(),
       });
       uid = uidResponse.next_uid;
@@ -454,7 +445,6 @@ class PremintClient extends ClientBase {
       premintConfig,
       checkSignature,
       account,
-      publicClient,
       walletClient,
       collection,
     });
@@ -475,7 +465,6 @@ class PremintClient extends ClientBase {
     uid: number;
   }): Promise<PremintSignatureGetResponse> {
     return await this.apiClient.getSignature({
-      chain_name: this.network.zoraBackendChainName,
       collection_address: address,
       uid,
     });
@@ -489,19 +478,15 @@ class PremintClient extends ClientBase {
    */
   async isValidSignature({
     data,
-    publicClient,
   }: {
     data: PremintSignatureGetResponse;
-    publicClient?: PublicClient;
   }): Promise<{
     isValid: boolean;
     contractAddress: Address;
     recoveredSigner: Address;
   }> {
-    publicClient = this.getPublicClient(publicClient);
-
     const [isValid, contractAddress, recoveredSigner] =
-      await publicClient.readContract({
+      await this.publicClient.readContract({
         abi: zoraCreator1155PremintExecutorImplABI,
         address: this.getExecutorAddress(),
         functionName: "isValidSignature",
@@ -530,19 +515,21 @@ class PremintClient extends ClientBase {
 
     const zoraTokenPath = uid ? `premint-${uid}` : tokenId;
 
+    const network = getApiNetworkConfigForChain(this.chain.id);
+
     return {
       explorer: tokenId
         ? `https://${this.chain.blockExplorers?.default.url}/token/${address}/instance/${tokenId}`
         : null,
       zoraCollect: `https://${
-        this.network.isTestnet ? "testnet." : ""
+        network.isTestnet ? "testnet." : ""
       }zora.co/collect/${
-        this.network.zoraPathChainName
+        network.zoraPathChainName
       }:${address}/${zoraTokenPath}`,
       zoraManage: `https://${
-        this.network.isTestnet ? "testnet." : ""
+        network.isTestnet ? "testnet." : ""
       }zora.co/collect/${
-        this.network.zoraPathChainName
+        network.zoraPathChainName
       }:${address}/${zoraTokenPath}`,
     };
   }
@@ -559,7 +546,7 @@ class PremintClient extends ClientBase {
    * @param settings.publicClient Optional public client for preflight checks.
    * @returns receipt, log, zoraURL
    */
-  async executePremint({
+  async makeMintParameters({
     data,
     account,
     mintArguments,
@@ -570,7 +557,7 @@ class PremintClient extends ClientBase {
       quantityToMint: number;
       mintComment?: string;
     };
-  }): Promise<{ request: SimulateContractParameters }> {
+  }): Promise<SimulateContractParameters> {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
@@ -591,7 +578,7 @@ class PremintClient extends ClientBase {
 
     const value = numberToMint * REWARD_PER_TOKEN;
 
-    const request = {
+    const request: SimulateContractParameters = {
       account,
       abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "premint",
@@ -600,18 +587,18 @@ class PremintClient extends ClientBase {
       args,
     };
 
-    return {
-      request,
-    };
+    return request;
   }
 }
 
 export function createPremintClient({
   chain,
-  premintAPIClient,
+  httpClient,
+  publicClient,
 }: {
   chain: Chain;
-  premintAPIClient?: typeof PremintAPIClient;
+  publicClient?: PublicClient;
+  httpClient?: IHttpClient;
 }) {
-  return new PremintClient(chain, premintAPIClient);
+  return new PremintClient(chain, publicClient, httpClient);
 }

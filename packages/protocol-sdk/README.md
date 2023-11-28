@@ -214,24 +214,71 @@ export async function createContract({
 }
 ```
 
-### Creating a premint:
+### Creating a token for free (gasless creation):
 
 ```ts
-import { PremintAPI } from "@zoralabs/protocol-sdk";
-import type { Address, WalletClient } from "viem";
+import {createPremintClient} from "@zoralabs/protocol-sdk";
+import type {Address, PublicClient, WalletClient} from "viem";
 
-async function makePremint(walletClient: WalletClient) {
-  // Create premint
-  const premint = await createPremintAPI(walletClient.chain).createPremint({
-    // Extra step to check the signature on-chain before attempting to sign
+async function createForFree({
+  walletClient,
+  creatorAccount,
+}: {
+  // wallet client that will submit the transaction
+  walletClient: WalletClient;
+  // address of the token contract
+  creatorAccount: Address;
+}) {
+  const premintClient = createPremintClient({ chain: walletClient.chain! });
+
+  // create and sign a free token creation.
+  const createdPremint = await premintClient.createPremint({
+    walletClient,
+    account: creatorAccount,
+    // if true, will validate that the creator is authorized to create premints on the contract.
     checkSignature: true,
-    // Collection information that this premint NFT will exist in once minted.
+    // collection info of collection to create
     collection: {
-      contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+      contractAdmin: creatorAccount,
       contractName: "Testing Contract",
       contractURI:
         "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
     },
+    // token info of token to create
+    token: {
+      tokenURI:
+        "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+    },
+  });
+
+  const premintUid = createdPremint.uid;
+  const premintCollectionAddress = createdPremint.verifyingContract;
+
+  return {
+    // unique id of created premint, which can be used later to 
+    // update or delete the premint
+    uid: premintUid,
+    tokenContract: premintCollectionAddress, 
+  }
+} 
+```
+
+### Updating a token that was created for free (before it was brought onchain):
+
+Before a token that was created for free is brought onchain, it can be updated by the original creator of that token, by having that creator sign a message indicating the update. This is useful for updating the tokenURI, other metadata, or token sale configuration (price, duration, limits, etc.):
+
+```ts
+import {createPremintClient} from "@zoralabs/protocol-sdk";
+import type {Address, PublicClient, WalletClient} from "viem";
+
+async function updateCreatedForFreeToken(walletClient: WalletClient, premintUid: number) {
+  // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
+  const premintClient = createPremintClient({ chain: walletClient.chain! });
+
+  // sign a message to update the created for free token, and store the update
+  await premintClient.updatePremint({
+    collection: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+    uid: premintUid,
     // WalletClient doing the signature
     walletClient,
     // Token information, falls back to defaults set in DefaultMintArguments.
@@ -240,102 +287,72 @@ async function makePremint(walletClient: WalletClient) {
         "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
     },
   });
-
-  console.log(`created ZORA premint, link: ${premint.url}`);
-  return premint;
 }
 ```
 
-### Updating a premint:
+### Deleting a token that was created for free (before it was brought onchain):
+
+Before a token that was created for free is brought onchain, it can be deleted by the original creator of that token, by having that creator sign a message indicating the deletion:
 
 ```ts
-import { PremintAPI } from "@zoralabs/premint-sdk";
-import type { Address, WalletClient } from "viem";
+import {createPremintClient} from "@zoralabs/protocol-sdk";
+import type {Address, PublicClient, WalletClient} from "viem";
 
-async function updatePremint(walletClient: WalletClient) {
-  // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
-  const premintAPI = createPremintAPI(walletClient.chain);
+async function deleteCreatedForFreeToken(walletClient: WalletClient) {
+  const premintClient = createPremintClient({ chain: walletClient.chain! });
 
-  // Create premint
-  const premint = await premintAPI.updatePremint({
-    // Extra step to check the signature on-chain before attempting to sign
-    collection: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-    uid: 23,
-    // WalletClient doing the signature
-    walletClient,
-    // Token information, falls back to defaults set in DefaultMintArguments.
-    token: {
-      tokenURI:
-        "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
-    },
-  });
-
-  console.log(`updated ZORA premint, link: ${premint.url}`);
-  return premint;
-}
-```
-
-### Deleting a premint:
-
-```ts
-import { PremintAPI } from "@zoralabs/premint-sdk";
-import type { Address, WalletClient } from "viem";
-
-async function deletePremint(walletClient: WalletClient) {
-  // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
-  const premintAPI = createPremintClient({ chain: walletClient.chain });
-
-  // Create premint
-  const premint = await premintAPI.deletePremint({
+  // sign a message to delete the premint, and store the deletion
+  await premintClient.deletePremint({
     // Extra step to check the signature on-chain before attempting to sign
     collection: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
     uid: 23,
     // WalletClient doing the signature
     walletClient,
   });
-
-  console.log(`updated ZORA premint, link: ${premint.url}`);
-  return premint;
 }
 ```
 
-### Executing a premint:
+### Minting a token that was created for free (and bringing it onchain):
 
 ```ts
-import { PremintAPI } from "@zoralabs/premint-sdk";
-import type { Address, WalletClient } from "viem";
+import {createPremintClient} from "@zoralabs/protocol-sdk";
+import type {Address, PublicClient, WalletClient} from "viem";
 
-async function executePremint(
+async function mintCreatedForFreeToken(
   walletClient: WalletClient,
-  premintAddress: Address,
-  premintUID: number,
+  publicClient: PublicClient,
+  minterAccount: Address,
 ) {
-  const premintAPI = createPremintClient({ chain: walletClient.chain });
+  const premintClient = createPremintClient({ chain: walletClient.chain! });
 
-  return await premintAPI.executePremintWithWallet({
-    data: premintAPI.getPremintData(premintAddress, premintUID),
-    walletClient,
+  const simulateContractParameters = await premintClient.makeMintParameters({
+    account: minterAccount,
+    data: await premintClient.getPremintData({
+      address: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
+      uid: 3,
+    }),
     mintArguments: {
       quantityToMint: 1,
+      mintComment: "",
     },
   });
+
+  // simulate the transaction and get any validation errors
+  const { request } = await publicClient.simulateContract(simulateContractParameters);
+
+  // submit the transaction to the network
+  const txHash = await walletClient.writeContract(request);
+
+  // wait for the transaction to be complete
+  const receipt = await publicClient.waitForTransactionReceipt({hash: txHash});
+
+  const { urls } = await premintClient.getDataFromPremintReceipt(receipt);
+
+  // block explorer url:
+  console.log(urls.explorer);
+  // collect url:
+  console.log(urls.zoraCollect);
+  // manage url:
+  console.log(urls.zoraManage);
 }
-```
-
-### Deleting a premint:
-
-```ts
-import {PremintAPI} from '@zoralabs/premint-sdk';
-import type {Address, WalletClient} from 'viem';
-
-async function deletePremint(walletClient: WalletClient, collection: Address, uid: number) {
-    const premintAPI = createPremintClient({chain: walletClient.chain});
-
-    return await premintAPI.deletePremint({
-        walletClient,
-        uid,
-        collection
-    });
-}
-
 ```
