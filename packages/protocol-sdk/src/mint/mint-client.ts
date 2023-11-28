@@ -51,32 +51,52 @@ class MintClient {
       publicClient || createPublicClient({ chain, transport: http() });
   }
 
+  /**
+   * Gets mintable information for a given token
+   * @param param0.tokenContract The contract address of the token to mint. 
+   * @param param0.tokenId The token id to mint. 
+   * @returns 
+   */
   async getMintable({
     tokenContract,
     tokenId,
   }: {
     tokenContract: Address;
-    tokenId?: bigint | number | string;
+    tokenId: bigint | number | string;
   }) {
     return await this.apiClient.getMintableForToken({
       tokenContract,
-      tokenId: tokenId?.toString(),
+      tokenId: tokenId.toString(),
     });
   }
 
-  // Prepares mint token params
-  async makePrepareMintTokenParams(args: {
+  /**
+   * Returns the parameters needed to prepare a transaction mint a token.
+   * @param param0.minterAccount The account that will mint the token.
+   * @param param0.mintable The mintable token to mint.
+   * @param param0.mintArguments The arguments for the mint (mint recipient, comment, mint referral, quantity to mint)
+   * @returns 
+   */
+  async makePrepareMintTokenParams({
+    ...rest
+  }: {
     minterAccount: Address;
     mintable: MintableGetTokenResponse;
     mintArguments: MintArguments;
   }): Promise<SimulateContractParameters> {
     return makePrepareMintTokenParams({
-      ...args,
+      ...rest,
       apiClient: this.apiClient,
       publicClient: this.publicClient,
     });
   }
 
+  /**
+   * Returns the mintFee, sale fee, and total cost of minting x quantities of a token.
+   * @param param0.mintable The mintable token to mint.
+   * @param param0.quantityToMint The quantity of tokens to mint.
+   * @returns 
+   */
   async getMintCosts({
     mintable,
     quantityToMint
@@ -107,6 +127,13 @@ class MintClient {
   }
 }
 
+/**
+ * Creates a new MintClient.
+ * @param param0.chain The chain to use for the mint client.
+ * @param param0.publicClient Optional viem public client
+ * @param param0.httpClient Optional http client to override post, get, and retry methods
+ * @returns 
+ */
 export function createMintClient({
   chain,
   publicClient,
@@ -121,7 +148,7 @@ export function createMintClient({
 
 export type TMintClient = ReturnType<typeof createMintClient>;
 
-export function validateMintableAndGetContextType(
+function validateMintableAndGetContextType(
   mintable: MintableGetTokenResponse | undefined,
 ) {
   if (!mintable) {
@@ -149,7 +176,7 @@ export function validateMintableAndGetContextType(
   return mintable.mint_context.mint_context_type;
 }
 
-export async function makePrepareMintTokenParams({
+async function makePrepareMintTokenParams({
   publicClient,
   mintable,
   apiClient,
@@ -188,7 +215,7 @@ export async function makePrepareMintTokenParams({
   );
 }
 
-export async function get721MintCosts({
+async function get721MintCosts({
   mintable,
   publicClient,
   quantityToMint,
@@ -257,7 +284,7 @@ async function makePrepareMint721TokenParams({
   return result;
 }
 
-export async function get1155MintFee({
+async function get1155MintFee({
   collectionAddress,
   publicClient,
 }: {
