@@ -76,6 +76,35 @@ class MintClient {
       publicClient: this.publicClient,
     });
   }
+
+  async getMintCosts({
+    mintable,
+    quantityToMint
+  }: {
+    mintable: Mintable,
+    quantityToMint: number | bigint
+  }): Promise<MintCosts> {
+    const mintContextType = validateMintableAndGetContextType(mintable);
+
+    if (mintContextType === "zora_create_1155") {
+      return await get1155MintCosts({
+        mintable,
+        publicClient: this.publicClient,
+        quantityToMint: BigInt(quantityToMint),
+      });
+    }
+    if (mintContextType === "zora_create") {
+      return await get721MintCosts({
+        mintable,
+        publicClient: this.publicClient,
+        quantityToMint: BigInt(quantityToMint),
+      });
+    }
+
+    throw new MintError(
+      `Mintable type ${mintContextType} is currently unsupported.`,
+    );
+  }
 }
 
 export function createMintClient({
