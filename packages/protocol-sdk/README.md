@@ -1,6 +1,6 @@
-# Premint SDK
+# Zora Protocol SDK
 
-Protocol SDK allows users to manage zora mints and collects.
+Protocol SDK allows users to create tokens using the Zora Protocol, and mint them.
 
 ## Installing
 
@@ -11,26 +11,173 @@ Protocol SDK allows users to manage zora mints and collects.
 
 ### Creating a mint from an on-chain contract:
 
-```ts
-import { createMintClient } from "@zoralabs/protocol-sdk";
-import type { Address, WalletClient } from "viem";
+#### Using viem
 
-async function mintNFT(
-  walletClient: WalletClient,
-  address: Address,
-  tokenId: bigint,
-) {
-  const mintAPI = createMintClient({ chain: walletClient.chain });
-  await mintAPI.mintNFT({
-    walletClient,
-    address,
+```ts
+import {createMintClient} from "@zoralabs/protocol-sdk";
+import type {Address, PublicClient, WalletClient} from "viem";
+
+async function mintNFT({
+  walletClient,
+  publicClient,
+  tokenContract,
+  tokenId,
+  mintToAddress,
+  quantityToMint,
+  mintReferral,
+}: {
+  // wallet client that will submit the transaction
+  walletClient: WalletClient;
+  // public client that will simulate the transaction
+  publicClient: PublicClient;
+  // address of the token contract
+  tokenContract: Address;
+  // id of the token to mint
+  tokenId: bigint;
+  // address that will receive the minted token
+  mintToAddress: Address;
+  // quantity of tokens to mint
+  quantityToMint: number;
+  // optional address that will receive a mint referral reward
+  mintReferral?: Address;
+}) {
+  const mintClient = createMintClient({chain: walletClient.chain!});
+
+  // get mintable information about the token.
+  const mintable = await mintClient.getMintable({
+    tokenContract,
     tokenId,
-    mintArguments: {
-      quantityToMint: 23,
-      mintComment: "Helo",
-    },
   });
+
+  // prepare the mint transaction, which can be simulated via an rpc with the public client.
+  const prepared = await mintClient.makePrepareMintTokenParams({
+    // token to mint
+    mintable,
+    mintArguments: {
+      // address that will receive the token
+      mintToAddress,
+      // quantity of tokens to mint
+      quantityToMint,
+      // comment to include with the mint
+      mintComment: "My comment",
+      // optional address that will receive a mint referral reward
+      mintReferral,
+    },
+    // account that is to invoke the mint transaction
+    minterAccount: walletClient.account!.address,
+  });
+
+  // simulate the transaction and get any validation errors
+  const { request } = await publicClient.simulateContract(prepared);
+
+  // submit the transaction to the network
+  const txHash = await walletClient.writeContract(request);
+
+  // wait for the transaction to be complete
+  await publicClient.waitForTransactionReceipt({hash: txHash});
 }
+```
+
+#### Using wagmi
+
+```tsx
+import {createMintClient, Mintable} from "@zoralabs/protocol-sdk";
+import {useEffect, useMemo, useState} from "react";
+import {BaseError, SimulateContractParameters, stringify} from "viem";
+import {Address, useAccount, useContractWrite, useNetwork, usePrepareContractWrite, usePublicClient, useWaitForTransaction} from "wagmi";
+
+// custom hook that gets the mintClient for the current chain
+const useMintClient = () => {
+  const publicClient = usePublicClient();
+
+  const {chain} = useNetwork();
+
+  const mintClient = useMemo(() => chain && createMintClient({chain, publicClient}), [chain, publicClient]);
+
+  return mintClient;
+};
+
+export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: Address}) => {
+  // call custom hook to get the mintClient
+  const mintClient = useMintClient();
+
+  // value will be set by the form
+  const [quantityToMint, setQuantityToMint] = useState<number>(1);
+
+  // fetched mintable info from the sdk
+  const [mintable, setMintable] = useState<Mintable>();
+
+  useEffect(() => {
+    // fetch the mintable token info
+    const fetchMintable = async () => {
+      if (mintClient) {
+        const mintable = await mintClient.getMintable({tokenId, tokenContract});
+        setMintable(mintable);
+      }
+    };
+
+    fetchMintable();
+  }, [mintClient, tokenId, tokenContract]);
+
+  // params for the prepare contract write hook
+  const [params, setParams] = useState<SimulateContractParameters>();
+
+  const {address} = useAccount();
+
+  useEffect(() => {
+    if (!mintable || !mintClient || !address) return;
+
+    const makeParams = async () => {
+      // make the params for the prepare contract write hook
+      const params = await mintClient.makePrepareMintTokenParams({
+        mintable,
+        minterAccount: address,
+        mintArguments: {
+          mintToAddress: address,
+          quantityToMint,
+        },
+      });
+      setParams(params);
+    };
+
+    makeParams();
+  }, [mintable, mintClient, address, quantityToMint]);
+
+  const {config} = usePrepareContractWrite(params);
+
+  const {write, data, error, isLoading, isError} = useContractWrite(config);
+  const {data: receipt, isLoading: isPending, isSuccess} = useWaitForTransaction({hash: data?.hash});
+
+  return (
+    <>
+      <h3>Mint a token</h3>
+      <form
+        onSubmit={(e) => {
+          e.preventDefault();
+          write?.();
+        }}
+      >
+        {/* input for quantity to mint: */}
+        <input placeholder="quantity to mint" onChange={(e) => setQuantityToMint(Number(e.target.value))} />
+        <button disabled={!write} type="submit">
+          Mint
+        </button>
+      </form>
+
+      {isLoading && <div>Check wallet...</div>}
+      {isPending && <div>Transaction pending...</div>}
+      {isSuccess && (
+        <>
+          <div>Transaction Hash: {data?.hash}</div>
+          <div>
+            Transaction Receipt: <pre>{stringify(receipt, null, 2)}</pre>
+          </div>
+        </>
+      )}
+      {isError && <div>{(error as BaseError)?.shortMessage}</div>}
+    </>
+  );
+};
 ```
 
 ### Creating an 1155 contract:
