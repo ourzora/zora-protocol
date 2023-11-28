@@ -9,7 +9,7 @@ describe("ZoraCreator1155Premint", () => {
     "can sign on the forked premint contract",
     async ({ viemClients: { walletClient, publicClient } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
-      const premintClient = createPremintClient({ chain: foundry });
+      const premintClient = createPremintClient({ chain: foundry, publicClient });
 
       premintClient.apiClient.getNextUID = vi
         .fn()
@@ -20,7 +20,6 @@ describe("ZoraCreator1155Premint", () => {
 
       await premintClient.createPremint({
         walletClient,
-        publicClient,
         account: deployerAccount!,
         checkSignature: true,
         collection: {
@@ -36,7 +35,6 @@ describe("ZoraCreator1155Premint", () => {
       });
 
       expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith({
-        chain_name: BackendChainNamesLookup.ZORA_GOERLI,
         collection: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
           contractName: "Testing Contract",
@@ -71,7 +69,7 @@ describe("ZoraCreator1155Premint", () => {
   anvilTest(
     "can validate premint on network",
     async ({ viemClients: { publicClient } }) => {
-      const premintClient = createPremintClient({ chain: foundry });
+      const premintClient = createPremintClient({ chain: foundry, publicClient });
 
       const premintData = {
         collection: {
@@ -106,7 +104,6 @@ describe("ZoraCreator1155Premint", () => {
       const signatureValid = await premintClient.isValidSignature({
         // @ts-ignore: Fix enum type
         data: premintData,
-        publicClient,
       });
       expect(signatureValid.isValid).toBe(true);
     },
