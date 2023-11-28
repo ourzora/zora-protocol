@@ -1,4 +1,4 @@
-import * as httpClientBase from "../apis/http-api-base";
+import { httpClient as defaultHttpClient, IHttpClient } from "../apis/http-api-base";
 import { paths } from "../apis/generated/discover-api-types";
 import { ZORA_API_BASE } from "../constants";
 import { NetworkConfig, networkConfigByChain } from "src/apis/chain-constants";
@@ -25,11 +25,11 @@ export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
 };
 
 export class MintAPIClient {
-  httpClient: typeof httpClientBase;
+  httpClient: IHttpClient;
   networkConfig: NetworkConfig;
 
-  constructor(chainId: number, httpClient?: typeof httpClientBase) {
-    this.httpClient = httpClient || httpClientBase;
+  constructor(chainId: number, httpClient?: IHttpClient) {
+    this.httpClient = httpClient || defaultHttpClient;
     this.networkConfig = getApiNetworkConfigForChain(chainId);
   }
 

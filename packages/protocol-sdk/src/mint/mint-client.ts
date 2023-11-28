@@ -9,7 +9,7 @@ import {
   zeroAddress,
   http,
 } from "viem";
-import * as httpClientBase from "../apis/http-api-base";
+import { IHttpClient } from "../apis/http-api-base";
 import { MintAPIClient, MintableGetTokenResponse } from "./mint-api-client";
 import { SimulateContractParameters } from "viem";
 import {
@@ -44,7 +44,7 @@ class MintClient {
   constructor(
     chain: Chain,
     publicClient?: PublicClient,
-    httpClient?: typeof httpClientBase,
+    httpClient?: IHttpClient,
   ) {
     this.apiClient = new MintAPIClient(chain.id, httpClient);
     this.publicClient =
@@ -141,7 +141,7 @@ export function createMintClient({
 }: {
   chain: Chain;
   publicClient?: PublicClient;
-  httpClient?: typeof httpClientBase;
+  httpClient?: IHttpClient;
 }) {
   return new MintClient(chain, publicClient, httpClient);
 }
