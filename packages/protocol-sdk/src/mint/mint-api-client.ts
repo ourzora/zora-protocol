@@ -56,18 +56,40 @@ export class MintAPIClient {
   }: {
     contractAddress: string;
     tokenId: bigint;
-  }): Promise<undefined | string> {
+  }): Promise<undefined | { address: Address; pricePerToken: bigint }> {
     const { retries, post } = this.httpClient;
     return retries(async () => {
       const response = await post<any>(this.networkConfig.subgraphUrl, {
-        query:
-          "query($id: ID!) {\n  zoraCreateToken(id: $id) {\n    id\n    salesStrategies{\n      fixedPrice {\n        address\n      }\n    }\n  }\n}",
+        query: `query ($id: ID!) {
+          zoraCreateToken(id: $id) {
+            id
+            salesStrategies(where: {type: "FIXED_PRICE"}) {
+              type
+              fixedPrice {
+                address
+                pricePerToken
+                saleEnd
+                saleStart
+                maxTokensPerAddress
+              }
+            }
+          }
+        }`,
         variables: {
           id: `${contractAddress.toLowerCase()}-${tokenId.toString()}`,
         },
       });
-      return response.zoraCreateToken?.salesStrategies?.find(() => true)
-        ?.fixedPriceMinterAddress;
+
+      const fixedPrice: {
+        address: Address;
+        pricePerToken: string;
+      } = response.data?.zoraCreateToken?.salesStrategies?.find(() => true)
+        ?.fixedPrice;
+
+      return {
+        address: fixedPrice.address as Address,
+        pricePerToken: BigInt(fixedPrice.pricePerToken),
+      };
     });
   }
 
