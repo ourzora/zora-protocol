@@ -15,3 +15,5 @@ lower level `preminter.ts` now supports premint v2 by defining v2 typed data def
 ### Changes to PremintClient
 
 `PremintClient` creation, updating, and deletion now take both premint config v1 and v2, but currently rejects them until the backend api supports creating v2 premints.
+
+* `isValidSignature` now just takes the data directly as a param, instead of `{data}`
