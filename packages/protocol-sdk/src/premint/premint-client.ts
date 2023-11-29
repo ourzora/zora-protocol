@@ -525,16 +525,20 @@ class PremintClient {
    * @param data Signature data from the API
    * @returns isValid = signature is valid or not, recoveredSigner = signer from contract
    */
-  async isValidSignature(data: PremintSignatureResponse): Promise<{
+  async isValidSignature({
+    signature,
+    premint,
+    collection,
+  }: PremintSignatureResponse): Promise<{
     isValid: boolean;
     recoveredSigner: Address | undefined;
   }> {
     const { isAuthorized, recoveredAddress } = await isValidSignature({
       chainId: this.chain.id,
-      signature: data.signature as Hex,
-      premintConfig: convertPremintV1(data.premint),
+      signature: signature as Hex,
+      premintConfig: convertPremintV1(premint),
       premintConfigVersion: PremintConfigVersion.V1,
-      collection: convertCollection(data.collection),
+      collection: convertCollection(collection),
       publicClient: this.publicClient,
     });
 
