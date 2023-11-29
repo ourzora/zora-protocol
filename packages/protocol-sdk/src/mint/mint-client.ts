@@ -306,10 +306,12 @@ export type MintCosts = {
 
 export async function get1155MintCosts({
   mintable,
+  price,
   publicClient,
   quantityToMint,
 }: {
   mintable: MintableGetTokenResponse;
+  price: bigint;
   publicClient: PublicClient;
   quantityToMint: bigint;
 }): Promise<MintCosts> {
@@ -321,8 +323,7 @@ export async function get1155MintCosts({
   });
 
   const mintFeeForTokens = mintFee * quantityToMint;
-  const tokenPurchaseCost =
-    BigInt(mintable.cost.native_price.raw) * quantityToMint;
+  const tokenPurchaseCost = price * quantityToMint;
 
   return {
     mintFee: mintFeeForTokens,
@@ -354,18 +355,21 @@ async function makePrepareMint1155TokenParams({
 
   const address = mintable.collection.address as Address;
 
-  const mintValue = (
-    await get1155MintCosts({
-      mintable,
-      publicClient,
-      quantityToMint: mintQuantity,
-    })
-  ).totalCost;
-
   const tokenFixedPriceMinter = await apiClient.getSalesConfigFixedPrice({
     contractAddress: address,
     tokenId: BigInt(mintable.token_id!),
   });
+
+  const mintValue = (
+    await get1155MintCosts({
+      mintable,
+      price:
+        tokenFixedPriceMinter?.pricePerToken ||
+        BigInt(mintable.cost.native_price.raw),
+      publicClient,
+      quantityToMint: mintQuantity,
+    })
+  ).totalCost;
 
   const result = {
     abi: zoraCreator1155ImplABI,
@@ -375,7 +379,7 @@ async function makePrepareMint1155TokenParams({
     address,
     /* args: minter, tokenId, quantity, minterArguments, mintReferral */
     args: [
-      (tokenFixedPriceMinter ||
+      (tokenFixedPriceMinter?.address ||
         zoraCreatorFixedPriceSaleStrategyAddress[999]) as Address,
       BigInt(mintable.token_id!),
       mintQuantity,
