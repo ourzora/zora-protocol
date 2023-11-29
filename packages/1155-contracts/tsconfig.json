@@ -1,5 +1,5 @@
 {
-  "extends": "tsconfig/tsconfig.json",
+  "extends": "zoralabs-tsconfig/tsconfig.json",
   "compilerOptions": {
     "baseUrl": ".",
     "outDir": "dist"
