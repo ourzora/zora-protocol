@@ -7,6 +7,7 @@
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.0",
     "@openzeppelin/contracts-upgradeable": "^5.0.0",
-    "account-abstraction": "https://github.com/eth-infinitism/account-abstraction#cea40eec061af9f55cd9b67e8d21960fa92efb33"
+    "account-abstraction": "https://github.com/eth-infinitism/account-abstraction#cea40eec061af9f55cd9b67e8d21960fa92efb33",
+    "forge-std": "https://github.com/foundry-rs/forge-std#2f112697506eab12d433a65fdc31a639548fe365"
   }
 }
