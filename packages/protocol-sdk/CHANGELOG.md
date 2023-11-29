@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.3.4
+
+### Patch Changes
+
+- ea27f01: Fix reading the FIXED_PRICE_MINTER from the subgraph
+
 ## 0.3.3
 
 ### Patch Changes
