@@ -45,7 +45,7 @@ export const DEFAULT_SALE_SETTINGS = {
 };
 
 // Hardcode the permission bit for the minter
-const PERMISSION_BIT_MINTER = 2n ** 2n;
+const PERMISSION_BIT_MINTER = 4n;
 
 type ContractType =
   | {

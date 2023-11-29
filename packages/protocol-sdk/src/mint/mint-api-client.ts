@@ -66,8 +66,12 @@ export class MintAPIClient {
           id: `${contractAddress.toLowerCase()}-${tokenId.toString()}`,
         },
       });
-      return response.zoraCreateToken?.salesStrategies?.find(() => true)
-        ?.fixedPriceMinterAddress;
+
+      const fixedPriceAddress =
+        response.data?.zoraCreateToken?.salesStrategies?.find(() => true)
+          ?.fixedPrice?.address;
+
+      return fixedPriceAddress;
     });
   }
 
