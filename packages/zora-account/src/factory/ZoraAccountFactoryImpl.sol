@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSUpgradeable, ERC1967Utils} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {IEntryPoint} from "account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
@@ -64,6 +64,10 @@ contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
                 )
             )
         );
+    }
+
+    function implementation() external view returns (address) {
+        return ERC1967Utils.getImplementation();
     }
 
     function _authorizeUpgrade(address newImpl) internal override onlyOwner {}

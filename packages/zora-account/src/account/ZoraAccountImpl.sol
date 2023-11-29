@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.20;
 
-import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
+import {UUPSUpgradeable, ERC1967Utils} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
 import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
@@ -214,6 +214,10 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         return keccak256(encodeMessageData(message));
     }
 
+    function implementation() external view returns (address) {
+        return ERC1967Utils.getImplementation();
+    }
+    
     // TODO add upgrade gate registered check
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner(msg.sender) {}
 
