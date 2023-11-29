@@ -319,7 +319,6 @@ export async function get1155MintCosts({
     collectionAddress: address,
     publicClient,
   });
-  console.log({mintFee})
 
   const mintFeeForTokens = mintFee * quantityToMint;
   const tokenPurchaseCost =
