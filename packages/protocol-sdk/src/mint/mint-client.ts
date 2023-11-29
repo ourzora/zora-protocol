@@ -109,6 +109,7 @@ class MintClient {
     if (mintContextType === "zora_create_1155") {
       return await get1155MintCosts({
         mintable,
+        price: BigInt(mintable.cost.native_price.raw),
         publicClient: this.publicClient,
         quantityToMint: BigInt(quantityToMint),
       });
