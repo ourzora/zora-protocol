@@ -530,7 +530,7 @@ class PremintClient {
     isValid: boolean;
     recoveredSigner: Address | undefined;
   }> {
-    const {isAuthorized, recoveredAddress }= await isValidSignature({
+    const { isAuthorized, recoveredAddress } = await isValidSignature({
       chainId: this.chain.id,
       signature: data.signature as Hex,
       premintConfig: convertPremintV1(data.premint),
@@ -599,7 +599,12 @@ class PremintClient {
       quantityToMint: number;
       mintComment?: string;
     };
-  }): Promise<SimulateContractParameters<typeof zoraCreator1155PremintExecutorImplABI, "premint">> {
+  }): Promise<
+    SimulateContractParameters<
+      typeof zoraCreator1155PremintExecutorImplABI,
+      "premint"
+    >
+  > {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
@@ -626,7 +631,10 @@ class PremintClient {
       value,
       address: getPremintExecutorAddress(),
       args,
-    } satisfies SimulateContractParameters<typeof zoraCreator1155PremintExecutorImplABI, "premint">;
+    } satisfies SimulateContractParameters<
+      typeof zoraCreator1155PremintExecutorImplABI,
+      "premint"
+    >;
 
     return request;
   }

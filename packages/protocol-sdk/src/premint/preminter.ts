@@ -200,11 +200,7 @@ export async function isAuthorizedToCreatePremint({
     abi: preminterAbi,
     address: getPremintExecutorAddress(),
     functionName: "isAuthorizedToCreatePremint",
-    args: [
-      signer,
-      collection.contractAdmin,
-      collectionAddress
-    ],
+    args: [signer, collection.contractAdmin, collectionAddress],
   });
 }
 
@@ -257,7 +253,10 @@ export async function isValidSignature({
   chainId: number;
   publicClient: PublicClient;
 } & PremintConfigAndVersion): Promise<IsValidSignatureReturn> {
-  const tokenContract = await getPremintCollectionAddress({ collection, publicClient });
+  const tokenContract = await getPremintCollectionAddress({
+    collection,
+    publicClient,
+  });
   const recoveredAddress = await tryRecoverPremintSigner({
     ...premintConfigAndVersion,
     signature,
@@ -277,7 +276,7 @@ export async function isValidSignature({
     collectionAddress: tokenContract,
     publicClient,
     signature,
-    ...premintConfigAndVersion
+    ...premintConfigAndVersion,
   });
 
   return {
