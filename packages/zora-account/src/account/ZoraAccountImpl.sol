@@ -3,6 +3,8 @@ pragma solidity 0.8.20;
 
 import {UUPSUpgradeable} from "@openzeppelin/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ECDSA} from "@openzeppelin/contracts/utils/cryptography/ECDSA.sol";
+import {MessageHashUtils} from "@openzeppelin/contracts/utils/cryptography/MessageHashUtils.sol";
+import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 
 import {IEntryPoint} from "account-abstraction/contracts/interfaces/IEntryPoint.sol";
 import {UserOperation} from "account-abstraction/contracts/interfaces/UserOperation.sol";
@@ -118,13 +120,33 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         }
     }
 
-    // TODO implement
+    /*
+     * Implement template method of BaseAccount.
+     *
+     * Uses a modified version of `SignatureChecker.isValidSignatureNow` in
+     * which the digest is wrapped with an "Ethereum Signed Message" envelope
+     * for the EOA-owner case but not in the ERC-1271 contract-owner case.
+     */
     function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
         internal
-        virtual
-        override(BaseAccount)
-        returns (uint256 validationData) {}
+        view 
+        override
+        returns (uint256 validationData)
+    {
+        bytes32 signedHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
 
+        (address recoveredAddress, ECDSA.RecoverError error,) = signedHash.tryRecover(userOp.signature);
+
+        if (
+            (error == ECDSA.RecoverError.NoError && isApprovedOwner(recoveredAddress))
+                || isApprovedOwner(recoveredAddress)
+                    && SignatureChecker.isValidERC1271SignatureNow(recoveredAddress, userOpHash, userOp.signature)
+        ) {
+            return 0;
+        }
+
+        return SIG_VALIDATION_FAILED;
+    }
 
     function isValidSignature(bytes32 digest, bytes memory signature) public view override returns (bytes4) {
         // TODO these two lines can be optimized
