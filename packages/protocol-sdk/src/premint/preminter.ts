@@ -245,7 +245,7 @@ export async function tryRecoverPremintSigner(
  * @param params.tokenContract the address of the 1155 contract
  * @returns
  */
-export async function recoverAndValidateSignature({
+export async function isValidSignature({
   signature,
   publicClient,
   collection,

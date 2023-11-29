@@ -22,8 +22,9 @@ import {
   getPremintCollectionAddress,
   premintTypedDataDefinition,
   ContractCreationConfig,
-  recoverAndValidateSignature,
+  isValidSignature,
   isAuthorizedToCreatePremint,
+  getPremintExecutorAddress,
 } from "./preminter";
 import type {
   PremintSignatureGetResponse,
@@ -196,16 +197,6 @@ class PremintClient {
     this.apiClient = new PremintAPIClient(chain.id, httpClient);
     this.publicClient =
       publicClient || createPublicClient({ chain, transport: http() });
-  }
-
-  /**
-   * The premint executor address is deployed to the same address across all chains.
-   * Can be overridden as needed by making a parent class.
-   *
-   * @returns Executor address for premints
-   */
-  getExecutorAddress() {
-    return zoraCreator1155PremintExecutorImplAddress[999];
   }
 
   /**
@@ -389,7 +380,7 @@ class PremintClient {
         signature,
         publicClient: this.publicClient,
         signer: typeof account === "string" ? account : account.address,
-        collectionAddress: await this.getCollectionAddres(convertedCollection),
+        collectionAddress: await this.getCollectionAddress(convertedCollection),
         ...premintConfigAndVersion,
       });
       if (!isAuthorized) {
@@ -517,7 +508,12 @@ class PremintClient {
     });
   }
 
-  async getCollectionAddres(collection: ContractCreationConfig) {
+  /**
+   * Gets the deterministic contract address for a premint collection
+   * @param collection Collection to get the address for
+   * @returns deterministic contract address
+   */
+  async getCollectionAddress(collection: ContractCreationConfig) {
     return await getPremintCollectionAddress({
       collection,
       publicClient: this.publicClient,
@@ -534,7 +530,7 @@ class PremintClient {
     isValid: boolean;
     recoveredSigner: Address | undefined;
   }> {
-    const {isAuthorized, recoveredAddress }= await recoverAndValidateSignature({
+    const {isAuthorized, recoveredAddress }= await isValidSignature({
       chainId: this.chain.id,
       signature: data.signature as Hex,
       premintConfig: convertPremintV1(data.premint),
@@ -603,12 +599,11 @@ class PremintClient {
       quantityToMint: number;
       mintComment?: string;
     };
-  }): Promise<SimulateContractParameters> {
+  }): Promise<SimulateContractParameters<typeof zoraCreator1155PremintExecutorImplABI, "premint">> {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
 
-    const targetAddress = this.getExecutorAddress();
     const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
     const args = [
       convertCollection(data.collection),
@@ -624,14 +619,14 @@ class PremintClient {
 
     const value = numberToMint * REWARD_PER_TOKEN;
 
-    const request: SimulateContractParameters = {
+    const request = {
       account,
       abi: zoraCreator1155PremintExecutorImplABI,
       functionName: "premint",
       value,
-      address: targetAddress,
+      address: getPremintExecutorAddress(),
       args,
-    };
+    } satisfies SimulateContractParameters<typeof zoraCreator1155PremintExecutorImplABI, "premint">;
 
     return request;
   }
