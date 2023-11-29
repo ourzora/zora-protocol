@@ -11,7 +11,6 @@ import type {
 } from "viem";
 import {
   zoraCreator1155PremintExecutorImplABI,
-  zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import {
