@@ -1,10 +1,14 @@
 import { foundry } from "viem/chains";
 import { describe, expect, vi } from "vitest";
 import { createPremintClient } from "./premint-client";
-import { anvilTest } from "src/anvil";
+import { anvilTest, forkUrls, makeAnvilTest } from "src/anvil";
+import { PremintSignatureResponse } from "./premint-api-client";
 
 describe("ZoraCreator1155Premint", () => {
-  anvilTest(
+  makeAnvilTest({
+    forkUrl: forkUrls.zoraGoerli,
+    forkBlockNumber: 1763437,
+  })(
     "can sign on the forked premint contract",
     async ({ viemClients: { walletClient, publicClient } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
@@ -76,7 +80,7 @@ describe("ZoraCreator1155Premint", () => {
         publicClient,
       });
 
-      const premintData = {
+      const premintData: PremintSignatureResponse = {
         collection: {
           contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
           contractName: "Testing Contract",
@@ -101,15 +105,12 @@ describe("ZoraCreator1155Premint", () => {
               "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
           },
         },
-        chain_name: "ZORA-TESTNET",
+        chain_name: "ZORA-GOERLI",
         signature:
           "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
       } as const;
 
-      const signatureValid = await premintClient.isValidSignature({
-        // @ts-ignore: Fix enum type
-        data: premintData,
-      });
+      const signatureValid = await premintClient.isValidSignature(premintData);
       expect(signatureValid.isValid).toBe(true);
     },
   );
