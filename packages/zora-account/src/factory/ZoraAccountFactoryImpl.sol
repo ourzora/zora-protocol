@@ -38,14 +38,7 @@ contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
         if (codeSize > 0) {
             return ZoraAccount(payable(addr));
         }
-        ret = ZoraAccount(
-            payable(
-                new ZoraAccount{salt : bytes32(salt)}(
-                    address(zoraAccountImpl),
-                    abi.encodeCall(ZoraAccountImpl.initialize, (owner))
-                )
-            )
-        );
+        ret = ZoraAccount(payable(new ZoraAccount{salt: bytes32(salt)}(address(zoraAccountImpl), abi.encodeCall(ZoraAccountImpl.initialize, (owner)))));
     }
 
     /**
@@ -55,15 +48,13 @@ contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
      * @return The address of the account that would be created with createAccount()
      */
     function getAddress(address owner, uint256 salt) public view returns (address) {
-        return Create2.computeAddress(
-            bytes32(salt),
-            keccak256(
-                abi.encodePacked(
-                    type(ZoraAccount).creationCode,
-                    abi.encode(address(zoraAccountImpl), abi.encodeCall(ZoraAccountImpl.initialize, (owner)))
+        return
+            Create2.computeAddress(
+                bytes32(salt),
+                keccak256(
+                    abi.encodePacked(type(ZoraAccount).creationCode, abi.encode(address(zoraAccountImpl), abi.encodeCall(ZoraAccountImpl.initialize, (owner))))
                 )
-            )
-        );
+            );
     }
 
     function implementation() external view returns (address) {

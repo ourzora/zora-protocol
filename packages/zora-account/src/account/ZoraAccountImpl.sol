@@ -90,7 +90,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
             revert ArrayLengthMismatch();
         }
         uint256 length = dest.length;
-        for (uint256 i = 0; i < length;) {
+        for (uint256 i = 0; i < length; ) {
             _call(dest[i], 0, func[i]);
             unchecked {
                 ++i;
@@ -112,7 +112,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
             revert ArrayLengthMismatch();
         }
         uint256 length = dest.length;
-        for (uint256 i = 0; i < length;) {
+        for (uint256 i = 0; i < length; ) {
             _call(dest[i], value[i], func[i]);
             unchecked {
                 ++i;
@@ -127,20 +127,14 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
      * which the digest is wrapped with an "Ethereum Signed Message" envelope
      * for the EOA-owner case but not in the ERC-1271 contract-owner case.
      */
-    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash)
-        internal
-        view 
-        override
-        returns (uint256 validationData)
-    {
+    function _validateSignature(UserOperation calldata userOp, bytes32 userOpHash) internal view override returns (uint256 validationData) {
         bytes32 signedHash = MessageHashUtils.toEthSignedMessageHash(userOpHash);
 
-        (address recoveredAddress, ECDSA.RecoverError error,) = signedHash.tryRecover(userOp.signature);
+        (address recoveredAddress, ECDSA.RecoverError error, ) = signedHash.tryRecover(userOp.signature);
 
         if (
-            (error == ECDSA.RecoverError.NoError && isApprovedOwner(recoveredAddress))
-                || isApprovedOwner(recoveredAddress)
-                    && SignatureChecker.isValidERC1271SignatureNow(recoveredAddress, userOpHash, userOp.signature)
+            (error == ECDSA.RecoverError.NoError && isApprovedOwner(recoveredAddress)) ||
+            (isApprovedOwner(recoveredAddress) && SignatureChecker.isValidERC1271SignatureNow(recoveredAddress, userOpHash, userOp.signature))
         ) {
             return 0;
         }
@@ -179,20 +173,21 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         }
     }
 
-        /**
+    /**
      * @notice Returns the domain separator for this contract, as defined in the EIP-712 standard.
      * @return bytes32 The domain separator hash.
      */
     function domainSeparator() public view returns (bytes32) {
-        return keccak256(
-            abi.encode(
-                DOMAIN_SEPARATOR_TYPEHASH,
-                abi.encode("ZoraAccount"), // name
-                abi.encode("1"), // version
-                block.chainid, // chainId
-                address(this) // verifying contract
-            )
-        );
+        return
+            keccak256(
+                abi.encode(
+                    DOMAIN_SEPARATOR_TYPEHASH,
+                    abi.encode("ZoraAccount"), // name
+                    abi.encode("1"), // version
+                    block.chainid, // chainId
+                    address(this) // verifying contract
+                )
+            );
     }
 
     /**
@@ -217,7 +212,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
     function implementation() external view returns (address) {
         return ERC1967Utils.getImplementation();
     }
-    
+
     // TODO add upgrade gate registered check
     function _authorizeUpgrade(address newImplementation) internal view override onlyOwner(msg.sender) {}
 

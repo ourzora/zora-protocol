@@ -29,11 +29,7 @@ contract ZoraAccountTestSetup is Test {
         entryPoint = new EntryPoint();
         zoraAccountFactoryImpl = new ZoraAccountFactoryImpl(entryPoint);
         zoraAccountFactory = ZoraAccountFactoryImpl(
-            payable(
-                address(
-                    new ZoraAccountFactory(address(zoraAccountFactoryImpl), abi.encodeWithSelector(zoraAccountFactoryImpl.initialize.selector, zora))
-                )
-            )
+            payable(address(new ZoraAccountFactory(address(zoraAccountFactoryImpl), abi.encodeWithSelector(zoraAccountFactoryImpl.initialize.selector, zora))))
         );
     }
 

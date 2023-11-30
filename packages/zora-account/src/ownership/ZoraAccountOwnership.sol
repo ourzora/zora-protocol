@@ -14,7 +14,8 @@ contract ZoraAccountOwnership is Initializable, IZoraAccountOwnership {
         EnumerableSet.AddressSet _owners;
     }
 
-    bytes32 private immutable ZoraAccountOwnershipStorageLocation = keccak256(abi.encode(uint256(keccak256("zora.storage.OwnerEnumerable")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private immutable ZoraAccountOwnershipStorageLocation =
+        keccak256(abi.encode(uint256(keccak256("zora.storage.OwnerEnumerable")) - 1)) & ~bytes32(uint256(0xff));
 
     function _getZoraAccountOwnershipStorage() private view returns (ZoraAccountOwnershipStorage storage $) {
         bytes32 position = ZoraAccountOwnershipStorageLocation;
@@ -39,27 +40,27 @@ contract ZoraAccountOwnership is Initializable, IZoraAccountOwnership {
         return _getZoraAccountOwnershipStorage()._owners.contains(owner);
     }
 
-    function _setupWithAdmin(address initialAdmin) onlyInitializing internal {
+    function _setupWithAdmin(address initialAdmin) internal onlyInitializing {
         // todo emit event
         _getZoraAccountOwnershipStorage()._owners.add(initialAdmin);
     }
 
     // TODO verify intent was to pass msg.sender with onlyOwner modifier
-    function changeOwnership(address previousOwner, address newOwner) onlyOwner(msg.sender) external {
+    function changeOwnership(address previousOwner, address newOwner) external onlyOwner(msg.sender) {
         // todo emit event
-        // TODO verify newOwner != address(0) && previousOwner != owner? 
+        // TODO verify newOwner != address(0) && previousOwner != owner?
         _getZoraAccountOwnershipStorage()._owners.remove(previousOwner);
         _getZoraAccountOwnershipStorage()._owners.add(newOwner);
     }
 
     // TODO verify intent was to pass msg.sender with onlyOwner modifier
-    function addOwner(address newOwner) onlyOwner(msg.sender) external {
+    function addOwner(address newOwner) external onlyOwner(msg.sender) {
         // todo emit event
         _getZoraAccountOwnershipStorage()._owners.add(newOwner);
     }
 
     // TODO verify intent was to pass msg.sender with onlyOwner modifier
-    function removeOwner(address ownerToRemove) onlyOwner(msg.sender) external {
+    function removeOwner(address ownerToRemove) external onlyOwner(msg.sender) {
         // todo emit event
         _getZoraAccountOwnershipStorage()._owners.remove(ownerToRemove);
     }
