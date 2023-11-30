@@ -308,7 +308,7 @@ library PremintTokenSetup {
             abi.encodeWithSelector(
                 ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                _buildNewSalesConfig(pricePerToken, maxTokensPerAddress, mintDuration)
+                _buildNewSalesConfig(pricePerToken, maxTokensPerAddress, mintDuration, payoutRecipient)
             )
         );
 
@@ -323,7 +323,8 @@ library PremintTokenSetup {
     function _buildNewSalesConfig(
         uint96 pricePerToken,
         uint64 maxTokensPerAddress,
-        uint64 duration
+        uint64 duration,
+        address payoutRecipient
     ) private view returns (ZoraCreatorFixedPriceSaleStrategy.SalesConfig memory) {
         uint64 saleStart = uint64(block.timestamp);
         uint64 saleEnd = duration == 0 ? type(uint64).max : saleStart + duration;
@@ -334,7 +335,7 @@ library PremintTokenSetup {
                 saleStart: saleStart,
                 saleEnd: saleEnd,
                 maxTokensPerAddress: maxTokensPerAddress,
-                fundsRecipient: address(0)
+                fundsRecipient: payoutRecipient
             });
     }
 }
