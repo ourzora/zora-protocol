@@ -353,6 +353,23 @@ contract ZoraCreator1155PreminterTest is Test {
         assertEq(balance, quantityToMint, "balance");
     }
 
+    function test_paidMint_creatorGetsPaidMintFunds() external {
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
+
+        address payoutRecipient = makeAddr("payoutRecipient");
+
+        premintConfig.tokenConfig.pricePerToken = 1 ether;
+        premintConfig.tokenConfig.payoutRecipient = payoutRecipient;
+
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+
+        uint256 quantityToMint = 4;
+
+        _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, premintExecutor, quantityToMint, "blah");
+
+        assertEq(payoutRecipient.balance, quantityToMint * premintConfig.tokenConfig.pricePerToken);
+    }
+
     function test_signatureForSameContractandUid_shouldMintExistingToken() external {
         // 1. Make contract creation params
 
@@ -870,7 +887,7 @@ contract ZoraCreator1155PreminterTest is Test {
             mintReferral: address(0)
         });
 
-        uint256 mintCost = mintFeeAmount * quantityToMint;
+        uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
         vm.deal(executor, mintCost);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
