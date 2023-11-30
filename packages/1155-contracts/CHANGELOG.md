@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.5.3
+
+### Patch Changes
+
+- d9f3596: For premint - fix bug where fundsRecipient was not set on the fixed price minter. Now it is properly set to the royaltyRecipient/payoutRecipient
+
 ## 2.5.2
 
 ### Patch Changes
