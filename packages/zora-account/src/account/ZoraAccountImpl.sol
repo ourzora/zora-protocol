@@ -51,7 +51,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
     }
 
     function _requireFromEntryPointOrOwner() internal view {
-        if (!isApprovedOwner(msg.sender) || msg.sender != address(_entryPoint)) {
+        if (!isApprovedOwner(msg.sender) && msg.sender != address(_entryPoint)) {
             revert NotAuthorized(msg.sender);
         }
     }
