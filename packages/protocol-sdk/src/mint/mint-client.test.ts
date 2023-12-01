@@ -1,4 +1,4 @@
-import { parseAbi, parseEther } from "viem";
+import { Address, parseAbi, parseEther } from "viem";
 import { zora } from "viem/chains";
 import { describe, expect } from "vitest";
 import { createMintClient } from "./mint-client";
@@ -19,16 +19,15 @@ describe("mint-helper", () => {
         address: creatorAccount,
         value: parseEther("2000"),
       });
-      const targetContract = "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
+      const targetContract: Address =
+        "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
       const targetTokenId = 1n;
       const minter = createMintClient({ chain: zora });
 
       const params = await minter.makePrepareMintTokenParams({
         minterAccount: creatorAccount,
-        mintable: await minter.getMintable({
-          tokenId: targetTokenId,
-          tokenContract: targetContract,
-        }),
+        tokenId: targetTokenId,
+        tokenAddress: targetContract,
         mintArguments: {
           mintToAddress: creatorAccount,
           quantityToMint: 1,
@@ -69,15 +68,14 @@ describe("mint-helper", () => {
         value: parseEther("2000"),
       });
 
-      const targetContract = "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
+      const targetContract: Address =
+        "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
       const targetTokenId = undefined;
       const minter = createMintClient({ chain: zora });
 
       const params = await minter.makePrepareMintTokenParams({
-        mintable: await minter.getMintable({
-          tokenContract: targetContract,
-          tokenId: targetTokenId,
-        }),
+        tokenId: targetTokenId,
+        tokenAddress: targetContract,
         minterAccount: creatorAccount,
         mintArguments: {
           mintToAddress: creatorAccount,
