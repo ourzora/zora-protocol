@@ -52,6 +52,25 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         }
     }
 
+    function _buildSafeUrl(address safe, address target, bytes memory cd) internal view returns (string memory) {
+        // sample url: https://ourzora.github.io/smol-safe/?value=0&safe={safeAddress}&to={target}&data={calldata}&network={chainId}
+        // https://ourzora.github.io/smol-safe/?safe={safe}&to={to}&data={data}&value=0&network={network}
+        string memory safeQueryString = string.concat("safe=", vm.toString(safe));
+        string memory toQueryString = string.concat("&to=", vm.toString(target));
+        string memory dataQueryString = string.concat("&data=", vm.toString(cd));
+        string memory valueQueryString = "&value=0";
+        string memory chainIdQueryString = string.concat("&network=", vm.toString(block.chainid));
+        string memory targetUrl = string.concat(
+            string.concat(
+                string.concat(string.concat(string.concat("https://ourzora.github.io/smol-safe/?", safeQueryString), toQueryString), dataQueryString),
+                valueQueryString
+            ),
+            chainIdQueryString
+        );
+
+        return targetUrl;
+    }
+
     /// @notice checks which chains need an upgrade, simulated the upgrade, and gets the upgrade calldata
     function simulateUpgradeOnFork(string memory chainName) private {
         // create and select the fork, which will be used for all subsequent calls
@@ -86,6 +105,7 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             console.logBytes(factory1155UpgradeCalldata);
             console2.log("upgrade to address:", targetImpl1155);
             console2.log("upgrade to version:", ZoraCreator1155FactoryImpl(targetImpl1155).contractVersion());
+            console2.log("smol safe upgrade url: ", _buildSafeUrl(chainConfig.factoryOwner, targetProxy1155, factory1155UpgradeCalldata));
             console2.log("------------------------");
         }
 
@@ -115,6 +135,7 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             console2.log("upgrade calldata:");
             console.logBytes(preminterUpgradeCalldata);
             console2.log("upgrade to address:", targetPremintImpl);
+            console2.log("smol safe upgrade url: ", _buildSafeUrl(chainConfig.factoryOwner, targetPreminterProxy, preminterUpgradeCalldata));
             console2.log("------------------------");
         }
 
