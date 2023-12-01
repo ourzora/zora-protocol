@@ -43,16 +43,11 @@ async function mintNFT({
 }) {
   const mintClient = createMintClient({chain: walletClient.chain!});
 
-  // get mintable information about the token.
-  const mintable = await mintClient.getMintable({
-    tokenContract,
-    tokenId,
-  });
-
   // prepare the mint transaction, which can be simulated via an rpc with the public client.
   const prepared = await mintClient.makePrepareMintTokenParams({
     // token to mint
-    mintable,
+    tokenContract,
+    tokenId,
     mintArguments: {
       // address that will receive the token
       mintToAddress,
@@ -81,7 +76,7 @@ async function mintNFT({
 #### Using wagmi
 
 ```tsx
-import {createMintClient, Mintable} from "@zoralabs/protocol-sdk";
+import {createMintClient} from "@zoralabs/protocol-sdk";
 import {useEffect, useMemo, useState} from "react";
 import {BaseError, SimulateContractParameters, stringify} from "viem";
 import {Address, useAccount, useContractWrite, useNetwork, usePrepareContractWrite, usePublicClient, useWaitForTransaction} from "wagmi";
@@ -104,33 +99,19 @@ export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: 
   // value will be set by the form
   const [quantityToMint, setQuantityToMint] = useState<number>(1);
 
-  // fetched mintable info from the sdk
-  const [mintable, setMintable] = useState<Mintable>();
-
-  useEffect(() => {
-    // fetch the mintable token info
-    const fetchMintable = async () => {
-      if (mintClient) {
-        const mintable = await mintClient.getMintable({tokenId, tokenContract});
-        setMintable(mintable);
-      }
-    };
-
-    fetchMintable();
-  }, [mintClient, tokenId, tokenContract]);
-
   // params for the prepare contract write hook
   const [params, setParams] = useState<SimulateContractParameters>();
 
   const {address} = useAccount();
 
   useEffect(() => {
-    if (!mintable || !mintClient || !address) return;
+    if (!mintClient || !address) return;
 
     const makeParams = async () => {
       // make the params for the prepare contract write hook
       const params = await mintClient.makePrepareMintTokenParams({
-        mintable,
+        tokenId,
+        tokenContract,
         minterAccount: address,
         mintArguments: {
           mintToAddress: address,
@@ -141,7 +122,7 @@ export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: 
     };
 
     makeParams();
-  }, [mintable, mintClient, address, quantityToMint]);
+  }, [mintClient, address, quantityToMint]);
 
   const {config} = usePrepareContractWrite(params);
 
