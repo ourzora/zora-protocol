@@ -3,13 +3,21 @@ pragma solidity ^0.8.20;
 
 import "./ZoraAccountTestSetup.sol";
 
+import "./utils/MockNFTs.sol";
+
 contract ZoraAccountTest is ZoraAccountTestSetup {
     ZoraAccountImpl internal account;
+
+    MockERC721 internal mock721;
+    MockERC1155 internal mock1155;
 
     function setUp() public override {
         super.setUp();
 
         account = deployAccount(accountOwnerEOA, uint256(accountOwnerSalt));
+
+        mock721 = new MockERC721(address(account));
+        mock1155 = new MockERC1155(address(account));
     }
 
     function testExecuteViaOwner() public {
@@ -23,5 +31,4 @@ contract ZoraAccountTest is ZoraAccountTestSetup {
         vm.prank(accountOwnerEOA);
         account.execute(testAddress, 1 ether, "");
         assertEq(testAddress.balance, 1 ether);
-    }
 }
