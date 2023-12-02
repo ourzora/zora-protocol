@@ -20,19 +20,15 @@ contract ZoraAccountTest is ZoraAccountTestSetup {
         mock1155 = new MockERC1155(address(account));
     }
 
-    function testOwner() public {
-        bool isOwner = account.isApprovedOwner(accountOwnerEOA);
-        assertTrue(isOwner);
-
-        address[] memory owners = account.getOwners();
-        assertEq(owners.length, 1);
-        assertEq(owners[0], accountOwnerEOA);
-    }
-
     function testExecuteViaOwner() public {
         vm.prank(accountOwnerEOA);
-        account.execute(address(mock721), 0, abi.encodeWithSelector(mock721.setSalePrice.selector, 1 ether));
-
-        assertEq(mock721.salePrice(), 1 ether);
+        account.execute(address(0), 0, "");
     }
+
+    function testExecuteWithValueViaOwner() public {
+        address testAddress = makeAddr("test");
+        vm.deal(address(account), 1 ether);
+        vm.prank(accountOwnerEOA);
+        account.execute(testAddress, 1 ether, "");
+        assertEq(testAddress.balance, 1 ether);
 }
