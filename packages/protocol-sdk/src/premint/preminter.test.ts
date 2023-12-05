@@ -10,18 +10,20 @@ import {
 } from "@zoralabs/protocol-deployments";
 
 import {
+  premintTypedDataDefinition,
+  isValidSignature,
+  recoverCreatorFromCreatorAttribution,
+  getPremintExecutorAddress,
+} from "./preminter";
+import {
   ContractCreationConfig,
   PremintConfigV1,
   TokenCreationConfigV1,
-  premintTypedDataDefinition,
-  isValidSignature,
   PremintConfigVersion,
   TokenCreationConfigV2,
   PremintConfigV2,
   MintArguments,
-  recoverCreatorFromCreatorAttribution,
-  getPremintExecutorAddress,
-} from "./preminter";
+} from "./contract-types";
 import { AnvilViemClientsTest, forkUrls, makeAnvilTest } from "src/anvil";
 
 // create token and contract creation config:
