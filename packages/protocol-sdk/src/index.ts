@@ -2,6 +2,8 @@ export * from "./premint/premint-client";
 
 export * from "./premint/preminter";
 
+export * from "./premint/contract-types";
+
 export * from "./premint/premint-api-client";
 
 export * from "./mint/mint-api-client";

@@ -14,17 +14,19 @@ import {
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import {
-  PremintConfigAndVersion,
-  PremintConfigV1,
-  PremintConfigV2,
-  PremintConfigVersion,
   getPremintCollectionAddress,
   premintTypedDataDefinition,
-  ContractCreationConfig,
   isValidSignature,
   isAuthorizedToCreatePremint,
   getPremintExecutorAddress,
 } from "./preminter";
+import {
+  PremintConfigAndVersion,
+  PremintConfigV1,
+  PremintConfigV2,
+  PremintConfigVersion,
+  ContractCreationConfig,
+} from "./contract-types";
 import type {
   PremintSignatureGetResponse,
   PremintSignatureResponse,
