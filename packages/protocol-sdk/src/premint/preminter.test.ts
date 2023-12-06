@@ -14,6 +14,7 @@ import {
   isValidSignature,
   recoverCreatorFromCreatorAttribution,
   getPremintExecutorAddress,
+  getPremintMintCosts,
 } from "./preminter";
 import {
   ContractCreationConfig,
@@ -102,8 +103,6 @@ const defaultPremintConfigV2 = ({
   version: 0,
 });
 
-const ZORA_MINT_FEE = parseEther("0.000777");
-
 const PREMINTER_ADDRESS = getPremintExecutorAddress();
 
 const anvilTest = makeAnvilTest({
@@ -139,6 +138,11 @@ async function setupContracts({
     fixedPriceMinterAddress,
   };
 }
+
+const zoraSepoliaAnvilTest = makeAnvilTest({
+  forkUrl: forkUrls.zoraSepolia,
+  forkBlockNumber: 1905837,
+});
 
 describe("ZoraCreator1155Preminter", () => {
   // skip for now - we need to make this work on zora testnet chain too
@@ -186,7 +190,7 @@ describe("ZoraCreator1155Preminter", () => {
     },
     20 * 1000,
   );
-  anvilTest(
+  zoraSepoliaAnvilTest(
     "can sign and recover a v1 premint config signature",
     async ({ viemClients }) => {
       const {
@@ -239,10 +243,7 @@ describe("ZoraCreator1155Preminter", () => {
 
     20 * 1000,
   );
-  makeAnvilTest({
-    forkUrl: forkUrls.zoraSepolia,
-    forkBlockNumber: 1262991,
-  })(
+  zoraSepoliaAnvilTest(
     "can sign and recover a v2 premint config signature",
     async ({ viemClients }) => {
       const {
@@ -296,7 +297,7 @@ describe("ZoraCreator1155Preminter", () => {
 
     20 * 1000,
   );
-  anvilTest(
+  zoraSepoliaAnvilTest(
     "can sign and mint multiple tokens",
     async ({ viemClients }) => {
       const {
@@ -337,9 +338,14 @@ describe("ZoraCreator1155Preminter", () => {
 
       const quantityToMint = 2n;
 
-      const valueToSend =
-        (ZORA_MINT_FEE + premintConfig1.tokenConfig.pricePerToken) *
-        quantityToMint;
+      const valueToSend = (
+        await getPremintMintCosts({
+          publicClient: viemClients.publicClient,
+          quantityToMint,
+          tokenContract: contractAddress,
+          tokenPrice: premintConfig1.tokenConfig.pricePerToken,
+        })
+      ).totalCost;
 
       await viemClients.testClient.setBalance({
         address: collectorAccount,
@@ -433,9 +439,14 @@ describe("ZoraCreator1155Preminter", () => {
 
       const quantityToMint2 = 4n;
 
-      const valueToSend2 =
-        (ZORA_MINT_FEE + premintConfig2.tokenConfig.pricePerToken) *
-        quantityToMint2;
+      const valueToSend2 = (
+        await getPremintMintCosts({
+          publicClient: viemClients.publicClient,
+          quantityToMint: quantityToMint2,
+          tokenContract: contractAddress,
+          tokenPrice: premintConfig2.tokenConfig.pricePerToken,
+        })
+      ).totalCost;
 
       const simulationResult = await viemClients.publicClient.simulateContract({
         abi: preminterAbi,
@@ -490,7 +501,7 @@ describe("ZoraCreator1155Preminter", () => {
     40 * 1000,
   );
 
-  anvilTest(
+  zoraSepoliaAnvilTest(
     "can decode the CreatorAttribution event",
     async ({ viemClients }) => {
       const {
@@ -532,9 +543,14 @@ describe("ZoraCreator1155Preminter", () => {
 
       const quantityToMint = 2n;
 
-      const valueToSend =
-        (ZORA_MINT_FEE + premintConfig.tokenConfig.pricePerToken) *
-        quantityToMint;
+      const valueToSend = (
+        await getPremintMintCosts({
+          publicClient: viemClients.publicClient,
+          quantityToMint,
+          tokenContract: contractAddress,
+          tokenPrice: premintConfig.tokenConfig.pricePerToken,
+        })
+      ).totalCost;
 
       await viemClients.testClient.setBalance({
         address: collectorAccount,
