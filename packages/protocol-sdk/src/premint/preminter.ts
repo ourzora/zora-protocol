@@ -1,6 +1,7 @@
 import { Address } from "abitype";
 import {
   zoraCreator1155PremintExecutorImplABI as preminterAbi,
+  zoraCreator1155FactoryImplAddress,
   zoraCreator1155ImplABI,
   zoraCreator1155PremintExecutorImplABI,
   zoraCreator1155PremintExecutorImplAddress,
@@ -30,6 +31,7 @@ import {
   v1Types,
   v2Types,
 } from "./contract-types";
+import { MintCosts } from "src/mint/mint-client";
 
 export const getPremintExecutorAddress = () =>
   zoraCreator1155PremintExecutorImplAddress[999];
@@ -392,4 +394,73 @@ export function makeNewPremint<T extends TokenCreationConfig>({
     version: 0,
     tokenConfig,
   } as PremintConfigForTokenCreationConfig<T>;
+}
+
+export async function getNew1155MintFee({
+  publicClient,
+}: {
+  publicClient: PublicClient;
+}): Promise<bigint> {
+  const implAddress = await publicClient.readContract({
+    address: zoraCreator1155FactoryImplAddress[999],
+    abi: zoraCreator1155PremintExecutorImplABI,
+    functionName: "implementation",
+  });
+
+  const mintFee = await publicClient.readContract({
+    address: implAddress,
+    abi: zoraCreator1155ImplABI,
+    functionName: "mintFee",
+  });
+
+  return mintFee;
+}
+
+export async function getPremintMintFee({
+  tokenContract,
+  publicClient,
+}: {
+  tokenContract: Address;
+  publicClient: PublicClient;
+}) {
+  // to get the mint fee we check if the contract exists.
+  // if it does, we get the mint fee from it.
+  // if it doesnt, we get the mint fee from the 1155 impl on the deployed 1155 factory proxy.
+
+  // check if contract exists
+  const deployedByteCode = await publicClient.getBytecode({
+    address: tokenContract,
+  });
+
+  const contractExists = deployedByteCode !== "0x";
+
+  if (!contractExists) {
+    return getNew1155MintFee({ publicClient });
+  }
+
+  return await publicClient.readContract({
+    address: tokenContract,
+    abi: zoraCreator1155ImplABI,
+    functionName: "mintFee",
+  });
+}
+
+export async function getPremintMintCosts({
+  publicClient,
+  tokenContract,
+  tokenPrice,
+  quantityToMint,
+}: {
+  tokenContract: Address;
+  tokenPrice: bigint;
+  quantityToMint: bigint;
+  publicClient: PublicClient;
+}): Promise<MintCosts> {
+  const mintFee = await getPremintMintFee({ tokenContract, publicClient });
+
+  return {
+    mintFee: mintFee * quantityToMint,
+    tokenPurchaseCost: tokenPrice * quantityToMint,
+    totalCost: (mintFee + tokenPrice) * quantityToMint,
+  };
 }

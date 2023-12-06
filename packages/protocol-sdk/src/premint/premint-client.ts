@@ -23,6 +23,7 @@ import {
   markPremintDeleted,
   makeNewPremint,
   supportsPremintVersion,
+  getPremintMintCosts,
 } from "./preminter";
 import {
   PremintConfigV2,
@@ -39,9 +40,9 @@ import type { PremintSignatureResponse } from "./premint-api-client";
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
-import { REWARD_PER_TOKEN } from "src/apis/chain-constants";
 import { IHttpClient } from "src/apis/http-api-base";
 import { getApiNetworkConfigForChain } from "src/mint/mint-api-client";
+import { MintCosts } from "src/mint/mint-client";
 
 type PremintedLogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,
@@ -461,6 +462,23 @@ class PremintClient {
     });
   }
 
+  async getMintCosts({
+    tokenContract,
+    quantityToMint,
+    tokenCreationConfig,
+  }: {
+    quantityToMint: bigint;
+    tokenContract: Address;
+    tokenCreationConfig: TokenCreationConfig;
+  }): Promise<MintCosts> {
+    return await getPremintMintCosts({
+      publicClient: this.publicClient,
+      quantityToMint,
+      tokenContract,
+      tokenPrice: tokenCreationConfig.pricePerToken,
+    });
+  }
+
   /**
    * Execute premint on-chain
    *
@@ -505,7 +523,14 @@ class PremintClient {
 
     const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
 
-    const value = numberToMint * REWARD_PER_TOKEN;
+    const value = (
+      await getPremintMintCosts({
+        tokenContract,
+        quantityToMint: numberToMint,
+        publicClient: this.publicClient,
+        tokenPrice: premintConfig.tokenConfig.pricePerToken,
+      })
+    ).totalCost;
 
     if (premintConfigVersion === PremintConfigVersion.V1) {
       return {
