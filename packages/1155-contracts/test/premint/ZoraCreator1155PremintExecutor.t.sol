@@ -870,6 +870,31 @@ contract ZoraCreator1155PreminterTest is Test {
         preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
     }
 
+    function test_mintFee_onOldContracts_returnsExistingMintFee() external {
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+
+        address contractAddress = preminter.getContractAddress(contractConfig);
+
+        uint256 mintFee = preminter.mintFee(contractAddress);
+
+        assertEq(mintFee, 0.000777 ether);
+    }
+
+    function test_mintFee_onNewContracts_returnsNewMintFee() external {
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
+
+        _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, premintExecutor, 1, "hi");
+
+        // sign and execute premint
+        address contractAddress = preminter.getContractAddress(contractConfig);
+
+        uint256 mintFee = preminter.mintFee(contractAddress);
+
+        assertEq(mintFee, 0.000777 ether);
+    }
+
     function _signAndExecutePremint(
         ContractCreationConfig memory contractConfig,
         PremintConfigV2 memory premintConfig,

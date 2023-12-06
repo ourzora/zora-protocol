@@ -16,6 +16,7 @@ import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExe
 import {PremintEncoding, ZoraCreator1155Attribution, DelegatedTokenCreation, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
 
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
@@ -249,5 +250,13 @@ contract ZoraCreator1155PremintExecutorImpl is
         MintArguments memory mintArguments = MintArguments({mintRecipient: msg.sender, mintComment: mintComment, mintReferral: address(0)});
 
         return premintV1(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
+    }
+
+    function mintFee(address collectionAddress) external view returns (uint256) {
+        if (collectionAddress.code.length == 0) {
+            return ZoraCreator1155FactoryImpl(address(zora1155Factory)).zora1155Impl().mintFee();
+        }
+
+        return IZoraCreator1155(collectionAddress).mintFee();
     }
 }
