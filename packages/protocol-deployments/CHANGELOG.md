@@ -1,5 +1,13 @@
 # @zoralabs/premint-sdk
 
+## 0.0.9
+
+### Patch Changes
+
+- 5156b9e: Deploy latest premint executor to zora sepolia and goerli
+- Updated dependencies [7e00197]
+  - @zoralabs/zora-1155-contracts@2.5.4
+
 ## 0.0.8
 
 ### Patch Changes
