@@ -19,11 +19,14 @@ import {
 } from "viem";
 import {
   ContractCreationConfig,
-  PremintConfigAndVersion,
+  PremintConfig,
+  PremintConfigForTokenCreationConfig,
   PremintConfigV1,
   PremintConfigV2,
   PremintConfigVersion,
+  PremintConfigWithVersion,
   PreminterDomain,
+  TokenCreationConfig,
   v1Types,
   v2Types,
 } from "./contract-types";
@@ -40,7 +43,7 @@ export const getPremintExecutorAddress = () =>
  * @param params.premintConfig the premint config
  * @returns
  */
-export const premintTypedDataDefinition = ({
+export const premintTypedDataDefinition = <T extends PremintConfigVersion>({
   verifyingContract,
   chainId,
   premintConfigVersion: version,
@@ -48,7 +51,7 @@ export const premintTypedDataDefinition = ({
 }: {
   verifyingContract: Address;
   chainId: number;
-} & PremintConfigAndVersion): TypedDataDefinition => {
+} & PremintConfigWithVersion<T>): TypedDataDefinition => {
   const domain = {
     chainId,
     name: PreminterDomain,
@@ -60,14 +63,14 @@ export const premintTypedDataDefinition = ({
     return {
       domain,
       types: v1Types,
-      message: premintConfig,
+      message: premintConfig as PremintConfigV1,
       primaryType: "CreatorAttribution",
     } satisfies TypedDataDefinition<typeof v1Types, "CreatorAttribution">;
   if (version === PremintConfigVersion.V2) {
     return {
       domain,
       types: v2Types,
-      message: premintConfig,
+      message: premintConfig as PremintConfigV2,
       primaryType: "CreatorAttribution",
     } satisfies TypedDataDefinition<typeof v2Types, "CreatorAttribution">;
   }
@@ -80,7 +83,9 @@ export type IsValidSignatureReturn = {
   recoveredAddress?: Address;
 };
 
-export async function isAuthorizedToCreatePremint({
+export async function isAuthorizedToCreatePremint<
+  T extends PremintConfigVersion,
+>({
   collection,
   collectionAddress,
   publicClient,
@@ -94,7 +99,7 @@ export async function isAuthorizedToCreatePremint({
   publicClient: PublicClient;
   signature: Hex;
   signer: Address;
-} & PremintConfigAndVersion) {
+} & PremintConfigWithVersion<T>) {
   // if we are using legacy version of premint config, we can use the function
   // "isValidSignature" which we know exists on the premint executor contract
   if (premintConfigVersion === PremintConfigVersion.V1) {
@@ -102,7 +107,7 @@ export async function isAuthorizedToCreatePremint({
       abi: zoraCreator1155PremintExecutorImplABI,
       address: getPremintExecutorAddress(),
       functionName: "isValidSignature",
-      args: [collection, premintConfig, signature],
+      args: [collection, premintConfig as PremintConfigV1, signature],
     });
 
     return isValidSignature;
@@ -117,14 +122,14 @@ export async function isAuthorizedToCreatePremint({
   });
 }
 
-export async function recoverPremintSigner({
+export async function recoverPremintSigner<T extends PremintConfigVersion>({
   signature,
   ...rest
 }: {
   signature: Hex;
   chainId: number;
   verifyingContract: Address;
-} & PremintConfigAndVersion): Promise<Address> {
+} & PremintConfigWithVersion<T>): Promise<Address> {
   const typedData = premintTypedDataDefinition(rest);
   return await recoverTypedDataAddress({
     ...typedData,
@@ -154,7 +159,7 @@ export async function tryRecoverPremintSigner(
  * @param params.tokenContract the address of the 1155 contract
  * @returns
  */
-export async function isValidSignature({
+export async function isValidSignature<T extends PremintConfigVersion>({
   signature,
   publicClient,
   collection,
@@ -165,7 +170,7 @@ export async function isValidSignature({
   signature: Hex;
   chainId: number;
   publicClient: PublicClient;
-} & PremintConfigAndVersion): Promise<IsValidSignatureReturn> {
+} & PremintConfigWithVersion<T>): Promise<IsValidSignatureReturn> {
   const tokenContract = await getPremintCollectionAddress({
     collection,
     publicClient,
@@ -288,22 +293,41 @@ export const recoverCreatorFromCreatorAttribution = async ({
   });
 };
 
+export const supportedPremintVersions = async ({
+  tokenContract,
+  publicClient,
+}: {
+  tokenContract: Address;
+  publicClient: PublicClient;
+}): Promise<readonly string[]> => {
+  try {
+    return await publicClient.readContract({
+      abi: preminterAbi,
+      address: getPremintExecutorAddress(),
+      functionName: "supportedPremintSignatureVersions",
+      args: [tokenContract],
+    });
+  } catch (e) {
+    console.error(e);
+    // if the premint executor contract doesn't support the function, it must be v1
+    return ["1"];
+  }
+};
 /**
  * Checks if the 1155 contract at that address supports the given version of the premint config.
  */
-export const supportsPremintVersion = async (
-  version: PremintConfigVersion,
-  tokenContract: Address,
-  publicClient: PublicClient,
-): Promise<boolean> => {
-  const supportedPremintSignatureVersions = await publicClient.readContract({
-    abi: preminterAbi,
-    address: getPremintExecutorAddress(),
-    functionName: "supportedPremintSignatureVersions",
-    args: [tokenContract],
-  });
-
-  return supportedPremintSignatureVersions.includes(version);
+export const supportsPremintVersion = async ({
+  version,
+  tokenContract,
+  publicClient,
+}: {
+  version: PremintConfigVersion;
+  tokenContract: Address;
+  publicClient: PublicClient;
+}): Promise<boolean> => {
+  return (
+    await supportedPremintVersions({ tokenContract, publicClient })
+  ).includes(version);
 };
 
 export async function getPremintCollectionAddress({
@@ -319,4 +343,53 @@ export async function getPremintCollectionAddress({
     functionName: "getContractAddress",
     args: [collection],
   });
+}
+
+export function markPremintDeleted<T extends PremintConfig>(
+  premintConfig: T,
+): T {
+  return {
+    ...premintConfig,
+    version: premintConfig.version + 1,
+    deleted: true,
+  };
+}
+
+export function applyUpdateToPremint({
+  uid,
+  version,
+  tokenConfig,
+  tokenConfigUpdates,
+}: {
+  tokenConfig: TokenCreationConfig;
+  tokenConfigUpdates: Partial<TokenCreationConfig>;
+} & Pick<PremintConfig, "uid" | "version">): PremintConfig {
+  const updatedTokenConfig: TokenCreationConfig = {
+    ...tokenConfig,
+    ...tokenConfigUpdates,
+  } as const;
+
+  const result = {
+    deleted: false,
+    uid,
+    version: version + 1,
+    tokenConfig: updatedTokenConfig,
+  } as PremintConfig;
+
+  return result;
+}
+
+export function makeNewPremint<T extends TokenCreationConfig>({
+  tokenConfig,
+  uid,
+}: {
+  tokenConfig: T;
+  uid: number;
+}): PremintConfigForTokenCreationConfig<T> {
+  return {
+    deleted: false,
+    uid,
+    version: 0,
+    tokenConfig,
+  } as PremintConfigForTokenCreationConfig<T>;
 }

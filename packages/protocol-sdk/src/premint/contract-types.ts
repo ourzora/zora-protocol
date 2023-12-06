@@ -77,22 +77,33 @@ export const v2Types = {
 
 export const PreminterDomain = "Preminter";
 
-export type PremintConfigVersion = "1" | "2";
+export enum PremintConfigVersion {
+  V1 = "1",
+  V2 = "2",
+}
 
-export const PremintConfigVersion = {
-  V1: "1",
-  V2: "2",
-} as const;
+export type PremintConfigForVersion<T extends PremintConfigVersion> =
+  T extends PremintConfigVersion.V1 ? PremintConfigV1 : PremintConfigV2;
 
-type PremintConfigForVersion<T extends PremintConfigVersion> = T extends "1"
-  ? PremintConfigV1
-  : PremintConfigV2;
-
-type PremintConfigWithVersion<T extends PremintConfigVersion> = {
+export type PremintConfigWithVersion<T extends PremintConfigVersion> = {
   premintConfig: PremintConfigForVersion<T>;
   premintConfigVersion: T;
 };
 
 export type PremintConfigAndVersion =
-  | PremintConfigWithVersion<"1">
-  | PremintConfigWithVersion<"2">;
+  | PremintConfigWithVersion<PremintConfigVersion.V1>
+  | PremintConfigWithVersion<PremintConfigVersion.V2>;
+
+export type PremintConfig = PremintConfigV1 | PremintConfigV2;
+export type TokenCreationConfig = TokenCreationConfigV1 | TokenCreationConfigV2;
+
+export type PremintConfigForTokenCreationConfig<T extends TokenCreationConfig> =
+  T extends TokenCreationConfigV1 ? PremintConfigV1 : PremintConfigV2;
+
+export type TokenConfigForVersion<T extends PremintConfigVersion> =
+  PremintConfigForVersion<T>["tokenConfig"];
+
+export type TokenConfigWithVersion<T extends PremintConfigVersion> = {
+  tokenConfig: TokenConfigForVersion<T>;
+  premintConfigVersion: T;
+};
