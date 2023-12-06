@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.8
+
+### Patch Changes
+
+- 4b77307: Deployed 3.5.3 to zora sepolia and goerli
+
 ## 0.0.7
 
 ### Patch Changes
