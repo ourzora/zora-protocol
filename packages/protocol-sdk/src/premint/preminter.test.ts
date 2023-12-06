@@ -107,7 +107,7 @@ const ZORA_MINT_FEE = parseEther("0.000777");
 const PREMINTER_ADDRESS = getPremintExecutorAddress();
 
 const anvilTest = makeAnvilTest({
-  forkUrl: forkUrls.zoraSepoli,
+  forkUrl: forkUrls.zoraSepolia,
   forkBlockNumber: 1265490,
 });
 
@@ -240,7 +240,7 @@ describe("ZoraCreator1155Preminter", () => {
     20 * 1000,
   );
   makeAnvilTest({
-    forkUrl: forkUrls.zoraSepoli,
+    forkUrl: forkUrls.zoraSepolia,
     forkBlockNumber: 1262991,
   })(
     "can sign and recover a v2 premint config signature",
