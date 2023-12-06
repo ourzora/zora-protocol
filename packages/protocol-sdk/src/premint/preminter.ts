@@ -423,25 +423,12 @@ export async function getPremintMintFee({
   tokenContract: Address;
   publicClient: PublicClient;
 }) {
-  // to get the mint fee we check if the contract exists.
-  // if it does, we get the mint fee from it.
-  // if it doesnt, we get the mint fee from the 1155 impl on the deployed 1155 factory proxy.
-
   // check if contract exists
-  const deployedByteCode = await publicClient.getBytecode({
-    address: tokenContract,
-  });
-
-  const contractExists = deployedByteCode !== "0x";
-
-  if (!contractExists) {
-    return getNew1155MintFee({ publicClient });
-  }
-
   return await publicClient.readContract({
-    address: tokenContract,
-    abi: zoraCreator1155ImplABI,
+    address: getPremintExecutorAddress(),
+    abi: zoraCreator1155PremintExecutorImplABI,
     functionName: "mintFee",
+    args: [tokenContract],
   });
 }
 
