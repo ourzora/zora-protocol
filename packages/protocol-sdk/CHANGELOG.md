@@ -1,5 +1,17 @@
 # @zoralabs/protocol-sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- 28884c9: \* `PremintClient` now takes a premint config v1 or v2, and a premint config version, for every call to create/update/delete a premint. PremintClient methods have been simplified and are easier to use - for example `createPremint` no longer allows to specify `deleted` = true. For `makeMintParameters` - it now just takes the uid and contract address (instead of full premint config)
+  - `PremintAPIClient` now converts entities to contract entities before returning them, and correspondingly expects them as contract entities when passed in. It internally converts them to backend entities before sending them to the backend.
+
+### Patch Changes
+
+- Updated dependencies [4b77307]
+  - @zoralabs/protocol-deployments@0.0.8
+
 ## 0.3.5
 
 ### Patch Changes
