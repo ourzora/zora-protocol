@@ -64,7 +64,8 @@ interface IZoraCreator1155PremintExecutor is
     struct MintArguments {
         address mintRecipient;
         string mintComment;
-        address mintReferral;
+        /// array of accounts to receive rewards - mintReferral is first argument, and platformReferral is second.  platformReferral isn't supported as of now but will be in a future release.
+        address[] mintRewardsRecipients;
     }
 
     struct PremintResult {

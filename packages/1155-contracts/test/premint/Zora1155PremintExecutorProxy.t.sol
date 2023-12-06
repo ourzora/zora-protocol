@@ -16,6 +16,7 @@ import {IOwnable2StepUpgradeable} from "../../src/utils/ownable/IOwnable2StepUpg
 import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {IUpgradeGate} from "../../src/interfaces/IUpgradeGate.sol";
+import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.sol";
 import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
@@ -38,7 +39,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         (creator, creatorPrivateKey) = makeAddrAndKey("creator");
 
         vm.startPrank(zora);
-        (, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         factoryAtProxy = ZoraCreator1155FactoryImpl(address(factoryProxy));
         vm.stopPrank();
 
@@ -52,7 +53,11 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         preminterAtProxy = ZoraCreator1155PremintExecutorImpl(address(proxy));
         preminterAtProxy.initialize(owner);
 
-        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: collector, mintComment: "blah", mintReferral: address(0)});
+        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({
+            mintRecipient: collector,
+            mintComment: "blah",
+            mintRewardsRecipients: new address[](0)
+        });
     }
 
     function test_canInvokeImplementationMethods() external {
@@ -157,7 +162,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         // 2. upgrade premint executor and factory to current version
         // create new factory proxy implementation
-        (, ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(upgradeGate), fixedPriceMinter);
+        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(upgradeGate), fixedPriceMinter);
 
         // upgrade factory proxy
         address upgradeOwner = forkedPreminterProxy.owner();

@@ -22,6 +22,7 @@ import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {Zora1155PremintFixtures} from "../fixtures/Zora1155PremintFixtures.sol";
+import {RewardSplits} from "@zoralabs/protocol-rewards/src/abstract/RewardSplits.sol";
 
 contract ZoraCreator1155PreminterTest is Test {
     uint256 internal constant CONTRACT_BASE_ID = 0;
@@ -42,6 +43,7 @@ contract ZoraCreator1155PreminterTest is Test {
     address internal collector;
 
     IZoraCreator1155PremintExecutor.MintArguments defaultMintArguments;
+    ProtocolRewards rewards;
 
     event PremintedV2(
         address indexed contractAddress,
@@ -59,14 +61,18 @@ contract ZoraCreator1155PreminterTest is Test {
         collector = makeAddr("collector");
 
         vm.startPrank(zora);
-        (, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        (rewards, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
 
         preminter = new ZoraCreator1155PremintExecutorImpl(factory);
 
-        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: premintExecutor, mintComment: "blah", mintReferral: address(0)});
+        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({
+            mintRecipient: premintExecutor,
+            mintComment: "blah",
+            mintRewardsRecipients: new address[](0)
+        });
     }
 
     function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
@@ -427,6 +433,45 @@ contract ZoraCreator1155PreminterTest is Test {
         );
     }
 
+    function test_mintReferral_getsMintReferralReward() public {
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
+
+        address mintReferral = makeAddr("mintReferral");
+
+        address minter = makeAddr("minter");
+
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+
+        uint256 quantityToMint = 4;
+
+        bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, block.chainid);
+
+        address[] memory mintRewardsRecipients = new address[](1);
+        mintRewardsRecipients[0] = mintReferral;
+
+        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
+            mintRecipient: minter,
+            mintComment: "",
+            mintRewardsRecipients: mintRewardsRecipients
+        });
+
+        uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
+
+        vm.deal(minter, mintCost);
+        vm.prank(minter);
+        preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments);
+
+        // now get balance of mintReferral in ProtocolRewards - it should be mint referral reward amount * quantityToMint
+        uint256 mintReferralReward = 0.000111 ether;
+
+        assertEq(rewards.balanceOf(mintReferral), mintReferralReward * quantityToMint);
+
+        vm.prank(mintReferral);
+        rewards.withdraw(mintReferral, mintReferralReward * quantityToMint);
+
+        assertEq(mintReferral.balance, mintReferralReward * quantityToMint);
+    }
+
     function testCreateTokenPerUid() public {
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
         PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
@@ -785,7 +830,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // create preminter on fork
         vm.startPrank(zora);
-        (, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -855,7 +900,7 @@ contract ZoraCreator1155PreminterTest is Test {
         IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
             mintRecipient: address(0),
             mintComment: "",
-            mintReferral: address(0)
+            mintRewardsRecipients: new address[](0)
         });
 
         uint256 quantityToMint = 3;
@@ -909,7 +954,7 @@ contract ZoraCreator1155PreminterTest is Test {
         IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
             mintRecipient: executor,
             mintComment: comment,
-            mintReferral: address(0)
+            mintRewardsRecipients: new address[](0)
         });
 
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
