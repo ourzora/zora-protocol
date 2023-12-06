@@ -17,15 +17,6 @@ import {PremintEncoding, ZoraCreator1155Attribution, DelegatedTokenCreation, Con
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 
-struct MintArguments {
-    // which account should receive the tokens minted.
-    address mintRecipient;
-    // comment to add to the mint
-    string mintComment;
-    // account that referred the minter to mint the tokens, this account will receive a mint referral award.  If set to address(0), no account will get the mint referral reward
-    address mintReferral;
-}
-
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
 /// Mints the first x tokens to the executor of the transaction.
