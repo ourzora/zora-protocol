@@ -203,32 +203,33 @@ import type {Address, PublicClient, WalletClient} from "viem";
 
 async function createForFree({
   walletClient,
+  publicClient,
   creatorAccount,
 }: {
   // wallet client that will submit the transaction
   walletClient: WalletClient;
+  // public client that will simulate the transaction
+  publicClient: PublicClient;
   // address of the token contract
   creatorAccount: Address;
 }) {
-  const premintClient = createPremintClient({ chain: walletClient.chain! });
+  const premintClient = createPremintClient({chain: walletClient.chain!, publicClient});
 
   // create and sign a free token creation.
   const createdPremint = await premintClient.createPremint({
     walletClient,
-    account: creatorAccount,
+    creatorAccount,
     // if true, will validate that the creator is authorized to create premints on the contract.
     checkSignature: true,
     // collection info of collection to create
     collection: {
       contractAdmin: creatorAccount,
       contractName: "Testing Contract",
-      contractURI:
-        "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+      contractURI: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
     },
     // token info of token to create
-    token: {
-      tokenURI:
-        "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+    tokenCreationConfig: {
+      tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
     },
   });
 
@@ -236,12 +237,13 @@ async function createForFree({
   const premintCollectionAddress = createdPremint.verifyingContract;
 
   return {
-    // unique id of created premint, which can be used later to 
+    // unique id of created premint, which can be used later to
     // update or delete the premint
     uid: premintUid,
-    tokenContract: premintCollectionAddress, 
-  }
-} 
+    tokenContractAddress: premintCollectionAddress,
+  };
+}
+
 ```
 
 ### Updating a token that was created for free (before it was brought onchain):
@@ -253,8 +255,7 @@ import {createPremintClient} from "@zoralabs/protocol-sdk";
 import type {Address, PublicClient, WalletClient} from "viem";
 
 async function updateCreatedForFreeToken(walletClient: WalletClient, premintUid: number) {
-  // Create premint API object passing in the current wallet chain (only zora and zora testnet are supported currently).
-  const premintClient = createPremintClient({ chain: walletClient.chain! });
+  const premintClient = createPremintClient({chain: walletClient.chain!});
 
   // sign a message to update the created for free token, and store the update
   await premintClient.updatePremint({
@@ -263,9 +264,8 @@ async function updateCreatedForFreeToken(walletClient: WalletClient, premintUid:
     // WalletClient doing the signature
     walletClient,
     // Token information, falls back to defaults set in DefaultMintArguments.
-    token: {
-      tokenURI:
-        "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+    tokenConfigUpdates: {
+      tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
     },
   });
 }
@@ -276,11 +276,8 @@ async function updateCreatedForFreeToken(walletClient: WalletClient, premintUid:
 Before a token that was created for free is brought onchain, it can be deleted by the original creator of that token, by having that creator sign a message indicating the deletion:
 
 ```ts
-import {createPremintClient} from "@zoralabs/protocol-sdk";
-import type {Address, PublicClient, WalletClient} from "viem";
-
 async function deleteCreatedForFreeToken(walletClient: WalletClient) {
-  const premintClient = createPremintClient({ chain: walletClient.chain! });
+  const premintClient = createPremintClient({chain: walletClient.chain!});
 
   // sign a message to delete the premint, and store the deletion
   await premintClient.deletePremint({
@@ -299,19 +296,13 @@ async function deleteCreatedForFreeToken(walletClient: WalletClient) {
 import {createPremintClient} from "@zoralabs/protocol-sdk";
 import type {Address, PublicClient, WalletClient} from "viem";
 
-async function mintCreatedForFreeToken(
-  walletClient: WalletClient,
-  publicClient: PublicClient,
-  minterAccount: Address,
-) {
-  const premintClient = createPremintClient({ chain: walletClient.chain! });
+async function mintCreatedForFreeToken(walletClient: WalletClient, publicClient: PublicClient, minterAccount: Address) {
+  const premintClient = createPremintClient({chain: walletClient.chain!});
 
   const simulateContractParameters = await premintClient.makeMintParameters({
     account: minterAccount,
-    data: await premintClient.getPremintData({
-      address: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
-      uid: 3,
-    }),
+    tokenContract: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
+    uid: 3,
     mintArguments: {
       quantityToMint: 1,
       mintComment: "",
@@ -319,7 +310,7 @@ async function mintCreatedForFreeToken(
   });
 
   // simulate the transaction and get any validation errors
-  const { request } = await publicClient.simulateContract(simulateContractParameters);
+  const {request} = await publicClient.simulateContract(simulateContractParameters);
 
   // submit the transaction to the network
   const txHash = await walletClient.writeContract(request);
@@ -327,7 +318,7 @@ async function mintCreatedForFreeToken(
   // wait for the transaction to be complete
   const receipt = await publicClient.waitForTransactionReceipt({hash: txHash});
 
-  const { urls } = await premintClient.getDataFromPremintReceipt(receipt);
+  const {urls} = await premintClient.getDataFromPremintReceipt(receipt);
 
   // block explorer url:
   console.log(urls.explorer);

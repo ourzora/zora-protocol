@@ -95,7 +95,7 @@ export const makeAnvilTest = ({
 export const forkUrls = {
   zoraMainnet: "https://rpc.zora.co/",
   zoraGoerli: "https://testnet.rpc.zora.co",
-  zoraSepoli: "https://sepolia.rpc.zora.energy",
+  zoraSepolia: "https://sepolia.rpc.zora.energy",
 };
 
 export const anvilTest = makeAnvilTest({
