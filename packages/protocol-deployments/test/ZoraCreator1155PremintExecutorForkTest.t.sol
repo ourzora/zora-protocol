@@ -148,7 +148,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
             premintConfig,
             signature,
             quantityToMint,
-            IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: executor, mintComment: comment, mintReferral: executor})
+            IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: executor, mintComment: comment, mintRewardsRecipients: new address[](0)})
         );
     }
 
@@ -178,7 +178,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
             premintConfigV2,
             signature,
             quantityToMint,
-            IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: executor, mintComment: comment, mintReferral: executor})
+            IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: executor, mintComment: comment, mintRewardsRecipients: new address[](0)})
         );
     }
 

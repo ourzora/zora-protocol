@@ -121,8 +121,11 @@ library ZoraCreator1155PremintExecutorImplLib {
         IZoraCreator1155PremintExecutor.MintArguments memory mintArguments
     ) internal {
         bytes memory mintSettings = abi.encode(mintArguments.mintRecipient, mintArguments.mintComment);
-        if (quantityToMint != 0)
+        if (quantityToMint != 0) {
             // mint the number of specified tokens to the executor
-            tokenContract.mintWithRewards{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintSettings, mintArguments.mintReferral);
+            address mintReferral = mintArguments.mintRewardsRecipients.length > 0 ? mintArguments.mintRewardsRecipients[0] : address(0);
+
+            tokenContract.mintWithRewards{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintSettings, mintReferral);
+        }
     }
 }

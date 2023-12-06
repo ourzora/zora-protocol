@@ -451,3 +451,13 @@ export async function getPremintMintCosts({
     totalCost: (mintFee + tokenPrice) * quantityToMint,
   };
 }
+
+export function makeMintRewardsRecipient({
+  mintReferral = zeroAddress,
+  platformReferral = zeroAddress,
+}: {
+  mintReferral?: Address;
+  platformReferral?: Address;
+}): Address[] {
+  return [mintReferral, platformReferral];
+}

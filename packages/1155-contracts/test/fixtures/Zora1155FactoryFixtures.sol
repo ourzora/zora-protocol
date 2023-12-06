@@ -14,9 +14,9 @@ import {IUpgradeGate} from "../../src/interfaces/IUpgradeGate.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 
 library Zora1155FactoryFixtures {
-    function setupZora1155Impl(address zora, IUpgradeGate upgradeGate) internal returns (ZoraCreator1155Impl) {
-        ProtocolRewards rewards = new ProtocolRewards();
-        return new ZoraCreator1155Impl(zora, address(upgradeGate), address(rewards));
+    function setupZora1155Impl(address zora, IUpgradeGate upgradeGate) internal returns (ProtocolRewards rewards, ZoraCreator1155Impl zora1155Impl) {
+        rewards = new ProtocolRewards();
+        zora1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(rewards));
     }
 
     function upgradeFactoryProxyToUse1155(
@@ -42,19 +42,28 @@ library Zora1155FactoryFixtures {
         address zora,
         IUpgradeGate upgradeGate,
         IMinter1155 fixedPriceMinter
-    ) internal returns (ZoraCreator1155Impl zoraCreator1155Impl, ZoraCreator1155FactoryImpl factoryImpl) {
-        zoraCreator1155Impl = setupZora1155Impl(zora, upgradeGate);
+    ) internal returns (ProtocolRewards rewards, ZoraCreator1155Impl zoraCreator1155Impl, ZoraCreator1155FactoryImpl factoryImpl) {
+        (rewards, zoraCreator1155Impl) = setupZora1155Impl(zora, upgradeGate);
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), fixedPriceMinter, IMinter1155(address(3)));
     }
 
     function setup1155AndFactoryProxy(
         address zora,
         address deployer
-    ) internal returns (ZoraCreator1155Impl zoraCreator1155Impl, IMinter1155 fixedPriceMinter, Zora1155Factory factoryProxy, IUpgradeGate upgradeGate) {
+    )
+        internal
+        returns (
+            ProtocolRewards rewards,
+            ZoraCreator1155Impl zoraCreator1155Impl,
+            IMinter1155 fixedPriceMinter,
+            Zora1155Factory factoryProxy,
+            IUpgradeGate upgradeGate
+        )
+    {
         factoryProxy = setupFactoryProxy(deployer);
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
         upgradeGate = new UpgradeGate();
-        zoraCreator1155Impl = setupZora1155Impl(zora, upgradeGate);
+        (rewards, zoraCreator1155Impl) = setupZora1155Impl(zora, upgradeGate);
         upgradeFactoryProxyToUse1155(factoryProxy, zoraCreator1155Impl, fixedPriceMinter, deployer);
     }
 }
