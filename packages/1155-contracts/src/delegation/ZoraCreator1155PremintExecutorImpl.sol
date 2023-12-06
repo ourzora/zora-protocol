@@ -247,7 +247,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         string calldata mintComment
     ) external payable returns (uint256 newTokenId) {
         // encode legacy mint arguments to call current function:
-        MintArguments memory mintArguments = MintArguments({mintRecipient: msg.sender, mintComment: mintComment, mintReferral: address(0)});
+        MintArguments memory mintArguments = MintArguments({mintRecipient: msg.sender, mintComment: mintComment, mintRewardsRecipients: new address[](0)});
 
         return premintV1(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
     }

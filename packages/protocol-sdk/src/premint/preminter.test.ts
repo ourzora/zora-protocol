@@ -361,7 +361,7 @@ describe("ZoraCreator1155Preminter", () => {
       const mintArguments: MintArguments = {
         mintComment: "",
         mintRecipient: collectorAccount,
-        mintReferral: collectorAccount,
+        mintRewardsRecipients: [],
       };
 
       // now have the collector execute the first signed message;
@@ -560,7 +560,7 @@ describe("ZoraCreator1155Preminter", () => {
           {
             mintComment: "",
             mintRecipient: collectorAccount,
-            mintReferral: zeroAddress,
+            mintRewardsRecipients: [],
           },
         ],
         value: valueToSend,
