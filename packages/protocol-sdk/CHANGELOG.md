@@ -1,5 +1,14 @@
 # @zoralabs/protocol-sdk
 
+## 0.4.1
+
+### Patch Changes
+
+- 7e00197: \* For premintV1 and V2 - mintReferrer has been changed to an array `mintRewardsRecipients` - which the first element in array is `mintReferral`, and second element is `platformReferral`. `platformReferral is not used by the premint contract yet`.
+- 0ceb709: Add mint costs getter for premint to protocol sdk
+- Updated dependencies [5156b9e]
+  - @zoralabs/protocol-deployments@0.0.9
+
 ## 0.4.0
 
 ### Minor Changes
