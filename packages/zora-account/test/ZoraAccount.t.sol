@@ -31,4 +31,5 @@ contract ZoraAccountTest is ZoraAccountTestSetup {
         vm.prank(accountOwnerEOA);
         account.execute(testAddress, 1 ether, "");
         assertEq(testAddress.balance, 1 ether);
+    }
 }
