@@ -120,10 +120,13 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             address mintReferral = makeAddr("referral");
             vm.deal(collector, 10 ether);
 
+            address[] memory mintRewardsRecipients = new address[](1);
+            mintRewardsRecipients[0] = mintReferral;
+
             IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
                 mintRecipient: collector,
                 mintComment: "",
-                mintReferral: mintReferral
+                mintRewardsRecipients: mintRewardsRecipients
             });
 
             vm.startPrank(collector);

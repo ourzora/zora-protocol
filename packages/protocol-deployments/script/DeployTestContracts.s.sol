@@ -21,7 +21,7 @@ contract DeployTestContracts is ZoraDeployerBase {
         IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
             mintRecipient: fundsRecipient,
             mintComment: "",
-            mintReferral: fundsRecipient
+            mintRewardsRecipients: new address[](0)
         });
 
         signAndExecutePremintV2(deployment.preminterProxy, fundsRecipient, mintArguments);

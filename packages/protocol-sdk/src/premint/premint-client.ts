@@ -24,6 +24,7 @@ import {
   makeNewPremint,
   supportsPremintVersion,
   getPremintMintCosts,
+  makeMintRewardsRecipient,
 } from "./preminter";
 import {
   PremintConfigV2,
@@ -504,6 +505,7 @@ class PremintClient {
       quantityToMint: number;
       mintComment?: string;
       mintReferral?: Address;
+      platformReferral?: Address;
       mintRecipient?: Address;
     };
   }): Promise<SimulateContractParameters> {
@@ -570,7 +572,10 @@ class PremintClient {
           {
             mintComment: mintArguments?.mintComment || "",
             mintRecipient: mintArguments?.mintRecipient || accountAddress,
-            mintReferral: mintArguments?.mintReferral || zeroAddress,
+            mintRewardsRecipients: makeMintRewardsRecipient({
+              mintReferral: mintArguments?.mintReferral,
+              platformReferral: mintArguments?.platformReferral,
+            }),
           },
         ],
       } satisfies SimulateContractParameters<
