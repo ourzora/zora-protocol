@@ -15,6 +15,11 @@ const zoraMainnetForkAnvilTest = makeAnvilTest({
   forkBlockNumber: 7550118,
 });
 
+const zoraSepoliaAnvilTest = makeAnvilTest({
+  forkUrl: forkUrls.zoraSepolia,
+  forkBlockNumber: 1904731,
+});
+
 describe("ZoraCreator1155Premint - v1 signatures", () => {
   zoraMainnetForkAnvilTest(
     "can sign by default v1 on the forked premint contract",
@@ -237,10 +242,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
 });
 
 describe("ZoraCreator1155Premint - v2 signatures", () => {
-  makeAnvilTest({
-    forkUrl: forkUrls.zoraSepolia,
-    forkBlockNumber: 1865004,
-  })(
+  zoraSepoliaAnvilTest(
     "can sign on the forked premint contract",
     async ({ viemClients: { walletClient, publicClient } }) => {
       const [creatorAccount, createReferralAccount] =

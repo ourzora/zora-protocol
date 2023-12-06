@@ -1,7 +1,6 @@
 import { Address } from "abitype";
 import {
   zoraCreator1155PremintExecutorImplABI as preminterAbi,
-  zoraCreator1155FactoryImplAddress,
   zoraCreator1155ImplABI,
   zoraCreator1155PremintExecutorImplABI,
   zoraCreator1155PremintExecutorImplAddress,
@@ -17,6 +16,7 @@ import {
   concat,
   recoverAddress,
   GetEventArgs,
+  parseEther,
 } from "viem";
 import {
   ContractCreationConfig,
@@ -396,26 +396,6 @@ export function makeNewPremint<T extends TokenCreationConfig>({
   } as PremintConfigForTokenCreationConfig<T>;
 }
 
-export async function getNew1155MintFee({
-  publicClient,
-}: {
-  publicClient: PublicClient;
-}): Promise<bigint> {
-  const implAddress = await publicClient.readContract({
-    address: zoraCreator1155FactoryImplAddress[999],
-    abi: zoraCreator1155PremintExecutorImplABI,
-    functionName: "implementation",
-  });
-
-  const mintFee = await publicClient.readContract({
-    address: implAddress,
-    abi: zoraCreator1155ImplABI,
-    functionName: "mintFee",
-  });
-
-  return mintFee;
-}
-
 export async function getPremintMintFee({
   tokenContract,
   publicClient,
@@ -423,13 +403,20 @@ export async function getPremintMintFee({
   tokenContract: Address;
   publicClient: PublicClient;
 }) {
-  // check if contract exists
-  return await publicClient.readContract({
-    address: getPremintExecutorAddress(),
-    abi: zoraCreator1155PremintExecutorImplABI,
-    functionName: "mintFee",
-    args: [tokenContract],
-  });
+  // try reading mint fee function from premint executor.  this will revert
+  // if the abi is not up to date yet
+  try {
+    return await publicClient.readContract({
+      address: getPremintExecutorAddress(),
+      abi: zoraCreator1155PremintExecutorImplABI,
+      functionName: "mintFee",
+      args: [tokenContract],
+    });
+  } catch (e) {
+    console.error(e);
+
+    return parseEther("0.000777");
+  }
 }
 
 export async function getPremintMintCosts({
