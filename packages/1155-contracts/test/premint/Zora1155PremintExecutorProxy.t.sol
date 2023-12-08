@@ -16,7 +16,7 @@ import {IOwnable2StepUpgradeable} from "../../src/utils/ownable/IOwnable2StepUpg
 import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {IUpgradeGate} from "../../src/interfaces/IUpgradeGate.sol";
-import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.sol";
+import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
@@ -176,12 +176,10 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         vm.prank(upgradeOwner);
         forkedPreminterProxy.upgradeTo(address(newImplementation));
 
-        // 3. create premint on old version of contract using new version of preminter
-        // verify the 1155 supports up to version 1
-        string[] memory supportedVersions = forkedPreminterProxy.supportedPremintSignatureVersions(deterministicAddress);
-        assertEq(supportedVersions.length, 1);
-        assertEq(supportedVersions[0], "1");
+        // 3. get mint fee - it should be the same as it was before
+        assertEq(mintFeeAmount, forkedPreminterProxy.mintFee(deterministicAddress));
 
+        // 3. create new premint on old version of contract using new version of preminter
         uint32 existingUid = premintConfig.uid;
         premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig(fixedPriceMinter, creator);
         premintConfig.uid = existingUid + 1;
@@ -197,11 +195,18 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         assertEq(tokenId, 2);
     }
 
-    function test_canExecutePremintV1_whenUpgradedToNewPreminterProxy_beforeFactoryProxyUpgraded() external {
-        vm.createSelectFork("zora", 5_000_000);
+    function test_premintExecutor_callsOldMintWithRewards_ifNewMintDoesntExist() external {
+        vm.createSelectFork("zora_sepolia", 1_910_812);
+
+        // this test starts from the previously deployed version of premint executor, then:
+        // creates an erc1155 via premint.
+        // upgrades premint executor to latest version.
+        // tries calling preming again with that existing contract.  Since the existing contract doesnt have the new mint function,
+        // it should fallback to call the old mintWithRewards
 
         // 1. execute premint using older version of proxy, this will create 1155 contract using the legacy interface
         address preminterProxy = 0x7777773606e7e46C8Ba8B98C08f5cD218e31d340;
+        address upgradeGate = 0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900;
         // get premint and factory proxies from forked deployments
         ZoraCreator1155PremintExecutorImpl forkedPreminterProxy = ZoraCreator1155PremintExecutorImpl(preminterProxy);
         ZoraCreator1155FactoryImpl forkedFactoryAtProxy = ZoraCreator1155FactoryImpl(address(forkedPreminterProxy.zora1155Factory()));
@@ -223,12 +228,33 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
+
+        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
+
+        assertEq(mintFeeAmount, 0.000777 ether);
+
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
 
-        // 2. upgrade premint executor to current version
+        uint256 tokenId = ILegacyZoraCreator1155PremintExecutor(forkedPreminterProxy).premint{value: mintFeeAmount}(
+            contractConfig,
+            premintConfig,
+            signature,
+            quantityToMint,
+            "yo"
+        );
+
+        // sanity check, make sure the token was minted
+        assertEq(tokenId, 1);
+
+        // 2. upgrade premint executor and factory to current version
+        // create new factory proxy implementation
+        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(upgradeGate), fixedPriceMinter);
+
         // upgrade factory proxy
         address upgradeOwner = forkedPreminterProxy.owner();
+        vm.prank(upgradeOwner);
+        forkedFactoryAtProxy.upgradeTo(address(newFactoryVersion));
         // upgrade preminter
         ZoraCreator1155PremintExecutorImpl newImplementation = new ZoraCreator1155PremintExecutorImpl(forkedFactoryAtProxy);
         vm.prank(upgradeOwner);
@@ -239,11 +265,15 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
-        // now premint using the new method - it should still work
-        uint256 tokenId = forkedPreminterProxy.premint{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, "");
+        // now premint - it should still be able to mint on the old version of the contract, even though new method is not there.
+        defaultMintArguments.mintRewardsRecipients = new address[](1);
+        address mintReferral = makeAddr("referral");
+        defaultMintArguments.mintRewardsRecipients[0] = mintReferral;
+        forkedPreminterProxy.premintV1{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
 
-        // sanity check, make sure token was minted and has a new token id
-        assertEq(tokenId, 1);
+        // have mint referral withdraw - it should pass
+        vm.prank(mintReferral);
+        IProtocolRewards(0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B).withdraw(mintReferral, 0.000111 ether * quantityToMint);
     }
 
     function _signPremint(bytes32 structHash, bytes32 premintVersion, address contractAddress) private view returns (bytes memory signature) {
