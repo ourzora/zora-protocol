@@ -11,6 +11,7 @@ import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155DelegatedCreation} from "./IZoraCreator1155DelegatedCreation.sol";
+import {IMintWithRewardsRecipients} from "./IMintWithRewardsRecipients.sol";
 
 /*
 
@@ -42,7 +43,8 @@ interface IZoraCreator1155 is
     IVersionedContract,
     IOwnable,
     IERC1155MetadataURIUpgradeable,
-    IZoraCreator1155DelegatedCreation
+    IZoraCreator1155DelegatedCreation,
+    IMintWithRewardsRecipients
 {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
@@ -84,14 +86,6 @@ interface IZoraCreator1155 is
     /// @param minterArguments The arguments to pass to the minter
     /// @param mintReferral The referrer of the mint
     function mintWithRewards(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address mintReferral) external payable;
-
-    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and rewards arguments
-    /// @param minter The minter contract to use
-    /// @param tokenId The token ID to mint
-    /// @param quantity The quantity of tokens to mint
-    /// @param rewardsRecipients The addresses of rewards arguments - mintReferral and platformReferral
-    /// @param minterArguments The arguments to pass to the minter
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, address[] memory rewardsRecipients, bytes calldata minterArguments) external payable;
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 

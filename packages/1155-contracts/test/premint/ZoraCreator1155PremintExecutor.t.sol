@@ -472,6 +472,45 @@ contract ZoraCreator1155PreminterTest is Test {
         assertEq(mintReferral.balance, mintReferralReward * quantityToMint);
     }
 
+    function test_platformReferral_getsMintReferralReward() public {
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
+
+        address platformReferral = makeAddr("platformReferral ");
+
+        address minter = makeAddr("minter");
+
+        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+
+        uint256 quantityToMint = 4;
+
+        bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, block.chainid);
+
+        address[] memory mintRewardsRecipients = new address[](2);
+        mintRewardsRecipients[1] = platformReferral;
+
+        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
+            mintRecipient: minter,
+            mintComment: "",
+            mintRewardsRecipients: mintRewardsRecipients
+        });
+
+        uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
+
+        vm.deal(minter, mintCost);
+        vm.prank(minter);
+        preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments);
+
+        // now get balance of mintReferral in ProtocolRewards - it should be mint referral reward amount * quantityToMint
+        uint256 platformReferralReward = 0.000111 ether * quantityToMint;
+
+        assertEq(rewards.balanceOf(platformReferral), platformReferralReward);
+
+        vm.prank(platformReferral);
+        rewards.withdraw(platformReferral, platformReferralReward);
+
+        assertEq(platformReferral.balance, platformReferralReward);
+    }
+
     function testCreateTokenPerUid() public {
         ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
         PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
