@@ -194,6 +194,51 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         assertEq(tokenId, 2);
     }
 
+    function test_canExecutePremintV1_whenUpgradedToNewPreminterProxy_beforeFactoryProxyUpgraded() external {
+        vm.createSelectFork("zora", 5_000_000);
+
+        // 1. execute premint using older version of proxy, this will create 1155 contract using the legacy interface
+        address preminterProxy = 0x7777773606e7e46C8Ba8B98C08f5cD218e31d340;
+        // get premint and factory proxies from forked deployments
+        ZoraCreator1155PremintExecutorImpl forkedPreminterProxy = ZoraCreator1155PremintExecutorImpl(preminterProxy);
+        ZoraCreator1155FactoryImpl forkedFactoryAtProxy = ZoraCreator1155FactoryImpl(address(forkedPreminterProxy.zora1155Factory()));
+        IMinter1155 fixedPriceMinter = forkedFactoryAtProxy.fixedPriceMinter();
+
+        // build and sign v1 premint config
+        ContractCreationConfig memory contractConfig = Zora1155PremintFixtures.makeDefaultContractCreationConfig(creator);
+        address deterministicAddress = forkedPreminterProxy.getContractAddress(contractConfig);
+        PremintConfig memory premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig(fixedPriceMinter, creator);
+
+        bytes memory signature = _signPremint(
+            ZoraCreator1155Attribution.hashPremint(premintConfig),
+            ZoraCreator1155Attribution.HASHED_VERSION_1,
+            deterministicAddress
+        );
+
+        // create 1155 contract via premint, using legacy interface
+        uint256 quantityToMint = 1;
+        vm.deal(collector, mintFeeAmount);
+        vm.prank(collector);
+
+        // 2. upgrade premint executor to current version
+        // upgrade factory proxy
+        address upgradeOwner = forkedPreminterProxy.owner();
+        // upgrade preminter
+        ZoraCreator1155PremintExecutorImpl newImplementation = new ZoraCreator1155PremintExecutorImpl(forkedFactoryAtProxy);
+        vm.prank(upgradeOwner);
+        forkedPreminterProxy.upgradeTo(address(newImplementation));
+
+        // 3. create premint on old proxy using new version of preminter
+        // execute the premint
+        vm.deal(collector, mintFeeAmount);
+        vm.prank(collector);
+        // now premint using the new method - it should still work
+        uint256 tokenId = forkedPreminterProxy.premint{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, "");
+
+        // sanity check, make sure token was minted and has a new token id
+        assertEq(tokenId, 1);
+    }
+
     function _signPremint(bytes32 structHash, bytes32 premintVersion, address contractAddress) private view returns (bytes memory signature) {
         // sign the premint
         bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, premintVersion, block.chainid);
