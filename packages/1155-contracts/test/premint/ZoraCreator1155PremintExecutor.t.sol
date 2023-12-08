@@ -33,7 +33,7 @@ contract ZoraCreator1155PreminterTest is Test {
     ZoraCreator1155FactoryImpl factory;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
-    uint256 internal mintFeeAmount = 0.000777 ether;
+    uint256 internal mintFeeAmount = 0.00111 ether;
 
     // setup contract config
     uint256 internal creatorPrivateKey;
@@ -153,7 +153,7 @@ contract ZoraCreator1155PreminterTest is Test {
         IZoraCreator1155 created1155Contract = IZoraCreator1155(contractAddress);
         // get the created contract, and make sure that tokens have been minted to the address
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
-        assertEq(ZoraCreator1155Impl(address(created1155Contract)).delegatedTokenId(premintConfig.uid), tokenId);
+        assertEq(ZoraCreator1155Impl(payable(address(created1155Contract))).delegatedTokenId(premintConfig.uid), tokenId);
     }
 
     function test_successfullyMintsTokens() external {
@@ -247,7 +247,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // get the created contract, and make sure that tokens have been minted to the address
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), 0);
 
-        assertEq(ZoraCreator1155Impl(contractAddress).firstMinters(tokenId), address(premintExecutor));
+        assertEq(ZoraCreator1155Impl(payable(contractAddress)).firstMinters(tokenId), address(premintExecutor));
     }
 
     event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
@@ -583,7 +583,7 @@ contract ZoraCreator1155PreminterTest is Test {
                 IZoraCreator1155Errors.UserMissingRoleForToken.selector,
                 address(preminter),
                 newTokenId,
-                ZoraCreator1155Impl(address(created1155Contract)).PERMISSION_BIT_SALES()
+                ZoraCreator1155Impl(payable(address(created1155Contract))).PERMISSION_BIT_SALES()
             )
         );
         vm.prank(address(preminter));
@@ -607,7 +607,7 @@ contract ZoraCreator1155PreminterTest is Test {
                 IZoraCreator1155Errors.UserMissingRoleForToken.selector,
                 address(preminter),
                 newTokenId,
-                ZoraCreator1155Impl(address(created1155Contract)).PERMISSION_BIT_FUNDS_MANAGER()
+                ZoraCreator1155Impl(payable(address(created1155Contract))).PERMISSION_BIT_FUNDS_MANAGER()
             )
         );
         vm.prank(address(preminter));
@@ -728,7 +728,13 @@ contract ZoraCreator1155PreminterTest is Test {
         }
 
         vm.deal(premintExecutor, mintCost);
-        IZoraCreator1155(contractAddress).mint{value: mintCost}(fixedPriceMinter, tokenId, quantityToMint, abi.encode(premintExecutor, comment));
+        IZoraCreator1155(contractAddress).mintWithRewards{value: mintCost}(
+            fixedPriceMinter,
+            tokenId,
+            quantityToMint,
+            abi.encode(premintExecutor, comment),
+            address(0)
+        );
 
         vm.stopPrank();
     }
@@ -881,7 +887,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 createdTokenId = _signAndExecutePremint(contractConfig, premintConfig, creatorPrivateKey, block.chainid, premintExecutor, 1, "hi");
 
-        ZoraCreator1155Impl createdContract = ZoraCreator1155Impl(preminter.getContractAddress(contractConfig));
+        ZoraCreator1155Impl createdContract = ZoraCreator1155Impl(payable(preminter.getContractAddress(contractConfig)));
 
         address storedCreateReferral = createdContract.createReferrals(createdTokenId);
 
@@ -922,7 +928,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 mintFee = preminter.mintFee(contractAddress);
 
-        assertEq(mintFee, 0.000777 ether);
+        assertEq(mintFee, 0.00111 ether);
     }
 
     function test_mintFee_onNewContracts_returnsNewMintFee() external {
@@ -937,7 +943,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 mintFee = preminter.mintFee(contractAddress);
 
-        assertEq(mintFee, 0.000777 ether);
+        assertEq(mintFee, 0.00111 ether);
     }
 
     function _signAndExecutePremint(

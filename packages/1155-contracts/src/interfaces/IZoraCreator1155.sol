@@ -77,14 +77,6 @@ interface IZoraCreator1155 is
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
-    /// @notice Only allow minting one token id at time
-    /// @dev Mint contract function that calls the underlying sales function for commands
-    /// @param minter Address for the minter
-    /// @param tokenId tokenId to mint, set to 0 for new tokenId
-    /// @param quantity to mint
-    /// @param minterArguments calldata for the minter contracts
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
-
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and a mint referral
     /// @param minter The minter contract to use
     /// @param tokenId The token ID to mint
@@ -92,6 +84,14 @@ interface IZoraCreator1155 is
     /// @param minterArguments The arguments to pass to the minter
     /// @param mintReferral The referrer of the mint
     function mintWithRewards(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address mintReferral) external payable;
+
+    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and rewards arguments
+    /// @param minter The minter contract to use
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param rewardsRecipients The addresses of rewards arguments - mintReferral and platformReferral
+    /// @param minterArguments The arguments to pass to the minter
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, address[] memory rewardsRecipients, bytes calldata minterArguments) external payable;
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 
@@ -143,9 +143,6 @@ interface IZoraCreator1155 is
 
     /// @notice Withdraws all ETH from the contract to the funds recipient address
     function withdraw() external;
-
-    /// @notice Withdraws ETH from the Zora Rewards contract
-    function withdrawRewards(address to, uint256 amount) external;
 
     /// @notice Returns the current implementation address
     function implementation() external view returns (address);

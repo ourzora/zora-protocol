@@ -74,7 +74,7 @@ contract DeploymentTestingUtils is Script {
             mintArguments
         );
 
-        require(ZoraCreator1155Impl(premintResult.contractAddress).delegatedTokenId(premintConfig.uid) == premintResult.tokenId, "token id mismatch");
+        require(ZoraCreator1155Impl(payable(premintResult.contractAddress)).delegatedTokenId(premintConfig.uid) == premintResult.tokenId, "token id mismatch");
     }
 
     function createAndSignPremintV2(
@@ -135,7 +135,7 @@ contract DeploymentTestingUtils is Script {
         .premintV2{value: mintFee(quantityToMint)}(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
 
         require(
-            ZoraCreator1155Impl(preminterAtProxy.getContractAddress(contractConfig)).delegatedTokenId(premintConfig.uid) == tokenId,
+            ZoraCreator1155Impl(payable(preminterAtProxy.getContractAddress(contractConfig))).delegatedTokenId(premintConfig.uid) == tokenId,
             "token id not created for uid"
         );
     }
