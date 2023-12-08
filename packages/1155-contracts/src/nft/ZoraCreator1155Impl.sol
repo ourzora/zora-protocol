@@ -407,24 +407,9 @@ contract ZoraCreator1155Impl is
         bytes calldata minterArguments,
         address mintReferral
     ) external payable nonReentrant {
-        // Require admin from the minter to mint
-        _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
-
-        // Get value sent and handle mint rewards
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(
-            msg.value,
-            quantity,
-            getCreatorRewardRecipient(tokenId),
-            createReferrals[tokenId],
-            mintReferral,
-            firstMinters[tokenId],
-            address(0)
-        );
-
-        // Execute commands returned from minter
-        _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
-
-        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
+        address[] memory rewardsRecipients = new address[](1);
+        rewardsRecipients[0] = mintReferral;
+        return _mint(minter, tokenId, quantity, rewardsRecipients, minterArguments);
     }
 
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and rewards arguments
@@ -437,9 +422,13 @@ contract ZoraCreator1155Impl is
         IMinter1155 minter,
         uint256 tokenId,
         uint256 quantity,
-        address[] memory rewardsRecipients,
+        address[] calldata rewardsRecipients,
         bytes calldata minterArguments
     ) external payable nonReentrant {
+        _mint(minter, tokenId, quantity, rewardsRecipients, minterArguments);
+    }
+
+    function _mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, address[] memory rewardsRecipients, bytes calldata minterArguments) private {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
