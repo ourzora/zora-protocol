@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {IProtocolRewards} from "../interfaces/IProtocolRewards.sol";
+import {IRewardsErrors} from "../interfaces/IRewardsErrors.sol";
 
 struct RewardsSettings {
     uint256 creatorReward;
@@ -13,12 +14,7 @@ struct RewardsSettings {
 }
 
 /// @notice Common logic for between Zora ERC-721 & ERC-1155 contracts for protocol reward splits & deposits
-abstract contract RewardSplits {
-    error CREATOR_FUNDS_RECIPIENT_NOT_SET();
-    error INVALID_ADDRESS_ZERO();
-    error INVALID_ETH_AMOUNT();
-    error ONLY_CREATE_REFERRAL();
-
+abstract contract RewardSplits is IRewardsErrors {
     bytes4 public constant PLATFORM_REFERRAL_REWARD_DEPOSIT_REASON = bytes4(keccak256("PLATFORM_REFERRAL_REWARD"));
 
     uint256 internal constant TOTAL_REWARD_PER_MINT = 0.00111 ether;
