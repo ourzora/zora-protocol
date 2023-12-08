@@ -218,6 +218,9 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
             deterministicAddress
         );
 
+        // use old mint fee - this is prior to having the `mintFee` functino on premint executor
+        mintFeeAmount = 0.000777 ether;
+
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
         vm.deal(collector, mintFeeAmount);
@@ -232,7 +235,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         forkedPreminterProxy.upgradeTo(address(newImplementation));
 
         // 3. create premint on old proxy using new version of preminter
-        // execute the premint
+        // execute the premint - get the updated mint fee amount
+        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
         // now premint using the new method - it should still work
