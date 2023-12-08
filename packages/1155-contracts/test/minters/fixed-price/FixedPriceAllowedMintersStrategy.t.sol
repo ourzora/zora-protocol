@@ -42,7 +42,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         minters[0] = allowedMinter;
 
         targetImpl = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
-        target = ZoraCreator1155Impl(address(new Zora1155(address(targetImpl))));
+        target = ZoraCreator1155Impl(payable(address(new Zora1155(address(targetImpl)))));
 
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, new bytes[](0));
         fixedPrice = new FixedPriceAllowedMintersStrategy();
@@ -88,7 +88,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.deal(allowedMinter, totalValue);
 
         vm.startPrank(allowedMinter);
-        target.mint{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"));
+        target.mintWithRewards{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
 
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
         assertEq(address(target).balance, 10 ether);
@@ -148,8 +148,8 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.deal(allowedMinter, totalValue * 2);
 
         vm.startPrank(allowedMinter);
-        target.mint{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"));
-        target.mint{value: totalValue}(fixedPrice, newNewTokenId, 10, abi.encode(tokenRecipient, "test comment"));
+        target.mintWithRewards{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
+        target.mintWithRewards{value: totalValue}(fixedPrice, newNewTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
 
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
         assertEq(target.balanceOf(tokenRecipient, newNewTokenId), 10);
@@ -190,7 +190,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.deal(allowedMinter, totalValue);
 
         vm.expectRevert(abi.encodeWithSignature("ONLY_MINTER()"));
-        target.mint{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"));
+        target.mintWithRewards{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
     }
 
     function test_MintersSetEvents() external {
