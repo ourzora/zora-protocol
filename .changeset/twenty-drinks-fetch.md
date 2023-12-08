@@ -1,5 +1,5 @@
 ---
-"@zoralabs/zora-1155-contracts": minor
+"@zoralabs/zora-1155-contracts": patch
 ---
 
 A fixed price with allowed minters module is now available for 1155 contracts to implement. The primary use case is if a platform would like a certain set of their addresses (and only them) to mint on behalf of their users.
