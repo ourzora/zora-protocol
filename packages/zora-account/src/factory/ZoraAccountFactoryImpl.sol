@@ -12,8 +12,8 @@ import {ZoraAccount} from "../proxy/ZoraAccount.sol";
 contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
     ZoraAccountImpl public immutable zoraAccountImpl;
 
-    constructor(IEntryPoint _entryPoint) initializer {
-        zoraAccountImpl = new ZoraAccountImpl(_entryPoint);
+    constructor(IEntryPoint _entryPoint, address upgradeGate) initializer {
+        zoraAccountImpl = new ZoraAccountImpl(_entryPoint, upgradeGate);
     }
 
     function initialize(address _initialOwner) public initializer {

@@ -10,6 +10,7 @@ import {ZoraAccountFactoryImpl} from "../src/factory/ZoraAccountFactoryImpl.sol"
 import {ZoraAccountImpl} from "../src/account/ZoraAccountImpl.sol";
 import {ZoraAccountFactory} from "../src/proxy/ZoraAccountFactory.sol";
 import {ZoraAccount} from "../src/proxy/ZoraAccount.sol";
+import {ZoraAccountUpgradeGate} from "../src/upgrades/ZoraAccountUpgradeGate.sol";
 
 contract ZoraAccountTestSetup is Test {
     address internal accountOwnerEOA;
@@ -25,9 +26,10 @@ contract ZoraAccountTestSetup is Test {
         (accountOwnerEOA, accountOwnerPK) = makeAddrAndKey("accountOwnerEOA");
         accountOwnerSalt = keccak256(abi.encodePacked("accountOwnerSalt"));
         zora = makeAddr("zora");
+        ZoraAccountUpgradeGate upgradeGate = new ZoraAccountUpgradeGate();
 
         entryPoint = new EntryPoint();
-        zoraAccountFactoryImpl = new ZoraAccountFactoryImpl(entryPoint);
+        zoraAccountFactoryImpl = new ZoraAccountFactoryImpl(entryPoint, address(upgradeGate));
         zoraAccountFactory = ZoraAccountFactoryImpl(
             payable(address(new ZoraAccountFactory(address(zoraAccountFactoryImpl), abi.encodeWithSelector(zoraAccountFactoryImpl.initialize.selector, zora))))
         );
