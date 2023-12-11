@@ -13,6 +13,13 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
+      - name: Set initial test ${{ inputs.name }} status
+        uses: myrotvorets/set-commit-status-action@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: pending 
+          context: Test ${{ inputs.name }} status
+
       - uses: actions/checkout@v3
 
       - name: Install node deps and founry
@@ -28,3 +35,10 @@ jobs:
           cd ${{ inputs.package_folder}} && yarn test
         env:
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+
+      - name: Set initial test ${{ inputs.name }} status
+        uses: myrotvorets/set-commit-status-action@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }} 
+          token: ${{ secrets.GITHUB_TOKEN }}

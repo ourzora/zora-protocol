@@ -13,4 +13,5 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       package_folder: packages/protocol-deployments
+      name: Deployments
     secrets: inherit
