@@ -15,9 +15,9 @@ import {IZoraAccount} from "../interfaces/IZoraAccount.sol";
 import {ZoraAccountOwnership} from "../ownership/ZoraAccountOwnership.sol";
 import {IZoraAccountUpgradeGate} from "../interfaces/IZoraAccountUpgradeGate.sol";
 
-import {Enjoy} from "../../_imagine/Enjoy.sol";
+import {Magic} from "../../_imagine/Magic.sol";
 
-contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, ZoraAccountOwnership, IZoraAccount {
+contract ZoraAccountImpl is Magic, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, ZoraAccountOwnership, IZoraAccount {
     using ECDSA for bytes32;
 
     /// @dev keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
