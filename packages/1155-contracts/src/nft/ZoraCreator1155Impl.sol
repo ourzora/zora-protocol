@@ -33,6 +33,7 @@ import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
 import {ZoraCreator1155Attribution, DecodedCreatorAttribution, PremintTokenSetup, PremintConfig, PremintConfigV2, DelegatedTokenCreation, DelegatedTokenSetup} from "../delegation/ZoraCreator1155Attribution.sol";
 
 /// Imagine. Mint. Enjoy.
@@ -395,31 +396,7 @@ contract ZoraCreator1155Impl is
         _mintBatch(recipient, tokenIds, quantities, data);
     }
 
-    /// @notice Mint tokens given a minter contract and minter arguments
-    /// @param minter The minter contract to use
-    /// @param tokenId The token ID to mint
-    /// @param quantity The quantity of tokens to mint
-    /// @param minterArguments The arguments to pass to the minter
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable nonReentrant {
-        // Require admin from the minter to mint
-        _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
-
-        // Get value sent and handle mint fee
-        uint256 ethValueSent = _handleRewardsAndGetValueSent(
-            msg.value,
-            quantity,
-            getCreatorRewardRecipient(tokenId),
-            createReferrals[tokenId],
-            address(0),
-            firstMinters[tokenId]
-        );
-
-        // Execute commands returned from minter
-        _executeCommands(minter.requestMint(msg.sender, tokenId, quantity, ethValueSent, minterArguments).commands, ethValueSent, tokenId);
-
-        emit Purchased(msg.sender, address(minter), tokenId, quantity, msg.value);
-    }
-
+    ///  @custom:deprecated mintWithRewards has been deprecated use mint instead
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and a mint referral
     /// @param minter The minter contract to use
     /// @param tokenId The token ID to mint
@@ -433,8 +410,41 @@ contract ZoraCreator1155Impl is
         bytes calldata minterArguments,
         address mintReferral
     ) external payable nonReentrant {
+        address[] memory rewardsRecipients = new address[](1);
+        rewardsRecipients[0] = mintReferral;
+        return _mint(minter, tokenId, quantity, rewardsRecipients, minterArguments);
+    }
+
+    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and rewards arguments
+    /// @param minter The minter contract to use
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param rewardsRecipients The addresses of rewards arguments - rewardsRecipients[0] = mintReferral, rewardsRecipients[1] = platformReferral
+    /// @param minterArguments The arguments to pass to the minter
+    function mint(
+        IMinter1155 minter,
+        uint256 tokenId,
+        uint256 quantity,
+        address[] calldata rewardsRecipients,
+        bytes calldata minterArguments
+    ) external payable nonReentrant {
+        _mint(minter, tokenId, quantity, rewardsRecipients, minterArguments);
+    }
+
+    function _mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, address[] memory rewardsRecipients, bytes calldata minterArguments) private {
         // Require admin from the minter to mint
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
+
+        address mintReferral = address(0);
+        address platformReferral = address(0);
+
+        if (rewardsRecipients.length > 1) {
+            platformReferral = rewardsRecipients[1];
+        }
+
+        if (rewardsRecipients.length > 0) {
+            mintReferral = rewardsRecipients[0];
+        }
 
         // Get value sent and handle mint rewards
         uint256 ethValueSent = _handleRewardsAndGetValueSent(
@@ -443,7 +453,8 @@ contract ZoraCreator1155Impl is
             getCreatorRewardRecipient(tokenId),
             createReferrals[tokenId],
             mintReferral,
-            firstMinters[tokenId]
+            firstMinters[tokenId],
+            platformReferral
         );
 
         // Execute commands returned from minter
@@ -460,7 +471,7 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token id to get the creator reward recipient for
     /// @dev Returns the royalty recipient address for the token if set; otherwise uses the fundsRecipient.
     /// If both are not set, this contract will be set as the recipient, and an account with
-    /// `PERMISSION_BIT_FUNDS_MANAGER` will be able to withdraw via the `withdrawRewards` function.
+    /// `PERMISSION_BIT_FUNDS_MANAGER` will be able to withdraw via the `withdrawFor` function.
     function getCreatorRewardRecipient(uint256 tokenId) public view returns (address) {
         address royaltyRecipient = getRoyalties(tokenId).royaltyRecipient;
 
@@ -571,7 +582,8 @@ contract ZoraCreator1155Impl is
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IZoraCreator1155).interfaceId ||
             ERC1155Upgradeable.supportsInterface(interfaceId) ||
-            interfaceId == type(IZoraCreator1155DelegatedCreation).interfaceId;
+            interfaceId == type(IZoraCreator1155DelegatedCreation).interfaceId ||
+            interfaceId == type(IMintWithRewardsRecipients).interfaceId;
     }
 
     /// Generic 1155 function overrides ///
@@ -725,16 +737,7 @@ contract ZoraCreator1155Impl is
         }
     }
 
-    /// @notice Withdraws ETH from the Zora Rewards contract
-    function withdrawRewards(address to, uint256 amount) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_FUNDS_MANAGER) {
-        bytes memory data = abi.encodeWithSelector(IProtocolRewards.withdraw.selector, to, amount);
-
-        (bool success, ) = address(protocolRewards).call(data);
-
-        if (!success) {
-            revert ProtocolRewardsWithdrawFailed(msg.sender, to, amount);
-        }
-    }
+    receive() external payable {}
 
     ///                                                          ///
     ///                         MANAGER UPGRADE                  ///

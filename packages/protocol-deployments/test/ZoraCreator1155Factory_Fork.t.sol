@@ -112,9 +112,9 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // mint the token
         vm.deal(collector, valueToSend);
         vm.startPrank(collector);
-        ZoraCreator1155Impl(address(target)).mintWithRewards{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector), address(0));
+        ZoraCreator1155Impl(payable(address(target))).mintWithRewards{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector), address(0));
 
-        uint256 balance = ZoraCreator1155Impl(address(target)).balanceOf(collector, tokenId);
+        uint256 balance = ZoraCreator1155Impl(payable(address(target))).balanceOf(collector, tokenId);
 
         assertEq(balance, quantityToMint, "balance mismatch");
     }

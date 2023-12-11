@@ -53,20 +53,62 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
     }
 
     function _buildSafeUrl(address safe, address target, bytes memory cd) internal view returns (string memory) {
-        // sample url: https://ourzora.github.io/smol-safe/?value=0&safe={safeAddress}&to={target}&data={calldata}&network={chainId}
-        // https://ourzora.github.io/smol-safe/?safe={safe}&to={to}&data={data}&value=0&network={network}
-        string memory safeQueryString = string.concat("safe=", vm.toString(safe));
-        string memory toQueryString = string.concat("&to=", vm.toString(target));
-        string memory dataQueryString = string.concat("&data=", vm.toString(cd));
-        string memory valueQueryString = "&value=0";
-        string memory chainIdQueryString = string.concat("&network=", vm.toString(block.chainid));
-        string memory targetUrl = string.concat(
-            string.concat(
-                string.concat(string.concat(string.concat("https://ourzora.github.io/smol-safe/?", safeQueryString), toQueryString), dataQueryString),
-                valueQueryString
-            ),
-            chainIdQueryString
-        );
+        address[] memory targets = new address[](1);
+        targets[0] = target;
+
+        bytes[] memory calldatas = new bytes[](1);
+        calldatas[0] = cd;
+
+        return _buildBatchSafeUrl(safe, targets, calldatas);
+    }
+
+    // pipe delimiter is url encoded | which is %7C
+    string constant PIPE_DELIMITER = "%7C";
+
+    function _buildBatchSafeUrl(address safe, address[] memory targets, bytes[] memory cd) internal view returns (string memory) {
+        string memory targetsString = "";
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            targetsString = string.concat(targetsString, vm.toString(targets[i]));
+
+            if (i < targets.length - 1) {
+                targetsString = string.concat(targetsString, PIPE_DELIMITER);
+            }
+        }
+
+        string memory calldataString = "";
+
+        for (uint256 i = 0; i < cd.length; i++) {
+            calldataString = string.concat(calldataString, vm.toString(cd[i]));
+
+            if (i < cd.length - 1) {
+                calldataString = string.concat(calldataString, PIPE_DELIMITER);
+            }
+        }
+
+        string memory valuesString = "";
+
+        for (uint256 i = 0; i < cd.length; i++) {
+            valuesString = string.concat(valuesString, "0");
+
+            if (i < cd.length - 1) {
+                valuesString = string.concat(valuesString, PIPE_DELIMITER);
+            }
+        }
+
+        // sample url: https://ourzora.github.io/smol-safe/${chainId}/${safeAddress}&target={pipeDelimitedTargets}&calldata={pipeDelimitedCalldata}&value={pipeDelimitedValues}
+        string memory targetUrl = "https://ourzora.github.io/smol-safe/#safe/";
+        targetUrl = string.concat(targetUrl, vm.toString(block.chainid));
+        targetUrl = string.concat(targetUrl, "/");
+        targetUrl = string.concat(targetUrl, vm.toString(safe));
+        targetUrl = string.concat(targetUrl, "/new");
+        targetUrl = string.concat(targetUrl, "?");
+        targetUrl = string.concat(targetUrl, "targets=");
+        targetUrl = string.concat(targetUrl, targetsString);
+        targetUrl = string.concat(targetUrl, "&calldatas=");
+        targetUrl = string.concat(targetUrl, calldataString);
+        targetUrl = string.concat(targetUrl, "&values=");
+        targetUrl = string.concat(targetUrl, valuesString);
 
         return targetUrl;
     }
@@ -93,28 +135,37 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         console2.log("chain:", chainName);
         console2.log("upgrade owner:", chainConfig.factoryOwner);
 
+        bytes memory factory1155UpgradeCalldata;
+
         if (is1155UpgradeNeeded) {
             console2.log("-- 1155 upgrade needed --");
             vm.prank(chainConfig.factoryOwner);
-            bytes memory factory1155UpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(targetProxy1155, targetImpl1155);
+            factory1155UpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(targetProxy1155, targetImpl1155);
             vm.prank(creator);
             ZoraDeployerUtils.deployTestContractForVerification(targetProxy1155, creator);
 
             console2.log("1155 upgrade target:", targetProxy1155);
             console2.log("upgrade calldata:");
             console.logBytes(factory1155UpgradeCalldata);
-            console2.log("upgrade to address:", targetImpl1155);
-            console2.log("upgrade to version:", ZoraCreator1155FactoryImpl(targetImpl1155).contractVersion());
-            console2.log("smol safe upgrade url: ", _buildSafeUrl(chainConfig.factoryOwner, targetProxy1155, factory1155UpgradeCalldata));
-            console2.log("------------------------");
+            {
+                console2.log("upgrade to address:", targetImpl1155);
+                console2.log("upgrade to version:", ZoraCreator1155FactoryImpl(targetImpl1155).contractVersion());
+                if (!preminterUpgradeNeeded) {
+                    console2.log("smol safe upgrade url: ", _buildSafeUrl(chainConfig.factoryOwner, targetProxy1155, factory1155UpgradeCalldata));
+                }
+                console2.log("------------------------");
+            }
         }
+
+        address factoryOwner = chainConfig.factoryOwner;
+        bytes memory preminterUpgradeCalldata;
 
         // hack - for now, only check on zora sepolia or goerli
         if (preminterUpgradeNeeded) {
             console2.log("-- preminter upgrade needed --");
             console2.log("preminter upgrade target:", targetPreminterProxy);
-            vm.prank(chainConfig.factoryOwner);
-            bytes memory preminterUpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(deployment.preminterProxy, deployment.preminterImpl);
+            vm.prank(factoryOwner);
+            preminterUpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(deployment.preminterProxy, deployment.preminterImpl);
 
             address collector = makeAddr("collector");
             address mintReferral = makeAddr("referral");
@@ -135,11 +186,28 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
 
             vm.stopPrank();
 
-            console2.log("upgrade calldata:");
-            console.logBytes(preminterUpgradeCalldata);
-            console2.log("upgrade to address:", targetPremintImpl);
-            console2.log("smol safe upgrade url: ", _buildSafeUrl(chainConfig.factoryOwner, targetPreminterProxy, preminterUpgradeCalldata));
-            console2.log("------------------------");
+            {
+                console2.log("upgrade calldata:");
+                console.logBytes(preminterUpgradeCalldata);
+                console2.log("upgrade to address:", targetPremintImpl);
+                if (!is1155UpgradeNeeded) {
+                    console2.log("smol safe upgrade url: ", _buildSafeUrl(factoryOwner, targetPreminterProxy, preminterUpgradeCalldata));
+                }
+                console2.log("------------------------");
+            }
+        }
+
+        // if both needed:
+        if (is1155UpgradeNeeded && preminterUpgradeNeeded) {
+            address[] memory targets = new address[](2);
+            targets[0] = targetProxy1155;
+            targets[1] = targetPreminterProxy;
+
+            bytes[] memory calldatas = new bytes[](2);
+            calldatas[0] = factory1155UpgradeCalldata;
+            calldatas[1] = preminterUpgradeCalldata;
+
+            console2.log("multi-upgrade smol safe upgrade url: ", _buildBatchSafeUrl(factoryOwner, targets, calldatas));
         }
 
         console2.log("=================\n");
