@@ -12,12 +12,14 @@ jobs:
     needs: build
     uses: ./.github/workflows/test.yml
     with:
+      name: Protocol rewards
       package_folder: packages/protocol-rewards
 
   contract_sizes:
     needs: build
     uses: ./.github/workflows/contract_sizes.yml
     with:
+      name: Protocol rewards
       package_folder: packages/protocol-rewards
 
   coverage:
