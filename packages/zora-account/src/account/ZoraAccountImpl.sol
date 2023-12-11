@@ -39,7 +39,7 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
     function initialize(address defaultOwner) public virtual initializer {
         _setupWithAdmin(defaultOwner);
 
-        emit ZoraAccountInitialized(_entryPoint, defaultOwner);
+        emit ZoraAccountInitialized(_entryPoint, defaultOwner, msg.sender);
     }
 
     // Allows receiving native ETH

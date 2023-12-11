@@ -5,13 +5,12 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IEntryPoint} from "account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
 interface IZoraAccount is IERC1271 {
-    /**
-     * @notice Emitted when this account is first initialized
-     * @param entryPoint The entry point
-     * @param owner The initial owner
-     *
-     **/
-    event ZoraAccountInitialized(IEntryPoint indexed entryPoint, address indexed owner);
+
+    /// @notice Emitted when a Zora account is first initialized
+    /// @param entryPoint The entry point
+    /// @param owner The initial owner
+    /// @param sender The sender of the transaction
+    event ZoraAccountInitialized(IEntryPoint indexed entryPoint, address indexed owner, address indexed sender);
 
     event ZoraAccountReceivedEth(address indexed sender, uint256 amount);
 
