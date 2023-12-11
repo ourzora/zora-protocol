@@ -300,6 +300,7 @@ describe("Zora1155", () => {
           fixedPriceMinterAddress,
           lastTokenId!,
           quantityToMint,
+          [AddressZero, AddressZero],
           encodedParams,
         ],
         value: valueToSend,

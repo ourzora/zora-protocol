@@ -2,6 +2,7 @@
 pragma solidity 0.8.17;
 
 import {IProtocolRewards} from "../interfaces/IProtocolRewards.sol";
+import {IRewardsErrors} from "../interfaces/IRewardsErrors.sol";
 
 struct RewardsSettings {
     uint256 creatorReward;
@@ -9,30 +10,19 @@ struct RewardsSettings {
     uint256 mintReferralReward;
     uint256 firstMinterReward;
     uint256 zoraReward;
+    uint256 platformReferralReward;
 }
 
 /// @notice Common logic for between Zora ERC-721 & ERC-1155 contracts for protocol reward splits & deposits
-abstract contract RewardSplits {
-    error CREATOR_FUNDS_RECIPIENT_NOT_SET();
-    error INVALID_ADDRESS_ZERO();
-    error INVALID_ETH_AMOUNT();
-    error ONLY_CREATE_REFERRAL();
+abstract contract RewardSplits is IRewardsErrors {
+    bytes4 public constant PLATFORM_REFERRAL_REWARD_DEPOSIT_REASON = bytes4(keccak256("PLATFORM_REFERRAL_REWARD"));
 
-    uint256 internal constant TOTAL_REWARD_PER_MINT = 0.000777 ether;
-
-    uint256 internal constant CREATOR_REWARD = 0.000333 ether;
-    uint256 internal constant FIRST_MINTER_REWARD = 0.000111 ether;
-
-    uint256 internal constant CREATE_REFERRAL_FREE_MINT_REWARD = 0.000111 ether;
-    uint256 internal constant MINT_REFERRAL_FREE_MINT_REWARD = 0.000111 ether;
-    uint256 internal constant ZORA_FREE_MINT_REWARD = 0.000111 ether;
-
-    uint256 internal constant MINT_REFERRAL_PAID_MINT_REWARD = 0.000222 ether;
-    uint256 internal constant CREATE_REFERRAL_PAID_MINT_REWARD = 0.000222 ether;
-    uint256 internal constant ZORA_PAID_MINT_REWARD = 0.000222 ether;
+    uint256 internal constant TOTAL_REWARD_PER_MINT = 0.00111 ether;
+    uint256 internal constant CREATOR_REWARD_SPLIT = 0.000555 ether;
+    uint256 internal constant NON_CREATOR_REWARDS_SPLIT = 0.000111 ether;
 
     address internal immutable zoraRewardRecipient;
-    IProtocolRewards internal immutable protocolRewards;
+    IProtocolRewards public immutable protocolRewards;
 
     constructor(address _protocolRewards, address _zoraRewardRecipient) payable {
         if (_protocolRewards == address(0) || _zoraRewardRecipient == address(0)) {
@@ -50,11 +40,12 @@ abstract contract RewardSplits {
     function computeFreeMintRewards(uint256 numTokens) public pure returns (RewardsSettings memory) {
         return
             RewardsSettings({
-                creatorReward: numTokens * CREATOR_REWARD,
-                createReferralReward: numTokens * CREATE_REFERRAL_FREE_MINT_REWARD,
-                mintReferralReward: numTokens * MINT_REFERRAL_FREE_MINT_REWARD,
-                firstMinterReward: numTokens * FIRST_MINTER_REWARD,
-                zoraReward: numTokens * ZORA_FREE_MINT_REWARD
+                creatorReward: numTokens * CREATOR_REWARD_SPLIT,
+                createReferralReward: numTokens * NON_CREATOR_REWARDS_SPLIT,
+                mintReferralReward: numTokens * NON_CREATOR_REWARDS_SPLIT,
+                firstMinterReward: numTokens * NON_CREATOR_REWARDS_SPLIT,
+                zoraReward: numTokens * NON_CREATOR_REWARDS_SPLIT,
+                platformReferralReward: numTokens * NON_CREATOR_REWARDS_SPLIT
             });
     }
 
@@ -62,10 +53,11 @@ abstract contract RewardSplits {
         return
             RewardsSettings({
                 creatorReward: 0,
-                createReferralReward: numTokens * CREATE_REFERRAL_PAID_MINT_REWARD,
-                mintReferralReward: numTokens * MINT_REFERRAL_PAID_MINT_REWARD,
-                firstMinterReward: numTokens * FIRST_MINTER_REWARD,
-                zoraReward: numTokens * ZORA_PAID_MINT_REWARD
+                createReferralReward: numTokens * NON_CREATOR_REWARDS_SPLIT,
+                mintReferralReward: numTokens * NON_CREATOR_REWARDS_SPLIT,
+                firstMinterReward: numTokens * NON_CREATOR_REWARDS_SPLIT,
+                zoraReward: numTokens * (NON_CREATOR_REWARDS_SPLIT + CREATOR_REWARD_SPLIT),
+                platformReferralReward: numTokens * NON_CREATOR_REWARDS_SPLIT
             });
     }
 
@@ -75,7 +67,8 @@ abstract contract RewardSplits {
         address creator,
         address createReferral,
         address mintReferral,
-        address firstMinter
+        address firstMinter,
+        address platformReferral
     ) internal {
         RewardsSettings memory settings = computeFreeMintRewards(numTokens);
 
@@ -87,7 +80,11 @@ abstract contract RewardSplits {
             mintReferral = zoraRewardRecipient;
         }
 
-        protocolRewards.depositRewards{value: totalReward}(
+        if (platformReferral == address(0)) {
+            platformReferral = zoraRewardRecipient;
+        }
+
+        protocolRewards.depositRewards{value: totalReward - settings.platformReferralReward}(
             creator,
             settings.creatorReward,
             createReferral,
@@ -99,9 +96,18 @@ abstract contract RewardSplits {
             zoraRewardRecipient,
             settings.zoraReward
         );
+
+        protocolRewards.deposit{value: settings.platformReferralReward}(platformReferral, PLATFORM_REFERRAL_REWARD_DEPOSIT_REASON, "");
     }
 
-    function _depositPaidMintRewards(uint256 totalReward, uint256 numTokens, address createReferral, address mintReferral, address firstMinter) internal {
+    function _depositPaidMintRewards(
+        uint256 totalReward,
+        uint256 numTokens,
+        address createReferral,
+        address mintReferral,
+        address firstMinter,
+        address platformReferral
+    ) internal {
         RewardsSettings memory settings = computePaidMintRewards(numTokens);
 
         if (createReferral == address(0)) {
@@ -112,7 +118,11 @@ abstract contract RewardSplits {
             mintReferral = zoraRewardRecipient;
         }
 
-        protocolRewards.depositRewards{value: totalReward}(
+        if (platformReferral == address(0)) {
+            platformReferral = zoraRewardRecipient;
+        }
+
+        protocolRewards.depositRewards{value: totalReward - settings.platformReferralReward}(
             address(0),
             0,
             createReferral,
@@ -124,5 +134,7 @@ abstract contract RewardSplits {
             zoraRewardRecipient,
             settings.zoraReward
         );
+
+        protocolRewards.deposit{value: settings.platformReferralReward}(platformReferral, PLATFORM_REFERRAL_REWARD_DEPOSIT_REASON, "");
     }
 }
