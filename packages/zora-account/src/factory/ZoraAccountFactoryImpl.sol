@@ -6,10 +6,11 @@ import {UUPSUpgradeable, ERC1967Utils} from "@openzeppelin/contracts-upgradeable
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {IEntryPoint} from "account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
+import {IZoraAccountFactory} from "../interfaces/IZoraAccountFactory.sol";
 import {ZoraAccountImpl} from "../account/ZoraAccountImpl.sol";
 import {ZoraAccount} from "../proxy/ZoraAccount.sol";
 
-contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
+contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable, IZoraAccountFactory {
     ZoraAccountImpl public immutable zoraAccountImpl;
 
     constructor(IEntryPoint _entryPoint, address upgradeGate) initializer {
@@ -20,7 +21,7 @@ contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
         __Ownable_init(_initialOwner);
         __UUPSUpgradeable_init();
 
-        // TODO emit ZoraAccountFactoryInitialized(_initialOwner);
+        emit ZoraAccountFactoryInitialized(_initialOwner, msg.sender);
     }
 
     /**
