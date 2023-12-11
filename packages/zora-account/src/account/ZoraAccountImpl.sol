@@ -13,6 +13,7 @@ import {TokenCallbackHandler} from "../utils/TokenCallbackHandler.sol";
 
 import {IZoraAccount} from "../interfaces/IZoraAccount.sol";
 import {ZoraAccountOwnership} from "../ownership/ZoraAccountOwnership.sol";
+import {IZoraAccountUpgradeGate} from "../interfaces/IZoraAccountUpgradeGate.sol";
 
 import {Enjoy} from "../../_imagine/Enjoy.sol";
 
@@ -31,8 +32,12 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
     /// @dev The entry point contract that can execute transactions
     IEntryPoint private immutable _entryPoint;
 
-    constructor(IEntryPoint anEntryPoint) initializer {
+    /// @notice Factory contract
+    IZoraAccountUpgradeGate public immutable upgradeGate;
+
+    constructor(IEntryPoint anEntryPoint, address _upgradeGate) initializer {
         _entryPoint = anEntryPoint;
+        upgradeGate = IZoraAccountUpgradeGate(_upgradeGate);
     }
 
     function initialize(address defaultOwner) public virtual initializer {
@@ -213,10 +218,16 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
         return ERC1967Utils.getImplementation();
     }
 
-    // TODO add upgrade gate registered check
-    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner(msg.sender) {}
-
     function supportsInterface(bytes4 interfaceId) public view virtual override(ZoraAccountOwnership, TokenCallbackHandler) returns (bool) {
         return interfaceId == type(IZoraAccount).interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /// @notice Ensures the caller is authorized to upgrade the contract
+    /// @dev This function is called in `upgradeTo` & `upgradeToAndCall`
+    /// @param newImplementation The new implementation address
+    function _authorizeUpgrade(address newImplementation) internal view override onlyOwner(msg.sender) {
+        if (!upgradeGate.isRegisteredUpgradePath(ERC1967Utils.getImplementation(), newImplementation)) {
+            revert();
+        }
     }
 }
