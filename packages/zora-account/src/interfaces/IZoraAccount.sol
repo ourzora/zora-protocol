@@ -12,6 +12,9 @@ interface IZoraAccount is IERC1271 {
     /// @param sender The sender of the transaction
     event ZoraAccountInitialized(IEntryPoint indexed entryPoint, address indexed owner, address indexed sender);
 
+    /// @notice Emitted when a Zora account receives ETH
+    /// @param sender The sender of the ETH
+    /// @param amount The amount of ETH received
     event ZoraAccountReceivedEth(address indexed sender, uint256 amount);
 
     /**
