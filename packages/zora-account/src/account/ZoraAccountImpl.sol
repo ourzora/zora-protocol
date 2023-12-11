@@ -20,19 +20,15 @@ import {Enjoy} from "../../_imagine/Enjoy.sol";
 contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, ZoraAccountOwnership, IZoraAccount {
     using ECDSA for bytes32;
 
-    /// @dev bytes4(keccak256("isValidSignature(bytes32,bytes)"))
-    bytes4 internal immutable _1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
-
-    /// @dev keccak256("ZoraAccountMessage(bytes message)");
-    bytes32 private immutable ZA_MSG_TYPEHASH = keccak256("ZoraAccountMessage(bytes message)");
-
     /// @dev keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     bytes32 private immutable DOMAIN_SEPARATOR_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+    bytes32 private immutable ZA_MSG_TYPEHASH = keccak256("ZoraAccountMessage(bytes message)");
+    bytes4 private immutable _1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
     /// @dev The entry point contract that can execute transactions
     IEntryPoint private immutable _entryPoint;
 
-    /// @notice Factory contract
+    /// @notice The Zora Account Upgrade Gate contract
     IZoraAccountUpgradeGate public immutable upgradeGate;
 
     constructor(IEntryPoint anEntryPoint, address _upgradeGate) initializer {
