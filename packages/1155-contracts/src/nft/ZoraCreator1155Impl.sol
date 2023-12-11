@@ -67,8 +67,6 @@ contract ZoraCreator1155Impl is
     uint256 public constant PERMISSION_BIT_METADATA = 2 ** 4;
     /// @notice This user role allows for only withdrawing funds and setting funds withdraw address
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
-    /// @notice Testing build scripts (cheeky)
-    bool public cheeky = true;
     /// @notice Factory contract
     IUpgradeGate internal immutable upgradeGate;
 
