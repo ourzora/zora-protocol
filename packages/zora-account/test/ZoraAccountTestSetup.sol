@@ -43,13 +43,13 @@ contract ZoraAccountTestSetup is Test {
         zoraAccountFactory = ZoraAccountFactoryImpl(
             payable(address(new ZoraAccountFactory(address(zoraAccountFactoryImpl), abi.encodeWithSelector(zoraAccountFactoryImpl.initialize.selector, zora))))
         );
-        account = deployAccount(accountOwnerEOA, uint256(accountOwnerSalt));
+        account = deployAccount(accountOwnerEOA, accountOwnerSalt);
 
         mock721 = new MockERC721(address(account));
         mock1155 = new MockERC1155(address(account));
     }
 
-    function deployAccount(address owner, uint256 salt) internal returns (ZoraAccountImpl) {
+    function deployAccount(address owner, bytes32 salt) internal returns (ZoraAccountImpl) {
         return ZoraAccountImpl(payable(address(zoraAccountFactory.createAccount(owner, salt))));
     }
 

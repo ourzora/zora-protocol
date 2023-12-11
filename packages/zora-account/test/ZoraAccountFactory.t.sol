@@ -8,7 +8,7 @@ contract ZoraAccountFactoryTest is ZoraAccountTestSetup {
         super.setUp();
     }
 
-    function testFactoryGetAddress(address fuzzOwner, uint256 fuzzOwnerSalt) public {
+    function testFactoryGetAddress(address fuzzOwner, bytes32 fuzzOwnerSalt) public {
         address precomputedAccountAddress = zoraAccountFactory.getAddress(fuzzOwner, fuzzOwnerSalt);
 
         account = deployAccount(fuzzOwner, fuzzOwnerSalt);
@@ -16,7 +16,7 @@ contract ZoraAccountFactoryTest is ZoraAccountTestSetup {
         assertEq(address(account), precomputedAccountAddress);
     }
 
-    function testFactoryGetAddressWhenAccountExists(address fuzzOwner, uint256 fuzzOwnerSalt) public {
+    function testFactoryGetAddressWhenAccountExists(address fuzzOwner, bytes32 fuzzOwnerSalt) public {
         account = deployAccount(fuzzOwner, fuzzOwnerSalt);
 
         address precomputedAccountAddress = zoraAccountFactory.getAddress(fuzzOwner, fuzzOwnerSalt);
@@ -29,7 +29,7 @@ contract ZoraAccountFactoryTest is ZoraAccountTestSetup {
     }
 
     function testFactoryAccountImpl() public {
-        account = deployAccount(accountOwnerEOA, uint256(accountOwnerSalt));
+        account = deployAccount(accountOwnerEOA, accountOwnerSalt);
 
         assertEq(account.implementation(), address(zoraAccountFactory.zoraAccountImpl()));
     }

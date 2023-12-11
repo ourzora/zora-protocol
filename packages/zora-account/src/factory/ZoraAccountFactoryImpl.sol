@@ -32,13 +32,13 @@ contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
      * @param salt A salt, which can be changed to create multiple accounts with the same owner
      * @return ret The address of either the newly deployed account or an existing account with this owner and salt
      */
-    function createAccount(address owner, uint256 salt) public returns (ZoraAccount ret) {
+    function createAccount(address owner, bytes32 salt) public returns (ZoraAccount ret) {
         address addr = getAddress(owner, salt);
         uint256 codeSize = addr.code.length;
         if (codeSize > 0) {
             return ZoraAccount(payable(addr));
         }
-        ret = ZoraAccount(payable(new ZoraAccount{salt: bytes32(salt)}(address(zoraAccountImpl), abi.encodeCall(ZoraAccountImpl.initialize, (owner)))));
+        ret = ZoraAccount(payable(new ZoraAccount{salt: salt}(address(zoraAccountImpl), abi.encodeCall(ZoraAccountImpl.initialize, (owner)))));
     }
 
     /**
@@ -47,10 +47,10 @@ contract ZoraAccountFactoryImpl is UUPSUpgradeable, Ownable2StepUpgradeable {
      * @param salt A salt, which can be changed to create multiple accounts with the same owner
      * @return The address of the account that would be created with createAccount()
      */
-    function getAddress(address owner, uint256 salt) public view returns (address) {
+    function getAddress(address owner, bytes32 salt) public view returns (address) {
         return
             Create2.computeAddress(
-                bytes32(salt),
+                salt,
                 keccak256(
                     abi.encodePacked(type(ZoraAccount).creationCode, abi.encode(address(zoraAccountImpl), abi.encodeCall(ZoraAccountImpl.initialize, (owner))))
                 )
