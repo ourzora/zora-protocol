@@ -4,6 +4,9 @@ on:
       package_folder:
         required: true
         type: string
+      name:
+        required: true
+        type: string
 
 jobs:
   check:
@@ -13,6 +16,13 @@ jobs:
     name: Contract sizes
     runs-on: ubuntu-latest
     steps:
+      - name: Set initial ${{ inputs.name }} sizes status
+        uses: myrotvorets/set-commit-status-action@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: pending 
+          context: Contract ${{ inputs.name }} sizes
+
       - uses: actions/checkout@v3
 
       - name: Install node deps and founry
@@ -25,3 +35,11 @@ jobs:
 
       - name: Check contract sizes
         run: cd ${{ inputs.package_folder }} && yarn build:sizes
+
+      - name: Set final ${{ inputs.name }} sizes status
+        uses: myrotvorets/set-commit-status-action@v2.0.0
+        if: always()
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          context: Contract ${{ inputs.name }} sizes
