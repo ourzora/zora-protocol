@@ -41,4 +41,4 @@ jobs:
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ job.status }} 
-          token: ${{ secrets.GITHUB_TOKEN }}
+          context: Test ${{ inputs.name }} status
