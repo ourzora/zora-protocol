@@ -4,6 +4,9 @@ on:
       package_folder:
         required: true
         type: string
+      name:
+        required: true
+        type: string
 
 jobs:
   check:
