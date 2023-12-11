@@ -17,6 +17,7 @@ import {PremintEncoding, ZoraCreator1155Attribution, DelegatedTokenCreation, Con
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
+import {IRewardsErrors} from "@zoralabs/protocol-rewards/src/interfaces/IRewardsErrors.sol";
 
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
@@ -27,7 +28,8 @@ contract ZoraCreator1155PremintExecutorImpl is
     Ownable2StepUpgradeable,
     UUPSUpgradeable,
     IHasContractName,
-    IZoraCreator1155Errors
+    IZoraCreator1155Errors,
+    IRewardsErrors
 {
     IZoraCreator1155Factory public immutable zora1155Factory;
 
