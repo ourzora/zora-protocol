@@ -15,7 +15,7 @@ contract MockERC721 is ERC721 {
 
     function setSalePrice(uint256 _salePrice) external {
         require(msg.sender == creator, "MockERC721: only creator can set sale price");
-        
+
         salePrice = _salePrice;
     }
 

@@ -1,13 +1,36 @@
 [profile.default]
-solc = '0.8.20'
 evm_version = 'paris'
-via_ir = true
-src = 'src'
-out = 'out'
-test = 'test'
 libs = ['lib']
 optimizer = true
 optimizer_runs = 10_000_000
+out = 'out'
+solc = '0.8.20'
+src = 'src'
+test = 'test'
+via_ir = true
+
+[profile.dev]
+evm_version = 'paris'
+libs = ['lib']
+optimizer = false
+optimizer_runs = 0
+out = 'out'
+solc = '0.8.20'
+src = 'src'
+test = 'test'
+via_ir = false
+
+[profile.deploy]
+evm_version = 'paris' 
+libs = ['lib'] 
+optimizer = true 
+optimizer_runs = 10_000_000 
+out = 'out' 
+script = 'script' 
+solc = '0.8.20' 
+src = 'src' 
+test = 'script' # ignore test compilation
+via_ir = true 
 
 [fuzz]
 runs = 500

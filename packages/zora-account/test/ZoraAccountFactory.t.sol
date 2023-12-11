@@ -4,8 +4,6 @@ pragma solidity ^0.8.20;
 import "./ZoraAccountTestSetup.sol";
 
 contract ZoraAccountFactoryTest is ZoraAccountTestSetup {
-    ZoraAccountImpl internal account;
-
     function setUp() public override {
         super.setUp();
     }
