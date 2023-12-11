@@ -1,5 +1,16 @@
 # @zoralabs/premint-sdk
 
+## 0.0.10
+
+### Patch Changes
+
+- 68c70a9: Tie protocol deployments to v2.5.4 of 1155
+- Updated dependencies [f0c380d]
+- Updated dependencies [98e78d7]
+- Updated dependencies [050b689]
+- Updated dependencies [3f8b18f]
+  - @zoralabs/zora-1155-contracts@2.6.0
+
 ## 0.0.9
 
 ### Patch Changes

@@ -11,6 +11,7 @@ import {IOwnable} from "../interfaces/IOwnable.sol";
 import {IVersionedContract} from "./IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155DelegatedCreation} from "./IZoraCreator1155DelegatedCreation.sol";
+import {IMintWithRewardsRecipients} from "./IMintWithRewardsRecipients.sol";
 
 /*
 
@@ -42,7 +43,8 @@ interface IZoraCreator1155 is
     IVersionedContract,
     IOwnable,
     IERC1155MetadataURIUpgradeable,
-    IZoraCreator1155DelegatedCreation
+    IZoraCreator1155DelegatedCreation,
+    IMintWithRewardsRecipients
 {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
@@ -76,14 +78,6 @@ interface IZoraCreator1155 is
     event ContractRendererUpdated(IRenderer1155 renderer);
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
-
-    /// @notice Only allow minting one token id at time
-    /// @dev Mint contract function that calls the underlying sales function for commands
-    /// @param minter Address for the minter
-    /// @param tokenId tokenId to mint, set to 0 for new tokenId
-    /// @param quantity to mint
-    /// @param minterArguments calldata for the minter contracts
-    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments) external payable;
 
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and a mint referral
     /// @param minter The minter contract to use
@@ -143,9 +137,6 @@ interface IZoraCreator1155 is
 
     /// @notice Withdraws all ETH from the contract to the funds recipient address
     function withdraw() external;
-
-    /// @notice Withdraws ETH from the Zora Rewards contract
-    function withdrawRewards(address to, uint256 amount) external;
 
     /// @notice Returns the current implementation address
     function implementation() external view returns (address);
