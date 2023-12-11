@@ -91,11 +91,8 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
             revert ArrayLengthMismatch();
         }
         uint256 length = dest.length;
-        for (uint256 i = 0; i < length; ) {
+        for (uint256 i; i < length; ++i) {
             _call(dest[i], 0, func[i]);
-            unchecked {
-                ++i;
-            }
         }
     }
 
@@ -113,11 +110,8 @@ contract ZoraAccountImpl is Enjoy, BaseAccount, TokenCallbackHandler, UUPSUpgrad
             revert ArrayLengthMismatch();
         }
         uint256 length = dest.length;
-        for (uint256 i = 0; i < length; ) {
+        for (uint256 i; i < length; ++i) {
             _call(dest[i], value[i], func[i]);
-            unchecked {
-                ++i;
-            }
         }
     }
 
