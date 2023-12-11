@@ -5,7 +5,7 @@ import {Test} from "forge-std/Test.sol";
 import {ZoraAccountUpgradeGate} from "../src/upgrades/ZoraAccountUpgradeGate.sol";
 
 contract ZoraAccountUpgradeGateTest is Test {
-    ZoraAccountUpgradeGate upgradeGate; 
+    ZoraAccountUpgradeGate upgradeGate;
     address constant admin = address(0x111);
 
     function setUp() public {

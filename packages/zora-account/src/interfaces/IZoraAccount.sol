@@ -5,7 +5,6 @@ import {IERC1271} from "@openzeppelin/contracts/interfaces/IERC1271.sol";
 import {IEntryPoint} from "account-abstraction/contracts/interfaces/IEntryPoint.sol";
 
 interface IZoraAccount is IERC1271 {
-
     /// @notice Emitted when a Zora account is first initialized
     /// @param entryPoint The entry point
     /// @param owner The initial owner

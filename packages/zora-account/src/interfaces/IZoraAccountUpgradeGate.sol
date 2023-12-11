@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 /// @notice Factory Upgrade Gate Admin Factory Implementation – Allows specific contract upgrades as a safety measure
 interface IZoraAccountUpgradeGate {
-
     /// @notice Event emitted when upgrade gate is emitted
     event UpgradeGateSetup();
 
