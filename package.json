@@ -24,15 +24,6 @@
   "workspaces": {
     "packages": [
       "packages/*"
-    ],
-    "nohoist": [
-      "**/@openzeppelin/**",
-      "**/@zoralabs/*",
-      "**/ds-test",
-      "**/erc721a-upgradeable",
-      "**/forge-std",
-      "**/solady",
-      "**/solmate"
     ]
   }
 }
