@@ -20,8 +20,7 @@ import {Magic} from "../../_imagine/Magic.sol";
 contract ZoraAccountImpl is Magic, BaseAccount, TokenCallbackHandler, UUPSUpgradeable, ZoraAccountOwnership, IZoraAccount {
     using ECDSA for bytes32;
 
-    /// @dev keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
-    bytes32 private immutable DOMAIN_SEPARATOR_TYPEHASH = 0x8b73c3c69bb8fe3d512ecc4cf759cc79239f7b179b0ffacaa9a75d522b39400f;
+    bytes32 private immutable DOMAIN_SEPARATOR_TYPEHASH = keccak256("EIP712Domain(string name,string version,uint256 chainId,address verifyingContract)");
     bytes32 private immutable ZA_MSG_TYPEHASH = keccak256("ZoraAccountMessage(bytes message)");
     bytes4 private immutable _1271_MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
 
