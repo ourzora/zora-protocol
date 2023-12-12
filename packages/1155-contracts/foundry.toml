@@ -5,8 +5,8 @@ fs_permissions = [
   { access = "read", path = "./package.json" },
   { access = "readwrite", path = "./deterministicConfig" },
 ]
-libs = ['_imagine', 'node_modules', 'script']
-allow_paths = ["node_modules/@zoralabs/protocol-rewards"]
+libs = ['_imagine', 'node_modules', 'script', "../../node_modules"]
+allow_paths = ["../../node_modules/@zoralabs/protocol-rewards"]
 optimizer = true
 optimizer_runs = 50
 via_ir = true
