@@ -31,4 +31,10 @@ interface IZoraAccount is IERC1271 {
      * @dev The caller is not authorized.
      */
     error NotAuthorized(address caller);
+
+    /// @dev Reverts if a valid signer is not recovered for a given digest and signature
+    /// @param digest The message digest
+    /// @param signature The passed signature
+    /// @param recoveredSigner The recovered signer
+    error InvalidRecoveredSignature(bytes32 digest, bytes signature, address recoveredSigner);
 }

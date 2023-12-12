@@ -151,20 +151,13 @@ contract ZoraAccountImpl is Magic, BaseAccount, TokenCallbackHandler, UUPSUpgrad
     }
 
     function recoverSigner(bytes32 digest, bytes memory signature) private pure returns (address) {
-        (uint8 v, bytes32 r, bytes32 s) = splitSignature(signature);
+        (address signer, , ) = ECDSA.tryRecover(digest, signature);
 
-        address signer = ecrecover(digest, v, r, s);
-        require(signer != address(0), "INVALID_SIGNATURE"); // TODO custom error & add to IZoraAccount
+        if (signer == address(0)) {
+            revert InvalidRecoveredSignature(digest, signature, signer);
+        }
 
         return signer;
-    }
-
-    function splitSignature(bytes memory signature) private pure returns (uint8 v, bytes32 r, bytes32 s) {
-        assembly {
-            r := mload(add(signature, 0x20))
-            s := mload(add(signature, 0x40))
-            v := byte(0, mload(add(signature, 0x60)))
-        }
     }
 
     /**
