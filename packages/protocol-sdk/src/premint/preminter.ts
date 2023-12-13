@@ -302,18 +302,12 @@ export const supportedPremintVersions = async ({
   tokenContract: Address;
   publicClient: PublicClient;
 }): Promise<readonly string[]> => {
-  try {
-    return await publicClient.readContract({
-      abi: preminterAbi,
-      address: getPremintExecutorAddress(),
-      functionName: "supportedPremintSignatureVersions",
-      args: [tokenContract],
-    });
-  } catch (e) {
-    console.error(e);
-    // if the premint executor contract doesn't support the function, it must be v1
-    return ["1"];
-  }
+  return await publicClient.readContract({
+    abi: preminterAbi,
+    address: getPremintExecutorAddress(),
+    functionName: "supportedPremintSignatureVersions",
+    args: [tokenContract],
+  });
 };
 /**
  * Checks if the 1155 contract at that address supports the given version of the premint config.

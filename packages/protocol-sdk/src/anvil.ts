@@ -100,5 +100,5 @@ export const forkUrls = {
 
 export const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
-  forkBlockNumber: 6133407,
+  forkBlockNumber: 7866332,
 });

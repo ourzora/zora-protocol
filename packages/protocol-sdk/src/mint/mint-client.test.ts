@@ -3,7 +3,7 @@ import { zora } from "viem/chains";
 import { describe, expect } from "vitest";
 import { createMintClient } from "./mint-client";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
-import { anvilTest } from "src/anvil";
+import { anvilTest, forkUrls, makeAnvilTest } from "src/anvil";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
@@ -58,7 +58,10 @@ describe("mint-helper", () => {
     12 * 1000,
   );
 
-  anvilTest(
+  makeAnvilTest({
+    forkUrl: forkUrls.zoraMainnet,
+    forkBlockNumber: 6133407,
+  })(
     "mints a new 721 token",
     async ({ viemClients }) => {
       const { testClient, walletClient, publicClient } = viemClients;
