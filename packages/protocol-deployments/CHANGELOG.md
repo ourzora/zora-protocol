@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.11
+
+### Patch Changes
+
+- bff853a: Include latest abi in protocol deployments
+
 ## 0.0.10
 
 ### Patch Changes

@@ -12,7 +12,7 @@ Protocol SDK allows users to create tokens using the Zora Protocol, and mint the
 ### Creating a mint from an on-chain contract:
 
 #### Using viem
-
+ 
 ```ts
 import {createMintClient} from "@zoralabs/protocol-sdk";
 import type {Address, PublicClient, WalletClient} from "viem";

@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.4.2
+
+### Patch Changes
+
+- 9b03ed2: Support premint v2 in sdk
+- Updated dependencies [bff853a]
+  - @zoralabs/protocol-deployments@0.0.11
+
 ## 0.4.1
 
 ### Patch Changes
