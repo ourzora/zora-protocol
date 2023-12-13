@@ -3,25 +3,15 @@ import { describe, expect, vi } from "vitest";
 
 import { Address, Hex } from "viem";
 import { createPremintClient } from "./premint-client";
-import { forkUrls, makeAnvilTest } from "src/anvil";
+import { anvilTest } from "src/anvil";
 import {
   ContractCreationConfig,
   PremintConfigV1,
   PremintConfigVersion,
 } from "./contract-types";
 
-const zoraMainnetForkAnvilTest = makeAnvilTest({
-  forkUrl: forkUrls.zoraMainnet,
-  forkBlockNumber: 7550118,
-});
-
-const zoraSepoliaAnvilTest = makeAnvilTest({
-  forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 1904731,
-});
-
 describe("ZoraCreator1155Premint - v1 signatures", () => {
-  zoraMainnetForkAnvilTest(
+  anvilTest(
     "can sign by default v1 on the forked premint contract",
     async ({ viemClients: { walletClient, publicClient } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
@@ -92,7 +82,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
     20 * 1000,
   );
 
-  zoraMainnetForkAnvilTest(
+  anvilTest(
     "can validate premint on network",
     async ({ viemClients: { publicClient } }) => {
       const premintClient = createPremintClient({
@@ -138,7 +128,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
     },
   );
 
-  zoraMainnetForkAnvilTest(
+  anvilTest(
     "can execute premint on network",
     async ({ viemClients: { walletClient, publicClient } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
@@ -211,28 +201,9 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
 
       expect(premintedLog).toEqual({
         contractAddress: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
-        contractConfig: {
-          contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          contractName: "Testing Contract",
-          contractURI:
-            "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
-        },
         createdNewContract: expect.any(Boolean),
         minter: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
         quantityMinted: 1n,
-        tokenConfig: {
-          fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
-          maxSupply: 18446744073709551615n,
-          maxTokensPerAddress: 0n,
-          mintDuration: 604800n,
-          mintStart: 0n,
-          pricePerToken: 0n,
-          royaltyBPS: 1000,
-          royaltyMintSchedule: 0,
-          royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          tokenURI:
-            "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
-        },
         tokenId: 1n,
         uid: 3,
       });
@@ -242,7 +213,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
 });
 
 describe("ZoraCreator1155Premint - v2 signatures", () => {
-  zoraSepoliaAnvilTest(
+  anvilTest(
     "can sign on the forked premint contract",
     async ({ viemClients: { walletClient, publicClient } }) => {
       const [creatorAccount, createReferralAccount] =

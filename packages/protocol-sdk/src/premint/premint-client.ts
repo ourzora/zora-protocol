@@ -36,8 +36,8 @@ import {
   TokenCreationConfigV2,
   TokenCreationConfig,
   PremintConfigForVersion,
+  MintArguments,
 } from "./contract-types";
-import type { PremintSignatureResponse } from "./premint-api-client";
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
@@ -45,9 +45,9 @@ import { IHttpClient } from "src/apis/http-api-base";
 import { getApiNetworkConfigForChain } from "src/mint/mint-api-client";
 import { MintCosts } from "src/mint/mint-client";
 
-type PremintedLogType = DecodeEventLogReturnType<
+type PremintedV2LogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,
-  "Preminted"
+  "PremintedV2"
 >["args"];
 
 type URLSReturnType = {
@@ -60,7 +60,6 @@ type SignedPremintResponse = {
   urls: URLSReturnType;
   uid: number;
   verifyingContract: Address;
-  premint: PremintSignatureResponse;
 };
 
 export const defaultTokenConfigV1MintArguments = (): Omit<
@@ -128,15 +127,15 @@ const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
  */
 export function getPremintedLogFromReceipt(
   receipt: TransactionReceipt,
-): PremintedLogType | undefined {
+): PremintedV2LogType | undefined {
   for (const data of receipt.logs) {
     try {
       const decodedLog = decodeEventLog({
         abi: zoraCreator1155PremintExecutorImplABI,
-        eventName: "Preminted",
+        eventName: "PremintedV2",
         ...data,
       });
-      if (decodedLog.eventName === "Preminted") {
+      if (decodedLog.eventName === "PremintedV2") {
         return decodedLog.args;
       }
     } catch (err: any) {}
@@ -286,8 +285,8 @@ class PremintClient {
    */
   private async signAndSubmitPremint<T extends PremintConfigVersion>(
     params: SignAndSubmitPremintParams<T>,
-  ) {
-    const { premint, verifyingContract } = await signAndSubmitPremint({
+  ): Promise<SignedPremintResponse> {
+    const { verifyingContract } = await signAndSubmitPremint({
       ...params,
       chainId: this.chain.id,
       apiClient: this.apiClient,
@@ -300,7 +299,6 @@ class PremintClient {
       urls: this.makeUrls({ address: verifyingContract, uid }),
       uid,
       verifyingContract,
-      premint,
     };
   }
 
@@ -534,11 +532,22 @@ class PremintClient {
       })
     ).totalCost;
 
+    const mintArgumentsContract: MintArguments = {
+      mintComment: mintArguments?.mintComment || "",
+      mintRecipient:
+        mintArguments?.mintRecipient ||
+        (typeof account === "string" ? account : account.address),
+      mintRewardsRecipients: makeMintRewardsRecipient({
+        mintReferral: mintArguments?.mintReferral,
+        platformReferral: mintArguments?.platformReferral,
+      }),
+    };
+
     if (premintConfigVersion === PremintConfigVersion.V1) {
       return {
         account,
         abi: zoraCreator1155PremintExecutorImplABI,
-        functionName: "premint",
+        functionName: "premintV1",
         value,
         address: getPremintExecutorAddress(),
         args: [
@@ -546,16 +555,14 @@ class PremintClient {
           premintConfig,
           signature,
           numberToMint,
-          mintArguments?.mintComment || "",
+          mintArgumentsContract,
         ],
       } satisfies SimulateContractParameters<
         typeof zoraCreator1155PremintExecutorImplABI,
-        "premint"
+        "premintV1"
       >;
     } else if (premintConfigVersion === PremintConfigVersion.V2) {
       const toPost = premintConfig as PremintConfigV2;
-      const accountAddress =
-        typeof account === "string" ? account : account.address;
 
       return {
         account,
@@ -569,14 +576,7 @@ class PremintClient {
           toPost,
           signature,
           numberToMint,
-          {
-            mintComment: mintArguments?.mintComment || "",
-            mintRecipient: mintArguments?.mintRecipient || accountAddress,
-            mintRewardsRecipients: makeMintRewardsRecipient({
-              mintReferral: mintArguments?.mintReferral,
-              platformReferral: mintArguments?.platformReferral,
-            }),
-          },
+          mintArgumentsContract,
         ],
       } satisfies SimulateContractParameters<
         typeof zoraCreator1155PremintExecutorImplABI,
