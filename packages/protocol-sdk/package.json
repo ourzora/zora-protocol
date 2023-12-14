@@ -16,7 +16,7 @@
   },
   "dependencies": {
     "@zoralabs/protocol-deployments": "*",
-    "abitype": "0.8.7",
+    "abitype": "^0.10.3",
     "vite": "4.5.0"
   },
   "peerDependencies": {

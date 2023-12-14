@@ -37,9 +37,9 @@
     "es-main": "^1.2.0",
     "@wagmi/cli": "^1.0.1",
     "@types/node": "^20.1.2",
-    "@turnkey/viem": "^0.2.4",
-    "@turnkey/http": "^1.2.0",
-    "@turnkey/api-key-stamper": "^0.1.1",
+    "@turnkey/viem": "^0.4.4",
+    "@turnkey/http": "^2.5.1",
+    "@turnkey/api-key-stamper": "^0.3.1",
     "@lavamoat/preinstall-always-fail": "2.0.0"
   }
 }

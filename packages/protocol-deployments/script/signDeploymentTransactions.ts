@@ -2,7 +2,6 @@ import { createAccount } from "@turnkey/viem";
 import { TurnkeyClient } from "@turnkey/http";
 import { Address, encodeFunctionData, parseAbi, LocalAccount, Hex } from "viem";
 import { ApiKeyStamper } from "@turnkey/api-key-stamper";
-// @ts-ignore
 import { glob } from "glob";
 import * as path from "path";
 import * as dotenv from "dotenv";
@@ -254,7 +253,7 @@ async function main() {
   const turnkeyAccount = await createAccount({
     client: httpClient,
     organizationId: process.env.TURNKEY_ORGANIZATION_ID!,
-    privateKeyId: process.env.TURNKEY_PRIVATE_KEY_ID!,
+    signWith: process.env.TURNKEY_PRIVATE_KEY_ID!,
     // optional; will be fetched from Turnkey if not provided
     ethereumAddress: process.env.TURNKEY_TARGET_ADDRESS!,
   });
