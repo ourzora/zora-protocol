@@ -10,7 +10,7 @@
     "build": "tsup",
     "prepack": "yarn build",
     "test:js": "vitest src",
-    "generate-types": "npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && npx openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts",
+    "generate-types": "echo 'npx is used here because this is a rare operation' && npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && yarn openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts",
     "prettier": "prettier --write 'src/**/*.ts'",
     "lint": "prettier --check 'src/**/*.ts'"
   },

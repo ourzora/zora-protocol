@@ -19,8 +19,8 @@ jobs:
 
       - name: Build js package
         run: |
-          npx turbo run build
+          yarn turbo run build
 
       - name: Test js package
         run: |
-          npx turbo run test:js
+          yarn turbo run test:js
