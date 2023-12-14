@@ -24,7 +24,7 @@ async function copyEnvironmentRunFiles() {
   );
 
   const groupedByChainId = allFileContents.reduce(
-    (acc: any, file: { chainId: string; contents: any }) => {
+    (acc: any, file: any) => {
       const chainId = file.chainId!;
       if (isNaN(Number(chainId))) return acc;
 

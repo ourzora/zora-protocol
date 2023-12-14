@@ -171,7 +171,7 @@ function parseCreate1155Receipt(receipt: TransactionReceipt): {
     .filter(Boolean);
 
   const updatedTokenEvents = parsedLog.filter(
-    (log) => log?.eventName === "UpdatedToken"
+    (log) => log?.eventName === "UpdatedToken",
   );
   const lastUpdatedTokenEvent =
     updatedTokenEvents[updatedTokenEvents.length - 1];
@@ -277,7 +277,7 @@ describe("Zora1155", () => {
 
       const encodedParams = encodeAbiParameters(
         [{ type: "address", name: "address" }],
-        [collectorAccount]
+        [collectorAccount],
       );
 
       const zoraMintFee = parseEther("0.000777");
@@ -308,7 +308,7 @@ describe("Zora1155", () => {
 
       expect(
         (await publicClient.waitForTransactionReceipt({ hash: mintCall }))
-          .status
+          .status,
       ).toBe("success");
 
       // check balance of token
@@ -322,6 +322,6 @@ describe("Zora1155", () => {
       expect(tokenBalance).toBe(quantityToMint);
     },
     // 10 second timeout
-    10 * 1000
+    10 * 1000,
   );
 });
