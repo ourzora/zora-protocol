@@ -15,8 +15,7 @@ abstract contract ERC721Rewards is RewardSplits {
         address creator,
         address createReferral,
         address mintReferral,
-        address firstMinter,
-        address platformReferral
+        address firstMinter
     ) internal {
         uint256 totalReward = computeTotalReward(numTokens);
 
@@ -25,7 +24,7 @@ abstract contract ERC721Rewards is RewardSplits {
                 revert INVALID_ETH_AMOUNT();
             }
 
-            _depositFreeMintRewards(totalReward, numTokens, creator, createReferral, mintReferral, firstMinter, platformReferral);
+            _depositFreeMintRewards(totalReward, numTokens, creator, createReferral, mintReferral, firstMinter);
         } else {
             uint256 totalSale = numTokens * salePrice;
 
@@ -33,7 +32,7 @@ abstract contract ERC721Rewards is RewardSplits {
                 revert INVALID_ETH_AMOUNT();
             }
 
-            _depositPaidMintRewards(totalReward, numTokens, createReferral, mintReferral, firstMinter, platformReferral);
+            _depositPaidMintRewards(totalReward, numTokens, createReferral, mintReferral, firstMinter);
         }
     }
 }

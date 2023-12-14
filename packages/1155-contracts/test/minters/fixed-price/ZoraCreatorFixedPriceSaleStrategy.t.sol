@@ -342,7 +342,7 @@ contract ZoraCreatorFixedPriceSaleStrategyTest is Test {
 
         vm.startPrank(tokenRecipient);
 
-        target.mintWithRewards{value: 1.00111 ether}(fixedPrice, newTokenId, 1, abi.encode(tokenRecipient, ""), address(0));
+        target.mintWithRewards{value: 1.000777 ether}(fixedPrice, newTokenId, 1, abi.encode(tokenRecipient, ""), address(0));
 
         vm.stopPrank();
     }
