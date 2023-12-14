@@ -43,7 +43,7 @@ const getAddresses = () => {
 
   for (const addressesFile of addressesFiles) {
     const jsonAddress = JSON.parse(
-      readFileSync(`./addresses/${addressesFile}`, "utf-8")
+      readFileSync(`./addresses/${addressesFile}`, "utf-8"),
     ) as {
       FIXED_PRICE_SALE_STRATEGY: Address;
       MERKLE_MINT_SALE_STRATEGY: Address;
