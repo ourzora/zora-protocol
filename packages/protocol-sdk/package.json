@@ -20,7 +20,7 @@
     "vite": "4.5.0"
   },
   "peerDependencies": {
-    "viem": "^1.16.6"
+    "viem": "^1.19.15"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
