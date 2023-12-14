@@ -434,11 +434,6 @@ contract ZoraCreator1155Impl is
         _requireAdminOrRole(address(minter), tokenId, PERMISSION_BIT_MINTER);
 
         address mintReferral = address(0);
-        address platformReferral = address(0);
-
-        if (rewardsRecipients.length > 1) {
-            platformReferral = rewardsRecipients[1];
-        }
 
         if (rewardsRecipients.length > 0) {
             mintReferral = rewardsRecipients[0];
@@ -451,8 +446,7 @@ contract ZoraCreator1155Impl is
             getCreatorRewardRecipient(tokenId),
             createReferrals[tokenId],
             mintReferral,
-            firstMinters[tokenId],
-            platformReferral
+            firstMinters[tokenId]
         );
 
         // Execute commands returned from minter

@@ -32,7 +32,7 @@ contract ERC1155RewardsTest is ProtocolRewardsTest {
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(collector), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
     }
 
     function test1155PaidMintDeposit(uint16 numTokens, uint256 pricePerToken) public {
@@ -56,7 +56,7 @@ contract ERC1155RewardsTest is ProtocolRewardsTest {
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(collector), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
     }
 
     function test1155FreeMintNullReferralRecipients(uint16 numTokens) public {
@@ -76,10 +76,7 @@ contract ERC1155RewardsTest is ProtocolRewardsTest {
         assertEq(protocolRewards.totalSupply(), totalReward);
         assertEq(protocolRewards.balanceOf(creator), settings.creatorReward);
         assertEq(protocolRewards.balanceOf(collector), settings.firstMinterReward);
-        assertEq(
-            protocolRewards.balanceOf(zora),
-            settings.zoraReward + settings.mintReferralReward + settings.createReferralReward + settings.platformReferralReward
-        );
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
     function test1155PaidMintNullReferralRecipient(uint16 numTokens, uint256 pricePerToken) public {
@@ -103,10 +100,7 @@ contract ERC1155RewardsTest is ProtocolRewardsTest {
 
         assertEq(protocolRewards.totalSupply(), totalReward);
         assertEq(protocolRewards.balanceOf(collector), settings.firstMinterReward);
-        assertEq(
-            protocolRewards.balanceOf(zora),
-            settings.zoraReward + settings.mintReferralReward + settings.createReferralReward + settings.platformReferralReward
-        );
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
     function testRevert1155FreeMintInvalidEth(uint16 numTokens) public {
@@ -141,61 +135,5 @@ contract ERC1155RewardsTest is ProtocolRewardsTest {
         vm.prank(collector);
         vm.expectRevert(abi.encodeWithSignature("MOCK_ERC1155_INVALID_REMAINING_VALUE()"));
         mockERC1155.mintWithRewards{value: totalValue - 1}(collector, 0, numTokens, mintReferral);
-    }
-
-    function test1155FreeMintDepositWithrewardsRecipients(uint16 numTokens) public {
-        vm.assume(numTokens > 0);
-
-        uint256 totalReward = mockERC1155.computeTotalReward(numTokens);
-
-        vm.deal(collector, totalReward);
-
-        vm.prank(collector);
-        mockERC1155.mint{value: totalReward}(collector, 0, numTokens, rewardsRecipients);
-
-        RewardsSettings memory settings = mockERC1155.computeFreeMintRewards(numTokens);
-
-        assertEq(protocolRewards.totalSupply(), totalReward);
-        assertEq(protocolRewards.balanceOf(creator), settings.creatorReward);
-        assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
-        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
-        assertEq(protocolRewards.balanceOf(collector), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
-        assertEq(protocolRewards.balanceOf(sourceReferral), settings.platformReferralReward);
-    }
-
-    function test1155PaidMintDepositWithrewardsRecipients(uint16 numTokens, uint256 pricePerToken) public {
-        vm.assume(numTokens > 0);
-        vm.assume(pricePerToken > 0 && pricePerToken < 100 ether);
-
-        mockERC1155.setSalePrice(pricePerToken);
-
-        uint256 totalReward = mockERC1155.computeTotalReward(numTokens);
-        uint256 totalSale = numTokens * pricePerToken;
-        uint256 totalValue = totalReward + totalSale;
-
-        vm.deal(collector, totalValue);
-
-        vm.prank(collector);
-        mockERC1155.mint{value: totalValue}(collector, 0, numTokens, rewardsRecipients);
-
-        RewardsSettings memory settings = mockERC1155.computePaidMintRewards(numTokens);
-
-        assertEq(protocolRewards.totalSupply(), totalReward);
-        assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
-        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
-        assertEq(protocolRewards.balanceOf(collector), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
-        assertEq(protocolRewards.balanceOf(sourceReferral), settings.platformReferralReward);
-    }
-
-    function testRevert1155PaidMintInvalidEthWithrewardsRecipients(uint16 numTokens, uint256 pricePerToken) public {
-        vm.assume(numTokens > 0);
-        vm.assume(pricePerToken > 0 && pricePerToken < 100 ether);
-
-        mockERC1155.setSalePrice(pricePerToken);
-
-        vm.expectRevert(abi.encodeWithSignature("INVALID_ETH_AMOUNT()"));
-        mockERC1155.mint(collector, 0, numTokens, rewardsRecipients);
     }
 }
