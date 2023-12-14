@@ -1,24 +1,15 @@
 # @zoralabs/zora-1155-contracts
 
-## 2.6.0
+## 2.7.0
 
 ### Minor Changes
 
-- f0c380d: expanded rewards: added new platformReferral reward. 1155 mint fee increased to 0.00111 ether. `mintWithRewards` deprecated. `mint` now replaces mintWithRewards, and has been changed to take a `rewardsRecipient` array, containing, in order `mintReferral` and `platformReferral`
+- e990b9d: Remove platform referral from RewardsSplits. Use new signature for 1155 for `mint` which takes an array of reward recipients.
 
 ### Patch Changes
 
-- 98e78d7: Include Rewards errors in Premint abi
-- 050b689: Support platform referral in premint executor; it can call the new mint function if it exists on the 1155 contract. Correspondingly, added a supportsInterface check to the 1155 contract for the new mint function.
-- 3f8b18f: A fixed price with allowed minters module is now available for 1155 contracts to implement. The primary use case is if a platform would like a certain set of their addresses (and only them) to mint on behalf of their users.
-
-  Deployments:
-
-  - Zora (7777777): 0x61Cb091f8EC70029E393D31BA8F6D533c1308408
-  - Zora Goerli (999): 0x9b4aEDF0989B0AF7c5f7511F55d721E37384ca6E
-
-- Updated dependencies [98e78d7]
-  - @zoralabs/protocol-rewards@1.2.2
+- Updated dependencies [e990b9d]
+  - @zoralabs/protocol-rewards@1.2.3
 
 ## 2.5.4
 
