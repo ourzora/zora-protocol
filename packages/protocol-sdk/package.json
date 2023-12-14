@@ -23,6 +23,7 @@
     "viem": "^1.16.6"
   },
   "devDependencies": {
+    "@lavamoat/preinstall-always-fail": "2.0.0",
     "zoralabs-tsconfig": "*",
     "typescript": "^5.2.2",
     "vite": "4.5.0",

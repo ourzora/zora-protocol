@@ -27,6 +27,7 @@
     "solmate": "^6.1.0"
   },
   "devDependencies": {
+    "@lavamoat/preinstall-always-fail": "2.0.0",
     "@turnkey/api-key-stamper": "^0.1.1",
     "@turnkey/http": "^1.2.0",
     "@turnkey/viem": "^0.2.4",
