@@ -36,7 +36,6 @@
     "_imagine/"
   ],
   "dependencies": {
-    "@lavamoat/preinstall-always-fail": "2.0.0",
     "@openzeppelin/contracts": "4.9.2",
     "@zoralabs/openzeppelin-contracts-upgradeable": "4.8.4",
     "@zoralabs/protocol-rewards": "*",
@@ -45,6 +44,7 @@
     "solmate": "6.1.0"
   },
   "devDependencies": {
+    "@lavamoat/preinstall-always-fail": "2.0.0",
     "@types/node": "20.1.2",
     "@wagmi/cli": "1.0.1",
     "es-main": "1.2.0",
