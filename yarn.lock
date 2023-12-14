@@ -4073,7 +4073,7 @@ validate-npm-package-license@^3.0.1:
     spdx-correct "^3.0.0"
     spdx-expression-parse "^3.0.0"
 
-viem@1.18.15:
+viem@1.19.15:
   version "1.19.15"
   resolved "https://registry.yarnpkg.com/viem/-/viem-1.19.15.tgz#0f2307632fa0ef10dfab2d8fdd71fbb842a0a4f5"
   integrity sha512-rc87AkyrUUsoOAgMNYP+X/wN4GYwbhP87DkmsqQCYKxxQyzTX0+yliKs6Bxljbjr8ybU72GOb12Oyus6393AjQ==
