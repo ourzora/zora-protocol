@@ -15,6 +15,6 @@ Import abis and addresses for a contract from the package:
 ```typescript
 import { zoraCreator1155FactoryImplConfig } from "@zoralabs/protocol-deployments";
 
-// get addresses and abi for zora creator 1155 factory:
+// get addresses and abi for the zora creator 1155 factory:
 const { addresses, abi } = zoraCreator1155FactoryImplConfig;
 ```
