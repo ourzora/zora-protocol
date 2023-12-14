@@ -18,8 +18,6 @@ contract ProtocolRewardsTest is Test {
     address internal mintReferral;
     address internal firstMinter;
     address internal zora;
-    address internal sourceReferral;
-    address[] internal rewardsRecipients = new address[](2);
 
     function setUp() public virtual {
         protocolRewards = new ProtocolRewards();
@@ -32,8 +30,5 @@ contract ProtocolRewardsTest is Test {
         mintReferral = makeAddr("mintReferral");
         firstMinter = makeAddr("firstMinter");
         zora = makeAddr("zora");
-        sourceReferral = makeAddr("sourceReferral");
-        rewardsRecipients[0] = mintReferral;
-        rewardsRecipients[1] = sourceReferral;
     }
 }
