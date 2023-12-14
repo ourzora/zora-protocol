@@ -31,7 +31,7 @@ contract MockERC721 is ERC721, ERC721Rewards, ERC721RewardsStorageV1 {
     function mintWithRewards(address to, uint256 numTokens, address mintReferral) external payable {
         if (firstMinter == address(0)) firstMinter = to;
 
-        _handleRewards(msg.value, numTokens, salePrice, creator != address(0) ? creator : address(this), createReferral, mintReferral, firstMinter, address(0));
+        _handleRewards(msg.value, numTokens, salePrice, creator != address(0) ? creator : address(this), createReferral, mintReferral, firstMinter);
 
         for (uint256 i; i < numTokens; ++i) {
             _mint(to, currentTokenId++);
@@ -62,45 +62,7 @@ contract MockERC1155 is ERC1155, ERC1155Rewards, ERC1155RewardsStorageV1 {
     function mintWithRewards(address to, uint256 tokenId, uint256 numTokens, address mintReferral) external payable {
         if (firstMinters[tokenId] == address(0)) firstMinters[tokenId] = to;
 
-        uint256 remainingValue = _handleRewardsAndGetValueSent(
-            msg.value,
-            numTokens,
-            creator,
-            createReferrals[tokenId],
-            mintReferral,
-            firstMinters[tokenId],
-            address(0)
-        );
-
-        uint256 expectedRemainingValue = salePrice * numTokens;
-
-        if (remainingValue != expectedRemainingValue) revert MOCK_ERC1155_INVALID_REMAINING_VALUE();
-
-        _mint(to, tokenId, numTokens, "");
-    }
-
-    function mint(address to, uint256 tokenId, uint256 numTokens, address[] memory rewardsRecipients) external payable {
-        if (firstMinters[tokenId] == address(0)) firstMinters[tokenId] = to;
-
-        address mintReferral = address(0);
-        address platformReferral = address(0);
-
-        if (rewardsRecipients.length > 1) {
-            mintReferral = rewardsRecipients[0];
-            platformReferral = rewardsRecipients[1];
-        } else if (rewardsRecipients.length == 1) {
-            mintReferral = rewardsRecipients[0];
-        }
-
-        uint256 remainingValue = _handleRewardsAndGetValueSent(
-            msg.value,
-            numTokens,
-            creator,
-            createReferrals[tokenId],
-            mintReferral,
-            firstMinters[tokenId],
-            platformReferral
-        );
+        uint256 remainingValue = _handleRewardsAndGetValueSent(msg.value, numTokens, creator, createReferrals[tokenId], mintReferral, firstMinters[tokenId]);
 
         uint256 expectedRemainingValue = salePrice * numTokens;
 

@@ -27,7 +27,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     address internal zora;
     Zora1155Factory internal factoryProxy;
     ZoraCreator1155FactoryImpl factoryAtProxy;
-    uint256 internal mintFeeAmount = 0.00111 ether;
+    uint256 internal mintFeeAmount = 0.000777 ether;
     ZoraCreator1155PremintExecutorImpl preminterAtProxy;
 
     IZoraCreator1155PremintExecutor.MintArguments defaultMintArguments;

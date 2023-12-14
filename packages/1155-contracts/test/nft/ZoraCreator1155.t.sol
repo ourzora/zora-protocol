@@ -67,7 +67,6 @@ contract ZoraCreator1155Test is Test {
     address internal mintReferral;
     address internal createReferral;
     address internal zora;
-    address internal sourceReferral;
     address[] internal rewardsRecipients;
 
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
@@ -91,11 +90,9 @@ contract ZoraCreator1155Test is Test {
         mintReferral = makeAddr("mintReferral");
         createReferral = makeAddr("createReferral");
         zora = makeAddr("zora");
-        sourceReferral = makeAddr("sourceReferral");
 
-        rewardsRecipients = new address[](2);
+        rewardsRecipients = new address[](1);
         rewardsRecipients[0] = mintReferral;
-        rewardsRecipients[1] = sourceReferral;
 
         address adminAddress;
         (adminAddress, adminKey) = makeAddrAndKey("admin");
@@ -709,7 +706,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_mintFee_returnsMintFee() public {
-        assertEq(target.mintFee(), 0.00111 ether);
+        assertEq(target.mintFee(), 0.000777 ether);
     }
 
     function test_FreeMintRewards(uint256 quantity) public {
@@ -735,10 +732,7 @@ contract ZoraCreator1155Test is Test {
 
         assertEq(protocolRewards.balanceOf(recipient), 0);
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
-        assertEq(
-            protocolRewards.balanceOf(zora),
-            settings.zoraReward + settings.mintReferralReward + settings.createReferralReward + settings.platformReferralReward
-        );
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
     function test_FreeMintRewardsWithCreateReferral(uint256 quantity) public {
@@ -765,7 +759,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(recipient), 0);
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward);
     }
 
     function test_FreeMintRewardsWithMintReferral(uint256 quantity) public {
@@ -792,7 +786,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(recipient), 0);
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
     function test_FreeMintRewardsWithCreateAndMintReferral(uint256 quantity) public {
@@ -820,7 +814,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
     }
 
     function testRevert_InsufficientEthForFreeMintRewards(uint256 quantity) public {
@@ -881,10 +875,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(address(target).balance, totalSale);
 
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
-        assertEq(
-            protocolRewards.balanceOf(zora),
-            settings.zoraReward + settings.mintReferralReward + settings.createReferralReward + settings.platformReferralReward
-        );
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.createReferralReward);
     }
 
     function test_PaidMintRewardsWithMintReferral(uint256 quantity, uint256 salePrice) public {
@@ -930,7 +921,7 @@ contract ZoraCreator1155Test is Test {
 
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
     function test_PaidMintRewardsWithCreateReferral(uint256 quantity, uint256 salePrice) public {
@@ -975,7 +966,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(address(target).balance, totalSale);
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.mintReferralReward);
     }
 
     function test_PaidMintRewardsWithCreateAndMintReferral(uint256 quantity, uint256 salePrice) public {
@@ -1021,7 +1012,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(createReferral), settings.createReferralReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward);
     }
 
     function testRevert_InsufficientEthForPaidMintRewards(uint256 quantity, uint256 salePrice) public {
@@ -1167,7 +1158,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(address(uint160(mintRecipient))), 0);
         assertEq(protocolRewards.balanceOf(rewardRecipient), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
-        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward + settings.platformReferralReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
 
     function test_SetCreatorRewardRecipientForToken() public {
@@ -1591,7 +1582,6 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(recipient), 0);
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
-        assertEq(protocolRewards.balanceOf(sourceReferral), settings.platformReferralReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
     }
 
@@ -1637,7 +1627,6 @@ contract ZoraCreator1155Test is Test {
         assertEq(address(target).balance, totalSale);
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
-        assertEq(protocolRewards.balanceOf(sourceReferral), settings.platformReferralReward);
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
     }
 

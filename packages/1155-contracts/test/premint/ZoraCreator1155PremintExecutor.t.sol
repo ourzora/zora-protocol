@@ -10,6 +10,7 @@ import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
+import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
 import {ICreatorRoyaltiesControl} from "../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
@@ -33,7 +34,7 @@ contract ZoraCreator1155PreminterTest is Test {
     ZoraCreator1155FactoryImpl factory;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
-    uint256 internal mintFeeAmount = 0.00111 ether;
+    uint256 internal mintFeeAmount = 0.000777 ether;
 
     // setup contract config
     uint256 internal creatorPrivateKey;
@@ -470,45 +471,6 @@ contract ZoraCreator1155PreminterTest is Test {
         rewards.withdraw(mintReferral, mintReferralReward * quantityToMint);
 
         assertEq(mintReferral.balance, mintReferralReward * quantityToMint);
-    }
-
-    function test_platformReferral_getsMintReferralReward() public {
-        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
-
-        address platformReferral = makeAddr("platformReferral ");
-
-        address minter = makeAddr("minter");
-
-        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
-
-        uint256 quantityToMint = 4;
-
-        bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, block.chainid);
-
-        address[] memory mintRewardsRecipients = new address[](2);
-        mintRewardsRecipients[1] = platformReferral;
-
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: minter,
-            mintComment: "",
-            mintRewardsRecipients: mintRewardsRecipients
-        });
-
-        uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
-
-        vm.deal(minter, mintCost);
-        vm.prank(minter);
-        preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments);
-
-        // now get balance of mintReferral in ProtocolRewards - it should be mint referral reward amount * quantityToMint
-        uint256 platformReferralReward = 0.000111 ether * quantityToMint;
-
-        assertEq(rewards.balanceOf(platformReferral), platformReferralReward);
-
-        vm.prank(platformReferral);
-        rewards.withdraw(platformReferral, platformReferralReward);
-
-        assertEq(platformReferral.balance, platformReferralReward);
     }
 
     function testCreateTokenPerUid() public {
@@ -967,7 +929,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 mintFee = preminter.mintFee(contractAddress);
 
-        assertEq(mintFee, 0.00111 ether);
+        assertEq(mintFee, 0.000777 ether);
     }
 
     function test_mintFee_onNewContracts_returnsNewMintFee() external {
@@ -982,7 +944,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 mintFee = preminter.mintFee(contractAddress);
 
-        assertEq(mintFee, 0.00111 ether);
+        assertEq(mintFee, 0.000777 ether);
     }
 
     function _signAndExecutePremint(
