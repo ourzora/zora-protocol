@@ -39,11 +39,11 @@ async function signAndSaveSignatures({
 }) {
   const configFolder = path.resolve(
     __dirname,
-    `../deterministicConfig/${proxyName}/`
+    `../deterministicConfig/${proxyName}/`,
   );
   const configFile = path.join(configFolder, "params.json");
   const deterministicDeployConfig = JSON.parse(
-    await readFile(configFile, "utf-8")
+    await readFile(configFile, "utf-8"),
   );
 
   const deploymentConfig: DeterministicDeploymentConfig = {
@@ -66,19 +66,22 @@ async function signAndSaveSignatures({
           deterministicDeploymentConfig: deploymentConfig,
         }),
       };
-    })
+    }),
   );
 
   // aggregate above to object of key value pair indexed by chain id as number:
-  const byChainId = signedConfigs.reduce((acc, { chainId, signature }) => {
-    acc[chainId] = signature;
-    return acc;
-  }, {} as { [key: number]: string });
+  const byChainId = signedConfigs.reduce(
+    (acc, { chainId, signature }) => {
+      acc[chainId] = signature;
+      return acc;
+    },
+    {} as { [key: number]: string },
+  );
 
   // write as json to ../deterministicConfig/factoryDeploySignatures.json:
   await writeFile(
     path.join(configFolder, "signatures.json"),
-    JSON.stringify(byChainId, null, 2)
+    JSON.stringify(byChainId, null, 2),
   );
 }
 
@@ -96,11 +99,11 @@ async function signAndSaveUpgradeGate({
 }) {
   const configFolder = path.resolve(
     __dirname,
-    `../deterministicConfig/${proxyName}/`
+    `../deterministicConfig/${proxyName}/`,
   );
   const configFile = path.join(configFolder, "params.json");
   const deterministicDeployConfig = JSON.parse(
-    await readFile(configFile, "utf-8")
+    await readFile(configFile, "utf-8"),
   );
 
   const deploymentConfig: GenericDeploymentConfiguration = {
@@ -135,25 +138,28 @@ async function signAndSaveUpgradeGate({
           initCall,
         }),
       };
-    })
+    }),
   );
 
   // aggregate above to object of key value pair indexed by chain id as number:
-  const byChainId = signedConfigs.reduce((acc, { chainId, signature }) => {
-    acc[chainId] = signature;
-    return acc;
-  }, {} as { [key: number]: string });
+  const byChainId = signedConfigs.reduce(
+    (acc, { chainId, signature }) => {
+      acc[chainId] = signature;
+      return acc;
+    },
+    {} as { [key: number]: string },
+  );
 
   // write as json to ../deterministicConfig/factoryDeploySignatures.json:
   await writeFile(
     path.join(configFolder, "signatures.json"),
-    JSON.stringify(byChainId, null, 2)
+    JSON.stringify(byChainId, null, 2),
   );
 }
 
 const getChainConfigs = async () => {
   const chainConfigsFiles = await glob(
-    path.resolve(__dirname, "../chainConfigs/*.json")
+    path.resolve(__dirname, "../chainConfigs/*.json"),
   );
 
   const chainConfigs = await Promise.all(
@@ -167,7 +173,7 @@ const getChainConfigs = async () => {
         chainId,
         owner: fileContents["FACTORY_OWNER"]! as Address,
       };
-    })
+    }),
   );
 
   return chainConfigs;
@@ -175,7 +181,7 @@ const getChainConfigs = async () => {
 
 const getFactoryImplConfigs = async () => {
   const addresseFiles = await glob(
-    path.resolve(__dirname, "../addresses/*.json")
+    path.resolve(__dirname, "../addresses/*.json"),
   );
 
   const chainConfigs = await Promise.all(
@@ -195,7 +201,7 @@ const getFactoryImplConfigs = async () => {
         implementationAddress: fileContents["FACTORY_IMPL"] as Address,
         owner: chainConfig["FACTORY_OWNER"] as Address,
       };
-    })
+    }),
   );
 
   return chainConfigs;
@@ -203,7 +209,7 @@ const getFactoryImplConfigs = async () => {
 
 const getPreminterImplConfigs = async () => {
   const addresseFiles = await glob(
-    path.resolve(__dirname, "../addresses/*.json")
+    path.resolve(__dirname, "../addresses/*.json"),
   );
 
   const chainConfigs = await Promise.all(
@@ -223,7 +229,7 @@ const getPreminterImplConfigs = async () => {
         implementationAddress: fileContents["PREMINTER_IMPL"] as Address,
         owner: chainConfig["FACTORY_OWNER"] as Address,
       };
-    })
+    }),
   );
 
   return chainConfigs.filter((x) => x.implementationAddress !== undefined);
@@ -240,14 +246,14 @@ async function main() {
     new ApiKeyStamper({
       apiPublicKey: process.env.TURNKEY_API_PUBLIC_KEY!,
       apiPrivateKey: process.env.TURNKEY_API_PRIVATE_KEY!,
-    })
+    }),
   );
 
   // Create the Viem custom account
   const turnkeyAccount = await createAccount({
     client: httpClient,
     organizationId: process.env.TURNKEY_ORGANIZATION_ID!,
-    privateKeyId: process.env.TURNKEY_PRIVATE_KEY_ID!,
+    signWith: process.env.TURNKEY_PRIVATE_KEY_ID!,
     // optional; will be fetched from Turnkey if not provided
     ethereumAddress: process.env.TURNKEY_TARGET_ADDRESS!,
   });

@@ -13,7 +13,7 @@
     "test-gas": "forge test --gas-report",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'wagmi.config.ts'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",
-    "copy-abis": "tsx script/bundle-abis.ts",
+    "copy-abis": "yarn tsx script/bundle-abis.ts",
     "lint": "yarn run prettier:check",
     "coverage": "forge coverage --report lcov",
     "write-gas-report": "forge test --gas-report > gasreport.ansi",
@@ -36,24 +36,22 @@
     "_imagine/"
   ],
   "dependencies": {
-    "@openzeppelin/contracts": "4.9.2",
-    "@zoralabs/openzeppelin-contracts-upgradeable": "4.8.4",
-    "@zoralabs/protocol-rewards": "*",
-    "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
+    "solmate": "6.1.0",
     "forge-std": "https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80",
-    "solady": "^0.0.123",
-    "solmate": "^6.1.0"
+    "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
+    "@zoralabs/protocol-rewards": "*",
+    "@zoralabs/openzeppelin-contracts-upgradeable": "4.8.4",
+    "@openzeppelin/contracts": "4.9.2"
   },
   "devDependencies": {
-    "@wagmi/cli": "^1.0.1",
-    "tsx": "^3.13.0",
-    "glob": "^10.2.2",
-    "prettier": "^2.8.8",
-    "es-main": "^1.2.0",
-    "prettier-plugin-solidity": "^1.1.3",
-    "@types/node": "^20.1.2",
-    "tsup": "^7.2.0",
     "zoralabs-tsconfig": "*",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "tsx": "^3.13.0",
+    "tsup": "^7.2.0",
+    "glob": "^10.2.2",
+    "es-main": "^1.2.0",
+    "@wagmi/cli": "^1.0.1",
+    "@types/node": "^20.1.2",
+    "@lavamoat/preinstall-always-fail": "2.0.0"
   }
 }
