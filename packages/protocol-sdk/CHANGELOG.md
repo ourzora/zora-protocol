@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.4.3
+
+### Patch Changes
+
+- 92b1b0e: Export premint conversions
+
 ## 0.4.2
 
 ### Patch Changes
