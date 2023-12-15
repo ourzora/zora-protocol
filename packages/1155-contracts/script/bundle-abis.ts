@@ -96,7 +96,7 @@ async function saveContractsAbisJson(contracts: { abi: any; name: string }[]) {
       const abiJsonPath = `${abisFolder}/${contract.name}.json`;
 
       await fs.writeFile(abiJsonPath, abiJson);
-    })
+    }),
   );
 }
 

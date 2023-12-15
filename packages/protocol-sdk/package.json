@@ -16,16 +16,17 @@
   },
   "dependencies": {
     "@zoralabs/protocol-deployments": "*",
-    "abitype": "^0.8.7",
+    "abitype": "^0.10.3",
     "vite": "4.5.0"
   },
   "peerDependencies": {
     "viem": "^1.19.15"
   },
   "devDependencies": {
+    "@lavamoat/preinstall-always-fail": "2.0.0",
     "zoralabs-tsconfig": "*",
     "typescript": "^5.2.2",
-    "vite": "4.5.0",
-    "vitest": "0.34.6"
+    "vite": "^4.5.0",
+    "vitest": "^0.34.6"
   }
 }
