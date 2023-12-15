@@ -1,0 +1,45 @@
+on:
+  workflow_call:
+    inputs:
+      package_folder:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Storage layout inspection
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set commit status as pending
+        uses: myrotvorets/set-commit-status-action@v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: pending
+          context: Storage Layout ${{ inputs.name }}
+
+      - uses: actions/checkout@v3
+
+      - name: Install node deps and founry
+        uses: ./.github/actions/setup_deps
+
+      - name: Cache build
+        uses: ./.github/actions/cache_foundry_build
+        with:
+          package_folder: ${{ inputs.package_folder }}
+
+      - name: "Inspect Storage Layout"
+        run: cd ${{ inputs.package_folder}} && yarn storage-inspect:check
+
+      - name: Set final commit status
+        uses: myrotvorets/set-commit-status-action@v2.0.0
+        if: always()
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          context: Storage Layout ${{ inputs.name }}

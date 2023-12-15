@@ -165,7 +165,7 @@ library ZoraCreator1155Attribution {
 
     bytes32 constant ATTRIBUTION_DOMAIN_V2 =
         keccak256(
-            "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address royaltyRecipient,address fixedPriceMinter,address createReferral)"
+            "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint64 maxTokensPerAddress,uint96 pricePerToken,uint64 mintStart,uint64 mintDuration,uint32 royaltyBPS,address payoutRecipient,address fixedPriceMinter,address createReferral)"
         );
 
     function hashPremint(PremintConfigV2 memory premintConfig) internal pure returns (bytes32) {
@@ -208,7 +208,7 @@ library ZoraCreator1155Attribution {
         return
             keccak256(
                 abi.encode(
-                    TOKEN_DOMAIN_V1,
+                    TOKEN_DOMAIN_V2,
                     _stringHash(tokenConfig.tokenURI),
                     tokenConfig.maxSupply,
                     tokenConfig.maxTokensPerAddress,
@@ -234,25 +234,17 @@ library ZoraCreator1155Attribution {
     /// @dev copied from ZoraCreator1155Impl
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
-    function isValidSignature(
-        address originalPremintCreator,
-        address contractAddress,
-        bytes32 structHash,
-        bytes32 hashedVersion,
-        bytes calldata signature
-    ) internal view returns (bool isValid, address recoveredSigner) {
-        recoveredSigner = recoverSignerHashed(structHash, signature, contractAddress, hashedVersion, block.chainid);
-
-        if (recoveredSigner == address(0)) {
-            return (false, address(0));
-        }
-
-        // if contract hasn't been created, signer must be the contract admin on the config
+    function isAuthorizedToCreatePremint(
+        address signer,
+        address premintContractConfigContractAdmin,
+        address contractAddress
+    ) internal view returns (bool authorized) {
+        // if contract hasn't been created, signer must be the contract admin on the premint config
         if (contractAddress.code.length == 0) {
-            isValid = recoveredSigner == originalPremintCreator;
+            return signer == premintContractConfigContractAdmin;
         } else {
             // if contract has been created, signer must have mint new token permission
-            isValid = IZoraCreator1155(contractAddress).isAdminOrRole(recoveredSigner, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
+            authorized = IZoraCreator1155(contractAddress).isAdminOrRole(signer, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
         }
     }
 }
@@ -316,7 +308,7 @@ library PremintTokenSetup {
             abi.encodeWithSelector(
                 ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                _buildNewSalesConfig(pricePerToken, maxTokensPerAddress, mintDuration)
+                _buildNewSalesConfig(pricePerToken, maxTokensPerAddress, mintDuration, payoutRecipient)
             )
         );
 
@@ -331,7 +323,8 @@ library PremintTokenSetup {
     function _buildNewSalesConfig(
         uint96 pricePerToken,
         uint64 maxTokensPerAddress,
-        uint64 duration
+        uint64 duration,
+        address payoutRecipient
     ) private view returns (ZoraCreatorFixedPriceSaleStrategy.SalesConfig memory) {
         uint64 saleStart = uint64(block.timestamp);
         uint64 saleEnd = duration == 0 ? type(uint64).max : saleStart + duration;
@@ -342,7 +335,7 @@ library PremintTokenSetup {
                 saleStart: saleStart,
                 saleEnd: saleEnd,
                 maxTokensPerAddress: maxTokensPerAddress,
-                fundsRecipient: address(0)
+                fundsRecipient: payoutRecipient
             });
     }
 }
@@ -398,7 +391,7 @@ library DelegatedTokenCreation {
         if (premintVersion == ZoraCreator1155Attribution.HASHED_VERSION_1) {
             PremintConfig memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfig));
 
-            creatorAttribution = _recoverCreatorAttribution(
+            creatorAttribution = recoverCreatorAttribution(
                 ZoraCreator1155Attribution.VERSION_1,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
@@ -409,7 +402,7 @@ library DelegatedTokenCreation {
         } else {
             PremintConfigV2 memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfigV2));
 
-            creatorAttribution = _recoverCreatorAttribution(
+            creatorAttribution = recoverCreatorAttribution(
                 ZoraCreator1155Attribution.VERSION_2,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
@@ -420,12 +413,23 @@ library DelegatedTokenCreation {
         }
     }
 
-    function _recoverCreatorAttribution(
+    function supportedPremintSignatureVersions() external pure returns (string[] memory versions) {
+        return _supportedPremintSignatureVersions();
+    }
+
+    function _supportedPremintSignatureVersions() internal pure returns (string[] memory versions) {
+        versions = new string[](2);
+        versions[0] = ZoraCreator1155Attribution.VERSION_1;
+        versions[1] = ZoraCreator1155Attribution.VERSION_2;
+    }
+
+    function recoverCreatorAttribution(
         string memory version,
         bytes32 structHash,
         address tokenContract,
         bytes calldata signature
-    ) private view returns (DecodedCreatorAttribution memory attribution) {
+    ) internal view returns (DecodedCreatorAttribution memory attribution) {
+        attribution.structHash = structHash;
         attribution.version = version;
 
         attribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(structHash, signature, tokenContract, keccak256(bytes(version)), block.chainid);
@@ -454,6 +458,8 @@ library DelegatedTokenCreation {
         uint256 nextTokenId
     ) private view returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
         validatePremint(premintConfig.tokenConfig.mintStart, premintConfig.deleted);
+
+        params.uid = premintConfig.uid;
 
         tokenSetupActions = PremintTokenSetup.makeSetupNewTokenCalls(nextTokenId, premintConfig.tokenConfig);
 

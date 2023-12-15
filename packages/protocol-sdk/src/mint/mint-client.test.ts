@@ -1,9 +1,9 @@
-import { parseAbi, parseEther } from "viem";
+import { Address, parseAbi, parseEther } from "viem";
 import { zora } from "viem/chains";
 import { describe, expect } from "vitest";
 import { createMintClient } from "./mint-client";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
-import { anvilTest } from "src/anvil";
+import { anvilTest, forkUrls, makeAnvilTest } from "src/anvil";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
@@ -19,23 +19,20 @@ describe("mint-helper", () => {
         address: creatorAccount,
         value: parseEther("2000"),
       });
-      const targetContract = "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
+      const targetContract: Address =
+        "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
       const targetTokenId = 1n;
       const minter = createMintClient({ chain: zora });
 
-      const { simulateContractParameters: params } =
-        await minter.makePrepareMintTokenParams({
-          publicClient,
-          minterAccount: creatorAccount,
-          mintable: await minter.getMintable({
-            tokenId: targetTokenId,
-            tokenContract: targetContract,
-          }),
-          mintArguments: {
-            mintToAddress: creatorAccount,
-            quantityToMint: 1,
-          },
-        });
+      const params = await minter.makePrepareMintTokenParams({
+        minterAccount: creatorAccount,
+        tokenId: targetTokenId,
+        tokenAddress: targetContract,
+        mintArguments: {
+          mintToAddress: creatorAccount,
+          quantityToMint: 1,
+        },
+      });
 
       const oldBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
@@ -61,7 +58,10 @@ describe("mint-helper", () => {
     12 * 1000,
   );
 
-  anvilTest(
+  makeAnvilTest({
+    forkUrl: forkUrls.zoraMainnet,
+    forkBlockNumber: 6133407,
+  })(
     "mints a new 721 token",
     async ({ viemClients }) => {
       const { testClient, walletClient, publicClient } = viemClients;
@@ -71,23 +71,20 @@ describe("mint-helper", () => {
         value: parseEther("2000"),
       });
 
-      const targetContract = "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
+      const targetContract: Address =
+        "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
       const targetTokenId = undefined;
       const minter = createMintClient({ chain: zora });
 
-      const { simulateContractParameters: prepared } =
-        await minter.makePrepareMintTokenParams({
-          mintable: await minter.getMintable({
-            tokenContract: targetContract,
-            tokenId: targetTokenId,
-          }),
-          publicClient,
-          minterAccount: creatorAccount,
-          mintArguments: {
-            mintToAddress: creatorAccount,
-            quantityToMint: 1,
-          },
-        });
+      const params = await minter.makePrepareMintTokenParams({
+        tokenId: targetTokenId,
+        tokenAddress: targetContract,
+        minterAccount: creatorAccount,
+        mintArguments: {
+          mintToAddress: creatorAccount,
+          quantityToMint: 1,
+        },
+      });
       const oldBalance = await publicClient.readContract({
         abi: erc721ABI,
         address: targetContract,
@@ -95,7 +92,7 @@ describe("mint-helper", () => {
         args: [creatorAccount],
       });
 
-      const simulated = await publicClient.simulateContract(prepared);
+      const simulated = await publicClient.simulateContract(params);
 
       const hash = await walletClient.writeContract(simulated.request);
 

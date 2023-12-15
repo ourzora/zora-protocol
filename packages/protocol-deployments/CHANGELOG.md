@@ -1,5 +1,58 @@
 # @zoralabs/premint-sdk
 
+## 0.0.11
+
+### Patch Changes
+
+- bff853a: Include latest abi in protocol deployments
+
+## 0.0.10
+
+### Patch Changes
+
+- 68c70a9: Tie protocol deployments to v2.5.4 of 1155
+- Updated dependencies [f0c380d]
+- Updated dependencies [98e78d7]
+- Updated dependencies [050b689]
+- Updated dependencies [3f8b18f]
+  - @zoralabs/zora-1155-contracts@2.6.0
+
+## 0.0.9
+
+### Patch Changes
+
+- 5156b9e: Deploy latest premint executor to zora sepolia and goerli
+- Updated dependencies [7e00197]
+  - @zoralabs/zora-1155-contracts@2.5.4
+
+## 0.0.8
+
+### Patch Changes
+
+- 4b77307: Deployed 3.5.3 to zora sepolia and goerli
+
+## 0.0.7
+
+### Patch Changes
+
+- 128b05c: Updated determinstic preminter deployment script to not fail if already deployed
+- 1d58cd1: Deployed 2.5.2 to zora sepolia and zora goerli
+- 128b05c: Deployed 2.5.1 to zora sepolia and zora goerli
+- Updated dependencies [e4edaac]
+  - @zoralabs/zora-1155-contracts@2.5.2
+
+## 0.0.6
+
+### Patch Changes
+
+- f3b7df8: Deployed 2.4.0 with collaborators to zora-goerli, zora-sepolia, base, optimism, mainnet
+- Updated dependencies [885ffa4]
+- Updated dependencies [ffb5cb7]
+- Updated dependencies [ffb5cb7]
+- Updated dependencies [d84721a]
+- Updated dependencies [cacb543]
+  - @zoralabs/zora-1155-contracts@2.5.0
+
 ## 0.0.5
 
 ### Patch Changes

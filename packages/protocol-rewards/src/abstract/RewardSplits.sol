@@ -11,13 +11,15 @@ struct RewardsSettings {
     uint256 zoraReward;
 }
 
-/// @notice Common logic for between Zora ERC-721 & ERC-1155 contracts for protocol reward splits & deposits
-abstract contract RewardSplits {
+interface IRewardsErrors {
     error CREATOR_FUNDS_RECIPIENT_NOT_SET();
     error INVALID_ADDRESS_ZERO();
     error INVALID_ETH_AMOUNT();
     error ONLY_CREATE_REFERRAL();
+}
 
+/// @notice Common logic for between Zora ERC-721 & ERC-1155 contracts for protocol reward splits & deposits
+abstract contract RewardSplits is IRewardsErrors {
     uint256 internal constant TOTAL_REWARD_PER_MINT = 0.000777 ether;
 
     uint256 internal constant CREATOR_REWARD = 0.000333 ether;

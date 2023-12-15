@@ -26,7 +26,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
         zora = makeAddr("zora");
         protocolRewards = new ProtocolRewards();
         zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
-        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
+        target = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
         vm.prank(admin);
@@ -103,7 +103,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_mint() public {
         SimpleMinter minter = new SimpleMinter();
         vm.expectRevert();
-        target.mint(IMinter1155(address(minter)), 1, 1, "");
+        target.mintWithRewards(IMinter1155(address(minter)), 1, 1, "", address(0));
     }
 
     function test_openAccessFails_setTokenMetadataRenderer() public {

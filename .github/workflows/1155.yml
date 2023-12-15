@@ -13,6 +13,21 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       package_folder: packages/1155-contracts
+      name: 1155 NFT Contracts
+
+  storage_layout:
+    needs: build
+    uses: ./.github/workflows/storage_layout.yml
+    with:
+      package_folder: packages/1155-contracts
+      name: 1155 NFT Contracts
+
+  contract_sizes:
+    needs: build
+    uses: ./.github/workflows/contract_sizes.yml
+    with:
+      package_folder: packages/1155-contracts
+      name: 1155 NFT Contracts
 
   coverage:
     uses: ./.github/workflows/coverage.yml

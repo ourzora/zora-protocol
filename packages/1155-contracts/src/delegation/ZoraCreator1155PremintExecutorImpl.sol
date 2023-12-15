@@ -15,15 +15,9 @@ import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorage
 import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExecutorImplLib.sol";
 import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
-
-struct MintArguments {
-    // which account should receive the tokens minted.
-    address mintRecipient;
-    // comment to add to the mint
-    string mintComment;
-    // account that referred the minter to mint the tokens, this account will receive a mint referral award.  If set to address(0), no account will get the mint referral reward
-    address mintReferral;
-}
+import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
+import {IRewardsErrors} from "@zoralabs/protocol-rewards/src/interfaces/IRewardsErrors.sol";
 
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
@@ -34,7 +28,8 @@ contract ZoraCreator1155PremintExecutorImpl is
     Ownable2StepUpgradeable,
     UUPSUpgradeable,
     IHasContractName,
-    IZoraCreator1155Errors
+    IZoraCreator1155Errors,
+    IRewardsErrors
 {
     IZoraCreator1155Factory public immutable zora1155Factory;
 
@@ -152,7 +147,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         return (true, ERC1155DelegationStorageV1(contractAddress).delegatedTokenId(uid));
     }
 
-    // @custom:deprecated use isValidSignatureV1 instead
+    // @custom:deprecated use isAuthorizedToCreatePremint instead
     function isValidSignature(
         ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
@@ -160,57 +155,34 @@ contract ZoraCreator1155PremintExecutorImpl is
     ) public view returns (bool isValid, address contractAddress, address recoveredSigner) {
         contractAddress = getContractAddress(contractConfig);
 
-        (isValid, recoveredSigner) = isValidSignatureV1(contractConfig.contractAdmin, contractAddress, premintConfig, signature);
-    }
-
-    /// @notice Recovers the signer of a premint, and checks if the signer is authorized to sign the premint.
-    /// @dev for use with v1 of premint config, PremintConfig
-    /// @param premintContractConfigContractAdmin If this contract was created via premint, the original contractConfig.contractAdmin.  Otherwise, set to address(0)
-    /// @param contractAddress The determinstic 1155 contract address the premint is for
-    /// @param premintConfig The premint config
-    /// @param signature The signature of the premint
-    /// @return isValid Whether the signature is valid
-    /// @return recoveredSigner The signer of the premint
-    function isValidSignatureV1(
-        address premintContractConfigContractAdmin,
-        address contractAddress,
-        PremintConfig calldata premintConfig,
-        bytes calldata signature
-    ) public view returns (bool isValid, address recoveredSigner) {
-        bytes32 hashedPremint = ZoraCreator1155Attribution.hashPremint(premintConfig);
-
-        (isValid, recoveredSigner) = ZoraCreator1155Attribution.isValidSignature(
-            premintContractConfigContractAdmin,
+        recoveredSigner = ZoraCreator1155Attribution.recoverSignerHashed(
+            ZoraCreator1155Attribution.hashPremint(premintConfig),
+            signature,
             contractAddress,
-            hashedPremint,
             ZoraCreator1155Attribution.HASHED_VERSION_1,
-            signature
+            block.chainid
         );
+
+        if (recoveredSigner == address(0)) {
+            return (false, address(0), recoveredSigner);
+        }
+
+        isValid = isAuthorizedToCreatePremint(recoveredSigner, contractConfig.contractAdmin, contractAddress);
     }
 
-    /// @notice Recovers the signer of a premint, and checks if the signer is authorized to sign the premint.
-    /// @dev for use with v2 of premint config, PremintConfig
+    /// @notice Checks if the signer of a premint is authorized to sign a premint for a given contract.  If the contract hasn't been created yet,
+    /// then the signer is authorized if the signer's address matches contractConfig.contractAdmin.  Otherwise, the signer must have the PERMISSION_BIT_MINTER
+    /// role on the contract
+    /// @param signer The signer of the premint
     /// @param premintContractConfigContractAdmin If this contract was created via premint, the original contractConfig.contractAdmin.  Otherwise, set to address(0)
     /// @param contractAddress The determinstic 1155 contract address the premint is for
-    /// @param premintConfig The premint config
-    /// @param signature The signature of the premint
-    /// @return isValid Whether the signature is valid
-    /// @return recoveredSigner The signer of the premint
-    function isValidSignatureV2(
+    /// @return isAuthorized Whether the signer is authorized
+    function isAuthorizedToCreatePremint(
+        address signer,
         address premintContractConfigContractAdmin,
-        address contractAddress,
-        PremintConfigV2 calldata premintConfig,
-        bytes calldata signature
-    ) public view returns (bool isValid, address recoveredSigner) {
-        bytes32 hashedPremint = ZoraCreator1155Attribution.hashPremint(premintConfig);
-
-        (isValid, recoveredSigner) = ZoraCreator1155Attribution.isValidSignature(
-            premintContractConfigContractAdmin,
-            contractAddress,
-            hashedPremint,
-            ZoraCreator1155Attribution.HASHED_VERSION_2,
-            signature
-        );
+        address contractAddress
+    ) public view returns (bool isAuthorized) {
+        return ZoraCreator1155Attribution.isAuthorizedToCreatePremint(signer, premintContractConfigContractAdmin, contractAddress);
     }
 
     // upgrade related functionality
@@ -221,6 +193,11 @@ contract ZoraCreator1155PremintExecutorImpl is
     }
 
     // upgrade functionality
+    /// @notice Returns the current implementation address
+    function implementation() external view returns (address) {
+        return _getImplementation();
+    }
+
     error UpgradeToMismatchedContractName(string expected, string actual);
 
     /// @notice Ensures the caller is authorized to upgrade the contract
@@ -247,8 +224,16 @@ contract ZoraCreator1155PremintExecutorImpl is
         string calldata mintComment
     ) external payable returns (uint256 newTokenId) {
         // encode legacy mint arguments to call current function:
-        MintArguments memory mintArguments = MintArguments({mintRecipient: msg.sender, mintComment: mintComment, mintReferral: address(0)});
+        MintArguments memory mintArguments = MintArguments({mintRecipient: msg.sender, mintComment: mintComment, mintRewardsRecipients: new address[](0)});
 
         return premintV1(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
+    }
+
+    function mintFee(address collectionAddress) external view returns (uint256) {
+        if (collectionAddress.code.length == 0) {
+            return ZoraCreator1155FactoryImpl(address(zora1155Factory)).zora1155Impl().mintFee();
+        }
+
+        return IZoraCreator1155(collectionAddress).mintFee();
     }
 }

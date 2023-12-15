@@ -28,13 +28,15 @@ async function waitForAnvilInit(anvil: any) {
   });
 }
 
+export type AnvilTestForkSettings = {
+  forkUrl: string;
+  forkBlockNumber: number;
+};
+
 export const makeAnvilTest = ({
   forkUrl,
   forkBlockNumber,
-}: {
-  forkUrl: string;
-  forkBlockNumber: number;
-}) =>
+}: AnvilTestForkSettings) =>
   test.extend<AnvilViemClientsTest>({
     viemClients: async ({ task }, use) => {
       console.log("setting up clients for ", task.name);
@@ -93,9 +95,10 @@ export const makeAnvilTest = ({
 export const forkUrls = {
   zoraMainnet: "https://rpc.zora.co/",
   zoraGoerli: "https://testnet.rpc.zora.co",
+  zoraSepolia: "https://sepolia.rpc.zora.energy",
 };
 
 export const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
-  forkBlockNumber: 6133407,
+  forkBlockNumber: 7866332,
 });

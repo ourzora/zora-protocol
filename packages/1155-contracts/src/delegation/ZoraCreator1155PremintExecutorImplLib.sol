@@ -8,6 +8,7 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
 
 interface ILegacyZoraCreator1155DelegatedMinter {
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
@@ -121,8 +122,15 @@ library ZoraCreator1155PremintExecutorImplLib {
         IZoraCreator1155PremintExecutor.MintArguments memory mintArguments
     ) internal {
         bytes memory mintSettings = abi.encode(mintArguments.mintRecipient, mintArguments.mintComment);
-        if (quantityToMint != 0)
-            // mint the number of specified tokens to the executor
-            tokenContract.mintWithRewards{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintSettings, mintArguments.mintReferral);
+        if (quantityToMint != 0) {
+            if (tokenContract.supportsInterface(type(IMintWithRewardsRecipients).interfaceId)) {
+                tokenContract.mint{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintArguments.mintRewardsRecipients, mintSettings);
+            } else {
+                // mint the number of specified tokens to the executor
+                address mintReferral = mintArguments.mintRewardsRecipients.length > 0 ? mintArguments.mintRewardsRecipients[0] : address(0);
+
+                tokenContract.mintWithRewards{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintSettings, mintReferral);
+            }
+        }
     }
 }

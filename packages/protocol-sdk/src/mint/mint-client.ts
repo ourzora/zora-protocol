@@ -2,18 +2,21 @@ import {
   Address,
   Chain,
   PublicClient,
+  createPublicClient,
   encodeAbiParameters,
-  parseAbi,
   parseAbiParameters,
   zeroAddress,
+  http,
 } from "viem";
-import { ClientBase } from "../apis/client-base";
-import { MintAPIClient, MintableGetTokenResponse } from "./mint-api-client";
+import { IHttpClient } from "../apis/http-api-base";
+import { MintAPIClient, SalesConfigAndTokenInfo } from "./mint-api-client";
 import { SimulateContractParameters } from "viem";
 import {
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
+import { GenericTokenIdTypes } from "src/types";
+import { zora721Abi } from "src/constants";
 
 class MintError extends Error {}
 class MintInactiveError extends Error {}
@@ -30,199 +33,199 @@ type MintArguments = {
   mintToAddress: Address;
 };
 
-type MintParameters = {
-  mintArguments: MintArguments;
-  publicClient: PublicClient;
-  mintable: MintableGetTokenResponse;
-  sender: Address;
-};
+class MintClient {
+  readonly apiClient: MintAPIClient;
+  readonly publicClient: PublicClient;
 
-const zora721Abi = parseAbi([
-  "function mintWithRewards(address recipient, uint256 quantity, string calldata comment, address mintReferral) external payable",
-  "function zoraFeeForAmount(uint256 amount) public view returns (address, uint256)",
-] as const);
-
-class MintClient extends ClientBase {
-  apiClient: typeof MintAPIClient;
-
-  constructor(chain: Chain, apiClient?: typeof MintAPIClient) {
-    super(chain);
-
-    if (!apiClient) {
-      apiClient = MintAPIClient;
-    }
-    this.apiClient = apiClient;
+  constructor(
+    chain: Chain,
+    publicClient?: PublicClient,
+    httpClient?: IHttpClient,
+  ) {
+    this.apiClient = new MintAPIClient(chain.id, httpClient);
+    this.publicClient =
+      publicClient || createPublicClient({ chain, transport: http() });
   }
 
-  async getMintable({
-    tokenContract,
-    tokenId,
-  }: {
-    tokenContract: Address;
-    tokenId?: bigint | number | string;
-  }) {
-    return this.apiClient.getMintable(
-      {
-        chain_name: this.network.zoraBackendChainName,
-        collection_address: tokenContract,
-      },
-      { token_id: tokenId?.toString() },
-    );
-  }
-
+  /**
+   * Returns the parameters needed to prepare a transaction mint a token.
+   * @param param0.minterAccount The account that will mint the token.
+   * @param param0.mintable The mintable token to mint.
+   * @param param0.mintArguments The arguments for the mint (mint recipient, comment, mint referral, quantity to mint)
+   * @returns
+   */
   async makePrepareMintTokenParams({
-    publicClient,
-    minterAccount,
-    mintable,
-    mintArguments,
+    ...rest
   }: {
-    publicClient: PublicClient;
-    mintable: MintableGetTokenResponse;
     minterAccount: Address;
+    tokenAddress: Address;
+    tokenId?: GenericTokenIdTypes;
     mintArguments: MintArguments;
-  }): Promise<{ simulateContractParameters: SimulateContractParameters }> {
-    if (!mintable) {
-      throw new MintError("No mintable found");
-    }
-
-    if (!mintable.is_active) {
-      throw new MintInactiveError("Minting token is inactive");
-    }
-
-    if (!mintable.mint_context) {
-      throw new MintError("No minting context data from zora API");
-    }
-
-    if (
-      !["zora_create", "zora_create_1155"].includes(
-        mintable.mint_context?.mint_context_type!,
-      )
-    ) {
-      throw new MintError(
-        `Mintable type ${mintable.mint_context.mint_context_type} is currently unsupported.`,
-      );
-    }
-
-    const thisPublicClient = this.getPublicClient(publicClient);
-
-    if (mintable.mint_context.mint_context_type === "zora_create_1155") {
-      return {
-        simulateContractParameters: await this.prepareMintZora1155({
-          publicClient: thisPublicClient,
-          mintArguments,
-          sender: minterAccount,
-          mintable,
-        }),
-      };
-    }
-    if (mintable.mint_context.mint_context_type === "zora_create") {
-      return {
-        simulateContractParameters: await this.prepareMintZora721({
-          publicClient: thisPublicClient,
-          mintArguments,
-          sender: minterAccount,
-          mintable,
-        }),
-      };
-    }
-
-    throw new Error("Mintable type not found or recognized.");
-  }
-
-  private async prepareMintZora1155({
-    mintable,
-    sender,
-    publicClient,
-    mintArguments,
-  }: MintParameters) {
-    const mintQuantity = BigInt(mintArguments.quantityToMint);
-
-    const address = mintable.collection.address as Address;
-
-    const mintFee = await publicClient.readContract({
-      abi: zoraCreator1155ImplABI,
-      functionName: "mintFee",
-      address,
+  }): Promise<SimulateContractParameters> {
+    return makePrepareMintTokenParams({
+      ...rest,
+      apiClient: this.apiClient,
+      publicClient: this.publicClient,
     });
-
-    const tokenFixedPriceMinter = await this.apiClient.getSalesConfigFixedPrice(
-      {
-        contractAddress: mintable.contract_address,
-        tokenId: mintable.token_id!,
-        subgraphUrl: this.network.subgraphUrl,
-      },
-    );
-
-    const result: SimulateContractParameters<
-      typeof zoraCreator1155ImplABI,
-      "mintWithRewards"
-    > = {
-      abi: zoraCreator1155ImplABI,
-      functionName: "mintWithRewards",
-      account: sender,
-      value: (mintFee + BigInt(mintable.cost.native_price.raw)) * mintQuantity,
-      address,
-      /* args: minter, tokenId, quantity, minterArguments, mintReferral */
-      args: [
-        (tokenFixedPriceMinter ||
-          zoraCreatorFixedPriceSaleStrategyAddress[999]) as Address,
-        BigInt(mintable.token_id!),
-        mintQuantity,
-        encodeAbiParameters(parseAbiParameters("address, string"), [
-          mintArguments.mintToAddress,
-          mintArguments.mintComment || "",
-        ]),
-        mintArguments.mintReferral || zeroAddress,
-      ],
-    };
-
-    return result;
-  }
-
-  private async prepareMintZora721({
-    mintable,
-    publicClient,
-    sender,
-    mintArguments,
-  }: MintParameters) {
-    const [_, mintFee] = await publicClient.readContract({
-      abi: zora721Abi,
-      address: mintable.contract_address as Address,
-      functionName: "zoraFeeForAmount",
-      args: [BigInt(mintArguments.quantityToMint)],
-    });
-
-    const result: SimulateContractParameters<
-      typeof zora721Abi,
-      "mintWithRewards"
-    > = {
-      abi: zora721Abi,
-      address: mintable.contract_address as Address,
-      account: sender,
-      functionName: "mintWithRewards",
-      value:
-        mintFee +
-        BigInt(mintable.cost.native_price.raw) *
-          BigInt(mintArguments.quantityToMint),
-      /* args: mint recipient, quantity to mint, mint comment, mintReferral */
-      args: [
-        mintArguments.mintToAddress,
-        BigInt(mintArguments.quantityToMint),
-        mintArguments.mintComment || "",
-        mintArguments.mintReferral || zeroAddress,
-      ],
-    };
-
-    return result;
   }
 }
 
+/**
+ * Creates a new MintClient.
+ * @param param0.chain The chain to use for the mint client.
+ * @param param0.publicClient Optional viem public client
+ * @param param0.httpClient Optional http client to override post, get, and retry methods
+ * @returns
+ */
 export function createMintClient({
   chain,
-  mintAPIClient,
+  publicClient,
+  httpClient,
 }: {
   chain: Chain;
-  mintAPIClient?: typeof MintAPIClient;
+  publicClient?: PublicClient;
+  httpClient?: IHttpClient;
 }) {
-  return new MintClient(chain, mintAPIClient);
+  return new MintClient(chain, publicClient, httpClient);
+}
+
+export type TMintClient = ReturnType<typeof createMintClient>;
+
+async function makePrepareMintTokenParams({
+  publicClient,
+  apiClient,
+  tokenId,
+  tokenAddress,
+  ...rest
+}: {
+  publicClient: PublicClient;
+  minterAccount: Address;
+  tokenId?: GenericTokenIdTypes;
+  tokenAddress: Address;
+  mintArguments: MintArguments;
+  apiClient: MintAPIClient;
+}): Promise<SimulateContractParameters> {
+  const salesConfigAndTokenInfo = await apiClient.getSalesConfigAndTokenInfo({
+    tokenId,
+    tokenAddress,
+  });
+
+  if (tokenId === undefined) {
+    return makePrepareMint721TokenParams({
+      salesConfigAndTokenInfo,
+      tokenAddress,
+      ...rest,
+    });
+  }
+
+  return makePrepareMint1155TokenParams({
+    salesConfigAndTokenInfo,
+    tokenAddress,
+    tokenId,
+    ...rest,
+  });
+}
+
+async function makePrepareMint721TokenParams({
+  tokenAddress,
+  salesConfigAndTokenInfo,
+  minterAccount,
+  mintArguments,
+}: {
+  tokenAddress: Address;
+  salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
+  minterAccount: Address;
+  mintArguments: MintArguments;
+}): Promise<SimulateContractParameters<typeof zora721Abi, "mintWithRewards">> {
+  const mintValue = getMintCosts({
+    salesConfigAndTokenInfo,
+    quantityToMint: BigInt(mintArguments.quantityToMint),
+  }).totalCost;
+
+  const result = {
+    abi: zora721Abi,
+    address: tokenAddress,
+    account: minterAccount,
+    functionName: "mintWithRewards",
+    value: mintValue,
+    args: [
+      mintArguments.mintToAddress,
+      BigInt(mintArguments.quantityToMint),
+      mintArguments.mintComment || "",
+      mintArguments.mintReferral || zeroAddress,
+    ],
+  } satisfies SimulateContractParameters<typeof zora721Abi, "mintWithRewards">;
+
+  return result;
+}
+
+export type MintCosts = {
+  mintFee: bigint;
+  tokenPurchaseCost: bigint;
+  totalCost: bigint;
+};
+
+export function getMintCosts({
+  salesConfigAndTokenInfo,
+  quantityToMint,
+}: {
+  salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
+  quantityToMint: bigint;
+}): MintCosts {
+  const mintFeeForTokens =
+    salesConfigAndTokenInfo.mintFeePerQuantity * quantityToMint;
+  const tokenPurchaseCost =
+    BigInt(salesConfigAndTokenInfo.fixedPrice.pricePerToken) * quantityToMint;
+
+  return {
+    mintFee: mintFeeForTokens,
+    tokenPurchaseCost,
+    totalCost: mintFeeForTokens + tokenPurchaseCost,
+  };
+}
+
+async function makePrepareMint1155TokenParams({
+  tokenId,
+  salesConfigAndTokenInfo,
+  minterAccount,
+  tokenAddress,
+  mintArguments,
+}: {
+  salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
+  tokenId: GenericTokenIdTypes;
+  minterAccount: Address;
+  tokenAddress: Address;
+  mintArguments: MintArguments;
+}) {
+  const mintQuantity = BigInt(mintArguments.quantityToMint);
+
+  const mintValue = getMintCosts({
+    salesConfigAndTokenInfo,
+    quantityToMint: mintQuantity,
+  }).totalCost;
+
+  const result = {
+    abi: zoraCreator1155ImplABI,
+    functionName: "mintWithRewards",
+    account: minterAccount,
+    value: mintValue,
+    address: tokenAddress,
+    /* args: minter, tokenId, quantity, minterArguments, mintReferral */
+    args: [
+      (salesConfigAndTokenInfo?.fixedPrice.address ||
+        zoraCreatorFixedPriceSaleStrategyAddress[999]) as Address,
+      BigInt(tokenId),
+      mintQuantity,
+      encodeAbiParameters(parseAbiParameters("address, string"), [
+        mintArguments.mintToAddress,
+        mintArguments.mintComment || "",
+      ]),
+      mintArguments.mintReferral || zeroAddress,
+    ],
+  } satisfies SimulateContractParameters<
+    typeof zoraCreator1155ImplABI,
+    "mintWithRewards"
+  >;
+
+  return result;
 }

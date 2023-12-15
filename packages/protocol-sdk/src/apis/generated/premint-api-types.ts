@@ -44,6 +44,7 @@ export interface components {
       | "OPTIMISM-MAINNET"
       | "OPTIMISM-GOERLI"
       | "ZORA-GOERLI"
+      | "ZORA-SEPOLIA"
       | "ZORA-MAINNET"
       | "BASE-MAINNET"
       | "BASE-GOERLI"
@@ -95,10 +96,13 @@ export interface components {
       /** Contract Name */
       contract_name: string;
       /** Premints */
-      premints: components["schemas"]["SignedPremintConfig"][];
+      premints: (
+        | components["schemas"]["SignedPremintConfigV1"]
+        | components["schemas"]["SignedPremintConfigV2"]
+      )[];
     };
     /**
-     * PremintConfig
+     * PremintConfigV1
      * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
      * (store_as, override_name), as well as provides other convinience methods.
      * ObjectBase allows for validation and type enforcement, and should be used inheritedfor any
@@ -109,8 +113,41 @@ export interface components {
      *     ...:     found_at_height: int = field(override_name="address", store_as=str)
      *     ...:     other: str = "default"
      */
-    PremintConfig: {
-      tokenConfig: components["schemas"]["TokenCreationConfig"];
+    PremintConfigV1: {
+      /**
+       * Config Version
+       * @default 1
+       * @enum {string}
+       */
+      config_version?: "1";
+      tokenConfig: components["schemas"]["TokenCreationConfigV1"];
+      /** Uid */
+      uid: number;
+      /** Version */
+      version: number;
+      /** Deleted */
+      deleted: boolean;
+    };
+    /**
+     * PremintConfigV2
+     * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
+     * (store_as, override_name), as well as provides other convinience methods.
+     * ObjectBase allows for validation and type enforcement, and should be used inheritedfor any
+     * complex type we include on a stored entity.
+     *
+     * Example::
+     *     >>> class Foo(ObjectBase):
+     *     ...:     found_at_height: int = field(override_name="address", store_as=str)
+     *     ...:     other: str = "default"
+     */
+    PremintConfigV2: {
+      /**
+       * Config Version
+       * @default 2
+       * @enum {string}
+       */
+      config_version?: "2";
+      tokenConfig: components["schemas"]["TokenCreationConfigV2"];
       /** Uid */
       uid: number;
       /** Version */
@@ -148,7 +185,10 @@ export interface components {
      */
     PremintRequest: {
       collection: components["schemas"]["CollectionCreationConfig"];
-      premint: components["schemas"]["PremintConfig"];
+      /** Premint */
+      premint:
+        | components["schemas"]["PremintConfigV1"]
+        | components["schemas"]["PremintConfigV2"];
       chain_name: components["schemas"]["ChainName"];
       /** Signature */
       signature: string;
@@ -167,7 +207,10 @@ export interface components {
      */
     PremintSignature: {
       collection: components["schemas"]["CollectionCreationConfig"];
-      premint: components["schemas"]["PremintConfig"];
+      /** Premint */
+      premint:
+        | components["schemas"]["PremintConfigV1"]
+        | components["schemas"]["PremintConfigV2"];
       chain_name: components["schemas"]["ChainName"];
       /** Signature */
       signature: string;
@@ -177,7 +220,7 @@ export interface components {
       signer: string;
     };
     /**
-     * SignedPremintConfig
+     * SignedPremintConfigV1
      * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
      * (store_as, override_name), as well as provides other convinience methods.
      * ObjectBase allows for validation and type enforcement, and should be used inheritedfor any
@@ -188,8 +231,14 @@ export interface components {
      *     ...:     found_at_height: int = field(override_name="address", store_as=str)
      *     ...:     other: str = "default"
      */
-    SignedPremintConfig: {
-      tokenConfig: components["schemas"]["TokenCreationConfig"];
+    SignedPremintConfigV1: {
+      /**
+       * Config Version
+       * @default 1
+       * @enum {string}
+       */
+      config_version?: "1";
+      tokenConfig: components["schemas"]["TokenCreationConfigV1"];
       /** Uid */
       uid: number;
       /** Version */
@@ -200,7 +249,7 @@ export interface components {
       signature: string;
     };
     /**
-     * TokenCreationConfig
+     * SignedPremintConfigV2
      * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
      * (store_as, override_name), as well as provides other convinience methods.
      * ObjectBase allows for validation and type enforcement, and should be used inheritedfor any
@@ -211,7 +260,36 @@ export interface components {
      *     ...:     found_at_height: int = field(override_name="address", store_as=str)
      *     ...:     other: str = "default"
      */
-    TokenCreationConfig: {
+    SignedPremintConfigV2: {
+      /**
+       * Config Version
+       * @default 2
+       * @enum {string}
+       */
+      config_version?: "2";
+      tokenConfig: components["schemas"]["TokenCreationConfigV2"];
+      /** Uid */
+      uid: number;
+      /** Version */
+      version: number;
+      /** Deleted */
+      deleted: boolean;
+      /** Signature */
+      signature: string;
+    };
+    /**
+     * TokenCreationConfigV1
+     * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
+     * (store_as, override_name), as well as provides other convinience methods.
+     * ObjectBase allows for validation and type enforcement, and should be used inheritedfor any
+     * complex type we include on a stored entity.
+     *
+     * Example::
+     *     >>> class Foo(ObjectBase):
+     *     ...:     found_at_height: int = field(override_name="address", store_as=str)
+     *     ...:     other: str = "default"
+     */
+    TokenCreationConfigV1: {
       /** Tokenuri */
       tokenURI: string;
       /** Maxsupply */
@@ -232,6 +310,40 @@ export interface components {
       royaltyRecipient: string;
       /** Fixedpriceminter */
       fixedPriceMinter: string;
+    };
+    /**
+     * TokenCreationConfigV2
+     * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
+     * (store_as, override_name), as well as provides other convinience methods.
+     * ObjectBase allows for validation and type enforcement, and should be used inheritedfor any
+     * complex type we include on a stored entity.
+     *
+     * Example::
+     *     >>> class Foo(ObjectBase):
+     *     ...:     found_at_height: int = field(override_name="address", store_as=str)
+     *     ...:     other: str = "default"
+     */
+    TokenCreationConfigV2: {
+      /** Tokenuri */
+      tokenURI: string;
+      /** Maxsupply */
+      maxSupply: string;
+      /** Maxtokensperaddress */
+      maxTokensPerAddress: string;
+      /** Pricepertoken */
+      pricePerToken: string;
+      /** Mintstart */
+      mintStart: string;
+      /** Mintduration */
+      mintDuration: string;
+      /** Royaltybps */
+      royaltyBPS: number;
+      /** Fixedpriceminter */
+      fixedPriceMinter: string;
+      /** Payoutrecipient */
+      payoutRecipient: string;
+      /** Createreferral */
+      createReferral: string;
     };
     /** ValidationError */
     ValidationError: {
@@ -266,7 +378,7 @@ export interface operations {
       /** @description Successful Response */
       200: {
         content: {
-          "application/json": components["schemas"]["PremintRequest"];
+          "application/json": components["schemas"]["PremintSignature"];
         };
       };
       /** @description Validation Error */

@@ -91,3 +91,15 @@ export const retries = async <T>(
     throw err;
   }
 };
+
+export interface IHttpClient {
+  get: typeof get;
+  post: typeof post;
+  retries: typeof retries;
+}
+
+export const httpClient: IHttpClient = {
+  get,
+  post,
+  retries,
+};

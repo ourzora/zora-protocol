@@ -27,6 +27,12 @@ interface ILegacyZoraCreator1155PremintExecutor {
         uint256 quantityToMint,
         string calldata mintComment
     ) external payable returns (uint256 newTokenId);
+
+    function isAuthorizedToCreatePremint(
+        address signer,
+        address premintContractConfigContractAdmin,
+        address contractAddress
+    ) external view returns (bool isAuthorized);
 }
 
 interface IZoraCreator1155PremintExecutorV1 {
@@ -37,13 +43,6 @@ interface IZoraCreator1155PremintExecutorV1 {
         uint256 quantityToMint,
         IZoraCreator1155PremintExecutor.MintArguments calldata mintArguments
     ) external payable returns (IZoraCreator1155PremintExecutor.PremintResult memory);
-
-    function isValidSignatureV1(
-        address originalContractAdmin,
-        address contractAddress,
-        PremintConfig calldata premintConfig,
-        bytes calldata signature
-    ) external view returns (bool isValid, address recoveredSigner);
 }
 
 interface IZoraCreator1155PremintExecutorV2 {
@@ -54,13 +53,6 @@ interface IZoraCreator1155PremintExecutorV2 {
         uint256 quantityToMint,
         IZoraCreator1155PremintExecutor.MintArguments calldata mintArguments
     ) external payable returns (IZoraCreator1155PremintExecutor.PremintResult memory);
-
-    function isValidSignatureV2(
-        address originalContractAdmin,
-        address contractAddress,
-        PremintConfigV2 calldata premintConfig,
-        bytes calldata signature
-    ) external view returns (bool isValid, address recoveredSigner);
 }
 
 interface IZoraCreator1155PremintExecutor is
@@ -72,7 +64,8 @@ interface IZoraCreator1155PremintExecutor is
     struct MintArguments {
         address mintRecipient;
         string mintComment;
-        address mintReferral;
+        /// array of accounts to receive rewards - mintReferral is first argument, and platformReferral is second.  platformReferral isn't supported as of now but will be in a future release.
+        address[] mintRewardsRecipients;
     }
 
     struct PremintResult {

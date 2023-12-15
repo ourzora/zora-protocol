@@ -8,8 +8,9 @@ import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
 import {Deployment} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
+import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
-contract DeployProxiesToNewChain is ZoraDeployerBase, DeploymentTestingUtils {
+contract DeployProxiesToNewChain is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
 
@@ -31,7 +32,14 @@ contract DeployProxiesToNewChain is ZoraDeployerBase, DeploymentTestingUtils {
 
         console2.log("testing premint");
 
-        signAndExecutePremint(deployment.preminterProxy, vm.envAddress("TEST_PREMINT_FUNDS_RECIPIENT"));
+        address fundsRecipient = vm.envAddress("TEST_PREMINT_FUNDS_RECIPIENT");
+        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
+            mintRecipient: fundsRecipient,
+            mintComment: "",
+            mintRewardsRecipients: new address[](0)
+        });
+
+        signAndExecutePremintV2(deployment.preminterProxy, vm.envAddress("TEST_PREMINT_FUNDS_RECIPIENT"), mintArguments);
 
         vm.stopBroadcast();
 

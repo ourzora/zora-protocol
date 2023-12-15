@@ -1,4 +1,4 @@
-import { decodeEventLog } from "viem";
+import { createPublicClient, decodeEventLog, http, zeroAddress } from "viem";
 import type {
   Account,
   Address,
@@ -11,36 +11,43 @@ import type {
 } from "viem";
 import {
   zoraCreator1155PremintExecutorImplABI,
-  zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import { PremintConfig, preminterTypedDataDefinition } from "./preminter";
-import type {
-  PremintSignatureGetResponse,
-  PremintSignatureResponse,
-} from "./premint-api-client";
+import {
+  getPremintCollectionAddress,
+  premintTypedDataDefinition,
+  isValidSignature,
+  isAuthorizedToCreatePremint,
+  getPremintExecutorAddress,
+  applyUpdateToPremint,
+  markPremintDeleted,
+  makeNewPremint,
+  supportsPremintVersion,
+  getPremintMintCosts,
+  makeMintRewardsRecipient,
+} from "./preminter";
+import {
+  PremintConfigV2,
+  PremintConfigVersion,
+  ContractCreationConfig,
+  TokenConfigForVersion,
+  PremintConfigWithVersion,
+  TokenCreationConfigV1,
+  TokenCreationConfigV2,
+  TokenCreationConfig,
+  PremintConfigForVersion,
+  MintArguments,
+} from "./contract-types";
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
-import { ClientBase } from "../apis/client-base";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
-import { REWARD_PER_TOKEN } from "src/apis/chain-constants";
+import { IHttpClient } from "src/apis/http-api-base";
+import { getApiNetworkConfigForChain } from "src/mint/mint-api-client";
+import { MintCosts } from "src/mint/mint-client";
 
-type MintArgumentsSettings = {
-  tokenURI: string;
-  maxSupply?: bigint;
-  maxTokensPerAddress?: bigint;
-  pricePerToken?: bigint;
-  mintStart?: bigint;
-  mintDuration?: bigint;
-  royaltyMintSchedule?: number;
-  royaltyBPS?: number;
-  royaltyRecipient?: Address;
-  fixedPriceMinter?: Address;
-};
-
-type PremintedLogType = DecodeEventLogReturnType<
+type PremintedV2LogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,
-  "Preminted"
+  "PremintedV2"
 >["args"];
 
 type URLSReturnType = {
@@ -53,10 +60,12 @@ type SignedPremintResponse = {
   urls: URLSReturnType;
   uid: number;
   verifyingContract: Address;
-  premint: PremintSignatureResponse;
 };
 
-export const DefaultMintArguments = {
+export const defaultTokenConfigV1MintArguments = (): Omit<
+  TokenCreationConfigV1,
+  "fixedPriceMinter" | "tokenURI" | "royaltyRecipient"
+> => ({
   maxSupply: OPEN_EDITION_MINT_SIZE,
   maxTokensPerAddress: 0n,
   pricePerToken: 0n,
@@ -64,6 +73,50 @@ export const DefaultMintArguments = {
   mintStart: 0n,
   royaltyMintSchedule: 0,
   royaltyBPS: 1000, // 10%,
+});
+
+export const defaultTokenConfigV2MintArguments = (): Omit<
+  TokenCreationConfigV2,
+  "fixedPriceMinter" | "tokenURI" | "payoutRecipient" | "createReferral"
+> => ({
+  maxSupply: OPEN_EDITION_MINT_SIZE,
+  maxTokensPerAddress: 0n,
+  pricePerToken: 0n,
+  mintDuration: BigInt(60 * 60 * 24 * 7), // 1 week
+  mintStart: 0n,
+  royaltyBPS: 1000, // 10%,
+});
+
+const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
+  premintConfigVersion,
+  tokenCreationConfig,
+  creatorAccount,
+}: {
+  premintConfigVersion: PremintConfigVersion;
+  tokenCreationConfig: Partial<TokenConfigForVersion<T>> & { tokenURI: string };
+  creatorAccount: Address;
+}): TokenConfigForVersion<T> => {
+  const fixedPriceMinter =
+    tokenCreationConfig.fixedPriceMinter || getDefaultFixedPriceMinterAddress();
+
+  if (premintConfigVersion === PremintConfigVersion.V1) {
+    return {
+      fixedPriceMinter,
+      ...defaultTokenConfigV1MintArguments(),
+      royaltyRecipient: creatorAccount,
+      ...tokenCreationConfig,
+    };
+  } else if (premintConfigVersion === PremintConfigVersion.V2) {
+    return {
+      fixedPriceMinter,
+      ...defaultTokenConfigV2MintArguments(),
+      payoutRecipient: creatorAccount,
+      createReferral: zeroAddress,
+      ...tokenCreationConfig,
+    };
+  } else {
+    throw new Error(`Invalid premint config version ${premintConfigVersion}`);
+  }
 };
 
 /**
@@ -74,106 +127,38 @@ export const DefaultMintArguments = {
  */
 export function getPremintedLogFromReceipt(
   receipt: TransactionReceipt,
-): PremintedLogType | undefined {
+): PremintedV2LogType | undefined {
   for (const data of receipt.logs) {
     try {
       const decodedLog = decodeEventLog({
         abi: zoraCreator1155PremintExecutorImplABI,
-        eventName: "Preminted",
+        eventName: "PremintedV2",
         ...data,
       });
-      if (decodedLog.eventName === "Preminted") {
+      if (decodedLog.eventName === "PremintedV2") {
         return decodedLog.args;
       }
     } catch (err: any) {}
   }
 }
-
-/**
- * Convert server to on-chain types for a premint
- *
- * @param premint Premint object from the server to convert to one that's compatible with viem
- * @returns Viem type-compatible premint object
- */
-export const convertPremint = (
-  premint: PremintSignatureGetResponse["premint"],
-) => ({
-  ...premint,
-  tokenConfig: {
-    ...premint.tokenConfig,
-    fixedPriceMinter: premint.tokenConfig.fixedPriceMinter as Address,
-    royaltyRecipient: premint.tokenConfig.royaltyRecipient as Address,
-    maxSupply: BigInt(premint.tokenConfig.maxSupply),
-    pricePerToken: BigInt(premint.tokenConfig.pricePerToken),
-    mintStart: BigInt(premint.tokenConfig.mintStart),
-    mintDuration: BigInt(premint.tokenConfig.mintDuration),
-    maxTokensPerAddress: BigInt(premint.tokenConfig.maxTokensPerAddress),
-  },
-});
-
-export const convertCollection = (
-  collection: PremintSignatureGetResponse["collection"],
-) => ({
-  ...collection,
-  contractAdmin: collection.contractAdmin as Address,
-});
-
-/**
- * Convert on-chain types for a premint to a server safe type
- *
- * @param premint Premint object from viem to convert to a JSON compatible type.
- * @returns JSON compatible premint
- */
-export const encodePremintForAPI = ({
-  tokenConfig,
-  ...premint
-}: PremintConfig) => ({
-  ...premint,
-  tokenConfig: {
-    ...tokenConfig,
-    maxSupply: tokenConfig.maxSupply.toString(),
-    pricePerToken: tokenConfig.pricePerToken.toString(),
-    mintStart: tokenConfig.mintStart.toString(),
-    mintDuration: tokenConfig.mintDuration.toString(),
-    maxTokensPerAddress: tokenConfig.maxTokensPerAddress.toString(),
-  },
-});
-
 /**
  * Preminter API to access ZORA Premint functionality.
  * Currently only supports V1 premints.
  */
-class PremintClient extends ClientBase {
-  apiClient: typeof PremintAPIClient;
+class PremintClient {
+  readonly apiClient: PremintAPIClient;
+  readonly publicClient: PublicClient;
+  readonly chain: Chain;
 
-  constructor(chain: Chain, apiClient?: typeof PremintAPIClient) {
-    super(chain);
-
-    if (!apiClient) {
-      apiClient = PremintAPIClient;
-    }
-    this.apiClient = apiClient;
-  }
-
-  /**
-   * The premint executor address is deployed to the same address across all chains.
-   * Can be overridden as needed by making a parent class.
-   *
-   * @returns Executor address for premints
-   */
-  getExecutorAddress() {
-    return zoraCreator1155PremintExecutorImplAddress[999];
-  }
-
-  /**
-   * The fixed price minter address is the same across all chains for our current
-   * deployer strategy.
-   * Can be overridden as needed by making a parent class.
-   *
-   * @returns Fixed price sale strategy
-   */
-  getFixedPriceMinterAddress() {
-    return zoraCreatorFixedPriceSaleStrategyAddress[999];
+  constructor(
+    chain: Chain,
+    publicClient?: PublicClient,
+    httpClient?: IHttpClient,
+  ) {
+    this.chain = chain;
+    this.apiClient = new PremintAPIClient(chain.id, httpClient);
+    this.publicClient =
+      publicClient || createPublicClient({ chain, transport: http() });
   }
 
   getDataFromPremintReceipt(receipt: TransactionReceipt) {
@@ -209,45 +194,39 @@ class PremintClient extends ClientBase {
     walletClient,
     uid,
     collection,
-    token,
     account,
+    tokenConfigUpdates,
   }: {
     walletClient: WalletClient;
     uid: number;
-    token: MintArgumentsSettings;
     account?: Account | Address;
     collection: Address;
+    tokenConfigUpdates: Partial<TokenCreationConfig>;
   }): Promise<SignedPremintResponse> {
-    const signatureResponse = await this.apiClient.getSignature({
-      chain_name: this.network.zoraBackendChainName,
-      collection_address: collection.toLowerCase(),
+    const {
+      premintConfig,
+      collection: collectionCreationConfig,
+      premintConfigVersion,
+    } = await this.apiClient.getSignature({
+      collectionAddress: collection,
       uid: uid,
     });
 
-    const convertedPremint = convertPremint(signatureResponse.premint);
-    const signerData = {
-      ...signatureResponse,
-      premint: {
-        ...convertedPremint,
-        tokenConfig: {
-          ...convertedPremint.tokenConfig,
-          ...token,
-        },
-      },
-    };
+    const updatedPremint = applyUpdateToPremint({
+      uid: premintConfig.uid,
+      version: premintConfig.version,
+      tokenConfig: premintConfig.tokenConfig,
+      tokenConfigUpdates: tokenConfigUpdates,
+    });
 
     return await this.signAndSubmitPremint({
       walletClient,
       account,
-      checkSignature: false,
+      checkSignature: true,
       verifyingContract: collection,
-      publicClient: this.getPublicClient(),
-      uid: uid,
-      collection: {
-        ...signerData.collection,
-        contractAdmin: signerData.collection.contractAdmin as Address,
-      },
-      premintConfig: signerData.premint,
+      collection: collectionCreationConfig,
+      premintConfig: updatedPremint,
+      premintConfigVersion: premintConfigVersion,
     });
   }
 
@@ -270,38 +249,31 @@ class PremintClient extends ClientBase {
     uid,
     account,
     collection,
-    publicClient,
   }: {
     walletClient: WalletClient;
-    publicClient: PublicClient;
     uid: number;
     account?: Account | Address;
     collection: Address;
   }) {
-    const signatureResponse = await this.apiClient.getSignature({
-      chain_name: this.network.zoraBackendChainName,
-      collection_address: collection.toLowerCase(),
+    const {
+      premintConfig,
+      premintConfigVersion,
+      collection: collectionCreationConfig,
+    } = await this.apiClient.getSignature({
+      collectionAddress: collection,
       uid: uid,
     });
 
-    const signerData = {
-      ...signatureResponse,
-      collection: convertCollection(signatureResponse.collection),
-      premint: {
-        ...convertPremint(signatureResponse.premint),
-        deleted: true,
-      },
-    };
+    const deletedPremint = markPremintDeleted(premintConfig);
 
     return await this.signAndSubmitPremint({
       walletClient,
       account,
       checkSignature: false,
       verifyingContract: collection,
-      publicClient: this.getPublicClient(publicClient),
-      uid: uid,
-      collection: signerData.collection,
-      premintConfig: signerData.premint,
+      collection: collectionCreationConfig,
+      premintConfig: deletedPremint,
+      premintConfigVersion,
     });
   }
 
@@ -311,67 +283,22 @@ class PremintClient extends ClientBase {
    * @param premintArguments Arguments to premint
    * @returns
    */
-  private async signAndSubmitPremint({
-    walletClient,
-    publicClient,
-    verifyingContract,
-    premintConfig,
-    uid,
-    account,
-    checkSignature,
-    collection,
-  }: {
-    publicClient: PublicClient;
-    uid: number;
-    walletClient: WalletClient;
-    verifyingContract: Address;
-    checkSignature: boolean;
-    account?: Address | Account;
-    premintConfig: PremintConfig;
-    collection: PremintSignatureGetResponse["collection"];
-  }) {
-    if (!account) {
-      account = walletClient.account;
-    }
-    if (!account) {
-      throw new Error("No account provided");
-    }
-
-    const signature = await walletClient.signTypedData({
-      account,
-      ...preminterTypedDataDefinition({
-        verifyingContract,
-        premintConfig,
-        chainId: this.chain.id,
-      }),
+  private async signAndSubmitPremint<T extends PremintConfigVersion>(
+    params: SignAndSubmitPremintParams<T>,
+  ): Promise<SignedPremintResponse> {
+    const { verifyingContract } = await signAndSubmitPremint({
+      ...params,
+      chainId: this.chain.id,
+      apiClient: this.apiClient,
+      publicClient: this.publicClient,
     });
 
-    if (checkSignature) {
-      const [isValidSignature] = await publicClient.readContract({
-        abi: zoraCreator1155PremintExecutorImplABI,
-        address: this.getExecutorAddress(),
-        functionName: "isValidSignature",
-        args: [convertCollection(collection), premintConfig, signature],
-      });
-      if (!isValidSignature) {
-        throw new Error("Invalid signature");
-      }
-    }
-
-    const apiData = {
-      collection,
-      premint: encodePremintForAPI(premintConfig),
-      chain_name: this.network.zoraBackendChainName,
-      signature: signature,
-    };
-
-    const premint = await this.apiClient.postSignature(apiData);
+    const uid = params.premintConfig.uid;
 
     return {
       urls: this.makeUrls({ address: verifyingContract, uid }),
       uid,
       verifyingContract,
-      premint,
     };
   }
 
@@ -381,80 +308,73 @@ class PremintClient extends ClientBase {
    * @param settings Settings for the new premint
    * @param settings.account Account to sign the premint with. Taken from walletClient if none passed in.
    * @param settings.collection Collection information for the mint
-   * @param settings.token Mint argument settings, optional settings are overridden with sensible defaults.
-   * @param settings.publicClient Public client (optional) – instantiated if not passed in with defaults.
-   * @param settings.walletClient Required wallet client for signing the premint message.
-   * @param settings.executionSettings Execution settings for premint options
-   * @param settings.executionSettings.deleted If this UID should be deleted. If omitted, set to false.
-   * @param settings.executionSettings.uid the UID to use – optional and retrieved as a fresh UID from ZORA by default.
+   * @param settings.tokenCreationConfig Mint argument settings, optional settings are overridden with sensible defaults.
+   * @param setings.premintConfigVersion Premint config version to use, defaults to V2
+   * @param settings.uid the UID to use – optional and retrieved as a fresh UID from ZORA by default.
    * @param settings.checkSignature if the signature should have a pre-flight check. Not required but helpful for debugging.
    * @returns premint url, uid, newContractAddress, and premint object
    */
-  async createPremint({
-    account,
+  async createPremint<
+    T extends PremintConfigVersion = PremintConfigVersion.V1,
+  >({
+    creatorAccount,
     collection,
-    token,
-    publicClient,
+    tokenCreationConfig,
+    premintConfigVersion,
     walletClient,
-    executionSettings,
+    uid,
     checkSignature = false,
   }: {
-    account: Address;
+    creatorAccount: Address;
     checkSignature?: boolean;
     walletClient: WalletClient;
-    collection: PremintSignatureGetResponse["collection"];
-    token: MintArgumentsSettings;
-    publicClient?: PublicClient;
-    executionSettings?: {
-      deleted?: boolean;
-      uid?: number;
+    collection: ContractCreationConfig;
+    tokenCreationConfig: Partial<TokenConfigForVersion<T>> & {
+      tokenURI: string;
     };
+    premintConfigVersion?: T;
+    uid?: number;
   }) {
-    publicClient = this.getPublicClient(publicClient);
-
-    const newContractAddress = await publicClient.readContract({
-      address: this.getExecutorAddress(),
-      abi: zoraCreator1155PremintExecutorImplABI,
-      functionName: "getContractAddress",
-      args: [convertCollection(collection)],
+    const newContractAddress = await getPremintCollectionAddress({
+      publicClient: this.publicClient,
+      collection,
     });
 
-    const tokenConfig = {
-      ...DefaultMintArguments,
-      fixedPriceMinter: this.getFixedPriceMinterAddress(),
-      royaltyRecipient: account,
-      ...token,
-    };
+    let uidToUse = uid;
 
-    let uid = executionSettings?.uid;
-    if (!uid) {
-      const uidResponse = await this.apiClient.getNextUID({
-        chain_name: this.network.zoraBackendChainName,
-        collection_address: newContractAddress.toLowerCase(),
-      });
-      uid = uidResponse.next_uid;
+    if (typeof uidToUse !== "number") {
+      uidToUse = await this.apiClient.getNextUID(newContractAddress);
     }
 
-    if (!uid) {
-      throw new Error("UID is missing but required");
+    const actualVersion = premintConfigVersion || PremintConfigVersion.V1;
+
+    if (
+      !(await supportsPremintVersion({
+        version: actualVersion,
+        publicClient: this.publicClient,
+        tokenContract: newContractAddress,
+      }))
+    ) {
+      throw new Error(
+        `Premint version ${actualVersion} not supported by contract`,
+      );
     }
 
-    let deleted = executionSettings?.deleted || false;
-
-    const premintConfig = {
-      tokenConfig: tokenConfig,
-      uid,
-      version: 1,
-      deleted,
-    };
+    const premintConfig = makeNewPremint({
+      tokenConfig: makeTokenConfigWithDefaults({
+        premintConfigVersion: actualVersion,
+        tokenCreationConfig,
+        creatorAccount,
+      }),
+      uid: uidToUse,
+    });
 
     return await this.signAndSubmitPremint({
-      uid,
       verifyingContract: newContractAddress,
       premintConfig,
+      premintConfigVersion: actualVersion,
       checkSignature,
-      account,
-      publicClient,
+      account: creatorAccount,
       walletClient,
       collection,
     });
@@ -467,17 +387,28 @@ class PremintClient extends ClientBase {
    * @param uid UID for the desired premint
    * @returns PremintSignatureGetResponse of premint data from the API
    */
-  async getPremintData({
+  async getPremintSignature({
     address,
     uid,
   }: {
-    address: string;
+    address: Address;
     uid: number;
-  }): Promise<PremintSignatureGetResponse> {
+  }) {
     return await this.apiClient.getSignature({
-      chain_name: this.network.zoraBackendChainName,
-      collection_address: address,
+      collectionAddress: address,
       uid,
+    });
+  }
+
+  /**
+   * Gets the deterministic contract address for a premint collection
+   * @param collection Collection to get the address for
+   * @returns deterministic contract address
+   */
+  async getCollectionAddress(collection: ContractCreationConfig) {
+    return await getPremintCollectionAddress({
+      collection,
+      publicClient: this.publicClient,
     });
   }
 
@@ -485,34 +416,32 @@ class PremintClient extends ClientBase {
    * Check user signature for v1
    *
    * @param data Signature data from the API
-   * @returns isValid = signature is valid or not, contractAddress = assumed contract address, recoveredSigner = signer from contract
+   * @returns isValid = signature is valid or not, recoveredSigner = signer from contract
    */
-  async isValidSignature({
-    data,
-    publicClient,
+  async isValidSignature<T extends PremintConfigVersion>({
+    signature,
+    collection,
+    premintConfig,
+    premintConfigVersion,
   }: {
-    data: PremintSignatureGetResponse;
-    publicClient?: PublicClient;
+    signature: Hex;
+    collection: ContractCreationConfig;
+    premintConfig: PremintConfigForVersion<T>;
+    premintConfigVersion?: T;
   }): Promise<{
     isValid: boolean;
-    contractAddress: Address;
-    recoveredSigner: Address;
+    recoveredSigner: Address | undefined;
   }> {
-    publicClient = this.getPublicClient(publicClient);
+    const { isAuthorized, recoveredAddress } = await isValidSignature({
+      chainId: this.chain.id,
+      signature: signature as Hex,
+      collection: collection,
+      publicClient: this.publicClient,
+      premintConfig,
+      premintConfigVersion: premintConfigVersion || PremintConfigVersion.V1,
+    });
 
-    const [isValid, contractAddress, recoveredSigner] =
-      await publicClient.readContract({
-        abi: zoraCreator1155PremintExecutorImplABI,
-        address: this.getExecutorAddress(),
-        functionName: "isValidSignature",
-        args: [
-          convertCollection(data.collection),
-          convertPremint(data.premint),
-          data.signature as Hex,
-        ],
-      });
-
-    return { isValid, contractAddress, recoveredSigner };
+    return { isValid: isAuthorized, recoveredSigner: recoveredAddress };
   }
 
   protected makeUrls({
@@ -524,27 +453,29 @@ class PremintClient extends ClientBase {
     tokenId?: bigint;
     address?: Address;
   }): URLSReturnType {
-    if ((!uid || !tokenId) && !address) {
-      return { explorer: null, zoraCollect: null, zoraManage: null };
-    }
+    return makeUrls({
+      uid,
+      address,
+      tokenId,
+      chain: this.chain,
+    });
+  }
 
-    const zoraTokenPath = uid ? `premint-${uid}` : tokenId;
-
-    return {
-      explorer: tokenId
-        ? `https://${this.chain.blockExplorers?.default.url}/token/${address}/instance/${tokenId}`
-        : null,
-      zoraCollect: `https://${
-        this.network.isTestnet ? "testnet." : ""
-      }zora.co/collect/${
-        this.network.zoraPathChainName
-      }:${address}/${zoraTokenPath}`,
-      zoraManage: `https://${
-        this.network.isTestnet ? "testnet." : ""
-      }zora.co/collect/${
-        this.network.zoraPathChainName
-      }:${address}/${zoraTokenPath}`,
-    };
+  async getMintCosts({
+    tokenContract,
+    quantityToMint,
+    tokenCreationConfig,
+  }: {
+    quantityToMint: bigint;
+    tokenContract: Address;
+    tokenCreationConfig: TokenCreationConfig;
+  }): Promise<MintCosts> {
+    return await getPremintMintCosts({
+      publicClient: this.publicClient,
+      quantityToMint,
+      tokenContract,
+      tokenPrice: tokenCreationConfig.pricePerToken,
+    });
   }
 
   /**
@@ -559,59 +490,213 @@ class PremintClient extends ClientBase {
    * @param settings.publicClient Optional public client for preflight checks.
    * @returns receipt, log, zoraURL
    */
-  async executePremint({
-    data,
+  async makeMintParameters({
+    uid,
+    tokenContract,
     account,
     mintArguments,
   }: {
-    data: PremintSignatureGetResponse;
+    uid: number;
+    tokenContract: Address;
     account: Account | Address;
     mintArguments?: {
       quantityToMint: number;
       mintComment?: string;
+      mintReferral?: Address;
+      platformReferral?: Address;
+      mintRecipient?: Address;
     };
-  }): Promise<{ request: SimulateContractParameters }> {
+  }): Promise<SimulateContractParameters> {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
-
-    const targetAddress = this.getExecutorAddress();
-    const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
-    const args = [
-      convertCollection(data.collection),
-      convertPremint(data.premint),
-      data.signature as Hex,
-      numberToMint,
-      mintArguments?.mintComment || "",
-    ] as const;
 
     if (!account) {
       throw new Error("Wallet not passed in");
     }
 
-    const value = numberToMint * REWARD_PER_TOKEN;
+    const { premintConfig, premintConfigVersion, collection, signature } =
+      await this.getPremintSignature({
+        address: tokenContract,
+        uid,
+      });
 
-    const request = {
-      account,
-      abi: zoraCreator1155PremintExecutorImplABI,
-      functionName: "premint",
-      value,
-      address: targetAddress,
-      args,
+    const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
+
+    const value = (
+      await getPremintMintCosts({
+        tokenContract,
+        quantityToMint: numberToMint,
+        publicClient: this.publicClient,
+        tokenPrice: premintConfig.tokenConfig.pricePerToken,
+      })
+    ).totalCost;
+
+    const mintArgumentsContract: MintArguments = {
+      mintComment: mintArguments?.mintComment || "",
+      mintRecipient:
+        mintArguments?.mintRecipient ||
+        (typeof account === "string" ? account : account.address),
+      mintRewardsRecipients: makeMintRewardsRecipient({
+        mintReferral: mintArguments?.mintReferral,
+        platformReferral: mintArguments?.platformReferral,
+      }),
     };
 
-    return {
-      request,
-    };
+    if (premintConfigVersion === PremintConfigVersion.V1) {
+      return {
+        account,
+        abi: zoraCreator1155PremintExecutorImplABI,
+        functionName: "premintV1",
+        value,
+        address: getPremintExecutorAddress(),
+        args: [
+          collection,
+          premintConfig,
+          signature,
+          numberToMint,
+          mintArgumentsContract,
+        ],
+      } satisfies SimulateContractParameters<
+        typeof zoraCreator1155PremintExecutorImplABI,
+        "premintV1"
+      >;
+    } else if (premintConfigVersion === PremintConfigVersion.V2) {
+      const toPost = premintConfig as PremintConfigV2;
+
+      return {
+        account,
+        abi: zoraCreator1155PremintExecutorImplABI,
+        functionName: "premintV2",
+        value,
+        address: getPremintExecutorAddress(),
+        // args are:  ContractCreationConfig calldata contractConfig, PremintConfigV2 calldata premintConfig, bytes calldata signature, uint256 quantityToMint, MintArguments calldata mintArguments
+        args: [
+          collection,
+          toPost,
+          signature,
+          numberToMint,
+          mintArgumentsContract,
+        ],
+      } satisfies SimulateContractParameters<
+        typeof zoraCreator1155PremintExecutorImplABI,
+        "premintV2"
+      >;
+    }
+
+    throw new Error(`Invalid premint config version ${premintConfigVersion}`);
   }
 }
 
 export function createPremintClient({
   chain,
-  premintAPIClient,
+  httpClient,
+  publicClient,
 }: {
   chain: Chain;
-  premintAPIClient?: typeof PremintAPIClient;
+  publicClient?: PublicClient;
+  httpClient?: IHttpClient;
 }) {
-  return new PremintClient(chain, premintAPIClient);
+  return new PremintClient(chain, publicClient, httpClient);
+}
+
+function makeUrls({
+  uid,
+  address,
+  tokenId,
+  chain,
+}: {
+  uid?: number;
+  tokenId?: bigint;
+  address?: Address;
+  chain: Chain;
+}): URLSReturnType {
+  if ((!uid || !tokenId) && !address) {
+    return { explorer: null, zoraCollect: null, zoraManage: null };
+  }
+
+  const zoraTokenPath = uid ? `premint-${uid}` : tokenId;
+
+  const network = getApiNetworkConfigForChain(chain.id);
+
+  return {
+    explorer: tokenId
+      ? `https://${chain.blockExplorers?.default.url}/token/${address}/instance/${tokenId}`
+      : null,
+    zoraCollect: `https://${
+      network.isTestnet ? "testnet." : ""
+    }zora.co/collect/${network.zoraPathChainName}:${address}/${zoraTokenPath}`,
+    zoraManage: `https://${
+      network.isTestnet ? "testnet." : ""
+    }zora.co/collect/${network.zoraPathChainName}:${address}/${zoraTokenPath}`,
+  };
+}
+
+type SignAndSubmitPremintParams<T extends PremintConfigVersion> = {
+  walletClient: WalletClient;
+  verifyingContract: Address;
+  checkSignature: boolean;
+  account?: Address | Account;
+  collection: ContractCreationConfig;
+} & PremintConfigWithVersion<T>;
+
+async function signAndSubmitPremint<T extends PremintConfigVersion>({
+  walletClient,
+  verifyingContract,
+  account,
+  checkSignature,
+  collection,
+  chainId,
+  publicClient,
+  apiClient,
+  ...premintConfigAndVersion
+}: SignAndSubmitPremintParams<T> & {
+  chainId: number;
+  publicClient: PublicClient;
+  apiClient: PremintAPIClient;
+}) {
+  if (!account) {
+    account = walletClient.account;
+  }
+  if (!account) {
+    throw new Error("No account provided");
+  }
+
+  const signature = await walletClient.signTypedData({
+    account,
+    ...premintTypedDataDefinition({
+      verifyingContract,
+      ...premintConfigAndVersion,
+      chainId,
+    }),
+  });
+
+  if (checkSignature) {
+    const isAuthorized = await isAuthorizedToCreatePremint({
+      collection,
+      signature,
+      publicClient,
+      signer: typeof account === "string" ? account : account.address,
+      collectionAddress: await getPremintCollectionAddress({
+        collection,
+        publicClient,
+      }),
+      ...premintConfigAndVersion,
+    });
+    if (!isAuthorized) {
+      throw new Error("Not authorized to create premint");
+    }
+  }
+
+  const premint = await apiClient.postSignature({
+    collection: collection,
+    signature: signature,
+    ...premintConfigAndVersion,
+  });
+
+  return { premint, verifyingContract };
+}
+
+function getDefaultFixedPriceMinterAddress() {
+  return zoraCreatorFixedPriceSaleStrategyAddress[999];
 }
