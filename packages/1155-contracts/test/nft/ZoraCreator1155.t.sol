@@ -67,6 +67,7 @@ contract ZoraCreator1155Test is Test {
     address internal mintReferral;
     address internal createReferral;
     address internal zora;
+    address[] internal rewardsRecipients;
 
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
     event RewardsDeposit(
@@ -90,6 +91,9 @@ contract ZoraCreator1155Test is Test {
         createReferral = makeAddr("createReferral");
         zora = makeAddr("zora");
 
+        rewardsRecipients = new address[](1);
+        rewardsRecipients[0] = mintReferral;
+
         address adminAddress;
         (adminAddress, adminKey) = makeAddrAndKey("admin");
         admin = payable(adminAddress);
@@ -99,7 +103,7 @@ contract ZoraCreator1155Test is Test {
         upgradeGate = new UpgradeGate();
         upgradeGate.initialize(admin);
         zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards));
-        target = ZoraCreator1155Impl(address(new Zora1155(address(zoraCreator1155Impl))));
+        target = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
         simpleMinter = new SimpleMinter();
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
 
@@ -666,7 +670,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalReward);
 
         vm.prank(admin);
-        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient));
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
         assertEq(tokenData.totalMinted, quantity);
@@ -680,7 +684,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
-        target.mint(SimpleMinter(payable(address(0))), tokenId, 0, "");
+        target.mintWithRewards(SimpleMinter(payable(address(0))), tokenId, 0, "", address(0));
     }
 
     function test_mint_revertCannotMintMoreTokens() external {
@@ -696,7 +700,7 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
-        target.mint{value: totalReward}(simpleMinter, tokenId, 1001, abi.encode(recipient));
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, 1001, abi.encode(recipient), address(0));
 
         vm.stopPrank();
     }
@@ -1270,10 +1274,12 @@ contract ZoraCreator1155Test is Test {
         uint256 creatorRewardBalance = settings.creatorReward + settings.firstMinterReward;
         assertEq(protocolRewards.balanceOf(address(target)), creatorRewardBalance);
 
-        vm.prank(admin);
-        target.withdrawRewards(admin, creatorRewardBalance);
+        protocolRewards.withdrawFor(address(target), creatorRewardBalance);
 
-        assertEq(admin.balance, creatorRewardBalance);
+        vm.prank(admin);
+        target.withdraw();
+
+        assertEq(address(0).balance, creatorRewardBalance);
         assertEq(protocolRewards.balanceOf(address(target)), 0);
     }
 
@@ -1433,7 +1439,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalReward);
 
         vm.prank(admin);
-        target.mint{value: totalReward}(simpleMinter, tokenId, 5, abi.encode(recipient));
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, 5, abi.encode(recipient), address(0));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -1457,7 +1463,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalReward);
 
         vm.prank(admin);
-        target.mint{value: totalReward}(simpleMinter, tokenId, 5, abi.encode(recipient));
+        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, 5, abi.encode(recipient), address(0));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -1486,7 +1492,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalValue);
 
         vm.prank(admin);
-        target.mint{value: totalValue}(simpleMinter, tokenId, 1000, abi.encode(recipient));
+        target.mintWithRewards{value: totalValue}(simpleMinter, tokenId, 1000, abi.encode(recipient), address(0));
 
         vm.prank(admin);
         target.withdraw();
@@ -1517,7 +1523,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(admin, totalValue);
         vm.prank(admin);
-        target.mint{value: totalValue}(simpleMinter, tokenId, 1000, abi.encode(recipient));
+        target.mintWithRewards{value: totalValue}(simpleMinter, tokenId, 1000, abi.encode(recipient), address(0));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.ETHWithdrawFailed.selector, simpleMinter, 1 ether));
         vm.prank(address(simpleMinter));
@@ -1550,5 +1556,93 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(admin);
         target.adminMint(address(0x1234), tokenId, 1, "");
+    }
+
+    function test_FreeMintRewardsWithrewardsRecipients(uint256 quantity) public {
+        vm.assume(quantity > 0 && quantity < type(uint200).max);
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        RewardsSettings memory settings = target.computeFreeMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        vm.deal(collector, totalReward);
+
+        vm.prank(collector);
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
+
+        (, , address fundsRecipient, , , ) = target.config();
+
+        assertEq(protocolRewards.balanceOf(recipient), 0);
+        assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
+    }
+
+    function test_PaidMintRewardsWithRewardsArgument(uint256 quantity, uint256 salePrice) public {
+        vm.assume(quantity > 0 && quantity < 1_000_000);
+        vm.assume(salePrice > 0 && salePrice < 10 ether);
+
+        init();
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("test", quantity);
+        target.addPermission(tokenId, address(fixedPriceMinter), adminRole);
+        target.callSale(
+            tokenId,
+            fixedPriceMinter,
+            abi.encodeWithSelector(
+                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+                tokenId,
+                ZoraCreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: uint96(salePrice),
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+
+        vm.stopPrank();
+
+        RewardsSettings memory settings = target.computePaidMintRewards(quantity);
+
+        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalSale = quantity * salePrice;
+        uint256 totalValue = totalReward + totalSale;
+
+        vm.deal(collector, totalValue);
+
+        vm.prank(collector);
+        target.mint{value: totalValue}(fixedPriceMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
+
+        assertEq(address(target).balance, totalSale);
+        assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
+        assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
+        assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
+    }
+
+    function testRevert_InsufficientEthForFreeMintRewardsWithRewardsArgument(uint256 quantity) public {
+        vm.assume(quantity > 0 && quantity < type(uint200).max);
+
+        init();
+
+        vm.prank(admin);
+        uint256 tokenId = target.setupNewToken("test", quantity);
+
+        vm.prank(admin);
+        target.addPermission(tokenId, address(simpleMinter), adminRole);
+
+        vm.prank(collector);
+        vm.expectRevert(abi.encodeWithSignature("INVALID_ETH_AMOUNT()"));
+        target.mint(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
     }
 }

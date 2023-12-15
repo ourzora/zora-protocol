@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-sdk",
-  "version": "0.3.1",
+  "version": "0.4.3",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "main": "./dist/index.js",
@@ -10,7 +10,7 @@
     "build": "tsup",
     "prepack": "yarn build",
     "test:js": "vitest src",
-    "generate-types": "npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && npx openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts",
+    "generate-types": "echo 'npx is used here because this is a rare operation' && npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/generated/premint-api-types.ts && yarn openapi-typescript https://api.zora.co/discover/openapi.json -o src/generated/discover-api-types.ts",
     "prettier": "prettier --write 'src/**/*.ts'",
     "lint": "prettier --check 'src/**/*.ts'"
   },
@@ -20,9 +20,10 @@
     "vite": "4.5.0"
   },
   "peerDependencies": {
-    "viem": "^1.16.6"
+    "viem": "^1.19.15"
   },
   "devDependencies": {
+    "zoralabs-tsconfig": "*",
     "typescript": "^5.2.2",
     "vite": "4.5.0",
     "vitest": "0.34.6"

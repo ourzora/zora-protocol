@@ -12,7 +12,7 @@ participant npm
 
 Activate LocalBranch
 Developer -> LocalBranch: Change smart contracts \nand commit
-Developer -> LocalBranch: npx changeset - create a changeset \n& commit 
+Developer -> LocalBranch: yarn changeset - create a changeset \n& commit 
 Developer -> LocalBranch: Git push & open PR
 LocalBranch --> RemotePR: Deltas and changeset
 activate RemotePR

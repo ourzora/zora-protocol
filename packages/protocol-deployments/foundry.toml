@@ -7,8 +7,9 @@ fs_permissions = [
 ]
 libs = ['_imagine', 'node_modules', 'script']
 allow_paths = [
-  "node_modules/@zoralabs/protocol-rewards",
-  "node_modules/@zoralabs/zora-1155-contracts",
+  "../../node_modules",
+  "../../node_modules/@zoralabs/protocol-rewards",
+  "../../node_modules/@zoralabs/zora-1155-contracts",
 ]
 optimizer = true
 optimizer_runs = 50

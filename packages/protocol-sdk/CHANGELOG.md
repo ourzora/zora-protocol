@@ -1,5 +1,97 @@
 # @zoralabs/protocol-sdk
 
+## 0.4.3
+
+### Patch Changes
+
+- 92b1b0e: Export premint conversions
+
+## 0.4.2
+
+### Patch Changes
+
+- 9b03ed2: Support premint v2 in sdk
+- Updated dependencies [bff853a]
+  - @zoralabs/protocol-deployments@0.0.11
+
+## 0.4.1
+
+### Patch Changes
+
+- 7e00197: \* For premintV1 and V2 - mintReferrer has been changed to an array `mintRewardsRecipients` - which the first element in array is `mintReferral`, and second element is `platformReferral`. `platformReferral is not used by the premint contract yet`.
+- 0ceb709: Add mint costs getter for premint to protocol sdk
+- Updated dependencies [5156b9e]
+  - @zoralabs/protocol-deployments@0.0.9
+
+## 0.4.0
+
+### Minor Changes
+
+- 28884c9: \* `PremintClient` now takes a premint config v1 or v2, and a premint config version, for every call to create/update/delete a premint. PremintClient methods have been simplified and are easier to use - for example `createPremint` no longer allows to specify `deleted` = true. For `makeMintParameters` - it now just takes the uid and contract address (instead of full premint config)
+  - `PremintAPIClient` now converts entities to contract entities before returning them, and correspondingly expects them as contract entities when passed in. It internally converts them to backend entities before sending them to the backend.
+
+### Patch Changes
+
+- Updated dependencies [4b77307]
+  - @zoralabs/protocol-deployments@0.0.8
+
+## 0.3.5
+
+### Patch Changes
+
+- 7eb5e3f: ### Changes to `preminter`
+
+  lower level `preminter.ts` now supports premint v2 by defining v2 typed data defintions.
+
+  - `isValidSignature` now takes either v1 or v2 of a premint config, along with the premint config version. and both recovers the signer address and validates if the signer can create a premint on the given contract.
+  - new function `premintTypedDataDefinition` which takes a premint config version and returns the signable typed data definition for that version
+  - new function `recoverCreatorFromCreatorAttribution` which recovers the creator address from a `CreatorAttribution` event
+  - new function `supportsPremintVersion` which checks if a given token contract supports a given premint config version
+  - new function `tryRecoverPremintSigner` which takes a premint config version and a premint signature, and tries to recover the signer address from the signature. If the signature is invalid, it returns undefined.
+
+  ### Changes to PremintClient
+
+  `PremintClient` creation, updating, and deletion now take both premint config v1 and v2, but currently rejects them until the backend api supports creating v2 premints.
+
+  - `isValidSignature` now just takes the data directly as a param, instead of `{data}`
+
+- 27a2e23: Fix reading the FIXED_PRICE_MINTER from the subgraph
+
+## 0.3.4
+
+### Patch Changes
+
+- ea27f01: Fix reading the FIXED_PRICE_MINTER from the subgraph
+
+## 0.3.3
+
+### Patch Changes
+
+- 97f58b3: `MintAPIClient` is now a class, that takes a chain id and httpClient in the constructor, enabling the httpClient methods `fetch`, `post`, and `retries` to be overridden.
+
+  new methods on `MintAPIClient`:
+
+  `getMintableForToken` - takes a token id and token contract address and returns the mintable for it. Easier to use for fetching specific tokens than `getMintable`.
+
+  `MintClient` now takes the optional `PublicClient` in the constructor instead of in each function, and stores it or creates a default one if none is provided in the constructor. It also takes an optional `httpClient` param in the constructor, allowing the `fetch`, `post`, and `retries` methods to be overridden when using the api. It now internally creates the MintAPIClient.
+
+  `MintClient.makePrepareMintTokenParams` has the following changes:
+
+  - returns a `SimulateContractParams`, instead of an object containing it indexed by key
+  - no longer takes a `PublicClient` as an argument (it should be specified in the constructor instead)
+
+  new function `MintClient.getMintCosts` takes a mintable and quantity to mint and returns the mintFee, paidMintPrice, and totalCost.
+
+- d02484e: premintClient can have http methods overridable via DI, and now takes publicClient and http overrides in `createPremintClient` function. it no longer takes `publicClient` as an argument in functions, and rather uses them from the constructor. `executePremint` has been renamed ot `makeMintParameters`
+
+## 0.3.2
+
+### Patch Changes
+
+- de0b0b7: `preminter` exposes new function isValidSignatureV1 that recovers a signer from a signed premint and determines if that signer is authorized to sign
+- Updated dependencies [f3b7df8]
+  - @zoralabs/protocol-deployments@0.0.6
+
 ## 0.3.1
 
 ### Patch Changes

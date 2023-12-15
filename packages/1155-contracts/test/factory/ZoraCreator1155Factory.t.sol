@@ -93,7 +93,7 @@ contract ZoraCreator1155FactoryTest is Test {
             admin,
             initSetup
         );
-        ZoraCreator1155Impl target = ZoraCreator1155Impl(deployedAddress);
+        ZoraCreator1155Impl target = ZoraCreator1155Impl(payable(deployedAddress));
 
         ICreatorRoyaltiesControl.RoyaltyConfiguration memory config = target.getRoyalties(0);
         assertEq(config.royaltyMintSchedule, 0);
@@ -237,7 +237,7 @@ contract ZoraCreator1155FactoryTest is Test {
         // now create deterministically, address should match expected address
         address createdAddress = factory.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
 
-        ZoraCreator1155Impl creatorProxy = ZoraCreator1155Impl(createdAddress);
+        ZoraCreator1155Impl creatorProxy = ZoraCreator1155Impl(payable(createdAddress));
 
         // 2. upgrade the created contract by creating a new contract and upgrading the existing one to point to it.
         IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
