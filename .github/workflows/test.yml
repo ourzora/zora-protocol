@@ -38,6 +38,7 @@ jobs:
           cd ${{ inputs.package_folder}} && yarn test
         env:
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
 
       - name: Set initial test ${{ inputs.name }} status
         uses: myrotvorets/set-commit-status-action@v2.0.0
