@@ -15,10 +15,10 @@
     "lint": "prettier --check 'package/**/*.ts' 'script/**/*.ts' 'wagmi.config.ts'",
     "update-new-deployment-addresses": "node script/copy-deployed-contracts.mjs deploy",
     "wagmi": "wagmi generate",
-    "unlink-protocol-rewards": "rm -rf ../../node_modules/@zoralabs/protocol-rewards && cp -r ../protocol-rewards ../../node_modules/@zoralabs/protocol-rewards",
-    "unlink-1155": "rm -rf ../../node_modules/@zoralabs/zora-1155-contracts && cp -r ../1155-contracts ../../node_modules/@zoralabs/zora-1155-contracts",
+    "unlink-protocol-rewards": "rm -rf ./node_modules/@zoralabs/protocol-rewards && cp -r ../protocol-rewards ./node_modules/@zoralabs/protocol-rewards",
+    "unlink-1155": "rm -rf ./node_modules/@zoralabs/zora-1155-contracts && cp -r ../1155-contracts ./node_modules/@zoralabs/zora-1155-contracts",
     "unlink-contracts": "yarn unlink-protocol-rewards && yarn unlink-1155",
-    "link-contracts": "cd ../../ && rm -rf ./node_modules && yarn"
+    "link-contracts": "rm -rf ./node_modules && cd .. && yarn"
   },
   "dependencies": {
     "solmate": "6.1.0",
