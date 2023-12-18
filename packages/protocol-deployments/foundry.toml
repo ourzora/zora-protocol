@@ -33,8 +33,8 @@ optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 optimism_goerli = "https://opt-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
 pgn = "https://rpc.publicgoods.network"
 pgn_sepolia = "https://sepolia.publicgoods.network"
-zora = "https://rpc.zora.energy"
-zora_goerli = "https://testnet.rpc.zora.energy"
-zora_sepolia = "https://sepolia.rpc.zora.energy"
+zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
+zora_goerli = "https://testnet.rpc.zora.energy/${CONDUIT_KEY}"
+zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
