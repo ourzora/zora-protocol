@@ -7,9 +7,8 @@ fs_permissions = [
 ]
 libs = ['_imagine', 'node_modules', 'script']
 allow_paths = [
-  "../../node_modules",
-  "../../node_modules/@zoralabs/protocol-rewards",
-  "../../node_modules/@zoralabs/zora-1155-contracts",
+  "node_modules/@zoralabs/protocol-rewards",
+  "node_modules/@zoralabs/zora-1155-contracts",
 ]
 optimizer = true
 optimizer_runs = 50
@@ -34,8 +33,8 @@ optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 optimism_goerli = "https://opt-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
 pgn = "https://rpc.publicgoods.network"
 pgn_sepolia = "https://sepolia.publicgoods.network"
-zora = "https://rpc.zora.energy"
-zora_goerli = "https://testnet.rpc.zora.energy"
-zora_sepolia = "https://sepolia.rpc.zora.energy"
+zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
+zora_goerli = "https://testnet.rpc.zora.energy/${CONDUIT_KEY}"
+zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
