@@ -1,12 +1,8 @@
 [profile.default]
 auto_detect_solc = true
-fs_permissions = [
-  { access = "read", path = "./addresses" },
-  { access = "read", path = "./package.json" },
-]
+fs_permissions = [{access = "read", path = "./addresses"}, {access = "read", path = "./package.json"}]
 fuzz_runs = 500
 libs = ['_imagine', 'node_modules', 'script']
-allow_paths = ["../../node_modules"]
 optimizer = true
 optimizer_runs = 500000
 out = 'out'
@@ -15,8 +11,8 @@ src = 'src'
 via_ir = true
 
 [profile.dev]
-optimizer = false
-optimizer_runs = 0
+optimizer = false 
+optimizer_runs = 0  
 via_ir = false
 
 [fmt]
