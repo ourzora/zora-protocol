@@ -96,7 +96,7 @@ describe("mint-helper", () => {
 
       const hash = await walletClient.writeContract(simulated.request);
 
-      const receipt = await publicClient.getTransactionReceipt({ hash });
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
       expect(receipt).not.to.be.null;
 
       const newBalance = await publicClient.readContract({
