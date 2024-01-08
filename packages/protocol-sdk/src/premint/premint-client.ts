@@ -9,10 +9,7 @@ import type {
   TransactionReceipt,
   WalletClient,
 } from "viem";
-import {
-  zoraCreator1155PremintExecutorImplABI,
-  zoraCreatorFixedPriceSaleStrategyAddress,
-} from "@zoralabs/protocol-deployments";
+import { zoraCreator1155PremintExecutorImplABI } from "@zoralabs/protocol-deployments";
 import {
   getPremintCollectionAddress,
   premintTypedDataDefinition,
@@ -25,9 +22,9 @@ import {
   supportsPremintVersion,
   getPremintMintCosts,
   makeMintRewardsRecipient,
+  getDefaultFixedPriceMinterAddress,
 } from "./preminter";
 import {
-  PremintConfigV2,
   PremintConfigVersion,
   ContractCreationConfig,
   TokenConfigForVersion,
@@ -88,16 +85,19 @@ export const defaultTokenConfigV2MintArguments = (): Omit<
 });
 
 const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
+  chainId,
   premintConfigVersion,
   tokenCreationConfig,
   creatorAccount,
 }: {
+  chainId: number;
   premintConfigVersion: PremintConfigVersion;
   tokenCreationConfig: Partial<TokenConfigForVersion<T>> & { tokenURI: string };
   creatorAccount: Address;
 }): TokenConfigForVersion<T> => {
   const fixedPriceMinter =
-    tokenCreationConfig.fixedPriceMinter || getDefaultFixedPriceMinterAddress();
+    tokenCreationConfig.fixedPriceMinter ||
+    getDefaultFixedPriceMinterAddress(chainId);
 
   if (premintConfigVersion === PremintConfigVersion.V1) {
     return {
@@ -365,6 +365,7 @@ class PremintClient {
         premintConfigVersion: actualVersion,
         tokenCreationConfig,
         creatorAccount,
+        chainId: this.chain.id,
       }),
       uid: uidToUse,
     });
@@ -464,17 +465,17 @@ class PremintClient {
   async getMintCosts({
     tokenContract,
     quantityToMint,
-    tokenCreationConfig,
+    pricePerToken,
   }: {
     quantityToMint: bigint;
     tokenContract: Address;
-    tokenCreationConfig: TokenCreationConfig;
+    pricePerToken: bigint;
   }): Promise<MintCosts> {
     return await getPremintMintCosts({
       publicClient: this.publicClient,
       quantityToMint,
       tokenContract,
-      tokenPrice: tokenCreationConfig.pricePerToken,
+      tokenPrice: pricePerToken,
     });
   }
 
@@ -493,12 +494,12 @@ class PremintClient {
   async makeMintParameters({
     uid,
     tokenContract,
-    account,
+    minterAccount,
     mintArguments,
   }: {
     uid: number;
     tokenContract: Address;
-    account: Account | Address;
+    minterAccount: Account | Address;
     mintArguments?: {
       quantityToMint: number;
       mintComment?: string;
@@ -511,7 +512,7 @@ class PremintClient {
       throw new Error("Quantity to mint cannot be below 1");
     }
 
-    if (!account) {
+    if (!minterAccount) {
       throw new Error("Wallet not passed in");
     }
 
@@ -536,7 +537,9 @@ class PremintClient {
       mintComment: mintArguments?.mintComment || "",
       mintRecipient:
         mintArguments?.mintRecipient ||
-        (typeof account === "string" ? account : account.address),
+        (typeof minterAccount === "string"
+          ? minterAccount
+          : minterAccount.address),
       mintRewardsRecipients: makeMintRewardsRecipient({
         mintReferral: mintArguments?.mintReferral,
         platformReferral: mintArguments?.platformReferral,
@@ -545,7 +548,7 @@ class PremintClient {
 
     if (premintConfigVersion === PremintConfigVersion.V1) {
       return {
-        account,
+        account: minterAccount,
         abi: zoraCreator1155PremintExecutorImplABI,
         functionName: "premintV1",
         value,
@@ -562,18 +565,15 @@ class PremintClient {
         "premintV1"
       >;
     } else if (premintConfigVersion === PremintConfigVersion.V2) {
-      const toPost = premintConfig as PremintConfigV2;
-
       return {
-        account,
+        account: minterAccount,
         abi: zoraCreator1155PremintExecutorImplABI,
         functionName: "premintV2",
         value,
         address: getPremintExecutorAddress(),
-        // args are:  ContractCreationConfig calldata contractConfig, PremintConfigV2 calldata premintConfig, bytes calldata signature, uint256 quantityToMint, MintArguments calldata mintArguments
         args: [
           collection,
-          toPost,
+          premintConfig,
           signature,
           numberToMint,
           mintArgumentsContract,
@@ -625,10 +625,14 @@ function makeUrls({
       : null,
     zoraCollect: `https://${
       network.isTestnet ? "testnet." : ""
-    }zora.co/collect/${network.zoraPathChainName}:${address}/${zoraTokenPath}`,
+    }zora.co/collect/${
+      network.zoraCollectPathChainName
+    }:${address}/${zoraTokenPath}`,
     zoraManage: `https://${
       network.isTestnet ? "testnet." : ""
-    }zora.co/collect/${network.zoraPathChainName}:${address}/${zoraTokenPath}`,
+    }zora.co/collect/${
+      network.zoraCollectPathChainName
+    }:${address}/${zoraTokenPath}`,
   };
 }
 
@@ -674,14 +678,12 @@ async function signAndSubmitPremint<T extends PremintConfigVersion>({
   if (checkSignature) {
     const isAuthorized = await isAuthorizedToCreatePremint({
       collection,
-      signature,
       publicClient,
       signer: typeof account === "string" ? account : account.address,
       collectionAddress: await getPremintCollectionAddress({
         collection,
         publicClient,
       }),
-      ...premintConfigAndVersion,
     });
     if (!isAuthorized) {
       throw new Error("Not authorized to create premint");
@@ -695,8 +697,4 @@ async function signAndSubmitPremint<T extends PremintConfigVersion>({
   });
 
   return { premint, verifyingContract };
-}
-
-function getDefaultFixedPriceMinterAddress() {
-  return zoraCreatorFixedPriceSaleStrategyAddress[999];
 }

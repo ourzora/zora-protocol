@@ -1,3 +1,5 @@
+import { networkConfigByChain } from "src/apis/chain-constants";
+import { components, paths } from "src/apis/generated/premint-api-types";
 import { Address, Hex } from "viem";
 import {
   ContractCreationConfig,
@@ -8,8 +10,6 @@ import {
   PremintConfigWithVersion,
 } from "./contract-types";
 import { PremintSignatureGetResponse } from "./premint-api-client";
-import { components, paths } from "src/apis/generated/premint-api-types";
-import { networkConfigByChain } from "src/apis/chain-constants";
 
 export const convertCollectionFromApi = (
   collection: PremintSignatureGetResponse["collection"],
@@ -36,7 +36,9 @@ export const convertPremintFromApi = (
     return {
       premintConfigVersion: PremintConfigVersion.V1,
       premintConfig: {
-        ...premint,
+        deleted: premint.deleted,
+        uid: premint.uid,
+        version: premint.version,
         tokenConfig: {
           ...tokenConfig,
           fixedPriceMinter: tokenConfig.fixedPriceMinter as Address,
@@ -55,7 +57,9 @@ export const convertPremintFromApi = (
     return {
       premintConfigVersion: PremintConfigVersion.V2,
       premintConfig: {
-        ...premint,
+        deleted: premint.deleted,
+        uid: premint.uid,
+        version: premint.version,
         tokenConfig: {
           ...tokenConfig,
           fixedPriceMinter: tokenConfig.fixedPriceMinter as Address,
@@ -85,6 +89,7 @@ const encodePremintV1ForAPI = ({
   ...premint
 }: PremintConfigV1): PremintSignatureGetResponse["premint"] => ({
   ...premint,
+  config_version: "1",
   tokenConfig: {
     ...tokenConfig,
     maxSupply: tokenConfig.maxSupply.toString(),
@@ -98,8 +103,9 @@ const encodePremintV1ForAPI = ({
 const encodePremintV2ForAPI = ({
   tokenConfig,
   ...premint
-}: PremintConfigV2) => ({
+}: PremintConfigV2): PremintSignatureRequestBody["premint"] => ({
   ...premint,
+  config_version: "2",
   tokenConfig: {
     ...tokenConfig,
     maxSupply: tokenConfig.maxSupply.toString(),
@@ -148,7 +154,7 @@ export const encodePostSignatureInput = <T extends PremintConfigVersion>({
   premint: encodePremintForAPI({
     premintConfig,
     premintConfigVersion,
-  }) as PremintSignatureRequestBody["premint"],
+  }),
   signature,
   collection,
   chain_name: networkConfigByChain[chainId]!.zoraBackendChainName,
