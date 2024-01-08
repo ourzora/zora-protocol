@@ -1,5 +1,12 @@
 # @zoralabs/premint-sdk
 
+## 0.0.12
+
+### Patch Changes
+
+- 3af77cf: Deploy 2.7.0 to mainnet, zora mainnet, zora sepolia, zora goerli, optimism, base
+- 23dba1c: Deployed all contracts to sepolia
+
 ## 0.0.11
 
 ### Patch Changes
