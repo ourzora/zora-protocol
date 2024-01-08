@@ -16,9 +16,23 @@ async function copyEnvironmentRunFiles() {
     latestFiles.map(async (file: string) => {
       const fileParts = file.split("/");
       const chainId = fileParts[fileParts.length - 2];
+      const parsed = JSON.parse(await readFile(file, "utf-8")) as Deploy;
+      const returns = parsed.returns[0]?.value || "{}";
+
+      // a recent version of forge added a bug where the returns value with some sort of url based encoding.
+      // the below code is a hack to fix this. It should be removed once forge is fixed.
+      // use string regex replace all to remove all instances of \\ from returns (this appeared in a wierd version of forge)
+      // also opening and closing quotes that incorrecly appear before opening bracket:
+      const filtered = returns
+        .replace(/\\/g, "")
+        .replace('"{', "{")
+        .replace('}"', "}");
+
+      const parsedReturns = JSON.parse(filtered);
       return {
         chainId,
-        contents: JSON.parse(await readFile(file, "utf-8")) as Deploy,
+        timestamp: parsed.timestamp,
+        returns: parsedReturns,
       };
     }),
   );
@@ -31,7 +45,7 @@ async function copyEnvironmentRunFiles() {
       if (!acc[chainId]) {
         acc[chainId] = [];
       }
-      acc[chainId]!.push(file.contents);
+      acc[chainId]!.push(file);
       return acc;
     },
     {} as Record<string, Deploy[]>,
@@ -56,7 +70,7 @@ async function copyEnvironmentRunFiles() {
       filePath,
       JSON.stringify(
         {
-          ...JSON.parse(latest!.returns["0"]!.value),
+          ...latest!.returns,
           timestamp: latest!.timestamp,
           commit: latest!.commit,
         },
