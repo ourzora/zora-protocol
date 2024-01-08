@@ -24,6 +24,7 @@ via_ir = false
 
 [rpc_endpoints]
 goerli = "https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
+sepolia = "https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
 mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 # for optimism, since we are just using this for deployment/fork testing,
 # we can use these since they're lower volume.
