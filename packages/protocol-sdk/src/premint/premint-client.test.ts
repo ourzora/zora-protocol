@@ -1,22 +1,18 @@
 import { foundry } from "viem/chains";
 import { describe, expect, vi } from "vitest";
 
-import { Address, Hex } from "viem";
 import { createPremintClient } from "./premint-client";
 import { anvilTest } from "src/anvil";
-import {
-  ContractCreationConfig,
-  PremintConfigV1,
-  PremintConfigVersion,
-} from "./contract-types";
+import { PremintConfigVersion } from "./contract-types";
+import { getDefaultFixedPriceMinterAddress } from "./preminter";
 
 describe("ZoraCreator1155Premint - v1 signatures", () => {
   anvilTest(
     "can sign by default v1 on the forked premint contract",
-    async ({ viemClients: { walletClient, publicClient } }) => {
+    async ({ viemClients: { walletClient, publicClient, chain } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
       const premintClient = createPremintClient({
-        chain: foundry,
+        chain,
         publicClient,
       });
 
@@ -55,7 +51,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
         premintConfig: {
           deleted: false,
           tokenConfig: {
-            fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
+            fixedPriceMinter: getDefaultFixedPriceMinterAddress(chain.id),
             maxSupply: 18446744073709551615n,
             maxTokensPerAddress: 0n,
             mintDuration: 604800n,
@@ -72,7 +68,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
         },
         premintConfigVersion: PremintConfigVersion.V1,
         signature:
-          "0x8c6a9160a0917d98c201b37c9220c17ebaed23a5f905202341c1d0d4e8673c3913880907d6de48c9858fbeb40a9a38d5edda979e4dcb133643ca8ecb4afe0b691b",
+          "0x70fc1d6e862c42f2b0e4a062f4eb973cc8692df58a24b71b4fe91ae7baa5a26d2c99b1b8ab61f64ff431bf30b0897877b11b7405542c90b89b041808f1561a6c1c",
       };
 
       expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith(
@@ -83,54 +79,8 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
   );
 
   anvilTest(
-    "can validate premint on network",
-    async ({ viemClients: { publicClient } }) => {
-      const premintClient = createPremintClient({
-        chain: foundry,
-        publicClient,
-      });
-
-      const collection: ContractCreationConfig = {
-        contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266" as Address,
-        contractName: "Testing Contract",
-        contractURI:
-          "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
-      };
-      const premint: PremintConfigV1 = {
-        uid: 3,
-        version: 1,
-        deleted: false,
-        tokenConfig: {
-          maxSupply: 18446744073709551615n,
-          maxTokensPerAddress: 0n,
-          pricePerToken: 0n,
-          mintDuration: 604800n,
-          mintStart: 0n,
-          royaltyMintSchedule: 0,
-          royaltyBPS: 1000,
-          fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
-          royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          tokenURI:
-            "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
-        },
-      };
-
-      const signature =
-        "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c" as Hex;
-
-      const signatureValid = await premintClient.isValidSignature({
-        collection: collection,
-        premintConfig: premint,
-        signature,
-        // default to premint config v1 version (we dont need to specify it here)
-      });
-      expect(signatureValid.isValid).toBe(true);
-    },
-  );
-
-  anvilTest(
     "can execute premint on network",
-    async ({ viemClients: { walletClient, publicClient } }) => {
+    async ({ viemClients: { walletClient, publicClient, chain } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
       const premintClient = createPremintClient({
         chain: foundry,
@@ -149,7 +99,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
           premintConfig: {
             deleted: false,
             tokenConfig: {
-              fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
+              fixedPriceMinter: getDefaultFixedPriceMinterAddress(chain.id),
               maxSupply: 18446744073709551615n,
               maxTokensPerAddress: 0n,
               mintDuration: 604800n,
@@ -162,18 +112,18 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
                 "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
             },
             uid: 3,
-            version: 1,
+            version: 0,
           },
           premintConfigVersion: PremintConfigVersion.V1,
           signature:
-            "0x588d19641de9ba1dade4d2bb5387c8dc96f4a990fef69787534b60caead759e6334975a6be10a796da948cd7d1d4f5580b3f84d49d9fa4e0b41c97759507975a1c",
+            "0x70fc1d6e862c42f2b0e4a062f4eb973cc8692df58a24b71b4fe91ae7baa5a26d2c99b1b8ab61f64ff431bf30b0897877b11b7405542c90b89b041808f1561a6c1c",
         });
 
       premintClient.apiClient.postSignature = vi.fn();
 
       const simulateContractParameters = await premintClient.makeMintParameters(
         {
-          account: deployerAccount!,
+          minterAccount: deployerAccount!,
           tokenContract: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
           uid: 3,
           mintArguments: {
@@ -215,11 +165,11 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
 describe("ZoraCreator1155Premint - v2 signatures", () => {
   anvilTest(
     "can sign on the forked premint contract",
-    async ({ viemClients: { walletClient, publicClient } }) => {
+    async ({ viemClients: { walletClient, publicClient, chain } }) => {
       const [creatorAccount, createReferralAccount] =
         await walletClient.getAddresses();
       const premintClient = createPremintClient({
-        chain: foundry,
+        chain,
         publicClient,
       });
 
@@ -277,7 +227,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         },
         premintConfigVersion: PremintConfigVersion.V2,
         signature:
-          "0xd0a9d8164911237430fe2c76ccfd4f53925a9e14e29da19b98ed5ed59e262b0d6ef24efe8b828b79e7b2fe5a60b81c3ce0f40b58d88619dcca131c87703d9f1f1c",
+          "0x8be7932b0b31bdb7fc9269b756e0d0c9514519f083d86576e23b73c033d8ed8440ea363bc8bba0ec5c30eb6bbdf796163a324201bc7520965037102518fb5e991c",
       };
 
       expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith(

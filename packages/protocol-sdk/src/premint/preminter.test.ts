@@ -141,7 +141,7 @@ async function setupContracts({
 
 const zoraSepoliaAnvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 1905837,
+  forkBlockNumber: 3118200,
 });
 
 describe("ZoraCreator1155Preminter", () => {
