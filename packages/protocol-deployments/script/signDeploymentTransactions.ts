@@ -32,10 +32,12 @@ async function signAndSaveSignatures({
   turnkeyAccount,
   chainConfigs,
   proxyName,
+  chainId,
 }: {
   turnkeyAccount: LocalAccount;
   chainConfigs: ChainConfig[];
   proxyName: "factoryProxy" | "premintExecutorProxy";
+  chainId: number;
 }) {
   const configFolder = path.resolve(
     __dirname,
@@ -54,34 +56,34 @@ async function signAndSaveSignatures({
     proxyCreationCode: deterministicDeployConfig.proxyCreationCode as Address,
   };
 
-  const signedConfigs = await Promise.all(
-    chainConfigs.map(async (chainConfig) => {
-      return {
-        chainId: chainConfig.chainId,
-        signature: await signDeployFactory({
-          account: turnkeyAccount,
-          implementationAddress: chainConfig.implementationAddress,
-          owner: chainConfig.owner,
-          chainId: chainConfig.chainId,
-          deterministicDeploymentConfig: deploymentConfig,
-        }),
-      };
-    }),
+  const chainConfig = chainConfigs.find((x) => x.chainId === chainId);
+
+  if (!chainConfig) {
+    return;
+  }
+
+  const signature = await signDeployFactory({
+    account: turnkeyAccount,
+    implementationAddress: chainConfig.implementationAddress,
+    owner: chainConfig.owner,
+    chainId: chainConfig.chainId,
+    deterministicDeploymentConfig: deploymentConfig,
+  });
+
+  const existingSignatures = JSON.parse(
+    await readFile(path.join(configFolder, "signatures.json"), "utf-8"),
   );
+
+  const updated = {
+    ...existingSignatures,
+    [chainId]: signature,
+  };
 
   // aggregate above to object of key value pair indexed by chain id as number:
-  const byChainId = signedConfigs.reduce(
-    (acc, { chainId, signature }) => {
-      acc[chainId] = signature;
-      return acc;
-    },
-    {} as { [key: number]: string },
-  );
-
   // write as json to ../deterministicConfig/factoryDeploySignatures.json:
   await writeFile(
     path.join(configFolder, "signatures.json"),
-    JSON.stringify(byChainId, null, 2),
+    JSON.stringify(updated, null, 2),
   );
 }
 
@@ -89,6 +91,7 @@ async function signAndSaveUpgradeGate({
   turnkeyAccount,
   chainConfigs,
   proxyName,
+  chainId,
 }: {
   turnkeyAccount: LocalAccount;
   chainConfigs: {
@@ -96,12 +99,14 @@ async function signAndSaveUpgradeGate({
     owner: Address;
   }[];
   proxyName: "upgradeGate";
+  chainId: number;
 }) {
   const configFolder = path.resolve(
     __dirname,
     `../deterministicConfig/${proxyName}/`,
   );
   const configFile = path.join(configFolder, "params.json");
+
   const deterministicDeployConfig = JSON.parse(
     await readFile(configFile, "utf-8"),
   );
@@ -116,44 +121,42 @@ async function signAndSaveUpgradeGate({
       deterministicDeployConfig.proxyDeployerAddress! as Address,
   };
 
-  const upgradeGateAbi = parseAbi([
-    //  ^? const abi: readonly [{ name: "balanceOf"; type: "function"; stateMutability:...
-    "function initialize(address owner)",
-  ]);
+  const upgradeGateAbi = parseAbi(["function initialize(address owner)"]);
 
-  const signedConfigs = await Promise.all(
-    chainConfigs.map(async (chainConfig) => {
-      const initCall = encodeFunctionData({
-        abi: upgradeGateAbi,
-        functionName: "initialize",
-        args: [chainConfig.owner],
-      });
+  const chainConfig = chainConfigs.find((x) => x.chainId === chainId);
 
-      return {
-        chainId: chainConfig.chainId,
-        signature: await signGenericDeploy({
-          account: turnkeyAccount,
-          chainId: chainConfig.chainId,
-          config: deploymentConfig,
-          initCall,
-        }),
-      };
-    }),
+  if (!chainConfig) {
+    throw new Error(`No chain config found for chain id ${chainId}`);
+  }
+
+  const initCall = encodeFunctionData({
+    abi: upgradeGateAbi,
+    functionName: "initialize",
+    args: [chainConfig.owner],
+  });
+
+  console.log("signing", { turnkeyAccount, deploymentConfig });
+
+  const signature = await signGenericDeploy({
+    account: turnkeyAccount,
+    chainId: chainConfig.chainId,
+    config: deploymentConfig,
+    initCall,
+  });
+
+  const existingSignatures = JSON.parse(
+    await readFile(path.join(configFolder, "signatures.json"), "utf-8"),
   );
 
-  // aggregate above to object of key value pair indexed by chain id as number:
-  const byChainId = signedConfigs.reduce(
-    (acc, { chainId, signature }) => {
-      acc[chainId] = signature;
-      return acc;
-    },
-    {} as { [key: number]: string },
-  );
+  const updated = {
+    ...existingSignatures,
+    [chainId]: signature,
+  };
 
   // write as json to ../deterministicConfig/factoryDeploySignatures.json:
   await writeFile(
     path.join(configFolder, "signatures.json"),
-    JSON.stringify(byChainId, null, 2),
+    JSON.stringify(updated, null, 2),
   );
 }
 
@@ -235,6 +238,17 @@ const getPreminterImplConfigs = async () => {
   return chainConfigs.filter((x) => x.implementationAddress !== undefined);
 };
 
+function getChainIdPositionalArg() {
+  // parse chain id as first argument:
+  const chainIdArg = process.argv[2];
+
+  if (!chainIdArg) {
+    throw new Error("Must provide chain id as first argument");
+  }
+
+  return parseInt(chainIdArg);
+}
+
 async function main() {
   // Create a Turnkey HTTP client with API key credentials
   const httpClient = new TurnkeyClient(
@@ -258,22 +272,27 @@ async function main() {
     ethereumAddress: process.env.TURNKEY_TARGET_ADDRESS!,
   });
 
+  const chainId = getChainIdPositionalArg();
+
   await signAndSaveSignatures({
     turnkeyAccount,
     chainConfigs: await getFactoryImplConfigs(),
     proxyName: "factoryProxy",
+    chainId,
   });
 
   await signAndSaveSignatures({
     turnkeyAccount,
     chainConfigs: await getPreminterImplConfigs(),
     proxyName: "premintExecutorProxy",
+    chainId,
   });
 
   await signAndSaveUpgradeGate({
     turnkeyAccount,
     chainConfigs: await getChainConfigs(),
     proxyName: "upgradeGate",
+    chainId,
   });
 }
 
