@@ -300,7 +300,7 @@ async function mintCreatedForFreeToken(walletClient: WalletClient, publicClient:
   const premintClient = createPremintClient({chain: walletClient.chain!});
 
   const simulateContractParameters = await premintClient.makeMintParameters({
-    account: minterAccount,
+    minterAccount,
     tokenContract: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
     uid: 3,
     mintArguments: {

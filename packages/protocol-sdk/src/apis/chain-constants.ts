@@ -7,95 +7,94 @@ import {
   optimism,
   optimismGoerli,
   zora,
+  zoraSepolia,
   zoraTestnet,
 } from "viem/chains";
 import type { components } from "./generated/premint-api-types";
 import { parseEther } from "viem";
 import { getSubgraph } from "../constants";
 
+type BackendChainName = components["schemas"]["ChainName"];
+
 export type NetworkConfig = {
   chainId: number;
-  zoraPathChainName: string;
-  zoraBackendChainName: components["schemas"]["ChainName"];
+  zoraCollectPathChainName: string;
+  zoraBackendChainName: BackendChainName;
   isTestnet: boolean;
   subgraphUrl: string;
 };
 
 export const REWARD_PER_TOKEN = parseEther("0.000777");
 
-export const BackendChainNamesLookup = {
-  ZORA_MAINNET: "ZORA-MAINNET",
-  ZORA_GOERLI: "ZORA-GOERLI",
-  OPTIMISM_MAINNET: "OPTIMISM-MAINNET",
-  OPTIMISM_GOERLI: "OPTIMISM-GOERLI",
-  ETHEREUM_MAINNET: "ETHEREUM-MAINNET",
-  ETHEREUM_GOERLI: "ETHEREUM-GOERLI",
-  BASE_MAINNET: "BASE-MAINNET",
-  BASE_GOERLI: "BASE-GOERLI",
-} as const;
-
 export const networkConfigByChain: Record<number, NetworkConfig> = {
   [mainnet.id]: {
     chainId: mainnet.id,
     isTestnet: false,
-    zoraPathChainName: "eth",
-    zoraBackendChainName: BackendChainNamesLookup.ETHEREUM_MAINNET,
+    zoraCollectPathChainName: "eth",
+    zoraBackendChainName: "ETHEREUM-MAINNET",
     subgraphUrl: getSubgraph("zora-create-mainnet", "stable"),
   },
   [goerli.id]: {
     chainId: goerli.id,
     isTestnet: true,
-    zoraPathChainName: "gor",
-    zoraBackendChainName: BackendChainNamesLookup.ETHEREUM_GOERLI,
+    zoraCollectPathChainName: "gor",
+    zoraBackendChainName: "ETHEREUM-GOERLI",
     subgraphUrl: getSubgraph("zora-create-goerli", "stable"),
   },
   [zora.id]: {
     chainId: zora.id,
     isTestnet: false,
-    zoraPathChainName: "zora",
-    zoraBackendChainName: BackendChainNamesLookup.ZORA_MAINNET,
+    zoraCollectPathChainName: "zora",
+    zoraBackendChainName: "ZORA-MAINNET",
     subgraphUrl: getSubgraph("zora-create-zora-mainnet", "stable"),
   },
   [zoraTestnet.id]: {
-    chainId: zora.id,
+    chainId: zoraTestnet.id,
     isTestnet: true,
-    zoraPathChainName: "zgor",
-    zoraBackendChainName: BackendChainNamesLookup.ZORA_GOERLI,
+    zoraCollectPathChainName: "zgor",
+    zoraBackendChainName: "ZORA-GOERLI",
     subgraphUrl: getSubgraph("zora-create-zora-testnet", "stable"),
+  },
+  [zoraSepolia.id]: {
+    chainId: zoraSepolia.id,
+    isTestnet: true,
+    zoraCollectPathChainName: "zsep",
+    zoraBackendChainName: "ZORA-SEPOLIA",
+    subgraphUrl: getSubgraph("zora-create-zora-sepolia", "stable"),
   },
   [optimism.id]: {
     chainId: optimism.id,
     isTestnet: false,
-    zoraPathChainName: "opt",
-    zoraBackendChainName: BackendChainNamesLookup.OPTIMISM_MAINNET,
+    zoraCollectPathChainName: "opt",
+    zoraBackendChainName: "OPTIMISM-MAINNET",
     subgraphUrl: getSubgraph("zora-create-optimism", "stable"),
   },
   [optimismGoerli.id]: {
     chainId: optimismGoerli.id,
     isTestnet: true,
-    zoraPathChainName: "ogor",
-    zoraBackendChainName: BackendChainNamesLookup.OPTIMISM_GOERLI,
+    zoraCollectPathChainName: "ogor",
+    zoraBackendChainName: "OPTIMISM-GOERLI",
     subgraphUrl: getSubgraph("zora-create-optimism-goerli", "stable"),
   },
   [base.id]: {
     chainId: base.id,
     isTestnet: false,
-    zoraPathChainName: "base",
-    zoraBackendChainName: BackendChainNamesLookup.BASE_MAINNET,
+    zoraCollectPathChainName: "base",
+    zoraBackendChainName: "BASE-MAINNET",
     subgraphUrl: getSubgraph("zora-create-base-mainnet", "stable"),
   },
   [baseGoerli.id]: {
     chainId: baseGoerli.id,
     isTestnet: true,
-    zoraPathChainName: "bgor",
-    zoraBackendChainName: BackendChainNamesLookup.BASE_GOERLI,
+    zoraCollectPathChainName: "bgor",
+    zoraBackendChainName: "BASE-GOERLI",
     subgraphUrl: getSubgraph("zora-create-base-goerli", "stable"),
   },
   [foundry.id]: {
     chainId: foundry.id,
     isTestnet: true,
-    zoraPathChainName: "zgor",
-    zoraBackendChainName: BackendChainNamesLookup.ZORA_GOERLI,
+    zoraCollectPathChainName: "zgor",
+    zoraBackendChainName: "ZORA-GOERLI",
     subgraphUrl: getSubgraph("zora-create-zora-testnet", "stable"),
   },
 };
