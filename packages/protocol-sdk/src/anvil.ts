@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { join } from "path";
 import { test } from "vitest";
 import {
+  Chain,
   PublicClient,
   TestClient,
   WalletClient,
@@ -10,13 +11,14 @@ import {
   createWalletClient,
   http,
 } from "viem";
-import { foundry } from "viem/chains";
+import { foundry, zora } from "viem/chains";
 
 export interface AnvilViemClientsTest {
   viemClients: {
     walletClient: WalletClient;
     publicClient: PublicClient;
     testClient: TestClient;
+    chain: Chain;
   };
 }
 
@@ -31,11 +33,13 @@ async function waitForAnvilInit(anvil: any) {
 export type AnvilTestForkSettings = {
   forkUrl: string;
   forkBlockNumber: number;
+  anvilChainId?: number;
 };
 
 export const makeAnvilTest = ({
   forkUrl,
   forkBlockNumber,
+  anvilChainId = 31337,
 }: AnvilTestForkSettings) =>
   test.extend<AnvilViemClientsTest>({
     viemClients: async ({ task }, use) => {
@@ -51,7 +55,7 @@ export const makeAnvilTest = ({
           "--fork-block-number",
           `${forkBlockNumber}`,
           "--chain-id",
-          "31337",
+          anvilChainId.toString(),
         ],
         {
           cwd: join(__dirname, ".."),
@@ -61,8 +65,9 @@ export const makeAnvilTest = ({
       const anvilHost = `http://0.0.0.0:${port}`;
       await waitForAnvilInit(anvil);
 
-      const chain = {
+      const chain: Chain = {
         ...foundry,
+        id: anvilChainId,
       };
 
       const walletClient = createWalletClient({
@@ -85,6 +90,7 @@ export const makeAnvilTest = ({
         publicClient,
         walletClient,
         testClient,
+        chain,
       });
 
       // clean up function, called once after all tests run
@@ -101,4 +107,5 @@ export const forkUrls = {
 export const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
   forkBlockNumber: 7866332,
+  anvilChainId: zora.id,
 });

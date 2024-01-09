@@ -1,5 +1,23 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.0
+
+### Minor Changes
+
+- a52d245: Fix premint v2 support in premint client and add support for sepolia to SDK:
+
+  - Fix chain constants config for Zora Goerli.
+  - Support Zora-Sepolia for premint client.
+  - Fix passing of `config_version` to and from the backend API.
+  - Change parameter on `makeMintParameters` from `account` to `minterAccount`.
+  - Fix price minter address for premint client by chain, since it is not the same on all chains (yet).
+
+### Patch Changes
+
+- Updated dependencies [3af77cf]
+- Updated dependencies [23dba1c]
+  - @zoralabs/protocol-deployments@0.0.12
+
 ## 0.4.3
 
 ### Patch Changes

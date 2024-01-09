@@ -4,6 +4,7 @@ import {
   zoraCreator1155ImplABI,
   zoraCreator1155PremintExecutorImplABI,
   zoraCreator1155PremintExecutorImplAddress,
+  zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import {
   TypedDataDefinition,
@@ -85,36 +86,17 @@ export type IsValidSignatureReturn = {
   recoveredAddress?: Address;
 };
 
-export async function isAuthorizedToCreatePremint<
-  T extends PremintConfigVersion,
->({
+export async function isAuthorizedToCreatePremint({
   collection,
   collectionAddress,
   publicClient,
-  premintConfig,
-  premintConfigVersion,
-  signature,
   signer,
 }: {
   collection: ContractCreationConfig;
   collectionAddress: Address;
   publicClient: PublicClient;
-  signature: Hex;
   signer: Address;
-} & PremintConfigWithVersion<T>) {
-  // if we are using legacy version of premint config, we can use the function
-  // "isValidSignature" which we know exists on the premint executor contract
-  if (premintConfigVersion === PremintConfigVersion.V1) {
-    const [isValidSignature] = await publicClient.readContract({
-      abi: zoraCreator1155PremintExecutorImplABI,
-      address: getPremintExecutorAddress(),
-      functionName: "isValidSignature",
-      args: [collection, premintConfig as PremintConfigV1, signature],
-    });
-
-    return isValidSignature;
-  }
-
+}) {
   // otherwize, we must assume the newer version of premint executor is deployed, so we call that.
   return await publicClient.readContract({
     abi: preminterAbi,
@@ -195,8 +177,6 @@ export async function isValidSignature<T extends PremintConfigVersion>({
     collection,
     collectionAddress: tokenContract,
     publicClient,
-    signature,
-    ...premintConfigAndVersion,
   });
 
   return {
@@ -441,4 +421,10 @@ export function makeMintRewardsRecipient({
   platformReferral?: Address;
 }): Address[] {
   return [mintReferral, platformReferral];
+}
+
+export function getDefaultFixedPriceMinterAddress(chainId: number): Address {
+  return zoraCreatorFixedPriceSaleStrategyAddress[
+    chainId as keyof typeof zoraCreatorFixedPriceSaleStrategyAddress
+  ]!;
 }
