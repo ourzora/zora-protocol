@@ -65,7 +65,7 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
   [optimism.id]: {
     chainId: optimism.id,
     isTestnet: false,
-    zoraCollectPathChainName: "opt",
+    zoraCollectPathChainName: "oeth",
     zoraBackendChainName: "OPTIMISM-MAINNET",
     subgraphUrl: getSubgraph("zora-create-optimism", "stable"),
   },
