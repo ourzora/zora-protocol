@@ -18,7 +18,5 @@ contract ScriptBase is Script {
 
     ImmutableCreate2Factory constant IMMUTABLE_CREATE2_FACTORY = ImmutableCreate2Factory(0x0000000000FFe8B47B3e2130213B802212439497);
 
-    function setUp() public {
-        deployer = vm.envAddress("deployer");
-    }
+    function setUp() public {}
 }
