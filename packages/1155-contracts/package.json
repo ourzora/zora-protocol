@@ -52,6 +52,7 @@
     "es-main": "^1.2.0",
     "@wagmi/cli": "^1.0.1",
     "@types/node": "^20.1.2",
-    "@lavamoat/preinstall-always-fail": "2.0.0"
+    "@lavamoat/preinstall-always-fail": "2.0.0",
+    "prettier-plugin-solidity": "^1.3.1"
   }
 }
