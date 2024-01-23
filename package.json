@@ -9,15 +9,18 @@
     "update-version": "changeset version && turbo run update-contract-version",
     "lint": "turbo run lint",
     "format": "turbo run format",
-    "release": "turbo run build && changeset publish"
+    "release": "turbo run build && changeset publish",
+    "prepare": "husky install"
   },
   "devDependencies": {
+    "@changesets/cli": "2.26.2",
     "eslint": "^8.48.0",
+    "husky": ">=6",
+    "lint-staged": ">=10",
     "prettier": "^3.0.3",
     "prettier-plugin-solidity": "^1.1.3",
     "tsconfig": "*",
-    "turbo": "latest",
-    "@changesets/cli": "2.26.2"
+    "turbo": "latest"
   },
   "name": "zora-protocol",
   "packageManager": "yarn@1.22.19",
@@ -34,5 +37,8 @@
       "**/solady",
       "**/solmate"
     ]
+  },
+  "lint-staged": {
+    "*": "prettier --write"
   }
 }
