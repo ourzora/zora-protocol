@@ -216,34 +216,35 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         vm.stopPrank();
     }
 
-    // function test_SaleStart() external {
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: 1 ether,
-    //                 saleStart: uint64(block.timestamp + 1 days),
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 10,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+    function test_SaleStart() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: uint64(block.timestamp + 1 days),
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 10,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    //     vm.deal(tokenRecipient, 20 ether);
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, 20 ether);
 
-    //     vm.expectRevert(abi.encodeWithSignature("SaleHasNotStarted()"));
-    //     vm.prank(tokenRecipient);
-    //     target.mintWithRewards{value: 10 ether}(fixedPriceErc20, newTokenId, 10, abi.encode(tokenRecipient, ""), address(0));
-    // }
+        vm.expectRevert(abi.encodeWithSignature("SaleHasNotStarted()"));
+        vm.prank(tokenRecipient);
+        fixedPriceErc20.requestMint(address(target), newTokenId, 10, 0, abi.encode(tokenRecipient));
+    }
 
     // function test_WrongValueSent() external {
     //     uint96 pricePerToken = 1 ether;
