@@ -3,11 +3,13 @@ pragma solidity 0.8.17;
 
 import {Enjoy} from "_imagine/mint/Enjoy.sol";
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
+import {IZoraCreator1155} from "../../interfaces/IZoraCreator1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {SaleStrategy} from "../SaleStrategy.sol";
 import {SaleCommandHelper} from "../utils/SaleCommandHelper.sol";
 import {LimitedMintPerAddress} from "../utils/LimitedMintPerAddress.sol";
 import {IMinterErrors} from "../../interfaces/IMinterErrors.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 /*
 
@@ -76,12 +78,13 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
     event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
 
     /// @notice Compiles and returns the commands needed to mint a token using this sales strategy
+    /// @param target The target drop
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
     /// @param ethValueSent The amount of ETH sent with the transaction
     /// @param minterArguments The arguments passed to the minter, which should be the address to mint to
     function requestMint(
-        address,
+        address target,
         uint256 tokenId,
         uint256 quantity,
         uint256 ethValueSent,
@@ -95,7 +98,7 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
             (mintTo, comment) = abi.decode(minterArguments, (address, string));
         }
 
-        SalesConfig storage config = salesConfigs[msg.sender][tokenId];
+        SalesConfig storage config = salesConfigs[target][tokenId];
 
         // If sales config does not exist this first check will always fail.
 
@@ -111,23 +114,33 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
 
         // Check USDC approval amount
         // TODO: Check USDC approval amount
-        if (config.pricePerToken * quantity != ethValueSent) {
-            revert WrongValueSent();
+        if (config.erc20Address == address(0)) {
+            if (config.pricePerToken * quantity != ethValueSent) {
+                revert WrongValueSent();
+            }
+        } else {
+            // IF TOTAL PRICE IS GREATER THAN ALLOWANCE
+                // REVERT
+            if (config.pricePerToken * quantity > IERC20(config.erc20Address).allowance(mintTo, address(this))) {
+                revert WrongValueSent();
+            }
         }
+        
 
         // Check minted per address limit
         if (config.maxTokensPerAddress > 0) {
-            _requireMintNotOverLimitAndUpdate(config.maxTokensPerAddress, quantity, msg.sender, tokenId, mintTo);
+            _requireMintNotOverLimitAndUpdate(config.maxTokensPerAddress, quantity, target, tokenId, mintTo);
         }
 
         bool shouldTransferFunds = config.fundsRecipient != address(0);
         commands.setSize(shouldTransferFunds ? 2 : 1);
 
         // Mint command
-        commands.mint(mintTo, tokenId, quantity);
+        IZoraCreator1155(target).adminMint(mintTo, tokenId, quantity, bytes(""));
+
 
         if (bytes(comment).length > 0) {
-            emit MintComment(mintTo, msg.sender, tokenId, quantity, comment);
+            emit MintComment(mintTo, target, tokenId, quantity, comment);
         }
 
         // Should transfer funds if funds recipient is set to a non-default address
