@@ -34,10 +34,11 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         ProtocolRewards protocolRewards = new ProtocolRewards();
         ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
         Zora1155 proxy = new Zora1155(address(targetImpl));
-        usdc = new ERC20PresetMinterPauser("USDC", "USDC");
         target = ZoraCreator1155Impl(payable(address(proxy)));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
         fixedPrice = new ERC20CreatorFixedPriceSaleStrategy();
+        usdc = new ERC20PresetMinterPauser("USDC", "USDC");
+        usdc.mint(address(target), 100);
     }
 
     function test_ContractName() external {
@@ -92,6 +93,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
 
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
         assertEq(address(target).balance, 10 ether);
+        assertEq(usdc.balanceOf(address(target)), 100);
 
         vm.stopPrank();
     }
