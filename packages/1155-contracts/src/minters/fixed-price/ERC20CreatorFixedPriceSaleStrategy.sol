@@ -77,17 +77,16 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig salesConfig);
     event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
 
-    /// @notice Compiles and returns the commands needed to mint a token using this sales strategy
+    /// @notice mint using ERC20 calls.
     /// @param target The target drop
     /// @param tokenId The token ID to mint
     /// @param quantity The quantity of tokens to mint
-    /// @param ethValueSent The amount of ETH sent with the transaction
     /// @param minterArguments The arguments passed to the minter, which should be the address to mint to
     function requestMint(
         address target,
         uint256 tokenId,
         uint256 quantity,
-        uint256 ethValueSent,
+        uint256,
         bytes calldata minterArguments
     ) external returns (ICreatorCommands.CommandSet memory commands) {
         address mintTo;
@@ -114,26 +113,16 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
 
         // Check USDC approval amount
         // TODO: Check USDC approval amount
-        if (config.erc20Address == address(0)) {
-            if (config.pricePerToken * quantity != ethValueSent) {
-                revert WrongValueSent();
-            }
-        } else {
-            // IF TOTAL PRICE IS GREATER THAN ALLOWANCE
-                // REVERT
-            if (config.pricePerToken * quantity > IERC20(config.erc20Address).allowance(mintTo, address(this))) {
-                revert WrongValueSent();
-            }
+        if (config.pricePerToken * quantity > IERC20(config.erc20Address).allowance(msg.sender, address(this))) {
+            revert WrongValueSent();
         }
         
-
         // Check minted per address limit
         if (config.maxTokensPerAddress > 0) {
             _requireMintNotOverLimitAndUpdate(config.maxTokensPerAddress, quantity, target, tokenId, mintTo);
         }
 
         bool shouldTransferFunds = config.fundsRecipient != address(0);
-        commands.setSize(shouldTransferFunds ? 2 : 1);
 
         // Mint command
         IZoraCreator1155(target).adminMint(mintTo, tokenId, quantity, bytes(""));
@@ -146,7 +135,8 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
         // Should transfer funds if funds recipient is set to a non-default address
         if (shouldTransferFunds) {
             // TODO: add command for ERC20 transfers
-            commands.transfer(config.fundsRecipient, ethValueSent);
+            // commands.transfer(config.fundsRecipient, config.pricePerToken * quantity);
+            IERC20(config.erc20Address).transferFrom(msg.sender, config.fundsRecipient, config.pricePerToken * quantity);
         }
     }
 

@@ -37,8 +37,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         target = ZoraCreator1155Impl(payable(address(proxy)));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
         fixedPriceErc20 = new ERC20CreatorFixedPriceSaleStrategy();
+        vm.prank(admin);
         usdc = new ERC20PresetMinterPauser("USDC", "USDC");
-        usdc.mint(address(target), 100);
     }
 
     function test_ContractName() external {
@@ -52,22 +52,26 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
     function test_MintFlow() external {
         vm.startPrank(admin);
         uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+    
         // GRANT MINTER ADMIN ROLE - adminMint (skip zora fee)
         target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        uint96 pricePerToken = 100;
+        
+
+        // CREATOR CALLS callSale on CREATORCROP
         vm.expectEmit(true, true, true, true);
         emit SaleSet(
             address(target),
             newTokenId,
             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-                pricePerToken: 0,
+                pricePerToken: pricePerToken,
                 saleStart: 0,
                 saleEnd: type(uint64).max,
                 maxTokensPerAddress: 0,
-                fundsRecipient: address(0),
+                fundsRecipient: fundsRecipient,
                 erc20Address: address(usdc)
             })
         );
-        // CREATOR CALLS callSale on CREATORCROP
         target.callSale(
             newTokenId,
             fixedPriceErc20,
@@ -75,30 +79,37 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                 ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
                 ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-                    pricePerToken: 0,
+                    pricePerToken: pricePerToken,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 0,
-                    fundsRecipient: address(0),
+                    fundsRecipient: fundsRecipient,
                     erc20Address: address(usdc)
                 })
             )
         );
         vm.stopPrank();
 
+        
+        // AIRDROP USDC
         uint256 numTokens = 10;
-        uint256 totalValue = (1 ether * numTokens);
+        uint256 totalValue = (pricePerToken * numTokens);
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, totalValue);
 
-        vm.deal(tokenRecipient, totalValue);
-
+        // COLLECTOR APPROVED USDC for MINTER
         vm.startPrank(tokenRecipient);
-        // COLLECTOR CALL requestMint 
-        fixedPriceErc20.requestMint(address(target), newTokenId, 10, 0, abi.encode(tokenRecipient, ""));
-        assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
-        // assertEq(address(target).balance, 10 ether);
-        // assertEq(usdc.balanceOf(address(target)), 100);
+        usdc.approve(address(fixedPriceErc20), totalValue);
 
-        // vm.stopPrank();
+        // COLLECTOR CALL requestMint 
+        fixedPriceErc20.requestMint(address(target), newTokenId, numTokens, 0, abi.encode(tokenRecipient, ""));
+
+        // VERIFY COLLECT
+        assertEq(target.balanceOf(tokenRecipient, newTokenId), numTokens);
+
+        // VERIFY USDC PAYMENT
+        assertEq(usdc.balanceOf(fundsRecipient), totalValue);
+        vm.stopPrank();
     }
 
     // function test_MintWithCommentBackwardsCompatible() external {
