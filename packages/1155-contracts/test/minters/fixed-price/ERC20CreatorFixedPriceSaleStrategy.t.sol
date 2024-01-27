@@ -231,6 +231,39 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         target.mintWithRewards{value: 10 ether}(fixedPriceErc20, newTokenId, 10, abi.encode(tokenRecipient, ""), address(0));
     }
 
+    function test_WrongValueSent() external {
+        uint96 pricePerToken = 1 ether;
+
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: pricePerToken,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 11,
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
+                })
+            )
+        );
+        vm.stopPrank();
+
+        vm.deal(tokenRecipient, 20 ether);
+        uint256 quantity = 1;
+        uint256 totalReward = target.computeTotalReward(quantity);
+        uint256 totalValue = (pricePerToken * quantity) + totalReward;
+        vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
+        vm.prank(tokenRecipient);
+        target.mintWithRewards{value: totalValue + 1}(fixedPriceErc20, newTokenId, quantity, abi.encode(tokenRecipient, ""), address(0));
+    }
+
     function test_SaleEnd() external {
         vm.warp(2 days);
 
