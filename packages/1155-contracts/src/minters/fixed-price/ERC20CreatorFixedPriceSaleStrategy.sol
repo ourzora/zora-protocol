@@ -45,10 +45,12 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
         uint64 saleEnd;
         /// @notice Max tokens that can be minted for an address, 0 if unlimited
         uint64 maxTokensPerAddress;
-        /// @notice Price per token in eth wei
+        /// @notice Price per token in ERC20 amount.
         uint96 pricePerToken;
         /// @notice Funds recipient (0 if no different funds recipient than the contract global)
         address fundsRecipient;
+        /// @notice ERC20 address (0 if ETH)
+        address erc20Address;
     }
 
     // target -> tokenId -> settings
@@ -107,7 +109,8 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
             revert SaleHasNotStarted();
         }
 
-        // Check value sent
+        // Check USDC approval amount
+        // TODO: Check USDC approval amount
         if (config.pricePerToken * quantity != ethValueSent) {
             revert WrongValueSent();
         }
@@ -129,6 +132,7 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
 
         // Should transfer funds if funds recipient is set to a non-default address
         if (shouldTransferFunds) {
+            // TODO: add command for ERC20 transfers
             commands.transfer(config.fundsRecipient, ethValueSent);
         }
     }
