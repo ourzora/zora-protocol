@@ -112,7 +112,6 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
         }
 
         // Check USDC approval amount
-        // TODO: Check USDC approval amount
         if (config.pricePerToken * quantity > IERC20(config.erc20Address).allowance(msg.sender, address(this))) {
             revert WrongValueSent();
         }
@@ -134,8 +133,6 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
 
         // Should transfer funds if funds recipient is set to a non-default address
         if (shouldTransferFunds) {
-            // TODO: add command for ERC20 transfers
-            // commands.transfer(config.fundsRecipient, config.pricePerToken * quantity);
             IERC20(config.erc20Address).transferFrom(msg.sender, config.fundsRecipient, config.pricePerToken * quantity);
         }
     }
