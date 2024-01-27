@@ -246,239 +246,238 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         fixedPriceErc20.requestMint(address(target), newTokenId, 10, 0, abi.encode(tokenRecipient));
     }
 
-    // function test_WrongValueSent() external {
-    //     uint96 pricePerToken = 1 ether;
+    function test_WrongValueSent() external {
+        uint96 pricePerToken = 1 ether;
 
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: pricePerToken,
-    //                 saleStart: 0,
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 11,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: pricePerToken,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 11,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    //     vm.deal(tokenRecipient, 20 ether);
-    //     uint256 quantity = 1;
-    //     uint256 totalReward = target.computeTotalReward(quantity);
-    //     uint256 totalValue = (pricePerToken * quantity) + totalReward;
-    //     vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
-    //     vm.prank(tokenRecipient);
-    //     target.mintWithRewards{value: totalValue + 1}(fixedPriceErc20, newTokenId, quantity, abi.encode(tokenRecipient, ""), address(0));
-    // }
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, 20 ether);
+        vm.startPrank(tokenRecipient);
+        vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
+        fixedPriceErc20.requestMint(address(target), newTokenId, 10, 0, abi.encode(tokenRecipient));
+    }
 
-    // function test_SaleEnd() external {
-    //     vm.warp(2 days);
+    function test_SaleEnd() external {
+        vm.warp(2 days);
 
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: 1 ether,
-    //                 saleStart: 0,
-    //                 saleEnd: uint64(1 days),
-    //                 maxTokensPerAddress: 0,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: uint64(1 days),
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    //     vm.deal(tokenRecipient, 20 ether);
+        vm.expectRevert(abi.encodeWithSignature("SaleEnded()"));
+        vm.prank(tokenRecipient);
+        fixedPriceErc20.requestMint(address(target), newTokenId, 10, 0, abi.encode(tokenRecipient));
+    }
 
-    //     vm.expectRevert(abi.encodeWithSignature("SaleEnded()"));
-    //     vm.prank(tokenRecipient);
-    //     target.mintWithRewards{value: 10 ether}(fixedPriceErc20, newTokenId, 10, abi.encode(tokenRecipient, ""), address(0));
-    // }
+    function test_MaxTokensPerAddress() external {
+        vm.warp(2 days);
 
-    // function test_MaxTokensPerAddress() external {
-    //     vm.warp(2 days);
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 5,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: 1 ether,
-    //                 saleStart: 0,
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 5,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+        uint256 numTokens = 6;
+        uint256 totalValue = (1 ether * numTokens);
 
-    //     uint256 numTokens = 6;
-    //     uint256 totalReward = target.computeTotalReward(numTokens);
-    //     uint256 totalValue = (1 ether * numTokens) + totalReward;
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, totalValue);
 
-    //     vm.deal(tokenRecipient, totalValue);
+        vm.startPrank(tokenRecipient);
+        usdc.approve(address(fixedPriceErc20), totalValue);
+        vm.expectRevert(abi.encodeWithSelector(ILimitedMintPerAddressErrors.UserExceedsMintLimit.selector, tokenRecipient, 5, 6));
+        fixedPriceErc20.requestMint(address(target), newTokenId, numTokens, 0, abi.encode(tokenRecipient));
+    }
 
-    //     vm.prank(tokenRecipient);
-    //     vm.expectRevert(abi.encodeWithSelector(ILimitedMintPerAddressErrors.UserExceedsMintLimit.selector, tokenRecipient, 5, 6));
-    //     target.mintWithRewards{value: totalValue}(fixedPriceErc20, newTokenId, numTokens, abi.encode(tokenRecipient, ""), address(0));
-    // }
+    function testFail_setupMint() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 9,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    // function testFail_setupMint() external {
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: 1 ether,
-    //                 saleStart: 0,
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 9,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, 20 ether);
 
-    //     vm.deal(tokenRecipient, 20 ether);
+        vm.startPrank(tokenRecipient);
+        usdc.approve(address(fixedPriceErc20), 10 ether);
+        fixedPriceErc20.requestMint(address(target), newTokenId, 10, 0, abi.encode(tokenRecipient));
 
-    //     vm.startPrank(tokenRecipient);
-    //     target.mintWithRewards{value: 10 ether}(fixedPriceErc20, newTokenId, 10, abi.encode(tokenRecipient), address(0));
+        assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
+        assertEq(usdc.balanceOf(fundsRecipient), 10 ether);
 
-    //     assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
-    //     assertEq(address(target).balance, 10 ether);
+        vm.stopPrank();
+    }
 
-    //     vm.stopPrank();
-    // }
+    function test_PricePerToken() external {
+        vm.warp(2 days);
 
-    // function test_PricePerToken() external {
-    //     vm.warp(2 days);
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: 1 ether,
-    //                 saleStart: 0,
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 0,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, 20 ether);
 
-    //     vm.deal(tokenRecipient, 20 ether);
+        vm.startPrank(tokenRecipient);
 
-    //     vm.startPrank(tokenRecipient);
+        usdc.approve(address(fixedPriceErc20), 1 ether);
+        fixedPriceErc20.requestMint(address(target), newTokenId, 1, 0, abi.encode(tokenRecipient, ""));
 
-    //     target.mintWithRewards{value: 1.000777 ether}(fixedPriceErc20, newTokenId, 1, abi.encode(tokenRecipient, ""), address(0));
+        vm.stopPrank();
+    }
 
-    //     vm.stopPrank();
-    // }
+    function test_FundsRecipient() external {
+        uint96 pricePerToken = 1 ether;
+        uint256 numTokens = 10;
 
-    // function test_FundsRecipient() external {
-    //     uint96 pricePerToken = 1 ether;
-    //     uint256 numTokens = 10;
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: pricePerToken,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: pricePerToken,
-    //                 saleStart: 0,
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 0,
-    //                 fundsRecipient: fundsRecipient,
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+        uint256 totalValue = (pricePerToken * numTokens);
 
-    //     uint256 totalReward = target.computeTotalReward(numTokens);
-    //     uint256 totalValue = (pricePerToken * numTokens) + totalReward;
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, totalValue);
 
-    //     vm.deal(tokenRecipient, totalValue);
+        vm.startPrank(tokenRecipient);
+        usdc.approve(address(fixedPriceErc20), totalValue);
+        fixedPriceErc20.requestMint(address(target), newTokenId, numTokens, 0, abi.encode(tokenRecipient, ""));
 
-    //     vm.prank(tokenRecipient);
-    //     target.mintWithRewards{value: totalValue}(fixedPriceErc20, newTokenId, numTokens, abi.encode(tokenRecipient, ""), address(0));
+        assertEq(usdc.balanceOf(fundsRecipient), 10 ether);
+    }
 
-    //     assertEq(fundsRecipient.balance, 10 ether);
-    // }
+    function test_MintedPerRecipientGetter() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 0 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 20,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    // function test_MintedPerRecipientGetter() external {
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: 0 ether,
-    //                 saleStart: 0,
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 20,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+        uint256 numTokens = 10;
+        
+        vm.prank(tokenRecipient);
+        fixedPriceErc20.requestMint(address(target), newTokenId, numTokens, 0, abi.encode(tokenRecipient, ""));
 
-    //     uint256 numTokens = 10;
-    //     uint256 totalReward = target.computeTotalReward(numTokens);
-
-    //     vm.deal(tokenRecipient, totalReward);
-
-    //     vm.prank(tokenRecipient);
-    //     target.mintWithRewards{value: totalReward}(fixedPriceErc20, newTokenId, 10, abi.encode(tokenRecipient, ""), address(0));
-
-    //     assertEq(fixedPriceErc20.getMintedPerWallet(address(target), newTokenId, tokenRecipient), 10);
-    // }
+        assertEq(fixedPriceErc20.getMintedPerWallet(address(target), newTokenId, tokenRecipient), numTokens);
+    }
 
     function test_ResetSale() external {
         vm.startPrank(admin);
