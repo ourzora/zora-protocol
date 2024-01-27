@@ -163,57 +163,58 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         vm.stopPrank();
     }
 
-    // function test_MintWithComment() external {
-    //     vm.startPrank(admin);
-    //     uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
-    //     target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
-    //     vm.expectEmit(true, true, true, true);
-    //     emit SaleSet(
-    //         address(target),
-    //         newTokenId,
-    //         ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //             pricePerToken: 1 ether,
-    //             saleStart: 0,
-    //             saleEnd: type(uint64).max,
-    //             maxTokensPerAddress: 0,
-    //             fundsRecipient: address(0),
-    //             erc20Address: address(0)
-    //         })
-    //     );
-    //     target.callSale(
-    //         newTokenId,
-    //         fixedPriceErc20,
-    //         abi.encodeWithSelector(
-    //             ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
-    //             newTokenId,
-    //             ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
-    //                 pricePerToken: 1 ether,
-    //                 saleStart: 0,
-    //                 saleEnd: type(uint64).max,
-    //                 maxTokensPerAddress: 0,
-    //                 fundsRecipient: address(0),
-    //                 erc20Address: address(0)
-    //             })
-    //         )
-    //     );
-    //     vm.stopPrank();
+    function test_MintWithComment() external {
+        vm.startPrank(admin);
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+        vm.expectEmit(true, true, true, true);
+        emit SaleSet(
+            address(target),
+            newTokenId,
+            ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                pricePerToken: 1 ether,
+                saleStart: 0,
+                saleEnd: type(uint64).max,
+                maxTokensPerAddress: 0,
+                fundsRecipient: fundsRecipient,
+                erc20Address: address(usdc)
+            })
+        );
+        target.callSale(
+            newTokenId,
+            fixedPriceErc20,
+            abi.encodeWithSelector(
+                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                newTokenId,
+                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            )
+        );
+        vm.stopPrank();
 
-    //     uint256 numTokens = 10;
-    //     uint256 totalReward = target.computeTotalReward(numTokens);
-    //     uint256 totalValue = (1 ether * numTokens) + totalReward;
+        uint256 numTokens = 10;
+        uint256 totalValue = (1 ether * numTokens) ;
 
-    //     vm.deal(tokenRecipient, totalValue);
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, totalValue);
 
-    //     vm.startPrank(tokenRecipient);
-    //     vm.expectEmit(true, true, true, true);
-    //     emit MintComment(tokenRecipient, address(target), newTokenId, 10, "test comment");
-    //     target.mintWithRewards{value: totalValue}(fixedPriceErc20, newTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
+        vm.startPrank(tokenRecipient);
+        usdc.approve(address(fixedPriceErc20), totalValue);
+        vm.expectEmit(true, true, true, true);
+        emit MintComment(tokenRecipient, address(target), newTokenId, numTokens, "test comment");
+        fixedPriceErc20.requestMint(address(target), newTokenId, numTokens, 0, abi.encode(tokenRecipient, "test comment"));
 
-    //     assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
-    //     assertEq(address(target).balance, 10 ether);
+        assertEq(target.balanceOf(tokenRecipient, newTokenId), numTokens);
+        assertEq(usdc.balanceOf(fundsRecipient), totalValue);
 
-    //     vm.stopPrank();
-    // }
+        vm.stopPrank();
+    }
 
     // function test_SaleStart() external {
     //     vm.startPrank(admin);
