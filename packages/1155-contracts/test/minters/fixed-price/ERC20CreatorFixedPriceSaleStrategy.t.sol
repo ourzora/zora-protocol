@@ -62,7 +62,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                 saleStart: 0,
                 saleEnd: type(uint64).max,
                 maxTokensPerAddress: 0,
-                fundsRecipient: address(0)
+                fundsRecipient: address(0),
+                erc20Address: address(0)
             })
         );
         target.callSale(
@@ -76,7 +77,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 0,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -111,7 +113,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                 saleStart: 0,
                 saleEnd: type(uint64).max,
                 maxTokensPerAddress: 0,
-                fundsRecipient: address(0)
+                fundsRecipient: address(0),
+                erc20Address: address(0)
             })
         );
         target.callSale(
@@ -125,7 +128,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 0,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -159,7 +163,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                 saleStart: 0,
                 saleEnd: type(uint64).max,
                 maxTokensPerAddress: 0,
-                fundsRecipient: address(0)
+                fundsRecipient: address(0),
+                erc20Address: address(0)
             })
         );
         target.callSale(
@@ -173,7 +178,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 0,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -211,7 +217,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: uint64(block.timestamp + 1 days),
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 10,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -241,7 +248,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: uint64(1 days),
                     maxTokensPerAddress: 0,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -271,7 +279,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 5,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -303,7 +312,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 9,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -337,7 +347,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 0,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -370,7 +381,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 0,
-                    fundsRecipient: fundsRecipient
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(0)
                 })
             )
         );
@@ -402,7 +414,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 20,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
@@ -427,7 +440,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         emit SaleSet(
             address(target),
             newTokenId,
-            ERC20CreatorFixedPriceSaleStrategy.SalesConfig({pricePerToken: 0, saleStart: 0, saleEnd: 0, maxTokensPerAddress: 0, fundsRecipient: address(0)})
+            ERC20CreatorFixedPriceSaleStrategy.SalesConfig({pricePerToken: 0, saleStart: 0, saleEnd: 0, maxTokensPerAddress: 0, fundsRecipient: address(0), erc20Address: address(0)})
         );
         target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(ERC20CreatorFixedPriceSaleStrategy.resetSale.selector, newTokenId));
         vm.stopPrank();
@@ -466,7 +479,8 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
                     saleStart: 0,
                     saleEnd: type(uint64).max,
                     maxTokensPerAddress: 0,
-                    fundsRecipient: address(0)
+                    fundsRecipient: address(0),
+                    erc20Address: address(0)
                 })
             )
         );
