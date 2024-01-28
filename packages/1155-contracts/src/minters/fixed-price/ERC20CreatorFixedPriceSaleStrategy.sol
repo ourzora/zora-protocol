@@ -51,7 +51,7 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
         uint96 pricePerToken;
         /// @notice Funds recipient (0 if no different funds recipient than the contract global)
         address fundsRecipient;
-        /// @notice ERC20 address (0 if ETH)
+        /// @notice ERC20 address
         address erc20Address;
     }
 
