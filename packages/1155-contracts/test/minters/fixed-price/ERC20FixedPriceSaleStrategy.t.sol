@@ -42,7 +42,7 @@ contract ERC20FixedPriceSaleStrategyTest is Test {
     }
 
     function test_ContractName() external {
-        assertEq(fixedPriceErc20.contractName(), "Fixed Price Sale Strategy");
+        assertEq(fixedPriceErc20.contractName(), "ERC20 Fixed Price Sale Strategy");
     }
 
     function test_Version() external {

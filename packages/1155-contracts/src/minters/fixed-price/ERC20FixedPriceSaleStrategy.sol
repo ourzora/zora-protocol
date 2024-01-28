@@ -89,6 +89,34 @@ contract ERC20FixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPerAddre
         uint256,
         bytes calldata minterArguments
     ) external returns (ICreatorCommands.CommandSet memory commands) {
+        commands = _requestMint(target, tokenId, quantity,0,minterArguments);
+    }
+
+    /// @notice Mint batch function that 1) checks quantity and 2) keeps track of allowed tokens
+    /// @param targets target drops
+    /// @param ids token ids to mint
+    /// @param quantities of tokens to mint
+    /// @param minterArguments as specified by 1155 standard
+    function requestMintBatch(address[] memory targets, uint256[] memory ids, uint256[] memory quantities, uint256, bytes[] calldata minterArguments) external {
+        uint256 numTokens = ids.length;
+
+        for (uint256 i; i < numTokens; ++i) {
+            _requestMint(targets[i], ids[i], quantities[i], 0, minterArguments[i]);
+        }
+    }
+
+    /// @notice mint using ERC20 calls.
+    /// @param target The target drop
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param minterArguments The arguments passed to the minter, which should be the address to mint to
+    function _requestMint(
+        address target,
+        uint256 tokenId,
+        uint256 quantity,
+        uint256,
+        bytes calldata minterArguments
+    ) internal returns (ICreatorCommands.CommandSet memory commands) {
         address mintTo;
         string memory comment = "";
         if (minterArguments.length == 32) {
