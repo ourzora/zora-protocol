@@ -10,19 +10,19 @@ import {IMinter1155} from "../../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ILimitedMintPerAddressErrors} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
-import {ERC20CreatorFixedPriceSaleStrategy} from "../../../src/minters/fixed-price/ERC20CreatorFixedPriceSaleStrategy.sol";
+import {ERC20FixedPriceSaleStrategy} from "../../../src/minters/fixed-price/ERC20FixedPriceSaleStrategy.sol";
 import {ERC20PresetMinterPauser} from "@openzeppelin/contracts/token/ERC20/presets/ERC20PresetMinterPauser.sol";
 
-contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
+contract ERC20FixedPriceSaleStrategyTest is Test {
     ZoraCreator1155Impl internal target;
-    ERC20CreatorFixedPriceSaleStrategy internal fixedPriceErc20;
+    ERC20FixedPriceSaleStrategy internal fixedPriceErc20;
     ERC20PresetMinterPauser internal usdc;
     address payable internal admin = payable(address(0x999));
     address internal zora;
     address internal tokenRecipient;
     address internal fundsRecipient;
 
-    event SaleSet(address indexed mediaContract, uint256 indexed tokenId, ERC20CreatorFixedPriceSaleStrategy.SalesConfig salesConfig);
+    event SaleSet(address indexed mediaContract, uint256 indexed tokenId, ERC20FixedPriceSaleStrategy.SalesConfig salesConfig);
     event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
 
     function setUp() external {
@@ -36,7 +36,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(payable(address(proxy)));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
-        fixedPriceErc20 = new ERC20CreatorFixedPriceSaleStrategy();
+        fixedPriceErc20 = new ERC20FixedPriceSaleStrategy();
         vm.prank(admin);
         usdc = new ERC20PresetMinterPauser("USDC", "USDC");
     }
@@ -63,7 +63,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         emit SaleSet(
             address(target),
             newTokenId,
-            ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+            ERC20FixedPriceSaleStrategy.SalesConfig({
                 pricePerToken: pricePerToken,
                 saleStart: 0,
                 saleEnd: type(uint64).max,
@@ -76,9 +76,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: pricePerToken,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -120,7 +120,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         emit SaleSet(
             address(target),
             newTokenId,
-            ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+            ERC20FixedPriceSaleStrategy.SalesConfig({
                 pricePerToken: 1 ether,
                 saleStart: 0,
                 saleEnd: type(uint64).max,
@@ -133,9 +133,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -171,7 +171,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         emit SaleSet(
             address(target),
             newTokenId,
-            ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+            ERC20FixedPriceSaleStrategy.SalesConfig({
                 pricePerToken: 1 ether,
                 saleStart: 0,
                 saleEnd: type(uint64).max,
@@ -184,9 +184,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -224,9 +224,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: uint64(block.timestamp + 1 days),
                     saleEnd: type(uint64).max,
@@ -256,9 +256,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: pricePerToken,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -287,9 +287,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: uint64(1 days),
@@ -316,9 +316,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -350,9 +350,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -387,9 +387,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -423,9 +423,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: pricePerToken,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -457,9 +457,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 0 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -487,12 +487,12 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         emit SaleSet(
             address(target),
             newTokenId,
-            ERC20CreatorFixedPriceSaleStrategy.SalesConfig({pricePerToken: 0, saleStart: 0, saleEnd: 0, maxTokensPerAddress: 0, fundsRecipient: address(0), erc20Address: address(0)})
+            ERC20FixedPriceSaleStrategy.SalesConfig({pricePerToken: 0, saleStart: 0, saleEnd: 0, maxTokensPerAddress: 0, fundsRecipient: address(0), erc20Address: address(0)})
         );
-        target.callSale(newTokenId, fixedPriceErc20, abi.encodeWithSelector(ERC20CreatorFixedPriceSaleStrategy.resetSale.selector, newTokenId));
+        target.callSale(newTokenId, fixedPriceErc20, abi.encodeWithSelector(ERC20FixedPriceSaleStrategy.resetSale.selector, newTokenId));
         vm.stopPrank();
 
-        ERC20CreatorFixedPriceSaleStrategy.SalesConfig memory sale = fixedPriceErc20.sale(address(target), newTokenId);
+        ERC20FixedPriceSaleStrategy.SalesConfig memory sale = fixedPriceErc20.sale(address(target), newTokenId);
         assertEq(sale.pricePerToken, 0);
         assertEq(sale.saleStart, 0);
         assertEq(sale.saleEnd, 0);
@@ -509,9 +509,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             newTokenId,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 newTokenId,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 0,
                     saleStart: 0,
                     saleEnd: 0,
@@ -523,7 +523,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         );
         vm.stopPrank();
 
-        ERC20CreatorFixedPriceSaleStrategy.SalesConfig memory sale = fixedPriceErc20.sale(address(target), newTokenId);
+        ERC20FixedPriceSaleStrategy.SalesConfig memory sale = fixedPriceErc20.sale(address(target), newTokenId);
         assertEq(sale.pricePerToken, 0);
         assertEq(sale.saleStart, 0);
         assertEq(sale.saleEnd, 0);
@@ -551,9 +551,9 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
             tokenId1,
             fixedPriceErc20,
             abi.encodeWithSelector(
-                ERC20CreatorFixedPriceSaleStrategy.setSale.selector,
+                ERC20FixedPriceSaleStrategy.setSale.selector,
                 tokenId2,
-                ERC20CreatorFixedPriceSaleStrategy.SalesConfig({
+                ERC20FixedPriceSaleStrategy.SalesConfig({
                     pricePerToken: 1 ether,
                     saleStart: 0,
                     saleEnd: type(uint64).max,
@@ -575,7 +575,7 @@ contract ERC20CreatorFixedPriceSaleStrategyTest is Test {
         target.addPermission(tokenId2, address(fixedPriceErc20), target.PERMISSION_BIT_MINTER());
 
         vm.expectRevert(abi.encodeWithSignature("Call_TokenIdMismatch()"));
-        target.callSale(tokenId1, fixedPriceErc20, abi.encodeWithSelector(ERC20CreatorFixedPriceSaleStrategy.resetSale.selector, tokenId2));
+        target.callSale(tokenId1, fixedPriceErc20, abi.encodeWithSelector(ERC20FixedPriceSaleStrategy.resetSale.selector, tokenId2));
         vm.stopPrank();
     }
 }

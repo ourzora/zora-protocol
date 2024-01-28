@@ -36,10 +36,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 */
 
-/// @title ERC20CreatorFixedPriceSaleStrategy
-/// @notice A sale strategy for ZoraCreator that allows for ERC20 fixed price sales over a given time period
+/// @title ERC20FixedPriceSaleStrategy
+/// @notice A sale strategy that allows for ERC20 fixed price sales over a given time period
 /// @author @iainnash / @tbtstl / @sweetman
-contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress, IMinterErrors {
+contract ERC20FixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintPerAddress, IMinterErrors {
     struct SalesConfig {
         /// @notice Unix timestamp for the sale start
         uint64 saleStart;
@@ -66,7 +66,7 @@ contract ERC20CreatorFixedPriceSaleStrategy is Enjoy, SaleStrategy, LimitedMintP
 
     /// @notice The name of the sale strategy
     function contractName() external pure override returns (string memory) {
-        return "Fixed Price Sale Strategy";
+        return "ERC20 Fixed Price Sale Strategy";
     }
 
     /// @notice The version of the sale strategy
