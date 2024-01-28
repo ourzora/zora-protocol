@@ -112,6 +112,92 @@ contract ERC20FixedPriceSaleStrategyTest is Test {
         vm.stopPrank();
     }
 
+    function test_MintBatchFlow() external {
+        vm.startPrank(admin);
+        uint96 pricePerToken = 100;
+        uint256 numTokens = 10;
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", numTokens);
+        uint256 newTokenId2 = target.setupNewToken("https://zora.co/testing/token2.json", numTokens);
+        uint256 newTokenId3 = target.setupNewToken("https://zora.co/testing/token3.json", numTokens);
+    
+        address[] memory targets = new address[](3); // Dynamically-sized array
+        uint256[] memory tokens = new uint256[](3); // Dynamically-sized array
+        uint256[] memory quantities = new uint256[](3); // Dynamically-sized array
+        bytes[] memory minterArguments = new bytes[](3);
+
+        tokens[0] = newTokenId;
+        tokens[1] = newTokenId2;
+        tokens[2] = newTokenId3;
+        targets[0] = address(target);
+        targets[1] = address(target);
+        targets[2] = address(target);
+        quantities[0] = numTokens;
+        quantities[1] = numTokens;
+        quantities[2] = numTokens;
+        
+        for (uint256 i = 0; i < tokens.length; i++) {
+            // GRANT MINTER ADMIN ROLE - adminMint (skip zora fee)
+            target.addPermission(tokens[i], address(fixedPriceErc20), target.PERMISSION_BIT_ADMIN());
+
+            // CREATOR CALLS callSale on CREATORCROP
+            vm.expectEmit(true, true, true, true);
+            emit SaleSet(
+                address(target),
+                tokens[i],
+                ERC20FixedPriceSaleStrategy.SalesConfig({
+                    pricePerToken: pricePerToken,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: fundsRecipient,
+                    erc20Address: address(usdc)
+                })
+            );
+            target.callSale(
+                tokens[i],
+                fixedPriceErc20,
+                abi.encodeWithSelector(
+                    ERC20FixedPriceSaleStrategy.setSale.selector,
+                    tokens[i],
+                    ERC20FixedPriceSaleStrategy.SalesConfig({
+                        pricePerToken: pricePerToken,
+                        saleStart: 0,
+                        saleEnd: type(uint64).max,
+                        maxTokensPerAddress: 0,
+                        fundsRecipient: fundsRecipient,
+                        erc20Address: address(usdc)
+                    })
+                )
+            );
+
+            minterArguments[i] = abi.encode(tokenRecipient, "");
+        }
+        
+        vm.stopPrank();
+
+        
+        // AIRDROP USDC
+        uint256 totalValue = (pricePerToken * numTokens * tokens.length);
+        vm.prank(admin);
+        usdc.mint(tokenRecipient, totalValue);
+
+        // COLLECTOR APPROVED USDC for MINTER
+        vm.startPrank(tokenRecipient);
+        usdc.approve(address(fixedPriceErc20), totalValue);
+
+        // COLLECTOR CALL requestBatchMint
+        fixedPriceErc20.requestMintBatch(targets, tokens, quantities, 0, minterArguments);
+
+        // VERIFY COLLECT
+        for (uint256 i = 0; i < tokens.length; i++) {
+            assertEq(target.balanceOf(tokenRecipient, tokens[i]), numTokens);
+        }
+
+        // VERIFY USDC PAYMENT
+        assertEq(usdc.balanceOf(fundsRecipient), totalValue);
+        vm.stopPrank();
+    }
+
     function test_MintWithCommentBackwardsCompatible() external {
         vm.startPrank(admin);
         uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
