@@ -5,7 +5,7 @@ import {
   zoraCreator1155PremintExecutorImplABI,
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
-} from "@zoralabs/protocol-deployments";
+} from "@zoralabs/1155-deployments";
 import {
   TypedDataDefinition,
   recoverTypedDataAddress,

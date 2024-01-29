@@ -1,5 +1,5 @@
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
-import { zoraCreator1155PremintExecutorImplABI as preminterAbi } from "@zoralabs/protocol-deployments";
+import { zoraCreator1155PremintExecutorImplABI as preminterAbi } from "@zoralabs/1155-deployments";
 
 type PremintV1Inputs = ExtractAbiFunction<
   typeof preminterAbi,

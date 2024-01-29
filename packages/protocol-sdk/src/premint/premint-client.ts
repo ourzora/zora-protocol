@@ -9,7 +9,7 @@ import type {
   TransactionReceipt,
   WalletClient,
 } from "viem";
-import { zoraCreator1155PremintExecutorImplABI } from "@zoralabs/protocol-deployments";
+import { zoraCreator1155PremintExecutorImplABI } from "@zoralabs/1155-deployments";
 import {
   getPremintCollectionAddress,
   premintTypedDataDefinition,

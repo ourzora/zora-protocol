@@ -7,7 +7,7 @@ import {
   zoraCreator1155ImplABI,
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155FactoryImplConfig,
-} from "@zoralabs/protocol-deployments";
+} from "@zoralabs/1155-deployments";
 
 import {
   premintTypedDataDefinition,

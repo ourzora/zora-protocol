@@ -3,7 +3,7 @@ import {
   zoraCreator1155FactoryImplAddress,
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyABI,
-} from "@zoralabs/protocol-deployments";
+} from "@zoralabs/1155-deployments";
 import type {
   Address,
   Hex,

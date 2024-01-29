@@ -1,4 +1,4 @@
-name: "1155"
+name: "1155 deployments"
 on:
   workflow_call:
 
@@ -6,12 +6,12 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     with:
-      package_folder: packages/protocol-deployments
+      package_folder: packages/1155-deployments
 
   test:
     needs: build
     uses: ./.github/workflows/test.yml
     with:
-      package_folder: packages/protocol-deployments
+      package_folder: packages/1155-deployments
       name: Deployments
     secrets: inherit

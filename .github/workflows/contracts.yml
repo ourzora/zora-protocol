@@ -4,14 +4,14 @@ on: "push"
 
 jobs:
   contracts-1155:
-    name: 1155
+    name: 1155 Contracts
     uses: ./.github/workflows/1155.yml
+
+  contracts-1155-deployments:
+    name: 1155 Deployments
+    uses: ./.github/workflows/1155-deployments.yml
+    secrets: inherit
 
   contracts-protocol-rewards:
     name: Protocol Rewards
     uses: ./.github/workflows/protocol-rewards.yml
-
-  contracts-protocol-deployments:
-    name: Protocol Deployments
-    uses: ./.github/workflows/protocol-deployments.yml
-    secrets: inherit

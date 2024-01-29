@@ -5,8 +5,8 @@ This repository is a monorepo for the Zora Protocol
 In it you will find:
 
 - [Zora 1155 Contracts](./packages/1155-contracts)
+- [Zora 1155 Deployments](./packages/1155-deployments)
 - [Protocol Rewards](./packages/protocol-rewards)
-- [Protocol Deployments](./packages/protocol-deployments)
 
 ## Official docs
 

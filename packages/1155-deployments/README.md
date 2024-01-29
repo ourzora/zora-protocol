@@ -1,6 +1,6 @@
 # Zora Protocol Deployments
 
-Contains deployment scripts, deployed addresses and versions for the Zora Protocol.
+Contains deployment scripts, deployed addresses and versions for the Zora 1155 Contracts.
 
 View [Protocol Deployments Notion Runbook](https://www.notion.so/ourzora/Upgrading-ZORA-Contracts-baa54997272242a1b1ccb56497aab7aa).
 
@@ -15,7 +15,7 @@ View [Protocol Deployments Notion Runbook](https://www.notion.so/ourzora/Upgradi
 Import abis and addresses for a contract from the package:
 
 ```typescript
-import { zoraCreator1155FactoryImplConfig } from "@zoralabs/protocol-deployments";
+import { zoraCreator1155FactoryImplConfig } from "@zoralabs/1155-deployments";
 
 // get addresses and abi for the zora creator 1155 factory:
 const { addresses, abi } = zoraCreator1155FactoryImplConfig;
