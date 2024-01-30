@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 interface IFixedPriceAllowedMintersStrategy {
     /// @notice If a minter address is allowed to mint a token

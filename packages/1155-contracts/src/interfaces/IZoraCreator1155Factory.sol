@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 import {ICreatorRoyaltiesControl} from "./ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "./IMinter1155.sol";

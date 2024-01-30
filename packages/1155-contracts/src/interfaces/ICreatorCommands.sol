@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 /// @notice Creator Commands used by minter modules passed back to the main modules
 interface ICreatorCommands {

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity ^0.8.17;
 
 /// @notice Factory Upgrade Gate Admin Factory Implementation – Allows specific contract upgrades as a safety measure
 interface IUpgradeGate {
