@@ -35,6 +35,7 @@ contract ZoraCreator1155PremintExecutorImpl is
 
     constructor(IZoraCreator1155Factory _factory) {
         zora1155Factory = _factory;
+        _disableInitializers();
     }
 
     function initialize(address _initialOwner) public initializer {
