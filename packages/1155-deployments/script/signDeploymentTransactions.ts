@@ -62,6 +62,10 @@ async function signAndSaveSignatures({
     return;
   }
 
+  if (!chainConfig.implementationAddress) {
+    return;
+  }
+
   const signature = await signDeployFactory({
     account: turnkeyAccount,
     implementationAddress: chainConfig.implementationAddress,

@@ -12,9 +12,7 @@ contract DeployMintersAndImplementations is ZoraDeployerBase {
     function run() public returns (string memory) {
         Deployment memory deployment = getDeployment();
 
-        address deployer = vm.envAddress("DEPLOYER");
-
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
 
         deployMinters(deployment);
 
