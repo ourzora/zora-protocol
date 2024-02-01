@@ -1,5 +1,15 @@
 # @zoralabs/premint-sdk
 
+## 0.0.13
+
+### Patch Changes
+
+- f3332ee: Remove pgn chain configs and addresses
+- d2085fd: Deployed to Arbitrum One & Arbitrum Sepolia
+- a51a0cb: Renamed protocol-deployments to 1155-deployments
+- Updated dependencies [8107ffe]
+  - @zoralabs/zora-1155-contracts@2.7.1
+
 ## 0.0.12
 
 ### Patch Changes

@@ -1,10 +1,20 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.2
+
+### Patch Changes
+
+- 5c536dc: Update optimism eth constant
+- Updated dependencies [f3332ee]
+- Updated dependencies [d2085fd]
+- Updated dependencies [a51a0cb]
+  - @zoralabs/1155-deployments@0.0.13
+
 ## 0.5.1
 
 ### Patch Changes
 
-- 73070c0: 
+- 73070c0:
   - Fix types export - make sure that types are exported to the correct directory. Broken by commit 627f8c37716f0b5c201f75ab1d025ae878be0ae29e7a269d21185fa04e4bcf93
   - Exclude tests from built bundle
   - Fixes #396

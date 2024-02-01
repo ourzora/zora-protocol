@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.7.1
+
+### Patch Changes
+
+- 8107ffe: Preminter impl disables initializers
+
 ## 2.7.0
 
 ### Minor Changes
