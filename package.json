@@ -39,6 +39,10 @@
     ]
   },
   "lint-staged": {
-    "*": "prettier --write"
+    "*.sol": "prettier --write",
+    "*.ts": "prettier --write",
+    "*.js": "prettier --write",
+    "*.mjs": "prettier --write",
+    "*.json": "prettier --write"
   }
 }
