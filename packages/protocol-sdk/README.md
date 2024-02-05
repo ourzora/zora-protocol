@@ -1,6 +1,6 @@
 # Zora Protocol SDK
 
-Protocol SDK allows users to create tokens using the Zora Protocol, and mint them.
+Protocol SDK allows developers to create tokens using the Zora Protocol and mint them.
 
 ## Installing
 
@@ -9,13 +9,13 @@ Protocol SDK allows users to create tokens using the Zora Protocol, and mint the
 - `npm install viem`
 - `npm install `
 
-### Creating a mint from an on-chain contract:
+### Creating a mint from an on-chain contract
 
 #### Using viem
- 
+
 ```ts
-import {createMintClient} from "@zoralabs/protocol-sdk";
-import type {Address, PublicClient, WalletClient} from "viem";
+import { createMintClient } from "@zoralabs/protocol-sdk";
+import type { Address, PublicClient, WalletClient } from "viem";
 
 async function mintNFT({
   walletClient,
@@ -41,7 +41,7 @@ async function mintNFT({
   // optional address that will receive a mint referral reward
   mintReferral?: Address;
 }) {
-  const mintClient = createMintClient({chain: walletClient.chain!});
+  const mintClient = createMintClient({ chain: walletClient.chain! });
 
   // prepare the mint transaction, which can be simulated via an rpc with the public client.
   const prepared = await mintClient.makePrepareMintTokenParams({
@@ -69,30 +69,47 @@ async function mintNFT({
   const txHash = await walletClient.writeContract(request);
 
   // wait for the transaction to be complete
-  await publicClient.waitForTransactionReceipt({hash: txHash});
+  await publicClient.waitForTransactionReceipt({ hash: txHash });
 }
 ```
 
 #### Using wagmi
 
 ```tsx
-import {createMintClient} from "@zoralabs/protocol-sdk";
-import {useEffect, useMemo, useState} from "react";
-import {BaseError, SimulateContractParameters, stringify} from "viem";
-import {Address, useAccount, useContractWrite, useNetwork, usePrepareContractWrite, usePublicClient, useWaitForTransaction} from "wagmi";
+import { createMintClient } from "@zoralabs/protocol-sdk";
+import { useEffect, useMemo, useState } from "react";
+import { BaseError, SimulateContractParameters, stringify } from "viem";
+import {
+  Address,
+  useAccount,
+  useContractWrite,
+  useNetwork,
+  usePrepareContractWrite,
+  usePublicClient,
+  useWaitForTransaction,
+} from "wagmi";
 
 // custom hook that gets the mintClient for the current chain
 const useMintClient = () => {
   const publicClient = usePublicClient();
 
-  const {chain} = useNetwork();
+  const { chain } = useNetwork();
 
-  const mintClient = useMemo(() => chain && createMintClient({chain, publicClient}), [chain, publicClient]);
+  const mintClient = useMemo(
+    () => chain && createMintClient({ chain, publicClient }),
+    [chain, publicClient],
+  );
 
   return mintClient;
 };
 
-export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: Address}) => {
+export const Mint = ({
+  tokenId,
+  tokenContract,
+}: {
+  tokenId: string;
+  tokenContract: Address;
+}) => {
   // call custom hook to get the mintClient
   const mintClient = useMintClient();
 
@@ -102,7 +119,7 @@ export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: 
   // params for the prepare contract write hook
   const [params, setParams] = useState<SimulateContractParameters>();
 
-  const {address} = useAccount();
+  const { address } = useAccount();
 
   useEffect(() => {
     if (!mintClient || !address) return;
@@ -124,10 +141,14 @@ export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: 
     makeParams();
   }, [mintClient, address, quantityToMint]);
 
-  const {config} = usePrepareContractWrite(params);
+  const { config } = usePrepareContractWrite(params);
 
-  const {write, data, error, isLoading, isError} = useContractWrite(config);
-  const {data: receipt, isLoading: isPending, isSuccess} = useWaitForTransaction({hash: data?.hash});
+  const { write, data, error, isLoading, isError } = useContractWrite(config);
+  const {
+    data: receipt,
+    isLoading: isPending,
+    isSuccess,
+  } = useWaitForTransaction({ hash: data?.hash });
 
   return (
     <>
@@ -139,7 +160,10 @@ export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: 
         }}
       >
         {/* input for quantity to mint: */}
-        <input placeholder="quantity to mint" onChange={(e) => setQuantityToMint(Number(e.target.value))} />
+        <input
+          placeholder="quantity to mint"
+          onChange={(e) => setQuantityToMint(Number(e.target.value))}
+        />
         <button disabled={!write} type="submit">
           Mint
         </button>
@@ -161,7 +185,7 @@ export const Mint = ({tokenId, tokenContract}: {tokenId: string; tokenContract: 
 };
 ```
 
-### Creating an 1155 contract:
+### Creating an 1155 contract
 
 If an object with {name, uri} is passed in to this helper, it uses the creatorAccount and those values to either 1) create or 2) mint to that existing contract.
 
@@ -195,11 +219,11 @@ export async function createContract({
 }
 ```
 
-### Creating a token for free (gasless creation):
+### Premint: create a mint without paying gas
 
 ```ts
-import {createPremintClient} from "@zoralabs/protocol-sdk";
-import type {Address, PublicClient, WalletClient} from "viem";
+import { createPremintClient } from "@zoralabs/protocol-sdk";
+import type { Address, PublicClient, WalletClient } from "viem";
 
 async function createForFree({
   walletClient,
@@ -213,7 +237,10 @@ async function createForFree({
   // address of the token contract
   creatorAccount: Address;
 }) {
-  const premintClient = createPremintClient({chain: walletClient.chain!, publicClient});
+  const premintClient = createPremintClient({
+    chain: walletClient.chain!,
+    publicClient,
+  });
 
   // create and sign a free token creation.
   const createdPremint = await premintClient.createPremint({
@@ -225,11 +252,13 @@ async function createForFree({
     collection: {
       contractAdmin: creatorAccount,
       contractName: "Testing Contract",
-      contractURI: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+      contractURI:
+        "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
     },
     // token info of token to create
     tokenCreationConfig: {
-      tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+      tokenURI:
+        "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
     },
   });
 
@@ -243,19 +272,21 @@ async function createForFree({
     tokenContractAddress: premintCollectionAddress,
   };
 }
-
 ```
 
-### Updating a token that was created for free (before it was brought onchain):
+### Updating a premint before it is brought onchain
 
-Before a token that was created for free is brought onchain, it can be updated by the original creator of that token, by having that creator sign a message indicating the update. This is useful for updating the tokenURI, other metadata, or token sale configuration (price, duration, limits, etc.):
+Before a premint is brought onchain, it can be updated by the original creator of that token, by having that creator sign a message indicating the update. This is useful for updating the tokenURI, other metadata, or token sale configuration (price, duration, limits, etc.):
 
 ```ts
-import {createPremintClient} from "@zoralabs/protocol-sdk";
-import type {Address, PublicClient, WalletClient} from "viem";
+import { createPremintClient } from "@zoralabs/protocol-sdk";
+import type { Address, PublicClient, WalletClient } from "viem";
 
-async function updateCreatedForFreeToken(walletClient: WalletClient, premintUid: number) {
-  const premintClient = createPremintClient({chain: walletClient.chain!});
+async function updateCreatedForFreeToken(
+  walletClient: WalletClient,
+  premintUid: number,
+) {
+  const premintClient = createPremintClient({ chain: walletClient.chain! });
 
   // sign a message to update the created for free token, and store the update
   await premintClient.updatePremint({
@@ -265,19 +296,20 @@ async function updateCreatedForFreeToken(walletClient: WalletClient, premintUid:
     walletClient,
     // Token information, falls back to defaults set in DefaultMintArguments.
     tokenConfigUpdates: {
-      tokenURI: "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+      tokenURI:
+        "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
     },
   });
 }
 ```
 
-### Deleting a token that was created for free (before it was brought onchain):
+### Deleting a premint before it is brought onchain
 
-Before a token that was created for free is brought onchain, it can be deleted by the original creator of that token, by having that creator sign a message indicating the deletion:
+Before a premint is brought onchain, it can be deleted by the original creator of that token, by having that creator sign a message indicating the deletion:
 
 ```ts
 async function deleteCreatedForFreeToken(walletClient: WalletClient) {
-  const premintClient = createPremintClient({chain: walletClient.chain!});
+  const premintClient = createPremintClient({ chain: walletClient.chain! });
 
   // sign a message to delete the premint, and store the deletion
   await premintClient.deletePremint({
@@ -290,14 +322,18 @@ async function deleteCreatedForFreeToken(walletClient: WalletClient) {
 }
 ```
 
-### Minting a token that was created for free (and bringing it onchain):
+### Minting a premint and bringing it onchain
 
 ```ts
-import {createPremintClient} from "@zoralabs/protocol-sdk";
-import type {Address, PublicClient, WalletClient} from "viem";
+import { createPremintClient } from "@zoralabs/protocol-sdk";
+import type { Address, PublicClient, WalletClient } from "viem";
 
-async function mintCreatedForFreeToken(walletClient: WalletClient, publicClient: PublicClient, minterAccount: Address) {
-  const premintClient = createPremintClient({chain: walletClient.chain!});
+async function mintCreatedForFreeToken(
+  walletClient: WalletClient,
+  publicClient: PublicClient,
+  minterAccount: Address,
+) {
+  const premintClient = createPremintClient({ chain: walletClient.chain! });
 
   const simulateContractParameters = await premintClient.makeMintParameters({
     minterAccount,
@@ -310,15 +346,19 @@ async function mintCreatedForFreeToken(walletClient: WalletClient, publicClient:
   });
 
   // simulate the transaction and get any validation errors
-  const {request} = await publicClient.simulateContract(simulateContractParameters);
+  const { request } = await publicClient.simulateContract(
+    simulateContractParameters,
+  );
 
   // submit the transaction to the network
   const txHash = await walletClient.writeContract(request);
 
   // wait for the transaction to be complete
-  const receipt = await publicClient.waitForTransactionReceipt({hash: txHash});
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash: txHash,
+  });
 
-  const {urls} = await premintClient.getDataFromPremintReceipt(receipt);
+  const { urls } = await premintClient.getDataFromPremintReceipt(receipt);
 
   // block explorer url:
   console.log(urls.explorer);
