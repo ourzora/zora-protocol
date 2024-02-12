@@ -1,5 +1,11 @@
 # @zoralabs/premint-sdk
 
+## 0.0.14
+
+### Patch Changes
+
+- Added back protocol-deployments - bundling 1155-deployments into it
+
 ## 0.0.13
 
 ### Patch Changes

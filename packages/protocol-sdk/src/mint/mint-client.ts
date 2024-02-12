@@ -14,7 +14,7 @@ import { SimulateContractParameters } from "viem";
 import {
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyAddress,
-} from "@zoralabs/1155-deployments";
+} from "@zoralabs/protocol-deployments";
 import { GenericTokenIdTypes } from "src/types";
 import { zora721Abi } from "src/constants";
 

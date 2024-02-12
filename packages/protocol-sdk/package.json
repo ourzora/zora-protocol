@@ -16,7 +16,7 @@
     "lint": "prettier --check 'src/**/*.ts' 'test-integration/**/*.ts'"
   },
   "dependencies": {
-    "@zoralabs/1155-deployments": "*",
+    "@zoralabs/protocol-deployments": "*",
     "abitype": "^0.10.3",
     "vite": "4.5.0"
   },

@@ -2,7 +2,7 @@ import { Address, parseAbi, parseEther } from "viem";
 import { zora } from "viem/chains";
 import { describe, expect } from "vitest";
 import { createMintClient } from "./mint-client";
-import { zoraCreator1155ImplABI } from "@zoralabs/1155-deployments";
+import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import { anvilTest, forkUrls, makeAnvilTest } from "src/anvil";
 
 const erc721ABI = parseAbi([

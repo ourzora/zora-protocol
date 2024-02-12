@@ -17,7 +17,7 @@ type Addresses = {
 const getAddresses = () => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("./addresses");
+  const addressesFiles = readdirSync("../1155-deployments/addresses");
 
   const addAddress = ({
     contractName,
@@ -43,7 +43,7 @@ const getAddresses = () => {
 
   for (const addressesFile of addressesFiles) {
     const jsonAddress = JSON.parse(
-      readFileSync(`./addresses/${addressesFile}`, "utf-8"),
+      readFileSync(`../1155-deployments/addresses/${addressesFile}`, "utf-8"),
     ) as {
       FIXED_PRICE_SALE_STRATEGY: Address;
       MERKLE_MINT_SALE_STRATEGY: Address;
@@ -92,7 +92,7 @@ const getAddresses = () => {
 };
 
 export default defineConfig({
-  out: "package/wagmiGenerated.ts",
+  out: "src/wagmiGenerated.ts",
   contracts: [
     ...Object.entries(getAddresses()).map(([contractName, addressConfig]) => ({
       abi: addressConfig.abi,
