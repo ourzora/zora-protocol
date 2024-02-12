@@ -1,2 +1,2 @@
-src/chainConfigs.ts
-src/wagmiGenerated.ts
+src/generated/**/*.ts
+json/**/*.json

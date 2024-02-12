@@ -5,10 +5,15 @@
   "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/src/index.d.ts",
+  "files": [
+    "dist/",
+    "src/",
+    "json/"
+  ],
   "type": "module",
   "scripts": {
     "build": "yarn wagmi && yarn bundle-configs && tsup",
-    "bundle-configs": "tsx scripts/bundle-chainConfigs.ts && yarn prettier",
+    "bundle-configs": "tsx scripts/bundle-configs.ts && yarn prettier",
     "prettier": "prettier --write 'src/**/*.ts' 'scripts/*' 'wagmi.config.ts'",
     "lint": "prettier --check 'src/**/*.ts' 'scripts/*' 'wagmi.config.ts'",
     "wagmi": "wagmi generate"

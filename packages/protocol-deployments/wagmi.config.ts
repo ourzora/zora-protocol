@@ -92,7 +92,7 @@ const getAddresses = () => {
 };
 
 export default defineConfig({
-  out: "src/wagmiGenerated.ts",
+  out: "src/generated/wagmi.ts",
   contracts: [
     ...Object.entries(getAddresses()).map(([contractName, addressConfig]) => ({
       abi: addressConfig.abi,
