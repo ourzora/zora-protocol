@@ -325,7 +325,7 @@ class PremintClient {
     uid,
     checkSignature = false,
   }: {
-    creatorAccount: Address;
+    creatorAccount: Address | Account;
     checkSignature?: boolean;
     walletClient: WalletClient;
     collection: ContractCreationConfig;
@@ -364,7 +364,10 @@ class PremintClient {
       tokenConfig: makeTokenConfigWithDefaults({
         premintConfigVersion: actualVersion,
         tokenCreationConfig,
-        creatorAccount,
+        creatorAccount:
+          typeof creatorAccount === "string"
+            ? creatorAccount
+            : creatorAccount.address,
         chainId: this.chain.id,
       }),
       uid: uidToUse,
