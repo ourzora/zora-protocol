@@ -44,3 +44,4 @@ Run in development mode (watch tests):
 ## Development workflow
 
 See [DEVELOPMENT.md](./DEVELOPMENT.md)
+

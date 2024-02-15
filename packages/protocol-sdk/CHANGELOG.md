@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.3
+
+### Patch Changes
+
+- a07499d: Allows an `Account` object to be passed for `signTypedData` compatiblity with Local Accounts
+
 ## 0.5.2
 
 ### Patch Changes
