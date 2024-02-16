@@ -7,6 +7,7 @@ import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {IERC1271} from "../interfaces/IERC1271.sol";
 
 struct ContractCreationConfig {
     // Creator/admin of the created contract.  Must match the account that signed the message
@@ -122,13 +123,17 @@ library ZoraCreator1155Attribution {
         return ECDSAUpgradeable.toTypedDataHash(_domainSeparatorV4(chainId, verifyingContract, hashedName, hashedVersion), structHash);
     }
 
+    /// @notice Define magic value to verify smart contract signatures (ERC1271).
+    bytes4 internal constant MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
+
     function recoverSignerHashed(
         bytes32 hashedPremintConfig,
         bytes calldata signature,
         address erc1155Contract,
         bytes32 signatureVersion,
-        uint256 chainId
-    ) internal pure returns (address signatory) {
+        uint256 chainId,
+        address premintSignerContract
+    ) internal view returns (address signatory) {
         // first validate the signature - the creator must match the signer of the message
         bytes32 digest = premintHashedTypeDataV4(
             hashedPremintConfig,
@@ -139,7 +144,29 @@ library ZoraCreator1155Attribution {
             chainId
         );
 
-        (signatory, ) = ECDSAUpgradeable.tryRecover(digest, signature);
+        if (premintSignerContract != address(0)) {
+            // if the smart contract wallet is set, then the signature must be validated by that address
+            if (premintSignerContract.code.length == 0) {
+                revert IZoraCreator1155Errors.premintSignerContractNotAContract();
+            }
+
+            try IERC1271(premintSignerContract).isValidSignature(digest, signature) returns (bytes4 magicValue) {
+                if (MAGIC_VALUE == magicValue) {
+                    return premintSignerContract;
+                }
+                revert IZoraCreator1155Errors.InvalidSigner(magicValue);
+            } catch {
+                revert IZoraCreator1155Errors.premintSignerContractFailedToRecoverSigner();
+            }
+        } else {
+            ECDSAUpgradeable.RecoverError recoverError;
+            // if the smart contract signer is not set, then the signature must be from the signer of the message
+            (signatory, recoverError) = ECDSAUpgradeable.tryRecover(digest, signature);
+
+            if (recoverError != ECDSAUpgradeable.RecoverError.NoError) {
+                revert IZoraCreator1155Errors.InvalidSignature(recoverError);
+            }
+        }
     }
 
     /// Gets hash data to sign for a premint.
@@ -383,7 +410,8 @@ library DelegatedTokenCreation {
         bytes32 premintVersion,
         bytes calldata signature,
         address tokenContract,
-        uint256 newTokenId
+        uint256 newTokenId,
+        address premintSignerContract
     ) external view returns (DelegatedTokenSetup memory params, DecodedCreatorAttribution memory creatorAttribution, bytes[] memory tokenSetupActions) {
         // based on version of encoded premint config, decode corresponding premint config,
         // and then recover signer from the signature, and then build token setup actions based
@@ -395,7 +423,8 @@ library DelegatedTokenCreation {
                 ZoraCreator1155Attribution.VERSION_1,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
-                signature
+                signature,
+                premintSignerContract
             );
 
             (params, tokenSetupActions) = _recoverDelegatedTokenSetup(premintConfig, newTokenId);
@@ -406,7 +435,8 @@ library DelegatedTokenCreation {
                 ZoraCreator1155Attribution.VERSION_2,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
-                signature
+                signature,
+                premintSignerContract
             );
 
             (params, tokenSetupActions) = _recoverDelegatedTokenSetup(premintConfig, newTokenId);
@@ -427,12 +457,20 @@ library DelegatedTokenCreation {
         string memory version,
         bytes32 structHash,
         address tokenContract,
-        bytes calldata signature
+        bytes calldata signature,
+        address premintSignerContract
     ) internal view returns (DecodedCreatorAttribution memory attribution) {
         attribution.structHash = structHash;
         attribution.version = version;
 
-        attribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(structHash, signature, tokenContract, keccak256(bytes(version)), block.chainid);
+        attribution.creator = ZoraCreator1155Attribution.recoverSignerHashed(
+            structHash,
+            signature,
+            tokenContract,
+            keccak256(bytes(version)),
+            block.chainid,
+            premintSignerContract
+        );
 
         attribution.signature = signature;
         attribution.domainName = ZoraCreator1155Attribution.NAME;

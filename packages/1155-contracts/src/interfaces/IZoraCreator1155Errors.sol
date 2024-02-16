@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import {ICreatorRoyaltyErrors} from "./ICreatorRoyaltiesControl.sol";
 import {ILimitedMintPerAddressErrors} from "./ILimitedMintPerAddress.sol";
 import {IMinterErrors} from "./IMinterErrors.sol";
+import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 
 interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddressErrors, IMinterErrors {
     error Call_TokenIdMismatch();
@@ -35,7 +36,12 @@ interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddres
     error MintNotYetStarted();
     error PremintDeleted();
 
+    // DelegatedMinting related errors
     error InvalidSignatureVersion();
+    error premintSignerContractNotAContract();
+    error InvalidSignature(ECDSAUpgradeable.RecoverError recoverError);
+    error InvalidSigner(bytes4 magicValue);
+    error premintSignerContractFailedToRecoverSigner();
 
     error ERC1155_MINT_TO_ZERO_ADDRESS();
 }

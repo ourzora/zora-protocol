@@ -132,7 +132,10 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.prank(executor);
-        newTokenId = preminter.premint{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, comment);
+        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments;
+        mintArguments.mintComment = comment;
+        mintArguments.mintRecipient = executor;
+        newTokenId = preminter.premintV1{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
     }
 
     function _signAndExecutePremintV1(uint256 privateKey, address executor, uint256 quantityToMint, string memory comment) private {

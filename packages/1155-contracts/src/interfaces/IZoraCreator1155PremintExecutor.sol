@@ -5,6 +5,17 @@ import {PremintEncoding, ZoraCreator1155Attribution, ContractCreationConfig, Pre
 import {IOwnable2StepUpgradeable} from "../utils/ownable/IOwnable2StepUpgradeable.sol";
 import {IZoraCreator1155Factory} from "./IZoraCreator1155Factory.sol";
 
+// this contains functions we have removed, but want to keep around for for testing purposes
+interface IRemovedZoraCreator1155PremintExecutorFunctions {
+    function premint(
+        ContractCreationConfig calldata contractConfig,
+        PremintConfig calldata premintConfig,
+        bytes calldata signature,
+        uint256 quantityToMint,
+        string calldata mintComment
+    ) external payable returns (uint256 newTokenId);
+}
+
 // interface for legacy v1 of premint executor methods
 // maintained in order to not break existing calls
 // to legacy api when this api is upgraded
@@ -19,14 +30,6 @@ interface ILegacyZoraCreator1155PremintExecutor {
         address minter,
         uint256 quantityMinted
     );
-
-    function premint(
-        ContractCreationConfig calldata contractConfig,
-        PremintConfig calldata premintConfig,
-        bytes calldata signature,
-        uint256 quantityToMint,
-        string calldata mintComment
-    ) external payable returns (uint256 newTokenId);
 
     function isAuthorizedToCreatePremint(
         address signer,
@@ -53,6 +56,15 @@ interface IZoraCreator1155PremintExecutorV2 {
         uint256 quantityToMint,
         IZoraCreator1155PremintExecutor.MintArguments calldata mintArguments
     ) external payable returns (IZoraCreator1155PremintExecutor.PremintResult memory);
+
+    function premintV2WithSignerContract(
+        ContractCreationConfig calldata contractConfig,
+        PremintConfigV2 calldata premintConfig,
+        bytes calldata signature,
+        uint256 quantityToMint,
+        IZoraCreator1155PremintExecutor.MintArguments calldata mintArguments,
+        address signerContract
+    ) external payable returns (IZoraCreator1155PremintExecutor.PremintResult memory result);
 }
 
 interface IZoraCreator1155PremintExecutor is
@@ -88,4 +100,6 @@ interface IZoraCreator1155PremintExecutor is
     function getContractAddress(ContractCreationConfig calldata contractConfig) external view returns (address);
 
     function supportedPremintSignatureVersions(address contractAddress) external view returns (string[] memory);
+
+    function mintFee(address contractAddress) external view returns (uint256);
 }

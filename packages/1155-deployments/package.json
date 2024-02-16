@@ -7,7 +7,7 @@
   "private": true,
   "scripts": {
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
-    "test": "FORK_TEST_CHAINS=mainnet,optimism,optimism_goerli,zora,zora_goerli,sepolia,base_goerli,base,zora_sepolia,arbitrum_one,arbitrum_sepolia forge test -vvv",
+    "test": "FORK_TEST_CHAINS=mainnet,optimism,optimism_goerli,zora,zora_goerli,sepolia,base,zora_sepolia,arbitrum_one,arbitrum_sepolia forge test -vvv",
     "copy-deployed-contracts": "yarn tsx script/copy-deployed-contracts.ts",
     "unlink-protocol-rewards": "rm -rf ./node_modules/@zoralabs/protocol-rewards && cp -r ../protocol-rewards ./node_modules/@zoralabs/protocol-rewards",
     "unlink-1155": "rm -rf ./node_modules/@zoralabs/zora-1155-contracts && cp -r ../1155-contracts ./node_modules/@zoralabs/zora-1155-contracts",

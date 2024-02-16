@@ -32,7 +32,7 @@ import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {ZoraCreator1155StorageV1} from "./ZoraCreator1155StorageV1.sol";
 import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
-import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {IZoraCreator1155DelegatedCreation, ISupportsAABasedDelegatedTokenCreation, IHasSupportedPremintSignatureVersions} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
 import {ZoraCreator1155Attribution, DecodedCreatorAttribution, PremintTokenSetup, PremintConfig, PremintConfigV2, DelegatedTokenCreation, DelegatedTokenSetup} from "../delegation/ZoraCreator1155Attribution.sol";
 
@@ -574,7 +574,8 @@ contract ZoraCreator1155Impl is
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IZoraCreator1155).interfaceId ||
             ERC1155Upgradeable.supportsInterface(interfaceId) ||
-            interfaceId == type(IZoraCreator1155DelegatedCreation).interfaceId ||
+            interfaceId == type(IHasSupportedPremintSignatureVersions).interfaceId ||
+            interfaceId == type(ISupportsAABasedDelegatedTokenCreation).interfaceId ||
             interfaceId == type(IMintWithRewardsRecipients).interfaceId;
     }
 
@@ -759,14 +760,16 @@ contract ZoraCreator1155Impl is
     /// @param premintVersion version of the premint configuration
     /// @param signature EIP-712 Signature created on the premintConfig by an account with the PERMISSION_BIT_MINTER role on the contract.
     /// @param sender original sender of the transaction, used to set the firstMinter
+    /// @param premintSignerContract if an EIP-1271 based premint, the contract that signed the premint
     function delegateSetupNewToken(
         bytes memory premintConfig,
         bytes32 premintVersion,
         bytes calldata signature,
-        address sender
+        address sender,
+        address premintSignerContract
     ) external nonReentrant returns (uint256 newTokenId) {
         (DelegatedTokenSetup memory params, DecodedCreatorAttribution memory attribution, bytes[] memory tokenSetupActions) = DelegatedTokenCreation
-            .decodeAndRecoverDelegatedTokenSetup(premintConfig, premintVersion, signature, address(this), nextTokenId);
+            .decodeAndRecoverDelegatedTokenSetup(premintConfig, premintVersion, signature, address(this), nextTokenId, premintSignerContract);
 
         // if a token has already been created for a premint config with this uid:
         if (delegatedTokenId[params.uid] != 0) {

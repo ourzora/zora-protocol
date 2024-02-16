@@ -13,7 +13,7 @@ import {
 
 type PremintInputs = ExtractAbiFunction<
   typeof preminterAbi,
-  "premint"
+  "premintV1"
 >["inputs"];
 
 type PreminterHashDataTypes = AbiParametersToPrimitiveTypes<PremintInputs>;

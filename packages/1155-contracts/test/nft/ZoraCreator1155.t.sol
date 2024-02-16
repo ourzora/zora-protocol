@@ -1110,7 +1110,7 @@ contract ZoraCreator1155Test is Test {
 
         {
             (bytes memory premintConfigEncoded, bytes32 version) = PremintEncoding.encodePremintV2(premintConfig);
-            tokenId = target.delegateSetupNewToken(premintConfigEncoded, version, signature, collectors[0]);
+            tokenId = target.delegateSetupNewToken(premintConfigEncoded, version, signature, collectors[0], address(0));
         }
 
         RewardsSettings memory settings = target.computeFreeMintRewards(quantity);

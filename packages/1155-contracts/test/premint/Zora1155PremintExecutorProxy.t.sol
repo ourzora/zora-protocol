@@ -17,7 +17,7 @@ import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {IUpgradeGate} from "../../src/interfaces/IUpgradeGate.sol";
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
-import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
+import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor, IRemovedZoraCreator1155PremintExecutorFunctions} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     address internal owner;
@@ -147,12 +147,12 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
 
-        mintFeeAmount = ZoraCreator1155Impl(payable(deterministicAddress)).mintFee();
+        mintFeeAmount = 0.000777 ether;
 
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
 
-        uint256 tokenId = ILegacyZoraCreator1155PremintExecutor(forkedPreminterProxy).premint{value: mintFeeAmount}(
+        uint256 tokenId = IRemovedZoraCreator1155PremintExecutorFunctions(address(forkedPreminterProxy)).premint{value: mintFeeAmount}(
             contractConfig,
             premintConfig,
             signature,
@@ -236,7 +236,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
 
-        uint256 tokenId = ILegacyZoraCreator1155PremintExecutor(forkedPreminterProxy).premint{value: mintFeeAmount}(
+        uint256 tokenId = IRemovedZoraCreator1155PremintExecutorFunctions(address(forkedPreminterProxy)).premint{value: mintFeeAmount}(
             contractConfig,
             premintConfig,
             signature,
@@ -274,6 +274,86 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // have mint referral withdraw - it should pass
         vm.prank(mintReferral);
         IProtocolRewards(0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B).withdraw(mintReferral, 0.000111 ether * quantityToMint);
+    }
+
+    function test_premintV2_canWorkWithOldInterface() external {
+        vm.createSelectFork("zora_sepolia", 4982793);
+
+        // 1. execute premint using currently deployed version of proxy, this will create 1155 contract using the legacy interface
+        address preminterProxy = 0x7777773606e7e46C8Ba8B98C08f5cD218e31d340;
+        IZoraCreator1155PremintExecutor forkedPreminterProxy = IZoraCreator1155PremintExecutor(preminterProxy);
+
+        // build and sign v2 premint config
+        ContractCreationConfig memory contractConfig = Zora1155PremintFixtures.makeDefaultContractCreationConfig(creator);
+        contractConfig.contractAdmin = creator;
+        contractConfig.contractURI = "ipfs://someurl";
+        address deterministicAddress = forkedPreminterProxy.getContractAddress(contractConfig);
+
+        assertEq(deterministicAddress.code.length, 0);
+
+        IMinter1155 fixedPriceMinter = ZoraCreator1155FactoryImpl(address(forkedPreminterProxy.zora1155Factory())).fixedPriceMinter();
+        PremintConfigV2 memory premintConfig = PremintConfigV2({
+            tokenConfig: Zora1155PremintFixtures.makeTokenCreationConfigV2WithCreateReferral(fixedPriceMinter, address(0), makeAddr("creator")),
+            uid: 100,
+            version: 0,
+            deleted: false
+        });
+
+        bytes memory signature = _signPremint(
+            ZoraCreator1155Attribution.hashPremint(premintConfig),
+            ZoraCreator1155Attribution.HASHED_VERSION_2,
+            deterministicAddress
+        );
+
+        // create 1155 contract via premint, using legacy interface
+        uint256 quantityToMint = 1;
+
+        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
+
+        vm.deal(collector, mintFeeAmount);
+        vm.prank(collector);
+
+        forkedPreminterProxy.premintV2{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
+
+        // 2. upgrade to current version of preminter
+        // now contract has been created; upgrade to latest version of premint executor
+        ZoraCreator1155PremintExecutorImpl newVersion = new ZoraCreator1155PremintExecutorImpl(forkedPreminterProxy.zora1155Factory());
+
+        vm.prank(forkedPreminterProxy.owner());
+        ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).upgradeTo(address(newVersion));
+
+        // 2. create premint using upgraded impl
+
+        premintConfig.uid = 101;
+        signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), ZoraCreator1155Attribution.HASHED_VERSION_2, deterministicAddress);
+
+        // it should succeed
+        ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).premintV2{value: mintFeeAmount}(
+            contractConfig,
+            premintConfig,
+            signature,
+            quantityToMint,
+            defaultMintArguments
+        );
+
+        // 3. create premint on new contract
+        contractConfig.contractURI = "https://zora.co/555555";
+
+        signature = _signPremint(
+            ZoraCreator1155Attribution.hashPremint(premintConfig),
+            ZoraCreator1155Attribution.HASHED_VERSION_2,
+            forkedPreminterProxy.getContractAddress(contractConfig)
+        );
+
+        // it should succeed
+        ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).premintV2WithSignerContract{value: mintFeeAmount}(
+            contractConfig,
+            premintConfig,
+            signature,
+            quantityToMint,
+            defaultMintArguments,
+            address(0)
+        );
     }
 
     function _signPremint(bytes32 structHash, bytes32 premintVersion, address contractAddress) private view returns (bytes memory signature) {

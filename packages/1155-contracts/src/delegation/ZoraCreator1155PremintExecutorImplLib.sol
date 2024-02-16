@@ -7,7 +7,7 @@ import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
-import {IZoraCreator1155DelegatedCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {IZoraCreator1155DelegatedCreation, IZoraCreator1155DelegatedCreationLegacy, ISupportsAABasedDelegatedTokenCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
 
 interface ILegacyZoraCreator1155DelegatedMinter {
@@ -77,10 +77,6 @@ library ZoraCreator1155PremintExecutorImplLib {
         return ILegacyZoraCreator1155DelegatedMinter(contractAddress).delegateSetupNewToken(premintConfig, signature, msg.sender);
     }
 
-    function supportsNewPremintInterface(address contractAddress) internal view returns (bool) {
-        return IZoraCreator1155(contractAddress).supportsInterface(type(IZoraCreator1155DelegatedCreation).interfaceId);
-    }
-
     function premint(
         IZoraCreator1155Factory zora1155Factory,
         ContractCreationConfig calldata contractConfig,
@@ -89,7 +85,8 @@ library ZoraCreator1155PremintExecutorImplLib {
         bytes calldata signature,
         uint256 quantityToMint,
         address fixedPriceMinter,
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments
+        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments,
+        address signerContract
     ) internal returns (IZoraCreator1155PremintExecutor.PremintResult memory) {
         // get or create the contract with the given params
         // contract address is deterministic.
@@ -97,13 +94,30 @@ library ZoraCreator1155PremintExecutorImplLib {
 
         uint256 newTokenId;
 
-        if (supportsNewPremintInterface(address(tokenContract))) {
+        if (tokenContract.supportsInterface(type(ISupportsAABasedDelegatedTokenCreation).interfaceId)) {
             // if the contract supports the new interface, we can use it to create the token.
 
             // pass the signature and the premint config to the token contract to create the token.
             // The token contract will verify the signature and that the signer has permission to create a new token.
             // and then create and setup the token using the given token config.
-            newTokenId = tokenContract.delegateSetupNewToken(encodedPremintConfig, premintVersion, signature, msg.sender);
+            newTokenId = ISupportsAABasedDelegatedTokenCreation(tokenContract).delegateSetupNewToken(
+                encodedPremintConfig,
+                premintVersion,
+                signature,
+                msg.sender,
+                signerContract
+            );
+        } else if (tokenContract.supportsInterface(type(IZoraCreator1155DelegatedCreationLegacy).interfaceId)) {
+            if (signerContract != address(0)) {
+                revert("Smart contract signing not supported on version of 1155 contract");
+            }
+
+            newTokenId = IZoraCreator1155DelegatedCreationLegacy(address(tokenContract)).delegateSetupNewToken(
+                encodedPremintConfig,
+                premintVersion,
+                signature,
+                msg.sender
+            );
         } else {
             // otherwise, we need to use the legacy interface.
             newTokenId = legacySetupNewToken(address(tokenContract), encodedPremintConfig, signature);
