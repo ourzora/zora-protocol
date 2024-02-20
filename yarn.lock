@@ -1916,24 +1916,6 @@
   resolved "https://registry.yarnpkg.com/@zoralabs/openzeppelin-contracts-upgradeable/-/openzeppelin-contracts-upgradeable-4.8.4.tgz#130b69cd5ff70b1f67da11fe53fe8b2323464b84"
   integrity sha512-5vhL88tz00Gv2+NUhLdYBRqb9RRekfyQAodXTQxJU2LYxxy6jr1mPycTZempQ1kmw5wIwFbSIoYzpaxOx6UK6Q==
 
-"@zoralabs/protocol-rewards@1.1.0":
-  version "1.1.0"
-  resolved "https://registry.yarnpkg.com/@zoralabs/protocol-rewards/-/protocol-rewards-1.1.0.tgz#3814678f6849c172f55c47fb83cdcd8521fa97f1"
-  integrity sha512-TTulEeXJVB2jfMcP9kfdTtykVc5rYH0jsgZtRJjnWZc55WymEx9Z+mPuMHSZ22eWN95fKxLsToBqE5/upaqSjQ==
-
-"@zoralabs/zora-1155-contracts@2.6.0":
-  version "2.6.0"
-  resolved "https://registry.yarnpkg.com/@zoralabs/zora-1155-contracts/-/zora-1155-contracts-2.6.0.tgz#b891fcb5da7ff6864f1513fc311991cf861ac1ed"
-  integrity sha512-7mY5WP5/osvv8+w7eZReCAWfr+ms2Pbqniukx8RBf8XUR1FhRoxZdi8sQ0T1++WgGAhS8kC4YMp9t8bGZAWH8g==
-  dependencies:
-    "@openzeppelin/contracts" "4.9.2"
-    "@zoralabs/openzeppelin-contracts-upgradeable" "4.8.4"
-    "@zoralabs/protocol-rewards" "*"
-    ds-test "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b"
-    forge-std "https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80"
-    solady "^0.0.123"
-    solmate "^6.1.0"
-
 JSONStream@1.3.2:
   version "1.3.2"
   resolved "https://registry.yarnpkg.com/JSONStream/-/JSONStream-1.3.2.tgz#c102371b6ec3a7cf3b847ca00c20bb0fce4c6dea"
@@ -6964,11 +6946,6 @@ solady@0.0.132:
   resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.132.tgz#5e81ec342990f334055db8e8f319786fcedb6b1a"
   integrity sha512-qMdj/Y5fgPmxcis3eTs1Z03Qt/DVt1VJmlugRNjw7DySkrMOW/rHNyUVqqvevsYaGXgbPT54z68chDNesFnH+Q==
 
-solady@^0.0.123:
-  version "0.0.123"
-  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.123.tgz#7ef95767c1570e3efde7550da2a8b439b2f413d2"
-  integrity sha512-F/B8OMCplGsS4FrdPrnEG0xdg8HKede5PwC+Rum8soj/LWxfKckA0p+Uwnlbgey2iI82IHvmSOCNhsdbA+lUrw==
-
 solidity-comments-extractor@^0.0.7:
   version "0.0.7"
   resolved "https://registry.yarnpkg.com/solidity-comments-extractor/-/solidity-comments-extractor-0.0.7.tgz#99d8f1361438f84019795d928b931f4e5c39ca19"
@@ -6983,11 +6960,6 @@ solmate@6.1.0:
   version "6.1.0"
   resolved "https://registry.yarnpkg.com/solmate/-/solmate-6.1.0.tgz#b85aaa8c2b34afe9c6d6d5a015c369267c576313"
   integrity sha512-gxG4YU5nnAQ+Ac23R44GS3Xo3+X0+8XCe4/P1KvVobL5ERBzQBG/xMv7NSvVo/pkHSYGufgUAPjiueYxujKJAA==
-
-solmate@^6.1.0:
-  version "6.2.0"
-  resolved "https://registry.yarnpkg.com/solmate/-/solmate-6.2.0.tgz#edd29b5f3d6faafafdcf65fe4d1d959b4841cfa8"
-  integrity sha512-AM38ioQ2P8zRsA42zenb9or6OybRjOLXIu3lhIT8rhddUuduCt76pUEuLxOIg9GByGojGz+EbpFdCB6B+QZVVA==
 
 source-map-js@^1.0.2:
   version "1.0.2"
