@@ -1,0 +1,10 @@
+chainid: "11155111"
+network: sepolia
+factories1155:
+  - address: "0x13dAA8E9e3f68deDE7b1386ACdc12eA98F2FB688"
+    startBlock: "3354498"
+    version: "1"
+factories721:
+  - address: "0x87cfd516c5ea86e50b950678CA970a8a28de27ac"
+    startBlock: "3354415"
+    version: "1"

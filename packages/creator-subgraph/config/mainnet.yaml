@@ -1,0 +1,28 @@
+chainid: "1"
+network: mainnet
+factories1155:
+  # this factory unable to be controlled anymore
+  - address: "0x784A410B891EE92612102521281a3e222a6E326D"
+    startBlock: "16844200"
+    version: "1"
+  # previous versions of this factory hold the UpgradeGate and is non-deterministic
+  - address: "0xA6C5f2DE915240270DaC655152C3f6A91748cb85"
+    startBlock: "17126366"
+    version: "2"
+  # this factory is deterministic and does not include the UpgradeGate
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "18272202"
+    version: "3"
+factories721:
+  - address: "0xF74B146ce44CC162b601deC3BE331784DB111DC1"
+    startBlock: "14758780"
+    version: "1"
+protocolRewards:
+  # initial protocol rewards – only used by old NFT contracts
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "17831976"
+    version: "1"
+  # newer rewards used by more recent contracts. This adds `withdrawFor`
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "17867249"
+    version: "2"

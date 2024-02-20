@@ -1,0 +1,20 @@
+chainid: "84531"
+network: base-goerli
+factories1155:
+  - address: "0x9168C5ba5a0a76db8A1BF5b2eE5557f2A0ECA4f4"
+    startBlock: "6948614"
+    version: "1"
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "10581134"
+    version: "2"
+factories721:
+  - address: "0x87cfd516c5ea86e50b950678CA970a8a28de27ac"
+    startBlock: "3597035"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "7920777"
+    version: "1"
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "8134033"
+    version: "2"

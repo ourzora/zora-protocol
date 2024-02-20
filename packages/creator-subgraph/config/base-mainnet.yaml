@@ -1,0 +1,20 @@
+chainid: "8453"
+network: base
+factories1155:
+  - address: "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
+    startBlock: "1496186"
+    version: "1"
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "4784084"
+    version: "2"
+factories721:
+  - address: "0x58C3ccB2dcb9384E5AB9111CD1a5DEA916B0f33c"
+    startBlock: "1461362"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "2123378"
+    version: "1"
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "2336418"
+    version: "2"

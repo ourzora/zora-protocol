@@ -1,0 +1,20 @@
+chainid: "420"
+network: optimism-goerli
+factories1155:
+  - address: "0xb0C56317E9cEBc6E0f7A59458a83D0A9ccC3e955"
+    startBlock: "9127679"
+    version: "1"
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "15463356"
+    version: "2"
+factories721:
+  - address: "0x3C1ebcF36Ca9DD9371c9aA99c274e4988906c6E3"
+    startBlock: "9120231"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "12803376"
+    version: "1"
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "13016586"
+    version: "2"

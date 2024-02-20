@@ -1,0 +1,2 @@
+export const TOKEN_STANDARD_ERC721 = 'ERC721'
+export const TOKEN_STANDARD_ERC1155 = 'ERC1155'

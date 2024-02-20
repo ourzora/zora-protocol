@@ -1,0 +1,28 @@
+chainid: "7777777"
+network: zora-mainnet
+factories1155:
+  - address: "0x35ca784918bf11692708c1D530691704AAcEA95E"
+    startBlock: "45420"
+    version: "1"
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "4664191"
+    version: "2"
+factories721:
+  - address: "0xA2c2A96A232113Dd4993E8b048EEbc3371AE8d85"
+    startBlock: "46799"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "2171044"
+    version: "1"
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "2384107"
+    version: "2"
+preminter:
+  - address: "0x7777773606e7e46C8Ba8B98C08f5cD218e31d340"
+    startBlock: "4664191"
+    version: "1"
+reserveAuctionV3:
+  - address: "0xA06262157905913f855573f53AD48DE2D4ba1F4A"
+    startBlock: "6686902"
+    version: "1"

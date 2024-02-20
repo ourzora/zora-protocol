@@ -5,13 +5,14 @@
   "license": "MIT",
   "files": [
     "src/",
-    "_imagine"
+    "_imagine",
+    "out/*/*.abi.json"
   ],
   "scripts": {
     "build:sizes": "forge build --sizes",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test": "forge test",
-    "build:contracts": "forge build",
+    "build:contracts": "forge build --extra-output-files abi",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "lint": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'"

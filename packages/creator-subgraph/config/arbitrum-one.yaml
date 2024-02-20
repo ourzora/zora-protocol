@@ -1,0 +1,13 @@
+chainid: "42161"
+network: arbitrum-one
+factories1155:
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "169120898"
+factories721:
+  - address: "0xa5f8577cCA2eE9d5577E76385dB1Af51517c76bb"
+    startBlock: "171408300"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "169101021"
+    version: "1"

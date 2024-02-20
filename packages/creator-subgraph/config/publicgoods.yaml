@@ -1,0 +1,10 @@
+chainid: "424"
+network: publicgoods
+factories1155:
+  - address: "0x6E742921602a5195f6439c8b8b827E85902E1B2D"
+    startBlock: "404897"
+    version: "1"
+factories721:
+  - address: "0x48d8db63724444C6270749fEe80bBDB6CF33677f"
+    startBlock: "389957"
+    version: "1"

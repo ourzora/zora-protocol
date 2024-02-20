@@ -6,6 +6,7 @@ In it you will find:
 
 - [Zora 1155 Contracts](./packages/1155-contracts)
 - [Zora 1155 Deployment Scripts](./packages/1155-deployments)
+- [Zora Creator Subgraph](./packages/creator-subgraph)
 - [Protocol Deployments](./packages/protocol-deployments)
 - [Protocol Rewards](./packages/protocol-rewards)
 - [Protocol SDK](./packages/protocol-sdk)

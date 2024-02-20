@@ -1,0 +1,20 @@
+chainid: "10"
+network: optimism
+factories1155:
+  - address: "0x78b524931e9d847c40BcBf225c25e154a7B05fDA"
+    startBlock: "97158995"
+    version: "1"
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "110378103"
+    version: "2"
+factories721:
+  - address: "0x7d1a46c6e614A0091c39E102F2798C27c1fA8892"
+    startBlock: "97155865"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "107718410"
+    version: "1"
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "107931668"
+    version: "2"

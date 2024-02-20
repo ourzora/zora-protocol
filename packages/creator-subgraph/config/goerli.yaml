@@ -1,0 +1,17 @@
+chainid: "5"
+network: goerli
+factories1155:
+  - address: "0x8732b4bCa198509bB9c40f9a24638Be1eaB7D30c"
+    startBlock: "8667388"
+    version: "1"
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "9803733"
+    version: "2"
+protocolRewards:
+  - version: "1"
+    address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "9423660"
+factories721:
+  - address: "0xb9583D05Ba9ba8f7F14CCEe3Da10D2bc0A72f519"
+    startBlock: "7412408"
+    version: "1"
