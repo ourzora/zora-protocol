@@ -1,817 +1,817 @@
 [
   {
-    "type": "function",
-    "name": "clearRedeem",
-    "inputs": [
-      {
-        "name": "tokenId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "hashes",
-        "type": "bytes32[]",
-        "internalType": "bytes32[]"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "contractName",
     "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "contractURI",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "contractVersion",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "string",
-        "internalType": "string"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "creatorContract",
-    "inputs": [],
-    "outputs": [
-      {
-        "name": "",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "initialize",
-    "inputs": [
-      {
-        "name": "_creatorContract",
-        "type": "address",
-        "internalType": "address"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "redeemInstructionsHash",
-    "inputs": [
-      {
-        "name": "_redeemInstructions",
-        "type": "tuple",
-        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
-        "components": [
-          {
-            "name": "mintToken",
-            "type": "tuple",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
-            "components": [
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "tokenId",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              }
-            ]
-          },
-          {
-            "name": "instructions",
-            "type": "tuple[]",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
-            "components": [
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdStart",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdEnd",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "transferRecipient",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "burnFunction",
-                "type": "bytes4",
-                "internalType": "bytes4"
-              }
-            ]
-          },
-          {
-            "name": "saleStart",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "saleEnd",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "ethAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "ethRecipient",
-            "type": "address",
-            "internalType": "address"
-          }
-        ]
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "redeemInstructionsHashIsAllowed",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "",
-        "type": "bytes32",
-        "internalType": "bytes32"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "requestMint",
-    "inputs": [
-      {
-        "name": "sender",
-        "type": "address",
-        "internalType": "address"
-      },
-      {
-        "name": "tokenId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "amount",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "ethValueSent",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "minterArguments",
-        "type": "bytes",
-        "internalType": "bytes"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "commands",
-        "type": "tuple",
-        "internalType": "struct ICreatorCommands.CommandSet",
-        "components": [
-          {
-            "name": "commands",
-            "type": "tuple[]",
-            "internalType": "struct ICreatorCommands.Command[]",
-            "components": [
-              {
-                "name": "method",
-                "type": "uint8",
-                "internalType": "enum ICreatorCommands.CreatorActions"
-              },
-              {
-                "name": "args",
-                "type": "bytes",
-                "internalType": "bytes"
-              }
-            ]
-          },
-          {
-            "name": "at",
-            "type": "uint256",
-            "internalType": "uint256"
-          }
-        ]
-      }
-    ],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "resetSale",
-    "inputs": [
-      {
-        "name": "",
-        "type": "uint256",
-        "internalType": "uint256"
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "view"
-  },
-  {
-    "type": "function",
-    "name": "setRedeem",
-    "inputs": [
-      {
-        "name": "tokenId",
-        "type": "uint256",
-        "internalType": "uint256"
-      },
-      {
-        "name": "_redeemInstructions",
-        "type": "tuple",
-        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
-        "components": [
-          {
-            "name": "mintToken",
-            "type": "tuple",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
-            "components": [
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "tokenId",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              }
-            ]
-          },
-          {
-            "name": "instructions",
-            "type": "tuple[]",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
-            "components": [
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdStart",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdEnd",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "transferRecipient",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "burnFunction",
-                "type": "bytes4",
-                "internalType": "bytes4"
-              }
-            ]
-          },
-          {
-            "name": "saleStart",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "saleEnd",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "ethAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "ethRecipient",
-            "type": "address",
-            "internalType": "address"
-          }
-        ]
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "nonpayable"
-  },
-  {
-    "type": "function",
-    "name": "supportsInterface",
-    "inputs": [
-      {
-        "name": "interfaceId",
-        "type": "bytes4",
-        "internalType": "bytes4"
-      }
-    ],
-    "outputs": [
-      {
-        "name": "",
-        "type": "bool",
-        "internalType": "bool"
-      }
-    ],
-    "stateMutability": "pure"
-  },
-  {
-    "type": "function",
-    "name": "validateRedeemInstructions",
-    "inputs": [
-      {
-        "name": "_redeemInstructions",
-        "type": "tuple",
-        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
-        "components": [
-          {
-            "name": "mintToken",
-            "type": "tuple",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
-            "components": [
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "tokenId",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              }
-            ]
-          },
-          {
-            "name": "instructions",
-            "type": "tuple[]",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
-            "components": [
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdStart",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdEnd",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "transferRecipient",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "burnFunction",
-                "type": "bytes4",
-                "internalType": "bytes4"
-              }
-            ]
-          },
-          {
-            "name": "saleStart",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "saleEnd",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "ethAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "ethRecipient",
-            "type": "address",
-            "internalType": "address"
-          }
-        ]
-      }
-    ],
-    "outputs": [],
-    "stateMutability": "view"
-  },
-  {
-    "type": "event",
-    "name": "Initialized",
-    "inputs": [
-      {
-        "name": "version",
-        "type": "uint8",
-        "indexed": false,
-        "internalType": "uint8"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RedeemProcessed",
-    "inputs": [
-      {
-        "name": "target",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "redeemsInstructionsHash",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "sender",
-        "type": "address",
-        "indexed": false,
-        "internalType": "address"
-      },
-      {
-        "name": "tokenIds",
-        "type": "uint256[][]",
-        "indexed": false,
-        "internalType": "uint256[][]"
-      },
-      {
-        "name": "amounts",
-        "type": "uint256[][]",
-        "indexed": false,
-        "internalType": "uint256[][]"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RedeemSet",
-    "inputs": [
-      {
-        "name": "target",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "redeemsInstructionsHash",
-        "type": "bytes32",
-        "indexed": true,
-        "internalType": "bytes32"
-      },
-      {
-        "name": "data",
-        "type": "tuple",
-        "indexed": false,
-        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
-        "components": [
-          {
-            "name": "mintToken",
-            "type": "tuple",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
-            "components": [
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "tokenId",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              }
-            ]
-          },
-          {
-            "name": "instructions",
-            "type": "tuple[]",
-            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
-            "components": [
-              {
-                "name": "tokenType",
-                "type": "uint8",
-                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType"
-              },
-              {
-                "name": "amount",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdStart",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenIdEnd",
-                "type": "uint256",
-                "internalType": "uint256"
-              },
-              {
-                "name": "tokenContract",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "transferRecipient",
-                "type": "address",
-                "internalType": "address"
-              },
-              {
-                "name": "burnFunction",
-                "type": "bytes4",
-                "internalType": "bytes4"
-              }
-            ]
-          },
-          {
-            "name": "saleStart",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "saleEnd",
-            "type": "uint64",
-            "internalType": "uint64"
-          },
-          {
-            "name": "ethAmount",
-            "type": "uint256",
-            "internalType": "uint256"
-          },
-          {
-            "name": "ethRecipient",
-            "type": "address",
-            "internalType": "address"
-          }
-        ]
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "event",
-    "name": "RedeemsCleared",
-    "inputs": [
-      {
-        "name": "target",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
-      },
-      {
-        "name": "redeemInstructionsHashes",
-        "type": "bytes32[]",
-        "indexed": true,
-        "internalType": "bytes32[]"
-      }
-    ],
-    "anonymous": false
-  },
-  {
-    "type": "error",
     "name": "BurnFailed",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "CallerNotCreatorContract",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "EmptyRedeemInstructions",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "IncorrectBurnOrTransferAmount",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "IncorrectMintAmount",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "IncorrectNumberOfTokenIds",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "InvalidCreatorContract",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "InvalidSaleEndOrStart",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "InvalidTokenIdsForTokenType",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "InvalidTokenType",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "MintTokenContractMustBeCreatorContract",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "MintTokenTypeMustBeERC1155",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "MustBurnOrTransfer",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "MustCallClearRedeem",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "RedeemInstructionAlreadySet",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "RedeemInstructionNotAllowed",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "SaleEnded",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "SaleHasNotStarted",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "SenderIsNotTokenOwner",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "TokenIdOutOfRange",
-    "inputs": []
+    "type": "error"
   },
   {
-    "type": "error",
+    "inputs": [],
     "name": "WrongValueSent",
-    "inputs": []
+    "type": "error"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": false,
+        "internalType": "uint8",
+        "name": "version",
+        "type": "uint8"
+      }
+    ],
+    "name": "Initialized",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "redeemsInstructionsHash",
+        "type": "bytes32"
+      },
+      {
+        "indexed": false,
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[][]",
+        "name": "tokenIds",
+        "type": "uint256[][]"
+      },
+      {
+        "indexed": false,
+        "internalType": "uint256[][]",
+        "name": "amounts",
+        "type": "uint256[][]"
+      }
+    ],
+    "name": "RedeemProcessed",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32",
+        "name": "redeemsInstructionsHash",
+        "type": "bytes32"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
+            "name": "mintToken",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdStart",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdEnd",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "transferRecipient",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "burnFunction",
+                "type": "bytes4"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
+            "name": "instructions",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleStart",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleEnd",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ethAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "ethRecipient",
+            "type": "address"
+          }
+        ],
+        "indexed": false,
+        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
+        "name": "data",
+        "type": "tuple"
+      }
+    ],
+    "name": "RedeemSet",
+    "type": "event"
+  },
+  {
+    "anonymous": false,
+    "inputs": [
+      {
+        "indexed": true,
+        "internalType": "address",
+        "name": "target",
+        "type": "address"
+      },
+      {
+        "indexed": true,
+        "internalType": "bytes32[]",
+        "name": "redeemInstructionsHashes",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "RedeemsCleared",
+    "type": "event"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32[]",
+        "name": "hashes",
+        "type": "bytes32[]"
+      }
+    ],
+    "name": "clearRedeem",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "contractName",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "contractURI",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "contractVersion",
+    "outputs": [
+      {
+        "internalType": "string",
+        "name": "",
+        "type": "string"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [],
+    "name": "creatorContract",
+    "outputs": [
+      {
+        "internalType": "address",
+        "name": "",
+        "type": "address"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "_creatorContract",
+        "type": "address"
+      }
+    ],
+    "name": "initialize",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
+            "name": "mintToken",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdStart",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdEnd",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "transferRecipient",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "burnFunction",
+                "type": "bytes4"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
+            "name": "instructions",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleStart",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleEnd",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ethAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "ethRecipient",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
+        "name": "_redeemInstructions",
+        "type": "tuple"
+      }
+    ],
+    "name": "redeemInstructionsHash",
+    "outputs": [
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes32",
+        "name": "",
+        "type": "bytes32"
+      }
+    ],
+    "name": "redeemInstructionsHashIsAllowed",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "address",
+        "name": "sender",
+        "type": "address"
+      },
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "amount",
+        "type": "uint256"
+      },
+      {
+        "internalType": "uint256",
+        "name": "ethValueSent",
+        "type": "uint256"
+      },
+      {
+        "internalType": "bytes",
+        "name": "minterArguments",
+        "type": "bytes"
+      }
+    ],
+    "name": "requestMint",
+    "outputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "enum ICreatorCommands.CreatorActions",
+                "name": "method",
+                "type": "uint8"
+              },
+              {
+                "internalType": "bytes",
+                "name": "args",
+                "type": "bytes"
+              }
+            ],
+            "internalType": "struct ICreatorCommands.Command[]",
+            "name": "commands",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "uint256",
+            "name": "at",
+            "type": "uint256"
+          }
+        ],
+        "internalType": "struct ICreatorCommands.CommandSet",
+        "name": "commands",
+        "type": "tuple"
+      }
+    ],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "",
+        "type": "uint256"
+      }
+    ],
+    "name": "resetSale",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "uint256",
+        "name": "tokenId",
+        "type": "uint256"
+      },
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
+            "name": "mintToken",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdStart",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdEnd",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "transferRecipient",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "burnFunction",
+                "type": "bytes4"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
+            "name": "instructions",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleStart",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleEnd",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ethAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "ethRecipient",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
+        "name": "_redeemInstructions",
+        "type": "tuple"
+      }
+    ],
+    "name": "setRedeem",
+    "outputs": [],
+    "stateMutability": "nonpayable",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "internalType": "bytes4",
+        "name": "interfaceId",
+        "type": "bytes4"
+      }
+    ],
+    "name": "supportsInterface",
+    "outputs": [
+      {
+        "internalType": "bool",
+        "name": "",
+        "type": "bool"
+      }
+    ],
+    "stateMutability": "pure",
+    "type": "function"
+  },
+  {
+    "inputs": [
+      {
+        "components": [
+          {
+            "components": [
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenId",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.MintToken",
+            "name": "mintToken",
+            "type": "tuple"
+          },
+          {
+            "components": [
+              {
+                "internalType": "enum ZoraCreatorRedeemMinterStrategy.TokenType",
+                "name": "tokenType",
+                "type": "uint8"
+              },
+              {
+                "internalType": "uint256",
+                "name": "amount",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdStart",
+                "type": "uint256"
+              },
+              {
+                "internalType": "uint256",
+                "name": "tokenIdEnd",
+                "type": "uint256"
+              },
+              {
+                "internalType": "address",
+                "name": "tokenContract",
+                "type": "address"
+              },
+              {
+                "internalType": "address",
+                "name": "transferRecipient",
+                "type": "address"
+              },
+              {
+                "internalType": "bytes4",
+                "name": "burnFunction",
+                "type": "bytes4"
+              }
+            ],
+            "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstruction[]",
+            "name": "instructions",
+            "type": "tuple[]"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleStart",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint64",
+            "name": "saleEnd",
+            "type": "uint64"
+          },
+          {
+            "internalType": "uint256",
+            "name": "ethAmount",
+            "type": "uint256"
+          },
+          {
+            "internalType": "address",
+            "name": "ethRecipient",
+            "type": "address"
+          }
+        ],
+        "internalType": "struct ZoraCreatorRedeemMinterStrategy.RedeemInstructions",
+        "name": "_redeemInstructions",
+        "type": "tuple"
+      }
+    ],
+    "name": "validateRedeemInstructions",
+    "outputs": [],
+    "stateMutability": "view",
+    "type": "function"
   }
 ]

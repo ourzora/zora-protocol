@@ -1,66 +1,66 @@
 [
   {
-    "type": "constructor",
     "inputs": [
       {
+        "internalType": "address",
         "name": "_logic",
-        "type": "address",
-        "internalType": "address"
+        "type": "address"
       }
     ],
-    "stateMutability": "nonpayable"
+    "stateMutability": "nonpayable",
+    "type": "constructor"
   },
   {
-    "type": "fallback",
-    "stateMutability": "payable"
-  },
-  {
-    "type": "receive",
-    "stateMutability": "payable"
-  },
-  {
-    "type": "event",
-    "name": "AdminChanged",
+    "anonymous": false,
     "inputs": [
       {
-        "name": "previousAdmin",
-        "type": "address",
         "indexed": false,
-        "internalType": "address"
+        "internalType": "address",
+        "name": "previousAdmin",
+        "type": "address"
       },
       {
-        "name": "newAdmin",
-        "type": "address",
         "indexed": false,
-        "internalType": "address"
+        "internalType": "address",
+        "name": "newAdmin",
+        "type": "address"
       }
     ],
-    "anonymous": false
+    "name": "AdminChanged",
+    "type": "event"
   },
   {
-    "type": "event",
-    "name": "BeaconUpgraded",
+    "anonymous": false,
     "inputs": [
       {
+        "indexed": true,
+        "internalType": "address",
         "name": "beacon",
-        "type": "address",
-        "indexed": true,
-        "internalType": "address"
+        "type": "address"
       }
     ],
-    "anonymous": false
+    "name": "BeaconUpgraded",
+    "type": "event"
   },
   {
-    "type": "event",
-    "name": "Upgraded",
+    "anonymous": false,
     "inputs": [
       {
-        "name": "implementation",
-        "type": "address",
         "indexed": true,
-        "internalType": "address"
+        "internalType": "address",
+        "name": "implementation",
+        "type": "address"
       }
     ],
-    "anonymous": false
+    "name": "Upgraded",
+    "type": "event"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "fallback"
+  },
+  {
+    "stateMutability": "payable",
+    "type": "receive"
   }
 ]
