@@ -39,7 +39,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
     }
 
     function test_proxyCanByDeployedAtDesiredAddress(bytes32 proxySalt) external {
-        vm.createSelectFork("zora_goerli", 1252119);
+        vm.createSelectFork("zora_sepolia", 5271587);
         // ensure nonce is greater than current account's nonce
 
         (address deployerAddress, uint256 deployerPrivateKey) = makeAddrAndKey("deployer");
@@ -57,7 +57,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
         DeterministicProxyDeployer factoryProxyDeployer = _deployKnownZoraFactoryProxy(proxyDeployerSalt);
 
         bytes memory factoryProxyCreationCode = type(Zora1155Factory).creationCode;
-        address mintFeeRecipient = makeAddr("mintFeeRecipient ");
+        address mintFeeRecipient = makeAddr("mintFeeRecipient");
 
         bytes32 digest = factoryProxyDeployer.hashedDigestFactoryProxy(
             proxyShimSalt,
@@ -96,7 +96,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
     }
 
     function test_genericContractCanByDeployedAtDesiredAddress(uint32 nonce) external {
-        vm.createSelectFork("zora_goerli", 1252119);
+        vm.createSelectFork("zora_sepolia", 5271587);
 
         (address deployerAddress, uint256 deployerPrivateKey) = makeAddrAndKey("deployer");
 

@@ -115,8 +115,8 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
     }
 
     function _chainSupportsPremintV2(string memory chainName) private pure returns (bool) {
-        // for now we know that only goerli and sepolia have v2 premint deployed
-        return (equals(chainName, "zora_sepolia") || equals(chainName, "zora_goerli"));
+        // for now we know that zora sepolia and zora mainnet have premint v2 deployed
+        return (equals(chainName, "zora_sepolia") || equals(chainName, "zora"));
     }
 
     function _signAndExecutePremintLegacy(

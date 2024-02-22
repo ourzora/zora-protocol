@@ -25,7 +25,7 @@ contract FactoryProxyDeterministicParams is ZoraDeployerBase {
     address proxyDeployerAddress;
 
     function run() public {
-        vm.createSelectFork("zora_goerli", 1252119);
+        vm.createSelectFork("zora_sepolia");
 
         deployerAddress = vm.envAddress("TURNKEY_TARGET_ADDRESS");
 

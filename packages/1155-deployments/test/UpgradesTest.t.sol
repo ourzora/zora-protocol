@@ -160,7 +160,6 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         address factoryOwner = chainConfig.factoryOwner;
         bytes memory preminterUpgradeCalldata;
 
-        // hack - for now, only check on zora sepolia or goerli
         if (preminterUpgradeNeeded) {
             console2.log("-- preminter upgrade needed --");
             console2.log("preminter upgrade target:", targetPreminterProxy);
