@@ -145,6 +145,33 @@ dataSources:
         - event: AuctionReservePriceUpdated(indexed address,indexed uint256,(address,address,uint256,uint256,address,uint96,address,uint96,address,uint80,uint16))
           handler: handleAuctionReservePriceUpdated
 {{/reserveAuctionV3}}
+{{#zoraMints}}
+  - name: ZoraMints
+    kind: ethereum/contract
+    network: {{network}}
+    source:
+      abi: ZoraMintsImpl
+      address: "{{address}}"
+      startBlock: {{startBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      entities:
+        - MintToken
+        - MintAccountBalance
+      language: wasm/assemblyscript
+      file: ./src/MintsMappings/factoryMappings.ts
+      abis:
+        - name: ZoraMintsImpl
+          file: ./graph-abis/ZoraMintsImpl.json  
+      eventHandlers:
+        - event: EthTokenCreated(indexed uint256,indexed uint256)
+          handler: handleEthTokenCreated
+        - event: EthMintableTokenSet(indexed uint256)
+          handler: handleEthMintableTokenSet
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleTransferSingle
+{{/zoraMints}}
 templates:
   - name: MetadataInfo
     kind: file/ipfs
