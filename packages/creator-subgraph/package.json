@@ -4,7 +4,6 @@
   "license": "MIT",
   "repository": "https://github.com/ourzora/zora-creator-subgraph",
   "scripts": {
-    "copy-abis": "bash scripts/copy-abis.sh",
     "codegen": "yarn gen-yaml-config && yarn extract-abis && graph codegen && echo 'import { Address } from \"@graphprotocol/graph-ts\";' >> generated/templates.ts",
     "extract-abis": "node scripts/extract-abis.mjs",
     "build": "yarn run codegen && graph build",

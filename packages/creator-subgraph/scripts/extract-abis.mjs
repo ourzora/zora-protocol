@@ -8,12 +8,13 @@ import {
   zoraCreatorFixedPriceSaleStrategyABI,
   zoraCreatorMerkleMinterStrategyABI,
   zoraCreatorRedeemMinterFactoryABI,
-} from "@zoralabs/protocol-deployments";
+  zoraCreatorRedeemMinterStrategyABI,
+  protocolRewardsABI,
+} from "@zoralabs/zora-1155-contracts";
 import erc721Drop from "@zoralabs/nft-drop-contracts/dist/artifacts/ERC721Drop.sol/ERC721Drop.json" assert { type: "json" };
 import zoraNFTCreatorV1 from "@zoralabs/nft-drop-contracts/dist/artifacts/ZoraNFTCreatorV1.sol/ZoraNFTCreatorV1.json" assert { type: "json" };
 import editionMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/EditionMetadataRenderer.sol/EditionMetadataRenderer.json" assert { type: "json" };
 import dropMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/DropMetadataRenderer.sol/DropMetadataRenderer.json" assert { type: "json" };
-// import protocolRewardsAbi from '@zoralabs/protocol-rewards/out/ProtocolRewards.sol/ProtocolRewards.abi.json' assert { type: "json" };
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -49,11 +50,9 @@ output_abi(
   zoraCreatorMerkleMinterStrategyABI,
 );
 output_abi("ZoraCreatorRedeemMinterFactory", zoraCreatorRedeemMinterFactoryABI);
+output_abi(
+  "ZoraCreatorRedeemMinterStrategy",
+  zoraCreatorRedeemMinterStrategyABI,
+);
 
-// output_abi('ProtocolRewards', protocolRewardsAbi);
-
-// Todo: get these packages built
-
-// output_abi('ZoraCreatorRedeemMinterStrategy', protocolDeployments.zoraCreator);
-// get_contract_abi $ERC1155_ARTIFACTS_PATH 'ZoraCreatorRedeemMinterStrategy'
-// get_contract_abi $ERC1155_ARTIFACTS_PATH 'Zora1155PremintExecutor'
+output_abi("ProtocolRewards", protocolRewardsABI);

@@ -23,7 +23,7 @@ dataSources:
       file: ./src/RewardsMappings/rewardsMappings.ts
       abis:
         - name: ProtocolRewards
-          file: ./graph-abis/ProtocolRewards.json  
+          file: ./abis/ProtocolRewards.json  
       eventHandlers:
         - event: Deposit(indexed address,indexed address,indexed bytes4,uint256,string)
           handler: handleDeposit
@@ -132,7 +132,7 @@ dataSources:
       file: ./src/ReserveAuctionV3Mappings/reserveAuctionV3Mappings.ts
       abis:
         - name: ReserveAuctionV3
-          file: ./graph-abis/ReserveAuctionV3.json  
+          file: ./abis/ReserveAuctionV3.json  
       eventHandlers:
         - event: AuctionCreated(indexed address,indexed uint256,(address,address,uint256,uint256,address,uint96,address,uint96,address,uint80,uint16))
           handler: handleAuctionCreated
@@ -311,7 +311,7 @@ templates:
       file: ./src/ERC1155Mappings/templates/ZoraCreatorRedeemMinterStrategy.ts
       abis:
         - name: ZoraCreatorRedeemMinterStrategy
-          file: ./graph-abis/ZoraCreatorRedeemMinterStrategy.json
+          file: ./abis/ZoraCreatorRedeemMinterStrategy.json
       eventHandlers:
         - event: RedeemsCleared(indexed address,indexed bytes32[])
           handler: handleRedeemCleared
