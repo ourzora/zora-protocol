@@ -163,7 +163,7 @@ dataSources:
       file: ./src/MintsMappings/factoryMappings.ts
       abis:
         - name: ZoraMintsImpl
-          file: ./graph-abis/ZoraMintsImpl.json  
+          file: ./abis/ZoraMintsImpl.json  
       eventHandlers:
         - event: EthTokenCreated(indexed uint256,indexed uint256)
           handler: handleEthTokenCreated
