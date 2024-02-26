@@ -1,0 +1,13 @@
+{
+  "name": "@zoralabs/frame-minter-contracts",
+  "version": "1.0.0",
+  "main": "./dist/index.js",
+  "author": "tbtstl <t@zora.co>",
+  "license": "MIT",
+  "dependencies": {
+    "@openzeppelin/contracts-upgradeable": "^5.0.1",
+    "@zoralabs/1155-deployments": "^0.0.13",
+    "@zoralabs/zora-1155-contracts": "^2.7.1",
+    "solmate": "^6.2.0"
+  }
+}

@@ -1,0 +1,22 @@
+[profile.default]
+fs_permissions = [
+  { access = "read", path = "./addresses" },
+  { access = "read", path = "./chainConfigs" },
+  { access = "read", path = "./package.json" },
+  { access = "readwrite", path = "./deterministicConfig" },
+]
+libs = ['_imagine', 'node_modules', 'script']
+optimizer = true
+optimizer_runs = 50000
+via_ir = true
+solc_version = '0.8.17'
+out = 'out'
+src = 'src'
+evm_version = 'paris'
+
+[profile.dev]
+optimizer = false
+optimizer_runs = 0
+via_ir = false
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
