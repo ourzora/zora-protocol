@@ -171,6 +171,8 @@ dataSources:
           handler: handleEthMintableTokenSet
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
+        - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
+          handler: handleTransferBatch
 {{/zoraMints}}
 templates:
   - name: MetadataInfo

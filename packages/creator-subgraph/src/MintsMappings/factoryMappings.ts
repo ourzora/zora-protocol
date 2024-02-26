@@ -1,10 +1,10 @@
-import { BigInt } from "@graphprotocol/graph-ts";
+import { Address, BigInt } from "@graphprotocol/graph-ts";
 import {
   EthTokenCreated,
   EthMintableTokenSet,
-  Redeemed,
   TransferSingle,
   ZoraMintsImpl,
+  TransferBatch,
 } from "../../generated/ZoraMints/ZoraMintsImpl";
 
 import { MintAccountBalance, MintToken } from "../../generated/schema";
@@ -40,6 +40,53 @@ export function handleEthMintableTokenSet(event: EthMintableTokenSet): void {
   newMintToken.save();
 }
 
+export function incrementRecipientBalance(
+  toAddress: Address,
+  value: BigInt,
+  tokenId: BigInt,
+): void {
+  if (toAddress.toHex() != zeroAddress) {
+    var mintAccountBalanceTo = MintAccountBalance.load(
+      `${toAddress.toHexString()}-${tokenId}`,
+    );
+    if (mintAccountBalanceTo == null) {
+      mintAccountBalanceTo = new MintAccountBalance(
+        `${toAddress.toHexString()}-${tokenId}`,
+      );
+      mintAccountBalanceTo.balance = BigInt.fromI32(0);
+      mintAccountBalanceTo.account = toAddress;
+      mintAccountBalanceTo.mintToken = `${tokenId}`;
+    }
+
+    mintAccountBalanceTo.balance = mintAccountBalanceTo.balance.plus(value);
+    mintAccountBalanceTo.save();
+  }
+}
+
+export function deductFromSenderBalance(
+  fromAddress: Address,
+  value: BigInt,
+  tokenId: BigInt,
+): void {
+  if (fromAddress.toHex() != zeroAddress) {
+    var mintAccountBalanceFrom = MintAccountBalance.load(
+      `${fromAddress.toHexString()}-${tokenId}`,
+    );
+    if (mintAccountBalanceFrom == null) {
+      mintAccountBalanceFrom = new MintAccountBalance(
+        `${fromAddress.toHexString()}-${tokenId}`,
+      );
+      mintAccountBalanceFrom.balance = BigInt.fromI32(0);
+      mintAccountBalanceFrom.account = fromAddress;
+      mintAccountBalanceFrom.mintToken = `${tokenId}`;
+    }
+
+    mintAccountBalanceFrom.balance =
+      mintAccountBalanceFrom.balance.minus(value);
+    mintAccountBalanceFrom.save();
+  }
+}
+
 export function handleTransferSingle(event: TransferSingle): void {
   const mintToken = new MintToken(`${event.params.id.toHexString()}`);
 
@@ -48,42 +95,40 @@ export function handleTransferSingle(event: TransferSingle): void {
   }
 
   // recipient balance
-  if (event.params.to.toHex() != zeroAddress) {
-    var mintAccountBalanceTo = MintAccountBalance.load(
-      `${event.params.to.toHexString()}-${event.params.id}`,
-    );
-    if (mintAccountBalanceTo == null) {
-      mintAccountBalanceTo = new MintAccountBalance(
-        `${event.params.to.toHexString()}-${event.params.id}`,
-      );
-      mintAccountBalanceTo.balance = BigInt.fromI32(0);
-      mintAccountBalanceTo.account = event.params.to;
-      mintAccountBalanceTo.mintToken = `${event.params.id}`;
-    }
-
-    mintAccountBalanceTo.balance = mintAccountBalanceTo.balance.plus(
-      event.params.value,
-    );
-    mintAccountBalanceTo.save();
-  }
+  incrementRecipientBalance(
+    event.params.to,
+    event.params.value,
+    event.params.id,
+  );
 
   // sender balance
-  if (event.params.from.toHex() != zeroAddress) {
-    var mintAccountBalanceFrom = MintAccountBalance.load(
-      `${event.params.from.toHexString()}-${event.params.id}`,
-    );
-    if (mintAccountBalanceFrom == null) {
-      mintAccountBalanceFrom = new MintAccountBalance(
-        `${event.params.from.toHexString()}-${event.params.id}`,
-      );
-      mintAccountBalanceFrom.balance = BigInt.fromI32(0);
-      mintAccountBalanceFrom.account = event.params.from;
-      mintAccountBalanceFrom.mintToken = `${event.params.id}`;
+  deductFromSenderBalance(
+    event.params.from,
+    event.params.value,
+    event.params.id,
+  );
+}
+
+export function handleTransferBatch(event: TransferBatch): void {
+  for (let i = 0; i < event.params.ids.length; i++) {
+    const mintToken = new MintToken(`${event.params.ids[i].toHexString()}`);
+
+    if (mintToken == null || event.params.values[i].equals(BigInt.fromI32(0))) {
+      continue;
     }
 
-    mintAccountBalanceFrom.balance = mintAccountBalanceFrom.balance.minus(
-      event.params.value,
+    // recipient balance
+    incrementRecipientBalance(
+      event.params.to,
+      event.params.values[i],
+      event.params.ids[i],
     );
-    mintAccountBalanceFrom.save();
+
+    // sender balance
+    deductFromSenderBalance(
+      event.params.from,
+      event.params.values[i],
+      event.params.ids[i],
+    );
   }
 }
