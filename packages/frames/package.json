@@ -6,8 +6,8 @@
   "license": "MIT",
   "dependencies": {
     "@openzeppelin/contracts-upgradeable": "^5.0.1",
-    "@zoralabs/1155-deployments": "^0.0.13",
-    "@zoralabs/zora-1155-contracts": "^2.7.1",
+    "@zoralabs/1155-deployments": "*",
+    "@zoralabs/zora-1155-contracts": "*",
     "solmate": "^6.2.0"
   }
 }
