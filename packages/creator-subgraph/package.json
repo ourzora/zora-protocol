@@ -3,6 +3,7 @@
   "version": "2.0.0",
   "license": "MIT",
   "repository": "https://github.com/ourzora/zora-creator-subgraph",
+  "private": true,
   "scripts": {
     "codegen": "yarn gen-yaml-config && yarn extract-abis && graph codegen && echo 'import { Address } from \"@graphprotocol/graph-ts\";' >> generated/templates.ts",
     "extract-abis": "node scripts/extract-abis.mjs",
