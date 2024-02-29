@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.4
+
+### Patch Changes
+
+- 9710e5e: Defining exports in protocol-sdk
+
 ## 0.5.3
 
 ### Patch Changes
