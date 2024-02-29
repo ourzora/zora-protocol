@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.1
+
+### Patch Changes
+
+- 8d6163c: Deployed to blast & blast sepolia
+
 ## 0.1.0
 
 ### Minor Changes
