@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.5
+
+### Patch Changes
+
+- 8a87809: Undo changes to package export because it didn't properly bundle all files in `dist`
+
 ## 0.5.4
 
 ### Patch Changes
