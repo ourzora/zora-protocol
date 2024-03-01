@@ -3,16 +3,8 @@
   "version": "0.5.4",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
-  "main": "./dist/index.cjs",
-  "module": "./dist/index.js",
+  "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
-  "exports": {
-    ".": {
-      "types": "./dist/index.d.ts",
-      "import": "./dist/index.js",
-      "default": "./dist/index.cjs"
-    }
-  },
   "type": "module",
   "scripts": {
     "build": "tsup",
