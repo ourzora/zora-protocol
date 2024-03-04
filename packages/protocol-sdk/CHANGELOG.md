@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.6
+
+### Patch Changes
+
+- 52b16aa: Publishing package in format that supports commonjs imports by specifying exports
+- Updated dependencies [52b16aa]
+  - @zoralabs/protocol-deployments@0.1.2
+
 ## 0.5.5
 
 ### Patch Changes

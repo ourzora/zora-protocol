@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.7.3
+
+### Patch Changes
+
+- 52b16aa: Publishing package in format that supports commonjs imports by specifying exports.
+
 ## 2.7.2
 
 ### Patch Changes

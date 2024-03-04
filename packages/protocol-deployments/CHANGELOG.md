@@ -1,5 +1,13 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.2
+
+### Patch Changes
+
+- 52b16aa: Publishing package in format that supports commonjs imports by specifying exports
+- Updated dependencies [52b16aa]
+  - @zoralabs/zora-1155-contracts@2.7.3
+
 ## 0.1.1
 
 ### Patch Changes
