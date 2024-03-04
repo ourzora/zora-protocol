@@ -1,0 +1,18 @@
+# this defines what should be ignored
+# for npm publishing.  it overrides the .gitignore
+# for npm publishing.  We need this to be defined separately
+# so we can include the dist folder.
+tsconfig.build.json
+**/*test-integration
+**/*.test.ts
+.turbo
+tsup.config.ts
+**/*.env*
+wagmi.config.ts
+cache
+lcov.info
+.storage-layout
+**/*.puml
+**/*.sh
+test
+out

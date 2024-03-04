@@ -3,14 +3,18 @@
   "version": "0.1.1",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
-  "main": "./dist/index.js",
-  "types": "./dist/src/index.d.ts",
-  "files": [
-    "dist/",
-    "src/",
-    "json/"
-  ],
   "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build": "yarn wagmi && yarn bundle-configs && tsup",
     "bundle-configs": "tsx scripts/bundle-configs.ts && yarn prettier",
