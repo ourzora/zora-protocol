@@ -1,0 +1,14 @@
+chainid: "81457"
+network: blast
+factories1155:
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "213028"
+    version: "1"
+factories721:
+  - address: "0x53a85FbD2955EF713AA489Ae0C48523E727a0c07"
+    startBlock: "213424"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "2123378"
+    version: "1"
