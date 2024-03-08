@@ -1,14 +1,12 @@
 import {
+  arbitrum,
   base,
-  baseGoerli,
   foundry,
-  goerli,
   mainnet,
   optimism,
-  optimismGoerli,
+  sepolia,
   zora,
   zoraSepolia,
-  zoraTestnet,
 } from "viem/chains";
 import type { components } from "./generated/premint-api-types";
 import { parseEther } from "viem";
@@ -34,12 +32,12 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     zoraBackendChainName: "ETHEREUM-MAINNET",
     subgraphUrl: getSubgraph("zora-create-mainnet", "stable"),
   },
-  [goerli.id]: {
-    chainId: goerli.id,
+  [sepolia.id]: {
+    chainId: sepolia.id,
     isTestnet: true,
-    zoraCollectPathChainName: "gor",
-    zoraBackendChainName: "ETHEREUM-GOERLI",
-    subgraphUrl: getSubgraph("zora-create-goerli", "stable"),
+    zoraCollectPathChainName: "sep",
+    zoraBackendChainName: "ETHEREUM-SEPOLIA",
+    subgraphUrl: getSubgraph("zora-create-sepolia", "stable"),
   },
   [zora.id]: {
     chainId: zora.id,
@@ -47,13 +45,6 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     zoraCollectPathChainName: "zora",
     zoraBackendChainName: "ZORA-MAINNET",
     subgraphUrl: getSubgraph("zora-create-zora-mainnet", "stable"),
-  },
-  [zoraTestnet.id]: {
-    chainId: zoraTestnet.id,
-    isTestnet: true,
-    zoraCollectPathChainName: "zgor",
-    zoraBackendChainName: "ZORA-GOERLI",
-    subgraphUrl: getSubgraph("zora-create-zora-testnet", "stable"),
   },
   [zoraSepolia.id]: {
     chainId: zoraSepolia.id,
@@ -69,12 +60,12 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     zoraBackendChainName: "OPTIMISM-MAINNET",
     subgraphUrl: getSubgraph("zora-create-optimism", "stable"),
   },
-  [optimismGoerli.id]: {
-    chainId: optimismGoerli.id,
+  [arbitrum.id]: {
+    chainId: arbitrum.id,
     isTestnet: true,
-    zoraCollectPathChainName: "ogor",
-    zoraBackendChainName: "OPTIMISM-GOERLI",
-    subgraphUrl: getSubgraph("zora-create-optimism-goerli", "stable"),
+    zoraCollectPathChainName: "arb",
+    zoraBackendChainName: "ARBITRUM-MAINNET",
+    subgraphUrl: getSubgraph("zora-create-arbitrum-one", "stable"),
   },
   [base.id]: {
     chainId: base.id,
@@ -82,13 +73,6 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     zoraCollectPathChainName: "base",
     zoraBackendChainName: "BASE-MAINNET",
     subgraphUrl: getSubgraph("zora-create-base-mainnet", "stable"),
-  },
-  [baseGoerli.id]: {
-    chainId: baseGoerli.id,
-    isTestnet: true,
-    zoraCollectPathChainName: "bgor",
-    zoraBackendChainName: "BASE-GOERLI",
-    subgraphUrl: getSubgraph("zora-create-base-goerli", "stable"),
   },
   [foundry.id]: {
     chainId: foundry.id,

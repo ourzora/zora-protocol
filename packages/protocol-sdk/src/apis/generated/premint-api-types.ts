@@ -48,7 +48,9 @@ export interface components {
       | "ZORA-MAINNET"
       | "BASE-MAINNET"
       | "BASE-GOERLI"
-      | "PGN-MAINNET";
+      | "PGN-MAINNET"
+      | "ARBITRUM-MAINNET"
+      | "BLAST-MAINNET";
     /**
      * CollectionCreationConfig
      * @description ObjectBase extends Pydantic's BaseModel class to support extra functionality
