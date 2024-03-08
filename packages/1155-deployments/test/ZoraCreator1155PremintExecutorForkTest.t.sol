@@ -12,7 +12,6 @@ import {Zora1155PremintFixtures} from "../src/Zora1155PremintFixtures.sol";
 contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
     ZoraCreator1155FactoryImpl factory;
     ZoraCreator1155PremintExecutorImpl preminter;
-    uint256 mintFeeAmount = 0.000777 ether;
     address creator;
     uint256 creatorPrivateKey;
     address payoutRecipient = makeAddr("payoutRecipient");
@@ -125,9 +124,10 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
         uint256 quantityToMint,
         string memory comment
     ) private returns (uint256 newTokenId) {
-        bytes memory signature = _signPremintV1(preminter.getContractAddress(contractConfig), privateKey, block.chainid);
+        address contractAddress = preminter.getContractAddress(contractConfig);
+        bytes memory signature = _signPremintV1(contractAddress, privateKey, block.chainid);
 
-        uint256 mintCost = mintFeeAmount * quantityToMint;
+        uint256 mintCost = preminter.mintFee(contractAddress) * quantityToMint;
         vm.deal(executor, mintCost);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
@@ -139,9 +139,10 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
     }
 
     function _signAndExecutePremintV1(uint256 privateKey, address executor, uint256 quantityToMint, string memory comment) private {
-        bytes memory signature = _signPremintV1(preminter.getContractAddress(contractConfig), privateKey, block.chainid);
+        address contractAddress = preminter.getContractAddress(contractConfig);
+        bytes memory signature = _signPremintV1(contractAddress, privateKey, block.chainid);
 
-        uint256 mintCost = mintFeeAmount * quantityToMint;
+        uint256 mintCost = preminter.mintFee(contractAddress) * quantityToMint;
         vm.deal(executor, mintCost);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
@@ -169,9 +170,10 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
     }
 
     function _signAndExecutePremintV2(uint256 privateKey, address executor, uint256 quantityToMint, string memory comment) private {
-        bytes memory signature = _signPremintV2(preminter.getContractAddress(contractConfig), privateKey, block.chainid);
+        address contractAddress = preminter.getContractAddress(contractConfig);
+        bytes memory signature = _signPremintV2(contractAddress, privateKey, block.chainid);
 
-        uint256 mintCost = mintFeeAmount * quantityToMint;
+        uint256 mintCost = preminter.mintFee(contractAddress) * quantityToMint;
         vm.deal(executor, mintCost);
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
