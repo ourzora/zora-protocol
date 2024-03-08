@@ -235,7 +235,7 @@ async function createForFree({
   // public client that will simulate the transaction
   publicClient: PublicClient;
   // address of the token contract
-  creatorAccount: Address;
+  creatorAccount: Account | Address;
 }) {
   const premintClient = createPremintClient({
     chain: walletClient.chain!,
@@ -250,7 +250,7 @@ async function createForFree({
     checkSignature: true,
     // collection info of collection to create
     collection: {
-      contractAdmin: creatorAccount,
+      contractAdmin: typeof creatorAccount === "string" ? creatorAccount : creatorAccount.address,
       contractName: "Testing Contract",
       contractURI:
         "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
