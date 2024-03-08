@@ -1,5 +1,5 @@
 ---
-"@zoralabs/1155-deployments": patch
+"@zoralabs/protocol-deployments": patch
 ---
 
 New preminter impl deployed to mainnet chains
