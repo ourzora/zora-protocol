@@ -315,7 +315,7 @@ class PremintClient {
    * @returns premint url, uid, newContractAddress, and premint object
    */
   async createPremint<
-    T extends PremintConfigVersion = PremintConfigVersion.V1,
+    T extends PremintConfigVersion = PremintConfigVersion.V2,
   >({
     creatorAccount,
     collection,
