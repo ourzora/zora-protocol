@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.3
+
+### Patch Changes
+
+- bb163d3: New preminter impl deployed to mainnet chains
+
 ## 0.1.2
 
 ### Patch Changes
@@ -12,7 +18,7 @@
 
 ### Patch Changes
 
-- 8d6163c: Deployed to blast & blast sepolia
+- 8d6163c: Deployed to blast & blast sepolia.
 
 ## 0.1.0
 

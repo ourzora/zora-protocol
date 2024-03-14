@@ -1,5 +1,14 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.7
+
+### Patch Changes
+
+- 2eda168: Update default premint version to v2
+- 4066420: Adding protocol SDK to base and sepolia networks
+- Updated dependencies [bb163d3]
+  - @zoralabs/protocol-deployments@0.1.3
+
 ## 0.5.6
 
 ### Patch Changes
