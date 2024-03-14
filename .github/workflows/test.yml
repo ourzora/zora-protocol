@@ -37,6 +37,7 @@ jobs:
         run: |
           cd ${{ inputs.package_folder}} && yarn test
         env:
+          QUICKNODE_API_KEY_BLAST: ${{ secrets.QUICKNODE_API_KEY_BLAST }}
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
           CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
 

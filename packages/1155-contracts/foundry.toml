@@ -29,5 +29,7 @@ pgn = "https://rpc.publicgoods.network"
 pgn_sepolia = "https://sepolia.publicgoods.network"
 zora = "https://rpc.zora.energy"
 zora_sepolia = "https://sepolia.rpc.zora.energy"
+blast = "https://cool-multi-moon.blast-mainnet.quiknode.pro/${QUICKNODE_API_KEY_BLAST}/"
+blast_sepolia = "https://cool-multi-moon.blast-sepolia.quiknode.pro/${QUICKNODE_API_KEY_BLAST}/"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
