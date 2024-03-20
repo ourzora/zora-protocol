@@ -11,8 +11,9 @@ import {ITransferHookReceiver} from "../../src/interfaces/ITransferHookReceiver.
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
-import {PremintConfigV2, TokenCreationConfigV2} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {ZoraCreator1155Attribution, PremintEncoding} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {PremintConfigV2, TokenCreationConfigV2} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {PremintEncoding, EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
+import {ZoraCreator1155Attribution} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -1098,7 +1099,7 @@ contract ZoraCreator1155Test is Test {
             ZoraCreator1155Attribution.premintHashedTypeDataV4(
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 address(target),
-                ZoraCreator1155Attribution.HASHED_VERSION_2,
+                PremintEncoding.HASHED_VERSION_2,
                 chainId
             )
         );
@@ -1109,8 +1110,14 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId;
 
         {
-            (bytes memory premintConfigEncoded, bytes32 version) = PremintEncoding.encodePremintV2(premintConfig);
-            tokenId = target.delegateSetupNewToken(premintConfigEncoded, version, signature, collectors[0], address(0));
+            EncodedPremintConfig memory premintConfigEncoded = PremintEncoding.encodePremintV2(premintConfig);
+            tokenId = target.delegateSetupNewToken(
+                premintConfigEncoded.premintConfig,
+                premintConfigEncoded.premintConfigVersion,
+                signature,
+                collectors[0],
+                address(0)
+            );
         }
 
         RewardsSettings memory settings = target.computeFreeMintRewards(quantity);

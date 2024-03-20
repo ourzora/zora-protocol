@@ -11,13 +11,14 @@ import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreat
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, PremintEncoding, ContractCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {IOwnable2StepUpgradeable} from "../../src/utils/ownable/IOwnable2StepUpgradeable.sol";
 import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {IUpgradeGate} from "../../src/interfaces/IUpgradeGate.sol";
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor, IRemovedZoraCreator1155PremintExecutorFunctions} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
+import {MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
 
 contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     address internal owner;
@@ -28,9 +29,11 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     Zora1155Factory internal factoryProxy;
     ZoraCreator1155FactoryImpl factoryAtProxy;
     uint256 internal mintFeeAmount = 0.000777 ether;
+    uint256 initialTokenId = 777;
+    uint256 initialTokenPrice = 0.000777 ether;
     ZoraCreator1155PremintExecutorImpl preminterAtProxy;
 
-    IZoraCreator1155PremintExecutor.MintArguments defaultMintArguments;
+    MintArguments defaultMintArguments;
 
     function setUp() external {
         zora = makeAddr("zora");
@@ -53,11 +56,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         preminterAtProxy = ZoraCreator1155PremintExecutorImpl(address(proxy));
         preminterAtProxy.initialize(owner);
 
-        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: collector,
-            mintComment: "blah",
-            mintRewardsRecipients: new address[](0)
-        });
+        defaultMintArguments = MintArguments({mintRecipient: collector, mintComment: "blah", mintRewardsRecipients: new address[](0)});
     }
 
     function test_canInvokeImplementationMethods() external {
@@ -76,11 +75,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         address deterministicAddress = preminterAtProxy.getContractAddress(contractConfig);
 
         // sign the premint
-        bytes memory signature = _signPremint(
-            ZoraCreator1155Attribution.hashPremint(premintConfig),
-            ZoraCreator1155Attribution.HASHED_VERSION_2,
-            deterministicAddress
-        );
+        bytes memory signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_2, deterministicAddress);
 
         uint256 quantityToMint = 1;
 
@@ -138,11 +133,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         address deterministicAddress = forkedPreminterProxy.getContractAddress(contractConfig);
         PremintConfig memory premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig(fixedPriceMinter, creator);
 
-        bytes memory signature = _signPremint(
-            ZoraCreator1155Attribution.hashPremint(premintConfig),
-            ZoraCreator1155Attribution.HASHED_VERSION_1,
-            deterministicAddress
-        );
+        bytes memory signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_1, deterministicAddress);
 
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
@@ -183,7 +174,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         uint32 existingUid = premintConfig.uid;
         premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig(fixedPriceMinter, creator);
         premintConfig.uid = existingUid + 1;
-        signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), ZoraCreator1155Attribution.HASHED_VERSION_1, deterministicAddress);
+        signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_1, deterministicAddress);
 
         // execute the premint
         vm.deal(collector, mintFeeAmount);
@@ -217,11 +208,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         address deterministicAddress = forkedPreminterProxy.getContractAddress(contractConfig);
         PremintConfig memory premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig(fixedPriceMinter, creator);
 
-        bytes memory signature = _signPremint(
-            ZoraCreator1155Attribution.hashPremint(premintConfig),
-            ZoraCreator1155Attribution.HASHED_VERSION_1,
-            deterministicAddress
-        );
+        bytes memory signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_1, deterministicAddress);
 
         // use old mint fee - this is prior to having the `mintFee` functino on premint executor
         mintFeeAmount = 0.000777 ether;
@@ -299,11 +286,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
             deleted: false
         });
 
-        bytes memory signature = _signPremint(
-            ZoraCreator1155Attribution.hashPremint(premintConfig),
-            ZoraCreator1155Attribution.HASHED_VERSION_2,
-            deterministicAddress
-        );
+        bytes memory signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_2, deterministicAddress);
 
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
@@ -316,6 +299,11 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         forkedPreminterProxy.premintV2{value: mintFeeAmount}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
 
         // 2. upgrade to current version of preminter
+        // first upgrade 1155 factory to current version
+        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(address(0)), fixedPriceMinter);
+        ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(address(forkedPreminterProxy.zora1155Factory()));
+        vm.prank(factory.owner());
+        factory.upgradeTo(address(newFactoryVersion));
         // now contract has been created; upgrade to latest version of premint executor
         ZoraCreator1155PremintExecutorImpl newVersion = new ZoraCreator1155PremintExecutorImpl(forkedPreminterProxy.zora1155Factory());
 
@@ -325,7 +313,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // 2. create premint using upgraded impl
 
         premintConfig.uid = 101;
-        signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), ZoraCreator1155Attribution.HASHED_VERSION_2, deterministicAddress);
+        signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_2, deterministicAddress);
 
         // it should succeed
         ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).premintV2{value: mintFeeAmount}(
@@ -341,7 +329,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         signature = _signPremint(
             ZoraCreator1155Attribution.hashPremint(premintConfig),
-            ZoraCreator1155Attribution.HASHED_VERSION_2,
+            PremintEncoding.HASHED_VERSION_2,
             forkedPreminterProxy.getContractAddress(contractConfig)
         );
 
@@ -352,6 +340,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
             signature,
             quantityToMint,
             defaultMintArguments,
+            makeAddr("firstMinter"),
             address(0)
         );
     }

@@ -1,14 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ContractCreationConfig, PremintConfig} from "./ZoraCreator1155Attribution.sol";
+import {ContractCreationConfig, PremintConfig} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreation, IZoraCreator1155DelegatedCreationLegacy, ISupportsAABasedDelegatedTokenCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
+import {MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 
 interface ILegacyZoraCreator1155DelegatedMinter {
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
@@ -77,22 +79,20 @@ library ZoraCreator1155PremintExecutorImplLib {
         return ILegacyZoraCreator1155DelegatedMinter(contractAddress).delegateSetupNewToken(premintConfig, signature, msg.sender);
     }
 
-    function premint(
+    function getOrCreateContractAndToken(
         IZoraCreator1155Factory zora1155Factory,
         ContractCreationConfig calldata contractConfig,
-        bytes memory encodedPremintConfig,
-        bytes32 premintVersion,
+        EncodedPremintConfig memory encodedPremintConfig,
         bytes calldata signature,
-        uint256 quantityToMint,
-        address fixedPriceMinter,
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments,
+        address firstMinter,
         address signerContract
-    ) internal returns (IZoraCreator1155PremintExecutor.PremintResult memory) {
+    ) internal returns (PremintResult memory premintResult) {
         // get or create the contract with the given params
         // contract address is deterministic.
         (IZoraCreator1155 tokenContract, bool isNewContract) = getOrCreateContract(zora1155Factory, contractConfig);
 
-        uint256 newTokenId;
+        premintResult.contractAddress = address(tokenContract);
+        premintResult.createdNewContract = isNewContract;
 
         if (tokenContract.supportsInterface(type(ISupportsAABasedDelegatedTokenCreation).interfaceId)) {
             // if the contract supports the new interface, we can use it to create the token.
@@ -100,11 +100,11 @@ library ZoraCreator1155PremintExecutorImplLib {
             // pass the signature and the premint config to the token contract to create the token.
             // The token contract will verify the signature and that the signer has permission to create a new token.
             // and then create and setup the token using the given token config.
-            newTokenId = ISupportsAABasedDelegatedTokenCreation(tokenContract).delegateSetupNewToken(
-                encodedPremintConfig,
-                premintVersion,
+            premintResult.tokenId = ISupportsAABasedDelegatedTokenCreation(tokenContract).delegateSetupNewToken(
+                encodedPremintConfig.premintConfig,
+                encodedPremintConfig.premintConfigVersion,
                 signature,
-                msg.sender,
+                firstMinter,
                 signerContract
             );
         } else if (tokenContract.supportsInterface(type(IZoraCreator1155DelegatedCreationLegacy).interfaceId)) {
@@ -112,30 +112,26 @@ library ZoraCreator1155PremintExecutorImplLib {
                 revert("Smart contract signing not supported on version of 1155 contract");
             }
 
-            newTokenId = IZoraCreator1155DelegatedCreationLegacy(address(tokenContract)).delegateSetupNewToken(
-                encodedPremintConfig,
-                premintVersion,
+            premintResult.tokenId = IZoraCreator1155DelegatedCreationLegacy(address(tokenContract)).delegateSetupNewToken(
+                encodedPremintConfig.premintConfig,
+                encodedPremintConfig.premintConfigVersion,
                 signature,
-                msg.sender
+                firstMinter
             );
         } else {
             // otherwise, we need to use the legacy interface.
-            newTokenId = legacySetupNewToken(address(tokenContract), encodedPremintConfig, signature);
+            premintResult.tokenId = legacySetupNewToken(address(tokenContract), encodedPremintConfig.premintConfig, signature);
         }
-
-        _performMint(tokenContract, fixedPriceMinter, newTokenId, quantityToMint, mintArguments);
-
-        return IZoraCreator1155PremintExecutor.PremintResult({contractAddress: address(tokenContract), tokenId: newTokenId, createdNewContract: isNewContract});
     }
 
-    function _performMint(
+    function mintWithEth(
         IZoraCreator1155 tokenContract,
         address fixedPriceMinter,
         uint256 tokenId,
         uint256 quantityToMint,
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments
+        MintArguments memory mintArguments
     ) internal {
-        bytes memory mintSettings = abi.encode(mintArguments.mintRecipient, mintArguments.mintComment);
+        bytes memory mintSettings = _toMintSettings(mintArguments);
         if (quantityToMint != 0) {
             if (tokenContract.supportsInterface(type(IMintWithRewardsRecipients).interfaceId)) {
                 tokenContract.mint{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintArguments.mintRewardsRecipients, mintSettings);
@@ -146,5 +142,9 @@ library ZoraCreator1155PremintExecutorImplLib {
                 tokenContract.mintWithRewards{value: msg.value}(IMinter1155(fixedPriceMinter), tokenId, quantityToMint, mintSettings, mintReferral);
             }
         }
+    }
+
+    function _toMintSettings(MintArguments memory mintArguments) internal pure returns (bytes memory) {
+        return abi.encode(mintArguments.mintRecipient, mintArguments.mintComment);
     }
 }

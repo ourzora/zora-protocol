@@ -1910,7 +1910,7 @@
     fast-url-parser "^1.1.3"
     tslib "^2.3.1"
 
-"@zoralabs/mints-contracts@^0.0.3":
+"@zoralabs/mints-contracts@*", "@zoralabs/mints-contracts@^0.0.3":
   version "0.0.3"
   resolved "https://registry.yarnpkg.com/@zoralabs/mints-contracts/-/mints-contracts-0.0.3.tgz#26974e2e0d7d1d565e4d7589f646c0f2c5d0cf6b"
   integrity sha512-kmvSzzgGiBUr+d/aeWsdsz6MFKKp+4gElcivcZWigv45KNVAOz3mOEeKcMnAFcyN0j+XNrZCOi9R4AIu/Ckpcg==
@@ -6965,6 +6965,11 @@ solady@0.0.132:
   version "0.0.132"
   resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.132.tgz#5e81ec342990f334055db8e8f319786fcedb6b1a"
   integrity sha512-qMdj/Y5fgPmxcis3eTs1Z03Qt/DVt1VJmlugRNjw7DySkrMOW/rHNyUVqqvevsYaGXgbPT54z68chDNesFnH+Q==
+
+solady@^0.0.168:
+  version "0.0.168"
+  resolved "https://registry.yarnpkg.com/solady/-/solady-0.0.168.tgz#b466f907455632241f459a623f285a30990ef645"
+  integrity sha512-7tgy21selT6Tg+8aAxkLUyjjCx9iQ3m3KE+5D4x/tIXr4wAfoVe6EK0lmmZjyIv8MRqQSx/vB6NfIC1LME3oZA==
 
 solidity-comments-extractor@^0.0.7:
   version "0.0.7"

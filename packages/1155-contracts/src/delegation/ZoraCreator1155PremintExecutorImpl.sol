@@ -13,11 +13,15 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCrea
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExecutorImplLib.sol";
-import {PremintEncoding, ZoraCreator1155Attribution, DelegatedTokenCreation, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2} from "./ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, DelegatedTokenCreation} from "./ZoraCreator1155Attribution.sol";
+import {PremintEncoding, EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
+import {ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreationLegacy, IHasSupportedPremintSignatureVersions} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
 import {IRewardsErrors} from "@zoralabs/protocol-rewards/src/interfaces/IRewardsErrors.sol";
+import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
@@ -62,37 +66,36 @@ contract ZoraCreator1155PremintExecutorImpl is
         bytes calldata signature,
         uint256 quantityToMint,
         MintArguments calldata mintArguments,
+        address firstMinter,
         address signerContract
     ) public payable returns (PremintResult memory result) {
-        (bytes memory encodedPremint, bytes32 premintVersion) = PremintEncoding.encodePremintV2(premintConfig);
-        address fixedPriceMinter = premintConfig.tokenConfig.fixedPriceMinter;
-        uint32 uid = premintConfig.uid;
+        result = ZoraCreator1155PremintExecutorImplLib.getOrCreateContractAndToken(
+            zora1155Factory,
+            contractConfig,
+            PremintEncoding.encodePremintV2(premintConfig),
+            signature,
+            firstMinter,
+            signerContract
+        );
 
-        // we wrap this here to get around stack too deep issues
-        {
-            result = ZoraCreator1155PremintExecutorImplLib.premint({
-                zora1155Factory: zora1155Factory,
-                contractConfig: contractConfig,
-                encodedPremintConfig: encodedPremint,
-                premintVersion: premintVersion,
-                signature: signature,
-                quantityToMint: quantityToMint,
-                fixedPriceMinter: fixedPriceMinter,
-                mintArguments: mintArguments,
-                signerContract: signerContract
-            });
+        if (quantityToMint > 0) {
+            ZoraCreator1155PremintExecutorImplLib.mintWithEth(
+                IZoraCreator1155(result.contractAddress),
+                premintConfig.tokenConfig.fixedPriceMinter,
+                result.tokenId,
+                quantityToMint,
+                mintArguments
+            );
         }
 
-        {
-            emit PremintedV2({
-                contractAddress: result.contractAddress,
-                tokenId: result.tokenId,
-                createdNewContract: result.createdNewContract,
-                uid: uid,
-                minter: msg.sender,
-                quantityMinted: quantityToMint
-            });
-        }
+        emit PremintedV2({
+            contractAddress: result.contractAddress,
+            tokenId: result.tokenId,
+            createdNewContract: result.createdNewContract,
+            uid: premintConfig.uid,
+            minter: firstMinter,
+            quantityMinted: quantityToMint
+        });
     }
 
     /// @notice Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.
@@ -113,7 +116,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         uint256 quantityToMint,
         MintArguments calldata mintArguments
     ) external payable returns (PremintResult memory result) {
-        return premintV2WithSignerContract(contractConfig, premintConfig, signature, quantityToMint, mintArguments, address(0));
+        return premintV2WithSignerContract(contractConfig, premintConfig, signature, quantityToMint, mintArguments, msg.sender, address(0));
     }
 
     /// Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.
@@ -134,40 +137,39 @@ contract ZoraCreator1155PremintExecutorImpl is
         uint256 quantityToMint,
         MintArguments calldata mintArguments
     ) external payable returns (PremintResult memory result) {
-        (bytes memory encodedPremint, bytes32 premintVersion) = PremintEncoding.encodePremintV1(premintConfig);
-        address fixedPriceMinter = premintConfig.tokenConfig.fixedPriceMinter;
-        uint32 uid = premintConfig.uid;
+        result = ZoraCreator1155PremintExecutorImplLib.getOrCreateContractAndToken(
+            zora1155Factory,
+            contractConfig,
+            PremintEncoding.encodePremintV1(premintConfig),
+            signature,
+            msg.sender,
+            address(0)
+        );
 
-        {
-            result = ZoraCreator1155PremintExecutorImplLib.premint({
-                zora1155Factory: zora1155Factory,
-                contractConfig: contractConfig,
-                encodedPremintConfig: encodedPremint,
-                premintVersion: premintVersion,
-                signature: signature,
-                quantityToMint: quantityToMint,
-                fixedPriceMinter: fixedPriceMinter,
-                mintArguments: mintArguments,
-                signerContract: address(0)
-            });
+        if (quantityToMint > 0) {
+            ZoraCreator1155PremintExecutorImplLib.mintWithEth(
+                IZoraCreator1155(result.contractAddress),
+                premintConfig.tokenConfig.fixedPriceMinter,
+                result.tokenId,
+                quantityToMint,
+                mintArguments
+            );
         }
 
-        {
-            emit PremintedV2({
-                contractAddress: result.contractAddress,
-                tokenId: result.tokenId,
-                createdNewContract: result.createdNewContract,
-                uid: uid,
-                minter: msg.sender,
-                quantityMinted: quantityToMint
-            });
-        }
+        emit PremintedV2({
+            contractAddress: result.contractAddress,
+            tokenId: result.tokenId,
+            createdNewContract: result.createdNewContract,
+            uid: premintConfig.uid,
+            minter: msg.sender,
+            quantityMinted: quantityToMint
+        });
     }
 
     /// @notice Gets the deterministic contract address for the given contract creation config.
     /// Contract address is generated deterministically from a hash based on the contract uri, contract name,
     /// contract admin, and the msg.sender, which is this contract's address.
-    function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
+    function getContractAddress(ContractCreationConfig calldata contractConfig) public view override returns (address) {
         return ZoraCreator1155PremintExecutorImplLib.getContractAddress(zora1155Factory, contractConfig);
     }
 
@@ -192,7 +194,7 @@ contract ZoraCreator1155PremintExecutorImpl is
             ZoraCreator1155Attribution.hashPremint(premintConfig),
             signature,
             contractAddress,
-            ZoraCreator1155Attribution.HASHED_VERSION_1,
+            PremintEncoding.HASHED_VERSION_1,
             block.chainid,
             address(0)
         );
@@ -241,7 +243,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         // try get token id for uid 0 - if call fails, we know this didn't support premint
         try ERC1155DelegationStorageV1(contractAddress).delegatedTokenId(uint32(0)) returns (uint256) {
             versions = new string[](1);
-            versions[0] = ZoraCreator1155Attribution.VERSION_1;
+            versions[0] = PremintEncoding.VERSION_1;
         } catch {
             versions = new string[](0);
         }

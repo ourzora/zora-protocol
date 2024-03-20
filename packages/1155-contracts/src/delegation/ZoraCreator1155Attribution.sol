@@ -7,100 +7,14 @@ import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {IERC1271} from "../interfaces/IERC1271.sol";
 
-struct ContractCreationConfig {
-    // Creator/admin of the created contract.  Must match the account that signed the message
-    address contractAdmin;
-    // Metadata URI for the created contract
-    string contractURI;
-    // Name of the created contract
-    string contractName;
-}
-
-struct PremintConfig {
-    // The config for the token to be created
-    TokenCreationConfig tokenConfig;
-    // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
-    // only one signature per token id, scoped to the contract hash can be executed.
-    uint32 uid;
-    // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
-    uint32 version;
-    // If executing this signature results in preventing any signature with this uid from being minted.
-    bool deleted;
-}
-
-struct TokenCreationConfig {
-    // Metadata URI for the created token
-    string tokenURI;
-    // Max supply of the created token
-    uint256 maxSupply;
-    // Max tokens that can be minted for an address, 0 if unlimited
-    uint64 maxTokensPerAddress;
-    // Price per token in eth wei. 0 for a free mint.
-    uint96 pricePerToken;
-    // The start time of the mint, 0 for immediate.  Prevents signatures from being used until the start time.
-    uint64 mintStart;
-    // The duration of the mint, starting from the first mint of this token. 0 for infinite
-    uint64 mintDuration;
-    // deperecated field; will be ignored.
-    uint32 royaltyMintSchedule;
-    // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
-    uint32 royaltyBPS;
-    // This is the address that will be set on the `royaltyRecipient` for the created token on the 1155 contract,
-    // which is the address that receives creator rewards and secondary royalties for the token,
-    // and on the `fundsRecipient` on the ZoraCreatorFixedPriceSaleStrategy contract for the token,
-    // which is the address that receives paid mint funds for the token.
-    address royaltyRecipient;
-    // Fixed price minter address
-    address fixedPriceMinter;
-}
-
-struct PremintConfigV2 {
-    // The config for the token to be created
-    TokenCreationConfigV2 tokenConfig;
-    // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
-    // only one signature per token id, scoped to the contract hash can be executed.
-    uint32 uid;
-    // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
-    uint32 version;
-    // If executing this signature results in preventing any signature with this uid from being minted.
-    bool deleted;
-}
-
-struct TokenCreationConfigV2 {
-    // Metadata URI for the created token
-    string tokenURI;
-    // Max supply of the created token
-    uint256 maxSupply;
-    // Max tokens that can be minted for an address, 0 if unlimited
-    uint64 maxTokensPerAddress;
-    // Price per token in eth wei. 0 for a free mint.
-    uint96 pricePerToken;
-    // The start time of the mint, 0 for immediate.  Prevents signatures from being used until the start time.
-    uint64 mintStart;
-    // The duration of the mint, starting from the first mint of this token. 0 for infinite
-    uint64 mintDuration;
-    // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
-    uint32 royaltyBPS;
-    // This is the address that will be set on the `royaltyRecipient` for the created token on the 1155 contract,
-    // which is the address that receives creator rewards and secondary royalties for the token,
-    // and on the `fundsRecipient` on the ZoraCreatorFixedPriceSaleStrategy contract for the token,
-    // which is the address that receives paid mint funds for the token.
-    address payoutRecipient;
-    // Fixed price minter address
-    address fixedPriceMinter;
-    // create referral
-    address createReferral;
-}
+import {PremintConfig, ContractCreationConfig, TokenCreationConfig, PremintConfigV2, TokenCreationConfigV2} from "@zoralabs/shared-contracts/entities/Premint.sol";
 
 library ZoraCreator1155Attribution {
     string internal constant NAME = "Preminter";
     bytes32 internal constant HASHED_NAME = keccak256(bytes(NAME));
-    string internal constant VERSION_1 = "1";
-    bytes32 internal constant HASHED_VERSION_1 = keccak256(bytes(VERSION_1));
-    string internal constant VERSION_2 = "2";
-    bytes32 internal constant HASHED_VERSION_2 = keccak256(bytes(VERSION_2));
 
     /**
      * @dev Returns the domain separator for the specified chain.
@@ -164,7 +78,7 @@ library ZoraCreator1155Attribution {
             (signatory, recoverError) = ECDSAUpgradeable.tryRecover(digest, signature);
 
             if (recoverError != ECDSAUpgradeable.RecoverError.NoError) {
-                revert IZoraCreator1155Errors.InvalidSignature(recoverError);
+                revert IZoraCreator1155Errors.InvalidSignature();
             }
         }
     }
@@ -367,16 +281,6 @@ library PremintTokenSetup {
     }
 }
 
-library PremintEncoding {
-    function encodePremintV1(PremintConfig memory premintConfig) internal pure returns (bytes memory encodedPremintConfig, bytes32 hashedVersion) {
-        return (abi.encode(premintConfig), ZoraCreator1155Attribution.HASHED_VERSION_1);
-    }
-
-    function encodePremintV2(PremintConfigV2 memory premintConfig) internal pure returns (bytes memory encodedPremintConfig, bytes32 hashedVersion) {
-        return (abi.encode(premintConfig), ZoraCreator1155Attribution.HASHED_VERSION_2);
-    }
-}
-
 struct DecodedCreatorAttribution {
     bytes32 structHash;
     string domainName;
@@ -416,11 +320,11 @@ library DelegatedTokenCreation {
         // based on version of encoded premint config, decode corresponding premint config,
         // and then recover signer from the signature, and then build token setup actions based
         // on the decoded premint config.
-        if (premintVersion == ZoraCreator1155Attribution.HASHED_VERSION_1) {
+        if (premintVersion == PremintEncoding.HASHED_VERSION_1) {
             PremintConfig memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfig));
 
             creatorAttribution = recoverCreatorAttribution(
-                ZoraCreator1155Attribution.VERSION_1,
+                PremintEncoding.VERSION_1,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
                 signature,
@@ -432,7 +336,7 @@ library DelegatedTokenCreation {
             PremintConfigV2 memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfigV2));
 
             creatorAttribution = recoverCreatorAttribution(
-                ZoraCreator1155Attribution.VERSION_2,
+                PremintEncoding.VERSION_2,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
                 signature,
@@ -449,8 +353,8 @@ library DelegatedTokenCreation {
 
     function _supportedPremintSignatureVersions() internal pure returns (string[] memory versions) {
         versions = new string[](2);
-        versions[0] = ZoraCreator1155Attribution.VERSION_1;
-        versions[1] = ZoraCreator1155Attribution.VERSION_2;
+        versions[0] = PremintEncoding.VERSION_1;
+        versions[1] = PremintEncoding.VERSION_2;
     }
 
     function recoverCreatorAttribution(

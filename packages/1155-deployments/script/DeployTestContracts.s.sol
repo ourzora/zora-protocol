@@ -7,6 +7,7 @@ import "forge-std/console2.sol";
 import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
 import {Deployment} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
+import {MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract DeployTestContracts is ZoraDeployerBase {
@@ -18,11 +19,7 @@ contract DeployTestContracts is ZoraDeployerBase {
         ZoraDeployerUtils.deployTestContractForVerification(deployment.factoryProxy, makeAddr("admin"));
 
         address fundsRecipient = vm.envAddress("DEPLOYER");
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: fundsRecipient,
-            mintComment: "",
-            mintRewardsRecipients: new address[](0)
-        });
+        MintArguments memory mintArguments = MintArguments({mintRecipient: fundsRecipient, mintComment: "", mintRewardsRecipients: new address[](0)});
 
         signAndExecutePremintV2(deployment.preminterProxy, fundsRecipient, mintArguments);
 

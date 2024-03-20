@@ -9,16 +9,18 @@
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test": "FORK_TEST_CHAINS=mainnet,optimism,zora,sepolia,base,zora_sepolia,arbitrum_one,arbitrum_sepolia,blast,blast_sepolia forge test -vvv",
     "copy-deployed-contracts": "yarn tsx script/copy-deployed-contracts.ts",
+    "unlink-common": "rm -rf ./node_modules/@zoralabs/shared-contracts && cp -r ../shared-contracts ./node_modules/@zoralabs/shared-contracts",
     "unlink-protocol-rewards": "rm -rf ./node_modules/@zoralabs/protocol-rewards && cp -r ../protocol-rewards ./node_modules/@zoralabs/protocol-rewards",
     "unlink-1155": "rm -rf ./node_modules/@zoralabs/zora-1155-contracts && cp -r ../1155-contracts ./node_modules/@zoralabs/zora-1155-contracts",
-    "unlink-contracts": "yarn unlink-protocol-rewards && yarn unlink-1155",
+    "unlink-contracts": "yarn unlink-common && yarn unlink-protocol-rewards && yarn unlink-1155",
     "link-contracts": "rm -rf ./node_modules && cd .. && yarn"
   },
   "dependencies": {
     "solmate": "6.1.0",
     "forge-std": "https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
-    "@zoralabs/zora-1155-contracts": "*"
+    "@zoralabs/zora-1155-contracts": "*",
+    "@zoralabs/shared-contracts": "*"
   },
   "devDependencies": {
     "zoralabs-tsconfig": "*",

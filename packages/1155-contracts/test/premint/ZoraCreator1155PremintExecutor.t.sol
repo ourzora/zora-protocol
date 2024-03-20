@@ -17,7 +17,8 @@ import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, PremintEncoding} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {ContractCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
@@ -43,7 +44,7 @@ contract ZoraCreator1155PreminterTest is Test {
     address internal premintExecutor;
     address internal collector;
 
-    IZoraCreator1155PremintExecutor.MintArguments defaultMintArguments;
+    MintArguments defaultMintArguments;
     ProtocolRewards rewards;
 
     event PremintedV2(
@@ -69,11 +70,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         preminter = new ZoraCreator1155PremintExecutorImpl(factory);
 
-        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: premintExecutor,
-            mintComment: "blah",
-            mintRewardsRecipients: new address[](0)
-        });
+        defaultMintArguments = MintArguments({mintRecipient: premintExecutor, mintComment: "blah", mintRewardsRecipients: new address[](0)});
     }
 
     function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
@@ -128,7 +125,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // 2. Call smart contract to get digest to sign for creation params.
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, ZoraCreator1155Attribution.HASHED_VERSION_1, chainId);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_1, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -174,7 +171,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // 2. Call smart contract to get digest to sign for creation params.
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, ZoraCreator1155Attribution.HASHED_VERSION_2, chainId);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_2, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -200,7 +197,7 @@ contract ZoraCreator1155PreminterTest is Test {
         premintConfig.uid++;
 
         structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, ZoraCreator1155Attribution.HASHED_VERSION_2, chainId);
+        digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_2, chainId);
         signature = _sign(creatorPrivateKey, digest);
 
         vm.deal(premintExecutor, mintCost);
@@ -230,7 +227,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // 2. Call smart contract to get digest to sign for creation params.
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, ZoraCreator1155Attribution.HASHED_VERSION_2, chainId);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_2, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -263,12 +260,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         address deterministicAddress = preminter.getContractAddress(contractConfig);
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(
-            structHash,
-            deterministicAddress,
-            ZoraCreator1155Attribution.HASHED_VERSION_1,
-            chainId
-        );
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, deterministicAddress, PremintEncoding.HASHED_VERSION_1, chainId);
         bytes memory signature = _sign(creatorPrivateKey, digest);
 
         uint256 quantityToMint = 4;
@@ -280,7 +272,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // verify CreatorAttribution was emitted from the erc1155 contract
         vm.expectEmit(true, true, true, true, deterministicAddress);
-        emit CreatorAttribution(structHash, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION_1, creator, signature);
+        emit CreatorAttribution(structHash, ZoraCreator1155Attribution.NAME, PremintEncoding.VERSION_1, creator, signature);
 
         // create contract and token via premint
         preminter.premintV1{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
@@ -296,12 +288,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         address deterministicAddress = preminter.getContractAddress(contractConfig);
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(
-            structHash,
-            deterministicAddress,
-            ZoraCreator1155Attribution.HASHED_VERSION_2,
-            chainId
-        );
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, deterministicAddress, PremintEncoding.HASHED_VERSION_2, chainId);
         bytes memory signature = _sign(creatorPrivateKey, digest);
 
         uint256 quantityToMint = 4;
@@ -313,7 +300,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // verify CreatorAttribution was emitted from the erc1155 contract
         vm.expectEmit(true, true, true, true, deterministicAddress);
-        emit CreatorAttribution(structHash, ZoraCreator1155Attribution.NAME, ZoraCreator1155Attribution.VERSION_2, creator, signature);
+        emit CreatorAttribution(structHash, ZoraCreator1155Attribution.NAME, PremintEncoding.VERSION_2, creator, signature);
 
         // create contract and token via premint
         preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments);
@@ -336,7 +323,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // 2. Call smart contract to get digest to sign for creation params.
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, ZoraCreator1155Attribution.HASHED_VERSION_2, chainId);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_2, chainId);
 
         // 3. Sign the digest
         // create a signature with the digest for the params
@@ -450,11 +437,7 @@ contract ZoraCreator1155PreminterTest is Test {
         address[] memory mintRewardsRecipients = new address[](1);
         mintRewardsRecipients[0] = mintReferral;
 
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: minter,
-            mintComment: "",
-            mintRewardsRecipients: mintRewardsRecipients
-        });
+        MintArguments memory mintArguments = MintArguments({mintRecipient: minter, mintComment: "", mintRewardsRecipients: mintRewardsRecipients});
 
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
 
@@ -904,11 +887,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // sign and execute premint
         bytes memory signature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, block.chainid);
 
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: address(0),
-            mintComment: "",
-            mintRewardsRecipients: new address[](0)
-        });
+        MintArguments memory mintArguments = MintArguments({mintRecipient: address(0), mintComment: "", mintRewardsRecipients: new address[](0)});
 
         uint256 quantityToMint = 3;
         uint256 mintCost = mintFeeAmount * quantityToMint;
@@ -958,11 +937,7 @@ contract ZoraCreator1155PreminterTest is Test {
     ) private returns (uint256 newTokenId) {
         bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, privateKey, chainId);
 
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: executor,
-            mintComment: comment,
-            mintRewardsRecipients: new address[](0)
-        });
+        MintArguments memory mintArguments = MintArguments({mintRecipient: executor, mintComment: comment, mintRewardsRecipients: new address[](0)});
 
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
         vm.deal(executor, mintCost);
@@ -979,7 +954,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId
     ) private pure returns (bytes memory signature) {
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, ZoraCreator1155Attribution.HASHED_VERSION_2, chainId);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_2, chainId);
 
         // create a signature with the digest for the params
         signature = _sign(privateKey, digest);

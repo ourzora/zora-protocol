@@ -17,7 +17,8 @@ import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution, PremintEncoding} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {ContractCreationConfig, TokenCreationConfigV2, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
@@ -62,8 +63,9 @@ contract ZoraCreator1155PreminterTest is Test {
     address internal zora;
     address internal premintExecutor;
     address internal collector;
+    address internal firstMinter;
 
-    IZoraCreator1155PremintExecutor.MintArguments defaultMintArguments;
+    MintArguments defaultMintArguments;
     ProtocolRewards rewards;
 
     function setUp() external {
@@ -71,6 +73,7 @@ contract ZoraCreator1155PreminterTest is Test {
         zora = makeAddr("zora");
         premintExecutor = makeAddr("premintExecutor");
         collector = makeAddr("collector");
+        firstMinter = collector;
 
         vm.startPrank(zora);
         (rewards, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
@@ -80,11 +83,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         preminter = new ZoraCreator1155PremintExecutorImpl(factory);
 
-        defaultMintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-            mintRecipient: premintExecutor,
-            mintComment: "blah",
-            mintRewardsRecipients: new address[](0)
-        });
+        defaultMintArguments = MintArguments({mintRecipient: premintExecutor, mintComment: "blah", mintRewardsRecipients: new address[](0)});
     }
 
     function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
@@ -120,12 +119,13 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
 
         // when
-        IZoraCreator1155PremintExecutor.PremintResult memory premintResult = preminter.premintV2WithSignerContract{value: mintCost}(
+        PremintResult memory premintResult = preminter.premintV2WithSignerContract{value: mintCost}(
             contractConfig,
             premintConfig,
             signature,
             quantityToMint,
             defaultMintArguments,
+            firstMinter,
             address(mockAA)
         );
 
@@ -148,7 +148,15 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // this should revert - because the smart wallet param is not a contract.
         vm.expectRevert(IZoraCreator1155Errors.premintSignerContractNotAContract.selector);
-        preminter.premintV2WithSignerContract{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments, creator);
+        preminter.premintV2WithSignerContract{value: mintCost}(
+            contractConfig,
+            premintConfig,
+            signature,
+            quantityToMint,
+            defaultMintArguments,
+            firstMinter,
+            creator
+        );
     }
 
     function test_premintV2_whenpremintSignerContract_revertsWhen_premintSignerContractRejectsSigner() external {
@@ -169,7 +177,15 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.InvalidSigner.selector, bytes4(0)));
-        preminter.premintV2WithSignerContract{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments, address(mockAA));
+        preminter.premintV2WithSignerContract{value: mintCost}(
+            contractConfig,
+            premintConfig,
+            signature,
+            quantityToMint,
+            defaultMintArguments,
+            firstMinter,
+            address(mockAA)
+        );
     }
 
     function test_premintV2_whenpremintSignerContract_revertsWhen_invalidSignature() external {
@@ -188,7 +204,15 @@ contract ZoraCreator1155PreminterTest is Test {
         bytes memory signature = abi.encodePacked("bad");
 
         vm.expectRevert(IZoraCreator1155Errors.premintSignerContractFailedToRecoverSigner.selector);
-        preminter.premintV2WithSignerContract{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments, address(mockAA));
+        preminter.premintV2WithSignerContract{value: mintCost}(
+            contractConfig,
+            premintConfig,
+            signature,
+            quantityToMint,
+            defaultMintArguments,
+            firstMinter,
+            address(mockAA)
+        );
     }
 
     function test_premintV2_whenpremintSignerContract_revertsWhen_premintSignerContractNotAContract() external {
@@ -207,6 +231,7 @@ contract ZoraCreator1155PreminterTest is Test {
             bytes(""),
             1,
             defaultMintArguments,
+            firstMinter,
             // here we pass an account thats not a contract - it should revert
             makeAddr("randomAccount")
         );
@@ -219,7 +244,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId
     ) private pure returns (bytes memory signature) {
         bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, ZoraCreator1155Attribution.HASHED_VERSION_2, chainId);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_2, chainId);
 
         // create a signature with the digest for the params
         signature = _sign(privateKey, digest);

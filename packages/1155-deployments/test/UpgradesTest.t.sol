@@ -7,6 +7,7 @@ import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/
 import {ForkDeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
+import {MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
@@ -173,11 +174,7 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             address[] memory mintRewardsRecipients = new address[](1);
             mintRewardsRecipients[0] = mintReferral;
 
-            IZoraCreator1155PremintExecutor.MintArguments memory mintArguments = IZoraCreator1155PremintExecutor.MintArguments({
-                mintRecipient: collector,
-                mintComment: "",
-                mintRewardsRecipients: mintRewardsRecipients
-            });
+            MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "", mintRewardsRecipients: mintRewardsRecipients});
 
             vm.startPrank(collector);
             signAndExecutePremintV1(targetPreminterProxy, makeAddr("payoutRecipientA"), mintArguments);

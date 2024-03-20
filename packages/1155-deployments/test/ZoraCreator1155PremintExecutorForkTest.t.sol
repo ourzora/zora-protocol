@@ -3,7 +3,9 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ForkDeploymentConfig} from "../src/DeploymentConfig.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
+import {ZoraCreator1155Attribution} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
+import {ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
@@ -132,7 +134,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
 
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.prank(executor);
-        IZoraCreator1155PremintExecutor.MintArguments memory mintArguments;
+        MintArguments memory mintArguments;
         mintArguments.mintComment = comment;
         mintArguments.mintRecipient = executor;
         newTokenId = preminter.premintV1{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
@@ -152,7 +154,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
             premintConfig,
             signature,
             quantityToMint,
-            IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: executor, mintComment: comment, mintRewardsRecipients: new address[](0)})
+            MintArguments({mintRecipient: executor, mintComment: comment, mintRewardsRecipients: new address[](0)})
         );
     }
 
@@ -160,7 +162,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
         bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(
             ZoraCreator1155Attribution.hashPremint(premintConfig),
             contractAddress,
-            ZoraCreator1155Attribution.HASHED_VERSION_1,
+            PremintEncoding.HASHED_VERSION_1,
             chainId
         );
 
@@ -183,7 +185,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
             premintConfigV2,
             signature,
             quantityToMint,
-            IZoraCreator1155PremintExecutor.MintArguments({mintRecipient: executor, mintComment: comment, mintRewardsRecipients: new address[](0)})
+            MintArguments({mintRecipient: executor, mintComment: comment, mintRewardsRecipients: new address[](0)})
         );
     }
 
@@ -191,7 +193,7 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
         bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(
             ZoraCreator1155Attribution.hashPremint(premintConfigV2),
             contractAddress,
-            ZoraCreator1155Attribution.HASHED_VERSION_2,
+            PremintEncoding.HASHED_VERSION_2,
             chainId
         );
 
