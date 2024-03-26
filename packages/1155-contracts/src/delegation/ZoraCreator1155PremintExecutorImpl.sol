@@ -15,7 +15,8 @@ import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorage
 import {ZoraCreator1155PremintExecutorImplLib} from "./ZoraCreator1155PremintExecutorImplLib.sol";
 import {ZoraCreator1155Attribution, DelegatedTokenCreation} from "./ZoraCreator1155Attribution.sol";
 import {PremintEncoding, EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
-import {ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2, MintArguments, PremintResult, Erc20PremintConfigV1, Erc20TokenCreationConfigV1} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ZoraCreator1155Attribution, DelegatedTokenCreation} from "./ZoraCreator1155Attribution.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreationLegacy, IHasSupportedPremintSignatureVersions} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
@@ -45,6 +46,56 @@ contract ZoraCreator1155PremintExecutorImpl is
     function initialize(address _initialOwner) public initializer {
         __Ownable_init(_initialOwner);
         __UUPSUpgradeable_init();
+    }
+
+    /// @notice Executes the creation of an 1155 contract, token, and/or ERC20 sale signed by a creator, and mints the first tokens to the executor of this transaction.
+    ///         To mint the first token(s) of an ERC20 sale, the executor must approve this contract the quantity * price of the mint.
+    /// @dev For use with v3 of premint config, PremintConfig3, which supports ERC20 mints.
+    /// @param contractConfig Parameters for creating a new contract, if one doesn't exist yet.  Used to resolve the deterministic contract address.
+    /// @param premintConfig Parameters for creating the token, and minting the initial x tokens to the executor.
+    /// @param signature Signature of the creator of the token, which must match the signer of the premint config, or have permission to create new tokens on the erc1155 contract if it's already been created
+    /// @param quantityToMint How many tokens to mint to the mintRecipient
+    /// @param mintArguments mint arguments specifying the token mint recipient, mint comment, and mint referral
+    /// @param signerContract If a smart wallet was used to create the premint, the address of that smart wallet. Otherwise, set to address(0)
+    function premintErc20V1(
+        ContractCreationConfig calldata contractConfig,
+        Erc20PremintConfigV1 calldata premintConfig,
+        bytes calldata signature,
+        uint256 quantityToMint,
+        MintArguments calldata mintArguments,
+        address firstMinter,
+        address signerContract
+    ) external returns (PremintResult memory result) {
+        result = ZoraCreator1155PremintExecutorImplLib.getOrCreateContractAndToken(
+            zora1155Factory,
+            contractConfig,
+            PremintEncoding.encodePremintErc20V1(premintConfig),
+            signature,
+            firstMinter,
+            signerContract
+        );
+
+        if (quantityToMint > 0) {
+            ZoraCreator1155PremintExecutorImplLib.performERC20Mint(
+                premintConfig.tokenConfig.erc20Minter,
+                premintConfig.tokenConfig.currency,
+                premintConfig.tokenConfig.pricePerToken,
+                quantityToMint,
+                result,
+                mintArguments
+            );
+        }
+
+        {
+            emit PremintedV2({
+                contractAddress: result.contractAddress,
+                tokenId: result.tokenId,
+                createdNewContract: result.createdNewContract,
+                uid: premintConfig.uid,
+                minter: firstMinter,
+                quantityMinted: quantityToMint
+            });
+        }
     }
 
     /// @notice Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.

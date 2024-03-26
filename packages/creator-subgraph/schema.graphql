@@ -412,6 +412,7 @@ type SalesStrategyConfig @entity {
   presale: SalesConfigMerkleMinterStrategy
   fixedPrice: SalesConfigFixedPriceSaleStrategy
   redeemMinter: SalesConfigRedeemMinterStrategy
+  erc20Minter: SalesConfigERC20Minter
   type: String!
 }
 
@@ -602,4 +603,50 @@ type MintAccountBalance @entity {
   balance: BigInt!
   account: Bytes!
   mintToken: MintToken!
+}
+
+### ERC20 Minter
+
+type SalesConfigERC20Minter @entity {
+  # Begin – default data block
+  id: ID!
+  txn: TransactionInfo!
+  block: BigInt!
+  address: Bytes!
+  timestamp: BigInt!
+  # End – default data block
+
+  configAddress: Bytes!
+
+  tokenId: BigInt!
+  contract: ZoraCreateContract!
+  saleStart: BigInt!
+  saleEnd: BigInt!
+  maxTokensPerAddress: BigInt!
+  pricePerToken: BigInt!
+  currency: Bytes!
+
+  fundsRecipient: Bytes
+}
+
+type ERC20RewardsDeposit @entity @immutable {
+  # Begin – default data block
+  id: ID!
+  txn: TransactionInfo!
+  block: BigInt!
+  address: Bytes!
+  timestamp: BigInt!
+  # End – default data block
+
+  collection: Bytes!
+  mintReferral: Bytes!
+  mintReferralReward: BigInt!
+  createReferral: Bytes!
+  createReferralReward: BigInt!
+  zora: Bytes!
+  zoraReward: BigInt!
+  currency: Bytes!
+  tokenId: BigInt!
+  firstMinter: Bytes!
+  firstMinterReward: BigInt!
 }

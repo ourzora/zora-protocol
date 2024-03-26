@@ -1,0 +1,725 @@
+[
+    {
+      "type": "constructor",
+      "inputs": [
+        {
+          "name": "_zoraRewardAddress",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "computePaidMintRewards",
+      "inputs": [
+        {
+          "name": "totalReward",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct IERC20Minter.RewardsSettings",
+          "components": [
+            {
+              "name": "createReferralReward",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "mintReferralReward",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "zoraReward",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "firstMinterReward",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "computeReward",
+      "inputs": [
+        {
+          "name": "totalReward",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "rewardPct",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "computeTotalReward",
+      "inputs": [
+        {
+          "name": "totalValue",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "contractName",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "contractURI",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "contractVersion",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "getCreateReferral",
+      "inputs": [
+        {
+          "name": "tokenContract",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "createReferral",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getFirstMinter",
+      "inputs": [
+        {
+          "name": "tokenContract",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "firstMinter",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "getMintedPerWallet",
+      "inputs": [
+        {
+          "name": "tokenContract",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "wallet",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "mint",
+      "inputs": [
+        {
+          "name": "mintTo",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "quantity",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "tokenAddress",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "totalValue",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "currency",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "mintReferral",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "comment",
+          "type": "string",
+          "internalType": "string"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "requestMint",
+      "inputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "",
+          "type": "bytes",
+          "internalType": "bytes"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct ICreatorCommands.CommandSet",
+          "components": [
+            {
+              "name": "commands",
+              "type": "tuple[]",
+              "internalType": "struct ICreatorCommands.Command[]",
+              "components": [
+                {
+                  "name": "method",
+                  "type": "uint8",
+                  "internalType": "enum ICreatorCommands.CreatorActions"
+                },
+                {
+                  "name": "args",
+                  "type": "bytes",
+                  "internalType": "bytes"
+                }
+              ]
+            },
+            {
+              "name": "at",
+              "type": "uint256",
+              "internalType": "uint256"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "resetSale",
+      "inputs": [
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "sale",
+      "inputs": [
+        {
+          "name": "tokenContract",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "tuple",
+          "internalType": "struct IERC20Minter.SalesConfig",
+          "components": [
+            {
+              "name": "saleStart",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "saleEnd",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "maxTokensPerAddress",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "pricePerToken",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "fundsRecipient",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "currency",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "function",
+      "name": "setSale",
+      "inputs": [
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "salesConfig",
+          "type": "tuple",
+          "internalType": "struct IERC20Minter.SalesConfig",
+          "components": [
+            {
+              "name": "saleStart",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "saleEnd",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "maxTokensPerAddress",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "pricePerToken",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "fundsRecipient",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "currency",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "outputs": [],
+      "stateMutability": "nonpayable"
+    },
+    {
+      "type": "function",
+      "name": "supportsInterface",
+      "inputs": [
+        {
+          "name": "interfaceId",
+          "type": "bytes4",
+          "internalType": "bytes4"
+        }
+      ],
+      "outputs": [
+        {
+          "name": "",
+          "type": "bool",
+          "internalType": "bool"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "totalRewardPct",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ],
+      "stateMutability": "pure"
+    },
+    {
+      "type": "function",
+      "name": "zoraRewardAddress",
+      "inputs": [],
+      "outputs": [
+        {
+          "name": "",
+          "type": "address",
+          "internalType": "address"
+        }
+      ],
+      "stateMutability": "view"
+    },
+    {
+      "type": "event",
+      "name": "ERC20MinterInitialized",
+      "inputs": [
+        {
+          "name": "rewardPercentage",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "ERC20RewardsDeposit",
+      "inputs": [
+        {
+          "name": "createReferral",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "mintReferral",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "firstMinter",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "zora",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "collection",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "currency",
+          "type": "address",
+          "indexed": false,
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "createReferralReward",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "mintReferralReward",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "firstMinterReward",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "zoraReward",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "MintComment",
+      "inputs": [
+        {
+          "name": "sender",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "tokenContract",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "quantity",
+          "type": "uint256",
+          "indexed": false,
+          "internalType": "uint256"
+        },
+        {
+          "name": "comment",
+          "type": "string",
+          "indexed": false,
+          "internalType": "string"
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "event",
+      "name": "SaleSet",
+      "inputs": [
+        {
+          "name": "mediaContract",
+          "type": "address",
+          "indexed": true,
+          "internalType": "address"
+        },
+        {
+          "name": "tokenId",
+          "type": "uint256",
+          "indexed": true,
+          "internalType": "uint256"
+        },
+        {
+          "name": "salesConfig",
+          "type": "tuple",
+          "indexed": false,
+          "internalType": "struct IERC20Minter.SalesConfig",
+          "components": [
+            {
+              "name": "saleStart",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "saleEnd",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "maxTokensPerAddress",
+              "type": "uint64",
+              "internalType": "uint64"
+            },
+            {
+              "name": "pricePerToken",
+              "type": "uint256",
+              "internalType": "uint256"
+            },
+            {
+              "name": "fundsRecipient",
+              "type": "address",
+              "internalType": "address"
+            },
+            {
+              "name": "currency",
+              "type": "address",
+              "internalType": "address"
+            }
+          ]
+        }
+      ],
+      "anonymous": false
+    },
+    {
+      "type": "error",
+      "name": "AddressZero",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "InvalidCurrency",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "PricePerTokenTooLow",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "RequestMintInvalidUseMint",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "SaleEnded",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "SaleHasNotStarted",
+      "inputs": []
+    },
+    {
+      "type": "error",
+      "name": "UserExceedsMintLimit",
+      "inputs": [
+        {
+          "name": "user",
+          "type": "address",
+          "internalType": "address"
+        },
+        {
+          "name": "limit",
+          "type": "uint256",
+          "internalType": "uint256"
+        },
+        {
+          "name": "requestedAmount",
+          "type": "uint256",
+          "internalType": "uint256"
+        }
+      ]
+    },
+    {
+      "type": "error",
+      "name": "WrongValueSent",
+      "inputs": []
+    }
+  ]
+  

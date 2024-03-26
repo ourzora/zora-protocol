@@ -12,3 +12,7 @@ protocolRewards:
   - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
     startBlock: "2123378"
     version: "1"
+erc20Minter:
+  - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
+    startBlock: "1331788"
+    version: "1"

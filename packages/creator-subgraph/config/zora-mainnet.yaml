@@ -26,3 +26,7 @@ reserveAuctionV3:
   - address: "0xA06262157905913f855573f53AD48DE2D4ba1F4A"
     startBlock: "6686902"
     version: "1"
+erc20Minter:
+  - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
+    startBlock: "12389159"
+    version: "1"

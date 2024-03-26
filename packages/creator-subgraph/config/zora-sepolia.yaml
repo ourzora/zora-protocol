@@ -24,3 +24,7 @@ zoraMints:
   - address: "0x77777773dE7607C8d2eF571ba03ab22a7df64CEA"
     startBlock: "4637159"
     version: "1"
+erc20Minter:
+  - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
+    startBlock: "6695930"
+    version: "1"

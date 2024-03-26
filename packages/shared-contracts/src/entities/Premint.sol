@@ -86,6 +86,43 @@ struct TokenCreationConfigV2 {
     address createReferral;
 }
 
+struct Erc20PremintConfigV1 {
+    // The config for the token to be created
+    Erc20TokenCreationConfigV1 tokenConfig;
+    // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
+    // only one signature per token id, scoped to the contract hash can be executed.
+    uint32 uid;
+    // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
+    uint32 version;
+    // If executing this signature results in preventing any signature with this uid from being minted.
+    bool deleted;
+}
+
+struct Erc20TokenCreationConfigV1 {
+    // Metadata URI for the created token
+    string tokenURI;
+    // Max supply of the created token
+    uint256 maxSupply;
+    // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
+    uint32 royaltyBPS;
+    // The address that the will receive rewards/funds/royalties.
+    address payoutRecipient;
+    // The address that referred the creation of the token.
+    address createReferral;
+    // The address of the ERC20 minter module.
+    address erc20Minter;
+    // The start time of the mint, 0 for immediate.
+    uint64 mintStart;
+    // The duration of the mint, starting from the first mint of this token. 0 for infinite
+    uint64 mintDuration;
+    // Max tokens that can be minted for an address, 0 if unlimited
+    uint64 maxTokensPerAddress;
+    // The ERC20 currency address
+    address currency;
+    // Price per token in ERC20 currency
+    uint256 pricePerToken;
+}
+
 struct MintArguments {
     address mintRecipient;
     string mintComment;

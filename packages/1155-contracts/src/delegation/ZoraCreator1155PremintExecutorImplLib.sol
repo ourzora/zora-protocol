@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ContractCreationConfig, PremintConfig} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, PremintConfig, PremintResult, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Minter} from "../interfaces/IERC20Minter.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155Factory} from "../interfaces/IZoraCreator1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
@@ -10,7 +12,7 @@ import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155Pre
 import {IZoraCreator1155DelegatedCreation, IZoraCreator1155DelegatedCreationLegacy, ISupportsAABasedDelegatedTokenCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
-import {MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {IERC20Minter} from "../interfaces/IERC20Minter.sol";
 
 interface ILegacyZoraCreator1155DelegatedMinter {
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
@@ -121,6 +123,42 @@ library ZoraCreator1155PremintExecutorImplLib {
         } else {
             // otherwise, we need to use the legacy interface.
             premintResult.tokenId = legacySetupNewToken(address(tokenContract), encodedPremintConfig.premintConfig, signature);
+        }
+    }
+
+    function performERC20Mint(
+        address erc20Minter,
+        address currency,
+        uint256 pricePerToken,
+        uint256 quantityToMint,
+        PremintResult memory premintResult,
+        MintArguments memory mintArguments
+    ) internal {
+        if (quantityToMint != 0) {
+            address mintReferral = mintArguments.mintRewardsRecipients.length > 0 ? mintArguments.mintRewardsRecipients[0] : address(0);
+
+            uint256 totalValue = pricePerToken * quantityToMint;
+
+            uint256 beforeBalance = IERC20(currency).balanceOf(address(this));
+            IERC20(currency).transferFrom(msg.sender, address(this), totalValue);
+            uint256 afterBalance = IERC20(currency).balanceOf(address(this));
+
+            if ((beforeBalance + totalValue) != afterBalance) {
+                revert IERC20Minter.ERC20TransferSlippage();
+            }
+
+            IERC20(currency).approve(erc20Minter, totalValue);
+
+            IERC20Minter(erc20Minter).mint(
+                mintArguments.mintRecipient,
+                quantityToMint,
+                premintResult.contractAddress,
+                premintResult.tokenId,
+                totalValue,
+                currency,
+                mintReferral,
+                mintArguments.mintComment
+            );
         }
     }
 

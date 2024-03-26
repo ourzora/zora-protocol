@@ -841,9 +841,10 @@ contract ZoraCreator1155PreminterTest is Test {
         // build a premint
         string[] memory supportedVersions = preminter.supportedPremintSignatureVersions(makeAddr("randomContract"));
 
-        assertEq(supportedVersions.length, 2);
+        assertEq(supportedVersions.length, 3);
         assertEq(supportedVersions[0], "1");
         assertEq(supportedVersions[1], "2");
+        assertEq(supportedVersions[2], "ERC20_1");
     }
 
     function test_premintVersion_whenCreated_returnsAllVersion() external {
@@ -858,9 +859,10 @@ contract ZoraCreator1155PreminterTest is Test {
 
         string[] memory supportedVersions = preminter.supportedPremintSignatureVersions(deterministicAddress);
 
-        assertEq(supportedVersions.length, 2);
+        assertEq(supportedVersions.length, 3);
         assertEq(supportedVersions[0], "1");
         assertEq(supportedVersions[1], "2");
+        assertEq(supportedVersions[2], "ERC20_1");
     }
 
     function testPremintWithCreateReferral() public {

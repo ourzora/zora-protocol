@@ -8,3 +8,7 @@ factories721:
   - address: "0x87cfd516c5ea86e50b950678CA970a8a28de27ac"
     startBlock: "3354415"
     version: "1"
+erc20Minter:
+  - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
+    startBlock: "5566250"
+    version: "1"
