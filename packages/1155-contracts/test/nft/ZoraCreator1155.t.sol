@@ -70,6 +70,7 @@ contract ZoraCreator1155Test is Test {
     address internal zora;
     address[] internal rewardsRecipients;
 
+    event ContractURIUpdated();
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
     event RewardsDeposit(
         address indexed creator,
@@ -1376,6 +1377,8 @@ contract ZoraCreator1155Test is Test {
         assertEq(target.name(), "test");
 
         vm.prank(admin);
+        vm.expectEmit(true, true, true, true);
+        emit ContractURIUpdated();
         target.updateContractMetadata("newURI", "ASDF");
         assertEq(target.name(), "ASDF");
     }

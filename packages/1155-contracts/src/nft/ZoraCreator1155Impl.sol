@@ -9,12 +9,13 @@ import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/c
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {ERC1155Rewards} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155Rewards.sol";
 import {ERC1155RewardsStorageV1} from "@zoralabs/protocol-rewards/src/abstract/ERC1155/ERC1155RewardsStorageV1.sol";
-import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
-import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
 import {ReentrancyGuardUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/security/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 
+import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
+import {IZoraCreator1155Initializer} from "../interfaces/IZoraCreator1155Initializer.sol";
+import {IERC7572} from "../interfaces/IERC7572.sol";
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 import {CreatorPermissionControl} from "../permissions/CreatorPermissionControl.sol";
 import {CreatorRendererControl} from "../renderer/CreatorRendererControl.sol";
@@ -55,6 +56,7 @@ contract ZoraCreator1155Impl is
     CreatorRoyaltiesControl,
     ERC1155Rewards,
     ERC1155RewardsStorageV1,
+    IERC7572,
     ERC1155DelegationStorageV1
 {
     /// @notice This user role allows for any action to be performed
@@ -315,6 +317,7 @@ contract ZoraCreator1155Impl is
         tokens[CONTRACT_BASE_ID].uri = _newURI;
         _setName(_newName);
         emit ContractMetadataUpdated(msg.sender, _newURI, _newName);
+        emit ContractURIUpdated();
     }
 
     function _setupNewToken(string memory newURI, uint256 maxSupply) internal returns (uint256 tokenId) {
@@ -671,7 +674,7 @@ contract ZoraCreator1155Impl is
     }
 
     /// @notice Returns the URI for the contract
-    function contractURI() external view returns (string memory) {
+    function contractURI() external view override(IERC7572, IZoraCreator1155) returns (string memory) {
         IRenderer1155 customRenderer = getCustomRenderer(CONTRACT_BASE_ID);
         if (address(customRenderer) != address(0)) {
             return customRenderer.contractURI();
