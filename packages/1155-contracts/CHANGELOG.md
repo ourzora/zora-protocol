@@ -1,5 +1,9 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.8
+
+- 13a4785: Adds ERC20 Minter which allows users to mint NFTs with ERC20 tokens.
+
 ## 2.7.3
 
 ### Patch Changes

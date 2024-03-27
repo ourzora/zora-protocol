@@ -1,5 +1,9 @@
 # @zoralabs/1155-deployments
 
+## 0.0.3
+
+- 13a4785: Adds ERC20 Minter contract deployment addresses
+
 ## 0.0.2
 
 ### Patch Changes
