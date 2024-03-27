@@ -26,5 +26,5 @@ jobs:
           version: yarn update-version
           publish: yarn release
         env:
-          GITHUB_TOKEN: ${{ secrets.PUBLISH_ACTIONS_GITHUB_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
