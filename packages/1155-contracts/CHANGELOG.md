@@ -1,5 +1,17 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.8.0
+
+### Minor Changes
+
+- 13a4785: Adds ERC20 Minter contract which enables zora 1155 creator NFTs to be minted with ERC20 tokens
+
+### Patch Changes
+
+- 13a4785: Adds first minter reward to ERC20 Minter
+- 1cf02a4: Add ERC7572 ContractURIUpdated() event for indexing
+- 079a596: Moved shared functionality into shared-contracts. premintWithSignerContract takes firstMinter as an argument
+
 ## 2.8
 
 - 13a4785: Adds ERC20 Minter which allows users to mint NFTs with ERC20 tokens.
