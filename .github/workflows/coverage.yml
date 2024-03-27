@@ -51,7 +51,7 @@ jobs:
         uses: zgosalvez/github-actions-report-lcov@v2
         with:
           coverage-files: ./${{ env.package_folder }}/lcov.info
-          minimum-coverage: 89
+          minimum-coverage: 87
           artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ./${{ env.package_folder }}

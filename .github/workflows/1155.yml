@@ -33,4 +33,4 @@ jobs:
     uses: ./.github/workflows/coverage.yml
     with:
       package: "1155-contracts"
-      files_to_ignore: '"*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*"'
+      files_to_ignore: '"*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*" "*test*"'

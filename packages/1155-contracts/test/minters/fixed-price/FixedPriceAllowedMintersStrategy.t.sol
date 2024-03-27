@@ -52,8 +52,53 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         assertEq(fixedPrice.contractName(), "Fixed Price Allowed Minters Strategy");
     }
 
+    function test_ContractURI() external {
+        assertEq(fixedPrice.contractURI(), "https://github.com/ourzora/zora-protocol/");
+    }
+
     function test_Version() external {
         assertEq(fixedPrice.contractVersion(), "1.0.0");
+    }
+
+    function test_SetSale() external {
+        vm.startPrank(admin);
+
+        uint256 newTokenId = target.setupNewToken("https://zora.co/testing/token.json", 10);
+        target.addPermission(newTokenId, address(fixedPrice), target.PERMISSION_BIT_MINTER());
+
+        target.callSale(
+            newTokenId,
+            fixedPrice,
+            abi.encodeWithSelector(
+                FixedPriceAllowedMintersStrategy.setSale.selector,
+                newTokenId,
+                IFixedPriceAllowedMintersStrategy.SalesConfig({
+                    pricePerToken: 1 ether,
+                    saleStart: 0,
+                    saleEnd: type(uint64).max,
+                    maxTokensPerAddress: 0,
+                    fundsRecipient: address(0)
+                })
+            )
+        );
+
+        target.callSale(newTokenId, fixedPrice, abi.encodeWithSelector(IFixedPriceAllowedMintersStrategy.setMinters.selector, newTokenId, minters, true));
+
+        vm.stopPrank();
+
+        bool isMinter = fixedPrice.isMinter(address(target), newTokenId, minters[0]);
+        assertTrue(isMinter);
+
+        FixedPriceAllowedMintersStrategy.SalesConfig memory config = fixedPrice.sale(address(target), newTokenId);
+
+        assertEq(config.pricePerToken, 1 ether);
+        assertEq(config.saleStart, 0);
+        assertEq(config.saleEnd, type(uint64).max);
+        assertEq(config.maxTokensPerAddress, 0);
+        assertEq(config.fundsRecipient, address(0));
+
+        uint256 numMinted = fixedPrice.getMintedPerWallet(address(target), newTokenId, address(this));
+        assertEq(numMinted, 0);
     }
 
     function test_MintFromAllowedMinter() external {
@@ -92,6 +137,9 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
 
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
         assertEq(address(target).balance, 10 ether);
+
+        uint256 numMinted = fixedPrice.getMintedPerWallet(address(target), newTokenId, allowedMinter); // We don't record the limit + num minted for this module
+        assertEq(numMinted, 0);
 
         vm.stopPrank();
     }
