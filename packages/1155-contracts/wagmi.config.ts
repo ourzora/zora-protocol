@@ -19,6 +19,7 @@ export default defineConfig({
         "DeterministicProxyDeployer",
         "IImmutableCreate2Factory",
         "ProtocolRewards",
+        "ERC20Minter",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],
