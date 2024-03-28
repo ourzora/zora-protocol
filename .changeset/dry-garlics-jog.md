@@ -1,6 +1,6 @@
 ---
 "@zoralabs/protocol-deployments": patch
-"@zoralabs/1155-contracts": patch
+"@zoralabs/zora-1155-contracts": patch
 "@zoralabs/1155-deployments": patch
 ---
 
