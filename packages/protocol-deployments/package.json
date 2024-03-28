@@ -22,10 +22,7 @@
     "lint": "prettier --check 'src/**/*.ts' 'scripts/*' 'wagmi.config.ts'",
     "wagmi": "wagmi generate"
   },
-  "dependencies": {
-    "@zoralabs/1155-deployments": "*",
-    "@zoralabs/zora-1155-contracts": "*"
-  },
+  "dependencies": {},
   "devDependencies": {
     "zoralabs-tsconfig": "*",
     "typescript": "^5.2.2",
@@ -35,6 +32,8 @@
     "es-main": "^1.2.0",
     "@wagmi/cli": "^1.0.1",
     "@types/node": "^20.1.2",
-    "@lavamoat/preinstall-always-fail": "2.0.0"
+    "@lavamoat/preinstall-always-fail": "2.0.0",
+    "@zoralabs/1155-deployments": "*",
+    "@zoralabs/zora-1155-contracts": "*"
   }
 }
