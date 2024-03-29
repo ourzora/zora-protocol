@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync } from "fs";
 import { join } from "path";
+import * as prettier from "prettier";
 
 // Reads all the chain configs in ./chainConfigs folder, and bundles them into a typescript
 // definition that looks like:
@@ -21,42 +22,42 @@ const readConfigs = async ({
     path: join(folder, fileName),
   }));
 
-  const allConfigs: Record<string, any> = Object.fromEntries(
-    await Promise.all(
-      files.map(async ({ fileName, path }) => {
-        const chainId = fileName.split(".")[0]!;
-        const fileContents = JSON.parse(readFileSync(path, "utf-8"));
+  const allConfigs: [number, any][] = await Promise.all(
+    files.map(async ({ fileName, path }) => {
+      const chainId = fileName.split(".")[0]!;
+      const fileContents = JSON.parse(readFileSync(path, "utf-8"));
 
-        return [chainId, fileContents];
-      }),
-    ),
+      return [+chainId, fileContents];
+    }),
   );
+
+  const mergedConfigs: Record<number, any> = {};
+
+  allConfigs.forEach(([chainId, config]) => {
+    mergedConfigs[chainId] = config;
+  });
 
   return {
     configType,
-    configs: allConfigs,
+    configs: mergedConfigs,
   };
 };
 
-function writeConfigsToJsFile({
-  mergedConfigs,
-  packageName,
-}: {
-  mergedConfigs: Record<string, any>;
-  packageName: string;
-}) {
-  // combine them into a single mapping
-  const configCode = Object.entries(mergedConfigs)
-    .map(([configType, configs]) => {
-      return `export const ${configType} = ${JSON.stringify(
-        configs,
-        null,
-        2,
-      )};`;
-    })
-    .join("\n");
-
-  writeFileSync(`./src/generated/${packageName}.ts`, configCode);
+function customStringify(obj: any) {
+  let isArray = Array.isArray(obj);
+  return (
+    (isArray ? "[" : "{") +
+    Object.entries(obj)
+      .map(([key, value]) => {
+        let val: any =
+          typeof value === "object"
+            ? customStringify(value)
+            : JSON.stringify(value);
+        return isArray ? val : `${key}:${val}`;
+      })
+      .join(",") +
+    (isArray ? "]" : "}")
+  );
 }
 
 async function mergeAndSaveConfigs({
@@ -72,18 +73,16 @@ async function mergeAndSaveConfigs({
   // read all config files in the target folder
   const allConfigs = await Promise.all(configs.map(readConfigs));
 
-  const mergedConfigs: Record<string, any> = {};
+  const configCode = allConfigs
+    .map(({ configType, configs }) => {
+      return `export const ${configType} = ${customStringify(configs)};`;
+    })
+    .join("\n");
 
-  allConfigs.forEach(({ configType, configs }) => {
-    mergedConfigs[configType] = configs;
-  });
-
-  // convert above to typescript code string:
-  writeConfigsToJsFile({ mergedConfigs, packageName });
-
-  // save output to json file
-  const jsonFile = `./json/${packageName}.json`;
-  writeFileSync(jsonFile, JSON.stringify(mergedConfigs, null, 2));
+  writeFileSync(
+    `./src/generated/${packageName}.ts`,
+    await prettier.format(configCode, { parser: "typescript" }),
+  );
 }
 
 async function bundleChainConfigs() {
