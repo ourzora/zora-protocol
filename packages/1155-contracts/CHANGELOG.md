@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.8.1
+
+### Patch Changes
+
+- c2a0a2b: Moved dev time dependencies to devDependencies since they are not needed by external users of the package, they are only used for codegen
+
 ## 2.8.0
 
 ### Minor Changes

@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.4
+
+### Patch Changes
+
+- c2a0a2b: Moved dependencies to devDependencies since they are not needed by external users of the package, they are only used for codegen
+
 ## 0.1.3
 
 ### Patch Changes
