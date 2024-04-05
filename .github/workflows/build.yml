@@ -18,7 +18,7 @@ jobs:
       - name: Install node deps and founry
         uses: ./.github/actions/setup_deps
 
-      - name: Cache build
+      - name: Load foundry cache
         uses: ./.github/actions/cache_foundry_build
         with:
           package_folder: ${{ inputs.package_folder }}

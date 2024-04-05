@@ -9,6 +9,7 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
+import {ImmutableCreate2FactoryUtils} from "@zoralabs/shared-contracts/utils/ImmutableCreate2FactoryUtils.sol";
 
 struct DeterministicParams {
     bytes proxyDeployerCreationCode;
@@ -115,7 +116,7 @@ contract DeterministicDeployerScript is Script {
 
         // we can know deterministically what the address of the new factory proxy deployer will be, given it's deployed from with the salt and init code,
         // from the ImmutableCreate2Factory
-        proxyDeployerAddress = ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.findCreate2Address(proxyDeployerSalt, proxyDeployerCreationCode);
+        proxyDeployerAddress = ImmutableCreate2FactoryUtils.immutableCreate2Address(proxyDeployerSalt, proxyDeployerCreationCode);
     }
 
     function getProxyShimParams(
@@ -199,7 +200,9 @@ contract DeterministicDeployerScript is Script {
         bytes32 proxyDeployerSalt = params.proxyDeployerSalt;
         bytes memory proxyDeployerCreationCode = params.proxyDeployerCreationCode;
 
-        ZoraDeployerUtils.getOrImmutable2Create(proxyDeployerAddress, proxyDeployerSalt, proxyDeployerCreationCode);
+        address createdAddresss = ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(proxyDeployerSalt, proxyDeployerCreationCode);
+
+        if (createdAddresss != proxyDeployerAddress) revert("Mismatched address");
 
         factoryDeployer = DeterministicProxyDeployer(proxyDeployerAddress);
     }

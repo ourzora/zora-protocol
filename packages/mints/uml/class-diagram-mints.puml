@@ -1,0 +1,17 @@
+@startuml
+class MINTsContract {
+    # initialize(owner: address, initialEthTokenId: uint256, initialEthTokenPrice: uint256)
+    # createEthToken(tokenId: uint256, pricePerToken: uint256, defaultMintable: bool): void
+    # setMintableEthToken(tokenId: uint256): void
+    + mintWithEth(quantity: uint256, recipient: address): uint256
+    + getEthPrice(): uint256
+    + redeem(tokenId: uint256, quantity: uint256, recipient: address): void
+    + collect(mintTokenIds, quantities, 1155Contract, 1155TokenId, mintArgs)
+    + collectPremint(mintTokenIds, quantities, premintConfig, premintSignature, mintArgs)
+    - mintableEthToken: uint256
+    - tokenCreated: uint256 => bool
+    - tokenPrices: uint256 => uint256
+    + name(): string
+    + symbol(): string
+}
+@enduml

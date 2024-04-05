@@ -103,6 +103,20 @@ async function bundleChainConfigs() {
     ],
     packageName: "1155",
   });
+
+  await mergeAndSaveConfigs({
+    configs: [
+      {
+        folder: "../mints-deployments/chainConfigs",
+        configType: "chainConfigs",
+      },
+      {
+        folder: "../mints-deployments/addresses",
+        configType: "addresses",
+      },
+    ],
+    packageName: "mints",
+  });
 }
 
 await bundleChainConfigs();

@@ -107,6 +107,11 @@ abstract contract DeploymentConfig is Script {
         deployment.preminterProxy = readAddressOrDefaultToZero(json, PREMINTER_PROXY);
         deployment.upgradeGate = readAddressOrDefaultToZero(json, UPGRADE_GATE);
     }
+
+    function getDeterminsticMintsManagerAddress() internal view returns (address) {
+        string memory json = vm.readFile("node_modules/@zoralabs/mints-deployments/deterministicConfig/mintsProxy/params.json");
+        return json.readAddress(".manager.deployedAddress");
+    }
 }
 
 contract ForkDeploymentConfig is DeploymentConfig {

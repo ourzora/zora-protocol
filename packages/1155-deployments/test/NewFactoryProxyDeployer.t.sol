@@ -11,6 +11,7 @@ import {Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
 import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {DeterministicDeployerScript, DeterministicParams} from "../src/DeterministicDeployerScript.sol";
+import {ImmutableCreate2FactoryUtils} from "@zoralabs/shared-contracts/utils/ImmutableCreate2FactoryUtils.sol";
 
 contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
     using stdJson for string;
@@ -19,17 +20,19 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
     // and copying the output values here.
     function _deployKnownZoraFactoryProxy(bytes32 salt) internal returns (DeterministicProxyDeployer) {
         // create new factory deployer using ImmutableCreate2Factory
-        return DeterministicProxyDeployer(ZoraDeployerUtils.IMMUTABLE_CREATE2_FACTORY.safeCreate2(salt, type(DeterministicProxyDeployer).creationCode));
+        return DeterministicProxyDeployer(ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(salt, type(DeterministicProxyDeployer).creationCode));
     }
 
     function create1155FactoryImpl() internal returns (address) {
         address mintFeeRecipient = makeAddr("mintFeeRecipient");
         address protocolRewards = makeAddr("protocolRewards");
+        address mintsAddress = makeAddr("mintsAddress");
 
         (address factoryImplDeployment, , ) = ZoraDeployerUtils.deployNew1155AndFactoryImpl({
             upgradeGateAddress: address(new UpgradeGate()),
             mintFeeRecipient: mintFeeRecipient,
             protocolRewards: protocolRewards,
+            mintsManagerAddress: mintsAddress,
             merkleMinter: IMinter1155(address(0)),
             redeemMinterFactory: IMinter1155(address(0)),
             fixedPriceMinter: IMinter1155(address(0))

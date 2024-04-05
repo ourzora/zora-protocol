@@ -3,6 +3,8 @@ fs_permissions = [
   { access = "read", path = "./addresses" },
   { access = "read", path = "./chainConfigs" },
   { access = "read", path = "./package.json" },
+  { access = "read", path = "../mints-deployments/deterministicConfig/mintsProxy/params.json" },
+  { access = "read", path = "../mints-deployments/addresses" },
   { access = "readwrite", path = "./deterministicConfig" },
 ]
 libs = ['_imagine', 'node_modules', 'script']

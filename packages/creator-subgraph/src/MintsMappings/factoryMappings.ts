@@ -1,43 +1,21 @@
 import { Address, BigInt } from "@graphprotocol/graph-ts";
 import {
-  EthTokenCreated,
-  EthMintableTokenSet,
   TransferSingle,
-  ZoraMintsImpl,
   TransferBatch,
-} from "../../generated/ZoraMints/ZoraMintsImpl";
+  TokenCreated,
+} from "../../generated/ZoraMints/ZoraMints1155";
 
 import { MintAccountBalance, MintToken } from "../../generated/schema";
 
-export function handleEthTokenCreated(event: EthTokenCreated): void {
-  const createdMintToken = new MintToken(`${event.params.tokenId}`);
-  createdMintToken.tokenId = event.params.tokenId;
-  createdMintToken.pricePerToken = event.params.pricePerToken;
-  createdMintToken.isMintable = false;
-
-  createdMintToken.save();
-}
-
 const zeroAddress = "0x0000000000000000000000000000000000000000";
 
-export function handleEthMintableTokenSet(event: EthMintableTokenSet): void {
-  // set current active token to inactive
-  const MintContract = ZoraMintsImpl.bind(event.address);
-  const activeTokenId = MintContract.mintableEthToken();
-  const activeMintToken = MintToken.load(`${activeTokenId}`);
-  if (activeMintToken != null) {
-    activeMintToken.isMintable = false;
-    activeMintToken.save();
-  }
+export function handleTokenCreated(event: TokenCreated): void {
+  const createdMintToken = new MintToken(`${event.params.tokenId}`);
+  createdMintToken.tokenId = event.params.tokenId;
+  createdMintToken.pricePerToken = event.params.price;
+  createdMintToken.tokenAddress = event.params.tokenAddress;
 
-  // set new token to active
-  const newMintToken = MintToken.load(`${event.params.tokenId}`);
-  if (newMintToken == null) {
-    return;
-  }
-
-  newMintToken.isMintable = true;
-  newMintToken.save();
+  createdMintToken.save();
 }
 
 export function incrementRecipientBalance(

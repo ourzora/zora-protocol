@@ -2,6 +2,12 @@ import { defineConfig } from "@wagmi/cli";
 import { Abi } from "viem";
 import { readdirSync, readFileSync } from "fs";
 import * as abis from "@zoralabs/zora-1155-contracts";
+import {
+  zoraMints1155ABI,
+  zoraMintsManagerImplABI,
+  mintsEthUnwrapperAndCallerABI,
+  iUnwrapAndForwardActionABI,
+} from "@zoralabs/mints-contracts";
 
 type Address = `0x${string}`;
 
@@ -14,7 +20,7 @@ type Addresses = {
   };
 };
 
-const getAddresses = () => {
+const get1155Addresses = () => {
   const addresses: Addresses = {};
 
   const addressesFiles = readdirSync("../1155-deployments/addresses");
@@ -91,17 +97,74 @@ const getAddresses = () => {
   return addresses;
 };
 
+const getMintsAddresses = () => {
+  const addressesFiles = readdirSync("../mints-deployments/addresses");
+
+  const chainIds = addressesFiles.map((x) => Number(x.split(".")[0]));
+
+  const mintsProxyConfig = JSON.parse(
+    readFileSync(
+      "../mints-deployments/deterministicConfig/mintsProxy/params.json",
+      "utf-8",
+    ),
+  );
+
+  const mintsEthUnwrapperAndCallerAddress = JSON.parse(
+    readFileSync("../mints-deployments/addresses/999999999.json", "utf-8"),
+  ).MINTS_ETH_UNWRAPPER_AND_CALLER as Address;
+
+  const mintsManagerAddress = mintsProxyConfig.manager
+    .deployedAddress as Address;
+  const zoraMints1155Address = mintsProxyConfig.mints1155
+    .deployedAddress as Address;
+
+  return {
+    mintsManager: Object.fromEntries(
+      chainIds.map((chainId) => [chainId, mintsManagerAddress]),
+    ),
+    mints1155: Object.fromEntries(
+      chainIds.map((chainId) => [chainId, zoraMints1155Address as Address]),
+    ),
+    mintsEthUnwrapperAndCaller: Object.fromEntries(
+      chainIds.map((chainId) => [chainId, mintsEthUnwrapperAndCallerAddress]),
+    ),
+  };
+};
+
+const mintsAddresses = getMintsAddresses();
+
 export default defineConfig({
   out: "src/generated/wagmi.ts",
   contracts: [
-    ...Object.entries(getAddresses()).map(([contractName, addressConfig]) => ({
-      abi: addressConfig.abi,
-      address: addressConfig.address,
-      name: contractName,
-    })),
+    ...Object.entries(get1155Addresses()).map(
+      ([contractName, addressConfig]) => ({
+        abi: addressConfig.abi,
+        address: addressConfig.address,
+        name: contractName,
+      }),
+    ),
     {
       abi: abis.zoraCreator1155ImplABI,
       name: "ZoraCreator1155Impl",
+    },
+    {
+      abi: zoraMintsManagerImplABI,
+      name: "ZoraMintsManagerImpl",
+      address: mintsAddresses.mintsManager,
+    },
+    {
+      abi: zoraMints1155ABI,
+      name: "ZoraMints1155",
+      address: mintsAddresses.mints1155,
+    },
+    {
+      abi: mintsEthUnwrapperAndCallerABI,
+      name: "MintsEthUnwrapperAndCaller",
+      address: mintsAddresses.mintsEthUnwrapperAndCaller,
+    },
+    {
+      abi: iUnwrapAndForwardActionABI,
+      name: "IUnwrapAndForwardAction",
     },
   ],
 });

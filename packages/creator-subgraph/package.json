@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "@graphprotocol/graph-ts": "0.29.3",
-    "@zoralabs/mints-contracts": "^0.0.3",
+    "@zoralabs/mints-contracts": "*",
     "@zoralabs/nft-drop-contracts": "1.12.0",
     "@zoralabs/protocol-rewards": "*",
     "@zoralabs/zora-1155-contracts": "*",

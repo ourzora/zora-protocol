@@ -13,6 +13,7 @@ interface ICreatorRoyaltyErrors {
 }
 
 interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddressErrors, IMinterErrors {
+    error OnlyTransfersFromZoraMints();
     error Call_TokenIdMismatch();
     error TokenIdMismatch(uint256 expected, uint256 actual);
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
@@ -54,4 +55,5 @@ interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddres
     error ERC1155_MINT_TO_ZERO_ADDRESS();
 
     error InvalidPremintVersion();
+    error NonEthRedemption();
 }

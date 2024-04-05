@@ -28,7 +28,7 @@ import {
 import { AnvilViemClientsTest, forkUrls, makeAnvilTest } from "src/anvil";
 
 // create token and contract creation config:
-const defaultContractConfig = ({
+export const defaultContractConfig = ({
   contractAdmin,
 }: {
   contractAdmin: Address;
@@ -58,11 +58,12 @@ const defaultTokenConfigV2 = (
   fixedPriceMinterAddress: Address,
   creatorAccount: Address,
   createReferral: Address,
+  pricePerToken = 0n,
 ): TokenCreationConfigV2 => ({
   tokenURI: "ipfs://tokenIpfsId0",
   maxSupply: 100n,
-  maxTokensPerAddress: 10n,
-  pricePerToken: 0n,
+  maxTokensPerAddress: 1000n,
+  pricePerToken,
   mintStart: 0n,
   mintDuration: 100n,
   royaltyBPS: 200,
@@ -84,19 +85,22 @@ const defaultPremintConfigV1 = ({
   version: 0,
 });
 
-const defaultPremintConfigV2 = ({
+export const defaultPremintConfigV2 = ({
   fixedPriceMinter,
   creatorAccount,
   createReferral = zeroAddress,
+  pricePerToken = 0n,
 }: {
   fixedPriceMinter: Address;
   creatorAccount: Address;
   createReferral?: Address;
+  pricePerToken?: bigint;
 }): PremintConfigV2 => ({
   tokenConfig: defaultTokenConfigV2(
     fixedPriceMinter,
     creatorAccount,
     createReferral,
+    pricePerToken,
   ),
   deleted: false,
   uid: 106,

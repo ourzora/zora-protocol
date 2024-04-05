@@ -8,10 +8,11 @@ import {IZoraCreator1155Errors} from "./IZoraCreator1155Errors.sol";
 import {IRenderer1155} from "../interfaces/IRenderer1155.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
 import {IOwnable} from "../interfaces/IOwnable.sol";
-import {IVersionedContract} from "./IVersionedContract.sol";
+import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155DelegatedCreation} from "./IZoraCreator1155DelegatedCreation.sol";
 import {IMintWithRewardsRecipients} from "./IMintWithRewardsRecipients.sol";
+import {IMintWithMints} from "@zoralabs/mints-contracts/src/IMintWithMints.sol";
 
 /*
 
@@ -44,7 +45,8 @@ interface IZoraCreator1155 is
     IOwnable,
     IERC1155MetadataURIUpgradeable,
     IZoraCreator1155DelegatedCreation,
-    IMintWithRewardsRecipients
+    IMintWithRewardsRecipients,
+    IMintWithMints
 {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
@@ -79,17 +81,10 @@ interface IZoraCreator1155 is
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
-    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and a mint referral
-    /// @param minter The minter contract to use
-    /// @param tokenId The token ID to mint
-    /// @param quantity The quantity of tokens to mint
-    /// @param minterArguments The arguments to pass to the minter
-    /// @param mintReferral The referrer of the mint
+    /// @dev Deprecated: call mint
     function mintWithRewards(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address mintReferral) external payable;
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
-
-    function adminMintBatch(address recipient, uint256[] memory tokenIds, uint256[] memory quantities, bytes memory data) external;
 
     function burnBatch(address user, uint256[] calldata tokenIds, uint256[] calldata amounts) external;
 

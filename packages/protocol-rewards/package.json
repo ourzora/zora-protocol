@@ -6,7 +6,8 @@
   "files": [
     "src/",
     "_imagine",
-    "out/*/*.abi.json"
+    "out/*/*.abi.json",
+    "deterministicConfig.json"
   ],
   "scripts": {
     "build:sizes": "forge build --sizes",

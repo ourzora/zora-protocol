@@ -15,11 +15,16 @@ import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {MockContractMetadata} from "../mock/MockContractMetadata.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
+import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
+import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
+import {IZoraMints1155} from "@zoralabs/mints-contracts/src/interfaces/IZoraMints1155.sol";
 
 contract ZoraCreator1155FactoryTest is Test {
     using stdJson for string;
     address internal zora;
     uint256 internal mintFeeAmount;
+    uint256 initialTokenId = 777;
+    uint256 initialTokenPrice = 0.000777 ether;
 
     ZoraCreator1155FactoryImpl internal factoryImpl;
     ZoraCreator1155FactoryImpl internal factory;
@@ -36,7 +41,8 @@ contract ZoraCreator1155FactoryTest is Test {
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
 
         ProtocolRewards protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards));
+        IZoraMintsMinterManager mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards), address(mints));
 
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -189,7 +195,12 @@ contract ZoraCreator1155FactoryTest is Test {
         // * create a new version of the erc1155 implementation
         // * create a new factory that points to that new erc1155 implementation,
         // * upgrade the proxy to point to the new factory
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(zora, address(factory), address(new ProtocolRewards()));
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(
+            zora,
+            address(factory),
+            address(new ProtocolRewards()),
+            address(ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice))
+        );
 
         ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(
             newZoraCreator,
@@ -240,7 +251,12 @@ contract ZoraCreator1155FactoryTest is Test {
         ZoraCreator1155Impl creatorProxy = ZoraCreator1155Impl(payable(createdAddress));
 
         // 2. upgrade the created contract by creating a new contract and upgrading the existing one to point to it.
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(
+            zora,
+            address(0),
+            address(new ProtocolRewards()),
+            address(ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice))
+        );
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = address(factory.zora1155Impl());

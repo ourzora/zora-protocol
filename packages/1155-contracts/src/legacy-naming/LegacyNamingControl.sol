@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {ILegacyNaming} from "../interfaces/ILegacyNaming.sol";
+import {ILegacyNaming} from "@zoralabs/shared-contracts/interfaces/ILegacyNaming.sol";
 import {LegacyNamingStorageV1} from "./LegacyNamingStorageV1.sol";
 
 /// @title LegacyNamingControl

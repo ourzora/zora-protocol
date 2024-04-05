@@ -595,7 +595,7 @@ type MintToken @entity {
   id: ID!
   tokenId: BigInt!
   pricePerToken: BigInt!
-  isMintable: Boolean!
+  tokenAddress: Bytes!
 }
 
 type MintAccountBalance @entity {

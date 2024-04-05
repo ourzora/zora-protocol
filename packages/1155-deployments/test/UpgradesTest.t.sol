@@ -2,15 +2,56 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
+import {Vm} from "forge-std/Vm.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ForkDeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
-import {MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {IZoraMintsManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsManager.sol";
+import {ICollectWithZoraMints} from "@zoralabs/mints-contracts/src/ICollectWithZoraMints.sol";
+import {IZoraCreator1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
+import {IZoraMints1155Managed} from "@zoralabs/mints-contracts/src/interfaces/IZoraMints1155Managed.sol";
+import {ContractCreationConfig, PremintConfigV2} from "@zoralabs/shared-contracts/entities/Premint.sol";
+
+interface IERC1967 {
+    /**
+     * @dev Emitted when the implementation is upgraded.
+     */
+    event Upgraded(address indexed implementation);
+
+    /**
+     * @dev Emitted when the admin account has changed.
+     */
+    event AdminChanged(address previousAdmin, address newAdmin);
+
+    /**
+     * @dev Emitted when the beacon is changed.
+     */
+    event BeaconUpgraded(address indexed beacon);
+}
+
+interface ITransparentUpgradeableProxy is IERC1967 {
+    function upgradeToAndCall(address, bytes calldata) external payable;
+}
+
+interface IProxyAdmin {
+    function upgradeAndCall(ITransparentUpgradeableProxy proxy, address implementation, bytes memory data) external payable;
+}
+
+interface GetImplementation {
+    function implementation() external view returns (address);
+}
+
+interface UUPSUpgradeable {
+    function upgradeToAndCall(address newImplementation, bytes memory data) external payable;
+}
 
 contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
+    using stdJson for string;
+
     /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
     /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
     function getForkTestChains() private view returns (string[] memory result) {
@@ -22,35 +63,80 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         }
     }
 
-    function determine1155Upgrade(Deployment memory deployment) private view returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
-        targetProxy = deployment.factoryProxy;
-        targetImpl = deployment.factoryImpl;
-        address currentImplementation = ZoraCreator1155FactoryImpl(targetProxy).implementation();
-
-        upgradeNeeded = targetImpl != currentImplementation;
+    struct UpgradeStatus {
+        string updateDescription;
+        bool upgradeNeeded;
+        address upgradeTarget;
+        address targetImpl;
+        bytes upgradeCalldata;
     }
 
-    function determinePreminterUpgrade(Deployment memory deployment) private returns (bool upgradeNeeded, address targetProxy, address targetImpl) {
-        targetProxy = deployment.preminterProxy;
-        targetImpl = deployment.preminterImpl;
+    function determine1155Upgrade(Deployment memory deployment) private view returns (UpgradeStatus memory) {
+        address upgradeTarget = deployment.factoryProxy;
+        address targetImpl = deployment.factoryImpl;
 
-        // right now we cannot call "implementation" on contract since it doesn't exist yet, so we check if deployed impl meets the v1 impl we know
-        address preminterV1ImplAddress = 0x6E2AbBcd82935bFC68A1d5d2c96372b13b65eD9C;
+        bool upgradeNeeded = targetImpl != ZoraCreator1155FactoryImpl(upgradeTarget).implementation();
+        bytes memory upgradeCalldata;
 
-        // if the target impl is still the v1 impl, it didnt have a method to check impl so we can't call it, also we know its still v1 impl so we don't need to upgrade
-        if (targetImpl == preminterV1ImplAddress) {
-            upgradeNeeded = false;
-        } else {
-            // if doesnt have implementation method, then we know upgrade is needed
-            (bool success, bytes memory data) = deployment.preminterProxy.call(abi.encodePacked(ZoraCreator1155PremintExecutorImpl.implementation.selector));
-
-            if (!success) {
-                upgradeNeeded = true;
-            } else {
-                address currentImplementation = abi.decode(data, (address));
-                upgradeNeeded = currentImplementation != targetImpl;
-            }
+        if (upgradeNeeded) {
+            upgradeCalldata = ZoraDeployerUtils.getUpgradeCalldata(targetImpl);
         }
+
+        return UpgradeStatus("1155 Factory", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
+    }
+
+    function determinePreminterUpgrade(Deployment memory deployment) private view returns (UpgradeStatus memory) {
+        address upgradeTarget = deployment.preminterProxy;
+        address targetImpl = deployment.preminterImpl;
+
+        bool upgradeNeeded = targetImpl != ZoraCreator1155PremintExecutorImpl(deployment.preminterProxy).implementation();
+
+        bytes memory upgradeCalldata;
+        if (upgradeNeeded) {
+            upgradeCalldata = ZoraDeployerUtils.getUpgradeCalldata(targetImpl);
+        }
+
+        return UpgradeStatus("Preminter", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
+    }
+
+    function tryReadMintsImpl() private view returns (address mintsImpl) {
+        string memory addressPath = string.concat("node_modules/@zoralabs/mints-deployments/addresses/", string.concat(vm.toString(block.chainid), ".json"));
+        try vm.readFile(addressPath) returns (string memory result) {
+            mintsImpl = result.readAddress(".MINTS_MANAGER_IMPL");
+        } catch {}
+    }
+
+    function mintsIsDeployed() private view returns (bool) {
+        return tryReadMintsImpl() != address(0);
+    }
+
+    function determineMintsUpgrade() private view returns (UpgradeStatus memory) {
+        address mintsManagerProxy = getDeterminsticMintsManagerAddress();
+
+        address targetImpl = tryReadMintsImpl();
+        if (targetImpl == address(0)) {
+            console2.log("Mints not deployed");
+            UpgradeStatus memory upgradeStatus;
+            return upgradeStatus;
+        }
+
+        if (targetImpl.code.length == 0) {
+            revert("No code at target impl");
+        }
+
+        bool upgradeNeeded = GetImplementation(mintsManagerProxy).implementation() != targetImpl;
+
+        address upgradeTarget = mintsManagerProxy;
+
+        bytes memory upgradeCalldata;
+
+        if (upgradeNeeded) {
+            // in the case of transparent proxy - the upgrade target is the proxy admin contract.
+            // get upgrade calldata
+            upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, targetImpl, "");
+        }
+
+        return UpgradeStatus("Mints", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
     }
 
     function _buildSafeUrl(address safe, address target, bytes memory cd) internal view returns (string memory) {
@@ -114,6 +200,130 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
         return targetUrl;
     }
 
+    function getUpgradeCalls(UpgradeStatus[] memory upgradeStatuses) private pure returns (address[] memory upgradeTargets, bytes[] memory upgradeCalldatas) {
+        uint256 numberOfUpgrades = 0;
+        for (uint256 i = 0; i < upgradeStatuses.length; i++) {
+            if (upgradeStatuses[i].upgradeNeeded) {
+                numberOfUpgrades++;
+            }
+        }
+        upgradeCalldatas = new bytes[](numberOfUpgrades);
+        upgradeTargets = new address[](numberOfUpgrades);
+        uint256 currentUpgradeIndex = 0;
+        for (uint256 i = 0; i < upgradeStatuses.length; i++) {
+            if (upgradeStatuses[i].upgradeNeeded) {
+                upgradeCalldatas[currentUpgradeIndex] = upgradeStatuses[i].upgradeCalldata;
+                upgradeTargets[currentUpgradeIndex] = upgradeStatuses[i].upgradeTarget;
+                currentUpgradeIndex++;
+
+                // print out upgrade info
+                console2.log("upgrading: ", upgradeStatuses[i].updateDescription);
+                console2.log("target:", upgradeStatuses[i].upgradeTarget);
+                console2.log("calldata:", vm.toString(upgradeStatuses[i].upgradeCalldata));
+            }
+        }
+    }
+
+    function performNeededUpgrades(address upgrader, UpgradeStatus[] memory upgradeStatuses) private returns (bool anyUpgradePerformed) {
+        vm.startPrank(upgrader);
+        for (uint256 i = 0; i < upgradeStatuses.length; i++) {
+            UpgradeStatus memory upgradeStatus = upgradeStatuses[i];
+            if (upgradeStatus.upgradeNeeded) {
+                anyUpgradePerformed = true;
+                console2.log("simulating upgrade:", upgradeStatus.updateDescription);
+                if (upgradeStatus.upgradeCalldata.length == 0) {
+                    revert("upgrade calldata is empty");
+                }
+
+                (bool success, ) = upgradeStatus.upgradeTarget.call(upgradeStatus.upgradeCalldata);
+
+                if (!success) {
+                    revert("upgrade failed");
+                }
+            }
+        }
+        vm.stopPrank();
+    }
+
+    function checkPremintingWorks() private {
+        console2.log("testing preminting");
+        // test premints:
+        address collector = makeAddr("collector");
+        address mintReferral = makeAddr("referral");
+        vm.deal(collector, 10 ether);
+
+        address preminterProxy = getDeployment().preminterProxy;
+
+        address[] memory mintRewardsRecipients = new address[](1);
+        mintRewardsRecipients[0] = mintReferral;
+
+        MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "", mintRewardsRecipients: mintRewardsRecipients});
+
+        vm.startPrank(collector);
+        signAndExecutePremintV1(preminterProxy, makeAddr("payoutRecipientA"), mintArguments);
+        signAndExecutePremintV2(preminterProxy, makeAddr("payoutRecipientB"), mintArguments);
+
+        vm.stopPrank();
+    }
+
+    function checkPremintWithMINTsWorks() private {
+        if (!mintsIsDeployed()) {
+            console2.log("skipping premint with MINTs test, MINTs not deployed");
+            return;
+        }
+        console2.log("testing collecing premints with MINTs");
+        // test premints:
+        address collector = makeAddr("collector");
+        vm.deal(collector, 10 ether);
+
+        IZoraMintsManager zoraMintsManager = IZoraMintsManager(getDeterminsticMintsManagerAddress());
+
+        address[] memory mintRewardsRecipients = new address[](0);
+
+        MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "", mintRewardsRecipients: mintRewardsRecipients});
+
+        uint256 quantityToMint = 5;
+
+        vm.startPrank(collector);
+
+        zoraMintsManager.mintWithEth{value: zoraMintsManager.getEthPrice() * quantityToMint}(quantityToMint, collector);
+
+        uint256[] memory mintTokenIds = new uint256[](1);
+        mintTokenIds[0] = zoraMintsManager.mintableEthToken();
+        uint256[] memory quantities = new uint256[](1);
+        quantities[0] = 3;
+
+        (ContractCreationConfig memory contractConfig, , PremintConfigV2 memory premintConfig, bytes memory signature) = createAndSignPremintV2(
+            getDeployment().preminterProxy,
+            makeAddr("payoutRecipientG"),
+            10_000
+        );
+
+        bytes memory call = abi.encodeWithSelector(
+            ICollectWithZoraMints.collectPremintV2.selector,
+            contractConfig,
+            premintConfig,
+            signature,
+            mintArguments,
+            address(0)
+        );
+
+        PremintResult memory result = abi.decode(
+            IZoraMints1155Managed(address(zoraMintsManager.zoraMints1155())).transferBatchToManagerAndCall(mintTokenIds, quantities, call),
+            (PremintResult)
+        );
+
+        assertEq(IZoraCreator1155(result.contractAddress).balanceOf(collector, result.tokenId), quantities[0]);
+
+        vm.stopPrank();
+    }
+
+    function checkContracts() private {
+        checkPremintingWorks();
+
+        checkPremintWithMINTsWorks();
+    }
+
     /// @notice checks which chains need an upgrade, simulated the upgrade, and gets the upgrade calldata
     function simulateUpgradeOnFork(string memory chainName) private {
         // create and select the fork, which will be used for all subsequent calls
@@ -123,90 +333,26 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
 
         ChainConfig memory chainConfig = getChainConfig();
 
-        address creator = makeAddr("creator");
+        UpgradeStatus[] memory upgradeStatuses = new UpgradeStatus[](3);
+        upgradeStatuses[0] = determine1155Upgrade(deployment);
+        upgradeStatuses[1] = determinePreminterUpgrade(deployment);
+        upgradeStatuses[2] = determineMintsUpgrade();
 
-        (bool is1155UpgradeNeeded, address targetProxy1155, address targetImpl1155) = determine1155Upgrade(deployment);
-        (bool preminterUpgradeNeeded, address targetPreminterProxy, address targetPremintImpl) = determinePreminterUpgrade(deployment);
+        bool upgradePerformed = performNeededUpgrades(chainConfig.factoryOwner, upgradeStatuses);
 
-        if (!is1155UpgradeNeeded && !preminterUpgradeNeeded) {
-            return;
+        if (upgradePerformed) {
+            checkContracts();
+
+            console2.log("---------------");
+
+            (address[] memory upgradeTargets, bytes[] memory upgradeCalldatas) = getUpgradeCalls(upgradeStatuses);
+
+            string memory smolSafeUrl = _buildBatchSafeUrl(chainConfig.factoryOwner, upgradeTargets, upgradeCalldatas);
+
+            console2.log("smol safe url: ", smolSafeUrl);
+
+            console2.log("---------------");
         }
-
-        console2.log("====== upgrade needed ======");
-        console2.log("chain:", chainName);
-        console2.log("upgrade owner:", chainConfig.factoryOwner);
-
-        bytes memory factory1155UpgradeCalldata;
-
-        if (is1155UpgradeNeeded) {
-            console2.log("-- 1155 upgrade needed --");
-            vm.prank(chainConfig.factoryOwner);
-            factory1155UpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(targetProxy1155, targetImpl1155);
-            vm.prank(creator);
-            ZoraDeployerUtils.deployTestContractForVerification(targetProxy1155, creator);
-
-            console2.log("1155 upgrade target:", targetProxy1155);
-            console2.log("upgrade calldata:");
-            console.logBytes(factory1155UpgradeCalldata);
-            {
-                console2.log("upgrade to address:", targetImpl1155);
-                console2.log("upgrade to version:", ZoraCreator1155FactoryImpl(targetImpl1155).contractVersion());
-                if (!preminterUpgradeNeeded) {
-                    console2.log("smol safe upgrade url: ", _buildSafeUrl(chainConfig.factoryOwner, targetProxy1155, factory1155UpgradeCalldata));
-                }
-                console2.log("------------------------");
-            }
-        }
-
-        address factoryOwner = chainConfig.factoryOwner;
-        bytes memory preminterUpgradeCalldata;
-
-        if (preminterUpgradeNeeded) {
-            console2.log("-- preminter upgrade needed --");
-            console2.log("preminter upgrade target:", targetPreminterProxy);
-            vm.prank(factoryOwner);
-            preminterUpgradeCalldata = ZoraDeployerUtils.simulateUpgrade(deployment.preminterProxy, deployment.preminterImpl);
-
-            address collector = makeAddr("collector");
-            address mintReferral = makeAddr("referral");
-            vm.deal(collector, 10 ether);
-
-            address[] memory mintRewardsRecipients = new address[](1);
-            mintRewardsRecipients[0] = mintReferral;
-
-            MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "", mintRewardsRecipients: mintRewardsRecipients});
-
-            vm.startPrank(collector);
-            signAndExecutePremintV1(targetPreminterProxy, makeAddr("payoutRecipientA"), mintArguments);
-            signAndExecutePremintV2(targetPreminterProxy, makeAddr("payoutRecipientB"), mintArguments);
-
-            vm.stopPrank();
-
-            {
-                console2.log("upgrade calldata:");
-                console.logBytes(preminterUpgradeCalldata);
-                console2.log("upgrade to address:", targetPremintImpl);
-                if (!is1155UpgradeNeeded) {
-                    console2.log("smol safe upgrade url: ", _buildSafeUrl(factoryOwner, targetPreminterProxy, preminterUpgradeCalldata));
-                }
-                console2.log("------------------------");
-            }
-        }
-
-        // if both needed:
-        if (is1155UpgradeNeeded && preminterUpgradeNeeded) {
-            address[] memory targets = new address[](2);
-            targets[0] = targetProxy1155;
-            targets[1] = targetPreminterProxy;
-
-            bytes[] memory calldatas = new bytes[](2);
-            calldatas[0] = factory1155UpgradeCalldata;
-            calldatas[1] = preminterUpgradeCalldata;
-
-            console2.log("multi-upgrade smol safe upgrade url: ", _buildBatchSafeUrl(factoryOwner, targets, calldatas));
-        }
-
-        console2.log("=================\n");
     }
 
     function test_fork_simulateUpgrades() external {

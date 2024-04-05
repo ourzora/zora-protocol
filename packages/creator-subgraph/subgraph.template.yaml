@@ -150,7 +150,7 @@ dataSources:
     kind: ethereum/contract
     network: {{network}}
     source:
-      abi: ZoraMintsImpl
+      abi: ZoraMints1155
       address: "{{address}}"
       startBlock: {{startBlock}}
     mapping:
@@ -162,13 +162,11 @@ dataSources:
       language: wasm/assemblyscript
       file: ./src/MintsMappings/factoryMappings.ts
       abis:
-        - name: ZoraMintsImpl
-          file: ./abis/ZoraMintsImpl.json  
+        - name: ZoraMints1155
+          file: ./abis/ZoraMints1155.json  
       eventHandlers:
-        - event: EthTokenCreated(indexed uint256,indexed uint256)
-          handler: handleEthTokenCreated
-        - event: EthMintableTokenSet(indexed uint256)
-          handler: handleEthMintableTokenSet
+        - event: TokenCreated(indexed uint256,indexed uint256,indexed address)
+          handler: handleTokenCreated
         - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
           handler: handleTransferSingle
         - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])

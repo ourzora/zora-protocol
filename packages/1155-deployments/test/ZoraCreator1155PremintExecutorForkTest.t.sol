@@ -3,9 +3,9 @@ pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
 import {ForkDeploymentConfig} from "../src/DeploymentConfig.sol";
+import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {ZoraCreator1155Attribution} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
 import {ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
-import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";

@@ -25,6 +25,8 @@ import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {Zora1155PremintFixtures} from "../fixtures/Zora1155PremintFixtures.sol";
 import {RewardSplits} from "@zoralabs/protocol-rewards/src/abstract/RewardSplits.sol";
+import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
+import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 
 contract ZoraCreator1155PreminterTest is Test {
     uint256 internal constant CONTRACT_BASE_ID = 0;
@@ -33,9 +35,12 @@ contract ZoraCreator1155PreminterTest is Test {
     ZoraCreator1155PremintExecutorImpl internal preminter;
     Zora1155Factory factoryProxy;
     ZoraCreator1155FactoryImpl factory;
+    IZoraMintsMinterManager mints;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
     uint256 internal mintFeeAmount = 0.000777 ether;
+    uint256 initialTokenId = 777;
+    uint256 initialTokenPrice = 0.000777 ether;
 
     // setup contract config
     uint256 internal creatorPrivateKey;
@@ -61,9 +66,10 @@ contract ZoraCreator1155PreminterTest is Test {
         zora = makeAddr("zora");
         premintExecutor = makeAddr("premintExecutor");
         collector = makeAddr("collector");
+        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
 
         vm.startPrank(zora);
-        (rewards, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        (rewards, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora, address(mints));
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -446,14 +452,15 @@ contract ZoraCreator1155PreminterTest is Test {
         preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments);
 
         // now get balance of mintReferral in ProtocolRewards - it should be mint referral reward amount * quantityToMint
-        uint256 mintReferralReward = 0.000111 ether;
+        uint256 mintReferralReward = 14_228500;
+        uint256 referralReward = (mintCost * mintReferralReward) / 10_0000000;
 
-        assertEq(rewards.balanceOf(mintReferral), mintReferralReward * quantityToMint);
+        assertEq(rewards.balanceOf(mintReferral), referralReward);
 
         vm.prank(mintReferral);
-        rewards.withdraw(mintReferral, mintReferralReward * quantityToMint);
+        rewards.withdraw(mintReferral, referralReward);
 
-        assertEq(mintReferral.balance, mintReferralReward * quantityToMint);
+        assertEq(mintReferral.balance, referralReward);
     }
 
     function testCreateTokenPerUid() public {
@@ -820,7 +827,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // create preminter on fork
         vm.startPrank(zora);
-        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora, address(mints));
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));

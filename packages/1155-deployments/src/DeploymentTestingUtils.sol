@@ -77,7 +77,8 @@ contract DeploymentTestingUtils is Script {
 
     function createAndSignPremintV2(
         address premintExecutorProxyAddress,
-        address payoutRecipient
+        address payoutRecipient,
+        uint32 uid
     )
         internal
         returns (
@@ -92,7 +93,7 @@ contract DeploymentTestingUtils is Script {
 
         premintConfig = PremintConfigV2({
             tokenConfig: TokenCreationConfigV2({
-                tokenURI: "blah.token",
+                tokenURI: "token.uri",
                 maxSupply: 100,
                 maxTokensPerAddress: 50,
                 pricePerToken: 0,
@@ -103,13 +104,13 @@ contract DeploymentTestingUtils is Script {
                 fixedPriceMinter: address(ZoraCreator1155FactoryImpl(address(preminterAtProxy.zora1155Factory())).fixedPriceMinter()),
                 createReferral: creator
             }),
-            uid: 100,
+            uid: uid,
             version: 0,
             deleted: false
         });
 
         // now interface with proxy preminter - sign and execute the premint
-        contractConfig = ContractCreationConfig({contractAdmin: creator, contractName: "blahb", contractURI: "blah.contract"});
+        contractConfig = ContractCreationConfig({contractAdmin: creator, contractName: "blahb", contractURI: "blah.contractssss"});
         address deterministicAddress = preminterAtProxy.getContractAddress(contractConfig);
 
         signature = signPremint(premintConfig, deterministicAddress, creatorPrivateKey);
@@ -121,7 +122,7 @@ contract DeploymentTestingUtils is Script {
             IZoraCreator1155PremintExecutor preminterAtProxy,
             PremintConfigV2 memory premintConfig,
             bytes memory signature
-        ) = createAndSignPremintV2(premintExecutorProxyAddress, payoutRecipient);
+        ) = createAndSignPremintV2(premintExecutorProxyAddress, payoutRecipient, 100);
 
         uint256 quantityToMint = 1;
         // execute the premint

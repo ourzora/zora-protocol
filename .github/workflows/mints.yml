@@ -1,0 +1,29 @@
+name: "Mints"
+on:
+  workflow_call:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      package_folder: packages/mints
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+    with:
+      package_folder: packages/mints
+      name: Mints
+
+  contract_sizes:
+    needs: build
+    uses: ./.github/workflows/contract_sizes.yml
+    with:
+      package_folder: packages/mints
+      name: Mints
+
+  coverage:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "mints"
+      files_to_ignore: '"*Ownable*" "*Mock*"'

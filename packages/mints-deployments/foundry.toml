@@ -1,0 +1,43 @@
+[profile.default]
+fs_permissions = [
+  { access = "readwrite", path = "./addresses" },
+  { access = "read", path = "./chainConfigs" },
+  { access = "read", path = "./package.json" },
+  { access = "readwrite", path = "./deterministicConfig" },
+]
+libs = ['node_modules', 'script']
+allow_paths = [
+  "node_modules/@zoralabs/mints-contracts",
+]
+auto_detect_solc = true
+fuzz_runs = 500
+optimizer = true
+optimizer_runs = 500000
+out = 'out'
+script = 'script'
+src = 'src'
+solc_version = '0.8.20'
+via_ir = true
+
+[profile.dev]
+optimizer = false
+optimizer_runs = 0
+via_ir = false
+
+[rpc_endpoints]
+goerli = "https://eth-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
+sepolia = "https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+# for optimism, since we are just using this for deployment/fork testing,
+# we can use these since they're lower volume.
+base = "https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+base_goerli = "https://base-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
+optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+optimism_goerli = "https://opt-goerli.g.alchemy.com/v2/${ALCHEMY_KEY}"
+pgn = "https://rpc.publicgoods.network"
+pgn_sepolia = "https://sepolia.publicgoods.network"
+zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
+zora_goerli = "https://testnet.rpc.zora.energy/${CONDUIT_KEY}"
+zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config

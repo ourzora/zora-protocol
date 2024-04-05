@@ -1,0 +1,35 @@
+@startuml
+actor Collector
+entity Preminter
+entity 1155Nft
+entity Mints
+entity ProtocolRewards
+
+group non-premint
+  Collector -> 1155Nft: mint
+  activate 1155Nft
+end
+
+group premint
+  Collector -> Preminter: premint
+  activate Preminter
+  Preminter -> 1155Nft: mint
+  deactivate Preminter
+end
+
+group mint mintToken(s) to 1155
+  1155Nft -> Mints: mintWithEth(\nquantity, recipient:1155Nft)
+  activate Mints
+  Mints --> 1155Nft: mints (mintTokenId, quantity)
+end
+
+group distribute rewards for token (same as before)
+  1155Nft -> Mints: redeem(tokenId, quantity, recipient:1155Nft)
+  1155Nft -> ProtocolRewards: depositRewards
+  deactivate Mints
+end
+1155Nft -> 1155Nft: _mint
+1155Nft --> Collector: minted 1155 tokens 
+deactivate 1155Nft
+
+@enduml

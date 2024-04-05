@@ -6,7 +6,7 @@ import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {Enjoy} from "_imagine/mint/Enjoy.sol";
 
 import {IContractMetadata} from "../../interfaces/IContractMetadata.sol";
-import {IVersionedContract} from "../../interfaces/IVersionedContract.sol";
+import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
 import {IMinter1155} from "../../interfaces/IMinter1155.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "./ZoraCreatorRedeemMinterStrategy.sol";

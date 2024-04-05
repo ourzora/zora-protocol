@@ -26,17 +26,18 @@
   },
   "dependencies": {
     "@zoralabs/protocol-deployments": "*",
-    "abitype": "^0.10.3",
-    "vite": "4.5.0"
+    "abitype": "^0.10.3"
   },
   "peerDependencies": {
-    "viem": "^1.19.15"
+    "viem": "^1.19.15",
+    "graphql-request": "^6.1.0"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
-    "zoralabs-tsconfig": "*",
+    "graphql-prettier": "^1.0.6",
     "typescript": "^5.2.2",
     "vite": "^4.5.0",
-    "vitest": "^0.34.6"
+    "vitest": "^0.34.6",
+    "zoralabs-tsconfig": "*"
   }
 }

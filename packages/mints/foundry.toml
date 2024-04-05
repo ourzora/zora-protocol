@@ -1,0 +1,15 @@
+[profile.default]
+fuzz_runs = 500
+libs = ['node_modules']
+optimizer = true
+optimizer_runs = 500000
+out = 'out'
+script = 'script'
+src = 'src'
+solc_version = '0.8.20'
+via_ir = true
+
+[profile.dev]
+optimizer = false
+optimizer_runs = 0
+via_ir = false

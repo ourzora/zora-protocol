@@ -14,18 +14,24 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
+import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
+import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 
 contract ZoraCreator1155AccessControlGeneralTest is Test {
     ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
+    IZoraMintsMinterManager internal mints;
     address payable admin;
     address internal zora;
+    uint256 initialTokenId = 777;
+    uint256 initialTokenPrice = 0.000777 ether;
 
     function setUp() external {
         zora = makeAddr("zora");
         protocolRewards = new ProtocolRewards();
-        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
+        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
+        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards), address(mints));
         target = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
@@ -89,15 +95,6 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_adminMint() public {
         vm.expectRevert();
         target.adminMint(address(0x012), 1, 10, "");
-    }
-
-    function test_openAccessFails_adminMintBatch() public {
-        uint256[] memory tokenIds = new uint256[](1);
-        uint256[] memory quantities = new uint256[](1);
-        tokenIds[0] = 1;
-        quantities[0] = 1;
-        vm.expectRevert();
-        target.adminMintBatch(address(0x123), tokenIds, quantities, "");
     }
 
     function test_openAccessFails_mint() public {

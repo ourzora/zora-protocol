@@ -15,15 +15,20 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ZoraMintsFixtures} from "../../fixtures/ZoraMintsFixtures.sol";
+import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 
 /// @notice Contract versions after v1.4.0 will not support burn to redeem
 contract ZoraCreatorRedeemMinterFactoryTest is Test {
     ProtocolRewards internal protocolRewards;
+    IZoraMintsMinterManager internal mints;
     ZoraCreator1155Impl internal target;
     ZoraCreatorRedeemMinterFactory internal minterFactory;
     address payable internal tokenAdmin = payable(address(0x999));
     address payable internal factoryAdmin = payable(address(0x888));
     address internal zora;
+    uint256 initialTokenId = 777;
+    uint256 initialTokenPrice = 0.000777 ether;
 
     event RedeemMinterDeployed(address indexed creatorContract, address indexed minterContract);
 
@@ -31,7 +36,8 @@ contract ZoraCreatorRedeemMinterFactoryTest is Test {
         zora = makeAddr("zora");
         bytes[] memory emptyData = new bytes[](0);
         protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
+        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards), address(mints));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(payable(address(proxy)));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), tokenAdmin, emptyData);

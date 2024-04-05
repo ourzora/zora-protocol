@@ -15,3 +15,8 @@ jobs:
   contracts-protocol-rewards:
     name: Protocol Rewards
     uses: ./.github/workflows/protocol-rewards.yml
+
+  contracts-mints:
+    name: Mints
+    uses: ./.github/workflows/mints.yml
+    secrets: inherit

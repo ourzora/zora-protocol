@@ -33,6 +33,10 @@ jobs:
         with:
           package_folder: ${{ inputs.package_folder }}
 
+      - name: Build contracts
+        run: |
+          cd ${{ inputs.package_folder}} && forge build
+
       - name: Test
         run: |
           cd ${{ inputs.package_folder}} && yarn test

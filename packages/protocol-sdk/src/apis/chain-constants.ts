@@ -82,3 +82,13 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     subgraphUrl: getSubgraph("zora-create-zora-testnet", "stable"),
   },
 };
+
+export const getSubgraphUrl = (chainId: number): string => {
+  const networkConfig = networkConfigByChain[chainId];
+
+  if (!networkConfig) {
+    throw new Error(`Network not configured for chain id ${chainId}`);
+  }
+
+  return networkConfig.subgraphUrl;
+};

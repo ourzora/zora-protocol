@@ -26,6 +26,7 @@ import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCr
 import {Zora1155PremintFixtures} from "../fixtures/Zora1155PremintFixtures.sol";
 import {RewardSplits} from "@zoralabs/protocol-rewards/src/abstract/RewardSplits.sol";
 import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/cryptography/ECDSAUpgradeable.sol";
+import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
 
 contract MockAA {
     bytes4 internal constant MAGIC_VALUE = bytes4(keccak256("isValidSignature(bytes32,bytes)"));
@@ -76,7 +77,11 @@ contract ZoraCreator1155PreminterTest is Test {
         firstMinter = collector;
 
         vm.startPrank(zora);
-        (rewards, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
+        (rewards, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(
+            zora,
+            zora,
+            address(ZoraMintsFixtures.createMockMints(1, 0.000777 ether))
+        );
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
