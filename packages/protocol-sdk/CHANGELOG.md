@@ -1,5 +1,14 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.8
+
+### Patch Changes
+
+- 50a4e09: Added sdk method to get total MINT balance
+- Updated dependencies [042edbe]
+- Updated dependencies [50a4e09]
+  - @zoralabs/protocol-deployments@0.1.5
+
 ## 0.5.7
 
 ### Patch Changes

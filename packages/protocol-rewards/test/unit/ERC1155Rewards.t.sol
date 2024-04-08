@@ -147,7 +147,7 @@ contract ERC1155RewardsTest is ProtocolRewardsTest {
     }
 
     function testRemainderSentToZora(uint256 rewardPrice, uint256 numTokens) public {
-        vm.assume(rewardPrice > 0.0000002 ether && rewardPrice < 2 ether);
+        vm.assume(rewardPrice > 0.0000002 ether && rewardPrice < 100 ether);
         vm.assume(numTokens > 0 && numTokens < 100_000);
 
         uint256 totalReward = mockERC1155.computeTotalReward(rewardPrice, numTokens);

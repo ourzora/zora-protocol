@@ -1,5 +1,17 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.9.0
+
+### Minor Changes
+
+- 50a4e09: - Zora Creator 1155 contracts use the MINTs contracts to get the mint fee, mint, and redeem a mint ticket upon minting.
+  - `ZoraCreator1155Impl` adds a new method `mintWithMints` that allows for minting with MINTs that are already owned.
+- 50a4e09: - Zora Creator 1155 contracts no longer have a public facing function `computeFreeMintRewards` and `computePaidMintRewards`
+  - protocol rewards calculation logic has been refactored and moved from the RewardSplits contract to the ZoraCreator1155Impl itself to save on contract size.
+  - ZoraCreator1155Impl rewards splits are percentage based instead of a fixed value. This % is calculated based on the total reward value. And is based on a % value nearly identical to the previous fixed value.
+- 50a4e09: remove `adminMintBatch` to save contract size
+- 50a4e09: - To support the MINTs contract passing the first minter as an argument to `premintV2WithSignerContract` - we add the field `firstMinter` to `premintV2WithSignerContract`, and then in the 1155 check that the firstMinter argument is not address(0) since it now can be passed in manually.
+
 ## 2.8.1
 
 ### Patch Changes

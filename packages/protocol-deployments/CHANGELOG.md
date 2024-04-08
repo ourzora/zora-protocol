@@ -1,5 +1,12 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.5
+
+### Patch Changes
+
+- 042edbe: Chain ids in published protocol-deployments package are now numbers instead of strings
+- 50a4e09: Includes MINTs contracts abis and addresses
+
 ## 0.1.4
 
 ### Patch Changes
