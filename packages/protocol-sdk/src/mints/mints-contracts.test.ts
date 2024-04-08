@@ -36,7 +36,6 @@ import {
   fixedPriceMinterMinterArguments,
   decodeCallFailedError,
   safeTransferBatchAndUnwrapTypedDataDefinition,
-  safeTransferAndUnwrapEthParams,
   safeTransferAndUnwrapTypedDataDefinition,
 } from "./mints-contracts";
 import { getPremintCollectionAddress } from "src/premint/preminter";
@@ -49,7 +48,7 @@ import { zoraSepolia } from "viem/chains";
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 7127513,
+  forkBlockNumber: 7137785,
   anvilChainId: zoraSepolia.id,
 });
 

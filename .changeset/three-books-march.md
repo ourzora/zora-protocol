@@ -2,4 +2,4 @@
 "@zoralabs/protocol-deployments": patch
 ---
 
-Chain ids in protocol-deployments are now numbers instead of strings
+Chain ids in published protocol-deployments package are now numbers instead of strings
