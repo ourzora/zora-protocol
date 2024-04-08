@@ -1545,8 +1545,8 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(mintReferral), settings.mintReferralReward);
     }
 
-    function test_mintWithVariablePrice(uint256 mintTicketPrice, uint256 tokenPrice, uint256 quantity) public {
-        vm.assume(mintTicketPrice > 0.000001 ether && mintTicketPrice < 1 ether);
+    function test_mintWithVariablePrice(uint128 mintTicketPrice, uint256 tokenPrice, uint256 quantity) public {
+        vm.assume(mintTicketPrice > 0.000001 ether && mintTicketPrice < 100 ether);
         vm.assume(tokenPrice > 0 && tokenPrice < type(uint200).max);
         vm.assume(quantity > 0 && quantity < 1_000_000);
         init();
