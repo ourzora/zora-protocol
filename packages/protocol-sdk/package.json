@@ -29,8 +29,8 @@
     "abitype": "^0.10.3"
   },
   "peerDependencies": {
-    "viem": "^1.19.15",
-    "graphql-request": "^6.1.0"
+    "graphql-request": "^6.1.0",
+    "viem": "^1.19.15"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",

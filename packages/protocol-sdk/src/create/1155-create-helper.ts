@@ -246,6 +246,7 @@ export function create1155CreatorClient({
     maxSupply,
     account,
     royaltySettings,
+    createReferral,
     getAdditionalSetupActions,
   }: {
     account: Address;
@@ -256,6 +257,7 @@ export function create1155CreatorClient({
     tokenMetadataURI: string;
     mintToCreatorCount?: bigint | number;
     salesConfig?: SalesConfigParamsType;
+    createReferral?: Address;
     getAdditionalSetupActions?: (args: {
       tokenId: bigint;
       contractAddress: Address;
@@ -296,6 +298,7 @@ export function create1155CreatorClient({
       account,
       mintToCreatorCount,
       royaltySettings,
+      createReferral,
     });
     if (getAdditionalSetupActions) {
       tokenSetupActions = [

@@ -101,4 +101,37 @@ describe("create-helper", () => {
     },
     20 * 1000,
   );
+  anvilTest(
+    "creates a new token with a create referral address",
+    async ({ viemClients: { testClient, publicClient, walletClient } }) => {
+      const addresses = await walletClient.getAddresses();
+      const creatorAddress = addresses[0]!;
+      await testClient.setBalance({
+        address: creatorAddress,
+        value: parseEther("1"),
+      });
+      const creatorClient = create1155CreatorClient({
+        publicClient: publicClient,
+      });
+      const { request } = await creatorClient.createNew1155Token({
+        contract: {
+          name: "testContract",
+          uri: demoContractMetadataURI,
+        },
+        tokenMetadataURI: demoTokenMetadataURI,
+        account: creatorAddress,
+        mintToCreatorCount: 1,
+        createReferral: creatorAddress,
+      });
+      const { request: simulationResponse } =
+        await publicClient.simulateContract(request);
+      const hash = await walletClient.writeContract(simulationResponse);
+      const receipt = await publicClient.waitForTransactionReceipt({ hash });
+      expect(receipt).not.toBeNull();
+      console.log(receipt);
+      expect(receipt.to).to.equal("0xa72724cc3dcef210141a1b84c61824074151dc99");
+      expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(2n);
+    },
+    20 * 1000,
+  );
 });
