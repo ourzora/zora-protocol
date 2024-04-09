@@ -1,0 +1,17 @@
+chainid: "84532"
+network: base-sepolia
+factories1155:
+  - address: "0x8cfbF874A12b346115003532119C29f6B56719CB"
+    startBlock: "7861615"
+factories721:
+  - address: "0xb0C56317E9cEBc6E0f7A59458a83D0A9ccC3e955"
+    startBlock: "7584274"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "5396229"
+    version: "1"
+erc20Minter:
+  - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
+    startBlock: "7857912"
+    version: "1"
