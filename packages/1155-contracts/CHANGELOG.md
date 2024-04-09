@@ -4,13 +4,25 @@
 
 ### Minor Changes
 
-- 50a4e09: - Zora Creator 1155 contracts use the MINTs contracts to get the mint fee, mint, and redeem a mint ticket upon minting.
+- 50a4e09: 
+  - Zora Creator 1155 contracts use the MINTs contracts to get the mint fee, mint, and redeem a mint ticket upon minting.
   - `ZoraCreator1155Impl` adds a new method `mintWithMints` that allows for minting with MINTs that are already owned.
-- 50a4e09: - Zora Creator 1155 contracts no longer have a public facing function `computeFreeMintRewards` and `computePaidMintRewards`
+  - 50a4e09: - Zora Creator 1155 contracts no longer have a public facing function `computeFreeMintRewards` and `computePaidMintRewards`
   - protocol rewards calculation logic has been refactored and moved from the RewardSplits contract to the ZoraCreator1155Impl itself to save on contract size.
-  - ZoraCreator1155Impl rewards splits are percentage based instead of a fixed value. This % is calculated based on the total reward value. And is based on a % value nearly identical to the previous fixed value.
-- 50a4e09: remove `adminMintBatch` to save contract size
-- 50a4e09: - To support the MINTs contract passing the first minter as an argument to `premintV2WithSignerContract` - we add the field `firstMinter` to `premintV2WithSignerContract`, and then in the 1155 check that the firstMinter argument is not address(0) since it now can be passed in manually.
+  - remove `ZoraCreator1155Impl.adminMintBatch` to save contract size
+  - 50a4e09: - To support the MINTs contract passing the first minter as an argument to `premintV2WithSignerContract` - we add the field `firstMinter` to `premintV2WithSignerContract`, and then in the 1155 check that the firstMinter argument is not address(0) since it now can be passed in manually.
+
+### ZoraCreator1155Impl rewards splits are percentage based instead of a fixed value. 
+
+Prior to 2.9.0, rewards were distributed based on a fixed value in ETH per token minted. From 2.9.0 rewards are distributed based on a percentage of the total reward collected for a mint.  The following table breaks down the reward splits for both free and paid mints before and after 2.9.0:
+
+| Reward Type | Free Mints (Prior to 2.9.0) | Paid Mints (Prior to 2.9.0) | Free Mints (After 2.9.0) | Paid Mints (After 2.9.0) |
+|-------------|-----------------------------|-----------------------------|--------------------------|--------------------------|
+| Creator Reward | 0.000333 ETH per token | - | 42.8571% of total reward | - |
+| First Minter Reward | 0.000111 ETH | 0.000111 ETH per token | 14.2285% | 28.5714% of total reward |
+| Create Referral Reward | 0.000111 ETH | 0.000222 ETH | 14.2285% | 28.5714% |
+| Mint Referral Reward | 0.000111 ETH | 0.000222 ETH | 14.2285% | 28.5714% |
+| Zora Platform Reward | 0.000111 ETH | 0.000222 ETH | 14.2285% | 28.5714% |
 
 ## 2.8.1
 
