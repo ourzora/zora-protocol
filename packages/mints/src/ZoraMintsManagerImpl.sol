@@ -427,6 +427,9 @@ contract ZoraMintsManagerImpl is
     }
 
     function _clearTransferredMints() private {
-        _getMintsManagerStorage().transferredMints.from = address(0);
+        TransferredMints storage transferredMints = _getMintsManagerStorage().transferredMints;
+        transferredMints.from = address(0);
+        transferredMints.tokenIds = new uint256[](0);
+        transferredMints.quantities = new uint256[](0);
     }
 }

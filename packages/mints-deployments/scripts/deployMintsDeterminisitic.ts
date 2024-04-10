@@ -187,7 +187,6 @@ const generateInitializationConfig = async ({
     MINTS_MANAGER_IMPL: Address;
   };
 
-  const mintsOwner = chainConfig.MINTS_OWNER;
   const initialEthTokenId = 1n;
   const initialEthTokenPrice = parseEther("0.000777");
 
@@ -200,7 +199,7 @@ const generateInitializationConfig = async ({
     abi: zoraMintsManagerImplABI,
     functionName: "initialize",
     args: [
-      mintsOwner,
+      chainConfig.PROXY_ADMIN,
       mints1155Config.salt,
       mints1155Config.creationCode,
       initialEthTokenId,
