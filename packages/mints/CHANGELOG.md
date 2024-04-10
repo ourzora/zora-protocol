@@ -1,5 +1,11 @@
 # @zoralabs/mints-contracts
 
+## 0.1.1
+
+### Patch Changes
+
+- 4b22aa9: Clear out transferred mints state on the mints manager to save gas
+
 ## 0.1.0
 
 ### Minor Changes

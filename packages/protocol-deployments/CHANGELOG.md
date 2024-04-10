@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.6
+
+### Patch Changes
+
+- 9a16b81: Remove graphql-request from hard dependencies in protocol sdk
+
 ## 0.1.5
 
 ### Patch Changes

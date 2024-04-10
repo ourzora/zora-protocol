@@ -1,10 +1,17 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.10
+
+### Patch Changes
+
+- Updated dependencies [9a16b81]
+  - @zoralabs/protocol-deployments@0.1.6
+
 ## 0.5.9
 
 ### Patch Changes
 
-- 825e5f7: Adds optional `createReferral` to `createNew1155Token` params 
+- 825e5f7: Adds optional `createReferral` to `createNew1155Token` params
 
 ## 0.5.8
 
