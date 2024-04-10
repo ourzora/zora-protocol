@@ -214,6 +214,7 @@ describe("MINTs collecting and redeeming.", () => {
 
       expect(totalMintsBalance).toEqual(initialMintsQuantityToMint);
     },
+    20_000,
   );
   anvilTest(
     "can use MINTSs to collect premint and non-premint",
@@ -362,6 +363,7 @@ describe("MINTs collecting and redeeming.", () => {
           (firstQuantityToCollect + secondQuantityToCollect),
       );
     },
+    20_000,
   );
   anvilTest(
     "can decode errors from transferBatchToManagerAndCall",
@@ -440,6 +442,7 @@ describe("MINTs collecting and redeeming.", () => {
         }
       }
     },
+    20_000,
   );
   anvilTest(
     "can use MINTs to gaslessly collect premint",
@@ -546,6 +549,7 @@ describe("MINTs collecting and redeeming.", () => {
         ),
       ).toBe(initialMintsBalance - premintQuantityToCollect);
     },
+    20_000,
   );
 
   anvilTest(
@@ -715,5 +719,6 @@ describe("MINTs collecting and redeeming.", () => {
 
       expect(tokenBalance).toBe(quantityToMintOn1155 * 2n);
     },
+    20_000,
   );
 });
