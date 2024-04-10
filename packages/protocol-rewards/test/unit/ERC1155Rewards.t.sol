@@ -170,8 +170,8 @@ contract ERC1155RewardsTest is ProtocolRewardsTest {
         );
     }
 
-    function testRemainderSentToZoraPaidMint(uint256 rewardPrice, uint256 numTokens, uint256 tokenPrice) public {
-        vm.assume(rewardPrice > 0.0000002 ether && rewardPrice < 2 ether);
+    function testRemainderSentToZoraPaidMint(uint128 rewardPrice, uint256 numTokens, uint256 tokenPrice) public {
+        vm.assume(rewardPrice > 0.0000002 ether && rewardPrice < 100 ether);
         vm.assume(tokenPrice > 0 ether && tokenPrice < 5 ether);
         vm.assume(numTokens > 0 && numTokens < 100_000);
 
