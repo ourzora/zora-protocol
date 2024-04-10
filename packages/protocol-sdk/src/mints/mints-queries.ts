@@ -1,11 +1,5 @@
-import { getSubgraphUrl } from "src/apis/chain-constants";
 import { Address } from "viem";
-import { request, gql } from "graphql-request";
-
-type CollectQueryResult = {
-  tokenIds: bigint[];
-  quantities: bigint[];
-};
+import { gql } from "graphql-request";
 
 export const getMintsAccountBalanceWithPriceQuery = (account: Address) => {
   const query = gql`
@@ -98,62 +92,4 @@ export const sumBalances = (
   return mintAccountBalances.reduce((acc, curr) => {
     return acc + BigInt(curr.balance);
   }, BigInt(0));
-};
-
-/***
- * Given an account and quantity of MINTs to use to collect with, queries for MINTs
- * owned by an account, and selects the best MINTs to use to collect with that will satisfy that quantity.
- * @param account Account to query for MINTs
- * @param chainId
- * @param quantityToCollect How many MINTs to use to collect with
- * @returns
- */
-export const getMINTsToCollectWith = async ({
-  account,
-  chainId,
-  quantityToCollect,
-}: {
-  account: Address;
-  chainId: number;
-  quantityToCollect: bigint;
-}): Promise<CollectQueryResult> => {
-  const subgraphUrl = getSubgraphUrl(chainId);
-
-  const { query, variables } = getMintsAccountBalanceWithPriceQuery(account);
-
-  const result = await request<MintAccountBalancesQueryResult>(
-    subgraphUrl,
-    query,
-    variables,
-  );
-
-  return selectMintsToCollectWithFromQueryResult(
-    result.mintTokenBalances,
-    quantityToCollect,
-  );
-};
-
-/***
- * Given an account, queries for MINTs owned by an account, and sums the balances.
- * @param account Account to query for MINTs
- * @returns Total MINTs balance of account
- */
-export const getMINTsBalance = async ({
-  chainId,
-  account,
-}: {
-  account: Address;
-  chainId: number;
-}) => {
-  const subgraphUrl = getSubgraphUrl(chainId);
-
-  const { query, variables } = getMintsAccountBalanceWithPriceQuery(account);
-
-  const result = await request<MintAccountBalancesQueryResult>(
-    subgraphUrl,
-    query,
-    variables,
-  );
-
-  return sumBalances(result.mintTokenBalances);
 };

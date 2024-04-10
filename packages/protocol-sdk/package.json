@@ -29,12 +29,12 @@
     "abitype": "^0.10.3"
   },
   "peerDependencies": {
-    "graphql-request": "^6.1.0",
     "viem": "^1.19.15"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
     "graphql-prettier": "^1.0.6",
+    "graphql-request": "^6.1.0",
     "typescript": "^5.2.2",
     "vite": "^4.5.0",
     "vitest": "^0.34.6",
