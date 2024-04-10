@@ -30,3 +30,11 @@ erc20Minter:
   - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
     startBlock: "12389159"
     version: "1"
+zoraMints:
+  - address: "0x7777777d57c1c6e472fa379b7b3b6c6ba3835073"
+    startBlock: "12827178"
+    version: "1"
+mintsManager:
+  - address: "0x77777770ca269366c7208afcf36fe2c6f7f7608b"
+    startBlock: "12827178"
+    version: "1"

@@ -172,6 +172,28 @@ dataSources:
         - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
           handler: handleTransferBatch
 {{/zoraMints}}
+{{#mintsManager}}
+  - name: MintsManager
+    kind: ethereum/contract
+    network: {{network}}
+    source:
+      abi: MintsManager
+      address: "{{address}}"
+      startBlock: {{startBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      entities:
+        - MintComment
+      language: wasm/assemblyscript
+      file: ./src/MintsMappings/mintsManagerMappings.ts
+      abis:
+        - name: MintsManager
+          file: ./abis/ZoraMintsManagerImpl.json  
+      eventHandlers:
+        - event: MintComment(indexed address,indexed address,indexed uint256,uint256,string)
+          handler: handleMintComment
+{{/mintsManager}}
 {{#erc20Minter}}
   - name: ERC20Minter
     kind: ethereum/contract

@@ -595,7 +595,8 @@ type MintToken @entity {
   id: ID!
   tokenId: BigInt!
   pricePerToken: BigInt!
-  tokenAddress: Bytes!
+  # Marking tokenAddress as potentially nullable in order to graft as the field did not exist on earlier versions
+  tokenAddress: Bytes
 }
 
 type MintAccountBalance @entity {

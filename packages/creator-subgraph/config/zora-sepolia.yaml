@@ -21,8 +21,12 @@ reserveAuctionV3:
     startBlock: "992417"
     version: "1"
 zoraMints:
-  - address: "0x7777777EBF55Ec642acCBCfe1342C2B7A384Afe4"
-    startBlock: "7126708"
+  - address: "0x7777777d57c1C6e472fa379b7b3B6c6ba3835073"
+    startBlock: "7129497"
+    version: "1"
+mintsManager:
+  - address: "0x77777770ca269366c7208afcf36fe2c6f7f7608b"
+    startBlock: "7129497"
     version: "1"
 erc20Minter:
   - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
