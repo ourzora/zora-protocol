@@ -9,6 +9,16 @@ Protocol SDK allows developers to create tokens using the Zora Protocol and mint
 - `npm install viem`
 - `npm install `
 
+
+## Examples
+
+- [Creating a mint from an on-chain contract](#creating-a-mint-from-an-on-chain-contract)
+- [Creating an 1155 contract](#creating-an-1155-contract)
+- [Premint: create a mint without paying gas](#premint-create-a-mint-without-paying-gas)
+- [Updating a premint before it is brought onchain](#updating-a-premint-before-it-is-brought-onchain)
+- [Deleting a premint before it is brought onchain](#deleting-a-premint-before-it-is-brought-onchain)
+- [Minting a premint and bringing it onchain](#minting-a-premint-and-bringing-it-onchain)
+
 ### Creating a mint from an on-chain contract
 
 #### Using viem
