@@ -190,8 +190,8 @@ const generateInitializationConfig = async ({
   const initialEthTokenId = 1n;
   const initialEthTokenPrice = parseEther("0.000777");
 
-  const metadataBaseURI = "https://zora.co/metadata/mints/";
-  const contractURI = "https://zora.co/metadata/mints/contract.json";
+  const metadataBaseURI = "https://zora.co/assets/mints/metadata/";
+  const contractURI = "https://zora.co/assets/mints/metadata/";
 
   // this will initialize the mints contract with the owner, the initial token id, and the initial token price:
   // and will be called when the proxy will be initially upgraded to the implementation:

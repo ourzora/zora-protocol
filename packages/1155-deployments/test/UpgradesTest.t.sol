@@ -49,6 +49,12 @@ interface UUPSUpgradeable {
     function upgradeToAndCall(address newImplementation, bytes memory data) external payable;
 }
 
+interface IOwnable2StepUpgradeable {
+    function owner() external view returns (address);
+    function pendingOwner() external view returns (address);
+    function acceptOwnership() external;
+}
+
 contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
     using stdJson for string;
 
@@ -108,6 +114,29 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
 
     function mintsIsDeployed() private view returns (bool) {
         return tryReadMintsImpl() != address(0);
+    }
+
+    function determineMintsOwnershipNeeded() private view returns (UpgradeStatus memory) {
+        IOwnable2StepUpgradeable mintsManagerProxy = IOwnable2StepUpgradeable(getDeterminsticMintsManagerAddress());
+
+        if (address(mintsManagerProxy).code.length == 0) {
+            return UpgradeStatus("Accept Mints Ownership", false, address(0), address(0), "");
+        }
+
+        ChainConfig memory chainConfig = getChainConfig();
+
+        bool upgradeNeeded = chainConfig.factoryOwner != mintsManagerProxy.owner();
+
+        bytes memory upgradeCalldata;
+
+        if (upgradeNeeded) {
+            if (mintsManagerProxy.pendingOwner() != chainConfig.factoryOwner) {
+                revert("Mints pending owner is not the expected owner");
+            }
+            upgradeCalldata = abi.encodeWithSelector(IOwnable2StepUpgradeable.acceptOwnership.selector);
+        }
+
+        return UpgradeStatus("Accept Mints Ownership", upgradeNeeded, address(mintsManagerProxy), address(0), upgradeCalldata);
     }
 
     function determineMintsUpgrade() private view returns (UpgradeStatus memory) {
@@ -333,10 +362,11 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
 
         ChainConfig memory chainConfig = getChainConfig();
 
-        UpgradeStatus[] memory upgradeStatuses = new UpgradeStatus[](3);
+        UpgradeStatus[] memory upgradeStatuses = new UpgradeStatus[](4);
         upgradeStatuses[0] = determine1155Upgrade(deployment);
         upgradeStatuses[1] = determinePreminterUpgrade(deployment);
-        upgradeStatuses[2] = determineMintsUpgrade();
+        upgradeStatuses[2] = determineMintsOwnershipNeeded();
+        upgradeStatuses[3] = determineMintsUpgrade();
 
         bool upgradePerformed = performNeededUpgrades(chainConfig.factoryOwner, upgradeStatuses);
 

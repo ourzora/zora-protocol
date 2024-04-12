@@ -27,6 +27,8 @@ contract ZoraMintsManagerMetadataTest is Test {
     ZoraMintsManagerImpl zoraMintsManager;
     IZoraMints1155 mints;
 
+    uint256[] tokenIds;
+
     function setUp() public {
         bytes memory mintsCreationCode = abi.encodePacked(type(ZoraMints1155).creationCode);
         ZoraMintsManagerImpl managerImpl = new ZoraMintsManagerImpl(IZoraCreator1155PremintExecutorV2(address(0x123)));
@@ -41,6 +43,10 @@ contract ZoraMintsManagerMetadataTest is Test {
             newBaseURI: "",
             newContractURI: ""
         });
+
+        tokenIds = new uint256[](2);
+        tokenIds[0] = 1;
+        tokenIds[1] = 5;
     }
 
     function testMetadataDeploysCorrectly() public {
@@ -49,7 +55,7 @@ contract ZoraMintsManagerMetadataTest is Test {
         vm.expectEmit(true, true, true, true);
         emit URIsUpdated({contractURI: "https://zora.co/mints/metadata/contract.json", baseURI: "https://zora.co/mints/metadata/"});
         vm.prank(defaultOwner);
-        zoraMintsManager.setMetadataURIs("https://zora.co/mints/metadata/contract.json", "https://zora.co/mints/metadata/");
+        zoraMintsManager.setMetadataURIs("https://zora.co/mints/metadata/contract.json", "https://zora.co/mints/metadata/", tokenIds);
         assertEq(zoraMintsManager.uri(1), "https://zora.co/mints/metadata/1");
         assertEq(zoraMintsManager.contractURI(), "https://zora.co/mints/metadata/contract.json");
     }
@@ -60,14 +66,14 @@ contract ZoraMintsManagerMetadataTest is Test {
 
     function testMetadataCannotBeUpdatedNonOwner() public {
         vm.expectRevert(abi.encodeWithSignature("OwnableUnauthorizedAccount(address)", address(0x7FA9385bE102ac3EAc297483Dd6233D62b3e1496)));
-        zoraMintsManager.setMetadataURIs("https://zora.co/mints/metadata/contract.json", "https://zora.co/mints/metadata/");
+        zoraMintsManager.setMetadataURIs("https://zora.co/mints/metadata/contract.json", "https://zora.co/mints/metadata/", tokenIds);
     }
 
     function testZoraNFTEmitsContractURI() public {
         vm.expectEmit(true, true, true, true);
         emit ContractURIUpdated();
         vm.prank(defaultOwner);
-        zoraMintsManager.setMetadataURIs("https://zora.co/mints/metadata/contract.json", "https://zora.co/mints/metadata/");
+        zoraMintsManager.setMetadataURIs("https://zora.co/mints/metadata/contract.json", "https://zora.co/mints/metadata/", tokenIds);
     }
 
     function testZoraNFTNotifiesNewTokenURI() public {
@@ -75,5 +81,27 @@ contract ZoraMintsManagerMetadataTest is Test {
         vm.expectEmit(true, true, true, true);
         emit URI("2", 2);
         zoraMintsManager.createToken(2, TokenConfig({price: 0.01 ether, tokenAddress: address(0), redeemHandler: address(0)}), false);
+    }
+
+    function testMintsMetadataUpdate_zora() public {
+        string memory newContractURI = "https://zora.co/assets/mints/metadata";
+        string memory newBaseURI = "https://zora.co/assets/mints/metadata/";
+
+        tokenIds = new uint256[](1);
+
+        tokenIds[0] = 1;
+
+        bytes memory setNewUrlsCall = abi.encodeWithSelector(ZoraMintsManagerImpl.setMetadataURIs.selector, newContractURI, newBaseURI, tokenIds);
+
+        vm.startPrank(zoraMintsManager.owner());
+
+        (bool success, ) = address(zoraMintsManager).call(setNewUrlsCall);
+
+        assertTrue(success);
+        assertEq(ZoraMints1155(address(zoraMintsManager.zoraMints1155())).contractURI(), newContractURI);
+        assertEq(ZoraMints1155(address(zoraMintsManager.zoraMints1155())).uri(1), "https://zora.co/assets/mints/metadata/1");
+
+        console2.log("update urls call:");
+        console2.log(vm.toString(setNewUrlsCall));
     }
 }

@@ -104,8 +104,13 @@ contract ZoraMintsManagerImpl is
         return "Zora Mints Manager";
     }
 
-    function setMetadataURIs(string memory newContractURI, string memory newBaseURI) external onlyOwner {
+    function setMetadataURIs(string calldata newContractURI, string calldata newBaseURI, uint256[] calldata tokenIdsToNotifyUpdate) external onlyOwner {
         _setMetadataURIs(newContractURI, newBaseURI);
+
+        // iterate through tokenIdsToNotifyUpdate and notify the mints contract of the updated URIs
+        for (uint256 i = 0; i < tokenIdsToNotifyUpdate.length; i++) {
+            IUpdateableTokenURI(address(_getMintsManagerStorage().mints)).notifyUpdatedTokenURI(_uri(tokenIdsToNotifyUpdate[i]), tokenIdsToNotifyUpdate[i]);
+        }
     }
 
     function _setMetadataURIs(string memory newContractURI, string memory newBaseURI) internal {
