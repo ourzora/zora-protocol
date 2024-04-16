@@ -1,5 +1,19 @@
 # @zoralabs/nft-creator-subgraph
 
+## 0.2.0
+
+### Minor Changes
+
+- 5888fd2: Adds Mints and Mints Manager Addresses for Zora Mainnet and Zora Sepolia. Also allows for indexing of MintComment events from the Mints Manager contract.
+
+### Patch Changes
+
+- Updated dependencies [b6fc3a4]
+- Updated dependencies [b6fc3a4]
+- Updated dependencies [5e6a4b0]
+  - @zoralabs/protocol-deployments@0.1.7
+  - @zoralabs/mints-contracts@0.1.2
+
 ## 0.1.0
 
 ### Minor Changes

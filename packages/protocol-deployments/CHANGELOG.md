@@ -1,5 +1,12 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.7
+
+### Patch Changes
+
+- b6fc3a4: Deployed latest ZoraMintsManagerImpl to zora and zora-sepolia
+- 5e6a4b0: Added Protocol Rewards and ERC20 Minter abis and addresses to protocol-deployments
+
 ## 0.1.6
 
 ### Patch Changes

@@ -1,5 +1,11 @@
 # @zoralabs/mints-contracts
 
+## 0.1.2
+
+### Patch Changes
+
+- b6fc3a4: When updating token uris in the mints manager, it notifies the Zora Mints 1155 to emit an event for all token ids that were updated
+
 ## 0.1.1
 
 ### Patch Changes
