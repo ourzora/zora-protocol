@@ -18,7 +18,7 @@
   "dependencies": {},
   "devDependencies": {
     "zoralabs-tsconfig": "*",
-    "viem": "^1.19.15",
+    "viem": "^2.9.19",
     "typescript": "^5.2.2",
     "tsx": "^3.13.0",
     "solady": "0.0.132",

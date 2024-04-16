@@ -121,7 +121,7 @@ export const collectMINTsWithEth = async ({
     functionName: "getEthPrice",
   });
 
-  const simulated = await publicClient.simulateContract(
+  const { request } = await publicClient.simulateContract(
     mintWithEthParams({
       chainId: chainId,
       quantity: quantityToMint,
@@ -131,10 +131,7 @@ export const collectMINTsWithEth = async ({
     }),
   );
 
-  await waitForSuccess(
-    await walletClient.writeContract(simulated.request),
-    publicClient,
-  );
+  await waitForSuccess(await walletClient.writeContract(request), publicClient);
   const mintsTokenId = await publicClient.readContract({
     abi: zoraMintsManagerImplABI,
     address: zoraMintsManagerImplAddress[chainId],

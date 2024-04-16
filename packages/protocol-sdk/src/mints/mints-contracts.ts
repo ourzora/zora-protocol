@@ -10,6 +10,7 @@ import {
   PremintConfigV2,
 } from "src/premint/contract-types";
 import { ContractCreationConfig } from "src/preminter";
+import { makeSimulateContractParamaters } from "src/utils";
 import {
   Account,
   Address,
@@ -18,7 +19,6 @@ import {
   PublicClient,
   ReadContractParameters,
   SignTypedDataParameters,
-  SimulateContractParameters,
   TypedData,
   decodeErrorResult,
   encodeFunctionData,
@@ -39,7 +39,7 @@ const addressOrAccountAddress = (address: Address | Account) =>
  *
  * @returns The parameters for the `mintWithEth` function call, including the ABI, contract address, function name, arguments, value, and account.
  */
-export function mintWithEthParams({
+export const mintWithEthParams = ({
   quantity,
   recipient,
   chainId,
@@ -51,19 +51,15 @@ export function mintWithEthParams({
   chainId: keyof typeof zoraMints1155Config.address;
   pricePerMint: bigint;
   account: Address | Account;
-}): SimulateContractParameters<
-  typeof zoraMintsManagerImplConfig.abi,
-  "mintWithEth"
-> {
-  return {
+}) =>
+  makeSimulateContractParamaters({
     abi: zoraMintsManagerImplConfig.abi,
     address: zoraMintsManagerImplConfig.address[chainId],
     functionName: "mintWithEth",
     args: [quantity, recipient || addressOrAccountAddress(account)],
     value: pricePerMint * quantity,
     account,
-  };
-}
+  });
 
 const getPaidMintValue = (quantities: bigint[], pricePerMint?: bigint) => {
   if (!pricePerMint || pricePerMint === 0n) return;
@@ -145,10 +141,7 @@ export function collectWithMintsParams({
   chainId: keyof typeof zoraMints1155Config.address;
   paidMintPricePerToken?: bigint;
   account: Address | Account;
-} & CollectOnManagerParams): SimulateContractParameters<
-  typeof zoraMints1155Config.abi,
-  "transferBatchToManagerAndCall"
-> {
+} & CollectOnManagerParams) {
   const call = encodeCollectOnManager({
     tokenIds,
     quantities,
@@ -158,7 +151,7 @@ export function collectWithMintsParams({
     mintArguments,
   });
 
-  return {
+  return makeSimulateContractParamaters({
     abi: zoraMints1155Config.abi,
     address: zoraMints1155Config.address[chainId],
     functionName: "transferBatchToManagerAndCall",
@@ -167,7 +160,7 @@ export function collectWithMintsParams({
     // for the paid mint cost.
     value: getPaidMintValue(quantities, paidMintPricePerToken),
     account,
-  };
+  });
 }
 
 type PermitTransferBatchParameters = {
@@ -413,22 +406,19 @@ export function collectPremintV2WithMintsParams({
   paidMintPricePerToken?: bigint;
   chainId: keyof typeof zoraMints1155Config.address;
   account: Address | Account;
-} & PremintOnManagerParams): SimulateContractParameters<
-  typeof zoraMints1155Config.abi,
-  "transferBatchToManagerAndCall"
-> {
+} & PremintOnManagerParams) {
   const call = encodePremintOnManager({
     ...rest,
   });
 
-  return {
+  return makeSimulateContractParamaters({
     abi: zoraMints1155Config.abi,
     address: zoraMints1155Config.address[chainId],
     functionName: "transferBatchToManagerAndCall",
     args: [tokenIds, quantities, call],
     value: getPaidMintValue(quantities, paidMintPricePerToken),
     account,
-  };
+  });
 }
 
 export type PermitSafeTransferBatch = AbiParametersToPrimitiveTypes<

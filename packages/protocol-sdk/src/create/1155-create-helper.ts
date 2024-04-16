@@ -5,6 +5,7 @@ import {
   zoraCreatorFixedPriceSaleStrategyABI,
 } from "@zoralabs/protocol-deployments";
 import type {
+  Account,
   Address,
   Hex,
   PublicClient,
@@ -13,6 +14,7 @@ import type {
 } from "viem";
 import { decodeEventLog, encodeFunctionData, zeroAddress } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
+import { makeSimulateContractParamaters } from "src/utils";
 
 // Sales end forever amount (uint64 max)
 const SALE_END_FOREVER = 18446744073709551615n;
@@ -227,7 +229,14 @@ async function getContractExists(
 }
 
 type CreateNew1155TokenReturn = {
-  request: SimulateContractParameters;
+  request: SimulateContractParameters<
+    any,
+    any,
+    any,
+    any,
+    any,
+    Account | Address
+  >;
   tokenSetupActions: Hex[];
   contractAddress: Address;
   contractExists: boolean;
@@ -311,10 +320,7 @@ export function create1155CreatorClient({
       throw new Error("Invariant: contract cannot be missing and an address");
     }
     if (!contractExists && typeof contract !== "string") {
-      const request: SimulateContractParameters<
-        typeof zoraCreator1155FactoryImplABI,
-        "createContractDeterministic"
-      > = {
+      const request = makeSimulateContractParamaters({
         abi: zoraCreator1155FactoryImplABI,
         functionName: "createContractDeterministic",
         account,
@@ -331,7 +337,7 @@ export function create1155CreatorClient({
           contract.defaultAdmin || account,
           tokenSetupActions,
         ],
-      };
+      });
       return {
         request,
         tokenSetupActions,
@@ -339,16 +345,13 @@ export function create1155CreatorClient({
         contractExists,
       };
     } else if (contractExists) {
-      const request: SimulateContractParameters<
-        typeof zoraCreator1155ImplABI,
-        "multicall"
-      > = {
+      const request = makeSimulateContractParamaters({
         abi: zoraCreator1155ImplABI,
         functionName: "multicall",
         account,
         address: contractAddress,
         args: [tokenSetupActions],
-      };
+      });
       return {
         request,
         tokenSetupActions,

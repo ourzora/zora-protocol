@@ -28,9 +28,10 @@
     "@zoralabs/protocol-deployments": "*"
   },
   "peerDependencies": {
-    "viem": "^1.19.15"
+    "viem": "^2.9.19"
   },
   "devDependencies": {
+    "abitype": "^1.0.2",
     "@lavamoat/preinstall-always-fail": "2.0.0",
     "@reservoir0x/relay-sdk": "^0.3.8",
     "@reservoir0x/reservoir-sdk": "^2.0.11",
@@ -39,7 +40,6 @@
     "typescript": "^5.2.2",
     "vite": "^4.5.0",
     "vitest": "^0.34.6",
-    "zoralabs-tsconfig": "*",
-    "abitype": "^0.10.3"
+    "zoralabs-tsconfig": "*"
   }
 }

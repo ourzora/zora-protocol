@@ -7,16 +7,18 @@ import {
   parseAbiParameters,
   zeroAddress,
   http,
+  Account,
+  SimulateContractParameters,
 } from "viem";
 import { IHttpClient } from "../apis/http-api-base";
 import { MintAPIClient, SalesConfigAndTokenInfo } from "./mint-api-client";
-import { SimulateContractParameters } from "viem";
 import {
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { GenericTokenIdTypes } from "src/types";
 import { zora721Abi } from "src/constants";
+import { makeSimulateContractParamaters } from "src/utils";
 
 class MintError extends Error {}
 class MintInactiveError extends Error {}
@@ -57,11 +59,11 @@ class MintClient {
   async makePrepareMintTokenParams({
     ...rest
   }: {
-    minterAccount: Address;
+    minterAccount: Address | Account;
     tokenAddress: Address;
     tokenId?: GenericTokenIdTypes;
     mintArguments: MintArguments;
-  }): Promise<SimulateContractParameters> {
+  }) {
     return makePrepareMintTokenParams({
       ...rest,
       apiClient: this.apiClient,
@@ -99,12 +101,14 @@ async function makePrepareMintTokenParams({
   ...rest
 }: {
   publicClient: PublicClient;
-  minterAccount: Address;
+  minterAccount: Address | Account;
   tokenId?: GenericTokenIdTypes;
   tokenAddress: Address;
   mintArguments: MintArguments;
   apiClient: MintAPIClient;
-}): Promise<SimulateContractParameters> {
+}): Promise<
+  SimulateContractParameters<any, any, any, any, any, Account | Address>
+> {
   const salesConfigAndTokenInfo = await apiClient.getSalesConfigAndTokenInfo({
     tokenId,
     tokenAddress,
@@ -134,15 +138,15 @@ async function makePrepareMint721TokenParams({
 }: {
   tokenAddress: Address;
   salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
-  minterAccount: Address;
+  minterAccount: Address | Account;
   mintArguments: MintArguments;
-}): Promise<SimulateContractParameters<typeof zora721Abi, "mintWithRewards">> {
+}) {
   const mintValue = getMintCosts({
     salesConfigAndTokenInfo,
     quantityToMint: BigInt(mintArguments.quantityToMint),
   }).totalCost;
 
-  const result = {
+  return makeSimulateContractParamaters({
     abi: zora721Abi,
     address: tokenAddress,
     account: minterAccount,
@@ -154,9 +158,7 @@ async function makePrepareMint721TokenParams({
       mintArguments.mintComment || "",
       mintArguments.mintReferral || zeroAddress,
     ],
-  } satisfies SimulateContractParameters<typeof zora721Abi, "mintWithRewards">;
-
-  return result;
+  });
 }
 
 export type MintCosts = {
@@ -193,7 +195,7 @@ async function makePrepareMint1155TokenParams({
 }: {
   salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
   tokenId: GenericTokenIdTypes;
-  minterAccount: Address;
+  minterAccount: Address | Account;
   tokenAddress: Address;
   mintArguments: MintArguments;
 }) {
@@ -204,7 +206,7 @@ async function makePrepareMint1155TokenParams({
     quantityToMint: mintQuantity,
   }).totalCost;
 
-  const result = {
+  return makeSimulateContractParamaters({
     abi: zoraCreator1155ImplABI,
     functionName: "mintWithRewards",
     account: minterAccount,
@@ -222,10 +224,5 @@ async function makePrepareMint1155TokenParams({
       ]),
       mintArguments.mintReferral || zeroAddress,
     ],
-  } satisfies SimulateContractParameters<
-    typeof zoraCreator1155ImplABI,
-    "mintWithRewards"
-  >;
-
-  return result;
+  });
 }

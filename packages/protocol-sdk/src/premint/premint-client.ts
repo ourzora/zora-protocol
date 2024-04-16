@@ -41,6 +41,7 @@ import { OPEN_EDITION_MINT_SIZE } from "../constants";
 import { IHttpClient } from "src/apis/http-api-base";
 import { getApiNetworkConfigForChain } from "src/mint/mint-api-client";
 import { MintCosts } from "src/mint/mint-client";
+import { makeSimulateContractParamaters } from "src/utils";
 
 type PremintedV2LogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,
@@ -510,7 +511,16 @@ class PremintClient {
       platformReferral?: Address;
       mintRecipient?: Address;
     };
-  }): Promise<SimulateContractParameters> {
+  }): Promise<
+    SimulateContractParameters<
+      typeof zoraCreator1155PremintExecutorImplABI,
+      "premintV1" | "premintV2",
+      any,
+      any,
+      any,
+      Account | Address
+    >
+  > {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
@@ -550,7 +560,7 @@ class PremintClient {
     };
 
     if (premintConfigVersion === PremintConfigVersion.V1) {
-      return {
+      return makeSimulateContractParamaters({
         account: minterAccount,
         abi: zoraCreator1155PremintExecutorImplABI,
         functionName: "premintV1",
@@ -563,12 +573,9 @@ class PremintClient {
           numberToMint,
           mintArgumentsContract,
         ],
-      } satisfies SimulateContractParameters<
-        typeof zoraCreator1155PremintExecutorImplABI,
-        "premintV1"
-      >;
+      });
     } else if (premintConfigVersion === PremintConfigVersion.V2) {
-      return {
+      return makeSimulateContractParamaters({
         account: minterAccount,
         abi: zoraCreator1155PremintExecutorImplABI,
         functionName: "premintV2",
@@ -581,10 +588,7 @@ class PremintClient {
           numberToMint,
           mintArgumentsContract,
         ],
-      } satisfies SimulateContractParameters<
-        typeof zoraCreator1155PremintExecutorImplABI,
-        "premintV2"
-      >;
+      });
     }
 
     throw new Error(`Invalid premint config version ${premintConfigVersion}`);
