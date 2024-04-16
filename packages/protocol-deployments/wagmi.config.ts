@@ -1,5 +1,5 @@
 import { defineConfig } from "@wagmi/cli";
-import { Abi } from "viem";
+import { Abi, zeroAddress } from "viem";
 import { readdirSync, readFileSync } from "fs";
 import * as abis from "@zoralabs/zora-1155-contracts";
 import {
@@ -36,7 +36,7 @@ const get1155Addresses = () => {
     address?: Address;
     abi: Abi;
   }) => {
-    if (!address) return;
+    if (!address || address === zeroAddress) return;
     if (!addresses[contractName]) {
       addresses[contractName] = {
         address: {},
@@ -45,6 +45,12 @@ const get1155Addresses = () => {
     }
 
     addresses[contractName]!.address[chainId] = address;
+  };
+
+  const protocolRewardsConfig = JSON.parse(
+    readFileSync("../protocol-rewards/deterministicConfig.json", "utf-8"),
+  ) as {
+    expectedAddress: Address;
   };
 
   for (const addressesFile of addressesFiles) {
@@ -58,6 +64,7 @@ const get1155Addresses = () => {
       FACTORY_IMPL: Address;
       FACTORY_PROXY: Address;
       PREMINTER_PROXY?: Address;
+      ERC20_MINTER?: Address;
     };
 
     const chainId = parseInt(addressesFile.split(".")[0]);
@@ -91,6 +98,18 @@ const get1155Addresses = () => {
       chainId,
       address: jsonAddress.PREMINTER_PROXY,
       abi: abis.zoraCreator1155PremintExecutorImplABI,
+    });
+    addAddress({
+      contractName: "ProtocolRewards",
+      chainId,
+      address: protocolRewardsConfig.expectedAddress,
+      abi: abis.protocolRewardsABI,
+    });
+    addAddress({
+      contractName: "ERC20Minter",
+      chainId,
+      abi: abis.erc20MinterABI,
+      address: jsonAddress.ERC20_MINTER,
     });
   }
 
