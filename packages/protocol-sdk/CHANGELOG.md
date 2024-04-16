@@ -1,5 +1,14 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.11
+
+### Patch Changes
+
+- 8e514b7: Cleanup protocol-sdk to have better docs around all methods, and remove methods that do not need to be exported and are not used.
+- 598a95b: Bumps protocol-sdk to use viem@2.x- see the [viem 2.X.X migration guide](https://viem.sh/docs/migration-guide#2xx-breaking-changes) for breaking changes when migratring from viem 1.X.X to 2.X.X
+- Updated dependencies [8e514b7]
+  - @zoralabs/protocol-deployments@0.1.8
+
 ## 0.5.10
 
 ### Patch Changes

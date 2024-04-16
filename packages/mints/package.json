@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/mints-contracts",
-  "version": "0.1.2",
+  "version": "0.1.3",
   "repository": "https://github.com/ourzora/zora-protocol.git",
   "license": "MIT",
   "main": "./dist/index.js",

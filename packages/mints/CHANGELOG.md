@@ -1,5 +1,11 @@
 # @zoralabs/mints-contracts
 
+## 0.1.3
+
+### Patch Changes
+
+- 8e514b7: Removed reentrancy guard from `MintsEthUnwrapperAndCaller`
+
 ## 0.1.2
 
 ### Patch Changes

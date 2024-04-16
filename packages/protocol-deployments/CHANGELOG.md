@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.8
+
+### Patch Changes
+
+- 8e514b7: Deployed lateset MintsEthUnwrapperAndCaller to chains
+
 ## 0.1.7
 
 ### Patch Changes
