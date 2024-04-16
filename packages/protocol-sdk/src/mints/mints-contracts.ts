@@ -1,9 +1,8 @@
 import {
   zoraMints1155Config,
   zoraMintsManagerImplABI,
+  zoraMintsManagerImplAddress,
   zoraMintsManagerImplConfig,
-  mintsEthUnwrapperAndCallerConfig,
-  iUnwrapAndForwardActionABI,
 } from "@zoralabs/protocol-deployments";
 import { AbiParametersToPrimitiveTypes, ExtractAbiFunction } from "abitype";
 import {
@@ -16,17 +15,30 @@ import {
   Address,
   ContractFunctionRevertedError,
   Hex,
+  PublicClient,
   ReadContractParameters,
   SignTypedDataParameters,
   SimulateContractParameters,
   TypedData,
   decodeErrorResult,
-  encodeAbiParameters,
   encodeFunctionData,
-  parseAbiParameters,
   zeroAddress,
 } from "viem";
 
+const addressOrAccountAddress = (address: Address | Account) =>
+  typeof address === "string" ? address : address.address;
+
+/**
+ * Constructs the parameters to mint a MINT with ETH on the ZoraMintsManager based on the price of the currently mintable ETH token.
+ *
+ * @param quantity - The number of mints to be created.
+ * @param recipient - The address that will receive the mints.
+ * @param chainId - The ID of the blockchain network where the contract is deployed.
+ * @param pricePerMint - The price for each mint in ETH. Must match the price of the defualt mintable ETH token.
+ * @param account - The address or account that is creating the mints.
+ *
+ * @returns The parameters for the `mintWithEth` function call, including the ABI, contract address, function name, arguments, value, and account.
+ */
 export function mintWithEthParams({
   quantity,
   recipient,
@@ -35,7 +47,7 @@ export function mintWithEthParams({
   account,
 }: {
   quantity: bigint;
-  recipient: Address;
+  recipient?: Address;
   chainId: keyof typeof zoraMints1155Config.address;
   pricePerMint: bigint;
   account: Address | Account;
@@ -47,7 +59,7 @@ export function mintWithEthParams({
     abi: zoraMintsManagerImplConfig.abi,
     address: zoraMintsManagerImplConfig.address[chainId],
     functionName: "mintWithEth",
-    args: [quantity, recipient],
+    args: [quantity, recipient || addressOrAccountAddress(account)],
     value: pricePerMint * quantity,
     account,
   };
@@ -59,12 +71,11 @@ const getPaidMintValue = (quantities: bigint[], pricePerMint?: bigint) => {
   return quantities.reduce((a, b) => a + b, 0n) * pricePerMint;
 };
 
-export const fixedPriceMinterMinterArguments = ({
-  mintRecipient,
-}: {
-  mintRecipient: Address;
-}) => encodeAbiParameters(parseAbiParameters("address"), [mintRecipient]);
-
+/**
+ * Constructs the parameters to get the total mints balance of an account on the ZoraMints1155 contract.
+ * @param account - The address of the account to check the balance of.
+ * @returns The parameters for the `balanceOfAccount` function call, including the ABI, contract address, function name, and arguments.
+ */
 export const mintsBalanceOfAccountParams = ({
   account,
   chainId,
@@ -107,17 +118,32 @@ export const encodeCollectOnManager = ({
     ],
   });
 
+/**
+ * Constructs parameters to collect a Zora Creator 1155 token using MINTs an account owns.
+ * @param tokenIds - The MINT token ids to use to collect the Zora Creator 1155 token with.
+ * @param quantities - The quantities of each MINT token to use to collect the Zora Creator 1155 token with.  The sum of these quantities will be the total quantity of the Zora Creator 1155 token collected.
+ * @param chainId - The ID of the chain where the MINTs are to be used
+ * @param paidMintPricePerToken - If this is for a paid mint, this is the price in eth per each token to be collected
+ * @param account - The account that will be executing the transaction, and whos MINTs will be used
+ * @param mintArguments - The minterArguments, mintRewardsRecipients, and mintComment
+ * @param minter - The IMinter1155 used by the Zora Creator 1155 contract to mint the tokens
+ * @param zoraCreator1155Contract - The Zora Creator 1155 contract address to mint tokens on
+ * @param zoraCreator1155TokenId - The token id on the Zora Creator contract to mint
+ */
 export function collectWithMintsParams({
   tokenIds,
   quantities,
   chainId,
-  pricePerToken,
+  paidMintPricePerToken,
   account,
-  ...rest
+  mintArguments,
+  minter,
+  zoraCreator1155Contract,
+  zoraCreator1155TokenId,
 }: {
   paidMintValue?: bigint;
   chainId: keyof typeof zoraMints1155Config.address;
-  pricePerToken?: bigint;
+  paidMintPricePerToken?: bigint;
   account: Address | Account;
 } & CollectOnManagerParams): SimulateContractParameters<
   typeof zoraMints1155Config.abi,
@@ -126,7 +152,10 @@ export function collectWithMintsParams({
   const call = encodeCollectOnManager({
     tokenIds,
     quantities,
-    ...rest,
+    zoraCreator1155Contract,
+    zoraCreator1155TokenId,
+    minter,
+    mintArguments,
   });
 
   return {
@@ -134,98 +163,72 @@ export function collectWithMintsParams({
     address: zoraMints1155Config.address[chainId],
     functionName: "transferBatchToManagerAndCall",
     args: [tokenIds, quantities, call],
-    value: getPaidMintValue(quantities, pricePerToken),
+    // if it is a paid mint, the aadditional value will be sent to the manager contract and forwarded to the creator 1155 contract
+    // for the paid mint cost.
+    value: getPaidMintValue(quantities, paidMintPricePerToken),
     account,
   };
 }
 
-export const collectWithMintsTypedDataDefinition = ({
-  tokenIds,
-  quantities,
-  chainId,
-  account,
-  nonce,
-  deadline,
-  ...rest
-}: {
-  chainId: keyof typeof zoraMints1155Config.address;
-  nonce: bigint;
-  deadline: bigint;
-  account: Account | Address;
-} & CollectOnManagerParams) => {
-  const safeTransferData = encodeCollectOnManager({
-    tokenIds,
-    quantities,
-    ...rest,
-  });
-
-  return makePermitTransferBatchAndTypeData({
-    tokenIds,
-    quantities,
-    chainId,
-    account,
-    nonce,
-    deadline,
-    safeTransferData,
-    // will safe transfer to manager contract before doing the
-    // collect operation
-    to: zoraMintsManagerImplConfig.address[chainId],
-  });
-};
-
-export const collectPremintWithMintsTypedDataDefinition = ({
-  tokenIds,
-  quantities,
-  chainId,
-  account,
-  nonce,
-  deadline,
-  ...rest
-}: {
-  chainId: keyof typeof zoraMints1155Config.address;
-  nonce: bigint;
-  deadline: bigint;
-  account: Account | Address;
-} & PremintOnManagerParams) => {
-  const safeTransferData = encodePremintOnManager({
-    ...rest,
-  });
-
-  return makePermitTransferBatchAndTypeData({
-    tokenIds,
-    quantities,
-    chainId,
-    account,
-    nonce,
-    deadline,
-    safeTransferData,
-    // will safe transfer to manager contract before doing the
-    // collect operation
-    to: zoraMintsManagerImplConfig.address[chainId],
-  });
-};
-
-function makePermitTransferBatchAndTypeData({
-  tokenIds,
-  quantities,
-  chainId,
-  account,
-  to,
-  nonce,
-  deadline,
-  safeTransferData,
-}: {
+type PermitTransferBatchParameters = {
   tokenIds: bigint[];
   quantities: bigint[];
   chainId: keyof typeof zoraMints1155Config.address;
   nonce: bigint;
   deadline: bigint;
-  account: Account | Address;
+  mintsOwner: Account | Address;
   to: Address;
   safeTransferData: Hex;
+};
+
+/**
+ * Get the current price to mint a MINT with ETH
+ * @param publicClient - The public client to use to read the contract
+ */
+export function getMintsEthPrice({
+  publicClient,
+}: {
+  publicClient: PublicClient;
 }) {
+  const chainId = publicClient.chain?.id as
+    | keyof typeof zoraMintsManagerImplAddress
+    | undefined;
+  // if chain id is not in the zoraMintsManagerImplAddress, throw an error:
+  if (!chainId || !zoraMintsManagerImplAddress[chainId]) {
+    throw new Error(`Chain id ${chainId} not supported`);
+  }
+
+  return publicClient.readContract({
+    abi: zoraMintsManagerImplABI,
+    address: zoraMintsManagerImplAddress[chainId],
+    functionName: "getEthPrice",
+  });
+}
+
+/**
+ * Builds the permit data and typed data to sign for permitting a batch transfer of MINTs.
+ * @param tokenIds - The token ids to transfer.
+ * @param quantities - The quantities of each token to transfer.
+ * @param chainId - The ID of the chain where the MINTs are to be used
+ * @param mintsOwner - The account that owns the MINTs to be transferred (and the account that is to sign the permit)
+ * @param to - The address to transfer the MINTs to.
+ * @param nonce - Random nonce of the permit.
+ * @param deadline - The deadline of the permit.
+ * @param safeTransferData - The data to be sent with the transfer.
+ * @returns permit and corresponding typed data to sign.
+ */
+export function makePermitTransferBatchAndTypeData({
+  tokenIds,
+  quantities,
+  chainId,
+  mintsOwner,
+  to,
+  nonce,
+  deadline,
+  safeTransferData,
+}: PermitTransferBatchParameters) {
   const permit: PermitSafeTransferBatch = {
-    owner: typeof account === "string" ? account : account.address,
+    owner: typeof mintsOwner === "string" ? mintsOwner : mintsOwner.address,
     to,
     tokenIds,
     quantities,
@@ -237,7 +240,7 @@ function makePermitTransferBatchAndTypeData({
   const typedData = permitBatchTypedDataDefinition({
     chainId,
     permit,
-    account,
+    account: mintsOwner,
   });
 
   return {
@@ -246,11 +249,23 @@ function makePermitTransferBatchAndTypeData({
   };
 }
 
-function makePermitTransferTypeData({
+/**
+ * Builds the permit data and typed data to sign for permitting a transfer of a MINTs for a single MINTs token id
+ * @param tokenId - The token id to transfer.
+ * @param quantity - The quantity of the token to transfer.
+ * @param chainId - The ID of the chain where the MINTs are to be used
+ * @param mintsOwner - The account that owns the MINTs to be transferred (and the account that is to sign the permit)
+ * @param to - The address to transfer the MINTs to.
+ * @param nonce - Random nonce of the permit.
+ * @param deadline - The deadline of the permit.
+ * @param safeTransferData - The data to be sent with the transfer.
+ * @returns
+ */
+export function makePermitTransferTypeData({
   tokenId,
   quantity,
   chainId,
-  account,
+  mintsOwner,
   to,
   nonce,
   deadline,
@@ -261,12 +276,12 @@ function makePermitTransferTypeData({
   chainId: keyof typeof zoraMints1155Config.address;
   nonce: bigint;
   deadline: bigint;
-  account: Account | Address;
+  mintsOwner: Account | Address;
   to: Address;
   safeTransferData: Hex;
 }) {
   const permit: PermitSafeTransfer = {
-    owner: typeof account === "string" ? account : account.address,
+    owner: typeof mintsOwner === "string" ? mintsOwner : mintsOwner.address,
     to,
     tokenId,
     quantity,
@@ -278,7 +293,7 @@ function makePermitTransferTypeData({
   const typedData = permitTransferTypedDataDefinition({
     chainId,
     permit,
-    account,
+    account: mintsOwner,
   });
 
   return {
@@ -297,7 +312,7 @@ type PremintOnManagerParams = {
   signerContract?: Address;
 };
 
-export const encodePremintOnManager = ({
+const encodePremintOnManager = ({
   contractCreationConfig,
   premintConfig,
   premintSignature,
@@ -316,15 +331,86 @@ export const encodePremintOnManager = ({
     ],
   });
 
+/**
+ * Builds a permit, and corresponding typed data to sign
+ * to collect a premint or non-premint Using the mints an account owns.
+ * @param mintsOwner - The account that owns the MINTs to be transferred (and the account that is to sign the permit)
+ * @param chainId - The ID of the chain where the MINTs are to be used
+ * @param deadline - The deadline of the permit.
+ * @param nonce - Random nonce of the permit.
+ * @param tokenIds - The mint token ids to to use
+ * @param quantities - The quantities of each token to use to collect the Zora Creator 1155 token with.  The sum of these quantities will be the total quantity of the Zora Creator 1155 token collected.
+ * @param premint - If this is for a premint, the configuration of the premint to collect
+ * @param collect - If this is for a non-premint, the configuration of the non-premint to collect
+ * @returns
+ */
+export const makePermitToCollectPremintOrNonPremint = ({
+  mintsOwner,
+  chainId,
+  deadline,
+  tokenIds,
+  // this quantity of MINTs will be used to collect premint
+  // and will be burned.  This same quantity is the quantity of
+  // premint to collect.
+  quantities,
+  nonce,
+  premint,
+  collect,
+}: Omit<PermitTransferBatchParameters, "to" | "safeTransferData"> &
+  (
+    | {
+        premint: Parameters<typeof encodePremintOnManager>[0];
+        collect?: undefined;
+      }
+    | {
+        premint?: undefined;
+        collect: Parameters<typeof encodeCollectOnManager>[0];
+      }
+  )) => {
+  let safeTransferData: Hex;
+
+  if (premint) {
+    safeTransferData = encodePremintOnManager(premint);
+  } else if (collect) {
+    safeTransferData = encodeCollectOnManager(collect);
+  } else {
+    throw new Error("Invalid operation");
+  }
+
+  return makePermitTransferBatchAndTypeData({
+    tokenIds,
+    quantities,
+    chainId,
+    mintsOwner,
+    nonce,
+    deadline,
+    safeTransferData,
+    to: zoraMintsManagerImplConfig.address[chainId],
+  });
+};
+
+/**
+ * Constructs the parameters to collect a premint using MINTs an account owns.
+ * @param tokenIds - The MINT token ids to use to collect the premint with.
+ * @param quantities - The quantities of each MINT token to use to collect the premint with.  The sum of these quantities will be the total quantity of the premint collected.
+ * @param chainId - The ID of the chain where the MINTs are to be used
+ * @param account - The account which's MINTs will be used to collect the premint.
+ * @param contractCreationConfig - The premint contract creation config
+ * @param premintConfig - The premint config
+ * @param premintSignature - The signature for the premint
+ * @param mintArguments - The minterArguments, mintRewardsRecipients, and mintComment
+ * @param signerContract - The contract that signed the premint, if this is a smart wallet based premint
+ * @param paidMintPricePerToken - If this is for a paid mint, this is the price in eth per each token to be collected
+ */
 export function collectPremintV2WithMintsParams({
   tokenIds,
   quantities,
-  pricePerToken,
+  paidMintPricePerToken,
   account,
   chainId,
   ...rest
 }: {
-  pricePerToken?: bigint;
+  paidMintPricePerToken?: bigint;
   chainId: keyof typeof zoraMints1155Config.address;
   account: Address | Account;
 } & PremintOnManagerParams): SimulateContractParameters<
@@ -340,7 +426,7 @@ export function collectPremintV2WithMintsParams({
     address: zoraMints1155Config.address[chainId],
     functionName: "transferBatchToManagerAndCall",
     args: [tokenIds, quantities, call],
-    value: getPaidMintValue(quantities, pricePerToken),
+    value: getPaidMintValue(quantities, paidMintPricePerToken),
     account,
   };
 }
@@ -362,7 +448,6 @@ export type PermitSafeTransfer = AbiParametersToPrimitiveTypes<
 export type CollectMintArguments = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<typeof zoraMintsManagerImplConfig.abi, "collect">["inputs"]
 >[3];
-// export type PermitTransferBatchToManager = ExtractAbiFunction<
 
 function makeTypeData<
   const TTypedData extends TypedData | { [key: string]: unknown },
@@ -481,167 +566,11 @@ export function permitTransferTypedDataDefinition({
   });
 }
 
-export const permitTransferBatchToManagerAndCallParams = ({
-  permit,
-  chainId,
-  signature,
-}: {
-  permit: PermitSafeTransferBatch;
-  chainId: keyof typeof zoraMints1155Config.address;
-  signature: Hex;
-}) => {
-  const result: SimulateContractParameters<
-    typeof zoraMints1155Config.abi,
-    "permitSafeTransferBatch"
-  > = {
-    abi: zoraMints1155Config.abi,
-    address: zoraMints1155Config.address[chainId],
-    functionName: "permitSafeTransferBatch",
-    args: [permit, signature],
-  };
-
-  return result;
-};
-
-export const safeTransferAndUnwrapTypedDataDefinition = ({
-  chainId,
-  tokenId,
-  quantity,
-  from,
-  addressToCall,
-  functionToCall,
-  valueToSend,
-  deadline,
-  nonce,
-}: {
-  tokenId: bigint;
-  quantity: bigint;
-  chainId: keyof typeof zoraMints1155Config.address;
-  // mints will be transferred from this address,
-  // must match the callers address
-  from: Address | Account;
-  addressToCall: Address;
-  functionToCall: Hex;
-  valueToSend: bigint;
-  deadline: bigint;
-  nonce: bigint;
-}) => {
-  // this is the call that the wrapper will call
-  const callArgument = encodeFunctionData({
-    abi: iUnwrapAndForwardActionABI,
-    functionName: "callWithEth",
-    args: [addressToCall, functionToCall, valueToSend],
-  });
-
-  return makePermitTransferTypeData({
-    account: from,
-    chainId,
-    deadline,
-    tokenId,
-    quantity,
-    safeTransferData: callArgument,
-    to: mintsEthUnwrapperAndCallerConfig.address[chainId],
-    nonce,
-  });
-};
-
-export const safeTransferBatchAndUnwrapTypedDataDefinition = ({
-  chainId,
-  tokenIds,
-  quantities,
-  from,
-  addressToCall,
-  functionToCall,
-  valueToSend,
-  deadline,
-  nonce,
-}: {
-  tokenIds: bigint[];
-  quantities: bigint[];
-  chainId: keyof typeof zoraMints1155Config.address;
-  // mints will be transferred from this address,
-  // must match the callers address
-  from: Address | Account;
-  addressToCall: Address;
-  functionToCall: Hex;
-  valueToSend: bigint;
-  deadline: bigint;
-  nonce: bigint;
-}) => {
-  // this is the call that the wrapper will call
-  const callArgument = encodeFunctionData({
-    abi: iUnwrapAndForwardActionABI,
-    functionName: "callWithEth",
-    args: [addressToCall, functionToCall, valueToSend],
-  });
-
-  return makePermitTransferBatchAndTypeData({
-    account: from,
-    chainId,
-    deadline,
-    tokenIds,
-    quantities,
-    safeTransferData: callArgument,
-    to: mintsEthUnwrapperAndCallerConfig.address[chainId],
-    nonce,
-  });
-};
-
-export const safeTransferAndUnwrapEthParams = ({
-  chainId,
-  tokenIds,
-  quantities,
-  from,
-  addressToCall,
-  functionToCall,
-  valueToSend,
-}: {
-  tokenIds: bigint[];
-  quantities: bigint[];
-  chainId: keyof typeof zoraMints1155Config.address;
-  // mints will be transferred from this address,
-  // must match the callers address
-  from: Address | Account;
-  addressToCall: Address;
-  functionToCall: Hex;
-  valueToSend: bigint;
-}) => {
-  // this is the encoded calldata for the eth unwrapper to
-  // read and execute.
-  // for valueToSend, whatever is remaining will be refunded
-  // to the recipient.
-  const callArgument = encodeFunctionData({
-    abi: iUnwrapAndForwardActionABI,
-    functionName: "callWithEth",
-    args: [addressToCall, functionToCall, valueToSend],
-  });
-
-  const result: SimulateContractParameters<
-    typeof zoraMints1155Config.abi,
-    "safeBatchTransferFrom"
-  > = {
-    abi: zoraMints1155Config.abi,
-    functionName: "safeBatchTransferFrom",
-    address: zoraMints1155Config.address[chainId],
-    args: [
-      typeof from === "string" ? from : from.address,
-      // the mints will be transferred to this address, which
-      // will burn/redeem their eth value
-      mintsEthUnwrapperAndCallerConfig.address[chainId],
-      // token ids to transfer/burn/unwrap - must be eth based tokens
-      tokenIds,
-      // quantities to transfer/burn/unwrap
-      quantities,
-      // this is the safeTransferData - which gets forwarded to the eth transferrer
-      callArgument,
-    ],
-    // the account whos mints will be transferred from
-    account: from,
-  };
-
-  return result;
-};
-
+/**
+ * Can be used to decode an a CallFailed error from the ZoraMints1155 contract when it has called a function on the ZoraMintsManager.
+ * @param error
+ * @returns
+ */
 export function decodeCallFailedError(error: ContractFunctionRevertedError) {
   if (error.data?.errorName !== "CallFailed")
     throw new Error("Not a CallFailed error");

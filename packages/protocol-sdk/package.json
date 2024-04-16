@@ -25,19 +25,21 @@
     "lint": "prettier --check 'src/**/*.ts' 'test-integration/**/*.ts'"
   },
   "dependencies": {
-    "@zoralabs/protocol-deployments": "*",
-    "abitype": "^0.10.3"
+    "@zoralabs/protocol-deployments": "*"
   },
   "peerDependencies": {
     "viem": "^1.19.15"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
+    "@reservoir0x/relay-sdk": "^0.3.8",
+    "@reservoir0x/reservoir-sdk": "^2.0.11",
     "graphql-prettier": "^1.0.6",
     "graphql-request": "^6.1.0",
     "typescript": "^5.2.2",
     "vite": "^4.5.0",
     "vitest": "^0.34.6",
-    "zoralabs-tsconfig": "*"
+    "zoralabs-tsconfig": "*",
+    "abitype": "^0.10.3"
   }
 }

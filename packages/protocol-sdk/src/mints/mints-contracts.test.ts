@@ -6,9 +6,6 @@ import {
   defaultPremintConfigV2,
 } from "src/premint/preminter.test";
 import {
-  mintsEthUnwrapperAndCallerConfig,
-  zoraCreator1155FactoryImplAddress,
-  zoraCreator1155FactoryImplConfig,
   zoraCreator1155ImplABI,
   zoraMints1155ABI,
   zoraMints1155Address,
@@ -19,24 +16,18 @@ import {
   Address,
   BaseError,
   ContractFunctionRevertedError,
-  Hex,
   PublicClient,
   WalletClient,
-  encodeFunctionData,
   parseEther,
 } from "viem";
 import {
   collectPremintV2WithMintsParams,
   collectWithMintsParams,
   mintWithEthParams,
-  permitTransferBatchToManagerAndCallParams,
   mintsBalanceOfAccountParams,
-  collectPremintWithMintsTypedDataDefinition,
   CollectMintArguments,
-  fixedPriceMinterMinterArguments,
   decodeCallFailedError,
-  safeTransferBatchAndUnwrapTypedDataDefinition,
-  safeTransferAndUnwrapTypedDataDefinition,
+  makePermitToCollectPremintOrNonPremint,
 } from "./mints-contracts";
 import { getPremintCollectionAddress } from "src/premint/preminter";
 import {
@@ -44,26 +35,20 @@ import {
   PremintConfigVersion,
 } from "src/premint/contract-types";
 import { premintTypedDataDefinition } from "src/premint/preminter";
-import { zoraSepolia } from "viem/chains";
+import { zora } from "viem/chains";
+import {
+  fixedPriceMinterMinterArguments,
+  getFixedPricedMinter,
+  waitForSuccess,
+} from "src/test-utils";
+
+const mintsMainnetDeployedBlock = 12990454;
 
 const anvilTest = makeAnvilTest({
-  forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 7137785,
-  anvilChainId: zoraSepolia.id,
+  forkUrl: forkUrls.zoraMainnet,
+  forkBlockNumber: mintsMainnetDeployedBlock,
+  anvilChainId: zora.id,
 });
-
-const getFixedPricedMinter = async ({
-  publicClient,
-  chainId,
-}: {
-  publicClient: PublicClient;
-  chainId: keyof typeof zoraCreator1155FactoryImplAddress;
-}) =>
-  await publicClient.readContract({
-    abi: zoraCreator1155FactoryImplConfig.abi,
-    address: zoraCreator1155FactoryImplAddress[chainId],
-    functionName: "fixedPriceMinter",
-  });
 
 const setupContractUsingPremint = async ({
   walletClient,
@@ -117,15 +102,7 @@ const setupContractUsingPremint = async ({
   };
 };
 
-const waitForSuccess = async (hash: Hex, publicClient: PublicClient) => {
-  const receipt = await publicClient.waitForTransactionReceipt({
-    hash,
-  });
-
-  expect(receipt.status).toBe("success");
-};
-
-const collectMINTsWithEth = async ({
+export const collectMINTsWithEth = async ({
   publicClient,
   walletClient,
   chainId,
@@ -193,7 +170,6 @@ describe("MINTs collecting and redeeming.", () => {
         mintWithEthParams({
           chainId: chainId,
           quantity: initialMintsQuantityToMint,
-          recipient: collectorAccount!,
           pricePerMint,
           account: collectorAccount!,
         }),
@@ -217,7 +193,7 @@ describe("MINTs collecting and redeeming.", () => {
     20_000,
   );
   anvilTest(
-    "can use MINTSs to collect premint and non-premint",
+    "can use MINTs to collect premint and non-premint",
     async ({
       viemClients: { walletClient, publicClient, testClient, chain },
     }) => {
@@ -510,28 +486,32 @@ describe("MINTs collecting and redeeming.", () => {
       const deadline = blockTime + 10n;
 
       // get typed data to sign, as well as permit to collect with
-      const { typedData, permit } = collectPremintWithMintsTypedDataDefinition({
-        account: collectorAccount!,
-        chainId: chainId,
-        mintArguments,
-        nonce,
+      const { typedData, permit } = makePermitToCollectPremintOrNonPremint({
+        mintsOwner: collectorAccount!,
+        chainId,
         deadline,
         tokenIds: [mintsTokenId],
+        // this quantity of MINTs will be used to collect premint
+        // and will be burned.  This same quantity is the quantity of
+        // premint to collect.
         quantities: [premintQuantityToCollect],
-        contractCreationConfig: contractConfig,
-        premintConfig: premintConfig,
-        premintSignature: premintSignature,
+        nonce,
+        premint: {
+          contractCreationConfig: contractConfig,
+          mintArguments,
+          premintConfig,
+          premintSignature,
+        },
       });
 
       const permitSignature = await walletClient.signTypedData(typedData);
 
       // now simulate and execute the transaction
       const permitSimulated = await publicClient.simulateContract({
-        ...permitTransferBatchToManagerAndCallParams({
-          permit,
-          chainId: chainId,
-          signature: permitSignature,
-        }),
+        abi: zoraMints1155ABI,
+        address: zoraMints1155Address[chainId],
+        functionName: "permitSafeTransferBatch",
+        args: [permit, permitSignature],
         account: permitExecutorAccount,
       });
 
@@ -548,176 +528,6 @@ describe("MINTs collecting and redeeming.", () => {
           }),
         ),
       ).toBe(initialMintsBalance - premintQuantityToCollect);
-    },
-    20_000,
-  );
-
-  anvilTest(
-    "can use MINTs to gaslessly collect on legacy 1155 contracts",
-    async ({ viemClients: { walletClient, publicClient, chain } }) => {
-      const [collectorAccount, permitExecutorAccount] =
-        await walletClient.getAddresses();
-
-      const chainId = chain.id as keyof typeof zoraMintsManagerImplAddress;
-
-      // 1. Collect some MINTs
-      const initialMintsQuantityToMint = 20n;
-
-      const mintsTokenId = await collectMINTsWithEth({
-        publicClient,
-        walletClient,
-        chainId,
-        collectorAccount: collectorAccount!,
-        quantityToMint: initialMintsQuantityToMint,
-      });
-
-      const initialMintsBalance = await publicClient.readContract(
-        mintsBalanceOfAccountParams({
-          account: collectorAccount!,
-          chainId: chainId,
-        }),
-      );
-
-      // now sign a message to collect.
-      let nonce = BigInt(Math.round(Math.random() * 1_000_000));
-
-      const blockTime = (await publicClient.getBlock()).timestamp;
-
-      const quantityToMintOn1155 = 3n;
-
-      // make signature deadline 10 seconds from now
-      const deadline = blockTime + 10n;
-
-      const fixedPriceMinter = await getFixedPricedMinter({
-        publicClient,
-        chainId,
-      });
-
-      const tokenId = 1n;
-
-      const minterArguments = fixedPriceMinterMinterArguments({
-        mintRecipient: collectorAccount!,
-      });
-
-      // this is the external contract that will be called
-      const legacy1155Address = "0x2988C3b4F3A823488e4E2d70F23bD66366639b81";
-
-      // this is the external contract funciton that will be called
-      const contractCall = encodeFunctionData({
-        abi: zoraCreator1155ImplABI,
-        functionName: "mint",
-        args: [
-          fixedPriceMinter,
-          tokenId,
-          quantityToMintOn1155,
-          [],
-          minterArguments,
-        ],
-      });
-
-      // get typed data to sign, as well as permit to collect with
-      const { typedData: batchTransferTypeData, permit: bathTransferPermit } =
-        safeTransferBatchAndUnwrapTypedDataDefinition({
-          from: collectorAccount!,
-          chainId: chainId,
-          nonce,
-          deadline,
-          // token ids to unwrap and burn - must be eth based token ids
-          tokenIds: [mintsTokenId],
-          // quantities to unwrap and burn
-          quantities: [quantityToMintOn1155],
-          // external address to call
-          addressToCall: legacy1155Address,
-          // external contract call
-          functionToCall: contractCall,
-          // value to send to external contract, extra value from mints
-          // will be refunded
-          valueToSend: parseEther("0.000777") * quantityToMintOn1155,
-        });
-
-      const permitBatchSignature = await walletClient.signTypedData(
-        batchTransferTypeData,
-      );
-
-      // now simulate and execute the transaction
-      const permitBatchSimulated = await publicClient.simulateContract({
-        ...permitTransferBatchToManagerAndCallParams({
-          permit: bathTransferPermit,
-          chainId: chainId,
-          signature: permitBatchSignature,
-        }),
-        account: permitExecutorAccount,
-      });
-
-      await waitForSuccess(
-        await walletClient.writeContract(permitBatchSimulated.request),
-        publicClient,
-      );
-
-      nonce = BigInt(Math.round(Math.random() * 1_000_000));
-
-      // make non-batch permit and signtarue
-      const { typedData: transferTypeData, permit: transferPermit } =
-        safeTransferAndUnwrapTypedDataDefinition({
-          from: collectorAccount!,
-          chainId: chainId,
-          nonce,
-          deadline,
-          // token ids to unwrap and burn - must be eth based token ids
-          tokenId: mintsTokenId,
-          // quantities to unwrap and burn
-          quantity: quantityToMintOn1155,
-          // external address to call
-          addressToCall: legacy1155Address,
-          // external contract call
-          functionToCall: contractCall,
-          // value to send to external contract, extra value from mints
-          // will be refunded
-          valueToSend: parseEther("0.000777") * quantityToMintOn1155,
-        });
-
-      const permitSignature =
-        await walletClient.signTypedData(transferTypeData);
-
-      const permitSimulated = await publicClient.simulateContract({
-        abi: zoraMints1155ABI,
-        address: zoraMints1155Address[chainId],
-        functionName: "permitSafeTransfer",
-        args: [transferPermit, permitSignature],
-        account: permitExecutorAccount,
-      });
-
-      await waitForSuccess(
-        await walletClient.writeContract(permitSimulated.request),
-        publicClient,
-      );
-
-      expect(
-        await publicClient.readContract(
-          mintsBalanceOfAccountParams({
-            account: collectorAccount!,
-            chainId: chainId,
-          }),
-        ),
-      ).toBe(initialMintsBalance - quantityToMintOn1155 * 2n);
-
-      expect(
-        await publicClient.readContract(
-          mintsBalanceOfAccountParams({
-            account: mintsEthUnwrapperAndCallerConfig.address[chainId],
-            chainId: chainId,
-          }),
-        ),
-      ).toBe(0n);
-
-      const tokenBalance = await publicClient.readContract({
-        abi: zoraCreator1155ImplABI,
-        address: legacy1155Address,
-        functionName: "balanceOf",
-        args: [collectorAccount!, tokenId],
-      });
-
-      expect(tokenBalance).toBe(quantityToMintOn1155 * 2n);
     },
     20_000,
   );

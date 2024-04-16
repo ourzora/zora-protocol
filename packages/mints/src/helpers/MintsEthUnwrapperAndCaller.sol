@@ -6,15 +6,13 @@ import {IZoraMints1155Managed} from "../interfaces/IZoraMints1155Managed.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Redemption} from "../ZoraMintsTypes.sol";
-import {TransferHelperUtils} from "../utils/TransferHelperUtils.sol";
 import {IUnwrapAndForwardAction} from "../interfaces/IUnwrapAndForwardAction.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
 /// @title Unwraps eth value of MINTS and sends the eth value to a receiver with a call, refunding any remaining eth to
 /// the original owner of the MINTs.  Works when MINTS backed by ETH are transferred to this contract.  ERC20 based MINTs
 /// are not supported.
 /// @author oveddan
-contract MintsEthUnwrapperAndCaller is ReentrancyGuard {
+contract MintsEthUnwrapperAndCaller {
     bytes4 constant ON_ERC1155_BATCH_RECEIVED_HASH = IERC1155Receiver.onERC1155BatchReceived.selector;
     bytes4 constant ON_ERC1155_RECEIVED_HASH = IERC1155Receiver.onERC1155Received.selector;
 
@@ -41,11 +39,11 @@ contract MintsEthUnwrapperAndCaller is ReentrancyGuard {
         _;
     }
 
-    function permitWithAdditionalValue(IZoraMints1155Managed.PermitBatch calldata permit, bytes calldata signature) external payable nonReentrant {
+    function permitWithAdditionalValue(IZoraMints1155Managed.PermitBatch calldata permit, bytes calldata signature) external payable {
         IZoraMints1155Managed(address(zoraMints1155)).permitSafeTransferBatch(permit, signature);
     }
 
-    function onERC1155Received(address, address from, uint256 id, uint256 value, bytes calldata data) external onlyMints nonReentrant returns (bytes4) {
+    function onERC1155Received(address, address from, uint256 id, uint256 value, bytes calldata data) external onlyMints returns (bytes4) {
         // temporarily enable receiving eth
         expectReceive = true;
         // redeem the MINTs - all eth will be sent to this contract
@@ -72,7 +70,7 @@ contract MintsEthUnwrapperAndCaller is ReentrancyGuard {
         uint256[] calldata ids,
         uint256[] calldata values,
         bytes calldata data
-    ) external onlyMints nonReentrant returns (bytes4) {
+    ) external onlyMints returns (bytes4) {
         // temporarily enable receiving eth
         expectReceive = true;
         // redeem the MINTs - all eth will be sent to this contract
