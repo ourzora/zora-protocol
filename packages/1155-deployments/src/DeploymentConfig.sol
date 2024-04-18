@@ -38,6 +38,8 @@ struct Deployment {
     address preminterProxy;
     /// @notice Upgrade gate
     address upgradeGate;
+    /// @notice erc20 minter
+    address erc20Minter;
 }
 
 abstract contract DeploymentConfig is Script {
@@ -65,6 +67,7 @@ abstract contract DeploymentConfig is Script {
     string constant PREMINTER_PROXY = "PREMINTER_PROXY";
     string constant PREMINTER_IMPL = "PREMINTER_IMPL";
     string constant UPGRADE_GATE = "UPGRADE_GATE";
+    string constant ERC20_MINTER = "ERC20_MINTER";
 
     /// @notice Return a prefixed key for reading with a ".".
     /// @param key key to prefix
@@ -106,6 +109,7 @@ abstract contract DeploymentConfig is Script {
         deployment.preminterImpl = readAddressOrDefaultToZero(json, PREMINTER_IMPL);
         deployment.preminterProxy = readAddressOrDefaultToZero(json, PREMINTER_PROXY);
         deployment.upgradeGate = readAddressOrDefaultToZero(json, UPGRADE_GATE);
+        deployment.erc20Minter = readAddressOrDefaultToZero(json, ERC20_MINTER);
     }
 
     function getDeterminsticMintsManagerAddress() internal view returns (address) {

@@ -36,6 +36,7 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
         vm.serializeAddress(deploymentJsonKey, PREMINTER_PROXY, deployment.preminterProxy);
         vm.serializeAddress(deploymentJsonKey, PREMINTER_IMPL, deployment.preminterImpl);
         vm.serializeAddress(deploymentJsonKey, UPGRADE_GATE, deployment.upgradeGate);
+        vm.serializeAddress(deploymentJsonKey, ERC20_MINTER, deployment.erc20Minter);
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
     }
 
