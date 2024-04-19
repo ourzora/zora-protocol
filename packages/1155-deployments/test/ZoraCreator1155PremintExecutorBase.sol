@@ -11,7 +11,7 @@ import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/fact
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {Zora1155PremintFixtures} from "../src/Zora1155PremintFixtures.sol";
 
-contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
+contract ZoraCreator1155PremintExecutorBase is ForkDeploymentConfig, Test {
     ZoraCreator1155FactoryImpl factory;
     ZoraCreator1155PremintExecutorImpl preminter;
     address creator;
@@ -23,17 +23,6 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
     PremintConfig premintConfig;
     PremintConfigV2 premintConfigV2;
     address createReferral = makeAddr("creatReferral");
-
-    /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
-    /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
-    function getForkTestChains() private view returns (string[] memory result) {
-        try vm.envString("FORK_TEST_CHAINS", ",") returns (string[] memory forkTestChains) {
-            result = forkTestChains;
-        } catch {
-            console.log("could not get fork test chains - make sure the environment variable FORK_TEST_CHAINS is set");
-            result = new string[](0);
-        }
-    }
 
     function setupPremint() private {
         // get contract hash, which is unique per contract creation config, and can be used
@@ -52,72 +41,22 @@ contract ZoraCreator1155PreminterForkTest is ForkDeploymentConfig, Test {
         premintConfigV2 = Zora1155PremintFixtures.makeDefaultV2PremintConfig(factory.fixedPriceMinter(), payoutRecipient, createReferral);
     }
 
-    function equals(string memory str1, string memory str2) public pure returns (bool) {
-        return keccak256(abi.encodePacked(str1)) == keccak256(abi.encodePacked(str2));
+    function legacyPremint_successfullyMintsPremintTokens() internal {
+        setupPremint();
+
+        _signAndExecutePremintLegacy(creatorPrivateKey, minter, 1, "test comment");
     }
 
-    function test_fork_legacyPremint_successfullyMintsPremintTokens() external {
-        string[] memory forkTestChains = getForkTestChains();
-        for (uint256 i = 0; i < forkTestChains.length; i++) {
-            string memory chainName = forkTestChains[i];
+    function premintV1_successfullyMintsPremintTokens() internal {
+        setupPremint();
 
-            console.log("testing on fork: ", chainName);
-
-            // create and select the fork, which will be used for all subsequent calls
-            // it will also affect the current block chain id based on the rpc url returned
-            vm.createSelectFork(vm.rpcUrl(chainName));
-
-            setupPremint();
-
-            _signAndExecutePremintLegacy(creatorPrivateKey, minter, 1, "test comment");
-        }
+        _signAndExecutePremintV1(creatorPrivateKey, minter, 1, "test comment");
     }
 
-    function test_fork_premintV1_successfullyMintsPremintTokens() external {
-        string[] memory forkTestChains = getForkTestChains();
-        for (uint256 i = 0; i < forkTestChains.length; i++) {
-            string memory chainName = forkTestChains[i];
+    function premintV2_successfullyMintsPremintTokens() internal {
+        setupPremint();
 
-            if (!_chainSupportsPremintV2(chainName)) {
-                console.log("skipping chain, does not support v1 premint: ", chainName);
-                continue;
-            }
-
-            console.log("testing on fork: ", chainName);
-
-            // it will also affect the current block chain id based on the rpc url returned
-            vm.createSelectFork(vm.rpcUrl(chainName));
-
-            setupPremint();
-
-            _signAndExecutePremintV1(creatorPrivateKey, minter, 1, "test comment");
-        }
-    }
-
-    function test_fork_premintV2_successfullyMintsPremintTokens() external {
-        string[] memory forkTestChains = getForkTestChains();
-        for (uint256 i = 0; i < forkTestChains.length; i++) {
-            string memory chainName = forkTestChains[i];
-
-            if (!_chainSupportsPremintV2(chainName)) {
-                console.log("skipping chain, does not support v2 premint: ", chainName);
-                continue;
-            }
-
-            console.log("testing on fork: ", chainName);
-
-            // it will also affect the current block chain id based on the rpc url returned
-            vm.createSelectFork(vm.rpcUrl(chainName));
-
-            setupPremint();
-
-            _signAndExecutePremintV2(creatorPrivateKey, minter, 0, "test comment");
-        }
-    }
-
-    function _chainSupportsPremintV2(string memory chainName) private pure returns (bool) {
-        // for now we know that zora sepolia and zora mainnet have premint v2 deployed
-        return (equals(chainName, "zora_sepolia") || equals(chainName, "zora"));
+        _signAndExecutePremintV2(creatorPrivateKey, minter, 0, "test comment");
     }
 
     function _signAndExecutePremintLegacy(

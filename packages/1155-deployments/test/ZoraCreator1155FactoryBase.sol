@@ -14,7 +14,7 @@ import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "@zoralabs/zora-1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ForkDeploymentConfig, Deployment} from "../src/DeploymentConfig.sol";
 
-contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
+contract ZoraCreator1155FactoryBase is ForkDeploymentConfig, Test {
     uint256 constant quantityToMint = 3;
     uint256 constant tokenMaxSupply = 100;
     uint32 constant royaltyMintSchedule = 10;
@@ -29,17 +29,6 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
     function setUp() external {
         creator = vm.addr(1);
         collector = vm.addr(2);
-    }
-
-    /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
-    /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
-    function getForkTestChains() private view returns (string[] memory result) {
-        try vm.envString("FORK_TEST_CHAINS", ",") returns (string[] memory forkTestChains) {
-            result = forkTestChains;
-        } catch {
-            console.log("could not get fork test chains - make sure the environment variable FORK_TEST_CHAINS is set");
-            result = new string[](0);
-        }
     }
 
     function _setupToken(IZoraCreator1155 target, IMinter1155 fixedPrice, uint96 tokenPrice) private returns (uint256 tokenId) {
@@ -112,38 +101,31 @@ contract ZoraCreator1155FactoryForkTest is ForkDeploymentConfig, Test {
         // mint the token
         vm.deal(collector, valueToSend);
         vm.startPrank(collector);
-        ZoraCreator1155Impl(payable(address(target))).mintWithRewards{value: valueToSend}(fixedPrice, tokenId, quantityToMint, abi.encode(collector), address(0));
+        ZoraCreator1155Impl(payable(address(target))).mintWithRewards{value: valueToSend}(
+            fixedPrice,
+            tokenId,
+            quantityToMint,
+            abi.encode(collector),
+            address(0)
+        );
 
         uint256 balance = ZoraCreator1155Impl(payable(address(target))).balanceOf(collector, tokenId);
 
         assertEq(balance, quantityToMint, "balance mismatch");
     }
 
-    function testTheFork(string memory chainName) private {
-        console.log("testing on fork: ", chainName);
-
-        // create and select the fork, which will be used for all subsequent calls
-        // it will also affect the current block chain id based on the rpc url returned
-        vm.createSelectFork(vm.rpcUrl(chainName));
-
+    function canCreateContractAndMint() internal {
         Deployment memory deployment = getDeployment();
 
         address factoryAddress = deployment.factoryProxy;
         ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(factoryAddress);
 
-        assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), string.concat("configured owner incorrect on: ", chainName));
+        assertEq(getChainConfig().factoryOwner, IOwnable(factoryAddress).owner(), "incorrect owner");
 
         // make sure that the address from the factory matches the stored fixed price address
         // sanity check - check minters match config
         assertEq(address(factory.merkleMinter()), deployment.merkleMintSaleStrategy, "merkle minter incorrect");
         assertEq(address(factory.fixedPriceMinter()), deployment.fixedPriceSaleStrategy, "fixed priced minter incorrect");
         assertEq(address(factory.redeemMinterFactory()), deployment.redeemMinterFactory, "redeem minter not correct");
-    }
-
-    function test_fork_canCreateContractAndMint() external {
-        string[] memory forkTestChains = getForkTestChains();
-        for (uint256 i = 0; i < forkTestChains.length; i++) {
-            testTheFork(forkTestChains[i]);
-        }
     }
 }

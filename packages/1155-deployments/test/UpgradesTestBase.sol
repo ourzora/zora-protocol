@@ -51,23 +51,14 @@ interface UUPSUpgradeable {
 
 interface IOwnable2StepUpgradeable {
     function owner() external view returns (address);
+
     function pendingOwner() external view returns (address);
+
     function acceptOwnership() external;
 }
 
-contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
+contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test {
     using stdJson for string;
-
-    /// @notice gets the chains to do fork tests on, by reading environment var FORK_TEST_CHAINS.
-    /// Chains are by name, and must match whats under `rpc_endpoints` in the foundry.toml
-    function getForkTestChains() private view returns (string[] memory result) {
-        try vm.envString("FORK_TEST_CHAINS", ",") returns (string[] memory forkTestChains) {
-            result = forkTestChains;
-        } catch {
-            console.log("could not get fork test chains - make sure the environment variable FORK_TEST_CHAINS is set");
-            result = new string[](0);
-        }
-    }
 
     struct UpgradeStatus {
         string updateDescription;
@@ -354,10 +345,7 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
     }
 
     /// @notice checks which chains need an upgrade, simulated the upgrade, and gets the upgrade calldata
-    function simulateUpgradeOnFork(string memory chainName) private {
-        // create and select the fork, which will be used for all subsequent calls
-        vm.createSelectFork(vm.rpcUrl(chainName));
-
+    function simulateUpgrade() internal {
         Deployment memory deployment = getDeployment();
 
         ChainConfig memory chainConfig = getChainConfig();
@@ -382,13 +370,6 @@ contract UpgradesTest is ForkDeploymentConfig, DeploymentTestingUtils, Test {
             console2.log("smol safe url: ", smolSafeUrl);
 
             console2.log("---------------");
-        }
-    }
-
-    function test_fork_simulateUpgrades() external {
-        string[] memory forkTestChains = getForkTestChains();
-        for (uint256 i = 0; i < forkTestChains.length; i++) {
-            simulateUpgradeOnFork(forkTestChains[i]);
         }
     }
 }
