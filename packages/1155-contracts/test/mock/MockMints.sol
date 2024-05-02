@@ -1,3 +1,6 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.17;
+
 import {ERC1155} from "@openzeppelin/contracts/token/ERC1155/ERC1155.sol";
 import {TokenConfig, Redemption} from "@zoralabs/mints-contracts/src/ZoraMintsTypes.sol";
 import {MintsStorageBase} from "@zoralabs/mints-contracts/src/MintsStorageBase.sol";
@@ -29,7 +32,7 @@ contract MockMintsManager is IZoraMintsManager {
     }
 
     /// This will be moved to the Mints Manager
-    function mintWithERC20(address tokenAddress, uint quantity, address recipient) external returns (uint256 mintableTokenId) {
+    function mintWithERC20(address, uint, address) external pure returns (uint256) {
         revert("Not implemented");
     }
 
@@ -43,7 +46,7 @@ contract MockMintsManager is IZoraMintsManager {
         }
     }
 
-    function setDefaultMintable(address tokenAddress, uint256 tokenId) public {
+    function setDefaultMintable(address, uint256 tokenId) public {
         TokenConfig memory tokenConfig = zoraMints1155.getTokenConfig(tokenId);
         if (tokenConfig.price == 0) {
             revert("Not a token");
@@ -55,11 +58,11 @@ contract MockMintsManager is IZoraMintsManager {
         mintableEthToken = tokenId;
     }
 
-    function uri(uint256 tokenId) external view returns (string memory) {
+    function uri(uint256) external pure returns (string memory) {
         revert("Not implemented");
     }
 
-    function contractURI() external view returns (string memory) {
+    function contractURI() external pure returns (string memory) {
         revert("Not implemented");
     }
 }
@@ -107,7 +110,7 @@ contract MockZoraMints1155 is ERC1155, IZoraMints1155 {
     }
 
     // called by the mints manager
-    function mintTokenWithERC20(uint256 tokenId, address tokenAddress, uint quantity, address recipient, bytes memory data) external {
+    function mintTokenWithERC20(uint256, address, uint, address, bytes memory) external pure {
         revert("Not implemented");
     }
 
@@ -175,7 +178,7 @@ contract MockZoraMints1155 is ERC1155, IZoraMints1155 {
         return tokenConfigs[tokenId];
     }
 
-    function balanceOfAccount(address user) external view override returns (uint256) {
+    function balanceOfAccount(address) external pure override returns (uint256) {
         revert("Not implemented");
     }
 }

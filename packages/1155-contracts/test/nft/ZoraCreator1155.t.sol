@@ -43,7 +43,7 @@ contract MockTransferHookReceiver is ITransferHookReceiver {
         hasTransfer[id] = true;
     }
 
-    function supportsInterface(bytes4 testInterface) external view override returns (bool) {
+    function supportsInterface(bytes4 testInterface) external pure override returns (bool) {
         return testInterface == type(ITransferHookReceiver).interfaceId;
     }
 }
@@ -1677,7 +1677,6 @@ contract ZoraCreator1155Test is Test {
         init();
         uint256 mintTokenPrice = 0.000222 ether;
         uint256 mintTokenId = 111;
-        uint256 tokenPrice = 0.001111 ether;
         uint256 salePrice = 2 ether;
 
         address fundsRecipient = makeAddr("fundsRecipient");
