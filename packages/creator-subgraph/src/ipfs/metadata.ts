@@ -8,7 +8,6 @@ import { MetadataInfo } from "../../generated/schema";
 
 export function handleJSONMetadataFetched(content: Bytes): void {
   const metadata = new MetadataInfo(dataSource.stringParam());
-  metadata.rawJson = content.toString();
   const jsonType = json.try_fromBytes(content);
   if (
     jsonType.isOk &&
@@ -35,12 +34,13 @@ export function handleJSONMetadataFetched(content: Bytes): void {
         (decimals.kind === JSONValueKind.STRING ||
           decimals.kind === JSONValueKind.NUMBER)
       ) {
-        metadata.decimals = decimals.toString();
+        metadata.decimals = null;
       }
       const animation_url = value.get("animation_url");
       if (animation_url && animation_url.kind === JSONValueKind.STRING) {
         metadata.animationUrl = animation_url.toString();
       }
+      metadata.rawJson = content.toString();
     }
   }
 
