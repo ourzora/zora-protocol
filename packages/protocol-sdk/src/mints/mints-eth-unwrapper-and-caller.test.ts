@@ -224,7 +224,7 @@ describe("MintsEthUnwrapperAndCaller", () => {
         quantityToMint: initialMintsQuantityToMint,
       });
 
-      const tokenId = 2n;
+      const tokenId = 6n;
 
       const quantityToMint = 3n;
 
@@ -232,7 +232,7 @@ describe("MintsEthUnwrapperAndCaller", () => {
 
       // address of the 1155 contract on the other chain that will be called
       const destinationContractAddress =
-        "0x49c38e84a1232dadf5129dbe14d01b9d5f9160c4" as Address;
+        "0x5f69da5da41e5472afb88fc291e7a92b7f15fbc5" as Address;
 
       const { mintCall, mintFee: mintFeeOnOtherChain } =
         await makeLegacy1155MintCall({
@@ -379,7 +379,7 @@ describe("MintsEthUnwrapperAndCaller", () => {
         quantityToMint: initialMintsQuantityToMint,
       });
 
-      const tokenId = 2n;
+      const tokenId = 6n;
 
       const quantityToMint = 3n;
 
@@ -387,7 +387,7 @@ describe("MintsEthUnwrapperAndCaller", () => {
 
       // address of the 1155 contract on the other chain that will be called
       const destinationContractAddress =
-        "0x49c38e84a1232dadf5129dbe14d01b9d5f9160c4" as Address;
+        "0x5f69da5da41e5472afb88fc291e7a92b7f15fbc5" as Address;
 
       const { mintCall, mintFee: mintFeeOnOtherChain } =
         await makeLegacy1155MintCall({
