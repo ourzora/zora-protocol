@@ -25,58 +25,6 @@ type PremintV2HashDataTypes = AbiParametersToPrimitiveTypes<PremintV2Inputs>;
 export type PremintConfigV2 = PremintV2HashDataTypes[1];
 export type TokenCreationConfigV2 = PremintConfigV2["tokenConfig"];
 
-export const v1Types = {
-  CreatorAttribution: [
-    { name: "tokenConfig", type: "TokenCreationConfig" },
-    // unique id scoped to the contract and token to create.
-    // ensure that a signature can be replaced, as long as the replacement
-    // has the same uid, and a newer version.
-    { name: "uid", type: "uint32" },
-    { name: "version", type: "uint32" },
-    // if this update should result in the signature being deleted.
-    { name: "deleted", type: "bool" },
-  ],
-  TokenCreationConfig: [
-    { name: "tokenURI", type: "string" },
-    { name: "maxSupply", type: "uint256" },
-    { name: "maxTokensPerAddress", type: "uint64" },
-    { name: "pricePerToken", type: "uint96" },
-    { name: "mintStart", type: "uint64" },
-    { name: "mintDuration", type: "uint64" },
-    { name: "royaltyMintSchedule", type: "uint32" },
-    { name: "royaltyBPS", type: "uint32" },
-    { name: "royaltyRecipient", type: "address" },
-    { name: "fixedPriceMinter", type: "address" },
-  ],
-} as const;
-
-export const v2Types = {
-  CreatorAttribution: [
-    { name: "tokenConfig", type: "TokenCreationConfig" },
-    // unique id scoped to the contract and token to create.
-    // ensure that a signature can be replaced, as long as the replacement
-    // has the same uid, and a newer version.
-    { name: "uid", type: "uint32" },
-    { name: "version", type: "uint32" },
-    // if this update should result in the signature being deleted.
-    { name: "deleted", type: "bool" },
-  ],
-  TokenCreationConfig: [
-    { name: "tokenURI", type: "string" },
-    { name: "maxSupply", type: "uint256" },
-    { name: "maxTokensPerAddress", type: "uint64" },
-    { name: "pricePerToken", type: "uint96" },
-    { name: "mintStart", type: "uint64" },
-    { name: "mintDuration", type: "uint64" },
-    { name: "royaltyBPS", type: "uint32" },
-    { name: "payoutRecipient", type: "address" },
-    { name: "fixedPriceMinter", type: "address" },
-    { name: "createReferral", type: "address" },
-  ],
-} as const;
-
-export const PreminterDomain = "Preminter";
-
 export enum PremintConfigVersion {
   V1 = "1",
   V2 = "2",

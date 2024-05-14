@@ -27,11 +27,12 @@ import {
   PremintConfigV2,
   PremintConfigVersion,
   PremintConfigWithVersion,
-  PreminterDomain,
   TokenCreationConfig,
-  v1Types,
-  v2Types,
 } from "./contract-types";
+import {
+  premintV1TypedDataDefinition,
+  premintV2TypedDataDefinition,
+} from "@zoralabs/protocol-deployments";
 import { MintCosts } from "src/mint/mint-client";
 
 export const getPremintExecutorAddress = () =>
@@ -55,27 +56,18 @@ export const premintTypedDataDefinition = <T extends PremintConfigVersion>({
   verifyingContract: Address;
   chainId: number;
 } & PremintConfigWithVersion<T>): TypedDataDefinition => {
-  const domain = {
-    chainId,
-    name: PreminterDomain,
-    version,
-    verifyingContract: verifyingContract,
-  };
-
   if (version === PremintConfigVersion.V1)
-    return {
-      domain,
-      types: v1Types,
+    return premintV1TypedDataDefinition({
+      chainId,
+      creator1155Contract: verifyingContract,
       message: premintConfig as PremintConfigV1,
-      primaryType: "CreatorAttribution",
-    } satisfies TypedDataDefinition<typeof v1Types, "CreatorAttribution">;
+    });
   if (version === PremintConfigVersion.V2) {
-    return {
-      domain,
-      types: v2Types,
+    return premintV2TypedDataDefinition({
+      chainId,
+      creator1155Contract: verifyingContract,
       message: premintConfig as PremintConfigV2,
-      primaryType: "CreatorAttribution",
-    } satisfies TypedDataDefinition<typeof v2Types, "CreatorAttribution">;
+    });
   }
 
   throw new Error(`Invalid version ${version}`);

@@ -1,4 +1,6 @@
 import {
+  mintsSafeTransferBatchTypedDataDefinition,
+  mintsSafeTransferTypedDataDefinition,
   zoraMints1155Config,
   zoraMintsManagerImplABI,
   zoraMintsManagerImplAddress,
@@ -19,7 +21,6 @@ import {
   PublicClient,
   ReadContractParameters,
   SignTypedDataParameters,
-  TypedData,
   decodeErrorResult,
   encodeFunctionData,
   zeroAddress,
@@ -230,11 +231,13 @@ export function makePermitTransferBatchAndTypeData({
     safeTransferData,
   };
 
-  const typedData = permitBatchTypedDataDefinition({
-    chainId,
-    permit,
+  const typedData: SignTypedDataParameters = {
+    ...mintsSafeTransferBatchTypedDataDefinition({
+      chainId,
+      message: permit,
+    }),
     account: mintsOwner,
-  });
+  };
 
   return {
     permit,
@@ -283,11 +286,13 @@ export function makePermitTransferTypeData({
     safeTransferData,
   };
 
-  const typedData = permitTransferTypedDataDefinition({
-    chainId,
-    permit,
+  const typedData: SignTypedDataParameters = {
+    ...mintsSafeTransferTypedDataDefinition({
+      chainId,
+      message: permit,
+    }),
     account: mintsOwner,
-  });
+  };
 
   return {
     permit,
@@ -438,123 +443,6 @@ export type PermitSafeTransfer = AbiParametersToPrimitiveTypes<
 export type CollectMintArguments = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<typeof zoraMintsManagerImplConfig.abi, "collect">["inputs"]
 >[3];
-
-function makeTypeData<
-  const TTypedData extends TypedData | { [key: string]: unknown },
-  TPrimaryType extends string,
->(args: SignTypedDataParameters<TTypedData, TPrimaryType>) {
-  return args;
-}
-
-export function permitBatchTypedDataDefinition({
-  permit,
-  chainId,
-  account,
-}: {
-  permit: PermitSafeTransferBatch;
-  chainId: keyof typeof zoraMints1155Config.address;
-  account: Account | Address;
-}) {
-  return makeTypeData({
-    primaryType: "Permit",
-    types: {
-      Permit: [
-        {
-          name: "owner",
-          type: "address",
-        },
-        {
-          name: "to",
-          type: "address",
-        },
-        {
-          name: "tokenIds",
-          type: "uint256[]",
-        },
-        {
-          name: "quantities",
-          type: "uint256[]",
-        },
-        {
-          name: "safeTransferData",
-          type: "bytes",
-        },
-        {
-          name: "nonce",
-          type: "uint256",
-        },
-        {
-          name: "deadline",
-          type: "uint256",
-        },
-      ],
-    },
-    message: permit,
-    domain: {
-      chainId,
-      name: "Mints",
-      version: "1",
-      verifyingContract: zoraMints1155Config.address[chainId],
-    },
-    // signing account must be permit owner
-    account,
-  });
-}
-
-export function permitTransferTypedDataDefinition({
-  permit,
-  chainId,
-  account,
-}: {
-  permit: PermitSafeTransfer;
-  chainId: keyof typeof zoraMints1155Config.address;
-  account: Account | Address;
-}) {
-  return makeTypeData({
-    primaryType: "PermitSafeTransfer",
-    types: {
-      PermitSafeTransfer: [
-        {
-          name: "owner",
-          type: "address",
-        },
-        {
-          name: "to",
-          type: "address",
-        },
-        {
-          name: "tokenId",
-          type: "uint256",
-        },
-        {
-          name: "quantity",
-          type: "uint256",
-        },
-        {
-          name: "safeTransferData",
-          type: "bytes",
-        },
-        {
-          name: "nonce",
-          type: "uint256",
-        },
-        {
-          name: "deadline",
-          type: "uint256",
-        },
-      ],
-    },
-    message: permit,
-    domain: {
-      chainId,
-      name: "Mints",
-      version: "1",
-      verifyingContract: zoraMints1155Config.address[chainId],
-    },
-    // signing account must be permit owner
-    account,
-  });
-}
 
 /**
  * Can be used to decode an a CallFailed error from the ZoraMints1155 contract when it has called a function on the ZoraMintsManager.
