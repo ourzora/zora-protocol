@@ -16,11 +16,10 @@
     }
   },
   "scripts": {
-    "build": "yarn wagmi && yarn bundle-configs && tsup",
+    "build": "yarn bundle-configs && tsup",
     "bundle-configs": "tsx scripts/bundle-configs.ts && yarn prettier",
-    "prettier": "prettier --write 'src/**/*.ts' 'scripts/*' 'wagmi.config.ts'",
-    "lint": "prettier --check 'src/**/*.ts' 'scripts/*' 'wagmi.config.ts'",
-    "wagmi": "wagmi generate"
+    "prettier": "prettier --write 'src/**/*.ts' 'scripts/*'",
+    "lint": "prettier --check 'src/**/*.ts' 'scripts/*'"
   },
   "dependencies": {},
   "devDependencies": {
@@ -30,12 +29,7 @@
     "tsup": "^7.2.0",
     "glob": "^10.2.2",
     "es-main": "^1.2.0",
-    "@wagmi/cli": "^1.0.1",
     "@types/node": "^20.1.2",
-    "@lavamoat/preinstall-always-fail": "2.0.0",
-    "@zoralabs/1155-deployments": "*",
-    "@zoralabs/zora-1155-contracts": "*",
-    "@zoralabs/mints-contracts": "*",
-    "@zoralabs/mints-deployments": "*"
+    "@lavamoat/preinstall-always-fail": "2.0.0"
   }
 }

@@ -1,0 +1,5 @@
+{
+  "extends": "zoralabs-tsconfig/tsconfig.json",
+  "exclude": ["node_modules/**"],
+  "include": ["wagmi.ts"]
+}

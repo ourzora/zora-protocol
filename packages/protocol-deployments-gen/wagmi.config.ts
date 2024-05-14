@@ -153,7 +153,7 @@ const getMintsAddresses = () => {
 const mintsAddresses = getMintsAddresses();
 
 export default defineConfig({
-  out: "src/generated/wagmi.ts",
+  out: "../protocol-deployments/src/generated/wagmi.ts",
   contracts: [
     ...Object.entries(get1155Addresses()).map(
       ([contractName, addressConfig]) => ({

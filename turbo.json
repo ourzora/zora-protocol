@@ -5,6 +5,9 @@
       "dependsOn": ["^build"],
       "outputs": [".dist/**"]
     },
+    "@zoralabs/protocol-deployments#build": {
+      "dependsOn": ["@zoralabs/protocol-deployments-gen#build"]
+    },
     "build:contracts": {
       "dependsOn": ["^build:contracts"],
       "outputs": [".dist/**"]

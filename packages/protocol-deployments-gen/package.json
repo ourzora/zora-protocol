@@ -1,0 +1,27 @@
+{
+  "name": "@zoralabs/protocol-deployments-gen",
+  "version": "0.0.0",
+  "repository": "https://github.com/ourzora/zora-protocol",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "build": "yarn wagmi",
+    "wagmi": "wagmi generate"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "zoralabs-tsconfig": "*",
+    "typescript": "^5.2.2",
+    "tsup": "^7.2.0",
+    "glob": "^10.2.2",
+    "es-main": "^1.2.0",
+    "@wagmi/cli": "^1.0.1",
+    "@types/node": "^20.1.2",
+    "@lavamoat/preinstall-always-fail": "2.0.0",
+    "@zoralabs/1155-deployments": "*",
+    "@zoralabs/zora-1155-contracts": "*",
+    "@zoralabs/mints-contracts": "*",
+    "@zoralabs/mints-deployments": "*"
+  }
+}
