@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.12
+
+### Patch Changes
+
+- e2452f7d: Removed `zora-1155-contracts`, `1155-deployments`, `mints-contracts`, and `mints-deployments` from devDependencies hierarchy.
+
 ## 0.5.11
 
 ### Patch Changes
