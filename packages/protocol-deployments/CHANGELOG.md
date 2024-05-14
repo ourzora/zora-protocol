@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.9
+
+### Patch Changes
+
+- f4641f4b: Removed dependencies from `zora-1155-contracts`, `1155-deployments`, `mints-contracts`, and `mints-deployments`
+
 ## 0.1.8
 
 ### Patch Changes
