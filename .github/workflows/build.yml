@@ -4,6 +4,9 @@ on:
       package_folder:
         required: true
         type: string
+      precache:
+        required: false
+        type: string
 
 jobs:
   check:
@@ -17,6 +20,10 @@ jobs:
 
       - name: Install node deps and founry
         uses: ./.github/actions/setup_deps
+
+      - name: Run precache command
+        if: ${{ inputs.precache != null }}
+        run: cd ${{ inputs.package_folder}} && ${{ inputs.precache }}
 
       - name: Load foundry cache
         uses: ./.github/actions/cache_foundry_build

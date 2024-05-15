@@ -6,6 +6,7 @@ jobs:
   build:
     uses: ./.github/workflows/build.yml
     with:
+      precache: "yarn generate"
       package_folder: packages/1155-deployments
 
   test:
@@ -13,5 +14,6 @@ jobs:
     uses: ./.github/workflows/test.yml
     with:
       package_folder: packages/1155-deployments
+      precache: "yarn generate"
       name: Deployments
     secrets: inherit
