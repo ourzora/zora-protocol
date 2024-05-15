@@ -1,10 +1,30 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.9.1
+
+### Patch Changes
+
+- cd6c6361: ERC20 Minter V2 Changes:
+  - Adds a flat ETH fee that goes to Zora (currently this fee is 0.000111 ETH but the contract owner can change this fee at any time)
+  - Reward recipients will still receive ERC20 rewards however this percentage can now be changed at any time by the contract owner
+  - Adds an `ERC20MinterConfig` struct which contains `zoraRewardRecipientAddress`, `rewardRecipientPercentage`, and `ethReward`
+  - Zora Reward Recipient Address can now be changed at any time by the contract owner as well
+  - `mint` function is now payable
+  - New functions:
+    - `function ethRewardAmount() external view returns (uint256)`
+    - `function setERC20MinterConfig(ERC20MinterConfig memory config) external`
+    - `function getERC20MinterConfig() external view returns (ERC20MinterConfig memory)`
+  - New events:
+    - `event ERC20MinterConfigSet(ERC20MinterConfig config)`
+  - Removed events:
+    - `event ZoraRewardsRecipientSet(address indexed prevRecipient, address indexed newRecipient)`
+    - `event ERC20MinterInitialized(uint256 rewardPercentage)`
+
 ## 2.9.0
 
 ### Minor Changes
 
-- 50a4e09: 
+- 50a4e09:
   - Zora Creator 1155 contracts use the MINTs contracts to get the mint fee, mint, and redeem a mint ticket upon minting.
   - `ZoraCreator1155Impl` adds a new method `mintWithMints` that allows for minting with MINTs that are already owned.
   - 50a4e09: - Zora Creator 1155 contracts no longer have a public facing function `computeFreeMintRewards` and `computePaidMintRewards`
@@ -12,17 +32,17 @@
   - remove `ZoraCreator1155Impl.adminMintBatch` to save contract size
   - 50a4e09: - To support the MINTs contract passing the first minter as an argument to `premintV2WithSignerContract` - we add the field `firstMinter` to `premintV2WithSignerContract`, and then in the 1155 check that the firstMinter argument is not address(0) since it now can be passed in manually.
 
-### ZoraCreator1155Impl rewards splits are percentage based instead of a fixed value. 
+### ZoraCreator1155Impl rewards splits are percentage based instead of a fixed value.
 
-Prior to 2.9.0, rewards were distributed based on a fixed value in ETH per token minted. From 2.9.0 rewards are distributed based on a percentage of the total reward collected for a mint.  The following table breaks down the reward splits for both free and paid mints before and after 2.9.0:
+Prior to 2.9.0, rewards were distributed based on a fixed value in ETH per token minted. From 2.9.0 rewards are distributed based on a percentage of the total reward collected for a mint. The following table breaks down the reward splits for both free and paid mints before and after 2.9.0:
 
-| Reward Type | Free Mints (Prior to 2.9.0) | Paid Mints (Prior to 2.9.0) | Free Mints (After 2.9.0) | Paid Mints (After 2.9.0) |
-|-------------|-----------------------------|-----------------------------|--------------------------|--------------------------|
-| Creator Reward | 0.000333 ETH per token | - | 42.8571% of total reward | - |
-| First Minter Reward | 0.000111 ETH | 0.000111 ETH per token | 14.2285% | 28.5714% of total reward |
-| Create Referral Reward | 0.000111 ETH | 0.000222 ETH | 14.2285% | 28.5714% |
-| Mint Referral Reward | 0.000111 ETH | 0.000222 ETH | 14.2285% | 28.5714% |
-| Zora Platform Reward | 0.000111 ETH | 0.000222 ETH | 14.2285% | 28.5714% |
+| Reward Type            | Free Mints (Prior to 2.9.0) | Paid Mints (Prior to 2.9.0) | Free Mints (After 2.9.0) | Paid Mints (After 2.9.0) |
+| ---------------------- | --------------------------- | --------------------------- | ------------------------ | ------------------------ |
+| Creator Reward         | 0.000333 ETH per token      | -                           | 42.8571% of total reward | -                        |
+| First Minter Reward    | 0.000111 ETH                | 0.000111 ETH per token      | 14.2285%                 | 28.5714% of total reward |
+| Create Referral Reward | 0.000111 ETH                | 0.000222 ETH                | 14.2285%                 | 28.5714%                 |
+| Mint Referral Reward   | 0.000111 ETH                | 0.000222 ETH                | 14.2285%                 | 28.5714%                 |
+| Zora Platform Reward   | 0.000111 ETH                | 0.000222 ETH                | 14.2285%                 | 28.5714%                 |
 
 ## 2.8.1
 

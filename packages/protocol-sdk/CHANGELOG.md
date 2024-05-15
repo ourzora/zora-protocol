@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.13
+
+### Patch Changes
+
+- 16deff0c: Moved typed data definitions from protocol-sdk to protocol-deployments
+- Updated dependencies [16deff0c]
+  - @zoralabs/protocol-deployments@0.1.10
+
 ## 0.5.12
 
 ### Patch Changes
