@@ -28,6 +28,15 @@ interface IERC20Minter {
         address currency;
     }
 
+    struct ERC20MinterConfig {
+        /// @notice The address of the Zora rewards recipient
+        address zoraRewardRecipientAddress;
+        /// @notice The reward recipient percentage
+        uint256 rewardRecipientPercentage;
+        /// @notice The ETH reward amount
+        uint256 ethReward;
+    }
+
     /// @notice Rewards Deposit Event
     /// @param createReferral Creator referral address
     /// @param mintReferral Mint referral address
@@ -54,10 +63,6 @@ interface IERC20Minter {
         uint256 zoraReward
     );
 
-    /// @notice ERC20MinterInitialized Event
-    /// @param rewardPercentage The reward percentage
-    event ERC20MinterInitialized(uint256 rewardPercentage);
-
     /// @notice MintComment Event
     /// @param sender The sender of the comment
     /// @param tokenContract The token contract address
@@ -72,10 +77,9 @@ interface IERC20Minter {
     /// @param salesConfig The sales configuration
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig salesConfig);
 
-    /// @notice ZoraRewardsRecipientSet Event
-    /// @param prevRecipient The previous recipient address
-    /// @param newRecipient The new recipient address
-    event ZoraRewardsRecipientSet(address indexed prevRecipient, address indexed newRecipient);
+    /// @notice ERC20MinterConfigSet Event
+    /// @param config The ERC20MinterConfig
+    event ERC20MinterConfigSet(ERC20MinterConfig config);
 
     /// @notice Cannot set address to zero
     error AddressZero();
@@ -101,11 +105,11 @@ interface IERC20Minter {
     /// @notice ERC20 transfer slippage
     error ERC20TransferSlippage();
 
-    /// @notice ERC20Minter is already initialized
-    error AlreadyInitialized();
+    /// @notice Failed to send ETH reward
+    error FailedToSendEthReward();
 
-    /// @notice Only the Zora rewards recipient can call this function
-    error OnlyZoraRewardsRecipient();
+    /// @notice Invalid value
+    error InvalidValue();
 
     /// @notice Mints a token using an ERC20 currency, note the total value must have been approved prior to calling this function
     /// @param mintTo The address to mint the token to
@@ -125,11 +129,28 @@ interface IERC20Minter {
         address currency,
         address mintReferral,
         string calldata comment
-    ) external;
+    ) external payable;
 
     /// @notice Sets the sale config for a given token
+    /// @param tokenId The ID of the token to set the sale config for
+    /// @param salesConfig The sale config to set
     function setSale(uint256 tokenId, SalesConfig memory salesConfig) external;
 
     /// @notice Returns the sale config for a given token
+    /// @param tokenContract The TokenContract address
+    /// @param tokenId The ID of the token to get the sale config for
     function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory);
+
+    /// @notice Returns the reward recipient percentage
+    function totalRewardPct() external view returns (uint256);
+
+    /// @notice Returns the ETH reward amount
+    function ethRewardAmount() external view returns (uint256);
+
+    /// @notice Sets the ERC20MinterConfig
+    /// @param config The ERC20MinterConfig to set
+    function setERC20MinterConfig(ERC20MinterConfig memory config) external;
+
+    /// @notice Gets the ERC20MinterConfig
+    function getERC20MinterConfig() external view returns (ERC20MinterConfig memory);
 }

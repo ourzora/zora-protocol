@@ -195,7 +195,7 @@ dataSources:
           handler: handleMintComment
 {{/mintsManager}}
 {{#erc20Minter}}
-  - name: ERC20Minter
+  - name: ERC20Minter{{version}}
     kind: ethereum/contract
     network: {{network}}
     source:

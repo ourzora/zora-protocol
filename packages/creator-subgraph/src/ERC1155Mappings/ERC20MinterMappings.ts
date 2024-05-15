@@ -2,7 +2,7 @@ import {
   MintComment as ERC20MintComment,
   SaleSet,
   ERC20RewardsDeposit as ERC20RewardsDepositEvent,
-} from "../../generated/ERC20Minter/ERC20Minter";
+} from "../../generated/ERC20Minter2/ERC20Minter";
 import { BigInt } from "@graphprotocol/graph-ts";
 import { getSalesConfigKey } from "../common/getSalesConfigKey";
 import { getTokenId } from "../common/getTokenId";

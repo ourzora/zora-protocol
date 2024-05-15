@@ -10,6 +10,7 @@ import {
   zoraCreatorRedeemMinterFactoryABI,
   zoraCreatorRedeemMinterStrategyABI,
   protocolRewardsABI,
+  erc20MinterABI,
 } from "@zoralabs/zora-1155-contracts";
 import {
   zoraMints1155ABI,
@@ -63,3 +64,5 @@ output_abi("ProtocolRewards", protocolRewardsABI);
 
 output_abi("ZoraMints1155", zoraMints1155ABI);
 output_abi("ZoraMintsManagerImpl", zoraMintsManagerImplABI);
+
+output_abi("ERC20Minter", erc20MinterABI);

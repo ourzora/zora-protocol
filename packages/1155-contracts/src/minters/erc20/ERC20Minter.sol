@@ -11,6 +11,9 @@ import {SaleStrategy} from "../../minters/SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
 import {ERC20MinterRewards} from "./ERC20MinterRewards.sol";
 import {IZora1155} from "./IZora1155.sol";
+import {TransferHelperUtils} from "../../utils/TransferHelperUtils.sol";
+import {Initializable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/Initializable.sol";
+import {Ownable2StepUpgradeable} from "../../utils/ownable/Ownable2StepUpgradeable.sol";
 
 /*
 
@@ -41,11 +44,11 @@ import {IZora1155} from "./IZora1155.sol";
 /// @notice Allows for ZoraCreator Mints to be purchased using ERC20 tokens
 /// @dev While this contract _looks_ like a minter, we need to be able to directly manage ERC20 tokens. Therefore, we need to establish minter permissions but instead of using the `requestMint` flow we directly request tokens to be minted in order to safely handle the incoming ERC20 tokens.
 /// @author @isabellasmallcombe
-contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMintPerAddress, ERC20MinterRewards {
+contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMintPerAddress, ERC20MinterRewards, Initializable, Ownable2StepUpgradeable {
     using SafeERC20 for IERC20;
 
-    /// @notice The address of the Zora rewards recipient
-    address public zoraRewardRecipientAddress;
+    /// @notice The ERC20 minter configuration
+    ERC20MinterConfig public minterConfig;
 
     /// @notice The ERC20 sale configuration for a given 1155 token
     /// @dev 1155 token address => 1155 token id => SalesConfig
@@ -53,24 +56,17 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
 
     /// @notice Initializes the contract with a Zora rewards recipient address
     /// @dev Allows deterministic contract address, called on deploy
-    function initialize(address _zoraRewardRecipientAddress) external {
-        if (_zoraRewardRecipientAddress == address(0)) {
-            revert AddressZero();
-        }
-
-        if (zoraRewardRecipientAddress != address(0)) {
-            revert AlreadyInitialized();
-        }
-
-        zoraRewardRecipientAddress = _zoraRewardRecipientAddress;
-
-        emit ERC20MinterInitialized(TOTAL_REWARD_PCT);
+    function initialize(address _zoraRewardRecipientAddress, address owner, uint256 _rewardPct, uint256 _ethReward) external initializer {
+        __Ownable_init(owner);
+        _setERC20MinterConfig(
+            ERC20MinterConfig({zoraRewardRecipientAddress: _zoraRewardRecipientAddress, rewardRecipientPercentage: _rewardPct, ethReward: _ethReward})
+        );
     }
 
     /// @notice Computes the total reward value for a given amount of ERC20 tokens
     /// @param totalValue The total number of ERC20 tokens
-    function computeTotalReward(uint256 totalValue) public pure returns (uint256) {
-        return (totalValue * TOTAL_REWARD_PCT) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+    function computeTotalReward(uint256 totalValue) public view returns (uint256) {
+        return (totalValue * minterConfig.rewardRecipientPercentage) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
     }
 
     /// @notice Computes the rewards value given an amount and a reward percentage
@@ -106,7 +102,7 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         } catch {}
 
         if (createReferral == address(0)) {
-            createReferral = zoraRewardRecipientAddress;
+            createReferral = minterConfig.zoraRewardRecipientAddress;
         }
     }
 
@@ -121,8 +117,13 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
                 firstMinter = IZora1155(tokenContract).getCreatorRewardRecipient(tokenId);
             }
         } catch {
-            firstMinter = zoraRewardRecipientAddress;
+            firstMinter = minterConfig.zoraRewardRecipientAddress;
         }
+    }
+
+    /// @notice Gets the ERC20MinterConfig
+    function getERC20MinterConfig() external view returns (ERC20MinterConfig memory) {
+        return minterConfig;
     }
 
     /// @notice Handles the incoming transfer of ERC20 tokens
@@ -151,19 +152,19 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         address firstMinter = getFirstMinter(tokenAddress, tokenId);
 
         if (mintReferral == address(0)) {
-            mintReferral = zoraRewardRecipientAddress;
+            mintReferral = minterConfig.zoraRewardRecipientAddress;
         }
 
         IERC20(currency).safeTransfer(createReferral, settings.createReferralReward);
         IERC20(currency).safeTransfer(firstMinter, settings.firstMinterReward);
         IERC20(currency).safeTransfer(mintReferral, settings.mintReferralReward);
-        IERC20(currency).safeTransfer(zoraRewardRecipientAddress, settings.zoraReward);
+        IERC20(currency).safeTransfer(minterConfig.zoraRewardRecipientAddress, settings.zoraReward);
 
         emit ERC20RewardsDeposit(
             createReferral,
             mintReferral,
             firstMinter,
-            zoraRewardRecipientAddress,
+            minterConfig.zoraRewardRecipientAddress,
             tokenAddress,
             currency,
             tokenId,
@@ -172,6 +173,14 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
             settings.firstMinterReward,
             settings.zoraReward
         );
+    }
+
+    /// @notice Distributes the ETH rewards to the Zora rewards recipient
+    /// @param ethSent The amount of ETH to distribute
+    function _distributeEthRewards(uint256 ethSent) private {
+        if (!TransferHelperUtils.safeSendETH(minterConfig.zoraRewardRecipientAddress, ethSent, TransferHelperUtils.FUNDS_SEND_NORMAL_GAS_LIMIT)) {
+            revert FailedToSendEthReward();
+        }
     }
 
     /// @notice Mints a token using an ERC20 currency, note the total value must have been approved prior to calling this function
@@ -192,7 +201,11 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         address currency,
         address mintReferral,
         string calldata comment
-    ) external nonReentrant {
+    ) external payable nonReentrant {
+        if (msg.value != minterConfig.ethReward) {
+            revert InvalidValue();
+        }
+
         SalesConfig storage config = salesConfigs[tokenAddress][tokenId];
 
         if (config.currency == address(0) || config.currency != currency) {
@@ -223,6 +236,8 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
 
         _distributeRewards(totalReward, currency, tokenId, tokenAddress, mintReferral);
 
+        _distributeEthRewards(msg.value);
+
         IERC20(config.currency).safeTransfer(config.fundsRecipient, totalValue - totalReward);
 
         if (bytes(comment).length > 0) {
@@ -231,8 +246,13 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
     }
 
     /// @notice The percentage of the total value that is distributed as rewards
-    function totalRewardPct() external pure returns (uint256) {
-        return TOTAL_REWARD_PCT;
+    function totalRewardPct() external view returns (uint256) {
+        return minterConfig.rewardRecipientPercentage;
+    }
+
+    /// @notice The amount of ETH distributed as rewards
+    function ethRewardAmount() external view returns (uint256) {
+        return minterConfig.ethReward;
     }
 
     /// @notice The URI of the contract
@@ -247,19 +267,18 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
 
     /// @notice The version of the contract
     function contractVersion() external pure returns (string memory) {
-        return "1.0.0";
+        return "2.0.0";
     }
 
     /// @notice Sets the sale config for a given token
+    /// @param tokenId The ID of the token to set the sale config for
+    /// @param salesConfig The sale config to set
     function setSale(uint256 tokenId, SalesConfig memory salesConfig) external {
+        _requireNotAddressZero(salesConfig.currency);
+        _requireNotAddressZero(salesConfig.fundsRecipient);
+
         if (salesConfig.pricePerToken < MIN_PRICE_PER_TOKEN) {
             revert PricePerTokenTooLow();
-        }
-        if (salesConfig.currency == address(0)) {
-            revert AddressZero();
-        }
-        if (salesConfig.fundsRecipient == address(0)) {
-            revert AddressZero();
         }
 
         salesConfigs[msg.sender][tokenId] = salesConfig;
@@ -269,6 +288,7 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
     }
 
     /// @notice Deletes the sale config for a given token
+    /// @param tokenId The ID of the token to reset the sale config for
     function resetSale(uint256 tokenId) external override {
         delete salesConfigs[msg.sender][tokenId];
 
@@ -277,6 +297,8 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
     }
 
     /// @notice Returns the sale config for a given token
+    /// @param tokenContract The TokenContract address
+    /// @param tokenId The ID of the token to get the sale config for
     function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory) {
         return salesConfigs[tokenContract][tokenId];
     }
@@ -291,19 +313,26 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         revert RequestMintInvalidUseMint();
     }
 
-    /// @notice Set the Zora rewards recipient address
-    /// @param recipient The new recipient address
-    function setZoraRewardsRecipient(address recipient) external {
-        if (msg.sender != zoraRewardRecipientAddress) {
-            revert OnlyZoraRewardsRecipient();
+    function _setERC20MinterConfig(ERC20MinterConfig memory _config) internal {
+        _requireNotAddressZero(_config.zoraRewardRecipientAddress);
+
+        if (_config.rewardRecipientPercentage > 100) {
+            revert InvalidValue();
         }
 
-        if (recipient == address(0)) {
+        minterConfig = _config;
+        emit ERC20MinterConfigSet(_config);
+    }
+
+    /// @notice Sets the ERC20MinterConfig
+    /// @param config The ERC20MinterConfig to set
+    function setERC20MinterConfig(ERC20MinterConfig memory config) external onlyOwner {
+        _setERC20MinterConfig(config);
+    }
+
+    function _requireNotAddressZero(address _address) internal {
+        if (_address == address(0)) {
             revert AddressZero();
         }
-
-        emit ZoraRewardsRecipientSet(zoraRewardRecipientAddress, recipient);
-
-        zoraRewardRecipientAddress = recipient;
     }
 }
