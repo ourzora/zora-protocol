@@ -1,6 +1,7 @@
 import {
   arbitrum,
   base,
+  baseSepolia,
   foundry,
   mainnet,
   optimism,
@@ -73,6 +74,13 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     zoraCollectPathChainName: "base",
     zoraBackendChainName: "BASE-MAINNET",
     subgraphUrl: getSubgraph("zora-create-base-mainnet", "stable"),
+  },
+  [baseSepolia.id]: {
+    chainId: baseSepolia.id,
+    isTestnet: true,
+    zoraCollectPathChainName: "bsep",
+    zoraBackendChainName: "BASE-SEPOLIA",
+    subgraphUrl: getSubgraph("zora-create-base-sepolia", "stable"),
   },
   [foundry.id]: {
     chainId: foundry.id,

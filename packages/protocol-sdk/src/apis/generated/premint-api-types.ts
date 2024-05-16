@@ -48,6 +48,7 @@ export interface components {
       | "ZORA-MAINNET"
       | "BASE-MAINNET"
       | "BASE-GOERLI"
+      | "BASE-SEPOLIA"
       | "PGN-MAINNET"
       | "ARBITRUM-MAINNET"
       | "BLAST-MAINNET";

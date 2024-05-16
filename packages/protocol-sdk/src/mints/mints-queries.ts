@@ -1,8 +1,7 @@
 import { Address } from "viem";
-import { gql } from "graphql-request";
 
 export const getMintsAccountBalanceWithPriceQuery = (account: Address) => {
-  const query = gql`
+  const query = `
     query GetMintAccountBalances($account: String!) {
       mintAccountBalances(where: { account: $account }) {
         balance

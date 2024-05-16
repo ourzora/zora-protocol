@@ -60,17 +60,17 @@ export class MintAPIClient {
               maxTokensPerAddress
             }
           }
-          
+
           query ($id: ID!) {
             zoraCreateToken(id: $id) {
               id
               contract {
                 mintFeePerQuantity
-                salesStrategies(where: {type: "FIXED_PRICE"}) {
+                salesStrategies(where: { type: "FIXED_PRICE" }) {
                   ...SaleStrategy
                 }
               }
-              salesStrategies(where: {type: "FIXED_PRICE"}) {
+              salesStrategies(where: { type: "FIXED_PRICE" }) {
                 ...SaleStrategy
               }
             }
