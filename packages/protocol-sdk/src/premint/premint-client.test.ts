@@ -8,7 +8,7 @@ import { forkUrls, makeAnvilTest } from "src/anvil";
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 8560739,
+  forkBlockNumber: 8869648,
   anvilChainId: zoraSepolia.id,
 });
 

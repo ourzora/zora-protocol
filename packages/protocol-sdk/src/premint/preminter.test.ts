@@ -152,7 +152,7 @@ async function setupContracts({
 
 const zoraSepoliaAnvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 8560739,
+  forkBlockNumber: 8869648,
   anvilChainId: zoraSepolia.id,
 });
 
@@ -400,7 +400,6 @@ describe("ZoraCreator1155Preminter", () => {
             premintConfig: premintConfig1,
             premintConfigVersion: PremintConfigVersion.V1,
           }),
-          PremintConfigVersion.V1,
           signedMessage,
           quantityToMint,
           mintArguments,
@@ -479,7 +478,6 @@ describe("ZoraCreator1155Preminter", () => {
             premintConfig: premintConfig2,
             premintConfigVersion: PremintConfigVersion.V2,
           }),
-          PremintConfigVersion.V2,
           signedMessage2,
           quantityToMint2,
           mintArguments,
@@ -622,7 +620,6 @@ describe("ZoraCreator1155Preminter", () => {
               premintConfig: collaboratorPremintConfig,
               premintConfigVersion: PremintConfigVersion.V2,
             }),
-            PremintConfigVersion.V2,
             collaboratorSignedMessage,
             quantityToMint,
             mintArguments,
@@ -647,7 +644,6 @@ describe("ZoraCreator1155Preminter", () => {
               premintConfig: collaboratorPremintConfig,
               premintConfigVersion: PremintConfigVersion.V2,
             }),
-            PremintConfigVersion.V2,
             collaboratorSignedMessage,
             quantityToMint,
             mintArguments,
@@ -678,7 +674,6 @@ describe("ZoraCreator1155Preminter", () => {
               premintConfig: premintConfig,
               premintConfigVersion: PremintConfigVersion.V2,
             }),
-            PremintConfigVersion.V2,
             creatorSignedMessage,
             quantityToMint,
             mintArguments,

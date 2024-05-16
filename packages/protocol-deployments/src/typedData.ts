@@ -4,17 +4,28 @@ import {
   TypedData,
   TypedDataToPrimitiveTypes,
 } from "abitype";
-import { TypedDataDefinition, encodeAbiParameters, getAbiItem } from "viem";
+import {
+  Hex,
+  TypedDataDefinition,
+  encodeAbiParameters,
+  getAbiItem,
+  keccak256,
+  toHex,
+} from "viem";
 import {
   zoraMints1155Address,
   zoraCreator1155PremintExecutorImplABI,
 } from "./generated/wagmi";
 import {
+  PremintConfigEncoded,
   PremintConfigV1,
   PremintConfigV2,
-  PremintConfigV3,
   PremintConfigVersion,
   PremintConfigWithVersion,
+  TokenConfigWithVersion,
+  TokenCreationConfigV1,
+  TokenCreationConfigV2,
+  TokenCreationConfigV3,
 } from "./types";
 
 const premintTypedDataDomain = ({
@@ -57,48 +68,66 @@ const premintV1TypedDataType = {
   ],
 } as const satisfies TypedData;
 
-const encodePremintConfigV1 = (config: PremintConfigV1) => {
+const encodeTokenConfigV1 = (config: TokenCreationConfigV1) => {
   const abiItem = getAbiItem({
     abi: zoraCreator1155PremintExecutorImplABI,
-    name: "premintV1Definition",
+    name: "tokenConfigV1Definition",
   });
 
   return encodeAbiParameters(abiItem.inputs, [config]);
 };
 
-const encodePremintConfigV2 = (config: PremintConfigV2) => {
+const encodeTokenConfigV2 = (config: TokenCreationConfigV2) => {
   const abiItem = getAbiItem({
     abi: zoraCreator1155PremintExecutorImplABI,
-    name: "premintV2Definition",
+    name: "tokenConfigV2Definition",
   });
 
   return encodeAbiParameters(abiItem.inputs, [config]);
 };
 
-export const encodePremintConfigV3 = (config: PremintConfigV3) => {
+const encodeTokenConfigV3 = (config: TokenCreationConfigV3) => {
   const abiItem = getAbiItem({
     abi: zoraCreator1155PremintExecutorImplABI,
-    name: "premintV3Definition",
+    name: "tokenConfigV3Definition",
   });
 
   return encodeAbiParameters(abiItem.inputs, [config]);
+};
+
+const encodeTokenConfig = <T extends PremintConfigVersion>({
+  tokenConfig,
+  premintConfigVersion,
+}: TokenConfigWithVersion<T>): Hex => {
+  if (premintConfigVersion === PremintConfigVersion.V1) {
+    return encodeTokenConfigV1(tokenConfig as TokenCreationConfigV1);
+  }
+  if (premintConfigVersion === PremintConfigVersion.V2) {
+    return encodeTokenConfigV2(tokenConfig as TokenCreationConfigV2);
+  }
+  if (premintConfigVersion === PremintConfigVersion.V3) {
+    return encodeTokenConfigV3(tokenConfig as TokenCreationConfigV3);
+  }
+
+  throw new Error("Invalid PremintConfigVersion: " + premintConfigVersion);
 };
 
 export const encodePremintConfig = <T extends PremintConfigVersion>({
   premintConfig,
   premintConfigVersion,
-}: PremintConfigWithVersion<T>) => {
-  if (premintConfigVersion === PremintConfigVersion.V1) {
-    return encodePremintConfigV1(premintConfig as PremintConfigV1);
-  }
-  if (premintConfigVersion === PremintConfigVersion.V2) {
-    return encodePremintConfigV2(premintConfig as PremintConfigV2);
-  }
-  if (premintConfigVersion === PremintConfigVersion.V3) {
-    return encodePremintConfigV3(premintConfig as PremintConfigV3);
-  }
+}: PremintConfigWithVersion<T>): PremintConfigEncoded => {
+  const encodedTokenConfig = encodeTokenConfig({
+    premintConfigVersion,
+    tokenConfig: premintConfig.tokenConfig,
+  });
 
-  throw new Error("Invalid PremintConfigVersion: " + premintConfigVersion);
+  return {
+    deleted: premintConfig.deleted,
+    uid: premintConfig.uid,
+    version: premintConfig.version,
+    premintConfigVersion: keccak256(toHex(premintConfigVersion)),
+    tokenConfig: encodedTokenConfig,
+  };
 };
 
 /**

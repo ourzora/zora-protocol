@@ -15,31 +15,55 @@ export type ContractCreationConfig = AbiParametersToPrimitiveTypes<
   >["inputs"]
 >[0];
 
-export type PremintConfigV1 = AbiParametersToPrimitiveTypes<
+export type TokenCreationConfigV1 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintV1Definition"
+    "tokenConfigV1Definition"
   >["inputs"]
 >[0];
-export type PremintConfigV2 = AbiParametersToPrimitiveTypes<
+
+export type TokenCreationConfigV2 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintV2Definition"
+    "tokenConfigV2Definition"
   >["inputs"]
 >[0];
-export type PremintConfigV3 = AbiParametersToPrimitiveTypes<
+
+export type TokenCreationConfigV3 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintV3Definition"
+    "tokenConfigV3Definition"
   >["inputs"]
 >[0];
+
+export type PremintConfigEncoded = AbiParametersToPrimitiveTypes<
+  ExtractAbiFunction<
+    typeof zoraCreator1155PremintExecutorImplABI,
+    "premintNewContract"
+  >["inputs"]
+>[1];
+
+type PremintConfigCommon = Pick<
+  PremintConfigEncoded,
+  "deleted" | "uid" | "version"
+>;
+
+export type PremintConfigV1 = PremintConfigCommon & {
+  tokenConfig: TokenCreationConfigV1;
+};
+export type PremintConfigV2 = PremintConfigCommon & {
+  tokenConfig: TokenCreationConfigV2;
+};
+export type PremintConfigV3 = PremintConfigCommon & {
+  tokenConfig: TokenCreationConfigV3;
+};
 
 export type PremintMintArguments = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
     "premintNewContract"
   >["inputs"]
->[5];
+>[4];
 
 export type PremintConfigForVersion<T extends PremintConfigVersion> =
   T extends PremintConfigVersion.V1
@@ -58,10 +82,6 @@ export type PremintConfigAndVersion =
   | PremintConfigWithVersion<PremintConfigVersion.V3>;
 
 export type PremintConfig = PremintConfigV1 | PremintConfigV2;
-
-export type TokenCreationConfigV1 = PremintConfigV1["tokenConfig"];
-export type TokenCreationConfigV2 = PremintConfigV2["tokenConfig"];
-export type TokenCreationConfigV3 = PremintConfigV3["tokenConfig"];
 
 export type TokenCreationConfig =
   | TokenCreationConfigV1

@@ -93,24 +93,28 @@ const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
   creatorAccount,
 }: {
   chainId: number;
-  premintConfigVersion: PremintConfigVersion;
+  premintConfigVersion: T;
   tokenCreationConfig: Partial<TokenConfigForVersion<T>> & { tokenURI: string };
   creatorAccount: Address;
 }): TokenConfigForVersion<T> => {
   if (premintConfigVersion === PremintConfigVersion.V3) {
     throw new Error("PremintV3 not supported in SDK");
   }
+
   const fixedPriceMinter =
-    (tokenCreationConfig as TokenCreationConfigV1 | TokenCreationConfigV2)
-      .fixedPriceMinter || getDefaultFixedPriceMinterAddress(chainId);
+    (
+      tokenCreationConfig as
+        | Partial<TokenCreationConfigV1>
+        | Partial<TokenCreationConfigV2>
+    ).fixedPriceMinter || getDefaultFixedPriceMinterAddress(chainId);
 
   if (premintConfigVersion === PremintConfigVersion.V1) {
     return {
       fixedPriceMinter,
       ...defaultTokenConfigV1MintArguments(),
       royaltyRecipient: creatorAccount,
-      ...tokenCreationConfig,
-    };
+      ...(tokenCreationConfig as Partial<TokenCreationConfigV1>),
+    } as TokenCreationConfigV1;
   } else if (premintConfigVersion === PremintConfigVersion.V2) {
     return {
       fixedPriceMinter,
@@ -371,6 +375,7 @@ class PremintClient {
 
     const premintConfig = makeNewPremint({
       tokenConfig: makeTokenConfigWithDefaults({
+        // @ts-ignore
         premintConfigVersion: actualVersion,
         tokenCreationConfig,
         creatorAccount:
@@ -580,7 +585,6 @@ class PremintClient {
           premintConfig,
           premintConfigVersion,
         }),
-        premintConfigVersion,
         signature,
         numberToMint,
         mintArgumentsContract,

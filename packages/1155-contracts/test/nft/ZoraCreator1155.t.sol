@@ -14,7 +14,7 @@ import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/Z
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {PremintConfigV2, TokenCreationConfigV2} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {ZoraCreator1155Attribution} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {PremintEncoding, EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
+import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
 import {IZoraMintsManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsManager.sol";
 
@@ -975,14 +975,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId;
 
         {
-            EncodedPremintConfig memory premintConfigEncoded = PremintEncoding.encodePremintV2(premintConfig);
-            tokenId = target.delegateSetupNewToken(
-                premintConfigEncoded.premintConfig,
-                premintConfigEncoded.premintConfigVersion,
-                signature,
-                collectors[0],
-                address(0)
-            );
+            tokenId = target.delegateSetupNewToken(abi.encode(premintConfig), PremintEncoding.HASHED_VERSION_2, signature, collectors[0], address(0));
         }
 
         uint256 totalReward = computeTotalReward(0.000777 ether, quantity);

@@ -80,8 +80,7 @@ Executing premint against contracts not created via premint can be done with a n
 ```solidity
 function premintExistingContract(
   address tokenContract,
-  bytes calldata encodedPremintConfig,
-  string calldata premintConfigVersion,
+  PremintConfigEncoded calldata encodedPremintConfig,
   bytes calldata signature,
   uint256 quantityToMint,
   MintArguments calldata mintArguments,
@@ -94,15 +93,28 @@ This contract address must be a zora creator 1155 contract that already supports
 
 #### New shared functions for preminting with new or existing contracts.
 
-In order to avoid having to create one function each for premint v1, v2, and future versions of premint, the new function `premintExistingContact` takes an abi encoded `premintConfig`, in addition to a `premintConfigVersion`; the abi encoded premint config can be a premintV1, premintV2, or erc20Premint.
+In order to avoid having to create one function each for premint v1, v2, and future versions of premint, the new function `premintExistingContact` takes a struct `PremintConfigEncoded` that contains commond properties for premint: `uid`, `version`, and `deleted`, an abi encoded `tokenConfig` and a `premintConfigVersion`; the abi encoded token config can be a `TokenCreationConfigV1`, `TokenCreationConfigV2`, or `TokenCreationConfigV3`.
 
-Correspondingly the existing `premintV1/premintV2/premintERC20` functions are deprecated in favor of a function `premintNewContract` that takes the already abi encoded `premintConfig`, and corresponding `premintConfigVersion`. This single function works with all versions of premint configs:
+Correspondingly the existing `premintV1/premintV2/premintERC20` functions are deprecated in favor of a function `premintNewContract` that takes a `PremintConfigEncoded` for the premintConfig. This single function works with all versions of premint configs:
 
 ```solidity
+struct PremintConfigEncoded {
+  // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
+  // only one signature per token id, scoped to the contract hash can be executed.
+  uint32 uid;
+  // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
+  uint32 version;
+  // If executing this signature results in preventing any signature with this uid from being minted.
+  bool deleted;
+  // abi encoded token creation config
+  bytes tokenConfig;
+  // hashed premint config version
+  bytes32 premintConfigVersion;
+}
+
 function premintExistingContract(
   address tokenContract,
-  bytes calldata encodedPremintConfig,
-  string calldata premintConfigVersion,
+  PremintConfigEncoded calldata encodedPremintConfig,
   bytes calldata signature,
   uint256 quantityToMint,
   MintArguments calldata mintArguments,
@@ -114,8 +126,7 @@ function premintExistingContract(
 ```solidity
 function premintNewContract(
   ContractWithAdditionalAdminsCreationConfig calldata contractConfig,
-  bytes calldata encodedPremintConfig,
-  string calldata premintConfigVersion,
+  PremintConfigEncoded calldata encodedPremintConfig,
   bytes calldata signature,
   uint256 quantityToMint,
   MintArguments calldata mintArguments,

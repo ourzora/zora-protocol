@@ -123,8 +123,7 @@ contract PremintERC20Test is Test {
         );
         premint.premintNewContract{value: totalEthReward}(
             contractConfig,
-            abi.encode(premintConfig),
-            PremintEncoding.VERSION_3,
+            PremintEncoding.encodePremint(premintConfig),
             signature,
             quantityToMint,
             mintArguments,
@@ -183,8 +182,7 @@ contract PremintERC20Test is Test {
         vm.expectRevert("ERC20: insufficient allowance");
         premint.premintNewContract{value: totalEthReward}(
             contractConfig,
-            abi.encode(premintConfig),
-            PremintEncoding.VERSION_3,
+            PremintEncoding.encodePremint(premintConfig),
             signature,
             quantityToMint,
             mintArguments,

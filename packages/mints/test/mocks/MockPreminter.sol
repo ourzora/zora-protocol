@@ -5,8 +5,7 @@ import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {Mock1155} from "./Mock1155.sol";
 
 import {IZoraCreator1155PremintExecutorV2} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorV2.sol";
-import {EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
-import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigV2, MintArguments, PremintResult, PremintConfigEncoded} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraMints1155} from "../../src/interfaces/IZoraMints1155.sol";
 import {IZoraMintsMinterManager} from "../../src/interfaces/IZoraMintsMinterManager.sol";
 
@@ -60,8 +59,7 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
 
     function premintNewContract(
         ContractWithAdditionalAdminsCreationConfig calldata contractConfig,
-        bytes calldata encodedPremintConfig,
-        string calldata premintConfigVersion,
+        PremintConfigEncoded calldata,
         bytes calldata signature,
         uint256 quantityToMint,
         MintArguments calldata mintArguments,
@@ -73,8 +71,7 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
 
     function premintExistingContract(
         address tokenContract,
-        bytes calldata encodedPremintConfig,
-        string calldata premintConfigVersion,
+        PremintConfigEncoded calldata,
         bytes calldata signature,
         uint256 quantityToMint,
         MintArguments calldata mintArguments,

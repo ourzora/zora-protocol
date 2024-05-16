@@ -12,7 +12,6 @@ import {MockPreminter} from "./mocks/MockPreminter.sol";
 import {IZoraCreator1155PremintExecutorV2} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorV2.sol";
 import {ContractCreationConfig, PremintConfigV2, TokenCreationConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {Mock1155, MockMinter1155, IMinter1155} from "./mocks/Mock1155.sol";
-import {PremintEncoding, EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {IMintWithMints} from "../src/IMintWithMints.sol";
 import {ZoraMintsFixtures} from "./fixtures/ZoraMintsFixtures.sol";
 import {TokenConfig} from "../src/ZoraMintsTypes.sol";

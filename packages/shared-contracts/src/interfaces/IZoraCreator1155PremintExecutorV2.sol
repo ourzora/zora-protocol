@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigV2, PremintResult, MintArguments} from "../entities/Premint.sol";
+import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigV2, PremintConfigEncoded, PremintResult, MintArguments} from "../entities/Premint.sol";
 import {IGetContractAddress} from "./IGetContractAddress.sol";
 
 interface IZoraCreator1155PremintExecutorV2 is IGetContractAddress {
@@ -22,8 +22,7 @@ interface IZoraCreator1155PremintExecutorV2 is IGetContractAddress {
     /// Contract address of the created contract is deterministically generated from the contract config and this contract's address.
     /// @dev For use with of any version of premint config
     /// @param contractConfig Parameters for creating a new contract, if one doesn't exist yet.  Used to resolve the deterministic contract address.
-    /// @param encodedPremintConfig abi encoded premint config
-    /// @param premintConfigVersion corresponding version for premint config
+    /// @param premintConfigEncoded abi encoded premint config
     /// @param signature Signature of the creator of the token, which must match the signer of the premint config, or have permission to create new tokens on the erc1155 contract if it's already been created
     /// @param quantityToMint How many tokens to mint to the mintRecipient
     /// @param mintArguments mint arguments specifying the token mint recipient, mint comment, and mint referral
@@ -31,8 +30,7 @@ interface IZoraCreator1155PremintExecutorV2 is IGetContractAddress {
     /// @param signerContract If a smart wallet was used to create the premint, the address of that smart wallet. Otherwise, set to address(0)
     function premintNewContract(
         ContractWithAdditionalAdminsCreationConfig calldata contractConfig,
-        bytes calldata encodedPremintConfig,
-        string calldata premintConfigVersion,
+        PremintConfigEncoded calldata premintConfigEncoded,
         bytes calldata signature,
         uint256 quantityToMint,
         MintArguments calldata mintArguments,
@@ -47,8 +45,7 @@ interface IZoraCreator1155PremintExecutorV2 is IGetContractAddress {
     /// Contract address of the created contract is deterministically generated from the contract config and this contract's address.
     /// @dev For use with of any version of premint config
     /// @param tokenContract Contract that premint was signed against.
-    /// @param encodedPremintConfig abi encoded premint config
-    /// @param premintConfigVersion corresponding version for premint config
+    /// @param premintConfigEncoded abi encoded premint config
     /// @param signature Signature of the creator of the token, which must match the signer of the premint config, or have permission to create new tokens on the erc1155 contract if it's already been created
     /// @param quantityToMint How many tokens to mint to the mintRecipient
     /// @param mintArguments mint arguments specifying the token mint recipient, mint comment, and mint referral
@@ -56,8 +53,7 @@ interface IZoraCreator1155PremintExecutorV2 is IGetContractAddress {
     /// @param signerContract If a smart wallet was used to create the premint, the address of that smart wallet. Otherwise, set to address(0)
     function premintExistingContract(
         address tokenContract,
-        bytes calldata encodedPremintConfig,
-        string calldata premintConfigVersion,
+        PremintConfigEncoded calldata premintConfigEncoded,
         bytes calldata signature,
         uint256 quantityToMint,
         MintArguments calldata mintArguments,

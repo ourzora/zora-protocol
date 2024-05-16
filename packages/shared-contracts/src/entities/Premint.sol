@@ -22,7 +22,7 @@ struct ContractWithAdditionalAdminsCreationConfig {
     address[] additionalAdmins;
 }
 
-struct PremintConfigCommon {
+struct PremintConfigEncoded {
     // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
     // only one signature per token id, scoped to the contract hash can be executed.
     uint32 uid;
@@ -30,6 +30,10 @@ struct PremintConfigCommon {
     uint32 version;
     // If executing this signature results in preventing any signature with this uid from being minted.
     bool deleted;
+    // abi encoded token creation config
+    bytes tokenConfig;
+    // hashed premint config version
+    bytes32 premintConfigVersion;
 }
 
 struct PremintConfig {

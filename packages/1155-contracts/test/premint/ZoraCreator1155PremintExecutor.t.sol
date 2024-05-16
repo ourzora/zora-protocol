@@ -18,7 +18,7 @@ import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155Facto
 import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {ZoraCreator1155Attribution, PremintEncoding} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig, MintArguments, PremintConfigEncoded} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
@@ -935,8 +935,7 @@ contract ZoraCreator1155PreminterTest is Test {
         emit PremintedV2(address(zora1155), 1, false, premintConfig.uid, executor, quantityToMint);
         preminter.premintExistingContract{value: mintCost}(
             address(zora1155),
-            abi.encode(premintConfig),
-            PremintEncoding.VERSION_2,
+            PremintEncoding.encodePremint(premintConfig),
             signature,
             quantityToMint,
             defaultMintArguments,
@@ -986,8 +985,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // premint using the creators premint - this should create the contract add the collaborators as admins
         preminter.premintNewContract{value: mintCost}(
             contractConfig,
-            abi.encode(premintConfig),
-            PremintEncoding.VERSION_2,
+            PremintEncoding.encodePremint(premintConfig),
             creatorPremintSignature,
             quantityToMint,
             defaultMintArguments,
@@ -1002,8 +1000,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // premint against existing contract using the collaborators premint - it should succeed
         uint256 collaboratorTokenId = preminter.premintExistingContract{value: mintCost}(
             contractAddress,
-            abi.encode(collaboratorPremintConfig),
-            PremintEncoding.VERSION_2,
+            PremintEncoding.encodePremint(collaboratorPremintConfig),
             collaboratorPremintSignature,
             quantityToMint,
             defaultMintArguments,
@@ -1052,8 +1049,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // premint using the collaborators premint
         preminter.premintNewContract{value: mintCost}(
             contractConfig,
-            abi.encode(collaboratorPremintConfig),
-            PremintEncoding.VERSION_2,
+            PremintEncoding.encodePremint(collaboratorPremintConfig),
             collaboratorPremintSignature,
             quantityToMint,
             defaultMintArguments,
@@ -1069,8 +1065,7 @@ contract ZoraCreator1155PreminterTest is Test {
         // premint against the existing contract using the original creators premint
         uint256 creatorTokenId = preminter.premintExistingContract{value: mintCost}(
             contractAddress,
-            abi.encode(premintConfig),
-            PremintEncoding.VERSION_2,
+            PremintEncoding.encodePremint(premintConfig),
             creatorPremintSignature,
             quantityToMint,
             defaultMintArguments,

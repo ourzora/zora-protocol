@@ -9,7 +9,6 @@ import {IERC1155Errors} from "@openzeppelin/contracts/interfaces/draft-IERC6093.
 import {ReceiveRejector} from "@zoralabs/shared-contracts/mocks/ReceiveRejector.sol";
 import {MockPreminter} from "../mocks/MockPreminter.sol";
 import {ContractCreationConfig, PremintConfigV2, TokenCreationConfigV2, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
-import {PremintEncoding, EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
