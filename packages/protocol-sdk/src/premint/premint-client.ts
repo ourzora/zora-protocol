@@ -8,10 +8,7 @@ import type {
   TransactionReceipt,
   WalletClient,
 } from "viem";
-import {
-  encodePremintConfig,
-  zoraCreator1155PremintExecutorImplABI,
-} from "@zoralabs/protocol-deployments";
+import { zoraCreator1155PremintExecutorImplABI } from "@zoralabs/protocol-deployments";
 import {
   getPremintCollectionAddress,
   isValidSignature,
@@ -567,31 +564,39 @@ class PremintClient {
       }),
     };
 
-    const firstMinter =
-      typeof minterAccount === "string" ? minterAccount : minterAccount.address;
-
-    return makeSimulateContractParamaters({
-      account: minterAccount,
-      abi: zoraCreator1155PremintExecutorImplABI,
-      functionName: "premintNewContract",
-      value,
-      address: getPremintExecutorAddress(),
-      args: [
-        {
-          ...collection,
-          collaborators: [],
-        },
-        encodePremintConfig({
+    if (premintConfigVersion === PremintConfigVersion.V1) {
+      return makeSimulateContractParamaters({
+        account: minterAccount,
+        abi: zoraCreator1155PremintExecutorImplABI,
+        functionName: "premintV1",
+        value,
+        address: getPremintExecutorAddress(),
+        args: [
+          collection,
           premintConfig,
-          premintConfigVersion,
-        }),
-        signature,
-        numberToMint,
-        mintArgumentsContract,
-        firstMinter,
-        zeroAddress,
-      ],
-    });
+          signature,
+          numberToMint,
+          mintArgumentsContract,
+        ],
+      });
+    } else if (premintConfigVersion === PremintConfigVersion.V2) {
+      return makeSimulateContractParamaters({
+        account: minterAccount,
+        abi: zoraCreator1155PremintExecutorImplABI,
+        functionName: "premintV2",
+        value,
+        address: getPremintExecutorAddress(),
+        args: [
+          collection,
+          premintConfig,
+          signature,
+          numberToMint,
+          mintArgumentsContract,
+        ],
+      });
+    }
+
+    throw new Error(`Invalid premint config version ${premintConfigVersion}`);
   }
 }
 
