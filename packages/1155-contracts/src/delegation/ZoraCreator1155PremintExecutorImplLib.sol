@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {PremintConfig, ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintResult, MintArguments, Erc20TokenCreationConfigV1, Erc20PremintConfigV1} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {PremintConfig, ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintResult, MintArguments, TokenCreationConfigV3, PremintConfigV3} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Minter} from "../interfaces/IERC20Minter.sol";
 import {IZoraCreator1155} from "../interfaces/IZoraCreator1155.sol";
@@ -12,7 +12,6 @@ import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155Pre
 import {IZoraCreator1155DelegatedCreation, IZoraCreator1155DelegatedCreationLegacy, ISupportsAABasedDelegatedTokenCreation} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
-import {IERC20Minter} from "../interfaces/IERC20Minter.sol";
 
 interface ILegacyZoraCreator1155DelegatedMinter {
     function delegateSetupNewToken(PremintConfig calldata premintConfig, bytes calldata signature, address sender) external returns (uint256 newTokenId);
@@ -151,16 +150,10 @@ library ZoraCreator1155PremintExecutorImplLib {
         }
     }
 
-    function performERC20Mint(
-        bytes memory encodePremintConfig,
-        uint256 quantityToMint,
-        address contractAddress,
-        uint256 tokenId,
-        MintArguments memory mintArguments
-    ) internal {
-        Erc20TokenCreationConfigV1 memory tokenConfig = abi.decode(encodePremintConfig, (Erc20PremintConfigV1)).tokenConfig;
+    function performERC20Mint(address minter, uint256 quantityToMint, address contractAddress, uint256 tokenId, MintArguments memory mintArguments) internal {
+        IERC20Minter.SalesConfig memory salesConfig = IERC20Minter(minter).sale(contractAddress, tokenId);
 
-        _performERC20Mint(tokenConfig.erc20Minter, tokenConfig.currency, tokenConfig.pricePerToken, quantityToMint, contractAddress, tokenId, mintArguments);
+        _performERC20Mint(minter, salesConfig.currency, salesConfig.pricePerToken, quantityToMint, contractAddress, tokenId, mintArguments);
     }
 
     function _performERC20Mint(
@@ -188,7 +181,7 @@ library ZoraCreator1155PremintExecutorImplLib {
 
         IERC20(currency).approve(erc20Minter, totalValue);
 
-        IERC20Minter(erc20Minter).mint(
+        IERC20Minter(erc20Minter).mint{value: msg.value}(
             mintArguments.mintRecipient,
             quantityToMint,
             contractAddress,

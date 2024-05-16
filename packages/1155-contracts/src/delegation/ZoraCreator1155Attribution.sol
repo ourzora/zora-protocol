@@ -9,9 +9,11 @@ import {ECDSAUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/con
 import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {IERC20Minter, ERC20Minter} from "../minters/erc20/ERC20Minter.sol";
+import {IMinterPremintSetup} from "../interfaces/IMinterPremintSetup.sol";
 import {IERC1271} from "../interfaces/IERC1271.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
-import {PremintConfig, ContractCreationConfig, TokenCreationConfig, PremintConfigV2, TokenCreationConfigV2, Erc20TokenCreationConfigV1, Erc20PremintConfigV1} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {PremintConfig, ContractCreationConfig, TokenCreationConfig, PremintConfigV2, TokenCreationConfigV2, TokenCreationConfigV3, PremintConfigV3} from "@zoralabs/shared-contracts/entities/Premint.sol";
 
 library ZoraCreator1155Attribution {
     string internal constant NAME = "Preminter";
@@ -122,7 +124,7 @@ library ZoraCreator1155Attribution {
             "CreatorAttribution(TokenCreationConfig tokenConfig,uint32 uid,uint32 version,bool deleted)TokenCreationConfig(string tokenURI,uint256 maxSupply,uint32 royaltyBPS,address payoutRecipient,address createReferral,address erc20Minter,uint64 mintStart,uint64 mintDuration,uint64 maxTokensPerAddress,address currency,uint256 pricePerToken)"
         );
 
-    function hashPremint(Erc20PremintConfigV1 memory premintConfig) internal pure returns (bytes32) {
+    function hashPremint(PremintConfigV3 memory premintConfig) internal pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(ATTRIBUTION_DOMAIN_ERC20_V1, _hashToken(premintConfig.tokenConfig), premintConfig.uid, premintConfig.version, premintConfig.deleted)
@@ -177,27 +179,24 @@ library ZoraCreator1155Attribution {
             );
     }
 
-    bytes32 constant TOKEN_DOMAIN_ERC20_V1 =
+    bytes32 constant TOKEN_DOMAIN_V3 =
         keccak256(
-            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint32 royaltyBPS,address payoutRecipient,address createReferral,address erc20Minter,uint64 mintStart,uint64 mintDuration,uint64 maxTokensPerAddress,address currency,uint256 pricePerToken)"
+            "TokenCreationConfig(string tokenURI,uint256 maxSupply,uint32 royaltyBPS,address payoutRecipient,address createReferral,uint64 mintStart,address minter,bytes premintSalesConfig)"
         );
 
-    function _hashToken(Erc20TokenCreationConfigV1 memory tokenConfig) private pure returns (bytes32) {
+    function _hashToken(TokenCreationConfigV3 memory tokenConfig) private pure returns (bytes32) {
         return
             keccak256(
                 abi.encode(
-                    TOKEN_DOMAIN_ERC20_V1,
+                    TOKEN_DOMAIN_V3,
                     _stringHash(tokenConfig.tokenURI),
                     tokenConfig.maxSupply,
                     tokenConfig.royaltyBPS,
                     tokenConfig.payoutRecipient,
                     tokenConfig.createReferral,
-                    tokenConfig.erc20Minter,
                     tokenConfig.mintStart,
-                    tokenConfig.mintDuration,
-                    tokenConfig.maxTokensPerAddress,
-                    tokenConfig.currency,
-                    tokenConfig.pricePerToken
+                    tokenConfig.minter,
+                    keccak256(tokenConfig.premintSalesConfig)
                 )
             );
     }
@@ -215,15 +214,14 @@ library PremintTokenSetup {
     uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
 
     /// @notice Build token setup actions for a v3 preminted token
-    function makeSetupNewTokenCalls(uint256 newTokenId, Erc20TokenCreationConfigV1 memory tokenConfig) internal view returns (bytes[] memory calls) {
+    function makeSetupNewTokenCalls(uint256 newTokenId, TokenCreationConfigV3 memory tokenConfig) internal view returns (bytes[] memory calls) {
+        bytes memory setupMinterCall = abi.encodeWithSelector(IMinterPremintSetup.setPremintSale.selector, newTokenId, tokenConfig.premintSalesConfig);
+
         return
             _buildCalls({
                 newTokenId: newTokenId,
-                erc20MinterAddress: tokenConfig.erc20Minter,
-                currency: tokenConfig.currency,
-                pricePerToken: tokenConfig.pricePerToken,
-                maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
-                mintDuration: tokenConfig.mintDuration,
+                minter: tokenConfig.minter,
+                setupMinterCall: setupMinterCall,
                 royaltyBPS: tokenConfig.royaltyBPS,
                 payoutRecipient: tokenConfig.payoutRecipient
             });
@@ -231,13 +229,17 @@ library PremintTokenSetup {
 
     /// @notice Build token setup actions for a v2 preminted token
     function makeSetupNewTokenCalls(uint256 newTokenId, TokenCreationConfigV2 memory tokenConfig) internal view returns (bytes[] memory calls) {
+        bytes memory setupMinterCall = abi.encodeWithSelector(
+            ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+            newTokenId,
+            _buildNewSalesConfig(tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.mintDuration, tokenConfig.payoutRecipient)
+        );
+
         return
             _buildCalls({
                 newTokenId: newTokenId,
-                fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
-                pricePerToken: tokenConfig.pricePerToken,
-                maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
-                mintDuration: tokenConfig.mintDuration,
+                minter: tokenConfig.fixedPriceMinter,
+                setupMinterCall: setupMinterCall,
                 royaltyBPS: tokenConfig.royaltyBPS,
                 payoutRecipient: tokenConfig.payoutRecipient
             });
@@ -245,13 +247,17 @@ library PremintTokenSetup {
 
     /// @notice Build token setup actions for a v1 preminted token
     function makeSetupNewTokenCalls(uint256 newTokenId, TokenCreationConfig memory tokenConfig) internal view returns (bytes[] memory calls) {
+        bytes memory setupMinterCall = abi.encodeWithSelector(
+            ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
+            newTokenId,
+            _buildNewSalesConfig(tokenConfig.pricePerToken, tokenConfig.maxTokensPerAddress, tokenConfig.mintDuration, tokenConfig.royaltyRecipient)
+        );
+
         return
             _buildCalls({
                 newTokenId: newTokenId,
-                fixedPriceMinterAddress: tokenConfig.fixedPriceMinter,
-                pricePerToken: tokenConfig.pricePerToken,
-                maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
-                mintDuration: tokenConfig.mintDuration,
+                minter: tokenConfig.fixedPriceMinter,
+                setupMinterCall: setupMinterCall,
                 royaltyBPS: tokenConfig.royaltyBPS,
                 payoutRecipient: tokenConfig.royaltyRecipient
             });
@@ -259,93 +265,22 @@ library PremintTokenSetup {
 
     function _buildCalls(
         uint256 newTokenId,
-        address erc20MinterAddress,
-        address currency,
-        uint256 pricePerToken,
-        uint64 maxTokensPerAddress,
-        uint64 mintDuration,
+        address minter,
+        bytes memory setupMinterCall,
         uint32 royaltyBPS,
         address payoutRecipient
     ) private view returns (bytes[] memory calls) {
         calls = new bytes[](3);
 
-        calls[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, newTokenId, erc20MinterAddress, PERMISSION_BIT_MINTER);
+        calls[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, newTokenId, minter, PERMISSION_BIT_MINTER);
 
-        calls[1] = abi.encodeWithSelector(
-            IZoraCreator1155.callSale.selector,
-            newTokenId,
-            IMinter1155(erc20MinterAddress),
-            abi.encodeWithSelector(
-                IERC20Minter.setSale.selector,
-                newTokenId,
-                _buildNewERC20SalesConfig(currency, pricePerToken, maxTokensPerAddress, mintDuration, payoutRecipient)
-            )
-        );
+        calls[1] = abi.encodeWithSelector(IZoraCreator1155.callSale.selector, newTokenId, IMinter1155(minter), setupMinterCall);
 
         calls[2] = abi.encodeWithSelector(
             IZoraCreator1155.updateRoyaltiesForToken.selector,
             newTokenId,
             ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: royaltyBPS, royaltyRecipient: payoutRecipient, royaltyMintSchedule: 0})
         );
-    }
-
-    function _buildCalls(
-        uint256 newTokenId,
-        address fixedPriceMinterAddress,
-        uint96 pricePerToken,
-        uint64 maxTokensPerAddress,
-        uint64 mintDuration,
-        uint32 royaltyBPS,
-        address payoutRecipient
-    ) private view returns (bytes[] memory calls) {
-        calls = new bytes[](3);
-
-        // build array of the calls to make
-        // get setup actions and invoke them
-        // set up the sales strategy
-        // first, grant the fixed price sale strategy minting capabilities on the token
-        // tokenContract.addPermission(newTokenId, address(fixedPriceMinter), PERMISSION_BIT_MINTER);
-        calls[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, newTokenId, fixedPriceMinterAddress, PERMISSION_BIT_MINTER);
-
-        // set the sales config on that token
-        calls[1] = abi.encodeWithSelector(
-            IZoraCreator1155.callSale.selector,
-            newTokenId,
-            IMinter1155(fixedPriceMinterAddress),
-            abi.encodeWithSelector(
-                ZoraCreatorFixedPriceSaleStrategy.setSale.selector,
-                newTokenId,
-                _buildNewSalesConfig(pricePerToken, maxTokensPerAddress, mintDuration, payoutRecipient)
-            )
-        );
-
-        // set the royalty config on that token:
-        calls[2] = abi.encodeWithSelector(
-            IZoraCreator1155.updateRoyaltiesForToken.selector,
-            newTokenId,
-            ICreatorRoyaltiesControl.RoyaltyConfiguration({royaltyBPS: royaltyBPS, royaltyRecipient: payoutRecipient, royaltyMintSchedule: 0})
-        );
-    }
-
-    function _buildNewERC20SalesConfig(
-        address currency,
-        uint256 pricePerToken,
-        uint64 maxTokensPerAddress,
-        uint64 duration,
-        address payoutRecipient
-    ) private view returns (ERC20Minter.SalesConfig memory) {
-        uint64 saleStart = uint64(block.timestamp);
-        uint64 saleEnd = duration == 0 ? type(uint64).max : saleStart + duration;
-
-        return
-            IERC20Minter.SalesConfig({
-                saleStart: saleStart,
-                saleEnd: saleEnd,
-                maxTokensPerAddress: maxTokensPerAddress,
-                pricePerToken: pricePerToken,
-                fundsRecipient: payoutRecipient,
-                currency: currency
-            });
     }
 
     function _buildNewSalesConfig(
@@ -431,11 +366,11 @@ library DelegatedTokenCreation {
             );
 
             (params, tokenSetupActions) = _recoverDelegatedTokenSetup(premintConfig, newTokenId);
-        } else if (premintVersion == PremintEncoding.HASHED_ERC20_VERSION_1) {
-            Erc20PremintConfigV1 memory premintConfig = abi.decode(premintConfigEncoded, (Erc20PremintConfigV1));
+        } else if (premintVersion == PremintEncoding.HASHED_VERSION_3) {
+            PremintConfigV3 memory premintConfig = abi.decode(premintConfigEncoded, (PremintConfigV3));
 
             creatorAttribution = recoverCreatorAttribution(
-                PremintEncoding.ERC20_VERSION_1,
+                PremintEncoding.VERSION_3,
                 ZoraCreator1155Attribution.hashPremint(premintConfig),
                 tokenContract,
                 signature,
@@ -456,7 +391,7 @@ library DelegatedTokenCreation {
         versions = new string[](3);
         versions[0] = PremintEncoding.VERSION_1;
         versions[1] = PremintEncoding.VERSION_2;
-        versions[2] = PremintEncoding.ERC20_VERSION_1;
+        versions[2] = PremintEncoding.VERSION_3;
     }
 
     function recoverCreatorAttribution(
@@ -483,7 +418,7 @@ library DelegatedTokenCreation {
     }
 
     function _recoverDelegatedTokenSetup(
-        Erc20PremintConfigV1 memory premintConfig,
+        PremintConfigV3 memory premintConfig,
         uint256 nextTokenId
     ) private view returns (DelegatedTokenSetup memory params, bytes[] memory tokenSetupActions) {
         validatePremint(premintConfig.tokenConfig.mintStart, premintConfig.deleted);

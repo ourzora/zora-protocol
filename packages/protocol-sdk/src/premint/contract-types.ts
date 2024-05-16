@@ -3,5 +3,5 @@ import { PremintConfigVersion as PremintConfigVersionOrig } from "@zoralabs/prot
 export enum PremintConfigVersion {
   V1 = PremintConfigVersionOrig.V1,
   V2 = PremintConfigVersionOrig.V2,
-  ERC20V1 = PremintConfigVersionOrig.ERC20V1,
+  V3 = PremintConfigVersionOrig.V3,
 }

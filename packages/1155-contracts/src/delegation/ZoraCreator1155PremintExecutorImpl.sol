@@ -15,7 +15,7 @@ import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorage
 import {ZoraCreator1155PremintExecutorImplLib, GetOrCreateContractResult} from "./ZoraCreator1155PremintExecutorImplLib.sol";
 import {ZoraCreator1155Attribution, DelegatedTokenCreation} from "./ZoraCreator1155Attribution.sol";
 import {PremintEncoding, EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
-import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2, MintArguments, PremintResult, Erc20PremintConfigV1, Erc20TokenCreationConfigV1} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2, MintArguments, PremintResult, PremintConfigV3, TokenCreationConfigV3} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreationLegacy, IHasSupportedPremintSignatureVersions} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
@@ -170,9 +170,9 @@ contract ZoraCreator1155PremintExecutorImpl is
                 encodedPremintConfig.premintConfigVersion == PremintEncoding.HASHED_VERSION_2
             ) {
                 ZoraCreator1155PremintExecutorImplLib.mintWithEth(tokenContract, encodedPremintConfig.minter, tokenId, quantityToMint, mintArguments);
-            } else if (encodedPremintConfig.premintConfigVersion == PremintEncoding.HASHED_ERC20_VERSION_1) {
+            } else if (encodedPremintConfig.premintConfigVersion == PremintEncoding.HASHED_VERSION_3) {
                 ZoraCreator1155PremintExecutorImplLib.performERC20Mint(
-                    encodedPremintConfig.premintConfig,
+                    encodedPremintConfig.minter,
                     quantityToMint,
                     address(tokenContract),
                     tokenId,
@@ -190,28 +190,6 @@ contract ZoraCreator1155PremintExecutorImpl is
                 contractURI: contractConfig.contractURI,
                 additionalAdmins: new address[](0)
             });
-    }
-
-    // @custom:deprecated use premintNewContract instead
-    function premintErc20V1(
-        ContractCreationConfig calldata contractConfig,
-        Erc20PremintConfigV1 calldata premintConfig,
-        bytes calldata signature,
-        uint256 quantityToMint,
-        MintArguments calldata mintArguments,
-        address firstMinter,
-        address signerContract
-    ) external returns (PremintResult memory result) {
-        return
-            _premintNewContract(
-                _withEmptySetup(contractConfig),
-                PremintEncoding.encodePremintErc20V1(premintConfig),
-                signature,
-                quantityToMint,
-                mintArguments,
-                firstMinter,
-                signerContract
-            );
     }
 
     // @custom:deprecated use premintNewContract instead
@@ -281,7 +259,7 @@ contract ZoraCreator1155PremintExecutorImpl is
         revert OnlyForAbiDefinition();
     }
 
-    function premintERC20V1Definition(Erc20PremintConfigV1 memory) external pure {
+    function premintV3Definition(PremintConfigV3 memory) external pure {
         revert OnlyForAbiDefinition();
     }
 
@@ -348,8 +326,8 @@ contract ZoraCreator1155PremintExecutorImpl is
     }
 
     /// @notice Checks if the signer of a premint is authorized to sign a premint for a given contract.  If the contract hasn't been created yet,
-    /// then the signer is authorized if the signer's address matches contractConfig.contractAdmin.  Otherwise, the signer must have the PERMISSION_BIT_MINTER
-    /// role on the contract
+    /// then the signer is authorized if the signer's address matches contractConfig.contractAdmin.  Otherwise, the signer must be
+    /// in the list of additional admins
     /// @param signer The signer of the premint
     /// @param premintContractConfigContractAdmin If this contract was created via premint, the original contractConfig.contractAdmin.  Otherwise, set to address(0)
     /// @param contractAddress The determinstic 1155 contract address the premint is for

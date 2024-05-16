@@ -10,9 +10,9 @@ import {
   zoraCreator1155PremintExecutorImplABI,
 } from "./generated/wagmi";
 import {
-  Erc20PremintConfigV1,
   PremintConfigV1,
   PremintConfigV2,
+  PremintConfigV3,
   PremintConfigVersion,
   PremintConfigWithVersion,
 } from "./types";
@@ -75,10 +75,10 @@ const encodePremintConfigV2 = (config: PremintConfigV2) => {
   return encodeAbiParameters(abiItem.inputs, [config]);
 };
 
-const encodePremintConfigERC20V1 = (config: Erc20PremintConfigV1) => {
+export const encodePremintConfigV3 = (config: PremintConfigV3) => {
   const abiItem = getAbiItem({
     abi: zoraCreator1155PremintExecutorImplABI,
-    name: "premintERC20V1Definition",
+    name: "premintV3Definition",
   });
 
   return encodeAbiParameters(abiItem.inputs, [config]);
@@ -94,8 +94,8 @@ export const encodePremintConfig = <T extends PremintConfigVersion>({
   if (premintConfigVersion === PremintConfigVersion.V2) {
     return encodePremintConfigV2(premintConfig as PremintConfigV2);
   }
-  if (premintConfigVersion === PremintConfigVersion.ERC20V1) {
-    return encodePremintConfigERC20V1(premintConfig as Erc20PremintConfigV1);
+  if (premintConfigVersion === PremintConfigVersion.V3) {
+    return encodePremintConfigV3(premintConfig as PremintConfigV3);
   }
 
   throw new Error("Invalid PremintConfigVersion: " + premintConfigVersion);

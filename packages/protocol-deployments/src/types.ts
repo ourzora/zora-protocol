@@ -5,7 +5,7 @@ import { zoraCreator1155PremintExecutorImplABI } from "./generated/wagmi";
 export enum PremintConfigVersion {
   V1 = "1",
   V2 = "2",
-  ERC20V1 = "ERC20_1",
+  V3 = "3",
 }
 
 export type ContractCreationConfig = AbiParametersToPrimitiveTypes<
@@ -27,10 +27,10 @@ export type PremintConfigV2 = AbiParametersToPrimitiveTypes<
     "premintV2Definition"
   >["inputs"]
 >[0];
-export type Erc20PremintConfigV1 = AbiParametersToPrimitiveTypes<
+export type PremintConfigV3 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintERC20V1Definition"
+    "premintV3Definition"
   >["inputs"]
 >[0];
 
@@ -46,7 +46,7 @@ export type PremintConfigForVersion<T extends PremintConfigVersion> =
     ? PremintConfigV1
     : T extends PremintConfigVersion.V2
       ? PremintConfigV2
-      : Erc20PremintConfigV1;
+      : PremintConfigV3;
 
 export type PremintConfigWithVersion<T extends PremintConfigVersion> = {
   premintConfig: PremintConfigForVersion<T>;
@@ -55,25 +55,25 @@ export type PremintConfigWithVersion<T extends PremintConfigVersion> = {
 export type PremintConfigAndVersion =
   | PremintConfigWithVersion<PremintConfigVersion.V1>
   | PremintConfigWithVersion<PremintConfigVersion.V2>
-  | PremintConfigWithVersion<PremintConfigVersion.ERC20V1>;
+  | PremintConfigWithVersion<PremintConfigVersion.V3>;
 
 export type PremintConfig = PremintConfigV1 | PremintConfigV2;
 
 export type TokenCreationConfigV1 = PremintConfigV1["tokenConfig"];
 export type TokenCreationConfigV2 = PremintConfigV2["tokenConfig"];
-export type Erc20TokenCreationConfigV1 = Erc20PremintConfigV1["tokenConfig"];
+export type TokenCreationConfigV3 = PremintConfigV3["tokenConfig"];
 
 export type TokenCreationConfig =
   | TokenCreationConfigV1
   | TokenCreationConfigV2
-  | Erc20TokenCreationConfigV1;
+  | TokenCreationConfigV3;
 
 export type PremintConfigForTokenCreationConfig<T extends TokenCreationConfig> =
   T extends TokenCreationConfigV1
     ? PremintConfigV1
     : T extends TokenCreationConfigV2
       ? PremintConfigV2
-      : Erc20PremintConfigV1;
+      : PremintConfigV3;
 
 export type TokenConfigForVersion<T extends PremintConfigVersion> =
   PremintConfigForVersion<T>["tokenConfig"];

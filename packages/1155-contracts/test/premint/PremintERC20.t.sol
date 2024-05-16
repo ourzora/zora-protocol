@@ -12,14 +12,18 @@ import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155PremintExecutor, ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
-import {ZoraCreator1155Attribution, ContractCreationConfig} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {Erc20TokenCreationConfigV1, Erc20PremintConfigV1, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ZoraCreator1155Attribution} from "../../src/delegation/ZoraCreator1155Attribution.sol";
+import {TokenCreationConfigV3, PremintConfigV3, MintArguments, ContractWithAdditionalAdminsCreationConfig} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155PremintExecutor} from "../../src/proxies/Zora1155PremintExecutor.sol";
 import {Zora1155Factory} from "../../src/proxies/Zora1155Factory.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
+import {IERC20Minter} from "../../src/interfaces/IERC20Minter.sol";
+import {IMinterPremintSetup} from "../../src/interfaces/IMinterPremintSetup.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 
 contract PremintERC20Test is Test {
     uint256 internal creatorPK;
@@ -65,82 +69,135 @@ contract PremintERC20Test is Test {
     }
 
     function testPremintERC20() public {
-        // TODO: fix when we have a way to support payable erc20 mints
-        vm.skip(true);
-        ContractCreationConfig memory contractConfig = ContractCreationConfig({contractAdmin: creator, contractName: "test", contractURI: "test.uri"});
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = ContractWithAdditionalAdminsCreationConfig({
+            contractAdmin: creator,
+            contractName: "test",
+            contractURI: "test.uri",
+            additionalAdmins: new address[](0)
+        });
 
-        Erc20TokenCreationConfigV1 memory tokenConfig = Erc20TokenCreationConfigV1({
+        uint256 zerodTokenId = 0;
+
+        IERC20Minter.PremintSalesConfig memory premintSalesConfig = IERC20Minter.PremintSalesConfig({
+            currency: address(mockErc20),
+            pricePerToken: 1e18,
+            maxTokensPerAddress: 5000,
+            duration: 1000,
+            fundsRecipient: collector
+        });
+
+        TokenCreationConfigV3 memory tokenConfig = TokenCreationConfigV3({
             tokenURI: "test.token.uri",
             maxSupply: 1000,
             royaltyBPS: 0,
             payoutRecipient: collector,
             createReferral: address(0),
-            erc20Minter: address(erc20Minter),
+            minter: address(erc20Minter),
             mintStart: 0,
-            mintDuration: 0,
-            maxTokensPerAddress: 0,
-            currency: address(mockErc20),
-            pricePerToken: 1e18
+            premintSalesConfig: abi.encode(premintSalesConfig)
         });
 
-        Erc20PremintConfigV1 memory premintConfig = Erc20PremintConfigV1({tokenConfig: tokenConfig, uid: 1, version: 3, deleted: false});
+        PremintConfigV3 memory premintConfig = PremintConfigV3({tokenConfig: tokenConfig, uid: 1, version: 3, deleted: false});
 
-        address contractAddress = premint.getContractAddress(contractConfig);
-        bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_ERC20_VERSION_1, block.chainid);
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creatorPK, digest);
-        bytes memory signature = abi.encodePacked(r, s, v);
+        address contractAddress = premint.getContractWithAdditionalAdminsAddress(contractConfig);
+        bytes memory signature = signPremint(premintConfig, contractAddress);
 
         MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "test comment", mintRewardsRecipients: new address[](0)});
 
-        uint256 quantityToMint = 1;
-        uint256 totalValue = tokenConfig.pricePerToken * quantityToMint;
-
-        vm.deal(collector, ethReward);
+        uint256 quantityToMint = 3;
+        uint256 totalValue = premintSalesConfig.pricePerToken * quantityToMint;
         mockErc20.mint(collector, totalValue);
 
         vm.prank(collector);
         mockErc20.approve(address(premint), totalValue);
 
+        uint256 totalEthReward = ethReward * quantityToMint;
+
+        vm.deal(collector, totalEthReward);
         vm.prank(collector);
-        premint.premintErc20V1(contractConfig, premintConfig, signature, quantityToMint, mintArguments, collector, address(0));
+        // validate that the erc20 minter is called with the correct arguments
+        vm.expectCall(
+            address(erc20Minter),
+            totalEthReward,
+            abi.encodeCall(erc20Minter.mint, (collector, quantityToMint, contractAddress, 1, totalValue, address(mockErc20), address(0), "test comment"))
+        );
+        premint.premintNewContract{value: totalEthReward}(
+            contractConfig,
+            abi.encode(premintConfig),
+            PremintEncoding.VERSION_3,
+            signature,
+            quantityToMint,
+            mintArguments,
+            collector,
+            address(0)
+        );
+
+        // validate that the erc20 minter has the proper sales config set
+        IERC20Minter.SalesConfig memory salesConfig = erc20Minter.sale(contractAddress, 1);
+        assertEq(salesConfig.saleStart, uint64(block.timestamp));
+        assertEq(salesConfig.saleEnd, uint64(block.timestamp) + premintSalesConfig.duration);
     }
 
     function testRevertExecutorMustApproveERC20Transfer() public {
-        ContractCreationConfig memory contractConfig = ContractCreationConfig({contractAdmin: creator, contractName: "test", contractURI: "test.uri"});
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = ContractWithAdditionalAdminsCreationConfig({
+            contractAdmin: creator,
+            contractName: "test",
+            contractURI: "test.uri",
+            additionalAdmins: new address[](0)
+        });
 
-        Erc20TokenCreationConfigV1 memory tokenConfig = Erc20TokenCreationConfigV1({
+        IERC20Minter.PremintSalesConfig memory premintSalesConfig = IERC20Minter.PremintSalesConfig({
+            currency: address(mockErc20),
+            pricePerToken: 1e18,
+            maxTokensPerAddress: 0,
+            duration: 0,
+            fundsRecipient: collector
+        });
+
+        TokenCreationConfigV3 memory tokenConfig = TokenCreationConfigV3({
             tokenURI: "test.token.uri",
             maxSupply: 1000,
             royaltyBPS: 0,
             payoutRecipient: collector,
             createReferral: address(0),
-            erc20Minter: address(erc20Minter),
+            minter: address(erc20Minter),
             mintStart: 0,
-            mintDuration: 0,
-            maxTokensPerAddress: 0,
-            currency: address(mockErc20),
-            pricePerToken: 1e18
+            premintSalesConfig: abi.encode(premintSalesConfig)
         });
 
-        Erc20PremintConfigV1 memory premintConfig = Erc20PremintConfigV1({tokenConfig: tokenConfig, uid: 1, version: 3, deleted: false});
+        PremintConfigV3 memory premintConfig = PremintConfigV3({tokenConfig: tokenConfig, uid: 1, version: 3, deleted: false});
 
-        address contractAddress = premint.getContractAddress(contractConfig);
-        bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
-        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_ERC20_VERSION_1, block.chainid);
-
-        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creatorPK, digest);
-        bytes memory signature = abi.encodePacked(r, s, v);
+        address contractAddress = premint.getContractWithAdditionalAdminsAddress(contractConfig);
+        bytes memory signature = signPremint(premintConfig, contractAddress);
 
         MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "test comment", mintRewardsRecipients: new address[](0)});
 
         uint256 quantityToMint = 1;
-        uint256 totalValue = tokenConfig.pricePerToken * quantityToMint;
+        uint256 totalValue = premintSalesConfig.pricePerToken * quantityToMint;
         mockErc20.mint(collector, totalValue);
 
+        uint256 totalEthReward = ethReward * quantityToMint;
+
+        vm.deal(collector, totalEthReward);
         vm.prank(collector);
         vm.expectRevert("ERC20: insufficient allowance");
-        premint.premintErc20V1(contractConfig, premintConfig, signature, quantityToMint, mintArguments, collector, address(0));
+        premint.premintNewContract{value: totalEthReward}(
+            contractConfig,
+            abi.encode(premintConfig),
+            PremintEncoding.VERSION_3,
+            signature,
+            quantityToMint,
+            mintArguments,
+            collector,
+            address(0)
+        );
+    }
+
+    function signPremint(PremintConfigV3 memory premintConfig, address contractAddress) public view returns (bytes memory) {
+        bytes32 structHash = ZoraCreator1155Attribution.hashPremint(premintConfig);
+        bytes32 digest = ZoraCreator1155Attribution.premintHashedTypeDataV4(structHash, contractAddress, PremintEncoding.HASHED_VERSION_3, block.chainid);
+
+        (uint8 v, bytes32 r, bytes32 s) = vm.sign(creatorPK, digest);
+        return abi.encodePacked(r, s, v);
     }
 }

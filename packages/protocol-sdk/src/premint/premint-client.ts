@@ -97,8 +97,8 @@ const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
   tokenCreationConfig: Partial<TokenConfigForVersion<T>> & { tokenURI: string };
   creatorAccount: Address;
 }): TokenConfigForVersion<T> => {
-  if (premintConfigVersion === PremintConfigVersion.ERC20V1) {
-    throw new Error("ERC20V1 not supported in SDK");
+  if (premintConfigVersion === PremintConfigVersion.V3) {
+    throw new Error("PremintV3 not supported in SDK");
   }
   const fixedPriceMinter =
     (tokenCreationConfig as TokenCreationConfigV1 | TokenCreationConfigV2)
@@ -536,8 +536,8 @@ class PremintClient {
 
     const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
 
-    if (premintConfigVersion === PremintConfigVersion.ERC20V1) {
-      throw new Error("ERC20 premint not supported in premint SDK");
+    if (premintConfigVersion === PremintConfigVersion.V3) {
+      throw new Error("PremintV3 not supported in premint SDK");
     }
 
     const value = (

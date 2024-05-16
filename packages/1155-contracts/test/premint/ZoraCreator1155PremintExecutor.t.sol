@@ -852,7 +852,7 @@ contract ZoraCreator1155PreminterTest is Test {
         assertEq(supportedVersions.length, 3);
         assertEq(supportedVersions[0], "1");
         assertEq(supportedVersions[1], "2");
-        assertEq(supportedVersions[2], "ERC20_1");
+        assertEq(supportedVersions[2], "3");
     }
 
     function test_premintVersion_whenCreated_returnsAllVersion() external {
@@ -870,7 +870,7 @@ contract ZoraCreator1155PreminterTest is Test {
         assertEq(supportedVersions.length, 3);
         assertEq(supportedVersions[0], "1");
         assertEq(supportedVersions[1], "2");
-        assertEq(supportedVersions[2], "ERC20_1");
+        assertEq(supportedVersions[2], "3");
     }
 
     function testPremintWithCreateReferral() public {
