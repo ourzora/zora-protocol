@@ -521,4 +521,28 @@ contract ERC20MinterTest is Test {
         emit ERC20MinterConfigSet(newConfig);
         minter.setERC20MinterConfig(newConfig);
     }
+
+    function test_ERC20MinterSetPremintSale() public {
+        IERC20Minter.PremintSalesConfig memory newConfig = IERC20Minter.PremintSalesConfig({
+            duration: 3000,
+            maxTokensPerAddress: 200,
+            pricePerToken: 50000,
+            fundsRecipient: makeAddr("fundsRecipient"),
+            currency: makeAddr("currency")
+        });
+        address erc1155Contract = makeAddr("contract");
+        uint256 tokenId = 10;
+
+        vm.prank(erc1155Contract);
+        minter.setPremintSale(10, abi.encode(newConfig));
+
+        IERC20Minter.SalesConfig memory salesConfig = minter.sale(erc1155Contract, tokenId);
+
+        assertEq(salesConfig.pricePerToken, newConfig.pricePerToken);
+        assertEq(salesConfig.saleStart, block.timestamp);
+        assertEq(salesConfig.saleEnd, block.timestamp + newConfig.duration);
+        assertEq(salesConfig.maxTokensPerAddress, newConfig.maxTokensPerAddress);
+        assertEq(salesConfig.fundsRecipient, newConfig.fundsRecipient);
+        assertEq(salesConfig.currency, newConfig.currency);
+    }
 }

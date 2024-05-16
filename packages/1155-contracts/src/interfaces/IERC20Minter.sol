@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-interface IERC20Minter {
+import {IMinterPremintSetup} from "./IMinterPremintSetup.sol";
+
+interface IERC20Minter is IMinterPremintSetup {
     struct RewardsSettings {
         /// @notice Amount of the create referral reward
         uint256 createReferralReward;
@@ -25,6 +27,14 @@ interface IERC20Minter {
         /// @notice Funds recipient (0 if no different funds recipient than the contract global)
         address fundsRecipient;
         /// @notice ERC20 Currency address
+        address currency;
+    }
+
+    struct PremintSalesConfig {
+        uint64 duration;
+        uint64 maxTokensPerAddress;
+        uint256 pricePerToken;
+        address fundsRecipient;
         address currency;
     }
 
@@ -135,6 +145,11 @@ interface IERC20Minter {
     /// @param tokenId The ID of the token to set the sale config for
     /// @param salesConfig The sale config to set
     function setSale(uint256 tokenId, SalesConfig memory salesConfig) external;
+
+    /// @notice Dynamically builds a SalesConfig from a PremintSalesConfig, taking into consideration the current block timestamp
+    /// and the PremintSalesConfig's duration.
+    /// @param config The PremintSalesConfig to build the SalesConfig from
+    function buildSalesConfigForPremint(PremintSalesConfig memory config) external view returns (SalesConfig memory);
 
     /// @notice Returns the sale config for a given token
     /// @param tokenContract The TokenContract address

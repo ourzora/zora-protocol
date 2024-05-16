@@ -6,6 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {IERC20Minter} from "../../interfaces/IERC20Minter.sol";
+import {IMinterPremintSetup} from "../../interfaces/IMinterPremintSetup.sol";
 import {LimitedMintPerAddress} from "../../minters/utils/LimitedMintPerAddress.sol";
 import {SaleStrategy} from "../../minters/SaleStrategy.sol";
 import {ICreatorCommands} from "../../interfaces/ICreatorCommands.sol";
@@ -273,7 +274,7 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
     /// @notice Sets the sale config for a given token
     /// @param tokenId The ID of the token to set the sale config for
     /// @param salesConfig The sale config to set
-    function setSale(uint256 tokenId, SalesConfig memory salesConfig) external {
+    function setSale(uint256 tokenId, SalesConfig memory salesConfig) public {
         _requireNotAddressZero(salesConfig.currency);
         _requireNotAddressZero(salesConfig.fundsRecipient);
 
@@ -285,6 +286,35 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
 
         // Emit event
         emit SaleSet(msg.sender, tokenId, salesConfig);
+    }
+
+    /// @notice Dynamically builds a SalesConfig from a PremintSalesConfig, taking into consideration the current block timestamp
+    /// and the PremintSalesConfig's duration.
+    /// @param config The PremintSalesConfig to build the SalesConfig from
+    function buildSalesConfigForPremint(PremintSalesConfig memory config) public view returns (ERC20Minter.SalesConfig memory) {
+        uint64 saleStart = uint64(block.timestamp);
+        uint64 saleEnd = config.duration == 0 ? type(uint64).max : saleStart + config.duration;
+        return
+            IERC20Minter.SalesConfig({
+                saleStart: saleStart,
+                saleEnd: saleEnd,
+                maxTokensPerAddress: config.maxTokensPerAddress,
+                pricePerToken: config.pricePerToken,
+                fundsRecipient: config.fundsRecipient,
+                currency: config.currency
+            });
+    }
+
+    /// @notice Sets the sales config based for the msg.sender on the tokenId, from the abi encoded premint sales config, by
+    /// abi decoding it, and dynamically building the SalesConfig. The saleStart will be the current block timestamp,
+    /// and saleEnd will be the current block timestamp + the duration in the PremintSalesConfig.
+    /// @param tokenId The ID of the token to set the sale config for
+    /// @param encodedPremintSalesConfig The abi encoded PremintSalesConfig
+    function setPremintSale(uint256 tokenId, bytes calldata encodedPremintSalesConfig) external override {
+        PremintSalesConfig memory premintSalesConfig = abi.decode(encodedPremintSalesConfig, (PremintSalesConfig));
+        SalesConfig memory salesConfig = buildSalesConfigForPremint(premintSalesConfig);
+
+        setSale(tokenId, salesConfig);
     }
 
     /// @notice Deletes the sale config for a given token
@@ -305,7 +335,11 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
 
     /// @notice IERC165 interface support
     function supportsInterface(bytes4 interfaceId) public pure virtual override(LimitedMintPerAddress, SaleStrategy) returns (bool) {
-        return super.supportsInterface(interfaceId) || LimitedMintPerAddress.supportsInterface(interfaceId) || SaleStrategy.supportsInterface(interfaceId);
+        return
+            super.supportsInterface(interfaceId) ||
+            LimitedMintPerAddress.supportsInterface(interfaceId) ||
+            SaleStrategy.supportsInterface(interfaceId) ||
+            interfaceId == type(IMinterPremintSetup).interfaceId;
     }
 
     /// @notice Reverts as `requestMint` is not used in the ERC20 minter. Call `mint` instead.
