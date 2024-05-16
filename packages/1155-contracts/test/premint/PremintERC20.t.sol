@@ -76,8 +76,6 @@ contract PremintERC20Test is Test {
             additionalAdmins: new address[](0)
         });
 
-        uint256 zerodTokenId = 0;
-
         IERC20Minter.PremintSalesConfig memory premintSalesConfig = IERC20Minter.PremintSalesConfig({
             currency: address(mockErc20),
             pricePerToken: 1e18,

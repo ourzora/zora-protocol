@@ -57,8 +57,8 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
 
     /// @notice Initializes the contract with a Zora rewards recipient address
     /// @dev Allows deterministic contract address, called on deploy
-    function initialize(address _zoraRewardRecipientAddress, address owner, uint256 _rewardPct, uint256 _ethReward) external initializer {
-        __Ownable_init(owner);
+    function initialize(address _zoraRewardRecipientAddress, address _owner, uint256 _rewardPct, uint256 _ethReward) external initializer {
+        __Ownable_init(_owner);
         _setERC20MinterConfig(
             ERC20MinterConfig({zoraRewardRecipientAddress: _zoraRewardRecipientAddress, rewardRecipientPercentage: _rewardPct, ethReward: _ethReward})
         );
@@ -288,7 +288,7 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         emit SaleSet(msg.sender, tokenId, salesConfig);
     }
 
-    /// @notice Dynamically builds a SalesConfig from a PremintSalesConfig, taking into consideration the current block timestamp
+    /// @notice Dynamically builds a SalesConfig from a PremintSalesConfig taking into consideration the current block timestamp
     /// and the PremintSalesConfig's duration.
     /// @param config The PremintSalesConfig to build the SalesConfig from
     function buildSalesConfigForPremint(PremintSalesConfig memory config) public view returns (ERC20Minter.SalesConfig memory) {
@@ -305,8 +305,8 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
             });
     }
 
-    /// @notice Sets the sales config based for the msg.sender on the tokenId, from the abi encoded premint sales config, by
-    /// abi decoding it, and dynamically building the SalesConfig. The saleStart will be the current block timestamp,
+    /// @notice Sets the sales config based for the msg.sender on the tokenId from the abi encoded premint sales config by
+    /// abi decoding it and dynamically building the SalesConfig. The saleStart will be the current block timestamp
     /// and saleEnd will be the current block timestamp + the duration in the PremintSalesConfig.
     /// @param tokenId The ID of the token to set the sale config for
     /// @param encodedPremintSalesConfig The abi encoded PremintSalesConfig
@@ -334,6 +334,7 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
     }
 
     /// @notice IERC165 interface support
+    /// @param interfaceId The interface ID to check
     function supportsInterface(bytes4 interfaceId) public pure virtual override(LimitedMintPerAddress, SaleStrategy) returns (bool) {
         return
             super.supportsInterface(interfaceId) ||
@@ -347,6 +348,8 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         revert RequestMintInvalidUseMint();
     }
 
+    /// @notice Sets the ERC20MinterConfig
+    /// @param _config The ERC20MinterConfig to set
     function _setERC20MinterConfig(ERC20MinterConfig memory _config) internal {
         _requireNotAddressZero(_config.zoraRewardRecipientAddress);
 
@@ -364,7 +367,9 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         _setERC20MinterConfig(config);
     }
 
-    function _requireNotAddressZero(address _address) internal {
+    /// @notice Reverts if the address is address(0)
+    /// @param _address The address to check
+    function _requireNotAddressZero(address _address) internal pure {
         if (_address == address(0)) {
             revert AddressZero();
         }

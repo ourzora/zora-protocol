@@ -31,10 +31,15 @@ interface IERC20Minter is IMinterPremintSetup {
     }
 
     struct PremintSalesConfig {
+        /// @notice Duration of the sale
         uint64 duration;
+        /// @notice Max tokens that can be minted for an address, `0` if unlimited
         uint64 maxTokensPerAddress;
+        /// @notice Price per token in ERC20 currency
         uint256 pricePerToken;
+        /// @notice Funds recipient (0 if no different funds recipient than the contract global)
         address fundsRecipient;
+        /// @notice ERC20 Currency address
         address currency;
     }
 
@@ -173,4 +178,11 @@ interface IERC20Minter is IMinterPremintSetup {
 
     /// @notice Gets the ERC20MinterConfig
     function getERC20MinterConfig() external view returns (ERC20MinterConfig memory);
+
+    /// @notice Sets the sales config based for the msg.sender on the tokenId from the abi encoded premint sales config by
+    /// abi decoding it and dynamically building the SalesConfig. The saleStart will be the current block timestamp
+    /// and saleEnd will be the current block timestamp + the duration in the PremintSalesConfig.
+    /// @param tokenId The ID of the token to set the sale config for
+    /// @param encodedPremintSalesConfig The abi encoded PremintSalesConfig
+    function setPremintSale(uint256 tokenId, bytes calldata encodedPremintSalesConfig) external override;
 }
