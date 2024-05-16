@@ -40,11 +40,12 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
     }
 
-    function deployMinters(Deployment memory deployment) internal {
-        (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) = ZoraDeployerUtils.deployMinters();
-        deployment.fixedPriceSaleStrategy = address(fixedPriceMinter);
-        deployment.merkleMintSaleStrategy = address(merkleMinter);
-        deployment.redeemMinterFactory = address(redeemMinterFactory);
+    function deployMinters(Deployment memory deployment, ChainConfig memory chainConfig) internal {
+        (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory, address erc20Minter) = ZoraDeployerUtils.deployMinters(chainConfig);
+        deployment.fixedPriceSaleStrategy = fixedPriceMinter;
+        deployment.merkleMintSaleStrategy = merkleMinter;
+        deployment.redeemMinterFactory = redeemMinterFactory;
+        deployment.erc20Minter = erc20Minter;
     }
 
     function deployNew1155AndFactoryImpl(Deployment memory deployment) internal {

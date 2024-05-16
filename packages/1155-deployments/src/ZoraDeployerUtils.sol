@@ -13,6 +13,7 @@ import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "@zoralabs/zora-1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "@zoralabs/zora-1155-contracts/src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
 import {ZoraCreatorRedeemMinterFactory} from "@zoralabs/zora-1155-contracts/src/minters/redeem/ZoraCreatorRedeemMinterFactory.sol";
+import {ERC20Minter} from "@zoralabs/zora-1155-contracts/src/minters/erc20/ERC20Minter.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {ICreatorRoyaltiesControl} from "@zoralabs/zora-1155-contracts/src/interfaces/ICreatorRoyaltiesControl.sol";
 import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
@@ -62,7 +63,19 @@ library ZoraDeployerUtils {
         );
     }
 
-    function deployMinters() internal returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory) {
+    function deployErc20Minter(ChainConfig memory chainConfig) internal returns (address erc20Minter) {
+        ERC20Minter minter = new ERC20Minter();
+        // todo: load these from config
+        uint256 rewardPct = 5;
+        uint256 ethReward = 0.000111 ether;
+        minter.initialize(chainConfig.mintFeeRecipient, chainConfig.factoryOwner, rewardPct, ethReward);
+
+        return address(minter);
+    }
+
+    function deployMinters(
+        ChainConfig memory chainConfig
+    ) internal returns (address fixedPriceMinter, address merkleMinter, address redeemMinterFactory, address erc20Minter) {
         fixedPriceMinter = ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(
             bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorFixedPriceSaleStrategy).creationCode
@@ -77,6 +90,8 @@ library ZoraDeployerUtils {
             bytes32(0x0000000000000000000000000000000000000000000000000000000000000001),
             type(ZoraCreatorRedeemMinterFactory).creationCode
         );
+
+        erc20Minter = deployErc20Minter(chainConfig);
     }
 
     // we dont care what this salt is, as long as it's the same for all deployments and it has first 20 bytes of 0
