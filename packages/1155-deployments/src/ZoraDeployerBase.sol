@@ -50,8 +50,6 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
     function deployNew1155AndFactoryImpl(Deployment memory deployment) internal {
         ChainConfig memory chainConfig = getChainConfig();
 
-        ensureCanOwn(chainConfig.factoryOwner);
-
         (address factoryImplDeployment, address contract1155ImplDeployment, string memory contract1155ImplVersion) = ZoraDeployerUtils
             .deployNew1155AndFactoryImpl({
                 upgradeGateAddress: determinsticUpgradeGateAddress(),
@@ -66,6 +64,21 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
         deployment.factoryImpl = factoryImplDeployment;
         deployment.contract1155Impl = contract1155ImplDeployment;
         deployment.contract1155ImplVersion = contract1155ImplVersion;
+    }
+
+    function deployNewFactoryImpl(Deployment memory deployment) internal {
+        ChainConfig memory chainConfig = getChainConfig();
+
+        ensureCanOwn(chainConfig.factoryOwner);
+
+        deployment.factoryImpl = address(
+            new ZoraCreator1155FactoryImpl({
+                _zora1155Impl: ZoraCreator1155Impl(payable(deployment.contract1155Impl)),
+                _merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
+                _redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
+                _fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
+            })
+        );
     }
 
     function deployNewPreminterImplementationDeterminstic(Deployment memory deployment) internal {

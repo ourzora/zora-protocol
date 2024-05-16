@@ -4,8 +4,18 @@ import {
   TypedData,
   TypedDataToPrimitiveTypes,
 } from "abitype";
-import { TypedDataDefinition } from "viem";
-import { zoraMints1155Address } from "./generated/wagmi";
+import { TypedDataDefinition, encodeAbiParameters, getAbiItem } from "viem";
+import {
+  zoraMints1155Address,
+  zoraCreator1155PremintExecutorImplABI,
+} from "./generated/wagmi";
+import {
+  Erc20PremintConfigV1,
+  PremintConfigV1,
+  PremintConfigV2,
+  PremintConfigVersion,
+  PremintConfigWithVersion,
+} from "./types";
 
 const premintTypedDataDomain = ({
   chainId,
@@ -13,7 +23,7 @@ const premintTypedDataDomain = ({
   creator1155Contract: verifyingContract,
 }: {
   chainId: number;
-  version: "1" | "2";
+  version: PremintConfigVersion;
   creator1155Contract: Address;
 }): TypedDataDomain => ({
   chainId,
@@ -47,6 +57,50 @@ const premintV1TypedDataType = {
   ],
 } as const satisfies TypedData;
 
+const encodePremintConfigV1 = (config: PremintConfigV1) => {
+  const abiItem = getAbiItem({
+    abi: zoraCreator1155PremintExecutorImplABI,
+    name: "premintV1Definition",
+  });
+
+  return encodeAbiParameters(abiItem.inputs, [config]);
+};
+
+const encodePremintConfigV2 = (config: PremintConfigV2) => {
+  const abiItem = getAbiItem({
+    abi: zoraCreator1155PremintExecutorImplABI,
+    name: "premintV2Definition",
+  });
+
+  return encodeAbiParameters(abiItem.inputs, [config]);
+};
+
+const encodePremintConfigERC20V1 = (config: Erc20PremintConfigV1) => {
+  const abiItem = getAbiItem({
+    abi: zoraCreator1155PremintExecutorImplABI,
+    name: "premintERC20V1Definition",
+  });
+
+  return encodeAbiParameters(abiItem.inputs, [config]);
+};
+
+export const encodePremintConfig = <T extends PremintConfigVersion>({
+  premintConfig,
+  premintConfigVersion,
+}: PremintConfigWithVersion<T>) => {
+  if (premintConfigVersion === PremintConfigVersion.V1) {
+    return encodePremintConfigV1(premintConfig as PremintConfigV1);
+  }
+  if (premintConfigVersion === PremintConfigVersion.V2) {
+    return encodePremintConfigV2(premintConfig as PremintConfigV2);
+  }
+  if (premintConfigVersion === PremintConfigVersion.ERC20V1) {
+    return encodePremintConfigERC20V1(premintConfig as Erc20PremintConfigV1);
+  }
+
+  throw new Error("Invalid PremintConfigVersion: " + premintConfigVersion);
+};
+
 /**
  * Builds a typed data definition for a PremintConfigV1 to be signed
  * @returns
@@ -58,9 +112,7 @@ export const premintV1TypedDataDefinition = ({
 }: {
   chainId: number;
   creator1155Contract: Address;
-  message: TypedDataToPrimitiveTypes<
-    typeof premintV1TypedDataType
-  >["CreatorAttribution"];
+  message: PremintConfigV1;
 }): TypedDataDefinition<
   typeof premintV1TypedDataType,
   "CreatorAttribution"
@@ -69,7 +121,7 @@ export const premintV1TypedDataDefinition = ({
   primaryType: "CreatorAttribution",
   domain: premintTypedDataDomain({
     chainId,
-    version: "1",
+    version: PremintConfigVersion.V1,
     creator1155Contract,
   }),
   message,
@@ -110,9 +162,7 @@ export const premintV2TypedDataDefinition = ({
 }: {
   chainId: number;
   creator1155Contract: Address;
-  message: TypedDataToPrimitiveTypes<
-    typeof premintV2TypedDataType
-  >["CreatorAttribution"];
+  message: PremintConfigV2;
 }): TypedDataDefinition<
   typeof premintV2TypedDataType,
   "CreatorAttribution"
@@ -121,11 +171,48 @@ export const premintV2TypedDataDefinition = ({
   primaryType: "CreatorAttribution",
   domain: premintTypedDataDomain({
     chainId,
-    version: "2",
+    version: PremintConfigVersion.V2,
     creator1155Contract,
   }),
   message,
 });
+
+export type PremintTypeDataDefinitionParams<T extends PremintConfigVersion> = {
+  verifyingContract: Address;
+  chainId: number;
+} & PremintConfigWithVersion<T>;
+
+/**
+ * Creates a typed data definition for a premint config.  Works for all versions of the premint config by specifying the premintConfigVersion.
+ *
+ * @param params.verifyingContract the address of the 1155 contract
+ * @param params.chainId the chain id the premint is signed for
+ * @param params.premintConfigVersion the version of the premint config
+ * @param params.premintConfig the premint config
+ * @returns
+ */
+export const premintTypedDataDefinition = <T extends PremintConfigVersion>({
+  verifyingContract,
+  chainId,
+  premintConfigVersion: version,
+  premintConfig,
+}: PremintTypeDataDefinitionParams<T>): TypedDataDefinition => {
+  if (version === PremintConfigVersion.V1)
+    return premintV1TypedDataDefinition({
+      chainId,
+      creator1155Contract: verifyingContract,
+      message: premintConfig as PremintConfigV1,
+    });
+  if (version === PremintConfigVersion.V2) {
+    return premintV2TypedDataDefinition({
+      chainId,
+      creator1155Contract: verifyingContract,
+      message: premintConfig as PremintConfigV2,
+    });
+  }
+
+  throw new Error(`Invalid version ${version}`);
+};
 
 const permitSafeTransferTypedDataType = {
   PermitSafeTransfer: [

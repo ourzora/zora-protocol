@@ -10,6 +10,28 @@ struct ContractCreationConfig {
     string contractName;
 }
 
+struct ContractWithAdditionalAdminsCreationConfig {
+    // Creator/admin of the created contract.  Must match the account that signed the message
+    address contractAdmin;
+    // Metadata URI for the created contract
+    string contractURI;
+    // Name of the created contract
+    string contractName;
+    // additional collabotors that will be added as admins
+    // to the contract
+    address[] additionalAdmins;
+}
+
+struct PremintConfigCommon {
+    // Unique id of the token, used to ensure that multiple signatures can't be used to create the same intended token.
+    // only one signature per token id, scoped to the contract hash can be executed.
+    uint32 uid;
+    // Version of this premint, scoped to the uid and contract.  Not used for logic in the contract, but used externally to track the newest version
+    uint32 version;
+    // If executing this signature results in preventing any signature with this uid from being minted.
+    bool deleted;
+}
+
 struct PremintConfig {
     // The config for the token to be created
     TokenCreationConfig tokenConfig;

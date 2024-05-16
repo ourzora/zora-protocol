@@ -207,25 +207,6 @@ library ZoraCreator1155Attribution {
     function _stringHash(string memory value) private pure returns (bytes32) {
         return keccak256(bytes(value));
     }
-
-    /// @notice copied from SharedBaseConstants
-    uint256 constant CONTRACT_BASE_ID = 0;
-    /// @dev copied from ZoraCreator1155Impl
-    uint256 constant PERMISSION_BIT_MINTER = 2 ** 2;
-
-    function isAuthorizedToCreatePremint(
-        address signer,
-        address premintContractConfigContractAdmin,
-        address contractAddress
-    ) internal view returns (bool authorized) {
-        // if contract hasn't been created, signer must be the contract admin on the premint config
-        if (contractAddress.code.length == 0) {
-            return signer == premintContractConfigContractAdmin;
-        } else {
-            // if contract has been created, signer must have mint new token permission
-            authorized = IZoraCreator1155(contractAddress).isAdminOrRole(signer, CONTRACT_BASE_ID, PERMISSION_BIT_MINTER);
-        }
-    }
 }
 
 /// @notice Utility library to setup tokens created via premint.  Functions exposed as external to not increase contract size in calling contract.

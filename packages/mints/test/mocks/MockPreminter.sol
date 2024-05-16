@@ -6,7 +6,7 @@ import {Mock1155} from "./Mock1155.sol";
 
 import {IZoraCreator1155PremintExecutorV2} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorV2.sol";
 import {EncodedPremintConfig} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
-import {ContractCreationConfig, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraMints1155} from "../../src/interfaces/IZoraMints1155.sol";
 import {IZoraMintsMinterManager} from "../../src/interfaces/IZoraMintsMinterManager.sol";
 
@@ -34,6 +34,10 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
         return Create2.computeAddress(salt, keccak256(getCreationCode(contractConfig)));
     }
 
+    function getContractWithAdditionalAdminsAddress(ContractWithAdditionalAdminsCreationConfig calldata contractConfig) external view returns (address) {
+        revert("Not implemented");
+    }
+
     function getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (Mock1155 tokenContract, bool isNewContract) {
         address contractAddress = getContractAddress(contractConfig);
 
@@ -54,13 +58,29 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
         Mock1155(contractAddress).transferMINTsToSelf(mintTokenIds, mintTokenIdQuantities);
     }
 
-    function premintV2(
-        ContractCreationConfig calldata contractConfig,
-        PremintConfigV2 calldata premintConfig,
+    function premintNewContract(
+        ContractWithAdditionalAdminsCreationConfig calldata contractConfig,
+        bytes calldata encodedPremintConfig,
+        string calldata premintConfigVersion,
         bytes calldata signature,
         uint256 quantityToMint,
-        MintArguments calldata mintArguments
-    ) external payable returns (PremintResult memory result) {
+        MintArguments calldata mintArguments,
+        address firstMinter,
+        address signerContract
+    ) external payable returns (PremintResult memory) {
+        revert("Not implemented");
+    }
+
+    function premintExistingContract(
+        address tokenContract,
+        bytes calldata encodedPremintConfig,
+        string calldata premintConfigVersion,
+        bytes calldata signature,
+        uint256 quantityToMint,
+        MintArguments calldata mintArguments,
+        address firstMinter,
+        address signerContract
+    ) external payable returns (uint256 tokenId) {
         revert("Not implemented");
     }
 

@@ -45,6 +45,14 @@ interface IZoraCreator1155Factory is IVersionedContract {
         address contractAdmin
     ) external view returns (address);
 
+    function deterministicContractAddressWithSetupActions(
+        address msgSender,
+        string calldata newContractURI,
+        string calldata name,
+        address contractAdmin,
+        bytes[] memory setupActions
+    ) external view returns (address);
+
     function defaultMinters() external returns (IMinter1155[] memory minters);
 
     function initialize(address _owner) external;

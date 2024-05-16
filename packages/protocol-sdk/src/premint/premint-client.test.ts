@@ -1,10 +1,16 @@
-import { foundry } from "viem/chains";
+import { foundry, zoraSepolia } from "viem/chains";
 import { describe, expect, vi } from "vitest";
 
 import { createPremintClient } from "./premint-client";
-import { anvilTest } from "src/anvil";
 import { PremintConfigVersion } from "./contract-types";
 import { getDefaultFixedPriceMinterAddress } from "./preminter";
+import { forkUrls, makeAnvilTest } from "src/anvil";
+
+const anvilTest = makeAnvilTest({
+  forkUrl: forkUrls.zoraSepolia,
+  forkBlockNumber: 8560739,
+  anvilChainId: zoraSepolia.id,
+});
 
 describe("ZoraCreator1155Premint - v1 signatures", () => {
   anvilTest(
@@ -32,6 +38,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
           contractName: "Testing Contract",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+          additionalAdmins: [],
         },
         tokenCreationConfig: {
           tokenURI:
@@ -47,6 +54,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
           contractName: "Testing Contract",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+          additionalAdmins: [],
         },
         premintConfig: {
           deleted: false,
@@ -68,7 +76,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
         },
         premintConfigVersion: PremintConfigVersion.V1,
         signature:
-          "0x70fc1d6e862c42f2b0e4a062f4eb973cc8692df58a24b71b4fe91ae7baa5a26d2c99b1b8ab61f64ff431bf30b0897877b11b7405542c90b89b041808f1561a6c1c",
+          "0x4d191dd60d428adfe507932a1758bee8ac5bbb77dcd3c05840c237416a3a25035bb8cc7c62177a4e9acb5f40c4032cdb3dbfefdd1575f2c3b4c57945b2076e2e1c",
       };
 
       expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith(
@@ -95,6 +103,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
             contractName: "Testing Contract",
             contractURI:
               "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+            additionalAdmins: [],
           },
           premintConfig: {
             deleted: false,
@@ -116,7 +125,7 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
           },
           premintConfigVersion: PremintConfigVersion.V1,
           signature:
-            "0x70fc1d6e862c42f2b0e4a062f4eb973cc8692df58a24b71b4fe91ae7baa5a26d2c99b1b8ab61f64ff431bf30b0897877b11b7405542c90b89b041808f1561a6c1c",
+            "0x4d191dd60d428adfe507932a1758bee8ac5bbb77dcd3c05840c237416a3a25035bb8cc7c62177a4e9acb5f40c4032cdb3dbfefdd1575f2c3b4c57945b2076e2e1c",
         });
 
       premintClient.apiClient.postSignature = vi.fn();
@@ -189,6 +198,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
           contractName: "Testing Contract Premint V2",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+          additionalAdmins: [],
         },
         premintConfigVersion: PremintConfigVersion.V2,
         tokenCreationConfig: {
@@ -206,11 +216,12 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
           contractName: "Testing Contract Premint V2",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+          additionalAdmins: [],
         },
         premintConfig: {
           deleted: false,
           tokenConfig: {
-            fixedPriceMinter: "0x04E2516A2c207E84a1839755675dfd8eF6302F0a",
+            fixedPriceMinter: "0x6d28164C3CE04A190D5F9f0f8881fc807EAD975A",
             maxSupply: 18446744073709551615n,
             maxTokensPerAddress: 0n,
             mintDuration: 604800n,
@@ -227,7 +238,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         },
         premintConfigVersion: PremintConfigVersion.V2,
         signature:
-          "0x8be7932b0b31bdb7fc9269b756e0d0c9514519f083d86576e23b73c033d8ed8440ea363bc8bba0ec5c30eb6bbdf796163a324201bc7520965037102518fb5e991c",
+          "0x5cc8c0ab240920282cf936d8b5eb1dd151a91ad78cc4e89f8ddeae6ea432ce7904a38e145b734bdd438f18d457451cb1ae28beb2c44bda71d58638dfcc071e1b1c",
       };
 
       expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith(

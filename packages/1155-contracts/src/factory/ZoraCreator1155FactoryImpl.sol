@@ -85,8 +85,8 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
         ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
         address payable defaultAdmin,
         bytes[] calldata setupActions
-    ) external returns (address) {
-        bytes32 digest = _hashContract(msg.sender, newContractURI, name, defaultAdmin);
+    ) external override returns (address) {
+        bytes32 digest = _hashContract(msg.sender, newContractURI, name, defaultAdmin, _setupActionsSalt(setupActions));
 
         address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(zora1155Impl)), 0);
 
@@ -102,8 +102,22 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
         string calldata newContractURI,
         string calldata name,
         address contractAdmin
-    ) external view returns (address) {
-        bytes32 digest = _hashContract(msgSender, newContractURI, name, contractAdmin);
+    ) external view override returns (address) {
+        return deterministicContractAddressWithSetupActions(msgSender, newContractURI, name, contractAdmin, new bytes[](0));
+    }
+
+    function _setupActionsSalt(bytes[] memory setupActions) private pure returns (bytes32) {
+        return setupActions.length == 0 ? bytes32(0) : keccak256(abi.encode(setupActions));
+    }
+
+    function deterministicContractAddressWithSetupActions(
+        address msgSender,
+        string calldata newContractURI,
+        string calldata name,
+        address contractAdmin,
+        bytes[] memory setupActions
+    ) public view override returns (address) {
+        bytes32 digest = _hashContract(msgSender, newContractURI, name, contractAdmin, _setupActionsSalt(setupActions));
 
         return CREATE3.getDeployed(digest);
     }
@@ -128,8 +142,20 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
         IZoraCreator1155Initializer(address(newContract)).initialize(name, newContractURI, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
     }
 
-    function _hashContract(address msgSender, string calldata newContractURI, string calldata name, address contractAdmin) private pure returns (bytes32) {
-        return keccak256(abi.encode(msgSender, contractAdmin, _stringHash(newContractURI), _stringHash(name)));
+    function _hashContract(
+        address msgSender,
+        string calldata newContractURI,
+        string calldata name,
+        address contractAdmin,
+        bytes32 salt
+    ) private pure returns (bytes32) {
+        // salt is a newer feature; prior to adding a salt, it wasn't part of the hash.
+        // so this special case is needed to maintain backwards compatibility
+        if (salt == bytes32(0)) {
+            return keccak256(abi.encode(msgSender, contractAdmin, _stringHash(newContractURI), _stringHash(name)));
+        }
+
+        return keccak256(abi.encode(msgSender, contractAdmin, _stringHash(newContractURI), _stringHash(name), salt));
     }
 
     function _stringHash(string calldata value) private pure returns (bytes32) {

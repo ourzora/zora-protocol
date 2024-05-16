@@ -5,19 +5,19 @@ import type {
   Chain,
   Hex,
   PublicClient,
-  SimulateContractParameters,
   TransactionReceipt,
   WalletClient,
 } from "viem";
-import { zoraCreator1155PremintExecutorImplABI } from "@zoralabs/protocol-deployments";
+import {
+  encodePremintConfig,
+  zoraCreator1155PremintExecutorImplABI,
+} from "@zoralabs/protocol-deployments";
 import {
   getPremintCollectionAddress,
-  premintTypedDataDefinition,
   isValidSignature,
   isAuthorizedToCreatePremint,
   getPremintExecutorAddress,
   applyUpdateToPremint,
-  markPremintDeleted,
   makeNewPremint,
   supportsPremintVersion,
   getPremintMintCosts,
@@ -28,13 +28,14 @@ import {
   PremintConfigVersion,
   ContractCreationConfig,
   TokenConfigForVersion,
-  PremintConfigWithVersion,
   TokenCreationConfigV1,
   TokenCreationConfigV2,
   TokenCreationConfig,
   PremintConfigForVersion,
-  MintArguments,
-} from "./contract-types";
+  PremintConfigWithVersion,
+  PremintMintArguments,
+  premintTypedDataDefinition,
+} from "@zoralabs/protocol-deployments";
 import { PremintAPIClient } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
@@ -96,9 +97,12 @@ const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
   tokenCreationConfig: Partial<TokenConfigForVersion<T>> & { tokenURI: string };
   creatorAccount: Address;
 }): TokenConfigForVersion<T> => {
+  if (premintConfigVersion === PremintConfigVersion.ERC20V1) {
+    throw new Error("ERC20V1 not supported in SDK");
+  }
   const fixedPriceMinter =
-    tokenCreationConfig.fixedPriceMinter ||
-    getDefaultFixedPriceMinterAddress(chainId);
+    (tokenCreationConfig as TokenCreationConfigV1 | TokenCreationConfigV2)
+      .fixedPriceMinter || getDefaultFixedPriceMinterAddress(chainId);
 
   if (premintConfigVersion === PremintConfigVersion.V1) {
     return {
@@ -265,7 +269,11 @@ class PremintClient {
       uid: uid,
     });
 
-    const deletedPremint = markPremintDeleted(premintConfig);
+    const deletedPremint = {
+      ...premintConfig,
+      version: premintConfig.version + 1,
+      deleted: true,
+    };
 
     return await this.signAndSubmitPremint({
       walletClient,
@@ -511,16 +519,7 @@ class PremintClient {
       platformReferral?: Address;
       mintRecipient?: Address;
     };
-  }): Promise<
-    SimulateContractParameters<
-      typeof zoraCreator1155PremintExecutorImplABI,
-      "premintV1" | "premintV2",
-      any,
-      any,
-      any,
-      Account | Address
-    >
-  > {
+  }) {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
@@ -537,6 +536,10 @@ class PremintClient {
 
     const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
 
+    if (premintConfigVersion === PremintConfigVersion.ERC20V1) {
+      throw new Error("ERC20 premint not supported in premint SDK");
+    }
+
     const value = (
       await getPremintMintCosts({
         tokenContract,
@@ -546,7 +549,7 @@ class PremintClient {
       })
     ).totalCost;
 
-    const mintArgumentsContract: MintArguments = {
+    const mintArgumentsContract: PremintMintArguments = {
       mintComment: mintArguments?.mintComment || "",
       mintRecipient:
         mintArguments?.mintRecipient ||
@@ -559,39 +562,32 @@ class PremintClient {
       }),
     };
 
-    if (premintConfigVersion === PremintConfigVersion.V1) {
-      return makeSimulateContractParamaters({
-        account: minterAccount,
-        abi: zoraCreator1155PremintExecutorImplABI,
-        functionName: "premintV1",
-        value,
-        address: getPremintExecutorAddress(),
-        args: [
-          collection,
-          premintConfig,
-          signature,
-          numberToMint,
-          mintArgumentsContract,
-        ],
-      });
-    } else if (premintConfigVersion === PremintConfigVersion.V2) {
-      return makeSimulateContractParamaters({
-        account: minterAccount,
-        abi: zoraCreator1155PremintExecutorImplABI,
-        functionName: "premintV2",
-        value,
-        address: getPremintExecutorAddress(),
-        args: [
-          collection,
-          premintConfig,
-          signature,
-          numberToMint,
-          mintArgumentsContract,
-        ],
-      });
-    }
+    const firstMinter =
+      typeof minterAccount === "string" ? minterAccount : minterAccount.address;
 
-    throw new Error(`Invalid premint config version ${premintConfigVersion}`);
+    return makeSimulateContractParamaters({
+      account: minterAccount,
+      abi: zoraCreator1155PremintExecutorImplABI,
+      functionName: "premintNewContract",
+      value,
+      address: getPremintExecutorAddress(),
+      args: [
+        {
+          ...collection,
+          collaborators: [],
+        },
+        encodePremintConfig({
+          premintConfig,
+          premintConfigVersion,
+        }),
+        premintConfigVersion,
+        signature,
+        numberToMint,
+        mintArgumentsContract,
+        firstMinter,
+        zeroAddress,
+      ],
+    });
   }
 }
 

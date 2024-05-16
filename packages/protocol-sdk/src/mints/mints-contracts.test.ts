@@ -11,6 +11,8 @@ import {
   zoraMints1155Address,
   zoraMintsManagerImplABI,
   zoraMintsManagerImplAddress,
+  PremintMintArguments,
+  premintTypedDataDefinition,
 } from "@zoralabs/protocol-deployments";
 import {
   Address,
@@ -30,11 +32,7 @@ import {
   makePermitToCollectPremintOrNonPremint,
 } from "./mints-contracts";
 import { getPremintCollectionAddress } from "src/premint/preminter";
-import {
-  MintArguments as PremintMintArguments,
-  PremintConfigVersion,
-} from "src/premint/contract-types";
-import { premintTypedDataDefinition } from "src/premint/preminter";
+import { PremintConfigVersion } from "src/premint/contract-types";
 import { zora } from "viem/chains";
 import {
   fixedPriceMinterMinterArguments,

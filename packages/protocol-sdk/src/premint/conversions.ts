@@ -8,7 +8,7 @@ import {
   PremintConfigV2,
   PremintConfigVersion,
   PremintConfigWithVersion,
-} from "./contract-types";
+} from "@zoralabs/protocol-deployments";
 import { PremintSignatureGetResponse } from "./premint-api-client";
 
 export const convertCollectionFromApi = (
@@ -16,6 +16,7 @@ export const convertCollectionFromApi = (
 ): ContractCreationConfig => ({
   ...collection,
   contractAdmin: collection.contractAdmin as Address,
+  additionalAdmins: [],
 });
 
 /**

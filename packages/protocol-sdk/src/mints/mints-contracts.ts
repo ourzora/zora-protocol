@@ -8,9 +8,9 @@ import {
 } from "@zoralabs/protocol-deployments";
 import { AbiParametersToPrimitiveTypes, ExtractAbiFunction } from "abitype";
 import {
-  MintArguments as PremintMintArguments,
+  PremintMintArguments,
   PremintConfigV2,
-} from "src/premint/contract-types";
+} from "@zoralabs/protocol-deployments";
 import { ContractCreationConfig } from "src/preminter";
 import { makeSimulateContractParamaters } from "src/utils";
 import {

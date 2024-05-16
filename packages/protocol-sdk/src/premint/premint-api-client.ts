@@ -11,7 +11,7 @@ import {
   PremintConfigAndVersion,
   PremintConfigVersion,
   PremintConfigWithVersion,
-} from "./contract-types";
+} from "@zoralabs/protocol-deployments";
 import { Address, Hex } from "viem";
 import {
   PremintSignatureRequestBody,

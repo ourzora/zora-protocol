@@ -54,6 +54,7 @@ tests.forEach(({ anvilTest, chain }) => {
                   contractName: "Testing Contract Premint V2",
                   contractURI:
                     "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3f",
+                  additionalAdmins: [],
                 },
                 premintConfigVersion: PremintConfigVersion.V2,
                 tokenCreationConfig: {
@@ -110,6 +111,7 @@ tests.forEach(({ anvilTest, chain }) => {
                   contractName: `Testing Contract Premint V1 ${publicClient.chain?.name}`,
                   contractURI:
                     "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3fg",
+                  additionalAdmins: [],
                 },
                 premintConfigVersion: PremintConfigVersion.V1,
                 tokenCreationConfig: {

@@ -18,7 +18,7 @@ import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155Facto
 import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {ZoraCreator1155Attribution, PremintEncoding} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {ContractCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, TokenCreationConfig, TokenCreationConfigV2, PremintConfigV2, PremintConfig, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
@@ -51,6 +51,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     MintArguments defaultMintArguments;
     ProtocolRewards rewards;
+    ZoraCreator1155Impl zoraCreator1155Impl;
 
     event PremintedV2(
         address indexed contractAddress,
@@ -69,7 +70,7 @@ contract ZoraCreator1155PreminterTest is Test {
         mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
 
         vm.startPrank(zora);
-        (rewards, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora, address(mints));
+        (rewards, zoraCreator1155Impl, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora, address(mints));
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -908,6 +909,243 @@ contract ZoraCreator1155PreminterTest is Test {
         vm.expectRevert(IZoraCreator1155Errors.ERC1155_MINT_TO_ZERO_ADDRESS.selector);
 
         preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
+    }
+
+    function _emptyInitData() private pure returns (bytes[] memory response) {
+        response = new bytes[](0);
+    }
+
+    function test_premintExistingContract_worksOnNonPremintCreatedContracts() public {
+        ZoraCreator1155Impl zora1155 = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
+
+        zora1155.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), payable(creator), _emptyInitData());
+
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
+
+        bytes memory signature = _signPremint(address(zora1155), premintConfig, creatorPrivateKey, block.chainid);
+
+        uint256 quantityToMint = 3;
+        uint256 mintCost = mintFeeAmount * quantityToMint;
+        address executor = makeAddr("executor");
+        vm.deal(executor, mintCost);
+
+        // now call premintExistingContract
+        vm.prank(executor);
+        vm.expectEmit(true, true, true, true);
+        emit PremintedV2(address(zora1155), 1, false, premintConfig.uid, executor, quantityToMint);
+        preminter.premintExistingContract{value: mintCost}(
+            address(zora1155),
+            abi.encode(premintConfig),
+            PremintEncoding.VERSION_2,
+            signature,
+            quantityToMint,
+            defaultMintArguments,
+            makeAddr("firstMinter"),
+            address(0)
+        );
+
+        assertEq(zora1155.balanceOf(defaultMintArguments.mintRecipient, 1), quantityToMint);
+    }
+
+    uint256 constant PERMISSION_BIT_ADMIN = 2 ** 1;
+
+    function test_premint_withCollaborators_whenContractOnChain_allowsCollaboratorsToCreatePremint() public {
+        // this tests, that when there are collaborators, after a premint is brought onchain,
+        // collaborator premints are valid
+        (address collaboratorA, uint256 collaboratorPrivateKey) = makeAddrAndKey("collaborator");
+        address collaboratorB = makeAddr("collaboratorB");
+
+        address[] memory collaborators = new address[](2);
+        collaborators[0] = collaboratorA;
+        collaborators[1] = collaboratorB;
+
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = ContractWithAdditionalAdminsCreationConfig({
+            contractAdmin: creator,
+            contractName: "blah",
+            contractURI: "blah.contract",
+            additionalAdmins: collaborators
+        });
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
+
+        PremintConfigV2 memory collaboratorPremintConfig = makeDefaultPremintConfigV2();
+        collaboratorPremintConfig.uid = premintConfig.uid + 1;
+
+        address contractAddress = preminter.getContractWithAdditionalAdminsAddress(contractConfig);
+
+        // sign and execute premint
+        bytes memory creatorPremintSignature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, block.chainid);
+        bytes memory collaboratorPremintSignature = _signPremint(contractAddress, collaboratorPremintConfig, collaboratorPrivateKey, block.chainid);
+
+        address executor = makeAddr("executor");
+        vm.deal(executor, 100 ether);
+        vm.startPrank(executor);
+
+        uint256 quantityToMint = 3;
+        uint256 mintCost = mintFeeAmount * quantityToMint;
+
+        // premint using the creators premint - this should create the contract add the collaborators as admins
+        preminter.premintNewContract{value: mintCost}(
+            contractConfig,
+            abi.encode(premintConfig),
+            PremintEncoding.VERSION_2,
+            creatorPremintSignature,
+            quantityToMint,
+            defaultMintArguments,
+            makeAddr("firstMinter"),
+            address(0)
+        );
+
+        // both collaborators should be added as admins
+        assertTrue(IZoraCreator1155(contractAddress).isAdminOrRole(collaboratorA, 0, PERMISSION_BIT_ADMIN));
+        assertTrue(IZoraCreator1155(contractAddress).isAdminOrRole(collaboratorB, 0, PERMISSION_BIT_ADMIN));
+
+        // premint against existing contract using the collaborators premint - it should succeed
+        uint256 collaboratorTokenId = preminter.premintExistingContract{value: mintCost}(
+            contractAddress,
+            abi.encode(collaboratorPremintConfig),
+            PremintEncoding.VERSION_2,
+            collaboratorPremintSignature,
+            quantityToMint,
+            defaultMintArguments,
+            makeAddr("firstMinter"),
+            address(0)
+        );
+
+        assertEq(collaboratorTokenId, 2);
+    }
+
+    function test_premint_withCollaborators_beforeContractOnChain_allowsCollaboratorsToCreatePremint() public {
+        // this tests, that when there are collaborators, before a premint is brought onchain,
+        // collaborator premints are valid
+        (address collaboratorA, uint256 collaboratorPrivateKey) = makeAddrAndKey("collaborator");
+        address collaboratorB = makeAddr("collaboratorB");
+
+        address[] memory collaborators = new address[](2);
+        collaborators[0] = collaboratorA;
+        collaborators[1] = collaboratorB;
+
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = ContractWithAdditionalAdminsCreationConfig({
+            contractAdmin: creator,
+            contractName: "blah",
+            contractURI: "blah.contract",
+            additionalAdmins: collaborators
+        });
+
+        PremintConfigV2 memory premintConfig = makeDefaultPremintConfigV2();
+
+        PremintConfigV2 memory collaboratorPremintConfig = makeDefaultPremintConfigV2();
+        collaboratorPremintConfig.uid = premintConfig.uid + 1;
+
+        address contractAddress = preminter.getContractWithAdditionalAdminsAddress(contractConfig);
+
+        // sign and execute premint
+        bytes memory creatorPremintSignature = _signPremint(contractAddress, premintConfig, creatorPrivateKey, block.chainid);
+        bytes memory collaboratorPremintSignature = _signPremint(contractAddress, collaboratorPremintConfig, collaboratorPrivateKey, block.chainid);
+
+        address executor = makeAddr("executor");
+        vm.deal(executor, 100 ether);
+        vm.startPrank(executor);
+
+        uint256 quantityToMint = 3;
+        uint256 mintCost = mintFeeAmount * quantityToMint;
+
+        // premint using the collaborators premint
+        preminter.premintNewContract{value: mintCost}(
+            contractConfig,
+            abi.encode(collaboratorPremintConfig),
+            PremintEncoding.VERSION_2,
+            collaboratorPremintSignature,
+            quantityToMint,
+            defaultMintArguments,
+            makeAddr("firstMinter"),
+            address(0)
+        );
+
+        // both collaborators should be added as admins
+        assertTrue(IZoraCreator1155(contractAddress).isAdminOrRole(creator, 0, PERMISSION_BIT_ADMIN));
+        assertTrue(IZoraCreator1155(contractAddress).isAdminOrRole(collaboratorA, 0, PERMISSION_BIT_ADMIN));
+        assertTrue(IZoraCreator1155(contractAddress).isAdminOrRole(collaboratorB, 0, PERMISSION_BIT_ADMIN));
+
+        // premint against the existing contract using the original creators premint
+        uint256 creatorTokenId = preminter.premintExistingContract{value: mintCost}(
+            contractAddress,
+            abi.encode(premintConfig),
+            PremintEncoding.VERSION_2,
+            creatorPremintSignature,
+            quantityToMint,
+            defaultMintArguments,
+            makeAddr("firstMinter"),
+            address(0)
+        );
+
+        assertEq(creatorTokenId, 2);
+    }
+
+    function test_isAuthorizedToCreatePremint_worksWithAdditionalCollaborators() external {
+        address collaboratorA = makeAddr("collaborator");
+        address collaboratorB = makeAddr("collaboratorB");
+        address nonCollaborator = makeAddr("nonCollaborator");
+
+        address[] memory additionalAdmins = new address[](2);
+
+        // make collaborator a contract admin
+        additionalAdmins[0] = collaboratorA;
+        // make collaborator b contract wide minter
+        additionalAdmins[1] = collaboratorB;
+        // make collaborator c another role - it should not be authorized to create a premint
+
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = ContractWithAdditionalAdminsCreationConfig({
+            contractAdmin: creator,
+            contractName: "blah",
+            contractURI: "blah.contract",
+            additionalAdmins: additionalAdmins
+        });
+
+        address contractAddress = preminter.getContractWithAdditionalAdminsAddress(contractConfig);
+
+        // creator should be able to create a premint
+        assertTrue(
+            preminter.isAuthorizedToCreatePremintWithAdditionalAdmins({
+                signer: creator,
+                premintContractConfigContractAdmin: contractConfig.contractAdmin,
+                contractAddress: contractAddress,
+                additionalAdmins: additionalAdmins
+            }),
+            "creator"
+        );
+
+        // collaborator a should be able to create a premint since its a contract wide admin
+        assertTrue(
+            preminter.isAuthorizedToCreatePremintWithAdditionalAdmins({
+                signer: collaboratorA,
+                premintContractConfigContractAdmin: contractConfig.contractAdmin,
+                contractAddress: contractAddress,
+                additionalAdmins: additionalAdmins
+            }),
+            "collaborator a"
+        );
+
+        // collaborator b should be able to create a premint since its a contract wide minter
+        assertTrue(
+            preminter.isAuthorizedToCreatePremintWithAdditionalAdmins({
+                signer: collaboratorB,
+                premintContractConfigContractAdmin: contractConfig.contractAdmin,
+                contractAddress: contractAddress,
+                additionalAdmins: additionalAdmins
+            }),
+            "collaborator b"
+        );
+
+        // collaborator c should not be able to create a premint since it has a random role that is not a contract admin
+        assertFalse(
+            preminter.isAuthorizedToCreatePremintWithAdditionalAdmins({
+                signer: nonCollaborator,
+                premintContractConfigContractAdmin: contractConfig.contractAdmin,
+                contractAddress: contractAddress,
+                additionalAdmins: additionalAdmins
+            }),
+            "collaborator c"
+        );
     }
 
     function test_mintFee_onOldContracts_returnsExistingMintFee() external {

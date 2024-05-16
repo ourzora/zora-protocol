@@ -39,9 +39,7 @@ interface ILegacyZoraCreator1155PremintExecutor {
         address premintContractConfigContractAdmin,
         address contractAddress
     ) external view returns (bool isAuthorized);
-}
 
-interface IZoraCreator1155PremintExecutorV1 {
     function premintV1(
         ContractCreationConfig calldata contractConfig,
         PremintConfig calldata premintConfig,
@@ -49,15 +47,17 @@ interface IZoraCreator1155PremintExecutorV1 {
         uint256 quantityToMint,
         MintArguments calldata mintArguments
     ) external payable returns (PremintResult memory);
+
+    function premintV2(
+        ContractCreationConfig calldata contractConfig,
+        PremintConfigV2 calldata premintConfig,
+        bytes calldata signature,
+        uint256 quantityToMint,
+        MintArguments calldata mintArguments
+    ) external payable returns (PremintResult memory);
 }
 
-interface IZoraCreator1155PremintExecutor is
-    ILegacyZoraCreator1155PremintExecutor,
-    IGetContractAddress,
-    IZoraCreator1155PremintExecutorV1,
-    IZoraCreator1155PremintExecutorV2,
-    IOwnable2StepUpgradeable
-{
+interface IZoraCreator1155PremintExecutor is ILegacyZoraCreator1155PremintExecutor, IGetContractAddress, IOwnable2StepUpgradeable {
     event PremintedV2(
         address indexed contractAddress,
         uint256 indexed tokenId,

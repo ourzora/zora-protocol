@@ -5,9 +5,9 @@ import {
   zoraCreator1155PremintExecutorImplABI,
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
+  premintTypedDataDefinition,
 } from "@zoralabs/protocol-deployments";
 import {
-  TypedDataDefinition,
   recoverTypedDataAddress,
   Hex,
   PublicClient,
@@ -28,50 +28,11 @@ import {
   PremintConfigVersion,
   PremintConfigWithVersion,
   TokenCreationConfig,
-} from "./contract-types";
-import {
-  premintV1TypedDataDefinition,
-  premintV2TypedDataDefinition,
 } from "@zoralabs/protocol-deployments";
 import { MintCosts } from "src/mint/mint-client";
 
 export const getPremintExecutorAddress = () =>
-  zoraCreator1155PremintExecutorImplAddress[999];
-
-/**
- * Creates a typed data definition for a premint config.  Works for all versions of the premint config by specifying the premintConfigVersion.
- *
- * @param params.verifyingContract the address of the 1155 contract
- * @param params.chainId the chain id the premint is signed for
- * @param params.premintConfigVersion the version of the premint config
- * @param params.premintConfig the premint config
- * @returns
- */
-export const premintTypedDataDefinition = <T extends PremintConfigVersion>({
-  verifyingContract,
-  chainId,
-  premintConfigVersion: version,
-  premintConfig,
-}: {
-  verifyingContract: Address;
-  chainId: number;
-} & PremintConfigWithVersion<T>): TypedDataDefinition => {
-  if (version === PremintConfigVersion.V1)
-    return premintV1TypedDataDefinition({
-      chainId,
-      creator1155Contract: verifyingContract,
-      message: premintConfig as PremintConfigV1,
-    });
-  if (version === PremintConfigVersion.V2) {
-    return premintV2TypedDataDefinition({
-      chainId,
-      creator1155Contract: verifyingContract,
-      message: premintConfig as PremintConfigV2,
-    });
-  }
-
-  throw new Error(`Invalid version ${version}`);
-};
+  zoraCreator1155PremintExecutorImplAddress[999] as Address;
 
 export type IsValidSignatureReturn = {
   isAuthorized: boolean;
@@ -93,8 +54,13 @@ export async function isAuthorizedToCreatePremint({
   return await publicClient.readContract({
     abi: preminterAbi,
     address: getPremintExecutorAddress(),
-    functionName: "isAuthorizedToCreatePremint",
-    args: [signer, collection.contractAdmin, collectionAddress],
+    functionName: "isAuthorizedToCreatePremintWithAdditionalAdmins",
+    args: [
+      signer,
+      collection.contractAdmin,
+      collectionAddress,
+      collection.additionalAdmins,
+    ],
   });
 }
 
@@ -106,9 +72,8 @@ export async function recoverPremintSigner<T extends PremintConfigVersion>({
   chainId: number;
   verifyingContract: Address;
 } & PremintConfigWithVersion<T>): Promise<Address> {
-  const typedData = premintTypedDataDefinition(rest);
   return await recoverTypedDataAddress({
-    ...typedData,
+    ...premintTypedDataDefinition(rest),
     signature,
   });
 }
@@ -311,16 +276,6 @@ export async function getPremintCollectionAddress({
     functionName: "getContractAddress",
     args: [collection],
   });
-}
-
-export function markPremintDeleted<T extends PremintConfig>(
-  premintConfig: T,
-): T {
-  return {
-    ...premintConfig,
-    version: premintConfig.version + 1,
-    deleted: true,
-  };
 }
 
 export function applyUpdateToPremint({
