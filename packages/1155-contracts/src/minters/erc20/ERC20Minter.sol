@@ -203,8 +203,8 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
         address mintReferral,
         string calldata comment
     ) external payable nonReentrant {
-        if (msg.value != minterConfig.ethReward) {
-            revert InvalidValue();
+        if (msg.value != minterConfig.ethReward * quantity) {
+            revert InvalidETHValue(minterConfig.ethReward * quantity, msg.value);
         }
 
         SalesConfig storage config = salesConfigs[tokenAddress][tokenId];

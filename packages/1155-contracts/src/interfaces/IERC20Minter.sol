@@ -118,6 +118,11 @@ interface IERC20Minter is IMinterPremintSetup {
     /// @notice Failed to send ETH reward
     error FailedToSendEthReward();
 
+    /// @notice Invalid value for ETH reward
+    /// @param expectedValue The expected value
+    /// @param actualValue The actual value
+    error InvalidETHValue(uint256 expectedValue, uint256 actualValue);
+
     /// @notice Invalid value
     error InvalidValue();
 
