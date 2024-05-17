@@ -57,21 +57,8 @@ contract MockPreminter is IZoraCreator1155PremintExecutorAllVersions {
         return contractAddress;
     }
 
-    function premintNewContract(
+    function premint(
         ContractWithAdditionalAdminsCreationConfig calldata contractConfig,
-        PremintConfigEncoded calldata,
-        bytes calldata signature,
-        uint256 quantityToMint,
-        MintArguments calldata mintArguments,
-        address firstMinter,
-        address signerContract
-    ) external payable returns (PremintResult memory) {
-        address contractAddress = getOrCreateContract(contractConfig);
-
-        return PremintResult(contractAddress, predictedTokenId, false);
-    }
-
-    function premintExistingContract(
         address tokenContract,
         PremintConfigEncoded calldata,
         bytes calldata signature,
@@ -79,8 +66,10 @@ contract MockPreminter is IZoraCreator1155PremintExecutorAllVersions {
         MintArguments calldata mintArguments,
         address firstMinter,
         address signerContract
-    ) external payable returns (uint256 tokenId) {
-        return predictedTokenId;
+    ) external payable returns (PremintResult memory) {
+        address contractAddress = tokenContract == address(0) ? getOrCreateContract(contractConfig) : tokenContract;
+
+        return PremintResult(contractAddress, predictedTokenId, false);
     }
 
     function premintV2WithSignerContract(

@@ -289,32 +289,17 @@ contract ZoraMintsManagerImpl is
 
         // if there is not token contract address, assume this is a new contract, we execute premint
         // against the new contract:
-        if (tokenContract == address(0)) {
-            result = premintExecutor.premintNewContract{value: msg.value}(
-                contractConfig,
-                premintConfig,
-                signature,
-                0,
-                // these arent used in the premint when quantity to mint is 0, so we can pass empty arguments
-                emptyArguments,
-                firstMinter,
-                signerContract
-            );
-        } else {
-            // otherwise we assume its an existing contract, and we execute premint against the existing contract
-            result.contractAddress = tokenContract;
-
-            result.tokenId = premintExecutor.premintExistingContract{value: msg.value}(
-                tokenContract,
-                premintConfig,
-                signature,
-                0,
-                // these arent used in the premint when quantity to mint is 0, so we can pass empty arguments
-                emptyArguments,
-                firstMinter,
-                signerContract
-            );
-        }
+        result = premintExecutor.premint{value: msg.value}(
+            contractConfig,
+            tokenContract,
+            premintConfig,
+            signature,
+            0,
+            // these arent used in the premint when quantity to mint is 0, so we can pass empty arguments
+            emptyArguments,
+            firstMinter,
+            signerContract
+        );
 
         (, address minter) = PremintEncoding.decodePremintConfig(premintConfig);
 

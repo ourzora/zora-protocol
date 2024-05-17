@@ -1,6 +1,9 @@
 import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
 
-import { zoraCreator1155PremintExecutorImplABI } from "./generated/wagmi";
+import {
+  zoraCreator1155PremintExecutorImplABI,
+  iPremintDefinitionsABI,
+} from "./generated/wagmi";
 
 export enum PremintConfigVersion {
   V1 = "1",
@@ -11,27 +14,27 @@ export enum PremintConfigVersion {
 export type ContractCreationConfig = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintNewContract"
+    "premint"
   >["inputs"]
 >[0];
 
 export type TokenCreationConfigV1 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
-    typeof zoraCreator1155PremintExecutorImplABI,
+    typeof iPremintDefinitionsABI,
     "tokenConfigV1Definition"
   >["inputs"]
 >[0];
 
 export type TokenCreationConfigV2 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
-    typeof zoraCreator1155PremintExecutorImplABI,
+    typeof iPremintDefinitionsABI,
     "tokenConfigV2Definition"
   >["inputs"]
 >[0];
 
 export type TokenCreationConfigV3 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
-    typeof zoraCreator1155PremintExecutorImplABI,
+    typeof iPremintDefinitionsABI,
     "tokenConfigV3Definition"
   >["inputs"]
 >[0];
@@ -39,9 +42,9 @@ export type TokenCreationConfigV3 = AbiParametersToPrimitiveTypes<
 export type PremintConfigEncoded = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintNewContract"
+    "premint"
   >["inputs"]
->[1];
+>[2];
 
 type PremintConfigCommon = Pick<
   PremintConfigEncoded,
@@ -61,9 +64,9 @@ export type PremintConfigV3 = PremintConfigCommon & {
 export type PremintMintArguments = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintNewContract"
+    "premint"
   >["inputs"]
->[4];
+>[5];
 
 export type PremintConfigForVersion<T extends PremintConfigVersion> =
   T extends PremintConfigVersion.V1

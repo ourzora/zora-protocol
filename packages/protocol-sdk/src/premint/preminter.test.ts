@@ -152,7 +152,7 @@ async function setupContracts({
 
 const zoraSepoliaAnvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 8869648,
+  forkBlockNumber: 8948974,
   anvilChainId: zoraSepolia.id,
 });
 
@@ -390,12 +390,13 @@ describe("ZoraCreator1155Preminter", () => {
       // parameters are required to call this function
       const mintHash = await viemClients.walletClient.writeContract({
         abi: preminterAbi,
-        functionName: "premintNewContract",
+        functionName: "premint",
         account: collectorAccount,
         chain: viemClients.chain,
         address: PREMINTER_ADDRESS,
         args: [
           contractConfig,
+          zeroAddress,
           encodePremintConfig({
             premintConfig: premintConfig1,
             premintConfigVersion: PremintConfigVersion.V1,
@@ -468,12 +469,13 @@ describe("ZoraCreator1155Preminter", () => {
 
       const simulationResult = await viemClients.publicClient.simulateContract({
         abi: preminterAbi,
-        functionName: "premintNewContract",
+        functionName: "premint",
         account: collectorAccount,
         chain: viemClients.chain,
         address: PREMINTER_ADDRESS,
         args: [
           contractConfig,
+          zeroAddress,
           encodePremintConfig({
             premintConfig: premintConfig2,
             premintConfigVersion: PremintConfigVersion.V2,
@@ -610,12 +612,13 @@ describe("ZoraCreator1155Preminter", () => {
 
         await viemClients.publicClient.simulateContract({
           abi: preminterAbi,
-          functionName: "premintNewContract",
+          functionName: "premint",
           account: collectorAccount,
           chain: viemClients.chain,
           address: PREMINTER_ADDRESS,
           args: [
             contractConfig,
+            zeroAddress,
             encodePremintConfig({
               premintConfig: collaboratorPremintConfig,
               premintConfigVersion: PremintConfigVersion.V2,
@@ -634,12 +637,13 @@ describe("ZoraCreator1155Preminter", () => {
         // as an admin to the contract along with the original creator
         let tx = await viemClients.walletClient.writeContract({
           abi: preminterAbi,
-          functionName: "premintNewContract",
+          functionName: "premint",
           account: collectorAccount,
           chain: viemClients.chain,
           address: PREMINTER_ADDRESS,
           args: [
             contractConfig,
+            zeroAddress,
             encodePremintConfig({
               premintConfig: collaboratorPremintConfig,
               premintConfigVersion: PremintConfigVersion.V2,
@@ -664,12 +668,13 @@ describe("ZoraCreator1155Preminter", () => {
 
         tx = await viemClients.walletClient.writeContract({
           abi: preminterAbi,
-          functionName: "premintNewContract",
+          functionName: "premint",
           account: collectorAccount,
           chain: viemClients.chain,
           address: PREMINTER_ADDRESS,
           args: [
             contractConfig,
+            zeroAddress,
             encodePremintConfig({
               premintConfig: premintConfig,
               premintConfigVersion: PremintConfigVersion.V2,

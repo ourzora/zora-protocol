@@ -498,8 +498,8 @@ contract ZoraMints1155Test is Test {
         vm.expectCall(
             address(mockPreminter),
             abi.encodeCall(
-                mockPreminter.premintNewContract,
-                (contractCreationConfig, PremintEncoding.encodePremint(premintConfig), signature, 0, emptyMintArguments, collector, signerContract)
+                mockPreminter.premint,
+                (contractCreationConfig, address(0), PremintEncoding.encodePremint(premintConfig), signature, 0, emptyMintArguments, collector, signerContract)
             )
         );
 
@@ -526,14 +526,25 @@ contract ZoraMints1155Test is Test {
 
         MintArguments memory emptyMintArguments;
 
+        ContractWithAdditionalAdminsCreationConfig memory emptyContractCreationConfig;
+
         bytes memory signature = bytes("hi!");
 
         vm.prank(collector);
         vm.expectCall(
             address(mockPreminter),
             abi.encodeCall(
-                mockPreminter.premintExistingContract,
-                (tokenContract, PremintEncoding.encodePremint(premintConfig), signature, 0, emptyMintArguments, collector, signerContract)
+                mockPreminter.premint,
+                (
+                    emptyContractCreationConfig,
+                    tokenContract,
+                    PremintEncoding.encodePremint(premintConfig),
+                    signature,
+                    0,
+                    emptyMintArguments,
+                    collector,
+                    signerContract
+                )
             )
         );
 
@@ -619,8 +630,8 @@ contract ZoraMints1155Test is Test {
         vm.expectCall(
             address(mockPreminter),
             abi.encodeCall(
-                mockPreminter.premintNewContract,
-                (contractCreationConfig, PremintEncoding.encodePremint(premintConfig), signature, 0, emptyMintArguments, collector, signerContract)
+                mockPreminter.premint,
+                (contractCreationConfig, address(0), PremintEncoding.encodePremint(premintConfig), signature, 0, emptyMintArguments, collector, signerContract)
             )
         );
         ZoraMints1155(address(mints)).transferBatchToManagerAndCall(tokenIds, quantities, call);

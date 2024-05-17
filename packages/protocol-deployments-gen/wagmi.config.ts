@@ -8,6 +8,7 @@ import {
   mintsEthUnwrapperAndCallerABI,
   iUnwrapAndForwardActionABI,
 } from "@zoralabs/mints-contracts";
+import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
 
 type Address = `0x${string}`;
 
@@ -184,6 +185,10 @@ export default defineConfig({
     {
       abi: iUnwrapAndForwardActionABI,
       name: "IUnwrapAndForwardAction",
+    },
+    {
+      abi: iPremintDefinitionsABI,
+      name: "IPremintDefinitions",
     },
   ],
 });

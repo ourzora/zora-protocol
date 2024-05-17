@@ -14,7 +14,7 @@ import {
 } from "viem";
 import {
   zoraMints1155Address,
-  zoraCreator1155PremintExecutorImplABI,
+  iPremintDefinitionsABI,
 } from "./generated/wagmi";
 import {
   PremintConfigEncoded,
@@ -70,7 +70,7 @@ const premintV1TypedDataType = {
 
 const encodeTokenConfigV1 = (config: TokenCreationConfigV1) => {
   const abiItem = getAbiItem({
-    abi: zoraCreator1155PremintExecutorImplABI,
+    abi: iPremintDefinitionsABI,
     name: "tokenConfigV1Definition",
   });
 
@@ -79,7 +79,7 @@ const encodeTokenConfigV1 = (config: TokenCreationConfigV1) => {
 
 const encodeTokenConfigV2 = (config: TokenCreationConfigV2) => {
   const abiItem = getAbiItem({
-    abi: zoraCreator1155PremintExecutorImplABI,
+    abi: iPremintDefinitionsABI,
     name: "tokenConfigV2Definition",
   });
 
@@ -88,7 +88,7 @@ const encodeTokenConfigV2 = (config: TokenCreationConfigV2) => {
 
 const encodeTokenConfigV3 = (config: TokenCreationConfigV3) => {
   const abiItem = getAbiItem({
-    abi: zoraCreator1155PremintExecutorImplABI,
+    abi: iPremintDefinitionsABI,
     name: "tokenConfigV3Definition",
   });
 

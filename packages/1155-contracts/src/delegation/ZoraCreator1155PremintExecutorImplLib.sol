@@ -25,7 +25,7 @@ library ZoraCreator1155PremintExecutorImplLib {
     function getOrCreateContract(
         IZoraCreator1155Factory zora1155Factory,
         ContractWithAdditionalAdminsCreationConfig memory contractConfig
-    ) internal returns (IZoraCreator1155 tokenContract, bool isNewContract) {
+    ) internal returns (address tokenContract, bool isNewContract) {
         // get contract address based on contract creation parameters
         address contractAddress = getContractWithAdditionalAdminsAddress(zora1155Factory, contractConfig);
         // first we see if the code is already deployed for the contract
@@ -33,9 +33,9 @@ library ZoraCreator1155PremintExecutorImplLib {
 
         if (isNewContract) {
             // if address doesn't exist for hash, create it
-            tokenContract = createContract(zora1155Factory, contractConfig);
+            tokenContract = address(createContract(zora1155Factory, contractConfig));
         } else {
-            tokenContract = IZoraCreator1155(contractAddress);
+            tokenContract = contractAddress;
         }
     }
 

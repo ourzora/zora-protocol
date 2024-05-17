@@ -353,14 +353,12 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         );
 
         // it should succeed
-        ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).premintV2WithSignerContract{value: mintFeeAmount}(
+        ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).premintV2{value: mintFeeAmount}(
             contractConfig,
             premintConfig,
             signature,
             quantityToMint,
-            defaultMintArguments,
-            makeAddr("firstMinter"),
-            address(0)
+            defaultMintArguments
         );
     }
 

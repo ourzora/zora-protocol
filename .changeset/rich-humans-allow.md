@@ -75,11 +75,12 @@ If any account in those `additionalAdmins`, it is considered authorized and can 
 
 #### New ability to do premints against existing contracts
 
-Executing premint against contracts not created via premint can be done with a new function on the preminter called `premintExistingContract`; instead of it taking a `ContractWithAdditionalAdminsCreationConfig`, it takes an 1155 contract address:
+Executing premint against contracts not created via premint can be done with by passing a `premintCollection` argument to the new `premint` function:
 
 ```solidity
-function premintExistingContract(
-  address tokenContract,
+function premint(
+  ContractWithAdditionalAdminsCreationConfig memory contractConfig,
+  address premintCollection,
   PremintConfigEncoded calldata encodedPremintConfig,
   bytes calldata signature,
   uint256 quantityToMint,
@@ -89,13 +90,13 @@ function premintExistingContract(
 ) external payable returns (uint256 tokenId);
 ```
 
-This contract address must be a zora creator 1155 contract that already supports premint, which is version 2.0.0 and up.
+This premint collection's address must be a zora creator 1155 contract that already supports premint, which is version 2.0.0 and up.
 
-#### New shared functions for preminting with new or existing contracts.
+#### New single shared function for executing a premint, which works with all versions of premint configs
 
-In order to avoid having to create one function each for premint v1, v2, and future versions of premint, the new function `premintExistingContact` takes a struct `PremintConfigEncoded` that contains commond properties for premint: `uid`, `version`, and `deleted`, an abi encoded `tokenConfig` and a `premintConfigVersion`; the abi encoded token config can be a `TokenCreationConfigV1`, `TokenCreationConfigV2`, or `TokenCreationConfigV3`.
+In order to avoid having to create one function each for premint v1, v2, and future versions of premint, the new function `premint` takes a struct `PremintConfigEncoded` that contains common properties for premint: `uid`, `version`, and `deleted`, an abi encoded `tokenConfig` and a `premintConfigVersion`; the abi encoded token config can be a `TokenCreationConfigV1`, `TokenCreationConfigV2`, or `TokenCreationConfigV3`.
 
-Correspondingly the existing `premintV1/premintV2/premintERC20` functions are deprecated in favor of a function `premintNewContract` that takes a `PremintConfigEncoded` for the premintConfig. This single function works with all versions of premint configs:
+Correspondingly the existing `premintV1/premintV2/premintERC20` functions are deprecated in favor of this new function `premint` that takes a `PremintConfigEncoded` for the premintConfig, and the `contractCreationConfig` as the first argument. If the `premintCollection` parameter is set to a zeroAddress, the function will get or create a contract with an address determined by the contractCreationConfig. This single function works with all versions of premint configs:
 
 ```solidity
 struct PremintConfigEncoded {
@@ -112,8 +113,9 @@ struct PremintConfigEncoded {
   bytes32 premintConfigVersion;
 }
 
-function premintExistingContract(
-  address tokenContract,
+function premint(
+  ContractWithAdditionalAdminsCreationConfig memory contractConfig,
+  address premintCollection,
   PremintConfigEncoded calldata encodedPremintConfig,
   bytes calldata signature,
   uint256 quantityToMint,
@@ -123,17 +125,7 @@ function premintExistingContract(
 ) external payable returns (uint256 tokenId);
 ```
 
-```solidity
-function premintNewContract(
-  ContractWithAdditionalAdminsCreationConfig calldata contractConfig,
-  PremintConfigEncoded calldata encodedPremintConfig,
-  bytes calldata signature,
-  uint256 quantityToMint,
-  MintArguments calldata mintArguments,
-  address firstMinter,
-  address signerContract
-) external payable returns (PremintResult memory);
-```
+`premintV2WithSignerContract` has been removed from the preminter contract to save contract size.
 
 #### 1155 factory's createContractDeterministic resulting address is affected by `setupActions`
 

@@ -11,7 +11,6 @@
   "scripts": {
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test": "FORK_TEST_CHAINS=mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,sepolia,base_goerli,base,zora_sepolia forge test -vvv",
-    "build": "FOUNDRY_PROFILE=dev forge build",
     "prettier": "prettier --write 'src/**/*.sol' 'scripts/**/*.ts'",
     "lint": "prettier --check 'src/**/*.sol' 'scripts/**/*.ts'",
     "copy-deployed-contracts": "yarn tsx script/copy-deployed-contracts.ts",

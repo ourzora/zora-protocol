@@ -18,7 +18,7 @@ import {ZoraCreator1155FactoryImpl} from "../../src/factory/ZoraCreator1155Facto
 import {ZoraCreator1155PremintExecutorImpl} from "../../src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {ZoraCreator1155Attribution, PremintEncoding} from "../../src/delegation/ZoraCreator1155Attribution.sol";
-import {ContractCreationConfig, TokenCreationConfigV2, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractWithAdditionalAdminsCreationConfig, TokenCreationConfigV2, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {UUPSUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/proxy/utils/UUPSUpgradeable.sol";
 import {ProxyShim} from "../../src/utils/ProxyShim.sol";
 import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
@@ -91,8 +91,14 @@ contract ZoraCreator1155PreminterTest is Test {
         defaultMintArguments = MintArguments({mintRecipient: premintExecutor, mintComment: "blah", mintRewardsRecipients: new address[](0)});
     }
 
-    function makeDefaultContractCreationConfig() internal view returns (ContractCreationConfig memory) {
-        return ContractCreationConfig({contractAdmin: creator, contractName: "blah", contractURI: "blah.contract"});
+    function makeDefaultContractCreationConfig() internal view returns (ContractWithAdditionalAdminsCreationConfig memory) {
+        return
+            ContractWithAdditionalAdminsCreationConfig({
+                contractAdmin: creator,
+                contractName: "blah",
+                contractURI: "blah.contract",
+                additionalAdmins: new address[](0)
+            });
     }
 
     function getFixedPriceMinter() internal view returns (IMinter1155) {
@@ -111,22 +117,28 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_premintV2_whenpremintSignerContract_premintSignerContractIsOwner() external {
         // given
-        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
         MockAA mockAA = new MockAA(creator);
         // contract config admin must be the creator, which in this case is the erc1271 contract.
         contractConfig.contractAdmin = address(mockAA);
         PremintConfigV2 memory premintConfig = makePremintConfigWithCreateReferral(premintExecutor);
 
         // creator is the one to sign the premint
-        bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, block.chainid);
+        bytes memory signature = _signPremint(
+            preminter.getContractWithAdditionalAdminsAddress(contractConfig),
+            premintConfig,
+            creatorPrivateKey,
+            block.chainid
+        );
 
         uint256 quantityToMint = 2;
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
 
         // when
-        PremintResult memory premintResult = preminter.premintV2WithSignerContract{value: mintCost}(
+        PremintResult memory premintResult = preminter.premint{value: mintCost}(
             contractConfig,
-            premintConfig,
+            address(0),
+            PremintEncoding.encodePremint(premintConfig),
             signature,
             quantityToMint,
             defaultMintArguments,
@@ -141,21 +153,27 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_premintV2_whenpremintSignerContract_revertsWhen_nonContractAtpremintSignerContract() external {
         // given
-        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
         // contract config admin must be the creator, which in this case is the erc1271 contract.
         PremintConfigV2 memory premintConfig = makePremintConfigWithCreateReferral(premintExecutor);
 
         // creator is the one to sign the premint
-        bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, creatorPrivateKey, block.chainid);
+        bytes memory signature = _signPremint(
+            preminter.getContractWithAdditionalAdminsAddress(contractConfig),
+            premintConfig,
+            creatorPrivateKey,
+            block.chainid
+        );
 
         uint256 quantityToMint = 2;
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
 
         // this should revert - because the smart wallet param is not a contract.
         vm.expectRevert(IZoraCreator1155Errors.premintSignerContractNotAContract.selector);
-        preminter.premintV2WithSignerContract{value: mintCost}(
+        preminter.premint{value: mintCost}(
             contractConfig,
-            premintConfig,
+            address(0),
+            PremintEncoding.encodePremint(premintConfig),
             signature,
             quantityToMint,
             defaultMintArguments,
@@ -166,7 +184,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_premintV2_whenpremintSignerContract_revertsWhen_premintSignerContractRejectsSigner() external {
         // given
-        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
 
         PremintConfigV2 memory premintConfig = makePremintConfigWithCreateReferral(premintExecutor);
 
@@ -176,15 +194,16 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // have another account sign the premint - it should be rejected
         (, uint256 otherPrivateKey) = makeAddrAndKey("other");
-        bytes memory signature = _signPremint(preminter.getContractAddress(contractConfig), premintConfig, otherPrivateKey, block.chainid);
+        bytes memory signature = _signPremint(preminter.getContractWithAdditionalAdminsAddress(contractConfig), premintConfig, otherPrivateKey, block.chainid);
 
         uint256 quantityToMint = 2;
         uint256 mintCost = (mintFeeAmount + premintConfig.tokenConfig.pricePerToken) * quantityToMint;
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.InvalidSigner.selector, bytes4(0)));
-        preminter.premintV2WithSignerContract{value: mintCost}(
+        preminter.premint{value: mintCost}(
             contractConfig,
-            premintConfig,
+            address(0),
+            PremintEncoding.encodePremint(premintConfig),
             signature,
             quantityToMint,
             defaultMintArguments,
@@ -195,7 +214,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_premintV2_whenpremintSignerContract_revertsWhen_invalidSignature() external {
         // given
-        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
         MockAA mockAA = new MockAA(creator);
         // contract config admin must be the creator, which in this case is the erc1271 contract.
         contractConfig.contractAdmin = address(mockAA);
@@ -209,9 +228,10 @@ contract ZoraCreator1155PreminterTest is Test {
         bytes memory signature = abi.encodePacked("bad");
 
         vm.expectRevert(IZoraCreator1155Errors.premintSignerContractFailedToRecoverSigner.selector);
-        preminter.premintV2WithSignerContract{value: mintCost}(
+        preminter.premint{value: mintCost}(
             contractConfig,
-            premintConfig,
+            address(0),
+            PremintEncoding.encodePremint(premintConfig),
             signature,
             quantityToMint,
             defaultMintArguments,
@@ -222,7 +242,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
     function test_premintV2_whenpremintSignerContract_revertsWhen_premintSignerContractNotAContract() external {
         // given
-        ContractCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig = makeDefaultContractCreationConfig();
         MockAA mockAA = new MockAA(creator);
         // contract config admin must be the creator, which in this case is the erc1271 contract.
         contractConfig.contractAdmin = address(mockAA);
@@ -230,9 +250,10 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // make the signature bad
         vm.expectRevert(IZoraCreator1155Errors.premintSignerContractNotAContract.selector);
-        preminter.premintV2WithSignerContract(
+        preminter.premint(
             contractConfig,
-            premintConfig,
+            address(0),
+            PremintEncoding.encodePremint(premintConfig),
             bytes(""),
             1,
             defaultMintArguments,

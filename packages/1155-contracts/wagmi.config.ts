@@ -18,6 +18,7 @@ export default defineConfig({
         "ZoraCreator1155PremintExecutorImpl",
         "DeterministicProxyDeployer",
         "IImmutableCreate2Factory",
+        "IPremintDefinitions",
         "ProtocolRewards",
         "ERC20Minter",
       ].map((contractName) => `${contractName}.json`),

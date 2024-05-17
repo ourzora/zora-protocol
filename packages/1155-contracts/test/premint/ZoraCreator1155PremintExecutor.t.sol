@@ -929,11 +929,14 @@ contract ZoraCreator1155PreminterTest is Test {
         address executor = makeAddr("executor");
         vm.deal(executor, mintCost);
 
+        ContractWithAdditionalAdminsCreationConfig memory emptyContractConfig;
+
         // now call premintExistingContract
         vm.prank(executor);
         vm.expectEmit(true, true, true, true);
         emit PremintedV2(address(zora1155), 1, false, premintConfig.uid, executor, quantityToMint);
-        preminter.premintExistingContract{value: mintCost}(
+        preminter.premint{value: mintCost}(
+            emptyContractConfig,
             address(zora1155),
             PremintEncoding.encodePremint(premintConfig),
             signature,
@@ -983,8 +986,9 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 mintCost = mintFeeAmount * quantityToMint;
 
         // premint using the creators premint - this should create the contract add the collaborators as admins
-        preminter.premintNewContract{value: mintCost}(
+        preminter.premint{value: mintCost}(
             contractConfig,
+            address(0),
             PremintEncoding.encodePremint(premintConfig),
             creatorPremintSignature,
             quantityToMint,
@@ -998,7 +1002,9 @@ contract ZoraCreator1155PreminterTest is Test {
         assertTrue(IZoraCreator1155(contractAddress).isAdminOrRole(collaboratorB, 0, PERMISSION_BIT_ADMIN));
 
         // premint against existing contract using the collaborators premint - it should succeed
-        uint256 collaboratorTokenId = preminter.premintExistingContract{value: mintCost}(
+        uint256 collaboratorTokenId = preminter
+        .premint{value: mintCost}(
+            contractConfig,
             contractAddress,
             PremintEncoding.encodePremint(collaboratorPremintConfig),
             collaboratorPremintSignature,
@@ -1006,7 +1012,7 @@ contract ZoraCreator1155PreminterTest is Test {
             defaultMintArguments,
             makeAddr("firstMinter"),
             address(0)
-        );
+        ).tokenId;
 
         assertEq(collaboratorTokenId, 2);
     }
@@ -1047,8 +1053,9 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 mintCost = mintFeeAmount * quantityToMint;
 
         // premint using the collaborators premint
-        preminter.premintNewContract{value: mintCost}(
+        preminter.premint{value: mintCost}(
             contractConfig,
+            address(0),
             PremintEncoding.encodePremint(collaboratorPremintConfig),
             collaboratorPremintSignature,
             quantityToMint,
@@ -1063,7 +1070,9 @@ contract ZoraCreator1155PreminterTest is Test {
         assertTrue(IZoraCreator1155(contractAddress).isAdminOrRole(collaboratorB, 0, PERMISSION_BIT_ADMIN));
 
         // premint against the existing contract using the original creators premint
-        uint256 creatorTokenId = preminter.premintExistingContract{value: mintCost}(
+        uint256 creatorTokenId = preminter
+        .premint{value: mintCost}(
+            contractConfig,
             contractAddress,
             PremintEncoding.encodePremint(premintConfig),
             creatorPremintSignature,
@@ -1071,7 +1080,7 @@ contract ZoraCreator1155PreminterTest is Test {
             defaultMintArguments,
             makeAddr("firstMinter"),
             address(0)
-        );
+        ).tokenId;
 
         assertEq(creatorTokenId, 2);
     }
