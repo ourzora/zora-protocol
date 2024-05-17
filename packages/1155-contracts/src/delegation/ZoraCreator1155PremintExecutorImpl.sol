@@ -22,6 +22,7 @@ import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.
 import {IRewardsErrors} from "@zoralabs/protocol-rewards/src/interfaces/IRewardsErrors.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
+import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title Enables creation of and minting tokens on Zora1155 contracts transactions using eip-712 signatures.
 /// Signature must provided by the contract creator, or an account that's permitted to create new tokens on the contract.
@@ -33,7 +34,8 @@ contract ZoraCreator1155PremintExecutorImpl is
     UUPSUpgradeable,
     IHasContractName,
     IZoraCreator1155Errors,
-    IRewardsErrors
+    IRewardsErrors,
+    ContractVersionBase
 {
     IZoraCreator1155Factory public immutable zora1155Factory;
 
