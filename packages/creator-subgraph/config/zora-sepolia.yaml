@@ -32,6 +32,6 @@ erc20Minter:
   - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
     startBlock: "6695930"
     version: "1"
-  - address: "0xed3f8CD54DfE67495337ceA7F6fb9d790d2b493F"
-    startBlock: "8639880"
+  - address: "0x7Cad62748DDf516CF85bC2C05C14786D84Cf861c"
+    startBlock: "8900543"
     version: "2"
