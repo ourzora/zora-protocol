@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.11
+
+### Patch Changes
+
+- 399ba552: Deployed deterministic proxies to base sepolia. Deployed latest versions to base sepolia.
+
 ## 0.1.10
 
 ### Patch Changes

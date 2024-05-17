@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.14
+
+### Patch Changes
+
+- 1a4aa02d: Remove graphql-request library and add base sepolia
+- Updated dependencies [399ba552]
+  - @zoralabs/protocol-deployments@0.1.11
+
 ## 0.5.13
 
 ### Patch Changes
