@@ -18,6 +18,7 @@ import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncodin
 import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, TokenCreationConfigV2, MintArguments, PremintResult, PremintConfigV3, TokenCreationConfigV3, PremintConfigEncoded} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraCreator1155PremintExecutor} from "../interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraCreator1155DelegatedCreationLegacy, IHasSupportedPremintSignatureVersions} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
+import {IZoraCreator1155PremintExecutorAllVersions} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorAllVersions.sol";
 import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
 import {IRewardsErrors} from "@zoralabs/protocol-rewards/src/interfaces/IRewardsErrors.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -30,6 +31,7 @@ import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 /// @author @oveddan
 contract ZoraCreator1155PremintExecutorImpl is
     IZoraCreator1155PremintExecutor,
+    IZoraCreator1155PremintExecutorAllVersions,
     Ownable2StepUpgradeable,
     UUPSUpgradeable,
     IHasContractName,

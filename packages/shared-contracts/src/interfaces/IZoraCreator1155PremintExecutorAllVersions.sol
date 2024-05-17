@@ -1,22 +1,10 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigV2, PremintConfigEncoded, PremintResult, MintArguments} from "../entities/Premint.sol";
+import {ContractWithAdditionalAdminsCreationConfig, PremintConfigEncoded, PremintResult, MintArguments} from "../entities/Premint.sol";
 import {IGetContractAddress} from "./IGetContractAddress.sol";
 
-interface IZoraCreator1155PremintExecutorV2 is IGetContractAddress {
-    function premintV2WithSignerContract(
-        ContractCreationConfig calldata contractConfig,
-        PremintConfigV2 calldata premintConfig,
-        bytes calldata signature,
-        uint256 quantityToMint,
-        MintArguments calldata mintArguments,
-        address firstMinter,
-        address signerContract
-    ) external payable returns (PremintResult memory result);
-}
-
-interface IZoraCreator1155PremintExecutorAllVersions {
+interface IZoraCreator1155PremintExecutorAllVersions is IGetContractAddress {
     /// Creates a new token on the given erc1155 contract on behalf of a creator, and mints x tokens to the executor of this transaction.
     /// If the erc1155 contract hasn't been created yet, it will be created with the given config within this same transaction.
     /// The creator must sign the intent to create the token, and must have mint new token permission on the erc1155 contract,

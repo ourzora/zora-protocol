@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import {Enjoy} from "_imagine/mint/Enjoy.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
-import {IZoraCreator1155PremintExecutorV2} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorV2.sol";
+import {IZoraCreator1155PremintExecutorAllVersions} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorAllVersions.sol";
 import {MintsManagerStorageBase} from "./MintsManagerStorageBase.sol";
 import {IZoraMints1155, IUpdateableTokenURI} from "./interfaces/IZoraMints1155.sol";
 import {IZoraMintsAdmin} from "./interfaces/IZoraMintsAdmin.sol";
@@ -17,7 +17,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IAuthority} from "@openzeppelin/contracts/access/manager/IAuthority.sol";
 import {IMintWithMints} from "./IMintWithMints.sol";
 import {IMinter1155} from "@zoralabs/shared-contracts/interfaces/IMinter1155.sol";
-import {ContractCreationConfig, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, PremintConfigV2, ContractWithAdditionalAdminsCreationConfig, PremintConfigEncoded, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ICollectWithZoraMints} from "./ICollectWithZoraMints.sol";
 import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
@@ -45,9 +46,9 @@ contract ZoraMintsManagerImpl is
     IHasContractName
 {
     using SafeERC20 for IERC20;
-    IZoraCreator1155PremintExecutorV2 immutable premintExecutor;
+    IZoraCreator1155PremintExecutorAllVersions immutable premintExecutor;
 
-    constructor(IZoraCreator1155PremintExecutorV2 _premintExecutor) {
+    constructor(IZoraCreator1155PremintExecutorAllVersions _premintExecutor) {
         if (address(_premintExecutor) == address(0)) {
             revert PremintExecutorCannotBeZero();
         }
@@ -244,6 +245,7 @@ contract ZoraMintsManagerImpl is
         (mintTo, mintComment) = abi.decode(minterArguments, (address, string));
     }
 
+    // deprecated: call collectPremint
     function collectPremintV2(
         ContractCreationConfig calldata contractConfig,
         PremintConfigV2 calldata premintConfig,
@@ -251,27 +253,75 @@ contract ZoraMintsManagerImpl is
         MintArguments calldata mintArguments,
         address signerContract
     ) external payable override onlyThis returns (PremintResult memory result) {
+        ContractWithAdditionalAdminsCreationConfig memory contractWithAdditionalAdminsCreationConfig = ContractWithAdditionalAdminsCreationConfig({
+            contractAdmin: contractConfig.contractAdmin,
+            contractURI: contractConfig.contractURI,
+            contractName: contractConfig.contractName,
+            additionalAdmins: new address[](0)
+        });
+
+        return
+            collectPremint(
+                contractWithAdditionalAdminsCreationConfig,
+                address(0),
+                PremintEncoding.encodePremint(premintConfig),
+                signature,
+                mintArguments,
+                signerContract
+            );
+    }
+
+    function collectPremint(
+        ContractWithAdditionalAdminsCreationConfig memory contractConfig,
+        address tokenContract,
+        PremintConfigEncoded memory premintConfig,
+        bytes calldata signature,
+        MintArguments calldata mintArguments,
+        address signerContract
+    ) public payable override onlyThis returns (PremintResult memory result) {
         MintArguments memory emptyArguments;
         TransferredMints memory transferredMints = _getTransferredMints();
         address firstMinter = transferredMints.from;
-        // call premint with mints on the premint executor, which will get or create the contract,
+
+        // call premint with mints on the premint executor,
         // get or create a token for the uid.
         // quantity to mint is 0, meaning that this step will just get or create the contract and token
-        result = premintExecutor.premintV2WithSignerContract{value: msg.value}(
-            contractConfig,
-            premintConfig,
-            signature,
-            0,
-            // these arent used in the premint when quantity to mint is 0, so we can pass empty arguments
-            emptyArguments,
-            firstMinter,
-            signerContract
-        );
+
+        // if there is not token contract address, assume this is a new contract, we execute premint
+        // against the new contract:
+        if (tokenContract == address(0)) {
+            result = premintExecutor.premintNewContract{value: msg.value}(
+                contractConfig,
+                premintConfig,
+                signature,
+                0,
+                // these arent used in the premint when quantity to mint is 0, so we can pass empty arguments
+                emptyArguments,
+                firstMinter,
+                signerContract
+            );
+        } else {
+            // otherwise we assume its an existing contract, and we execute premint against the existing contract
+            result.contractAddress = tokenContract;
+
+            result.tokenId = premintExecutor.premintExistingContract{value: msg.value}(
+                tokenContract,
+                premintConfig,
+                signature,
+                0,
+                // these arent used in the premint when quantity to mint is 0, so we can pass empty arguments
+                emptyArguments,
+                firstMinter,
+                signerContract
+            );
+        }
+
+        (, address minter) = PremintEncoding.decodePremintConfig(premintConfig);
 
         // collect tokens from the creator contract using MINTs
         _collect(
             IMintWithMints(result.contractAddress),
-            IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
+            IMinter1155(minter),
             result.tokenId,
             mintArguments.mintRewardsRecipients,
             abi.encode(mintArguments.mintRecipient, ""),
@@ -408,7 +458,11 @@ contract ZoraMintsManagerImpl is
     function _handleReceivedCall(bytes calldata data, uint256 value) private returns (bool success, bytes memory result) {
         bytes4 selector = bytes4(data[:4]);
 
-        if (selector != ICollectWithZoraMints.collect.selector && selector != ICollectWithZoraMints.collectPremintV2.selector) {
+        if (
+            (selector != ICollectWithZoraMints.collect.selector &&
+                selector != ICollectWithZoraMints.collectPremintV2.selector &&
+                selector != ICollectWithZoraMints.collectPremint.selector)
+        ) {
             revert UnknownUserAction(selector);
         }
 

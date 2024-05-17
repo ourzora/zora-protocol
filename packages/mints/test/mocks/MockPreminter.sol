@@ -4,12 +4,12 @@ pragma solidity ^0.8.17;
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {Mock1155} from "./Mock1155.sol";
 
-import {IZoraCreator1155PremintExecutorV2} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorV2.sol";
+import {IZoraCreator1155PremintExecutorAllVersions} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorAllVersions.sol";
 import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigV2, MintArguments, PremintResult, PremintConfigEncoded} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraMints1155} from "../../src/interfaces/IZoraMints1155.sol";
 import {IZoraMintsMinterManager} from "../../src/interfaces/IZoraMintsMinterManager.sol";
 
-contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
+contract MockPreminter is IZoraCreator1155PremintExecutorAllVersions {
     bytes32 constant salt = keccak256(bytes("randomSalt"));
 
     // we hardcode this for now for testing
@@ -21,40 +21,40 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
         mintsManager = _mints;
     }
 
-    function getCreationCode(ContractCreationConfig memory contractConfig) public view returns (bytes memory) {
+    function getCreationCode(ContractWithAdditionalAdminsCreationConfig memory contractConfig) public view returns (bytes memory) {
         return
             abi.encodePacked(
                 type(Mock1155).creationCode,
-                abi.encode(mintsManager, contractConfig.contractAdmin, contractConfig.contractURI, contractConfig.contractName)
+                abi.encode(mintsManager, contractConfig.contractAdmin, contractConfig.contractURI, contractConfig.contractName, contractConfig.additionalAdmins)
             );
     }
 
-    function getContractAddress(ContractCreationConfig calldata contractConfig) public view returns (address) {
+    function getContractAddress(ContractCreationConfig calldata) public view returns (address) {
+        revert("Not Implemented");
+    }
+
+    function getContractWithAdditionalAdminsAddress(ContractWithAdditionalAdminsCreationConfig calldata contractConfig) public view returns (address) {
         return Create2.computeAddress(salt, keccak256(getCreationCode(contractConfig)));
-    }
-
-    function getContractWithAdditionalAdminsAddress(ContractWithAdditionalAdminsCreationConfig calldata contractConfig) external view returns (address) {
-        revert("Not implemented");
-    }
-
-    function getOrCreateContract(ContractCreationConfig calldata contractConfig) private returns (Mock1155 tokenContract, bool isNewContract) {
-        address contractAddress = getContractAddress(contractConfig);
-
-        if (contractAddress.code.length == 0) {
-            address createdAddress = Create2.deploy(0, salt, getCreationCode(contractConfig));
-
-            if (createdAddress != getContractAddress(contractConfig)) {
-                revert("MockPreminter: created address does not match expected address");
-            }
-        }
-
-        return (Mock1155(contractAddress), false);
     }
 
     function _doTransfer(uint256[] calldata mintTokenIds, uint256[] calldata mintTokenIdQuantities, address contractAddress) private {
         // transfer mints to itself
         // then transfer mints to the contract
         Mock1155(contractAddress).transferMINTsToSelf(mintTokenIds, mintTokenIdQuantities);
+    }
+
+    function getOrCreateContract(ContractWithAdditionalAdminsCreationConfig calldata contractConfig) public returns (address) {
+        address contractAddress = getContractWithAdditionalAdminsAddress(contractConfig);
+
+        if (contractAddress.code.length == 0) {
+            address createdAddress = Create2.deploy(0, salt, getCreationCode(contractConfig));
+
+            if (createdAddress != contractAddress) {
+                revert("MockPreminter: created address does not match expected address");
+            }
+        }
+
+        return contractAddress;
     }
 
     function premintNewContract(
@@ -66,7 +66,9 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
         address firstMinter,
         address signerContract
     ) external payable returns (PremintResult memory) {
-        revert("Not implemented");
+        address contractAddress = getOrCreateContract(contractConfig);
+
+        return PremintResult(contractAddress, predictedTokenId, false);
     }
 
     function premintExistingContract(
@@ -78,7 +80,7 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
         address firstMinter,
         address signerContract
     ) external payable returns (uint256 tokenId) {
-        revert("Not implemented");
+        return predictedTokenId;
     }
 
     function premintV2WithSignerContract(
@@ -89,17 +91,5 @@ contract MockPreminter is IZoraCreator1155PremintExecutorV2 {
         MintArguments calldata mintArguments,
         address firstMinter,
         address signerContract
-    ) external payable returns (PremintResult memory result) {
-        address contractAddress = getContractAddress(contractConfig);
-
-        if (contractAddress.code.length == 0) {
-            address createdAddress = Create2.deploy(0, salt, getCreationCode(contractConfig));
-
-            if (createdAddress != getContractAddress(contractConfig)) {
-                revert("MockPreminter: created address does not match expected address");
-            }
-        }
-
-        return PremintResult(contractAddress, predictedTokenId, false);
-    }
+    ) external payable returns (PremintResult memory result) {}
 }

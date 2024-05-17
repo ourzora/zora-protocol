@@ -6,7 +6,7 @@ import {IMinter1155} from "@zoralabs/shared-contracts/interfaces/IMinter1155.sol
 import {IMintWithMints} from "./IMintWithMints.sol";
 import {PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 
-import {ContractCreationConfig, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {ContractCreationConfig, ContractWithAdditionalAdminsCreationConfig, PremintConfigEncoded, PremintConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 
 interface ICollectWithZoraMints is IZoraCreator1155Errors {
     event Collected(uint256[] indexed tokenIds, uint256[] quantities, address indexed zoraCreator1155Contract, uint256 indexed zoraCreator1155TokenId);
@@ -40,9 +40,19 @@ interface ICollectWithZoraMints is IZoraCreator1155Errors {
         CollectMintArguments calldata collectMintArguments
     ) external payable;
 
+    /** deprecated - use collectPremint */
     function collectPremintV2(
         ContractCreationConfig calldata contractConfig,
         PremintConfigV2 calldata premintConfig,
+        bytes calldata signature,
+        MintArguments calldata mintArguments,
+        address signerContract
+    ) external payable returns (PremintResult memory);
+
+    function collectPremint(
+        ContractWithAdditionalAdminsCreationConfig calldata contractConfig,
+        address tokenContract,
+        PremintConfigEncoded calldata premintConfigEncoded,
         bytes calldata signature,
         MintArguments calldata mintArguments,
         address signerContract

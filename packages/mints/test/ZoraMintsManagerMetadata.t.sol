@@ -16,7 +16,7 @@ import {ZoraMintsManagerImpl, TokenConfig} from "../src/ZoraMintsManagerImpl.sol
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {ZoraMintsManager} from "../src/ZoraMintsManager.sol";
 import {IZoraMintsURIManager} from "../src/interfaces/IZoraMintsURIManager.sol";
-import {IZoraCreator1155PremintExecutorV2} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorV2.sol";
+import {IZoraCreator1155PremintExecutorAllVersions} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorAllVersions.sol";
 
 contract ZoraMintsManagerMetadataTest is Test {
     event URIsUpdated(string contractURI, string baseURI);
@@ -31,7 +31,7 @@ contract ZoraMintsManagerMetadataTest is Test {
 
     function setUp() public {
         bytes memory mintsCreationCode = abi.encodePacked(type(ZoraMints1155).creationCode);
-        ZoraMintsManagerImpl managerImpl = new ZoraMintsManagerImpl(IZoraCreator1155PremintExecutorV2(address(0x123)));
+        ZoraMintsManagerImpl managerImpl = new ZoraMintsManagerImpl(IZoraCreator1155PremintExecutorAllVersions(address(0x123)));
         ZoraMintsManager managerProxy = new ZoraMintsManager(address(managerImpl));
         zoraMintsManager = ZoraMintsManagerImpl(address(managerProxy));
         mints = zoraMintsManager.initialize({

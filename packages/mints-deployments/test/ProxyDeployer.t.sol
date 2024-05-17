@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 
 import "forge-std/Test.sol";
-import {IZoraCreator1155PremintExecutorV2} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorV2.sol";
+import {IZoraCreator1155PremintExecutorAllVersions} from "@zoralabs/shared-contracts/interfaces/IZoraCreator1155PremintExecutorAllVersions.sol";
 import {ProxyAdmin} from "@openzeppelin/contracts/proxy/transparent/ProxyAdmin.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -19,7 +19,7 @@ contract DeterministicUUPSProxyDeployerDeployerTest is Test {
 
     DeterministicUUPSProxyDeployer proxyDeployer;
 
-    IZoraCreator1155PremintExecutorV2 preminter;
+    IZoraCreator1155PremintExecutorAllVersions preminter;
 
     function setUp() external {
         vm.createSelectFork("zora", 9718296);

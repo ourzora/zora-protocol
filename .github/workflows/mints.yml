@@ -26,4 +26,4 @@ jobs:
     uses: ./.github/workflows/coverage.yml
     with:
       package: "mints"
-      files_to_ignore: '"*Ownable*" "*Mock*"'
+      files_to_ignore: '"*Ownable*" "*Mock*" "*BatchDataHelper*" "*test*"'
