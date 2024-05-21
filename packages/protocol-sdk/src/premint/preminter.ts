@@ -50,17 +50,14 @@ export async function isAuthorizedToCreatePremint({
   publicClient: PublicClient;
   signer: Address;
 }) {
+  if (collection.additionalAdmins.length > 0)
+    throw new Error("additionalAdmins not supported yet.");
   // otherwize, we must assume the newer version of premint executor is deployed, so we call that.
   return await publicClient.readContract({
     abi: preminterAbi,
     address: getPremintExecutorAddress(),
-    functionName: "isAuthorizedToCreatePremintWithAdditionalAdmins",
-    args: [
-      signer,
-      collection.contractAdmin,
-      collectionAddress,
-      collection.additionalAdmins,
-    ],
+    functionName: "isAuthorizedToCreatePremint",
+    args: [signer, collection.contractAdmin, collectionAddress],
   });
 }
 
