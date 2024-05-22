@@ -365,10 +365,18 @@ contract ZoraCreator1155Impl is
     /// @param tokenId The token ID to remove the role from
     /// @param user The user to remove the role from
     /// @param permissionBits The permission bit to remove
-    function removePermission(uint256 tokenId, address user, uint256 permissionBits) external onlyAdmin(tokenId) {
+    function removePermission(uint256 tokenId, address user, uint256 permissionBits) external {
+        address sender = msg.sender;
+
+        // Check if the user is an admin if they do not have the roles they are attempting to remove.
+        if (!(user == sender && _hasAllPermissions(tokenId, sender, permissionBits))) {
+            // Ensure that the sender of this message is an admin
+            _requireAdmin(sender, tokenId);
+        }
+
         _removePermission(tokenId, user, permissionBits);
 
-        // Clear owner field
+        // Clear owner field on contract if removed permission is owner.
         if (tokenId == CONTRACT_BASE_ID && user == config.owner && !_hasAnyPermission(CONTRACT_BASE_ID, user, PERMISSION_BIT_ADMIN)) {
             _setOwner(address(0));
         }

@@ -92,6 +92,7 @@ contract ZoraCreator1155Test is Test {
         uint256 firstMinterReward,
         uint256 zoraReward
     );
+    event UpdatedPermissions(uint256 indexed tokenId, address indexed user, uint256 indexed tokenPermissions);
 
     function setUp() external {
         creator = makeAddr("creator");
@@ -332,12 +333,9 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, recipient, adminRole);
     }
 
-    function test_removePermission(uint256 tokenId, uint256 permission, address user) external {
+    function test_removePermissionAdmin(uint256 tokenId, uint256 permission, address user) external {
         vm.assume(permission != 0);
         init();
-
-        vm.prank(admin);
-        target.setupNewToken("test", 1000);
 
         vm.prank(admin);
         target.addPermission(tokenId, user, permission);
@@ -346,6 +344,97 @@ contract ZoraCreator1155Test is Test {
         target.removePermission(tokenId, user, permission);
 
         assertEq(target.permissions(tokenId, user), 0);
+    }
+
+    function test_removePermissionUser() external {
+        init();
+
+        address targetUser = address(0x240);
+
+        vm.prank(admin);
+        target.addPermission(0, targetUser, 2 ** 3);
+
+        vm.prank(targetUser);
+        target.removePermission(0, targetUser, 2 ** 3);
+
+        assertEq(target.permissions(0, targetUser), 0);
+    }
+
+    function test_removePermissionsUser() external {
+        init();
+
+        address targetUser = address(0x240);
+
+        vm.prank(admin);
+        target.addPermission(0, targetUser, 2 ** 3 + 2 ** 4 + 2 ** 5);
+
+        vm.prank(targetUser);
+        target.removePermission(0, targetUser, 2 ** 3 + 2 ** 4);
+
+        assertEq(target.permissions(0, targetUser), 2 ** 5);
+    }
+
+    function test_removePermissionSingleToken() external {
+        init();
+
+        address targetUser = address(0x025);
+
+        vm.prank(admin);
+        target.addPermission(10, targetUser, 2 ** 3);
+
+        vm.prank(targetUser);
+        vm.expectEmit();
+        emit UpdatedPermissions(10, targetUser, 0);
+        target.removePermission(10, targetUser, 2 ** 3);
+
+        assertEq(target.permissions(10, targetUser), 0);
+    }
+
+    function test_removePermissionsUserNotAllowed() external {
+        init();
+
+        address targetUser = address(0x240);
+        address userWithPermissions = address(0x14028);
+
+        // Permissions granted that do _not_ include 2**1 (admin permission)
+        uint256 permissions = 2 ** 3 + 2 ** 4 + 2 ** 5;
+
+        vm.prank(admin);
+        target.addPermission(0, userWithPermissions, permissions);
+
+        uint256 adminPermissionBit = target.PERMISSION_BIT_ADMIN();
+
+        vm.prank(targetUser);
+        vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, targetUser, 0, adminPermissionBit));
+        target.removePermission(0, userWithPermissions, permissions);
+
+        assertEq(target.permissions(0, userWithPermissions), permissions);
+
+        // Try again now from the user with permissions
+        vm.prank(userWithPermissions);
+        target.removePermission(0, userWithPermissions, permissions);
+
+        assertEq(target.permissions(0, userWithPermissions), 0);
+    }
+
+    function test_removePermissionsUserAdmin() external {
+        init();
+
+        address targetUser = address(0x2401);
+
+        uint256 permissions = 2 ** 3 + 2 ** 4 + 2 ** 6;
+
+        vm.prank(admin);
+        target.addPermission(0, targetUser, permissions);
+
+        assertEq(target.permissions(0, targetUser), permissions);
+
+        vm.expectEmit();
+        emit UpdatedPermissions(0, targetUser, 2 ** 6);
+        vm.prank(admin);
+        target.removePermission(0, targetUser, 2 ** 3 + 2 ** 4);
+
+        assertEq(target.permissions(0, targetUser), 2 ** 6);
     }
 
     function test_removePermissionRevokeOwnership() external {

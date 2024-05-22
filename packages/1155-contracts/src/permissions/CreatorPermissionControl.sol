@@ -15,6 +15,14 @@ contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermiss
         return permissions[tokenId][user] & permissionBits > 0;
     }
 
+    /// @notice Check if the user has all of the given permissions
+    /// @dev if multiple permissions are passed in this checks for any one of those permissions
+    /// @return true or false if any of the passed in permissions apply
+    function _hasAllPermissions(uint256 tokenId, address user, uint256 permissionBits) internal view returns (bool) {
+        // Does a bitwise and and checks if all of those permissions match
+        return permissions[tokenId][user] & permissionBits == permissionBits;
+    }
+
     /// @notice addPermission – internal function to add a set of permission bits to a user
     /// @param tokenId token id to add the permission to (0 indicates contract-wide add)
     /// @param user user to update permissions for
