@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.10.1
+
+### Patch Changes
+
+- 368940ba: Change removePermission behavior to allow a user to remove their own permission
+
 ## 2.10.0
 
 ### Minor Changes

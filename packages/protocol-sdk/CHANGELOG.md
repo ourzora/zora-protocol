@@ -1,5 +1,12 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.15
+
+### Patch Changes
+
+- 888168b8: Fix protocol-sdk to point to `isAuthorizedToCreatePremint`
+- 344f452b: Add support for ERC-20 minting on 1155s using ERC20 minters within the function `makePrepareMintTokenParams`.
+
 ## 0.5.14
 
 ### Patch Changes
