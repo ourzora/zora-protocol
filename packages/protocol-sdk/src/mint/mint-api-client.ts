@@ -1,10 +1,13 @@
+import { Address } from "viem";
 import {
   httpClient as defaultHttpClient,
   IHttpClient,
 } from "../apis/http-api-base";
 import { NetworkConfig, networkConfigByChain } from "src/apis/chain-constants";
 import { GenericTokenIdTypes } from "src/types";
-import { Address } from "viem";
+import { NFT_SALE_QUERY } from "src/constants";
+
+export type SaleType = "fixedPrice" | "erc20";
 
 type FixedPriceSaleStrategyResult = {
   address: Address;
@@ -14,12 +17,48 @@ type FixedPriceSaleStrategyResult = {
   maxTokensPerAddress: string;
 };
 
-type SaleStrategyResult = {
-  fixedPrice: FixedPriceSaleStrategyResult;
+type ERC20SaleStrategyResult = FixedPriceSaleStrategyResult & {
+  currency: Address;
 };
 
+type SalesStrategyResult =
+  | {
+      type: "FIXED_PRICE";
+      fixedPrice: FixedPriceSaleStrategyResult;
+    }
+  | {
+      type: "ERC_20_MINTER";
+      erc20Minter: ERC20SaleStrategyResult;
+    };
+
+type TokenQueryResult = {
+  tokenId?: string;
+  salesStrategies?: SalesStrategyResult[];
+  contract: {
+    mintFeePerQuantity: "string";
+    salesStrategies: SalesStrategyResult[];
+  };
+};
+
+type SaleStrategy<T extends SaleType> = {
+  saleType: T;
+  address: Address;
+  pricePerToken: bigint;
+  saleEnd: string;
+  saleStart: string;
+  maxTokensPerAddress: bigint;
+};
+
+type FixedPriceSaleStrategy = SaleStrategy<"fixedPrice">;
+
+type ERC20SaleStrategy = SaleStrategy<"erc20"> & {
+  currency: Address;
+};
+
+type SaleStrategies = FixedPriceSaleStrategy | ERC20SaleStrategy;
+
 export type SalesConfigAndTokenInfo = {
-  fixedPrice: FixedPriceSaleStrategyResult;
+  salesConfig: SaleStrategies;
   mintFeePerQuantity: bigint;
 };
 
@@ -42,40 +81,16 @@ export class MintAPIClient {
   async getSalesConfigAndTokenInfo({
     tokenAddress,
     tokenId,
+    saleType,
   }: {
     tokenAddress: Address;
     tokenId?: GenericTokenIdTypes;
+    saleType?: SaleType;
   }): Promise<SalesConfigAndTokenInfo> {
     const { retries, post } = this.httpClient;
     return retries(async () => {
       const response = await post<any>(this.networkConfig.subgraphUrl, {
-        query: `
-          fragment SaleStrategy on SalesStrategyConfig {
-            type
-            fixedPrice {
-              address
-              pricePerToken
-              saleEnd
-              saleStart
-              maxTokensPerAddress
-            }
-          }
-
-          query ($id: ID!) {
-            zoraCreateToken(id: $id) {
-              id
-              contract {
-                mintFeePerQuantity
-                salesStrategies(where: { type: "FIXED_PRICE" }) {
-                  ...SaleStrategy
-                }
-              }
-              salesStrategies(where: { type: "FIXED_PRICE" }) {
-                ...SaleStrategy
-              }
-            }
-          }
-        `,
+        query: NFT_SALE_QUERY,
         variables: {
           id:
             tokenId !== undefined
@@ -85,31 +100,78 @@ export class MintAPIClient {
         },
       });
 
-      const token = response.data?.zoraCreateToken;
+      const token = response.data?.zoraCreateToken as TokenQueryResult;
 
       if (!token) {
         throw new Error("Cannot find a token to mint");
       }
 
-      const saleStrategies: SaleStrategyResult[] =
-        tokenId !== undefined
+      const allStrategies =
+        (typeof tokenId !== "undefined"
           ? token.salesStrategies
-          : token.contract.salesStrategies;
+          : token.contract.salesStrategies) || [];
 
-      const fixedPrice = saleStrategies
-        ?.sort((a: SaleStrategyResult, b: SaleStrategyResult) =>
-          BigInt(a.fixedPrice.saleEnd) > BigInt(b.fixedPrice.saleEnd) ? 1 : -1,
+      const saleStrategies = allStrategies.sort((a, b) =>
+        BigInt(
+          a.type === "ERC_20_MINTER"
+            ? a.erc20Minter.saleEnd
+            : a.fixedPrice.saleEnd,
+        ) >
+        BigInt(
+          b.type === "FIXED_PRICE"
+            ? b.fixedPrice.saleEnd
+            : b.erc20Minter.saleEnd,
         )
-        ?.find(() => true)?.fixedPrice;
+          ? 1
+          : -1,
+      );
 
-      if (!fixedPrice) {
-        throw new Error("Cannot find fixed price sale strategy");
+      let targetStrategy: SalesStrategyResult | undefined;
+
+      if (!saleType) {
+        targetStrategy = saleStrategies[0];
+        if (!targetStrategy) {
+          throw new Error("Cannot find sale strategy");
+        }
+      } else {
+        const mappedSaleType =
+          saleType === "erc20" ? "ERC_20_MINTER" : "FIXED_PRICE";
+        targetStrategy = saleStrategies.find(
+          (strategy: SalesStrategyResult) => strategy.type === mappedSaleType,
+        );
+        if (!targetStrategy) {
+          throw new Error(`Cannot find sale strategy for ${mappedSaleType}`);
+        }
       }
 
-      return {
-        fixedPrice,
-        mintFeePerQuantity: BigInt(token.contract.mintFeePerQuantity),
-      };
+      if (targetStrategy.type === "FIXED_PRICE") {
+        return {
+          salesConfig: {
+            saleType: "fixedPrice",
+            ...targetStrategy.fixedPrice,
+            maxTokensPerAddress: BigInt(
+              targetStrategy.fixedPrice.maxTokensPerAddress,
+            ),
+            pricePerToken: BigInt(targetStrategy.fixedPrice.pricePerToken),
+          },
+          mintFeePerQuantity: BigInt(token.contract.mintFeePerQuantity),
+        };
+      }
+      if (targetStrategy.type === "ERC_20_MINTER") {
+        return {
+          salesConfig: {
+            saleType: "erc20",
+            ...targetStrategy.erc20Minter,
+            maxTokensPerAddress: BigInt(
+              targetStrategy.erc20Minter.maxTokensPerAddress,
+            ),
+            pricePerToken: BigInt(targetStrategy.erc20Minter.pricePerToken),
+          },
+          mintFeePerQuantity: BigInt(token.contract.mintFeePerQuantity),
+        };
+      }
+
+      throw new Error("Invalid saleType");
     });
   }
 }

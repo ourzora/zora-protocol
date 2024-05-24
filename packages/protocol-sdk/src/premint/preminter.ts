@@ -56,8 +56,13 @@ export async function isAuthorizedToCreatePremint({
   return await publicClient.readContract({
     abi: preminterAbi,
     address: getPremintExecutorAddress(),
-    functionName: "isAuthorizedToCreatePremint",
-    args: [signer, collection.contractAdmin, collectionAddress],
+    functionName: "isAuthorizedToCreatePremintWithAdditionalAdmins",
+    args: [
+      signer,
+      collection.contractAdmin,
+      collectionAddress,
+      collection.additionalAdmins,
+    ],
   });
 }
 

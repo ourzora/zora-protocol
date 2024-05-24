@@ -10,15 +10,21 @@ import {
   Account,
   SimulateContractParameters,
 } from "viem";
-import { IHttpClient } from "../apis/http-api-base";
-import { MintAPIClient, SalesConfigAndTokenInfo } from "./mint-api-client";
 import {
+  erc20MinterABI,
+  erc20MinterAddress,
   zoraCreator1155ImplABI,
   zoraCreatorFixedPriceSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import { GenericTokenIdTypes } from "src/types";
+import { IHttpClient } from "src/apis/http-api-base";
 import { zora721Abi } from "src/constants";
+import { GenericTokenIdTypes } from "src/types";
 import { makeSimulateContractParamaters } from "src/utils";
+import {
+  MintAPIClient,
+  SalesConfigAndTokenInfo,
+  SaleType,
+} from "./mint-api-client";
 
 class MintError extends Error {}
 class MintInactiveError extends Error {}
@@ -33,6 +39,7 @@ type MintArguments = {
   mintComment?: string;
   mintReferral?: Address;
   mintToAddress: Address;
+  saleType?: SaleType;
 };
 
 class MintClient {
@@ -98,6 +105,7 @@ async function makePrepareMintTokenParams({
   apiClient,
   tokenId,
   tokenAddress,
+  mintArguments,
   ...rest
 }: {
   publicClient: PublicClient;
@@ -112,12 +120,14 @@ async function makePrepareMintTokenParams({
   const salesConfigAndTokenInfo = await apiClient.getSalesConfigAndTokenInfo({
     tokenId,
     tokenAddress,
+    saleType: mintArguments.saleType,
   });
 
   if (tokenId === undefined) {
     return makePrepareMint721TokenParams({
       salesConfigAndTokenInfo,
       tokenAddress,
+      mintArguments,
       ...rest,
     });
   }
@@ -126,6 +136,7 @@ async function makePrepareMintTokenParams({
     salesConfigAndTokenInfo,
     tokenAddress,
     tokenId,
+    mintArguments,
     ...rest,
   });
 }
@@ -177,7 +188,7 @@ export function getMintCosts({
   const mintFeeForTokens =
     salesConfigAndTokenInfo.mintFeePerQuantity * quantityToMint;
   const tokenPurchaseCost =
-    BigInt(salesConfigAndTokenInfo.fixedPrice.pricePerToken) * quantityToMint;
+    BigInt(salesConfigAndTokenInfo.salesConfig.pricePerToken) * quantityToMint;
 
   return {
     mintFee: mintFeeForTokens,
@@ -206,23 +217,53 @@ async function makePrepareMint1155TokenParams({
     quantityToMint: mintQuantity,
   }).totalCost;
 
-  return makeSimulateContractParamaters({
-    abi: zoraCreator1155ImplABI,
-    functionName: "mintWithRewards",
-    account: minterAccount,
-    value: mintValue,
-    address: tokenAddress,
-    /* args: minter, tokenId, quantity, minterArguments, mintReferral */
-    args: [
-      (salesConfigAndTokenInfo?.fixedPrice.address ||
-        zoraCreatorFixedPriceSaleStrategyAddress[999]) as Address,
-      BigInt(tokenId),
-      mintQuantity,
-      encodeAbiParameters(parseAbiParameters("address, string"), [
-        mintArguments.mintToAddress,
-        mintArguments.mintComment || "",
-      ]),
-      mintArguments.mintReferral || zeroAddress,
-    ],
-  });
+  switch (salesConfigAndTokenInfo.salesConfig.saleType) {
+    case "fixedPrice":
+      const fixedPriceArgs = mintArguments;
+
+      return makeSimulateContractParamaters({
+        abi: zoraCreator1155ImplABI,
+        functionName: "mintWithRewards",
+        account: minterAccount,
+        value: mintValue,
+        address: tokenAddress,
+        /* args: minter, tokenId, quantity, minterArguments, mintReferral */
+        args: [
+          (salesConfigAndTokenInfo.salesConfig.address ||
+            zoraCreatorFixedPriceSaleStrategyAddress[999999999]) as Address,
+          BigInt(tokenId),
+          mintQuantity,
+          encodeAbiParameters(parseAbiParameters("address, string"), [
+            fixedPriceArgs.mintToAddress,
+            fixedPriceArgs.mintComment || "",
+          ]),
+          fixedPriceArgs.mintReferral || zeroAddress,
+        ],
+      });
+
+    case "erc20":
+      const erc20Args = mintArguments;
+
+      return makeSimulateContractParamaters({
+        abi: erc20MinterABI,
+        functionName: "mint",
+        account: minterAccount,
+        address: (salesConfigAndTokenInfo?.salesConfig.address ||
+          erc20MinterAddress[999999999]) as Address,
+        /* args: mintTo, quantity, tokenAddress, tokenId, totalValue, currency, mintReferral, comment */
+        args: [
+          mintArguments.mintToAddress,
+          mintQuantity,
+          tokenAddress,
+          BigInt(tokenId),
+          salesConfigAndTokenInfo.salesConfig.pricePerToken,
+          salesConfigAndTokenInfo.salesConfig.currency,
+          erc20Args.mintReferral || zeroAddress,
+          erc20Args.mintComment || "",
+        ],
+      });
+
+    default:
+      throw new MintError("Unsupported sale type");
+  }
 }

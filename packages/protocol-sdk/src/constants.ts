@@ -15,3 +15,39 @@ export const zora721Abi = parseAbi([
   "function mintWithRewards(address recipient, uint256 quantity, string calldata comment, address mintReferral) external payable",
   "function zoraFeeForAmount(uint256 amount) public view returns (address, uint256)",
 ] as const);
+
+export const NFT_SALE_QUERY = `
+fragment SaleStrategy on SalesStrategyConfig {
+  type
+  fixedPrice {
+    address
+    pricePerToken
+    saleEnd
+    saleStart
+    maxTokensPerAddress
+  }
+  erc20Minter {
+    address
+    pricePerToken
+    currency
+    saleEnd
+    saleStart
+    maxTokensPerAddress
+  }
+}
+
+query ($id: ID!) {
+  zoraCreateToken(id: $id) {
+    id
+    contract {
+      mintFeePerQuantity
+      salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER"]}) {
+        ...SaleStrategy
+      }
+    }
+    salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER"]}) {
+      ...SaleStrategy
+    }
+  }
+}
+`;

@@ -9,7 +9,6 @@ Protocol SDK allows developers to create tokens using the Zora Protocol and mint
 - `npm install viem`
 - `npm install `
 
-
 ## Examples
 
 - [Creating a mint from an on-chain contract](#creating-a-mint-from-an-on-chain-contract)
@@ -80,6 +79,44 @@ async function mintNFT({
 
   // wait for the transaction to be complete
   await publicClient.waitForTransactionReceipt({ hash: txHash });
+}
+```
+
+### Minting an NFT with an ERC20 minter
+
+If an 1155 token is set to be an ERC20 mint, use the `makePrepareMintTokenParams` the same way as for
+eth based mints. The underlying function should handle preparing arguments for the ERC20 mint.
+
+```ts
+import type { PublicClient } from "viem";
+
+async function mint1155TokenWithERC20Currency(
+  publicClient: PublicClient,
+  minterAddress: Address,
+) {
+  const mintClient = createMintClient({ chain: zora });
+  const exampleCurrency = "0xb6b701878a1f80197dF2c209D0BDd292EA73164D";
+  // nft collection address
+  const targetContract = "0x689bc305456c38656856d12469aed282fbd89fe0";
+  const tokenId = 17;
+  // the NFT token price in WEI value
+  const erc20PricePerToken = 2000000000000000000;
+
+  const tokenParams = await mintClient.makePrepareMintTokenParams({
+    minterAccount: minterAddress,
+    tokenId: tokenId,
+    tokenAddress: targetContract,
+    mintArguments: {
+      mintToAddress: minterAddress,
+      quantityToMint: 1,
+    },
+  });
+
+  const simulationResult = await publicClient.simulateContract(params);
+  const hash = await walletClient.writeContract(simulationResult.request);
+  const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+  return receipt;
 }
 ```
 
@@ -260,7 +297,10 @@ async function createForFree({
     checkSignature: true,
     // collection info of collection to create
     collection: {
-      contractAdmin: typeof creatorAccount === "string" ? creatorAccount : creatorAccount.address,
+      contractAdmin:
+        typeof creatorAccount === "string"
+          ? creatorAccount
+          : creatorAccount.address,
       contractName: "Testing Contract",
       contractURI:
         "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
