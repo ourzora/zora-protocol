@@ -29,21 +29,24 @@ describe("ZoraCreator1155Premint - v1 signatures", () => {
         .fn<Parameters<typeof premintClient.apiClient.postSignature>>()
         .mockResolvedValue({ ok: true });
 
-      await premintClient.createPremint({
-        walletClient,
-        creatorAccount: deployerAccount!,
-        checkSignature: true,
+      const { signAndSubmit } = await premintClient.createPremint({
+        payoutRecipient: deployerAccount!,
         collection: {
           contractAdmin: deployerAccount!,
           contractName: "Testing Contract",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
-          additionalAdmins: [],
         },
         tokenCreationConfig: {
           tokenURI:
             "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
         },
+      });
+
+      await signAndSubmit({
+        walletClient,
+        checkSignature: true,
+        account: deployerAccount!,
       });
 
       const expectedPostSignatureArgs: Parameters<
@@ -189,16 +192,13 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         .fn<Parameters<typeof premintClient.apiClient.postSignature>>()
         .mockResolvedValue({ ok: true });
 
-      await premintClient.createPremint({
-        walletClient,
-        creatorAccount: creatorAccount!,
-        checkSignature: true,
+      const { signAndSubmit } = await premintClient.createPremint({
+        payoutRecipient: creatorAccount!,
         collection: {
           contractAdmin: creatorAccount!,
           contractName: "Testing Contract Premint V2",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
-          additionalAdmins: [],
         },
         premintConfigVersion: PremintConfigVersion.V2,
         tokenCreationConfig: {
@@ -206,6 +206,12 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
             "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
           createReferral: createReferralAccount,
         },
+      });
+
+      await signAndSubmit({
+        account: creatorAccount!,
+        walletClient,
+        checkSignature: true,
       });
 
       const expectedPostSignatureArgs: Parameters<

@@ -3,13 +3,14 @@ import { walletClient, chain, creatorAccount } from "./config";
 
 const premintClient = createPremintClient({ chain });
 
-// create and sign the premint, the premint and signature will be uploaded to an api to be served later
-const { uid, verifyingContract } = await premintClient.createPremint({
-  // the walletClient will be used to sign the message.
-  walletClient,
-  creatorAccount,
-  // if true, will validate that the creator is authorized to create premints on the contract.
-  checkSignature: true,
+// create and sign the Premint, the Premint and signature will be uploaded to an api to be served later
+const {
+  premintConfig: { uid },
+  signAndSubmit,
+  collectionAddress,
+} = await premintClient.createPremint({
+  payoutRecipient: creatorAccount,
+
   // collection info of collection to create
   collection: {
     contractAdmin: creatorAccount,
@@ -38,10 +39,18 @@ const { uid, verifyingContract } = await premintClient.createPremint({
   },
 });
 
+await signAndSubmit({
+  account: creatorAccount,
+  // the walletClient will be used to sign the message.
+  walletClient,
+  // if true, the signature will be checked before being submitted.
+  checkSignature: true,
+});
+
 // the uid of the created premint
 console.log(uid);
 // the deterministic contract address of the collection that is to be
 // created for the premint.
-console.log(verifyingContract);
+console.log(collectionAddress);
 
-export { uid, verifyingContract as collection };
+export { uid, collectionAddress as collection };

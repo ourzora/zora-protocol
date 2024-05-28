@@ -76,7 +76,9 @@ export type PremintConfigForVersion<T extends PremintConfigVersion> =
       : PremintConfigV3;
 
 export type PremintConfigWithVersion<T extends PremintConfigVersion> = {
+  /** Premint Config */
   premintConfig: PremintConfigForVersion<T>;
+  /** PremintConfigVersion of the premint */
   premintConfigVersion: T;
 };
 export type PremintConfigAndVersion =

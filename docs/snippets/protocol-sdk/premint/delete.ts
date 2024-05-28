@@ -4,14 +4,19 @@ import { collection, uid } from "./create";
 
 const premintClient = createPremintClient({ chain });
 
-// sign a message to delete the premint, and store the deletion on the Zora Premint API.
-await premintClient.deletePremint({
+// create a call to sign and submit a deletion of a premint
+const { signAndSubmit } = await premintClient.deletePremint({
   // Premint collection address to delete the premint from
   collection,
   // id of the premint
   uid,
-  // WalletClient doing the signature
-  walletClient,
-  // account to sign the deletion
+});
+
+// sign and submit the deletion of the Premint
+await signAndSubmit({
   account: creatorAccount,
+  // the walletClient will be used to sign the message.
+  walletClient,
+  // if true, the signature will be checked before being submitted.
+  checkSignature: true,
 });

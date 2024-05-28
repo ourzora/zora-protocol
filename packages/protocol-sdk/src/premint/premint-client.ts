@@ -6,6 +6,7 @@ import type {
   Hex,
   SimulateContractParameters,
   TransactionReceipt,
+  TypedDataDefinition,
   WalletClient,
 } from "viem";
 import { zoraCreator1155PremintExecutorImplABI } from "@zoralabs/protocol-deployments";
@@ -57,12 +58,6 @@ type URLSReturnType = {
   zoraManage: null | string;
 };
 
-type SignedPremintResponse = {
-  urls: URLSReturnType;
-  uid: number;
-  verifyingContract: Address;
-};
-
 export const defaultTokenConfigV1MintArguments = (): Omit<
   TokenCreationConfigV1,
   "fixedPriceMinter" | "tokenURI" | "royaltyRecipient"
@@ -92,12 +87,12 @@ const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
   chainId,
   premintConfigVersion,
   tokenCreationConfig,
-  creatorAccount,
+  payoutRecipient,
 }: {
   chainId: number;
   premintConfigVersion: T;
   tokenCreationConfig: Partial<TokenConfigForVersion<T>> & { tokenURI: string };
-  creatorAccount: Address;
+  payoutRecipient: Address;
 }): TokenConfigForVersion<T> => {
   if (premintConfigVersion === PremintConfigVersion.V3) {
     throw new Error("PremintV3 not supported in SDK");
@@ -114,14 +109,14 @@ const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
     return {
       fixedPriceMinter,
       ...defaultTokenConfigV1MintArguments(),
-      royaltyRecipient: creatorAccount,
+      royaltyRecipient: payoutRecipient,
       ...(tokenCreationConfig as Partial<TokenCreationConfigV1>),
     } as TokenCreationConfigV1;
   } else if (premintConfigVersion === PremintConfigVersion.V2) {
     return {
       fixedPriceMinter,
       ...defaultTokenConfigV2MintArguments(),
-      payoutRecipient: creatorAccount,
+      payoutRecipient: payoutRecipient,
       createReferral: zeroAddress,
       ...tokenCreationConfig,
     };
@@ -154,7 +149,6 @@ export function getPremintedLogFromReceipt(
 }
 /**
  * Preminter API to access ZORA Premint functionality.
- * Currently only supports V1 premints.
  */
 class PremintClient {
   readonly apiClient: PremintAPIClient;
@@ -183,225 +177,51 @@ class PremintClient {
   }
 
   /**
-   * Update existing premint given collection address and UID of existing premint.
+   * Prepares data for updating a premint
    *
-   * 1. Loads existing premint token
-   * 2. Updates with settings passed into function
-   * 3. Increments the version field
-   * 4. Re-signs the premint
-   * 5. Uploads the premint to the ZORA API
-   *
-   * Updates existing premint
-   * @param settings Settings for the new premint
-   * @param settings.account Account to sign the premint update from. Taken from walletClient if none passed in.
-   * @param settings.collection Collection information for the mint
-   * @param settings.walletClient viem wallet client to use to sign
-   * @param settings.uid UID
-   * @param settings.token Mint argument settings, optional settings are overridden with sensible defaults.
-   *
+   * @param parameters - Parameters for updating the premint {@link UpdatePremintParams}
+   * @returns A PremintReturn. {@link PremintReturn}
    */
-  async updatePremint({
-    walletClient,
-    uid,
-    collection,
-    account,
-    tokenConfigUpdates,
-  }: {
-    walletClient: WalletClient;
-    uid: number;
-    account?: Account | Address;
-    collection: Address;
-    tokenConfigUpdates: Partial<TokenCreationConfig>;
-  }): Promise<SignedPremintResponse> {
-    const {
-      premintConfig,
-      collection: collectionCreationConfig,
-      premintConfigVersion,
-    } = await this.apiClient.getSignature({
-      collectionAddress: collection,
-      uid: uid,
-    });
-
-    const updatedPremint = applyUpdateToPremint({
-      uid: premintConfig.uid,
-      version: premintConfig.version,
-      tokenConfig: premintConfig.tokenConfig,
-      tokenConfigUpdates: tokenConfigUpdates,
-    });
-
-    return await this.signAndSubmitPremint({
-      walletClient,
-      account,
-      checkSignature: true,
-      verifyingContract: collection,
-      collection: collectionCreationConfig,
-      premintConfig: updatedPremint,
-      premintConfigVersion: premintConfigVersion,
-    });
-  }
-
-  /**
-   * Delete premint.
-   *
-   * 1. Loads current premint from collection address with UID
-   * 2. Increments version and marks as deleted
-   * 3. Signs new premint version
-   * 4. Sends to ZORA Premint API
-   *
-   * Deletes existing premint
-   * @param settings.collection collection address
-   * @param settings.uid UID
-   * @param settings.walletClient viem wallet client to use to sign
-   *
-   */
-  async deletePremint({
-    walletClient,
-    uid,
-    account,
-    collection,
-  }: {
-    walletClient: WalletClient;
-    uid: number;
-    account?: Account | Address;
-    collection: Address;
-  }) {
-    const {
-      premintConfig,
-      premintConfigVersion,
-      collection: collectionCreationConfig,
-    } = await this.apiClient.getSignature({
-      collectionAddress: collection,
-      uid: uid,
-    });
-
-    const deletedPremint = {
-      ...premintConfig,
-      version: premintConfig.version + 1,
-      deleted: true,
-    };
-
-    return await this.signAndSubmitPremint({
-      walletClient,
-      account,
-      checkSignature: false,
-      verifyingContract: collection,
-      collection: collectionCreationConfig,
-      premintConfig: deletedPremint,
-      premintConfigVersion,
-    });
-  }
-
-  /**
-   * Internal function to sign and submit a premint request.
-   *
-   * @param premintArguments Arguments to premint
-   * @returns
-   */
-  private async signAndSubmitPremint<T extends PremintConfigVersion>(
-    params: SignAndSubmitPremintParams<T>,
-  ): Promise<SignedPremintResponse> {
-    const { verifyingContract } = await signAndSubmitPremint({
-      ...params,
-      chainId: this.chain.id,
+  async updatePremint(args: UpdatePremintParams): Promise<PremintReturn<any>> {
+    return await updatePremint({
+      ...args,
       apiClient: this.apiClient,
       publicClient: this.publicClient,
+      chainId: this.chain.id,
     });
-
-    const uid = params.premintConfig.uid;
-
-    return {
-      urls: this.makeUrls({ address: verifyingContract, uid }),
-      uid,
-      verifyingContract,
-    };
   }
 
   /**
-   * Create premint
+   * Prepares data for deleting a premint
    *
-   * @param settings Settings for the new premint
-   * @param settings.account Account to sign the premint with. Taken from walletClient if none passed in.
-   * @param settings.collection Collection information for the mint
-   * @param settings.tokenCreationConfig Mint argument settings, optional settings are overridden with sensible defaults.
-   * @param setings.premintConfigVersion Premint config version to use, defaults to V2
-   * @param settings.uid the UID to use – optional and retrieved as a fresh UID from ZORA by default.
-   * @param settings.checkSignature if the signature should have a pre-flight check. Not required but helpful for debugging.
-   * @returns premint url, uid, newContractAddress, and premint object
+   * @param parameters - Parameters for deleting the premint {@link DeletePremintParams}
+   * @returns A PremintReturn. {@link PremintReturn}
    */
-  async createPremint<
-    T extends PremintConfigVersion = PremintConfigVersion.V2,
-  >({
-    creatorAccount,
-    collection,
-    tokenCreationConfig,
-    premintConfigVersion,
-    walletClient,
-    uid,
-    checkSignature = false,
-  }: {
-    creatorAccount: Address | Account;
-    checkSignature?: boolean;
-    walletClient: WalletClient;
-    collection: Omit<ContractCreationConfig, "additionalAdmins"> & {
-      additionalAdmins?: Address[];
-    };
-    tokenCreationConfig: Partial<TokenConfigForVersion<T>> & {
-      tokenURI: string;
-    };
-    premintConfigVersion?: T;
-    uid?: number;
-  }) {
-    const collectionWithAdditionalAdmins: ContractCreationConfig = {
-      ...collection,
-      additionalAdmins: collection.additionalAdmins || [],
-    };
-    const newContractAddress = await getPremintCollectionAddress({
+  async deletePremint(
+    params: DeletePremintParams,
+  ): Promise<PremintReturn<any>> {
+    return deletePremint({
+      ...params,
+      apiClient: this.apiClient,
       publicClient: this.publicClient,
-      collection: collectionWithAdditionalAdmins,
+      chainId: this.chain.id,
     });
+  }
 
-    let uidToUse = uid;
-
-    if (typeof uidToUse !== "number") {
-      uidToUse = await this.apiClient.getNextUID(newContractAddress);
-    }
-
-    const actualVersion = premintConfigVersion || PremintConfigVersion.V1;
-
-    if (
-      !(await supportsPremintVersion({
-        version: actualVersion,
-        publicClient: this.publicClient,
-        tokenContract: newContractAddress,
-      }))
-    ) {
-      throw new Error(
-        `Premint version ${actualVersion} not supported by contract`,
-      );
-    }
-
-    const premintConfig = makeNewPremint({
-      tokenConfig: makeTokenConfigWithDefaults({
-        // @ts-ignore
-        premintConfigVersion: actualVersion,
-        tokenCreationConfig,
-        creatorAccount:
-          typeof creatorAccount === "string"
-            ? creatorAccount
-            : creatorAccount.address,
-        chainId: this.chain.id,
-      }),
-      uid: uidToUse,
-    });
-
-    return await this.signAndSubmitPremint({
-      verifyingContract: newContractAddress,
-      premintConfig,
-      premintConfigVersion: actualVersion,
-      checkSignature,
-      account: creatorAccount,
-      walletClient,
-      collection: collectionWithAdditionalAdmins,
+  /**
+   * Prepares data for creating a premint
+   *
+   * @param parameters - Parameters for creating the premint {@link CreatePremintParameters}
+   * @returns A PremintReturn. {@link PremintReturn}
+   */
+  async createPremint<T extends PremintConfigVersion = PremintConfigVersion.V2>(
+    parameters: CreatePremintParameters<T>,
+  ): Promise<PremintReturn<any>> {
+    return createPremint({
+      ...parameters,
+      publicClient: this.publicClient,
+      apiClient: this.apiClient,
+      chainId: this.chain.id,
     });
   }
 
@@ -504,118 +324,18 @@ class PremintClient {
   }
 
   /**
-   * Execute premint on-chain
+   * Prepares the parameters to collect a premint; it brings the contract and token onchain, then collects
+   * tokens on that contract for the mint recipient.
    *
-   * @param settings.data Data from the API for the mint
-   * @param settings.account Optional account (if omitted taken from wallet client) for the account executing the premint.
-   * @param settings.walletClient WalletClient to send execution from.
-   * @param settings.mintArguments User minting arguments.
-   * @param settings.mintArguments.quantityToMint Quantity to mint, optional, defaults to 1.
-   * @param settings.mintArguments.mintComment Optional mint comment, optional, omits when not included.
-   * @param settings.publicClient Optional public client for preflight checks.
+   * @param parameters - Parameters for collecting the Premint {@link MakeMintParametersArguments}
    * @returns receipt, log, zoraURL
    */
-  async makeMintParameters({
-    uid,
-    tokenContract,
-    minterAccount,
-    mintArguments,
-  }: {
-    uid: number;
-    tokenContract: Address;
-    minterAccount: Account | Address;
-    mintArguments?: {
-      quantityToMint: number;
-      mintComment?: string;
-      mintReferral?: Address;
-      platformReferral?: Address;
-      mintRecipient?: Address;
-    };
-  }): Promise<
-    SimulateContractParameters<
-      typeof zoraCreator1155PremintExecutorImplABI,
-      "premintV1" | "premintV2",
-      any,
-      any,
-      any,
-      Account | Address
-    >
-  > {
-    if (mintArguments && mintArguments?.quantityToMint < 1) {
-      throw new Error("Quantity to mint cannot be below 1");
-    }
-
-    if (!minterAccount) {
-      throw new Error("Wallet not passed in");
-    }
-
-    const { premintConfig, premintConfigVersion, collection, signature } =
-      await this.getPremintSignature({
-        address: tokenContract,
-        uid,
-      });
-
-    const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
-
-    if (premintConfigVersion === PremintConfigVersion.V3) {
-      throw new Error("PremintV3 not supported in premint SDK");
-    }
-
-    const value = (
-      await getPremintMintCosts({
-        tokenContract,
-        quantityToMint: numberToMint,
-        publicClient: this.publicClient,
-        tokenPrice: premintConfig.tokenConfig.pricePerToken,
-      })
-    ).totalCost;
-
-    const mintArgumentsContract: PremintMintArguments = {
-      mintComment: mintArguments?.mintComment || "",
-      mintRecipient:
-        mintArguments?.mintRecipient ||
-        (typeof minterAccount === "string"
-          ? minterAccount
-          : minterAccount.address),
-      mintRewardsRecipients: makeMintRewardsRecipient({
-        mintReferral: mintArguments?.mintReferral,
-        platformReferral: mintArguments?.platformReferral,
-      }),
-    };
-
-    if (premintConfigVersion === PremintConfigVersion.V1) {
-      return makeSimulateContractParamaters({
-        account: minterAccount,
-        abi: zoraCreator1155PremintExecutorImplABI,
-        functionName: "premintV1",
-        value,
-        address: getPremintExecutorAddress(),
-        args: [
-          collection,
-          premintConfig,
-          signature,
-          numberToMint,
-          mintArgumentsContract,
-        ],
-      });
-    } else if (premintConfigVersion === PremintConfigVersion.V2) {
-      return makeSimulateContractParamaters({
-        account: minterAccount,
-        abi: zoraCreator1155PremintExecutorImplABI,
-        functionName: "premintV2",
-        value,
-        address: getPremintExecutorAddress(),
-        args: [
-          collection,
-          premintConfig,
-          signature,
-          numberToMint,
-          mintArgumentsContract,
-        ],
-      });
-    }
-
-    throw new Error(`Invalid premint config version ${premintConfigVersion}`);
+  async makeMintParameters(parameters: MakeMintParametersArguments) {
+    return await makeMintParameters({
+      ...parameters,
+      apiClient: this.apiClient,
+      publicClient: this.publicClient,
+    });
   }
 }
 
@@ -624,7 +344,530 @@ export function createPremintClient(clientConfig: ClientConfig) {
   return new PremintClient(chain, publicClient, httpClient);
 }
 
-function makeUrls({
+type ContractCreationConfigWithoutAdditionalAdmins = Omit<
+  ContractCreationConfig,
+  "additionalAdmins"
+>;
+
+type PremintContext = {
+  publicClient: PublicClient;
+  apiClient: PremintAPIClient;
+  chainId: number;
+};
+
+/** ======= ADMIN ======= */
+
+export type SignAndSubmitParams = {
+  /** The WalletClient used to sign the premint */
+  walletClient: WalletClient;
+  /** The account that is to sign the premint */
+  account: Account | Address;
+  /** If the signature should be checked before submitting it to the api */
+  checkSignature?: boolean;
+};
+
+export type SignAndSubmitReturn = {
+  /** The signature of the Premint  */
+  signature: Hex;
+  /** The account that signed the Premint */
+  signerAccount: Account | Address;
+};
+
+export type SubmitParams = {
+  /** The signature of the Premint */
+  signature: Hex;
+  /** If the premint signature should be validated before submitting to the API */
+  checkSignature?: boolean;
+  /** The account that signed the premint */
+  signerAccount: Account | Address;
+};
+
+type PremintReturn<T extends PremintConfigVersion> = {
+  /** The typedDataDefinition of the Premint which is to be signed the creator. */
+  typedDataDefinition: TypedDataDefinition;
+  /** The deterministic collection address of the Premint */
+  collectionAddress: Address;
+  /** Signs the Premint, and submits it and the signature to the Zora Premint API */
+  signAndSubmit: (params: SignAndSubmitParams) => Promise<SignAndSubmitReturn>;
+  /** For the case where the premint is signed externally, takes the signature for the Premint, and submits it and the Premint to the Zora Premint API */
+  submit: (params: SubmitParams) => void;
+} & PremintConfigWithVersion<T>;
+
+function makePremintReturn<T extends PremintConfigVersion>({
+  premintConfig,
+  premintConfigVersion,
+  collectionAddress,
+  collection,
+  publicClient,
+  apiClient,
+  chainId,
+}: PremintConfigWithVersion<T> & {
+  collectionAddress: Address;
+  collection: ContractCreationConfigWithoutAdditionalAdmins;
+} & PremintContext): PremintReturn<T> {
+  const typedDataDefinition = premintTypedDataDefinition({
+    verifyingContract: collectionAddress,
+    premintConfig,
+    premintConfigVersion,
+    chainId,
+  });
+
+  const signAndSubmit = async ({
+    walletClient,
+    account,
+    checkSignature,
+  }: SignAndSubmitParams): Promise<SignAndSubmitReturn> => {
+    const { signature, signerAccount } = await signPremint({
+      account,
+      walletClient,
+      typedDataDefinition,
+    });
+
+    await submit({
+      signature,
+      checkSignature,
+      signerAccount,
+    });
+
+    return {
+      signature,
+      signerAccount,
+    };
+  };
+
+  const submit = async ({
+    signature,
+    checkSignature,
+    signerAccount,
+  }: {
+    signature: Hex;
+    checkSignature?: boolean;
+    signerAccount: Account | Address;
+  }) => {
+    if (checkSignature) {
+      await validateSignature({
+        collection: {
+          ...collection,
+          additionalAdmins: [],
+        },
+        publicClient,
+        signerAccount,
+      });
+    }
+
+    await apiClient.postSignature({
+      collection: {
+        ...collection,
+        additionalAdmins: [],
+      },
+      signature: signature,
+      premintConfig,
+      premintConfigVersion,
+    });
+  };
+
+  return {
+    premintConfig,
+    premintConfigVersion,
+    typedDataDefinition,
+    collectionAddress,
+    signAndSubmit,
+    submit,
+  };
+}
+
+async function signPremint({
+  account,
+  walletClient,
+  typedDataDefinition,
+}: {
+  /** The account that is to sign the premint */
+  account?: Address | Account;
+  /** WalletClient used to sign the premint */
+  walletClient: WalletClient;
+  /** Data  */
+  typedDataDefinition: TypedDataDefinition;
+}) {
+  if (!account) {
+    account = walletClient.account;
+  }
+  if (!account) {
+    throw new Error("No account provided");
+  }
+
+  const signature = await walletClient.signTypedData({
+    account,
+    ...typedDataDefinition,
+  });
+
+  return {
+    signature,
+    signerAccount: account,
+  };
+}
+
+const validateSignature = async ({
+  collection,
+  publicClient,
+  signerAccount,
+}: {
+  collection: ContractCreationConfig;
+  publicClient: PublicClient;
+  signerAccount: Address | Account;
+}) => {
+  const isAuthorized = await isAuthorizedToCreatePremint({
+    collection,
+    publicClient,
+    signer:
+      typeof signerAccount === "string" ? signerAccount : signerAccount.address,
+    collectionAddress: await getPremintCollectionAddress({
+      collection,
+      publicClient,
+    }),
+  });
+  if (!isAuthorized) {
+    throw new Error("Not authorized to create premint");
+  }
+};
+
+/** CREATE */
+
+type CreatePremintParameters<T extends PremintConfigVersion> = {
+  /** The account to receive the creator reward if it's a free mint, and the paid mint fee if it's a paid mint */
+  payoutRecipient: Address;
+  /** Collection information for the mint */
+  collection: ContractCreationConfigWithoutAdditionalAdmins;
+  /** tokenCreationConfig Token creation settings, optional settings are overridden with sensible defaults */
+  tokenCreationConfig: Partial<TokenConfigForVersion<T>> & {
+    tokenURI: string;
+  };
+  /** Premint config version to use, defaults to V2 */
+  premintConfigVersion?: T;
+  /** uid the UID to use – optional and retrieved as a fresh UID from ZORA by default. */
+  uid?: number;
+};
+
+async function createPremint<T extends PremintConfigVersion>({
+  payoutRecipient: creatorAccount,
+  collection,
+  tokenCreationConfig,
+  premintConfigVersion,
+  uid,
+  publicClient,
+  apiClient,
+  chainId,
+}: CreatePremintParameters<T> & PremintContext) {
+  const {
+    premintConfig,
+    premintConfigVersion: actualVersion,
+    collectionAddress,
+  } = await prepareCreatePremintConfig<T>({
+    payoutRecipient: creatorAccount,
+    collection,
+    tokenCreationConfig,
+    premintConfigVersion,
+    uid,
+    publicClient,
+    apiClient,
+    chainId,
+  });
+
+  return makePremintReturn({
+    premintConfig,
+    premintConfigVersion: actualVersion,
+    collectionAddress,
+    collection,
+    publicClient,
+    apiClient,
+    chainId,
+  });
+}
+
+async function prepareCreatePremintConfig<T extends PremintConfigVersion>({
+  payoutRecipient,
+  collection,
+  tokenCreationConfig,
+  premintConfigVersion,
+  uid,
+  publicClient,
+  apiClient,
+  chainId,
+}: {
+  payoutRecipient: Address | Account;
+  collection: Omit<ContractCreationConfig, "additionalAdmins"> & {
+    additionalAdmins?: Address[];
+  };
+  tokenCreationConfig: Partial<TokenConfigForVersion<T>> & {
+    tokenURI: string;
+  };
+  premintConfigVersion?: T;
+  uid?: number;
+} & PremintContext) {
+  const collectionWithAdditionalAdmins: ContractCreationConfig = {
+    ...collection,
+    additionalAdmins: collection.additionalAdmins || [],
+  };
+  const newContractAddress = await getPremintCollectionAddress({
+    publicClient,
+    collection: collectionWithAdditionalAdmins,
+  });
+
+  let uidToUse = uid;
+
+  if (typeof uidToUse !== "number") {
+    uidToUse = await apiClient.getNextUID(newContractAddress);
+  }
+
+  const actualVersion = premintConfigVersion || PremintConfigVersion.V1;
+
+  if (
+    !(await supportsPremintVersion({
+      version: actualVersion,
+      publicClient,
+      tokenContract: newContractAddress,
+    }))
+  ) {
+    throw new Error(
+      `Premint version ${actualVersion} not supported by contract`,
+    );
+  }
+
+  const premintConfig = makeNewPremint({
+    tokenConfig: makeTokenConfigWithDefaults({
+      // @ts-ignore
+      premintConfigVersion: actualVersion,
+      tokenCreationConfig,
+      payoutRecipient:
+        typeof payoutRecipient === "string"
+          ? payoutRecipient
+          : payoutRecipient.address,
+      chainId,
+    }),
+    uid: uidToUse,
+  });
+
+  return {
+    premintConfig,
+    premintConfigVersion: actualVersion,
+    collectionAddress: newContractAddress,
+  };
+}
+
+/** UPDATE */
+
+export type UpdatePremintParams = {
+  /** uid of the Premint to update */
+  uid: number;
+  /** address of the Premint to update */
+  collection: Address;
+  /** update to apply to the Premint */
+  tokenConfigUpdates: Partial<TokenCreationConfig>;
+};
+
+async function updatePremint({
+  uid,
+  collection,
+  tokenConfigUpdates,
+  apiClient,
+  publicClient,
+  chainId,
+}: UpdatePremintParams & {
+  apiClient: PremintAPIClient;
+  publicClient: PublicClient;
+  chainId: number;
+}) {
+  const {
+    premintConfig,
+    collection: collectionCreationConfig,
+    premintConfigVersion,
+  } = await apiClient.getSignature({
+    collectionAddress: collection,
+    uid: uid,
+  });
+
+  const updatedPremint = applyUpdateToPremint({
+    uid: premintConfig.uid,
+    version: premintConfig.version,
+    tokenConfig: premintConfig.tokenConfig,
+    tokenConfigUpdates: tokenConfigUpdates,
+  });
+
+  return makePremintReturn({
+    premintConfig: updatedPremint,
+    premintConfigVersion,
+    collectionAddress: collection,
+    collection: collectionCreationConfig,
+    publicClient,
+    apiClient,
+    chainId,
+  });
+}
+
+/** DELETE */
+
+export type DeletePremintParams = {
+  /** id of the premint to delete */
+  uid: number;
+  /** collection address of the Premint to delete */
+  collection: Address;
+};
+
+async function deletePremint({
+  uid,
+  collection,
+  publicClient,
+  apiClient,
+  chainId,
+}: DeletePremintParams & {
+  apiClient: PremintAPIClient;
+  publicClient: PublicClient;
+  chainId: number;
+}) {
+  const {
+    premintConfig,
+    premintConfigVersion,
+    collection: collectionCreationConfig,
+  } = await apiClient.getSignature({
+    collectionAddress: collection,
+    uid: uid,
+  });
+
+  const deletedPremint = {
+    ...premintConfig,
+    version: premintConfig.version + 1,
+    deleted: true,
+  };
+
+  return makePremintReturn({
+    premintConfig: deletedPremint,
+    premintConfigVersion,
+    collectionAddress: collection,
+    collection: collectionCreationConfig,
+    publicClient,
+    apiClient,
+    chainId,
+  });
+}
+
+export type MakeMintParametersArguments = {
+  /** uid of the Premint to mint */
+  uid: number;
+  /** Premint contract address */
+  tokenContract: Address;
+  /** Account to execute the mint */
+  minterAccount: Account | Address;
+  /** Minting settings */
+  mintArguments?: {
+    /** Quantity of tokens to mint */
+    quantityToMint: number;
+    /** Comment to add to the mint */
+    mintComment?: string;
+    /** Address to receive the mint referral reward */
+    mintReferral?: Address;
+    /** Address to receive the minted tokens */
+    mintRecipient?: Address;
+  };
+};
+
+/** ======== MINTING ======== */
+
+async function makeMintParameters({
+  uid,
+  tokenContract,
+  minterAccount,
+  mintArguments,
+  apiClient,
+  publicClient,
+}: MakeMintParametersArguments & {
+  apiClient: PremintAPIClient;
+  publicClient: PublicClient;
+}): Promise<
+  SimulateContractParameters<
+    typeof zoraCreator1155PremintExecutorImplABI,
+    "premintV1" | "premintV2",
+    any,
+    any,
+    any,
+    Account | Address
+  >
+> {
+  if (mintArguments && mintArguments?.quantityToMint < 1) {
+    throw new Error("Quantity to mint cannot be below 1");
+  }
+
+  if (!minterAccount) {
+    throw new Error("Wallet not passed in");
+  }
+
+  const { premintConfig, premintConfigVersion, collection, signature } =
+    await apiClient.getSignature({
+      collectionAddress: tokenContract,
+      uid,
+    });
+
+  const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
+
+  if (premintConfigVersion === PremintConfigVersion.V3) {
+    throw new Error("PremintV3 not supported in premint SDK");
+  }
+
+  const value = (
+    await getPremintMintCosts({
+      tokenContract,
+      quantityToMint: numberToMint,
+      publicClient,
+      tokenPrice: premintConfig.tokenConfig.pricePerToken,
+    })
+  ).totalCost;
+
+  const mintArgumentsContract: PremintMintArguments = {
+    mintComment: mintArguments?.mintComment || "",
+    mintRecipient:
+      mintArguments?.mintRecipient ||
+      (typeof minterAccount === "string"
+        ? minterAccount
+        : minterAccount.address),
+    mintRewardsRecipients: makeMintRewardsRecipient({
+      mintReferral: mintArguments?.mintReferral,
+    }),
+  };
+
+  if (premintConfigVersion === PremintConfigVersion.V1) {
+    return makeSimulateContractParamaters({
+      account: minterAccount,
+      abi: zoraCreator1155PremintExecutorImplABI,
+      functionName: "premintV1",
+      value,
+      address: getPremintExecutorAddress(),
+      args: [
+        collection,
+        premintConfig,
+        signature,
+        numberToMint,
+        mintArgumentsContract,
+      ],
+    });
+  } else if (premintConfigVersion === PremintConfigVersion.V2) {
+    return makeSimulateContractParamaters({
+      account: minterAccount,
+      abi: zoraCreator1155PremintExecutorImplABI,
+      functionName: "premintV2",
+      value,
+      address: getPremintExecutorAddress(),
+      args: [
+        collection,
+        premintConfig,
+        signature,
+        numberToMint,
+        mintArgumentsContract,
+      ],
+    });
+  }
+
+  throw new Error(`Invalid premint config version ${premintConfigVersion}`);
+}
+
+export function makeUrls({
   uid,
   address,
   tokenId,
@@ -658,67 +901,4 @@ function makeUrls({
       network.zoraCollectPathChainName
     }:${address}/${zoraTokenPath}`,
   };
-}
-
-type SignAndSubmitPremintParams<T extends PremintConfigVersion> = {
-  walletClient: WalletClient;
-  verifyingContract: Address;
-  checkSignature: boolean;
-  account?: Address | Account;
-  collection: ContractCreationConfig;
-} & PremintConfigWithVersion<T>;
-
-async function signAndSubmitPremint<T extends PremintConfigVersion>({
-  walletClient,
-  verifyingContract,
-  account,
-  checkSignature,
-  collection,
-  chainId,
-  publicClient,
-  apiClient,
-  ...premintConfigAndVersion
-}: SignAndSubmitPremintParams<T> & {
-  chainId: number;
-  publicClient: PublicClient;
-  apiClient: PremintAPIClient;
-}) {
-  if (!account) {
-    account = walletClient.account;
-  }
-  if (!account) {
-    throw new Error("No account provided");
-  }
-
-  const signature = await walletClient.signTypedData({
-    account,
-    ...premintTypedDataDefinition({
-      verifyingContract,
-      ...premintConfigAndVersion,
-      chainId,
-    }),
-  });
-
-  if (checkSignature) {
-    const isAuthorized = await isAuthorizedToCreatePremint({
-      collection,
-      publicClient,
-      signer: typeof account === "string" ? account : account.address,
-      collectionAddress: await getPremintCollectionAddress({
-        collection,
-        publicClient,
-      }),
-    });
-    if (!isAuthorized) {
-      throw new Error("Not authorized to create premint");
-    }
-  }
-
-  const premint = await apiClient.postSignature({
-    collection: collection,
-    signature: signature,
-    ...premintConfigAndVersion,
-  });
-
-  return { premint, verifyingContract };
 }

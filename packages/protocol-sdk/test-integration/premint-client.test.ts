@@ -47,7 +47,7 @@ tests.forEach(({ anvilTest, chain }) => {
             const { uid, verifyingContract } =
               await premintClient.createPremint({
                 walletClient,
-                creatorAccount: creatorAccount!,
+                payoutRecipient: creatorAccount!,
                 checkSignature: true,
                 collection: {
                   contractAdmin: creatorAccount!,
@@ -104,7 +104,7 @@ tests.forEach(({ anvilTest, chain }) => {
             const { uid, verifyingContract } =
               await premintClient.createPremint({
                 walletClient,
-                creatorAccount: creatorAccount!,
+                payoutRecipient: creatorAccount!,
                 checkSignature: true,
                 collection: {
                   contractAdmin: creatorAccount!,
