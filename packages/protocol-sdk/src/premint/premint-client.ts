@@ -1,10 +1,9 @@
-import { createPublicClient, decodeEventLog, http, zeroAddress } from "viem";
+import { decodeEventLog, zeroAddress } from "viem";
 import type {
   Account,
   Address,
   Chain,
   Hex,
-  PublicClient,
   SimulateContractParameters,
   TransactionReceipt,
   WalletClient,
@@ -40,7 +39,12 @@ import { OPEN_EDITION_MINT_SIZE } from "../constants";
 import { IHttpClient } from "src/apis/http-api-base";
 import { getApiNetworkConfigForChain } from "src/mint/mint-api-client";
 import { MintCosts } from "src/mint/mint-client";
-import { makeSimulateContractParamaters } from "src/utils";
+import {
+  ClientConfig,
+  makeSimulateContractParamaters,
+  PublicClient,
+  setupClient,
+} from "src/utils";
 
 type PremintedV2LogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,
@@ -159,13 +163,12 @@ class PremintClient {
 
   constructor(
     chain: Chain,
-    publicClient?: PublicClient,
-    httpClient?: IHttpClient,
+    publicClient: PublicClient,
+    httpClient: IHttpClient,
   ) {
     this.chain = chain;
     this.apiClient = new PremintAPIClient(chain.id, httpClient);
-    this.publicClient =
-      publicClient || createPublicClient({ chain, transport: http() });
+    this.publicClient = publicClient;
   }
 
   getDataFromPremintReceipt(receipt: TransactionReceipt) {
@@ -616,15 +619,8 @@ class PremintClient {
   }
 }
 
-export function createPremintClient<chain extends Chain>({
-  chain,
-  httpClient,
-  publicClient,
-}: {
-  chain: chain;
-  publicClient?: PublicClient;
-  httpClient?: IHttpClient;
-}) {
+export function createPremintClient(clientConfig: ClientConfig) {
+  const { chain, httpClient, publicClient } = setupClient(clientConfig);
   return new PremintClient(chain, publicClient, httpClient);
 }
 

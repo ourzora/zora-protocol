@@ -7,16 +7,18 @@ import {
 import type {
   Account,
   Address,
-  Chain,
   Hex,
-  PublicClient,
   SimulateContractParameters,
   TransactionReceipt,
-  Transport,
 } from "viem";
 import { decodeEventLog, encodeFunctionData, zeroAddress } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
-import { makeSimulateContractParamaters } from "src/utils";
+import {
+  makeSimulateContractParamaters,
+  ClientConfig,
+  PublicClient,
+  setupClient,
+} from "src/utils";
 
 // Sales end forever amount (uint64 max)
 const SALE_END_FOREVER = 18446744073709551615n;
@@ -188,8 +190,8 @@ export const getTokenIdFromCreateReceipt = (
   }
 };
 
-async function getContractExists<chain extends Chain>(
-  publicClient: PublicClient<Transport, chain>,
+async function getContractExists(
+  publicClient: PublicClient,
   contract: ContractType,
   // Account that is the creator of the contract
   account: Address,
@@ -244,11 +246,8 @@ type CreateNew1155TokenReturn = {
   contractExists: boolean;
 };
 
-export function create1155CreatorClient<chain extends Chain>({
-  publicClient,
-}: {
-  publicClient: PublicClient<Transport, chain>;
-}) {
+export function create1155CreatorClient(clientConfig: ClientConfig) {
+  const { publicClient } = setupClient(clientConfig);
   async function createNew1155Token({
     contract,
     tokenMetadataURI,

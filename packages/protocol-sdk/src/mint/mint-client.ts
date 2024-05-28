@@ -1,12 +1,9 @@
 import {
   Address,
   Chain,
-  PublicClient,
-  createPublicClient,
   encodeAbiParameters,
   parseAbiParameters,
   zeroAddress,
-  http,
   Account,
   SimulateContractParameters,
 } from "viem";
@@ -19,12 +16,17 @@ import {
 import { IHttpClient } from "src/apis/http-api-base";
 import { zora721Abi } from "src/constants";
 import { GenericTokenIdTypes } from "src/types";
-import { makeSimulateContractParamaters } from "src/utils";
 import {
   MintAPIClient,
   SalesConfigAndTokenInfo,
   SaleType,
 } from "./mint-api-client";
+import {
+  makeSimulateContractParamaters,
+  ClientConfig,
+  setupClient,
+  PublicClient,
+} from "src/utils";
 
 class MintError extends Error {}
 class MintInactiveError extends Error {}
@@ -63,12 +65,11 @@ class MintClient {
 
   constructor(
     chain: Chain,
-    publicClient?: PublicClient,
-    httpClient?: IHttpClient,
+    publicClient: PublicClient,
+    httpClient: IHttpClient,
   ) {
     this.apiClient = new MintAPIClient(chain.id, httpClient);
-    this.publicClient =
-      publicClient || createPublicClient({ chain, transport: http() });
+    this.publicClient = publicClient;
   }
 
   /**
@@ -93,15 +94,8 @@ class MintClient {
  * @param param0.httpClient Optional http client to override post, get, and retry methods
  * @returns
  */
-export function createMintClient({
-  chain,
-  publicClient,
-  httpClient,
-}: {
-  chain: Chain;
-  publicClient?: PublicClient;
-  httpClient?: IHttpClient;
-}) {
+export function createMintClient(clientConfig: ClientConfig) {
+  const { chain, publicClient, httpClient } = setupClient(clientConfig);
   return new MintClient(chain, publicClient, httpClient);
 }
 

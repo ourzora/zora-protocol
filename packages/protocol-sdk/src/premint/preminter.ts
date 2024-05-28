@@ -10,7 +10,6 @@ import {
 import {
   recoverTypedDataAddress,
   Hex,
-  PublicClient,
   zeroAddress,
   hashDomain,
   keccak256,
@@ -30,6 +29,7 @@ import {
   TokenCreationConfig,
 } from "@zoralabs/protocol-deployments";
 import { MintCosts } from "src/mint/mint-client";
+import { PublicClient } from "src/utils";
 
 export const getPremintExecutorAddress = () =>
   zoraCreator1155PremintExecutorImplAddress[999] as Address;

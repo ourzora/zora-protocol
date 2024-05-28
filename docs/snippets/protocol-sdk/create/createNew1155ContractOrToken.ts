@@ -1,7 +1,7 @@
 import { create1155CreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient } from "./config";
+import { publicClient, walletClient, chain } from "./config";
 
-const creatorClient = create1155CreatorClient({ publicClient });
+const creatorClient = create1155CreatorClient({ chain });
 
 const { request } = await creatorClient.createNew1155Token({
   // by providing a contract creation config, the contract will be created

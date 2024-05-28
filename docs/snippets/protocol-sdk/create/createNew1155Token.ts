@@ -1,7 +1,7 @@
 import { create1155CreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient } from "./config";
+import { publicClient, walletClient, chain } from "./config";
 
-const creatorClient = create1155CreatorClient({ publicClient });
+const creatorClient = create1155CreatorClient({ chain });
 
 const address = "0x1234567890123456789012345678901234567890";
 

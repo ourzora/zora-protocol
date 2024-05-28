@@ -12,7 +12,9 @@ const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
 describe("create-helper", () => {
   anvilTest(
     "creates a new contract given arguments",
-    async ({ viemClients: { testClient, publicClient, walletClient } }) => {
+    async ({
+      viemClients: { testClient, publicClient, walletClient, chain },
+    }) => {
       const addresses = await walletClient.getAddresses();
       const creatorAddress = addresses[0]!;
       await testClient.setBalance({
@@ -20,6 +22,7 @@ describe("create-helper", () => {
         value: parseEther("1"),
       });
       const creatorClient = create1155CreatorClient({
+        chain,
         publicClient: publicClient,
       });
       const { request } = await creatorClient.createNew1155Token({
@@ -43,11 +46,12 @@ describe("create-helper", () => {
   );
   anvilTest(
     "creates a new contract, than creates a new token on this existing contract",
-    async ({ viemClients: { publicClient, walletClient } }) => {
+    async ({ viemClients: { publicClient, walletClient, chain } }) => {
       const addresses = await walletClient.getAddresses();
       const creatorAccount = addresses[0]!;
 
       const creatorClient = create1155CreatorClient({
+        chain,
         publicClient: publicClient,
       });
 
@@ -103,7 +107,9 @@ describe("create-helper", () => {
   );
   anvilTest(
     "creates a new token with a create referral address",
-    async ({ viemClients: { testClient, publicClient, walletClient } }) => {
+    async ({
+      viemClients: { testClient, publicClient, walletClient, chain },
+    }) => {
       const addresses = await walletClient.getAddresses();
       const creatorAddress = addresses[0]!;
       await testClient.setBalance({
@@ -111,6 +117,7 @@ describe("create-helper", () => {
         value: parseEther("1"),
       });
       const creatorClient = create1155CreatorClient({
+        chain,
         publicClient: publicClient,
       });
       const { request } = await creatorClient.createNew1155Token({

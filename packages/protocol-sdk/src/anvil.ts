@@ -5,6 +5,7 @@ import {
   Chain,
   PublicClient,
   TestClient,
+  Transport,
   WalletClient,
   createPublicClient,
   createTestClient,
@@ -16,7 +17,8 @@ import { foundry, zora } from "viem/chains";
 export interface AnvilViemClientsTest {
   viemClients: {
     walletClient: WalletClient;
-    publicClient: PublicClient;
+    // see https://github.com/wevm/viem/discussions/2282
+    publicClient: PublicClient<Transport, Chain>;
     testClient: TestClient;
     chain: Chain;
   };

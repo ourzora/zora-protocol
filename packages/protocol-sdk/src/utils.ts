@@ -5,8 +5,16 @@ import {
   Chain,
   ContractFunctionArgs,
   ContractFunctionName,
+  PublicClient as BasePublicClient,
   SimulateContractParameters,
+  Transport,
+  createPublicClient,
+  http,
 } from "viem";
+import {
+  IHttpClient,
+  httpClient as defaultHttpClient,
+} from "./apis/http-api-base";
 
 export const makeSimulateContractParamaters = <
   const abi extends Abi | readonly unknown[],
@@ -28,3 +36,20 @@ export const makeSimulateContractParamaters = <
     accountOverride
   >,
 ) => args;
+
+export type PublicClient = BasePublicClient<Transport, Chain>;
+
+export type ClientConfig = {
+  chain: Chain;
+  publicClient?: PublicClient;
+  httpClient?: IHttpClient;
+};
+
+export function setupClient({ chain, httpClient, publicClient }: ClientConfig) {
+  return {
+    chain,
+    httpClient: httpClient || defaultHttpClient,
+    publicClient:
+      publicClient || createPublicClient({ chain, transport: http() }),
+  };
+}
