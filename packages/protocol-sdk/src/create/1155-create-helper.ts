@@ -7,10 +7,12 @@ import {
 import type {
   Account,
   Address,
+  Chain,
   Hex,
   PublicClient,
   SimulateContractParameters,
   TransactionReceipt,
+  Transport,
 } from "viem";
 import { decodeEventLog, encodeFunctionData, zeroAddress } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
@@ -186,8 +188,8 @@ export const getTokenIdFromCreateReceipt = (
   }
 };
 
-async function getContractExists(
-  publicClient: PublicClient,
+async function getContractExists<chain extends Chain>(
+  publicClient: PublicClient<Transport, chain>,
   contract: ContractType,
   // Account that is the creator of the contract
   account: Address,
@@ -242,10 +244,10 @@ type CreateNew1155TokenReturn = {
   contractExists: boolean;
 };
 
-export function create1155CreatorClient({
+export function create1155CreatorClient<chain extends Chain>({
   publicClient,
 }: {
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, chain>;
 }) {
   async function createNew1155Token({
     contract,

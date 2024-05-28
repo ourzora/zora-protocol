@@ -29,7 +29,7 @@
     "tsup": "^7.2.0",
     "tsx": "^3.13.0",
     "typescript": "^5.2.2",
-    "viem": "^2.9.18",
+    "viem": "^2.11.1",
     "zoralabs-tsconfig": "*"
   }
 }

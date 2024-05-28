@@ -23,15 +23,15 @@
     "@graphprotocol/graph-ts": "0.29.3",
     "@zoralabs/mints-contracts": "*",
     "@zoralabs/nft-drop-contracts": "1.12.0",
+    "@zoralabs/protocol-deployments": "*",
     "@zoralabs/protocol-rewards": "*",
-    "@zoralabs/zora-1155-contracts": "*",
-    "@zoralabs/protocol-deployments": "*"
+    "@zoralabs/zora-1155-contracts": "*"
   },
   "devDependencies": {
     "@goldskycom/cli": "^7.1.0",
     "@graphprotocol/graph-cli": "0.48.0",
-    "yamljs": "^0.3.0",
     "mustache": "4.2.0",
-    "typescript": "^5.2.2"
+    "typescript": "^5.2.2",
+    "yamljs": "^0.3.0"
   }
 }

@@ -5,6 +5,7 @@ import type {
   Chain,
   Hex,
   PublicClient,
+  SimulateContractParameters,
   TransactionReceipt,
   WalletClient,
 } from "viem";
@@ -338,16 +339,22 @@ class PremintClient {
     creatorAccount: Address | Account;
     checkSignature?: boolean;
     walletClient: WalletClient;
-    collection: ContractCreationConfig;
+    collection: Omit<ContractCreationConfig, "additionalAdmins"> & {
+      additionalAdmins?: Address[];
+    };
     tokenCreationConfig: Partial<TokenConfigForVersion<T>> & {
       tokenURI: string;
     };
     premintConfigVersion?: T;
     uid?: number;
   }) {
+    const collectionWithAdditionalAdmins: ContractCreationConfig = {
+      ...collection,
+      additionalAdmins: collection.additionalAdmins || [],
+    };
     const newContractAddress = await getPremintCollectionAddress({
       publicClient: this.publicClient,
-      collection,
+      collection: collectionWithAdditionalAdmins,
     });
 
     let uidToUse = uid;
@@ -391,7 +398,7 @@ class PremintClient {
       checkSignature,
       account: creatorAccount,
       walletClient,
-      collection,
+      collection: collectionWithAdditionalAdmins,
     });
   }
 
@@ -521,7 +528,16 @@ class PremintClient {
       platformReferral?: Address;
       mintRecipient?: Address;
     };
-  }) {
+  }): Promise<
+    SimulateContractParameters<
+      typeof zoraCreator1155PremintExecutorImplABI,
+      "premintV1" | "premintV2",
+      any,
+      any,
+      any,
+      Account | Address
+    >
+  > {
     if (mintArguments && mintArguments?.quantityToMint < 1) {
       throw new Error("Quantity to mint cannot be below 1");
     }
@@ -600,12 +616,12 @@ class PremintClient {
   }
 }
 
-export function createPremintClient({
+export function createPremintClient<chain extends Chain>({
   chain,
   httpClient,
   publicClient,
 }: {
-  chain: Chain;
+  chain: chain;
   publicClient?: PublicClient;
   httpClient?: IHttpClient;
 }) {

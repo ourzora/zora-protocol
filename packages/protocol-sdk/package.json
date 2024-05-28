@@ -28,7 +28,7 @@
     "@zoralabs/protocol-deployments": "*"
   },
   "peerDependencies": {
-    "viem": "^2.9.19"
+    "viem": "^2.11.1"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",

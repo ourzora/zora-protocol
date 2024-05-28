@@ -35,11 +35,26 @@ export const Errors = {
 };
 
 type MintArguments = {
+  /** Quantity of tokens to mint */
   quantityToMint: number;
+  /** Comment to add to the mint */
   mintComment?: string;
+  /** Optional address to receive the mint referral reward */
   mintReferral?: Address;
+  /** Address to receive the minted tokens */
   mintToAddress: Address;
   saleType?: SaleType;
+};
+
+type MintTokenParams = {
+  /** Account to execute the mint */
+  minterAccount: Address | Account;
+  /** Contract address of token to mint */
+  tokenAddress: Address;
+  /** Id of token to mint */
+  tokenId?: GenericTokenIdTypes;
+  /** Mint settings */
+  mintArguments: MintArguments;
 };
 
 class MintClient {
@@ -58,21 +73,13 @@ class MintClient {
 
   /**
    * Returns the parameters needed to prepare a transaction mint a token.
-   * @param param0.minterAccount The account that will mint the token.
-   * @param param0.mintable The mintable token to mint.
-   * @param param0.mintArguments The arguments for the mint (mint recipient, comment, mint referral, quantity to mint)
-   * @returns
+   *
+   * @param parameters - Parameters for collecting the token {@link MintTokenParams}
+   * @returns Parameters for simulating/executing the mint transaction
    */
-  async makePrepareMintTokenParams({
-    ...rest
-  }: {
-    minterAccount: Address | Account;
-    tokenAddress: Address;
-    tokenId?: GenericTokenIdTypes;
-    mintArguments: MintArguments;
-  }) {
+  async makePrepareMintTokenParams(parameters: MintTokenParams) {
     return makePrepareMintTokenParams({
-      ...rest,
+      ...parameters,
       apiClient: this.apiClient,
       publicClient: this.publicClient,
     });

@@ -1,0 +1,58 @@
+# Zora Developer Tools
+
+The Zora Developer Tools is a suite of typescript libraries and utilities that simplify interacting with the Zora Protocol contracts.
+
+## Protocol Deployments Package
+
+The [Protocol Deployments](./protocol-deployments/guide) package provides contract abis, deployed addresses, and typed data definitions for the Zora Contracts. These bundled configs and abis can be used in conjunction with wagmi or viem to interact with the Zora Protocol in typescript without needing to write any solidity.
+
+```typescript
+import {
+  protocolRewardsABI,
+  zoraCreator1155FactoryImplABI,
+  protocolRewardsAddress,
+  zoraCreator1155FactoryImplAddress,
+} from "@zoralabs/protocol-deployments";
+```
+
+## Protocol SDK
+
+The [Protocol SDK](./protocol-sdk/getting-started) is a typescript package that simplifies interacting with the Zora protocol by generating required transactions for our contracts.
+
+```ts twoslash
+import { zora } from "viem/chains";
+import { http, createPublicClient } from "viem";
+import { createMintClient } from "@zoralabs/protocol-sdk";
+
+const tokenAddress = "0x1234567890123456789012345678901234567890";
+const tokenId = 1n;
+const mintToAddress = "0x71907e8Ae7aeFb58ceC8eb46DAf4fc78c29E5173";
+const quantityToMint = 1;
+const minterAccount = "0xCb8454D64AFeB46455cB4847C53279F6cdCbFb5e";
+
+const publicClient = createPublicClient({
+  // this will determine which chain to interact with
+  chain: zora,
+  transport: http(),
+});
+
+const mintClient = createMintClient({ chain: zora });
+
+// prepare the mint transaction, which can be simulated via an rpc with the public client.
+const prepared = await mintClient.makePrepareMintTokenParams({
+  // 1155 contract address
+  tokenAddress,
+  tokenId,
+  mintArguments: {
+    // address that will receive the minted tokens
+    mintToAddress,
+    // quantity of tokens to mint
+    quantityToMint,
+  },
+  // account to execute the mint transaction
+  minterAccount,
+});
+
+// simulate the transaction
+const { request } = await publicClient.simulateContract(prepared);
+```

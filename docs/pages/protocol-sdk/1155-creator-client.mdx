@@ -1,0 +1,68 @@
+## Create Onchain 1155 Contracts & Tokens
+
+The Protocol SDK can be used to prepare transactions to create 1155 contracts and tokens, using the `1155CreatorClient`
+
+### Setup/Create the 1155CreatorClient
+
+Initialize a 1155 Creator Client with a public client. The public client's chain
+is used to determine the network to interact with.
+
+```ts twoslash
+import { create1155CreatorClient } from "@zoralabs/protocol-sdk";
+import { zora } from "viem/chains";
+import { createPublicClient, http } from "viem";
+
+const publicClient = createPublicClient({
+  // this will determine which chain to interact with
+  chain: zora,
+  transport: http(),
+});
+
+const creatorClient = create1155CreatorClient({ publicClient });
+```
+
+The function `createNew1155Token` is used to create a new 1155 contract and/or token.
+The `contract` argument can be either contract creation parameters or a contract uri.
+
+### Creating a new 1155 contract and token
+
+If `contract` is set to be contract creation parameters, an 1155 contract is either created or retrieved
+at a deterministic address based on those parameters, and the token is created on that contract.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/create/createNew1155ContractOrToken.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+```
+
+:::
+
+### Creating a token on an existing 1155 contract
+
+If `contract` is set to be a contract uri, the token is created on that existing contract.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/create/createNew1155Token.ts]
+```
+
+```ts twoslash [config.ts] filename="config.ts"
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+```
+
+:::

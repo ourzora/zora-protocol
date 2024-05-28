@@ -5,6 +5,10 @@
       "dependsOn": ["^build"],
       "outputs": [".dist/**"]
     },
+    "build:site": {
+      "dependsOn": ["^build"],
+      "outputs": [".dist/**"]
+    },
     "@zoralabs/protocol-deployments#build": {
       "dependsOn": ["@zoralabs/protocol-deployments-gen#build"]
     },
@@ -35,6 +39,9 @@
     },
     "lint": {
       "dependsOn": ["^lint"]
+    },
+    "docs#lint": {
+      "dependsOn": ["^@zoralabs/protocol-sdk#build"]
     },
     "update-contract-version": {
       "dependsOn": ["^update-contract-version"]

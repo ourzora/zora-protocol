@@ -1,0 +1,41 @@
+## Collect Onchain 1155 Tokens
+
+The Protocol SDK can be used to prepare transactions for collecting 1155 tokens onchain. This is done using the `MintClient`.
+
+### Setup/Create the MintClient
+
+```ts twoslash
+import { createMintClient } from "@zoralabs/protocol-sdk";
+import { zora } from "viem/chains";
+
+const mintClient = createMintClient({ chain: zora });
+```
+
+### Collecting an onchain 1155 token
+
+The function `makePrepareMintTokenParameters` builds the parameters to collect an onchain 1155 token,
+which can be used to simulate or write to the transaction using viem or wagmi:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+
+// @filename: data.ts
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/collect/mintClient.ts]
+```
+
+```ts twoslash [data.ts]
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+```
+
+:::

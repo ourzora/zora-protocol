@@ -26,6 +26,7 @@
   "packageManager": "yarn@1.22.19",
   "workspaces": {
     "packages": [
+      "docs",
       "packages/*"
     ],
     "nohoist": [
@@ -35,7 +36,9 @@
       "**/erc721a-upgradeable",
       "**/forge-std",
       "**/solady",
-      "**/solmate"
+      "**/solmate",
+      "**/vocs",
+      "**/yaml"
     ]
   },
   "lint-staged": {

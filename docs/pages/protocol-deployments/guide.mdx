@@ -1,0 +1,105 @@
+## Protocol Deployments Package
+
+`@zoralabs/protocol-deployments` is a typescript package that provides contract abis, deployed addresses,
+and typed data definitions for the Zora Contracts.
+These bundled configs and abis can be used in conjunction with wagmi or viem to interact with the Zora Protocol in
+typescript without needing to write any solidity.
+
+### Installation
+
+To add the Zora Protocol Deployments to your project, install the required package:
+
+:::code-group
+
+```bash [pnpm]
+pnpm add @zoralabs/protocol-deployments
+```
+
+```bash [npm]
+npm install @zoralabs/protocol-deployments
+```
+
+```bash [yarn]
+yarn add @zoralabs/protocol-deployments
+```
+
+:::
+
+### Importing Contract ABIs
+
+The package exports a set of contract ABIs for the Zora Protocol. These can be imported and used in your project as follows:
+
+```ts twoslash
+import {
+  protocolRewardsABI,
+  zoraCreator1155FactoryImplABI,
+} from "@zoralabs/protocol-deployments";
+```
+
+### Importing Contract Addresses
+
+The package exports addresses each Zora Protocol contract is deployed to on each chain.
+
+```ts twoslash
+import {
+  protocolRewardsAddress,
+  zoraCreator1155FactoryImplAddress,
+} from "@zoralabs/protocol-deployments";
+import { zora } from "viem/chains";
+
+// get addresses contracts are deployed on the Zora chain
+const protocolRewardsAddressOnZora = protocolRewardsAddress[zora.id];
+const zoraCreator1155FactoryImplAddressOnZora =
+  zoraCreator1155FactoryImplAddress[zora.id];
+```
+
+### Usage with React wagmi Hooks
+
+The bundled contract ABIs and addresses can be used in conjunction with [wagmi](https://wagmi.sh/) to interact with contracts in a typesafe manner
+in React Apps with minimal code.
+
+First, install `@tanstack/react-query` with `@zoralabs/protocol-deployments`:
+
+:::code-group
+
+```bash [pnpm]
+pnpm add @zoralabs/protocol-deployments @tanstack/react-query
+```
+
+```bash [npm]
+npm install @zoralabs/protocol-deployments @tanstack/react-query
+```
+
+```bash [yarn]
+yarn add @zoralabs/protocol-deployments @tanstack/react-query
+```
+
+:::
+
+wagmi hooks like [useReadContract](https://wagmi.sh/react/api/hooks/useReadContract) and [useWriteContract](https://wagmi.sh/react/api/hooks/useWriteContract) can be used in conjunction with the contract ABIs and addresses:
+
+```tsx twoslash [index.tsx]
+// [!include ~/snippets/protocol-deployments/wagmi/protocolRewards.tsx]
+```
+
+### Usage with viem
+
+The bundled contract ABIs and addresses can be used in conjunction with [viem](https://viem.sh/) to interact with contracts in a typesafe manner
+with minimal code:
+
+:::code-group
+
+```ts twoslash [index.tsx]
+// @filename: config.ts
+// [!include ~/snippets/protocol-deployments/viem/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-deployments/viem/protocolRewards.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-deployments/viem/config.ts]
+```
+
+:::

@@ -11,9 +11,6 @@ abis/
 # Remove broadcast logs
 **/*/broadcast
 
-# Docs
-docs/
-
 # Dotenv file
 **/*.env
 
@@ -47,3 +44,5 @@ pnpm-lock.yaml
 .turbo
 
 **/*wagmiGenerated.ts
+
+**/vocs.config.ts.*
