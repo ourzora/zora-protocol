@@ -1,0 +1,34 @@
+{
+  "deployedVersions": [
+    {
+      "version": "2.7.0",
+      "contractImplAddress": "0x97eb05B8db496B12244BCcf17CF377d00a99b67a"
+    }
+  ],
+  "targetVersion": {
+    "version": "2.9.0",
+    "contractImplAddress": "0x07FdF967bD687d9Af8FB1b06f78bdA9447Bf8C60"
+  },
+  "missingUpgradePaths": [
+    {
+      "from": [
+        {
+          "address": "0x97eb05B8db496B12244BCcf17CF377d00a99b67a",
+          "version": "2.7.0"
+        }
+      ],
+      "to": {
+        "version": "2.9.0",
+        "address": "0x07FdF967bD687d9Af8FB1b06f78bdA9447Bf8C60"
+      },
+      "upgradeCall": {
+        "address": "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900",
+        "calldata": "0x92b60a4c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000007fdf967bd687d9af8fb1b06f78bda9447bf8c60000000000000000000000000000000000000000000000000000000000000000100000000000000000000000097eb05b8db496b12244bccf17cf377d00a99b67a"
+      }
+    }
+  ],
+  "missingUpgradePathTargets": ["0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900"],
+  "missingUpgradePathCalls": [
+    "0x92b60a4c000000000000000000000000000000000000000000000000000000000000004000000000000000000000000007fdf967bd687d9af8fb1b06f78bda9447bf8c60000000000000000000000000000000000000000000000000000000000000000100000000000000000000000097eb05b8db496b12244bccf17cf377d00a99b67a"
+  ]
+}

@@ -66,6 +66,7 @@ const get1155Addresses = () => {
       FACTORY_PROXY: Address;
       PREMINTER_PROXY?: Address;
       ERC20_MINTER?: Address;
+      UPGRADE_GATE?: Address;
     };
 
     const chainId = parseInt(addressesFile.split(".")[0]);
@@ -111,6 +112,12 @@ const get1155Addresses = () => {
       chainId,
       abi: abis.erc20MinterABI,
       address: jsonAddress.ERC20_MINTER,
+    });
+    addAddress({
+      contractName: "UpgradeGate",
+      chainId,
+      address: jsonAddress.UPGRADE_GATE,
+      abi: abis.upgradeGateABI,
     });
   }
 

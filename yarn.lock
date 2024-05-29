@@ -4181,6 +4181,14 @@
     fast-url-parser "^1.1.3"
     tslib "^2.3.1"
 
+"@zoralabs/chains@^1.3.1":
+  version "1.3.1"
+  resolved "https://registry.yarnpkg.com/@zoralabs/chains/-/chains-1.3.1.tgz#a7c860c03f5a3a2fc0d9d0b650ad8eaa1c148296"
+  integrity sha512-Fr4RT85mngV9WXlollRbiHhbIhC3J+e5PCxLWoaJi58dgr23FrvVJG4+wOARzF9kl7QKSfwEAsBzSn1DB9P3Qg==
+  dependencies:
+    viem "^2.5.0"
+    yargs "^17.7.2"
+
 "@zoralabs/nft-drop-contracts@1.12.0":
   version "1.12.0"
   resolved "https://registry.yarnpkg.com/@zoralabs/nft-drop-contracts/-/nft-drop-contracts-1.12.0.tgz#ee2ef954c0ddb93aa3a9f5439604124ddad2dc28"
@@ -13512,6 +13520,20 @@ viem@^2.11.1:
     isows "1.0.4"
     ws "8.13.0"
 
+viem@^2.5.0:
+  version "2.9.25"
+  resolved "https://registry.yarnpkg.com/viem/-/viem-2.9.25.tgz#afcf320790e175b2afc83d29819f56cb50906f0d"
+  integrity sha512-W0QOXCsYQppnV89PQP0EnCvfZIEsDYqmpVakLPNrok4Q4B7651M3MV/sYifYcLWv3Mn4KUyMCUlVxlej6CfC/w==
+  dependencies:
+    "@adraffy/ens-normalize" "1.10.0"
+    "@noble/curves" "1.2.0"
+    "@noble/hashes" "1.3.2"
+    "@scure/bip32" "1.3.2"
+    "@scure/bip39" "1.2.1"
+    abitype "1.0.0"
+    isows "1.0.3"
+    ws "8.13.0"
+
 viem@^2.9.19:
   version "2.9.19"
   resolved "https://registry.yarnpkg.com/viem/-/viem-2.9.19.tgz#095cd0331930e10ba82c32a046d704ef8d349e94"
@@ -14023,7 +14045,7 @@ yargs@^15.1.0, yargs@^15.3.1:
     y18n "^4.0.0"
     yargs-parser "^18.1.2"
 
-yargs@^17.5.1, yargs@^17.7.1:
+yargs@^17.5.1, yargs@^17.7.1, yargs@^17.7.2:
   version "17.7.2"
   resolved "https://registry.yarnpkg.com/yargs/-/yargs-17.7.2.tgz#991df39aca675a192b816e1e0363f9d75d2aa269"
   integrity sha512-7dSzzRQ++CKnNI/krKnYRV7JKKPUXMEh61soaHKg9mrWEhzFWhFnxPxGl+69cD1Ou63C13NUPCnmIcrvqCuM6w==

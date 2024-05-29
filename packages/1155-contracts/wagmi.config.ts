@@ -21,6 +21,7 @@ export default defineConfig({
         "IPremintDefinitions",
         "ProtocolRewards",
         "ERC20Minter",
+        "UpgradeGate",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],

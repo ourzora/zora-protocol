@@ -1,0 +1,10 @@
+{
+  "deployedVersions": [],
+  "targetVersion": {
+    "version": "2.9.0",
+    "contractImplAddress": "0x857B5c291519Cff6D2090a87C3bC2eCe676ad057"
+  },
+  "missingUpgradePaths": [],
+  "missingUpgradePathTargets": [],
+  "missingUpgradePathCalls": []
+}

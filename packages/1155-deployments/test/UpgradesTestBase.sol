@@ -15,6 +15,7 @@ import {IZoraCreator1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IZo
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {IZoraMints1155Managed} from "@zoralabs/mints-contracts/src/interfaces/IZoraMints1155Managed.sol";
 import {ContractCreationConfig, PremintConfigV2} from "@zoralabs/shared-contracts/entities/Premint.sol";
+import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
 
 interface IERC1967 {
     /**
@@ -107,27 +108,11 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         return tryReadMintsImpl() != address(0);
     }
 
-    function determineMintsOwnershipNeeded() private view returns (UpgradeStatus memory) {
-        IOwnable2StepUpgradeable mintsManagerProxy = IOwnable2StepUpgradeable(getDeterminsticMintsManagerAddress());
+    function readMissingUpgradePaths() private view returns (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) {
+        string memory json = vm.readFile(string.concat("./versions/", string.concat(vm.toString(block.chainid), ".json")));
 
-        if (address(mintsManagerProxy).code.length == 0) {
-            return UpgradeStatus("Accept Mints Ownership", false, address(0), address(0), "");
-        }
-
-        ChainConfig memory chainConfig = getChainConfig();
-
-        bool upgradeNeeded = chainConfig.factoryOwner != mintsManagerProxy.owner();
-
-        bytes memory upgradeCalldata;
-
-        if (upgradeNeeded) {
-            if (mintsManagerProxy.pendingOwner() != chainConfig.factoryOwner) {
-                revert("Mints pending owner is not the expected owner");
-            }
-            upgradeCalldata = abi.encodeWithSelector(IOwnable2StepUpgradeable.acceptOwnership.selector);
-        }
-
-        return UpgradeStatus("Accept Mints Ownership", upgradeNeeded, address(mintsManagerProxy), address(0), upgradeCalldata);
+        upgradePathTargets = json.readAddressArray(".missingUpgradePathTargets");
+        upgradePathCalls = json.readBytesArray(".missingUpgradePathCalls");
     }
 
     function determineMintsUpgrade() private view returns (UpgradeStatus memory) {
@@ -344,6 +329,42 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         checkPremintWithMINTsWorks();
     }
 
+    function checkRegisterUpgradePaths() private returns (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) {
+        (upgradePathTargets, upgradePathCalls) = readMissingUpgradePaths();
+
+        if (upgradePathTargets.length > 0) {
+            for (uint256 i = 0; i < upgradePathTargets.length; i++) {
+                vm.prank(UpgradeGate(upgradePathTargets[i]).owner());
+                (bool success, ) = upgradePathTargets[i].call(upgradePathCalls[i]);
+
+                if (!success) {
+                    revert("upgrade path failed");
+                }
+            }
+        } else {
+            console2.log("no missing upgrade paths");
+        }
+    }
+
+    function appendCalls(
+        UpgradeStatus[] memory upgradeStatuses,
+        address[] memory targets,
+        bytes[] memory calls,
+        string memory upgradePathDescription
+    ) private pure returns (UpgradeStatus[] memory newUpgradeStatuses) {
+        newUpgradeStatuses = new UpgradeStatus[](upgradeStatuses.length + targets.length);
+
+        for (uint256 i = 0; i < upgradeStatuses.length; i++) {
+            newUpgradeStatuses[i] = upgradeStatuses[i];
+        }
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            newUpgradeStatuses[upgradeStatuses.length + i] = UpgradeStatus(upgradePathDescription, true, targets[i], address(0), calls[i]);
+        }
+
+        return newUpgradeStatuses;
+    }
+
     /// @notice checks which chains need an upgrade, simulated the upgrade, and gets the upgrade calldata
     function simulateUpgrade() internal {
         Deployment memory deployment = getDeployment();
@@ -351,19 +372,23 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         ChainConfig memory chainConfig = getChainConfig();
 
         UpgradeStatus[] memory upgradeStatuses = new UpgradeStatus[](4);
-        upgradeStatuses[0] = determine1155Upgrade(deployment);
+        UpgradeStatus memory upgrade1155 = determine1155Upgrade(deployment);
+        upgradeStatuses[0] = upgrade1155;
         upgradeStatuses[1] = determinePreminterUpgrade(deployment);
-        upgradeStatuses[2] = determineMintsOwnershipNeeded();
-        upgradeStatuses[3] = determineMintsUpgrade();
+        upgradeStatuses[2] = determineMintsUpgrade();
 
         bool upgradePerformed = performNeededUpgrades(chainConfig.factoryOwner, upgradeStatuses);
 
         if (upgradePerformed) {
             checkContracts();
 
-            console2.log("---------------");
+            (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) = checkRegisterUpgradePaths();
+
+            upgradeStatuses = appendCalls(upgradeStatuses, upgradePathTargets, upgradePathCalls, "Register Upgrade Paths");
 
             (address[] memory upgradeTargets, bytes[] memory upgradeCalldatas) = getUpgradeCalls(upgradeStatuses);
+
+            console2.log("---------------");
 
             string memory smolSafeUrl = _buildBatchSafeUrl(chainConfig.factoryOwner, upgradeTargets, upgradeCalldatas);
 
