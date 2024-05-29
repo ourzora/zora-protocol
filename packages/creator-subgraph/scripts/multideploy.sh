@@ -22,10 +22,10 @@ networkfiles=()
 if [[ -n $networks ]]
 then
   for p in ${networks//,/ }; do
-    networkfiles+=("config/$p.json")
+    networkfiles+=("config/$p.yaml")
   done
 else
-  for file in ./config/*.json; do
+  for file in ./config/*.yaml; do
     networkfiles+=($file)
   done
 fi
@@ -47,7 +47,7 @@ function getDeploymentBase() {
 }
 
 function getNetworkDeploymentBlock() {
-  startBlock=$(cat config/$1.json | jq "$fromcontract | map(.startBlock | tonumber) | max")
+  startBlock=$(yaml2json config/$1.yaml | jq "$fromcontract | map(.startBlock | tonumber) | max")
   echo $startBlock
 }
 
@@ -72,7 +72,7 @@ do
   fi
   # echo $newjson
   # echo "$newjson" > ./config/$network.json
-  cat ./config/$network.json
+  cat ./config/$network.yaml
   NETWORK=$network yarn run build
   echo goldsky subgraph deploy zora-create-$network/$version $graft_flags
   goldsky subgraph deploy zora-create-$network/$version $graft_flags
