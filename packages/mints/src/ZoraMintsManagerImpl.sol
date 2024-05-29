@@ -260,6 +260,9 @@ contract ZoraMintsManagerImpl is
             additionalAdmins: new address[](0)
         });
 
+        TransferredMints memory transferredMints = _getTransferredMints();
+        address firstMinter = transferredMints.from;
+
         return
             collectPremint(
                 contractWithAdditionalAdminsCreationConfig,
@@ -267,6 +270,7 @@ contract ZoraMintsManagerImpl is
                 PremintEncoding.encodePremint(premintConfig),
                 signature,
                 mintArguments,
+                firstMinter,
                 signerContract
             );
     }
@@ -277,16 +281,14 @@ contract ZoraMintsManagerImpl is
         PremintConfigEncoded memory premintConfig,
         bytes calldata signature,
         MintArguments calldata mintArguments,
+        address firstMinter,
         address signerContract
     ) public payable override onlyThis returns (PremintResult memory result) {
         MintArguments memory emptyArguments;
-        TransferredMints memory transferredMints = _getTransferredMints();
-        address firstMinter = transferredMints.from;
 
         // call premint with mints on the premint executor,
         // get or create a token for the uid.
         // quantity to mint is 0, meaning that this step will just get or create the contract and token
-
         // if there is not token contract address, assume this is a new contract, we execute premint
         // against the new contract:
         result = premintExecutor.premint(

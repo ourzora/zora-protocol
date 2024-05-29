@@ -154,6 +154,7 @@ contract ZoraMints1155Test is Test {
         PremintConfigV2 memory _premintConfig,
         bytes memory signature,
         MintArguments memory _mintArguments,
+        address _firstMinter,
         address _signerContract
     ) public payable {
         bytes memory call = abi.encodeWithSelector(
@@ -163,6 +164,7 @@ contract ZoraMints1155Test is Test {
             PremintEncoding.encodePremint(_premintConfig),
             signature,
             _mintArguments,
+            _firstMinter,
             _signerContract
         );
         ZoraMints1155(address(mints)).transferBatchToManagerAndCall{value: value}(tokenIds, quantities, call);
@@ -176,6 +178,7 @@ contract ZoraMints1155Test is Test {
         PremintConfigV2 memory _premintConfig,
         bytes memory signature,
         MintArguments memory _mintArguments,
+        address _firstMinter,
         address _signerContract
     ) public payable {
         bytes memory call = abi.encodeWithSelector(
@@ -185,6 +188,7 @@ contract ZoraMints1155Test is Test {
             PremintEncoding.encodePremint(_premintConfig),
             signature,
             _mintArguments,
+            _firstMinter,
             _signerContract
         );
         ZoraMints1155(address(mints)).transferBatchToManagerAndCall{value: value}(tokenIds, quantities, call);
@@ -459,7 +463,17 @@ contract ZoraMints1155Test is Test {
         // collect with proper amount; ensure that the tokens have been transferred to the predicted contract address
         vm.prank(collector);
 
-        collectPremintV2NewContract(0, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, signerContract);
+        collectPremintV2NewContract(
+            0,
+            tokenIds,
+            quantities,
+            contractCreationConfig,
+            premintConfig,
+            signature,
+            mintArguments,
+            makeAddr("firstMinter"),
+            signerContract
+        );
 
         // lets verify the contract has been created by making sure the code has size
         assertGt(expectedContractAddress.code.length, 0);
@@ -494,16 +508,27 @@ contract ZoraMints1155Test is Test {
 
         bytes memory signature = bytes("hi!");
 
+        address firstMinter = makeAddr("firstMinter");
+
         vm.prank(collector);
         vm.expectCall(
             address(mockPreminter),
             abi.encodeCall(
                 mockPreminter.premint,
-                (contractCreationConfig, address(0), PremintEncoding.encodePremint(premintConfig), signature, 0, emptyMintArguments, collector, signerContract)
+                (
+                    contractCreationConfig,
+                    address(0),
+                    PremintEncoding.encodePremint(premintConfig),
+                    signature,
+                    0,
+                    emptyMintArguments,
+                    firstMinter,
+                    signerContract
+                )
             )
         );
 
-        collectPremintV2NewContract(0, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, signerContract);
+        collectPremintV2NewContract(0, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, firstMinter, signerContract);
     }
 
     function test_collectPremint_calls_premintExistingContract() external {
@@ -530,6 +555,8 @@ contract ZoraMints1155Test is Test {
 
         bytes memory signature = bytes("hi!");
 
+        address firstMinter = makeAddr("firstMinter");
+
         vm.prank(collector);
         vm.expectCall(
             address(mockPreminter),
@@ -542,13 +569,13 @@ contract ZoraMints1155Test is Test {
                     signature,
                     0,
                     emptyMintArguments,
-                    collector,
+                    firstMinter,
                     signerContract
                 )
             )
         );
 
-        collectPremintExistingContract(0, tokenIds, quantities, tokenContract, premintConfig, signature, mintArguments, signerContract);
+        collectPremintExistingContract(0, tokenIds, quantities, tokenContract, premintConfig, signature, mintArguments, firstMinter, signerContract);
     }
 
     function test_collectPremint_calls_mintWithMints() external {
@@ -589,7 +616,17 @@ contract ZoraMints1155Test is Test {
         );
 
         vm.prank(collector);
-        collectPremintV2NewContract(0, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, signerContract);
+        collectPremintV2NewContract(
+            0,
+            tokenIds,
+            quantities,
+            contractCreationConfig,
+            premintConfig,
+            signature,
+            mintArguments,
+            makeAddr("firstMinter"),
+            signerContract
+        );
     }
 
     function test_collectPremintPayable_calls_mintWithMintsPayable() external {
@@ -631,7 +668,17 @@ contract ZoraMints1155Test is Test {
         );
 
         vm.prank(collector);
-        collectPremintV2NewContract(paidMintValue, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, signerContract);
+        collectPremintV2NewContract(
+            paidMintValue,
+            tokenIds,
+            quantities,
+            contractCreationConfig,
+            premintConfig,
+            signature,
+            mintArguments,
+            makeAddr("firstMinter"),
+            signerContract
+        );
     }
 
     function test_deprecated_collectPremintV2_callsPremintNewContract() external {
@@ -648,8 +695,6 @@ contract ZoraMints1155Test is Test {
         rewardsRecipients[0] = makeAddr("rewardsRecipient1");
 
         contractCreationConfig.additionalAdmins = new address[](0);
-
-        address contractAddress = mockPreminter.getContractWithAdditionalAdminsAddress(contractCreationConfig);
 
         bytes memory signature = bytes("hi!");
 
@@ -703,7 +748,17 @@ contract ZoraMints1155Test is Test {
         vm.expectEmit(true, true, true, true);
         emit Collected(tokenIds, quantities, mockPreminter.getContractWithAdditionalAdminsAddress(contractCreationConfig), expectedTokenId);
         vm.prank(collector);
-        collectPremintV2NewContract(0, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, signerContract);
+        collectPremintV2NewContract(
+            0,
+            tokenIds,
+            quantities,
+            contractCreationConfig,
+            premintConfig,
+            signature,
+            mintArguments,
+            makeAddr("firstMinter"),
+            signerContract
+        );
     }
 
     function _makeValidCollectCall() private view returns (bytes memory) {
@@ -907,8 +962,6 @@ contract ZoraMints1155Test is Test {
         quantities[0] = 5;
         mintQuantities(collector, tokenIds, quantities);
 
-        uint256 tokenIdToCollect = 1;
-
         IZoraMints1155Managed.PermitBatch memory permit = IZoraMints1155Managed.PermitBatch({
             owner: collector,
             to: address(mintsManager),
@@ -946,8 +999,6 @@ contract ZoraMints1155Test is Test {
         uint256[] memory quantities = new uint256[](1);
         quantities[0] = 5;
         mintQuantities(collector, tokenIds, quantities);
-
-        uint256 tokenIdToCollect = 1;
 
         IZoraMints1155Managed.PermitSingle memory permit = IZoraMints1155Managed.PermitSingle({
             owner: collector,

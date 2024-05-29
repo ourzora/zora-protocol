@@ -55,6 +55,7 @@ interface ICollectWithZoraMints is IZoraCreator1155Errors {
         PremintConfigEncoded calldata premintConfigEncoded,
         bytes calldata signature,
         MintArguments calldata mintArguments,
+        address firstMinter,
         address signerContract
     ) external payable returns (PremintResult memory);
 
