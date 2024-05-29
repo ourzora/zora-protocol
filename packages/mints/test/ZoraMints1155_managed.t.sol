@@ -592,6 +592,48 @@ contract ZoraMints1155Test is Test {
         collectPremintV2NewContract(0, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, signerContract);
     }
 
+    function test_collectPremintPayable_calls_mintWithMintsPayable() external {
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = 2;
+
+        setupTokenIds(tokenIds);
+
+        uint256[] memory quantities = new uint256[](1);
+        quantities[0] = 5;
+        mintQuantities(collector, tokenIds, quantities);
+
+        address[] memory rewardsRecipients = new address[](2);
+        rewardsRecipients[0] = makeAddr("rewardsRecipient1");
+        rewardsRecipients[1] = makeAddr("rewardsRecipient2");
+
+        uint256 paidMintValue = 3 ether;
+
+        address contractAddress = mockPreminter.getContractWithAdditionalAdminsAddress(contractCreationConfig);
+
+        uint256 expectedTokenId = mockPreminter.predictedTokenId();
+
+        bytes memory signature = "";
+
+        vm.expectCall(
+            contractAddress,
+            paidMintValue,
+            abi.encodeCall(
+                IMintWithMints(contractAddress).mintWithMints,
+                (
+                    tokenIds,
+                    quantities,
+                    IMinter1155(premintConfig.tokenConfig.fixedPriceMinter),
+                    expectedTokenId,
+                    mintArguments.mintRewardsRecipients,
+                    abi.encode(mintArguments.mintRecipient, "")
+                )
+            )
+        );
+
+        vm.prank(collector);
+        collectPremintV2NewContract(paidMintValue, tokenIds, quantities, contractCreationConfig, premintConfig, signature, mintArguments, signerContract);
+    }
+
     function test_deprecated_collectPremintV2_callsPremintNewContract() external {
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = 2;

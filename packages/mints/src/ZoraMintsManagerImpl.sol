@@ -289,7 +289,7 @@ contract ZoraMintsManagerImpl is
 
         // if there is not token contract address, assume this is a new contract, we execute premint
         // against the new contract:
-        result = premintExecutor.premint{value: msg.value}(
+        result = premintExecutor.premint(
             contractConfig,
             tokenContract,
             premintConfig,
