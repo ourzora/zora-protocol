@@ -27,7 +27,7 @@ forge script script/DeployMintsManagerImpl.s.sol {rest of deployment config}
 Deploy the `ZoraMintsManager`, which when initialized will deploy the `ZoraMints1155` contract:
 
 ```sh
-yarn tsx scripts/deployMintsDeterminisitic.ts {chainId}
+yarn tsx scripts/deployMintsDeterminisitic.ts {chain-name}
 ```
 
 To verify that deployed proxy contract, run the printed out verification command from the above step.

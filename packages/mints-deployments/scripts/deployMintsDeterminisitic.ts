@@ -12,6 +12,7 @@ import {
   PublicClient,
   Account,
   WalletClient,
+  Chain,
 } from "viem";
 import { ApiKeyStamper } from "@turnkey/api-key-stamper";
 import * as path from "path";
@@ -19,10 +20,10 @@ import * as dotenv from "dotenv";
 import { readFile } from "fs/promises";
 import { zoraMintsManagerImplABI } from "@zoralabs/mints-contracts";
 import { abi as proxyDeployerAbi } from "../out/DeterministicUUPSProxyDeployer.sol/DeterministicUUPSProxyDeployer.json";
+import * as chains from "viem/chains";
 
 import { fileURLToPath } from "url";
 import { dirname } from "path";
-import { arbitrumSepolia, sepolia, zora, zoraSepolia } from "viem/chains";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -30,15 +31,27 @@ const __dirname = dirname(__filename);
 // Load environment variables from `.env.local`
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-function getChainIdPositionalArg() {
+function getChainNamePositionalArg() {
   // parse chain id as first argument:
-  const chainIdArg = process.argv[2];
+  const chainName = process.argv[2];
 
-  if (!chainIdArg) {
-    throw new Error("Must provide chain id as first argument");
+  if (!chainName) {
+    throw new Error("Must provide chain name as first argument");
   }
 
-  return parseInt(chainIdArg);
+  return chainName;
+}
+
+function getChain(chainName: string): Chain {
+  const allChains = Object.values(chains);
+
+  const result = allChains.find((chain) => chain.network === chainName);
+
+  if (!result) {
+    throw new Error(`Chain ${chainName} not found`);
+  }
+
+  return result;
 }
 
 const loadTurnkeyAccount = async () => {
@@ -111,23 +124,6 @@ const loadDeterministicTransparentProxyConfig = async (
   return fileContents as MintsDeterminsticConfig;
 };
 
-const safeAbi = [
-  {
-    constant: true,
-    inputs: [],
-    name: "getOwners",
-    outputs: [
-      {
-        name: "",
-        type: "address[]",
-      },
-    ],
-    payable: false,
-    stateMutability: "view",
-    type: "function",
-  },
-];
-
 const validateIsValidSafe = async (
   address: Address,
   publicClient: PublicClient,
@@ -177,11 +173,9 @@ const generateInitializationConfig = async ({
 
   const chainConfig = JSON.parse(await readFile(chainConfigPath, "utf-8")) as {
     PROXY_ADMIN: Address;
-    MINTS_OWNER: Address;
   };
 
   await validateIsValidSafe(chainConfig.PROXY_ADMIN, publicClient);
-  await validateIsValidSafe(chainConfig.MINTS_OWNER, publicClient);
 
   const addresses = JSON.parse(await readFile(addressesPath, "utf-8")) as {
     MINTS_MANAGER_IMPL: Address;
@@ -216,27 +210,16 @@ const generateInitializationConfig = async ({
   };
 };
 
-function getChain(chainId: any) {
-  if (chainId === zoraSepolia.id) return zoraSepolia;
-  if (chainId === sepolia.id) return sepolia;
-  if (chainId === arbitrumSepolia.id) return arbitrumSepolia;
-  if (chainId === zora.id) return zora;
-
-  throw new Error(`Chain id ${chainId} not supported`);
-}
-
 const makeClientsFromAccount = async ({
-  chainId,
+  chain,
   account,
 }: {
-  chainId: Number;
+  chain: Chain;
   account: LocalAccount;
 }): Promise<{
   publicClient: PublicClient;
   walletClient: WalletClient;
 }> => {
-  const chain = getChain(chainId);
-
   const walletClient = createWalletClient({
     account,
     chain,
@@ -291,11 +274,12 @@ function printVerificationCommand({
   deployedAddress,
   constructorArgs,
   contractName,
-}: DeterminsticContractConfig) {
+  chainName,
+}: DeterminsticContractConfig & { chainName: string }) {
   console.log("verify the contract with the following command:");
 
   console.log(
-    `forge verify-contract  ${deployedAddress} ${contractName} $(chains (chainName) --verify) --constructor-args ${constructorArgs}`,
+    `forge verify-contract  ${deployedAddress} ${contractName} $(chains ${chainName} --verify) --constructor-args ${constructorArgs}`,
   );
 }
 
@@ -305,21 +289,23 @@ async function main() {
   const turnkeyAccount = await loadTurnkeyAccount();
 
   // get the chain id from the first positional argument
-  const chainId = getChainIdPositionalArg();
+  const chainName = getChainNamePositionalArg();
 
   // load the determinstic proxy config for the mints manager and 1155 contract
   const mintsProxyConfig =
     await loadDeterministicTransparentProxyConfig("mintsProxy");
 
+  const chain = (await getChain(chainName)) as Chain;
+
   const { publicClient, walletClient } = await makeClientsFromAccount({
-    chainId,
+    chain,
     account: turnkeyAccount,
   });
 
   // generate the initialization call config for the mints manager, including
   // the initial implementation address, and the initial implementation call
   const initializationConfig = await generateInitializationConfig({
-    chainId,
+    chainId: chain.id,
     publicClient,
     mints1155Config: mintsProxyConfig.mints1155,
   });
@@ -342,8 +328,14 @@ async function main() {
     `${mintsProxyConfig.manager.contractName} contract deployed to ${mintsProxyConfig.manager.deployedAddress}`,
   );
 
-  printVerificationCommand(mintsProxyConfig.manager);
-  printVerificationCommand(mintsProxyConfig.mints1155);
+  printVerificationCommand({
+    ...mintsProxyConfig.manager,
+    chainName,
+  });
+  printVerificationCommand({
+    ...mintsProxyConfig.mints1155,
+    chainName,
+  });
 }
 
 main().catch((error) => {

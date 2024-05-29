@@ -32,7 +32,9 @@ library ProxyDeployerUtils {
                 mints1155Salt,
                 _mints1155CreationCode,
                 initialEthTokenId,
-                initialEthPrice
+                initialEthPrice,
+                "https://zora.co/assets/mints/metadata/",
+                "https://zora.co/assets/mints/metadata/"
             );
     }
 }

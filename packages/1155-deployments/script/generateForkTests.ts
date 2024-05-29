@@ -13,6 +13,7 @@ const forkTestChains = [
   "zora",
   "sepolia",
   "base",
+  "base_sepolia",
   "zora_sepolia",
   "arbitrum_one",
   "arbitrum_sepolia",
