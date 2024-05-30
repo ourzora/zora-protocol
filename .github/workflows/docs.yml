@@ -7,7 +7,7 @@ name: Build and deploy docs
 on:
   # Runs on pushes targeting the default branch
   push:
-    branches: ["protocol-sdk-docs", "main"]
+    branches: ["main", "docs-correct-folder"]
 
   # Allows you to run this workflow manually from the Actions tab
   workflow_dispatch:
@@ -28,6 +28,8 @@ jobs:
   # Build job
   build:
     runs-on: ubuntu-latest
+    environment:
+      name: github-pages
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -37,7 +39,7 @@ jobs:
 
       - name: Build docs
         env:
-          BASE_PATH: "zora-protocol-private"
+          BASE_PATH: ${{ vars.PAGES_BASE_PATH }}
         run: yarn turbo run build:site
 
       - name: Setup pages
