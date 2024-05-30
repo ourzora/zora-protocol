@@ -25,7 +25,6 @@
     "@types/node": "^20.1.2",
     "@zoralabs/chains": "^1.3.1",
     "@zoralabs/mints-contracts": "*",
-    "@zoralabs/mints-deployments": "*",
     "@zoralabs/shared-contracts": "*",
     "@zoralabs/zora-1155-contracts": "*",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",

@@ -113,7 +113,7 @@ abstract contract DeploymentConfig is Script {
     }
 
     function getDeterminsticMintsManagerAddress() internal view returns (address) {
-        string memory json = vm.readFile("node_modules/@zoralabs/mints-deployments/deterministicConfig/mintsProxy/params.json");
+        string memory json = vm.readFile("../mints-deployments/deterministicConfig/mintsProxy/params.json");
         return json.readAddress(".manager.deployedAddress");
     }
 }

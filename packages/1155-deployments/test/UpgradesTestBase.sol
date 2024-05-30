@@ -98,7 +98,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
     }
 
     function tryReadMintsImpl() private view returns (address mintsImpl) {
-        string memory addressPath = string.concat("node_modules/@zoralabs/mints-deployments/addresses/", string.concat(vm.toString(block.chainid), ".json"));
+        string memory addressPath = string.concat("../mints-deployments/addresses/", string.concat(vm.toString(block.chainid), ".json"));
         try vm.readFile(addressPath) returns (string memory result) {
             mintsImpl = result.readAddress(".MINTS_MANAGER_IMPL");
         } catch {}
