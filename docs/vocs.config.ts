@@ -2,7 +2,7 @@ import { defineConfig } from "vocs";
 
 export default defineConfig({
   title: "Zora Developer Tools",
-  titleTemplate: "%s – Zora",
+  titleTemplate: "%s – Zora Developer Tools",
   iconUrl: "/zoraOrb.svg",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
@@ -16,6 +16,12 @@ export default defineConfig({
       text: "SDK",
       link: "/protocol-sdk/getting-started",
       match: "/protocol-sdk",
+    },
+  ],
+  socials: [
+    {
+      icon: "github",
+      link: "https://github.com/ourzora/zora-protocol",
     },
   ],
   sidebar: [
