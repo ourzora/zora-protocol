@@ -1,5 +1,11 @@
 # @zoralabs/1155-deployments
 
+## 0.0.5
+
+### Patch Changes
+
+- 15a4c65d: Updates to latest deploys on ZORA and ZORA Sepolia.
+
 ## 0.0.4
 
 ### Patch Changes
