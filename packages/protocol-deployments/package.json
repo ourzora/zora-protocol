@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-deployments",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "type": "module",

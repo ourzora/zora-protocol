@@ -1,5 +1,13 @@
 # @zoralabs/1155-deployments
 
+## 0.0.4
+
+### Patch Changes
+
+- f08a0d01: Remove mints-deployments as dependency as it is now directly included in codegen.
+
+  This fixes the package not being publish in npm and used only as an internal build package.
+
 ## 0.0.3
 
 ### Patch Changes

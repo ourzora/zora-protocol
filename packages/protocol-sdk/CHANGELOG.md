@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.16
+
+### Patch Changes
+
+- 12387133: `create1155CreatorClient` requires `chain` to be passed as a default argument instead of a `publicClient`
+- Updated dependencies [7af9c4db]
+  - @zoralabs/protocol-deployments@0.1.12
+
 ## 0.5.15
 
 ### Patch Changes

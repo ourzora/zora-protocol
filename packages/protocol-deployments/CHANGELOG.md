@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.12
+
+### Patch Changes
+
+- 7af9c4db: Deployed 1155 version 2.9.0 to mainnet, optimism, base, arbitrum one, arbitrum sepolia, blast
+
 ## 0.1.11
 
 ### Patch Changes

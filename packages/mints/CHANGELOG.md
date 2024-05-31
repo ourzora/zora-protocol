@@ -1,5 +1,12 @@
 # @zoralabs/mints-contracts
 
+## 0.1.4
+
+### Patch Changes
+
+- 461d3ba2: collectPremint - fixed bug where paid mint value was being incorrectly sent to the premint call
+- 60a8a7c4: collectPremint - firstMinter is explicitly specified in call
+
 ## 0.1.3
 
 ### Patch Changes
