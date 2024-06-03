@@ -1,4 +1,11 @@
-import { Address, zeroAddress } from "viem";
+import {
+  Address,
+  Hex,
+  hashTypedData,
+  keccak256,
+  stringToBytes,
+  zeroAddress,
+} from "viem";
 import { zoraSepolia } from "viem/chains";
 import { describe, expect } from "vitest";
 import { parseEther } from "viem";
@@ -24,6 +31,20 @@ import {
   getPremintMintCosts,
 } from "./preminter";
 import { AnvilViemClientsTest, forkUrls, makeAnvilTest } from "src/anvil";
+import { privateKeyToAccount } from "viem/accounts";
+
+const erc1271Abi = [
+  {
+    type: "function",
+    name: "isValidSignature",
+    inputs: [
+      { name: "_hash", type: "bytes32", internalType: "bytes32" },
+      { name: "_signature", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
+    stateMutability: "view",
+  },
+] as const;
 
 // create token and contract creation config:
 export const defaultContractConfig = ({
@@ -152,7 +173,7 @@ async function setupContracts({
 
 const zoraSepoliaAnvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraSepolia,
-  forkBlockNumber: 8948974,
+  forkBlockNumber: 9467979,
   anvilChainId: zoraSepolia.id,
 });
 
@@ -524,6 +545,137 @@ describe("ZoraCreator1155Preminter", () => {
     },
     40 * 1000,
   ),
+    zoraSepoliaAnvilTest(
+      "can sign a premint from an smart contract account and mint tokens against that premint",
+      async ({ viemClients }) => {
+        const {
+          fixedPriceMinterAddress,
+          accounts: { collectorAccount },
+        } = await setupContracts({ viemClients });
+
+        // this test shows how to create a premint that is signed by an EOA, but the premint
+        // contract admin will be a smart wallet owned by the EOA.
+        // contract admin is set as the smart wallet.  Smart wallet owner is the EOA.
+        // EOA signs the premint.
+        // When calling `premint` smart wallets address must be passed as an argument
+
+        // this was an AA contract that was deployed that has has the owner below as the
+        // valid signer. See https://sepolia.explorer.zora.energy/address/0x74F5fAf983d54FEd6D937654Aa4FD258534F2d4B?tab=contract
+        // it was deployed via the script `packages/1155-deployments/script/DeploySimpleAA.s.sol`
+        const smartWalletAddress = "0x74F5fAf983d54FEd6D937654Aa4FD258534F2d4B";
+        const ownerAddress = "0x7c8999dC9a822c1f0Df42023113EDB4FDd543266";
+        const ownerPrivateKey =
+          "0x02016836a56b71f0d02689e69e326f4f4c1b9057164ef592671cf0d37c8040c0";
+
+        const ownerAccount = privateKeyToAccount(ownerPrivateKey);
+
+        const premintConfig = defaultPremintConfigV2({
+          fixedPriceMinter: fixedPriceMinterAddress,
+          // we set the creator to the AA contract
+          creatorAccount: smartWalletAddress,
+        });
+
+        expect(ownerAccount.address).toBe(ownerAddress);
+
+        const contractConfig = defaultContractConfig({
+          // for the contract config, we set the smart wallet as the admin
+          contractAdmin: smartWalletAddress,
+        });
+
+        let contractAddress = await viemClients.publicClient.readContract({
+          abi: preminterAbi,
+          address: PREMINTER_ADDRESS,
+          functionName: "getContractWithAdditionalAdminsAddress",
+          args: [contractConfig],
+        });
+
+        const typedData = premintTypedDataDefinition({
+          verifyingContract: contractAddress,
+          // we need to sign here for the anvil chain, cause thats where it is run on
+          chainId: viemClients.chain.id,
+          premintConfig: premintConfig,
+          premintConfigVersion: PremintConfigVersion.V2,
+        });
+
+        // have creator sign the message to create the contract
+        // and the token
+        const signedMessage = await viemClients.walletClient.signTypedData({
+          ...typedData,
+          account: ownerAccount,
+        });
+
+        // sanity check - validate the signature on the smart wallet contract
+        const result = await viemClients.publicClient.readContract({
+          abi: erc1271Abi,
+          address: smartWalletAddress,
+          functionName: "isValidSignature",
+          args: [hashTypedData(typedData), signedMessage],
+        });
+
+        // if is a valid signature, signature should return `bytes4(keccak256("isValidSignature(bytes32,bytes)"))`
+        const expectedMagicValue = keccak256(
+          stringToBytes("isValidSignature(bytes32,bytes)"),
+        ).slice(0, 10);
+
+        expect(result).toBe(expectedMagicValue);
+
+        const quantityToMint = 2n;
+
+        const valueToSend = (
+          await getPremintMintCosts({
+            publicClient: viemClients.publicClient,
+            quantityToMint,
+            tokenContract: contractAddress,
+            tokenPrice: premintConfig.tokenConfig.pricePerToken,
+          })
+        ).totalCost;
+
+        await viemClients.testClient.setBalance({
+          address: collectorAccount,
+          value: parseEther("10"),
+        });
+
+        const mintArguments: PremintMintArguments = {
+          mintComment: "",
+          mintRecipient: collectorAccount,
+          mintRewardsRecipients: [],
+        };
+
+        const firstMinter = collectorAccount;
+
+        // const { }
+
+        // now have the collector execute the first signed message;
+        // it should create the contract, the token,
+        // and min the quantity to mint tokens to the collector
+        // the signature along with contract + token creation
+        // parameters are required to call this function
+        await viemClients.publicClient.simulateContract({
+          abi: preminterAbi,
+          functionName: "premint",
+          account: collectorAccount,
+          chain: viemClients.chain,
+          address: PREMINTER_ADDRESS,
+          args: [
+            contractConfig,
+            zeroAddress,
+            encodePremintConfig({
+              premintConfig: premintConfig,
+              premintConfigVersion: PremintConfigVersion.V2,
+            }),
+            signedMessage,
+            quantityToMint,
+            mintArguments,
+            firstMinter,
+            // we must specify the smart wallet address in the call, so that the 1155 contract
+            // knows to have the smart wallet validate the signature
+            smartWalletAddress,
+          ],
+          value: valueToSend,
+        });
+      },
+      40 * 1000,
+    ),
     zoraSepoliaAnvilTest(
       "can have collaborators create premints that can be executed on existing contracts",
       async ({ viemClients }) => {
