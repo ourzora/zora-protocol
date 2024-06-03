@@ -18,6 +18,7 @@ import {
   blast,
   arbitrumSepolia,
   baseSepolia,
+  sepolia,
 } from "viem/chains";
 import { getChain } from "@zoralabs/chains";
 import { dirname, join } from "path";
@@ -111,6 +112,12 @@ const chains: {
     upgradeGates: [determinsticUpgradeGateAddress],
     subgraph: getSubgraph("zora-create-arbitrum-sepolia", "stable"),
   },
+  {
+    chain: sepolia,
+    upgradeGates: [determinsticUpgradeGateAddress],
+    subgraph: getSubgraph("zora-create-sepolia", "stable"),
+  },
+
   {
     chain: baseSepolia,
     upgradeGates: [determinsticUpgradeGateAddress],
