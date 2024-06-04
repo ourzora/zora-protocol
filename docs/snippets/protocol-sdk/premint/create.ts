@@ -9,8 +9,6 @@ const {
   signAndSubmit,
   collectionAddress,
 } = await premintClient.createPremint({
-  payoutRecipient: creatorAccount,
-
   // collection info of collection to create
   collection: {
     contractAdmin: creatorAccount,
@@ -35,7 +33,7 @@ const {
     // the price in eth per token, for paid mints.  0 for it to be a free mint.
     pricePerToken: 0n,
     // address to receive creator rewards for free mints, or if its a paid mint, the paid mint sale proceeds.
-    payoutRecipient: "0x21122518fdABeEb82250799368deA86524651DE4",
+    payoutRecipient: creatorAccount,
   },
 });
 

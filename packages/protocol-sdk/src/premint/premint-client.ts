@@ -10,6 +10,8 @@ import type {
   WalletClient,
 } from "viem";
 import {
+  PremintConfigAndVersion,
+  TokenConfigWithVersion,
   encodePremintConfig,
   zoraCreator1155PremintExecutorImplABI,
 } from "@zoralabs/protocol-deployments";
@@ -20,7 +22,7 @@ import {
   getPremintExecutorAddress,
   applyUpdateToPremint,
   makeNewPremint,
-  supportsPremintVersion,
+  supportedPremintVersions,
   getPremintMintCosts,
   makeMintRewardsRecipient,
   getDefaultFixedPriceMinterAddress,
@@ -31,7 +33,6 @@ import {
 import {
   PremintConfigVersion,
   ContractCreationConfig,
-  TokenConfigForVersion,
   TokenCreationConfigV1,
   TokenCreationConfigV2,
   TokenCreationConfig,
@@ -81,6 +82,47 @@ export const defaultTokenConfigV1MintArguments = (): Omit<
   royaltyBPS: 1000, // 10%,
 });
 
+const pickTokenConfigV1 = (tokenConfig: TokenConfigInput) => ({
+  maxSupply: tokenConfig.maxSupply,
+  maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
+  pricePerToken: tokenConfig.pricePerToken,
+  mintDuration: tokenConfig.mintDuration,
+  mintStart: tokenConfig.mintStart,
+  royaltyBPS: tokenConfig.royaltyBPS,
+  tokenURI: tokenConfig.tokenURI,
+  royaltyRecipient: tokenConfig.payoutRecipient,
+});
+
+const pickTokenConfigV2 = (tokenConfig: TokenConfigInput) => ({
+  maxSupply: tokenConfig.maxSupply,
+  maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
+  pricePerToken: tokenConfig.pricePerToken,
+  mintDuration: tokenConfig.mintDuration,
+  mintStart: tokenConfig.mintStart,
+  royaltyBPS: tokenConfig.royaltyBPS,
+  tokenURI: tokenConfig.tokenURI,
+  payoutRecipient: tokenConfig.payoutRecipient,
+  createReferral: tokenConfig.createReferral || zeroAddress,
+});
+
+const tokenConfigV1WithDefault = (
+  tokenConfig: TokenConfigInput,
+  fixedPriceMinter: Address,
+): TokenCreationConfigV1 => ({
+  ...pickTokenConfigV1(tokenConfig),
+  ...defaultTokenConfigV1MintArguments(),
+  fixedPriceMinter,
+});
+
+const tokenConfigV2WithDefault = (
+  tokenConfig: TokenConfigInput,
+  fixedPriceMinter: Address,
+): TokenCreationConfigV2 => ({
+  ...pickTokenConfigV2(tokenConfig),
+  ...defaultTokenConfigV2MintArguments(),
+  fixedPriceMinter,
+});
+
 export const defaultTokenConfigV2MintArguments = (): Omit<
   TokenCreationConfigV2,
   "fixedPriceMinter" | "tokenURI" | "payoutRecipient" | "createReferral"
@@ -93,46 +135,53 @@ export const defaultTokenConfigV2MintArguments = (): Omit<
   royaltyBPS: 1000, // 10%,
 });
 
-const makeTokenConfigWithDefaults = <T extends PremintConfigVersion>({
+type TokenConfigInput = {
+  tokenURI: string;
+  payoutRecipient: Address;
+  createReferral?: Address;
+  maxSupply?: bigint;
+  maxTokensPerAddress?: bigint;
+  pricePerToken?: bigint;
+  mintDuration?: bigint;
+  mintStart?: bigint;
+  royaltyBPS?: number;
+};
+
+const makeTokenConfigWithDefaults = ({
   chainId,
-  premintConfigVersion,
   tokenCreationConfig,
-  payoutRecipient,
+  supportedPremintVersions,
 }: {
   chainId: number;
-  premintConfigVersion: T;
-  tokenCreationConfig: Partial<TokenConfigForVersion<T>> & { tokenURI: string };
-  payoutRecipient: Address;
-}): TokenConfigForVersion<T> => {
-  if (premintConfigVersion === PremintConfigVersion.V3) {
-    throw new Error("PremintV3 not supported in SDK");
-  }
+  tokenCreationConfig: TokenConfigInput;
+  supportedPremintVersions: PremintConfigVersion[];
+}): TokenConfigWithVersion<
+  PremintConfigVersion.V1 | PremintConfigVersion.V2
+> => {
+  const fixedPriceMinter = getDefaultFixedPriceMinterAddress(chainId);
 
-  const fixedPriceMinter =
-    (
-      tokenCreationConfig as
-        | Partial<TokenCreationConfigV1>
-        | Partial<TokenCreationConfigV2>
-    ).fixedPriceMinter || getDefaultFixedPriceMinterAddress(chainId);
+  if (!supportedPremintVersions.includes(PremintConfigVersion.V2)) {
+    // we need to return a token config v1
+    if (tokenCreationConfig.createReferral) {
+      throw new Error("Contract does not support create referral");
+    }
 
-  if (premintConfigVersion === PremintConfigVersion.V1) {
     return {
-      fixedPriceMinter,
-      ...defaultTokenConfigV1MintArguments(),
-      royaltyRecipient: payoutRecipient,
-      ...(tokenCreationConfig as Partial<TokenCreationConfigV1>),
-    } as TokenCreationConfigV1;
-  } else if (premintConfigVersion === PremintConfigVersion.V2) {
-    return {
-      fixedPriceMinter,
-      ...defaultTokenConfigV2MintArguments(),
-      payoutRecipient: payoutRecipient,
-      createReferral: zeroAddress,
-      ...tokenCreationConfig,
+      premintConfigVersion: PremintConfigVersion.V1,
+      tokenConfig: tokenConfigV1WithDefault(
+        tokenCreationConfig,
+        fixedPriceMinter,
+      ),
     };
-  } else {
-    throw new Error(`Invalid premint config version ${premintConfigVersion}`);
   }
+
+  return {
+    premintConfigVersion: PremintConfigVersion.V2,
+    tokenConfig: tokenConfigV2WithDefault(
+      tokenCreationConfig,
+      fixedPriceMinter,
+    ),
+  };
 };
 
 /**
@@ -224,8 +273,8 @@ class PremintClient {
    * @param parameters - Parameters for creating the premint {@link CreatePremintParameters}
    * @returns A PremintReturn. {@link PremintReturn}
    */
-  async createPremint<T extends PremintConfigVersion = PremintConfigVersion.V2>(
-    parameters: CreatePremintParameters<T>,
+  async createPremint(
+    parameters: CreatePremintParameters,
   ): Promise<PremintReturn<any>> {
     return createPremint({
       ...parameters,
@@ -517,38 +566,28 @@ async function signPremint({
 
 /** CREATE */
 
-type CreatePremintParameters<T extends PremintConfigVersion> = {
-  /** The account to receive the creator reward if it's a free mint, and the paid mint fee if it's a paid mint */
-  payoutRecipient: Address;
+type CreatePremintParameters = {
   /** tokenCreationConfig Token creation settings, optional settings are overridden with sensible defaults */
-  tokenCreationConfig: Partial<TokenConfigForVersion<T>> & {
-    tokenURI: string;
-  };
-  /** Premint config version to use, defaults to V2 */
-  premintConfigVersion?: T;
+  tokenCreationConfig: TokenConfigInput;
   /** uid the UID to use – optional and retrieved as a fresh UID from ZORA by default. */
   uid?: number;
 } & ContractCreationConfigOrAddress;
 
-async function createPremint<T extends PremintConfigVersion>({
-  payoutRecipient: creatorAccount,
+async function createPremint({
   tokenCreationConfig,
-  premintConfigVersion,
   uid,
   publicClient,
   apiClient,
   chainId,
   ...collectionOrAddress
-}: CreatePremintParameters<T> & PremintContext) {
+}: CreatePremintParameters & PremintContext) {
   const {
     premintConfig,
-    premintConfigVersion: actualVersion,
+    premintConfigVersion,
     collectionAddress: collectionAddressToUse,
-  } = await prepareCreatePremintConfig<T>({
-    payoutRecipient: creatorAccount,
+  } = await prepareCreatePremintConfig({
     ...collectionOrAddress,
     tokenCreationConfig,
-    premintConfigVersion,
     uid,
     publicClient,
     apiClient,
@@ -557,7 +596,7 @@ async function createPremint<T extends PremintConfigVersion>({
 
   return makePremintReturn({
     premintConfig,
-    premintConfigVersion: actualVersion,
+    premintConfigVersion,
     collectionAddress: collectionAddressToUse,
     collection: collectionOrAddress.collection,
     publicClient,
@@ -566,24 +605,22 @@ async function createPremint<T extends PremintConfigVersion>({
   });
 }
 
-async function prepareCreatePremintConfig<T extends PremintConfigVersion>({
-  payoutRecipient,
+type PreparePremintReturn = {
+  collectionAddress: Address;
+} & PremintConfigAndVersion;
+
+async function prepareCreatePremintConfig({
   tokenCreationConfig,
-  premintConfigVersion,
   uid,
   publicClient,
   apiClient,
   chainId,
   ...collectionOrAddress
 }: {
-  payoutRecipient: Address | Account;
-  tokenCreationConfig: Partial<TokenConfigForVersion<T>> & {
-    tokenURI: string;
-  };
-  premintConfigVersion?: T;
+  tokenCreationConfig: TokenConfigInput;
   uid?: number;
 } & PremintContext &
-  ContractCreationConfigOrAddress) {
+  ContractCreationConfigOrAddress): Promise<PreparePremintReturn> {
   const newContractAddress = await getPremintCollectionAddress({
     publicClient,
     ...collectionOrAddress,
@@ -595,37 +632,29 @@ async function prepareCreatePremintConfig<T extends PremintConfigVersion>({
     uidToUse = await apiClient.getNextUID(newContractAddress);
   }
 
-  const actualVersion = premintConfigVersion || PremintConfigVersion.V2;
+  const supportedVersions = await supportedPremintVersions({
+    tokenContract: newContractAddress,
+    publicClient,
+  });
 
-  if (
-    !(await supportsPremintVersion({
-      version: actualVersion,
-      publicClient,
-      tokenContract: newContractAddress,
-    }))
-  ) {
-    throw new Error(
-      `Premint version ${actualVersion} not supported by contract`,
-    );
-  }
+  const tokenConfigAndVersion = makeTokenConfigWithDefaults({
+    tokenCreationConfig,
+    chainId,
+    supportedPremintVersions: supportedVersions,
+  });
 
   const premintConfig = makeNewPremint({
-    tokenConfig: makeTokenConfigWithDefaults({
-      // @ts-ignore
-      premintConfigVersion: actualVersion,
-      tokenCreationConfig,
-      payoutRecipient:
-        typeof payoutRecipient === "string"
-          ? payoutRecipient
-          : payoutRecipient.address,
-      chainId,
-    }),
+    ...tokenConfigAndVersion,
     uid: uidToUse,
   });
 
-  return {
+  const premintConfigAndVersion = {
     premintConfig,
-    premintConfigVersion: actualVersion,
+    premintConfigVersion: tokenConfigAndVersion.premintConfigVersion,
+  } as PremintConfigAndVersion;
+
+  return {
+    ...premintConfigAndVersion,
     collectionAddress: newContractAddress,
   };
 }

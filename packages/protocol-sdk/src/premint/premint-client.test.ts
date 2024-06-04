@@ -19,84 +19,7 @@ const anvilTest = makeAnvilTest({
   anvilChainId: zoraSepolia.id,
 });
 
-describe("ZoraCreator1155Premint - v1 signatures", () => {
-  anvilTest(
-    "can sign and submit new premints on new contracts",
-    async ({ viemClients: { walletClient, publicClient, chain } }) => {
-      const [deployerAccount] = await walletClient.getAddresses();
-      const premintClient = createPremintClient({
-        chain,
-        publicClient,
-      });
-
-      premintClient.apiClient.getNextUID = vi
-        .fn<any, ReturnType<typeof premintClient.apiClient.getNextUID>>()
-        .mockResolvedValue(3);
-      premintClient.apiClient.postSignature = vi
-        .fn<Parameters<typeof premintClient.apiClient.postSignature>>()
-        .mockResolvedValue({ ok: true });
-
-      const { signAndSubmit } = await premintClient.createPremint({
-        payoutRecipient: deployerAccount!,
-        collection: {
-          contractAdmin: deployerAccount!,
-          contractName: "Testing Contract",
-          contractURI:
-            "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
-        },
-        tokenCreationConfig: {
-          tokenURI:
-            "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
-        },
-        premintConfigVersion: PremintConfigVersion.V1,
-      });
-
-      await signAndSubmit({
-        walletClient,
-        checkSignature: true,
-        account: deployerAccount!,
-      });
-
-      const expectedPostSignatureArgs: Parameters<
-        typeof premintClient.apiClient.postSignature
-      >[0] = {
-        collection: {
-          contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-          contractName: "Testing Contract",
-          contractURI:
-            "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
-        },
-        collectionAddress: undefined,
-        premintConfig: {
-          deleted: false,
-          tokenConfig: {
-            fixedPriceMinter: getDefaultFixedPriceMinterAddress(chain.id),
-            maxSupply: 18446744073709551615n,
-            maxTokensPerAddress: 0n,
-            mintDuration: 604800n,
-            mintStart: 0n,
-            pricePerToken: 0n,
-            royaltyBPS: 1000,
-            royaltyMintSchedule: 0,
-            royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-            tokenURI:
-              "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
-          },
-          uid: 3,
-          version: 0,
-        },
-        premintConfigVersion: PremintConfigVersion.V1,
-        signature:
-          "0x4d191dd60d428adfe507932a1758bee8ac5bbb77dcd3c05840c237416a3a25035bb8cc7c62177a4e9acb5f40c4032cdb3dbfefdd1575f2c3b4c57945b2076e2e1c",
-      };
-
-      expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith(
-        expectedPostSignatureArgs,
-      );
-    },
-    20 * 1000,
-  );
-
+describe("ZoraCreator1155Premint", () => {
   anvilTest(
     "can mint premints",
     async ({ viemClients: { walletClient, publicClient, chain } }) => {
@@ -202,17 +125,16 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         .mockResolvedValue({ ok: true });
 
       const { signAndSubmit } = await premintClient.createPremint({
-        payoutRecipient: creatorAccount!,
         collection: {
           contractAdmin: creatorAccount!,
           contractName: "Testing Contract Premint V2",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
-        premintConfigVersion: PremintConfigVersion.V2,
         tokenCreationConfig: {
           tokenURI:
             "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+          payoutRecipient: creatorAccount!,
           createReferral: createReferralAccount,
         },
       });
@@ -288,12 +210,11 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
 
       const { premintConfig, typedDataDefinition } =
         await premintClient.createPremint({
-          payoutRecipient: creatorAccount!,
           collection,
-          premintConfigVersion: PremintConfigVersion.V2,
           tokenCreationConfig: {
             tokenURI:
               "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+            payoutRecipient: creatorAccount!,
           },
         });
 
