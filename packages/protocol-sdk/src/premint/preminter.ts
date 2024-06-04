@@ -6,6 +6,8 @@ import {
   zoraCreator1155PremintExecutorImplAddress,
   zoraCreatorFixedPriceSaleStrategyAddress,
   premintTypedDataDefinition,
+  ContractCreationConfig,
+  PremintConfigForVersion,
 } from "@zoralabs/protocol-deployments";
 import {
   recoverTypedDataAddress,
@@ -17,11 +19,10 @@ import {
   recoverAddress,
   GetEventArgs,
   parseEther,
+  Account,
 } from "viem";
 import {
-  ContractCreationConfig,
   PremintConfig,
-  PremintConfigForTokenCreationConfig,
   PremintConfigV1,
   PremintConfigV2,
   PremintConfigVersion,
@@ -30,6 +31,11 @@ import {
 } from "@zoralabs/protocol-deployments";
 import { MintCosts } from "src/mint/mint-client";
 import { PublicClient } from "src/utils";
+import {
+  ContractCreationConfigAndAddress,
+  ContractCreationConfigOrAddress,
+  ContractCreationConfigWithOptionalAdditionalAdmins,
+} from "./contract-types";
 
 export const getPremintExecutorAddress = () =>
   zoraCreator1155PremintExecutorImplAddress[999] as Address;
@@ -40,28 +46,28 @@ export type IsValidSignatureReturn = {
 };
 
 export async function isAuthorizedToCreatePremint({
-  collection,
+  contractAdmin = zeroAddress,
+  additionalAdmins = [],
   collectionAddress,
   publicClient,
   signer,
 }: {
-  collection: ContractCreationConfig;
+  contractAdmin?: Address;
+  additionalAdmins?: Address[];
   collectionAddress: Address;
   publicClient: PublicClient;
-  signer: Address;
+  signer: Address | Account;
 }) {
-  if (collection.additionalAdmins.length > 0)
-    throw new Error("additionalAdmins not supported yet.");
   // otherwize, we must assume the newer version of premint executor is deployed, so we call that.
   return await publicClient.readContract({
     abi: preminterAbi,
     address: getPremintExecutorAddress(),
     functionName: "isAuthorizedToCreatePremintWithAdditionalAdmins",
     args: [
-      signer,
-      collection.contractAdmin,
+      typeof signer === "string" ? signer : signer.address,
+      contractAdmin,
       collectionAddress,
-      collection.additionalAdmins,
+      additionalAdmins,
     ],
   });
 }
@@ -106,22 +112,19 @@ export async function isValidSignature<T extends PremintConfigVersion>({
   signature,
   publicClient,
   collection,
+  collectionAddress,
   chainId,
   ...premintConfigAndVersion
 }: {
-  collection: ContractCreationConfig;
   signature: Hex;
   chainId: number;
   publicClient: PublicClient;
-} & PremintConfigWithVersion<T>): Promise<IsValidSignatureReturn> {
-  const tokenContract = await getPremintCollectionAddress({
-    collection,
-    publicClient,
-  });
+} & PremintConfigWithVersion<T> &
+  ContractCreationConfigAndAddress): Promise<IsValidSignatureReturn> {
   const recoveredAddress = await tryRecoverPremintSigner({
     ...premintConfigAndVersion,
     signature,
-    verifyingContract: tokenContract,
+    verifyingContract: collectionAddress,
     chainId,
   });
 
@@ -133,8 +136,9 @@ export async function isValidSignature<T extends PremintConfigVersion>({
 
   const isAuthorized = await isAuthorizedToCreatePremint({
     signer: recoveredAddress!,
-    collection,
-    collectionAddress: tokenContract,
+    additionalAdmins: collection?.additionalAdmins,
+    contractAdmin: collection?.contractAdmin,
+    collectionAddress: collectionAddress,
     publicClient,
   });
 
@@ -266,18 +270,27 @@ export const supportsPremintVersion = async ({
 };
 
 export async function getPremintCollectionAddress({
-  collection,
   publicClient,
+  collection,
+  collectionAddress,
 }: {
-  collection: ContractCreationConfig;
   publicClient: PublicClient;
-}): Promise<Address> {
-  return publicClient.readContract({
-    address: getPremintExecutorAddress(),
-    abi: zoraCreator1155PremintExecutorImplABI,
-    functionName: "getContractAddress",
-    args: [collection],
-  });
+} & ContractCreationConfigOrAddress): Promise<Address> {
+  if (typeof collection !== "undefined") {
+    return publicClient.readContract({
+      address: getPremintExecutorAddress(),
+      abi: zoraCreator1155PremintExecutorImplABI,
+      functionName: "getContractWithAdditionalAdminsAddress",
+      args: [
+        {
+          ...collection,
+          additionalAdmins: collection.additionalAdmins || [],
+        },
+      ],
+    });
+  }
+
+  return collectionAddress;
 }
 
 export function applyUpdateToPremint({
@@ -304,19 +317,19 @@ export function applyUpdateToPremint({
   return result;
 }
 
-export function makeNewPremint<T extends TokenCreationConfig>({
+export function makeNewPremint<T extends PremintConfigVersion>({
   tokenConfig,
   uid,
 }: {
-  tokenConfig: T;
+  tokenConfig: PremintConfigForVersion<T>["tokenConfig"];
   uid: number;
-}): PremintConfigForTokenCreationConfig<T> {
+}): PremintConfigForVersion<T> {
   return {
     deleted: false,
     uid,
     version: 0,
     tokenConfig,
-  } as PremintConfigForTokenCreationConfig<T>;
+  } as PremintConfigForVersion<T>;
 }
 
 export async function getPremintMintFee({
@@ -377,3 +390,41 @@ export function getDefaultFixedPriceMinterAddress(chainId: number): Address {
     chainId as keyof typeof zoraCreatorFixedPriceSaleStrategyAddress
   ]!;
 }
+
+export const emptyContractCreationConfig = (): ContractCreationConfig => ({
+  contractAdmin: zeroAddress,
+  contractURI: "",
+  contractName: "",
+  additionalAdmins: [],
+});
+
+export function defaultAdditionalAdmins(
+  collection: ContractCreationConfigWithOptionalAdditionalAdmins,
+): ContractCreationConfig {
+  return {
+    ...collection,
+    additionalAdmins: collection.additionalAdmins || [],
+  };
+}
+
+export const toContractCreationConfigOrAddress = ({
+  collection,
+  collectionAddress,
+}: {
+  collection?: ContractCreationConfigWithOptionalAdditionalAdmins;
+  collectionAddress?: Address;
+}) => {
+  if (typeof collection !== "undefined") {
+    return {
+      collection,
+    };
+  }
+
+  if (typeof collectionAddress !== "undefined") {
+    return {
+      collectionAddress,
+    };
+  }
+
+  throw new Error("Must provide either a collection or a collection address");
+};

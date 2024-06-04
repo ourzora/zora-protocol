@@ -71,6 +71,11 @@ export interface components {
       contractURI: string;
       /** Contractname */
       contractName: string;
+      /**
+       * Additionaladmins
+       * @default []
+       */
+      additionalAdmins?: string[];
     };
     /** HTTPValidationError */
     HTTPValidationError: {
@@ -187,7 +192,7 @@ export interface components {
      *     ...:     other: str = "default"
      */
     PremintRequest: {
-      collection: components["schemas"]["CollectionCreationConfig"];
+      collection?: components["schemas"]["CollectionCreationConfig"];
       /** Premint */
       premint:
         | components["schemas"]["PremintConfigV1"]
@@ -195,6 +200,8 @@ export interface components {
       chain_name: components["schemas"]["ChainName"];
       /** Signature */
       signature: string;
+      /** Collection Address */
+      collection_address?: string;
     };
     /**
      * PremintSignature
@@ -209,7 +216,7 @@ export interface components {
      *     ...:     other: str = "default"
      */
     PremintSignature: {
-      collection: components["schemas"]["CollectionCreationConfig"];
+      collection?: components["schemas"]["CollectionCreationConfig"];
       /** Premint */
       premint:
         | components["schemas"]["PremintConfigV1"]

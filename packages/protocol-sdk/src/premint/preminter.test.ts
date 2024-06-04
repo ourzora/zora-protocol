@@ -260,6 +260,7 @@ describe("ZoraCreator1155Preminter", () => {
       // recover and verify address is correct
       const { recoveredAddress, isAuthorized } = await isValidSignature({
         collection: contractConfig,
+        collectionAddress: tokenContract,
         chainId: viemClients.publicClient.chain!.id,
         premintConfig,
         premintConfigVersion: PremintConfigVersion.V1,
@@ -314,6 +315,7 @@ describe("ZoraCreator1155Preminter", () => {
       // recover and verify address is correct
       const { recoveredAddress, isAuthorized } = await isValidSignature({
         collection: contractConfig,
+        collectionAddress: tokenContract,
         chainId: viemClients.publicClient.chain!.id,
         premintConfig,
         premintConfigVersion: PremintConfigVersion.V2,

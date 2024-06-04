@@ -10,14 +10,21 @@ import {
   PremintConfigWithVersion,
 } from "@zoralabs/protocol-deployments";
 import { PremintSignatureGetResponse } from "./premint-api-client";
+import { ContractCreationConfigOrAddress } from "./contract-types";
 
 export const convertCollectionFromApi = (
   collection: PremintSignatureGetResponse["collection"],
-): ContractCreationConfig => ({
-  ...collection,
-  contractAdmin: collection.contractAdmin as Address,
-  additionalAdmins: [],
-});
+): ContractCreationConfig | undefined => {
+  if (!collection) return undefined;
+
+  return {
+    additionalAdmins:
+      (collection.additionalAdmins as Address[] | undefined) || [],
+    contractAdmin: collection.contractAdmin as Address,
+    contractName: collection.contractName,
+    contractURI: collection.contractURI,
+  };
+};
 
 /**
  * Convert server to on-chain types for a premint
@@ -82,6 +89,7 @@ export const convertGetPremintApiResponse = (
 ) => ({
   ...convertPremintFromApi(response.premint),
   collection: convertCollectionFromApi(response.collection),
+  collectionAddress: response.collection_address as Address,
   signature: response.signature as Hex,
 });
 
@@ -143,20 +151,24 @@ export type PremintSignatureResponse =
  */
 export const encodePostSignatureInput = <T extends PremintConfigVersion>({
   collection,
+  collectionAddress,
   premintConfigVersion,
   premintConfig,
   signature,
   chainId,
 }: {
-  collection: ContractCreationConfig;
   signature: Hex;
   chainId: number;
-} & PremintConfigWithVersion<T>): PremintSignatureRequestBody => ({
+} & PremintConfigWithVersion<T> &
+  ContractCreationConfigOrAddress): PremintSignatureRequestBody => ({
   premint: encodePremintForAPI({
     premintConfig,
     premintConfigVersion,
   }),
   signature,
-  collection,
+  collection: collection as
+    | PremintSignatureRequestBody["collection"]
+    | undefined,
+  collection_address: collectionAddress,
   chain_name: networkConfigByChain[chainId]!.zoraBackendChainName,
 });

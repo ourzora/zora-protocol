@@ -19,6 +19,7 @@ import {
   convertGetPremintApiResponse,
   encodePostSignatureInput,
 } from "./conversions";
+import { ContractCreationConfigOrAddress } from "./contract-types";
 
 type PremintNextUIDGetType =
   paths["/signature/{chain_name}/{collection_address}/next_uid"]["get"];
@@ -91,16 +92,14 @@ class PremintAPIClient {
     this.networkConfig = getApiNetworkConfigForChain(chainId);
   }
   postSignature = async <T extends PremintConfigVersion>({
-    collection,
     signature,
-    ...premintConfigAndVersion
+    ...rest
   }: {
-    collection: ContractCreationConfig;
     signature: Hex;
-  } & PremintConfigWithVersion<T>): Promise<PremintSignatureResponse> => {
+  } & PremintConfigWithVersion<T> &
+    ContractCreationConfigOrAddress): Promise<PremintSignatureResponse> => {
     const data = encodePostSignatureInput({
-      collection,
-      ...premintConfigAndVersion,
+      ...rest,
       chainId: this.networkConfig.chainId,
       signature,
     });
@@ -128,7 +127,8 @@ class PremintAPIClient {
   }): Promise<
     {
       signature: Hex;
-      collection: ContractCreationConfig;
+      collection: ContractCreationConfig | undefined;
+      collectionAddress: Address;
     } & PremintConfigAndVersion
   > => {
     const response = await getSignature({

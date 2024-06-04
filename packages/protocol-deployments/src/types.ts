@@ -4,6 +4,7 @@ import {
   zoraCreator1155PremintExecutorImplABI,
   iPremintDefinitionsABI,
 } from "./generated/wagmi";
+import { Address } from "viem";
 
 export enum PremintConfigVersion {
   V1 = "1",
@@ -11,12 +12,17 @@ export enum PremintConfigVersion {
   V3 = "3",
 }
 
-export type ContractCreationConfig = AbiParametersToPrimitiveTypes<
-  ExtractAbiFunction<
-    typeof zoraCreator1155PremintExecutorImplABI,
-    "premint"
-  >["inputs"]
->[0];
+export type ContractCreationConfig = Omit<
+  AbiParametersToPrimitiveTypes<
+    ExtractAbiFunction<
+      typeof zoraCreator1155PremintExecutorImplABI,
+      "premint"
+    >["inputs"]
+  >[0],
+  "additionalAdmins"
+> & {
+  additionalAdmins: Address[];
+};
 
 export type TokenCreationConfigV1 = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<

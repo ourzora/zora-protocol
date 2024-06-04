@@ -19,3 +19,9 @@ export * from "./mints/mints-queries";
 export * from "./mints/mints-contracts";
 
 export * from "./mints/mints-eth-unwrapper-and-caller";
+
+export {
+  type ContractCreationConfigWithOptionalAdditionalAdmins,
+  type ContractCreationConfigOrAddress,
+  type ContractCreationConfigAndAddress,
+} from "./premint/contract-types";

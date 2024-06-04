@@ -18,7 +18,6 @@ import {
   Address,
   BaseError,
   ContractFunctionRevertedError,
-  PublicClient,
   WalletClient,
   parseEther,
 } from "viem";
@@ -39,8 +38,9 @@ import {
   getFixedPricedMinter,
   waitForSuccess,
 } from "src/test-utils";
+import { PublicClient } from "src/utils";
 
-const mintsMainnetDeployedBlock = 12990454;
+const mintsMainnetDeployedBlock = 15372992;
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
