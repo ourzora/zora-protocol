@@ -1,5 +1,16 @@
 # @zoralabs/protocol-sdk
 
+## 0.5.17
+
+### Patch Changes
+
+- b16078bc:
+  - premintClient now supports creating/minting premints with additional admins.
+  - premint client supports creating premints with just a collection address, as long as the premint has been brought onchain
+- 502f3295: premint sdk - on createPremint, `payoutRecipient` argument moved to `tokenCreationConfig`. premintConfigVersion is no longer an argument; the sdk automatically figures out which is the appropriate version
+- Updated dependencies [9cdd81ac]
+  - @zoralabs/protocol-deployments@0.1.13
+
 ## 0.5.16
 
 ### Patch Changes

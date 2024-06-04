@@ -1,5 +1,18 @@
 # @zoralabs/protocol-deployments
 
+## 0.1.13
+
+### Patch Changes
+
+- 9cdd81ac: Deployed latest version of 1155 contracts, 1155 factory, preminter, and mints manager to:
+
+  - blast
+  - Optimism mainnet
+  - Base
+  - Arbitrum One
+  - Arbitrum Sepolia
+  - Sepolia
+
 ## 0.1.12
 
 ### Patch Changes
