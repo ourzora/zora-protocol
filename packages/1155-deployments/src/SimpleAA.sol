@@ -17,9 +17,9 @@ contract SimpleAA {
 
         if (signatory == owner) {
             return MAGIC_VALUE;
-        } else {
-            return bytes4(0);
         }
+
+        return bytes4(0);
     }
 
     receive() external payable {}

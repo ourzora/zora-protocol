@@ -645,8 +645,6 @@ describe("ZoraCreator1155Preminter", () => {
 
         const firstMinter = collectorAccount;
 
-        // const { }
-
         // now have the collector execute the first signed message;
         // it should create the contract, the token,
         // and min the quantity to mint tokens to the collector
