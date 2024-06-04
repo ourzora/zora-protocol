@@ -27,7 +27,7 @@ export default defineConfig({
   sidebar: [
     {
       text: "Introduction",
-      link: "/introduction",
+      link: "/",
     },
     {
       text: "Protocol Deployments Package",
