@@ -76,7 +76,7 @@ export const defaultTokenConfigV1MintArguments = (): Omit<
   maxSupply: OPEN_EDITION_MINT_SIZE,
   maxTokensPerAddress: 0n,
   pricePerToken: 0n,
-  mintDuration: BigInt(60 * 60 * 24 * 7), // 1 week
+  mintDuration: 0n,
   mintStart: 0n,
   royaltyMintSchedule: 0,
   royaltyBPS: 1000, // 10%,
@@ -130,7 +130,7 @@ export const defaultTokenConfigV2MintArguments = (): Omit<
   maxSupply: OPEN_EDITION_MINT_SIZE,
   maxTokensPerAddress: 0n,
   pricePerToken: 0n,
-  mintDuration: BigInt(60 * 60 * 24 * 7), // 1 week
+  mintDuration: 0n,
   mintStart: 0n,
   royaltyBPS: 1000, // 10%,
 });

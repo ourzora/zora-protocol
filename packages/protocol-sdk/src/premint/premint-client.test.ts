@@ -161,7 +161,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
             fixedPriceMinter: "0x6d28164C3CE04A190D5F9f0f8881fc807EAD975A",
             maxSupply: 18446744073709551615n,
             maxTokensPerAddress: 0n,
-            mintDuration: 604800n,
+            mintDuration: 0n,
             mintStart: 0n,
             pricePerToken: 0n,
             royaltyBPS: 1000,
@@ -175,7 +175,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         },
         premintConfigVersion: PremintConfigVersion.V2,
         signature:
-          "0x5cc8c0ab240920282cf936d8b5eb1dd151a91ad78cc4e89f8ddeae6ea432ce7904a38e145b734bdd438f18d457451cb1ae28beb2c44bda71d58638dfcc071e1b1c",
+          "0xfe5725c05754ad17a73cc9706bf940e30bd7b4a674bb1b283a66a1cc87022c8c13fcf8989f9feb675f8932a6a8ddb8d16af2abef28fa2fff3282487ef5385b3d1b",
       };
 
       expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith(
