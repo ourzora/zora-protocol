@@ -1,12 +1,12 @@
 # Zora Developer Tools
 
-The Zora Developer Tools is a suite of typescript libraries and utilities that simplify interacting with the Zora Protocol contracts.
+The Zora Developer Tools is a suite of typescript libraries and utilities that simplify interacting with the Zora protocol contracts.
 
 ## Protocol Deployments Package
 
-The [Protocol Deployments](./protocol-deployments/guide) package provides contract abis, deployed addresses, and typed data definitions for the Zora Contracts. These bundled configs and abis can be used in conjunction with wagmi or viem to interact with the Zora Protocol in typescript without needing to write any solidity.
+The [Protocol Deployments](./protocol-deployments/guide) package provides contract abis, deployed addresses, and typescript types for the Zora Contracts. These bundled configs and abis can be used in conjunction with wagmi or viem to interact with the Zora contracts in typescript without needing to write any solidity.
 
-```typescript
+```ts twoslash
 import {
   protocolRewardsABI,
   zoraCreator1155FactoryImplABI,

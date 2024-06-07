@@ -1,13 +1,13 @@
 ## Protocol Deployments Package
 
 `@zoralabs/protocol-deployments` is a typescript package that provides contract abis, deployed addresses,
-and typed data definitions for the Zora Contracts.
-These bundled configs and abis can be used in conjunction with wagmi or viem to interact with the Zora Protocol in
-typescript without needing to write any solidity.
+and typescript types for the Zora contracts.
+These bundled configs and abis can be used in conjunction with wagmi or viem to interact with the Zora contracts in
+typescript.
 
 ### Installation
 
-To add the Zora Protocol Deployments to your project, install the required package:
+To add `@zoralabs/protocol-deployments` to your project, install the required package:
 
 :::code-group
 
@@ -27,7 +27,7 @@ yarn add @zoralabs/protocol-deployments
 
 ### Importing Contract ABIs
 
-The package exports a set of contract ABIs for the Zora Protocol. These can be imported and used in your project as follows:
+The package exports a set of contract ABIs for the Zora Protocol. These can be imported and used as follows:
 
 ```ts twoslash
 import {
@@ -38,7 +38,7 @@ import {
 
 ### Importing Contract Addresses
 
-The package exports addresses each Zora Protocol contract is deployed to on each chain.
+The package exports addresses each Zora contract is deployed to on each chain.
 
 ```ts twoslash
 import {

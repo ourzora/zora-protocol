@@ -136,14 +136,23 @@ export const defaultTokenConfigV2MintArguments = (): Omit<
 });
 
 type TokenConfigInput = {
+  /** Metadata URI of the token to create. */
   tokenURI: string;
+  /** Account to receive creator rewards if it's a free mint, and token price value if its a paid mint. Defaults to the premint signing account. */
   payoutRecipient: Address;
+  /** Optional: account to receive the create referral award. */
   createReferral?: Address;
+  /** Optional: max supply of tokens that can be minted.  Defaults to unlimited.  */
   maxSupply?: bigint;
+  /** Optional: max tokens that can be minted for an address, 0 if unlimited. Defaults to unlimited. */
   maxTokensPerAddress?: bigint;
+  /** Optional: price per token, if this is a paid mint. 0 if a free mint.  Defaults to 0, or a free mint. */
   pricePerToken?: bigint;
+  /** Optional: duration of the mint, starting from the time the premint is brought onchain. 0 for infinite.  Defaults to infinite. */
   mintDuration?: bigint;
+  /** Optional: earliest time the premint can be brought onchain and minted. 0 for immediately.  Defaults to immediately. */
   mintStart?: bigint;
+  /** Optional: The royalty amount in basis points for secondary sales, in basis points.  Defaults to 1000. */
   royaltyBPS?: number;
 };
 
