@@ -1,0 +1,145 @@
+## Using the SDK to Gaslessly Create 1155 Contracts and Tokens, aka Premints
+
+### Intro to Premints
+
+The Zora Protocol allows creators to create 1155 contracts and tokens without needing to pay any gas or have eth in their wallet. This
+is done by creating what's called a `Premint` - a signed intent to create and setup an 1155 contract and/or token.
+It is then uploading it to an API, where it can be retrieved later to bring onchain and mint by an account willing to pay the gas to do so.  This can either be the first collector, or the
+the original creator of the Premint. The account that brings the Premint onchain will earn the first minter reward.
+
+In order for the Premint to be discoverable in the Zora network, it must be signed by the creator's wallet and uploaded to the Zora Premint API.
+Before the Premint is brought onchain, the creator of the Premint can sign a message to update or delete it.
+
+### Creator Client for Premints
+
+The Zora Protocol SDK encapsulates the complexity for creating, updating and deleting premints, by providing methods that handle
+building the Premint to sign, signing the Premint, and submitting the Premint and signature to the Zora Premint API so it can be fetched later.
+
+Premints can be collected using the Collect Client's [mint()](/protocol-sdk/collect/mint).
+
+#### Setup the Creator Client
+
+Initialize the Creator Client:
+
+```ts twoslash
+import { createCreatorClient } from "@zoralabs/protocol-sdk";
+import { zora } from "viem/chains";
+
+const creatorClient = createCreatorClient({ chain: zora });
+
+// @noErrors
+creatorClient.
+//            ^|
+
+
+
+```
+
+### Creating a Premint
+
+The function `createPremint` build a new premint with sensible defaults, and provides methods to
+sign and submit it to the Zora Premint API.
+
+Just calling `createPremint` does not actually submit the premint to the API; it just builds the premint object and corresponding data to sign.
+
+One of the items returned from `create` is `signAndSubmit` which must be called with a `WalletClient` to sign the premint and submit the premint and signature to the Zora Premint API.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/premint/createFull.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+```
+
+:::
+
+### Signing a Premint using an external library
+
+Sometimes it may be desireable to sign a premint with another library, and not using the sdk's `signAndSubmit` method.
+For this case, the `createPremint`, `updatePremint`, and `deletePremint` functions return a `typedDataDefinition` which is the typed data definition for the premint and must be signed.
+Once the signature has been obtained, it can be submitted to the Zora Premint API using the `submit` method:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/premint/createSignSeparately.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+```
+
+:::
+
+### Updating a Premint
+
+**Before a Premint is brought onchain,** it can be updated by the original creator of that premint, by having that creator sign a message indicating the update.
+This signature and updated premint is then submitted to the Zora Premint API and replaces the existing stored premint for the token
+with the same uid.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+
+// @filename: create.ts
+// [!include ~/snippets/protocol-sdk/premint/create.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/premint/update.ts]
+```
+
+```ts twoslash [simpleCreate.ts]
+// [!include ~/snippets/protocol-sdk/premint/create.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+```
+
+:::
+
+### Deleting a Premint
+
+**Before a premint is brought onchain,** it can be deleted by the original creator of that premint, by having that creator sign a message indicating that
+the premint should be deleted.
+This signature and deleted premint is then submitted to the Zora Premint API and causes the API to no longer serve that premint.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+
+// @filename: create.ts
+// [!include ~/snippets/protocol-sdk/premint/create.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/premint/delete.ts]
+```
+
+```ts twoslash [create.ts]
+// [!include ~/snippets/protocol-sdk/premint/create.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/premint/config.ts]
+```
+
+:::

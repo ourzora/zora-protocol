@@ -17,14 +17,14 @@ import {
 
 ## Protocol SDK
 
-The [Protocol SDK](./protocol-sdk/getting-started) is a typescript package that simplifies interacting with the Zora protocol by generating required transactions for our contracts.
+The [Protocol SDK](./protocol-sdk/introduction) is a typescript package that simplifies interacting with the Zora protocol by generating required transactions for our contracts.
 
 ```ts twoslash
 import { zora } from "viem/chains";
 import { http, createPublicClient } from "viem";
-import { createMintClient } from "@zoralabs/protocol-sdk";
+import { createCollectorClient } from "@zoralabs/protocol-sdk";
 
-const tokenAddress = "0x1234567890123456789012345678901234567890";
+const tokenContract = "0x1234567890123456789012345678901234567890";
 const tokenId = 1n;
 const mintToAddress = "0x71907e8Ae7aeFb58ceC8eb46DAf4fc78c29E5173";
 const quantityToMint = 1;
@@ -36,19 +36,19 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-const mintClient = createMintClient({ chain: zora });
+const collectorClient = createCollectorClient({ chain: zora });
 
 // prepare the mint transaction, which can be simulated via an rpc with the public client.
-const prepared = await mintClient.makePrepareMintTokenParams({
+const prepared = await collectorClient.mint({
+  mintType: "1155",
   // 1155 contract address
-  tokenAddress,
+  tokenContract,
+  // id of the token to mint
   tokenId,
-  mintArguments: {
-    // address that will receive the minted tokens
-    mintToAddress,
-    // quantity of tokens to mint
-    quantityToMint,
-  },
+  // address that will receive the minted tokens
+  mintRecipient: mintToAddress,
+  // quantity of tokens to mint
+  quantityToMint,
   // account to execute the mint transaction
   minterAccount,
 });

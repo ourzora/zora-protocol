@@ -23,6 +23,6 @@ export const walletClient = createWalletClient({
   transport: custom(window.ethereum!),
 });
 
-const [account] = (await walletClient.getAddresses()) as [Address];
+const [minterAccount] = (await walletClient.getAddresses()) as [Address];
 
-export { account };
+export { minterAccount };

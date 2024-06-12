@@ -1,31 +1,25 @@
-import { create1155CreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chain } from "./config";
+import { createCreatorClient } from "@zoralabs/protocol-sdk";
+import { publicClient, walletClient, chain, creatorAccount } from "./config";
+import { collectionAddress } from "./createNewContract";
 
-const creatorClient = create1155CreatorClient({ chain });
+const creatorClient = createCreatorClient({ chain });
 
-const address = "0x1234567890123456789012345678901234567890";
-
-const { request } = await creatorClient.createNew1155Token({
+const { parameters } = await creatorClient.create1155({
   // by providing a contract address, the token will be created on an existing contract
   // at that address
-  contract: address,
-  // token metadata uri
-  tokenMetadataURI: "ipfs://DUMMY/token.json",
+  contract: collectionAddress, // [!code hl]
+  token: {
+    // token metadata uri
+    tokenMetadataURI: "ipfs://DUMMY/token.json",
+  },
   // account to execute the transaction (the creator)
-  account: "0x1234567890123456789012345678901234567890",
-  // how many tokens to mint to the creator upon token creation
-  mintToCreatorCount: 1,
+  account: creatorAccount,
 });
 
 // simulate the transaction
-const { request: simulateRequest } =
-  await publicClient.simulateContract(request);
+const { request } = await publicClient.simulateContract(parameters);
 
 // execute the transaction
-const hash = await walletClient.writeContract(simulateRequest);
+const hash = await walletClient.writeContract(request);
 // wait for the response
-const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-if (receipt.status !== "success") {
-  throw new Error("Transaction failed");
-}
+await publicClient.waitForTransactionReceipt({ hash });

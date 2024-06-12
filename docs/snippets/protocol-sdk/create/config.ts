@@ -16,3 +16,5 @@ export const walletClient = createWalletClient({
   chain,
   transport: custom(window.ethereum!),
 });
+
+export const creatorAccount = (await walletClient.getAddresses())[0]!;

@@ -1,0 +1,45 @@
+### Getting mint costs
+
+The Collector Client provides a function to get the costs to mint x quantities of an 1155s, 721s, or premints, using the function `getMintCosts()`:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+
+// @filename: data.ts
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+
+// @filename: example.ts
+// ---cut---
+import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { chain } from "./config";
+import { tokenAddress, tokenId } from "./data";
+
+const collectorClient = createCollectorClient({ chain });
+
+const mintCosts = await collectorClient.getMintCosts({
+  mintType: "1155",
+  // 1155 contract address
+  collection: tokenAddress,
+  tokenId,
+  quantityMinted: 5
+});
+
+// @noErrors
+mintCosts.
+//        ^|
+
+
+```
+
+```ts twoslash [data.ts]
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+```
+
+:::

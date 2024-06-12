@@ -1,7 +1,6 @@
 import { zoraSepolia } from "viem/chains";
 import { describe, expect, vi } from "vitest";
 
-import { createPremintClient } from "./premint-client";
 import { PremintConfigVersion } from "./contract-types";
 import {
   getDefaultFixedPriceMinterAddress,
@@ -12,6 +11,8 @@ import {
   ContractCreationConfig,
   PremintConfigV2,
 } from "@zoralabs/protocol-deployments";
+import { PremintAPIClient } from "./premint-api-client";
+import { createCollectorClient, createCreatorClient } from "src/sdk";
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraSepolia,
@@ -24,13 +25,11 @@ describe("ZoraCreator1155Premint", () => {
     "can mint premints",
     async ({ viemClients: { walletClient, publicClient, chain } }) => {
       const [deployerAccount] = await walletClient.getAddresses();
-      const premintClient = createPremintClient({
-        chain,
-        publicClient,
-      });
 
-      premintClient.apiClient.getSignature = vi
-        .fn<any, ReturnType<typeof premintClient.apiClient.getSignature>>()
+      const premintApiClient = new PremintAPIClient(chain.id);
+
+      premintApiClient.getSignature = vi
+        .fn<any, ReturnType<typeof premintApiClient.getSignature>>()
         .mockResolvedValue({
           collection: {
             contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -63,26 +62,30 @@ describe("ZoraCreator1155Premint", () => {
             "0x4d191dd60d428adfe507932a1758bee8ac5bbb77dcd3c05840c237416a3a25035bb8cc7c62177a4e9acb5f40c4032cdb3dbfefdd1575f2c3b4c57945b2076e2e1c",
         });
 
-      premintClient.apiClient.postSignature = vi.fn();
+      premintApiClient.postSignature = vi.fn();
 
-      const simulateContractParameters = await premintClient.makeMintParameters(
-        {
-          minterAccount: deployerAccount!,
-          tokenContract: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
-          uid: 3,
-          mintArguments: {
-            quantityToMint: 1,
-            mintComment: "",
-          },
-        },
-      );
+      const collectorClient = createCollectorClient({
+        chain,
+        publicClient,
+        premintGetter: premintApiClient,
+      });
+
+      const simulateContractParameters = await collectorClient.mint({
+        mintType: "premint",
+        minterAccount: deployerAccount!,
+        tokenContract: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
+        uid: 3,
+        quantityToMint: 1,
+        mintComment: "",
+      });
       const { request: simulateRequest } = await publicClient.simulateContract(
         simulateContractParameters,
       );
       const hash = await walletClient.writeContract(simulateRequest);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
       const { premintedLog, urls } =
-        premintClient.getDataFromPremintReceipt(receipt);
+        collectorClient.getCollectDataFromPremintReceipt(receipt);
 
       expect(urls).toEqual({
         explorer:
@@ -112,19 +115,22 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
     async ({ viemClients: { walletClient, publicClient, chain } }) => {
       const [creatorAccount, createReferralAccount] =
         await walletClient.getAddresses();
-      const premintClient = createPremintClient({
+      const premintApiClient = new PremintAPIClient(chain.id);
+
+      premintApiClient.getNextUID = vi
+        .fn<any, ReturnType<typeof premintApiClient.getNextUID>>()
+        .mockResolvedValue(3);
+      premintApiClient.postSignature = vi
+        .fn<Parameters<typeof premintApiClient.postSignature>>()
+        .mockResolvedValue({ ok: true });
+
+      const creatorClient = createCreatorClient({
         chain,
+        premintApi: premintApiClient,
         publicClient,
       });
 
-      premintClient.apiClient.getNextUID = vi
-        .fn<any, ReturnType<typeof premintClient.apiClient.getNextUID>>()
-        .mockResolvedValue(3);
-      premintClient.apiClient.postSignature = vi
-        .fn<Parameters<typeof premintClient.apiClient.postSignature>>()
-        .mockResolvedValue({ ok: true });
-
-      const { signAndSubmit } = await premintClient.createPremint({
+      const { signAndSubmit } = await creatorClient.createPremint({
         collection: {
           contractAdmin: creatorAccount!,
           contractName: "Testing Contract Premint V2",
@@ -146,7 +152,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
       });
 
       const expectedPostSignatureArgs: Parameters<
-        typeof premintClient.apiClient.postSignature
+        typeof premintApiClient.postSignature
       >[0] = {
         collection: {
           contractAdmin: creatorAccount!,
@@ -178,7 +184,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
           "0xfe5725c05754ad17a73cc9706bf940e30bd7b4a674bb1b283a66a1cc87022c8c13fcf8989f9feb675f8932a6a8ddb8d16af2abef28fa2fff3282487ef5385b3d1b",
       };
 
-      expect(premintClient.apiClient.postSignature).toHaveBeenCalledWith(
+      expect(premintApiClient.postSignature).toHaveBeenCalledWith(
         expectedPostSignatureArgs,
       );
     },
@@ -190,9 +196,19 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
     async ({ viemClients: { walletClient, publicClient, chain } }) => {
       const [deployerAccount, creatorAccount, additionalAdmin] =
         await walletClient.getAddresses();
-      const premintClient = createPremintClient({
+
+      const premintApiClient = new PremintAPIClient(chain.id);
+
+      const collectorClient = createCollectorClient({
         chain,
         publicClient,
+        premintGetter: premintApiClient,
+      });
+
+      const creatorClient = createCreatorClient({
+        chain,
+        publicClient,
+        premintApi: premintApiClient,
       });
 
       const collection: ContractCreationConfig = {
@@ -209,7 +225,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
       });
 
       const { premintConfig, typedDataDefinition } =
-        await premintClient.createPremint({
+        await creatorClient.createPremint({
           collection,
           tokenCreationConfig: {
             tokenURI:
@@ -223,8 +239,8 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         account: additionalAdmin!,
       });
 
-      premintClient.apiClient.getSignature = vi
-        .fn<any, ReturnType<typeof premintClient.apiClient.getSignature>>()
+      premintApiClient.getSignature = vi
+        .fn<any, ReturnType<typeof premintApiClient.getSignature>>()
         .mockResolvedValue({
           collection,
           collectionAddress,
@@ -233,26 +249,22 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
           signature,
         });
 
-      premintClient.apiClient.postSignature = vi.fn();
-
-      const simulateContractParameters = await premintClient.makeMintParameters(
-        {
-          minterAccount: deployerAccount!,
-          tokenContract: collectionAddress,
-          uid: premintConfig.uid,
-          mintArguments: {
-            quantityToMint: 1,
-            mintComment: "",
-          },
-        },
-      );
+      const simulateContractParameters = await collectorClient.mint({
+        mintType: "premint",
+        uid: premintConfig.uid,
+        minterAccount: deployerAccount!,
+        tokenContract: collectionAddress,
+        quantityToMint: 1,
+        mintComment: "",
+      });
       const { request: simulateRequest } = await publicClient.simulateContract(
         simulateContractParameters,
       );
       const hash = await walletClient.writeContract(simulateRequest);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
       const { premintedLog, urls } =
-        premintClient.getDataFromPremintReceipt(receipt);
+        collectorClient.getCollectDataFromPremintReceipt(receipt);
 
       expect(urls).toEqual({
         explorer: `https://undefined/token/${collectionAddress}/instance/1`,

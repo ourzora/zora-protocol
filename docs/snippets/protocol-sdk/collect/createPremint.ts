@@ -1,7 +1,9 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { walletClient, chain, creatorAccount } from "./config";
+import { walletClient, chain } from "./config";
 
 const creatorClient = createCreatorClient({ chain });
+
+const creatorAccount = "0xf69fEc6d858c77e969509843852178bd24CAd2B6";
 
 const {
   // the premint that was created

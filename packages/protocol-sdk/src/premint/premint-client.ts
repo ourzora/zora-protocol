@@ -17,7 +17,6 @@ import {
 } from "@zoralabs/protocol-deployments";
 import {
   getPremintCollectionAddress,
-  isValidSignature,
   isAuthorizedToCreatePremint,
   getPremintExecutorAddress,
   applyUpdateToPremint,
@@ -36,20 +35,23 @@ import {
   TokenCreationConfigV1,
   TokenCreationConfigV2,
   TokenCreationConfig,
-  PremintConfigForVersion,
   PremintConfigWithVersion,
   PremintMintArguments,
   premintTypedDataDefinition,
 } from "@zoralabs/protocol-deployments";
-import { PremintAPIClient } from "./premint-api-client";
+import {
+  IPremintAPI,
+  IPremintGetter,
+  PremintAPIClient,
+} from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
-import { IHttpClient } from "src/apis/http-api-base";
-import { getApiNetworkConfigForChain } from "src/mint/mint-api-client";
+import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
 import { MintCosts } from "src/mint/mint-client";
 import {
   ClientConfig,
-  makeSimulateContractParamaters,
+  makeContractParameters,
+  mintRecipientOrAccount,
   PublicClient,
   setupClient,
 } from "src/utils";
@@ -57,6 +59,7 @@ import {
   ContractCreationConfigAndAddress,
   ContractCreationConfigOrAddress,
 } from "./contract-types";
+import { MakePremintMintParametersArguments } from "src/mint/types";
 
 type PremintedV2LogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,
@@ -219,29 +222,22 @@ export function getPremintedLogFromReceipt(
  * Preminter API to access ZORA Premint functionality.
  */
 class PremintClient {
-  readonly apiClient: PremintAPIClient;
+  readonly apiClient: IPremintAPI;
   readonly publicClient: PublicClient;
   readonly chain: Chain;
 
   constructor(
     chain: Chain,
     publicClient: PublicClient,
-    httpClient: IHttpClient,
+    apiClient: IPremintAPI,
   ) {
     this.chain = chain;
-    this.apiClient = new PremintAPIClient(chain.id, httpClient);
+    this.apiClient = apiClient;
     this.publicClient = publicClient;
   }
 
   getDataFromPremintReceipt(receipt: TransactionReceipt) {
-    const premintedLog = getPremintedLogFromReceipt(receipt);
-    return {
-      premintedLog,
-      urls: this.makeUrls({
-        address: premintedLog?.contractAddress,
-        tokenId: premintedLog?.tokenId,
-      }),
-    };
+    return getDataFromPremintReceipt(receipt, this.chain);
   }
 
   /**
@@ -300,13 +296,7 @@ class PremintClient {
    * @param uid UID for the desired premint
    * @returns PremintSignatureGetResponse of premint data from the API
    */
-  async getPremintSignature({
-    address,
-    uid,
-  }: {
-    address: Address;
-    uid: number;
-  }) {
+  async getPremint({ address, uid }: { address: Address; uid: number }) {
     return await this.apiClient.getSignature({
       collectionAddress: address,
       uid,
@@ -322,60 +312,6 @@ class PremintClient {
     return await getPremintCollectionAddress({
       collection,
       publicClient: this.publicClient,
-    });
-  }
-
-  /**
-   * Check user signature for v1
-   *
-   * @param data Signature data from the API
-   * @returns isValid = signature is valid or not, recoveredSigner = signer from contract
-   */
-  async isValidSignature<T extends PremintConfigVersion>({
-    signature,
-    premintConfig,
-    premintConfigVersion,
-    ...collectionAndOrAddress
-  }: {
-    signature: Hex;
-    premintConfig: PremintConfigForVersion<T>;
-    premintConfigVersion?: T;
-  } & ContractCreationConfigOrAddress): Promise<{
-    isValid: boolean;
-    recoveredSigner: Address | undefined;
-  }> {
-    const collectionAddressToUse = await getPremintCollectionAddress({
-      ...collectionAndOrAddress,
-      publicClient: this.publicClient,
-    });
-
-    const { isAuthorized, recoveredAddress } = await isValidSignature({
-      chainId: this.chain.id,
-      signature: signature as Hex,
-      publicClient: this.publicClient,
-      premintConfig,
-      premintConfigVersion: premintConfigVersion || PremintConfigVersion.V1,
-      collectionAddress: collectionAddressToUse,
-      collection: collectionAndOrAddress.collection,
-    });
-
-    return { isValid: isAuthorized, recoveredSigner: recoveredAddress };
-  }
-
-  protected makeUrls({
-    uid,
-    address,
-    tokenId,
-  }: {
-    uid?: number;
-    tokenId?: bigint;
-    address?: Address;
-  }): URLSReturnType {
-    return makeUrls({
-      uid,
-      address,
-      tokenId,
-      chain: this.chain,
     });
   }
 
@@ -403,23 +339,57 @@ class PremintClient {
    * @param parameters - Parameters for collecting the Premint {@link MakeMintParametersArguments}
    * @returns receipt, log, zoraURL
    */
-  async makeMintParameters(parameters: MakeMintParametersArguments) {
-    return await makeMintParameters({
-      ...parameters,
-      apiClient: this.apiClient,
+  async makeMintParameters({
+    minterAccount,
+    tokenContract,
+    uid,
+    mintArguments,
+    firstMinter,
+  }: MakeMintParametersArguments) {
+    return await collectPremint({
+      uid,
+      tokenContract,
+      minterAccount,
+      quantityToMint: mintArguments?.quantityToMint || 1n,
+      mintComment: mintArguments?.mintComment,
+      mintReferral: mintArguments?.mintReferral,
+      mintRecipient: mintArguments?.mintRecipient,
+      firstMinter,
+      premintGetter: this.apiClient,
       publicClient: this.publicClient,
     });
   }
 }
 
-export function createPremintClient(clientConfig: ClientConfig) {
-  const { chain, httpClient, publicClient } = setupClient(clientConfig);
-  return new PremintClient(chain, publicClient, httpClient);
+export function getDataFromPremintReceipt(
+  receipt: TransactionReceipt,
+  chain: Chain,
+) {
+  const premintedLog = getPremintedLogFromReceipt(receipt);
+  return {
+    tokenId: premintedLog?.tokenId,
+    collectionAddres: premintedLog?.contractAddress,
+    premintedLog,
+    urls: makeUrls({
+      address: premintedLog?.contractAddress,
+      tokenId: premintedLog?.tokenId,
+      chain,
+    }),
+  };
+}
+
+export function createPremintClient(
+  clientConfig: ClientConfig & { premintApi?: IPremintAPI },
+) {
+  const { chain, publicClient } = setupClient(clientConfig);
+  const premintApiToUse =
+    clientConfig.premintApi || new PremintAPIClient(chain.id);
+  return new PremintClient(chain, publicClient, premintApiToUse);
 }
 
 type PremintContext = {
   publicClient: PublicClient;
-  apiClient: PremintAPIClient;
+  apiClient: IPremintAPI;
   chainId: number;
 };
 
@@ -428,11 +398,7 @@ type PremintContext = {
 export type SignAndSubmitParams = {
   /** The WalletClient used to sign the premint */
   walletClient: WalletClient;
-  /** The account that is to sign the premint */
-  account: Account | Address;
-  /** If the signature should be checked before submitting it to the api */
-  checkSignature?: boolean;
-};
+} & CheckSignatureParams;
 
 export type SignAndSubmitReturn = {
   /** The signature of the Premint  */
@@ -441,14 +407,23 @@ export type SignAndSubmitReturn = {
   signerAccount: Account | Address;
 };
 
+export type CheckSignatureParams =
+  | {
+      /** If the premint signature should be validated before submitting to the API */
+      checkSignature: true;
+      /** Account that signed the premint */
+      account: Account | Address;
+    }
+  | {
+      /** If the premint signature should be validated before submitting to the API */
+      checkSignature?: false;
+      account?: Account | Address;
+    };
+
 export type SubmitParams = {
   /** The signature of the Premint */
   signature: Hex;
-  /** If the premint signature should be validated before submitting to the API */
-  checkSignature?: boolean;
-  /** The account that signed the premint */
-  signerAccount: Account | Address;
-};
+} & CheckSignatureParams;
 
 type PremintReturn<T extends PremintConfigVersion> = {
   /** The typedDataDefinition of the Premint which is to be signed the creator. */
@@ -481,7 +456,7 @@ function makePremintReturn<T extends PremintConfigVersion>({
 
   const signAndSubmit = async ({
     walletClient,
-    account,
+    account: account,
     checkSignature,
   }: SignAndSubmitParams): Promise<SignAndSubmitReturn> => {
     const { signature, signerAccount } = await signPremint({
@@ -493,7 +468,7 @@ function makePremintReturn<T extends PremintConfigVersion>({
     await submit({
       signature,
       checkSignature,
-      signerAccount,
+      account: signerAccount,
     });
 
     return {
@@ -505,19 +480,15 @@ function makePremintReturn<T extends PremintConfigVersion>({
   const submit = async ({
     signature,
     checkSignature,
-    signerAccount,
-  }: {
-    signature: Hex;
-    checkSignature?: boolean;
-    signerAccount: Account | Address;
-  }) => {
+    account,
+  }: SubmitParams) => {
     if (checkSignature) {
       const isAuthorized = await isAuthorizedToCreatePremint({
         collectionAddress,
         additionalAdmins: collection?.additionalAdmins,
         contractAdmin: collection?.contractAdmin,
         publicClient,
-        signer: signerAccount,
+        signer: account,
       });
 
       if (!isAuthorized) {
@@ -687,7 +658,7 @@ async function updatePremint({
   publicClient,
   chainId,
 }: UpdatePremintParams & {
-  apiClient: PremintAPIClient;
+  apiClient: IPremintAPI;
   publicClient: PublicClient;
   chainId: number;
 }) {
@@ -734,7 +705,7 @@ async function deletePremint({
   apiClient,
   chainId,
 }: DeletePremintParams & {
-  apiClient: PremintAPIClient;
+  apiClient: IPremintAPI;
   publicClient: PublicClient;
   chainId: number;
 }) {
@@ -789,33 +760,32 @@ export type MakeMintParametersArguments = {
 
 /** ======== MINTING ======== */
 
-async function makeMintParameters({
+export async function collectPremint({
   uid,
   tokenContract,
   minterAccount,
-  mintArguments,
+  quantityToMint,
+  mintComment = "",
+  mintReferral,
+  mintRecipient,
   firstMinter,
-  apiClient,
+  premintGetter,
   publicClient,
-}: MakeMintParametersArguments & {
-  apiClient: PremintAPIClient;
+}: Omit<MakePremintMintParametersArguments, "mintType"> & {
+  premintGetter: IPremintGetter;
   publicClient: PublicClient;
 }): Promise<
   SimulateContractParameters<
     typeof zoraCreator1155PremintExecutorImplABI,
-    "premintV1" | "premintV2",
+    "premint",
     any,
     any,
     any,
     Account | Address
   >
 > {
-  if (mintArguments && mintArguments?.quantityToMint < 1) {
+  if (typeof quantityToMint !== "undefined" && quantityToMint < 1) {
     throw new Error("Quantity to mint cannot be below 1");
-  }
-
-  if (!minterAccount) {
-    throw new Error("Wallet not passed in");
   }
 
   const {
@@ -824,12 +794,12 @@ async function makeMintParameters({
     collection,
     collectionAddress,
     signature,
-  } = await apiClient.getSignature({
+  } = await premintGetter.getSignature({
     collectionAddress: tokenContract,
     uid,
   });
 
-  const numberToMint = BigInt(mintArguments?.quantityToMint || 1);
+  const numberToMint = BigInt(quantityToMint || 1);
 
   if (premintConfigVersion === PremintConfigVersion.V3) {
     throw new Error("PremintV3 not supported in premint SDK");
@@ -842,17 +812,16 @@ async function makeMintParameters({
       publicClient,
       tokenPrice: premintConfig.tokenConfig.pricePerToken,
     })
-  ).totalCost;
+  ).totalCostEth;
 
   const mintArgumentsContract: PremintMintArguments = {
-    mintComment: mintArguments?.mintComment || "",
-    mintRecipient:
-      mintArguments?.mintRecipient ||
-      (typeof minterAccount === "string"
-        ? minterAccount
-        : minterAccount.address),
+    mintComment: mintComment,
+    mintRecipient: mintRecipientOrAccount({
+      mintRecipient,
+      minterAccount,
+    }),
     mintRewardsRecipients: makeMintRewardsRecipient({
-      mintReferral: mintArguments?.mintReferral,
+      mintReferral,
     }),
   };
 
@@ -867,7 +836,7 @@ async function makeMintParameters({
     firstMinter ||
     (typeof minterAccount === "string" ? minterAccount : minterAccount.address);
 
-  return makeSimulateContractParamaters({
+  return makeContractParameters({
     account: minterAccount,
     abi: zoraCreator1155PremintExecutorImplABI,
     functionName: "premint",

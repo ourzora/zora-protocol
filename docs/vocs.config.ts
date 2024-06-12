@@ -39,23 +39,47 @@ export default defineConfig({
       ],
     },
     {
-      text: "SDK",
+      text: "Protocol SDK",
       items: [
         {
-          text: "Getting Started",
-          link: "/protocol-sdk/getting-started",
+          text: "Introduction",
+          link: "/protocol-sdk/introduction",
         },
         {
-          text: "Collect Onchain 1155 Tokens",
-          link: "/protocol-sdk/mint-client",
+          text: "Creator Client",
+          items: [
+            {
+              text: "create 1155s gaslessly (premints)",
+              link: "/protocol-sdk/creator/premint",
+            },
+            {
+              text: "create 1155s onchain",
+              link: "/protocol-sdk/creator/onchain",
+              items: [
+                {
+                  text: "erc-20 mints",
+                  link: "/protocol-sdk/creator/erc20-mints",
+                },
+                {
+                  text: "split payouts",
+                  link: "/protocol-sdk/creator/splits",
+                },
+              ],
+            },
+          ],
         },
         {
-          text: "Create Onchain 1155 Tokens",
-          link: "/protocol-sdk/1155-creator-client",
-        },
-        {
-          text: "Gasslessly Create 1155 Tokens (Premint)",
-          link: "/protocol-sdk/premint-client",
+          text: "Collector Client",
+          items: [
+            {
+              text: "mint",
+              link: "/protocol-sdk/collect/mint",
+            },
+            {
+              text: "getMintCosts",
+              link: "/protocol-sdk/collect/mint-costs",
+            },
+          ],
         },
       ],
     },

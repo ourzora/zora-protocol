@@ -1,6 +1,5 @@
 import {
   Address,
-  Hex,
   hashTypedData,
   keccak256,
   stringToBytes,
@@ -379,7 +378,7 @@ describe("ZoraCreator1155Preminter", () => {
           tokenContract: contractAddress,
           tokenPrice: premintConfig1.tokenConfig.pricePerToken,
         })
-      ).totalCost;
+      ).totalCostEth;
 
       await viemClients.testClient.setBalance({
         address: collectorAccount,
@@ -488,7 +487,7 @@ describe("ZoraCreator1155Preminter", () => {
           tokenContract: contractAddress,
           tokenPrice: premintConfig2.tokenConfig.pricePerToken,
         })
-      ).totalCost;
+      ).totalCostEth;
 
       const simulationResult = await viemClients.publicClient.simulateContract({
         abi: preminterAbi,
@@ -630,7 +629,7 @@ describe("ZoraCreator1155Preminter", () => {
             tokenContract: contractAddress,
             tokenPrice: premintConfig.tokenConfig.pricePerToken,
           })
-        ).totalCost;
+        ).totalCostEth;
 
         await viemClients.testClient.setBalance({
           address: collectorAccount,
@@ -752,7 +751,7 @@ describe("ZoraCreator1155Preminter", () => {
             tokenContract: contractAddress,
             tokenPrice: premintConfig.tokenConfig.pricePerToken,
           })
-        ).totalCost;
+        ).totalCostEth;
 
         const mintArguments: PremintMintArguments = {
           mintComment: "",

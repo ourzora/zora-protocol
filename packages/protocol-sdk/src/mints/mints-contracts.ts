@@ -12,7 +12,7 @@ import {
   PremintConfigV2,
 } from "@zoralabs/protocol-deployments";
 import { ContractCreationConfig } from "src/preminter";
-import { makeSimulateContractParamaters } from "src/utils";
+import { makeContractParameters } from "src/utils";
 import {
   Account,
   Address,
@@ -53,7 +53,7 @@ export const mintWithEthParams = ({
   pricePerMint: bigint;
   account: Address | Account;
 }) =>
-  makeSimulateContractParamaters({
+  makeContractParameters({
     abi: zoraMintsManagerImplConfig.abi,
     address: zoraMintsManagerImplConfig.address[chainId],
     functionName: "mintWithEth",
@@ -152,7 +152,7 @@ export function collectWithMintsParams({
     mintArguments,
   });
 
-  return makeSimulateContractParamaters({
+  return makeContractParameters({
     abi: zoraMints1155Config.abi,
     address: zoraMints1155Config.address[chainId],
     functionName: "transferBatchToManagerAndCall",
@@ -416,7 +416,7 @@ export function collectPremintV2WithMintsParams({
     ...rest,
   });
 
-  return makeSimulateContractParamaters({
+  return makeContractParameters({
     abi: zoraMints1155Config.abi,
     address: zoraMints1155Config.address[chainId],
     functionName: "transferBatchToManagerAndCall",

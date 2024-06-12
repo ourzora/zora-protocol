@@ -1,30 +1,22 @@
 ## Create Onchain 1155 Contracts & Tokens
 
-The Protocol SDK can be used to prepare transactions to create 1155 contracts and tokens, using the `1155CreatorClient`
+The Protocol SDK can be used to prepare transactions to create 1155 contracts and tokens, using the Creator Client.
 
-### Setup/Create the 1155CreatorClient
+### Setup/Create the Creator Client
 
-Initialize a 1155 Creator Client with a public client. The public client's chain
-is used to determine the network to interact with.
+Initialize a Creator Client with a chain. The chain is used to determine the network to interact with.
 
 ```ts twoslash
-import { create1155CreatorClient } from "@zoralabs/protocol-sdk";
+import { createCreatorClient } from "@zoralabs/protocol-sdk";
 import { zora } from "viem/chains";
-import { createPublicClient, http } from "viem";
 
-const publicClient = createPublicClient({
-  // this will determine which chain to interact with
-  chain: zora,
-  transport: http(),
-});
-
-const creatorClient = create1155CreatorClient({ publicClient });
+const creatorClient = createCreatorClient({ chain: zora });
 ```
 
-The function `createNew1155Token` is used to create a new 1155 contract and/or token.
-The `contract` argument can be either contract creation parameters or a contract uri.
-
 ### Creating a new 1155 contract and token
+
+The function `create1155` is used to create a new 1155 contract and/or token.
+The `contract` argument can be either contract creation parameters or a contract uri.
 
 If `contract` is set to be contract creation parameters, an 1155 contract is either created or retrieved
 at a deterministic address based on those parameters, and the token is created on that contract.
@@ -56,9 +48,21 @@ If `contract` is set to be a contract uri, the token is created on that existing
 // @filename: config.ts
 // [!include ~/snippets/protocol-sdk/create/config.ts]
 
+// @filename: createNewContract.ts
+// [!include ~/snippets/protocol-sdk/create/createNewContract.ts]
+
 // @filename: example.ts
 // ---cut---
 // [!include ~/snippets/protocol-sdk/create/createNew1155Token.ts]
+```
+
+```ts twoslash [createNewContract.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+
+// @filename: createNewContract.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/create/createNewContract.ts]
 ```
 
 ```ts twoslash [config.ts] filename="config.ts"
@@ -66,3 +70,5 @@ If `contract` is set to be a contract uri, the token is created on that existing
 ```
 
 :::
+
+

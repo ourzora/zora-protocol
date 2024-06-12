@@ -172,3 +172,13 @@ export const encodePostSignatureInput = <T extends PremintConfigVersion>({
   collection_address: collectionAddress,
   chain_name: networkConfigByChain[chainId]!.zoraBackendChainName,
 });
+
+export const isPremintConfigV1 = (
+  premintConfigAndVersion: PremintConfigAndVersion,
+): premintConfigAndVersion is PremintConfigWithVersion<PremintConfigVersion.V1> =>
+  premintConfigAndVersion.premintConfigVersion === PremintConfigVersion.V1;
+
+export const isPremintConfigV2 = (
+  premintConfigAndVersion: PremintConfigAndVersion,
+): premintConfigAndVersion is PremintConfigWithVersion<PremintConfigVersion.V2> =>
+  premintConfigAndVersion.premintConfigVersion === PremintConfigVersion.V2;

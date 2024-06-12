@@ -8,7 +8,7 @@ export * from "./premint/premint-api-client";
 
 export * from "./premint/conversions";
 
-export * from "./mint/mint-api-client";
+export * from "./mint/subgraph-mint-getter";
 
 export * from "./mint/mint-client";
 
@@ -25,3 +25,7 @@ export {
   type ContractCreationConfigOrAddress,
   type ContractCreationConfigAndAddress,
 } from "./premint/contract-types";
+
+export * from "./create/types";
+
+export * from "./sdk";

@@ -25,7 +25,8 @@
     "lint": "prettier --check 'src/**/*.ts' 'test-integration/**/*.ts'"
   },
   "dependencies": {
-    "@zoralabs/protocol-deployments": "*"
+    "@zoralabs/protocol-deployments": "*",
+    "semver": "^7.6.2"
   },
   "peerDependencies": {
     "viem": "^2.11.1"

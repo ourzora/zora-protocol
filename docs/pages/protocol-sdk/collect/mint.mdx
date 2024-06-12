@@ -1,0 +1,115 @@
+## Mint 1155s, 721s, and Premints
+
+The Collector Client can be used to prepare transactions for minting 1155s, 721s, and premints with
+a function `mint()`. The type of item to mint is determined by the `mintType` parameter, which
+can be set to either `1155`, `721`, or `premint`. Depending on the `mintType` additional parameters
+must be passed.
+
+```ts twoslash
+import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { zora } from "viem/chains";
+
+// set to the chain you want to interact with
+const collectorClient = createCollectorClient({ chain: zora });
+
+const prepared = await collectorClient.mint({
+  // collection address to mint
+  tokenContract: "0x1234567890123456789012345678901234567890",
+  // quantity of tokens to mint
+  quantityToMint: 5,
+  // can be set to 1155, 721, or premint
+// @noErrors
+  mintType: "",
+  //         ^|
+});
+
+```
+
+### Mint Premints
+
+Once a Premint has been created and submitted to the Zora Premint API, it can be collected by calling `mint()` with `mintType` set to `premint`, and the `uid` set to the premint's uid:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+
+// @filename: createPremint.ts
+// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/collect/mintPremint.ts]
+```
+
+```ts twoslash [createPremint.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+
+// @filename: createPremint.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+```
+
+:::
+
+### Mint 1155s
+
+1155s can be minted by calling `mint()` with `mintType` set to `1155`, and the `tokenId` set to the token id to mint:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+
+// @filename: data.ts
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/collect/mint1155.ts]
+```
+
+```ts twoslash [data.ts]
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+```
+
+:::
+
+### Mint 721s
+
+721s can be minted by calling `mint()` with `mintType` set to `721`. No `tokenId` is set as the token id is determined by auto-incrementing token ids; one tokenId will be created & minted for each `quantityToMint`:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+
+// @filename: data.ts
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/collect/mint721.ts]
+```
+
+```ts twoslash [data.ts]
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+```
+
+:::

@@ -5,9 +5,8 @@ import {
 } from "../apis/http-api-base";
 import { NetworkConfig, networkConfigByChain } from "src/apis/chain-constants";
 import { GenericTokenIdTypes } from "src/types";
+import { IMintGetter, SalesConfigAndTokenInfo, SaleType } from "./types";
 import { NFT_SALE_QUERY } from "src/constants";
-
-export type SaleType = "fixedPrice" | "erc20";
 
 type FixedPriceSaleStrategyResult = {
   address: Address;
@@ -40,28 +39,6 @@ type TokenQueryResult = {
   };
 };
 
-type SaleStrategy<T extends SaleType> = {
-  saleType: T;
-  address: Address;
-  pricePerToken: bigint;
-  saleEnd: string;
-  saleStart: string;
-  maxTokensPerAddress: bigint;
-};
-
-type FixedPriceSaleStrategy = SaleStrategy<"fixedPrice">;
-
-type ERC20SaleStrategy = SaleStrategy<"erc20"> & {
-  currency: Address;
-};
-
-type SaleStrategies = FixedPriceSaleStrategy | ERC20SaleStrategy;
-
-export type SalesConfigAndTokenInfo = {
-  salesConfig: SaleStrategies;
-  mintFeePerQuantity: bigint;
-};
-
 export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
   if (!networkConfigByChain[chainId]) {
     throw new Error(`chain id ${chainId} network not configured `);
@@ -69,7 +46,7 @@ export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
   return networkConfigByChain[chainId]!;
 };
 
-export class MintAPIClient {
+export class SubgraphMintGetter implements IMintGetter {
   httpClient: IHttpClient;
   networkConfig: NetworkConfig;
 

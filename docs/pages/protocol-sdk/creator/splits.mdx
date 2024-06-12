@@ -1,0 +1,33 @@
+## Creating an 1155 with a split payout
+
+[0xSplits](https://splits.org/) can be used to split the payout for 1155s among multiple recipients.
+This is done by first creating a 0xSplit recipient contract at a deterministic address based on the recipient addresses
+and the split percentages, and then creating the 1155 token with the 0xSplit recipient contract as the payout recipient.
+Due to security limitations, this must be done in two separate transactions.
+**Note: splits are not currently supported with Premints, and are only supported with onchain creation using `create1155()`.**
+
+Here is an example using the [0xSplits SDK](https://docs.splits.org/sdk/splits-v1):
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+
+// @filename: data.ts
+// [!include ~/snippets/protocol-sdk/create/data.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/create/create1155WithSplits.ts]
+```
+
+```ts twoslash [data.ts]
+// [!include ~/snippets/protocol-sdk/create/data.ts]
+```
+
+```ts twoslash [config.ts] filename="config.ts"
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+```
+
+:::

@@ -1,0 +1,55 @@
+## Protocol SDK
+
+The Zora Protocol SDK is a typescript package that simplifies interacting with the Zora protocol by generating required transactions for our contracts.
+
+### Installation
+
+To add the Zora Protocol SDK to your project, install the required packages:
+
+:::code-group
+
+```bash [pnpm]
+pnpm add @zoralabs/protocol-sdk viem@2.x
+```
+
+```bash [npm]
+npm install @zoralabs/protocol-sdk viem@2.x
+```
+
+```bash [yarn]
+yarn add @zoralabs/protocol-sdk viem@2.x
+```
+
+:::
+
+### Usage
+
+The Zora Protocol SDK contains both a Creator Client and a Collector Client. The Creator Client is used to 
+create and manage Zora creator 1155 contracts and tokens, while the Collector Client is used to mint 
+Zora creator 1155, 721, and premints.
+
+```ts twoslash
+import { createCreatorClient } from "@zoralabs/protocol-sdk";
+import { zora } from "viem/chains";
+
+const creatorClient = createCreatorClient({ chain: zora });
+// @noErrors
+creatorClient.
+//            ^|
+
+
+
+```
+
+```ts twoslash
+import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { zora } from "viem/chains";
+
+const collectorClient = createCollectorClient({ chain: zora });
+// @noErrors
+collectorClient.
+//              ^|
+
+
+
+```

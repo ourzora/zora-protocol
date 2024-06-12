@@ -78,7 +78,7 @@ tests.forEach(({ anvilTest, chain }) => {
 
             await testClient.setBalance({
               address: minterAccount!,
-              value: mintCosts.totalCost,
+              value: mintCosts.totalCostEth,
             });
 
             // if simulation succeeds, mint will succeed
@@ -134,7 +134,7 @@ tests.forEach(({ anvilTest, chain }) => {
 
             await testClient.setBalance({
               address: minterAccount!,
-              value: mintCosts.totalCost,
+              value: mintCosts.totalCostEth,
             });
 
             // if simulation succeeds, mint will succeed
