@@ -1,5 +1,18 @@
 # @zoralabs/protocol-sdk
 
+## 0.6.0
+
+### Minor Changes
+
+- 8c23f05b: - new high-level sdks: `createCreatorClient` and `createCollectorClient`. `createPremintClient`, `createMintClient`, `create1155CreatorClient`, and `createPremintClient` are removed.
+  - external apis, such as the premint api can be stubbed/replaced/mocked.
+  - new function `mint` on the collector sdk that works with `1155`, `premint`, and `721`s.
+  - `create1155` now supports creating erc20, free, and paid mints. Setup actions now mimic what's on zora.co.
+
+### Patch Changes
+
+- b0f0fb74: premintClient - fix default mint duration to be unlimited (it was one week before)
+
 ## 0.5.17
 
 ### Patch Changes
