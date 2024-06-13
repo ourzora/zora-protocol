@@ -4,13 +4,19 @@ The Protocol SDK can be used to prepare transactions to create 1155 contracts an
 
 ### Setup/Create the Creator Client
 
-Initialize a Creator Client with a chain. The chain is used to determine the network to interact with.
+Initialize a Creator Client with a chain id and `PublicClient`. The chain is used to determine the network to interact with.
 
 ```ts twoslash
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
+import { createPublicClient, http } from 'viem';
 import { zora } from "viem/chains";
 
-const creatorClient = createCreatorClient({ chain: zora });
+const publicClient = createPublicClient({ 
+  chain: zora, 
+  transport: http() 
+});
+
+const creatorClient = createCreatorClient({ chainId: zora.id, publicClient });
 ```
 
 ### Creating a new 1155 contract and token

@@ -9,9 +9,9 @@ const creatorClient = createCreatorClient({ chainId, publicClient });
 const creatorAccount = "0xf69fEc6d858c77e969509843852178bd24CAd2B6";
 
 const {
-  // the premint that was created
+  // the premint that is to be created
   premintConfig,
-  // collection address of the premint
+  // deterministic collection address of the premint
   collectionAddress,
   typedDataDefinition,
   submit,
