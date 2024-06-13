@@ -6,7 +6,10 @@ can be set to either `1155`, `721`, or `premint`. Depending on the `mintType` ad
 must be passed.
 
 ```tsx twoslash
-import { useChainId, usePublicClient, useWriteContract } from '@zoralabs/protocol-sdk';
+import { 
+  useChainId, 
+  usePublicClient, 
+  useWriteContract } from 'wagmi';
 import { createCollectorClient } from "@zoralabs/protocol-sdk";
 
 const chainId = useChainId();
