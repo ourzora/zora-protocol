@@ -5,10 +5,9 @@ a function `mint()`. The type of item to mint is determined by the `mintType` pa
 can be set to either `1155`, `721`, or `premint`. Depending on the `mintType` additional parameters
 must be passed.
 
-```ts twoslash
-import { useChainId, usePublicClient } from '@zoralabs/protocol-sdk';
+```tsx twoslash
+import { useChainId, usePublicClient, useWriteContract } from '@zoralabs/protocol-sdk';
 import { createCollectorClient } from "@zoralabs/protocol-sdk";
-import { zora } from "viem/chains";
 
 const chainId = useChainId();
 const publicClient = usePublicClient();
@@ -16,7 +15,7 @@ const publicClient = usePublicClient();
 // set to the chain you want to interact with
 const collectorClient = createCollectorClient({ chainId, publicClient });
 
-const prepared = await collectorClient.mint({
+const { parameters } = await collectorClient.mint({
   // collection address to mint
   tokenContract: "0x1234567890123456789012345678901234567890",
   // quantity of tokens to mint
@@ -27,6 +26,11 @@ const prepared = await collectorClient.mint({
   //         ^|
 });
 
+
+const { writeContract } = useWriteContract();
+
+// clicking the button writes the mint transaction to the network
+<button onClick={() => writeContract(parameters)}>Create</button>
 ```
 
 ### Mint Premints
