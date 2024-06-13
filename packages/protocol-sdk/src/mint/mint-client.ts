@@ -128,18 +128,22 @@ async function mint({
   chainId: number;
 }) {
   if (isPremintCollect(parameters)) {
-    return collectPremint({
-      ...parameters,
-      premintGetter: premintGetter,
-      publicClient,
-    });
+    return {
+      parameters: await collectPremint({
+        ...parameters,
+        premintGetter: premintGetter,
+        publicClient,
+      }),
+    };
   }
 
-  return collectOnchain({
-    ...parameters,
-    mintGetter: mintGetter,
-    chainId,
-  });
+  return {
+    parameters: await collectOnchain({
+      ...parameters,
+      mintGetter: mintGetter,
+      chainId,
+    }),
+  };
 }
 
 export function requestErc20ApprovalForMint({

@@ -1,5 +1,5 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { useAccount, useChainId, usePublicClient } from "wagmi";
+import { useAccount, useChainId, usePublicClient, useSignTypedData } from "wagmi";
 
 const chainId = useChainId();
 const publicClient = usePublicClient()!;
@@ -7,7 +7,12 @@ const { address: creatorAddress } = useAccount();
 
 const creatorClient = createCreatorClient({ chainId, publicClient });
 
-await creatorClient.createPremint({
+const {
+  // data to sign
+  typedDataDefinition,
+  // submit will submit the signature and premint to the api
+  submit
+} = await creatorClient.createPremint({
   // info of the 1155 contract to create.
   contract: {
     // the account that will be the admin of the collection.  
@@ -24,3 +29,15 @@ await creatorClient.createPremint({
     payoutRecipient: creatorAddress!,
   },
 });
+
+const { signTypedData, data: signature } = useSignTypedData();
+
+if (signature) {
+  submit({
+    signature
+  });
+}
+
+// when the user clicks to create, sign the typed data
+// @noErrors
+<button onClick={() => signTypedData(typedDataDefinition)}>Create</button>

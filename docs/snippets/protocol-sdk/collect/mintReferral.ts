@@ -13,7 +13,7 @@ const { address } = useAccount();
 
 const collectorClient = createCollectorClient({ chainId, publicClient });
 
-const parameters = await collectorClient.mint({
+const { parameters } = await collectorClient.mint({
   tokenContract: collection,
   mintType: "premint",
   uid,

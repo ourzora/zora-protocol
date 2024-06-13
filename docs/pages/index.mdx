@@ -36,10 +36,11 @@ const publicClient = createPublicClient({
   transport: http(),
 });
 
-const collectorClient = createCollectorClient({ chain: zora });
+const collectorClient = createCollectorClient({ 
+  chainId: zora.id, publicClient });
 
-// prepare the mint transaction, which can be simulated via an rpc with the public client.
-const prepared = await collectorClient.mint({
+// prepare a transaction to mint an 1155 token
+const { parameters } = await collectorClient.mint({
   mintType: "1155",
   // 1155 contract address
   tokenContract,
@@ -54,5 +55,5 @@ const prepared = await collectorClient.mint({
 });
 
 // simulate the transaction
-const { request } = await publicClient.simulateContract(prepared);
+const { request } = await publicClient.simulateContract(parameters);
 ```

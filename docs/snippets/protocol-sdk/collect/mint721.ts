@@ -4,7 +4,7 @@ import { publicClient, walletClient, chainId, minterAccount } from "./config";
 const collectorClient = createCollectorClient({ chainId, publicClient });
 
 // prepare the mint transaction, which can be simulated via an rpc with the public client.
-const prepared = await collectorClient.mint({
+const { parameters } = await collectorClient.mint({
   // 1155 contract address
   tokenContract: "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839",
   // type of item to mint
@@ -20,7 +20,7 @@ const prepared = await collectorClient.mint({
 });
 
 // simulate the transaction
-const { request } = await publicClient.simulateContract(prepared);
+const { request } = await publicClient.simulateContract(parameters);
 
 // execute the transaction
 await walletClient.writeContract(request);

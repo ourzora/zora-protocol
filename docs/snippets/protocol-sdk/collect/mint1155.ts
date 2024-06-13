@@ -13,7 +13,7 @@ const { address } = useAccount();
 const collectorClient = createCollectorClient({ chainId, publicClient });
 
 // prepare the mint transaction
-const prepared = await collectorClient.mint({
+const { parameters } = await collectorClient.mint({
   // 1155 contract address
   tokenContract: "0xCD860870DE521cDb0C5ae89E80bBa057Cd30Bf8C",
   // type of item to mint
@@ -33,4 +33,4 @@ const prepared = await collectorClient.mint({
 const { writeContract } = useWriteContract();
 
 // write the mint transaction to the network
-writeContract(prepared);
+writeContract(parameters);

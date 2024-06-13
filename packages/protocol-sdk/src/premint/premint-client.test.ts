@@ -70,7 +70,7 @@ describe("ZoraCreator1155Premint", () => {
         premintGetter: premintApiClient,
       });
 
-      const simulateContractParameters = await collectorClient.mint({
+      const { parameters } = await collectorClient.mint({
         mintType: "premint",
         minterAccount: deployerAccount!,
         tokenContract: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
@@ -78,9 +78,8 @@ describe("ZoraCreator1155Premint", () => {
         quantityToMint: 1,
         mintComment: "",
       });
-      const { request: simulateRequest } = await publicClient.simulateContract(
-        simulateContractParameters,
-      );
+      const { request: simulateRequest } =
+        await publicClient.simulateContract(parameters);
       const hash = await walletClient.writeContract(simulateRequest);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
@@ -249,7 +248,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
           signature,
         });
 
-      const simulateContractParameters = await collectorClient.mint({
+      const { parameters } = await collectorClient.mint({
         mintType: "premint",
         uid: premintConfig.uid,
         minterAccount: deployerAccount!,
@@ -257,9 +256,8 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         quantityToMint: 1,
         mintComment: "",
       });
-      const { request: simulateRequest } = await publicClient.simulateContract(
-        simulateContractParameters,
-      );
+      const { request: simulateRequest } =
+        await publicClient.simulateContract(parameters);
       const hash = await walletClient.writeContract(simulateRequest);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
 

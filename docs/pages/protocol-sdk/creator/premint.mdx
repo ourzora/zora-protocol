@@ -67,7 +67,7 @@ Sometimes it may be desireable to sign a premint with another library, and not u
 For this case, the `createPremint`, `updatePremint`, and `deletePremint` functions return a `typedDataDefinition` which is the typed data definition for the premint and must be signed.
 Once the signature has been obtained, it can be submitted to the Zora Premint API using the `submit` method:
 
-```ts twoslash [example.ts]
+```ts twoslash
 // [!include ~/snippets/protocol-sdk/premint/createSignSeparately.tsx]
 ```
 

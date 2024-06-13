@@ -31,7 +31,7 @@ describe("mint-helper", () => {
         publicClient,
       });
 
-      const params = await collectorClient.mint({
+      const { parameters } = await collectorClient.mint({
         minterAccount: creatorAccount,
         tokenId: targetTokenId,
         tokenContract: targetContract,
@@ -47,7 +47,7 @@ describe("mint-helper", () => {
         args: [creatorAccount, targetTokenId],
       });
 
-      const simulationResult = await publicClient.simulateContract(params);
+      const simulationResult = await publicClient.simulateContract(parameters);
 
       const hash = await walletClient.writeContract(simulationResult.request);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -85,7 +85,7 @@ describe("mint-helper", () => {
         publicClient,
       });
 
-      const params = await collectorClient.mint({
+      const { parameters } = await collectorClient.mint({
         tokenContract: targetContract,
         minterAccount: creatorAccount,
         mintRecipient: creatorAccount,
@@ -99,7 +99,7 @@ describe("mint-helper", () => {
         args: [creatorAccount],
       });
 
-      const simulated = await publicClient.simulateContract(params);
+      const simulated = await publicClient.simulateContract(parameters);
 
       const hash = await walletClient.writeContract(simulated.request);
 
@@ -168,7 +168,7 @@ describe("mint-helper", () => {
       });
       expect(approveTxReciept).to.not.be.null;
 
-      const params = await minter.mint({
+      const { parameters } = await minter.mint({
         minterAccount: mockCollector,
         tokenId: targetTokenId,
         tokenContract: targetContract,
@@ -185,7 +185,7 @@ describe("mint-helper", () => {
       });
       expect(beforeCollector1155Balance).to.be.equal(0n);
 
-      const simulationResult = await publicClient.simulateContract(params);
+      const simulationResult = await publicClient.simulateContract(parameters);
       const hash = await walletClient.writeContract(simulationResult.request);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       expect(receipt).to.not.be.null;

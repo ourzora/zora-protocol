@@ -9,7 +9,7 @@ const publicClient = usePublicClient()!;
 const collectorClient = createCollectorClient({ chainId, publicClient });
 
 // get parameters to mint a premint, which can be used to simulate and submit the transaction
-const parameters = await collectorClient.mint({
+const { parameters } = await collectorClient.mint({
   // the deterministic premint collection address
   tokenContract: collection,
   // type of item to mint
