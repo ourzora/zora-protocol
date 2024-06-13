@@ -14,22 +14,26 @@ The Collector Client provides a function to get the costs to mint x quantities o
 // @filename: example.ts
 // ---cut---
 import { createCollectorClient } from "@zoralabs/protocol-sdk";
-import { chain } from "./config";
+import { chainId, publicClient } from "./config";
 import { tokenAddress, tokenId } from "./data";
 
-const collectorClient = createCollectorClient({ chain });
+const collectorClient = createCollectorClient({ chainId, publicClient });
 
 const mintCosts = await collectorClient.getMintCosts({
-  mintType: "1155",
   // 1155 contract address
   collection: tokenAddress,
+  // 1155 token id
   tokenId,
   quantityMinted: 5
+// @noErrors
+  mintType: "",
+//           ^|
 });
 
 // @noErrors
 mintCosts.
 //        ^|
+
 
 
 ```

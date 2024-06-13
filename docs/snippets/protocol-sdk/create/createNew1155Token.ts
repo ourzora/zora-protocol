@@ -1,8 +1,8 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chain, creatorAccount } from "./config";
+import { publicClient, walletClient, chainId, creatorAccount } from "./config";
 import { collectionAddress } from "./createNewContract";
 
-const creatorClient = createCreatorClient({ chain });
+const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const { parameters } = await creatorClient.create1155({
   // by providing a contract address, the token will be created on an existing contract

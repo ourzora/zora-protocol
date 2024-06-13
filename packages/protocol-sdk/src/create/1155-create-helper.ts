@@ -7,11 +7,12 @@ import type {
   Account,
   Address,
   Hex,
+  PublicClient,
   SimulateContractParameters,
   TransactionReceipt,
 } from "viem";
 import { decodeEventLog } from "viem";
-import { makeContractParameters, ClientConfig, setupClient } from "src/utils";
+import { makeContractParameters } from "src/utils";
 import { getContractInfo } from "./contract-setup";
 import { ContractType, CreateNew1155Params, New1155Token } from "./types";
 import { constructCreate1155TokenCalls } from "./token-setup";
@@ -110,63 +111,88 @@ function makeCreateContractAndTokenCall({
   });
 }
 
-export function create1155CreatorClient(clientConfig: ClientConfig) {
-  const { publicClient, chain } = setupClient(clientConfig);
-  async function createNew1155Token({
-    contract,
-    account,
-    getAdditionalSetupActions,
-    token: tokenConfig,
-  }: CreateNew1155Params): Promise<CreateNew1155TokenReturn> {
-    const { contractExists, contractAddress, nextTokenId, contractVersion } =
-      await getContractInfo({
-        publicClient,
-        chainId: chain.id,
-        contract,
-        account,
-      });
+export class Create1155Client {
+  private readonly chainId: number;
+  private readonly publicClient: Pick<PublicClient, "readContract">;
 
-    const {
-      minter,
-      newToken,
-      setupActions: tokenSetupActions,
-    } = constructCreate1155TokenCalls({
-      chainId: chain.id,
-      ownerAddress: account,
-      contractVersion,
-      nextTokenId,
-      ...tokenConfig,
+  constructor({
+    chainId,
+    publicClient,
+  }: {
+    chainId: number;
+    publicClient: Pick<PublicClient, "readContract">;
+  }) {
+    this.chainId = chainId;
+    this.publicClient = publicClient;
+  }
+
+  async createNew1155Token(props: CreateNew1155Params) {
+    return createNew1155Token({
+      ...props,
+      publicClient: this.publicClient,
+      chainId: this.chainId,
     });
+  }
+}
 
-    const setupActions = getAdditionalSetupActions
-      ? [
-          ...getAdditionalSetupActions({
-            tokenId: nextTokenId,
-            contractAddress,
-          }),
-          ...tokenSetupActions,
-        ]
-      : tokenSetupActions;
-
-    const request = makeCreateContractAndTokenCall({
-      contractExists,
-      contractAddress,
+async function createNew1155Token({
+  contract,
+  account,
+  getAdditionalSetupActions,
+  token: tokenConfig,
+  publicClient,
+  chainId,
+}: CreateNew1155Params & {
+  publicClient: Pick<PublicClient, "readContract">;
+  chainId: number;
+}): Promise<CreateNew1155TokenReturn> {
+  const { contractExists, contractAddress, nextTokenId, contractVersion } =
+    await getContractInfo({
+      publicClient,
+      chainId: chainId,
       contract,
       account,
-      tokenSetupActions: setupActions,
-      royaltyBPS: tokenConfig.royaltyBPS,
-      fundsRecipient: tokenConfig.payoutRecipient,
     });
 
-    return {
-      parameters: request,
-      tokenSetupActions,
-      collectionAddress: contractAddress,
-      contractExists,
-      newTokenId: nextTokenId,
-      newToken,
-      minter,
-    };
-  }
-  return { createNew1155Token };
+  const {
+    minter,
+    newToken,
+    setupActions: tokenSetupActions,
+  } = constructCreate1155TokenCalls({
+    chainId: chainId,
+    ownerAddress: account,
+    contractVersion,
+    nextTokenId,
+    ...tokenConfig,
+  });
+
+  const setupActions = getAdditionalSetupActions
+    ? [
+        ...getAdditionalSetupActions({
+          tokenId: nextTokenId,
+          contractAddress,
+        }),
+        ...tokenSetupActions,
+      ]
+    : tokenSetupActions;
+
+  const request = makeCreateContractAndTokenCall({
+    contractExists,
+    contractAddress,
+    contract,
+    account,
+    tokenSetupActions: setupActions,
+    royaltyBPS: tokenConfig.royaltyBPS,
+    fundsRecipient: tokenConfig.payoutRecipient,
+  });
+
+  return {
+    parameters: request,
+    tokenSetupActions,
+    collectionAddress: contractAddress,
+    contractExists,
+    newTokenId: nextTokenId,
+    newToken,
+    minter,
+  };
 }

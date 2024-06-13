@@ -1,23 +1,19 @@
 import {
-  createPremintClient,
+  PremintClient,
   getDataFromPremintReceipt,
 } from "./premint/premint-client";
-import { create1155CreatorClient } from "./create/1155-create-helper";
-import { createMintClient } from "./mint/mint-client";
+import { Create1155Client } from "./create/1155-create-helper";
+import { MintClient } from "./mint/mint-client";
 import { ClientConfig } from "./utils";
 import { IPremintAPI, PremintAPIClient } from "./premint/premint-api-client";
 import { SubgraphMintGetter } from "./mint/subgraph-mint-getter";
 import { IMintGetter } from "./mint/types";
 
-type PremintClient = ReturnType<typeof createPremintClient>;
-type OnChainCreatorClient = ReturnType<typeof create1155CreatorClient>;
-type MintClient = ReturnType<typeof createMintClient>;
-
 export type CreatorClient = {
   createPremint: PremintClient["createPremint"];
   updatePremint: PremintClient["updatePremint"];
   deletePremint: PremintClient["deletePremint"];
-  create1155: OnChainCreatorClient["createNew1155Token"];
+  create1155: Create1155Client["createNew1155Token"];
 };
 
 export type CollectorClient = {
@@ -41,14 +37,23 @@ export type CreatorClientConfig = ClientConfig & {
 export function createCreatorClient(
   clientConfig: CreatorClientConfig,
 ): CreatorClient {
-  const premintClient = createPremintClient(clientConfig);
+  const premintClient = new PremintClient({
+    chainId: clientConfig.chainId,
+    publicClient: clientConfig.publicClient,
+    premintApi:
+      clientConfig.premintApi || new PremintAPIClient(clientConfig.chainId),
+  });
+
+  const create1155CreatorClient = new Create1155Client({
+    chainId: clientConfig.chainId,
+    publicClient: clientConfig.publicClient,
+  });
 
   return {
     createPremint: (p) => premintClient.createPremint(p),
     updatePremint: (p) => premintClient.updatePremint(p),
     deletePremint: (p) => premintClient.deletePremint(p),
-    create1155: (p) =>
-      create1155CreatorClient(clientConfig).createNew1155Token(p),
+    create1155: (p) => create1155CreatorClient.createNew1155Token(p),
   };
 }
 
@@ -69,11 +74,11 @@ export function createCollectorClient(
   params: CollectorClientConfig,
 ): CollectorClient {
   const premintGetterToUse =
-    params.premintGetter || new PremintAPIClient(params.chain.id);
+    params.premintGetter || new PremintAPIClient(params.chainId);
   const mintGetterToUse =
-    params.mintGetter || new SubgraphMintGetter(params.chain.id);
-  const mintClient = createMintClient({
-    chain: params.chain,
+    params.mintGetter || new SubgraphMintGetter(params.chainId);
+  const mintClient = new MintClient({
+    chainId: params.chainId,
     publicClient: params.publicClient,
     premintGetter: premintGetterToUse,
     mintGetter: mintGetterToUse,
@@ -86,7 +91,7 @@ export function createCollectorClient(
         uid: p.uid,
       }),
     getCollectDataFromPremintReceipt: (p) =>
-      getDataFromPremintReceipt(p, params.chain),
+      getDataFromPremintReceipt(p, params.chainId),
     mint: (p) => mintClient.mint(p),
     getMintCosts: (p) => mintClient.getMintCosts(p),
   };

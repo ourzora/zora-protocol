@@ -77,7 +77,7 @@ const setupContractUsingPremint = async ({
   contractConfig.contractName = "Testing contract for MINTS";
 
   const contractAddress = await getPremintCollectionAddress({
-    collection: contractConfig,
+    contract: contractConfig,
     publicClient,
   });
 

@@ -150,8 +150,8 @@ export type PremintSignatureResponse =
  * @returns
  */
 export const encodePostSignatureInput = <T extends PremintConfigVersion>({
-  collection,
-  collectionAddress,
+  contract: collection,
+  contractAddress: collectionAddress,
   premintConfigVersion,
   premintConfig,
   signature,

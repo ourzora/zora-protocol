@@ -61,28 +61,15 @@ One of the items returned from `create` is `signAndSubmit` which must be called 
 
 :::
 
-### Signing a Premint using an external library
+### Signing and Submitting Premint a Premint using Wagmi
 
 Sometimes it may be desireable to sign a premint with another library, and not using the sdk's `signAndSubmit` method.
 For this case, the `createPremint`, `updatePremint`, and `deletePremint` functions return a `typedDataDefinition` which is the typed data definition for the premint and must be signed.
 Once the signature has been obtained, it can be submitted to the Zora Premint API using the `submit` method:
 
-:::code-group
-
 ```ts twoslash [example.ts]
-// @filename: config.ts
-// [!include ~/snippets/protocol-sdk/premint/config.ts]
-
-// @filename: example.ts
-// ---cut---
-// [!include ~/snippets/protocol-sdk/premint/createSignSeparately.ts]
+// [!include ~/snippets/protocol-sdk/premint/createSignSeparately.tsx]
 ```
-
-```ts twoslash [config.ts]
-// [!include ~/snippets/protocol-sdk/premint/config.ts]
-```
-
-:::
 
 ### Updating a Premint
 
@@ -143,3 +130,38 @@ This signature and deleted premint is then submitted to the Zora Premint API and
 ```
 
 :::
+
+
+### Earning Create Referral Referral Rewards
+
+To earn a create referral reward, pass in the `createReferral` argument when creating a Premint:
+
+```ts twoslash
+import { createCreatorClient } from "@zoralabs/protocol-sdk";
+import { useAccount, useChainId, usePublicClient } from "wagmi";
+
+const chainId = useChainId();
+const publicClient = usePublicClient()!;
+const { address } = useAccount();
+const creatorAccount = address!;
+// ---cut---
+const creatorClient = createCreatorClient({ chainId, publicClient });
+
+await creatorClient.createPremint({
+  // collection info of contract to create. 
+  contract: {
+    contractAdmin: creatorAccount!,
+    contractName: "Testing Contract",
+    contractURI:
+      "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+  },
+  token: {
+    tokenURI:
+      "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+    payoutRecipient: creatorAccount!,
+    // create referral address will get the create referral reward // [!code hl]
+    // when the token is minted. // [!code hl]
+    createReferral: "0x5843c8d6007813de3D2313fC55F2Fa1Cbbc394A6", // [!code hl]
+  },
+});
+```

@@ -273,8 +273,8 @@ export const supportsPremintVersion = async ({
 
 export async function getPremintCollectionAddress({
   publicClient,
-  collection,
-  collectionAddress,
+  contract: collection,
+  contractAddress: collectionAddress,
 }: {
   publicClient: PublicClient;
 } & ContractCreationConfigOrAddress): Promise<Address> {
@@ -466,13 +466,13 @@ export const toContractCreationConfigOrAddress = ({
 }) => {
   if (typeof collection !== "undefined") {
     return {
-      collection,
+      contract: collection,
     };
   }
 
   if (typeof collectionAddress !== "undefined") {
     return {
-      collectionAddress,
+      contractAddress: collectionAddress,
     };
   }
 

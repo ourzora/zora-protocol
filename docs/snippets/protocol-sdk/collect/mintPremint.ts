@@ -1,12 +1,15 @@
 import { createCollectorClient } from "@zoralabs/protocol-sdk";
-import { walletClient, publicClient, chain } from "./config";
 import { collection, uid } from "./createPremint";
+import { useChainId, usePublicClient, useWriteContract } from "wagmi";
+
+const chainId = useChainId();
+const publicClient = usePublicClient()!;
 
 // initialize the collect sdk with the chain configuration
-const collectorClient = createCollectorClient({ chain });
+const collectorClient = createCollectorClient({ chainId, publicClient });
 
 // get parameters to mint a premint, which can be used to simulate and submit the transaction
-const simulateContractParameters = await collectorClient.mint({
+const parameters = await collectorClient.mint({
   // the deterministic premint collection address
   tokenContract: collection,
   // type of item to mint
@@ -21,10 +24,6 @@ const simulateContractParameters = await collectorClient.mint({
   minterAccount: "0xf69fEc6d858c77e969509843852178bd24CAd2B6",
 });
 
-// simulate the transaction and get any validation errors
-const { request } = await publicClient.simulateContract(
-  simulateContractParameters,
-);
+const { writeContract } = useWriteContract();
 
-// submit the transaction to the network
-await walletClient.writeContract(request);
+writeContract(parameters);

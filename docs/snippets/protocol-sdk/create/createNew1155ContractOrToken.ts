@@ -1,7 +1,18 @@
+import {
+  useAccount,
+  useChainId,
+  usePublicClient,
+  useWriteContract,
+} from "wagmi";
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chain, creatorAccount } from "./config";
 
-const creatorClient = createCreatorClient({ chain });
+// use wagmi hooks to get the chainId, publicClient, and account
+
+const chainId = useChainId();
+const publicClient = usePublicClient()!;
+const { address } = useAccount();
+
+const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const { parameters } = await creatorClient.create1155({
   // by providing a contract creation config, the contract will be created
@@ -16,11 +27,9 @@ const { parameters } = await creatorClient.create1155({
     tokenMetadataURI: "ipfs://DUMMY/token.json",
   },
   // account to execute the transaction (the creator)
-  account: creatorAccount,
+  account: address!,
 });
 
-// simulate the transaction
-const { request } = await publicClient.simulateContract(parameters);
+const { writeContract } = useWriteContract();
 
-// execute the transaction
-await walletClient.writeContract(request);
+writeContract(parameters);

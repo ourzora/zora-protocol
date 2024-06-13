@@ -2,7 +2,6 @@ import { decodeEventLog, zeroAddress } from "viem";
 import type {
   Account,
   Address,
-  Chain,
   Hex,
   SimulateContractParameters,
   TransactionReceipt,
@@ -39,21 +38,15 @@ import {
   PremintMintArguments,
   premintTypedDataDefinition,
 } from "@zoralabs/protocol-deployments";
-import {
-  IPremintAPI,
-  IPremintGetter,
-  PremintAPIClient,
-} from "./premint-api-client";
+import { IPremintAPI, IPremintGetter } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
 import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
 import { MintCosts } from "src/mint/mint-client";
 import {
-  ClientConfig,
   makeContractParameters,
   mintRecipientOrAccount,
   PublicClient,
-  setupClient,
 } from "src/utils";
 import {
   ContractCreationConfigAndAddress,
@@ -221,23 +214,30 @@ export function getPremintedLogFromReceipt(
 /**
  * Preminter API to access ZORA Premint functionality.
  */
-class PremintClient {
+export class PremintClient {
   readonly apiClient: IPremintAPI;
   readonly publicClient: PublicClient;
-  readonly chain: Chain;
+  readonly chainId: number;
 
-  constructor(
-    chain: Chain,
-    publicClient: PublicClient,
-    apiClient: IPremintAPI,
-  ) {
-    this.chain = chain;
-    this.apiClient = apiClient;
+  constructor({
+    chainId,
+    publicClient,
+    premintApi,
+  }: {
+    chainId: number;
+    publicClient: PublicClient;
+    premintApi: IPremintAPI;
+  }) {
+    this.chainId = chainId;
+    this.apiClient = premintApi;
     this.publicClient = publicClient;
   }
 
-  getDataFromPremintReceipt(receipt: TransactionReceipt) {
-    return getDataFromPremintReceipt(receipt, this.chain);
+  getDataFromPremintReceipt(
+    receipt: TransactionReceipt,
+    blockExplorerUrl?: string,
+  ) {
+    return getDataFromPremintReceipt(receipt, this.chainId, blockExplorerUrl);
   }
 
   /**
@@ -251,7 +251,7 @@ class PremintClient {
       ...args,
       apiClient: this.apiClient,
       publicClient: this.publicClient,
-      chainId: this.chain.id,
+      chainId: this.chainId,
     });
   }
 
@@ -268,7 +268,7 @@ class PremintClient {
       ...params,
       apiClient: this.apiClient,
       publicClient: this.publicClient,
-      chainId: this.chain.id,
+      chainId: this.chainId,
     });
   }
 
@@ -285,7 +285,7 @@ class PremintClient {
       ...parameters,
       publicClient: this.publicClient,
       apiClient: this.apiClient,
-      chainId: this.chain.id,
+      chainId: this.chainId,
     });
   }
 
@@ -310,7 +310,7 @@ class PremintClient {
    */
   async getCollectionAddress(collection: ContractCreationConfig) {
     return await getPremintCollectionAddress({
-      collection,
+      contract: collection,
       publicClient: this.publicClient,
     });
   }
@@ -363,7 +363,8 @@ class PremintClient {
 
 export function getDataFromPremintReceipt(
   receipt: TransactionReceipt,
-  chain: Chain,
+  chainId: number,
+  blockExplorerUrl?: string,
 ) {
   const premintedLog = getPremintedLogFromReceipt(receipt);
   return {
@@ -373,18 +374,10 @@ export function getDataFromPremintReceipt(
     urls: makeUrls({
       address: premintedLog?.contractAddress,
       tokenId: premintedLog?.tokenId,
-      chain,
+      chainId,
+      blockExplorerUrl,
     }),
   };
-}
-
-export function createPremintClient(
-  clientConfig: ClientConfig & { premintApi?: IPremintAPI },
-) {
-  const { chain, publicClient } = setupClient(clientConfig);
-  const premintApiToUse =
-    clientConfig.premintApi || new PremintAPIClient(chain.id);
-  return new PremintClient(chain, publicClient, premintApiToUse);
 }
 
 type PremintContext = {
@@ -548,13 +541,13 @@ async function signPremint({
 
 type CreatePremintParameters = {
   /** tokenCreationConfig Token creation settings, optional settings are overridden with sensible defaults */
-  tokenCreationConfig: TokenConfigInput;
+  token: TokenConfigInput;
   /** uid the UID to use – optional and retrieved as a fresh UID from ZORA by default. */
   uid?: number;
 } & ContractCreationConfigOrAddress;
 
 async function createPremint({
-  tokenCreationConfig,
+  token: tokenCreationConfig,
   uid,
   publicClient,
   apiClient,
@@ -578,7 +571,7 @@ async function createPremint({
     premintConfig,
     premintConfigVersion,
     collectionAddress: collectionAddressToUse,
-    collection: collectionOrAddress.collection,
+    collection: collectionOrAddress.contract,
     publicClient,
     apiClient,
     chainId,
@@ -862,12 +855,14 @@ export function makeUrls({
   uid,
   address,
   tokenId,
-  chain,
+  chainId,
+  blockExplorerUrl,
 }: {
   uid?: number;
   tokenId?: bigint;
   address?: Address;
-  chain: Chain;
+  chainId: number;
+  blockExplorerUrl?: string;
 }): URLSReturnType {
   if ((!uid || !tokenId) && !address) {
     return { explorer: null, zoraCollect: null, zoraManage: null };
@@ -875,11 +870,11 @@ export function makeUrls({
 
   const zoraTokenPath = uid ? `premint-${uid}` : tokenId;
 
-  const network = getApiNetworkConfigForChain(chain.id);
+  const network = getApiNetworkConfigForChain(chainId);
 
   return {
     explorer: tokenId
-      ? `https://${chain.blockExplorers?.default.url}/token/${address}/instance/${tokenId}`
+      ? `https://${blockExplorerUrl}/token/${address}/instance/${tokenId}`
       : null,
     zoraCollect: `https://${
       network.isTestnet ? "testnet." : ""

@@ -28,11 +28,11 @@ export type ContractCreationConfigAndAddress = {
 export type ContractCreationConfigOrAddress =
   | {
       /** Parameters for creating the contract for new premints. */
-      collection: ContractCreationConfigWithOptionalAdditionalAdmins;
-      collectionAddress?: undefined;
+      contract: ContractCreationConfigWithOptionalAdditionalAdmins;
+      contractAddress?: undefined;
     }
   | {
-      collection?: undefined;
+      contract?: undefined;
       /** Premint collection address */
-      collectionAddress: Address;
+      contractAddress: Address;
     };

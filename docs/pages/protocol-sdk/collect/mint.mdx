@@ -6,11 +6,15 @@ can be set to either `1155`, `721`, or `premint`. Depending on the `mintType` ad
 must be passed.
 
 ```ts twoslash
+import { useChainId, usePublicClient } from '@zoralabs/protocol-sdk';
 import { createCollectorClient } from "@zoralabs/protocol-sdk";
 import { zora } from "viem/chains";
 
+const chainId = useChainId();
+const publicClient = usePublicClient();
+
 // set to the chain you want to interact with
-const collectorClient = createCollectorClient({ chain: zora });
+const collectorClient = createCollectorClient({ chainId, publicClient });
 
 const prepared = await collectorClient.mint({
   // collection address to mint
@@ -32,9 +36,6 @@ Once a Premint has been created and submitted to the Zora Premint API, it can be
 :::code-group
 
 ```ts twoslash [example.ts]
-// @filename: config.ts
-// [!include ~/snippets/protocol-sdk/collect/config.ts]
-
 // @filename: createPremint.ts
 // [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
 
@@ -44,16 +45,9 @@ Once a Premint has been created and submitted to the Zora Premint API, it can be
 ```
 
 ```ts twoslash [createPremint.ts]
-// @filename: config.ts
-// [!include ~/snippets/protocol-sdk/collect/config.ts]
-
 // @filename: createPremint.ts
 // ---cut---
 // [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
-```
-
-```ts twoslash [config.ts]
-// [!include ~/snippets/protocol-sdk/collect/config.ts]
 ```
 
 :::
@@ -110,6 +104,28 @@ Once a Premint has been created and submitted to the Zora Premint API, it can be
 
 ```ts twoslash [config.ts]
 // [!include ~/snippets/protocol-sdk/collect/config.ts]
+```
+
+:::
+
+### Earning Mint Referral Rewards
+
+To earn a mint referral reward, pass in the `mintReferral` argument to the `mint` function:
+
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: createPremint.ts
+// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/collect/mintReferral.ts]
+```
+
+```ts twoslash [createPremint.ts]
+// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
 ```
 
 :::

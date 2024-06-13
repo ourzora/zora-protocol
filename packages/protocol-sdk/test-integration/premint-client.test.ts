@@ -40,7 +40,7 @@ tests.forEach(({ anvilTest, chain }) => {
             const [creatorAccount, createReferralAccount, minterAccount] =
               await walletClient.getAddresses();
             const premintClient = createPremintClient({
-              chain,
+              chainId: chain,
               publicClient,
             });
 
@@ -49,7 +49,7 @@ tests.forEach(({ anvilTest, chain }) => {
                 walletClient,
                 payoutRecipient: creatorAccount!,
                 checkSignature: true,
-                collection: {
+                contract: {
                   contractAdmin: creatorAccount!,
                   contractName: "Testing Contract Premint V2",
                   contractURI:
@@ -57,7 +57,7 @@ tests.forEach(({ anvilTest, chain }) => {
                   additionalAdmins: [],
                 },
                 premintConfigVersion: PremintConfigVersion.V2,
-                tokenCreationConfig: {
+                token: {
                   tokenURI:
                     "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2f",
                   createReferral: createReferralAccount!,
@@ -97,7 +97,7 @@ tests.forEach(({ anvilTest, chain }) => {
             const [creatorAccount, minterAccount] =
               await walletClient.getAddresses();
             const premintClient = createPremintClient({
-              chain,
+              chainId: chain,
               publicClient,
             });
 
@@ -106,7 +106,7 @@ tests.forEach(({ anvilTest, chain }) => {
                 walletClient,
                 payoutRecipient: creatorAccount!,
                 checkSignature: true,
-                collection: {
+                contract: {
                   contractAdmin: creatorAccount!,
                   contractName: `Testing Contract Premint V1 ${publicClient.chain?.name}`,
                   contractURI:
@@ -114,7 +114,7 @@ tests.forEach(({ anvilTest, chain }) => {
                   additionalAdmins: [],
                 },
                 premintConfigVersion: PremintConfigVersion.V1,
-                tokenCreationConfig: {
+                token: {
                   tokenURI:
                     "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
                 },

@@ -1,15 +1,12 @@
 import { describe, expect, vi } from "vitest";
-import {
-  create1155CreatorClient,
-  getTokenIdFromCreateReceipt,
-} from "./1155-create-helper";
+import { getTokenIdFromCreateReceipt } from "./1155-create-helper";
 import { anvilTest } from "src/anvil";
 import { createCreatorClient } from "src/sdk";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
-import { SalesConfigAndTokenInfo } from "src/mint/subgraph-mint-getter";
 import { makePrepareMint1155TokenParams } from "src/mint/mint-client";
 import { waitForSuccess } from "src/test-utils";
 import { parseEther } from "viem";
+import { SalesConfigAndTokenInfo } from "src/mint/types";
 
 const demoTokenMetadataURI = "ipfs://DUMMY/token.json";
 const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
@@ -22,7 +19,7 @@ describe("create-helper", () => {
       const creatorAddress = addresses[0]!;
 
       const creatorClient = createCreatorClient({
-        chain,
+        chainId: chain.id,
         publicClient: publicClient,
       });
       const { parameters: request } = await creatorClient.create1155({
@@ -53,7 +50,7 @@ describe("create-helper", () => {
       const creatorAccount = addresses[0]!;
 
       const creatorClient = createCreatorClient({
-        chain,
+        chainId: chain.id,
         publicClient: publicClient,
       });
 
@@ -129,11 +126,11 @@ describe("create-helper", () => {
       const creatorAddress = addresses[0]!;
       const createReferral = addresses[1]!;
 
-      const creatorClient = create1155CreatorClient({
-        chain,
+      const creatorClient = createCreatorClient({
+        chainId: chain.id,
         publicClient: publicClient,
       });
-      const { parameters: request } = await creatorClient.createNew1155Token({
+      const { parameters: request } = await creatorClient.create1155({
         contract: {
           name: "testContract",
           uri: demoContractMetadataURI,
@@ -173,7 +170,7 @@ describe("create-helper", () => {
       const creatorAddress = addresses[0]!;
 
       const creatorClient = createCreatorClient({
-        chain,
+        chainId: chain.id,
         publicClient: publicClient,
       });
       const {
@@ -250,7 +247,7 @@ describe("create-helper", () => {
       const creatorAddress = addresses[0]!;
 
       const creatorClient = createCreatorClient({
-        chain,
+        chainId: chain.id,
         publicClient: publicClient,
       });
 

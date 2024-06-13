@@ -26,7 +26,10 @@ describe("mint-helper", () => {
       const targetContract: Address =
         "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
       const targetTokenId = 1n;
-      const collectorClient = createCollectorClient({ chain: zora });
+      const collectorClient = createCollectorClient({
+        chainId: zora.id,
+        publicClient,
+      });
 
       const params = await collectorClient.mint({
         minterAccount: creatorAccount,
@@ -77,7 +80,10 @@ describe("mint-helper", () => {
 
       const targetContract: Address =
         "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
-      const collectorClient = createCollectorClient({ chain: zora });
+      const collectorClient = createCollectorClient({
+        chainId: zora.id,
+        publicClient,
+      });
 
       const params = await collectorClient.mint({
         tokenContract: targetContract,
@@ -126,7 +132,7 @@ describe("mint-helper", () => {
         "0x689bc305456c38656856d12469aed282fbd89fe0";
       const targetTokenId = 16n;
 
-      const minter = createCollectorClient({ chain });
+      const minter = createCollectorClient({ chainId: chain.id, publicClient });
 
       const mockCollector = "0xb6b701878a1f80197dF2c209D0BDd292EA73164D";
       await testClient.impersonateAccount({

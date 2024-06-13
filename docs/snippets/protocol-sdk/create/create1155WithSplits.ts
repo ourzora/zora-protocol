@@ -1,5 +1,5 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chain, creatorAccount } from "./config";
+import { publicClient, walletClient, chainId, creatorAccount } from "./config";
 import { SplitV1Client, SplitRecipient } from "@0xsplits/splits-sdk";
 import { Address, Chain, HttpTransport, PublicClient } from "viem";
 import { contract } from "./data";
@@ -8,7 +8,7 @@ import { contract } from "./data";
 
 // setup a splits client
 const splitsClient = new SplitV1Client({
-  chainId: chain.id,
+  chainId,
   publicClient: publicClient as PublicClient<HttpTransport, Chain>,
   apiConfig: {
     // This is a dummy 0xSplits api key, replace with your own
@@ -55,7 +55,7 @@ const splitRecipient = predicted.splitAddress;
 
 /* ==== 2. Create the 1155 with the splits recipient as the payoutRecipient ===== */
 
-const creatorClient = createCreatorClient({ chain });
+const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const { parameters } = await creatorClient.create1155({
   contract,

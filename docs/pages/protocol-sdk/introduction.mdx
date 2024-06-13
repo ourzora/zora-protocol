@@ -29,26 +29,27 @@ create and manage Zora creator 1155 contracts and tokens, while the Collector Cl
 Zora creator 1155, 721, and premints.
 
 ```ts twoslash
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { zora } from "viem/chains";
+import { useChainId, usePublicClient } from 'wagmi';
+import { 
+  createCreatorClient, 
+  createCollectorClient } from "@zoralabs/protocol-sdk";
 
-const creatorClient = createCreatorClient({ chain: zora });
+// get the current chain id and PublicClient using wagmi
+const chainId = useChainId();
+const publicClient = usePublicClient();
+
+const creatorClient = createCreatorClient({ chainId, publicClient });
 // @noErrors
 creatorClient.
 //            ^|
 
 
 
-```
 
-```ts twoslash
-import { createCollectorClient } from "@zoralabs/protocol-sdk";
-import { zora } from "viem/chains";
-
-const collectorClient = createCollectorClient({ chain: zora });
+const collectorClient = createCollectorClient({ chainId, publicClient });
 // @noErrors
-collectorClient.
-//              ^|
+collectorClient.m
+//               ^|
 
 
 

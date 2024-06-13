@@ -11,6 +11,7 @@ import {
 } from "viem";
 
 export const chain = zora;
+export const chainId = zora.id;
 
 export const publicClient = createPublicClient({
   // this will determine which chain to interact with

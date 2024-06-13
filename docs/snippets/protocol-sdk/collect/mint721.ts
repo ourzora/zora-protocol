@@ -1,7 +1,7 @@
 import { createCollectorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chain, minterAccount } from "./config";
+import { publicClient, walletClient, chainId, minterAccount } from "./config";
 
-const collectorClient = createCollectorClient({ chain });
+const collectorClient = createCollectorClient({ chainId, publicClient });
 
 // prepare the mint transaction, which can be simulated via an rpc with the public client.
 const prepared = await collectorClient.mint({

@@ -1,8 +1,8 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chain, creatorAccount } from "./config";
+import { publicClient, walletClient, chainId, creatorAccount } from "./config";
 import { contract } from "./data";
 
-const creatorClient = createCreatorClient({ chain });
+const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const erc20TokenAddress = "0xa6b280b42cb0b7c4a4f789ec6ccc3a7609a1bc39";
 

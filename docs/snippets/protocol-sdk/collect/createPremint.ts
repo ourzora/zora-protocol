@@ -1,7 +1,10 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { walletClient, chain } from "./config";
+import { useChainId, usePublicClient, useSignTypedData } from "wagmi";
 
-const creatorClient = createCreatorClient({ chain });
+const chainId = useChainId();
+const publicClient = usePublicClient()!;
+
+const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const creatorAccount = "0xf69fEc6d858c77e969509843852178bd24CAd2B6";
 
@@ -10,12 +13,12 @@ const {
   premintConfig,
   // collection address of the premint
   collectionAddress,
-  // used to sign and submit the premint to the Zora Premint API
-  signAndSubmit,
+  typedDataDefinition,
+  submit,
 } = await creatorClient.createPremint({
   // collection info of collection to create.  The combination of these fields will determine the
   // deterministic collection address.
-  collection: {
+  contract: {
     // the account that will be the admin of the collection.  Must match the signer of the premint.
     contractAdmin: creatorAccount,
     contractName: "Testing Contract",
@@ -23,7 +26,7 @@ const {
       "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
   },
   // token info of token to create
-  tokenCreationConfig: {
+  token: {
     tokenURI:
       "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
 
@@ -32,9 +35,15 @@ const {
 });
 
 // sign the new premint, and submit it to the Zora Premint API
-await signAndSubmit({
-  walletClient,
-});
+const { signTypedData, data: signature } = useSignTypedData();
+
+signTypedData(typedDataDefinition);
+
+if (signature) {
+  submit({
+    signature,
+  });
+}
 
 export const uid = premintConfig.uid;
 export const collection = collectionAddress;

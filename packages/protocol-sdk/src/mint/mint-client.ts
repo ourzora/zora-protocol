@@ -1,6 +1,5 @@
 import {
   Address,
-  Chain,
   encodeAbiParameters,
   parseAbiParameters,
   zeroAddress,
@@ -16,11 +15,8 @@ import {
 } from "@zoralabs/protocol-deployments";
 import { zora721Abi } from "src/constants";
 import { GenericTokenIdTypes } from "src/types";
-import { SubgraphMintGetter } from "./subgraph-mint-getter";
 import {
   makeContractParameters,
-  ClientConfig,
-  setupClient,
   PublicClient,
   mintRecipientOrAccount,
 } from "src/utils";
@@ -40,10 +36,7 @@ import {
   is1155Mint,
 } from "./types";
 import { collectPremint } from "src/premint/premint-client";
-import {
-  IPremintGetter,
-  PremintAPIClient,
-} from "src/premint/premint-api-client";
+import { IPremintGetter } from "src/premint/premint-api-client";
 import { getPremintMintCostsWithUnknownTokenPrice } from "src/premint/preminter";
 
 class MintError extends Error {}
@@ -54,19 +47,24 @@ export const Errors = {
   MintInactiveError,
 };
 
-class MintClient {
-  private readonly chain: Chain;
+export class MintClient {
+  private readonly chainId: number;
   private readonly publicClient: PublicClient;
   private readonly mintGetter: IMintGetter;
   private readonly premintGetter: IPremintGetter;
 
-  constructor(
-    chain: Chain,
-    publicClient: PublicClient,
-    premintGetter: IPremintGetter,
-    mintGetter: IMintGetter,
-  ) {
-    this.chain = chain;
+  constructor({
+    chainId,
+    publicClient,
+    premintGetter,
+    mintGetter,
+  }: {
+    chainId: number;
+    publicClient: PublicClient;
+    premintGetter: IPremintGetter;
+    mintGetter: IMintGetter;
+  }) {
+    this.chainId = chainId;
     this.publicClient = publicClient;
     this.mintGetter = mintGetter;
     this.premintGetter = premintGetter;
@@ -82,7 +80,7 @@ class MintClient {
   async mint(parameters: MakeMintParametersArguments) {
     return mint({
       parameters,
-      chainId: this.chain.id,
+      chainId: this.chainId,
       publicClient: this.publicClient,
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
@@ -103,34 +101,6 @@ class MintClient {
     });
   }
 }
-
-/**
- * Creates a new MintClient.
- * @param param0.chain The chain to use for the mint client.
- * @param param0.publicClient Optional viem public client
- * @param param0.httpClient Optional http client to override post, get, and retry methods
- * @returns
- */
-export function createMintClient(
-  clientConfig: ClientConfig & {
-    premintGetter?: IPremintGetter;
-    mintGetter?: IMintGetter;
-  },
-) {
-  const { chain, publicClient } = setupClient(clientConfig);
-  const premintGetterToUse =
-    clientConfig.premintGetter || new PremintAPIClient(chain.id);
-  const mintGetterToUse =
-    clientConfig.mintGetter || new SubgraphMintGetter(chain.id);
-  return new MintClient(
-    chain,
-    publicClient,
-    premintGetterToUse,
-    mintGetterToUse,
-  );
-}
-
-export type TMintClient = ReturnType<typeof createMintClient>;
 
 function isPremintCollect(
   parameters: MakeMintParametersArguments,

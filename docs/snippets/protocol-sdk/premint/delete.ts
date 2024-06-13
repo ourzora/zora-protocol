@@ -1,8 +1,8 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { walletClient, chain, creatorAccount } from "./config";
+import { walletClient, chainId, creatorAccount, publicClient } from "./config";
 import { collection, uid } from "./create";
 
-const creatorClient = createCreatorClient({ chain });
+const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const { signAndSubmit } = await creatorClient.deletePremint({
   // Premint collection address to delete the premint from

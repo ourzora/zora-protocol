@@ -1,7 +1,7 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { walletClient, chain, creatorAccount } from "./config";
+import { walletClient, chainId, publicClient, creatorAccount } from "./config";
 
-const creatorClient = createCreatorClient({ chain });
+const creatorClient = createCreatorClient({ chainId, publicClient });
 
 // create and sign the Premint, the Premint and signature will be uploaded to an api to be served later
 const {
@@ -10,7 +10,7 @@ const {
 } = await creatorClient.createPremint({
   // collection info of collection to create.  The combination of these fields will determine the
   // deterministic collection address.
-  collection: {
+  contract: {
     // the account that will be the admin of the collection.  Must match the signer of the premint.
     contractAdmin: creatorAccount,
     contractName: "Testing Contract",
@@ -18,7 +18,7 @@ const {
       "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
   },
   // token info of token to create
-  tokenCreationConfig: {
+  token: {
     tokenURI:
       "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
     // address to get create referral reward

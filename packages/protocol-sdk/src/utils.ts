@@ -7,9 +7,6 @@ import {
   ContractFunctionName,
   PublicClient as BasePublicClient,
   SimulateContractParameters,
-  Transport,
-  createPublicClient,
-  http,
   AbiStateMutability,
 } from "viem";
 
@@ -31,20 +28,19 @@ export const makeContractParameters = <
   >,
 ) => args;
 
-export type PublicClient = BasePublicClient<Transport, Chain>;
+export type PublicClient = Pick<BasePublicClient, "readContract">;
 
 export type ClientConfig = {
   /** The chain that the client is to run on. */
-  chain: Chain;
+  chainId: number;
   /** Optional public client for the chain.  If not provide, it is created. */
-  publicClient?: PublicClient;
+  publicClient: PublicClient;
 };
 
-export function setupClient({ chain, publicClient }: ClientConfig) {
+export function setupClient({ chainId, publicClient }: ClientConfig) {
   return {
-    chain,
-    publicClient:
-      publicClient || createPublicClient({ chain, transport: http() }),
+    chainId,
+    publicClient,
   };
 }
 

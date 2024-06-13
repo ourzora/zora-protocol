@@ -65,7 +65,7 @@ describe("ZoraCreator1155Premint", () => {
       premintApiClient.postSignature = vi.fn();
 
       const collectorClient = createCollectorClient({
-        chain,
+        chainId: chain.id,
         publicClient,
         premintGetter: premintApiClient,
       });
@@ -125,19 +125,19 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         .mockResolvedValue({ ok: true });
 
       const creatorClient = createCreatorClient({
-        chain,
+        chainId: chain.id,
         premintApi: premintApiClient,
         publicClient,
       });
 
       const { signAndSubmit } = await creatorClient.createPremint({
-        collection: {
+        contract: {
           contractAdmin: creatorAccount!,
           contractName: "Testing Contract Premint V2",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
-        tokenCreationConfig: {
+        token: {
           tokenURI:
             "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
           payoutRecipient: creatorAccount!,
@@ -154,13 +154,13 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
       const expectedPostSignatureArgs: Parameters<
         typeof premintApiClient.postSignature
       >[0] = {
-        collection: {
+        contract: {
           contractAdmin: creatorAccount!,
           contractName: "Testing Contract Premint V2",
           contractURI:
             "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
         },
-        collectionAddress: undefined,
+        contractAddress: undefined,
         premintConfig: {
           deleted: false,
           tokenConfig: {
@@ -200,13 +200,13 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
       const premintApiClient = new PremintAPIClient(chain.id);
 
       const collectorClient = createCollectorClient({
-        chain,
+        chainId: chain.id,
         publicClient,
         premintGetter: premintApiClient,
       });
 
       const creatorClient = createCreatorClient({
-        chain,
+        chainId: chain.id,
         publicClient,
         premintApi: premintApiClient,
       });
@@ -220,14 +220,14 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
       };
 
       const collectionAddress = await getPremintCollectionAddress({
-        collection,
+        contract: collection,
         publicClient,
       });
 
       const { premintConfig, typedDataDefinition } =
         await creatorClient.createPremint({
-          collection,
-          tokenCreationConfig: {
+          contract: collection,
+          token: {
             tokenURI:
               "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
             payoutRecipient: creatorAccount!,
