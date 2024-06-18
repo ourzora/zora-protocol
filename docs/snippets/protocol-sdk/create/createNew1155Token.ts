@@ -8,10 +8,7 @@ const { parameters } = await creatorClient.create1155({
   // by providing a contract address, the token will be created on an existing contract
   // at that address
   contract: collectionAddress, // [!code hl]
-  token: {
-    // token metadata uri
-    tokenMetadataURI: "ipfs://DUMMY/token.json",
-  },
+  tokenMetadataURI: "ipfs://DUMMY/token.json",
   // account to execute the transaction (the creator)
   account: creatorAccount,
 });
