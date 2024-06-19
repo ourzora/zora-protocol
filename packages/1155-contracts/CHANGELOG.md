@@ -471,7 +471,7 @@ Prior to 2.9.0, rewards were distributed based on a fixed value in ETH per token
     uint64 mintStart;
     // The duration of the mint, starting from the first mint of this token. 0 for infinite
     uint64 mintDuration;
-    // deperecated field; will be ignored.
+    // deprecated field; will be ignored.
     uint32 royaltyMintSchedule;
     // RoyaltyBPS for created tokens. The royalty amount in basis points for secondary sales.
     uint32 royaltyBPS;
