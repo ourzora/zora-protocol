@@ -6,7 +6,7 @@ import {ILimitedMintPerAddress} from "../../interfaces/ILimitedMintPerAddress.so
 contract LimitedMintPerAddress is ILimitedMintPerAddress {
     /// @notice Storage for slot to check user mints
     /// @notice target contract -> tokenId -> minter user -> numberMinted
-    /// @dev No gap or stroage interface since this is used within non-upgradeable contracts
+    /// @dev No gap or storage interface since this is used within non-upgradeable contracts
     mapping(address => mapping(uint256 => mapping(address => uint256))) internal mintedPerAddress;
 
     function getMintedPerWallet(address tokenContract, uint256 tokenId, address wallet) external view returns (uint256) {
