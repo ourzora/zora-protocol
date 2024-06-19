@@ -222,7 +222,7 @@ contract ZoraCreator1155PremintExecutorImpl is
     /// role on the contract
     /// @param signer The signer of the premint
     /// @param premintContractConfigContractAdmin If this contract was created via premint, the original contractConfig.contractAdmin.  Otherwise, set to address(0)
-    /// @param contractAddress The determinstic 1155 contract address the premint is for
+    /// @param contractAddress The deterministic 1155 contract address the premint is for
     /// @return isAuthorized Whether the signer is authorized
     function isAuthorizedToCreatePremint(
         address signer,
@@ -237,7 +237,7 @@ contract ZoraCreator1155PremintExecutorImpl is
     /// in the list of additional admins
     /// @param signer The signer of the premint
     /// @param premintContractConfigContractAdmin If this contract was created via premint, the original contractConfig.contractAdmin.  Otherwise, set to address(0)
-    /// @param contractAddress The determinstic 1155 contract address the premint is for
+    /// @param contractAddress The deterministic 1155 contract address the premint is for
     /// @return isAuthorized Whether the signer is authorized
     function isAuthorizedToCreatePremintWithAdditionalAdmins(
         address signer,
