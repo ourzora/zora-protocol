@@ -555,7 +555,7 @@ Prior to 2.9.0, rewards were distributed based on a fixed value in ETH per token
 
 ### Patch Changes
 
-- 9207e8f: Deployed determinstic proxies and latest versions to mainnet, goerli, base, base goerli, optimism, optimism goerli
+- 9207e8f: Deployed deterministic proxies and latest versions to mainnet, goerli, base, base goerli, optimism, optimism goerli
 
 ## 2.0.1
 
@@ -568,7 +568,7 @@ Prior to 2.9.0, rewards were distributed based on a fixed value in ETH per token
 ### Major Changes
 
 - 82f6506: Premint with Delegated Minting
-  Determinstic Proxy Addresses
+  Deterministic Proxy Addresses
   Premint deployed to zora and zora goerli
 
 ## 1.6.1
