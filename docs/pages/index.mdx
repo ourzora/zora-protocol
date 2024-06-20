@@ -39,7 +39,7 @@ const publicClient = createPublicClient({
 const collectorClient = createCollectorClient({ 
   chainId: zora.id, publicClient });
 
-// prepare a transaction to mint an 1155 token
+//Prepare a transaction to mint an 1155 token
 const { parameters } = await collectorClient.mint({
   mintType: "1155",
   // 1155 contract address
