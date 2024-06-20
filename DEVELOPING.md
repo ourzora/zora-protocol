@@ -5,7 +5,7 @@
 Within a contracts package folder (i.e. `packages/1155-contracts`):
 
 1. Setup new `chainConfigs` file setting 1. fee recipient, and 2. owner for factory contracts
-2. Generate signatures for deploying upgrade gate at a deterministic address and transferring ownership to the factory owner:
+2. Generate signatures for deploying the upgrade gate at a deterministic address and transferring ownership to the factory owner:
 
     yarn tsx script/signDeploymentTransactions.ts
 
@@ -34,7 +34,7 @@ Within a contracts package folder (i.e. `packages/1155-contracts`):
 Publishing happens in the following steps:
 
 * Some changes are made to the repo; this can include smart contract changes or additions, if smart contracts are changed, tests should be created or updated to reflect the changes.
-* The changes are committed to a branch which is **pushed** to **github**.
+* The changes are committed to a branch that is **pushed** to **github**.
 * A **pr** is **opened** for this branch.
 * The changes are reviewed, if they are **approved**:
 * *If there are changes to the smart contracts that should be deployed*: the contract should be. Deploying the contract results in the addresses of the deployed contracts being updated in the corresponding `./addresses/{chainId}.json` file. This file should be committed and pushed to github.
