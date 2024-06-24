@@ -27,6 +27,7 @@ import {
   emptyContractCreationConfig,
   defaultAdditionalAdmins,
   toContractCreationConfigOrAddress,
+  getPremintMintFee,
 } from "./preminter";
 import {
   PremintConfigVersion,
@@ -42,7 +43,6 @@ import { IPremintAPI, IPremintGetter } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
 import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
-import { MintCosts } from "src/mint/mint-client";
 import {
   makeContractParameters,
   mintRecipientOrAccount,
@@ -52,7 +52,13 @@ import {
   ContractCreationConfigAndAddress,
   ContractCreationConfigOrAddress,
 } from "./contract-types";
-import { MakePremintMintParametersArguments } from "src/mint/types";
+import {
+  MakeMintParametersArgumentsBase,
+  MakePremintMintParametersArguments,
+  MintCosts,
+} from "src/mint/types";
+import { PremintFromApi } from "./conversions";
+import { SimulateContractParametersWithAccount } from "src/types";
 
 type PremintedV2LogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,
@@ -297,7 +303,7 @@ export class PremintClient {
    * @returns PremintSignatureGetResponse of premint data from the API
    */
   async getPremint({ address, uid }: { address: Address; uid: number }) {
-    return await this.apiClient.getSignature({
+    return await this.apiClient.get({
       collectionAddress: address,
       uid,
     });
@@ -426,7 +432,7 @@ type PremintReturn<T extends PremintConfigVersion> = {
   /** Signs the Premint, and submits it and the signature to the Zora Premint API */
   signAndSubmit: (params: SignAndSubmitParams) => Promise<SignAndSubmitReturn>;
   /** For the case where the premint is signed externally, takes the signature for the Premint, and submits it and the Premint to the Zora Premint API */
-  submit: (params: SubmitParams) => void;
+  submit: (params: SubmitParams) => Promise<void>;
 } & PremintConfigWithVersion<T>;
 
 function makePremintReturn<T extends PremintConfigVersion>({
@@ -656,10 +662,9 @@ async function updatePremint({
   chainId: number;
 }) {
   const {
-    premintConfig,
+    premint: { premintConfig, premintConfigVersion },
     collection: collectionCreationConfig,
-    premintConfigVersion,
-  } = await apiClient.getSignature({
+  } = await apiClient.get({
     collectionAddress: collection,
     uid: uid,
   });
@@ -703,11 +708,10 @@ async function deletePremint({
   chainId: number;
 }) {
   const {
-    premintConfig,
-    premintConfigVersion,
+    premint: { premintConfig, premintConfigVersion },
     collection: collectionCreationConfig,
     collectionAddress,
-  } = await apiClient.getSignature({
+  } = await apiClient.get({
     collectionAddress: collection,
     uid: uid,
   });
@@ -781,32 +785,51 @@ export async function collectPremint({
     throw new Error("Quantity to mint cannot be below 1");
   }
 
-  const {
-    premintConfig,
-    premintConfigVersion,
-    collection,
-    collectionAddress,
-    signature,
-  } = await premintGetter.getSignature({
+  const premint = await premintGetter.get({
     collectionAddress: tokenContract,
     uid,
   });
 
-  const numberToMint = BigInt(quantityToMint || 1);
+  const mintFee = await getPremintMintFee({
+    tokenContract,
+    publicClient,
+  });
 
-  if (premintConfigVersion === PremintConfigVersion.V3) {
-    throw new Error("PremintV3 not supported in premint SDK");
-  }
+  return buildPremintMintCall({
+    mintArguments: {
+      minterAccount,
+      quantityToMint,
+      firstMinter,
+      mintComment,
+      mintRecipient,
+      mintReferral,
+    },
+    mintFee,
+    premint,
+  });
+}
 
-  const value = (
-    await getPremintMintCosts({
-      tokenContract,
-      quantityToMint: numberToMint,
-      publicClient,
-      tokenPrice: premintConfig.tokenConfig.pricePerToken,
-    })
-  ).totalCostEth;
-
+export const buildPremintMintCall = ({
+  mintArguments: {
+    minterAccount,
+    mintComment = "",
+    mintRecipient,
+    mintReferral,
+    firstMinter,
+    quantityToMint,
+  },
+  premint: { collection, collectionAddress, premint, signature },
+  mintFee,
+}: {
+  mintArguments: Omit<MakeMintParametersArgumentsBase, "tokenContract"> & {
+    firstMinter?: Address;
+  };
+  premint: Pick<
+    PremintFromApi,
+    "collection" | "collectionAddress" | "premint" | "signature"
+  >;
+  mintFee: bigint;
+}): SimulateContractParametersWithAccount => {
   const mintArgumentsContract: PremintMintArguments = {
     mintComment: mintComment,
     mintRecipient: mintRecipientOrAccount({
@@ -829,6 +852,14 @@ export async function collectPremint({
     firstMinter ||
     (typeof minterAccount === "string" ? minterAccount : minterAccount.address);
 
+  if (premint.premintConfigVersion === PremintConfigVersion.V3) {
+    throw new Error("PremintV3 not supported in premint SDK");
+  }
+
+  const value =
+    (mintFee + premint.premintConfig.tokenConfig.pricePerToken) *
+    BigInt(quantityToMint);
+
   return makeContractParameters({
     account: minterAccount,
     abi: zoraCreator1155PremintExecutorImplABI,
@@ -838,18 +869,15 @@ export async function collectPremint({
     args: [
       collectionOrEmpty,
       collectionAddressToSubmit,
-      encodePremintConfig({
-        premintConfig,
-        premintConfigVersion,
-      }),
+      encodePremintConfig(premint),
       signature,
-      numberToMint,
+      BigInt(quantityToMint),
       mintArgumentsContract,
       firstMinterToSubmit,
       zeroAddress,
     ],
   });
-}
+};
 
 export function makeUrls({
   uid,

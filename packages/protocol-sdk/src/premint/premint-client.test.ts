@@ -28,8 +28,8 @@ describe("ZoraCreator1155Premint", () => {
 
       const premintApiClient = new PremintAPIClient(chain.id);
 
-      premintApiClient.getSignature = vi
-        .fn<any, ReturnType<typeof premintApiClient.getSignature>>()
+      premintApiClient.get = vi
+        .fn<any, ReturnType<typeof premintApiClient.get>>()
         .mockResolvedValue({
           collection: {
             contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -39,25 +39,28 @@ describe("ZoraCreator1155Premint", () => {
             additionalAdmins: [],
           },
           collectionAddress: "0xf8dA7f53c283d898818af7FB9d98103F559bDac2",
-          premintConfig: {
-            deleted: false,
-            tokenConfig: {
-              fixedPriceMinter: getDefaultFixedPriceMinterAddress(chain.id),
-              maxSupply: 18446744073709551615n,
-              maxTokensPerAddress: 0n,
-              mintDuration: 604800n,
-              mintStart: 0n,
-              pricePerToken: 0n,
-              royaltyBPS: 1000,
-              royaltyMintSchedule: 0,
-              royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
-              tokenURI:
-                "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+          premint: {
+            premintConfig: {
+              deleted: false,
+              tokenConfig: {
+                fixedPriceMinter: getDefaultFixedPriceMinterAddress(chain.id),
+                maxSupply: 18446744073709551615n,
+                maxTokensPerAddress: 0n,
+                mintDuration: 604800n,
+                mintStart: 0n,
+                pricePerToken: 0n,
+                royaltyBPS: 1000,
+                royaltyMintSchedule: 0,
+                royaltyRecipient: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
+                tokenURI:
+                  "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+              },
+              uid: 3,
+              version: 0,
             },
-            uid: 3,
-            version: 0,
+            premintConfigVersion: PremintConfigVersion.V1,
           },
-          premintConfigVersion: PremintConfigVersion.V1,
+          signer: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
           signature:
             "0x4d191dd60d428adfe507932a1758bee8ac5bbb77dcd3c05840c237416a3a25035bb8cc7c62177a4e9acb5f40c4032cdb3dbfefdd1575f2c3b4c57945b2076e2e1c",
         });
@@ -238,13 +241,16 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
         account: additionalAdmin!,
       });
 
-      premintApiClient.getSignature = vi
-        .fn<any, ReturnType<typeof premintApiClient.getSignature>>()
+      premintApiClient.get = vi
+        .fn<any, ReturnType<typeof premintApiClient.get>>()
         .mockResolvedValue({
           collection,
           collectionAddress,
-          premintConfig: premintConfig as PremintConfigV2,
-          premintConfigVersion: PremintConfigVersion.V2,
+          premint: {
+            premintConfig: premintConfig as PremintConfigV2,
+            premintConfigVersion: PremintConfigVersion.V2,
+          },
+          signer: collection.contractAdmin,
           signature,
         });
 

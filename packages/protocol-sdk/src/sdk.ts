@@ -7,7 +7,7 @@ import { MintClient } from "./mint/mint-client";
 import { ClientConfig } from "./utils";
 import { IPremintAPI, PremintAPIClient } from "./premint/premint-api-client";
 import { SubgraphMintGetter } from "./mint/subgraph-mint-getter";
-import { IMintGetter } from "./mint/types";
+import { IOnchainMintGetter } from "./mint/types";
 
 export type CreatorClient = {
   createPremint: PremintClient["createPremint"];
@@ -21,6 +21,8 @@ export type CollectorClient = {
   getCollectDataFromPremintReceipt: PremintClient["getDataFromPremintReceipt"];
   mint: MintClient["mint"];
   getMintCosts: MintClient["getMintCosts"];
+  getToken: MintClient["get"];
+  getTokensOfContract: MintClient["getOfContract"];
 };
 
 export type CreatorClientConfig = ClientConfig & {
@@ -61,7 +63,7 @@ export type CollectorClientConfig = ClientConfig & {
   /** API for getting premints.  Defaults to the Zora Premint API */
   premintGetter?: IPremintAPI;
   /** API for getting onchain mints.  Defaults to the Zora Creator Subgraph */
-  mintGetter?: IMintGetter;
+  mintGetter?: IOnchainMintGetter;
 };
 
 /**
@@ -78,7 +80,6 @@ export function createCollectorClient(
   const mintGetterToUse =
     params.mintGetter || new SubgraphMintGetter(params.chainId);
   const mintClient = new MintClient({
-    chainId: params.chainId,
     publicClient: params.publicClient,
     premintGetter: premintGetterToUse,
     mintGetter: mintGetterToUse,
@@ -86,12 +87,14 @@ export function createCollectorClient(
 
   return {
     getPremint: (p) =>
-      premintGetterToUse.getSignature({
+      premintGetterToUse.get({
         collectionAddress: p.address,
         uid: p.uid,
       }),
     getCollectDataFromPremintReceipt: (p) =>
       getDataFromPremintReceipt(p, params.chainId),
+    getToken: (p) => mintClient.get(p),
+    getTokensOfContract: (p) => mintClient.getOfContract(p),
     mint: (p) => mintClient.mint(p),
     getMintCosts: (p) => mintClient.getMintCosts(p),
   };

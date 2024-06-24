@@ -1,43 +1,23 @@
+import { Address, Account, SimulateContractParameters } from "viem";
+import { IPublicClient } from "src/types";
 import {
-  Address,
-  encodeAbiParameters,
-  parseAbiParameters,
-  zeroAddress,
-  Account,
-  SimulateContractParameters,
-  erc20Abi,
-} from "viem";
-import {
-  erc20MinterABI,
-  erc20MinterAddress,
-  zoraCreator1155ImplABI,
-  zoraCreatorFixedPriceSaleStrategyAddress,
-} from "@zoralabs/protocol-deployments";
-import { zora721Abi } from "src/constants";
-import { GenericTokenIdTypes } from "src/types";
-import {
-  makeContractParameters,
-  PublicClient,
-  mintRecipientOrAccount,
-} from "src/utils";
-import {
-  IMintGetter,
-  SalesConfigAndTokenInfo,
-  isErc20SaleStrategy,
+  GetMintParameters,
+  IOnchainMintGetter,
+  MintCosts,
+  PrepareMintReturn,
+  SaleType,
 } from "./types";
 import {
   MakeMintParametersArguments,
-  MakeMintParametersArgumentsBase,
   Make1155MintArguments,
-  MakePremintMintParametersArguments,
   Make721MintArguments,
   GetMintCostsParameters,
-  isOnChainMint,
   is1155Mint,
 } from "./types";
-import { collectPremint } from "src/premint/premint-client";
 import { IPremintGetter } from "src/premint/premint-api-client";
-import { getPremintMintCostsWithUnknownTokenPrice } from "src/premint/preminter";
+
+import { makeOnchainMintCall } from "./mint-transactions";
+import { getMint, getMintCosts, getMintsOfContract } from "./mint-queries";
 
 class MintError extends Error {}
 class MintInactiveError extends Error {}
@@ -48,23 +28,19 @@ export const Errors = {
 };
 
 export class MintClient {
-  private readonly chainId: number;
-  private readonly publicClient: PublicClient;
-  private readonly mintGetter: IMintGetter;
+  private readonly publicClient: IPublicClient;
+  private readonly mintGetter: IOnchainMintGetter;
   private readonly premintGetter: IPremintGetter;
 
   constructor({
-    chainId,
     publicClient,
     premintGetter,
     mintGetter,
   }: {
-    chainId: number;
-    publicClient: PublicClient;
+    publicClient: IPublicClient;
     premintGetter: IPremintGetter;
-    mintGetter: IMintGetter;
+    mintGetter: IOnchainMintGetter;
   }) {
-    this.chainId = chainId;
     this.publicClient = publicClient;
     this.mintGetter = mintGetter;
     this.premintGetter = premintGetter;
@@ -75,15 +51,49 @@ export class MintClient {
    * Works with premint, onchain 1155, and onchain 721.
    *
    * @param parameters - Parameters for collecting the token {@link MakeMintParametersArguments}
-   * @returns Parameters for simulating/executing the mint transaction
+   * @returns Parameters for simulating/executing the mint transaction, any necessary erc20 approval, and costs to mint
    */
-  async mint(parameters: MakeMintParametersArguments) {
+  async mint(
+    parameters: MakeMintParametersArguments,
+  ): Promise<PrepareMintReturn> {
     return mint({
       parameters,
-      chainId: this.chainId,
       publicClient: this.publicClient,
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
+    });
+  }
+
+  /**
+   * Gets an 1155, 721, or premint, and returns both information about it, and a function
+   * that can be used to build a mint transaction for a quantity of items to mint.
+   * @param parameters - Token to get {@link GetMintParameters}
+   * @Returns Information about the mint and a function to build a mint transaction {@link MintableReturn}
+   */
+  async get(parameters: GetMintParameters) {
+    return getMint({
+      params: parameters,
+      mintGetter: this.mintGetter,
+      premintGetter: this.premintGetter,
+      publicClient: this.publicClient,
+    });
+  }
+
+  /**
+   * Gets onchain and premint tokens of an 1155 contract.  For each token returns both information about it, and a function
+   * that can be used to build a mint transaction for a quantity of items to mint.
+   * @param parameters - Contract address to get tokens for {@link GetMintsOfContractParameters}
+   * @Returns Array of tokens, each containing information about the token and a function to build a mint transaction.
+   */
+  async getOfContract(params: {
+    tokenContract: Address;
+    preferredSaleType?: SaleType;
+  }) {
+    return getMintsOfContract({
+      params,
+      mintGetter: this.mintGetter,
+      premintGetter: this.premintGetter,
+      publicClient: this.publicClient,
     });
   }
 
@@ -94,7 +104,7 @@ export class MintClient {
    */
   async getMintCosts(parameters: GetMintCostsParameters): Promise<MintCosts> {
     return getMintCosts({
-      ...parameters,
+      params: parameters,
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
       publicClient: this.publicClient,
@@ -102,106 +112,32 @@ export class MintClient {
   }
 }
 
-function isPremintCollect(
-  parameters: MakeMintParametersArguments,
-): parameters is MakePremintMintParametersArguments {
-  return parameters.mintType === "premint";
-}
-
-function is721Collect(
-  parameters: MakeMintParametersArguments,
-): parameters is Make721MintArguments {
-  return parameters.mintType === "721";
-}
-
 async function mint({
   parameters,
-  chainId,
   publicClient,
   mintGetter,
   premintGetter,
 }: {
   parameters: MakeMintParametersArguments;
-  publicClient: PublicClient;
-  mintGetter: IMintGetter;
+  publicClient: IPublicClient;
+  mintGetter: IOnchainMintGetter;
   premintGetter: IPremintGetter;
-  chainId: number;
-}) {
-  if (isPremintCollect(parameters)) {
-    return {
-      parameters: await collectPremint({
-        ...parameters,
-        premintGetter: premintGetter,
-        publicClient,
-      }),
-    };
-  }
-
-  return {
-    parameters: await collectOnchain({
-      ...parameters,
-      mintGetter: mintGetter,
-      chainId,
-    }),
-  };
-}
-
-export function requestErc20ApprovalForMint({
-  account,
-  tokenAddress,
-  quantityErc20,
-  erc20MinterAddress,
-}: {
-  account: Account | Address;
-  tokenAddress: Address;
-  quantityErc20: bigint;
-  erc20MinterAddress: Address;
-}) {
-  return makeContractParameters({
-    abi: erc20Abi,
-    address: tokenAddress,
-    account,
-    functionName: "approve",
-    args: [erc20MinterAddress, quantityErc20],
-  });
-}
-
-export async function getNecessaryErc20Approval({
-  chainId,
-  account,
-  tokenAddress,
-  quantityErc20,
-  publicClient,
-}: {
-  chainId: number;
-  account: Account | Address;
-  tokenAddress: Address;
-  quantityErc20: bigint;
-  publicClient: PublicClient;
-}) {
-  const destination =
-    erc20MinterAddress[chainId as keyof typeof erc20MinterAddress];
-  const allowance = await publicClient.readContract({
-    abi: erc20Abi,
-    address: tokenAddress,
-    functionName: "allowance",
-    account,
-    args: [
-      destination,
-      erc20MinterAddress[chainId as keyof typeof erc20MinterAddress],
-    ],
+}): Promise<PrepareMintReturn> {
+  const { prepareMint } = await getMint({
+    params: parameters,
+    mintGetter,
+    premintGetter,
+    publicClient,
   });
 
-  if (allowance < quantityErc20) {
-    return requestErc20ApprovalForMint({
-      erc20MinterAddress: destination,
-      account,
-      tokenAddress,
-      quantityErc20: quantityErc20 - allowance,
-    });
-  }
-
-  return undefined;
+  return prepareMint({
+    minterAccount: parameters.minterAccount,
+    quantityToMint: parameters.quantityToMint,
+    firstMinter: parameters.firstMinter,
+    mintComment: parameters.mintComment,
+    mintRecipient: parameters.mintRecipient,
+    mintReferral: parameters.mintReferral,
+  });
 }
 
 export async function collectOnchain({
@@ -209,226 +145,22 @@ export async function collectOnchain({
   mintGetter,
   ...parameters
 }: (Make1155MintArguments | Make721MintArguments) & {
-  mintGetter: IMintGetter;
+  mintGetter: IOnchainMintGetter;
   chainId: number;
 }): Promise<
   SimulateContractParameters<any, any, any, any, any, Account | Address>
 > {
-  const { tokenContract: tokenContract, saleType } = parameters;
+  const { tokenContract: tokenContract, preferredSaleType: saleType } =
+    parameters;
   const tokenId = is1155Mint(parameters) ? parameters.tokenId : undefined;
-  const salesConfigAndTokenInfo = await mintGetter.getSalesConfigAndTokenInfo({
+  const salesConfigAndTokenInfo = await mintGetter.getMintable({
     tokenId,
     tokenAddress: tokenContract,
-    saleType,
+    preferredSaleType: saleType,
   });
 
-  if (is721Collect(parameters)) {
-    return makePrepareMint721TokenParams({
-      salesConfigAndTokenInfo,
-      ...parameters,
-    });
-  }
-
-  return makePrepareMint1155TokenParams({
-    salesConfigAndTokenInfo,
-    chainId,
-    ...parameters,
+  return makeOnchainMintCall({
+    mintParams: parameters,
+    token: salesConfigAndTokenInfo,
   });
-}
-
-async function makePrepareMint721TokenParams({
-  salesConfigAndTokenInfo,
-  minterAccount,
-  tokenContract,
-  mintComment,
-  mintReferral,
-  mintRecipient,
-  quantityToMint,
-}: {
-  salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
-} & Pick<
-  MakeMintParametersArgumentsBase,
-  | "minterAccount"
-  | "tokenContract"
-  | "mintComment"
-  | "mintReferral"
-  | "quantityToMint"
-  | "mintRecipient"
->) {
-  const actualQuantityToMint = BigInt(quantityToMint || 1);
-  const mintValue = parseMintCosts({
-    salesConfigAndTokenInfo,
-    quantityToMint: actualQuantityToMint,
-  }).totalCostEth;
-
-  return makeContractParameters({
-    abi: zora721Abi,
-    address: tokenContract,
-    account: minterAccount,
-    functionName: "mintWithRewards",
-    value: mintValue,
-    args: [
-      mintRecipientOrAccount({ mintRecipient, minterAccount }),
-      actualQuantityToMint,
-      mintComment || "",
-      mintReferral || zeroAddress,
-    ],
-  });
-}
-
-export type MintCosts = {
-  /** The total of the mint fee, in eth */
-  mintFee: bigint;
-  /** If it is a paid or erc20 mint, the total price of the paid or erc20 mint in eth or erc20 value correspondingly. */
-  totalPurchaseCost: bigint;
-  /** If it is an erc20 mint, the erc20 address */
-  totalPurchaseCostCurrency?: Address;
-  /** The total cost in eth (mint fee + purchase cost) to mint */
-  totalCostEth: bigint;
-};
-
-export function parseMintCosts({
-  salesConfigAndTokenInfo,
-  quantityToMint,
-}: {
-  salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
-  quantityToMint: bigint;
-}): MintCosts {
-  const mintFeeForTokens =
-    salesConfigAndTokenInfo.mintFeePerQuantity * quantityToMint;
-
-  const tokenPurchaseCost =
-    BigInt(salesConfigAndTokenInfo.salesConfig.pricePerToken) * quantityToMint;
-
-  const totalPurchaseCostCurrency = isErc20SaleStrategy(
-    salesConfigAndTokenInfo.salesConfig,
-  )
-    ? salesConfigAndTokenInfo.salesConfig.currency
-    : undefined;
-
-  const totalPurchaseCostEth = totalPurchaseCostCurrency
-    ? 0n
-    : tokenPurchaseCost;
-
-  return {
-    mintFee: mintFeeForTokens,
-    totalPurchaseCost: tokenPurchaseCost,
-    totalPurchaseCostCurrency,
-    totalCostEth: mintFeeForTokens + totalPurchaseCostEth,
-  };
-}
-
-export async function getMintCosts(
-  params: GetMintCostsParameters & {
-    mintGetter: IMintGetter;
-    premintGetter: IPremintGetter;
-    publicClient: PublicClient;
-  },
-) {
-  const { quantityMinted: quantityToMint, collection, publicClient } = params;
-  if (isOnChainMint(params)) {
-    const tokenId = is1155Mint(params) ? params.tokenId : undefined;
-    const salesConfigAndTokenInfo =
-      await params.mintGetter.getSalesConfigAndTokenInfo({
-        tokenId,
-        tokenAddress: collection,
-      });
-
-    return parseMintCosts({
-      salesConfigAndTokenInfo,
-      quantityToMint: BigInt(quantityToMint),
-    });
-  }
-
-  return getPremintMintCostsWithUnknownTokenPrice({
-    premintGetter: params.premintGetter,
-    publicClient: publicClient,
-    quantityToMint: BigInt(quantityToMint),
-    uid: params.uid,
-    tokenContract: collection,
-  });
-}
-
-export function makePrepareMint1155TokenParams({
-  tokenContract: tokenContract,
-  tokenId,
-  salesConfigAndTokenInfo,
-  minterAccount,
-  mintComment,
-  mintReferral,
-  mintRecipient,
-  quantityToMint,
-  chainId,
-}: {
-  salesConfigAndTokenInfo: SalesConfigAndTokenInfo;
-  chainId: number;
-  tokenId: GenericTokenIdTypes;
-} & Pick<
-  MakeMintParametersArgumentsBase,
-  | "minterAccount"
-  | "tokenContract"
-  | "mintComment"
-  | "mintReferral"
-  | "quantityToMint"
-  | "mintRecipient"
->) {
-  const mintQuantity = BigInt(quantityToMint || 1);
-
-  const mintTo = mintRecipientOrAccount({ mintRecipient, minterAccount });
-
-  const saleType = salesConfigAndTokenInfo.salesConfig.saleType;
-
-  if (saleType === "fixedPrice") {
-    const mintValue = parseMintCosts({
-      salesConfigAndTokenInfo,
-      quantityToMint: mintQuantity,
-    }).totalCostEth;
-
-    return makeContractParameters({
-      abi: zoraCreator1155ImplABI,
-      functionName: "mintWithRewards",
-      account: minterAccount,
-      value: mintValue,
-      address: tokenContract,
-      /* args: minter, tokenId, quantity, minterArguments, mintReferral */
-      args: [
-        (salesConfigAndTokenInfo.salesConfig.address ||
-          zoraCreatorFixedPriceSaleStrategyAddress[
-            chainId as keyof typeof zoraCreatorFixedPriceSaleStrategyAddress
-          ]) as Address,
-        BigInt(tokenId),
-        mintQuantity,
-        encodeAbiParameters(parseAbiParameters("address, string"), [
-          mintTo,
-          mintComment || "",
-        ]),
-        mintReferral || zeroAddress,
-      ],
-    });
-  }
-
-  if (saleType === "erc20") {
-    return makeContractParameters({
-      abi: erc20MinterABI,
-      functionName: "mint",
-      account: minterAccount,
-      address: (salesConfigAndTokenInfo?.salesConfig.address ||
-        erc20MinterAddress[
-          chainId as keyof typeof erc20MinterAddress
-        ]) as Address,
-      /* args: mintTo, quantity, tokenAddress, tokenId, totalValue, currency, mintReferral, comment */
-      args: [
-        mintTo,
-        mintQuantity,
-        tokenContract,
-        BigInt(tokenId),
-        salesConfigAndTokenInfo.salesConfig.pricePerToken * mintQuantity,
-        salesConfigAndTokenInfo.salesConfig.currency,
-        mintReferral || zeroAddress,
-        mintComment || "",
-      ],
-    });
-  }
-
-  throw new MintError("Unsupported sale type");
 }

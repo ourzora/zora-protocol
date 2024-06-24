@@ -29,7 +29,6 @@ import {
   PremintConfigWithVersion,
   TokenCreationConfig,
 } from "@zoralabs/protocol-deployments";
-import { MintCosts } from "src/mint/mint-client";
 import { PublicClient } from "src/utils";
 import {
   ContractCreationConfigAndAddress,
@@ -38,6 +37,7 @@ import {
 } from "./contract-types";
 import { IPremintGetter } from "./premint-api-client";
 import { isPremintConfigV1, isPremintConfigV2 } from "./conversions";
+import { MintCosts } from "src/mint/types";
 
 export const getPremintExecutorAddress = () =>
   zoraCreator1155PremintExecutorImplAddress[999] as Address;
@@ -380,7 +380,6 @@ export async function getPremintMintCosts({
     totalCostEth: (mintFee + tokenPrice) * quantityToMintBigInt,
   };
 }
-
 export async function getPremintPricePerToken({
   collection,
   uid,
@@ -390,7 +389,7 @@ export async function getPremintPricePerToken({
   uid: number;
   premintGetter: IPremintGetter;
 }) {
-  const premintConfigWithVersion = await premintGetter.getSignature({
+  const { premint: premintConfigWithVersion } = await premintGetter.get({
     collectionAddress: collection,
     uid,
   });

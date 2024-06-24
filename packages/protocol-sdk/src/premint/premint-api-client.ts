@@ -6,16 +6,17 @@ import { components, paths } from "../apis/generated/premint-api-types";
 import { ZORA_API_BASE } from "../constants";
 import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
 import {
-  ContractCreationConfig,
-  PremintConfigAndVersion,
   PremintConfigVersion,
   PremintConfigWithVersion,
 } from "@zoralabs/protocol-deployments";
 import { Address, Hex } from "viem";
 import {
+  PremintCollectionFromApi,
+  PremintFromApi,
   PremintSignatureRequestBody,
   PremintSignatureResponse,
   convertGetPremintApiResponse,
+  convertGetPremintOfCollectionApiResponse,
   encodePostSignatureInput,
 } from "./conversions";
 import { ContractCreationConfigOrAddress } from "./contract-types";
@@ -31,6 +32,11 @@ type SignaturePremintGetType =
   paths["/signature/{chain_name}/{collection_address}/{uid}"]["get"];
 export type PremintSignatureGetResponse =
   SignaturePremintGetType["responses"][200]["content"]["application/json"];
+
+type SignaturePremintGetOfCollectionType =
+  paths["/signature/{chain_name}/{collection_address}"]["get"];
+export type PremintSignatureGetOfCollectionResponse =
+  SignaturePremintGetOfCollectionType["responses"][200]["content"]["application/json"];
 
 export type PremintCollection = PremintSignatureGetResponse["collection"];
 
@@ -72,13 +78,7 @@ export const getSignature = async ({
   uid: number;
   chainId: number;
   httpClient?: Pick<IHttpClient, "retries" | "get">;
-}): Promise<
-  {
-    signature: Hex;
-    collection: ContractCreationConfig | undefined;
-    collectionAddress: Address;
-  } & PremintConfigAndVersion
-> => {
+}): Promise<PremintFromApi> => {
   const chainName = getApiNetworkConfigForChain(chainId).zoraBackendChainName;
   const result = await retries(() =>
     get<PremintSignatureGetResponse>(
@@ -89,15 +89,40 @@ export const getSignature = async ({
   return convertGetPremintApiResponse(result);
 };
 
+const getOfCollection = async ({
+  collectionAddress,
+  chainId,
+  httpClient: { retries, get } = defaultHttpClient,
+}: {
+  collectionAddress: Address;
+  chainId: number;
+  httpClient?: Pick<IHttpClient, "retries" | "get">;
+}) => {
+  const chainName = getApiNetworkConfigForChain(chainId).zoraBackendChainName;
+  const result = await retries(() =>
+    get<PremintSignatureGetOfCollectionResponse>(
+      `${ZORA_API_BASE}premint/signature/${chainName}/${collectionAddress.toLowerCase()}`,
+    ),
+  );
+
+  return convertGetPremintOfCollectionApiResponse(result);
+};
+
 export interface IPremintGetter {
-  getSignature(params: {
+  get(params: {
     collectionAddress: Address;
     uid: number;
-  }): ReturnType<typeof getSignature>;
+  }): Promise<PremintFromApi>;
+
+  getOfCollection(params: {
+    collectionAddress: Address;
+  }): Promise<PremintCollectionFromApi>;
 }
 
 export interface IPremintAPI {
-  getSignature: IPremintGetter["getSignature"];
+  get: IPremintGetter["get"];
+
+  getOfCollection: IPremintGetter["getOfCollection"];
 
   getNextUID(collectionAddress: Address): Promise<number>;
 
@@ -141,13 +166,20 @@ class PremintAPIClient implements IPremintAPI {
       })
     ).next_uid;
 
-  getSignature: IPremintAPI["getSignature"] = async ({
-    collectionAddress,
-    uid,
-  }) => {
+  get: IPremintAPI["get"] = async ({ collectionAddress, uid }) => {
     return getSignature({
       collectionAddress,
       uid,
+      chainId: this.chainId,
+      httpClient: this.httpClient,
+    });
+  };
+
+  getOfCollection: IPremintAPI["getOfCollection"] = async ({
+    collectionAddress,
+  }) => {
+    return getOfCollection({
+      collectionAddress,
       chainId: this.chainId,
       httpClient: this.httpClient,
     });

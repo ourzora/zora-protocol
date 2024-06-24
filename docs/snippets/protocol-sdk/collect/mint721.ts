@@ -19,8 +19,5 @@ const { parameters } = await collectorClient.mint({
   minterAccount: minterAccount,
 });
 
-// simulate the transaction
-const { request } = await publicClient.simulateContract(parameters);
-
 // execute the transaction
-await walletClient.writeContract(request);
+await walletClient.writeContract(parameters);

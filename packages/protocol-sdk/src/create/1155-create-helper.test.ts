@@ -1,12 +1,14 @@
-import { describe, expect, vi } from "vitest";
+import { describe, expect } from "vitest";
 import { getTokenIdFromCreateReceipt } from "./1155-create-helper";
 import { anvilTest } from "src/anvil";
 import { createCreatorClient } from "src/sdk";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
-import { makePrepareMint1155TokenParams } from "src/mint/mint-client";
 import { waitForSuccess } from "src/test-utils";
 import { parseEther } from "viem";
-import { SalesConfigAndTokenInfo } from "src/mint/types";
+import {
+  MintableParameters,
+  makePrepareMint1155TokenParams,
+} from "src/mint/mint-transactions";
 
 const demoTokenMetadataURI = "ipfs://DUMMY/token.json";
 const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
@@ -196,8 +198,9 @@ describe("create-helper", () => {
         publicClient,
       );
 
-      const salesConfigAndTokenInfo: SalesConfigAndTokenInfo = {
+      const salesConfigAndTokenInfo: MintableParameters = {
         mintFeePerQuantity: parseEther("0.000777"),
+        contractVersion: "2.8.0",
         salesConfig: {
           saleType: "fixedPrice",
           address: minter,
@@ -221,7 +224,6 @@ describe("create-helper", () => {
 
       const mintParams = makePrepareMint1155TokenParams({
         tokenContract: collectionAddress,
-        chainId: chain.id,
         minterAccount: minterAddress,
         tokenId: newTokenId,
         salesConfigAndTokenInfo,
@@ -279,8 +281,9 @@ describe("create-helper", () => {
         publicClient,
       );
 
-      const salesConfigAndTokenInfo: SalesConfigAndTokenInfo = {
+      const salesConfigAndTokenInfo: MintableParameters = {
         mintFeePerQuantity: parseEther("0.000777"),
+        contractVersion: "2.8.0",
         salesConfig: {
           saleType: "fixedPrice",
           address: minter,
@@ -304,7 +307,6 @@ describe("create-helper", () => {
 
       const mintParams = makePrepareMint1155TokenParams({
         tokenContract: collectionAddress,
-        chainId: chain.id,
         minterAccount: minterAddress,
         tokenId: newTokenId,
         salesConfigAndTokenInfo,

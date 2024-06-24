@@ -1,31 +1,9 @@
-import {
-  Abi,
-  Account,
-  Address,
-  Chain,
-  ContractFunctionArgs,
-  ContractFunctionName,
-  PublicClient as BasePublicClient,
-  SimulateContractParameters,
-  AbiStateMutability,
-} from "viem";
+import { Account, Address, PublicClient as BasePublicClient } from "viem";
+import { IHttpClient } from "./apis/http-api-base";
+import { SimulateContractParametersWithAccount } from "./types";
 
-export const makeContractParameters = <
-  const abi extends Abi | readonly unknown[],
-  stateMutabiliy extends AbiStateMutability,
-  functionName extends ContractFunctionName<abi, stateMutabiliy>,
-  args extends ContractFunctionArgs<abi, stateMutabiliy, functionName>,
-  chainOverride extends Chain | undefined,
-  accountOverride extends Account | Address | undefined = undefined,
->(
-  args: SimulateContractParameters<
-    abi,
-    functionName,
-    args,
-    Chain,
-    chainOverride,
-    accountOverride
-  >,
+export const makeContractParameters = (
+  args: SimulateContractParametersWithAccount,
 ) => args;
 
 export type PublicClient = Pick<BasePublicClient, "readContract">;
@@ -60,3 +38,26 @@ export function mintRecipientOrAccount({
 export type Concrete<Type> = {
   [Property in keyof Type]-?: Type[Property];
 };
+
+export async function querySubgraphWithRetries({
+  httpClient,
+  subgraphUrl,
+  query,
+  variables,
+}: {
+  httpClient: IHttpClient;
+  subgraphUrl: string;
+  query: string;
+  variables: any;
+}) {
+  const { retries, post } = httpClient;
+
+  const result = await retries(async () => {
+    return await post<any>(subgraphUrl, {
+      query,
+      variables,
+    });
+  });
+
+  return result?.data;
+}

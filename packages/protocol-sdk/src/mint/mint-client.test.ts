@@ -1,20 +1,20 @@
 import { describe, expect } from "vitest";
 import { Address, erc20Abi, parseAbi, parseEther } from "viem";
-import { zora } from "viem/chains";
-import {
-  zoraCreator1155ImplABI,
-  erc20MinterAddress as erc20MinterAddresses,
-} from "@zoralabs/protocol-deployments";
-import { anvilTest, forkUrls, makeAnvilTest } from "src/anvil";
+import { zora, zoraSepolia } from "viem/chains";
+import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
+import { forkUrls, makeAnvilTest } from "src/anvil";
 import { createCollectorClient } from "src/sdk";
-import { requestErc20ApprovalForMint } from "./mint-client";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
 ] as const);
 
 describe("mint-helper", () => {
-  anvilTest(
+  makeAnvilTest({
+    forkBlockNumber: 16028671,
+    forkUrl: forkUrls.zoraMainnet,
+    anvilChainId: zora.id,
+  })(
     "mints a new 1155 token",
     async ({ viemClients }) => {
       const { testClient, walletClient, publicClient } = viemClients;
@@ -31,14 +31,23 @@ describe("mint-helper", () => {
         publicClient,
       });
 
-      const { parameters } = await collectorClient.mint({
-        minterAccount: creatorAccount,
-        tokenId: targetTokenId,
+      const { token: mintable, prepareMint } = await collectorClient.getToken({
         tokenContract: targetContract,
         mintType: "1155",
-        mintRecipient: creatorAccount,
+        tokenId: targetTokenId,
+      });
+
+      mintable.maxSupply;
+      mintable.totalMinted;
+      mintable.tokenURI;
+      mintable;
+
+      const { parameters, costs } = prepareMint({
+        minterAccount: creatorAccount,
         quantityToMint: 1,
       });
+
+      expect(costs.totalCostEth).toBe(1n * parseEther("0.000777"));
 
       const oldBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
@@ -85,13 +94,24 @@ describe("mint-helper", () => {
         publicClient,
       });
 
-      const { parameters } = await collectorClient.mint({
+      const { prepareMint } = await collectorClient.getToken({
         tokenContract: targetContract,
-        minterAccount: creatorAccount,
-        mintRecipient: creatorAccount,
-        quantityToMint: 1,
         mintType: "721",
       });
+
+      const quantityToMint = 3n;
+
+      const { parameters, costs } = prepareMint({
+        minterAccount: creatorAccount,
+        mintRecipient: creatorAccount,
+        quantityToMint,
+      });
+
+      expect(costs.totalPurchaseCost).toBe(quantityToMint * parseEther(".08"));
+      expect(costs.totalCostEth).toBe(
+        quantityToMint * (parseEther("0.08") + parseEther("0.000777")),
+      );
+
       const oldBalance = await publicClient.readContract({
         abi: erc721ABI,
         address: targetContract,
@@ -114,7 +134,7 @@ describe("mint-helper", () => {
       });
 
       expect(oldBalance).to.be.equal(0n);
-      expect(newBalance).to.be.equal(1n);
+      expect(newBalance).to.be.equal(quantityToMint);
     },
     12 * 1000,
   );
@@ -139,42 +159,47 @@ describe("mint-helper", () => {
         address: mockCollector,
       });
 
-      const erc20Currency = "0xa6b280b42cb0b7c4a4f789ec6ccc3a7609a1bc39";
-      const erc20PricePerToken = 1000000000000000000n;
+      const { prepareMint } = await minter.getToken({
+        mintType: "1155",
+        tokenContract: targetContract,
+        tokenId: targetTokenId,
+      });
+
+      const quantityToMint = 1n;
+
+      const { parameters, erc20Approval, costs } = prepareMint({
+        minterAccount: mockCollector,
+        quantityToMint,
+      });
+
+      expect(erc20Approval).toBeDefined();
+      expect(costs.totalCostEth).toBe(0n);
+      expect(costs.totalPurchaseCost).toBe(
+        quantityToMint * 1000000000000000000n,
+      );
+      expect(costs.totalPurchaseCostCurrency).toBe(
+        "0xa6b280b42cb0b7c4a4f789ec6ccc3a7609a1bc39",
+      );
 
       const beforeERC20Balance = await publicClient.readContract({
         abi: erc20Abi,
-        address: erc20Currency,
+        address: erc20Approval!.erc20,
         functionName: "balanceOf",
         args: [mockCollector],
       });
 
-      const quantityToMint = 3n;
-
-      const quantityErc20 = erc20PricePerToken * BigInt(quantityToMint);
-
-      const { request } = await publicClient.simulateContract(
-        requestErc20ApprovalForMint({
-          erc20MinterAddress:
-            erc20MinterAddresses[chain.id as keyof typeof erc20MinterAddresses],
-          tokenAddress: erc20Currency,
-          account: mockCollector,
-          quantityErc20,
-        }),
-      );
-      const approveHash = await walletClient.writeContract(request);
-      const approveTxReciept = await publicClient.waitForTransactionReceipt({
-        hash: approveHash,
+      // execute the erc20 approval
+      const { request: erc20Request } = await publicClient.simulateContract({
+        abi: erc20Abi,
+        address: erc20Approval!.erc20,
+        functionName: "approve",
+        args: [erc20Approval!.approveTo, erc20Approval!.quantity],
+        account: mockCollector,
       });
-      expect(approveTxReciept).to.not.be.null;
 
-      const { parameters } = await minter.mint({
-        minterAccount: mockCollector,
-        tokenId: targetTokenId,
-        tokenContract: targetContract,
-        mintRecipient: mockCollector,
-        quantityToMint,
-        mintType: "1155",
+      const approveHash = await walletClient.writeContract(erc20Request);
+      await publicClient.waitForTransactionReceipt({
+        hash: approveHash,
       });
 
       const beforeCollector1155Balance = await publicClient.readContract({
@@ -185,20 +210,20 @@ describe("mint-helper", () => {
       });
       expect(beforeCollector1155Balance).to.be.equal(0n);
 
+      // execute the mint
       const simulationResult = await publicClient.simulateContract(parameters);
       const hash = await walletClient.writeContract(simulationResult.request);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
-      expect(receipt).to.not.be.null;
+      await publicClient.waitForTransactionReceipt({ hash });
 
       const afterERC20Balance = await publicClient.readContract({
         abi: erc20Abi,
-        address: erc20Currency,
+        address: erc20Approval!.erc20,
         functionName: "balanceOf",
         args: [mockCollector],
       });
 
       expect(beforeERC20Balance - afterERC20Balance).to.be.equal(
-        erc20PricePerToken * quantityToMint,
+        erc20Approval!.quantity,
       );
 
       const afterCollector1155Balance = await publicClient.readContract({
@@ -208,6 +233,30 @@ describe("mint-helper", () => {
         args: [mockCollector, targetTokenId],
       });
       expect(afterCollector1155Balance).to.be.equal(quantityToMint);
+    },
+    12 * 1000,
+  );
+
+  makeAnvilTest({
+    forkUrl: forkUrls.zoraSepolia,
+    forkBlockNumber: 10294670,
+    anvilChainId: zoraSepolia.id,
+  })(
+    "gets onchain and premint mintables",
+    async ({ viemClients }) => {
+      const { publicClient, chain } = viemClients;
+
+      const targetContract: Address =
+        "0xa33e4228843092bb0f2fcbb2eb237bcefc1046b3";
+
+      const minter = createCollectorClient({ chainId: chain.id, publicClient });
+
+      const { tokens: mintables, contract } = await minter.getTokensOfContract({
+        tokenContract: targetContract,
+      });
+
+      expect(mintables.length).toBe(4);
+      expect(contract).toBeDefined();
     },
     12 * 1000,
   );

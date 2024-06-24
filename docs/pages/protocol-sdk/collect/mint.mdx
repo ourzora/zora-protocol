@@ -87,6 +87,30 @@ Once a Premint has been created and submitted to the Zora Premint API, it can be
 
 :::
 
+### Mint ERC20 based 1155s
+
+When minting ERC20 based 1155s, an additional approval to transfer ERC20s to an address must be executed before minting.  
+In the case that the 1155 to mint is an ERC20 based mint, the `mint` function will return an `erc20Approval` which contains
+information about which ERC20 token to approve, the amount to approve, and the address to approve to.  
+Before executing the mint transaction, the approval transaction must be executed: 
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/collect/minterc20.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/collect/config.ts]
+```
+
+:::
+
 ### Mint 721s
 
 721s can be minted by calling `mint()` with `mintType` set to `721`. No `tokenId` is set as the token id is determined by auto-incrementing token ids; one tokenId will be created & minted for each `quantityToMint`:
