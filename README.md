@@ -2,7 +2,7 @@
 
 [![Contracts](https://github.com/ourzora/zora-protocol/actions/workflows/contracts.yml/badge.svg)](https://github.com/ourzora/zora-protocol/actions/workflows/contracts.yml)
 
-This repository is a monorepo for the Zora Protocol
+This repository is a monorepo for the Zora Protocol.
 
 In it you will find:
 
