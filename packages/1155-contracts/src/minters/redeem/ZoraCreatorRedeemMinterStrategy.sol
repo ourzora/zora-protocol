@@ -58,7 +58,7 @@ contract ZoraCreatorRedeemMinterStrategy is Enjoy, SaleStrategy, Initializable {
         uint256 tokenId;
         /// @notice The amount of tokens that can be minted
         uint256 amount;
-        /// @notice The mint token type (alwas ERC1155)
+        /// @notice The mint token type (always ERC1155)
         TokenType tokenType;
     }
 

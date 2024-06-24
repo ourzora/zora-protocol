@@ -108,7 +108,7 @@ contract ZoraCreator1155Impl is
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external nonReentrant initializer {
-        // We are not initalizing the OZ 1155 implementation
+        // We are not initializing the OZ 1155 implementation
         // to save contract storage space and runtime
         // since the only thing affected here is the uri.
         // __ERC1155_init("");
