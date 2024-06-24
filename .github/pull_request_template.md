@@ -37,7 +37,7 @@
 - [ ] My code follows the code style of this project.
 - [ ] My change requires a change to the documentation.
 - [ ] I have updated the documentation accordingly.
-- [ ] i added a changeset to account for this change
+- [ ] I added a changeset to account for this change
 
 ## Reviewer Checklist:
 
