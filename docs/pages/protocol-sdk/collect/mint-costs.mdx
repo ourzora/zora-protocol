@@ -23,7 +23,7 @@ const publicClient = usePublicClient();
 const collectorClient = createCollectorClient({ chainId, publicClient });
 const { address } = useAccount();
 
-const { prepareMint } = await collectorClient.getMintable({
+const { prepareMint } = await collectorClient.getToken({
   // 1155 contract address
   collection: tokenAddress,
   // 1155 token id
