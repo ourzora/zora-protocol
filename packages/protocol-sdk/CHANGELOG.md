@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.7.0
+
+### Minor Changes
+
+- f52f28f3: Added methods to Collector Client: getToken, getTokensOfContract
+
 ## 0.6.0
 
 ### Minor Changes
