@@ -18,7 +18,7 @@
 
 ### Patch Changes
 
-- c2a0a2b: Moved dev depenencies to devDependencies since they are not needed by external users of the package, they are only used for codegen
+- c2a0a2b: Moved dev dependencies to devDependencies since they are not needed by external users of the package, they are only used for codegen
 
 ## 0.0.3
 
