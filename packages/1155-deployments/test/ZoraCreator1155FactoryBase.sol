@@ -56,7 +56,7 @@ contract ZoraCreator1155FactoryBase is ForkDeploymentConfig, Test {
     }
 
     function _createErc1155Contract(IZoraCreator1155Factory factory) private returns (IZoraCreator1155 target) {
-        // create the contract, with no toekns
+        // create the contract, with no tokens
         bytes[] memory initSetup = new bytes[](0);
 
         address admin = creator;
