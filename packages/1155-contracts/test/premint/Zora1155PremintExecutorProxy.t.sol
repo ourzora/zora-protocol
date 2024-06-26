@@ -219,7 +219,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         bytes memory signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_1, deterministicAddress);
 
-        // use old mint fee - this is prior to having the `mintFee` functino on premint executor
+        // use old mint fee - this is prior to having the `mintFee` function on premint executor
         mintFeeAmount = 0.000777 ether;
 
         // create 1155 contract via premint, using legacy interface
