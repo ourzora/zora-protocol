@@ -276,7 +276,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
             console2.log("skipping premint with MINTs test, MINTs not deployed");
             return;
         }
-        console2.log("testing collecing premints with MINTs");
+        console2.log("testing collecting premints with MINTs");
         // test premints:
         address collector = makeAddr("collector");
         vm.deal(collector, 10 ether);
