@@ -1,0 +1,154 @@
+---
+title: ERC20 Minter
+---
+---
+
+The ERC20 Minter contract allows you to mint 1155 tokens with ERC20 tokens. This contract is deterministically deployed on all chains that we currently support to this address `0x777777E8850d8D6d98De2B5f64fae401F96eFF31`. 
+
+When minting with the ERC20 Minter contract there is a 5% reward that is split amongst the reward recipients in the ERC20 currency. A breakdown of these percentages looks like:
+
+#### ERC20 Mint Reward Percentages
+
+| Recipient                            | Amount                                                                                                                                                                 |
+| -------------------------------------| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Creator                              | 95% of earnings from sales                                                                                                                                             |
+| Mint Fee                             | 5% of listed purchase price                                                                                                                                            |
+| Create Referral                      | 28.57% of Mint Fee (if there is no create referral recipient set the reward will go to Zora)                                                                             |
+| Mint Referral                        | 28.57% of Mint Fee                                                                                                                                                     |
+| First Minter                         | 14.23% of Mint Fee (if there is no first minter reward recipient set the reward will go to the creator reward recipient and if that does not exist it will go to Zora) |
+| Zora                                 | 28.63% of Mint Fee                                                                                                                                                     |
+
+
+Read functions on the contract:
+```
+/// @notice Computes the rewards for an ERC20 mint
+/// @param totalReward The total reward to be distributed
+/// @return RewardsSettings struct
+function computePaidMintRewards(uint256 totalReward) public pure returns (RewardsSettings memory);
+
+/// @notice Computes the rewards value given an amount and a reward percentage
+/// @param totalReward The total reward to be distributed
+/// @param rewardPct The percentage of the reward to be distributed
+/// @return The reward value
+function computeReward(uint256 totalReward, uint256 rewardPct) public pure returns (uint256)
+
+/// @notice Computes the total reward value for a given amount of ERC20 tokens
+/// @param totalValue The total number of ERC20 tokens
+/// @return The total reward value
+function computeTotalReward(uint256 totalValue) public view returns (uint256)
+
+/// @notice The name of the contract which is "ERC20 Minter"
+/// @return The contract name
+function contractName() external pure returns (string memory)
+
+/// @notice The URI of the contract
+/// @return The contract URI
+function contractURI() external pure returns (string memory)
+
+/// @notice The version of the contract
+/// @return The contract version
+function contractVersion() external pure returns (string memory)
+
+/// @notice Gets the create referral address for a given token
+/// @param tokenContract The address of the token contract
+/// @param tokenId The ID of the token
+/// @return The create referral address
+function getCreateReferral(address tokenContract, uint256 tokenId) public view returns (address createReferral)
+
+/// @notice Gets the first minter address for a given token
+/// @param tokenContract The address of the token contract
+/// @param tokenId The ID of the token
+/// @return The first minter address
+function getFirstMinter(address tokenContract, uint256 tokenId) public view returns (address firstMinter)
+
+/// @notice Returns the number of tokens minted per wallet
+/// @param token The address of the token
+/// @param tokenId The tokenId of the token
+/// @param wallet The address of the wallet
+/// @return the amount minted per wallet
+function getMintedPerWallet(address token, uint256 tokenId, address wallet) external view returns (uint256);
+
+/// @notice Returns the sale config for a given token
+/// @param tokenContract The TokenContract address
+/// @param tokenId The ID of the token to get the sale config for
+/// @return a SalesConfig struct
+function sale(address tokenContract, uint256 tokenId) external view returns (SalesConfig memory)
+
+/// @notice IERC165 interface support
+/// @param interfaceId The interface ID to check
+/// @return a boolean value depending if the interface is supported
+function supportsInterface(bytes4 interfaceId) public pure virtual override(LimitedMintPerAddress, SaleStrategy) returns (bool)
+
+/// @notice The percentage of the total value that is distributed as rewards
+/// @return the reward percentage
+function totalRewardPct() external view returns (uint256)
+
+/// @notice The Zora Reward Recipient address
+/// @return the Zora Reward Recipient address
+function zoraRewardRecipientAddress() external view returns (address)
+```
+
+Write functions on the contract: 
+```
+/// @notice Mints a token using an ERC20 currency, note the total value must have been approved prior to calling this function
+/// @param mintTo The address to mint the token to
+/// @param quantity The quantity of tokens to mint
+/// @param tokenAddress The address of the token to mint
+/// @param tokenId The ID of the token to mint
+/// @param totalValue The total value of the mint
+/// @param currency The address of the currency to use for the mint
+/// @param mintReferral The address of the mint referral
+/// @param comment The optional mint comment
+function mint(
+    address mintTo,
+    uint256 quantity,
+    address tokenAddress,
+    uint256 tokenId,
+    uint256 totalValue,
+    address currency,
+    address mintReferral,
+    string calldata comment
+) external nonReentrant
+
+/// @notice Deletes the sale config for a given token
+function resetSale(uint256 tokenId) external override
+
+/// @notice Sets the sale config for a given token
+function setSale(uint256 tokenId, SalesConfig memory salesConfig) external
+
+/// @notice Set the Zora rewards recipient address
+/// @param recipient The new recipient address
+function setZoraRewardsRecipient(address recipient) external
+```
+
+
+Structs in the contract:
+```
+struct RewardsSettings {
+        /// @notice Amount of the create referral reward
+        uint256 createReferralReward;
+        /// @notice Amount of the mint referral reward
+        uint256 mintReferralReward;
+        /// @notice Amount of the zora reward
+        uint256 zoraReward;
+        /// @notice Amount of the first minter reward
+        uint256 firstMinterReward;
+}
+
+struct SalesConfig {
+    /// @notice Unix timestamp for the sale start
+    uint64 saleStart;
+    /// @notice Unix timestamp for the sale end
+    uint64 saleEnd;
+    /// @notice Max tokens that can be minted for an address, 0 if unlimited
+    uint64 maxTokensPerAddress;
+    /// @notice Price per token in ERC20 currency
+    uint256 pricePerToken;
+    /// @notice Funds recipient (0 if no different funds recipient than the contract global)
+    address fundsRecipient;
+    /// @notice ERC20 Currency address
+    address currency;
+}
+```
+
+[Using the ERC20 Minter contract with the protocol sdk](https://ourzora.github.io/zora-protocol/protocol-sdk/mint-client#collecting-an-onchain-1155-token)

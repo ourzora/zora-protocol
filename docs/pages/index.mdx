@@ -1,59 +1,38 @@
-# Zora Developer Tools
+---
+layout: landing
+---
 
-The Zora Developer Tools is a suite of typescript libraries and utilities that simplify interacting with the Zora protocol contracts.
+import { Card, CardContainer } from "../components/Card";
+import { IntroShader } from "../components/IntroShader";
+import { HomePage } from 'vocs/components'
+import { HomePageLogo } from "../components/HomePageLogo";
 
-## Protocol Deployments Package
+<HomePage.Root>
+  <HomePageLogo dark="/zora-wordmark-white.svg" light="/zora-wordmark-black.svg" /> 
+  <HomePage.Tagline>Explore our guides and examples to integrate Zora </HomePage.Tagline>
+  <img src="/zora-docs-hero-image.png"  className="hero-image" />
+<p>Build your project using the Zora Protocol and plug into over $25m of rewards out of the box. We’ve created a series of tools that makes it easy to get started building on Zora.</p>
+</HomePage.Root>
 
-The [Protocol Deployments](./protocol-deployments/guide) package provides contract abis, deployed addresses, and typescript types for the Zora Contracts. These bundled configs and abis can be used in conjunction with wagmi or viem to interact with the Zora contracts in typescript without needing to write any solidity.
+  <CardContainer>
+    <Card title="Create a contract" icon="PaintBrush" href="/protocol-sdk/creator/premint">
+      Create a new ZORA ERC-1155 NFT contract without needing to pay any gas using the SDK
+    </Card>
+    <Card title="Mint NFTs" icon="CubeTransparent" href="/protocol-sdk/collect/mint">
+      Mint any ZORA ERC-1155 or ERC-721 Token using the SDK
+    </Card>
+    <Card title="Earn Protocol Rewards" icon="Rocket" href="/protocol-sdk/collect/mint#earning-mint-referral-rewards">
+      Earn by interacting with the ZORA protocol and referring users
+    </Card>
+    <Card title="Bug Bounty Program" icon="Bug" href="/bug-bounty/bug-bounty-doc">
+      Report potential vulnerabilities in our product
+    </Card>
+    <Card title="Get Support" icon="Info" href="//support.zora.co">
+      Learn more about the product or get in touch with support
+    </Card>
+    <Card title="Visit Zora" icon="Plus" href="//zora.co">
+      Create and collect on Zora
+    </Card>
+  </CardContainer>
 
-```ts twoslash
-import {
-  protocolRewardsABI,
-  zoraCreator1155FactoryImplABI,
-  protocolRewardsAddress,
-  zoraCreator1155FactoryImplAddress,
-} from "@zoralabs/protocol-deployments";
-```
-
-## Protocol SDK
-
-The [Protocol SDK](./protocol-sdk/introduction) is a typescript package that simplifies interacting with the Zora protocol by generating required transactions for our contracts.
-
-```ts twoslash
-import { zora } from "viem/chains";
-import { http, createPublicClient } from "viem";
-import { createCollectorClient } from "@zoralabs/protocol-sdk";
-
-const tokenContract = "0x1234567890123456789012345678901234567890";
-const tokenId = 1n;
-const mintToAddress = "0x71907e8Ae7aeFb58ceC8eb46DAf4fc78c29E5173";
-const quantityToMint = 1;
-const minterAccount = "0xCb8454D64AFeB46455cB4847C53279F6cdCbFb5e";
-
-const publicClient = createPublicClient({
-  // this will determine which chain to interact with
-  chain: zora,
-  transport: http(),
-});
-
-const collectorClient = createCollectorClient({ 
-  chainId: zora.id, publicClient });
-
-//Prepare a transaction to mint an 1155 token
-const { parameters } = await collectorClient.mint({
-  mintType: "1155",
-  // 1155 contract address
-  tokenContract,
-  // id of the token to mint
-  tokenId,
-  // address that will receive the minted tokens
-  mintRecipient: mintToAddress,
-  // quantity of tokens to mint
-  quantityToMint,
-  // account to execute the mint transaction
-  minterAccount,
-});
-
-// simulate the transaction
-const { request } = await publicClient.simulateContract(parameters);
-```
+  

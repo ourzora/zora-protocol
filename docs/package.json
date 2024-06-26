@@ -13,6 +13,7 @@
     "@mdx-js/mdx": "^3.0.0",
     "@tanstack/react-query": "^5.37.1",
     "@types/react": "latest",
+    "glslCanvas": "^0.2.6",
     "react": "latest",
     "react-dom": "latest",
     "typescript": "^5.2.2",

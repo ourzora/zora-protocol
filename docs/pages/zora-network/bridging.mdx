@@ -1,0 +1,41 @@
+---
+sidebar_position: 4
+---
+
+# Bridging
+
+---
+
+## Bridging User Interfaces
+
+The official bridge for a native bridge can be found at https://bridge.zora.energy/.
+
+To bridge ERC-20s, the optimism superbridge.app supports ZORA: https://superbridge.app/zora.
+
+For instant bridging, multiple providers allow for instant bridging both from and to the ZORA network.
+
+## Bridging Technical Details
+
+### ETH => Zora Network
+
+ETH can be bridged from Ethereum (L1) to the Zora Network (L2) by calling `depositTransaction` on the L1 contract address below. 
+It will take about **1-2 minutes** for funds to show up on the Zora Network. 
+You must also set the gas limit to **60,000**.
+The ETH must also be set as the `value` in the overrides of the transaction.
+
+```
+depositTransaction(
+    address _to, // Target address on L2.
+    uint256 _value, // ETH value to send to the recipient.
+    uint64 _gasLimit, // Minimum L2 gas limit (can be greater than or equal to this value).
+    bool _isCreation, // Whether or not the transaction is a contract creation.
+    bytes __data // Data to trigger the recipient with.
+)
+```
+
+** Warning: ** Please do not transfer large amounts of ETH to Layer 2.
+It is recommended to transfer a small amount of ETH when bridging for the first time.
+Lastly, **DO NOT** transfer WETH or any ERC-20 tokens to the bridge address. 
+
+- Zora Network Mainnet: [0x1a0ad011913A150f69f6A19DF447A0CfD9551054](https://etherscan.io/address/0x1a0ad011913A150f69f6A19DF447A0CfD9551054)
+- Zora Network Goerli: [0xDb9F51790365e7dc196e7D072728df39Be958ACe](https://goerli.etherscan.io/address/0xDb9F51790365e7dc196e7D072728df39Be958ACe)

@@ -1,0 +1,41 @@
+---
+title: Creating a Token 
+---
+---
+
+Calling `setupNewTokenWithCreateReferral` on a deployed 1155 contract will create a new token.
+In addition, by passing in your address as the `createReferral` will yield you rewards from those mints. 
+All tokens start at tokenId 1 and increment up. 
+tokenId 0 is reserved for the contract information.
+`maxSupply` should be set to `MAX_INT` for an open edition.
+
+[**View source code here**](https://github.com/ourzora/zora-protocol/blob/ba8548a06b3b003dff59bab1c9aa2738255326c3/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L297C1-L311C24)
+
+```
+function setupNewTokenWithCreateReferral(
+    string calldata newURI,
+    uint256 maxSupply,
+    address createReferral
+) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256)
+```
+
+
+## Updating Metadata
+`updateTokenURI` updates the token URI for a token. 
+Won't work for tokenId 0 since that is reserved for the contract level information.
+
+```
+function updateTokenURI(
+    uint256 tokenId, 
+    string memory _newURI
+)
+```
+
+Updates the contract metadata.
+```
+function updateContractMetadata(
+    string memory _newURI, 
+    string memory _newName
+)
+```
+

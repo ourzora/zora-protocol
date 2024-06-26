@@ -1,0 +1,107 @@
+.vocs_HomePage {
+  font-family: "Arial Narrow", sans-serif;
+}
+
+.vocs_HomePage .vocs_HomePage_tagline {
+  font-size: 30.8px;
+  letter-spacing: -1.25px;
+  line-height: 0.975;
+  font-weight: 400;
+  color: black;
+  }
+
+  :root.dark .vocs_HomePage .vocs_HomePage_tagline {
+    color: white;
+  }
+
+.hero-image {
+  width: 100%;
+}
+
+.vocs_HomePage p {
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.5px;
+  line-height: 0.95;
+}
+
+.vocs_NavigationMenu_link {
+  font-family: "Arial Mono", monospace;
+}
+
+.CardContainer {
+  display: grid;
+  padding: var(--four-space) 0;
+  gap: var(--four-space);
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.CustomIcon {
+  width: 30px;
+  height: 30px;
+  display: inline-block;
+  color: #444;
+  background: #eee;
+  border-radius: 4px;
+  padding: 6px;
+  margin-top: 6px;
+  margin-bottom: -4px;
+}
+
+.BoxCard {
+  display: block;
+  color: inherit;
+  border: 1px solid #ddd;
+  border-radius: 15px;
+  padding: 6px 10px 10px;
+  margin-right: 16px;
+  margin-bottom: 16px;
+  transition:
+    ease-in-out 300ms border-color,
+    ease-in-out 300ms background-color;
+  font-size: 0.75em;
+}
+
+.IntroShader {
+  position: relative;
+  width: 100%;
+}
+
+.IntroShader > canvas {
+  backface-visibility: hidden;
+  -webkit-perspective: 1000;
+  perspective: 1000;
+  height: 400px;
+}
+
+.EngZorb {
+  top: 30%;
+  left: 30%;
+  bottom: 30%;
+  right: 30%;
+  background-image: url("/engZorb.svg");
+  background-size: contain;
+  background-position: center;
+  background-repeat: no-repeat;
+  position: absolute;
+  opacity: 0.4;
+}
+
+.BoxCard:hover {
+  border-color: #aaa;
+  background-color: #f9f9f9;
+}
+
+:root.dark .BoxCard:hover {
+  border-color: #fff;
+  background-color: #3d3d3d
+}
+
+
+
+.BoxCard > strong {
+  display: block;
+  color: var(--vocs-color_heading);
+  font-weight: 600;
+  font-size: 1.1em;
+}

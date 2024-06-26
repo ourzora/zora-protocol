@@ -1,0 +1,354 @@
+---
+title: Events for Indexing and Integration Overview
+---
+
+# ZORA Smart Contracts Event-based Overview
+
+## 1155 Contracts
+
+### Creating a New Token
+
+When a user creates a new token, the parameters expected are maxSupply and URI. maxSupply is the immutable maximum number of NFTs that can be made for this token and the URI is possible to change but the initial URL representing the token.
+
+Now that we have both gasless and on-chain minting the token creation event arguments are slightly different to determine the originating user of the mint.
+
+Creating new tokens can happen with a call to either [`setupNewToken()`](https://github.com/ourzora/zora-protocol/blob/HEAD/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L260) or [`delegateSetupNewToken()`](https://github.com/ourzora/zora-protocol/blob/f58ee955e6b50c13e90b4cfd72ab4b68dce86fad/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L765) (used by the gasless creation mint flow).
+
+Be aware that often creating a new token and minting often occur in the _same_ transaction.
+
+It is also possible to setup a new token without a mint event.
+
+Any time a new token is setup, this event is emitted. However, the sender field is not the actual creator and is the premint executor contract in a gasless setting.
+
+```solidity
+emit UpdatedToken(address sender, uint256 tokenId, TokenData {
+    string uri,
+    uint256 maxSupply,
+})
+```
+
+Read the [subgraph handler](https://github.com/ourzora/zora-creator-subgraph/blob/HEAD/src/ERC1155Mappings/templates/ZoraCreator1155ImplMappings.ts#L403) for this action.
+
+The standard 1155 `URI` event is also emitted when the token is setup when provided with:
+
+```solidity
+event URI(string uri, uint256 tokenId)
+// Emitted in ZoraCreator1155Impl:306
+```
+
+The `CreatorAttribution` event is emitted only when bringing a token onchain. The creator of the token in this case is the `creator` field of the event. This is part of a [draft ERC standard](https://eips.ethereum.org/EIPS/eip-7015).
+
+If necessary, this field can be verified by extracting the signer of the `signature` using `structHash`.
+
+```solidity
+// this is what attributes this token to have been created by the original creator
+event CreatorAttribution(bytes32 structHash, string domainName, string version, address creator, bytes signature);
+// Emitted in `ZoraCreator1155Impl:781`
+```
+
+### Setting a Price
+
+#### Events Emitted:
+
+Minting a token can occur via different `SalesConfiguration` contracts which are given `Minter` roles on the 1155 contracts to setup a mint.
+
+Sales configurations are linked to contracts via `Permissions` with the `Minter` role.
+
+You can determine which contract is a sales configuration contract by their `contractName`.
+
+The most common `SalesConfiguration` is a `FixedPriceSaleStrategy`. The `factory` contracts include getters for `fixedPriceMinter` and `merkleMinter` which are the two zora-supported sales methods but users can add their own as well.
+
+We index known sales configuration contracts for `SaleSet` events.
+
+```solidity
+event SaleSet(address indexed mediaContract, uint256 indexed tokenId, SalesConfig {
+    /// @notice Unix timestamp for the sale start
+    uint64 saleStart;
+    /// @notice Unix timestamp for the sale end
+    uint64 saleEnd;
+    /// @notice Max tokens that can be minted for an address, 0 if unlimited
+    uint64 maxTokensPerAddress;
+    /// @notice Price per token in eth wei
+    uint96 pricePerToken;
+    /// @notice Funds recipient (0 if no different funds recipient than the contract global)
+    address fundsRecipient;
+} salesConfig);
+```
+
+#### How to call:
+
+These settings are set via the `callSale` argument which sets the caller context for security purposes to be the calling contract and does the required permissions checks:
+
+```solidity
+function callSale(uint256 tokenId, IMinter1155 minterModule, bytes calldata data);
+```
+
+For example, you would setup a fixed price nft sale in solidity for token id `1` using:
+
+```solidity
+Zora1155(nftContract).callSale(1, FIXED_PRICE_SALE_STRATEGY, abi.encodeWithSelector(FixedPriceSaleStrategy.setSale(1, SalesConfig({
+    saleStart: 0,
+    saleEnd: 1735711271, // new years 2025
+    maxTokensPerAddress: 0, // unlimited
+    pricePerToken: 0 ether,
+    fundsRecipient: address(0) // set to contract
+}))));
+```
+
+Note that the `FIXED_PRICE_SALE_STRATEGY` would need to have `Minter` permissions either on the whole contract (token id `0`) or on the individual token (token id `1`).
+
+### Purchasing / Collecting a Token
+
+#### Mint Events Emitted:
+
+When a user purchases a token the primary event emitted is the `Purchased` event:
+
+```solidity
+event Purchased(address sender, address minterModule, uint256 tokenId, uint256 quantity, uint256 amount);
+```
+
+The amount includes both the price and the mint fee.
+
+The other events emitted on a purchase are the standard 1155 transfer events:
+
+```solidity
+event TransferSingle(address indexed operator, address indexed from, address indexed to, uint256 id, uint256 value)
+```
+
+If the user wishes to include a `MintComment`, an MintComment event is emitted in the same transaction from the `FixedPriceSaleStrategy`.
+
+```solidity
+event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
+```
+
+#### Calling the Mint Function:
+
+Purchasing a token should be called via:
+
+```solidity
+function mintWithRewards(
+    IMinter1155 minter,
+    uint256 tokenId,
+    uint256 quantity,
+    bytes calldata minterArguments,
+    address mintReferral
+)
+```
+
+- The first argument is the minter module which can be found via looking at permissions or the subgraph.
+- The second argument is the desired `tokenId` and the `quantity`.
+- Sales information can be found by querying the subgraph or the fixed price minter's `function sale(address tokenContract, uint256 tokenId) returns (SalesConfig memory)`.
+- MinterArguments for fixed price minter are `abi.encode(address (tokenMintRecipient))`, and `abi.encode(address (tokenMintRecipient), string (mintComment))` if you wish to add a MintComment.
+- The mintReferral argument is the Zora Rewards referral address.
+
+All of these arguments are handled if using the [Protocol SDK](https://docs.zora.co/docs/smart-contracts/creator-tools/ProtocolSDK).
+
+### Mint Comments
+
+Mint comments are optional strings emitted on the `FixedPriceSaleStrategy`. Read the [subgraph handler](https://github.com/ourzora/zora-creator-subgraph/blob/HEAD/src/ERC721Mappings/templates/ERC721DropMappings.ts#L344).
+
+```solidity
+event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
+```
+
+### Permissions
+
+When permissions are changed the `UpdatedPermissions` event is emitted.
+
+```solidity
+event UpdatedPermissions(uint256 indexed tokenId, address indexed user, uint256 indexed permissions);
+```
+
+Global permissions are assigned to token id 0, and individual token permissions are assigned to the token.
+By default, the user that creates a token is given admin permissions on that token.
+
+| Permission    | Bits | Numeric | Description                                                         |
+| ------------- | ---- | ------- | ------------------------------------------------------------------- |
+| Admin         | 2^1  | 2       | Allows for all functionality and for managing permissions           |
+| Minter        | 2^2  | 4       | Allows to mint existing tokens                                      |
+| Sales         | 2^3  | 8       | Allows for updating pricing and sales information                   |
+| Metadata      | 2^4  | 16      | Allows for updating token metadata and information                  |
+| Funds Manager | 2^5  | 32      | Allows for withdrawing funds and setting the funds withdraw address |
+
+Permissions can be added via [`addPermission(uint256 tokenId, address user, uint256 permissions)`](https://github.com/ourzora/zora-protocol/blob/HEAD/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L330) and removed via [`function removePermission(uint256 tokenId, address user, uint256 permissionBits)`](https://github.com/ourzora/zora-protocol/blob/HEAD/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L338).
+
+View the [subgraph handler](https://github.com/ourzora/zora-creator-subgraph/blob/HEAD/src/ERC1155Mappings/templates/ZoraCreator1155ImplMappings.ts#L118).
+
+## 721 
+
+> #### Note 
+> 721 NFTs are still supported on the contract and API level. However, 721 NFTs *cannot* be created/updated on the UI level but can still be minted.
+
+### Creating a new Token
+
+721 Contracts share both metadata as either a series of metadata or shared edition metadata.
+
+They also have the same sales settings across the contract unlike 1155 tokens.
+
+New tokens are created by calling the ZoraNFTCreatorV1 proxy contract.
+
+Once the contract is created, if the sale is active users can purchase tokens.
+
+We also support a `multicall` pattern with the `setupCalls` argument where the factory is granted temporary admin permissions to execute multiple commands on the contract after deployment allowing for setting additional settings or minting upon deployment.
+
+#### Creating an Edition:
+
+```solidity
+function createEditionWithReferral(
+    string memory name,
+    string memory symbol,
+    address defaultAdmin,
+    uint64 editionSize,
+    uint16 royaltyBPS,
+    address payable fundsRecipient,
+    bytes[] memory setupCalls,
+    IMetadataRenderer metadataRenderer,
+    bytes memory metadataInitializer,
+    address createReferral
+)
+```
+
+#### Creating a Drop:
+
+Event Emitted when a drop is created from the factory:
+
+```
+event CreatedDrop(address indexed creator, address indexed editionContractAddress, uint256 editionSize)
+```
+
+This is emitted by the `ZoraNFTCreatorV1` factory contract.
+
+##### Setting a Price
+
+Event emitted with Sales Configuration Setup:
+
+```
+event SalesConfigChanged(address indexed changedBy);
+```
+
+After this event is emitted, the contract sales information can be queried and stored. See [subgraph implementation](https://github.com/ourzora/zora-creator-subgraph/blob/HEAD/src/ERC721Mappings/templates/ERC721DropMappings.ts#L56).
+
+##### Collecting a Token
+
+First, sales information can be retrieved by calling `salesConfig()` on the 721 contract which returns all of the presale (allowlist), and public sale (standard purchase) configuration.
+
+After this call, the `function mintWithRewards(address recipient, uint256 quantity, string calldata comment, address mintReferral)` function can be called.
+
+The mint fee can be queried from `zoraFeeForAmount(uint256 amount) returns (address, uint256 fee)` which returns the total mint fee for a given amount.
+
+The value sent is `pricePerToken * numberOfTokens + mintFee`.
+
+This emits:
+
+```solidity
+event IERC721Drop.Sale(
+    address recipient,
+    uint256 quantity,
+    uint256 pricePerToken,
+    uint256 firstPurchasedTokenId
+);
+```
+
+and if salesComment is not unset (in solidity, is not an empty string) `''`:
+
+```
+event IERC721Drop.MintComment(
+    address sender, // Address sending the mint
+    address tokenContract, // Current NFT contract
+    uint256 tokenId,
+    uint256 quantity,
+    string comment
+);
+```
+
+## Protocol Rewards
+
+Zora Protocol Rewards power rewards for both the 721 and 1155 contracts.
+
+The contracts include a shared solidity library to calculate the fees and call a shared hyperstructure to escrow and store the deposits for users to deposit.
+
+This allows us to have the gas savings and security of a model where users retrieve funds from the contract rather than push payments where payments are sent to them while also making it easy for users to retrieve all their rewards in one place.
+
+Protocol Reward events for a free and a paid mint vary.
+
+Since the logic is in the NFT itself, upgrading the NFT can change the deposit behavior below.
+
+This is an example of how our NFT contracts behave for the current version.
+
+Users need to opt-into new versions with different fee payment amounts by upgrading.
+
+#### Free Mint
+
+The below event is emitted from the ZoraRewards contract when a deposit is received from a free mint:
+
+Example Event:
+
+```solidity
+RewardsDeposit(
+    // This is the address of the token creator
+    address indexed creator,
+    // This is the address of the referral for the token creation
+    address indexed createReferral,
+    // This is the address of the referral of the mint
+    address indexed mintReferral,
+    // This is the address of the user that brought the token onchain
+    address firstMinter,
+    // This is the address of the zora multisig
+    address zora,
+    // This is the address of the smart contract depositing the reward
+    address from,
+    // This is the amount going to the `creator` address above.
+    uint256 creatorReward,
+    // This amount is currently 0.000333 ETH for a free mint
+    // This is the amount going to the `createReferral` address above.
+    // This amount is currently 0.000111 ETH
+    uint256 createReferralReward,
+    // This is the amount going to the `mintReferral` address above.
+    // This amount is currently 0.000111 ETH
+    uint256 mintReferralReward,
+    // This is the amount going to the `firstMinter` address above.
+    // This amount is currently 0.000111 ETH
+    uint256 firstMinterReward,
+    // This is the amount going to the `zora` address above.
+    // This amount is currently 0.000111 ETH
+    uint256 zoraReward
+)
+```
+
+#### Paid Mint
+
+The below event is emitted from the ZoraRewards contract when a deposit is received from a paid mint:
+
+Example Event:
+
+```solidity
+RewardsDeposit(
+    // This is the address of the token creator
+    address indexed creator,
+    // This is the address of the referral for the token creation
+    address indexed createReferral,
+    // This is the address of the referral of the mint
+    address indexed mintReferral,
+    // This is the address of the user that brought the token onchain
+    address firstMinter,
+    // This is the address of the zora multisig
+    address zora,
+    // This is the address of the smart contract depositing the reward
+    address from,
+    // This is the amount going to the `creator` address above.
+    uint256 creatorReward,
+    // This amount is currently 0 ETH for a paid mint
+    // This is the amount going to the `createReferral` address above.
+    // This amount is currently 0.000222 ETH
+    uint256 createReferralReward,
+    // This is the amount going to the `mintReferral` address above.
+    // This amount is currently 0.000222 ETH
+    uint256 mintReferralReward,
+    // This is the amount going to the `firstMinter` address above.
+    // This amount is currently 0.000111 ETH
+    uint256 firstMinterReward,
+    // This is the amount going to the `zora` address above.
+    // This amount is currently 0.000222 ETH
+    uint256 zoraReward
+)
+```

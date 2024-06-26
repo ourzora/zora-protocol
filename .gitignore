@@ -46,3 +46,4 @@ pnpm-lock.yaml
 **/*wagmiGenerated.ts
 
 **/vocs.config.ts.*
+.vercel

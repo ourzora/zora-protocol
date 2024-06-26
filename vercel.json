@@ -1,0 +1,12 @@
+{
+  "git": {
+    "deploymentEnabled": false
+  },
+  "redirects": [
+    {
+      "source": "/protocol-sdk/getting-started",
+      "destination": "/protocol-sdk/introduction",
+      "permanent": false
+    }
+  ]
+}

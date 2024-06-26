@@ -1,0 +1,37 @@
+##### Metadata rendering contract for NFTs with all the same media assets
+---
+
+This contract is in charge of managing and rendering the metadata for Zora editions.
+An edition is an NFT collection where all the NFTs share the same media asset (video, image, etc).
+
+Whenever a `tokenURI` is called on the NFT contract, the call is forwarded to this contract to get metadata for a specific NFT.
+
+View the source contract code [here](https://github.com/ourzora/zora-drops-contracts/blob/main/src/metadata/EditionMetadataRenderer.sol) and the list of deployed contract addresses [here](https://github.com/ourzora/zora-drops-contracts/tree/main/deployments).
+
+
+## updateMediaURIs
+Updates the media asset for the edition. 
+
+- `target`: The contract address to update metadata for
+- `imageURI`: The new media uri
+- `animationURI`: The new animation uri
+
+The `imageURI` is the resource for the main piece of media and `animationURI` is used for the thumbnail if a video. 
+
+```
+function updateMediaURIs(
+    address target,
+    string memory imageURI,
+    string memory animationURI
+)
+```
+
+## updateDescription
+Updates the description for the edition. 
+
+- `target`: The contract address to update the description for
+- `newDescription`: The new description
+
+```
+function updateDescription(address target, string memory newDescription)
+```

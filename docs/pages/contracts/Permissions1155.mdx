@@ -1,0 +1,104 @@
+---
+title: Permissions
+---
+---
+
+[View Source Code](https://github.com/ourzora/zora-protocol/blob/ba8548a06b3b003dff59bab1c9aa2738255326c3/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L356)
+
+## Admin and Minter Role
+- `Admin`: Can update sales, airdrop tokens, metadata, and withdraw ETH
+- `Minter`: Can mint and airdrop tokens
+
+## Assigning Mint Access
+By giving an address mint access it will be able to mint NFTs from the contract.
+However, this means different sales strategies can be created for the contract and given access to manage minting.
+The minter role can be granted at either the contract or token level.
+
+The roles are stored at different bit amounts.
+
+```
+uint256 PERMISSION_BIT_ADMIN = 2**1;
+uint256 PERMISSION_BIT_MINTER = 2**2;
+```
+
+Note, contract metadata and other settings are stored at tokenId 0. 
+To specify an update for the contract level, tokenId 0 can be used instead of an individual token.
+```
+uint256 CONTRACT_BASE_ID = 0;
+
+```
+
+## Checking for Admin or Role
+The `isAdminOrRole` checks if an address either has a minter role for a token or if they are the admin. 
+Passing in tokenId 0 will return the role for the contract level. 
+```
+function isAdminOrRole(
+    address user,
+    uint256 tokenId,
+    uint256 role // Optional for admin checking
+)
+```
+
+## Contract Level Permissions
+
+### Setting the Owner
+Set the owner of the contract. 
+This function can only be called by the contract admin.
+Owner is set to the `defaultAdmin` when the contract is created.
+```
+function setOwner(address newOwner) external onlyAdmin(CONTRACT_BASE_ID)
+```
+
+### Setting a Contract Role 
+For granting permission at the contract level, 0 is passed in as the tokenId
+Only an admin can add an address as a role. 
+By default, both the Zora minters have the contract level minter role in the contract.
+```
+function addPermission(
+    uint256 tokenId, // tokenId 0 for contract level
+    address user,
+    uint256 permissionBits
+) external onlyAdmin(tokenId)
+```
+
+## Token Level Permissions
+Add a role to a user for a specific token.
+```
+function addPermission(
+    uint256 tokenId,
+    address user,
+    uint256 permissionBits
+) external onlyAdmin(tokenId)
+```
+
+## Removing a Role
+Remove a role from a user for a token or the contract (tokenId 0).
+```
+function removePermission(
+    uint256 tokenId,
+    address user,
+    uint256 permissionBits
+) external onlyAdmin(tokenId)
+```
+
+## Updating Royalties
+Updates the royalty configuration for a token or the contract (tokenId 0).
+```
+function updateRoyaltiesForToken(
+    uint256 tokenId, 
+    RoyaltyConfiguration memory newConfiguration
+)
+```
+
+- `royaltyBPS`: The royalty amount in basis points for secondary sales.
+- `royaltyRecipient`: The address that will receive the royalty payments.
+
+`Deprecated` `royaltyMintSchedule`: 1/N tokens are minted to the royalty recipient
+
+```
+struct RoyaltyConfiguration {
+    uint32 royaltyMintSchedule;
+    uint32 royaltyBPS;
+    address royaltyRecipient;
+}
+```

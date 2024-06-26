@@ -1,0 +1,43 @@
+##### Metadata rendering contract for NFTs with individual media assets
+---
+
+This contract is in charge of managing and rendering the metadata for Zora drops.
+A drop is an NFT collection where all the NFTs have individual media assets. 
+
+Whenever a `tokenURI` is called on an NFT contract it is forwarded to this contract to get metadata for a specific NFT.
+
+View the source contract code [here](https://github.com/ourzora/zora-drops-contracts/blob/main/src/metadata/DropMetadataRenderer.sol) and the list of deployed contract addresses [here](https://github.com/ourzora/zora-drops-contracts/tree/main/deployments).
+
+- `baseURI`: A common base path that all the assets share and can append the tokenId to the end to get the metadata for an NFT.
+- `contractURI`: A resource for getting metadata for the contract. Follows the contract-level metadata format described [here](https://docs.opensea.io/docs/contract-level-metadata).
+- `provenanceHash`: A hash that is used to prove that the order of the images and metadata was set pre-mint, and was not manipulated.
+- `target`: The address of the NFT contract to get data for.
+
+## updateMetadataBase
+Updates the baseURI and contractURI.
+```
+function updateMetadataBase(
+    address target,
+    string memory baseUri,
+    string memory newContractUri
+)
+```
+
+## updateMetadataBaseWithDetails
+Updates the metadata base URI, extension, contract URI and freezing details.
+
+```
+function updateMetadataBaseWithDetails(
+    address target,
+    string memory metadataBase,
+    string memory metadataExtension,
+    string memory newContractURI,
+    uint256 freezeAt
+)
+```
+
+## updateProvenanceHash
+Updates the provenance hash stored in the contract. 
+```
+function updateProvenanceHash(address target, bytes32 provenanceHash)
+```
