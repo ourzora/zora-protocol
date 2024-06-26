@@ -1662,7 +1662,7 @@ contract ZoraCreator1155Test is Test {
         // update mint card price
         createEthToken(111, uint96(mintTicketPrice), true);
 
-        // update quanity to be fuzzy value - 1
+        // update quantity to be fuzzy value - 1
         quantity = quantity - 1;
 
         totalReward = target.computeTotalReward(mints.getEthPrice(), quantity);
