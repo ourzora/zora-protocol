@@ -65,7 +65,7 @@ type PremintedV2LogType = DecodeEventLogReturnType<
   "PremintedV2"
 >["args"];
 
-type URLSReturnType = {
+export type URLSReturnType = {
   explorer: null | string;
   zoraCollect: null | string;
   zoraManage: null | string;
@@ -433,6 +433,7 @@ type PremintReturn<T extends PremintConfigVersion> = {
   signAndSubmit: (params: SignAndSubmitParams) => Promise<SignAndSubmitReturn>;
   /** For the case where the premint is signed externally, takes the signature for the Premint, and submits it and the Premint to the Zora Premint API */
   submit: (params: SubmitParams) => Promise<void>;
+  urls: URLSReturnType;
 } & PremintConfigWithVersion<T>;
 
 function makePremintReturn<T extends PremintConfigVersion>({
@@ -503,6 +504,12 @@ function makePremintReturn<T extends PremintConfigVersion>({
     });
   };
 
+  const urls = makeUrls({
+    chainId,
+    address: collectionAddress,
+    uid: premintConfig.uid,
+  });
+
   return {
     premintConfig,
     premintConfigVersion,
@@ -510,6 +517,7 @@ function makePremintReturn<T extends PremintConfigVersion>({
     collectionAddress,
     signAndSubmit,
     submit,
+    urls,
   };
 }
 

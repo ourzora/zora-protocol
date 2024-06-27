@@ -32,6 +32,7 @@
     "viem": "^2.11.1"
   },
   "devDependencies": {
+    "@fleekhq/fleek-storage-js": "^1.0.24",
     "@lavamoat/preinstall-always-fail": "2.0.0",
     "@reservoir0x/relay-sdk": "^0.3.8",
     "@reservoir0x/reservoir-sdk": "^2.0.11",

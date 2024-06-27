@@ -12,6 +12,8 @@ All upgrades are opt-in and must be done manually on a per contract basis by the
 - [Deployed Addresses](https://github.com/ourzora/zora-protocol/tree/main/packages/1155-deployments/addresses)
 - Factory Proxy Address `0x777777C338d93e2C7adf08D102d45CA7CC4Ed021` on all networks
 
+**The easiest way to create Zora 1555 contracts using the factory is [by using the sdk.](/protocol-sdk/creator/onchain)**
+
 ## Calling the Factory Contract
 The `createContract` function on the factory is responsible for deploying a new 1155 contract. 
 The `setupActions` parameter allows for multiple actions to be called when deploying the contract.
@@ -40,21 +42,7 @@ The contract supports multicall so multiple functions can be called to set up th
 The Contract URI contains contract specific details. This metadata is stored in a JSON file on IPFS. 
 The uri is retrieved via the `contractURI()` call on the contract.
 
-```
-type CollectionMetadata = {
-  name?: string
-  description?: string
-  image?: string
-  imageURI?: string
-  animation_url?: string
-  animationURI?: string
-  seller_fee_basis_points?: string
-  seller_fee_recipient?: string
-  storefront?: {
-    theme?: StorefrontTheme
-  }
-}
-```
+Refer to the [SDK guide on building contract metadata](/protocol-sdk/metadata/contract-metadata) for schematic info and some sample code.
 
 ## Setup Actions
 An optional param that is encoded function data that can be passed in and can call a separate function within the contract.

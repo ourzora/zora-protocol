@@ -60,6 +60,10 @@ export default defineConfig({
                 link: "/contracts/Deploy1155Contract",
               },
               {
+                text: "Contract and Token Metadata",
+                link: "/contracts/metadata",
+              },
+              {
                 text: "Creating a Token",
                 link: "/contracts/Creating1155Token",
               },
@@ -142,6 +146,19 @@ export default defineConfig({
                     link: "/protocol-sdk/creator/splits",
                   },
                 ],
+              },
+            ],
+          },
+          {
+            text: "Metadata",
+            items: [
+              {
+                text: "building token metadata",
+                link: "/protocol-sdk/metadata/token-metadata",
+              },
+              {
+                text: "building contract metadata",
+                link: "/protocol-sdk/metadata/contract-metadata",
               },
             ],
           },

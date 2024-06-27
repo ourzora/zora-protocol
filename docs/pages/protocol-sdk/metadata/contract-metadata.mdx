@@ -1,0 +1,38 @@
+# Building Contract Metadata
+
+Zora 1155 and 721 contracts have contract-wide json metadata containing descriptive info
+about the contract, including a name and image.  This json metadata is pinned to [IPFS](https://ipfs.tech/).
+
+
+The structure of Contract Metadata is defined in a type exported from the SDK, ContractMetadataJson:
+
+```ts
+type ContractMetadataJson = {
+  name?: string;
+  description?: string;
+  image?: string;
+} 
+```
+
+The `image` field should point to an image file pinned to ipfs.
+
+The Zora Protocol SDK exports a type `ContractMetadataJson` that defines this json structure.
+
+Here's some example code for building contract metadata json:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: pinata.ts
+// [!include ~/snippets/protocol-sdk/ipfs/pinata.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/ipfs/contractpinata.ts]
+```
+
+```ts twoslash [pinata.ts]
+// [!include ~/snippets/protocol-sdk/ipfs/pinata.ts]
+```
+
+:::

@@ -29,3 +29,5 @@ export {
 export * from "./create/types";
 
 export * from "./sdk";
+
+export * from "./ipfs";

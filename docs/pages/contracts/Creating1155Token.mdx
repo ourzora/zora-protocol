@@ -12,7 +12,7 @@ tokenId 0 is reserved for the contract information.
 
 [**View source code here**](https://github.com/ourzora/zora-protocol/blob/ba8548a06b3b003dff59bab1c9aa2738255326c3/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L297C1-L311C24)
 
-```
+```solidity
 function setupNewTokenWithCreateReferral(
     string calldata newURI,
     uint256 maxSupply,
@@ -20,12 +20,18 @@ function setupNewTokenWithCreateReferral(
 ) public onlyAdminOrRole(CONTRACT_BASE_ID, PERMISSION_BIT_MINTER) nonReentrant returns (uint256)
 ```
 
+## Token Metadata
+
+Each token in a Zora 1155 or 721 contract has a metadata uri field which points to a JSON Metadata file, pinned to [IPFS](https://ipfs.tech/), 
+containing the media associated with the token as well as additional descriptive info. [Refer to the SDK guide on building token metadata](/protocol-sdk/metadata/token-metadata) 
+for schematic info, utilities, and sample code to build and pin the json and corresponding assets to IPFS.
+
 
 ## Updating Metadata
 `updateTokenURI` updates the token URI for a token. 
 Won't work for tokenId 0 since that is reserved for the contract level information.
 
-```
+```solidity
 function updateTokenURI(
     uint256 tokenId, 
     string memory _newURI

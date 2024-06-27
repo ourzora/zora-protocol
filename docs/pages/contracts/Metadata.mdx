@@ -1,0 +1,36 @@
+# Contract and Token Metadata
+
+
+Contract metadata has the following json schema:
+
+```json twoslash
+{
+  "name": "{contract name}",
+  "description": "{contract description}",
+  "image": "{contract image}"
+} 
+```
+
+Token metadata has the following json schema:
+
+```json twoslash
+{
+  "name": "{token name}",
+  "description": "{token description}",
+  "image": "{token image ipfs url}",
+  "animation_url": "{token media ipfs url}",
+  "content": {
+    "mime": "{content mime type}",
+    "uri": "{content ipfs uri}"
+  },
+  "attributes": {
+    "trait_type": "{trait type}",
+    "value": "{trait value}"
+  }
+}
+```
+
+Contract and token metadata should be pinned to IPFS using a preferred pinning service, 
+and the url when set on a contract or token should be in an ipfs url format, like: `ipfs://{cid}`
+
+Refer to the SDK guide to [contract](/protocol-sdk/metadata/contract-metadata) and [token metadata](/protocol-sdk/metadata/token-metadata) for utilities and sample code to build and pin the json metadata to IPFS.
