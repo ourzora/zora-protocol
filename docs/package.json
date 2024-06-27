@@ -18,6 +18,10 @@
     "react-dom": "latest",
     "typescript": "^5.2.2",
     "viem": "^2.11.1",
+    "vike": "^0.4.177",
+    "vite-plugin-ssr": "^0.4.142",
+    "vite-plugin-vercel": "^7.0.0",
+    "vite-tsconfig-paths": "^4.3.2",
     "vocs": "^1.0.0-alpha.52",
     "wagmi": "^2.9.4",
     "yaml": "2.3.4"

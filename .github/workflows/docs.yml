@@ -1,10 +1,10 @@
-name: Vercel Preview Deployment
+name: Vercel Deployment
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
   VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 on:
   push:
-    branches-ignore:
+    branches:
       - main
 jobs:
   Deploy-Preview:

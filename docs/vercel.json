@@ -1,0 +1,19 @@
+{
+  "redirects": [
+    {
+      "source": "/protocol-sdk/getting-started",
+      "destination": "/protocol-sdk/introduction",
+      "permanent": false
+    },
+    {
+      "source": "/docs/smart-contracts/creator-tools/:path*",
+      "destination": "/contracts/:path*",
+      "permanent": false
+    },
+    {
+      "source": "/docs/zora-network/:path*",
+      "destination": "/zora-network/:path*",
+      "permanent": false
+    }
+  ]
+}

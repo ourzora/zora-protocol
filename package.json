@@ -6,6 +6,7 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "dev": "turbo run dev",
+    "docs:preview": "yarn workspace docs preview",
     "update-version": "changeset version && turbo run update-contract-version",
     "lint": "turbo run lint",
     "format": "turbo run format",
