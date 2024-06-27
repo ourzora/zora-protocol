@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.7.1
+
+### Patch Changes
+
+- 5c009569: Added metadata builder methods to sdk. sdk's method createPremint returns collect/manage urls
+
 ## 0.7.0
 
 ### Minor Changes
