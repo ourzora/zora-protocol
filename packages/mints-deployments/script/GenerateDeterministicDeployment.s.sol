@@ -55,7 +55,7 @@ contract GenerateDeterminsticDeployment is ProxyDeployerScript {
         expectedAddress = vm.parseAddress(addressStr);
 
         uint256 saltIndex = LibString.indexOf(result, "Salt: ");
-        // bytes lengh is 32, + 0x
+        // bytes length is 32, + 0x
         // slice is start to end exclusive
         // if start is saltIndex + 6, end should be startIndex + 6 + 64 + 0x (2)
         uint256 startBytes32 = saltIndex + 6;
@@ -105,7 +105,7 @@ contract GenerateDeterminsticDeployment is ProxyDeployerScript {
 
         vm.startBroadcast();
 
-        // create a proxy deployer, which we can use to generated determistic addresses and corresponding params.
+        // create a proxy deployer, which we can use to generated deterministic addresses and corresponding params.
         // proxy deployer code is based on code saved to file from running the script SaveProxyDeployerConfig.s.sol
         DeterministicUUPSProxyDeployer proxyDeployer = createOrGetDeterministicProxyDeployer();
 
