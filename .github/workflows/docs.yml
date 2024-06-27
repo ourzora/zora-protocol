@@ -7,7 +7,7 @@ on:
     branches:
       - main
 jobs:
-  Deploy-Preview:
+  Deploy:
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}

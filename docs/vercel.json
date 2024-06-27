@@ -1,4 +1,7 @@
 {
+  "git": {
+    "deploymentEnabled": false
+  },
   "redirects": [
     {
       "source": "/protocol-sdk/getting-started",
