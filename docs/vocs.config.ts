@@ -44,7 +44,7 @@ export default defineConfig({
             link: "/contracts/factories",
           },
           {
-            text: "Rewards",
+            text: "Protocol Rewards",
             link: "/contracts/rewards",
           },
           {
