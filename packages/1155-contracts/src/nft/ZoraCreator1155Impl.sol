@@ -325,15 +325,21 @@ contract ZoraCreator1155Impl is
         return tokenId;
     }
 
-    /// @notice Allow a minter to cap the supply of a token
-    /// @dev This ensures a token cannot be minted further by the calling minter and other approved minters
-    /// @param tokenId The token id
-    function capSupply(uint256 tokenId) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) returns (uint256) {
+    /// @notice Allow a minter to reduce the max supply of a token.
+    /// @dev This allows enforcing that no more new tokens can be minted.
+    /// @param tokenId The token id to reduce the supply for
+    /// @param newMaxSupply The new max supply
+    function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
         TokenData storage tokenData = tokens[tokenId];
 
-        tokenData.maxSupply = tokenData.totalMinted;
+        if (newMaxSupply >= tokenData.maxSupply) {
+            revert CanOnlyReduceMaxSupply();
+        }
+        if (newMaxSupply < tokenData.totalMinted) {
+            revert CannotReduceMaxSupplyBelowMinted();
+        }
 
-        return tokenData.maxSupply;
+        tokenData.maxSupply = newMaxSupply;
     }
 
     /// @notice Update the token URI for a token

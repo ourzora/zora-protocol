@@ -26,6 +26,9 @@ interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddres
     error Mint_UnknownCommand();
     error Mint_InvalidMintArrayLength();
 
+    error CanOnlyReduceMaxSupply();
+    error CannotReduceMaxSupplyBelowMinted();
+
     error Burn_NotOwnerOrApproved(address operator, address user);
 
     error NewOwnerNeedsToBeAdmin();

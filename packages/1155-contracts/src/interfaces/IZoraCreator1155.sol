@@ -129,6 +129,8 @@ interface IZoraCreator1155 is
 
     function getTokenInfo(uint256 tokenId) external view returns (TokenData memory);
 
+    function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external;
+
     function callRenderer(uint256 tokenId, bytes memory data) external;
 
     function callSale(uint256 tokenId, IMinter1155 salesConfig, bytes memory data) external;

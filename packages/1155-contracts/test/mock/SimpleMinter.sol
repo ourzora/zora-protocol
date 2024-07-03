@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {IMinter1155} from "../../src/interfaces/IMinter1155.sol";
 import {IERC165Upgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/interfaces/IERC165Upgradeable.sol";
-import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
+import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
 import {ICreatorCommands} from "../../src/interfaces/ICreatorCommands.sol";
 import {SaleCommandHelper} from "../../src/minters/utils/SaleCommandHelper.sol";
 
@@ -43,9 +43,7 @@ contract SimpleMinter is IMinter1155 {
         return interfaceId == type(IMinter1155).interfaceId || interfaceId == type(IERC165Upgradeable).interfaceId;
     }
 
-    function settleMint(address collection, uint256 tokenId) external returns (uint256) {
-        uint256 totalSupply = ZoraCreator1155Impl(payable(collection)).capSupply(tokenId);
-
-        return totalSupply;
+    function settleMint(address collection, uint256 tokenId, uint256 newMaxSupply) external {
+        IZoraCreator1155(collection).reduceSupply(tokenId, newMaxSupply);
     }
 }

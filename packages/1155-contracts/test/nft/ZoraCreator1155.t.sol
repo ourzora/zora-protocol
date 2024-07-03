@@ -1885,7 +1885,7 @@ contract ZoraCreator1155Test is Test {
         target.mintWithMints(mintTokenIds, mintQuantities, simpleMinter, tokenId, rewardsRecipients, abi.encode(recipient));
     }
 
-    function test_CapSupply() public {
+    function test_ReduceSupply() public {
         init();
 
         uint256 initialMaxSupply = 1_000_000;
@@ -1909,11 +1909,12 @@ contract ZoraCreator1155Test is Test {
         assertEq(tokenData.totalMinted, quantity);
         assertEq(tokenData.maxSupply, initialMaxSupply);
 
-        simpleMinter.settleMint(address(target), tokenId);
+        uint256 totalSupply = target.getTokenInfo(tokenId).totalMinted;
+        simpleMinter.settleMint(address(target), tokenId, totalSupply);
 
         tokenData = target.getTokenInfo(tokenId);
 
-        assertEq(tokenData.maxSupply, quantity);
+        assertEq(tokenData.maxSupply, totalSupply);
 
         vm.deal(collector, totalReward);
         vm.prank(collector);
@@ -1921,7 +1922,49 @@ contract ZoraCreator1155Test is Test {
         target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
     }
 
-    function testRevert_CapSupplyInvalidPermission() public {
+    function test_ReduceSupply_revertsWhen_newSupplyGreaterThanMax() public {
+        init();
+
+        uint256 initialMaxSupply = 1_000_000;
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("test", initialMaxSupply);
+        target.addPermission(tokenId, address(simpleMinter), minterRole);
+
+        vm.stopPrank();
+
+        vm.expectRevert(IZoraCreator1155Errors.CanOnlyReduceMaxSupply.selector);
+        simpleMinter.settleMint(address(target), tokenId, initialMaxSupply);
+
+        vm.expectRevert(IZoraCreator1155Errors.CanOnlyReduceMaxSupply.selector);
+        simpleMinter.settleMint(address(target), tokenId, initialMaxSupply + 1);
+    }
+
+    function test_ReduceSupply_revertsWhen_newSupplyLessThanTotalMinted() public {
+        init();
+
+        uint256 initialMaxSupply = 1_000_000;
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("test", initialMaxSupply);
+        target.addPermission(tokenId, address(simpleMinter), minterRole);
+
+        vm.stopPrank();
+
+        uint256 quantity = 11;
+        uint256 totalReward = 0.000777 ether * quantity;
+
+        vm.deal(collector, totalReward);
+        vm.prank(collector);
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
+
+        vm.expectRevert(IZoraCreator1155Errors.CannotReduceMaxSupplyBelowMinted.selector);
+        simpleMinter.settleMint(address(target), tokenId, quantity - 1);
+    }
+
+    function testRevert_ReduceSupplyInvalidPermission() public {
         init();
 
         uint256 initialMaxSupply = 1_000_000;
@@ -1944,6 +1987,6 @@ contract ZoraCreator1155Test is Test {
         target.removePermission(tokenId, address(simpleMinter), minterRole);
 
         vm.expectRevert(abi.encodeWithSignature("UserMissingRoleForToken(address,uint256,uint256)", address(simpleMinter), tokenId, minterRole));
-        simpleMinter.settleMint(address(target), tokenId);
+        simpleMinter.settleMint(address(target), tokenId, 0);
     }
 }
