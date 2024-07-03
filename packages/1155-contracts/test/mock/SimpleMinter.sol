@@ -42,4 +42,10 @@ contract SimpleMinter is IMinter1155 {
     function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
         return interfaceId == type(IMinter1155).interfaceId || interfaceId == type(IERC165Upgradeable).interfaceId;
     }
+
+    function settleMint(address collection, uint256 tokenId) external returns (uint256) {
+        uint256 totalSupply = ZoraCreator1155Impl(payable(collection)).capSupply(tokenId);
+
+        return totalSupply;
+    }
 }

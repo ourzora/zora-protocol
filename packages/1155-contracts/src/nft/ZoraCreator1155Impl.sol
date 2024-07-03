@@ -325,6 +325,17 @@ contract ZoraCreator1155Impl is
         return tokenId;
     }
 
+    /// @notice Allow a minter to cap the supply of a token
+    /// @dev This ensures a token cannot be minted further by the calling minter and other approved minters
+    /// @param tokenId The token id
+    function capSupply(uint256 tokenId) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) returns (uint256) {
+        TokenData storage tokenData = tokens[tokenId];
+
+        tokenData.maxSupply = tokenData.totalMinted;
+
+        return tokenData.maxSupply;
+    }
+
     /// @notice Update the token URI for a token
     /// @param tokenId The token ID to update the URI for
     /// @param _newURI The new URI
@@ -412,25 +423,6 @@ contract ZoraCreator1155Impl is
     ) external nonReentrant onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
         // Mint the specified tokens
         _mint(recipient, tokenId, quantity, data);
-    }
-
-    /// @custom:deprecated mintWithRewards has been deprecated use mint instead
-    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and a mint referral
-    /// @param minter The minter contract to use
-    /// @param tokenId The token ID to mint
-    /// @param quantity The quantity of tokens to mint
-    /// @param minterArguments The arguments to pass to the minter
-    /// @param mintReferral The referrer of the mint
-    function mintWithRewards(
-        IMinter1155 minter,
-        uint256 tokenId,
-        uint256 quantity,
-        bytes calldata minterArguments,
-        address mintReferral
-    ) external payable nonReentrant {
-        address[] memory rewardsRecipients = new address[](1);
-        rewardsRecipients[0] = mintReferral;
-        return _mint(minter, tokenId, quantity, rewardsRecipients, minterArguments);
     }
 
     /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and rewards arguments

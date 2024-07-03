@@ -74,6 +74,7 @@ contract ZoraCreator1155Test is Test {
     address internal createReferral;
     address internal zora;
     address[] internal rewardsRecipients;
+    address[] internal defaultRewardsRecipients;
     uint256 initialTokenId = 777;
     uint256 initialTokenPrice = 0.000777 ether;
 
@@ -103,6 +104,7 @@ contract ZoraCreator1155Test is Test {
 
         rewardsRecipients = new address[](1);
         rewardsRecipients[0] = mintReferral;
+        defaultRewardsRecipients = new address[](1);
 
         address adminAddress;
         (adminAddress, adminKey) = makeAddrAndKey("admin");
@@ -626,7 +628,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalReward);
 
         vm.prank(admin);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
 
         IZoraCreator1155TypesV1.TokenData memory tokenData = target.getTokenInfo(tokenId);
         assertEq(tokenData.totalMinted, quantity);
@@ -640,7 +642,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("test", 1000);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.UserMissingRoleForToken.selector, address(0), tokenId, target.PERMISSION_BIT_MINTER()));
-        target.mintWithRewards(SimpleMinter(payable(address(0))), tokenId, 0, "", address(0));
+        target.mint(SimpleMinter(payable(address(0))), tokenId, 0, defaultRewardsRecipients, "");
     }
 
     function test_mint_revertCannotMintMoreTokens() external {
@@ -656,7 +658,7 @@ contract ZoraCreator1155Test is Test {
         target.addPermission(tokenId, address(simpleMinter), adminRole);
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.CannotMintMoreTokens.selector, tokenId, 1001, 0, 1000));
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, 1001, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, 1001, defaultRewardsRecipients, abi.encode(recipient));
 
         vm.stopPrank();
     }
@@ -682,7 +684,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
 
         (, , address fundsRecipient, , , ) = target.config();
 
@@ -708,7 +710,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
 
         (, , address fundsRecipient, , , ) = target.config();
 
@@ -735,7 +737,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), mintReferral);
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
 
         (, , address fundsRecipient, , , ) = target.config();
 
@@ -762,7 +764,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalReward);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), mintReferral);
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
 
         (, , address fundsRecipient, , , ) = target.config();
 
@@ -786,7 +788,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(collector);
         vm.expectRevert();
-        target.mintWithRewards(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint(simpleMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
     }
 
     function test_PaidMintRewards(uint256 quantity, uint256 salePrice) public {
@@ -826,7 +828,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalValue);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalValue}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalValue}(fixedPriceMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
 
         assertEq(address(target).balance, totalSale);
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
@@ -870,7 +872,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalValue);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalValue}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), mintReferral);
+        target.mint{value: totalValue}(fixedPriceMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
 
         assertEq(address(target).balance, totalSale);
 
@@ -916,7 +918,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalValue);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalValue}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalValue}(fixedPriceMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
 
         assertEq(address(target).balance, totalSale);
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
@@ -961,7 +963,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(collector, totalValue);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalValue}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), mintReferral);
+        target.mint{value: totalValue}(fixedPriceMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
 
         assertEq(address(target).balance, totalSale);
         assertEq(protocolRewards.balanceOf(admin), settings.firstMinterReward);
@@ -1000,7 +1002,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.prank(collector);
         vm.expectRevert();
-        target.mintWithRewards(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint(fixedPriceMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
     }
 
     function test_FirstMinterRewardReceivedOnConsecutiveMints(uint32 quantity) public {
@@ -1072,14 +1074,14 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(collectors[1], totalReward);
         vm.prank(collectors[1]);
-        target.mintWithRewards{value: totalReward}(fixedPriceMinter, tokenId, quantity, abi.encode(collectors[1]), address(0));
+        target.mint{value: totalReward}(fixedPriceMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(collectors[1]));
 
         assertEq(protocolRewards.balanceOf(collectors[0]), settings.firstMinterReward);
 
         vm.deal(collectors[2], totalReward);
 
         vm.prank(collectors[2]);
-        target.mintWithRewards{value: totalReward}(fixedPriceMinter, tokenId, quantity, abi.encode(collectors[2]), address(0));
+        target.mint{value: totalReward}(fixedPriceMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(collectors[2]));
 
         assertEq(protocolRewards.balanceOf(collectors[0]), settings.firstMinterReward * 2);
     }
@@ -1102,15 +1104,16 @@ contract ZoraCreator1155Test is Test {
 
         uint256 mintRecipient = 1234;
 
-        address rewardRecipient = makeAddr("rewardRecipient");
+        address[] memory rewardsRecipientsArray = new address[](1);
+        rewardsRecipientsArray[0] = makeAddr("rewardRecipient");
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(mintRecipient), rewardRecipient);
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipientsArray, abi.encode(mintRecipient));
 
         (, , address fundsRecipient, , , ) = target.config();
 
         assertEq(protocolRewards.balanceOf(address(uint160(mintRecipient))), 0);
-        assertEq(protocolRewards.balanceOf(rewardRecipient), settings.mintReferralReward);
+        assertEq(protocolRewards.balanceOf(rewardsRecipientsArray[0]), settings.mintReferralReward);
         assertEq(protocolRewards.balanceOf(fundsRecipient), settings.creatorReward + settings.firstMinterReward);
         assertEq(protocolRewards.balanceOf(zora), settings.zoraReward + settings.createReferralReward);
     }
@@ -1160,7 +1163,7 @@ contract ZoraCreator1155Test is Test {
             settings.firstMinterReward,
             settings.zoraReward
         );
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
 
         assertEq(protocolRewards.balanceOf(collaborator), settings.creatorReward + settings.firstMinterReward);
     }
@@ -1221,7 +1224,7 @@ contract ZoraCreator1155Test is Test {
         address creatorRewardRecipient = target.getCreatorRewardRecipient(tokenId);
 
         vm.prank(collector);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
 
         assertEq(creatorRewardRecipient, address(target));
 
@@ -1268,7 +1271,7 @@ contract ZoraCreator1155Test is Test {
         uint256 totalReward = target.computeTotalReward(0.000777 ether, quantity);
 
         vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
-        target.mintWithRewards{value: totalReward}(fixedPriceMinter, tokenId, quantity, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(fixedPriceMinter, tokenId, quantity, defaultRewardsRecipients, abi.encode(recipient));
     }
 
     function test_callSale() external {
@@ -1395,7 +1398,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalReward);
 
         vm.prank(admin);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, 5, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, 5, defaultRewardsRecipients, abi.encode(recipient));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -1419,7 +1422,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalReward);
 
         vm.prank(admin);
-        target.mintWithRewards{value: totalReward}(simpleMinter, tokenId, 5, abi.encode(recipient), address(0));
+        target.mint{value: totalReward}(simpleMinter, tokenId, 5, defaultRewardsRecipients, abi.encode(recipient));
 
         uint256[] memory burnBatchIds = new uint256[](1);
         uint256[] memory burnBatchValues = new uint256[](1);
@@ -1448,7 +1451,7 @@ contract ZoraCreator1155Test is Test {
         vm.deal(admin, totalValue);
 
         vm.prank(admin);
-        target.mintWithRewards{value: totalValue}(simpleMinter, tokenId, 1000, abi.encode(recipient), address(0));
+        target.mint{value: totalValue}(simpleMinter, tokenId, 1000, defaultRewardsRecipients, abi.encode(recipient));
 
         vm.prank(admin);
         target.withdraw();
@@ -1479,7 +1482,7 @@ contract ZoraCreator1155Test is Test {
 
         vm.deal(admin, totalValue);
         vm.prank(admin);
-        target.mintWithRewards{value: totalValue}(simpleMinter, tokenId, 1000, abi.encode(recipient), address(0));
+        target.mint{value: totalValue}(simpleMinter, tokenId, 1000, defaultRewardsRecipients, abi.encode(recipient));
 
         vm.expectRevert(abi.encodeWithSelector(IZoraCreator1155Errors.ETHWithdrawFailed.selector, simpleMinter, 1 ether));
         vm.prank(address(simpleMinter));
@@ -1880,5 +1883,67 @@ contract ZoraCreator1155Test is Test {
         vm.expectRevert(abi.encodeWithSignature("Mint_InvalidMintArrayLength()"));
 
         target.mintWithMints(mintTokenIds, mintQuantities, simpleMinter, tokenId, rewardsRecipients, abi.encode(recipient));
+    }
+
+    function test_CapSupply() public {
+        init();
+
+        uint256 initialMaxSupply = 1_000_000;
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("test", initialMaxSupply);
+        target.addPermission(tokenId, address(simpleMinter), minterRole);
+
+        vm.stopPrank();
+
+        uint256 quantity = 11;
+        uint256 totalReward = 0.000777 ether * quantity;
+
+        vm.deal(collector, totalReward);
+        vm.prank(collector);
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
+
+        IZoraCreator1155.TokenData memory tokenData = target.getTokenInfo(tokenId);
+
+        assertEq(tokenData.totalMinted, quantity);
+        assertEq(tokenData.maxSupply, initialMaxSupply);
+
+        simpleMinter.settleMint(address(target), tokenId);
+
+        tokenData = target.getTokenInfo(tokenId);
+
+        assertEq(tokenData.maxSupply, quantity);
+
+        vm.deal(collector, totalReward);
+        vm.prank(collector);
+        vm.expectRevert(abi.encodeWithSignature("CannotMintMoreTokens(uint256,uint256,uint256,uint256)", 1, 11, 11, 11));
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
+    }
+
+    function testRevert_CapSupplyInvalidPermission() public {
+        init();
+
+        uint256 initialMaxSupply = 1_000_000;
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("test", initialMaxSupply);
+        target.addPermission(tokenId, address(simpleMinter), minterRole);
+
+        vm.stopPrank();
+
+        uint256 quantity = 11;
+        uint256 totalReward = 0.000777 ether * quantity;
+
+        vm.deal(collector, totalReward);
+        vm.prank(collector);
+        target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
+
+        vm.prank(admin);
+        target.removePermission(tokenId, address(simpleMinter), minterRole);
+
+        vm.expectRevert(abi.encodeWithSignature("UserMissingRoleForToken(address,uint256,uint256)", address(simpleMinter), tokenId, minterRole));
+        simpleMinter.settleMint(address(target), tokenId);
     }
 }

@@ -719,13 +719,15 @@ contract ZoraCreator1155PreminterTest is Test {
             vm.expectRevert(IMinterErrors.SaleEnded.selector);
         }
 
+        address[] memory rewardsRecipients = new address[](1);
+
         vm.deal(premintExecutor, mintCost);
-        IZoraCreator1155(contractAddress).mintWithRewards{value: mintCost}(
+        IZoraCreator1155(contractAddress).mint{value: mintCost}(
             fixedPriceMinter,
             tokenId,
             quantityToMint,
-            abi.encode(premintExecutor, comment),
-            address(0)
+            rewardsRecipients,
+            abi.encode(premintExecutor, comment)
         );
 
         vm.stopPrank();

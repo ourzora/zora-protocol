@@ -10,7 +10,7 @@ import {
   erc20MinterABI,
   zoraCreator1155ImplABI,
 } from "@zoralabs/protocol-deployments";
-import { zora721Abi } from "src/constants";
+import { zora721Abi, zora1155LegacyAbi } from "src/constants";
 import {
   GenericTokenIdTypes,
   SimulateContractParametersWithAccount,
@@ -207,7 +207,7 @@ function makeEthMintCall({
 
   // otherwise call the deprecated mint function
   return makeContractParameters({
-    abi: zoraCreator1155ImplABI,
+    abi: zora1155LegacyAbi,
     functionName: "mintWithRewards",
     account: minterAccount,
     value: mintValue,

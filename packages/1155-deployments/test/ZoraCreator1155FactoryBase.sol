@@ -101,12 +101,12 @@ contract ZoraCreator1155FactoryBase is ForkDeploymentConfig, Test {
         // mint the token
         vm.deal(collector, valueToSend);
         vm.startPrank(collector);
-        ZoraCreator1155Impl(payable(address(target))).mintWithRewards{value: valueToSend}(
+        ZoraCreator1155Impl(payable(address(target))).mint{value: valueToSend}(
             fixedPrice,
             tokenId,
             quantityToMint,
-            abi.encode(collector),
-            address(0)
+            new address[](1),
+            abi.encode(collector)
         );
 
         uint256 balance = ZoraCreator1155Impl(payable(address(target))).balanceOf(collector, tokenId);

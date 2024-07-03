@@ -81,8 +81,13 @@ interface IZoraCreator1155 is
     event ContractMetadataUpdated(address indexed updater, string uri, string name);
     event Purchased(address indexed sender, address indexed minter, uint256 indexed tokenId, uint256 quantity, uint256 value);
 
-    /// @dev Deprecated: call mint
-    function mintWithRewards(IMinter1155 minter, uint256 tokenId, uint256 quantity, bytes calldata minterArguments, address mintReferral) external payable;
+    /// @notice Mint tokens and payout rewards given a minter contract, minter arguments, and rewards arguments
+    /// @param minter The minter contract to use
+    /// @param tokenId The token ID to mint
+    /// @param quantity The quantity of tokens to mint
+    /// @param rewardsRecipients The addresses of rewards arguments - rewardsRecipients[0] = mintReferral, rewardsRecipients[1] = platformReferral
+    /// @param minterArguments The arguments to pass to the minter
+    function mint(IMinter1155 minter, uint256 tokenId, uint256 quantity, address[] calldata rewardsRecipients, bytes calldata minterArguments) external payable;
 
     function adminMint(address recipient, uint256 tokenId, uint256 quantity, bytes memory data) external;
 

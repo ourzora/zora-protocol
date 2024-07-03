@@ -27,6 +27,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
     address internal zora;
     address internal tokenRecipient;
     address internal fundsRecipient;
+    address[] internal rewardsRecipients;
 
     address internal allowedMinter;
     address[] internal minters;
@@ -42,6 +43,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         zora = makeAddr("zora");
         tokenRecipient = makeAddr("tokenRecipient");
         fundsRecipient = makeAddr("fundsRecipient");
+        rewardsRecipients = new address[](1);
 
         allowedMinter = makeAddr("allowedMinter");
         minters = new address[](1);
@@ -150,7 +152,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         createEthToken(newTokenId, uint96(mints.getEthPrice()), true);
 
         vm.startPrank(allowedMinter);
-        target.mintWithRewards{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
+        target.mint{value: totalValue}(fixedPrice, newTokenId, 10, rewardsRecipients, abi.encode(tokenRecipient, "test comment"));
 
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
         assertEq(address(target).balance, 10 ether);
@@ -213,8 +215,8 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.deal(allowedMinter, totalValue * 2);
 
         vm.startPrank(allowedMinter);
-        target.mintWithRewards{value: totalValue}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
-        target.mintWithRewards{value: totalValue}(fixedPrice, newNewTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
+        target.mint{value: totalValue}(fixedPrice, newTokenId, 10, rewardsRecipients, abi.encode(tokenRecipient, "test comment"));
+        target.mint{value: totalValue}(fixedPrice, newNewTokenId, 10, rewardsRecipients, abi.encode(tokenRecipient, "test comment"));
 
         createEthToken(newTokenId, 1 ether, true);
         createEthToken(newNewTokenId, 1 ether, true);
@@ -257,7 +259,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.deal(allowedMinter, totalValue);
 
         vm.expectRevert(abi.encodeWithSignature("ONLY_MINTER()"));
-        target.mintWithRewards{value: totalReward}(fixedPrice, newTokenId, 10, abi.encode(tokenRecipient, "test comment"), address(0));
+        target.mint{value: totalReward}(fixedPrice, newTokenId, 10, rewardsRecipients, abi.encode(tokenRecipient, "test comment"));
     }
 
     function test_MintersSetEvents() external {

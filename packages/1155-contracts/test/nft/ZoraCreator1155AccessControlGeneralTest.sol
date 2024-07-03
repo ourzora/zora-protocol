@@ -100,7 +100,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_mint() public {
         SimpleMinter minter = new SimpleMinter();
         vm.expectRevert();
-        target.mintWithRewards(IMinter1155(address(minter)), 1, 1, "", address(0));
+        target.mint(IMinter1155(address(minter)), 1, 1, new address[](1), "");
     }
 
     function test_openAccessFails_setTokenMetadataRenderer() public {
