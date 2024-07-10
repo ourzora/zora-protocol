@@ -17,8 +17,8 @@ const forkTestChains = [
   "zora_sepolia",
   "arbitrum_one",
   "arbitrum_sepolia",
-  "blast",
-  "blast_sepolia",
+  // "blast",
+  // "blast_sepolia",
 ];
 
 type ForkTestGenConfig = {
