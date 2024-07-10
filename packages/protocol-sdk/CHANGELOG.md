@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.7.2
+
+### Patch Changes
+
+- cd5ac235: protocol sdk gets mint price from the default mint price entity on the subgraph
+
 ## 0.7.1
 
 ### Patch Changes
