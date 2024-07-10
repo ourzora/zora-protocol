@@ -16,12 +16,14 @@ import {
 import { querySubgraphWithRetries } from "src/utils";
 import {
   buildContractTokensQuery,
+  buildGetDefaultMintPriceQuery,
   buildNftTokenSalesQuery,
   buildPremintsOfContractQuery,
   ISubgraphQuery,
   SalesStrategyResult,
   TokenQueryResult,
 } from "./subgraph-queries";
+import * as semver from "semver";
 
 export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
   if (!networkConfigByChain[chainId]) {
@@ -106,6 +108,7 @@ function getTargetStrategy({
 
   return targetStrategy;
 }
+
 export class SubgraphMintGetter implements IOnchainMintGetter {
   httpClient: IHttpClient;
   networkConfig: NetworkConfig;
@@ -113,6 +116,18 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
   constructor(chainId: number, httpClient?: IHttpClient) {
     this.httpClient = httpClient || defaultHttpClient;
     this.networkConfig = getApiNetworkConfigForChain(chainId);
+  }
+
+  async getContractMintFee(contract: TokenQueryResult["contract"]) {
+    const storedMintFee = BigInt(contract.mintFeePerQuantity);
+    if (!contractUsesMintCardsForMintFee(contract.contractVersion)) {
+      return storedMintFee;
+    }
+    const defaultMintFee = await this.querySubgraphWithRetries(
+      buildGetDefaultMintPriceQuery({}),
+    );
+
+    return defaultMintFee || storedMintFee;
   }
 
   async querySubgraphWithRetries<T>({
@@ -146,8 +161,11 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
       throw new Error("Cannot find token");
     }
 
+    const defaultMintFee = await this.getContractMintFee(token.contract);
+
     return parseTokenQueryResult({
-      token,
+      token: token,
+      defaultMintFee,
       tokenId,
       preferredSaleType: saleType,
     });
@@ -166,7 +184,9 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
       }),
     );
 
-    if (!tokens) return [];
+    if (!tokens || tokens.length === 0) return [];
+
+    const defaultMintFee = await this.getContractMintFee(tokens[0]!.contract);
 
     return tokens
       .filter((x) => x.tokenId !== "0")
@@ -175,6 +195,7 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
           token,
           tokenId: token.tokenId,
           preferredSaleType,
+          defaultMintFee,
         }),
       );
   }
@@ -203,10 +224,12 @@ function parseTokenQueryResult({
   token,
   tokenId,
   preferredSaleType,
+  defaultMintFee,
 }: {
   token: TokenQueryResult;
   tokenId?: GenericTokenIdTypes;
   preferredSaleType?: SaleType;
+  defaultMintFee: bigint;
 }): OnchainSalesConfigAndTokenInfo {
   const targetStrategy = getTargetStrategy({
     tokenId,
@@ -214,7 +237,7 @@ function parseTokenQueryResult({
     token,
   });
 
-  const tokenInfo = parseTokenInfo(token);
+  const tokenInfo = parseTokenInfo(token, defaultMintFee);
 
   const salesConfig = parseSalesConfig(targetStrategy);
 
@@ -228,7 +251,17 @@ function parseTokenQueryResult({
   };
 }
 
-function parseTokenInfo(token: TokenQueryResult): OnchainMintable {
+const contractUsesMintCardsForMintFee = (contractVersion: string) => {
+  const semVerContractVersion = semver.coerce(contractVersion)?.raw;
+  if (!semVerContractVersion) return false;
+
+  return semver.gte(semVerContractVersion, "2.9.0");
+};
+
+function parseTokenInfo(
+  token: TokenQueryResult,
+  defaultMintFee: bigint,
+): OnchainMintable {
   return {
     contract: {
       address: token.contract.address,
@@ -241,7 +274,7 @@ function parseTokenInfo(token: TokenQueryResult): OnchainMintable {
     creator: token.creator,
     totalMinted: BigInt(token.totalMinted),
     maxSupply: BigInt(token.maxSupply),
-    mintFeePerQuantity: BigInt(token.contract.mintFeePerQuantity),
+    mintFeePerQuantity: defaultMintFee,
     contractVersion: token.contract.contractVersion,
   };
 }

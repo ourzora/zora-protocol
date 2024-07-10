@@ -117,6 +117,25 @@ query ($id: ID!) {
   };
 }
 
+export function buildGetDefaultMintPriceQuery({}): ISubgraphQuery<
+  bigint | undefined
+> {
+  return {
+    query: `
+{
+  defaultMintPrice(id: "0x0000000000000000000000000000000000000000") {
+    pricePerToken
+  }
+}
+`,
+    variables: {},
+    parseResponseData: (responseData: any | undefined) =>
+      responseData?.defaultMintPrice?.pricePerToken
+        ? BigInt(responseData?.defaultMintPrice?.pricePerToken)
+        : undefined,
+  };
+}
+
 export function buildContractTokensQuery({
   tokenAddress,
 }: {
