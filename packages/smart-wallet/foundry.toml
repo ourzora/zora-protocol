@@ -1,0 +1,20 @@
+[profile.default]
+evm_version = 'paris'
+optimizer = true
+optimizer_runs = 1_000_000
+out = 'out'
+solc = '0.8.23'
+via_ir = true
+libs = ["node_modules"]
+
+[fuzz]
+runs = 500
+
+[fmt]
+bracket_spacing = true
+int_types = "long"
+line_length = 150
+quote_style = "double"
+tab_width = 4
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
