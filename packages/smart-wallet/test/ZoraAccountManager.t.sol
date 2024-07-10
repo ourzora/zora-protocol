@@ -3,9 +3,9 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
 
-import { ZoraAccountManagerImpl } from "../src/ZoraAccountManagerImpl.sol";
-import { ZoraAccountManager } from "../src/ZoraAccountManager.sol";
-import { ISmartWalletFactory } from "../src/interfaces/ISmartWalletFactory.sol";
+import {ZoraAccountManagerImpl} from "../src/ZoraAccountManagerImpl.sol";
+import {ZoraAccountManager} from "../src/ZoraAccountManager.sol";
+import {ICoinbaseSmartWalletFactory} from "../src/interfaces/ICoinbaseSmartWalletFactory.sol";
 
 contract ZoraAccountManagerTest is Test {
     struct Users {
@@ -21,12 +21,12 @@ contract ZoraAccountManagerTest is Test {
     ZoraAccountManagerImpl internal managerImpl;
     ZoraAccountManagerImpl internal manager;
 
-    ISmartWalletFactory internal constant smartWalletFactory = ISmartWalletFactory(0x0BA5ED0c6AA8c49038F819E587E2633c4A9F428a);
+    ICoinbaseSmartWalletFactory internal constant smartWalletFactory = ICoinbaseSmartWalletFactory(0x0BA5ED0c6AA8c49038F819E587E2633c4A9F428a);
 
     function setUp() public {
         vm.createSelectFork(vm.envString("ZORA_SEPOLIA_RPC_URL"));
 
-        users = Users({ alice: makeAddr("alice"), bob: makeAddr("bob"), charlie: makeAddr("charlie"), owner: makeAddr("owner") });
+        users = Users({alice: makeAddr("alice"), bob: makeAddr("bob"), charlie: makeAddr("charlie"), owner: makeAddr("owner")});
         mockOwners = new address[](3);
         mockOwners[0] = users.alice;
         mockOwners[1] = users.bob;
