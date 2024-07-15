@@ -9,6 +9,7 @@ import {RewardSplitsLib} from "@zoralabs/protocol-rewards/src/abstract/RewardSpl
 import {MathUpgradeable} from "@zoralabs/openzeppelin-contracts-upgradeable/contracts/utils/math/MathUpgradeable.sol";
 import {ZoraCreator1155Impl} from "../../src/nft/ZoraCreator1155Impl.sol";
 import {ITransferHookReceiver} from "../../src/interfaces/ITransferHookReceiver.sol";
+import {IReduceSupply} from "../../src/interfaces/IReduceSupply.sol";
 import {Zora1155} from "../../src/proxies/Zora1155.sol";
 import {ZoraCreatorFixedPriceSaleStrategy} from "../../src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
 import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
@@ -1383,6 +1384,9 @@ contract ZoraCreator1155Test is Test {
 
         bytes4 erc2981InterfaceId = bytes4(0x2a55205a);
         assertTrue(target.supportsInterface(erc2981InterfaceId));
+
+        bytes4 reduceSupplyInterfaceId = type(IReduceSupply).interfaceId;
+        assertTrue(target.supportsInterface(reduceSupplyInterfaceId));
     }
 
     function test_burnBatch() external {

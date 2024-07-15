@@ -13,6 +13,7 @@ import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.s
 import {IZoraCreator1155DelegatedCreation} from "./IZoraCreator1155DelegatedCreation.sol";
 import {IMintWithRewardsRecipients} from "./IMintWithRewardsRecipients.sol";
 import {IMintWithMints} from "@zoralabs/mints-contracts/src/IMintWithMints.sol";
+import {IReduceSupply} from "./IReduceSupply.sol";
 
 /*
 
@@ -46,7 +47,8 @@ interface IZoraCreator1155 is
     IERC1155MetadataURIUpgradeable,
     IZoraCreator1155DelegatedCreation,
     IMintWithRewardsRecipients,
-    IMintWithMints
+    IMintWithMints,
+    IReduceSupply
 {
     function PERMISSION_BIT_ADMIN() external returns (uint256);
 
@@ -128,8 +130,6 @@ interface IZoraCreator1155 is
     function isAdminOrRole(address user, uint256 tokenId, uint256 role) external view returns (bool);
 
     function getTokenInfo(uint256 tokenId) external view returns (TokenData memory);
-
-    function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external;
 
     function callRenderer(uint256 tokenId, bytes memory data) external;
 
