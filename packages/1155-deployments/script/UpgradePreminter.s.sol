@@ -25,7 +25,7 @@ contract UpgradePreminter is ZoraDeployerBase {
 
         upgradeTarget = deployment.preminterImpl;
 
-        console2.log("Upgrade PremintExecutor target and implementatin:", upgradeTarget, preminterImplementation);
+        console2.log("Upgrade PremintExecutor target and implementation:", upgradeTarget, preminterImplementation);
         console2.log("To upgrade, use this calldata:");
         console2.logBytes(upgradeCalldata);
 

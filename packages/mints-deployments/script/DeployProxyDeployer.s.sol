@@ -5,7 +5,7 @@ import "forge-std/Script.sol";
 import {ProxyDeployerScript} from "../src/ProxyDeployerScript.sol";
 
 /// @dev This should be run once on chains to deploye the Mints proxy to;
-/// It creates the determinstic proxy deployer on the desired chain,
+/// It creates the deterministic proxy deployer on the desired chain,
 /// based on the saved byte code and salt a config generated previously in the
 /// script SaveProxyDeployerConfig.s.sol
 contract DeployProxyDeployer is ProxyDeployerScript {
