@@ -28,8 +28,8 @@
     "test:fork": {
       "dependsOn": ["^test:fork"]
     },
-    "prettier": {
-      "dependsOn": ["^prettier"]
+    "prettier:write": {
+      "dependsOn": ["^prettier:write"]
     },
     "storage-inspect:check": {
       "dependsOn": ["^storage-inspect:check"]

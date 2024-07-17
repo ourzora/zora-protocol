@@ -7,7 +7,6 @@ import {
   WalletClient,
   recoverTypedDataAddress,
 } from "viem";
-import axios from "axios";
 import { paths, TransactionStepItem } from "@reservoir0x/relay-sdk";
 import { PermitSafeTransferBatch } from "./mints-contracts";
 import {
@@ -32,8 +31,18 @@ const postToRelay = async ({
     data,
   };
 
-  return (await axios.post(request.url, request.data))
-    .data as RelayCallResponse;
+  const response = await fetch(request.url, {
+    method: "POST",
+    body: JSON.stringify(request.data),
+    headers: { "content-type": "application/json" },
+  });
+
+  if (response.ok) {
+    const responseJson = await response.json();
+    return responseJson as RelayCallResponse;
+  } else {
+    throw new Error("Bad response from relay");
+  }
 };
 
 export const getRelayCall = async ({

@@ -16,11 +16,11 @@
     "test": "forge test",
     "build:contracts": "forge build",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol'",
-    "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' ",
+    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol'",
     "lint": "prettier --check 'src/**/*.sol' 'test/**/*.sol' ",
     "copy-abis": "yarn tsx script/bundle-abis.ts",
-    "build": "yarn wagmi && yarn copy-abis && yarn prettier && tsup",
-    "wagmi": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
+    "build": "yarn wagmi:generate && yarn copy-abis && yarn prettier:write && tsup",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
     "update-contract-version": "node script/update-contract-version.mjs"
   },
   "dependencies": {
@@ -33,8 +33,13 @@
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
+    "@wagmi/cli": "^1.0.1",
     "@types/node": "20.3.2",
+    "pathe": "^1.1.2",
+    "prettier": "^3.0.3",
+    "tsx": "^4.11.0",
     "typescript": "^5.2.2",
+    "zoralabs-tsconfig": "*",
     "glob": "^10.2.2",
     "tsup": "^7.2.0",
     "prettier-plugin-solidity": "^1.3.1"

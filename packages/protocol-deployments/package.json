@@ -17,17 +17,20 @@
   },
   "scripts": {
     "build": "yarn bundle-configs && tsup",
-    "bundle-configs": "tsx scripts/bundle-configs.ts && yarn prettier",
-    "prettier": "prettier --write 'src/**/*.ts' 'scripts/*'",
+    "bundle-configs": "tsx scripts/bundle-configs.ts && yarn prettier:write",
+    "prettier:write": "prettier --write 'src/**/*.ts' 'scripts/*'",
     "lint": "prettier --check 'src/**/*.ts' 'scripts/*'"
   },
   "dependencies": {},
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
-    "@types/node": "^20.1.2",
+    "@types/node": "^20.3.2",
+    "abitype": "^1.0.2",
     "es-main": "^1.2.0",
     "tsup": "^7.2.0",
     "tsx": "^3.13.0",
+    "prettier": "^3.2.5",
+    "prettier-plugin-solidity": "^1.1.3",
     "typescript": "^5.2.2",
     "viem": "^2.11.1",
     "zoralabs-tsconfig": "*"

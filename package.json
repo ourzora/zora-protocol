@@ -11,7 +11,8 @@
     "lint": "turbo run lint",
     "format": "turbo run format",
     "release": "turbo run build && changeset publish",
-    "prepare": "husky install"
+    "prepare": "husky install",
+    "run-lint-staged": "lint-staged"
   },
   "devDependencies": {
     "@changesets/cli": "2.26.2",
@@ -48,5 +49,11 @@
     "*.js": "prettier --write",
     "*.mjs": "prettier --write",
     "*.json": "prettier --write"
+  },
+  "ignore": [
+    "*.template.sol"
+  ],
+  "engines": {
+    "node": ">=16"
   }
 }

@@ -8,7 +8,7 @@
   ],
   "scripts": {
     "prettier:check": "prettier --check 'src/**/*.sol'",
-    "prettier": "prettier --write 'src/**/*.sol'"
+    "prettier:write": "prettier --write 'src/**/*.sol'"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.1",
@@ -17,6 +17,7 @@
     "solady": "^0.0.168"
   },
   "devDependencies": {
+    "prettier": "^3.0.3",
     "prettier-plugin-solidity": "^1.3.1"
   }
 }

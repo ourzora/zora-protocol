@@ -23,8 +23,10 @@
     "yaml": "2.3.4"
   },
   "devDependencies": {
+    "@types/node": "^20.13.0",
     "@0xsplits/splits-sdk": "^4.0.2",
     "@zoralabs/protocol-sdk": "*",
+    "@zoralabs/protocol-deployments": "*",
     "zoralabs-tsconfig": "*"
   }
 }

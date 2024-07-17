@@ -15,7 +15,7 @@
     "test": "forge test",
     "build:contracts": "forge build --extra-output-files abi",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
-    "prettier": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "lint": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'"
   },
   "dependencies": {
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "20.3.2",
+    "prettier": "^3.0.3",
     "@lavamoat/preinstall-always-fail": "2.0.0",
     "prettier-plugin-solidity": "^1.3.1"
   }
