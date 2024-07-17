@@ -1,0 +1,968 @@
+export const abi = [
+  { type: "constructor", inputs: [], stateMutability: "nonpayable" },
+  {
+    type: "function",
+    name: "ETH_ADDRESS",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "MINIMUM_ERC20_PRICE",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "MINIMUM_ETH_PRICE",
+    inputs: [],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "NAME",
+    inputs: [],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "VERSION",
+    inputs: [],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "authority",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "balanceOf",
+    inputs: [
+      { name: "account", type: "address", internalType: "address" },
+      { name: "id", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "balanceOfAccount",
+    inputs: [{ name: "account", type: "address", internalType: "address" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "balanceOfBatch",
+    inputs: [
+      {
+        name: "accounts",
+        type: "address[]",
+        internalType: "address[]",
+      },
+      { name: "ids", type: "uint256[]", internalType: "uint256[]" },
+    ],
+    outputs: [{ name: "", type: "uint256[]", internalType: "uint256[]" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "contractURI",
+    inputs: [],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "createToken",
+    inputs: [
+      { name: "tokenId", type: "uint256", internalType: "uint256" },
+      {
+        name: "tokenConfig",
+        type: "tuple",
+        internalType: "struct TokenConfig",
+        components: [
+          { name: "price", type: "uint256", internalType: "uint256" },
+          {
+            name: "tokenAddress",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "redeemHandler",
+            type: "address",
+            internalType: "address",
+          },
+        ],
+      },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "eip712Domain",
+    inputs: [],
+    outputs: [
+      { name: "fields", type: "bytes1", internalType: "bytes1" },
+      { name: "name", type: "string", internalType: "string" },
+      { name: "version", type: "string", internalType: "string" },
+      { name: "chainId", type: "uint256", internalType: "uint256" },
+      {
+        name: "verifyingContract",
+        type: "address",
+        internalType: "address",
+      },
+      { name: "salt", type: "bytes32", internalType: "bytes32" },
+      {
+        name: "extensions",
+        type: "uint256[]",
+        internalType: "uint256[]",
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getManager",
+    inputs: [],
+    outputs: [{ name: "", type: "address", internalType: "address" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "getTokenConfig",
+    inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct TokenConfig",
+        components: [
+          { name: "price", type: "uint256", internalType: "uint256" },
+          {
+            name: "tokenAddress",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "redeemHandler",
+            type: "address",
+            internalType: "address",
+          },
+        ],
+      },
+    ],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "hashPermitBatch",
+    inputs: [
+      {
+        name: "permit",
+        type: "tuple",
+        internalType: "struct IZoraSparks1155Managed.PermitBatch",
+        components: [
+          { name: "owner", type: "address", internalType: "address" },
+          { name: "to", type: "address", internalType: "address" },
+          {
+            name: "tokenIds",
+            type: "uint256[]",
+            internalType: "uint256[]",
+          },
+          {
+            name: "quantities",
+            type: "uint256[]",
+            internalType: "uint256[]",
+          },
+          {
+            name: "safeTransferData",
+            type: "bytes",
+            internalType: "bytes",
+          },
+          {
+            name: "deadline",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "nonce", type: "uint256", internalType: "uint256" },
+        ],
+      },
+    ],
+    outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "hashPermitSingle",
+    inputs: [
+      {
+        name: "permit",
+        type: "tuple",
+        internalType: "struct IZoraSparks1155Managed.PermitSingle",
+        components: [
+          { name: "owner", type: "address", internalType: "address" },
+          { name: "to", type: "address", internalType: "address" },
+          { name: "tokenId", type: "uint256", internalType: "uint256" },
+          {
+            name: "quantity",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "safeTransferData",
+            type: "bytes",
+            internalType: "bytes",
+          },
+          {
+            name: "deadline",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "nonce", type: "uint256", internalType: "uint256" },
+        ],
+      },
+    ],
+    outputs: [{ name: "", type: "bytes32", internalType: "bytes32" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "isApprovedForAll",
+    inputs: [
+      { name: "account", type: "address", internalType: "address" },
+      { name: "operator", type: "address", internalType: "address" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "isConsumingScheduledOp",
+    inputs: [],
+    outputs: [{ name: "", type: "bytes4", internalType: "bytes4" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "isValidSignatureTransferBatch",
+    inputs: [
+      {
+        name: "permit",
+        type: "tuple",
+        internalType: "struct IZoraSparks1155Managed.PermitBatch",
+        components: [
+          { name: "owner", type: "address", internalType: "address" },
+          { name: "to", type: "address", internalType: "address" },
+          {
+            name: "tokenIds",
+            type: "uint256[]",
+            internalType: "uint256[]",
+          },
+          {
+            name: "quantities",
+            type: "uint256[]",
+            internalType: "uint256[]",
+          },
+          {
+            name: "safeTransferData",
+            type: "bytes",
+            internalType: "bytes",
+          },
+          {
+            name: "deadline",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "nonce", type: "uint256", internalType: "uint256" },
+        ],
+      },
+      { name: "signature", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "isValidSignatureTransferSingle",
+    inputs: [
+      {
+        name: "permit",
+        type: "tuple",
+        internalType: "struct IZoraSparks1155Managed.PermitSingle",
+        components: [
+          { name: "owner", type: "address", internalType: "address" },
+          { name: "to", type: "address", internalType: "address" },
+          { name: "tokenId", type: "uint256", internalType: "uint256" },
+          {
+            name: "quantity",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "safeTransferData",
+            type: "bytes",
+            internalType: "bytes",
+          },
+          {
+            name: "deadline",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "nonce", type: "uint256", internalType: "uint256" },
+        ],
+      },
+      { name: "signature", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "mintTokenWithERC20",
+    inputs: [
+      { name: "tokenId", type: "uint256", internalType: "uint256" },
+      {
+        name: "tokenAddress",
+        type: "address",
+        internalType: "address",
+      },
+      { name: "quantity", type: "uint256", internalType: "uint256" },
+      { name: "recipient", type: "address", internalType: "address" },
+      { name: "data", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "mintTokenWithEth",
+    inputs: [
+      { name: "tokenId", type: "uint256", internalType: "uint256" },
+      { name: "quantity", type: "uint256", internalType: "uint256" },
+      { name: "recipient", type: "address", internalType: "address" },
+      { name: "data", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "name",
+    inputs: [],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "pure",
+  },
+  {
+    type: "function",
+    name: "nonceUsed",
+    inputs: [
+      { name: "owner", type: "address", internalType: "address" },
+      { name: "nonce", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "notifyURIsUpdated",
+    inputs: [
+      {
+        name: "newContractURI",
+        type: "string",
+        internalType: "string",
+      },
+      { name: "newBaseURI", type: "string", internalType: "string" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "notifyUpdatedTokenURI",
+    inputs: [
+      { name: "newUri", type: "string", internalType: "string" },
+      { name: "tokenId", type: "uint256", internalType: "uint256" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "permitSafeTransfer",
+    inputs: [
+      {
+        name: "permit",
+        type: "tuple",
+        internalType: "struct IZoraSparks1155Managed.PermitSingle",
+        components: [
+          { name: "owner", type: "address", internalType: "address" },
+          { name: "to", type: "address", internalType: "address" },
+          { name: "tokenId", type: "uint256", internalType: "uint256" },
+          {
+            name: "quantity",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          {
+            name: "safeTransferData",
+            type: "bytes",
+            internalType: "bytes",
+          },
+          {
+            name: "deadline",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "nonce", type: "uint256", internalType: "uint256" },
+        ],
+      },
+      { name: "signature", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "permitSafeTransferBatch",
+    inputs: [
+      {
+        name: "permit",
+        type: "tuple",
+        internalType: "struct IZoraSparks1155Managed.PermitBatch",
+        components: [
+          { name: "owner", type: "address", internalType: "address" },
+          { name: "to", type: "address", internalType: "address" },
+          {
+            name: "tokenIds",
+            type: "uint256[]",
+            internalType: "uint256[]",
+          },
+          {
+            name: "quantities",
+            type: "uint256[]",
+            internalType: "uint256[]",
+          },
+          {
+            name: "safeTransferData",
+            type: "bytes",
+            internalType: "bytes",
+          },
+          {
+            name: "deadline",
+            type: "uint256",
+            internalType: "uint256",
+          },
+          { name: "nonce", type: "uint256", internalType: "uint256" },
+        ],
+      },
+      { name: "signature", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "redeem",
+    inputs: [
+      { name: "tokenId", type: "uint256", internalType: "uint256" },
+      { name: "quantity", type: "uint256", internalType: "uint256" },
+      { name: "recipient", type: "address", internalType: "address" },
+    ],
+    outputs: [
+      {
+        name: "",
+        type: "tuple",
+        internalType: "struct Redemption",
+        components: [
+          {
+            name: "tokenAddress",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "valueRedeemed",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+      },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "redeemBatch",
+    inputs: [
+      {
+        name: "tokenIds",
+        type: "uint256[]",
+        internalType: "uint256[]",
+      },
+      {
+        name: "quantities",
+        type: "uint256[]",
+        internalType: "uint256[]",
+      },
+      { name: "recipient", type: "address", internalType: "address" },
+    ],
+    outputs: [
+      {
+        name: "redemptions",
+        type: "tuple[]",
+        internalType: "struct Redemption[]",
+        components: [
+          {
+            name: "tokenAddress",
+            type: "address",
+            internalType: "address",
+          },
+          {
+            name: "valueRedeemed",
+            type: "uint256",
+            internalType: "uint256",
+          },
+        ],
+      },
+    ],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "safeBatchTransferFrom",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+      { name: "ids", type: "uint256[]", internalType: "uint256[]" },
+      { name: "values", type: "uint256[]", internalType: "uint256[]" },
+      { name: "data", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "safeTransferFrom",
+    inputs: [
+      { name: "from", type: "address", internalType: "address" },
+      { name: "to", type: "address", internalType: "address" },
+      { name: "id", type: "uint256", internalType: "uint256" },
+      { name: "value", type: "uint256", internalType: "uint256" },
+      { name: "data", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setApprovalForAll",
+    inputs: [
+      { name: "operator", type: "address", internalType: "address" },
+      { name: "approved", type: "bool", internalType: "bool" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "setAuthority",
+    inputs: [
+      { name: "newAuthority", type: "address", internalType: "address" },
+    ],
+    outputs: [],
+    stateMutability: "nonpayable",
+  },
+  {
+    type: "function",
+    name: "supportsInterface",
+    inputs: [{ name: "interfaceId", type: "bytes4", internalType: "bytes4" }],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "symbol",
+    inputs: [],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "pure",
+  },
+  {
+    type: "function",
+    name: "tokenExists",
+    inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }],
+    outputs: [{ name: "", type: "bool", internalType: "bool" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "tokenPrice",
+    inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }],
+    outputs: [{ name: "", type: "uint256", internalType: "uint256" }],
+    stateMutability: "view",
+  },
+  {
+    type: "function",
+    name: "transferBatchToManagerAndCall",
+    inputs: [
+      {
+        name: "tokenIds",
+        type: "uint256[]",
+        internalType: "uint256[]",
+      },
+      {
+        name: "quantities",
+        type: "uint256[]",
+        internalType: "uint256[]",
+      },
+      { name: "call", type: "bytes", internalType: "bytes" },
+    ],
+    outputs: [{ name: "callReturn", type: "bytes", internalType: "bytes" }],
+    stateMutability: "payable",
+  },
+  {
+    type: "function",
+    name: "uri",
+    inputs: [{ name: "tokenId", type: "uint256", internalType: "uint256" }],
+    outputs: [{ name: "", type: "string", internalType: "string" }],
+    stateMutability: "view",
+  },
+  {
+    type: "event",
+    name: "ApprovalForAll",
+    inputs: [
+      {
+        name: "account",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "operator",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "approved",
+        type: "bool",
+        indexed: false,
+        internalType: "bool",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "AuthorityUpdated",
+    inputs: [
+      {
+        name: "authority",
+        type: "address",
+        indexed: false,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "ContractURIUpdated",
+    inputs: [],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "EIP712DomainChanged",
+    inputs: [],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "TokenCreated",
+    inputs: [
+      {
+        name: "tokenId",
+        type: "uint256",
+        indexed: true,
+        internalType: "uint256",
+      },
+      {
+        name: "price",
+        type: "uint256",
+        indexed: true,
+        internalType: "uint256",
+      },
+      {
+        name: "tokenAddress",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "TransferBatch",
+    inputs: [
+      {
+        name: "operator",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "from",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "to",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "ids",
+        type: "uint256[]",
+        indexed: false,
+        internalType: "uint256[]",
+      },
+      {
+        name: "values",
+        type: "uint256[]",
+        indexed: false,
+        internalType: "uint256[]",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "TransferSingle",
+    inputs: [
+      {
+        name: "operator",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "from",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "to",
+        type: "address",
+        indexed: true,
+        internalType: "address",
+      },
+      {
+        name: "id",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+      {
+        name: "value",
+        type: "uint256",
+        indexed: false,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "URI",
+    inputs: [
+      {
+        name: "value",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+      {
+        name: "id",
+        type: "uint256",
+        indexed: true,
+        internalType: "uint256",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "URIsUpdated",
+    inputs: [
+      {
+        name: "contractURI",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+      {
+        name: "baseURI",
+        type: "string",
+        indexed: false,
+        internalType: "string",
+      },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "error",
+    name: "AccessManagedInvalidAuthority",
+    inputs: [{ name: "authority", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "AccessManagedRequiredDelay",
+    inputs: [
+      { name: "caller", type: "address", internalType: "address" },
+      { name: "delay", type: "uint32", internalType: "uint32" },
+    ],
+  },
+  {
+    type: "error",
+    name: "AccessManagedUnauthorized",
+    inputs: [{ name: "caller", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "AddressEmptyCode",
+    inputs: [{ name: "target", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "AddressInsufficientBalance",
+    inputs: [{ name: "account", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "ArrayLengthMismatch",
+    inputs: [
+      { name: "lengthA", type: "uint256", internalType: "uint256" },
+      { name: "lengthB", type: "uint256", internalType: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "CallFailed",
+    inputs: [{ name: "returnData", type: "bytes", internalType: "bytes" }],
+  },
+  {
+    type: "error",
+    name: "ERC1155InsufficientBalance",
+    inputs: [
+      { name: "sender", type: "address", internalType: "address" },
+      { name: "balance", type: "uint256", internalType: "uint256" },
+      { name: "needed", type: "uint256", internalType: "uint256" },
+      { name: "tokenId", type: "uint256", internalType: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "ERC1155InvalidApprover",
+    inputs: [{ name: "approver", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "ERC1155InvalidArrayLength",
+    inputs: [
+      { name: "idsLength", type: "uint256", internalType: "uint256" },
+      { name: "valuesLength", type: "uint256", internalType: "uint256" },
+    ],
+  },
+  {
+    type: "error",
+    name: "ERC1155InvalidOperator",
+    inputs: [{ name: "operator", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "ERC1155InvalidReceiver",
+    inputs: [{ name: "receiver", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "ERC1155InvalidSender",
+    inputs: [{ name: "sender", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "ERC1155MissingApprovalForAll",
+    inputs: [
+      { name: "operator", type: "address", internalType: "address" },
+      { name: "owner", type: "address", internalType: "address" },
+    ],
+  },
+  { type: "error", name: "ERC20TransferSlippage", inputs: [] },
+  {
+    type: "error",
+    name: "ERC2612ExpiredSignature",
+    inputs: [{ name: "deadline", type: "uint256", internalType: "uint256" }],
+  },
+  { type: "error", name: "ETHTransferFailed", inputs: [] },
+  { type: "error", name: "FailedInnerCall", inputs: [] },
+  { type: "error", name: "IncorrectAmountSent", inputs: [] },
+  {
+    type: "error",
+    name: "InvalidAccountNonce",
+    inputs: [
+      { name: "account", type: "address", internalType: "address" },
+      { name: "currentNonce", type: "uint256", internalType: "uint256" },
+    ],
+  },
+  { type: "error", name: "InvalidRecipient", inputs: [] },
+  { type: "error", name: "InvalidShortString", inputs: [] },
+  { type: "error", name: "InvalidSignature", inputs: [] },
+  { type: "error", name: "InvalidTokenPrice", inputs: [] },
+  { type: "error", name: "NoUriForNonexistentToken", inputs: [] },
+  {
+    type: "error",
+    name: "NotARedeemHandler",
+    inputs: [{ name: "handler", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "SafeERC20FailedOperation",
+    inputs: [{ name: "token", type: "address", internalType: "address" }],
+  },
+  {
+    type: "error",
+    name: "StringTooLong",
+    inputs: [{ name: "str", type: "string", internalType: "string" }],
+  },
+  { type: "error", name: "TokenAlreadyCreated", inputs: [] },
+  { type: "error", name: "TokenDoesNotExist", inputs: [] },
+  {
+    type: "error",
+    name: "TokenMismatch",
+    inputs: [
+      {
+        name: "storedTokenAddress",
+        type: "address",
+        internalType: "address",
+      },
+      {
+        name: "expectedTokenAddress",
+        type: "address",
+        internalType: "address",
+      },
+    ],
+  },
+  { type: "error", name: "TokenNotMintable", inputs: [] },
+] as const;

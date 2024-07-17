@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/nft-creator-subgraph",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "license": "MIT",
   "repository": "https://github.com/ourzora/zora-creator-subgraph",
   "private": true,
@@ -21,7 +21,7 @@
   ],
   "dependencies": {
     "@graphprotocol/graph-ts": "0.29.3",
-    "@zoralabs/mints-contracts": "*",
+    "@zoralabs/sparks-contracts": "*",
     "@zoralabs/nft-drop-contracts": "1.12.0",
     "@zoralabs/protocol-deployments": "*",
     "@zoralabs/protocol-rewards": "*",

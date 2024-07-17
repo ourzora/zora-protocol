@@ -11,20 +11,15 @@ import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltie
 import {ILimitedMintPerAddressErrors} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorMerkleMinterStrategy} from "../../../src/minters/merkle/ZoraCreatorMerkleMinterStrategy.sol";
-import {ZoraMintsFixtures} from "../../fixtures/ZoraMintsFixtures.sol";
-import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 
 contract ZoraCreatorMerkleMinterStrategyTest is Test {
     ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal target;
     ZoraCreatorMerkleMinterStrategy internal merkleMinter;
-    IZoraMintsMinterManager internal mints;
     address payable internal admin = payable(address(0x999));
     address internal zora;
     address internal mintTo;
     address[] internal rewardRecipients;
-    uint256 initialTokenId = 777;
-    uint256 initialTokenPrice = 0.000777 ether;
 
     event SaleSet(address indexed sender, uint256 indexed tokenId, ZoraCreatorMerkleMinterStrategy.MerkleSaleSettings merkleSaleSettings);
 
@@ -34,8 +29,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         bytes[] memory emptyData = new bytes[](0);
         rewardRecipients = new address[](1);
         protocolRewards = new ProtocolRewards();
-        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards), address(mints));
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(payable(address(proxy)));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
@@ -82,7 +76,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.stopPrank();
 
         uint256 totalSale = 10 ether;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         uint256 totalValue = totalSale + totalReward;
 
         vm.deal(mintTo, totalValue);
@@ -123,7 +117,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.stopPrank();
 
         uint256 totalSale = 10 ether;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         uint256 totalValue = totalSale + totalReward;
 
         vm.deal(mintTo, totalValue);
@@ -200,7 +194,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.stopPrank();
 
         uint256 totalSale = 10 ether;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         uint256 totalValue = totalSale + totalReward;
 
         vm.deal(mintTo, totalValue);
@@ -283,7 +277,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.stopPrank();
 
         uint256 totalSale = 10 ether;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         uint256 totalValue = totalSale + totalReward;
 
         vm.deal(mintTo, totalValue);
@@ -332,7 +326,7 @@ contract ZoraCreatorMerkleMinterStrategyTest is Test {
         vm.stopPrank();
 
         uint256 totalSale = 10 ether;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         uint256 totalValue = totalSale + totalReward;
 
         vm.deal(mintTo, totalValue);

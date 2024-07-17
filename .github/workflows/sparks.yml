@@ -1,0 +1,29 @@
+name: "Sparks"
+on:
+  workflow_call:
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      package_folder: packages/sparks
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+    with:
+      package_folder: packages/sparks
+      name: Sparks
+
+  contract_sizes:
+    needs: build
+    uses: ./.github/workflows/contract_sizes.yml
+    with:
+      package_folder: packages/sparks
+      name: Sparks
+
+  coverage:
+    uses: ./.github/workflows/coverage.yml
+    with:
+      package: "sparks"
+      files_to_ignore: '"*Ownable*" "*Mock*" "*BatchDataHelper*" "*test*"'

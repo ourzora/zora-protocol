@@ -589,6 +589,23 @@ type Auction @entity {
   ended: Boolean
 }
 
+### Sparks contract
+
+type SparkToken @entity {
+  id: ID!
+  tokenId: BigInt!
+  pricePerToken: BigInt!
+  # Marking tokenAddress as potentially nullable in order to graft as the field did not exist on earlier versions
+  tokenAddress: Bytes
+}
+
+type SparkAccountBalance @entity {
+  id: ID!
+  balance: BigInt!
+  account: Bytes!
+  sparkToken: SparkToken!
+}
+
 ### Mints contract
 
 type MintToken @entity {

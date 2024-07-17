@@ -38,3 +38,7 @@ mintsManager:
   - address: "0x77777770ca269366c7208afcf36fe2c6f7f7608b"
     startBlock: "12827178"
     version: "1"
+zoraSparks:
+  - address: "0x7777777b3eA6C126942BB14dD5C3C11D365C385D"
+    startBlock: "17060171"
+    version: "1"

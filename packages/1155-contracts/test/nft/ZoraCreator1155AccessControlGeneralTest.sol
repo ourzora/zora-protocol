@@ -14,14 +14,11 @@ import {IZoraCreator1155Factory} from "../../src/interfaces/IZoraCreator1155Fact
 import {ICreatorRendererControl} from "../../src/interfaces/ICreatorRendererControl.sol";
 import {SimpleMinter} from "../mock/SimpleMinter.sol";
 import {SimpleRenderer} from "../mock/SimpleRenderer.sol";
-import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
-import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 
 contract ZoraCreator1155AccessControlGeneralTest is Test {
     ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal zoraCreator1155Impl;
     ZoraCreator1155Impl internal target;
-    IZoraMintsMinterManager internal mints;
     address payable admin;
     address internal zora;
     uint256 initialTokenId = 777;
@@ -30,8 +27,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function setUp() external {
         zora = makeAddr("zora");
         protocolRewards = new ProtocolRewards();
-        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards), address(mints));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
         target = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());

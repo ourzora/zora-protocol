@@ -1,0 +1,48 @@
+{
+  "name": "@zoralabs/sparks-deployments",
+  "version": "0.0.1",
+  "repository": "https://github.com/ourzora/zora-protocol",
+  "license": "MIT",
+  "type": "module",
+  "private": true,
+  "files": [
+    "deterministicConfig"
+  ],
+  "scripts": {
+    "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
+    "test": "FORK_TEST_CHAINS=mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,sepolia,base_goerli,base,zora_sepolia forge test -vvv",
+    "prettier:write": "prettier --write 'src/**/*.sol' 'scripts/**/*.ts'",
+    "lint": "prettier --check 'src/**/*.sol' 'scripts/**/*.ts'",
+    "copy-deployed-contracts": "yarn tsx script/copy-deployed-contracts.ts",
+    "unlink-common": "rm -rf ./node_modules/@zoralabs/shared-contracts && cp -r ../shared-contracts ./node_modules/@zoralabs/shared-contracts",
+    "unlink-sparks": "rm -rf ./node_modules/@zoralabs/sparks-contracts && cp -r ../sparks ./node_modules/@zoralabs/sparks-contracts",
+    "unlink-contracts": "yarn unlink-common && yarn unlink-sparks",
+    "link-contracts": "rm -rf ./node_modules && cd .. && yarn"
+  },
+  "dependencies": {
+    "@zoralabs/sparks-contracts": "*",
+    "@zoralabs/shared-contracts": "*"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "5.0.2",
+    "@openzeppelin/contracts-upgradeable": "5.0.2",
+    "prettier": "^3.0.3",
+    "@inquirer/prompts": "^3.3.0",
+    "viem": "^2.9.19",
+    "@lavamoat/preinstall-always-fail": "2.0.0",
+    "@turnkey/api-key-stamper": "^0.3.1",
+    "@turnkey/http": "^2.5.1",
+    "@turnkey/viem": "^0.4.4",
+    "@types/node": "^20.1.2",
+    "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
+    "es-main": "^1.2.0",
+    "forge-std": "https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80",
+    "glob": "^10.2.2",
+    "prettier-plugin-solidity": "^1.3.1",
+    "solady": "0.0.132",
+    "solmate": "6.1.0",
+    "tsx": "^3.13.0",
+    "typescript": "^5.2.2",
+    "zoralabs-tsconfig": "*"
+  }
+}

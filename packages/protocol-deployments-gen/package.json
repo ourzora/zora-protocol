@@ -22,7 +22,7 @@
     "@lavamoat/preinstall-always-fail": "2.0.0",
     "@zoralabs/1155-deployments": "*",
     "@zoralabs/zora-1155-contracts": "*",
-    "@zoralabs/mints-contracts": "*",
-    "@zoralabs/mints-deployments": "*"
+    "@zoralabs/sparks-contracts": "*",
+    "@zoralabs/sparks-deployments": "*"
   }
 }

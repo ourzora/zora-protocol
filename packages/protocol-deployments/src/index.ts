@@ -5,4 +5,4 @@ export * from "./generated/wagmi";
 export * from "./typedData";
 export * from "./types";
 export * as contracts1155 from "./generated/1155";
-export * as mints from "./generated/mints";
+export * as sparks from "./generated/sparks";

@@ -12,7 +12,6 @@ import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersion
 import {ICreatorRoyaltiesControl} from "../interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155DelegatedCreation} from "./IZoraCreator1155DelegatedCreation.sol";
 import {IMintWithRewardsRecipients} from "./IMintWithRewardsRecipients.sol";
-import {IMintWithMints} from "@zoralabs/mints-contracts/src/IMintWithMints.sol";
 import {IReduceSupply} from "./IReduceSupply.sol";
 
 /*
@@ -47,7 +46,6 @@ interface IZoraCreator1155 is
     IERC1155MetadataURIUpgradeable,
     IZoraCreator1155DelegatedCreation,
     IMintWithRewardsRecipients,
-    IMintWithMints,
     IReduceSupply
 {
     function PERMISSION_BIT_ADMIN() external returns (uint256);

@@ -25,8 +25,6 @@ import {IMinterErrors} from "../../src/interfaces/IMinterErrors.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {Zora1155PremintFixtures} from "../fixtures/Zora1155PremintFixtures.sol";
 import {RewardSplits} from "@zoralabs/protocol-rewards/src/abstract/RewardSplits.sol";
-import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
-import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 
 contract ZoraCreator1155PreminterTest is Test {
     uint256 internal constant CONTRACT_BASE_ID = 0;
@@ -35,12 +33,10 @@ contract ZoraCreator1155PreminterTest is Test {
     ZoraCreator1155PremintExecutorImpl internal preminter;
     Zora1155Factory factoryProxy;
     ZoraCreator1155FactoryImpl factory;
-    IZoraMintsMinterManager mints;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
-    uint256 internal mintFeeAmount = 0.000777 ether;
+    uint256 internal mintFeeAmount = 0.000111 ether;
     uint256 initialTokenId = 777;
-    uint256 initialTokenPrice = 0.000777 ether;
 
     // setup contract config
     uint256 internal creatorPrivateKey;
@@ -67,10 +63,9 @@ contract ZoraCreator1155PreminterTest is Test {
         zora = makeAddr("zora");
         premintExecutor = makeAddr("premintExecutor");
         collector = makeAddr("collector");
-        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
 
         vm.startPrank(zora);
-        (rewards, zoraCreator1155Impl, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora, address(mints));
+        (rewards, zoraCreator1155Impl, , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -338,7 +333,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // this account will be used to execute the premint, and should result in a contract being created
         premintExecutor = vm.addr(701);
-        uint256 mintCost = quantityToMint * 0.000777 ether;
+        uint256 mintCost = quantityToMint * 0.000111 ether;
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.deal(premintExecutor, mintCost);
         vm.prank(premintExecutor);
@@ -830,7 +825,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         // create preminter on fork
         vm.startPrank(zora);
-        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora, address(mints));
+        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         vm.stopPrank();
 
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -1161,7 +1156,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 mintFee = preminter.mintFee(contractAddress);
 
-        assertEq(mintFee, 0.000777 ether);
+        assertEq(mintFee, 0.000111 ether);
     }
 
     function test_mintFee_onNewContracts_returnsNewMintFee() external {
@@ -1176,7 +1171,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 mintFee = preminter.mintFee(contractAddress);
 
-        assertEq(mintFee, 0.000777 ether);
+        assertEq(mintFee, mintFeeAmount);
     }
 
     function _signAndExecutePremint(

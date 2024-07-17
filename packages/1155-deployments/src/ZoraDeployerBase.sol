@@ -56,7 +56,6 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
                 upgradeGateAddress: determinsticUpgradeGateAddress(),
                 mintFeeRecipient: chainConfig.mintFeeRecipient,
                 protocolRewards: chainConfig.protocolRewards,
-                mintsManagerAddress: getDeterminsticMintsManagerAddress(),
                 merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
                 redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
                 fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)

@@ -194,6 +194,33 @@ dataSources:
         - event: MintComment(indexed address,indexed address,indexed uint256,uint256,string)
           handler: handleMintComment
 {{/mintsManager}}
+{{#zoraSparks}}
+  - name: ZoraSparks
+    kind: ethereum/contract
+    network: {{network}}
+    source:
+      abi: ZoraSparks1155
+      address: "{{address}}"
+      startBlock: {{startBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      entities:
+        - SparkToken
+        - SparkAccountBalance
+      language: wasm/assemblyscript
+      file: ./src/SparksMappings/factoryMappings.ts
+      abis:
+        - name: ZoraSparks1155
+          file: ./abis/ZoraSparks1155.json  
+      eventHandlers:
+        - event: TokenCreated(indexed uint256,indexed uint256,indexed address)
+          handler: handleTokenCreated
+        - event: TransferSingle(indexed address,indexed address,indexed address,uint256,uint256)
+          handler: handleTransferSingle
+        - event: TransferBatch(indexed address,indexed address,indexed address,uint256[],uint256[])
+          handler: handleTransferBatch
+{{/zoraSparks}}
 {{#erc20Minter}}
   - name: ERC20Minter{{version}}
     kind: ethereum/contract

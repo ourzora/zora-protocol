@@ -15,7 +15,8 @@ import {
 import {
   zoraMints1155ABI,
   zoraMintsManagerImplABI,
-} from "@zoralabs/mints-contracts";
+  zoraSparks1155ABI,
+} from "@zoralabs/sparks-contracts";
 import erc721Drop from "@zoralabs/nft-drop-contracts/dist/artifacts/ERC721Drop.sol/ERC721Drop.json" assert { type: "json" };
 import zoraNFTCreatorV1 from "@zoralabs/nft-drop-contracts/dist/artifacts/ZoraNFTCreatorV1.sol/ZoraNFTCreatorV1.json" assert { type: "json" };
 import editionMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/EditionMetadataRenderer.sol/EditionMetadataRenderer.json" assert { type: "json" };
@@ -64,5 +65,6 @@ output_abi("ProtocolRewards", protocolRewardsABI);
 
 output_abi("ZoraMints1155", zoraMints1155ABI);
 output_abi("ZoraMintsManagerImpl", zoraMintsManagerImplABI);
+output_abi("ZoraSparks1155", zoraSparks1155ABI);
 
 output_abi("ERC20Minter", erc20MinterABI);

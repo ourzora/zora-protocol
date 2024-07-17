@@ -112,8 +112,8 @@ abstract contract DeploymentConfig is Script {
         deployment.erc20Minter = readAddressOrDefaultToZero(json, ERC20_MINTER);
     }
 
-    function getDeterminsticMintsManagerAddress() internal view returns (address) {
-        string memory json = vm.readFile("../mints-deployments/deterministicConfig/mintsProxy/params.json");
+    function getDeterminsticSparksManagerAddress() internal view returns (address) {
+        string memory json = vm.readFile("../sparks-deployments/deterministicConfig/sparksProxy/params.json");
         return json.readAddress(".manager.deployedAddress");
     }
 }

@@ -13,21 +13,16 @@ import {IRenderer1155} from "../../../src/interfaces/IRenderer1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ZoraCreatorRedeemMinterStrategy} from "../../../src/minters/redeem/ZoraCreatorRedeemMinterStrategy.sol";
-import {ZoraMintsFixtures} from "../../fixtures/ZoraMintsFixtures.sol";
-import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 
 /// @notice Contract versions after v1.4.0 will not support burn to redeem
 contract ZoraCreatorRedeemMinterStrategyTest is Test {
     ProtocolRewards internal protocolRewards;
     ZoraCreator1155Impl internal target;
     ZoraCreatorRedeemMinterStrategy internal redeemMinter;
-    IZoraMintsMinterManager internal mints;
     address payable internal admin = payable(address(0x999));
     uint256 internal newTokenId;
     address internal zora;
     address[] internal rewardRecipients;
-    uint256 initialTokenId = 777;
-    uint256 initialTokenPrice = 0.000777 ether;
 
     event RedeemSet(address indexed target, bytes32 indexed redeemsInstructionsHash, ZoraCreatorRedeemMinterStrategy.RedeemInstructions data);
     event RedeemProcessed(address indexed target, bytes32 indexed redeemsInstructionsHash, address sender, uint256[][] tokenIds, uint256[][] amounts);
@@ -38,8 +33,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         rewardRecipients = new address[](1);
         bytes[] memory emptyData = new bytes[](0);
         protocolRewards = new ProtocolRewards();
-        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
-        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards), address(mints));
+        ZoraCreator1155Impl targetImpl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
         Zora1155 proxy = new Zora1155(address(targetImpl));
         target = ZoraCreator1155Impl(payable(address(proxy)));
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, emptyData);
@@ -294,7 +288,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectEmit(true, true, false, false);
@@ -352,7 +346,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
         target.mint{value: 1 ether + totalReward}(redeemMinter, newTokenId, 10, rewardRecipients, abi.encode(redeemInstructions, tokenIds, amounts));
 
@@ -408,7 +402,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[0][1] = 1;
         uint256[][] memory amounts = new uint256[][](1);
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         target.mint{value: 1 ether + totalReward}(redeemMinter, newTokenId, 10, rewardRecipients, abi.encode(redeemInstructions, tokenIds, amounts));
@@ -501,7 +495,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[2][0] = 0;
         tokenIds[2][1] = 1;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         target.mint{value: 1 ether + totalReward}(redeemMinter, newTokenId, 10, rewardRecipients, abi.encode(redeemInstructions, tokenIds, amounts));
@@ -594,7 +588,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[2][0] = 0;
         tokenIds[2][1] = 1;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         target.mint{value: 1 ether + totalReward}(redeemMinter, newTokenId, 10, rewardRecipients, abi.encode(redeemInstructions, tokenIds, amounts));
@@ -685,7 +679,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[1][1] = 2;
         tokenIds[1][2] = 3;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 5 ether + totalReward);
 
         // detour: tokenId out of range
@@ -859,7 +853,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 3 ether + totalReward);
 
         vm.expectRevert(abi.encodeWithSignature("WrongValueSent()"));
@@ -917,7 +911,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         target.mint{value: 1 ether + totalReward}(redeemMinter, newTokenId, 10, rewardRecipients, abi.encode(redeemInstructions, tokenIds, amounts));
@@ -971,7 +965,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0][0] = 500;
 
         uint256 incorrectNumTokens = 11;
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, incorrectNumTokens);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), incorrectNumTokens);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert(abi.encodeWithSignature("IncorrectMintAmount()"));
@@ -1038,7 +1032,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         // ERC1155: amounts length != tokenIds length
         amounts = new uint256[][](2);
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert(abi.encodeWithSignature("IncorrectNumberOfTokenIds()"));
@@ -1111,7 +1105,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[1][0] = 0;
         tokenIds[1][1] = 1;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 4 ether + totalReward);
 
         // ERC721: tokenids length != instruction amount
@@ -1188,7 +1182,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert(abi.encodeWithSignature("BurnFailed()"));
@@ -1251,7 +1245,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert(abi.encodeWithSignature("BurnFailed()"));
@@ -1315,7 +1309,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[0][1] = 1;
         uint256[][] memory amounts;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert(abi.encodeWithSignature("SenderIsNotTokenOwner()"));
@@ -1376,7 +1370,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert("ERC20: transfer amount exceeds balance");
@@ -1439,7 +1433,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         amounts[0] = new uint256[](1);
         amounts[0][0] = 500;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert("ERC1155: insufficient balance for transfer");
@@ -1501,7 +1495,7 @@ contract ZoraCreatorRedeemMinterStrategyTest is Test {
         tokenIds[0][1] = 1;
         uint256[][] memory amounts;
 
-        uint256 totalReward = target.computeTotalReward(0.000777 ether, 10);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), 10);
         vm.deal(tokenRecipient, 1 ether + totalReward);
 
         vm.expectRevert("ERC721: caller is not token owner or approved");

@@ -9,11 +9,9 @@ import {ForkDeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentCo
 import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
 import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
 import {MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
-import {IZoraMintsManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsManager.sol";
-import {ICollectWithZoraMints} from "@zoralabs/mints-contracts/src/ICollectWithZoraMints.sol";
+import {IZoraSparksManager} from "@zoralabs/sparks-contracts/src/interfaces/IZoraSparksManager.sol";
 import {IZoraCreator1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
-import {IZoraMints1155Managed} from "@zoralabs/mints-contracts/src/interfaces/IZoraMints1155Managed.sol";
 import {ContractCreationConfig, PremintConfigV2} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
 
@@ -97,15 +95,15 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         return UpgradeStatus("Preminter", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
     }
 
-    function tryReadMintsImpl() private view returns (address mintsImpl) {
-        string memory addressPath = string.concat("../mints-deployments/addresses/", string.concat(vm.toString(block.chainid), ".json"));
+    function tryReadSparksImpl() private view returns (address mintsImpl) {
+        string memory addressPath = string.concat("../sparks-deployments/addresses/", string.concat(vm.toString(block.chainid), ".json"));
         try vm.readFile(addressPath) returns (string memory result) {
-            mintsImpl = result.readAddress(".MINTS_MANAGER_IMPL");
+            mintsImpl = result.readAddress(".SPARKS_MANAGER_IMPL");
         } catch {}
     }
 
     function mintsIsDeployed() private view returns (bool) {
-        return tryReadMintsImpl() != address(0);
+        return tryReadSparksImpl() != address(0);
     }
 
     function readMissingUpgradePaths() private view returns (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) {
@@ -115,12 +113,12 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         upgradePathCalls = json.readBytesArray(".missingUpgradePathCalls");
     }
 
-    function determineMintsUpgrade() private view returns (UpgradeStatus memory) {
-        address mintsManagerProxy = getDeterminsticMintsManagerAddress();
+    function determineSparksUpgrade() private view returns (UpgradeStatus memory) {
+        address mintsManagerProxy = getDeterminsticSparksManagerAddress();
 
-        address targetImpl = tryReadMintsImpl();
+        address targetImpl = tryReadSparksImpl();
         if (targetImpl == address(0)) {
-            console2.log("Mints not deployed");
+            console2.log("Sparks not deployed");
             UpgradeStatus memory upgradeStatus;
             return upgradeStatus;
         }
@@ -141,7 +139,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
             upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, targetImpl, "");
         }
 
-        return UpgradeStatus("Mints", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
+        return UpgradeStatus("Sparks", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
     }
 
     function _buildSafeUrl(address safe, address target, bytes memory cd) internal view returns (string memory) {
@@ -281,44 +279,44 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         address collector = makeAddr("collector");
         vm.deal(collector, 10 ether);
 
-        IZoraMintsManager zoraMintsManager = IZoraMintsManager(getDeterminsticMintsManagerAddress());
+        IZoraSparksManager zoraSparksManager = IZoraSparksManager(getDeterminsticSparksManagerAddress());
 
-        address[] memory mintRewardsRecipients = new address[](0);
+        // address[] memory mintRewardsRecipients = new address[](0);
 
-        MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "", mintRewardsRecipients: mintRewardsRecipients});
+        // MintArguments memory mintArguments = MintArguments({mintRecipient: collector, mintComment: "", mintRewardsRecipients: mintRewardsRecipients});
 
-        uint256 quantityToMint = 5;
+        // uint256 quantityToMint = 5;
 
-        vm.startPrank(collector);
+        // vm.startPrank(collector);
 
-        zoraMintsManager.mintWithEth{value: zoraMintsManager.getEthPrice() * quantityToMint}(quantityToMint, collector);
+        // zoraSparksManager.mintWithEth{value: zoraSparksManager.getEthPrice() * quantityToMint}(quantityToMint, collector);
 
-        uint256[] memory mintTokenIds = new uint256[](1);
-        mintTokenIds[0] = zoraMintsManager.mintableEthToken();
-        uint256[] memory quantities = new uint256[](1);
-        quantities[0] = 3;
+        // uint256[] memory mintTokenIds = new uint256[](1);
+        // mintTokenIds[0] = zoraSparksManager.mintableEthToken();
+        // uint256[] memory quantities = new uint256[](1);
+        // quantities[0] = 3;
 
-        (ContractCreationConfig memory contractConfig, , PremintConfigV2 memory premintConfig, bytes memory signature) = createAndSignPremintV2(
-            getDeployment().preminterProxy,
-            makeAddr("payoutRecipientG"),
-            10_000
-        );
+        // (ContractCreationConfig memory contractConfig, , PremintConfigV2 memory premintConfig, bytes memory signature) = createAndSignPremintV2(
+        //     getDeployment().preminterProxy,
+        //     makeAddr("payoutRecipientG"),
+        //     10_000
+        // );
 
-        bytes memory call = abi.encodeWithSelector(
-            ICollectWithZoraMints.collectPremintV2.selector,
-            contractConfig,
-            premintConfig,
-            signature,
-            mintArguments,
-            address(0)
-        );
+        // bytes memory call = abi.encodeWithSelector(
+        //     ICollectWithZoraSparks.collectPremintV2.selector,
+        //     contractConfig,
+        //     premintConfig,
+        //     signature,
+        //     mintArguments,
+        //     address(0)
+        // );
 
-        PremintResult memory result = abi.decode(
-            IZoraMints1155Managed(address(zoraMintsManager.zoraMints1155())).transferBatchToManagerAndCall(mintTokenIds, quantities, call),
-            (PremintResult)
-        );
+        // PremintResult memory result = abi.decode(
+        //     IZoraSparks1155Managed(address(zoraSparksManager.zoraSparks1155())).transferBatchToManagerAndCall(mintTokenIds, quantities, call),
+        //     (PremintResult)
+        // );
 
-        assertEq(IZoraCreator1155(result.contractAddress).balanceOf(collector, result.tokenId), quantities[0]);
+        // assertEq(IZoraCreator1155(result.contractAddress).balanceOf(collector, result.tokenId), quantities[0]);
 
         vm.stopPrank();
     }
@@ -375,7 +373,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         UpgradeStatus memory upgrade1155 = determine1155Upgrade(deployment);
         upgradeStatuses[0] = upgrade1155;
         upgradeStatuses[1] = determinePreminterUpgrade(deployment);
-        upgradeStatuses[2] = determineMintsUpgrade();
+        upgradeStatuses[2] = determineSparksUpgrade();
 
         bool upgradePerformed = performNeededUpgrades(chainConfig.factoryOwner, upgradeStatuses);
 

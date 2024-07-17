@@ -1,0 +1,23 @@
+@startuml
+
+class SPARKs {
+    + collect(mintTokenIds, quantities, 1155Contract, 1155TokenId, mintArgs)
+    + collectPremint(mintTokenIds, quantities, premintConfig, premintSignature, mintArgs)
+    + redeemBatch(mintTokenIds, quantities)
+    - validateSignature()
+    - setApproval()
+}
+
+class 1155CreatorContract {
+    + mintWithSPARKs(mintTokenIds, quantities, tokenId, mintArgs)
+}
+
+class PremintExecutor {
+    + premintWithSPARKs(premintConfig, premintSignature, mintTokenIds, quantities, mintArgs): void
+}
+
+1155CreatorContract::mintWithTicket --> SPARKs::redeem: calls redeemBatch
+SPARKs --> 1155CreatorContract::mintWithMintTicket: calls mintWithSPARKs
+SPARKs --> PremintExecutor::premintWithTicket: calls premintWithTicket
+PremintExecutor::premintWithTicket --> 1155CreatorContract::mintWithTicket: calls mintWithTicket 
+@enduml

@@ -63,8 +63,12 @@ contract DeploymentTestingUtils is Script {
 
         uint256 quantityToMint = 1;
 
+        address contractAddress = preminterAtProxy.getContractAddress(contractConfig);
+
+        uint256 mintFee = preminterAtProxy.mintFee(contractAddress) * quantityToMint;
+
         // execute the premint
-        PremintResult memory premintResult = preminterAtProxy.premintV1{value: mintFee(quantityToMint)}(
+        PremintResult memory premintResult = preminterAtProxy.premintV1{value: mintFee}(
             contractConfig,
             premintConfig,
             signature,
@@ -72,7 +76,7 @@ contract DeploymentTestingUtils is Script {
             mintArguments
         );
 
-        require(ZoraCreator1155Impl(payable(premintResult.contractAddress)).delegatedTokenId(premintConfig.uid) == premintResult.tokenId, "token id mismatch");
+        require(ZoraCreator1155Impl(payable(contractAddress)).delegatedTokenId(premintConfig.uid) == premintResult.tokenId, "token id mismatch");
     }
 
     function createAndSignPremintV2(
@@ -125,14 +129,12 @@ contract DeploymentTestingUtils is Script {
         ) = createAndSignPremintV2(premintExecutorProxyAddress, payoutRecipient, 100);
 
         uint256 quantityToMint = 1;
+        address contractAddress = preminterAtProxy.getContractAddress(contractConfig);
+        uint256 mintFee = preminterAtProxy.mintFee(contractAddress) * quantityToMint;
         // execute the premint
-        uint256 tokenId = preminterAtProxy
-        .premintV2{value: mintFee(quantityToMint)}(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
+        uint256 tokenId = preminterAtProxy.premintV2{value: mintFee}(contractConfig, premintConfig, signature, quantityToMint, mintArguments).tokenId;
 
-        require(
-            ZoraCreator1155Impl(payable(preminterAtProxy.getContractAddress(contractConfig))).delegatedTokenId(premintConfig.uid) == tokenId,
-            "token id not created for uid"
-        );
+        require(ZoraCreator1155Impl(payable(contractAddress)).delegatedTokenId(premintConfig.uid) == tokenId, "token id not created for uid");
     }
 
     function signPremint(PremintConfigV2 memory premintConfig, address deterministicAddress, uint256 privateKey) private view returns (bytes memory signature) {
@@ -143,10 +145,6 @@ contract DeploymentTestingUtils is Script {
 
         (uint8 v, bytes32 r, bytes32 s) = vm.sign(privateKey, digest);
         return abi.encodePacked(r, s, v);
-    }
-
-    function mintFee(uint256 quantityToMint) internal pure returns (uint256) {
-        return quantityToMint * 0.000777 ether;
     }
 
     function signPremint(PremintConfig memory premintConfig, address deterministicAddress, uint256 privateKey) private view returns (bytes memory signature) {

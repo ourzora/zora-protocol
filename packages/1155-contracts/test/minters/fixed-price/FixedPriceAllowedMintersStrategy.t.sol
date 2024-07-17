@@ -11,9 +11,6 @@ import {IMinter1155} from "../../../src/interfaces/IMinter1155.sol";
 import {ICreatorRoyaltiesControl} from "../../../src/interfaces/ICreatorRoyaltiesControl.sol";
 import {IZoraCreator1155Factory} from "../../../src/interfaces/IZoraCreator1155Factory.sol";
 import {ILimitedMintPerAddressErrors} from "../../../src/interfaces/ILimitedMintPerAddress.sol";
-import {ZoraMintsFixtures} from "../../fixtures/ZoraMintsFixtures.sol";
-import {IZoraMintsManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsManager.sol";
-import {TokenConfig} from "@zoralabs/mints-contracts/src/ZoraMintsTypes.sol";
 
 import {IFixedPriceAllowedMintersStrategy, FixedPriceAllowedMintersStrategy} from "../../../src/minters/fixed-price/FixedPriceAllowedMintersStrategy.sol";
 
@@ -21,7 +18,6 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
     ZoraCreator1155Impl internal targetImpl;
     ZoraCreator1155Impl internal target;
     FixedPriceAllowedMintersStrategy internal fixedPrice;
-    IZoraMintsManager internal mints;
 
     address payable internal admin;
     address internal zora;
@@ -31,8 +27,6 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
 
     address internal allowedMinter;
     address[] internal minters;
-    uint256 initialTokenId = 777;
-    uint256 initialTokenPrice = 0.000777 ether;
 
     event SaleSet(address indexed mediaContract, uint256 indexed tokenId, FixedPriceAllowedMintersStrategy.SalesConfig salesConfig);
     event MintComment(address indexed sender, address indexed tokenContract, uint256 indexed tokenId, uint256 quantity, string comment);
@@ -48,20 +42,12 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         allowedMinter = makeAddr("allowedMinter");
         minters = new address[](1);
         minters[0] = allowedMinter;
-        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
 
-        targetImpl = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()), address(mints));
+        targetImpl = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
         target = ZoraCreator1155Impl(payable(address(new Zora1155(address(targetImpl)))));
 
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, new bytes[](0));
         fixedPrice = new FixedPriceAllowedMintersStrategy();
-    }
-
-    function createEthToken(uint256 tokenId, uint256 pricePerToken, bool defaultMintable) internal {
-        mints.zoraMints1155().createToken(tokenId, TokenConfig({price: pricePerToken, tokenAddress: address(0), redeemHandler: address(0)}));
-        if (defaultMintable) {
-            mints.setDefaultMintable(address(0), tokenId);
-        }
     }
 
     function test_ContractName() external {
@@ -144,12 +130,10 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.stopPrank();
 
         uint256 numTokens = 10;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), numTokens);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), numTokens);
         uint256 totalValue = (1 ether * numTokens) + totalReward;
 
         vm.deal(allowedMinter, totalValue);
-
-        createEthToken(newTokenId, uint96(mints.getEthPrice()), true);
 
         vm.startPrank(allowedMinter);
         target.mint{value: totalValue}(fixedPrice, newTokenId, 10, rewardsRecipients, abi.encode(tokenRecipient, "test comment"));
@@ -210,16 +194,13 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.stopPrank();
 
         uint256 numTokens = 10;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), numTokens);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), numTokens);
         uint256 totalValue = (1 ether * numTokens) + totalReward;
         vm.deal(allowedMinter, totalValue * 2);
 
         vm.startPrank(allowedMinter);
         target.mint{value: totalValue}(fixedPrice, newTokenId, 10, rewardsRecipients, abi.encode(tokenRecipient, "test comment"));
         target.mint{value: totalValue}(fixedPrice, newNewTokenId, 10, rewardsRecipients, abi.encode(tokenRecipient, "test comment"));
-
-        createEthToken(newTokenId, 1 ether, true);
-        createEthToken(newNewTokenId, 1 ether, true);
 
         assertEq(target.balanceOf(tokenRecipient, newTokenId), 10);
         assertEq(target.balanceOf(tokenRecipient, newNewTokenId), 10);
@@ -254,7 +235,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         vm.stopPrank();
 
         uint256 numTokens = 10;
-        uint256 totalReward = target.computeTotalReward(mints.getEthPrice(), numTokens);
+        uint256 totalReward = target.computeTotalReward(target.mintFee(), numTokens);
         uint256 totalValue = (1 ether * numTokens) + totalReward;
         vm.deal(allowedMinter, totalValue);
 

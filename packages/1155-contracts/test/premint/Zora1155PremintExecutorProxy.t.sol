@@ -18,8 +18,6 @@ import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCr
 import {IUpgradeGate} from "../../src/interfaces/IUpgradeGate.sol";
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor, IRemovedZoraCreator1155PremintExecutorFunctions} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
-import {ZoraMintsFixtures} from "../fixtures/ZoraMintsFixtures.sol";
-import {IZoraMintsMinterManager} from "@zoralabs/mints-contracts/src/interfaces/IZoraMintsMinterManager.sol";
 import {MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
 
 contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
@@ -30,11 +28,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
     address internal zora;
     Zora1155Factory internal factoryProxy;
     ZoraCreator1155FactoryImpl factoryAtProxy;
-    uint256 internal mintFeeAmount = 0.000777 ether;
-    uint256 initialTokenId = 777;
-    uint256 initialTokenPrice = 0.000777 ether;
     ZoraCreator1155PremintExecutorImpl preminterAtProxy;
-    IZoraMintsMinterManager mints;
 
     MintArguments defaultMintArguments;
 
@@ -43,10 +37,9 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         owner = makeAddr("owner");
         collector = makeAddr("collector");
         (creator, creatorPrivateKey) = makeAddrAndKey("creator");
-        mints = ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice);
 
         vm.startPrank(zora);
-        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora, address(mints));
+        (, , , factoryProxy, ) = Zora1155FactoryFixtures.setup1155AndFactoryProxy(zora, zora);
         factoryAtProxy = ZoraCreator1155FactoryImpl(address(factoryProxy));
         vm.stopPrank();
 
@@ -82,6 +75,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         bytes memory signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_2, deterministicAddress);
 
         uint256 quantityToMint = 1;
+
+        uint256 mintFeeAmount = preminterAtProxy.mintFee(deterministicAddress);
 
         // execute the premint
         vm.deal(collector, mintFeeAmount);
@@ -142,7 +137,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
 
-        mintFeeAmount = 0.000777 ether;
+        uint256 mintFeeAmount = 0.000777 ether;
 
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
@@ -160,12 +155,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         // 2. upgrade premint executor and factory to current version
         // create new factory proxy implementation
-        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(
-            zora,
-            IUpgradeGate(upgradeGate),
-            fixedPriceMinter,
-            address(mints)
-        );
+        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(upgradeGate), fixedPriceMinter);
 
         // upgrade factory proxy
         address upgradeOwner = forkedPreminterProxy.owner();
@@ -184,6 +174,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         premintConfig = Zora1155PremintFixtures.makeDefaultV1PremintConfig(fixedPriceMinter, creator);
         premintConfig.uid = existingUid + 1;
         signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_1, deterministicAddress);
+
+        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
 
         // execute the premint
         vm.deal(collector, mintFeeAmount);
@@ -219,15 +211,10 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         bytes memory signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_1, deterministicAddress);
 
-        // use old mint fee - this is prior to having the `mintFee` functino on premint executor
-        mintFeeAmount = 0.000777 ether;
-
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
 
-        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
-
-        assertEq(mintFeeAmount, 0.000777 ether);
+        uint256 mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
 
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
@@ -245,12 +232,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         // 2. upgrade premint executor and factory to current version
         // create new factory proxy implementation
-        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(
-            zora,
-            IUpgradeGate(upgradeGate),
-            fixedPriceMinter,
-            address(mints)
-        );
+        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(upgradeGate), fixedPriceMinter);
 
         // upgrade factory proxy
         address upgradeOwner = forkedPreminterProxy.owner();
@@ -305,7 +287,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // create 1155 contract via premint, using legacy interface
         uint256 quantityToMint = 1;
 
-        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
+        uint256 mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
 
         vm.deal(collector, mintFeeAmount);
         vm.prank(collector);
@@ -314,12 +296,7 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         // 2. upgrade to current version of preminter
         // first upgrade 1155 factory to current version
-        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(
-            zora,
-            IUpgradeGate(address(0)),
-            fixedPriceMinter,
-            address(ZoraMintsFixtures.createMockMints(initialTokenId, initialTokenPrice))
-        );
+        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(address(0)), fixedPriceMinter);
         ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(address(forkedPreminterProxy.zora1155Factory()));
         vm.prank(factory.owner());
         factory.upgradeTo(address(newFactoryVersion));
@@ -334,6 +311,8 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         premintConfig.uid = 101;
         signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_2, deterministicAddress);
 
+        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
+
         // it should succeed
         ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).premintV2{value: mintFeeAmount}(
             contractConfig,
@@ -346,11 +325,11 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
         // 3. create premint on new contract
         contractConfig.contractURI = "https://zora.co/555555";
 
-        signature = _signPremint(
-            ZoraCreator1155Attribution.hashPremint(premintConfig),
-            PremintEncoding.HASHED_VERSION_2,
-            forkedPreminterProxy.getContractAddress(contractConfig)
-        );
+        deterministicAddress = forkedPreminterProxy.getContractAddress(contractConfig);
+
+        signature = _signPremint(ZoraCreator1155Attribution.hashPremint(premintConfig), PremintEncoding.HASHED_VERSION_2, deterministicAddress);
+
+        mintFeeAmount = forkedPreminterProxy.mintFee(deterministicAddress);
 
         // it should succeed
         ZoraCreator1155PremintExecutorImpl(address(forkedPreminterProxy)).premintV2{value: mintFeeAmount}(
