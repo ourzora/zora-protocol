@@ -27,7 +27,7 @@ interface IUpgradeableProxy {
 
 library ZoraSparksFixtures {
     function setupSparksProxyWithMockPreminter(
-        address proxyAdmin,
+        address,
         address initialOwner,
         uint256 initialEthTokenId,
         uint256 initialEthTokenPrice

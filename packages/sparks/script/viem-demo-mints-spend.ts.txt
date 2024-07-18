@@ -1,0 +1,157 @@
+import {
+  createPublicClient,
+  encodeFunctionData,
+  createWalletClient,
+  parseEther,
+  Hex,
+  Address,
+  http,
+  hashTypedData,
+} from "viem";
+import { zoraSepolia, sepolia } from "viem/chains";
+import { privateKeyToAccount } from "viem/accounts";
+import SponsoredMintsSpenderActionABI from "./SponsoredMintsSpenderAction.abi.json";
+import SponsoredMintsSpenderABI from "./SponsoredMintsSpenderAbi.abi.json";
+import ZoraMintsABI from "./ZoraMints.abi.json";
+import dotenv from "dotenv";
+
+dotenv.config({ path: "./.env" });
+
+// the user is the smart wallet
+const user = privateKeyToAccount(process.env.USER_PRIVATE_KEY! as Hex);
+// this is a hot wallet that can be used to spend funds in the `SponsoredMintsSender.sol`.
+const verifier = privateKeyToAccount(process.env.VERIFIER_PRIVATE_KEY! as Hex);
+
+const zoraMintsAddress =
+  "0x7777777d57c1C6e472fa379b7b3B6c6ba3835073" as Address;
+const sponsoredMintsSpenderAddress =
+  "0xeB92557ba4AAa552468D3DDEc12E754E1970ddB7" as Address;
+
+async function handleRelayDemo() {
+  const zoraPublicClient = createPublicClient({
+    chain: zoraSepolia,
+    transport: http(),
+  });
+  const zoraWalletClient = createWalletClient({
+    chain: zoraSepolia,
+    transport: http(),
+  });
+
+  // @ts-ignore
+  const response = await fetch(
+    "https://api.testnets.relay.link/execute/bridge",
+    {
+      method: "POST",
+      body: JSON.stringify({
+        user: sponsoredMintsSpenderAddress,
+        recipient: user.address,
+        originChainId: zoraSepolia.id,
+        destinationChainId: sepolia.id,
+        currency: "eth",
+        amount: `${parseEther("0.000777")}`,
+      }),
+      headers: {
+        accept: "application/json",
+        "content-type": "application/json",
+      },
+    },
+  );
+  const jsonResponse = await response.json();
+  console.log({ jsonResponse });
+
+  const transactionStep = jsonResponse.steps.find(
+    (step: any) => step.kind === "transaction",
+  );
+  const transactionItem = transactionStep.items[0];
+  console.log({ transactionItem });
+
+  const sponsoredCallData = {
+    verifier: verifier.address,
+    from: user.address,
+    destination: transactionItem.data.to,
+    data: transactionItem.data.data,
+    totalAmount: transactionItem.data.value,
+    expectedRedeemAmount: parseEther("0.000777"),
+    ids: [1n],
+    quantities: [1n],
+    nonce: BigInt(Math.floor(Math.random() * 1000000)),
+    deadline: BigInt(Math.floor(new Date().getTime() / 1000 + 60)),
+  } as const;
+
+  console.log({ sponsoredCallData });
+
+  const SponsoredMintBatch =
+    SponsoredMintsSpenderActionABI[0]!.inputs[0]!.components!;
+  console.log({ SponsoredMintBatch });
+
+  const hashedData = {
+    domain: {
+      name: "SponsoredMintsSpender",
+      version: "1",
+      chainId: zoraSepolia.id,
+      verifyingContract: sponsoredMintsSpenderAddress,
+    },
+    types: {
+      SponsoredMintBatch,
+    },
+    primaryType: "SponsoredMintBatch",
+    message: sponsoredCallData,
+  } as const;
+
+  const hashedTypedDataResult = hashTypedData(hashedData);
+
+  const contractFullHash = await zoraPublicClient.readContract({
+    address: sponsoredMintsSpenderAddress,
+    // @ts-ignore
+    abi: SponsoredMintsSpenderABI,
+    functionName: "hashSponsoredMint",
+    args: [sponsoredCallData],
+  });
+
+  console.log({ hashedTypedDataResult, contractFullHash });
+
+  const signatureForSponsoredSpend = await verifier.signTypedData(hashedData);
+
+  console.log({ sponsoredCallData });
+  const receiveSignatureFunction = encodeFunctionData({
+    abi: SponsoredMintsSpenderActionABI,
+    functionName: "sponsoredMintBatch",
+    args: [sponsoredCallData, signatureForSponsoredSpend],
+  });
+
+  const functionData1155 = encodeFunctionData({
+    abi: ZoraMintsABI,
+    functionName: "safeBatchTransferFrom",
+    args: [
+      user.address,
+      sponsoredMintsSpenderAddress,
+      [1n],
+      [1n],
+      receiveSignatureFunction,
+    ],
+  });
+  console.log({ functionData1155 });
+
+  // send user op with safeBatchTransferFrom
+  // transferring to the SponsoredMintsSender with calldata to unwrap and spend addt'l ETH to relay
+  const writeResponse = await zoraPublicClient.simulateContract({
+    address: zoraMintsAddress,
+    abi: ZoraMintsABI,
+    functionName: "safeBatchTransferFrom",
+    args: [
+      user.address,
+      sponsoredMintsSpenderAddress,
+      [1n],
+      [1n],
+      receiveSignatureFunction,
+    ],
+    account: user,
+  });
+
+  const writeResponseActual = await zoraWalletClient.writeContract(
+    writeResponse.request,
+  );
+  console.log({ writeResponseActual });
+}
+
+handleRelayDemo();

@@ -27,11 +27,17 @@ contract RedeemHookMock is BaseRedeemHandler {
         redeemReturnValue = _value;
     }
 
-    function handleRedeemEth(address redeemer, uint tokenId, uint quantity, address recipient) external payable override onlySparks {
+    function handleRedeemEth(address /* redeemer */, uint /* tokenId */, uint /* quantity */, address /* recipient */) external payable override onlySparks {
         if (reject) revert("Reject");
     }
 
-    function handleRedeemErc20(uint256 valueToRedeem, address redeemer, uint tokenId, uint quantity, address recipient) external view override onlySparks {
+    function handleRedeemErc20(
+        uint256 /* valueToRedeem */,
+        address /* redeemer */,
+        uint /* tokenId */,
+        uint /* quantity */,
+        address /* recipient */
+    ) external view override onlySparks {
         if (reject) revert("Reject");
     }
 }
