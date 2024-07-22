@@ -1,5 +1,17 @@
 # @zoralabs/sparks-contracts
 
+## 0.2.0
+
+### Minor Changes
+
+- 0ec838a4: Renamed Mints contracts to Sparks contracts. Removed all collect/collectPremint functions from the sparks manager contract
+
+### Patch Changes
+
+- 898c84a7: [chore] Update dependencies and runtime scripts
+
+  This ensures jobs do not match binary names to make runs less ambigious and also that all deps are accounted for.
+
 ## 0.1.4
 
 ### Patch Changes

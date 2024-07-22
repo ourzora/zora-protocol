@@ -1,5 +1,18 @@
 # @zoralabs/protocol-sdk
 
+## 0.7.3
+
+### Patch Changes
+
+- 898c84a7: [chore] Update dependencies and runtime scripts
+
+  This ensures jobs do not match binary names to make runs less ambigious and also that all deps are accounted for.
+
+- Updated dependencies [898c84a7]
+- Updated dependencies [0ec838a4]
+- Updated dependencies [e0b5074d]
+  - @zoralabs/protocol-deployments@0.2.0
+
 ## 0.7.2
 
 ### Patch Changes

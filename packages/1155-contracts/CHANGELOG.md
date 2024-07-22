@@ -1,5 +1,19 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.12.0
+
+### Minor Changes
+
+- 0ec838a4: 1155 contracts have a hardcoded mint fee of 0.000111 ether, and no longer have a fee that is determined by the MintsManager contract
+
+### Patch Changes
+
+- 898c84a7: [chore] Update dependencies and runtime scripts
+
+  This ensures jobs do not match binary names to make runs less ambigious and also that all deps are accounted for.
+
+- 2677c896: Add reduceSupply interface check to 1155
+
 ## 2.11.0
 
 ### Minor Changes

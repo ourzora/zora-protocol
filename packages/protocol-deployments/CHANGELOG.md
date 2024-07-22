@@ -1,5 +1,19 @@
 # @zoralabs/protocol-deployments
 
+## 0.2.0
+
+### Minor Changes
+
+- 0ec838a4: Publishing Sparks contracts abis and addresses.
+
+### Patch Changes
+
+- 898c84a7: [chore] Update dependencies and runtime scripts
+
+  This ensures jobs do not match binary names to make runs less ambigious and also that all deps are accounted for.
+
+- e0b5074d: Updated mainnet 1155 addresses and versions
+
 ## 0.1.13
 
 ### Patch Changes
