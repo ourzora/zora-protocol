@@ -5,9 +5,9 @@
   "repository": "https://github.com/ourzora/zora-creator-subgraph",
   "private": true,
   "scripts": {
-    "codegen": "yarn gen-yaml-config && yarn extract-abis && graph codegen && echo 'import { Address } from \"@graphprotocol/graph-ts\";' >> generated/templates.ts",
+    "codegen": "pnpm run gen-yaml-config && pnpm run extract-abis && graph codegen && echo 'import { Address } from \"@graphprotocol/graph-ts\";' >> generated/templates.ts",
     "extract-abis": "node scripts/extract-abis.mjs",
-    "build": "yarn run codegen && graph build",
+    "build": "pnpm run codegen && graph build",
     "gen-yaml-config": "cat template_warning.md > subgraph.yaml && yaml2json config/${NETWORK:-zora-sepolia}.yaml | mustache - subgraph.template.yaml >> subgraph.yaml && yaml2json config/${NETWORK:-zora-sepolia}.yaml | mustache - src/constants/chainid.ts.template > src/constants/chainid.ts",
     "deploy-hosted": "graph deploy --node https://api.thegraph.com/deploy/ ${DEPLOYMENT_PATH}",
     "test": "graph test . -v 0.5.4"
@@ -21,11 +21,11 @@
   ],
   "dependencies": {
     "@graphprotocol/graph-ts": "0.29.3",
-    "@zoralabs/sparks-contracts": "*",
+    "@zoralabs/sparks-contracts": "workspace:^",
     "@zoralabs/nft-drop-contracts": "1.12.0",
-    "@zoralabs/protocol-deployments": "*",
-    "@zoralabs/protocol-rewards": "*",
-    "@zoralabs/zora-1155-contracts": "*"
+    "@zoralabs/protocol-deployments": "workspace:^",
+    "@zoralabs/protocol-rewards": "workspace:^",
+    "@zoralabs/zora-1155-contracts": "workspace:^"
   },
   "devDependencies": {
     "@goldskycom/cli": "^7.1.0",

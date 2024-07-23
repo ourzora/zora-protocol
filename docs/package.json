@@ -13,6 +13,7 @@
     "@mdx-js/mdx": "^3.0.0",
     "@tanstack/react-query": "^5.37.1",
     "@types/react": "latest",
+    "@vanilla-extract/css": "^1.15.3",
     "react": "latest",
     "react-dom": "latest",
     "typescript": "^5.2.2",
@@ -23,10 +24,10 @@
     "yaml": "2.3.4"
   },
   "devDependencies": {
-    "@types/node": "^20.13.0",
     "@0xsplits/splits-sdk": "^4.0.2",
-    "@zoralabs/protocol-sdk": "*",
-    "@zoralabs/protocol-deployments": "*",
-    "zoralabs-tsconfig": "*"
+    "@types/node": "^20.13.0",
+    "@zoralabs/protocol-deployments": "workspace:^",
+    "@zoralabs/protocol-sdk": "workspace:^",
+    "@zoralabs/tsconfig": "workspace:^"
   }
 }

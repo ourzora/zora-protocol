@@ -23,7 +23,7 @@ jobs:
 
       - name: Ensure pre.json exists
         if: steps.check_pre.outputs.files_exists != 'true'
-        run: echo "pre.json does not exist, enter prerelease mode with 'yarn changeset pre enter {prereleaseName}'"; exit 1
+        run: echo "pre.json does not exist, enter prerelease mode with 'pnpm changeset pre enter {prereleaseName}'"; exit 1
 
       - name: Install node deps and founry
         uses: ./.github/actions/setup_deps
@@ -33,8 +33,8 @@ jobs:
         uses: changesets/action@v1
         with:
           # This expects you to have a script called release which does a build for your packages and calls changeset publish
-          version: yarn update-version
-          publish: yarn release
+          version: pnpm run update-version
+          publish: pnpm run release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}

@@ -13,15 +13,15 @@
     "test": "FORK_TEST_CHAINS=mainnet,goerli,optimism,optimism_goerli,zora,zora_goerli,sepolia,base_goerli,base,zora_sepolia forge test -vvv",
     "prettier:write": "prettier --write 'src/**/*.sol' 'scripts/**/*.ts'",
     "lint": "prettier --check 'src/**/*.sol' 'scripts/**/*.ts'",
-    "copy-deployed-contracts": "yarn tsx script/copy-deployed-contracts.ts",
+    "copy-deployed-contracts": "pnpm tsx script/copy-deployed-contracts.ts",
     "unlink-common": "rm -rf ./node_modules/@zoralabs/shared-contracts && cp -r ../shared-contracts ./node_modules/@zoralabs/shared-contracts",
     "unlink-sparks": "rm -rf ./node_modules/@zoralabs/sparks-contracts && cp -r ../sparks ./node_modules/@zoralabs/sparks-contracts",
-    "unlink-contracts": "yarn unlink-common && yarn unlink-sparks",
-    "link-contracts": "rm -rf ./node_modules && cd .. && yarn"
+    "unlink-contracts": "pnpm unlink-common && pnpm run unlink-sparks",
+    "link-contracts": "rm -rf ./node_modules && cd .. && pnpm"
   },
   "dependencies": {
-    "@zoralabs/sparks-contracts": "*",
-    "@zoralabs/shared-contracts": "*"
+    "@zoralabs/sparks-contracts": "workspace:^",
+    "@zoralabs/shared-contracts": "workspace:^"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "5.0.2",
@@ -43,6 +43,6 @@
     "solmate": "6.1.0",
     "tsx": "^3.13.0",
     "typescript": "^5.2.2",
-    "zoralabs-tsconfig": "*"
+    "@zoralabs/tsconfig": "workspace:^"
   }
 }

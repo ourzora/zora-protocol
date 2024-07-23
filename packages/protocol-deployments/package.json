@@ -16,8 +16,8 @@
     }
   },
   "scripts": {
-    "build": "yarn bundle-configs && tsup",
-    "bundle-configs": "tsx scripts/bundle-configs.ts && yarn prettier:write",
+    "build": "pnpm bundle-configs && tsup",
+    "bundle-configs": "tsx scripts/bundle-configs.ts && pnpm prettier:write",
     "prettier:write": "prettier --write 'src/**/*.ts' 'scripts/*'",
     "lint": "prettier --check 'src/**/*.ts' 'scripts/*'"
   },
@@ -33,6 +33,6 @@
     "prettier-plugin-solidity": "^1.1.3",
     "typescript": "^5.2.2",
     "viem": "^2.11.1",
-    "zoralabs-tsconfig": "*"
+    "@zoralabs/tsconfig": "workspace:^"
   }
 }

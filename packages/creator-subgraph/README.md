@@ -18,7 +18,7 @@ After `git clone` run `yarn` to install dependencies.
 Steps to build:
 
 ```sh
-NETWORK=zora yarn run build
+NETWORK=zora pnpm run build
 
 ```
 

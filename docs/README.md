@@ -21,11 +21,11 @@ It is built on the [vocs](https://vocs.dev) framework.
 Before running the dev server, from the root of the monorepo:
 
 ```bash
-yarn build
+pnpm run build
 ```
 
 Then, from the `docs` directory, start the dev server:
 
 ```bash
-yarn dev
+pnpm run dev
 ```

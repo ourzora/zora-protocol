@@ -46,7 +46,7 @@ jobs:
 
       - name: Test
         run: |
-          cd ${{ inputs.package_folder}} && yarn test
+          cd ${{ inputs.package_folder}} && pnpm run test
         env:
           TENDERLY_KEY: ${{ secrets.TENDERLY_KEY }}
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}

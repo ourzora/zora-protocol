@@ -1,6 +1,6 @@
 {
   "$schema": "https://turbo.build/schema.json",
-  "pipeline": {
+  "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": [".dist/**"]
@@ -11,6 +11,15 @@
     },
     "@zoralabs/protocol-deployments#build": {
       "dependsOn": ["@zoralabs/protocol-deployments-gen#build"]
+    },
+    "@zoralabs/protocol-deployments-gen#build": {
+      "dependsOn": [
+        "@zoralabs/zora-1155-contracts#build",
+        "@zoralabs/1155-deployments#build"
+      ]
+    },
+    "@zoralabs/zora-1155-contracts#build": {
+      "outputs": ["dist/**", "out/**", "abis/**"]
     },
     "build:contracts": {
       "dependsOn": ["^build:contracts"],

@@ -18,15 +18,15 @@
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol'",
     "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol'",
     "lint": "prettier --check 'src/**/*.sol' 'test/**/*.sol' ",
-    "copy-abis": "yarn tsx script/bundle-abis.ts",
-    "build": "yarn wagmi:generate && yarn copy-abis && yarn prettier:write && tsup",
+    "copy-abis": "pnpm tsx script/bundle-abis.ts",
+    "build": "pnpm wagmi:generate && pnpm copy-abis && pnpm prettier:write && tsup",
     "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
     "update-contract-version": "node script/update-contract-version.mjs"
   },
   "dependencies": {
     "@openzeppelin/contracts": "^5.0.1",
     "@openzeppelin/contracts-upgradeable": "^5.0.1",
-    "@zoralabs/shared-contracts": "*",
+    "@zoralabs/shared-contracts": "workspace:^",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
     "forge-std": "https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80",
     "graphql-request": "^6.1.0"
@@ -39,7 +39,7 @@
     "prettier": "^3.0.3",
     "tsx": "^4.11.0",
     "typescript": "^5.2.2",
-    "zoralabs-tsconfig": "*",
+    "@zoralabs/tsconfig": "workspace:^",
     "glob": "^10.2.2",
     "tsup": "^7.2.0",
     "prettier-plugin-solidity": "^1.3.1"

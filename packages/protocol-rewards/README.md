@@ -30,5 +30,5 @@ Current Supported Chains:
 
 To interact with the `ProtocolRewards` contract:
 ```sh
-yarn add @zoralabs/protocol-rewards
+pnpm add @zoralabs/protocol-rewards
 ```

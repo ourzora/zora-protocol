@@ -29,8 +29,8 @@ jobs:
 
       - name: Build js package
         run: |
-          yarn turbo run build
+          pnpm turbo run build
 
       - name: Test js package
         run: |
-          yarn turbo run test:js
+          pnpm turbo run test:js

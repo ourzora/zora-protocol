@@ -34,7 +34,7 @@ jobs:
           package_folder: ${{ inputs.package_folder }}
 
       - name: "Inspect Storage Layout"
-        run: cd ${{ inputs.package_folder}} && yarn storage-inspect:check
+        run: cd ${{ inputs.package_folder}} && pnpm run storage-inspect:check
 
       - name: Set final commit status
         uses: myrotvorets/set-commit-status-action@v2.0.0

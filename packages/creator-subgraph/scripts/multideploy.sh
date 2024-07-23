@@ -73,7 +73,7 @@ do
   # echo $newjson
   # echo "$newjson" > ./config/$network.json
   cat ./config/$network.yaml
-  NETWORK=$network yarn run build
+  NETWORK=$network pnpm run build
   echo goldsky subgraph deploy zora-create-$network/$version $graft_flags
   goldsky subgraph deploy zora-create-$network/$version $graft_flags
 done

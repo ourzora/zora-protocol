@@ -37,9 +37,6 @@ dist/
 package/wagmiGenerated.ts
 package/chainConfigs.ts
 
-# not currently using pnpm
-pnpm-lock.yaml
-
 # turbo
 .turbo
 

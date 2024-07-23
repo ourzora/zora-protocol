@@ -6,11 +6,12 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "dev": "turbo run dev",
-    "docs:preview": "yarn workspace docs preview",
+    "docs:preview": "pnpm run --filter docs preview",
     "update-version": "changeset version && turbo run update-contract-version",
     "lint": "turbo run lint",
     "format": "turbo run format",
     "release": "turbo run build && changeset publish",
+    "changesets": "changesets",
     "prepare": "husky install",
     "run-lint-staged": "lint-staged"
   },
@@ -21,28 +22,9 @@
     "lint-staged": ">=10",
     "prettier": "^3.0.3",
     "prettier-plugin-solidity": "^1.1.3",
-    "tsconfig": "*",
-    "turbo": "latest"
+    "turbo": "^2.0.9"
   },
   "name": "zora-protocol",
-  "packageManager": "yarn@1.22.19",
-  "workspaces": {
-    "packages": [
-      "docs",
-      "packages/*"
-    ],
-    "nohoist": [
-      "**/@openzeppelin/**",
-      "**/@zoralabs/*",
-      "**/ds-test",
-      "**/erc721a-upgradeable",
-      "**/forge-std",
-      "**/solady",
-      "**/solmate",
-      "**/vocs",
-      "**/yaml"
-    ]
-  },
   "lint-staged": {
     "*.sol": "prettier --write",
     "*.ts": "prettier --write",
@@ -50,10 +32,12 @@
     "*.mjs": "prettier --write",
     "*.json": "prettier --write"
   },
+  "packageManager": "pnpm@9.6.0",
   "ignore": [
     "*.template.sol"
   ],
   "engines": {
-    "node": ">=16"
+    "node": ">=16",
+    "pnpm": ">=3"
   }
 }

@@ -7,8 +7,8 @@
   "private": true,
   "dependencies": {
     "@openzeppelin/contracts-upgradeable": "^5.0.1",
-    "@zoralabs/1155-deployments": "*",
-    "@zoralabs/zora-1155-contracts": "*",
+    "@zoralabs/1155-deployments": "workspace:^",
+    "@zoralabs/zora-1155-contracts": "workspace:^",
     "solmate": "^6.2.0"
   }
 }
