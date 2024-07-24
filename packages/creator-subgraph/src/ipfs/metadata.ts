@@ -7,7 +7,13 @@ import {
 import { MetadataInfo } from "../../generated/schema";
 
 export function handleJSONMetadataFetched(content: Bytes): void {
-  const metadata = new MetadataInfo(dataSource.stringParam());
+  const dataSourceStripParam = dataSource.stringParam();
+  // load or create metadata info
+  let metadata = MetadataInfo.load(dataSourceStripParam);
+  if (metadata == null) {
+    metadata = new MetadataInfo(dataSourceStripParam);
+  }
+
   const jsonType = json.try_fromBytes(content);
   if (
     jsonType.isOk &&

@@ -1,5 +1,9 @@
 # @zoralabs/nft-creator-subgraph
 
+## 0.3.1
+
+- Attempt to fix IPFS metadata fetching by loading by id first.
+
 ## 0.3.0
 
 ### Minor Changes

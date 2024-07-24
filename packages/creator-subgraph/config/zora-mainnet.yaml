@@ -1,5 +1,8 @@
 chainid: "7777777"
 network: zora-mainnet
+grafting: 
+  base: "QmYEoKDDuXLFXrCM2zJUV81P4yxHB2g5kaRS4DgPh8knC4"
+  block: "17060169"
 factories1155:
   - address: "0x35ca784918bf11692708c1D530691704AAcEA95E"
     startBlock: "45420"

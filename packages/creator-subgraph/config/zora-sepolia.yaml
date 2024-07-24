@@ -1,5 +1,8 @@
 chainid: "999999999"
 network: zora-sepolia
+grafting: 
+  base: "QmSNKfRFs3bRWevCkzZLSh26NHWmxdECA8pXcVHFgMV4M1"
+  block: "11367070"
 factories1155:
   - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
     startBlock: "309965"
