@@ -1,0 +1,30 @@
+on:
+  workflow_call:
+    outputs:
+      changed:
+        description: Packages changed as JSON
+        value: ${{ jobs.changed.outputs.changed }}
+
+jobs:
+  changed:
+    outputs:
+      changed: ${{ steps.turborepoChanges.outputs.package_names }}
+    strategy:
+      fail-fast: true
+
+    name: Package changed check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 2 # Get 2 commits
+
+      - name: Install node deps
+        uses: ./.github/actions/setup_deps
+
+      - name: Any packages changed in last commit?
+        id: turborepoChanges
+        uses: "94726/action-turborepo-changes@v1.1.1"
+        with:
+          from: HEAD^1 # Check for changes since previous commit

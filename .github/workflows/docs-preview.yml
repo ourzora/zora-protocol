@@ -7,7 +7,12 @@ on:
     branches-ignore:
       - main
 jobs:
+  changed:
+    uses: ./.github/workflows/turborepo-changed.yml
+
   Deploy-Preview:
+    needs: changed
+    if: ${{ contains(needs.changed.outputs.changed, 'docs') }}
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
