@@ -1,5 +1,12 @@
 # @zoralabs/nft-creator-subgraph
 
+## 0.3.3
+
+### Patch Changes
+
+- Updated dependencies [cf108bdb]
+  - @zoralabs/zora-1155-contracts@2.12.2
+
 ## 0.3.2
 
 ### Patch Changes

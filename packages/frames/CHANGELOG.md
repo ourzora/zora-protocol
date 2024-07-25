@@ -1,5 +1,13 @@
 # @zoralabs/frame-minter-contracts
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [cf108bdb]
+  - @zoralabs/zora-1155-contracts@2.12.2
+  - @zoralabs/1155-deployments@0.0.5
+
 ## 0.0.2
 
 ### Patch Changes

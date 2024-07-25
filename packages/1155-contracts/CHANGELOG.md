@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.12.2
+
+### Patch Changes
+
+- cf108bdb: 1155 mint fee hardcoded to 0.000777 eth
+
 ## 2.12.1
 
 ### Patch Changes
