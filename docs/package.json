@@ -19,7 +19,7 @@
     "typescript": "^5.2.2",
     "viem": "^2.11.1",
     "vite-tsconfig-paths": "^4.3.2",
-    "vocs": "^1.0.0-alpha.52",
+    "vocs": "^1.0.0-alpha.55",
     "wagmi": "^2.9.4",
     "yaml": "2.3.4"
   },
