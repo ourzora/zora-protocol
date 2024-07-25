@@ -77,7 +77,7 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IUpgradeGate internal immutable upgradeGate;
 
-    uint256 constant MINT_FEE = 0.000111 ether;
+    uint256 constant MINT_FEE = 0.000777 ether;
 
     bytes4 constant ON_ERC1155_RECEIVED_HASH = IERC1155Receiver.onERC1155Received.selector;
     bytes4 constant ON_ERC1155_BATCH_RECEIVED_HASH = IERC1155Receiver.onERC1155BatchReceived.selector;

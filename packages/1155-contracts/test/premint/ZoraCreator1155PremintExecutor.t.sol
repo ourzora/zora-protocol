@@ -35,7 +35,7 @@ contract ZoraCreator1155PreminterTest is Test {
     ZoraCreator1155FactoryImpl factory;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
-    uint256 internal mintFeeAmount = 0.000111 ether;
+    uint256 internal mintFeeAmount;
     uint256 initialTokenId = 777;
 
     // setup contract config
@@ -71,6 +71,8 @@ contract ZoraCreator1155PreminterTest is Test {
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
 
         preminter = new ZoraCreator1155PremintExecutorImpl(factory);
+
+        mintFeeAmount = preminter.mintFee(address(0));
 
         defaultMintArguments = MintArguments({mintRecipient: premintExecutor, mintComment: "blah", mintRewardsRecipients: new address[](0)});
     }
@@ -331,9 +333,11 @@ contract ZoraCreator1155PreminterTest is Test {
         // create a signature with the digest for the params
         bytes memory signature = _sign(creatorPrivateKey, digest);
 
+        uint256 mintFee = preminter.mintFee(contractAddress);
+
         // this account will be used to execute the premint, and should result in a contract being created
         premintExecutor = vm.addr(701);
-        uint256 mintCost = quantityToMint * 0.000111 ether;
+        uint256 mintCost = quantityToMint * mintFee;
         // now call the premint function, using the same config that was used to generate the digest, and the signature
         vm.deal(premintExecutor, mintCost);
         vm.prank(premintExecutor);
@@ -1156,7 +1160,7 @@ contract ZoraCreator1155PreminterTest is Test {
 
         uint256 mintFee = preminter.mintFee(contractAddress);
 
-        assertEq(mintFee, 0.000111 ether);
+        assertEq(mintFee, 0.000777 ether);
     }
 
     function test_mintFee_onNewContracts_returnsNewMintFee() external {
