@@ -98,7 +98,7 @@ importers:
         version: 20.14.11
       '@wagmi/cli':
         specifier: ^1.0.1
-        version: 1.5.2(@wagmi/core@2.12.2(typescript@5.5.3))(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(wagmi@2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))
+        version: 1.5.2(@wagmi/core@2.12.2(typescript@5.5.3)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8)))(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(wagmi@2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8))
       '@zoralabs/openzeppelin-contracts-upgradeable':
         specifier: 4.8.4
         version: 4.8.4
@@ -198,6 +198,9 @@ importers:
       glob:
         specifier: ^10.2.2
         version: 10.4.5
+      graphql-request:
+        specifier: ^6.1.0
+        version: 6.1.0(encoding@0.1.13)(graphql@16.9.0)
       handlebars:
         specifier: ^4.7.8
         version: 4.7.8
@@ -331,7 +334,7 @@ importers:
         version: 20.14.11
       '@wagmi/cli':
         specifier: ^1.0.1
-        version: 1.5.2(@wagmi/core@2.12.2(typescript@5.5.3))(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(wagmi@2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))
+        version: 1.5.2(@wagmi/core@2.12.2(typescript@5.5.3)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8)))(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(wagmi@2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8))
       '@zoralabs/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
@@ -11627,7 +11630,7 @@ snapshots:
 
   '@metamask/safe-event-emitter@3.1.1': {}
 
-  '@metamask/sdk-communication-layer@0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@metamask/sdk-communication-layer@0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       bufferutil: 4.0.8
       cross-fetch: 4.0.0(encoding@0.1.13)
@@ -11655,7 +11658,7 @@ snapshots:
     dependencies:
       '@metamask/onboarding': 1.0.1
       '@metamask/providers': 16.1.0
-      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       '@metamask/sdk-install-modal-web': 0.26.5(i18next@23.11.5)(react-dom@18.3.1(react@18.3.1))(react-native@0.74.0(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.3)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
       '@types/dom-screen-wake-lock': 1.0.3
       bowser: 2.11.0
@@ -11690,7 +11693,7 @@ snapshots:
     dependencies:
       '@metamask/onboarding': 1.0.1
       '@metamask/providers': 16.1.0
-      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       '@metamask/sdk-install-modal-web': 0.26.5(i18next@23.11.5)(react-dom@18.3.1(react@18.3.1))(react-native@0.74.0(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.3)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
       '@types/dom-screen-wake-lock': 1.0.3
       bowser: 2.11.0
@@ -13390,6 +13393,38 @@ snapshots:
       loupe: 2.3.7
       pretty-format: 29.7.0
 
+  '@wagmi/cli@1.5.2(@wagmi/core@2.12.2(typescript@5.5.3)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8)))(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(wagmi@2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8))':
+    dependencies:
+      abitype: 0.8.7(typescript@5.5.3)(zod@3.23.8)
+      abort-controller: 3.0.0
+      bundle-require: 3.1.2(esbuild@0.16.17)
+      cac: 6.7.14
+      change-case: 4.1.2
+      chokidar: 3.6.0
+      dedent: 0.7.0
+      detect-package-manager: 2.0.1
+      dotenv: 16.4.5
+      dotenv-expand: 10.0.0
+      esbuild: 0.16.17
+      execa: 6.1.0
+      find-up: 6.3.0
+      fs-extra: 10.1.0
+      globby: 13.2.2
+      node-fetch: 3.3.2
+      ora: 6.3.1
+      pathe: 1.1.2
+      picocolors: 1.0.1
+      prettier: 2.8.8
+      viem: 1.21.4(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8)
+      zod: 3.23.8
+    optionalDependencies:
+      '@wagmi/core': 2.12.2(typescript@5.5.3)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))
+      typescript: 5.5.3
+      wagmi: 2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   '@wagmi/cli@1.5.2(@wagmi/core@2.12.2(typescript@5.5.3))(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(wagmi@2.11.3(bufferutil@4.0.8)(encoding@0.1.13)(typescript@5.5.3)(utf-8-validate@5.0.10))':
     dependencies:
       abitype: 0.8.7(typescript@5.5.3)(zod@3.23.8)
@@ -13418,38 +13453,6 @@ snapshots:
       '@wagmi/core': 2.12.2(typescript@5.5.3)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))
       typescript: 5.5.3
       wagmi: 2.11.3(bufferutil@4.0.8)(encoding@0.1.13)(typescript@5.5.3)(utf-8-validate@5.0.10)
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
-  '@wagmi/cli@1.5.2(@wagmi/core@2.12.2(typescript@5.5.3))(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(wagmi@2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))':
-    dependencies:
-      abitype: 0.8.7(typescript@5.5.3)(zod@3.23.8)
-      abort-controller: 3.0.0
-      bundle-require: 3.1.2(esbuild@0.16.17)
-      cac: 6.7.14
-      change-case: 4.1.2
-      chokidar: 3.6.0
-      dedent: 0.7.0
-      detect-package-manager: 2.0.1
-      dotenv: 16.4.5
-      dotenv-expand: 10.0.0
-      esbuild: 0.16.17
-      execa: 6.1.0
-      find-up: 6.3.0
-      fs-extra: 10.1.0
-      globby: 13.2.2
-      node-fetch: 3.3.2
-      ora: 6.3.1
-      pathe: 1.1.2
-      picocolors: 1.0.1
-      prettier: 2.8.8
-      viem: 1.21.4(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8)
-      zod: 3.23.8
-    optionalDependencies:
-      '@wagmi/core': 2.12.2(typescript@5.5.3)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))
-      typescript: 5.5.3
-      wagmi: 2.11.3(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
