@@ -1,5 +1,14 @@
 # @zoralabs/nft-creator-subgraph
 
+## 0.3.2
+
+### Patch Changes
+
+- Updated dependencies [527aa518]
+  - @zoralabs/protocol-deployments@0.2.1
+  - @zoralabs/zora-1155-contracts@2.12.1
+  - @zoralabs/sparks-contracts@0.2.1
+
 ## 0.3.1
 
 - Attempt to fix IPFS metadata fetching by loading by id first.

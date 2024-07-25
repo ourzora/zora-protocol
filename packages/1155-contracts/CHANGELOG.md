@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.12.1
+
+### Patch Changes
+
+- 527aa518: Move from yarn to pnpm properly pinning deps packages.
+
 ## 2.12.0
 
 ### Minor Changes

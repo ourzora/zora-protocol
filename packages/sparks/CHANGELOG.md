@@ -1,5 +1,11 @@
 # @zoralabs/sparks-contracts
 
+## 0.2.1
+
+### Patch Changes
+
+- 527aa518: Move from yarn to pnpm properly pinning deps packages
+
 ## 0.2.0
 
 ### Minor Changes

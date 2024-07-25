@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/frame-minter-contracts",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "main": "./dist/index.js",
   "author": "tbtstl <t@zora.co>",
   "license": "MIT",

@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.7.4
+
+### Patch Changes
+
+- 527aa518: Move from yarn to pnpm properly pinning deps packages
+- Updated dependencies [527aa518]
+  - @zoralabs/protocol-deployments@0.2.1
+
 ## 0.7.3
 
 ### Patch Changes
