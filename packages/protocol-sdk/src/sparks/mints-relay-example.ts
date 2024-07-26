@@ -8,7 +8,7 @@ import {
   recoverTypedDataAddress,
 } from "viem";
 import { paths, TransactionStepItem } from "@reservoir0x/relay-sdk";
-import { PermitSafeTransferBatch } from "./mints-contracts";
+import { PermitSafeTransferBatch } from "./sparks-contracts";
 import {
   mintsEthUnwrapperAndCallerABI,
   mintsEthUnwrapperAndCallerAddress,

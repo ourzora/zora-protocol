@@ -5,6 +5,8 @@ import {
   zoraMintsManagerImplABI,
   zoraMintsManagerImplAddress,
   zoraMintsManagerImplConfig,
+  zoraSparksManagerImplABI,
+  zoraSparksManagerImplAddress,
 } from "@zoralabs/protocol-deployments";
 import { AbiParametersToPrimitiveTypes, ExtractAbiFunction } from "abitype";
 import {
@@ -41,12 +43,14 @@ const addressOrAccountAddress = (address: Address | Account) =>
  * @returns The parameters for the `mintWithEth` function call, including the ABI, contract address, function name, arguments, value, and account.
  */
 export const mintWithEthParams = ({
+  tokenId,
   quantity,
   recipient,
   chainId,
   pricePerMint,
   account,
 }: {
+  tokenId: bigint;
   quantity: bigint;
   recipient?: Address;
   chainId: keyof typeof zoraMints1155Config.address;
@@ -54,10 +58,10 @@ export const mintWithEthParams = ({
   account: Address | Account;
 }) =>
   makeContractParameters({
-    abi: zoraMintsManagerImplConfig.abi,
-    address: zoraMintsManagerImplConfig.address[chainId],
+    abi: zoraSparksManagerImplABI,
+    address: zoraSparksManagerImplAddress[chainId],
     functionName: "mintWithEth",
-    args: [quantity, recipient || addressOrAccountAddress(account)],
+    args: [tokenId, quantity, recipient || addressOrAccountAddress(account)],
     value: pricePerMint * quantity,
     account,
   });

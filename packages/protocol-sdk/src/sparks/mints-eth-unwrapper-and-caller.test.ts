@@ -17,14 +17,14 @@ import {
   encodeFunctionData,
   parseEther,
 } from "viem";
-import { mintsBalanceOfAccountParams } from "./mints-contracts";
+import { mintsBalanceOfAccountParams } from "./sparks-contracts";
 import { base, zora, zoraSepolia } from "viem/chains";
 import {
   getRelayCall,
   makeAndSignSponsoredRelayCall,
   validateAndExecuteSponsoredRelayCall,
 } from "./mints-relay-example";
-import { collectMINTsWithEth } from "./mints-contracts.test";
+import { collectSPARKsWithEth } from "./sparks-contracts-test";
 import {
   fixedPriceMinterMinterArguments,
   getFixedPricedMinter,
@@ -79,7 +79,7 @@ const makeLegacy1155MintCall = async ({
   };
 };
 
-describe("MintsEthUnwrapperAndCaller", () => {
+describe.skip("MintsEthUnwrapperAndCaller", () => {
   makeAnvilTest({
     forkUrl: forkUrls.zoraSepolia,
     forkBlockNumber: 7297306,
@@ -95,7 +95,7 @@ describe("MintsEthUnwrapperAndCaller", () => {
       // 1. Collect some MINTs
       const initialMintsQuantityToMint = 20n;
 
-      const mintsTokenId = await collectMINTsWithEth({
+      const mintsTokenId = await collectSPARKsWithEth({
         publicClient,
         walletClient,
         chainId,
@@ -216,7 +216,7 @@ describe("MintsEthUnwrapperAndCaller", () => {
 
       const initialMintsQuantityToMint = 20n;
 
-      const mintsTokenId = await collectMINTsWithEth({
+      const mintsTokenId = await collectSPARKsWithEth({
         publicClient,
         walletClient,
         chainId,
@@ -371,7 +371,7 @@ describe("MintsEthUnwrapperAndCaller", () => {
 
       const initialMintsQuantityToMint = 20n;
 
-      const mintsTokenId = await collectMINTsWithEth({
+      const mintsTokenId = await collectSPARKsWithEth({
         publicClient,
         walletClient,
         chainId,

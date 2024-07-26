@@ -4,7 +4,7 @@ import {
   zoraMints1155Config,
 } from "@zoralabs/protocol-deployments";
 import { Account, Address, Hex, encodeFunctionData } from "viem";
-import { makePermitTransferBatchAndTypeData } from "./mints-contracts";
+import { makePermitTransferBatchAndTypeData } from "./sparks-contracts";
 
 type CallWithEthParams = {
   address: Address;
