@@ -15,6 +15,7 @@ import {
 import {
   zoraMints1155Address,
   iPremintDefinitionsABI,
+  sponsoredSparksSpenderAddress,
 } from "./generated/wagmi";
 import {
   PremintConfigEncoded,
@@ -338,5 +339,77 @@ export const mintsSafeTransferBatchTypedDataDefinition = ({
     name: "Mints",
     version: "1",
     verifyingContract: zoraMints1155Address[chainId],
+  },
+});
+
+export const sponsoredSparksBatchTransferTypedDataType = {
+  SponsoredMintBatch: [
+    {
+      name: "verifier",
+      type: "address",
+    },
+    {
+      name: "from",
+      type: "address",
+    },
+    {
+      name: "destination",
+      type: "address",
+    },
+    {
+      name: "data",
+      type: "bytes",
+    },
+    {
+      name: "expectedRedeemAmount",
+      type: "uint256",
+    },
+    {
+      name: "totalAmount",
+      type: "uint256",
+    },
+    {
+      name: "ids",
+      type: "uint256[]",
+    },
+    {
+      name: "quantities",
+      type: "uint256[]",
+    },
+    {
+      name: "nonce",
+      type: "uint256",
+    },
+    {
+      name: "deadline",
+      type: "uint256",
+    },
+  ],
+} as const;
+
+/**
+ * Builds a typed data definition for a PermitSafeTransferBatch on the Mints1155 contract to be signed
+ * @returns
+ */
+export const sponsoredSparksBatchTypedDataDefinition = ({
+  chainId,
+  message,
+}: {
+  chainId: keyof typeof sponsoredSparksSpenderAddress;
+  message: TypedDataToPrimitiveTypes<
+    typeof sponsoredSparksBatchTransferTypedDataType
+  >["SponsoredMintBatch"];
+}): TypedDataDefinition<
+  typeof sponsoredSparksBatchTransferTypedDataType,
+  "SponsoredMintBatch"
+> => ({
+  types: sponsoredSparksBatchTransferTypedDataType,
+  message,
+  primaryType: "SponsoredMintBatch",
+  domain: {
+    chainId,
+    name: "SponsoredSparksSpender",
+    version: "1",
+    verifyingContract: sponsoredSparksSpenderAddress[chainId],
   },
 });

@@ -9,8 +9,11 @@ import {
   iUnwrapAndForwardActionABI,
   zoraMints1155ABI,
   zoraMintsManagerImplABI,
+  sponsoredSparksSpenderABI,
+  iSponsoredSparksSpenderActionABI,
 } from "@zoralabs/sparks-contracts";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
+import { zora, zoraSepolia } from "viem/chains";
 
 type Address = `0x${string}`;
 
@@ -229,6 +232,17 @@ export default defineConfig({
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",
+    },
+    {
+      abi: sponsoredSparksSpenderABI,
+      name: "SponsoredSparksSpender",
+      address: {
+        [zora.id]: "0x29b75AbA7dc7FE26d90CD96fbB390B26e04C4EB2",
+      },
+    },
+    {
+      abi: iSponsoredSparksSpenderActionABI,
+      name: "ISponsoredSparksSpenderAction",
     },
   ],
 });

@@ -3,6 +3,7 @@ import { ExtractAbiFunction, AbiParametersToPrimitiveTypes } from "abitype";
 import {
   zoraCreator1155PremintExecutorImplABI,
   iPremintDefinitionsABI,
+  sponsoredSparksSpenderABI,
 } from "./generated/wagmi";
 import { Address } from "viem";
 
@@ -113,3 +114,10 @@ export type TokenConfigWithVersion<T extends PremintConfigVersion> = {
   tokenConfig: TokenConfigForVersion<T>;
   premintConfigVersion: T;
 };
+
+export type SponsoredSparksBatch = AbiParametersToPrimitiveTypes<
+  ExtractAbiFunction<
+    typeof sponsoredSparksSpenderABI,
+    "hashSponsoredMint"
+  >["inputs"]
+>[0];

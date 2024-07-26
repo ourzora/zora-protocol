@@ -15,6 +15,8 @@ export default defineConfig({
         "ZoraSparksManagerImpl",
         "SparksEthUnwrapperAndCaller",
         "IUnwrapAndForwardAction",
+        "SponsoredSparksSpender",
+        "ISponsoredSparksSpenderAction",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],

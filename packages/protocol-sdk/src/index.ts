@@ -18,8 +18,6 @@ export * from "./sparks/mints-queries";
 
 export * from "./sparks/sparks-contracts";
 
-export * from "./sparks/mints-eth-unwrapper-and-caller";
-
 export {
   type ContractCreationConfigWithOptionalAdditionalAdmins,
   type ContractCreationConfigOrAddress,
