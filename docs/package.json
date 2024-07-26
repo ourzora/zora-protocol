@@ -21,13 +21,11 @@
     "vite-tsconfig-paths": "^4.3.2",
     "vocs": "^1.0.0-alpha.55",
     "wagmi": "^2.9.4",
-    "yaml": "2.3.4"
-  },
-  "devDependencies": {
+    "yaml": "2.3.4",
     "@0xsplits/splits-sdk": "^4.0.2",
     "@types/node": "^20.13.0",
-    "@zoralabs/protocol-deployments": "workspace:^",
-    "@zoralabs/protocol-sdk": "workspace:^",
-    "@zoralabs/tsconfig": "workspace:^"
+    "@zoralabs/protocol-deployments": "workspace:*",
+    "@zoralabs/protocol-sdk": "workspace:*",
+    "@zoralabs/tsconfig": "workspace:*"
   }
 }

@@ -32,18 +32,33 @@ importers:
 
   docs:
     dependencies:
+      '@0xsplits/splits-sdk':
+        specifier: ^4.0.2
+        version: 4.0.5(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))
       '@mdx-js/mdx':
         specifier: ^3.0.0
         version: 3.0.1
       '@tanstack/react-query':
         specifier: ^5.37.1
         version: 5.51.11(react@18.3.1)
+      '@types/node':
+        specifier: ^20.13.0
+        version: 20.14.11
       '@types/react':
         specifier: latest
         version: 18.3.3
       '@vanilla-extract/css':
         specifier: ^1.15.3
         version: 1.15.3
+      '@zoralabs/protocol-deployments':
+        specifier: workspace:*
+        version: link:../packages/protocol-deployments
+      '@zoralabs/protocol-sdk':
+        specifier: workspace:*
+        version: link:../packages/protocol-sdk
+      '@zoralabs/tsconfig':
+        specifier: workspace:*
+        version: link:../packages/tsconfig
       react:
         specifier: latest
         version: 18.3.1
@@ -68,22 +83,6 @@ importers:
       yaml:
         specifier: 2.3.4
         version: 2.3.4
-    devDependencies:
-      '@0xsplits/splits-sdk':
-        specifier: ^4.0.2
-        version: 4.0.5(viem@2.17.9(bufferutil@4.0.8)(typescript@5.5.3)(utf-8-validate@5.0.10)(zod@3.23.8))
-      '@types/node':
-        specifier: ^20.13.0
-        version: 20.14.11
-      '@zoralabs/protocol-deployments':
-        specifier: workspace:^
-        version: link:../packages/protocol-deployments
-      '@zoralabs/protocol-sdk':
-        specifier: workspace:^
-        version: link:../packages/protocol-sdk
-      '@zoralabs/tsconfig':
-        specifier: workspace:^
-        version: link:../packages/tsconfig
 
   packages/1155-contracts:
     devDependencies:
