@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.12.3
+
+### Patch Changes
+
+- 2fce20f4: Adding a new getOrCreateFactory function for the 1155 contracts.
+
 ## 2.12.2
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @zoralabs/protocol-deployments
 
+## 0.2.2
+
+### Patch Changes
+
+- 12909b5b: Export sparks sponsored mints spender abi, address, and typed data definition
+- 58914a0c: Deployed latest 1155 version to zora mainnet, zora sepolia, sepolia
+
 ## 0.2.1
 
 ### Patch Changes

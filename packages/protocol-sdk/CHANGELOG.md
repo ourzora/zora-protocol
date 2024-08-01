@@ -1,5 +1,14 @@
 # @zoralabs/protocol-sdk
 
+## 0.7.5
+
+### Patch Changes
+
+- 12909b5b: Renamed Mints to Sparks
+- Updated dependencies [12909b5b]
+- Updated dependencies [58914a0c]
+  - @zoralabs/protocol-deployments@0.2.2
+
 ## 0.7.4
 
 ### Patch Changes
