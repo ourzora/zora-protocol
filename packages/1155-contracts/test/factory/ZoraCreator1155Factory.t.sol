@@ -205,6 +205,74 @@ contract ZoraCreator1155FactoryTest is Test {
         assertEq(createdAddress, expectedContractAddress);
     }
 
+    function test_createContractDeterministic_createsAndReturnsLastCreated(
+        string calldata nameA,
+        string calldata uri,
+        address contractAdmin,
+        // this number will determine how transactions the factory makes before
+        // creating the deterministic contract.  it should not affect the address
+        uint16 numberOfCallsBeforeCreation
+    ) external {
+        vm.assume(contractAdmin != address(0));
+        vm.assume(numberOfCallsBeforeCreation < 5);
+
+        address contractCreator = vm.addr(1);
+
+        bytes[] memory initSetup = new bytes[](1);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, 0, contractCreator, 8);
+
+        // we can know ahead of time the expected address
+        address expectedContractAddress = factory.deterministicContractAddressWithSetupActions(contractCreator, uri, nameA, contractAdmin, initSetup);
+
+        // create parameters for contract creation
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
+            royaltyBPS: 10,
+            royaltyRecipient: vm.addr(5),
+            royaltyMintSchedule: 0
+        });
+
+        address[] memory deployments = new address[](2);
+
+        vm.startPrank(contractCreator);
+        deployments[0] = factory.createContractDeterministic(uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
+        deployments[1] = factory.getOrCreateContractDeterministic(deployments[0], uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
+        assertEq(deployments[0], deployments[1]);
+    }
+
+    function test_createContractDeterministic_createsAndReturnsCreatedBoth(
+        string calldata nameA,
+        string calldata uri,
+        address contractAdmin,
+        // this number will determine how transactions the factory makes before
+        // creating the deterministic contract.  it should not affect the address
+        uint16 numberOfCallsBeforeCreation
+    ) external {
+        vm.assume(contractAdmin != address(0));
+        vm.assume(numberOfCallsBeforeCreation < 5);
+
+        address contractCreator = vm.addr(1);
+
+        bytes[] memory initSetup = new bytes[](1);
+        initSetup[0] = abi.encodeWithSelector(IZoraCreator1155.addPermission.selector, 0, contractCreator, 8);
+
+        // we can know ahead of time the expected address
+        address expectedContractAddress = factory.deterministicContractAddressWithSetupActions(contractCreator, uri, nameA, contractAdmin, initSetup);
+
+        // create parameters for contract creation
+        ICreatorRoyaltiesControl.RoyaltyConfiguration memory royaltyConfig = ICreatorRoyaltiesControl.RoyaltyConfiguration({
+            royaltyBPS: 10,
+            royaltyRecipient: vm.addr(5),
+            royaltyMintSchedule: 0
+        });
+
+        address[] memory deployments = new address[](2);
+
+        vm.startPrank(contractCreator);
+        deployments[0] = factory.getOrCreateContractDeterministic(address(0), uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
+        deployments[1] = factory.getOrCreateContractDeterministic(address(0), uri, nameA, royaltyConfig, payable(contractAdmin), initSetup);
+        assertEq(deployments[0], deployments[1]);
+    }
+
     function test_createContractDeterministic_whenContractUpgraded_stillHasSameAddress() external {
         string memory uri = "ipfs://asdfadsf";
         string memory nameA = "nameA";

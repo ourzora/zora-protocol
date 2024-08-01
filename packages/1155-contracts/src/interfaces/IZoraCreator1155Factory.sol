@@ -10,6 +10,7 @@ import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersion
 interface IZoraCreator1155Factory is IVersionedContract {
     error Constructor_ImplCannotBeZero();
     error UpgradeToMismatchedContractName(string expected, string actual);
+    error ExpectedContractAddressDoesNotMatchCalculatedContractAddress(address expectedContractAddress, address calculcatedContractAddress);
 
     event FactorySetup();
     event SetupNewContract(
@@ -20,6 +21,7 @@ interface IZoraCreator1155Factory is IVersionedContract {
         string name,
         ICreatorRoyaltiesControl.RoyaltyConfiguration defaultRoyaltyConfiguration
     );
+    event ContractAlreadyExistsSkippingDeploy(address calculatedContractAddress);
 
     function createContract(
         string memory contractURI,
@@ -37,6 +39,15 @@ interface IZoraCreator1155Factory is IVersionedContract {
         address payable defaultAdmin,
         bytes[] calldata setupActions
     ) external returns (address);
+
+    function getOrCreateContractDeterministic(
+        address expectedContractAddress,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) external returns (address calculatedContractAddress);
 
     function deterministicContractAddress(
         address msgSender,

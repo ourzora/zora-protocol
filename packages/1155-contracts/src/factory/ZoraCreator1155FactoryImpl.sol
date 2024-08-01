@@ -85,7 +85,7 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
         ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
         address payable defaultAdmin,
         bytes[] calldata setupActions
-    ) external override returns (address) {
+    ) public override returns (address) {
         bytes32 digest = _hashContract(msg.sender, newContractURI, name, defaultAdmin, _setupActionsSalt(setupActions));
 
         address createdContract = CREATE3.deploy(digest, abi.encodePacked(type(Zora1155).creationCode, abi.encode(zora1155Impl)), 0);
@@ -95,6 +95,32 @@ contract ZoraCreator1155FactoryImpl is IZoraCreator1155Factory, Ownable2StepUpgr
         _initializeContract(newContract, newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
 
         return address(newContract);
+    }
+
+    /// @notice Get or create new contract deterministic
+    /// @param expectedContractAddress Optional: set the expected contract address for this deployment, set to 0 to skip check
+    /// @param newContractURI new contract uri for the deploy
+    /// @param name contract name
+    /// @param defaultRoyaltyConfiguration royalty configuration
+    /// @param defaultAdmin default admin
+    /// @param setupActions setup actions array
+    function getOrCreateContractDeterministic(
+        address expectedContractAddress,
+        string calldata newContractURI,
+        string calldata name,
+        ICreatorRoyaltiesControl.RoyaltyConfiguration calldata defaultRoyaltyConfiguration,
+        address payable defaultAdmin,
+        bytes[] calldata setupActions
+    ) external override returns (address calculatedContractAddress) {
+        calculatedContractAddress = deterministicContractAddressWithSetupActions(msg.sender, newContractURI, name, defaultAdmin, setupActions);
+        if (expectedContractAddress != address(0) && expectedContractAddress != calculatedContractAddress) {
+            revert ExpectedContractAddressDoesNotMatchCalculatedContractAddress(expectedContractAddress, calculatedContractAddress);
+        }
+        if (calculatedContractAddress.code.length > 0) {
+            emit ContractAlreadyExistsSkippingDeploy(calculatedContractAddress);
+        } else {
+            createContractDeterministic(newContractURI, name, defaultRoyaltyConfiguration, defaultAdmin, setupActions);
+        }
     }
 
     function deterministicContractAddress(
