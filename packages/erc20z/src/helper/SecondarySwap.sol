@@ -100,7 +100,6 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, ERC1155Holder {
         uint160 sqrtPriceLimitX96
     ) external nonReentrant {
         // Ensure the recipient is valid
-        require(recipient != address(0), "Invalid recipient");
         if (recipient == address(0)) {
             revert InvalidRecipient();
         }
