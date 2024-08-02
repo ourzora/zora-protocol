@@ -11,6 +11,7 @@ export default defineConfig({
       include: [
         "ZoraTimedSaleStrategy",
         "ZoraTimedSaleStrategyImpl",
+        "SecondarySwap",
         "ERC20Z",
       ].map((contractName) => `${contractName}.json`),
     }),
