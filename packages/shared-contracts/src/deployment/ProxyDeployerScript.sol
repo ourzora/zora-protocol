@@ -125,24 +125,26 @@ contract ProxyDeployerScript is Script {
     }
 
     function getZoraRecipient() internal view returns (address) {
-        string memory json = vm.readFile(chainConfigPath());
-
         return validateMultisig(getChainConfigJson().readAddress(".ZORA_RECIPIENT"));
     }
 
     function getWeth() internal view returns (address weth) {
-        string memory json = vm.readFile(chainConfigPath());
-
         weth = getChainConfigJson().readAddress(".WETH");
+
+        if (weth == address(0)) {
+            revert("WETH address not configured");
+        }
 
         if (weth.code.length == 0) {
             revert("No code at WETH address");
         }
+
+        if (keccak256(bytes(ISymbol(weth).symbol())) != keccak256(bytes("WETH"))) {
+            revert("WETH does not have symbol WETH. Invalid address configured");
+        }
     }
 
     function getNonFungiblePositionManager() internal view returns (address nonFungiblePositionManager) {
-        string memory json = vm.readFile(chainConfigPath());
-
         nonFungiblePositionManager = getChainConfigJson().readAddress(".NONFUNGIBLE_POSITION_MANAGER");
 
         if (nonFungiblePositionManager.code.length == 0) {

@@ -12,8 +12,13 @@ import {
   sponsoredSparksSpenderABI,
   iSponsoredSparksSpenderActionABI,
 } from "@zoralabs/sparks-contracts";
+import {
+  erc20ZABI,
+  zoraTimedSaleStrategyImplABI,
+  royaltiesABI,
+} from "@zoralabs/erc20z";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
-import { zora, zoraSepolia } from "viem/chains";
+import { zora } from "viem/chains";
 
 type Address = `0x${string}`;
 
@@ -184,6 +189,42 @@ const getSparksAddresses = () => {
 
 const sparksAddresses = getSparksAddresses();
 
+const getErc20zAddresses = () => {
+  const addressesFiles = readdirSync("../erc20z/addresses");
+  const chainIds = addressesFiles
+    .map((file) => parseInt(file.split(".")[0]))
+    .map((x) => +x);
+
+  const zoraTimedSaleStrategyConfig = JSON.parse(
+    readFileSync(
+      "../erc20z/deterministicConfig/zoraTimedSaleStrategy.json",
+      "utf-8",
+    ),
+  );
+
+  const royaltiesConfig = JSON.parse(
+    readFileSync(
+      "../erc20z/deterministicConfig/zoraTimedSaleStrategy.json",
+      "utf-8",
+    ),
+  );
+
+  const zoraTimedSaleStrategyAddress =
+    zoraTimedSaleStrategyConfig.deployedAddress as Address;
+  const royaltiesAddress = royaltiesConfig.deployedAddress as Address;
+
+  return {
+    zoraTimedSaleStrategy: Object.fromEntries(
+      chainIds.map((chainId) => [chainId, zoraTimedSaleStrategyAddress]),
+    ),
+    royalties: Object.fromEntries(
+      chainIds.map((chainId) => [chainId, royaltiesAddress as Address]),
+    ),
+  };
+};
+
+const erc20zAddresses = getErc20zAddresses();
+
 export default defineConfig({
   out: "../protocol-deployments/src/generated/wagmi.ts",
   contracts: [
@@ -243,6 +284,20 @@ export default defineConfig({
     {
       abi: iSponsoredSparksSpenderActionABI,
       name: "ISponsoredSparksSpenderAction",
+    },
+    {
+      abi: zoraTimedSaleStrategyImplABI,
+      name: "zoraTimedSaleStrategy",
+      address: erc20zAddresses.zoraTimedSaleStrategy,
+    },
+    {
+      abi: royaltiesABI,
+      name: "ERC20ZRoyalties",
+      address: erc20zAddresses.royalties,
+    },
+    {
+      abi: erc20ZABI,
+      name: "ERC20Z",
     },
   ],
 });

@@ -13,6 +13,7 @@ export default defineConfig({
         "ZoraTimedSaleStrategyImpl",
         "SecondarySwap",
         "ERC20Z",
+        "Royalties",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],

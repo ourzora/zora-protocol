@@ -13,7 +13,8 @@
     "@zoralabs/1155-deployments": "workspace:^",
     "@zoralabs/zora-1155-contracts": "workspace:^",
     "@zoralabs/sparks-contracts": "workspace:^",
-    "@zoralabs/sparks-deployments": "workspace:^"
+    "@zoralabs/sparks-deployments": "workspace:^",
+    "@zoralabs/erc20z": "workspace:^"
   },
   "devDependencies": {
     "@zoralabs/tsconfig": "workspace:^",
