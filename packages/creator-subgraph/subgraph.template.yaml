@@ -249,6 +249,36 @@ dataSources:
         - event:  ERC20RewardsDeposit(indexed address,indexed address,indexed address,address,address,address,uint256,uint256,uint256,uint256,uint256)
           handler: handleERC20RewardsDeposit
 {{/erc20Minter}}
+{{#zoraTimedSaleStrategy}}
+  - name: ZoraTimedSaleStrategy{{version}}
+    kind: ethereum/contract
+    network: {{network}}
+    source:
+      abi: ZoraTimedSaleStrategy
+      address: "{{address}}"
+      startBlock: {{startBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      entities:
+        - SalesConfigZoraTimedSaleStrategy
+        - MintComment
+        - ZoraTimedSaleStrategyRewardsDeposit
+      language: wasm/assemblyscript
+      file: ./src/ERC1155Mappings/templates/ZoraTimedSaleStrategyMappings.ts
+      abis:
+        - name: ZoraTimedSaleStrategy 
+          file: ./abis/ZoraTimedSaleStrategy.json
+      eventHandlers:
+        - event: SaleSet(indexed address,indexed uint256,(uint64,uint64,string,string),address,address,uint256)
+          handler: handleZoraTimedSaleStrategySaleSet
+        - event: MintComment(indexed address,indexed address,indexed uint256,uint256,string)
+          handler: handleMintComment
+        - event: ZoraTimedSaleStrategyRewards(indexed address,indexed uint256,address,uint256,address,uint256,address,uint256,address,uint256,address,uint256)
+          handler: handleZoraTimedSaleStrategyRewardsDeposit
+        - event: MarketLaunched(indexed address,indexed uint256,address,address)
+          handler: handleMarketLaunched
+{{/zoraTimedSaleStrategy}}
 templates:
   - name: MetadataInfo
     kind: file/ipfs

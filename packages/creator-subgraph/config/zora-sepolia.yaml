@@ -1,6 +1,6 @@
 chainid: "999999999"
 network: zora-sepolia
-grafting: 
+grafting:
   base: "QmSNKfRFs3bRWevCkzZLSh26NHWmxdECA8pXcVHFgMV4M1"
   block: "11367070"
 factories1155:
@@ -42,3 +42,7 @@ erc20Minter:
   - address: "0x7Cad62748DDf516CF85bC2C05C14786D84Cf861c"
     startBlock: "8900543"
     version: "2"
+zoraTimedSaleStrategy:
+  - address: "0x0A11CBCef015d8d84BaF3A4c4EafAE2dde4Af660"
+    startBlock: "11838195"
+    version: "1"

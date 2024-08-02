@@ -3,20 +3,58 @@ name: "Contracts"
 on: "push"
 
 jobs:
+  contracts-erc20z:
+    name: ERC20Z Contracts
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/erc20z
+      name: ERC20Z
+      ignore_coverage_files: '"*lib*" "*Zora1155*" "*uniswap*"'
+      # fixes stack too deep temporarily
+      coverage_args: "--ir-minimum"
+      skip_storage_layout: true
+
   contracts-1155:
     name: 1155 Contracts
-    uses: ./.github/workflows/1155.yml
-
-  contracts-1155-deployments:
-    name: 1155 Deployments
-    uses: ./.github/workflows/1155-deployments.yml
+    uses: ./.github/workflows/contract.yml
     secrets: inherit
+    with:
+      package_folder: packages/1155-contracts
+      ignore_coverage_files: '"*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*" "*test*"'
+      name: 1155 Contracts
 
   contracts-protocol-rewards:
     name: Protocol Rewards
-    uses: ./.github/workflows/protocol-rewards.yml
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/protocol-rewards
+      name: Rewards
+      ignore_coverage_files: '"*lib*"'
+      skip_storage_layout: true
 
   contracts-sparks:
     name: Sparks
-    uses: ./.github/workflows/sparks.yml
+    uses: ./.github/workflows/contract.yml
     secrets: inherit
+    with:
+      package_folder: packages/sparks
+      ignore_coverage_files: '"*Ownable*" "*Mock*" "*BatchDataHelper*" "*test*"'
+      skip_storage_layout: true
+      name: Sparks
+
+  contracts-1155-deployments:
+    name: 1155 Deployments
+    uses: ./.github/workflows/deployment.yml
+    secrets: inherit
+    with:
+      package_folder: packages/1155-deployments
+      precache: "pnpm run generate"
+
+  contracts-sparks-deployments:
+    name: Sparks Deployments
+    uses: ./.github/workflows/deployment.yml
+    secrets: inherit
+    with:
+      package_folder: packages/sparks-deployments

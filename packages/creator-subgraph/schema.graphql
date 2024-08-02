@@ -413,6 +413,7 @@ type SalesStrategyConfig @entity {
   fixedPrice: SalesConfigFixedPriceSaleStrategy
   redeemMinter: SalesConfigRedeemMinterStrategy
   erc20Minter: SalesConfigERC20Minter
+  zoraTimedMinter: SalesConfigZoraTimedSaleStrategy
   type: String!
 }
 
@@ -667,4 +668,58 @@ type ERC20RewardsDeposit @entity @immutable {
   tokenId: BigInt!
   firstMinter: Bytes!
   firstMinterReward: BigInt!
+}
+
+# ZoraTimedSaleStrategy
+
+type ERC20Z @entity {
+  id: ID!
+  name: String!
+  symbol: String!
+  pool: Bytes!
+}
+
+type SalesConfigZoraTimedSaleStrategy @entity {
+  # Begin – default data block
+  id: ID!
+  txn: TransactionInfo!
+  block: BigInt!
+  address: Bytes!
+  timestamp: BigInt!
+  # End – default data block
+
+  configAddress: Bytes!
+
+  tokenId: BigInt!
+  contract: ZoraCreateContract!
+  saleStart: BigInt!
+  saleEnd: BigInt!
+  erc20Z: ERC20Z!
+  mintFee: BigInt!
+  secondaryActivated: Boolean!
+  erc20z: Bytes!
+  pool: Bytes!
+}
+
+type ZoraTimedSaleStrategyRewardsDeposit @entity {
+  # Begin – default data block
+  id: ID!
+  txn: TransactionInfo!
+  block: BigInt!
+  address: Bytes!
+  timestamp: BigInt!
+  # End – default data block
+
+  collection: Bytes!
+  tokenId: BigInt!
+  creator: Bytes!
+  creatorReward: BigInt!
+  createReferral: Bytes!
+  createReferralReward: BigInt!
+  mintReferral: Bytes!
+  mintReferralReward: BigInt!
+  market: Bytes!
+  marketReward: BigInt!
+  zora: Bytes!
+  zoraReward: BigInt!
 }

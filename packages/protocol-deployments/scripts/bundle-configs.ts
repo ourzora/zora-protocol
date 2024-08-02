@@ -107,7 +107,7 @@ async function bundleChainConfigs() {
   await mergeAndSaveConfigs({
     configs: [
       {
-        folder: "../sparks-deployments/chainConfigs",
+        folder: "../shared-contracts/chainConfigs",
         configType: "chainConfigs",
       },
       {

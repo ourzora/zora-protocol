@@ -1,0 +1,48 @@
+on:
+  workflow_call:
+    inputs:
+      package_folder:
+        required: true
+        type: string
+      slither_args:
+        required: false
+        type: string
+        default: ""
+
+env:
+  package_folder: ${{ inputs.package_folder }}
+  FOUNDRY_PROFILE: ci
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: Slither
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - name: Install node deps and foundry
+        uses: ./.github/actions/setup_deps
+
+      - name: Cache build
+        uses: ./.github/actions/cache_foundry_build
+        with:
+          package_folder: ${{ env.package_folder }}
+          foundry_profile: coverage
+      
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.10' 
+
+      - name: Install Slither
+        run: python3 -m pip install slither-analyzer
+
+      - name: Run slither
+        working-directory: ${{ env.package_folder }}
+        continue-on-error: true # disable failing the build for outputs with slither
+        run: slither . --filter-paths "node_modules|src/uniswap|src/interfaces/uniswap"
+      

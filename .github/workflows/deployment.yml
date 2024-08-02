@@ -1,0 +1,29 @@
+name: "1155"
+on:
+  workflow_call:
+    inputs:
+        package_folder:
+          required: true
+          type: string
+        name:
+          required: false
+          type: string
+        precache:
+          required: false
+          type: string
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      package_folder: ${{ inputs.package_folder }}
+      precache: ${{ inputs.precache }}
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+    secrets: inherit
+    with:
+      package_folder: ${{ inputs.package_folder }}
+      precache: ${{ inputs.precache }}
+      name: ${{ inputs.name }}

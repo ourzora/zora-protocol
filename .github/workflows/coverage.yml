@@ -1,17 +1,20 @@
 on:
   workflow_call:
     inputs:
-      package:
+      package_folder:
         required: true
         type: string
       files_to_ignore:
         required: false
         type: string
         default: ""
+      coverage_args:
+        required: false
+        type: string
+        default: ""
 
 env:
-  # Setting an environment variable with the value of a configuration variable
-  package_folder: packages/${{ inputs.package }}
+  package_folder: ${{ inputs.package_folder }}
   FOUNDRY_PROFILE: ci
 
 jobs:
@@ -32,11 +35,15 @@ jobs:
       - name: Cache build
         uses: ./.github/actions/cache_foundry_build
         with:
-          package_folder: packages/${{ inputs.package }}
+          package_folder: ${{ env.package_folder }}
           foundry_profile: coverage
 
       - name: Run Forge coverage
-        run: cd $package_folder && forge coverage --report lcov
+        run: cd $package_folder && forge coverage --report lcov ${{ inputs.coverage_args }}
+        env:
+          TENDERLY_KEY: ${{ secrets.TENDERLY_KEY }}
+          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+          CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
 
       - name: Setup LCOV
         uses: hrishikesh-kadam/setup-lcov@v1

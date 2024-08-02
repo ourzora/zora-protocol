@@ -3,7 +3,6 @@ pragma solidity ^0.8.17;
 
 import {IImmutableCreate2Factory} from "../interfaces/IImmutableCreate2Factory.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {LibString} from "solady/utils/LibString.sol";
 
 library ImmutableCreate2FactoryUtils {
     IImmutableCreate2Factory public constant IMMUTABLE_CREATE2_FACTORY = IImmutableCreate2Factory(0x0000000000FFe8B47B3e2130213B802212439497);
@@ -42,16 +41,5 @@ library ImmutableCreate2FactoryUtils {
 
     function immutableCreate2Address(bytes32 salt, bytes memory creationCode) internal pure returns (address) {
         return Create2.computeAddress(salt, keccak256(creationCode), address(IMMUTABLE_CREATE2_FACTORY));
-    }
-
-    function generateMineSaltCommand(address deployer, address signer, bytes32 initCodeHash) internal pure returns (string memory) {
-        string memory targetCommand = "cargo run --release ";
-        targetCommand = string.concat(targetCommand, LibString.toHexString(deployer));
-        targetCommand = string.concat(targetCommand, " ");
-        targetCommand = string.concat(targetCommand, LibString.toHexString(signer));
-        targetCommand = string.concat(targetCommand, " ");
-        targetCommand = string.concat(targetCommand, LibString.toHexStringNoPrefix(uint256(initCodeHash), 32));
-        targetCommand = string.concat(targetCommand, " 0");
-        return targetCommand;
     }
 }

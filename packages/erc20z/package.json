@@ -1,0 +1,56 @@
+{
+  "name": "@zoralabs/erc20z",
+  "version": "0.0.1",
+  "author": "Rohan Kulkarni",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "test": "forge test -vv",
+    "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
+    "test-gas": "forge test --gas-report",
+    "build:sizes": "forge build --sizes",
+    "copy-abis": "pnpm tsx script/bundle-abis.ts",
+    "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
+    "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate"
+  },
+  "devDependencies": {
+    "@turnkey/api-key-stamper": "^0.3.1",
+    "@turnkey/http": "^2.5.1",
+    "@turnkey/viem": "^0.4.4",
+    "viem": "^1.10.0",
+    "@types/node": "^20.1.2",
+    "@wagmi/cli": "^1.0.1",
+    "@zoralabs/tsconfig": "workspace:^",
+    "glob": "^10.2.2",
+    "pathe": "^1.1.2",
+    "prettier": "^3.0.3",
+    "prettier-plugin-solidity": "^1.3.1",
+    "tsup": "^7.2.0",
+    "tsx": "^3.13.0",
+    "typescript": "^5.2.2"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.0.2",
+    "@openzeppelin/contracts-upgradeable": "5.0.2",
+    "@zoralabs/protocol-rewards": "workspace:^",
+    "@zoralabs/shared-contracts": "workspace:^",
+    "@zoralabs/zora-1155-contracts": "workspace:^",
+    "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
+    "forge-std": "https://github.com/foundry-rs/forge-std#v1.9.1",
+    "solady": "0.0.132"
+  }
+}

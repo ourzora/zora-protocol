@@ -1,0 +1,61 @@
+name: "Contract"
+on:
+  workflow_call:
+    inputs:
+        package_folder:
+          required: true
+          type: string
+        coverage_args:
+          required: false
+          type: string
+        name:
+          required: true
+          type: string
+        ignore_coverage_files:
+          required: false
+          type: string
+        skip_storage_layout:
+          type: boolean
+          default: false
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+    with:
+      package_folder: ${{ inputs.package_folder }}
+
+  test:
+    needs: build
+    uses: ./.github/workflows/test.yml
+    with:
+      package_folder: ${{ inputs.package_folder }}
+      name: ${{ inputs.name }}
+
+  storage_layout:
+    needs: build
+    uses: ./.github/workflows/storage_layout.yml
+    if: ${{ inputs.skip_storage_layout == false }}
+    with:
+      package_folder: ${{ inputs.package_folder }}
+      name: ${{ inputs.name }}
+
+  contract_sizes:
+    needs: build
+    uses: ./.github/workflows/contract_sizes.yml
+    with:
+      package_folder: ${{ inputs.package_folder }}
+      name: ${{ inputs.name }}
+  
+  slither:
+    needs: build
+    uses: ./.github/workflows/slither.yml
+    with:
+      package_folder: ${{ inputs.package_folder }}
+
+  coverage:
+    uses: ./.github/workflows/coverage.yml
+    secrets: inherit
+    with:
+      package_folder: ${{ inputs.package_folder }}
+      files_to_ignore: ${{ inputs.ignore_coverage_files }}
+      coverage_args: ${{ inputs.coverage_args }}

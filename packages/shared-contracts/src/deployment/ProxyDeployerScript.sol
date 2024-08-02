@@ -1,0 +1,216 @@
+// spdx-license-identifier: MIT
+pragma solidity ^0.8.20;
+
+import "forge-std/Script.sol";
+import {LibString} from "solady/utils/LibString.sol";
+
+import {ProxyDeployerConfig, DeterministicContractConfig} from "./Config.sol";
+import {ProxyDeployerUtils} from "./ProxyDeployerUtils.sol";
+import {DeterministicUUPSProxyDeployer} from "./DeterministicUUPSProxyDeployer.sol";
+import {DeterministicDeployerAndCaller} from "./DeterministicDeployerAndCaller.sol";
+import {ImmutableCreate2FactoryUtils} from "../utils/ImmutableCreate2FactoryUtils.sol";
+
+interface ISafe {
+    function getOwners() external view returns (address[] memory);
+}
+
+interface ISymbol {
+    function symbol() external view returns (string memory);
+}
+
+contract ProxyDeployerScript is Script {
+    using stdJson for string;
+
+    // copied from: https://github.com/karmacoma-eth/foundry-playground/blob/main/script/MineSaltScript.sol#L17C1-L36C9
+    function mineSalt(
+        address deployer,
+        bytes32 initCodeHash,
+        string memory startsWith,
+        address caller
+    ) internal returns (bytes32 salt, address expectedAddress) {
+        string[] memory args;
+
+        // if there is no caller, we dont need to add the caller to the args
+        if (caller == address(0)) args = new string[](8);
+        else {
+            args = new string[](10);
+        }
+        args[0] = "cast";
+        args[1] = "create2";
+        args[2] = "--starts-with";
+        args[3] = startsWith;
+        args[4] = "--deployer";
+        args[5] = LibString.toHexString(deployer);
+        args[6] = "--init-code-hash";
+        args[7] = LibString.toHexStringNoPrefix(uint256(initCodeHash), 32);
+        // if there is a caller, add the caller to the args, enforcing the first 20 bytes will match.
+        if (caller != address(0)) {
+            args[8] = "--caller";
+            args[9] = LibString.toHexString(caller);
+        }
+        string memory result = string(vm.ffi(args));
+
+        console2.log(result);
+
+        uint256 addressIndex = LibString.indexOf(result, "Address: ");
+        string memory addressStr = LibString.slice(result, addressIndex + 9, addressIndex + 9 + 42);
+        expectedAddress = vm.parseAddress(addressStr);
+
+        uint256 saltIndex = LibString.indexOf(result, "Salt: ");
+        // bytes lengh is 32, + 0x
+        // slice is start to end exclusive
+        // if start is saltIndex + 6, end should be startIndex + 6 + 64 + 0x (2)
+        uint256 startBytes32 = saltIndex + 6;
+        string memory saltStr = LibString.slice(result, startBytes32, startBytes32 + 66);
+
+        salt = vm.parseBytes32(saltStr);
+    }
+
+    function proxyDeployerConfigPath(string memory proxyDeployerName) internal pure returns (string memory) {
+        return string.concat("deterministicConfig/", string.concat(proxyDeployerName, ".json"));
+    }
+
+    function readProxyDeployerConfig(string memory proxyDeployerName) internal view returns (ProxyDeployerConfig memory config) {
+        string memory json = vm.readFile(proxyDeployerConfigPath(proxyDeployerName));
+
+        config.creationCode = json.readBytes(".creationCode");
+        config.salt = json.readBytes32(".salt");
+        config.deployedAddress = json.readAddress(".deployedAddress");
+    }
+
+    function writeProxyDeployerConfig(ProxyDeployerConfig memory config, string memory proxyDeployerName) internal {
+        string memory result = "deterministicKey";
+
+        vm.serializeAddress(result, "deployedAddress", config.deployedAddress);
+        vm.serializeBytes(result, "creationCode", config.creationCode);
+        string memory finalOutput = vm.serializeBytes32(result, "salt", config.salt);
+
+        vm.writeJson(finalOutput, proxyDeployerConfigPath(proxyDeployerName));
+    }
+
+    function determinsticConfigJson(DeterministicContractConfig memory config, string memory objectKey) internal returns (string memory result) {
+        vm.serializeBytes32(objectKey, "salt", config.salt);
+        vm.serializeBytes(objectKey, "creationCode", config.creationCode);
+        vm.serializeAddress(objectKey, "deployedAddress", config.deployedAddress);
+        vm.serializeString(objectKey, "contractName", config.contractName);
+        vm.serializeAddress(objectKey, "deploymentCaller", config.deploymentCaller);
+        result = vm.serializeBytes(objectKey, "constructorArgs", config.constructorArgs);
+    }
+
+    function saveDeterministicContractConfig(DeterministicContractConfig memory config, string memory contractName) internal {
+        string memory configJson = determinsticConfigJson(config, "config");
+
+        vm.writeJson(configJson, proxyDeployerConfigPath(contractName));
+    }
+
+    function readDeterministicContractConfig(string memory contractName) internal view returns (DeterministicContractConfig memory config) {
+        string memory json = vm.readFile(proxyDeployerConfigPath(contractName));
+
+        config.salt = json.readBytes32(".salt");
+        config.deployedAddress = json.readAddress(".deployedAddress");
+        config.creationCode = json.readBytes(".creationCode");
+        config.constructorArgs = json.readBytes(".constructorArgs");
+    }
+
+    function chainConfigPath() internal view returns (string memory) {
+        return string.concat("../shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json");
+    }
+
+    function getChainConfigJson() internal view returns (string memory) {
+        return vm.readFile(chainConfigPath());
+    }
+
+    function getProxyAdmin() internal view returns (address) {
+        return validateMultisig(getChainConfigJson().readAddress(".PROXY_ADMIN"));
+    }
+
+    function getZoraRecipient() internal view returns (address) {
+        string memory json = vm.readFile(chainConfigPath());
+
+        return validateMultisig(getChainConfigJson().readAddress(".ZORA_RECIPIENT"));
+    }
+
+    function getWeth() internal view returns (address weth) {
+        string memory json = vm.readFile(chainConfigPath());
+
+        weth = getChainConfigJson().readAddress(".WETH");
+
+        if (weth.code.length == 0) {
+            revert("No code at WETH address");
+        }
+    }
+
+    function getNonFungiblePositionManager() internal view returns (address nonFungiblePositionManager) {
+        string memory json = vm.readFile(chainConfigPath());
+
+        nonFungiblePositionManager = getChainConfigJson().readAddress(".NONFUNGIBLE_POSITION_MANAGER");
+
+        if (nonFungiblePositionManager.code.length == 0) {
+            revert("No code at nonFungiblePositionManager address");
+        }
+
+        string memory symbol = ISymbol(nonFungiblePositionManager).symbol();
+
+        if (keccak256(bytes(symbol)) != keccak256(bytes("UNI-V3-POS"))) {
+            revert("NonFungiblePositionManager does not have symbol UNI-V3-POS. Invalid address configured");
+        }
+    }
+
+    function validateMultisig(address multisigAddress) internal view returns (address) {
+        if (multisigAddress == address(0)) {
+            revert("Cannot be address zero");
+        }
+
+        if (multisigAddress.code.length == 0) {
+            revert("No code at address");
+        }
+
+        if (ISafe(multisigAddress).getOwners().length == 0) {
+            revert("No owners on multisig");
+        }
+
+        return multisigAddress;
+    }
+
+    function generateAndSaveUUPSProxyDeployerConfig() internal {
+        bytes32 salt = ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE_2_FRIENDLY_SALT;
+        bytes memory creationCode = type(DeterministicUUPSProxyDeployer).creationCode;
+        address deterministicAddress = ImmutableCreate2FactoryUtils.immutableCreate2Address(creationCode);
+
+        ProxyDeployerConfig memory config = ProxyDeployerConfig({creationCode: creationCode, salt: salt, deployedAddress: deterministicAddress});
+
+        writeProxyDeployerConfig(config, "uupsProxyDeployer");
+    }
+
+    function generateAndSaveDeployerAndCallerConfig() internal {
+        bytes32 salt = ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE_2_FRIENDLY_SALT;
+        bytes memory creationCode = type(DeterministicDeployerAndCaller).creationCode;
+        address deterministicAddress = ImmutableCreate2FactoryUtils.immutableCreate2Address(creationCode);
+
+        ProxyDeployerConfig memory config = ProxyDeployerConfig({creationCode: creationCode, salt: salt, deployedAddress: deterministicAddress});
+
+        writeProxyDeployerConfig(config, "deployerAndCaller");
+    }
+
+    function saveProxyDeployerConfig(DeterministicContractConfig memory config, string memory proxyName) internal {
+        string memory configJson = determinsticConfigJson(config, "config");
+
+        vm.writeJson(configJson, string.concat(string.concat("deterministicConfig/", proxyName, "/params.json")));
+    }
+
+    function createOrGetUUPSProxyDeployer() internal returns (DeterministicUUPSProxyDeployer) {
+        ProxyDeployerConfig memory uupsProxyDeployerConfig = readProxyDeployerConfig("uupsProxyDeployer");
+
+        return DeterministicUUPSProxyDeployer(ProxyDeployerUtils.createOrGetProxyDeployer(uupsProxyDeployerConfig));
+    }
+
+    function createOrGetDeployerAndCaller() internal returns (DeterministicDeployerAndCaller deployer) {
+        ProxyDeployerConfig memory proxyDeployer = readProxyDeployerConfig("deployerAndCaller");
+
+        deployer = DeterministicDeployerAndCaller(ProxyDeployerUtils.createOrGetProxyDeployer(proxyDeployer));
+
+        if (address(deployer) != proxyDeployer.deployedAddress) {
+            revert("Mimsatched deployer address");
+        }
+    }
+}

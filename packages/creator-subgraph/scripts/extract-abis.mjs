@@ -12,6 +12,7 @@ import {
   protocolRewardsABI,
   erc20MinterABI,
 } from "@zoralabs/zora-1155-contracts";
+import { zoraTimedSaleStrategyImplABI } from "@zoralabs/erc20z";
 import {
   zoraMints1155ABI,
   zoraMintsManagerImplABI,
@@ -60,6 +61,7 @@ output_abi(
   "ZoraCreatorRedeemMinterStrategy",
   zoraCreatorRedeemMinterStrategyABI,
 );
+output_abi("ZoraTimedSaleStrategy", zoraTimedSaleStrategyImplABI);
 
 output_abi("ProtocolRewards", protocolRewardsABI);
 
