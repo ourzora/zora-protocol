@@ -128,6 +128,18 @@ contract ProxyDeployerScript is Script {
         return validateMultisig(getChainConfigJson().readAddress(".ZORA_RECIPIENT"));
     }
 
+    function getUniswapSwapRouter() internal view returns (address uniswapSwapRouter) {
+        uniswapSwapRouter = getChainConfigJson().readAddress(".UNISWAP_SWAP_ROUTER");
+
+        if (uniswapSwapRouter == address(0)) {
+            revert("WETH address not configured");
+        }
+
+        if (uniswapSwapRouter.code.length == 0) {
+            revert("No code at WETH address");
+        }
+    }
+
     function getWeth() internal view returns (address weth) {
         weth = getChainConfigJson().readAddress(".WETH");
 
