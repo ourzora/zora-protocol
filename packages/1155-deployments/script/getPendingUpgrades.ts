@@ -144,6 +144,7 @@ const getMissingUpgradesFrom = async ({
   (
     await Promise.all(
       fromVersions.map(async (fromVersion) => {
+        if (fromVersion.version === toVersion.version) return;
         const upgradeRegistered = await publicClient.readContract({
           address: upgradeGate,
           abi: upgradeGateABI,

@@ -1,8 +1,13 @@
 {
-  "deployedVersions": [],
+  "deployedVersions": [
+    {
+      "version": "2.12.3",
+      "contractImplAddress": "0x7316777F0cBe4da5a52cd5e68d1C50af8E466AC1"
+    }
+  ],
   "targetVersion": {
-    "version": "2.10.1",
-    "contractImplAddress": "0x55B53DBE22859d538E3b44DD06C9FAE292409E3c"
+    "version": "2.12.3",
+    "contractImplAddress": "0xC7598f8eAA1455f5b2B3f206A9af55B2BA248e3E"
   },
   "missingUpgradePaths": [],
   "missingUpgradePathTargets": [],

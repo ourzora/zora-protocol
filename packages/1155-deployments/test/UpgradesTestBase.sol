@@ -377,14 +377,14 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
 
         bool upgradePerformed = performNeededUpgrades(chainConfig.factoryOwner, upgradeStatuses);
 
-        if (upgradePerformed) {
+        (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) = checkRegisterUpgradePaths();
+
+        upgradeStatuses = appendCalls(upgradeStatuses, upgradePathTargets, upgradePathCalls, "Register Upgrade Paths");
+
+        (address[] memory upgradeTargets, bytes[] memory upgradeCalldatas) = getUpgradeCalls(upgradeStatuses);
+
+        if (upgradePerformed || upgradeTargets.length > 0) {
             checkContracts();
-
-            (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) = checkRegisterUpgradePaths();
-
-            upgradeStatuses = appendCalls(upgradeStatuses, upgradePathTargets, upgradePathCalls, "Register Upgrade Paths");
-
-            (address[] memory upgradeTargets, bytes[] memory upgradeCalldatas) = getUpgradeCalls(upgradeStatuses);
 
             console2.log("---------------");
 

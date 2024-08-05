@@ -1,34 +1,39 @@
 {
   "deployedVersions": [
     {
+      "version": "2.12.3",
+      "contractImplAddress": "0xA02FC0fc9b0b3E23ac26eB0f2D392fD5cdA58514"
+    },
+    {
       "version": "2.7.3",
       "contractImplAddress": "0x8237F421357F87a23ed0CFf3a5586172F210A21B"
+    },
+    {
+      "version": "2.10.1",
+      "contractImplAddress": "0x0ef82DaB14798E63F1B99479Ba689e3f6A6fEb6C"
+    },
+    {
+      "version": "2.12.3",
+      "contractImplAddress": "0xA02FC0fc9b0b3E23ac26eB0f2D392fD5cdA58514"
+    },
+    {
+      "version": "2.9.0",
+      "contractImplAddress": "0x2C49E95303734eE3826307783d5fDD180B2131D3"
+    },
+    {
+      "version": "2.12.3",
+      "contractImplAddress": "0xA02FC0fc9b0b3E23ac26eB0f2D392fD5cdA58514"
+    },
+    {
+      "version": "2.10.1",
+      "contractImplAddress": "0x0ef82DaB14798E63F1B99479Ba689e3f6A6fEb6C"
     }
   ],
   "targetVersion": {
-    "version": "2.10.1",
-    "contractImplAddress": "0x0ef82DaB14798E63F1B99479Ba689e3f6A6fEb6C"
+    "version": "2.12.3",
+    "contractImplAddress": "0xA02FC0fc9b0b3E23ac26eB0f2D392fD5cdA58514"
   },
-  "missingUpgradePaths": [
-    {
-      "from": [
-        {
-          "address": "0x8237F421357F87a23ed0CFf3a5586172F210A21B",
-          "version": "2.7.3"
-        }
-      ],
-      "to": {
-        "version": "2.10.1",
-        "address": "0x0ef82DaB14798E63F1B99479Ba689e3f6A6fEb6C"
-      },
-      "upgradeCall": {
-        "address": "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900",
-        "calldata": "0x92b60a4c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000ef82dab14798e63f1b99479ba689e3f6a6feb6c00000000000000000000000000000000000000000000000000000000000000010000000000000000000000008237f421357f87a23ed0cff3a5586172f210a21b"
-      }
-    }
-  ],
-  "missingUpgradePathTargets": ["0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900"],
-  "missingUpgradePathCalls": [
-    "0x92b60a4c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000000ef82dab14798e63f1b99479ba689e3f6a6feb6c00000000000000000000000000000000000000000000000000000000000000010000000000000000000000008237f421357f87a23ed0cff3a5586172f210a21b"
-  ]
+  "missingUpgradePaths": [],
+  "missingUpgradePathTargets": [],
+  "missingUpgradePathCalls": []
 }
