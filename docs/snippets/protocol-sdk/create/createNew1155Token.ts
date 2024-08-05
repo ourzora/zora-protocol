@@ -1,13 +1,13 @@
 import { createCreatorClient } from "@zoralabs/protocol-sdk";
 import { publicClient, walletClient, chainId, creatorAccount } from "./config";
-import { collectionAddress } from "./createNewContract";
+import { contractAddress } from "./createNewContract";
 
 const creatorClient = createCreatorClient({ chainId, publicClient });
 
-const { parameters } = await creatorClient.create1155({
+const { parameters } = await creatorClient.create1155OnExistingContract({
   // by providing a contract address, the token will be created on an existing contract
   // at that address
-  contract: collectionAddress, // [!code hl]
+  contractAddress, // [!code hl]
   token: {
     // token metadata uri
     tokenMetadataURI: "ipfs://DUMMY/token.json",

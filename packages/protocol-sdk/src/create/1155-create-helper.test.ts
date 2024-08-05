@@ -1,6 +1,8 @@
 import { describe, expect } from "vitest";
-import { getTokenIdFromCreateReceipt } from "./1155-create-helper";
-import { anvilTest } from "src/anvil";
+import {
+  getContractAddressFromReceipt,
+  getTokenIdFromCreateReceipt,
+} from "./1155-create-helper";
 import { createCreatorClient } from "src/sdk";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import { waitForSuccess } from "src/test-utils";
@@ -9,9 +11,17 @@ import {
   MintableParameters,
   makePrepareMint1155TokenParams,
 } from "src/mint/mint-transactions";
+import { forkUrls, makeAnvilTest } from "src/anvil";
+import { zora } from "viem/chains";
 
 const demoTokenMetadataURI = "ipfs://DUMMY/token.json";
 const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
+
+const anvilTest = makeAnvilTest({
+  forkUrl: forkUrls.zoraMainnet,
+  forkBlockNumber: 18094820,
+  anvilChainId: zora.id,
+});
 
 describe("create-helper", () => {
   anvilTest(
@@ -24,24 +34,27 @@ describe("create-helper", () => {
         chainId: chain.id,
         publicClient: publicClient,
       });
-      const { parameters: request } = await creatorClient.create1155({
-        contract: {
-          name: "testContract",
-          uri: demoContractMetadataURI,
-        },
-        token: {
-          tokenMetadataURI: demoTokenMetadataURI,
-          mintToCreatorCount: 1,
-        },
-        account: creatorAddress,
-      });
-      const { request: simulationResponse } =
-        await publicClient.simulateContract(request);
-      const hash = await walletClient.writeContract(simulationResponse);
+      const { parameters, contractAddress: collectionAddress } =
+        await creatorClient.create1155({
+          contract: {
+            name: "testContract",
+            uri: demoContractMetadataURI,
+          },
+          token: {
+            tokenMetadataURI: demoTokenMetadataURI,
+            mintToCreatorCount: 1,
+          },
+          account: creatorAddress,
+        });
+      const { request } = await publicClient.simulateContract(parameters);
+      const hash = await walletClient.writeContract(request);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       expect(receipt).not.toBeNull();
       expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(1n);
+      expect(getContractAddressFromReceipt(receipt)).to.be.equal(
+        collectionAddress,
+      );
     },
     20 * 1000,
   );
@@ -56,25 +69,18 @@ describe("create-helper", () => {
         publicClient: publicClient,
       });
 
-      const {
-        parameters: request,
-        collectionAddress: contractAddress,
-        contractExists,
-      } = await creatorClient.create1155({
-        contract: {
-          name: "testContract2",
-          uri: demoContractMetadataURI,
-        },
-        token: {
-          tokenMetadataURI: demoTokenMetadataURI,
-          mintToCreatorCount: 3,
-        },
-        account: creatorAccount,
-      });
-      expect(contractAddress).to.be.equal(
-        "0xb1A8928dF830C21eD682949Aa8A83C1C215194d3",
-      );
-      expect(contractExists).to.be.false;
+      const { parameters: request, contractAddress: contractAddress } =
+        await creatorClient.create1155({
+          contract: {
+            name: "testContract2",
+            uri: demoContractMetadataURI,
+          },
+          token: {
+            tokenMetadataURI: demoTokenMetadataURI,
+            mintToCreatorCount: 3,
+          },
+          account: creatorAccount,
+        });
       const { request: simulateResponse } =
         await publicClient.simulateContract(request);
       const hash = await walletClient.writeContract(simulateResponse);
@@ -93,21 +99,15 @@ describe("create-helper", () => {
         }),
       ).toBe(3n);
 
-      const newTokenOnExistingContract = await creatorClient.create1155({
-        contract: {
-          name: "testContract2",
-          uri: demoContractMetadataURI,
-        },
-        token: {
-          tokenMetadataURI: demoTokenMetadataURI,
-          mintToCreatorCount: 2,
-        },
-        account: creatorAccount,
-      });
-      expect(newTokenOnExistingContract.collectionAddress).to.be.equal(
-        "0xb1A8928dF830C21eD682949Aa8A83C1C215194d3",
-      );
-      expect(newTokenOnExistingContract.contractExists).to.be.true;
+      const newTokenOnExistingContract =
+        await creatorClient.create1155OnExistingContract({
+          contractAddress: contractAddress,
+          token: {
+            tokenMetadataURI: demoTokenMetadataURI,
+            mintToCreatorCount: 2,
+          },
+          account: creatorAccount,
+        });
       const { request: simulateRequest } = await publicClient.simulateContract(
         newTokenOnExistingContract.parameters,
       );
@@ -132,7 +132,11 @@ describe("create-helper", () => {
         chainId: chain.id,
         publicClient: publicClient,
       });
-      const { parameters: request } = await creatorClient.create1155({
+      const {
+        parameters: request,
+        contractAddress: collectionAddress,
+        newTokenId,
+      } = await creatorClient.create1155({
         contract: {
           name: "testContract",
           uri: demoContractMetadataURI,
@@ -148,15 +152,15 @@ describe("create-helper", () => {
       const hash = await walletClient.writeContract(simulationResponse);
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
       expect(receipt).not.toBeNull();
-      expect(receipt.to).to.equal("0xa72724cc3dcef210141a1b84c61824074151dc99");
-      expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(2n);
+      expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
+      expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(newTokenId);
 
       expect(
         await publicClient.readContract({
           abi: zoraCreator1155ImplABI,
-          address: "0xa72724cc3dcef210141a1b84c61824074151dc99",
+          address: collectionAddress,
           functionName: "createReferrals",
-          args: [2n],
+          args: [newTokenId],
         }),
       ).to.be.equal(createReferral);
     },
@@ -177,10 +181,11 @@ describe("create-helper", () => {
       });
       const {
         parameters: request,
-        collectionAddress,
         newTokenId,
         newToken,
         minter,
+        contractAddress: collectionAddress,
+        contractVersion,
       } = await creatorClient.create1155({
         contract: {
           name: "testContract",
@@ -200,7 +205,7 @@ describe("create-helper", () => {
 
       const salesConfigAndTokenInfo: MintableParameters = {
         mintFeePerQuantity: parseEther("0.000777"),
-        contractVersion: "2.8.0",
+        contractVersion,
         salesConfig: {
           saleType: "fixedPrice",
           address: minter,
@@ -257,10 +262,11 @@ describe("create-helper", () => {
 
       const {
         parameters: request,
-        collectionAddress,
+        contractAddress: collectionAddress,
         newTokenId,
         newToken,
         minter,
+        contractVersion,
       } = await creatorClient.create1155({
         contract: {
           name: "testContract",
@@ -283,7 +289,7 @@ describe("create-helper", () => {
 
       const salesConfigAndTokenInfo: MintableParameters = {
         mintFeePerQuantity: parseEther("0.000777"),
-        contractVersion: "2.8.0",
+        contractVersion,
         salesConfig: {
           saleType: "fixedPrice",
           address: minter,

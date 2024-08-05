@@ -6,7 +6,7 @@ const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const erc20TokenAddress = "0xa6b280b42cb0b7c4a4f789ec6ccc3a7609a1bc39";
 
-const { parameters } = await creatorClient.create1155({
+const { parameters, contractAddress } = await creatorClient.create1155({
   contract,
   token: {
     tokenMetadataURI: "ipfs://DUMMY/token.json",
@@ -27,3 +27,5 @@ const { request } = await publicClient.simulateContract(parameters);
 
 // execute the transaction
 await walletClient.writeContract(request);
+
+export { contractAddress };

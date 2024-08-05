@@ -13,7 +13,8 @@ export type CreatorClient = {
   createPremint: PremintClient["createPremint"];
   updatePremint: PremintClient["updatePremint"];
   deletePremint: PremintClient["deletePremint"];
-  create1155: Create1155Client["createNew1155Token"];
+  create1155: Create1155Client["createNew1155"];
+  create1155OnExistingContract: Create1155Client["createNew1155OnExistingContract"];
 };
 
 export type CollectorClient = {
@@ -55,7 +56,9 @@ export function createCreatorClient(
     createPremint: (p) => premintClient.createPremint(p),
     updatePremint: (p) => premintClient.updatePremint(p),
     deletePremint: (p) => premintClient.deletePremint(p),
-    create1155: (p) => create1155CreatorClient.createNew1155Token(p),
+    create1155: (p) => create1155CreatorClient.createNew1155(p),
+    create1155OnExistingContract: (p) =>
+      create1155CreatorClient.createNew1155OnExistingContract(p),
   };
 }
 

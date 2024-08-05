@@ -3,7 +3,7 @@ import { publicClient, walletClient, chainId, creatorAccount } from "./config";
 
 const creatorClient = createCreatorClient({ chainId, publicClient });
 
-const { parameters, collectionAddress } = await creatorClient.create1155({
+const { parameters, contractAddress } = await creatorClient.create1155({
   // by providing a contract creation config, the contract will be created
   // if it does not exist at a deterministic address
   contract: {
@@ -26,4 +26,4 @@ const { request } = await publicClient.simulateContract(parameters);
 // execute the transaction
 await walletClient.writeContract(request);
 
-export { collectionAddress };
+export { contractAddress };

@@ -21,11 +21,9 @@ const creatorClient = createCreatorClient({ chainId: zora.id, publicClient });
 
 ### Creating a new 1155 contract and token
 
-The function `create1155` is used to create a new 1155 contract and/or token.
-The `contract` argument can be either contract creation parameters or a contract uri.
-
-If `contract` is set to be contract creation parameters, an 1155 contract is either created or retrieved
-at a deterministic address based on those parameters, and the token is created on that contract.
+The function `create1155` is used to create a new 1155 contract and token.
+The `contract` argument needs to be contract creation parameters.  Calling this function prepares a parameters for a transaction
+that creates an 1155 contract at the deterministic address based on those parameters, and a token on that contract.
 
 :::code-group
 
@@ -46,7 +44,8 @@ at a deterministic address based on those parameters, and the token is created o
 
 ### Creating a token on an existing 1155 contract
 
-If `contract` is set to be a contract uri, the token is created on that existing contract.
+To create a token on an existing 1155 contract, the function `create1155OnExistingContract` must be called
+with the 1155 contract address and the token creation parameters.
 
 :::code-group
 

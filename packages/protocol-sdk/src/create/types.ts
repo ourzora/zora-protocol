@@ -1,13 +1,11 @@
 import { Concrete } from "src/utils";
-import { Address, Hex } from "viem";
+import { Account, Address, Hex, SimulateContractParameters } from "viem";
 
-export type ContractType =
-  | {
-      name: string;
-      uri: string;
-      defaultAdmin?: Address;
-    }
-  | Address;
+export type NewContractParams = {
+  name: string;
+  uri: string;
+  defaultAdmin?: Address;
+};
 
 export type SalesConfigParamsType = {
   // defaults to 0
@@ -22,14 +20,18 @@ export type SalesConfigParamsType = {
   currency?: Address;
 };
 
-export type CreateNew1155Params = {
+export type CreateNew1155ParamsBase = {
   account: Address;
-  contract: ContractType;
-  getAdditionalSetupActions?: (args: {
-    tokenId: bigint;
-    contractAddress: Address;
-  }) => Hex[];
+  getAdditionalSetupActions?: (args: { tokenId: bigint }) => Hex[];
   token: CreateNew1155TokenProps;
+};
+
+export type CreateNew1155ContractParams = CreateNew1155ParamsBase & {
+  contract: NewContractParams;
+};
+
+export type CreateNew1155TokenParams = CreateNew1155ParamsBase & {
+  contractAddress: Address;
 };
 
 export interface CreateNew1155TokenProps {
@@ -55,3 +57,23 @@ export type New1155Token = {
   salesConfig: Concrete<SalesConfigParamsType>;
   tokenMetadataURI: string;
 };
+
+export type CreateNew1155TokenReturn = {
+  parameters: SimulateContractParameters<
+    any,
+    any,
+    any,
+    any,
+    any,
+    Account | Address
+  >;
+  tokenSetupActions: Hex[];
+  newTokenId: bigint;
+  newToken: New1155Token;
+  minter: Address;
+  contractVersion: string;
+};
+
+export type CreateNew1155ContractAndTokenReturn = {
+  contractAddress: Address;
+} & CreateNew1155TokenReturn;
