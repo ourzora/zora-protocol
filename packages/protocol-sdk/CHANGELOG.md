@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.8.0
+
+### Minor Changes
+
+- 5417f4dd: ProtocolSdk `create1155` can only be used for new contracts, and returns the correct deterministic contract address. A new function `create1155OnExistingContract` is added to support creating 1155 tokens on existing contracts
+
 ## 0.7.6
 
 ### Patch Changes
