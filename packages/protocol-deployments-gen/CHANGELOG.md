@@ -1,5 +1,12 @@
 # @zoralabs/protocol-deployments-gen
 
+## 0.0.5
+
+### Patch Changes
+
+- Updated dependencies [6b00336e]
+  - @zoralabs/erc20z@0.1.0
+
 ## 0.0.4
 
 ### Patch Changes

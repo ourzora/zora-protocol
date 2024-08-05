@@ -1,5 +1,15 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.0
+
+### Minor Changes
+
+- 58f59243: Including erc20z contracts in protocol-deployments
+
+### Patch Changes
+
+- b5a7fac4: Deployed latest 1155 to base and base sepolia
+
 ## 0.2.2
 
 ### Patch Changes
