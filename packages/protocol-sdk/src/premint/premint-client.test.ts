@@ -29,7 +29,7 @@ describe("ZoraCreator1155Premint", () => {
       const premintApiClient = new PremintAPIClient(chain.id);
 
       premintApiClient.get = vi
-        .fn<any, ReturnType<typeof premintApiClient.get>>()
+        .fn<typeof premintApiClient.get>()
         .mockResolvedValue({
           collection: {
             contractAdmin: "0xf39Fd6e51aad88F6F4ce6aB8827279cffFb92266",
@@ -120,11 +120,12 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
       const premintApiClient = new PremintAPIClient(chain.id);
 
       premintApiClient.getNextUID = vi
-        .fn<any, ReturnType<typeof premintApiClient.getNextUID>>()
+        .fn<typeof premintApiClient.getNextUID>()
         .mockResolvedValue(3);
       premintApiClient.postSignature = vi
-        .fn<Parameters<typeof premintApiClient.postSignature>>()
-        .mockResolvedValue({ ok: true });
+        .fn<typeof premintApiClient.postSignature>()
+        // @ts-ignore
+        .mockResolvedValue({});
 
       const creatorClient = createCreatorClient({
         chainId: chain.id,
@@ -242,7 +243,7 @@ describe("ZoraCreator1155Premint - v2 signatures", () => {
       });
 
       premintApiClient.get = vi
-        .fn<any, ReturnType<typeof premintApiClient.get>>()
+        .fn<typeof premintApiClient.get>()
         .mockResolvedValue({
           collection,
           collectionAddress,

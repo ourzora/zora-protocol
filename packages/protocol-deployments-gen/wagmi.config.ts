@@ -31,6 +31,15 @@ type Addresses = {
   };
 };
 
+const timedSaleStrategyErrors = zoraTimedSaleStrategyImplABI.filter(
+  (x) => x.type === "error",
+);
+
+const zora1155Errors = [
+  ...abis.zoraCreator1155ImplABI.filter((x) => x.type === "error"),
+  ...timedSaleStrategyErrors,
+];
+
 const get1155Addresses = () => {
   const addresses: Addresses = {};
 
@@ -97,7 +106,7 @@ const get1155Addresses = () => {
       contractName: "ZoraCreator1155FactoryImpl",
       chainId,
       address: jsonAddress.FACTORY_PROXY,
-      abi: abis.zoraCreator1155FactoryImplABI,
+      abi: [...abis.zoraCreator1155FactoryImplABI, ...zora1155Errors],
     });
     addAddress({
       contractName: "ZoraCreatorRedeemMinterFactory",
@@ -236,7 +245,7 @@ export default defineConfig({
       }),
     ),
     {
-      abi: abis.zoraCreator1155ImplABI,
+      abi: [...abis.zoraCreator1155ImplABI, ...timedSaleStrategyErrors],
       name: "ZoraCreator1155Impl",
     },
     {

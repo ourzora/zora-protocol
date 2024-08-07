@@ -159,7 +159,6 @@ export async function getMintCosts({
     }
 
     return parseMintCosts({
-      mintFeePerQuantity: salesConfigAndTokenInfo.mintFeePerQuantity,
       salesConfig: salesConfigAndTokenInfo.salesConfig,
       quantityToMint: BigInt(quantityToMint),
       allowListEntry,
@@ -239,7 +238,6 @@ function parsePremint({
     return {
       creator: premint.signer,
       maxSupply: premint.premint.premintConfig.tokenConfig.maxSupply,
-      mintFeePerQuantity: mintFee,
       mintType: "premint",
       uid: premint.premint.premintConfig.uid,
       contract: {
@@ -255,6 +253,7 @@ function parsePremint({
           premint.premint.premintConfig.tokenConfig.maxTokensPerAddress,
         pricePerToken: premint.premint.premintConfig.tokenConfig.pricePerToken,
         saleType: "premint",
+        mintFeePerQuantity: mintFee,
       },
     };
   }
@@ -278,7 +277,6 @@ const makeOnchainPrepareMint =
       costs: parseMintCosts({
         salesConfig: result.salesConfig,
         quantityToMint: BigInt(params.quantityToMint),
-        mintFeePerQuantity: result.mintFeePerQuantity,
         allowListEntry: params.allowListEntry,
       }),
     };
@@ -306,7 +304,6 @@ const makePremintPrepareMint =
       premint,
     }),
     costs: parseMintCosts({
-      mintFeePerQuantity: mintFee,
       quantityToMint: BigInt(params.quantityToMint),
       salesConfig: mintable.salesConfig,
       allowListEntry: params.allowListEntry,

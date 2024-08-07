@@ -130,11 +130,7 @@ export default defineConfig({
             text: "Creator Client",
             items: [
               {
-                text: "create 1155s gaslessly (premints)",
-                link: "/protocol-sdk/creator/premint",
-              },
-              {
-                text: "create 1155s onchain",
+                text: "create 1155s",
                 link: "/protocol-sdk/creator/onchain",
                 items: [
                   {
@@ -146,6 +142,10 @@ export default defineConfig({
                     link: "/protocol-sdk/creator/splits",
                   },
                 ],
+              },
+              {
+                text: "create 1155s gaslessly (premints)",
+                link: "/protocol-sdk/creator/premint",
               },
             ],
           },

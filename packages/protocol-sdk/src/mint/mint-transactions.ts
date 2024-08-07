@@ -10,6 +10,7 @@ import {
 import {
   erc20MinterABI,
   zoraCreator1155ImplABI,
+  zoraTimedSaleStrategyABI,
 } from "@zoralabs/protocol-deployments";
 import { zora721Abi, zora1155LegacyAbi } from "src/constants";
 import {
@@ -53,7 +54,7 @@ export function makeOnchainMintCall({
 
 export type MintableParameters = Pick<
   OnchainSalesConfigAndTokenInfo,
-  "contractVersion" | "mintFeePerQuantity" | "salesConfig"
+  "contractVersion" | "salesConfig"
 >;
 
 export function makePrepareMint1155TokenParams({
@@ -96,6 +97,26 @@ export function makePrepareMint1155TokenParams({
       tokenContract,
       tokenId,
       allowListEntry,
+    });
+  }
+
+  if (saleType === "timed") {
+    return makeContractParameters({
+      abi: zoraTimedSaleStrategyABI,
+      functionName: "mint",
+      account: minterAccount,
+      address: salesConfigAndTokenInfo.salesConfig.address,
+      value:
+        salesConfigAndTokenInfo.salesConfig.mintFeePerQuantity * mintQuantity,
+      /* args: mintTo, quantity, collection, tokenId, mintReferral, comment */
+      args: [
+        mintTo,
+        mintQuantity,
+        tokenContract,
+        BigInt(tokenId),
+        mintReferral || zeroAddress,
+        mintComment || "",
+      ],
     });
   }
 
@@ -143,7 +164,6 @@ function makePrepareMint721TokenParams({
 >): SimulateContractParametersWithAccount {
   const actualQuantityToMint = BigInt(quantityToMint || 1);
   const mintValue = parseMintCosts({
-    mintFeePerQuantity: salesConfigAndTokenInfo.mintFeePerQuantity,
     salesConfig: salesConfigAndTokenInfo.salesConfig,
     quantityToMint: actualQuantityToMint,
     allowListEntry: undefined,
@@ -217,7 +237,6 @@ function makeEthMintCall({
   allowListEntry?: AllowListEntry;
 }): SimulateContractParametersWithAccount {
   const mintValue = parseMintCosts({
-    mintFeePerQuantity: salesConfigAndTokenInfo.mintFeePerQuantity,
     salesConfig: salesConfigAndTokenInfo.salesConfig,
     quantityToMint: mintQuantity,
     allowListEntry,
@@ -292,16 +311,14 @@ function paidMintCost(
 
 export function parseMintCosts({
   salesConfig,
-  mintFeePerQuantity,
   quantityToMint,
   allowListEntry,
 }: {
   salesConfig: SaleStrategies;
-  mintFeePerQuantity: bigint;
   quantityToMint: bigint;
   allowListEntry: Pick<AllowListEntry, "price"> | undefined;
 }): MintCosts {
-  const mintFeeForTokens = mintFeePerQuantity * quantityToMint;
+  const mintFeeForTokens = salesConfig.mintFeePerQuantity * quantityToMint;
 
   const tokenPurchaseCost =
     paidMintCost(salesConfig, allowListEntry) * quantityToMint;

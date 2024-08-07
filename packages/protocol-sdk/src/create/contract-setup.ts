@@ -27,6 +27,7 @@ export async function getContractInfoExistingContract({
   // Account that is the creator of the contract
 }): Promise<{
   contractVersion: string;
+  contractName: string;
   nextTokenId: bigint;
 }> {
   // Check if contract exists either from metadata or the static address passed in.
@@ -50,8 +51,15 @@ export async function getContractInfoExistingContract({
     functionName: "nextTokenId",
   });
 
+  const contractName = await publicClient.readContract({
+    address: contractAddress,
+    abi: zoraCreator1155ImplABI,
+    functionName: "name",
+  });
+
   return {
     contractVersion,
+    contractName,
     nextTokenId,
   };
 }

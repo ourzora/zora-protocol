@@ -23,8 +23,16 @@ export type FixedPriceParamsType = SaleStartAndEnd &
   MaxTokensPerAddress & {
     type?: "fixedPrice";
     // the price per token, if it is a priced mint
-    pricePerToken?: bigint;
+    pricePerToken: bigint;
   };
+
+export type TimedSaleParamsType = SaleStartAndEnd & {
+  type?: "timed";
+  // Name of the erc20z token to create for the secondary sale.  If not provided, fetches the metadata from the tokenMetadataURI and uses the name from it.
+  erc20Name?: string;
+  // Symbol of the erc20z token to create for the secondary sale.  If not provided, extracts it from the name.
+  erc20Symbol?: string;
+};
 
 export type Erc20ParamsType = SaleStartAndEnd &
   MaxTokensPerAddress & {
@@ -44,7 +52,8 @@ export type AllowListParamType = SaleStartAndEnd & {
 export type SalesConfigParamsType =
   | AllowListParamType
   | Erc20ParamsType
-  | FixedPriceParamsType;
+  | FixedPriceParamsType
+  | TimedSaleParamsType;
 
 export type CreateNew1155ParamsBase = {
   account: Address;
@@ -84,7 +93,8 @@ export interface ContractProps {
 export type ConcreteSalesConfig =
   | Concrete<FixedPriceParamsType>
   | Concrete<Erc20ParamsType>
-  | Concrete<AllowListParamType>;
+  | Concrete<AllowListParamType>
+  | Concrete<TimedSaleParamsType>;
 
 export type New1155Token = {
   payoutRecipient: Address;

@@ -1,10 +1,22 @@
-import { describe, expect } from "vitest";
-import { Address, erc20Abi, parseAbi, parseEther } from "viem";
+import { describe, expect, vi } from "vitest";
+import { Address, erc20Abi, parseAbi, parseEther, zeroAddress } from "viem";
 import { zora, zoraSepolia } from "viem/chains";
-import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
+import {
+  zoraCreator1155ImplABI,
+  zoraTimedSaleStrategyAddress,
+} from "@zoralabs/protocol-deployments";
 import { forkUrls, makeAnvilTest } from "src/anvil";
-import { createCollectorClient } from "src/sdk";
+import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { getAllowListEntry } from "src/allow-list/allow-list-client";
+import {
+  demoContractMetadataURI,
+  demoTokenMetadataURI,
+} from "src/create/1155-create-helper.test";
+import { SubgraphMintGetter } from "./subgraph-mint-getter";
+import { new1155ContractVersion } from "src/create/contract-setup";
+import { SALE_END_FOREVER } from "src/create/minter-defaults";
+import { ISubgraphQuerier } from "src/apis/subgraph-querier";
+import { TokenQueryResult } from "./subgraph-queries";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
@@ -326,4 +338,130 @@ describe("mint-helper", () => {
       },
       12 * 1000,
     );
+
+  makeAnvilTest({
+    forkUrl: forkUrls.zoraMainnet,
+    forkBlockNumber: 18145203,
+    anvilChainId: zora.id,
+  })(
+    "can mint a zora timed sale strategy mint",
+    async ({ viemClients }) => {
+      const { publicClient, chain, walletClient } = viemClients;
+
+      const creator = (await walletClient.getAddresses())[0]!;
+
+      const creatorClient = createCreatorClient({
+        chainId: chain.id,
+        publicClient,
+      });
+
+      const { parameters, contractAddress, newTokenId } =
+        await creatorClient.create1155({
+          account: creator,
+          contract: {
+            name: "Test Timed Sale",
+            uri: demoContractMetadataURI,
+            defaultAdmin: creator,
+          },
+          token: {
+            tokenMetadataURI: demoTokenMetadataURI,
+          },
+        });
+
+      const { request: createRequest } =
+        await publicClient.simulateContract(parameters);
+      const createHash = await walletClient.writeContract(createRequest);
+      const createReceipt = await publicClient.waitForTransactionReceipt({
+        hash: createHash,
+      });
+      expect(createReceipt.status).toBe("success");
+
+      const zoraCreateToken: TokenQueryResult = {
+        contract: {
+          address: contractAddress,
+          contractVersion: new1155ContractVersion(chain.id),
+          // not used:
+          mintFeePerQuantity: "0",
+          name: "",
+          contractURI: "",
+          salesStrategies: [],
+        },
+        creator: creator,
+        maxSupply: "1000",
+        tokenStandard: "ERC1155",
+        totalMinted: "0",
+        uri: "",
+        tokenId: newTokenId.toString(),
+        salesStrategies: [
+          {
+            type: "ZORA_TIMED",
+            zoraTimedMinter: {
+              address:
+                zoraTimedSaleStrategyAddress[
+                  chain.id as keyof typeof zoraTimedSaleStrategyAddress
+                ],
+              mintFee: "111000000000000",
+              saleEnd: SALE_END_FOREVER.toString(),
+              saleStart: "0",
+              erc20Z: {
+                // not needed
+                id: zeroAddress,
+                // note needed
+                pool: zeroAddress,
+              },
+              secondaryActivated: false,
+            },
+          },
+        ],
+      };
+
+      const mockQuery = vi.fn<ISubgraphQuerier["query"]>().mockResolvedValue({
+        zoraCreateToken,
+      });
+
+      const mintGetter = new SubgraphMintGetter(chain.id);
+      mintGetter.subgraphQuerier.query = mockQuery;
+
+      const collectorClient = createCollectorClient({
+        chainId: chain.id,
+        publicClient,
+        mintGetter,
+      });
+
+      const collector = (await walletClient.getAddresses())[1]!;
+
+      const { prepareMint } = await collectorClient.getToken({
+        mintType: "1155",
+        tokenContract: contractAddress,
+        tokenId: newTokenId,
+      });
+
+      const quantityToMint = 10n;
+
+      const { parameters: mintParameters, costs } = prepareMint({
+        minterAccount: collector,
+        quantityToMint,
+      });
+
+      expect(costs.totalCostEth).toBe(quantityToMint * parseEther("0.000111"));
+
+      const { request: mintRequest } =
+        await publicClient.simulateContract(mintParameters);
+      const mintHash = await walletClient.writeContract(mintRequest);
+      const mintReceipt = await publicClient.waitForTransactionReceipt({
+        hash: mintHash,
+      });
+      expect(mintReceipt.status).toBe("success");
+
+      const balance = await publicClient.readContract({
+        abi: zoraCreator1155ImplABI,
+        address: contractAddress,
+        functionName: "balanceOf",
+        args: [collector, newTokenId],
+      });
+
+      expect(balance).toBe(quantityToMint);
+    },
+    20_000,
+  );
 });

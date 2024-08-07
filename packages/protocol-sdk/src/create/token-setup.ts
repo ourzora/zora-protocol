@@ -6,10 +6,10 @@ import { OPEN_EDITION_MINT_SIZE } from "src/constants";
 import { getSalesConfigWithDefaults } from "./minter-defaults";
 import { setupMinters } from "./minter-setup";
 
-function applyNew1155Defaults(
+async function applyNew1155Defaults(
   props: CreateNew1155TokenProps,
   ownerAddress: Address,
-): New1155Token {
+): Promise<New1155Token> {
   const { payoutRecipient: fundsRecipient } = props;
   const fundsRecipientOrOwner =
     fundsRecipient && fundsRecipient !== zeroAddress
@@ -24,7 +24,10 @@ function applyNew1155Defaults(
         : BigInt(props.maxSupply),
     royaltyBPS: props.royaltyBPS || 1000,
     tokenMetadataURI: props.tokenMetadataURI,
-    salesConfig: getSalesConfigWithDefaults(props.salesConfig),
+    salesConfig: await getSalesConfigWithDefaults(
+      props.salesConfig,
+      props.tokenMetadataURI,
+    ),
   };
 }
 
@@ -109,17 +112,17 @@ function makeAdminMintCall({
   });
 }
 
-export function constructCreate1155TokenCalls(
+export async function constructCreate1155TokenCalls(
   props: CreateNew1155TokenProps &
     ContractProps & {
       ownerAddress: Address;
       chainId: number;
     },
-): {
+): Promise<{
   setupActions: `0x${string}`[];
   newToken: New1155Token;
   minter: Address;
-} {
+}> {
   const {
     chainId,
     nextTokenId,
@@ -128,7 +131,7 @@ export function constructCreate1155TokenCalls(
     contractVersion,
   } = props;
 
-  const new1155TokenPropsWithDefaults = applyNew1155Defaults(
+  const new1155TokenPropsWithDefaults = await applyNew1155Defaults(
     props,
     ownerAddress,
   );

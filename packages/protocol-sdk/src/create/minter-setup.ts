@@ -6,6 +6,8 @@ import {
   zoraCreatorFixedPriceSaleStrategyAddress,
   zoraCreatorMerkleMinterStrategyABI,
   zoraCreatorMerkleMinterStrategyAddress,
+  zoraTimedSaleStrategyABI,
+  zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { Address, encodeFunctionData, Hex } from "viem";
 import {
@@ -14,6 +16,7 @@ import {
   AllowListParamType,
   Erc20ParamsType,
   FixedPriceParamsType,
+  TimedSaleParamsType,
 } from "./types";
 import { Concrete } from "src/utils";
 
@@ -142,6 +145,58 @@ function setupFixedPriceMinter({
   };
 }
 
+type SetupTimedMinterProps = {
+  tokenId: bigint;
+  chainId: number;
+} & Concrete<TimedSaleParamsType>;
+
+function setupTimedSaleMinter({
+  chainId,
+  tokenId,
+  erc20Name: erc20zName,
+  erc20Symbol: erc20zSymbol,
+  saleStart,
+  saleEnd,
+}: SetupTimedMinterProps): {
+  minter: Address;
+  setupActions: Hex[];
+} {
+  const minterAddress =
+    zoraTimedSaleStrategyAddress[
+      chainId as keyof typeof zoraTimedSaleStrategyAddress
+    ];
+  const fixedPriceApproval = encodeFunctionData({
+    abi: zoraCreator1155ImplABI,
+    functionName: "addPermission",
+    args: [BigInt(tokenId), minterAddress, PERMISSION_BITS.MINTER],
+  });
+
+  const saleData = encodeFunctionData({
+    abi: zoraTimedSaleStrategyABI,
+    functionName: "setSale",
+    args: [
+      BigInt(tokenId),
+      {
+        saleStart,
+        saleEnd,
+        name: erc20zName,
+        symbol: erc20zSymbol,
+      },
+    ],
+  });
+
+  const callSale = encodeFunctionData({
+    abi: zoraCreator1155ImplABI,
+    functionName: "callSale",
+    args: [BigInt(tokenId), minterAddress, saleData],
+  });
+
+  return {
+    minter: minterAddress,
+    setupActions: [fixedPriceApproval, callSale],
+  };
+}
+
 function setupAllowListMinter({
   chainId,
   tokenId: nextTokenId,
@@ -201,6 +256,12 @@ const isAllowList = (
 const isErc20 = (
   salesConfig: ConcreteSalesConfig,
 ): salesConfig is Concrete<Erc20ParamsType> => salesConfig.type === "erc20Mint";
+const isFixedPrice = (
+  salesConfig: ConcreteSalesConfig,
+): salesConfig is Concrete<FixedPriceParamsType> =>
+  salesConfig.type === "fixedPrice" ||
+  (salesConfig as unknown as Concrete<FixedPriceParamsType>).pricePerToken >
+    BigInt(0);
 
 export function setupMinters({ salesConfig, ...rest }: SetupMintersProps): {
   minter: Address;
@@ -219,7 +280,13 @@ export function setupMinters({ salesConfig, ...rest }: SetupMintersProps): {
     });
   }
 
-  return setupFixedPriceMinter({
+  if (isFixedPrice(salesConfig))
+    return setupFixedPriceMinter({
+      ...salesConfig,
+      ...rest,
+    });
+
+  return setupTimedSaleMinter({
     ...salesConfig,
     ...rest,
   });

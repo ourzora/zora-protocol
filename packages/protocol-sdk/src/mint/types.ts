@@ -102,10 +102,16 @@ export type GetMintCostsParameters = {
   quantityMinted: number | bigint;
 } & MintTypes;
 
-export type SaleType = "fixedPrice" | "erc20" | "allowlist" | "premint";
+export type SaleType =
+  | "fixedPrice"
+  | "erc20"
+  | "allowlist"
+  | "premint"
+  | "timed";
 
 type SaleStrategy<T extends SaleType> = {
   saleType: T;
+  mintFeePerQuantity: bigint;
 };
 
 type PricedSaleStrategy = {
@@ -138,26 +144,37 @@ type AllowListSaleStrategy = SaleStrategy<"allowlist"> & {
   merkleRoot: string;
 };
 
+type ZoraTimedSaleStrategy = SaleStrategy<"timed"> & {
+  mintFee: bigint;
+  erc20Z: Address;
+  pool: Address;
+  secondaryActivated: boolean;
+  address: Address;
+} & StartAndEnd;
+
 type PremintSaleStrategy = SaleStrategy<"premint"> &
   PricedSaleStrategy & {
     duration: bigint;
   };
 
-export type SaleStrategies =
-  | FixedPriceSaleStrategy
-  | ERC20SaleStrategy
-  | AllowListSaleStrategy
-  | PremintSaleStrategy;
-
 export type OnchainSalesStrategies =
   | FixedPriceSaleStrategy
   | ERC20SaleStrategy
-  | AllowListSaleStrategy;
+  | AllowListSaleStrategy
+  | ZoraTimedSaleStrategy;
+
+export type SaleStrategies = OnchainSalesStrategies | PremintSaleStrategy;
 
 export function isErc20SaleStrategy(
   salesConfig: SaleStrategies,
 ): salesConfig is ERC20SaleStrategy {
   return salesConfig.saleType === "erc20";
+}
+
+export function isTimedSaleStrategy(
+  salesConfig: SaleStrategies,
+): salesConfig is ZoraTimedSaleStrategy {
+  return salesConfig.saleType === "timed";
 }
 
 export type ContractInfo = {
@@ -174,8 +191,6 @@ export type MintableBase = {
   contract: ContractInfo;
   /** Token metadata URI */
   tokenURI: string;
-  /** Price in eth to mint 1 item */
-  mintFeePerQuantity: bigint;
   /** Creator of the mintable item */
   creator: Address;
   /** Maximum total number of items that can be minted */

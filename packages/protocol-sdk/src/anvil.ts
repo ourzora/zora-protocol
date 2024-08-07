@@ -101,7 +101,7 @@ export const makeAnvilTest = ({
   });
 
 export const forkUrls = {
-  zoraMainnet: "https://rpc.zora.co/",
+  zoraMainnet: `https://rpc.zora.co/${process.env.VITE_CONDUIT_KEY}`,
   zoraGoerli: "https://testnet.rpc.zora.co",
   zoraSepolia: "https://sepolia.rpc.zora.energy",
 };

@@ -1,8 +1,6 @@
 import { Address } from "viem";
-import {
-  httpClient as defaultHttpClient,
-  IHttpClient,
-} from "../apis/http-api-base";
+import { httpClient as defaultHttpClient } from "../apis/http-api-base";
+import { ISubgraphQuerier, SubgraphQuerier } from "../apis/subgraph-querier";
 import { NetworkConfig, networkConfigByChain } from "src/apis/chain-constants";
 import { GenericTokenIdTypes } from "src/types";
 import {
@@ -11,19 +9,15 @@ import {
   OnchainMintable,
   OnchainSalesConfigAndTokenInfo,
   OnchainSalesStrategies,
-  isErc20SaleStrategy,
 } from "./types";
-import { querySubgraphWithRetries } from "src/utils";
 import {
   buildContractTokensQuery,
-  buildGetDefaultMintPriceQuery,
   buildNftTokenSalesQuery,
   buildPremintsOfContractQuery,
   ISubgraphQuery,
   SalesStrategyResult,
   TokenQueryResult,
 } from "./subgraph-queries";
-import * as semver from "semver";
 
 export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
   if (!networkConfigByChain[chainId]) {
@@ -34,6 +28,7 @@ export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
 
 function parseSalesConfig(
   targetStrategy: SalesStrategyResult,
+  contractMintFee: bigint,
 ): OnchainSalesStrategies {
   if (targetStrategy.type === "FIXED_PRICE")
     return {
@@ -43,6 +38,7 @@ function parseSalesConfig(
         targetStrategy.fixedPrice.maxTokensPerAddress,
       ),
       pricePerToken: BigInt(targetStrategy.fixedPrice.pricePerToken),
+      mintFeePerQuantity: contractMintFee,
     };
 
   if (targetStrategy.type === "ERC_20_MINTER") {
@@ -53,6 +49,7 @@ function parseSalesConfig(
         targetStrategy.erc20Minter.maxTokensPerAddress,
       ),
       pricePerToken: BigInt(targetStrategy.erc20Minter.pricePerToken),
+      mintFeePerQuantity: 0n,
     };
   }
   if (targetStrategy.type === "PRESALE") {
@@ -62,6 +59,20 @@ function parseSalesConfig(
       merkleRoot: targetStrategy.presale.merkleRoot,
       saleStart: targetStrategy.presale.presaleStart,
       saleEnd: targetStrategy.presale.presaleEnd,
+      mintFeePerQuantity: contractMintFee,
+    };
+  }
+  if (targetStrategy.type === "ZORA_TIMED") {
+    return {
+      saleType: "timed",
+      address: targetStrategy.zoraTimedMinter.address,
+      mintFee: BigInt(targetStrategy.zoraTimedMinter.mintFee),
+      saleStart: targetStrategy.zoraTimedMinter.saleStart,
+      saleEnd: targetStrategy.zoraTimedMinter.saleEnd,
+      erc20Z: targetStrategy.zoraTimedMinter.erc20Z.id,
+      pool: targetStrategy.zoraTimedMinter.erc20Z.pool,
+      secondaryActivated: targetStrategy.zoraTimedMinter.secondaryActivated,
+      mintFeePerQuantity: BigInt(targetStrategy.zoraTimedMinter.mintFee),
     };
   }
 
@@ -71,6 +82,7 @@ function parseSalesConfig(
 function getSaleEnd(a: SalesStrategyResult) {
   if (a.type === "FIXED_PRICE") return BigInt(a.fixedPrice.saleEnd);
   if (a.type === "ERC_20_MINTER") return BigInt(a.erc20Minter.saleEnd);
+  if (a.type === "ZORA_TIMED") return BigInt(a.zoraTimedMinter.saleEnd);
   return BigInt(a.presale.presaleEnd);
 }
 
@@ -83,6 +95,9 @@ function strategyIsStillValid(
   }
   if (strategy.type === "ERC_20_MINTER") {
     return BigInt(strategy.erc20Minter.saleEnd) > blockTime;
+  }
+  if (strategy.type === "ZORA_TIMED") {
+    return BigInt(strategy.zoraTimedMinter.saleEnd) > blockTime;
   }
   return BigInt(strategy.presale.presaleEnd) > blockTime;
 }
@@ -135,24 +150,17 @@ function getTargetStrategy({
 }
 
 export class SubgraphMintGetter implements IOnchainMintGetter {
-  httpClient: IHttpClient;
+  public readonly subgraphQuerier: ISubgraphQuerier;
   networkConfig: NetworkConfig;
 
-  constructor(chainId: number, httpClient?: IHttpClient) {
-    this.httpClient = httpClient || defaultHttpClient;
+  constructor(chainId: number, subgraphQuerier?: ISubgraphQuerier) {
+    this.subgraphQuerier =
+      subgraphQuerier || new SubgraphQuerier(defaultHttpClient);
     this.networkConfig = getApiNetworkConfigForChain(chainId);
   }
 
   async getContractMintFee(contract: TokenQueryResult["contract"]) {
-    const storedMintFee = BigInt(contract.mintFeePerQuantity);
-    if (!contractUsesMintCardsForMintFee(contract.contractVersion)) {
-      return storedMintFee;
-    }
-    const defaultMintFee = await this.querySubgraphWithRetries(
-      buildGetDefaultMintPriceQuery({}),
-    );
-
-    return defaultMintFee || storedMintFee;
+    return BigInt(contract.mintFeePerQuantity);
   }
 
   async querySubgraphWithRetries<T>({
@@ -160,8 +168,7 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
     variables,
     parseResponseData,
   }: ISubgraphQuery<T>) {
-    const responseData = await querySubgraphWithRetries({
-      httpClient: this.httpClient,
+    const responseData = await this.subgraphQuerier.query({
       subgraphUrl: this.networkConfig.subgraphUrl,
       query,
       variables,
@@ -250,6 +257,33 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
   }
 }
 
+function getTargetStrategyAndMintFee({
+  token,
+  tokenId,
+  preferredSaleType,
+  defaultMintFee,
+  blockTime,
+}: {
+  token: TokenQueryResult;
+  tokenId?: GenericTokenIdTypes;
+  preferredSaleType?: SaleType;
+  defaultMintFee: bigint;
+  blockTime: bigint;
+}) {
+  const targetStrategy = getTargetStrategy({
+    tokenId,
+    preferredSaleType: preferredSaleType,
+    token,
+    blockTime,
+  });
+
+  if (!targetStrategy) return undefined;
+
+  const salesConfig = parseSalesConfig(targetStrategy, defaultMintFee);
+
+  return salesConfig;
+}
+
 function parseTokenQueryResult({
   token,
   tokenId,
@@ -263,24 +297,17 @@ function parseTokenQueryResult({
   defaultMintFee: bigint;
   blockTime: bigint;
 }): OnchainSalesConfigAndTokenInfo {
-  const targetStrategy = getTargetStrategy({
-    tokenId,
-    preferredSaleType: preferredSaleType,
+  const salesConfig = getTargetStrategyAndMintFee({
     token,
+    tokenId,
+    preferredSaleType,
+    defaultMintFee,
     blockTime,
   });
 
-  const tokenInfo = parseTokenInfo(token, defaultMintFee);
-
-  if (!targetStrategy) {
-    return tokenInfo;
-  }
-
-  const salesConfig = parseSalesConfig(targetStrategy);
-
-  if (isErc20SaleStrategy(salesConfig)) {
-    tokenInfo.mintFeePerQuantity = 0n;
-  }
+  const tokenInfo = parseTokenInfo({
+    token,
+  });
 
   return {
     ...tokenInfo,
@@ -288,17 +315,11 @@ function parseTokenQueryResult({
   };
 }
 
-const contractUsesMintCardsForMintFee = (contractVersion: string) => {
-  const semVerContractVersion = semver.coerce(contractVersion)?.raw;
-  if (!semVerContractVersion) return false;
-
-  return semver.gte(semVerContractVersion, "2.9.0");
-};
-
-function parseTokenInfo(
-  token: TokenQueryResult,
-  defaultMintFee: bigint,
-): OnchainMintable {
+function parseTokenInfo({
+  token,
+}: {
+  token: TokenQueryResult;
+}): OnchainMintable {
   return {
     contract: {
       address: token.contract.address,
@@ -311,7 +332,6 @@ function parseTokenInfo(
     creator: token.creator,
     totalMinted: BigInt(token.totalMinted),
     maxSupply: BigInt(token.maxSupply),
-    mintFeePerQuantity: defaultMintFee,
     contractVersion: token.contract.contractVersion,
   };
 }

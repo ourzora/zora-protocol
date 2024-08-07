@@ -34,10 +34,26 @@ export type PresaleSalesStrategyResult = {
   };
 };
 
+export type ZoraTimedMinterSaleStrategyResult = {
+  type: "ZORA_TIMED";
+  zoraTimedMinter: {
+    address: Address;
+    mintFee: string;
+    saleStart: string;
+    saleEnd: string;
+    erc20Z: {
+      id: Address;
+      pool: Address;
+    };
+    secondaryActivated: boolean;
+  };
+};
+
 export type SalesStrategyResult =
   | FixedPriceSaleStrategyResult
   | ERC20SaleStrategyResult
-  | PresaleSalesStrategyResult;
+  | PresaleSalesStrategyResult
+  | ZoraTimedMinterSaleStrategyResult;
 
 export type TokenQueryResult = {
   tokenId?: string;
@@ -48,7 +64,7 @@ export type TokenQueryResult = {
   salesStrategies?: SalesStrategyResult[];
   tokenStandard: "ERC1155" | "ERC721";
   contract: {
-    mintFeePerQuantity: "string";
+    mintFeePerQuantity: string;
     salesStrategies: SalesStrategyResult[];
     address: Address;
     contractVersion: string;
@@ -81,6 +97,17 @@ fragment SaleStrategy on SalesStrategyConfig {
     presaleEnd
     merkleRoot
   }
+  zoraTimedMinter {
+    address
+    mintFee
+    saleStart
+    saleEnd
+    erc20Z {
+      id 
+      pool
+    }
+    secondaryActivated
+  }
 }`;
 
 const TOKEN_FRAGMENT = `
@@ -91,7 +118,7 @@ fragment Token on ZoraCreateToken {
     totalMinted
     maxSupply
     tokenStandard
-    salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER", "PRESALE"]}) {
+    salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER", "PRESALE", "ZORA_TIMED"]}) {
       ...SaleStrategy
     }
     contract {
@@ -100,7 +127,7 @@ fragment Token on ZoraCreateToken {
       contractVersion
       contractURI
       name
-      salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER", "PRESALE"]}) {
+      salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER", "PRESALE", "ZORA_TIMED"]}) {
         ...SaleStrategy
       }
     }
@@ -136,25 +163,6 @@ query ($id: ID!) {
     },
     parseResponseData: (responseData: any | undefined) =>
       responseData?.zoraCreateToken,
-  };
-}
-
-export function buildGetDefaultMintPriceQuery({}): ISubgraphQuery<
-  bigint | undefined
-> {
-  return {
-    query: `
-{
-  defaultMintPrice(id: "0x0000000000000000000000000000000000000000") {
-    pricePerToken
-  }
-}
-`,
-    variables: {},
-    parseResponseData: (responseData: any | undefined) =>
-      responseData?.defaultMintPrice?.pricePerToken
-        ? BigInt(responseData?.defaultMintPrice?.pricePerToken)
-        : undefined,
   };
 }
 
