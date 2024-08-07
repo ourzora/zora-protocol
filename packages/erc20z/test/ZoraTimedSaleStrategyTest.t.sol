@@ -329,7 +329,7 @@ contract ZoraTimedSaleStrategyTest is BaseTest {
         uint256 tokensMintedInOtherMinter = tokensMintedInOtherMinterShort;
 
         vm.assume(tokensMinted > 0);
-        // this is failing:
+
         uint64 saleStart = uint64(block.timestamp);
         uint64 saleEnd = uint64(block.timestamp + 4);
         setUpSale(saleStart, saleEnd);
@@ -370,7 +370,7 @@ contract ZoraTimedSaleStrategyTest is BaseTest {
         uint256 tokensMintedInOtherMinter = tokensMintedInOtherMinterShort;
 
         vm.assume(tokensMinted > 0);
-        // this is failing:
+
         uint64 saleStart = uint64(block.timestamp);
         uint64 saleEnd = uint64(block.timestamp + 4);
         setUpSale(saleStart, saleEnd);
@@ -535,7 +535,6 @@ contract ZoraTimedSaleStrategyTest is BaseTest {
         vm.stopPrank();
     }
 
-    // TODO: fix test and re-enable
     function testLaunchMarket() public {
         uint64 saleStart = uint64(block.timestamp);
         uint64 saleEnd = uint64(block.timestamp + 24 hours);
