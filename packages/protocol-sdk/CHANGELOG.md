@@ -1,5 +1,16 @@
 # @zoralabs/protocol-sdk
 
+## 0.9.0
+
+### Minor Changes
+
+- 8c50a99c: Add support for creating 1155s and collecting using the new ZoraTimedSaleStrategy. Default to using the new ZoraTimedSaleStrategy as a minter for new 1155s.
+
+### Patch Changes
+
+- 47c20f4d: - Added support for allowlist mint creation and collection
+  - For creating an erc20 mint, the parameter `type` must be set to `erc20Mint` on the `token.salesConfig` object
+
 ## 0.8.0
 
 ### Minor Changes
