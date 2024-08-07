@@ -1,5 +1,13 @@
 # @zoralabs/sparks-deployments
 
+## 0.0.3
+
+### Patch Changes
+
+- Updated dependencies [9b487789]
+  - @zoralabs/shared-contracts@0.0.1
+  - @zoralabs/sparks-contracts@0.2.2
+
 ## 0.0.2
 
 ### Patch Changes
