@@ -29,3 +29,7 @@ export * from "./create/types";
 export * from "./sdk";
 
 export * from "./ipfs";
+
+export { createAllowList } from "./allow-list/allow-list-client";
+
+export * from "./allow-list/types";

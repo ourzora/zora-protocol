@@ -7,7 +7,7 @@ import {
 
 export type GenericTokenIdTypes = number | bigint | string;
 
-export type IPublicClient = Pick<PublicClient, "readContract">;
+export type IPublicClient = Pick<PublicClient, "readContract" | "getBlock">;
 
 export type SimulateContractParametersWithAccount = SimulateContractParameters<
   any,

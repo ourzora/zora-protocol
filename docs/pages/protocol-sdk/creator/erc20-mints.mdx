@@ -1,7 +1,9 @@
 # Creating an 1155 that can be minted in ERC-20 tokens
 
-1155s can be priced and minted using an ERC-20 token. To create an 1155 token that is priced in ERC-20, the `token.salesConfig.currency` must be set to the address of the ERC20 token.
-Additionally, the `pricePerToken` argument is set to the amount of ERC-20 tokens required to mint each token:
+1155s can be priced and minted using an ERC-20 token. To create an 1155 token that is priced in ERC-20:
+* `token.salesConfig.type` must be set to `erc20Mint`
+* `token.salesConfig.currency` must be set to the address of the ERC20 token.
+* `token.salesConfig.pricePerToken` argument is set to the amount of ERC-20 tokens required to mint each token:
 
 :::code-group
 

@@ -4,6 +4,7 @@ import { zora, zoraSepolia } from "viem/chains";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import { forkUrls, makeAnvilTest } from "src/anvil";
 import { createCollectorClient } from "src/sdk";
+import { getAllowListEntry } from "src/allow-list/allow-list-client";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
@@ -239,25 +240,90 @@ describe("mint-helper", () => {
 
   makeAnvilTest({
     forkUrl: forkUrls.zoraSepolia,
-    forkBlockNumber: 10294670,
+    forkBlockNumber: 10970943,
     anvilChainId: zoraSepolia.id,
-  })(
-    "gets onchain and premint mintables",
-    async ({ viemClients }) => {
-      const { publicClient, chain } = viemClients;
+  })("can mint allowlist tokens", async ({ viemClients }) => {
+    const { publicClient, chain, testClient, walletClient } = viemClients;
 
-      const targetContract: Address =
-        "0xa33e4228843092bb0f2fcbb2eb237bcefc1046b3";
+    const collectorClient = createCollectorClient({
+      chainId: chain.id,
+      publicClient,
+    });
 
-      const minter = createCollectorClient({ chainId: chain.id, publicClient });
+    const targetContract = "0x440cF6a9f12b2f05Ec4Cee8eE0F317B0eC0c2eCD";
 
-      const { tokens: mintables, contract } = await minter.getTokensOfContract({
-        tokenContract: targetContract,
-      });
+    const tokenId = 1n;
 
-      expect(mintables.length).toBe(4);
-      expect(contract).toBeDefined();
-    },
-    12 * 1000,
-  );
+    const allowListUser = "0xf69fEc6d858c77e969509843852178bd24CAd2B6";
+    const merkleRoot =
+      "4d08ab87f97dda8811b4bb32a16a175db65e4c140797c993679a3d58aaadc791";
+
+    const allowListEntryResult = await getAllowListEntry({
+      address: allowListUser,
+      merkleRoot,
+    });
+
+    const { prepareMint } = await collectorClient.getToken({
+      mintType: "1155",
+      tokenContract: targetContract,
+      tokenId,
+    });
+
+    const minter = (await walletClient.getAddresses())[0]!;
+
+    await testClient.setBalance({
+      address: minter,
+      value: parseEther("10"),
+    });
+
+    const quantityToMint = allowListEntryResult.allowListEntry!.maxCanMint;
+
+    const { parameters } = prepareMint({
+      minterAccount: minter,
+      quantityToMint,
+      mintRecipient: allowListUser,
+      allowListEntry: allowListEntryResult.allowListEntry,
+    });
+
+    const { request } = await publicClient.simulateContract(parameters);
+    const hash = await walletClient.writeContract(request);
+
+    await publicClient.waitForTransactionReceipt({ hash });
+
+    const balance = await publicClient.readContract({
+      abi: zoraCreator1155ImplABI,
+      functionName: "balanceOf",
+      address: targetContract,
+      args: [allowListUser, tokenId],
+    });
+
+    expect(balance).toBe(BigInt(quantityToMint));
+  }),
+    makeAnvilTest({
+      forkUrl: forkUrls.zoraSepolia,
+      forkBlockNumber: 10294670,
+      anvilChainId: zoraSepolia.id,
+    })(
+      "gets onchain and premint mintables",
+      async ({ viemClients }) => {
+        const { publicClient, chain } = viemClients;
+
+        const targetContract: Address =
+          "0xa33e4228843092bb0f2fcbb2eb237bcefc1046b3";
+
+        const minter = createCollectorClient({
+          chainId: chain.id,
+          publicClient,
+        });
+
+        const { tokens: mintables, contract } =
+          await minter.getTokensOfContract({
+            tokenContract: targetContract,
+          });
+
+        expect(mintables.length).toBe(4);
+        expect(contract).toBeDefined();
+      },
+      12 * 1000,
+    );
 });

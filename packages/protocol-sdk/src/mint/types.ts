@@ -3,6 +3,7 @@ import {
   GenericTokenIdTypes,
   SimulateContractParametersWithAccount,
 } from "src/types";
+import { AllowListEntry } from "src/allow-list/types";
 
 export type MintParameters<MintType> = {
   /** Type of the collection to be minted. */
@@ -25,7 +26,7 @@ export type PremintMintParameters = MintParameters<"premint"> & {
   uid: number;
 };
 
-export type MintType = "1155" | "721" | "premint";
+export type MintType = "1155" | "721" | "allowlist" | "premint";
 
 export type MintTypes =
   | Erc1155MintParameters
@@ -63,6 +64,8 @@ export type MintParametersBase = {
   mintRecipient?: Address;
   /** If this is a premint, the address to get the first minter reward */
   firstMinter?: Address;
+  /** If this is an allow list mint, the info for the allow list entry */
+  allowListEntry?: AllowListEntry;
 };
 
 export type MakeMintParametersArgumentsBase = MintParametersBase & {
@@ -99,40 +102,60 @@ export type GetMintCostsParameters = {
   quantityMinted: number | bigint;
 } & MintTypes;
 
-export type SaleType = "fixedPrice" | "erc20" | "premint";
+export type SaleType = "fixedPrice" | "erc20" | "allowlist" | "premint";
 
 type SaleStrategy<T extends SaleType> = {
   saleType: T;
+};
+
+type PricedSaleStrategy = {
   pricePerToken: bigint;
   maxTokensPerAddress: bigint;
 };
 
-type FixedPriceSaleStrategy = SaleStrategy<"fixedPrice"> & {
-  address: Address;
+export type StartAndEnd = {
   saleStart: string;
   saleEnd: string;
 };
 
-type ERC20SaleStrategy = SaleStrategy<"erc20"> & {
+type FixedPriceSaleStrategy = SaleStrategy<"fixedPrice"> &
+  PricedSaleStrategy &
+  StartAndEnd & {
+    address: Address;
+  };
+
+type ERC20SaleStrategy = SaleStrategy<"erc20"> &
+  PricedSaleStrategy &
+  StartAndEnd & {
+    address: Address;
+    currency: Address;
+  };
+
+type AllowListSaleStrategy = SaleStrategy<"allowlist"> & {
   address: Address;
   saleStart: string;
   saleEnd: string;
-  currency: Address;
+  merkleRoot: string;
 };
 
-type PremintSaleStrategy = SaleStrategy<"premint"> & {
-  duration: bigint;
-};
+type PremintSaleStrategy = SaleStrategy<"premint"> &
+  PricedSaleStrategy & {
+    duration: bigint;
+  };
 
 export type SaleStrategies =
   | FixedPriceSaleStrategy
   | ERC20SaleStrategy
+  | AllowListSaleStrategy
   | PremintSaleStrategy;
 
-export type OnchainSalesStrategies = FixedPriceSaleStrategy | ERC20SaleStrategy;
+export type OnchainSalesStrategies =
+  | FixedPriceSaleStrategy
+  | ERC20SaleStrategy
+  | AllowListSaleStrategy;
 
 export function isErc20SaleStrategy(
-  salesConfig: FixedPriceSaleStrategy | ERC20SaleStrategy | PremintSaleStrategy,
+  salesConfig: SaleStrategies,
 ): salesConfig is ERC20SaleStrategy {
   return salesConfig.saleType === "erc20";
 }
@@ -173,7 +196,7 @@ export type PremintMintable = MintableBase & {
 };
 
 export type OnchainSalesConfigAndTokenInfo = {
-  salesConfig: FixedPriceSaleStrategy | ERC20SaleStrategy;
+  salesConfig?: OnchainSalesStrategies;
 } & OnchainMintable;
 
 export type PremintSalesConfigAndTokenInfo = {
@@ -189,6 +212,7 @@ export interface IOnchainMintGetter {
     tokenAddress: Address;
     tokenId?: GenericTokenIdTypes;
     preferredSaleType?: SaleType;
+    blockTime: bigint;
   }): Promise<OnchainSalesConfigAndTokenInfo>;
 
   getContractMintable(params: {

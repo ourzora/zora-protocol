@@ -11,7 +11,9 @@ const { parameters, contractAddress } = await creatorClient.create1155({
   token: {
     tokenMetadataURI: "ipfs://DUMMY/token.json",
     salesConfig: {
-      // by setting a `currency` field, the token will be mintable with the erc20 token at that address
+      // to have the token priced in erc20, the type must be set to "erc20Mint"
+      type: "erc20Mint", // [!code hl]
+      // `currency` field must be set if it is an erc20 mint
       currency: erc20TokenAddress, // [!code hl]
       // the price per token in the erc20 token value
       pricePerToken: 1000000000000000000n, // [!code hl]

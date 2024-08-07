@@ -49,6 +49,15 @@ export const get = async <T>(url: string) => {
  * @throws Error when HTTP response fails
  */
 export const post = async <T>(url: string, data: any) => {
+  const controller = new AbortController();
+  const { signal } = controller;
+
+  // 30 minute timeout:
+  const timeout = 30 * 60 * 1000;
+
+  // Set a timeout to automatically abort the request
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
+
   const response = await fetch(url, {
     method: "POST",
     headers: {
@@ -56,7 +65,10 @@ export const post = async <T>(url: string, data: any) => {
       accept: "application/json",
     },
     body: JSON.stringify(data),
+    signal,
   });
+
+  clearTimeout(timeoutId);
   if (response.status !== 200) {
     let json;
     try {

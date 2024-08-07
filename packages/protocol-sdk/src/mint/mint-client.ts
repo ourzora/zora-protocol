@@ -1,4 +1,4 @@
-import { Address, Account, SimulateContractParameters } from "viem";
+import { Address } from "viem";
 import { IPublicClient } from "src/types";
 import {
   GetMintParameters,
@@ -7,16 +7,9 @@ import {
   PrepareMintReturn,
   SaleType,
 } from "./types";
-import {
-  MakeMintParametersArguments,
-  Make1155MintArguments,
-  Make721MintArguments,
-  GetMintCostsParameters,
-  is1155Mint,
-} from "./types";
+import { MakeMintParametersArguments, GetMintCostsParameters } from "./types";
 import { IPremintGetter } from "src/premint/premint-api-client";
 
-import { makeOnchainMintCall } from "./mint-transactions";
 import { getMint, getMintCosts, getMintsOfContract } from "./mint-queries";
 
 class MintError extends Error {}
@@ -137,30 +130,5 @@ async function mint({
     mintComment: parameters.mintComment,
     mintRecipient: parameters.mintRecipient,
     mintReferral: parameters.mintReferral,
-  });
-}
-
-export async function collectOnchain({
-  chainId,
-  mintGetter,
-  ...parameters
-}: (Make1155MintArguments | Make721MintArguments) & {
-  mintGetter: IOnchainMintGetter;
-  chainId: number;
-}): Promise<
-  SimulateContractParameters<any, any, any, any, any, Account | Address>
-> {
-  const { tokenContract: tokenContract, preferredSaleType: saleType } =
-    parameters;
-  const tokenId = is1155Mint(parameters) ? parameters.tokenId : undefined;
-  const salesConfigAndTokenInfo = await mintGetter.getMintable({
-    tokenId,
-    tokenAddress: tokenContract,
-    preferredSaleType: saleType,
-  });
-
-  return makeOnchainMintCall({
-    mintParams: parameters,
-    token: salesConfigAndTokenInfo,
   });
 }

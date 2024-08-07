@@ -27,6 +27,8 @@ import {
 import { makeOnchainMintCall, parseMintCosts } from "./mint-transactions";
 import { buildPremintMintCall } from "src/premint/premint-client";
 import { IPublicClient } from "src/types";
+import { AllowListEntry } from "src/allow-list/types";
+import { Concrete } from "src/utils";
 
 export async function getMint({
   params,
@@ -42,10 +44,12 @@ export async function getMint({
   const { tokenContract } = params;
   if (isOnChainMint(params)) {
     const tokenId = is1155Mint(params) ? params.tokenId : undefined;
+    const blockTime = (await publicClient.getBlock()).timestamp;
     const result = await mintGetter.getMintable({
       tokenId,
       tokenAddress: tokenContract,
       preferredSaleType: params.preferredSaleType,
+      blockTime: blockTime,
     });
 
     return toMintableReturn(result);
@@ -129,11 +133,13 @@ export async function getMintsOfContract({
 
 export async function getMintCosts({
   params,
+  allowListEntry,
   mintGetter,
   premintGetter,
   publicClient,
 }: {
   params: GetMintCostsParameters;
+  allowListEntry?: Pick<AllowListEntry, "price">;
   mintGetter: IOnchainMintGetter;
   premintGetter: IPremintGetter;
   publicClient: IPublicClient;
@@ -141,15 +147,22 @@ export async function getMintCosts({
   const { quantityMinted: quantityToMint, collection } = params;
   if (isOnChainMint(params)) {
     const tokenId = is1155Mint(params) ? params.tokenId : undefined;
+    const blockTime = (await publicClient.getBlock()).timestamp;
     const salesConfigAndTokenInfo = await mintGetter.getMintable({
       tokenId,
       tokenAddress: collection,
+      blockTime,
     });
+
+    if (!salesConfigAndTokenInfo.salesConfig) {
+      throw new Error("No valid sales config found for token");
+    }
 
     return parseMintCosts({
       mintFeePerQuantity: salesConfigAndTokenInfo.mintFeePerQuantity,
       salesConfig: salesConfigAndTokenInfo.salesConfig,
       quantityToMint: BigInt(quantityToMint),
+      allowListEntry,
     });
   }
 
@@ -251,15 +264,25 @@ function parsePremint({
 
 const makeOnchainPrepareMint =
   (result: OnchainSalesConfigAndTokenInfo): PrepareMint =>
-  (params: MintParametersBase) => ({
-    parameters: makeOnchainMintCall({ token: result, mintParams: params }),
-    erc20Approval: getRequiredErc20Approvals(params, result),
-    costs: parseMintCosts({
-      salesConfig: result.salesConfig,
-      quantityToMint: BigInt(params.quantityToMint),
-      mintFeePerQuantity: result.mintFeePerQuantity,
-    }),
-  });
+  (params: MintParametersBase) => {
+    if (!result.salesConfig) {
+      throw new Error("No valid sales config found for token");
+    }
+
+    return {
+      parameters: makeOnchainMintCall({
+        token: result as Concrete<OnchainSalesConfigAndTokenInfo>,
+        mintParams: params,
+      }),
+      erc20Approval: getRequiredErc20Approvals(params, result),
+      costs: parseMintCosts({
+        salesConfig: result.salesConfig,
+        quantityToMint: BigInt(params.quantityToMint),
+        mintFeePerQuantity: result.mintFeePerQuantity,
+        allowListEntry: params.allowListEntry,
+      }),
+    };
+  };
 
 function toMintableReturn(
   result: OnchainSalesConfigAndTokenInfo,
@@ -286,6 +309,7 @@ const makePremintPrepareMint =
       mintFeePerQuantity: mintFee,
       quantityToMint: BigInt(params.quantityToMint),
       salesConfig: mintable.salesConfig,
+      allowListEntry: params.allowListEntry,
     }),
   });
 
@@ -310,7 +334,7 @@ function getRequiredErc20Approvals(
   params: MintParametersBase,
   result: OnchainSalesConfigAndTokenInfo,
 ): Erc20Approval | undefined {
-  if (result.salesConfig.saleType !== "erc20") return undefined;
+  if (result.salesConfig?.saleType !== "erc20") return undefined;
 
   return {
     quantity: result.salesConfig.pricePerToken * BigInt(params.quantityToMint),

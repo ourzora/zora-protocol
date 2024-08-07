@@ -55,41 +55,66 @@ function parseSalesConfig(
       pricePerToken: BigInt(targetStrategy.erc20Minter.pricePerToken),
     };
   }
+  if (targetStrategy.type === "PRESALE") {
+    return {
+      saleType: "allowlist",
+      address: targetStrategy.presale.address,
+      merkleRoot: targetStrategy.presale.merkleRoot,
+      saleStart: targetStrategy.presale.presaleStart,
+      saleEnd: targetStrategy.presale.presaleEnd,
+    };
+  }
 
   throw new Error("Unknown saleType");
 }
 
 function getSaleEnd(a: SalesStrategyResult) {
-  return BigInt(
-    a.type === "ERC_20_MINTER" ? a.erc20Minter.saleEnd : a.fixedPrice.saleEnd,
-  );
+  if (a.type === "FIXED_PRICE") return BigInt(a.fixedPrice.saleEnd);
+  if (a.type === "ERC_20_MINTER") return BigInt(a.erc20Minter.saleEnd);
+  return BigInt(a.presale.presaleEnd);
+}
+
+function strategyIsStillValid(
+  strategy: SalesStrategyResult,
+  blockTime: bigint,
+): boolean {
+  if (strategy.type === "FIXED_PRICE") {
+    return BigInt(strategy.fixedPrice.saleEnd) > blockTime;
+  }
+  if (strategy.type === "ERC_20_MINTER") {
+    return BigInt(strategy.erc20Minter.saleEnd) > blockTime;
+  }
+  return BigInt(strategy.presale.presaleEnd) > blockTime;
 }
 
 function getTargetStrategy({
   tokenId,
   preferredSaleType,
   token,
+  blockTime,
 }: {
   tokenId?: GenericTokenIdTypes;
   preferredSaleType?: SaleType;
   token: TokenQueryResult;
-}) {
+  blockTime: bigint;
+}): SalesStrategyResult | undefined {
   const allStrategies =
     (typeof tokenId !== "undefined"
       ? token.salesStrategies
       : token.contract.salesStrategies) || [];
 
-  const saleStrategies = allStrategies.sort((a, b) =>
+  const stillValidSalesStrategies = allStrategies.filter((strategy) =>
+    strategyIsStillValid(strategy, blockTime),
+  );
+
+  const saleStrategies = stillValidSalesStrategies.sort((a, b) =>
     getSaleEnd(a) > getSaleEnd(b) ? 1 : -1,
   );
 
   let targetStrategy: SalesStrategyResult | undefined;
 
   if (!preferredSaleType) {
-    targetStrategy = saleStrategies[0];
-    if (!targetStrategy) {
-      throw new Error("Cannot find sale strategy");
-    }
+    return saleStrategies[0];
   } else {
     const mappedSaleType =
       preferredSaleType === "erc20" ? "ERC_20_MINTER" : "FIXED_PRICE";
@@ -149,6 +174,7 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
     tokenAddress,
     tokenId,
     preferredSaleType: saleType,
+    blockTime,
   }) => {
     const token = await this.querySubgraphWithRetries(
       buildNftTokenSalesQuery({
@@ -168,15 +194,18 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
       defaultMintFee,
       tokenId,
       preferredSaleType: saleType,
+      blockTime,
     });
   };
 
   async getContractMintable({
     tokenAddress,
     preferredSaleType,
+    blockTime,
   }: {
     tokenAddress: Address;
     preferredSaleType?: SaleType;
+    blockTime: bigint;
   }) {
     const tokens = await this.querySubgraphWithRetries(
       buildContractTokensQuery({
@@ -196,6 +225,7 @@ export class SubgraphMintGetter implements IOnchainMintGetter {
           tokenId: token.tokenId,
           preferredSaleType,
           defaultMintFee,
+          blockTime,
         }),
       );
   }
@@ -225,19 +255,26 @@ function parseTokenQueryResult({
   tokenId,
   preferredSaleType,
   defaultMintFee,
+  blockTime,
 }: {
   token: TokenQueryResult;
   tokenId?: GenericTokenIdTypes;
   preferredSaleType?: SaleType;
   defaultMintFee: bigint;
+  blockTime: bigint;
 }): OnchainSalesConfigAndTokenInfo {
   const targetStrategy = getTargetStrategy({
     tokenId,
     preferredSaleType: preferredSaleType,
     token,
+    blockTime,
   });
 
   const tokenInfo = parseTokenInfo(token, defaultMintFee);
+
+  if (!targetStrategy) {
+    return tokenInfo;
+  }
 
   const salesConfig = parseSalesConfig(targetStrategy);
 

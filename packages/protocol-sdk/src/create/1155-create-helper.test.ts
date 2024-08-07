@@ -13,6 +13,8 @@ import {
 } from "src/mint/mint-transactions";
 import { forkUrls, makeAnvilTest } from "src/anvil";
 import { zora } from "viem/chains";
+import { AllowList } from "src/allow-list/types";
+import { createAllowList } from "src/allow-list/allow-list-client";
 
 const demoTokenMetadataURI = "ipfs://DUMMY/token.json";
 const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
@@ -182,7 +184,6 @@ describe("create-helper", () => {
       const {
         parameters: request,
         newTokenId,
-        newToken,
         minter,
         contractAddress: collectionAddress,
         contractVersion,
@@ -209,7 +210,7 @@ describe("create-helper", () => {
         salesConfig: {
           saleType: "fixedPrice",
           address: minter,
-          pricePerToken: newToken.salesConfig.pricePerToken,
+          pricePerToken: 0n,
           // these dont matter
           maxTokensPerAddress: 0n,
           saleEnd: "",
@@ -264,7 +265,6 @@ describe("create-helper", () => {
         parameters: request,
         contractAddress: collectionAddress,
         newTokenId,
-        newToken,
         minter,
         contractVersion,
       } = await creatorClient.create1155({
@@ -293,7 +293,7 @@ describe("create-helper", () => {
         salesConfig: {
           saleType: "fixedPrice",
           address: minter,
-          pricePerToken: newToken.salesConfig.pricePerToken,
+          pricePerToken,
           // these dont matter
           maxTokensPerAddress: 0n,
           saleEnd: "",
@@ -327,5 +327,58 @@ describe("create-helper", () => {
       );
     },
     20 * 1000,
+  );
+
+  anvilTest(
+    "creates an allow list mint contract",
+    async ({ viemClients: { publicClient, walletClient, chain } }) => {
+      const creator = (await walletClient.getAddresses())[0]!;
+      const allowList: AllowList = {
+        entries: [
+          {
+            user: "0xf69fEc6d858c77e969509843852178bd24CAd2B6",
+            price: 2n,
+            maxCanMint: 10000,
+          },
+          {
+            user: "0xcD08da546414dd463C89705B5E72CE1AeebF1567",
+            price: 3n,
+            maxCanMint: 10,
+          },
+        ],
+      };
+
+      const root = await createAllowList({
+        allowList,
+      });
+
+      const creatorClient = createCreatorClient({
+        chainId: chain.id,
+        publicClient: publicClient,
+      });
+
+      const { parameters } = await creatorClient.create1155({
+        contract: {
+          name: "test allowlists",
+          uri: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
+        },
+        token: {
+          tokenMetadataURI:
+            "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
+          salesConfig: {
+            type: "allowlistMint",
+            presaleMerkleRoot: `0x${root}`,
+          },
+        },
+        account: creator,
+      });
+
+      const { request } = await publicClient.simulateContract(parameters);
+
+      await waitForSuccess(
+        await walletClient.writeContract(request),
+        publicClient,
+      );
+    },
   );
 });

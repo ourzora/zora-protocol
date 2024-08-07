@@ -2,26 +2,42 @@ import { GenericTokenIdTypes } from "src/types";
 import { Address } from "viem";
 
 export type FixedPriceSaleStrategyResult = {
-  address: Address;
-  pricePerToken: string;
-  saleEnd: string;
-  saleStart: string;
-  maxTokensPerAddress: string;
+  type: "FIXED_PRICE";
+  fixedPrice: {
+    address: Address;
+    pricePerToken: string;
+    saleEnd: string;
+    saleStart: string;
+    maxTokensPerAddress: string;
+  };
 };
 
-export type ERC20SaleStrategyResult = FixedPriceSaleStrategyResult & {
-  currency: Address;
+export type ERC20SaleStrategyResult = {
+  type: "ERC_20_MINTER";
+  erc20Minter: {
+    address: Address;
+    pricePerToken: string;
+    saleEnd: string;
+    saleStart: string;
+    maxTokensPerAddress: string;
+    currency: Address;
+  };
+};
+
+export type PresaleSalesStrategyResult = {
+  type: "PRESALE";
+  presale: {
+    address: Address;
+    presaleStart: string;
+    presaleEnd: string;
+    merkleRoot: string;
+  };
 };
 
 export type SalesStrategyResult =
-  | {
-      type: "FIXED_PRICE";
-      fixedPrice: FixedPriceSaleStrategyResult;
-    }
-  | {
-      type: "ERC_20_MINTER";
-      erc20Minter: ERC20SaleStrategyResult;
-    };
+  | FixedPriceSaleStrategyResult
+  | ERC20SaleStrategyResult
+  | PresaleSalesStrategyResult;
 
 export type TokenQueryResult = {
   tokenId?: string;
@@ -59,6 +75,12 @@ fragment SaleStrategy on SalesStrategyConfig {
     saleStart
     maxTokensPerAddress
   }
+  presale {
+    address
+    presaleStart
+    presaleEnd
+    merkleRoot
+  }
 }`;
 
 const TOKEN_FRAGMENT = `
@@ -69,7 +91,7 @@ fragment Token on ZoraCreateToken {
     totalMinted
     maxSupply
     tokenStandard
-    salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER"]}) {
+    salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER", "PRESALE"]}) {
       ...SaleStrategy
     }
     contract {
@@ -78,7 +100,7 @@ fragment Token on ZoraCreateToken {
       contractVersion
       contractURI
       name
-      salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER"]}) {
+      salesStrategies(where: {type_in: ["FIXED_PRICE", "ERC_20_MINTER", "PRESALE"]}) {
         ...SaleStrategy
       }
     }

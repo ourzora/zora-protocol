@@ -6,7 +6,7 @@ export const makeContractParameters = (
   args: SimulateContractParametersWithAccount,
 ) => args;
 
-export type PublicClient = Pick<BasePublicClient, "readContract">;
+export type PublicClient = Pick<BasePublicClient, "readContract" | "getBlock">;
 
 export type ClientConfig = {
   /** The chain that the client is to run on. */

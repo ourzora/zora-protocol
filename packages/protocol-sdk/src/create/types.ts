@@ -7,18 +7,44 @@ export type NewContractParams = {
   defaultAdmin?: Address;
 };
 
-export type SalesConfigParamsType = {
-  // defaults to 0
-  pricePerToken?: bigint;
+export type SaleStartAndEnd = {
   // defaults to 0, in seconds
   saleStart?: bigint;
   // defaults to forever, in seconds
   saleEnd?: bigint;
+};
+
+export type MaxTokensPerAddress = {
   // max tokens that can be minted per address
   maxTokensPerAddress?: bigint;
-  // if an erc20 mint, the erc20 address.  Leave null for eth mints
-  currency?: Address;
 };
+
+export type FixedPriceParamsType = SaleStartAndEnd &
+  MaxTokensPerAddress & {
+    type?: "fixedPrice";
+    // the price per token, if it is a priced mint
+    pricePerToken?: bigint;
+  };
+
+export type Erc20ParamsType = SaleStartAndEnd &
+  MaxTokensPerAddress & {
+    type: "erc20Mint";
+    // if the erc20 address of the token to mint against
+    currency: Address;
+    // price in currency per token
+    pricePerToken: bigint;
+  };
+
+export type AllowListParamType = SaleStartAndEnd & {
+  type: "allowlistMint";
+  // the merkle root of the allowlist
+  presaleMerkleRoot: `0x${string}`;
+};
+
+export type SalesConfigParamsType =
+  | AllowListParamType
+  | Erc20ParamsType
+  | FixedPriceParamsType;
 
 export type CreateNew1155ParamsBase = {
   account: Address;
@@ -34,28 +60,39 @@ export type CreateNew1155TokenParams = CreateNew1155ParamsBase & {
   contractAddress: Address;
 };
 
-export interface CreateNew1155TokenProps {
+export type AllowlistData = {
+  saleStart?: bigint;
+  saleEnd?: bigint;
+  presaleMerkleRoot: `0x${string}`;
+};
+
+export type CreateNew1155TokenProps = {
   maxSupply?: bigint | number;
   tokenMetadataURI: string;
   royaltyBPS?: number;
-  salesConfig?: SalesConfigParamsType;
   createReferral?: Address;
   mintToCreatorCount?: number;
   payoutRecipient?: Address;
-}
+  salesConfig?: SalesConfigParamsType;
+};
 
 export interface ContractProps {
   nextTokenId: bigint;
   contractVersion: string;
 }
 
+export type ConcreteSalesConfig =
+  | Concrete<FixedPriceParamsType>
+  | Concrete<Erc20ParamsType>
+  | Concrete<AllowListParamType>;
+
 export type New1155Token = {
   payoutRecipient: Address;
   createReferral: Address;
   maxSupply: bigint;
   royaltyBPS: number;
-  salesConfig: Concrete<SalesConfigParamsType>;
   tokenMetadataURI: string;
+  salesConfig: ConcreteSalesConfig;
 };
 
 export type CreateNew1155TokenReturn = {
