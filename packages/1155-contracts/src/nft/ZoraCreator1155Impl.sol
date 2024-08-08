@@ -79,9 +79,6 @@ contract ZoraCreator1155Impl is
 
     uint256 constant MINT_FEE = 0.000777 ether;
 
-    bytes4 constant ON_ERC1155_RECEIVED_HASH = IERC1155Receiver.onERC1155Received.selector;
-    bytes4 constant ON_ERC1155_BATCH_RECEIVED_HASH = IERC1155Receiver.onERC1155BatchReceived.selector;
-
     constructor(address _mintFeeRecipient, address _upgradeGate, address _protocolRewards) RewardSplits(_protocolRewards, _mintFeeRecipient) initializer {
         upgradeGate = IUpgradeGate(_upgradeGate);
     }
