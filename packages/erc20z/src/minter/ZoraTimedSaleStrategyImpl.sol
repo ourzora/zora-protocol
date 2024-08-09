@@ -296,8 +296,8 @@ contract ZoraTimedSaleStrategyImpl is
                 CREATOR_REWARD * quantity,
                 CREATOR_REFERRER_REWARD * quantity,
                 MINT_REFERRER_REWARD * quantity,
-                ZORA_REWARD * quantity,
-                MARKET_REWARD * quantity
+                MARKET_REWARD * quantity,
+                ZORA_REWARD * quantity
             );
     }
 
