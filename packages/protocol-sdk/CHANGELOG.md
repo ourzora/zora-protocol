@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.9.1
+
+### Patch Changes
+
+- f40c4a8f: `create1155` and `create1155OnExistingContract` return an async `prepareMint` function, enabling to mint right after creating without needing to rely on the subgraph.
+
 ## 0.9.0
 
 ### Minor Changes
