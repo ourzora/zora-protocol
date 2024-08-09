@@ -10,18 +10,20 @@ import { contractAddress } from "./createNewContract";
 
 const creatorClient = createCreatorClient({ chainId, publicClient });
 
-const { parameters: createParameters, prepareMint } =
-  await creatorClient.create1155OnExistingContract({
-    // by providing a contract address, the token will be created on an existing contract
-    // at that address
-    contractAddress, // [!code hl]
-    token: {
-      // token metadata uri
-      tokenMetadataURI: "ipfs://DUMMY/token.json",
-    },
-    // account to execute the transaction (the creator)
-    account: creatorAccount,
-  });
+const {
+  parameters: createParameters,
+  prepareMint, // [!code hl]
+} = await creatorClient.create1155OnExistingContract({
+  // by providing a contract address, the token will be created on an existing contract
+  // at that address
+  contractAddress,
+  token: {
+    // token metadata uri
+    tokenMetadataURI: "ipfs://DUMMY/token.json",
+  },
+  // account to execute the transaction (the creator)
+  account: creatorAccount,
+});
 
 const { request } = await publicClient.simulateContract(createParameters);
 
