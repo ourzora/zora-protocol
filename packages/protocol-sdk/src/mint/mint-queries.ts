@@ -261,7 +261,7 @@ function parsePremint({
   throw new Error("Invalid premint config version");
 }
 
-const makeOnchainPrepareMint =
+export const makeOnchainPrepareMint =
   (result: OnchainSalesConfigAndTokenInfo): PrepareMint =>
   (params: MintParametersBase) => {
     if (!result.salesConfig) {
@@ -273,7 +273,7 @@ const makeOnchainPrepareMint =
         token: result as Concrete<OnchainSalesConfigAndTokenInfo>,
         mintParams: params,
       }),
-      erc20Approval: getRequiredErc20Approvals(params, result),
+      erc20Approval: getRequiredErc20Approvals(params, result.salesConfig),
       costs: parseMintCosts({
         salesConfig: result.salesConfig,
         quantityToMint: BigInt(params.quantityToMint),
@@ -327,15 +327,15 @@ function toPremintMintReturn({
     prepareMint: makePremintPrepareMint(mintable, mintFee, premint),
   };
 }
-function getRequiredErc20Approvals(
+export function getRequiredErc20Approvals(
   params: MintParametersBase,
-  result: OnchainSalesConfigAndTokenInfo,
+  salesConfig: OnchainSalesConfigAndTokenInfo["salesConfig"],
 ): Erc20Approval | undefined {
-  if (result.salesConfig?.saleType !== "erc20") return undefined;
+  if (salesConfig?.saleType !== "erc20") return undefined;
 
   return {
-    quantity: result.salesConfig.pricePerToken * BigInt(params.quantityToMint),
-    approveTo: result.salesConfig.address,
-    erc20: result.salesConfig.currency,
+    quantity: salesConfig.pricePerToken * BigInt(params.quantityToMint),
+    approveTo: salesConfig.address,
+    erc20: salesConfig.currency,
   };
 }

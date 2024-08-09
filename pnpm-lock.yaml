@@ -69,7 +69,7 @@ importers:
         specifier: ^5.2.2
         version: 5.5.4
       viem:
-        specifier: ^2.11.1
+        specifier: ^2.13.2
         version: 2.18.0(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)
       vite-tsconfig-paths:
         specifier: ^4.3.2

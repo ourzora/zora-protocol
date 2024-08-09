@@ -9,13 +9,7 @@ import {
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { waitForSuccess } from "src/test-utils";
-import {
-  Address,
-  parseEther,
-  PublicClient,
-  TransactionReceipt,
-  zeroAddress,
-} from "viem";
+import { Address, parseEther, PublicClient, TransactionReceipt } from "viem";
 import { makePrepareMint1155TokenParams } from "src/mint/mint-transactions";
 import { forkUrls, makeAnvilTest } from "src/anvil";
 import { zora } from "viem/chains";
@@ -81,15 +75,18 @@ describe("create-helper", () => {
         chainId: chain.id,
         publicClient: publicClient,
       });
-      const { parameters, contractAddress, newTokenId } =
-        await creatorClient.create1155({
-          contract: randomNewContract(),
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-            mintToCreatorCount: 1,
-          },
-          account: creatorAddress,
-        });
+      const {
+        parameters: parameters,
+        contractAddress,
+        newTokenId,
+      } = await creatorClient.create1155({
+        contract: randomNewContract(),
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+          mintToCreatorCount: 1,
+        },
+        account: creatorAddress,
+      });
 
       const { request } = await publicClient.simulateContract(parameters);
       const hash = await walletClient.writeContract(request);
@@ -127,17 +124,20 @@ describe("create-helper", () => {
         chainId: chain.id,
         publicClient: publicClient,
       });
-      const { parameters, contractAddress, newTokenId } =
-        await creatorClient.create1155({
-          contract: randomNewContract(),
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-            salesConfig: {
-              pricePerToken: 0n,
-            },
+      const {
+        parameters: parameters,
+        contractAddress,
+        newTokenId,
+      } = await creatorClient.create1155({
+        contract: randomNewContract(),
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+          salesConfig: {
+            pricePerToken: 0n,
           },
-          account: creatorAddress,
-        });
+        },
+        account: creatorAddress,
+      });
 
       const { request } = await publicClient.simulateContract(parameters);
       const hash = await walletClient.writeContract(request);
@@ -282,19 +282,14 @@ describe("create-helper", () => {
         chainId: chain.id,
         publicClient: publicClient,
       });
-      const {
-        parameters: request,
-        newTokenId,
-        minter,
-        contractAddress: collectionAddress,
-        contractVersion,
-      } = await creatorClient.create1155({
-        contract: randomNewContract(),
-        token: {
-          tokenMetadataURI: demoTokenMetadataURI,
-        },
-        account: creatorAddress,
-      });
+      const { parameters: request, prepareMint } =
+        await creatorClient.create1155({
+          contract: randomNewContract(),
+          token: {
+            tokenMetadataURI: demoTokenMetadataURI,
+          },
+          account: creatorAddress,
+        });
       const { request: createSimulation } =
         await publicClient.simulateContract(request);
       await waitForSuccess(
@@ -312,25 +307,8 @@ describe("create-helper", () => {
         value: parseEther("10"),
       });
 
-      const mintParams = makePrepareMint1155TokenParams({
-        tokenContract: collectionAddress,
+      const { parameters: mintParams } = await prepareMint({
         minterAccount: minterAddress,
-        tokenId: newTokenId,
-        salesConfigAndTokenInfo: {
-          contractVersion,
-          salesConfig: {
-            saleType: "timed",
-            address: minter,
-            // below fields arent used when determining mint price for minting
-            saleEnd: "",
-            saleStart: "",
-            erc20Z: zeroAddress,
-            pool: zeroAddress,
-            secondaryActivated: false,
-            mintFeePerQuantity: parseEther("0.000111"),
-            mintFee: 0n,
-          },
-        },
         quantityToMint,
       });
 
@@ -454,7 +432,7 @@ describe("create-helper", () => {
         publicClient: publicClient,
       });
 
-      const { parameters } = await creatorClient.create1155({
+      const { parameters: parameters } = await creatorClient.create1155({
         contract: {
           name: "test allowlists",
           uri: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",

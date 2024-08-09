@@ -20,8 +20,9 @@ export const publicClient = createPublicClient({
 });
 
 export const walletClient = createWalletClient({
-  chain,
+  chain: chain as Chain,
   transport: custom(window.ethereum!),
 });
 
 export const creatorAccount = (await walletClient.getAddresses())[0]!;
+export const minterAccount = (await walletClient.getAddresses())[1]!;

@@ -26,6 +26,7 @@ import {
   NewContractParams,
 } from "./types";
 import { constructCreate1155TokenCalls } from "./token-setup";
+import { makeOnchainPrepareMintFromCreate } from "./mint-from-create";
 
 // Default royalty bps
 const ROYALTY_BPS_DEFAULT = 1000;
@@ -218,6 +219,15 @@ async function createNew1155ContractAndToken({
     contract,
   });
 
+  const prepareMint = makeOnchainPrepareMintFromCreate({
+    contractAddress: contractAddress,
+    contractVersion,
+    minter,
+    publicClient,
+    result: newToken.salesConfig,
+    tokenId: nextTokenId,
+  });
+
   return {
     parameters: request,
     tokenSetupActions,
@@ -226,6 +236,7 @@ async function createNew1155ContractAndToken({
     contractAddress: contractAddress,
     contractVersion,
     minter,
+    prepareMint,
   };
 }
 
@@ -265,6 +276,15 @@ async function createNew1155Token({
     tokenSetupActions,
   });
 
+  const prepareMint = makeOnchainPrepareMintFromCreate({
+    contractAddress: contractAddress,
+    contractVersion,
+    minter,
+    publicClient,
+    result: newToken.salesConfig,
+    tokenId: nextTokenId,
+  });
+
   return {
     parameters: request,
     tokenSetupActions,
@@ -272,6 +292,7 @@ async function createNew1155Token({
     newToken,
     contractVersion,
     minter,
+    prepareMint,
   };
 }
 

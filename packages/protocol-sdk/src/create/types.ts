@@ -1,3 +1,4 @@
+import { AsyncPrepareMint } from "src/mint/types";
 import { Concrete } from "src/utils";
 import { Account, Address, Hex, SimulateContractParameters } from "viem";
 
@@ -119,6 +120,7 @@ export type CreateNew1155TokenReturn = {
   newToken: New1155Token;
   minter: Address;
   contractVersion: string;
+  prepareMint: AsyncPrepareMint;
 };
 
 export type CreateNew1155ContractAndTokenReturn = {

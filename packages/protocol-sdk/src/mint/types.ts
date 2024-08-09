@@ -269,6 +269,9 @@ export type PrepareMintReturn = {
 };
 
 export type PrepareMint = (params: MintParametersBase) => PrepareMintReturn;
+export type AsyncPrepareMint = (
+  params: MintParametersBase,
+) => Promise<PrepareMintReturn>;
 
 export type MintableReturn = {
   /** Token information */
