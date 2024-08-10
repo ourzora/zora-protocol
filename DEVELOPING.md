@@ -42,6 +42,6 @@ Publishing happens in the following steps:
 * The changeset and smart contract addresses are pushed to the branch.
 * The pr is merged into main - any changesets in the PR are detected by a github action `release`, which will then **open a new PR** with proper versions and readme updated in each each package.   If more changesets are pushed to main before this branch is merged, the PR will continuously update the version of the packages according to the changeset specification.
 
-7. That version is merged into main along with the new versions.
+10. That version is merged into main along with the new versions.
 
-8. The package is then published to npm with the command: `pnpm run publish-packages` and the package is published.
+11. The package is then published to npm with the command: `pnpm run publish-packages` and the package is published.
