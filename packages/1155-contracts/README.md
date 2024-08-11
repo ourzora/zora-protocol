@@ -8,6 +8,5 @@ The main implementation of the Zora Creator 1155 Contracts includes the followin
 - Royalties Control
 - Minting Control
 - Permissions Control
-- Royalties Controls
 
 Most controls exist on a per-contract and per-token level. Per contract level is defined as any configuration existing in the pre-reserved 0 token space.
