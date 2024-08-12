@@ -42,7 +42,7 @@ Run in development mode (watch tests):
 
 ## Bug Bounty
 
-5 ETH for any critical bugs that could result in loss of funds. Rewards will be given for smaller bugs or ideas.
+5 ETH for any critical bugs that could result in loss of funds. No rewards will be given for minor bugs or ideas.
 
 ## Development workflow
 
