@@ -13,8 +13,8 @@ import type {
 import { decodeEventLog } from "viem";
 import { makeContractParameters } from "src/utils";
 import {
-  getContractInfoExistingContract,
   getDeterministicContractAddress,
+  getNewContractMintFee,
   new1155ContractVersion,
 } from "./contract-setup";
 import {
@@ -27,6 +27,7 @@ import {
 } from "./types";
 import { constructCreate1155TokenCalls } from "./token-setup";
 import { makeOnchainPrepareMintFromCreate } from "./mint-from-create";
+import { IContractGetter } from "./contract-getter";
 
 // Default royalty bps
 const ROYALTY_BPS_DEFAULT = 1000;
@@ -136,16 +137,20 @@ function makeCreateTokenCall({
 export class Create1155Client {
   private readonly chainId: number;
   private readonly publicClient: Pick<PublicClient, "readContract">;
+  public readonly contractGetter: IContractGetter;
 
   constructor({
     chainId,
     publicClient,
+    contractGetter,
   }: {
     chainId: number;
     publicClient: Pick<PublicClient, "readContract">;
+    contractGetter: IContractGetter;
   }) {
     this.chainId = chainId;
     this.publicClient = publicClient;
+    this.contractGetter = contractGetter;
   }
 
   async createNew1155(
@@ -171,6 +176,7 @@ export class Create1155Client {
       getAdditionalSetupActions,
       publicClient: this.publicClient,
       chainId: this.chainId,
+      contractGetter: this.contractGetter,
     });
   }
 }
@@ -223,9 +229,14 @@ async function createNew1155ContractAndToken({
     contractAddress: contractAddress,
     contractVersion,
     minter,
-    publicClient,
     result: newToken.salesConfig,
     tokenId: nextTokenId,
+    // to get the contract wide mint fee, we get what it would be for a new contract
+    getContractMintFee: async () =>
+      getNewContractMintFee({
+        publicClient,
+        chainId,
+      }),
   });
 
   return {
@@ -245,17 +256,15 @@ async function createNew1155Token({
   account,
   getAdditionalSetupActions,
   token,
-  publicClient,
   chainId,
+  contractGetter,
 }: CreateNew1155TokenParams & {
   publicClient: Pick<PublicClient, "readContract">;
   chainId: number;
+  contractGetter: IContractGetter;
 }): Promise<CreateNew1155TokenReturn> {
-  const { nextTokenId, contractVersion } =
-    await getContractInfoExistingContract({
-      publicClient,
-      contractAddress: contractAddress,
-    });
+  const { nextTokenId, contractVersion, mintFee } =
+    await contractGetter.getContractInfo({ contractAddress, retries: 5 });
 
   const {
     minter,
@@ -280,9 +289,9 @@ async function createNew1155Token({
     contractAddress: contractAddress,
     contractVersion,
     minter,
-    publicClient,
     result: newToken.salesConfig,
     tokenId: nextTokenId,
+    getContractMintFee: async () => mintFee,
   });
 
   return {

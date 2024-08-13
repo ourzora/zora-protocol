@@ -8,6 +8,10 @@ import { ClientConfig } from "./utils";
 import { IPremintAPI, PremintAPIClient } from "./premint/premint-api-client";
 import { SubgraphMintGetter } from "./mint/subgraph-mint-getter";
 import { IOnchainMintGetter } from "./mint/types";
+import {
+  IContractGetter,
+  SubgraphContractGetter,
+} from "./create/contract-getter";
 
 export type CreatorClient = {
   createPremint: PremintClient["createPremint"];
@@ -29,6 +33,7 @@ export type CollectorClient = {
 export type CreatorClientConfig = ClientConfig & {
   /** API for submitting and getting premints.  Defaults to the Zora Premint API */
   premintApi?: IPremintAPI;
+  contractGetter?: IContractGetter;
 };
 
 /**
@@ -50,6 +55,9 @@ export function createCreatorClient(
   const create1155CreatorClient = new Create1155Client({
     chainId: clientConfig.chainId,
     publicClient: clientConfig.publicClient,
+    contractGetter:
+      clientConfig.contractGetter ||
+      new SubgraphContractGetter(clientConfig.chainId),
   });
 
   return {

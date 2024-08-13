@@ -1,6 +1,10 @@
 import { Address } from "viem";
 import { httpClient as defaultHttpClient } from "../apis/http-api-base";
-import { ISubgraphQuerier, SubgraphQuerier } from "../apis/subgraph-querier";
+import {
+  ISubgraphQuerier,
+  ISubgraphQuery,
+  SubgraphQuerier,
+} from "../apis/subgraph-querier";
 import { NetworkConfig, networkConfigByChain } from "src/apis/chain-constants";
 import { GenericTokenIdTypes } from "src/types";
 import {
@@ -14,7 +18,6 @@ import {
   buildContractTokensQuery,
   buildNftTokenSalesQuery,
   buildPremintsOfContractQuery,
-  ISubgraphQuery,
   SalesStrategyResult,
   TokenQueryResult,
 } from "./subgraph-queries";

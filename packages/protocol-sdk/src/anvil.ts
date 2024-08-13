@@ -45,8 +45,9 @@ export const makeAnvilTest = ({
 }: AnvilTestForkSettings) =>
   test.extend<AnvilViemClientsTest>({
     viemClients: async ({ task }, use) => {
-      console.log("setting up clients for ", task.name);
+      console.log("setting up clients for", task.name);
       const port = Math.floor(Math.random() * 2000) + 4000;
+
       const anvil = spawn(
         "anvil",
         [
@@ -101,7 +102,7 @@ export const makeAnvilTest = ({
   });
 
 export const forkUrls = {
-  zoraMainnet: `https://rpc.zora.co/${process.env.VITE_CONDUIT_KEY}`,
+  zoraMainnet: `https://rpc.zora.energy/${process.env.VITE_CONDUIT_KEY}`,
   zoraGoerli: "https://testnet.rpc.zora.co",
   zoraSepolia: "https://sepolia.rpc.zora.energy",
 };

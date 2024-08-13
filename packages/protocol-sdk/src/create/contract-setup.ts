@@ -18,52 +18,6 @@ export function new1155ContractVersion(chainId: number): string {
   return address.CONTRACT_1155_IMPL_VERSION;
 }
 
-export async function getContractInfoExistingContract({
-  publicClient,
-  contractAddress,
-}: {
-  publicClient: Pick<PublicClient, "readContract">;
-  contractAddress: Address;
-  // Account that is the creator of the contract
-}): Promise<{
-  contractVersion: string;
-  contractName: string;
-  nextTokenId: bigint;
-}> {
-  // Check if contract exists either from metadata or the static address passed in.
-  // If a static address is passed in, this fails if that contract does not exist.
-  let contractVersion: string;
-  try {
-    contractVersion = await publicClient.readContract({
-      abi: zoraCreator1155ImplABI,
-      address: contractAddress,
-      functionName: "contractVersion",
-    });
-  } catch (e: any) {
-    // This logic branch is hit if the contract doesn't exist
-    //  falling back to contractExists to false.
-    throw new Error(`Contract does not exist at ${contractAddress}`);
-  }
-
-  const nextTokenId = await publicClient.readContract({
-    address: contractAddress,
-    abi: zoraCreator1155ImplABI,
-    functionName: "nextTokenId",
-  });
-
-  const contractName = await publicClient.readContract({
-    address: contractAddress,
-    abi: zoraCreator1155ImplABI,
-    functionName: "name",
-  });
-
-  return {
-    contractVersion,
-    contractName,
-    nextTokenId,
-  };
-}
-
 export async function getDeterministicContractAddress({
   publicClient,
   account,
@@ -95,4 +49,21 @@ export async function getDeterministicContractAddress({
   });
 
   return contractAddress;
+}
+
+export async function getNewContractMintFee({
+  publicClient,
+  chainId,
+}: {
+  publicClient: Pick<PublicClient, "readContract">;
+  chainId: number;
+}) {
+  const implAddress = contracts1155.addresses[chainId as contracts1155Address]
+    .CONTRACT_1155_IMPL as Address;
+
+  return await publicClient.readContract({
+    abi: zoraCreator1155ImplABI,
+    address: implAddress,
+    functionName: "mintFee",
+  });
 }

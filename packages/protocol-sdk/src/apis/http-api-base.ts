@@ -1,3 +1,5 @@
+import { retriesGeneric } from "src/retries";
+
 export class BadResponseError<T = any> extends Error {
   status: number;
   json: T;
@@ -7,12 +9,6 @@ export class BadResponseError<T = any> extends Error {
     this.status = status;
     this.json = json;
   }
-}
-
-async function wait(delayMs: number) {
-  return new Promise((resolve) => {
-    setTimeout(resolve, delayMs);
-  });
 }
 
 /**
@@ -86,22 +82,18 @@ export const post = async <T>(url: string, data: any) => {
 export const retries = async <T>(
   tryFn: () => T,
   maxTries: number = 3,
-  atTry: number = 1,
   linearBackoffMS: number = 200,
 ): Promise<T> => {
-  try {
-    return await tryFn();
-  } catch (err: any) {
-    if (err instanceof BadResponseError) {
-      if (err.status >= 500) {
-        if (atTry <= maxTries) {
-          await wait(atTry * linearBackoffMS);
-          return await retries(tryFn, maxTries, atTry + 1);
-        }
-      }
-    }
-    throw err;
-  }
+  const shouldRetry = (err: any) => {
+    return err instanceof BadResponseError && err.status >= 500;
+  };
+
+  return retriesGeneric({
+    tryFn,
+    maxTries,
+    linearBackoffMS,
+    shouldRetryOnError: shouldRetry,
+  });
 };
 
 export interface IHttpClient {

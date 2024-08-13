@@ -1,3 +1,4 @@
+import { ISubgraphQuery } from "src/apis/subgraph-querier";
 import { GenericTokenIdTypes } from "src/types";
 import { Address } from "viem";
 
@@ -189,13 +190,6 @@ query ($contract: Bytes!) {
       responseData?.zoraCreateTokens,
   };
 }
-
-export type ISubgraphQuery<T> = {
-  query: string;
-  variables: Record<string, any>;
-  parseResponseData: (data: any | undefined) => T | undefined;
-};
-
 export function buildPremintsOfContractQuery({
   tokenAddress,
 }: {

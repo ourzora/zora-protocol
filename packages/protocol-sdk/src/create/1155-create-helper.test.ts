@@ -1,4 +1,4 @@
-import { describe, expect } from "vitest";
+import { describe, expect, vi } from "vitest";
 import {
   getContractAddressFromReceipt,
   getTokenIdFromCreateReceipt,
@@ -16,6 +16,8 @@ import { zora } from "viem/chains";
 import { AllowList } from "src/allow-list/types";
 import { createAllowList } from "src/allow-list/allow-list-client";
 import { NewContractParams } from "./types";
+import { SubgraphContractGetter } from "./contract-getter";
+import { inspect } from "util";
 
 export const demoTokenMetadataURI =
   "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u";
@@ -54,6 +56,7 @@ function logFailure(receipt: TransactionReceipt) {
   if (receipt.status !== "success") {
     console.log("transaction failed");
     console.log(receipt.logs);
+    console.log(inspect(receipt, { depth: 10 }));
   }
 }
 
@@ -168,9 +171,12 @@ describe("create-helper", () => {
       const addresses = await walletClient.getAddresses();
       const creatorAccount = addresses[0]!;
 
+      const contractGetter = new SubgraphContractGetter(chain.id);
+
       const creatorClient = createCreatorClient({
         chainId: chain.id,
         publicClient: publicClient,
+        contractGetter,
       });
 
       const { parameters: request, contractAddress: contractAddress } =
@@ -201,6 +207,21 @@ describe("create-helper", () => {
           args: [creatorAccount, firstTokenId!],
         }),
       ).toBe(3n);
+
+      const contractVersion = await publicClient.readContract({
+        abi: zoraCreator1155ImplABI,
+        address: contractAddress,
+        functionName: "contractVersion",
+      });
+
+      contractGetter.getContractInfo = vi
+        .fn<SubgraphContractGetter["getContractInfo"]>()
+        .mockResolvedValueOnce({
+          contractVersion,
+          mintFee: parseEther("0.000777"),
+          name: "test",
+          nextTokenId: 2n,
+        });
 
       const newTokenOnExistingContract =
         await creatorClient.create1155OnExistingContract({

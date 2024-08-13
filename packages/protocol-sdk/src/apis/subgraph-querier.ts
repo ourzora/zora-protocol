@@ -1,10 +1,17 @@
 import { IHttpClient } from "./http-api-base";
 
+export type ISubgraphQuery<T> = {
+  query: string;
+  variables: Record<string, any>;
+  parseResponseData: (data: any | undefined) => T | undefined;
+};
+
 export interface ISubgraphQuerier {
   query: (params: {
     subgraphUrl: string;
     query: string;
     variables?: Record<string, any>;
+    maxRetries?: number;
   }) => Promise<object | undefined>;
 }
 

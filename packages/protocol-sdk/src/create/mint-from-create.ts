@@ -1,4 +1,4 @@
-import { Address, parseEther, PublicClient, zeroAddress } from "viem";
+import { Address, parseEther, zeroAddress } from "viem";
 import { ConcreteSalesConfig } from "./types";
 import {
   AsyncPrepareMint,
@@ -6,7 +6,6 @@ import {
   OnchainSalesStrategies,
   PrepareMintReturn,
 } from "src/mint/types";
-import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import {
   makePrepareMint1155TokenParams,
   parseMintCosts,
@@ -16,13 +15,11 @@ import { getRequiredErc20Approvals } from "src/mint/mint-queries";
 async function toSalesStrategyFromSubgraph({
   minter,
   salesConfig,
-  publicClient,
-  contractAddress,
+  getContractMintFee,
 }: {
   minter: Address;
   salesConfig: ConcreteSalesConfig;
-  publicClient: Pick<PublicClient, "readContract">;
-  contractAddress: Address;
+  getContractMintFee: () => Promise<bigint>;
 }): Promise<OnchainSalesStrategies> {
   if (salesConfig.type === "timed") {
     return {
@@ -51,11 +48,7 @@ async function toSalesStrategyFromSubgraph({
       maxTokensPerAddress: salesConfig.maxTokensPerAddress,
     };
   }
-  const contractMintFee = await publicClient.readContract({
-    abi: zoraCreator1155ImplABI,
-    address: contractAddress,
-    functionName: "mintFee",
-  });
+  const contractMintFee = await getContractMintFee();
   if (salesConfig.type === "fixedPrice") {
     return {
       saleType: "fixedPrice",
@@ -81,21 +74,20 @@ export function makeOnchainPrepareMintFromCreate({
   tokenId,
   result,
   minter,
-  publicClient,
+  getContractMintFee,
   contractVersion,
 }: {
   contractAddress: Address;
   tokenId: bigint;
   result: ConcreteSalesConfig;
   minter: Address;
-  publicClient: Pick<PublicClient, "readContract">;
+  getContractMintFee: () => Promise<bigint>;
   contractVersion: string;
 }): AsyncPrepareMint {
   return async (params: MintParametersBase): Promise<PrepareMintReturn> => {
     const subgraphSalesConfig = await toSalesStrategyFromSubgraph({
       minter,
-      contractAddress,
-      publicClient,
+      getContractMintFee,
       salesConfig: result,
     });
     return {
