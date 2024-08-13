@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.9.2
+
+### Patch Changes
+
+- 5f964909: To speed up performance for `create1155OnExistingContract`, use subgraph to get contract info and reduce quantity of rpc reads.
+
 ## 0.9.1
 
 ### Patch Changes
