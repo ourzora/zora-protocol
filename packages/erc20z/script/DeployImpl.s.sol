@@ -25,7 +25,8 @@ contract DeployScript is ProxyDeployerScript {
     function run() public {
         vm.startBroadcast();
 
-        ImmutableCreate2FactoryUtils.safeCreate2OrGetExistingWithFriendlySalt(type(ZoraTimedSaleStrategyImpl).creationCode);
+        address result = ImmutableCreate2FactoryUtils.safeCreate2OrGetExistingWithFriendlySalt(type(ZoraTimedSaleStrategyImpl).creationCode);
+        console2.log("Deployed to ", result);
 
         vm.stopBroadcast();
     }
