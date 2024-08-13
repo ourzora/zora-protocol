@@ -6,10 +6,17 @@ import {
 import { createCreatorClient } from "src/sdk";
 import {
   zoraCreator1155ImplABI,
+  zoraTimedSaleStrategyABI,
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { waitForSuccess } from "src/test-utils";
-import { Address, parseEther, PublicClient, TransactionReceipt } from "viem";
+import {
+  Address,
+  erc20Abi,
+  parseEther,
+  PublicClient,
+  TransactionReceipt,
+} from "viem";
 import { makePrepareMint1155TokenParams } from "src/mint/mint-transactions";
 import { forkUrls, makeAnvilTest } from "src/anvil";
 import { zora } from "viem/chains";
@@ -67,6 +74,13 @@ function randomNewContract(): NewContractParams {
   };
 }
 
+const add24HoursToNowInSeconds = (): number => {
+  const currentTimeInSeconds = Math.floor(Date.now() / 1000);
+  const add24Hours = 24 * 60 * 60;
+
+  return currentTimeInSeconds + add24Hours;
+};
+
 describe("create-helper", () => {
   anvilTest(
     "when no sales config is provided, it creates a new 1155 contract and token using the timed sale strategy",
@@ -78,15 +92,24 @@ describe("create-helper", () => {
         chainId: chain.id,
         publicClient: publicClient,
       });
+
+      const saleStart = 5n;
+      const saleEnd = BigInt(add24HoursToNowInSeconds());
+      const contract = randomNewContract();
       const {
         parameters: parameters,
         contractAddress,
         newTokenId,
       } = await creatorClient.create1155({
-        contract: randomNewContract(),
+        contract,
         token: {
           tokenMetadataURI: demoTokenMetadataURI,
           mintToCreatorCount: 1,
+          salesConfig: {
+            saleStart,
+            saleEnd,
+            type: "timed",
+          },
         },
         account: creatorAddress,
       });
@@ -102,6 +125,27 @@ describe("create-helper", () => {
       expect(getContractAddressFromReceipt(receipt)).to.be.equal(
         contractAddress,
       );
+
+      const salesConfig = await publicClient.readContract({
+        abi: zoraTimedSaleStrategyABI,
+        address:
+          zoraTimedSaleStrategyAddress[
+            chain.id as keyof typeof zoraTimedSaleStrategyAddress
+          ],
+        functionName: "sale",
+        args: [contractAddress, newTokenId],
+      });
+
+      expect(salesConfig.saleEnd).toBe(saleEnd);
+      expect(salesConfig.saleStart).toBe(saleStart);
+
+      const erc20Name = await publicClient.readContract({
+        abi: erc20Abi,
+        address: salesConfig.erc20zAddress,
+        functionName: "name",
+      });
+
+      expect(erc20Name).toBe(contract.name);
 
       expect(
         await minterIsMinterOnToken({

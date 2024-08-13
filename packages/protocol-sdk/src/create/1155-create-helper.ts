@@ -206,6 +206,7 @@ async function createNew1155ContractAndToken({
     nextTokenId,
     token,
     getAdditionalSetupActions,
+    contractName: contract.name,
   });
 
   const request = makeCreateContractAndTokenCall({
@@ -263,7 +264,7 @@ async function createNew1155Token({
   chainId: number;
   contractGetter: IContractGetter;
 }): Promise<CreateNew1155TokenReturn> {
-  const { nextTokenId, contractVersion, mintFee } =
+  const { nextTokenId, contractVersion, mintFee, name } =
     await contractGetter.getContractInfo({ contractAddress, retries: 5 });
 
   const {
@@ -277,6 +278,7 @@ async function createNew1155Token({
     nextTokenId,
     token,
     getAdditionalSetupActions,
+    contractName: name,
   });
 
   const request = makeCreateTokenCall({
@@ -311,11 +313,13 @@ async function prepareSetupActions({
   contractVersion,
   nextTokenId,
   token,
+  contractName,
   getAdditionalSetupActions,
 }: {
   chainId: number;
   contractVersion: string;
   nextTokenId: bigint;
+  contractName: string;
 } & CreateNew1155ParamsBase) {
   const {
     minter,
@@ -327,6 +331,7 @@ async function prepareSetupActions({
     contractVersion,
     nextTokenId,
     ...token,
+    contractName,
   });
 
   const setupActions = getAdditionalSetupActions

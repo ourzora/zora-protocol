@@ -29,7 +29,7 @@ export type FixedPriceParamsType = SaleStartAndEnd &
 
 export type TimedSaleParamsType = SaleStartAndEnd & {
   type?: "timed";
-  // Name of the erc20z token to create for the secondary sale.  If not provided, fetches the metadata from the tokenMetadataURI and uses the name from it.
+  // Name of the erc20z token to create for the secondary sale.  If not provided, uses the contract name
   erc20Name?: string;
   // Symbol of the erc20z token to create for the secondary sale.  If not provided, extracts it from the name.
   erc20Symbol?: string;
