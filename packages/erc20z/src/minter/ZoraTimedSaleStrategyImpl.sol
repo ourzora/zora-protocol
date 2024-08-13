@@ -16,6 +16,9 @@ import {IERC20Z} from "../interfaces/IERC20Z.sol";
 import {IZora1155} from "../interfaces/IZora1155.sol";
 import {ZoraTimedSaleStrategyConstants} from "./ZoraTimedSaleStrategyConstants.sol";
 import {ZoraTimedSaleStorageDataLocation} from "../storage/ZoraTimedSaleStorageDataLocation.sol";
+import {IUniswapV3SwapCallback} from "../interfaces/uniswap/IUniswapV3SwapCallback.sol";
+import {UniswapV3LiquidityCalculator} from "../uniswap/UniswapV3LiquidityCalculator.sol";
+import {IUniswapV3Pool} from "../interfaces/uniswap/IUniswapV3Pool.sol";
 
 /*
 
@@ -50,7 +53,8 @@ contract ZoraTimedSaleStrategyImpl is
     IMinter1155,
     IZoraTimedSaleStrategy,
     ZoraTimedSaleStorageDataLocation,
-    ZoraTimedSaleStrategyConstants
+    ZoraTimedSaleStrategyConstants,
+    IUniswapV3SwapCallback
 {
     IProtocolRewards public protocolRewards;
     address public erc20zImpl;
@@ -277,6 +281,14 @@ contract ZoraTimedSaleStrategyImpl is
         // Mint additional ERC1155 tokens if needed
         IZora1155(collection).adminMint(erc20zAddress, tokenId, calculatedValues.additionalERC1155ToMint, "");
 
+        // Desired initial price
+        bool tokenIsFirst = IUniswapV3Pool(saleStorage.poolAddress).token0() == saleStorage.erc20zAddress;
+        uint160 desiredSqrtPriceX96 = tokenIsFirst ? UniswapV3LiquidityCalculator.SQRT_PRICE_X96_ERC20Z_0 : UniswapV3LiquidityCalculator.SQRT_PRICE_X96_WETH_0;
+
+        if (IUniswapV3Pool(saleStorage.poolAddress).slot0().sqrtPriceX96 != desiredSqrtPriceX96) {
+            IUniswapV3Pool(saleStorage.poolAddress).swap(address(this), tokenIsFirst, 1, desiredSqrtPriceX96, "");
+        }
+
         // Activate the secondary market on Uniswap via the ERC20Z contract
         IERC20Z(erc20zAddress).activate(
             calculatedValues.finalTotalERC20ZSupply,
@@ -285,6 +297,10 @@ contract ZoraTimedSaleStrategyImpl is
             calculatedValues.excessERC20,
             calculatedValues.excessERC1155
         );
+    }
+
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
+        // no-op to pass through for force-setting the price
     }
 
     /// @notice Computes the rewards for a given quantity of tokens
@@ -410,7 +426,7 @@ contract ZoraTimedSaleStrategyImpl is
 
     /// @notice The version of the contract
     function contractVersion() external pure returns (string memory) {
-        return "1.0.0";
+        return "1.1.0";
     }
 
     /// @notice Update the Zora reward recipient
