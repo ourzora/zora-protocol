@@ -1,5 +1,11 @@
 # @zoralabs/erc20z
 
+## 1.0.0
+
+### Major Changes
+
+- 63db29bf: Major release
+
 ## 0.1.1
 
 ### Patch Changes

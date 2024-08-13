@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.9.3
+
+### Patch Changes
+
+- c75eb65b: Fix bug where for timed sale strategy, sales settings were not being set. For getting default erc20 name, get it from the contract name instead of fetching from ipfs.
+
 ## 0.9.2
 
 ### Patch Changes
