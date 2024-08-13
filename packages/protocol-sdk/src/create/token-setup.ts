@@ -9,6 +9,7 @@ import { setupMinters } from "./minter-setup";
 async function applyNew1155Defaults(
   props: CreateNew1155TokenProps,
   ownerAddress: Address,
+  contractName: string,
 ): Promise<New1155Token> {
   const { payoutRecipient: fundsRecipient } = props;
   const fundsRecipientOrOwner =
@@ -26,7 +27,7 @@ async function applyNew1155Defaults(
     tokenMetadataURI: props.tokenMetadataURI,
     salesConfig: await getSalesConfigWithDefaults(
       props.salesConfig,
-      props.tokenMetadataURI,
+      contractName,
     ),
   };
 }
@@ -117,6 +118,8 @@ export async function constructCreate1155TokenCalls(
     ContractProps & {
       ownerAddress: Address;
       chainId: number;
+    } & {
+      contractName: string;
     },
 ): Promise<{
   setupActions: `0x${string}`[];
@@ -134,6 +137,7 @@ export async function constructCreate1155TokenCalls(
   const new1155TokenPropsWithDefaults = await applyNew1155Defaults(
     props,
     ownerAddress,
+    props.contractName,
   );
 
   const verifyTokenIdExpected = encodeFunctionData({
