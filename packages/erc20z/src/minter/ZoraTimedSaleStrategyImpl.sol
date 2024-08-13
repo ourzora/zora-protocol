@@ -290,13 +290,13 @@ contract ZoraTimedSaleStrategyImpl is
         }
 
         // Activate the secondary market on Uniswap via the ERC20Z contract
-        IERC20Z(erc20zAddress).activate(
-            calculatedValues.finalTotalERC20ZSupply,
-            calculatedValues.erc20Reserve,
-            calculatedValues.erc20Liquidity,
-            calculatedValues.excessERC20,
-            calculatedValues.excessERC1155
-        );
+        IERC20Z(erc20zAddress).activate({
+            erc20TotalSupply: calculatedValues.finalTotalERC20ZSupply,
+            erc20Reserve: calculatedValues.erc20Reserve,
+            erc20Liquidity: calculatedValues.erc20Liquidity,
+            erc20Excess: calculatedValues.excessERC20,
+            erc1155Excess: calculatedValues.excessERC1155
+        });
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
@@ -307,14 +307,14 @@ contract ZoraTimedSaleStrategyImpl is
     /// @param quantity The quantity of tokens to compute rewards for
     function computeRewards(uint256 quantity) public pure returns (RewardsSettings memory) {
         return
-            RewardsSettings(
-                MINT_PRICE * quantity,
-                CREATOR_REWARD * quantity,
-                CREATOR_REFERRER_REWARD * quantity,
-                MINT_REFERRER_REWARD * quantity,
-                ZORA_REWARD * quantity,
-                MARKET_REWARD * quantity
-            );
+            RewardsSettings({
+                totalReward: MINT_PRICE * quantity,
+                creatorReward: CREATOR_REWARD * quantity,
+                createReferralReward: CREATOR_REFERRER_REWARD * quantity,
+                mintReferralReward: MINT_REFERRER_REWARD * quantity,
+                marketReward: MARKET_REWARD * quantity,
+                zoraReward: ZORA_REWARD * quantity
+            });
     }
 
     /// @notice Gets the create referral address for a given token
