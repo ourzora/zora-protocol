@@ -7,6 +7,7 @@ import {IWETH} from "../src/interfaces/IWETH.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {SecondarySwap} from "../src/helper/SecondarySwap.sol";
 import {ProxyDeployerScript, DeterministicDeployerAndCaller, DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
+import {IZoraTimedSaleStrategy} from "../src/interfaces/IZoraTimedSaleStrategy.sol";
 import {ISwapRouter} from "../src/interfaces/uniswap/ISwapRouter.sol";
 
 contract DeploySwapHelper is ProxyDeployerScript {
@@ -15,13 +16,15 @@ contract DeploySwapHelper is ProxyDeployerScript {
     }
 
     function run() public {
+        DeterministicContractConfig memory minterConfig = readDeterministicContractConfig("zoraTimedSaleStrategy");
+
         vm.startBroadcast();
 
         IWETH weth = IWETH(getWeth());
         ISwapRouter swapRouter = ISwapRouter(getUniswapSwapRouter());
 
         uint24 uniswapPoolFee = 10_000;
-        SecondarySwap secondarySwap = new SecondarySwap(weth, swapRouter, uniswapPoolFee);
+        SecondarySwap secondarySwap = new SecondarySwap(weth, swapRouter, uniswapPoolFee, IZoraTimedSaleStrategy(minterConfig.deployedAddress));
 
         // stdJson.write(".SWAP_HELPER", getConfigAddressPath(), address(secondarySwap));
         console2.log("deployed to ", vm.toString(block.chainid), address(secondarySwap));

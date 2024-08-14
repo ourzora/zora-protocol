@@ -16,7 +16,7 @@ contract SecondarySwapTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        secondarySwap = new SecondarySwap(weth, swapRouter, defaultUniswapFee);
+        secondarySwap = new SecondarySwap(weth, swapRouter, defaultUniswapFee, saleStrategy);
         vm.label(address(secondarySwap), "SECONDARY_SWAP");
     }
 
@@ -74,7 +74,7 @@ contract SecondarySwapTest is BaseTest {
         assertEq(after1155Balance, before1155Balance + num1155ToReceive);
     }
 
-    function testSell() public {
+    function testSellWithSafeTransfer() public {
         uint256 numMints = 111;
 
         (address erc20z, ) = setSaleAndLaunchMarket(numMints);
@@ -99,7 +99,41 @@ contract SecondarySwapTest is BaseTest {
         minEthToAcquire = 0;
 
         vm.startPrank(mockBuyer);
+        collection.safeTransferFrom(mockBuyer, address(secondarySwap), 0, num1155ToTransfer, abi.encode(mockBuyer, minEthToAcquire, sqrtPriceLimitX96));
 
+        vm.stopPrank();
+
+        uint256 afterEthBalance = address(mockBuyer).balance;
+
+        assertEq(collection.balanceOf(mockBuyer, 0), 0);
+        assertTrue(afterEthBalance > beforeEthBalance);
+    }
+
+    function testSellWithSell1155() public {
+        uint256 numMints = 111;
+
+        (address erc20z, ) = setSaleAndLaunchMarket(numMints);
+
+        address payable mockBuyer = payable(makeAddr("mockBuyer"));
+        vm.deal(mockBuyer, 1 ether);
+
+        uint256 num1155ToReceive = 1;
+
+        maxEthToSpend = 1 ether;
+        sqrtPriceLimitX96 = 0;
+
+        vm.prank(mockBuyer);
+        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96);
+
+        assertEq(collection.balanceOf(mockBuyer, 0), num1155ToReceive);
+
+        uint256 num1155ToTransfer = 1;
+
+        uint256 beforeEthBalance = address(mockBuyer).balance;
+
+        minEthToAcquire = 0;
+
+        vm.startPrank(mockBuyer);
         collection.setApprovalForAll(address(secondarySwap), true);
         secondarySwap.sell1155(erc20z, num1155ToTransfer, mockBuyer, minEthToAcquire, sqrtPriceLimitX96);
 

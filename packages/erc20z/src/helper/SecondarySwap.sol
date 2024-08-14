@@ -2,26 +2,32 @@
 pragma solidity ^0.8.23;
 
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
-import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155Holder.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {IERC1155Receiver} from "@openzeppelin/contracts/token/ERC1155/IERC1155Receiver.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 import {ISecondarySwap} from "../interfaces/ISecondarySwap.sol";
 import {IERC20Z} from "../interfaces/IERC20Z.sol";
 import {ISwapRouter} from "../interfaces/uniswap/ISwapRouter.sol";
+import {IZoraTimedSaleStrategy} from "../interfaces/IZoraTimedSaleStrategy.sol";
 import {IWETH} from "../interfaces/IWETH.sol";
 
-contract SecondarySwap is ISecondarySwap, ReentrancyGuard, ERC1155Holder {
+contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
     uint256 internal constant ONE_ERC_20 = 1e18;
+
+    bytes4 constant ON_ERC1155_RECEIVED_HASH = IERC1155Receiver.onERC1155Received.selector;
 
     IWETH public immutable WETH;
     ISwapRouter public immutable swapRouter;
     uint24 public immutable uniswapFee;
+    IZoraTimedSaleStrategy public immutable zoraTimedSaleStrategy;
 
-    constructor(IWETH weth_, ISwapRouter swapRouter_, uint24 uniswapFee_) {
+    constructor(IWETH weth_, ISwapRouter swapRouter_, uint24 uniswapFee_, IZoraTimedSaleStrategy zoraTimedSaleStrategy_) {
         WETH = weth_;
         swapRouter = swapRouter_;
         uniswapFee = uniswapFee_;
+        zoraTimedSaleStrategy = zoraTimedSaleStrategy_;
     }
 
     /// @notice ETH -> WETH -> ERC20Z -> ERC1155
@@ -99,16 +105,20 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, ERC1155Holder {
         uint256 minEthToAcquire,
         uint160 sqrtPriceLimitX96
     ) external nonReentrant {
-        // Ensure the recipient is valid
-        if (recipient == address(0)) {
-            revert InvalidRecipient();
-        }
-
-        // Get the ERC1155 token info from ERC20Z
         IERC20Z.TokenInfo memory tokenInfo = IERC20Z(erc20zAddress).tokenInfo();
 
         // Transfer ERC1155 tokens from sender to this contract and wrap them
         IERC1155(tokenInfo.collection).safeTransferFrom(msg.sender, erc20zAddress, tokenInfo.tokenId, num1155ToSell, abi.encode(address(this)));
+
+        _sell1155(erc20zAddress, num1155ToSell, recipient, minEthToAcquire, sqrtPriceLimitX96);
+    }
+
+    /// @notice ERC1155 -> ERC20Z -> WETH -> ETH
+    function _sell1155(address erc20zAddress, uint256 num1155ToSell, address payable recipient, uint256 minEthToAcquire, uint160 sqrtPriceLimitX96) private {
+        // Ensure the recipient is valid
+        if (recipient == address(0)) {
+            revert InvalidRecipient();
+        }
 
         // Calculate expected amount of ERC20Z
         uint256 expectedAmountERC20In = num1155ToSell * 1e18;
@@ -142,6 +152,36 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, ERC1155Holder {
         Address.sendValue(recipient, amountWethOut);
 
         emit SecondarySell(msg.sender, recipient, erc20zAddress, amountWethOut, num1155ToSell);
+    }
+
+    /// @notice Receive transfer hook that allows to sell 1155s for eth based on the secondary market value
+    function onERC1155Received(address, address, uint256 id, uint256 value, bytes calldata data) external override nonReentrant returns (bytes4) {
+        address collection = msg.sender;
+
+        uint256 num1155ToSell = value;
+
+        (address payable recipient, uint256 minEthToAcquire, uint160 sqrtPriceLimitX96) = abi.decode(data, (address, uint256, uint160));
+
+        address erc20zAddress = zoraTimedSaleStrategy.sale(collection, id).erc20zAddress;
+
+        if (erc20zAddress == address(0)) {
+            revert SaleNotSet();
+        }
+
+        // assume this contract has 1155s, transfer them to the erc20z and wrap them
+        IERC1155(collection).safeTransferFrom(address(this), erc20zAddress, id, num1155ToSell, abi.encode(address(this)));
+
+        _sell1155(erc20zAddress, num1155ToSell, recipient, minEthToAcquire, sqrtPriceLimitX96);
+
+        return ON_ERC1155_RECEIVED_HASH;
+    }
+
+    function supportsInterface(bytes4 interfaceId) public view virtual returns (bool) {
+        return interfaceId == type(IERC1155Receiver).interfaceId;
+    }
+
+    function onERC1155BatchReceived(address, address, uint256[] calldata, uint256[] calldata, bytes calldata) external pure override returns (bytes4) {
+        revert NotSupported();
     }
 
     receive() external payable {
