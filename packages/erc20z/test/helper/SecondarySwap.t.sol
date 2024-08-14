@@ -16,7 +16,8 @@ contract SecondarySwapTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        secondarySwap = new SecondarySwap(weth, swapRouter, defaultUniswapFee, saleStrategy);
+        secondarySwap = new SecondarySwap();
+        secondarySwap.initialize(weth, swapRouter, defaultUniswapFee, saleStrategy);
         vm.label(address(secondarySwap), "SECONDARY_SWAP");
     }
 

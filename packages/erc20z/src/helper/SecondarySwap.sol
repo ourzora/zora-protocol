@@ -18,12 +18,13 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
 
     bytes4 constant ON_ERC1155_RECEIVED_HASH = IERC1155Receiver.onERC1155Received.selector;
 
-    IWETH public immutable WETH;
-    ISwapRouter public immutable swapRouter;
-    uint24 public immutable uniswapFee;
-    IZoraTimedSaleStrategy public immutable zoraTimedSaleStrategy;
+    IWETH public WETH;
+    ISwapRouter public swapRouter;
+    uint24 public uniswapFee;
+    IZoraTimedSaleStrategy public zoraTimedSaleStrategy;
 
-    constructor(IWETH weth_, ISwapRouter swapRouter_, uint24 uniswapFee_, IZoraTimedSaleStrategy zoraTimedSaleStrategy_) {
+    /// @notice This must be called in the same transaction that the contract is created on.
+    function initialize(IWETH weth_, ISwapRouter swapRouter_, uint24 uniswapFee_, IZoraTimedSaleStrategy zoraTimedSaleStrategy_) external {
         WETH = weth_;
         swapRouter = swapRouter_;
         uniswapFee = uniswapFee_;

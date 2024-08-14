@@ -42,34 +42,6 @@ contract DeployScript is ProxyDeployerScript {
         vm.writeJson(result, string.concat("./addresses/", vm.toString(block.chainid), ".json"));
     }
 
-    function signDeploymentWithTurnkey(
-        DeterministicContractConfig memory config,
-        bytes memory init,
-        DeterministicDeployerAndCaller deployer
-    ) internal returns (bytes memory signature) {
-        string[] memory args = new string[](8);
-
-        args[0] = "pnpm";
-        args[1] = "tsx";
-        args[2] = "scripts/signDeployAndCall.ts";
-
-        args[3] = vm.toString(block.chainid);
-
-        // salt
-        args[4] = vm.toString(config.salt);
-
-        // creation code:
-        args[5] = LibString.toHexString(config.creationCode);
-
-        // init
-        args[6] = LibString.toHexString(init);
-
-        // deployer address
-        args[7] = vm.toString(address(deployer));
-
-        signature = vm.ffi(args);
-    }
-
     function run() public {
         IProtocolRewards protocolRewards = IProtocolRewards(PROTOCOL_REWARDS);
         address owner = getProxyAdmin();
