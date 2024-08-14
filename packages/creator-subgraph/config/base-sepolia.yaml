@@ -1,5 +1,8 @@
 chainid: "84532"
 network: base-sepolia
+grafting: 
+  base: "QmcjERBXYMr7Jj4u66hcZ4CJxy3VUZdDKVA3Uy85rxe61T"
+  block: "13429990"
 factories1155:
   - address: "0x8cfbF874A12b346115003532119C29f6B56719CB"
     startBlock: "7861615"
@@ -18,4 +21,8 @@ protocolRewards:
 erc20Minter:
   - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
     startBlock: "7857912"
+    version: "1"
+zoraTimedSaleStrategy:
+  - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
+    startBlock: "13429993"
     version: "1"
