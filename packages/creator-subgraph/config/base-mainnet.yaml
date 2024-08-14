@@ -1,5 +1,8 @@
 chainid: "8453"
 network: base
+grafting: 
+  base: "QmW7iJ2ZH8zibUEDMY9oMhUMgtcAZZ71cdPypqgumqqh1A"
+  block: "17918250"
 factories1155:
   - address: "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
     startBlock: "1496186"
@@ -21,4 +24,8 @@ protocolRewards:
 erc20Minter:
   - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
     startBlock: "12341612"
+    version: "1"
+zoraTimedSaleStrategy:
+  - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
+    startBlock: "17918252"
     version: "1"

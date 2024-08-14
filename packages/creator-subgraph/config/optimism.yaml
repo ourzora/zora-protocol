@@ -1,5 +1,8 @@
 chainid: "10"
 network: optimism
+grafting: 
+  base: "QmSh1j66CStGWZYPTiZ6Gujb9hFjhZmNepyGcAxShmJNDr"
+  block: "123513420"
 factories1155:
   - address: "0x78b524931e9d847c40BcBf225c25e154a7B05fDA"
     startBlock: "97158995"
@@ -21,4 +24,8 @@ protocolRewards:
 erc20Minter:
   - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
     startBlock: "117937046"
+    version: "1"
+zoraTimedSaleStrategy:
+  - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
+    startBlock: "123513422"
     version: "1"

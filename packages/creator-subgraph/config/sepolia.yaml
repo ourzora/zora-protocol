@@ -1,5 +1,8 @@
 chainid: "11155111"
 network: sepolia
+grafting:
+  base: "QmVu11dQwr8FKUHMRKWyKiMp82TzqMGmAkxTX57AgYnQqB"
+  block: "6424645"
 factories1155:
   - address: "0x13dAA8E9e3f68deDE7b1386ACdc12eA98F2FB688"
     startBlock: "3354498"
@@ -13,6 +16,6 @@ erc20Minter:
     startBlock: "5566250"
     version: "1"
 zoraTimedSaleStrategy:
-  - address: "0x8237F421357F87a23ed0CFf3a5586172F210A21B"
-    startBlock: "6358125"
+  - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
+    startBlock: "6424650"
     version: "1"
