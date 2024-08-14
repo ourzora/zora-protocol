@@ -17,17 +17,35 @@ contract DeploySwapHelper is ProxyDeployerScript {
 
     function run() public {
         DeterministicContractConfig memory minterConfig = readDeterministicContractConfig("zoraTimedSaleStrategy");
+        DeterministicContractConfig memory secondarySwap = readDeterministicContractConfig("secondarySwap");
 
         vm.startBroadcast();
+
+        // get deployer contract
+        DeterministicDeployerAndCaller deployer = createOrGetDeployerAndCaller();
 
         IWETH weth = IWETH(getWeth());
         ISwapRouter swapRouter = ISwapRouter(getUniswapSwapRouter());
 
         uint24 uniswapPoolFee = 10_000;
-        SecondarySwap secondarySwap = new SecondarySwap(weth, swapRouter, uniswapPoolFee, IZoraTimedSaleStrategy(minterConfig.deployedAddress));
 
-        // stdJson.write(".SWAP_HELPER", getConfigAddressPath(), address(secondarySwap));
-        console2.log("deployed to ", vm.toString(block.chainid), address(secondarySwap));
-        console2.log(string.concat('   "SWAP_HELPER": "', vm.toString(address(secondarySwap)), '",'));
+        // build init call
+        bytes memory init = abi.encodeWithSelector(
+            SecondarySwap.initialize.selector,
+            weth,
+            swapRouter,
+            uniswapPoolFee,
+            IZoraTimedSaleStrategy(minterConfig.deployedAddress)
+        );
+
+        // sign deployment with turnkey account
+        bytes memory signature = signDeploymentWithTurnkey(secondarySwap, init, deployer);
+
+        // deterministically deploy contract using the signature
+        address deployed = deployer.permitSafeCreate2AndCall(signature, secondarySwap.salt, secondarySwap.creationCode, init, secondarySwap.deployedAddress);
+
+        console2.log("deployed to ", vm.toString(block.chainid), deployed);
+
+        vm.stopBroadcast();
     }
 }

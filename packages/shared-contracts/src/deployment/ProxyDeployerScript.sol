@@ -66,6 +66,34 @@ contract ProxyDeployerScript is Script {
         salt = vm.parseBytes32(saltStr);
     }
 
+    function signDeploymentWithTurnkey(
+        DeterministicContractConfig memory config,
+        bytes memory init,
+        DeterministicDeployerAndCaller deployer
+    ) internal returns (bytes memory signature) {
+        string[] memory args = new string[](8);
+
+        args[0] = "pnpm";
+        args[1] = "tsx";
+        args[2] = "scripts/signDeployAndCall.ts";
+
+        args[3] = vm.toString(block.chainid);
+
+        // salt
+        args[4] = vm.toString(config.salt);
+
+        // creation code:
+        args[5] = LibString.toHexString(config.creationCode);
+
+        // init
+        args[6] = LibString.toHexString(init);
+
+        // deployer address
+        args[7] = vm.toString(address(deployer));
+
+        signature = vm.ffi(args);
+    }
+
     function proxyDeployerConfigPath(string memory proxyDeployerName) internal pure returns (string memory) {
         return string.concat("deterministicConfig/", string.concat(proxyDeployerName, ".json"));
     }
