@@ -33,4 +33,8 @@ interface ISecondarySwap {
     error ERC20ZMinimumAmountNotReceived();
     error ERC20ZEquivalentAmountNotConverted();
     error OnlyWETH();
+    /// @notice Operation not supported
+    error NotSupported();
+    /// @notice Timed Sale has not been configured for the collection and token ID
+    error SaleNotSet();
 }
