@@ -1,4 +1,4 @@
-import { defineConfig } from "@wagmi/cli";
+import { Config, ContractConfig, defineConfig } from "@wagmi/cli";
 import { Abi, zeroAddress } from "viem";
 import { readdirSync, readFileSync } from "fs";
 import * as abis from "@zoralabs/zora-1155-contracts";
@@ -16,6 +16,7 @@ import {
   erc20ZABI,
   zoraTimedSaleStrategyImplABI,
   royaltiesABI,
+  secondarySwapABI,
 } from "@zoralabs/erc20z";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
 import { zora } from "viem/chains";
@@ -40,32 +41,57 @@ const zora1155Errors = [
   ...timedSaleStrategyErrors,
 ];
 
-const get1155Addresses = () => {
+type AbiAndAddresses = {
+  abi: Abi;
+  address: Record<number, Address>;
+};
+
+const addAddress = <
+  T extends Record<string, AbiAndAddresses>,
+  K extends Record<string, Address>,
+>({
+  contractName,
+  abi,
+  addresses,
+  storedConfigs,
+  configKey,
+}: {
+  abi: Abi;
+  contractName: string;
+  configKey: keyof K;
+  addresses: T;
+  storedConfigs: {
+    chainId: number;
+    config: K;
+  }[];
+}) => {
+  // @ts-ignore
+  addresses[contractName] = {
+    address: {},
+    abi,
+  };
+
+  for (const storedConfig of storedConfigs) {
+    const address = storedConfig.config[configKey] as Address | undefined;
+    if (address && address !== zeroAddress)
+      addresses[contractName]!.address[storedConfig.chainId] = address;
+  }
+};
+
+const toConfig = (
+  addresses: Record<string, AbiAndAddresses>,
+): ContractConfig[] => {
+  return Object.entries(addresses).map(([contractName, config]) => ({
+    abi: config.abi,
+    name: contractName,
+    address: config.address,
+  }));
+};
+
+const get1155Contracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
   const addressesFiles = readdirSync("../1155-deployments/addresses");
-
-  const addAddress = ({
-    contractName,
-    chainId,
-    address,
-    abi,
-  }: {
-    contractName: string;
-    chainId: number;
-    address?: Address;
-    abi: Abi;
-  }) => {
-    if (!address || address === zeroAddress) return;
-    if (!addresses[contractName]) {
-      addresses[contractName] = {
-        address: {},
-        abi,
-      };
-    }
-
-    addresses[contractName]!.address[chainId] = address;
-  };
 
   const protocolRewardsConfig = JSON.parse(
     readFileSync("../protocol-rewards/deterministicConfig.json", "utf-8"),
@@ -73,74 +99,93 @@ const get1155Addresses = () => {
     expectedAddress: Address;
   };
 
-  for (const addressesFile of addressesFiles) {
-    const jsonAddress = JSON.parse(
-      readFileSync(`../1155-deployments/addresses/${addressesFile}`, "utf-8"),
-    ) as {
-      FIXED_PRICE_SALE_STRATEGY: Address;
-      MERKLE_MINT_SALE_STRATEGY: Address;
-      REDEEM_MINTER_FACTORY: Address;
-      "1155_IMPL": Address;
-      FACTORY_IMPL: Address;
-      FACTORY_PROXY: Address;
-      PREMINTER_PROXY?: Address;
-      ERC20_MINTER?: Address;
-      UPGRADE_GATE?: Address;
+  const storedConfigs = addressesFiles.map((file) => {
+    const protocolRewardsAddress = protocolRewardsConfig.expectedAddress;
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: {
+        ...(JSON.parse(
+          readFileSync(`../1155-deployments/addresses/${file}`, "utf-8"),
+        ) as {
+          FIXED_PRICE_SALE_STRATEGY: Address;
+          MERKLE_MINT_SALE_STRATEGY: Address;
+          REDEEM_MINTER_FACTORY: Address;
+          "1155_IMPL": Address;
+          FACTORY_IMPL: Address;
+          FACTORY_PROXY: Address;
+          PREMINTER_PROXY?: Address;
+          ERC20_MINTER?: Address;
+          UPGRADE_GATE?: Address;
+        }),
+        PROTOCOL_REWARDS: protocolRewardsAddress,
+      },
     };
+  });
 
-    const chainId = parseInt(addressesFile.split(".")[0]);
+  addAddress({
+    contractName: "ZoraCreatorFixedPriceSaleStrategy",
+    abi: abis.zoraCreatorFixedPriceSaleStrategyABI,
+    addresses,
+    configKey: "FIXED_PRICE_SALE_STRATEGY",
+    storedConfigs: storedConfigs,
+  });
+  addAddress({
+    contractName: "ZoraCreatorMerkleMinterStrategy",
+    abi: abis.zoraCreatorMerkleMinterStrategyABI,
+    configKey: "MERKLE_MINT_SALE_STRATEGY",
+    addresses,
+    storedConfigs: storedConfigs,
+  });
+  addAddress({
+    contractName: "ZoraCreator1155FactoryImpl",
+    configKey: "FACTORY_PROXY",
+    abi: [...abis.zoraCreator1155FactoryImplABI, ...zora1155Errors],
+    addresses,
+    storedConfigs,
+  });
+  addAddress({
+    contractName: "ZoraCreatorRedeemMinterFactory",
+    configKey: "REDEEM_MINTER_FACTORY",
+    abi: abis.zoraCreatorRedeemMinterFactoryABI,
+    addresses,
+    storedConfigs,
+  });
+  addAddress({
+    contractName: "ZoraCreator1155PremintExecutorImpl",
+    configKey: "PREMINTER_PROXY",
+    abi: abis.zoraCreator1155PremintExecutorImplABI,
+    addresses,
+    storedConfigs,
+  });
+  addAddress({
+    contractName: "ProtocolRewards",
+    configKey: "PROTOCOL_REWARDS",
+    abi: abis.protocolRewardsABI,
+    addresses,
+    storedConfigs,
+  });
+  addAddress({
+    contractName: "ERC20Minter",
+    configKey: "ERC20_MINTER",
+    abi: abis.erc20MinterABI,
+    addresses,
+    storedConfigs,
+  });
+  addAddress({
+    contractName: "UpgradeGate",
+    configKey: "UPGRADE_GATE",
+    abi: abis.upgradeGateABI,
+    addresses,
+    storedConfigs,
+  });
 
-    addAddress({
-      contractName: "ZoraCreatorFixedPriceSaleStrategy",
-      chainId,
-      address: jsonAddress.FIXED_PRICE_SALE_STRATEGY,
-      abi: abis.zoraCreatorFixedPriceSaleStrategyABI,
-    });
-    addAddress({
-      contractName: "ZoraCreatorMerkleMinterStrategy",
-      chainId,
-      address: jsonAddress.MERKLE_MINT_SALE_STRATEGY,
-      abi: abis.zoraCreatorMerkleMinterStrategyABI,
-    });
-    addAddress({
-      contractName: "ZoraCreator1155FactoryImpl",
-      chainId,
-      address: jsonAddress.FACTORY_PROXY,
-      abi: [...abis.zoraCreator1155FactoryImplABI, ...zora1155Errors],
-    });
-    addAddress({
-      contractName: "ZoraCreatorRedeemMinterFactory",
-      chainId,
-      address: jsonAddress.REDEEM_MINTER_FACTORY,
-      abi: abis.zoraCreatorRedeemMinterFactoryABI,
-    });
-    addAddress({
-      contractName: "ZoraCreator1155PremintExecutorImpl",
-      chainId,
-      address: jsonAddress.PREMINTER_PROXY,
-      abi: abis.zoraCreator1155PremintExecutorImplABI,
-    });
-    addAddress({
-      contractName: "ProtocolRewards",
-      chainId,
-      address: protocolRewardsConfig.expectedAddress,
-      abi: abis.protocolRewardsABI,
-    });
-    addAddress({
-      contractName: "ERC20Minter",
-      chainId,
-      abi: abis.erc20MinterABI,
-      address: jsonAddress.ERC20_MINTER,
-    });
-    addAddress({
-      contractName: "UpgradeGate",
-      chainId,
-      address: jsonAddress.UPGRADE_GATE,
-      abi: abis.upgradeGateABI,
-    });
-  }
-
-  return addresses;
+  return [
+    ...toConfig(addresses),
+    {
+      abi: [...abis.zoraCreator1155ImplABI, ...timedSaleStrategyErrors],
+      name: "ZoraCreator1155Impl",
+    },
+  ];
 };
 
 const getSparksAddresses = () => {
@@ -198,56 +243,68 @@ const getSparksAddresses = () => {
 
 const sparksAddresses = getSparksAddresses();
 
-const getErc20zAddresses = () => {
+const getErc20zContracts = (): ContractConfig[] => {
+  const addresses: Addresses = {};
+
   const addressesFiles = readdirSync("../erc20z/addresses");
-  const chainIds = addressesFiles
-    .map((file) => parseInt(file.split(".")[0]))
-    .map((x) => +x);
 
-  const zoraTimedSaleStrategyConfig = JSON.parse(
-    readFileSync(
-      "../erc20z/deterministicConfig/zoraTimedSaleStrategy.json",
-      "utf-8",
-    ),
-  );
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: {
+        ...(JSON.parse(
+          readFileSync(`../erc20z/addresses/${file}`, "utf-8"),
+        ) as {
+          SWAP_HELPER: Address;
+          ERC20Z: Address;
+          NONFUNGIBLE_POSITION_MANAGER: Address;
+          ROYALTIES: Address;
+          SALE_STRATEGY: Address;
+          SALE_STRATEGY_IMPL: Address;
+          WETH: Address;
+        }),
+      },
+    };
+  });
 
-  const royaltiesConfig = JSON.parse(
-    readFileSync(
-      "../erc20z/deterministicConfig/zoraTimedSaleStrategy.json",
-      "utf-8",
-    ),
-  );
+  addAddress({
+    abi: royaltiesABI,
+    addresses,
+    configKey: "ROYALTIES",
+    contractName: "ERC20ZRoyalties",
+    storedConfigs,
+  });
 
-  const zoraTimedSaleStrategyAddress =
-    zoraTimedSaleStrategyConfig.deployedAddress as Address;
-  const royaltiesAddress = royaltiesConfig.deployedAddress as Address;
+  addAddress({
+    abi: zoraTimedSaleStrategyImplABI,
+    addresses,
+    configKey: "SALE_STRATEGY",
+    contractName: "zoraTimedSaleStrategy",
+    storedConfigs,
+  });
 
-  return {
-    zoraTimedSaleStrategy: Object.fromEntries(
-      chainIds.map((chainId) => [chainId, zoraTimedSaleStrategyAddress]),
-    ),
-    royalties: Object.fromEntries(
-      chainIds.map((chainId) => [chainId, royaltiesAddress as Address]),
-    ),
-  };
+  addAddress({
+    abi: secondarySwapABI,
+    addresses,
+    configKey: "SWAP_HELPER",
+    contractName: "SecondarySwap",
+    storedConfigs,
+  });
+
+  return [
+    ...toConfig(addresses),
+    {
+      abi: erc20ZABI,
+      name: "ERC20Z",
+    },
+  ];
 };
-
-const erc20zAddresses = getErc20zAddresses();
 
 export default defineConfig({
   out: "../protocol-deployments/src/generated/wagmi.ts",
   contracts: [
-    ...Object.entries(get1155Addresses()).map(
-      ([contractName, addressConfig]) => ({
-        abi: addressConfig.abi,
-        address: addressConfig.address,
-        name: contractName,
-      }),
-    ),
-    {
-      abi: [...abis.zoraCreator1155ImplABI, ...timedSaleStrategyErrors],
-      name: "ZoraCreator1155Impl",
-    },
+    ...get1155Contracts(),
+    ...getErc20zContracts(),
     {
       abi: zoraSparksManagerImplABI,
       name: "ZoraSparksManagerImpl",
@@ -293,20 +350,6 @@ export default defineConfig({
     {
       abi: iSponsoredSparksSpenderActionABI,
       name: "ISponsoredSparksSpenderAction",
-    },
-    {
-      abi: zoraTimedSaleStrategyImplABI,
-      name: "zoraTimedSaleStrategy",
-      address: erc20zAddresses.zoraTimedSaleStrategy,
-    },
-    {
-      abi: royaltiesABI,
-      name: "ERC20ZRoyalties",
-      address: erc20zAddresses.royalties,
-    },
-    {
-      abi: erc20ZABI,
-      name: "ERC20Z",
     },
   ],
 });
