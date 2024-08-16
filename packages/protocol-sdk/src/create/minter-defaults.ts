@@ -74,10 +74,10 @@ export const parseNameIntoSymbol = (name: string) => {
   return result;
 };
 
-const timedSaleSettingsWithDefaults = async (
+const timedSaleSettingsWithDefaults = (
   params: TimedSaleParamsType,
   contractName: string,
-): Promise<Concrete<TimedSaleParamsType>> => {
+): Concrete<TimedSaleParamsType> => {
   // If the name is not provided, try to fetch it from the metadata
   const erc20Name = params.erc20Name || contractName;
   const symbol = params.erc20Symbol || parseNameIntoSymbol(erc20Name);
@@ -106,10 +106,10 @@ const isFixedPrice = (
   );
 };
 
-export const getSalesConfigWithDefaults = async (
+export const getSalesConfigWithDefaults = (
   salesConfig: SalesConfigParamsType | undefined,
   contractName: string,
-): Promise<ConcreteSalesConfig> => {
+): ConcreteSalesConfig => {
   if (!salesConfig) return timedSaleSettingsWithDefaults({}, contractName);
   if (isAllowList(salesConfig)) {
     return allowListWithDefaults(salesConfig);
