@@ -79,15 +79,16 @@ export const post = async <T>(url: string, data: any) => {
   return (await response.json()) as T;
 };
 
+const defaultShouldRetry = (err: any) => {
+  return err instanceof BadResponseError && err.status >= 500;
+};
+
 export const retries = async <T>(
   tryFn: () => T,
   maxTries: number = 3,
   linearBackoffMS: number = 200,
+  shouldRetry: (err: any) => boolean = defaultShouldRetry,
 ): Promise<T> => {
-  const shouldRetry = (err: any) => {
-    return err instanceof BadResponseError && err.status >= 500;
-  };
-
   return retriesGeneric({
     tryFn,
     maxTries,

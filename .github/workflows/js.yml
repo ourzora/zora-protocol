@@ -11,6 +11,7 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VITE_CONDUIT_KEY: ${{ secrets.VITE_CONDUIT_KEY }}
 
     name: Build js package
     runs-on: ubuntu-latest
