@@ -199,7 +199,7 @@ async function createNew1155ContractAndToken({
     minter,
     newToken,
     setupActions: tokenSetupActions,
-  } = await prepareSetupActions({
+  } = prepareSetupActions({
     chainId,
     account,
     contractVersion,
@@ -271,7 +271,7 @@ async function createNew1155Token({
     minter,
     newToken,
     setupActions: tokenSetupActions,
-  } = await prepareSetupActions({
+  } = prepareSetupActions({
     chainId,
     account,
     contractVersion,
@@ -307,7 +307,7 @@ async function createNew1155Token({
   };
 }
 
-async function prepareSetupActions({
+function prepareSetupActions({
   chainId,
   account,
   contractVersion,
@@ -325,7 +325,7 @@ async function prepareSetupActions({
     minter,
     newToken,
     setupActions: tokenSetupActions,
-  } = await constructCreate1155TokenCalls({
+  } = constructCreate1155TokenCalls({
     chainId: chainId,
     ownerAddress: account,
     contractVersion,
