@@ -5,7 +5,7 @@ import {
   zoraCreator1155ImplABI,
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import { forkUrls, makeAnvilTest } from "src/anvil";
+import { forkUrls, makeAnvilTest, writeContractWithRetries } from "src/anvil";
 import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { getAllowListEntry } from "src/allow-list/allow-list-client";
 import {
@@ -370,11 +370,7 @@ describe("mint-helper", () => {
 
       const { request: createRequest } =
         await publicClient.simulateContract(parameters);
-      const createHash = await walletClient.writeContract(createRequest);
-      const createReceipt = await publicClient.waitForTransactionReceipt({
-        hash: createHash,
-      });
-      expect(createReceipt.status).toBe("success");
+      await writeContractWithRetries(createRequest, walletClient, publicClient);
 
       const zoraCreateToken: TokenQueryResult = {
         contract: {

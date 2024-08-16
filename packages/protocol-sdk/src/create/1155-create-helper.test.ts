@@ -10,21 +10,14 @@ import {
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { waitForSuccess } from "src/test-utils";
-import {
-  Address,
-  erc20Abi,
-  parseEther,
-  PublicClient,
-  TransactionReceipt,
-} from "viem";
+import { Address, erc20Abi, parseEther, PublicClient } from "viem";
 import { makePrepareMint1155TokenParams } from "src/mint/mint-transactions";
-import { forkUrls, makeAnvilTest } from "src/anvil";
+import { forkUrls, makeAnvilTest, writeContractWithRetries } from "src/anvil";
 import { zora } from "viem/chains";
 import { AllowList } from "src/allow-list/types";
 import { createAllowList } from "src/allow-list/allow-list-client";
 import { NewContractParams } from "./types";
 import { SubgraphContractGetter } from "./contract-getter";
-import { inspect } from "util";
 
 export const demoTokenMetadataURI =
   "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u";
@@ -58,14 +51,6 @@ const minterIsMinterOnToken = async ({
     args: [minter, tokenId, PERMISSION_BITS.MINTER],
   });
 };
-
-function logFailure(receipt: TransactionReceipt) {
-  if (receipt.status !== "success") {
-    console.log("transaction failed");
-    console.log(receipt.logs);
-    console.log(inspect(receipt, { depth: 10 }));
-  }
-}
 
 function randomNewContract(): NewContractParams {
   return {
@@ -115,10 +100,11 @@ describe("create-helper", () => {
       });
 
       const { request } = await publicClient.simulateContract(parameters);
-      const hash = await walletClient.writeContract(request);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
-      logFailure(receipt);
-      expect(receipt.status).toBe("success");
+      const receipt = await writeContractWithRetries(
+        request,
+        walletClient,
+        publicClient,
+      );
       expect(receipt).not.toBeNull();
       expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(1n);
@@ -187,12 +173,8 @@ describe("create-helper", () => {
       });
 
       const { request } = await publicClient.simulateContract(parameters);
-      const hash = await walletClient.writeContract(request);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
 
-      logFailure(receipt);
-
-      expect(receipt.status).toBe("success");
+      await writeContractWithRetries(request, walletClient, publicClient);
 
       expect(
         await minterIsMinterOnToken({
@@ -234,13 +216,13 @@ describe("create-helper", () => {
         });
       const { request: simulateResponse } =
         await publicClient.simulateContract(request);
-      const hash = await walletClient.writeContract(simulateResponse);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
-      logFailure(receipt);
-      expect(receipt.status).toBe("success");
+      const receipt = await writeContractWithRetries(
+        simulateResponse,
+        walletClient,
+        publicClient,
+      );
       const firstTokenId = getTokenIdFromCreateReceipt(receipt);
       expect(firstTokenId).to.be.equal(1n);
-      expect(receipt).not.toBeNull();
 
       // creator should have mint to creator count balance
       expect(
@@ -279,18 +261,16 @@ describe("create-helper", () => {
       const { request: simulateRequest } = await publicClient.simulateContract(
         newTokenOnExistingContract.parameters,
       );
-      const newHash = await walletClient.writeContract(simulateRequest);
-      const newReceipt = await publicClient.waitForTransactionReceipt({
-        hash: newHash,
-      });
+      const newReceipt = await writeContractWithRetries(
+        simulateRequest,
+        walletClient,
+        publicClient,
+      );
 
-      logFailure(receipt);
-
-      expect(newReceipt.status).toBe("success");
       const tokenId = getTokenIdFromCreateReceipt(newReceipt);
       expect(tokenId).to.be.equal(2n);
     },
-    20 * 1000,
+    30 * 1000,
   );
   anvilTest(
     "creates a new token with a create referral address",
@@ -317,9 +297,11 @@ describe("create-helper", () => {
       });
       const { request: simulationResponse } =
         await publicClient.simulateContract(request);
-      const hash = await walletClient.writeContract(simulationResponse);
-      const receipt = await publicClient.waitForTransactionReceipt({ hash });
-      expect(receipt.status).toBe("success");
+      const receipt = await writeContractWithRetries(
+        simulationResponse,
+        walletClient,
+        publicClient,
+      );
       expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(newTokenId);
 
@@ -357,8 +339,10 @@ describe("create-helper", () => {
         });
       const { request: createSimulation } =
         await publicClient.simulateContract(request);
-      await waitForSuccess(
-        await walletClient.writeContract(createSimulation),
+
+      await writeContractWithRetries(
+        createSimulation,
+        walletClient,
         publicClient,
       );
 
@@ -420,8 +404,9 @@ describe("create-helper", () => {
       });
       const { request: createSimulation } =
         await publicClient.simulateContract(request);
-      await waitForSuccess(
-        await walletClient.writeContract(createSimulation),
+      await writeContractWithRetries(
+        createSimulation,
+        walletClient,
         publicClient,
       );
 

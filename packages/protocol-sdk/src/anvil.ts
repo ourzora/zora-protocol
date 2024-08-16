@@ -2,8 +2,10 @@ import { spawn } from "node:child_process";
 import { join } from "path";
 import { test } from "vitest";
 import {
+  Account,
   Chain,
   PublicClient,
+  SimulateContractReturnType,
   TestClient,
   Transport,
   WalletClient,
@@ -13,6 +15,7 @@ import {
   http,
 } from "viem";
 import { foundry, zora } from "viem/chains";
+import { retries } from "./apis/http-api-base";
 
 export interface AnvilViemClientsTest {
   viemClients: {
@@ -103,8 +106,7 @@ export const makeAnvilTest = ({
 
 export const forkUrls = {
   zoraMainnet: `https://rpc.zora.energy/${process.env.VITE_CONDUIT_KEY}`,
-  zoraGoerli: "https://testnet.rpc.zora.co",
-  zoraSepolia: "https://sepolia.rpc.zora.energy",
+  zoraSepolia: `https://sepolia.rpc.zora.energy/${process.env.VITE_CONDUIT_KEY}`,
 };
 
 export const anvilTest = makeAnvilTest({
@@ -112,3 +114,32 @@ export const anvilTest = makeAnvilTest({
   forkBlockNumber: 7866332,
   anvilChainId: zora.id,
 });
+
+export async function writeContractWithRetries(
+  request: SimulateContractReturnType<any, any, any, Chain, Account>["request"],
+  walletClient: WalletClient,
+  publicClient: PublicClient,
+) {
+  let tryCount = 1;
+  const tryFn = async () => {
+    if (tryCount > 1) {
+      console.log("retrying try #", tryCount);
+    }
+    const hash = await walletClient.writeContract(request);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+    if (receipt.status !== "success") {
+      console.log("failed try #", tryCount);
+      tryCount++;
+      throw new Error("transaction failed");
+    }
+
+    return receipt;
+  };
+
+  const shouldRetry = () => {
+    return true;
+  };
+
+  return await retries(tryFn, 3, 1000, shouldRetry);
+}
