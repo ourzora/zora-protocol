@@ -13,7 +13,6 @@ jobs:
       ignore_coverage_files: '"*lib*" "*Zora1155*" "*uniswap*"'
       # fixes stack too deep temporarily
       coverage_args: "--ir-minimum"
-      skip_storage_layout: true
 
   contracts-1155:
     name: 1155 Contracts

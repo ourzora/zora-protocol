@@ -1,0 +1,11 @@
+👁👁 STORAGE LAYOUT snapshot 👁👁
+=======================
+
+=======================
+➡ ZoraTimedSaleStrategyImpl
+=======================
+
+| Name            | Type                      | Slot | Offset | Bytes | Contract                                                           |
+|-----------------|---------------------------|------|--------|-------|--------------------------------------------------------------------|
+| protocolRewards | contract IProtocolRewards | 0    | 0      | 20    | src/minter/ZoraTimedSaleStrategyImpl.sol:ZoraTimedSaleStrategyImpl |
+| erc20zImpl      | address                   | 1    | 0      | 20    | src/minter/ZoraTimedSaleStrategyImpl.sol:ZoraTimedSaleStrategyImpl |
