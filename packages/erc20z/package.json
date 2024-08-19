@@ -21,6 +21,8 @@
     "test": "forge test -vv",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test-gas": "forge test --gas-report",
+    "storage-inspect:check": "./script/storage-check.sh check ZoraTimedSaleStrategyImpl",
+    "storage-inspect:generate": "./script/storage-check.sh generate ZoraTimedSaleStrategyImpl",
     "build:sizes": "forge build --sizes",
     "copy-abis": "pnpm tsx script/bundle-abis.ts",
     "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
