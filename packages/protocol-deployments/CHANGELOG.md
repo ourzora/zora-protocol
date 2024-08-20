@@ -1,5 +1,12 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.1
+
+### Patch Changes
+
+- d221894d: Fix royalties contract address. Include secondary swap address
+- f94e5f03: Deployed secondary swap to rest of chains
+
 ## 0.3.0
 
 ### Minor Changes

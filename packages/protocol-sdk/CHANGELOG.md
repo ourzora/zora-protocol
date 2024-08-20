@@ -1,5 +1,15 @@
 # @zoralabs/protocol-sdk
 
+## 0.9.4
+
+### Patch Changes
+
+- b9fcab20: Removed unneeded async in token setup
+- Updated dependencies [d221894d]
+- Updated dependencies [f94e5f03]
+- Updated dependencies [1b4d5ee7]
+  - @zoralabs/protocol-deployments@0.3.1
+
 ## 0.9.3
 
 ### Patch Changes
