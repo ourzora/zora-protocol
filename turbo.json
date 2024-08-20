@@ -13,13 +13,6 @@
       "dependsOn": ["@zoralabs/protocol-deployments-gen#build"],
       "outputs": ["dist/**"]
     },
-    "@zoralabs/nft-creator-subgraph#build": {
-      "dependsOn": [
-        "@zoralabs/sparks-contracts#build",
-        "@zoralabs/zora-1155-contracts#build",
-        "@zoralabs/erc20z#build"
-      ]
-    },
     "@zoralabs/zora-1155-contracts#build": {
       "outputs": ["dist/**", "out/**", "abis/**"]
     },
