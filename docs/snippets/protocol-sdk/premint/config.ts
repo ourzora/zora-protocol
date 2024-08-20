@@ -21,7 +21,7 @@ export const publicClient = createPublicClient({
 });
 
 export const walletClient = createWalletClient({
-  chain: zora,
+  chain: zora as Chain,
   transport: custom(window.ethereum!),
 });
 
