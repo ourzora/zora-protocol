@@ -233,15 +233,6 @@ contract ZoraCreator1155Impl is
         _;
     }
 
-    /// @notice Modifier checking if the requested quantity of tokens can be minted for the tokenId
-    /// @dev This reverts if the number that can be minted is exceeded
-    /// @param tokenId token id to check available allowed quantity
-    /// @param quantity requested to be minted
-    modifier canMintQuantity(uint256 tokenId, uint256 quantity) {
-        _requireCanMintQuantity(tokenId, quantity);
-        _;
-    }
-
     /// @notice Only from approved address for burn
     /// @param from address that the tokens will be burned from, validate that this is msg.sender or that msg.sender is approved
     modifier onlyFromApprovedForBurn(address from) {
