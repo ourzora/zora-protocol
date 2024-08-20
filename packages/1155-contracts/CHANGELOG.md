@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.12.4
+
+### Patch Changes
+
+- 82f63033: Remove unused canMintQuantity modifier from 1155 contracts
+
 ## 2.12.3
 
 ### Patch Changes
