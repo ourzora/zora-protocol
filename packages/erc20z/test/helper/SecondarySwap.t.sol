@@ -4,6 +4,7 @@ pragma solidity ^0.8.17;
 import "../BaseTest.sol";
 
 import {SecondarySwap} from "../../src/helper/SecondarySwap.sol";
+import {ISecondarySwap} from "../../src/interfaces/ISecondarySwap.sol";
 
 contract SecondarySwapTest is BaseTest {
     SecondarySwap internal secondarySwap;
@@ -12,6 +13,15 @@ contract SecondarySwapTest is BaseTest {
     uint256 internal minEthToAcquire;
     uint24 internal defaultUniswapFee = 10_000;
     uint160 internal sqrtPriceLimitX96;
+
+    event SecondaryComment(
+        address indexed sender,
+        address indexed collection,
+        uint256 indexed tokenId,
+        uint256 quantity,
+        string comment,
+        ISecondarySwap.SecondaryType secondaryType
+    );
 
     function setUp() public override {
         super.setUp();
@@ -68,7 +78,9 @@ contract SecondarySwapTest is BaseTest {
         sqrtPriceLimitX96 = 0;
 
         vm.prank(mockBuyer);
-        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96);
+        vm.expectEmit(true, true, true, true);
+        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "mint comment", ISecondarySwap.SecondaryType.BUY);
+        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96, "mint comment");
 
         uint256 after1155Balance = collection.balanceOf(mockBuyer, 0);
 
@@ -89,7 +101,7 @@ contract SecondarySwapTest is BaseTest {
         sqrtPriceLimitX96 = 0;
 
         vm.prank(mockBuyer);
-        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96);
+        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96, "buy comment");
 
         assertEq(collection.balanceOf(mockBuyer, 0), num1155ToReceive);
 
@@ -124,7 +136,9 @@ contract SecondarySwapTest is BaseTest {
         sqrtPriceLimitX96 = 0;
 
         vm.prank(mockBuyer);
-        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96);
+        vm.expectEmit(true, true, true, true);
+        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "buy comment", ISecondarySwap.SecondaryType.BUY);
+        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96, "buy comment");
 
         assertEq(collection.balanceOf(mockBuyer, 0), num1155ToReceive);
 
@@ -136,7 +150,9 @@ contract SecondarySwapTest is BaseTest {
 
         vm.startPrank(mockBuyer);
         collection.setApprovalForAll(address(secondarySwap), true);
-        secondarySwap.sell1155(erc20z, num1155ToTransfer, mockBuyer, minEthToAcquire, sqrtPriceLimitX96);
+        vm.expectEmit(true, true, true, true);
+        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "sell comment", ISecondarySwap.SecondaryType.SELL);
+        secondarySwap.sell1155(erc20z, num1155ToTransfer, mockBuyer, minEthToAcquire, sqrtPriceLimitX96, "sell comment");
 
         vm.stopPrank();
 

@@ -38,7 +38,8 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         address payable recipient,
         address payable excessRefundRecipient,
         uint256 maxEthToSpend,
-        uint160 sqrtPriceLimitX96
+        uint160 sqrtPriceLimitX96,
+        string calldata comment
     ) external payable nonReentrant {
         // Ensure the recipient address is valid
         if (recipient == address(0)) {
@@ -96,6 +97,11 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         }
 
         emit SecondaryBuy(msg.sender, recipient, erc20zAddress, amountWethUsed, num1155ToBuy);
+
+        if (bytes(comment).length > 0) {
+            IERC20Z.TokenInfo memory tokenInfo = IERC20Z(erc20zAddress).tokenInfo();
+            emit SecondaryComment(msg.sender, tokenInfo.collection, tokenInfo.tokenId, num1155ToBuy, comment, SecondaryType.BUY);
+        }
     }
 
     /// @notice ERC1155 -> ERC20Z -> WETH -> ETH
@@ -104,7 +110,8 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         uint256 num1155ToSell,
         address payable recipient,
         uint256 minEthToAcquire,
-        uint160 sqrtPriceLimitX96
+        uint160 sqrtPriceLimitX96,
+        string calldata comment
     ) external nonReentrant {
         IERC20Z.TokenInfo memory tokenInfo = IERC20Z(erc20zAddress).tokenInfo();
 
@@ -112,6 +119,10 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         IERC1155(tokenInfo.collection).safeTransferFrom(msg.sender, erc20zAddress, tokenInfo.tokenId, num1155ToSell, abi.encode(address(this)));
 
         _sell1155(erc20zAddress, num1155ToSell, recipient, minEthToAcquire, sqrtPriceLimitX96);
+
+        if (bytes(comment).length > 0) {
+            emit SecondaryComment(msg.sender, tokenInfo.collection, tokenInfo.tokenId, num1155ToSell, comment, SecondaryType.SELL);
+        }
     }
 
     /// @notice ERC1155 -> ERC20Z -> WETH -> ETH
