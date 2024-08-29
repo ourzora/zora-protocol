@@ -45,6 +45,29 @@ that creates an 1155 contract at the deterministic address based on those parame
 
 :::
 
+### Custom parameters for secondary markets
+
+If you are wanting to customize the default configuration parameters such as `saleStart` you can do that by passing in a `salesConfig` struct.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/create/createNew1155ContractOrTokenWithCustomParams.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+```
+
+:::
+
+With the update to use the v2 sales config it introduces `marketCountdown` and `minimumMarketEth` in version 0.9.5 of the sdk.
+
 ## Configuring the backing ERC20 Token Name and Symbol for the 1155 Secondary Market
 
 When leveraging the [secondary markets](https://support.zora.co/en/articles/2519873) feature, a backing ERC20 token is created with a name and symbol for each minted 1155.  
