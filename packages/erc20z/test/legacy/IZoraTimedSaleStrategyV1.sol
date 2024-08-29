@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-interface IZoraTimedSaleStrategy {
+interface IZoraTimedSaleStrategyV1 {
     struct SalesConfig {
         /// @notice Unix timestamp for the sale start
         uint64 saleStart;
@@ -13,21 +13,6 @@ interface IZoraTimedSaleStrategy {
         string symbol;
     }
 
-    /// @dev This is used to pass in parameters for the `updateSale` function
-    struct SalesConfigV2 {
-        /// @notice Unix timestamp for the sale start
-        uint64 saleStart;
-        /// @notice The amount of time after the `minimumMarketEth` is reached until the secondary market can be launched
-        uint64 marketCountdown;
-        /// @notice The amount of ETH required to launch a market
-        uint256 minimumMarketEth;
-        /// @notice The ERC20Z name
-        string name;
-        /// @notice The ERC20Z symbol
-        string symbol;
-    }
-
-    /// @dev This is the SaleV1 style sale with a set end and start time and is used in both cases for storing key sale information
     struct SaleStorage {
         /// @notice The ERC20z address
         address payable erc20zAddress;
@@ -41,38 +26,6 @@ interface IZoraTimedSaleStrategy {
         bool secondaryActivated;
     }
 
-    /// @dev These are additional fields required for the SaleV2 style functionality. SaleV2 sets SaleV1 parameters as well.
-    /// @notice SaleV2 is now the default strategy but old strategies without V2 config will operate as previously.
-    struct SaleStorageV2 {
-        /// @notice The amount of ETH required to launch a market
-        uint256 minimumMarketEth;
-        /// @notice The amount of time after the `minimumMarketEth` is reached until the secondary market can be launched.
-        uint64 marketCountdown;
-    }
-
-    /// @dev Sales data virutal struct used for emitting events having SaleV1 and SaleV2 structs
-    struct SaleData {
-        /// @notice Unix timestamp for the sale start
-        uint64 saleStart;
-        /// @notice The amount of time after the `minimumMarketEth` is reached until the secondary market can be launched
-        uint64 marketCountdown;
-        /// @notice Unix timestamp for the sale end -- this will default to 0 until the market countdown is kicked off
-        uint64 saleEnd;
-        /// @notice Boolean if the secondary market has been launched
-        bool secondaryActivated;
-        /// @notice The amount of ETH required to launch a market
-        uint256 minimumMarketEth;
-        /// @notice The Uniswap pool address
-        address poolAddress;
-        /// @notice The ERC20z address
-        address payable erc20zAddress;
-        /// @notice The ERC20Z name
-        string name;
-        /// @notice The ERC20Z symbol
-        string symbol;
-    }
-
-    /// @notice Activated ERC20 information used for the structs
     struct ERC20zActivate {
         /// @notice Total Supply of ERC20z tokens
         uint256 finalTotalERC20ZSupply;
@@ -90,18 +43,11 @@ interface IZoraTimedSaleStrategy {
         uint256 final1155Supply;
     }
 
-    /// @notice V1 storage structs for the timed sale
     struct ZoraTimedSaleStrategyStorage {
         /// @notice The Zora reward recipient
         address zoraRewardRecipient;
         /// @notice The sales mapping
         mapping(address collection => mapping(uint256 tokenId => SaleStorage)) sales;
-    }
-
-    /// @notice V2 storage structs for the timed sale
-    struct ZoraTimedSaleStrategyStorageV2 {
-        /// @notice The sales mapping
-        mapping(address collection => mapping(uint256 tokenId => SaleStorageV2)) salesV2;
     }
 
     struct RewardsSettings {
@@ -127,13 +73,6 @@ interface IZoraTimedSaleStrategy {
     /// @param poolAddress The Uniswap pool address
     /// @param mintFee The total fee in eth to mint each token
     event SaleSet(address indexed collection, uint256 indexed tokenId, SalesConfig salesConfig, address erc20zAddress, address poolAddress, uint256 mintFee);
-
-    /// @notice Emitted when a sale is created and updated, and when a market countdown is underway
-    /// @param collection The collection address
-    /// @param tokenId The token ID
-    /// @param saleData The sale data
-    /// @param mintFee The total fee in eth to mint each token
-    event SaleSetV2(address indexed collection, uint256 indexed tokenId, SaleData saleData, uint256 mintFee);
 
     /// @notice MintComment Event
     /// @param sender The sender of the comment
@@ -184,9 +123,6 @@ interface IZoraTimedSaleStrategy {
     /// @notice Error thrown when market is attempted to be started with no sales completed
     error NeedsToBeAtLeastOneSaleToStartMarket();
 
-    /// @notice Error thrown when market minimum is not reached
-    error MarketMinimumNotReached();
-
     /// @notice requestMint() is not used in minter, use mint() instead
     error RequestMintInvalidUseMint();
 
@@ -202,23 +138,14 @@ interface IZoraTimedSaleStrategy {
     /// @notice The sale has not started
     error SaleHasNotStarted();
 
-    /// @notice The sale has already started
-    error SaleV2AlreadyStarted();
-
     /// @notice The sale is in progress
     error SaleInProgress();
 
     /// @notice The sale has ended
     error SaleEnded();
 
-    /// @notice The v2 sale has ended
-    error SaleV2Ended();
-
     /// @notice The sale has not been set
     error SaleNotSet();
-
-    /// @notice The  has not been set
-    error SaleV2NotSet();
 
     /// @notice Insufficient funds
     error InsufficientFunds();
@@ -241,21 +168,11 @@ interface IZoraTimedSaleStrategy {
     /// @notice The market has already been launched
     error MarketAlreadyLaunched();
 
-    /// @notice The minimum amount of ETH required to set a sale
-    error MinimumMarketEthNotMet();
-
-    /// @notice This is deprecated and used for short-term backwards compatibility, use `setSaleV2()` instead.
-    ///         This creates a V2 sale under the hood and ignores the passed `saleEnd` field.
-    ///         Defaults for the V2 sale: `marketCountdown` = 24 hours & `minimumMarketEth` = 0.00222 ETH (200 mints).
-    /// @param tokenId The collection token id to set the sale config for
-    /// @param salesConfig The sale config to set
-    function setSale(uint256 tokenId, SalesConfig calldata salesConfig) external;
-
     /// @notice Called by an 1155 collection to set the sale config for a given token
     /// @dev Additionally creates an ERC20Z and Uniswap V3 pool for the token
     /// @param tokenId The collection token id to set the sale config for
     /// @param salesConfig The sale config to set
-    function setSaleV2(uint256 tokenId, SalesConfigV2 calldata salesConfig) external;
+    function setSale(uint256 tokenId, SalesConfig calldata salesConfig) external;
 
     /// @notice Called by a collector to mint a token
     /// @param mintTo The address to mint the token to
@@ -283,11 +200,6 @@ interface IZoraTimedSaleStrategy {
     /// @param tokenId The ID of the token to get the sale config for
     function sale(address collection, uint256 tokenId) external view returns (SaleStorage memory);
 
-    /// @notice Returns the sale config for a given token
-    /// @param collection The collection address
-    /// @param tokenId The ID of the token to get the sale config for
-    function saleV2(address collection, uint256 tokenId) external view returns (SaleData memory);
-
     /// @notice Calculate the ERC20z activation values
     /// @param collection The collection address
     /// @param tokenId The token ID
@@ -297,8 +209,8 @@ interface IZoraTimedSaleStrategy {
     /// @notice Called by an 1155 collection to update the sale time if the sale has not started or ended.
     /// @param tokenId The 1155 token id
     /// @param newStartTime The new start time for the sale, ignored if the existing sale has already started
-    /// @param newMarketCountdown The new market countdown for the sale
-    function updateSale(uint256 tokenId, uint64 newStartTime, uint64 newMarketCountdown) external;
+    /// @param newEndTime The new end time for the sale
+    function updateSale(uint256 tokenId, uint64 newStartTime, uint64 newEndTime) external;
 
     /// @notice Called by anyone upon the end of a primary sale to launch the secondary market.
     /// @param collection The 1155 collection address

@@ -56,10 +56,15 @@ contract ZoraTimedSaleStrategyImpl is
     ZoraTimedSaleStrategyConstants,
     IUniswapV3SwapCallback
 {
+    /// @dev This is an upgradeable contract and this variable is at slot0. Do not move this variable.
+    /// @notice Runtime-configurable pointer to protocolRewards allowing batched predictable deployed addresses on multiple chains.
     IProtocolRewards public protocolRewards;
+
+    /// @dev This is an upgrdeable contract and this variable is at slot1. Do not move this variable.
+    /// @notice Runtime-configurable pointer to erc20zImpl allowing batched predictable deployed addresses on multiple chains.
     address public erc20zImpl;
 
-    /// @notice Constructor for the Zora Timed Sale Strategy
+    /// @notice Constructor for the Zora Timed Sale Strategy. Prevents impl deployment from being initialized.
     constructor() initializer {}
 
     /// @notice Initializes the Zora Timed Sale Strategy
@@ -82,26 +87,45 @@ contract ZoraTimedSaleStrategyImpl is
         _getZoraTimedSaleStrategyStorage().zoraRewardRecipient = _zoraRewardRecipient;
     }
 
+    /// @notice This is deprecated and used for short-term backwards compatibility, use `setSaleV2()` instead.
+    ///         This creates a V2 sale under the hood and ignores the passed `saleEnd` field.
+    ///         Defaults for the V2 sale: `marketCountdown` = 24 hours & `minimumMarketEth` = 0.00111 ETH (100 mints).
+    /// @param tokenId The collection token id to set the sale config for
+    /// @param salesConfig The sale config to set
+    function setSale(uint256 tokenId, SalesConfig calldata salesConfig) external {
+        // The defaults if this function is called when V2 is live.
+        // Keeping these in local scope since they're only applicable here.
+        uint64 defaultMarketCountdownForV1Sale = 24 hours;
+        uint256 defaultMinimumMarketEthForV1Sale = 0.00111 ether; // 100 mints * MARKET_REWARD
+
+        SalesConfigV2 memory salesConfigV2 = SalesConfigV2({
+            saleStart: salesConfig.saleStart,
+            marketCountdown: defaultMarketCountdownForV1Sale,
+            minimumMarketEth: defaultMinimumMarketEthForV1Sale,
+            name: salesConfig.name,
+            symbol: salesConfig.symbol
+        });
+
+        setSaleV2(tokenId, salesConfigV2);
+    }
+
     /// @notice Called by an 1155 collection to set the sale config for a given token
     /// @dev Additionally creates an ERC20Z and Uniswap V3 pool for the token
     /// @param tokenId The collection token id to set the sale config for
     /// @param salesConfig The sale config to set
-    function setSale(uint256 tokenId, SalesConfig calldata salesConfig) external {
+    function setSaleV2(uint256 tokenId, SalesConfigV2 memory salesConfig) public {
         address collection = msg.sender;
 
         if (!IZora1155(collection).supportsInterface(type(IReduceSupply).interfaceId)) {
             revert ZoraCreator1155ContractNeedsToSupportReduceSupply();
         }
 
-        if (salesConfig.saleEnd <= block.timestamp) {
-            revert EndTimeCannotBeInThePast();
-        }
-
-        if (salesConfig.saleStart >= salesConfig.saleEnd) {
-            revert StartTimeCannotBeAfterEndTime();
+        if (salesConfig.minimumMarketEth < MARKET_REWARD) {
+            revert MinimumMarketEthNotMet();
         }
 
         SaleStorage storage saleStorage = _getZoraTimedSaleStrategyStorage().sales[collection][tokenId];
+        SaleStorageV2 storage saleStorageV2 = _getZoraTimedSaleStrategyStorageV2().salesV2[collection][tokenId];
 
         if (saleStorage.erc20zAddress != address(0)) {
             revert SaleAlreadySet();
@@ -116,56 +140,63 @@ contract ZoraTimedSaleStrategyImpl is
         saleStorage.erc20zAddress = payable(erc20zAddress);
         saleStorage.saleStart = salesConfig.saleStart;
         saleStorage.poolAddress = poolAddress;
-        saleStorage.saleEnd = salesConfig.saleEnd;
+        saleStorageV2.minimumMarketEth = salesConfig.minimumMarketEth;
+        saleStorageV2.marketCountdown = salesConfig.marketCountdown;
 
-        emit SaleSet(collection, tokenId, salesConfig, erc20zAddress, poolAddress, MINT_PRICE);
+        SaleData memory saleData = SaleData({
+            saleStart: salesConfig.saleStart,
+            marketCountdown: salesConfig.marketCountdown,
+            saleEnd: 0,
+            secondaryActivated: false,
+            minimumMarketEth: salesConfig.minimumMarketEth,
+            poolAddress: poolAddress,
+            erc20zAddress: payable(erc20zAddress),
+            name: salesConfig.name,
+            symbol: salesConfig.symbol
+        });
+
+        emit SaleSetV2(collection, tokenId, saleData, MINT_PRICE);
     }
 
     /// @notice Called by an 1155 collection to update the sale time if the sale has not started or ended.
     /// @param tokenId The 1155 token id
     /// @param newStartTime The new start time for the sale, ignored if the existing sale has already started
-    /// @param newEndTime The new end time for the sale
-    function updateSale(uint256 tokenId, uint64 newStartTime, uint64 newEndTime) external {
+    /// @param newMarketCountdown The new market countdown for the sale
+    function updateSale(uint256 tokenId, uint64 newStartTime, uint64 newMarketCountdown) external {
         SaleStorage storage saleStorage = _getZoraTimedSaleStrategyStorage().sales[msg.sender][tokenId];
+        SaleStorageV2 storage saleStorageV2 = _getZoraTimedSaleStrategyStorageV2().salesV2[msg.sender][tokenId];
 
         // Ensure the sale has been set
         if (saleStorage.erc20zAddress == address(0)) {
             revert SaleNotSet();
         }
 
-        // Ensure the existing sale has not ended.
-        if (saleStorage.secondaryActivated || block.timestamp >= saleStorage.saleEnd) {
-            revert SaleEnded();
+        // Ensure the v2 sale has been set
+        if (!_validateV2Sale(saleStorageV2.minimumMarketEth)) {
+            revert SaleV2NotSet();
         }
 
-        // If the existing sale is already in progress, only the end time can be updated.
+        // Ensure the sale has not started
         if (block.timestamp >= saleStorage.saleStart) {
-            // Ensure the new end time is in the future.
-            if (newEndTime <= block.timestamp) {
-                revert EndTimeCannotBeInThePast();
-            }
-
-            saleStorage.saleEnd = newEndTime;
-
-            // Otherwise the sale has not started and both the start and end times can be updated.
-        } else {
-            // Ensure the new start time is before the new end time
-            if (newStartTime >= newEndTime) {
-                revert StartTimeCannotBeAfterEndTime();
-            }
-
-            saleStorage.saleStart = newStartTime;
-            saleStorage.saleEnd = newEndTime;
+            revert SaleV2AlreadyStarted();
         }
 
-        SalesConfig memory saleConfig = SalesConfig({
-            saleStart: saleStorage.saleStart,
-            saleEnd: saleStorage.saleEnd,
+        saleStorage.saleStart = newStartTime;
+        saleStorageV2.marketCountdown = newMarketCountdown;
+
+        SaleData memory saleData = SaleData({
+            saleStart: newStartTime,
+            marketCountdown: newMarketCountdown,
+            saleEnd: 0,
+            secondaryActivated: false,
+            minimumMarketEth: saleStorageV2.minimumMarketEth,
+            poolAddress: saleStorage.poolAddress,
+            erc20zAddress: saleStorage.erc20zAddress,
             name: IERC20Z(saleStorage.erc20zAddress).name(),
             symbol: IERC20Z(saleStorage.erc20zAddress).symbol()
         });
 
-        emit SaleSet(msg.sender, tokenId, saleConfig, saleStorage.erc20zAddress, saleStorage.poolAddress, MINT_PRICE);
+        emit SaleSetV2(msg.sender, tokenId, saleData, MINT_PRICE);
     }
 
     /// @notice Called by a collector to mint a token
@@ -184,6 +215,7 @@ contract ZoraTimedSaleStrategyImpl is
         string calldata comment
     ) external payable nonReentrant {
         SaleStorage storage saleStorage = _getZoraTimedSaleStrategyStorage().sales[collection][tokenId];
+        SaleStorageV2 storage saleStorageV2 = _getZoraTimedSaleStrategyStorageV2().salesV2[collection][tokenId];
 
         if (saleStorage.erc20zAddress == address(0)) {
             revert SaleNotSet();
@@ -197,7 +229,14 @@ contract ZoraTimedSaleStrategyImpl is
             revert SaleHasNotStarted();
         }
 
-        if (block.timestamp > saleStorage.saleEnd) {
+        bool isV2Sale = _validateV2Sale(saleStorageV2.minimumMarketEth);
+
+        // If this is a V2 sale, handle the mint accordingly
+        if (isV2Sale) {
+            _handleV2Mint(collection, tokenId, quantity, saleStorage, saleStorageV2);
+
+            // Otherwise, this is a V1 sale - ensure it has not ended
+        } else if (block.timestamp > saleStorage.saleEnd) {
             revert SaleEnded();
         }
 
@@ -207,6 +246,60 @@ contract ZoraTimedSaleStrategyImpl is
 
         if (bytes(comment).length > 0) {
             emit MintComment(mintTo, collection, tokenId, quantity, comment);
+        }
+    }
+
+    /// @dev The internal logic for minting on a V2 sale
+    /// @param collection The collection address
+    /// @param tokenId The token ID
+    /// @param quantity The quantity of tokens to mint
+    /// @param saleStorage The sale storage
+    /// @param saleStorageV2 The V2 sale storage
+    function _handleV2Mint(
+        address collection,
+        uint256 tokenId,
+        uint256 quantity,
+        SaleStorage storage saleStorage,
+        SaleStorageV2 storage saleStorageV2
+    ) internal {
+        // Check if the market countdown has already started
+        bool hasCountdownStarted = saleStorage.saleEnd != 0;
+
+        // If underway:
+        if (hasCountdownStarted) {
+            // Ensure the sale has not ended
+            if (block.timestamp > saleStorage.saleEnd) {
+                revert SaleV2Ended();
+            }
+
+            // Otherwise, check if this mint should start the countdown:
+        } else {
+            // Get the amount of ETH currently reserved for the secondary market
+            uint256 currentMarketEth = saleStorage.erc20zAddress.balance;
+
+            // Get the amount of ETH that will be added from this mint
+            uint256 incomingMarketEth = quantity * MARKET_REWARD;
+
+            // If the market has not met the minimum ETH threshold, AND
+            // If the amount of ETH from the incoming mint will satisfy the minimum amount of ETH needed
+            if ((currentMarketEth < saleStorageV2.minimumMarketEth) && (currentMarketEth + incomingMarketEth >= saleStorageV2.minimumMarketEth)) {
+                // Start the market countdown and store the sale end time
+                saleStorage.saleEnd = uint64(block.timestamp + saleStorageV2.marketCountdown);
+
+                SaleData memory saleData = SaleData({
+                    saleStart: saleStorage.saleStart,
+                    marketCountdown: saleStorageV2.marketCountdown,
+                    saleEnd: saleStorage.saleEnd,
+                    secondaryActivated: false,
+                    minimumMarketEth: saleStorageV2.minimumMarketEth,
+                    poolAddress: saleStorage.poolAddress,
+                    erc20zAddress: saleStorage.erc20zAddress,
+                    name: IERC20Z(saleStorage.erc20zAddress).name(),
+                    symbol: IERC20Z(saleStorage.erc20zAddress).symbol()
+                });
+
+                emit SaleSetV2(collection, tokenId, saleData, MINT_PRICE);
+            }
         }
     }
 
@@ -252,11 +345,7 @@ contract ZoraTimedSaleStrategyImpl is
     /// @param tokenId The 1155 token id
     function launchMarket(address collection, uint256 tokenId) external {
         SaleStorage storage saleStorage = _getZoraTimedSaleStrategyStorage().sales[collection][tokenId];
-
-        // Ensure the sale has ended
-        if (block.timestamp < saleStorage.saleEnd) {
-            revert SaleInProgress();
-        }
+        SaleStorageV2 storage saleStorageV2 = _getZoraTimedSaleStrategyStorageV2().salesV2[collection][tokenId];
 
         // Ensure the market hasn't already been launched
         if (saleStorage.secondaryActivated) {
@@ -267,8 +356,21 @@ contract ZoraTimedSaleStrategyImpl is
 
         address erc20zAddress = saleStorage.erc20zAddress;
 
-        if (erc20zAddress.balance == 0) {
+        bool isV2Sale = _validateV2Sale(saleStorageV2.minimumMarketEth);
+
+        // Ensure there is at least one mint to start the market for a V1 sale
+        if (!isV2Sale && erc20zAddress.balance < MARKET_REWARD) {
             revert NeedsToBeAtLeastOneSaleToStartMarket();
+        }
+
+        // Ensure the market has met the minimum amount of ETH needed for a V2 sale
+        if (isV2Sale && erc20zAddress.balance < saleStorageV2.minimumMarketEth) {
+            revert MarketMinimumNotReached();
+        }
+
+        // Ensure the sale has ended
+        if (block.timestamp < saleStorage.saleEnd) {
+            revert SaleInProgress();
         }
 
         ERC20zActivate memory calculatedValues = calculateERC20zActivate(collection, tokenId, erc20zAddress);
@@ -395,6 +497,13 @@ contract ZoraTimedSaleStrategyImpl is
         }
     }
 
+    /// @dev Helper function used in two forms of validation.
+    ///      1. Ensuring the `minimumMarketEth` passed in `setSaleV2()` is enough for a secondary market to start with at least one ERC20z token.
+    ///      2. Checking if a stored sale is a V2 sale, which is distinguished by whether a `minimumMarketEth` >= MARKET_REWARD is set in storage.
+    function _validateV2Sale(uint256 minimumMarketEth) internal pure returns (bool) {
+        return minimumMarketEth >= MARKET_REWARD;
+    }
+
     /// @dev This sale strategy does not support minting via the requestMint function
     function requestMint(address, uint256, uint256, uint256, bytes calldata) external pure returns (ICreatorCommands.CommandSet memory) {
         revert RequestMintInvalidUseMint();
@@ -405,6 +514,27 @@ contract ZoraTimedSaleStrategyImpl is
     /// @param tokenId The 1155 token id
     function sale(address collection, uint256 tokenId) external view returns (SaleStorage memory) {
         return _getZoraTimedSaleStrategyStorage().sales[collection][tokenId];
+    }
+
+    /// @notice Returns the V2 sale data for a given token
+    /// @param collection The 1155 collection address
+    /// @param tokenId The 1155 token id
+    function saleV2(address collection, uint256 tokenId) external view returns (SaleData memory) {
+        SaleStorage storage saleStorage = _getZoraTimedSaleStrategyStorage().sales[collection][tokenId];
+        SaleStorageV2 storage saleStorageV2 = _getZoraTimedSaleStrategyStorageV2().salesV2[collection][tokenId];
+
+        return
+            SaleData({
+                saleStart: saleStorage.saleStart,
+                marketCountdown: saleStorageV2.marketCountdown,
+                saleEnd: saleStorage.saleEnd,
+                secondaryActivated: saleStorage.secondaryActivated,
+                minimumMarketEth: saleStorageV2.minimumMarketEth,
+                poolAddress: saleStorage.poolAddress,
+                erc20zAddress: saleStorage.erc20zAddress,
+                name: IERC20Z(saleStorage.erc20zAddress).name(),
+                symbol: IERC20Z(saleStorage.erc20zAddress).symbol()
+            });
     }
 
     /// @notice IERC165 interface support
@@ -426,7 +556,7 @@ contract ZoraTimedSaleStrategyImpl is
 
     /// @notice The version of the contract
     function contractVersion() external pure returns (string memory) {
-        return "1.1.0";
+        return "2.0.0";
     }
 
     /// @notice Update the Zora reward recipient

@@ -28,7 +28,6 @@ async function toSalesStrategyFromSubgraph({
       // for now we hardcode this
       mintFeePerQuantity: parseEther("0.000111"),
       saleStart: salesConfig.saleStart.toString(),
-      saleEnd: salesConfig.saleEnd.toString(),
       // the following are not needed for now but we wanna satisfy concrete
       erc20Z: zeroAddress,
       mintFee: 0n,

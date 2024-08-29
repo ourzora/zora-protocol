@@ -1,6 +1,7 @@
 import {
   MintComment as ZoraTimedMintComment,
   SaleSet,
+  SaleSetV2,
   ZoraTimedSaleStrategyRewards as ZoraTimedSaleStrategyRewardsDepositEvent,
   MarketLaunched,
 } from "../../../generated/ZoraTimedSaleStrategy1/ZoraTimedSaleStrategy";
@@ -15,7 +16,7 @@ import {
   MintComment,
   ZoraTimedSaleStrategyRewardsDeposit,
   ERC20Z,
-  SalesConfigZoraTimedSaleStrategy,
+  SalesConfigZoraTimedSaleStrategy
 } from "../../../generated/schema";
 import { getMintCommentId } from "../../common/getMintCommentId";
 
@@ -97,6 +98,75 @@ export function handleZoraTimedSaleStrategySaleSet(event: SaleSet): void {
     saleJoin.address = event.address;
     saleJoin.save();
   }
+}
+
+export function handleZoraTimedSaleStrategySaleSetV2(event: SaleSetV2): void {
+  const id = getSalesConfigKey(
+    event.address,
+    event.params.collection,
+    event.params.tokenId,
+  );
+
+  let sale = SalesConfigZoraTimedSaleStrategy.load(id);
+
+  if (sale) {
+    if (event.params.saleData.saleEnd !== BigInt.zero()) {
+      sale.saleEnd = event.params.saleData.saleEnd;
+    } else {
+      sale.saleStart = event.params.saleData.saleStart;
+      sale.marketCountdown = event.params.saleData.marketCountdown;
+    }
+
+    sale.save();
+    return;
+  }
+
+  sale = new SalesConfigZoraTimedSaleStrategy(id);
+
+  sale.configAddress = event.address;
+  sale.contract = getContractId(event.params.collection);
+  sale.tokenId = event.params.tokenId;
+  sale.mintFee = event.params.mintFee;
+  sale.saleStart = event.params.saleData.saleStart;
+  sale.marketCountdown = event.params.saleData.marketCountdown;
+  sale.saleEnd = event.params.saleData.saleEnd;
+  sale.secondaryActivated = event.params.saleData.secondaryActivated;
+  sale.minimumMarketEth = event.params.saleData.minimumMarketEth;
+  sale.pool = event.params.saleData.poolAddress;
+  sale.erc20z = event.params.saleData.erc20zAddress;
+  sale.erc20Z = getOrCreateErc20Z(
+    event.params.saleData.erc20zAddress,
+    event.params.saleData.name,
+    event.params.saleData.symbol,
+    event.params.saleData.poolAddress,
+  ).id;
+
+  const txn = makeTransaction(event);
+
+  sale.txn = txn;
+  sale.block = event.block.number;
+  sale.timestamp = event.block.timestamp;
+  sale.address = event.address;
+  sale.save();
+
+  const saleJoin = new SalesStrategyConfig(id);
+
+  if (event.params.tokenId.equals(BigInt.zero())) {
+    saleJoin.contract = getContractId(event.params.collection);
+  } else {
+    saleJoin.tokenAndContract = getTokenId(
+      event.params.collection,
+      event.params.tokenId,
+    );
+  }
+
+  saleJoin.zoraTimedMinter = id;
+  saleJoin.type = SALE_CONFIG_ZORA_TIMED;
+  saleJoin.txn = txn;
+  saleJoin.block = event.block.number;
+  saleJoin.timestamp = event.block.timestamp;
+  saleJoin.address = event.address;
+  saleJoin.save();
 }
 
 export function handleMintComment(event: ZoraTimedMintComment): void {

@@ -23,23 +23,23 @@ contract InitialLiquidityTest is BaseTest {
         super.setUp();
 
         saleStart = uint64(block.timestamp);
-        saleEnd = uint64(block.timestamp + 1 hours);
 
-        IZoraTimedSaleStrategy.SalesConfig memory salesConfig = IZoraTimedSaleStrategy.SalesConfig({
+        IZoraTimedSaleStrategy.SalesConfigV2 memory salesConfig = IZoraTimedSaleStrategy.SalesConfigV2({
             saleStart: saleStart,
-            saleEnd: saleEnd,
+            marketCountdown: DEFAULT_MARKET_COUNTDOWN,
+            minimumMarketEth: DEFAULT_MINIMUM_MARKET_ETH,
             name: "Test",
             symbol: "TST"
         });
         vm.prank(users.creator);
-        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSale.selector, tokenId, salesConfig));
+        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSaleV2.selector, tokenId, salesConfig));
 
-        IZoraTimedSaleStrategy.SaleStorage memory saleStorage = saleStrategy.sale(address(collection), tokenId);
+        IZoraTimedSaleStrategy.SaleData memory saleStorage = saleStrategy.saleV2(address(collection), tokenId);
 
         erc20z = ERC20Z(saleStorage.erc20zAddress);
         pool = IPool(saleStorage.poolAddress);
 
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
         uint256 ethAmount = numMints * mintFee;
 
         vm.deal(users.collector, ethAmount);
@@ -47,7 +47,7 @@ contract InitialLiquidityTest is BaseTest {
         vm.prank(users.collector);
         saleStrategy.mint{value: ethAmount}(users.collector, numMints, address(collection), tokenId, users.mintReferral, "");
 
-        vm.warp(saleEnd + 1);
+        vm.warp(block.timestamp + DEFAULT_MARKET_COUNTDOWN + 1);
 
         handler = new Handler(saleStrategy, address(collection), tokenId);
 
@@ -55,7 +55,7 @@ contract InitialLiquidityTest is BaseTest {
     }
 
     function invariant_noLiquidityBeforeActivate() public view {
-        IZoraTimedSaleStrategy.SaleStorage memory sale = saleStrategy.sale(address(collection), tokenId);
+        IZoraTimedSaleStrategy.SaleData memory sale = saleStrategy.saleV2(address(collection), tokenId);
 
         if (!sale.secondaryActivated) {
             uint128 liquidity = pool.liquidity();

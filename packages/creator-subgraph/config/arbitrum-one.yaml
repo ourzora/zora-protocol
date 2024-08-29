@@ -1,8 +1,8 @@
 chainid: "42161"
 network: arbitrum-one
 grafting: 
-  base: "QmSdJsReUgGTa2PnPg9ZALJZas71ig4irbQp75aqoUY1DX"
-  block: "238753370"
+  base: "QmVe3BKnLAWk1tj5hbHFLLRY469Y3yC7rwLwQUN4BiFpgC"
+  block: "244996249"
 factories1155:
   - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
     startBlock: "169120898"

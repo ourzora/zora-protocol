@@ -7,10 +7,20 @@ abstract contract ZoraTimedSaleStorageDataLocation {
     /// @dev keccak256(abi.encode(uint256(keccak256("zora.storage.ZoraTimedSaleStrategy")) - 1)) & ~bytes32(uint256(0xff));
     bytes32 private constant ZoraTimedSaleStrategyStorageLocation = 0xe011f00dc6461ce60c6549a992e2b5cccb7ae98ed8fc0ee04eadce4204ebee00;
 
+    /// @dev keccak256(abi.encode(uint256(keccak256("zora.storage.ZoraTimedSaleStrategyV2")) - 1)) & ~bytes32(uint256(0xff));
+    bytes32 private constant ZoraTimedSaleStrategyStorageV2Location = 0xa7847b5c257e8ee3599bc3b02fee2b300998969f6fb6eaeafa73f9412bb1eb00;
+
     /// @notice Returns the storage struct for the Zora Timed Sale Strategy
     function _getZoraTimedSaleStrategyStorage() internal pure returns (IZoraTimedSaleStrategy.ZoraTimedSaleStrategyStorage storage strategyStorage) {
         assembly {
             strategyStorage.slot := ZoraTimedSaleStrategyStorageLocation
+        }
+    }
+
+    /// @notice Returns the storage struct for the Zora Timed Sale Strategy
+    function _getZoraTimedSaleStrategyStorageV2() internal pure returns (IZoraTimedSaleStrategy.ZoraTimedSaleStrategyStorageV2 storage strategyStorage) {
+        assembly {
+            strategyStorage.slot := ZoraTimedSaleStrategyStorageV2Location
         }
     }
 }

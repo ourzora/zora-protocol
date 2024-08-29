@@ -18,6 +18,10 @@ import { AllowList } from "src/allow-list/types";
 import { createAllowList } from "src/allow-list/allow-list-client";
 import { NewContractParams } from "./types";
 import { SubgraphContractGetter } from "./contract-getter";
+import {
+  DEFAULT_MINIMUM_MARKET_ETH,
+  DEFAULT_MARKET_COUNTDOWN,
+} from "./minter-defaults";
 
 export const demoTokenMetadataURI =
   "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u";
@@ -25,7 +29,7 @@ export const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
-  forkBlockNumber: 18094820,
+  forkBlockNumber: 19000000,
   anvilChainId: zora.id,
 });
 
@@ -59,13 +63,6 @@ function randomNewContract(): NewContractParams {
   };
 }
 
-const add24HoursToNowInSeconds = (): number => {
-  const currentTimeInSeconds = Math.floor(Date.now() / 1000);
-  const add24Hours = 24 * 60 * 60;
-
-  return currentTimeInSeconds + add24Hours;
-};
-
 describe("create-helper", () => {
   anvilTest(
     "when no sales config is provided, it creates a new 1155 contract and token using the timed sale strategy",
@@ -79,7 +76,6 @@ describe("create-helper", () => {
       });
 
       const saleStart = 5n;
-      const saleEnd = BigInt(add24HoursToNowInSeconds());
       const contract = randomNewContract();
       const {
         parameters: parameters,
@@ -92,7 +88,6 @@ describe("create-helper", () => {
           mintToCreatorCount: 1,
           salesConfig: {
             saleStart,
-            saleEnd,
             type: "timed",
           },
         },
@@ -118,12 +113,14 @@ describe("create-helper", () => {
           zoraTimedSaleStrategyAddress[
             chain.id as keyof typeof zoraTimedSaleStrategyAddress
           ],
-        functionName: "sale",
+        functionName: "saleV2",
         args: [contractAddress, newTokenId],
       });
 
-      expect(salesConfig.saleEnd).toBe(saleEnd);
+      expect(salesConfig.saleEnd).toBe(0n);
       expect(salesConfig.saleStart).toBe(saleStart);
+      expect(salesConfig.minimumMarketEth).toBe(DEFAULT_MINIMUM_MARKET_ETH);
+      expect(salesConfig.marketCountdown).toBe(DEFAULT_MARKET_COUNTDOWN);
 
       const erc20Name = await publicClient.readContract({
         abi: erc20Abi,

@@ -156,7 +156,8 @@ function setupTimedSaleMinter({
   erc20Name: erc20zName,
   erc20Symbol: erc20zSymbol,
   saleStart,
-  saleEnd,
+  marketCountdown,
+  minimumMarketEth,
 }: SetupTimedMinterProps): {
   minter: Address;
   setupActions: Hex[];
@@ -165,7 +166,7 @@ function setupTimedSaleMinter({
     zoraTimedSaleStrategyAddress[
       chainId as keyof typeof zoraTimedSaleStrategyAddress
     ];
-  const fixedPriceApproval = encodeFunctionData({
+  const minterApproval = encodeFunctionData({
     abi: zoraCreator1155ImplABI,
     functionName: "addPermission",
     args: [BigInt(tokenId), minterAddress, PERMISSION_BITS.MINTER],
@@ -173,12 +174,13 @@ function setupTimedSaleMinter({
 
   const saleData = encodeFunctionData({
     abi: zoraTimedSaleStrategyABI,
-    functionName: "setSale",
+    functionName: "setSaleV2",
     args: [
       BigInt(tokenId),
       {
         saleStart,
-        saleEnd,
+        marketCountdown,
+        minimumMarketEth,
         name: erc20zName,
         symbol: erc20zSymbol,
       },
@@ -193,7 +195,7 @@ function setupTimedSaleMinter({
 
   return {
     minter: minterAddress,
-    setupActions: [fixedPriceApproval, callSale],
+    setupActions: [minterApproval, callSale],
   };
 }
 

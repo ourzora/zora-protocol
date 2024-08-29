@@ -699,6 +699,10 @@ type SalesConfigZoraTimedSaleStrategy @entity {
   secondaryActivated: Boolean!
   erc20z: Bytes!
   pool: Bytes!
+
+  # V2 fields (optional)
+  marketCountdown: BigInt
+  minimumMarketEth: BigInt
 }
 
 type ZoraTimedSaleStrategyRewardsDeposit @entity {

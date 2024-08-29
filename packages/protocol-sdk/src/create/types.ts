@@ -27,12 +27,18 @@ export type FixedPriceParamsType = SaleStartAndEnd &
     pricePerToken: bigint;
   };
 
-export type TimedSaleParamsType = SaleStartAndEnd & {
+export type TimedSaleParamsType = {
   type?: "timed";
   // Name of the erc20z token to create for the secondary sale.  If not provided, uses the contract name
   erc20Name?: string;
   // Symbol of the erc20z token to create for the secondary sale.  If not provided, extracts it from the name.
   erc20Symbol?: string;
+  // Sale start time
+  saleStart?: bigint;
+  // Market countdown
+  marketCountdown?: bigint;
+  // Minimum market ETH amount
+  minimumMarketEth?: bigint;
 };
 
 export type Erc20ParamsType = SaleStartAndEnd &

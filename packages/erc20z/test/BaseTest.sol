@@ -19,6 +19,7 @@ import {ICreatorRoyaltiesControl} from "./mock/ICreatorRoyaltiesControl.sol";
 import {Zora1155} from "./mock/Zora1155.sol";
 import {Zora1155 as Zora1155NoReduceSupply} from "./mock/Zora1155NoReduceSupply.sol";
 import {Royalties} from "../src/royalties/Royalties.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 /** // TODO (later) store uniswap deployments in a config file for multichain forking
  *  Zora Mainnet
@@ -45,6 +46,11 @@ contract BaseTest is Test {
 
     uint256 internal constant mintFee = 0.000111 ether;
     uint256 internal constant royaltyFeeBps = 2500;
+    uint256 constant ONE_ERC20 = 1e18;
+
+    uint64 internal constant DEFAULT_MARKET_COUNTDOWN = 3 hours;
+    uint256 internal constant DEFAULT_MINIMUM_MARKET_ETH = 0.0111 ether;
+    uint256 internal constant DEFAULT_MINIMUM_MINTS = 1000;
 
     struct Users {
         address owner;
@@ -108,5 +114,13 @@ contract BaseTest is Test {
         vm.label(address(royalties), "ROYALTIES");
         vm.label(address(saleStrategy), "SALE_STRATEGY");
         vm.label(address(collection), "1155_COLLECTION");
+    }
+
+    function setUpERC20z() public returns (address) {
+        bytes32 salt = keccak256(abi.encodePacked(collection, tokenId, msg.sender, block.number, block.prevrandao, block.timestamp, tx.gasprice));
+        address erc20zAddress = Clones.cloneDeterministic(address(erc20zImpl), salt);
+        vm.prank(users.creator);
+        IERC20Z(erc20zAddress).initialize(address(collection), tokenId, "TestName", "TestSymbol");
+        return erc20zAddress;
     }
 }
