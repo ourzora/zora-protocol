@@ -5,30 +5,22 @@ import "./BaseTest.sol";
 import {IERC20Z} from "../src/interfaces/IERC20Z.sol";
 import {IZora1155} from "../src/interfaces/IZora1155.sol";
 import {IRoyalties} from "../src/interfaces/IRoyalties.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {MockMintableERC721} from "./mock/MockMintableERC721.sol";
 import {MockMintableERC1155} from "./mock/MockMintableERC1155.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
 import {ERC20Z} from "../src/ERC20Z.sol";
 
 contract ERC20zTest is BaseTest {
-    function setUpERC20z() public returns (address) {
-        bytes32 salt = keccak256(abi.encodePacked(collection, tokenId, msg.sender, block.number, block.prevrandao, block.timestamp, tx.gasprice));
-        address erc20zAddress = Clones.cloneDeterministic(address(erc20zImpl), salt);
-        vm.prank(users.creator);
-        IERC20Z(erc20zAddress).initialize(address(collection), tokenId, "TestName", "TestSymbol");
-        return erc20zAddress;
-    }
-
-    function setUpTimedSale(uint64 saleStart, uint64 saleEnd) public {
-        IZoraTimedSaleStrategy.SalesConfig memory salesConfig = IZoraTimedSaleStrategy.SalesConfig({
+    function setUpTimedSale(uint64 saleStart) public {
+        IZoraTimedSaleStrategy.SalesConfigV2 memory salesConfig = IZoraTimedSaleStrategy.SalesConfigV2({
             saleStart: saleStart,
-            saleEnd: saleEnd,
+            marketCountdown: DEFAULT_MARKET_COUNTDOWN,
+            minimumMarketEth: DEFAULT_MINIMUM_MARKET_ETH,
             name: "Test",
             symbol: "TST"
         });
         vm.prank(users.creator);
-        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSale.selector, tokenId, salesConfig));
+        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSaleV2.selector, tokenId, salesConfig));
 
         vm.label(saleStrategy.sale(address(collection), tokenId).erc20zAddress, "ERC20Z");
         vm.label(saleStrategy.sale(address(collection), tokenId).poolAddress, "V3_POOL");
@@ -88,7 +80,7 @@ contract ERC20zTest is BaseTest {
     }
 
     function erc20zMintSetUp() public returns (address) {
-        setUpTimedSale(uint64(block.timestamp), uint64(block.timestamp + 24 hours));
+        setUpTimedSale(uint64(block.timestamp));
 
         uint256 totalTokens = 2;
         uint256 totalValue = mintFee * totalTokens;
@@ -354,7 +346,7 @@ contract ERC20zTest is BaseTest {
 
         // activate primary
         setUpERC20z();
-        setUpTimedSale(uint64(block.timestamp), uint64(block.timestamp + 24 hours));
+        setUpTimedSale(uint64(block.timestamp));
 
         uint256 totalValue = mintFee * tokens;
         vm.deal(users.collector, totalValue);

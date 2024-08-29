@@ -278,6 +278,8 @@ dataSources:
           handler: handleZoraTimedSaleStrategyRewardsDeposit
         - event: MarketLaunched(indexed address,indexed uint256,address,address)
           handler: handleMarketLaunched
+        - event: SaleSetV2(indexed address,indexed uint256,(uint64,uint64,uint64,bool,uint256,address,address,string,string),uint256)
+          handler: handleZoraTimedSaleStrategySaleSetV2
 {{/zoraTimedSaleStrategy}}
 templates:
   - name: MetadataInfo

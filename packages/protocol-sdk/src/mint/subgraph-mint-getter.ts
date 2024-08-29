@@ -76,6 +76,12 @@ function parseSalesConfig(
       pool: targetStrategy.zoraTimedMinter.erc20Z.pool,
       secondaryActivated: targetStrategy.zoraTimedMinter.secondaryActivated,
       mintFeePerQuantity: BigInt(targetStrategy.zoraTimedMinter.mintFee),
+      marketCountdown: targetStrategy.zoraTimedMinter.marketCountdown
+        ? BigInt(targetStrategy.zoraTimedMinter.marketCountdown)
+        : undefined,
+      minimumMarketEth: targetStrategy.zoraTimedMinter.minimumMarketEth
+        ? BigInt(targetStrategy.zoraTimedMinter.minimumMarketEth)
+        : undefined,
     };
   }
 
@@ -100,7 +106,10 @@ function strategyIsStillValid(
     return BigInt(strategy.erc20Minter.saleEnd) > blockTime;
   }
   if (strategy.type === "ZORA_TIMED") {
-    return BigInt(strategy.zoraTimedMinter.saleEnd) > blockTime;
+    return (
+      BigInt(strategy.zoraTimedMinter.saleEnd) === 0n ||
+      BigInt(strategy.zoraTimedMinter.saleEnd) > blockTime
+    );
   }
   return BigInt(strategy.presale.presaleEnd) > blockTime;
 }

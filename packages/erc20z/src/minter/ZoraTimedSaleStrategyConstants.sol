@@ -36,7 +36,9 @@ contract ZoraTimedSaleStrategyConstants {
     uint256 internal constant MINT_REFERRER_REWARD = 0.0000222 ether;
     /// @notice The creator referrer reward
     uint256 internal constant CREATOR_REFERRER_REWARD = 0.0000111 ether;
-    /// @notice The market reward
+    /// @notice The amount of ETH from each mint that is reserved for the secondary market liquidity pool.
+    ///         For V2 sales, this is also the lowest amount that can be passed for `minimumMarketEth`,
+    ///         as it ensures that a secondary market can always begin with one whole unit.
     uint256 internal constant MARKET_REWARD = 0.0000111 ether;
     /// @notice The Zora reward
     uint256 internal constant ZORA_REWARD = 0.0000111 ether;

@@ -47,6 +47,8 @@ export type ZoraTimedMinterSaleStrategyResult = {
       pool: Address;
     };
     secondaryActivated: boolean;
+    marketCountdown?: string;
+    minimumMarketEth?: string;
   };
 };
 
@@ -108,6 +110,8 @@ fragment SaleStrategy on SalesStrategyConfig {
       pool
     }
     secondaryActivated
+    marketCountdown
+    minimumMarketEth
   }
 }`;
 

@@ -150,7 +150,11 @@ type ZoraTimedSaleStrategy = SaleStrategy<"timed"> & {
   pool: Address;
   secondaryActivated: boolean;
   address: Address;
-} & StartAndEnd;
+  saleStart: string;
+  saleEnd?: string;
+  minimumMarketEth?: bigint;
+  marketCountdown?: bigint;
+};
 
 type PremintSaleStrategy = SaleStrategy<"premint"> &
   PricedSaleStrategy & {

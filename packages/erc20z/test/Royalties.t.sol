@@ -25,6 +25,37 @@ contract RoyaltiesTest is BaseTest {
         weth.approve(address(swapRouter), 1 ether);
     }
 
+    function setSaleAndLaunchMarket(uint256 numMints) internal returns (address erc20zAddress, address poolAddress) {
+        uint64 saleStart = uint64(block.timestamp);
+
+        IZoraTimedSaleStrategy.SalesConfigV2 memory salesConfig = IZoraTimedSaleStrategy.SalesConfigV2({
+            saleStart: saleStart,
+            marketCountdown: DEFAULT_MARKET_COUNTDOWN,
+            minimumMarketEth: DEFAULT_MINIMUM_MARKET_ETH,
+            name: "Test",
+            symbol: "TST"
+        });
+        vm.prank(users.creator);
+        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSaleV2.selector, tokenId, salesConfig));
+
+        IZoraTimedSaleStrategy.SaleStorage memory saleStorage = saleStrategy.sale(address(collection), tokenId);
+        erc20zAddress = saleStorage.erc20zAddress;
+        poolAddress = saleStorage.poolAddress;
+
+        vm.label(erc20zAddress, "ERC20Z");
+        vm.label(poolAddress, "V3_POOL");
+
+        uint256 totalValue = mintFee * numMints;
+        vm.deal(users.collector, totalValue);
+
+        vm.prank(users.collector);
+        saleStrategy.mint{value: totalValue}(users.collector, numMints, address(collection), tokenId, users.mintReferral, "");
+
+        vm.warp(block.timestamp + DEFAULT_MARKET_COUNTDOWN + 1);
+
+        saleStrategy.launchMarket(address(collection), tokenId);
+    }
+
     function testRevertsWhenZeroAddresses() public {
         Royalties royalties = new Royalties();
         // Test that weth address cannot be zero
@@ -47,38 +78,8 @@ contract RoyaltiesTest is BaseTest {
         royalties.initialize(weth, nonfungiblePositionManager, payable(users.zoraRewardRecipient), 1000);
     }
 
-    function setSaleAndLaunchMarket(uint256 numMints) internal returns (address erc20zAddress, address poolAddress) {
-        uint64 saleStart = uint64(block.timestamp);
-        uint64 saleEnd = uint64(block.timestamp + 24 hours);
-
-        IZoraTimedSaleStrategy.SalesConfig memory salesConfig = IZoraTimedSaleStrategy.SalesConfig({
-            saleStart: saleStart,
-            saleEnd: saleEnd,
-            name: "Test",
-            symbol: "TST"
-        });
-        vm.prank(users.creator);
-        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSale.selector, tokenId, salesConfig));
-
-        IZoraTimedSaleStrategy.SaleStorage memory saleStorage = saleStrategy.sale(address(collection), tokenId);
-        erc20zAddress = saleStorage.erc20zAddress;
-        poolAddress = saleStorage.poolAddress;
-
-        vm.label(erc20zAddress, "ERC20Z");
-        vm.label(poolAddress, "V3_POOL");
-
-        uint256 totalValue = mintFee * numMints;
-        vm.deal(users.collector, totalValue);
-
-        vm.prank(users.collector);
-        saleStrategy.mint{value: totalValue}(users.collector, numMints, address(collection), tokenId, users.mintReferral, "");
-
-        vm.warp(saleEnd + 1);
-        saleStrategy.launchMarket(address(collection), tokenId);
-    }
-
     function testClaim() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20zAddress, ) = setSaleAndLaunchMarket(numMints);
 
@@ -96,7 +97,7 @@ contract RoyaltiesTest is BaseTest {
 
         swapRouter.exactOutputSingle(params);
 
-        uint256 expectedTotalEth = 1232223222322;
+        uint256 expectedTotalEth = 1132537496173;
         uint256 totalEthAccrued = royalties.getUnclaimedFees(erc20zAddress).token1Amount;
 
         assertEq(totalEthAccrued, expectedTotalEth);
@@ -121,7 +122,7 @@ contract RoyaltiesTest is BaseTest {
     }
 
     function testPositionReceivesWrongLiquidityToken() public {
-        (address erc20zAddress, ) = setSaleAndLaunchMarket(100);
+        (address erc20zAddress, ) = setSaleAndLaunchMarket(1000);
 
         vm.deal(users.collector, 1.2 ether);
 
@@ -174,7 +175,7 @@ contract RoyaltiesTest is BaseTest {
     }
 
     function testRevertRecipientCannotBeAddressZero() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20zAddress, ) = setSaleAndLaunchMarket(numMints);
 
@@ -200,7 +201,7 @@ contract RoyaltiesTest is BaseTest {
     }
 
     function testRevertOnlyCreatorCanCall() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20zAddress, ) = setSaleAndLaunchMarket(numMints);
 
@@ -223,7 +224,7 @@ contract RoyaltiesTest is BaseTest {
     }
 
     function testClaimForBothTokens() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20zAddress, ) = setSaleAndLaunchMarket(numMints);
 
@@ -256,7 +257,7 @@ contract RoyaltiesTest is BaseTest {
             })
         );
 
-        uint256 expectedTotalEth = 2735264735264;
+        uint256 expectedTotalEth = 2288188002473;
         uint256 expectedTotalErc20 = 9999999999999999;
 
         uint256 totalErc20Accrued = royalties.getUnclaimedFees(erc20zAddress).token0Amount;
@@ -285,7 +286,7 @@ contract RoyaltiesTest is BaseTest {
     }
 
     function testClaimTransfers() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20zAddress, ) = setSaleAndLaunchMarket(numMints);
 
@@ -318,7 +319,7 @@ contract RoyaltiesTest is BaseTest {
     }
 
     function testRevertCreatorMustBeSet() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20zAddress, ) = setSaleAndLaunchMarket(numMints);
 

@@ -33,18 +33,18 @@ contract SecondarySwapTest is BaseTest {
 
     function setSaleAndLaunchMarket(uint256 numMints) internal returns (address erc20zAddress, address poolAddress) {
         uint64 saleStart = uint64(block.timestamp);
-        uint64 saleEnd = uint64(block.timestamp + 24 hours);
 
-        IZoraTimedSaleStrategy.SalesConfig memory salesConfig = IZoraTimedSaleStrategy.SalesConfig({
+        IZoraTimedSaleStrategy.SalesConfigV2 memory salesConfig = IZoraTimedSaleStrategy.SalesConfigV2({
             saleStart: saleStart,
-            saleEnd: saleEnd,
+            marketCountdown: DEFAULT_MARKET_COUNTDOWN,
+            minimumMarketEth: DEFAULT_MINIMUM_MARKET_ETH,
             name: "Test",
             symbol: "TST"
         });
         vm.prank(users.creator);
-        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSale.selector, tokenId, salesConfig));
+        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSaleV2.selector, tokenId, salesConfig));
 
-        IZoraTimedSaleStrategy.SaleStorage memory saleStorage = saleStrategy.sale(address(collection), tokenId);
+        IZoraTimedSaleStrategy.SaleData memory saleStorage = saleStrategy.saleV2(address(collection), tokenId);
         erc20zAddress = saleStorage.erc20zAddress;
         poolAddress = saleStorage.poolAddress;
 
@@ -57,12 +57,13 @@ contract SecondarySwapTest is BaseTest {
         vm.prank(users.collector);
         saleStrategy.mint{value: totalValue}(users.collector, numMints, address(collection), tokenId, users.mintReferral, "");
 
-        vm.warp(saleEnd + 1);
+        vm.warp(block.timestamp + DEFAULT_MARKET_COUNTDOWN + 1);
+
         saleStrategy.launchMarket(address(collection), tokenId);
     }
 
     function testBuy() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20z, ) = setSaleAndLaunchMarket(numMints);
 
@@ -88,7 +89,7 @@ contract SecondarySwapTest is BaseTest {
     }
 
     function testSellWithSafeTransfer() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20z, ) = setSaleAndLaunchMarket(numMints);
 
@@ -123,7 +124,7 @@ contract SecondarySwapTest is BaseTest {
     }
 
     function testSellWithSell1155() public {
-        uint256 numMints = 111;
+        uint256 numMints = 1000;
 
         (address erc20z, ) = setSaleAndLaunchMarket(numMints);
 

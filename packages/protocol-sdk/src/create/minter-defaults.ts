@@ -10,6 +10,12 @@ import {
   TimedSaleParamsType,
 } from "./types";
 
+// 200 mints worth of eth
+export const DEFAULT_MINIMUM_MARKET_ETH = 2220000000000000n;
+
+// 24 hour countdown
+export const DEFAULT_MARKET_COUNTDOWN = BigInt(24 * 60 * 60);
+
 // Sales end forever amount (uint64 max)
 export const SALE_END_FOREVER = 18446744073709551615n;
 
@@ -81,13 +87,17 @@ const timedSaleSettingsWithDefaults = (
   // If the name is not provided, try to fetch it from the metadata
   const erc20Name = params.erc20Name || contractName;
   const symbol = params.erc20Symbol || parseNameIntoSymbol(erc20Name);
+  const start = params.saleStart || 0n;
+  const countdown = params.marketCountdown || DEFAULT_MARKET_COUNTDOWN;
+  const minimumEth = params.minimumMarketEth || DEFAULT_MINIMUM_MARKET_ETH;
 
   return {
     type: "timed",
-    ...DEFAULT_SALE_START_AND_END,
-    ...params,
     erc20Name: erc20Name,
     erc20Symbol: symbol,
+    saleStart: start,
+    marketCountdown: countdown,
+    minimumMarketEth: minimumEth,
   };
 };
 

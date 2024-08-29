@@ -14,7 +14,6 @@ import {
 } from "src/create/1155-create-helper.test";
 import { SubgraphMintGetter } from "./subgraph-mint-getter";
 import { new1155ContractVersion } from "src/create/contract-setup";
-import { SALE_END_FOREVER } from "src/create/minter-defaults";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { TokenQueryResult } from "./subgraph-queries";
 
@@ -341,7 +340,7 @@ describe("mint-helper", () => {
 
   makeAnvilTest({
     forkUrl: forkUrls.zoraMainnet,
-    forkBlockNumber: 18145203,
+    forkBlockNumber: 19000000,
     anvilChainId: zora.id,
   })(
     "can mint a zora timed sale strategy mint",
@@ -397,7 +396,7 @@ describe("mint-helper", () => {
                   chain.id as keyof typeof zoraTimedSaleStrategyAddress
                 ],
               mintFee: "111000000000000",
-              saleEnd: SALE_END_FOREVER.toString(),
+              saleEnd: "0",
               saleStart: "0",
               erc20Z: {
                 // not needed
