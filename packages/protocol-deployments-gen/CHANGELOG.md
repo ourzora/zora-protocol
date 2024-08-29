@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments-gen
 
+## 0.0.10
+
+### Patch Changes
+
+- f18dd724: Updating for timed sale v2 abi 
+
 ## 0.0.9
 
 ### Patch Changes
