@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.9.5
+
+### Patch Changes
+
+- 879a019a: - Fixed types, defaults, and queries for v2 timed sales 
+
 ## 0.9.4
 
 ### Patch Changes
@@ -182,7 +188,7 @@
 
 ### Patch Changes
 
-- 825e5f7: Adds optional `createReferral` to `createNew1155Token` params
+- 825e5f7: Adds optional `createReferral` to `createNew1155Token` params 
 
 ## 0.5.8
 
