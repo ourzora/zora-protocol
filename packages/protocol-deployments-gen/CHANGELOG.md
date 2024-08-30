@@ -1,10 +1,17 @@
 # @zoralabs/protocol-deployments-gen
 
+## 0.0.11
+
+### Patch Changes
+
+- Updated dependencies [5359c538]
+  - @zoralabs/erc20z@2.0.1
+
 ## 0.0.10
 
 ### Patch Changes
 
-- f18dd724: Updating for timed sale v2 abi 
+- f18dd724: Updating for timed sale v2 abi
 
 ## 0.0.9
 

@@ -1,10 +1,19 @@
 # @zoralabs/protocol-sdk
 
+## 0.9.6
+
+### Patch Changes
+
+- 24520e9a: Fix sdk setSale for v2 params
+- Updated dependencies [247ebc86]
+- Updated dependencies [24520e9a]
+  - @zoralabs/protocol-deployments@0.3.2
+
 ## 0.9.5
 
 ### Patch Changes
 
-- 879a019a: - Fixed types, defaults, and queries for v2 timed sales 
+- 879a019a: - Fixed types, defaults, and queries for v2 timed sales
 
 ## 0.9.4
 
@@ -188,7 +197,7 @@
 
 ### Patch Changes
 
-- 825e5f7: Adds optional `createReferral` to `createNew1155Token` params 
+- 825e5f7: Adds optional `createReferral` to `createNew1155Token` params
 
 ## 0.5.8
 

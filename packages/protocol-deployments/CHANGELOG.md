@@ -1,5 +1,12 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.2
+
+### Patch Changes
+
+- 247ebc86: update for timed sales v2
+- 24520e9a: Fix sdk setSale for v2 params
+
 ## 0.3.1
 
 ### Patch Changes
