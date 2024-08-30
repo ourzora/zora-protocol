@@ -21,8 +21,8 @@ Current Supported Chains:
 - Zora Goerli
 - Ethereum Mainnet
 - Ethereum Goerli
-- OP Mainnet
-- OP Goerli
+- Optimism Mainnet
+- Optimism Goerli
 - Base Mainnet
 - Base Goerli
 
