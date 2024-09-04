@@ -81,6 +81,10 @@ export default defineConfig({
                 link: "/contracts/Permissions1155",
               },
               {
+                text: "Timed Sale with Secondary",
+                link: "/contracts/ZoraTimedSaleStrategy",
+              },
+              {
                 text: "ERC20 Minter",
                 link: "/contracts/ERC20Minter",
               },

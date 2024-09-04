@@ -1,0 +1,39 @@
+
+@startuml
+class ZoraTimedSaleStrategy {
+}
+
+class ERC20z {
+}
+
+class Royalties {
+}
+
+class ZoraCreator1155 {
+}
+
+class UniswapLP {
+
+}
+
+class Creator {
+}
+
+ZoraTimedSaleStrategy --> ERC20z: creates
+ZoraTimedSaleStrategy --> ERC20z: deposits market reward
+
+ZoraTimedSaleStrategy --> UniswapLP: creates
+
+ERC20z --> UniswapLP: deposits liquidity
+
+ERC20z --> Royalties: sets as liquidity owner
+
+Royalties --> UniswapLP: withdraws liquidity
+
+Creator --> Royalties: withdraws royalties
+
+
+
+
+
+@enduml
