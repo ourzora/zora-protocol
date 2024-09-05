@@ -1,3 +1,4 @@
+import VitePluginRadar from "vite-plugin-radar";
 import { defineConfig } from "vocs";
 
 export default defineConfig({
@@ -5,7 +6,7 @@ export default defineConfig({
   titleTemplate: "%s | ZORA Docs",
   iconUrl: "/Zorb.png",
   logoUrl: "/Zorb.png",
-  ogImageUrl:"https://docs.zora.co/og.png",
+  ogImageUrl: "https://docs.zora.co/og.png",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [
@@ -215,6 +216,15 @@ export default defineConfig({
     ],
   },
   vite: {
+    plugins: process.env.GOOGLE_ANALYTICS_TAG_ID
+      ? [
+          VitePluginRadar({
+            analytics: {
+              id: process.env.GOOGLE_ANALYTICS_TAG_ID as string,
+            },
+          }),
+        ]
+      : [],
     esbuild: {
       supported: {
         "top-level-await": true, //browsers can handle top-level-await features

@@ -10,22 +10,23 @@
     "preview": "vocs preview"
   },
   "dependencies": {
+    "@0xsplits/splits-sdk": "^4.0.2",
     "@mdx-js/mdx": "^3.0.0",
     "@tanstack/react-query": "^5.37.1",
+    "@types/node": "^20.13.0",
     "@types/react": "latest",
     "@vanilla-extract/css": "^1.15.3",
+    "@zoralabs/protocol-deployments": "workspace:*",
+    "@zoralabs/protocol-sdk": "workspace:*",
+    "@zoralabs/tsconfig": "workspace:*",
     "react": "latest",
     "react-dom": "latest",
     "typescript": "^5.2.2",
     "viem": "^2.13.2",
+    "vite-plugin-radar": "^0.9.6",
     "vite-tsconfig-paths": "^4.3.2",
     "vocs": "^1.0.0-alpha.55",
     "wagmi": "^2.9.4",
-    "yaml": "2.3.4",
-    "@0xsplits/splits-sdk": "^4.0.2",
-    "@types/node": "^20.13.0",
-    "@zoralabs/protocol-deployments": "workspace:*",
-    "@zoralabs/protocol-sdk": "workspace:*",
-    "@zoralabs/tsconfig": "workspace:*"
+    "yaml": "2.3.4"
   }
 }
