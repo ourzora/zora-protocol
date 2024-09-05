@@ -113,7 +113,16 @@ contract SecondarySwapTest is BaseTest {
         minEthToAcquire = 0;
 
         vm.startPrank(mockBuyer);
-        collection.safeTransferFrom(mockBuyer, address(secondarySwap), 0, num1155ToTransfer, abi.encode(mockBuyer, minEthToAcquire, sqrtPriceLimitX96));
+
+        vm.expectEmit(true, true, true, true);
+        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "sell comment", ISecondarySwap.SecondaryType.SELL);
+        collection.safeTransferFrom(
+            mockBuyer,
+            address(secondarySwap),
+            0,
+            num1155ToTransfer,
+            abi.encode(mockBuyer, minEthToAcquire, sqrtPriceLimitX96, "sell comment")
+        );
 
         vm.stopPrank();
 
