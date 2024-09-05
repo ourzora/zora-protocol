@@ -301,7 +301,7 @@ const getErc20zContracts = (): ContractConfig[] => {
 };
 
 export default defineConfig({
-  out: "../protocol-deployments/src/generated/wagmi.ts",
+  out: "./generated/wagmi.ts",
   contracts: [
     ...get1155Contracts(),
     ...getErc20zContracts(),

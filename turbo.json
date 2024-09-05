@@ -9,6 +9,10 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "@zoralabs/protocol-deployments-gen#build": {
+      "dependsOn": ["^build"],
+      "outputs": ["generated/**"]
+    },
     "@zoralabs/protocol-deployments#build": {
       "dependsOn": ["@zoralabs/protocol-deployments-gen#build"],
       "outputs": ["dist/**"]
