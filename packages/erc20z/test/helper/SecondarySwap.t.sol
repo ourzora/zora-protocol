@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import "../BaseTest.sol";
 
 import {SecondarySwap} from "../../src/helper/SecondarySwap.sol";
-import {ISecondarySwap} from "../../src/interfaces/ISecondarySwap.sol";
 
 contract SecondarySwapTest is BaseTest {
     SecondarySwap internal secondarySwap;
@@ -13,15 +12,6 @@ contract SecondarySwapTest is BaseTest {
     uint256 internal minEthToAcquire;
     uint24 internal defaultUniswapFee = 10_000;
     uint160 internal sqrtPriceLimitX96;
-
-    event SecondaryComment(
-        address indexed sender,
-        address indexed collection,
-        uint256 indexed tokenId,
-        uint256 quantity,
-        string comment,
-        ISecondarySwap.SecondaryType secondaryType
-    );
 
     function setUp() public override {
         super.setUp();
@@ -33,18 +23,18 @@ contract SecondarySwapTest is BaseTest {
 
     function setSaleAndLaunchMarket(uint256 numMints) internal returns (address erc20zAddress, address poolAddress) {
         uint64 saleStart = uint64(block.timestamp);
+        uint64 saleEnd = uint64(block.timestamp + 24 hours);
 
-        IZoraTimedSaleStrategy.SalesConfigV2 memory salesConfig = IZoraTimedSaleStrategy.SalesConfigV2({
+        IZoraTimedSaleStrategy.SalesConfig memory salesConfig = IZoraTimedSaleStrategy.SalesConfig({
             saleStart: saleStart,
-            marketCountdown: DEFAULT_MARKET_COUNTDOWN,
-            minimumMarketEth: DEFAULT_MINIMUM_MARKET_ETH,
+            saleEnd: saleEnd,
             name: "Test",
             symbol: "TST"
         });
         vm.prank(users.creator);
-        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSaleV2.selector, tokenId, salesConfig));
+        collection.callSale(tokenId, saleStrategy, abi.encodeWithSelector(saleStrategy.setSale.selector, tokenId, salesConfig));
 
-        IZoraTimedSaleStrategy.SaleData memory saleStorage = saleStrategy.saleV2(address(collection), tokenId);
+        IZoraTimedSaleStrategy.SaleStorage memory saleStorage = saleStrategy.sale(address(collection), tokenId);
         erc20zAddress = saleStorage.erc20zAddress;
         poolAddress = saleStorage.poolAddress;
 
@@ -57,13 +47,12 @@ contract SecondarySwapTest is BaseTest {
         vm.prank(users.collector);
         saleStrategy.mint{value: totalValue}(users.collector, numMints, address(collection), tokenId, users.mintReferral, "");
 
-        vm.warp(block.timestamp + DEFAULT_MARKET_COUNTDOWN + 1);
-
+        vm.warp(saleEnd + 1);
         saleStrategy.launchMarket(address(collection), tokenId);
     }
 
     function testBuy() public {
-        uint256 numMints = 1000;
+        uint256 numMints = 111;
 
         (address erc20z, ) = setSaleAndLaunchMarket(numMints);
 
@@ -79,9 +68,7 @@ contract SecondarySwapTest is BaseTest {
         sqrtPriceLimitX96 = 0;
 
         vm.prank(mockBuyer);
-        vm.expectEmit(true, true, true, true);
-        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "mint comment", ISecondarySwap.SecondaryType.BUY);
-        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96, "mint comment");
+        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96);
 
         uint256 after1155Balance = collection.balanceOf(mockBuyer, 0);
 
@@ -89,7 +76,7 @@ contract SecondarySwapTest is BaseTest {
     }
 
     function testSellWithSafeTransfer() public {
-        uint256 numMints = 1000;
+        uint256 numMints = 111;
 
         (address erc20z, ) = setSaleAndLaunchMarket(numMints);
 
@@ -102,7 +89,7 @@ contract SecondarySwapTest is BaseTest {
         sqrtPriceLimitX96 = 0;
 
         vm.prank(mockBuyer);
-        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96, "buy comment");
+        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96);
 
         assertEq(collection.balanceOf(mockBuyer, 0), num1155ToReceive);
 
@@ -113,16 +100,7 @@ contract SecondarySwapTest is BaseTest {
         minEthToAcquire = 0;
 
         vm.startPrank(mockBuyer);
-
-        vm.expectEmit(true, true, true, true);
-        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "sell comment", ISecondarySwap.SecondaryType.SELL);
-        collection.safeTransferFrom(
-            mockBuyer,
-            address(secondarySwap),
-            0,
-            num1155ToTransfer,
-            abi.encode(mockBuyer, minEthToAcquire, sqrtPriceLimitX96, "sell comment")
-        );
+        collection.safeTransferFrom(mockBuyer, address(secondarySwap), 0, num1155ToTransfer, abi.encode(mockBuyer, minEthToAcquire, sqrtPriceLimitX96));
 
         vm.stopPrank();
 
@@ -133,7 +111,7 @@ contract SecondarySwapTest is BaseTest {
     }
 
     function testSellWithSell1155() public {
-        uint256 numMints = 1000;
+        uint256 numMints = 111;
 
         (address erc20z, ) = setSaleAndLaunchMarket(numMints);
 
@@ -146,9 +124,7 @@ contract SecondarySwapTest is BaseTest {
         sqrtPriceLimitX96 = 0;
 
         vm.prank(mockBuyer);
-        vm.expectEmit(true, true, true, true);
-        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "buy comment", ISecondarySwap.SecondaryType.BUY);
-        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96, "buy comment");
+        secondarySwap.buy1155{value: 1 ether}(erc20z, num1155ToReceive, mockBuyer, mockBuyer, maxEthToSpend, sqrtPriceLimitX96);
 
         assertEq(collection.balanceOf(mockBuyer, 0), num1155ToReceive);
 
@@ -160,9 +136,7 @@ contract SecondarySwapTest is BaseTest {
 
         vm.startPrank(mockBuyer);
         collection.setApprovalForAll(address(secondarySwap), true);
-        vm.expectEmit(true, true, true, true);
-        emit SecondaryComment(mockBuyer, address(collection), tokenId, num1155ToReceive, "sell comment", ISecondarySwap.SecondaryType.SELL);
-        secondarySwap.sell1155(erc20z, num1155ToTransfer, mockBuyer, minEthToAcquire, sqrtPriceLimitX96, "sell comment");
+        secondarySwap.sell1155(erc20z, num1155ToTransfer, mockBuyer, minEthToAcquire, sqrtPriceLimitX96);
 
         vm.stopPrank();
 

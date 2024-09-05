@@ -38,8 +38,7 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         address payable recipient,
         address payable excessRefundRecipient,
         uint256 maxEthToSpend,
-        uint160 sqrtPriceLimitX96,
-        string calldata comment
+        uint160 sqrtPriceLimitX96
     ) external payable nonReentrant {
         // Ensure the recipient address is valid
         if (recipient == address(0)) {
@@ -97,11 +96,6 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         }
 
         emit SecondaryBuy(msg.sender, recipient, erc20zAddress, amountWethUsed, num1155ToBuy);
-
-        if (bytes(comment).length > 0) {
-            IERC20Z.TokenInfo memory tokenInfo = IERC20Z(erc20zAddress).tokenInfo();
-            emit SecondaryComment(msg.sender, tokenInfo.collection, tokenInfo.tokenId, num1155ToBuy, comment, SecondaryType.BUY);
-        }
     }
 
     /// @notice ERC1155 -> ERC20Z -> WETH -> ETH
@@ -110,27 +104,18 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         uint256 num1155ToSell,
         address payable recipient,
         uint256 minEthToAcquire,
-        uint160 sqrtPriceLimitX96,
-        string calldata comment
+        uint160 sqrtPriceLimitX96
     ) external nonReentrant {
         IERC20Z.TokenInfo memory tokenInfo = IERC20Z(erc20zAddress).tokenInfo();
 
+        // Transfer ERC1155 tokens from sender to this contract and wrap them
         IERC1155(tokenInfo.collection).safeTransferFrom(msg.sender, erc20zAddress, tokenInfo.tokenId, num1155ToSell, abi.encode(address(this)));
 
-        _sell1155(tokenInfo, msg.sender, erc20zAddress, num1155ToSell, recipient, minEthToAcquire, sqrtPriceLimitX96, comment);
+        _sell1155(erc20zAddress, num1155ToSell, recipient, minEthToAcquire, sqrtPriceLimitX96);
     }
 
     /// @notice ERC1155 -> ERC20Z -> WETH -> ETH
-    function _sell1155(
-        IERC20Z.TokenInfo memory tokenInfo,
-        address msgSender,
-        address erc20zAddress,
-        uint256 num1155ToSell,
-        address payable recipient,
-        uint256 minEthToAcquire,
-        uint160 sqrtPriceLimitX96,
-        string memory comment
-    ) private {
+    function _sell1155(address erc20zAddress, uint256 num1155ToSell, address payable recipient, uint256 minEthToAcquire, uint160 sqrtPriceLimitX96) private {
         // Ensure the recipient is valid
         if (recipient == address(0)) {
             revert InvalidRecipient();
@@ -167,36 +152,27 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
         // Transfer ETH to the recipient
         Address.sendValue(recipient, amountWethOut);
 
-        if (bytes(comment).length > 0) {
-            emit SecondaryComment(msgSender, tokenInfo.collection, tokenInfo.tokenId, num1155ToSell, comment, SecondaryType.SELL);
-        }
-
-        emit SecondarySell(msgSender, recipient, erc20zAddress, amountWethOut, num1155ToSell);
+        emit SecondarySell(msg.sender, recipient, erc20zAddress, amountWethOut, num1155ToSell);
     }
 
     /// @notice Receive transfer hook that allows to sell 1155s for eth based on the secondary market value
-    function onERC1155Received(address operator, address, uint256 id, uint256 value, bytes calldata data) external override nonReentrant returns (bytes4) {
-        IERC20Z.TokenInfo memory tokenInfo;
-
-        tokenInfo.collection = msg.sender;
-        tokenInfo.tokenId = id;
+    function onERC1155Received(address, address, uint256 id, uint256 value, bytes calldata data) external override nonReentrant returns (bytes4) {
+        address collection = msg.sender;
 
         uint256 num1155ToSell = value;
 
-        (address payable recipient, uint256 minEthToAcquire, uint160 sqrtPriceLimitX96, string memory comment) = abi.decode(
-            data,
-            (address, uint256, uint160, string)
-        );
+        (address payable recipient, uint256 minEthToAcquire, uint160 sqrtPriceLimitX96) = abi.decode(data, (address, uint256, uint160));
 
-        address erc20zAddress = zoraTimedSaleStrategy.sale(tokenInfo.collection, tokenInfo.tokenId).erc20zAddress;
+        address erc20zAddress = zoraTimedSaleStrategy.sale(collection, id).erc20zAddress;
 
         if (erc20zAddress == address(0)) {
             revert SaleNotSet();
         }
 
-        IERC1155(tokenInfo.collection).safeTransferFrom(address(this), erc20zAddress, id, num1155ToSell, abi.encode(address(this)));
-        // in the case of a safeTransferFrom, the operator is the msg.sender
-        _sell1155(tokenInfo, operator, erc20zAddress, num1155ToSell, recipient, minEthToAcquire, sqrtPriceLimitX96, comment);
+        // assume this contract has 1155s, transfer them to the erc20z and wrap them
+        IERC1155(collection).safeTransferFrom(address(this), erc20zAddress, id, num1155ToSell, abi.encode(address(this)));
+
+        _sell1155(erc20zAddress, num1155ToSell, recipient, minEthToAcquire, sqrtPriceLimitX96);
 
         return ON_ERC1155_RECEIVED_HASH;
     }
