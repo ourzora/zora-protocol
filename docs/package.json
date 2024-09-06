@@ -7,7 +7,8 @@
     "dev": "vocs dev",
     "build": "tsc --noEmit",
     "build:site": "vocs build",
-    "preview": "vocs preview"
+    "preview": "vocs preview",
+    "copy-changelog": "pnpm tsx scripts/copy-changelogs.ts"
   },
   "dependencies": {
     "@0xsplits/splits-sdk": "^4.0.2",

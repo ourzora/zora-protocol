@@ -21,6 +21,11 @@ export default defineConfig({
       match: "/protocol-sdk",
     },
     {
+      text: "Changelogs",
+      link: "/changelogs/protocol-sdk",
+      match: "/changelogs",
+    },
+    {
       text: "Zora Network",
       link: "/zora-network/intro",
       match: "/zora-network",
@@ -188,6 +193,25 @@ export default defineConfig({
                 link: "/protocol-sdk/collect/mint-costs",
               },
             ],
+          },
+        ],
+      },
+    ],
+    "/changelogs": [
+      {
+        text: "Changelogs",
+        items: [
+          {
+            text: "@zoralabs/protocol-sdk",
+            link: "/changelogs/protocol-sdk",
+          },
+          {
+            text: "@zoralabs/protocol-deployments",
+            link: "/changelogs/protocol-deployments",
+          },
+          {
+            text: "@zoralabs/zora-1155-contracts",
+            link: "/changelogs/1155-contracts",
           },
         ],
       },
