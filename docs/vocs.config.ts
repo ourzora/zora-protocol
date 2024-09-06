@@ -63,7 +63,7 @@ export default defineConfig({
               },
               {
                 text: "Contract and Token Metadata",
-                link: "/contracts/metadata",
+                link: "/contracts/Metadata",
               },
               {
                 text: "Creating a Token",
