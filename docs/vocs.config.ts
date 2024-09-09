@@ -243,7 +243,6 @@ export default defineConfig({
     plugins: process.env.GOOGLE_ANALYTICS_TAG_ID
       ? [
           VitePluginRadar({
-            enableDev: true,
             analytics: {
               id: process.env.GOOGLE_ANALYTICS_TAG_ID as string,
             },
