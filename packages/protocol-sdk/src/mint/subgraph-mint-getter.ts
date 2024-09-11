@@ -1,10 +1,5 @@
 import { Address } from "viem";
-import { httpClient as defaultHttpClient } from "../apis/http-api-base";
-import {
-  ISubgraphQuerier,
-  ISubgraphQuery,
-  SubgraphQuerier,
-} from "../apis/subgraph-querier";
+import { ISubgraphQuerier } from "../apis/subgraph-querier";
 import { NetworkConfig, networkConfigByChain } from "src/apis/chain-constants";
 import { GenericTokenIdTypes } from "src/types";
 import {
@@ -21,6 +16,7 @@ import {
   SalesStrategyResult,
   TokenQueryResult,
 } from "./subgraph-queries";
+import { SubgraphGetter } from "src/apis/subgraph-getter";
 
 export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
   if (!networkConfigByChain[chainId]) {
@@ -161,32 +157,16 @@ function getTargetStrategy({
   return targetStrategy;
 }
 
-export class SubgraphMintGetter implements IOnchainMintGetter {
-  public readonly subgraphQuerier: ISubgraphQuerier;
-  networkConfig: NetworkConfig;
-
+export class SubgraphMintGetter
+  extends SubgraphGetter
+  implements IOnchainMintGetter
+{
   constructor(chainId: number, subgraphQuerier?: ISubgraphQuerier) {
-    this.subgraphQuerier =
-      subgraphQuerier || new SubgraphQuerier(defaultHttpClient);
-    this.networkConfig = getApiNetworkConfigForChain(chainId);
+    super(chainId, subgraphQuerier);
   }
 
   async getContractMintFee(contract: TokenQueryResult["contract"]) {
     return BigInt(contract.mintFeePerQuantity);
-  }
-
-  async querySubgraphWithRetries<T>({
-    query,
-    variables,
-    parseResponseData,
-  }: ISubgraphQuery<T>) {
-    const responseData = await this.subgraphQuerier.query({
-      subgraphUrl: this.networkConfig.subgraphUrl,
-      query,
-      variables,
-    });
-
-    return parseResponseData(responseData);
   }
 
   getMintable: IOnchainMintGetter["getMintable"] = async ({

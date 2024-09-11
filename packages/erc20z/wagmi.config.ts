@@ -14,6 +14,7 @@ export default defineConfig({
         "SecondarySwap",
         "ERC20Z",
         "Royalties",
+        "IWETH",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],

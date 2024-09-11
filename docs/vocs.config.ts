@@ -158,6 +158,23 @@ export default defineConfig({
                 text: "create 1155s gaslessly (premints)",
                 link: "/protocol-sdk/creator/premint",
               },
+              {
+                text: "Protocol Rewards and Secondary Royalties",
+                items: [
+                  {
+                    text: "getRewardsBalances",
+                    link: "/protocol-sdk/creator/getRewardsBalances",
+                  },
+                  {
+                    text: "withdrawRewards",
+                    link: "/protocol-sdk/creator/withdrawRewards",
+                  },
+                ],
+              },
+              {
+                text: "view and withdraw protocol rewards and secondary royalties",
+                link: "/protocol-sdk/creator/rewards",
+              },
             ],
           },
           {

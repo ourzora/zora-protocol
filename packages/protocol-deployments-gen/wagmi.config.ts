@@ -1,4 +1,4 @@
-import { Config, ContractConfig, defineConfig } from "@wagmi/cli";
+import { ContractConfig, defineConfig } from "@wagmi/cli";
 import { Abi, zeroAddress } from "viem";
 import { readdirSync, readFileSync } from "fs";
 import * as abis from "@zoralabs/zora-1155-contracts";
@@ -17,6 +17,7 @@ import {
   zoraTimedSaleStrategyImplABI,
   royaltiesABI,
   secondarySwapABI,
+  iwethABI,
 } from "@zoralabs/erc20z";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
 import { zora } from "viem/chains";
@@ -188,6 +189,32 @@ const get1155Contracts = (): ContractConfig[] => {
   ];
 };
 
+const getSharedAddresses = () => {
+  const addresses: Addresses = {};
+  const addressesFiles = readdirSync("../shared-contracts/chainConfigs");
+
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../shared-contracts/chainConfigs/${file}`, "utf-8"),
+      ) as {
+        WETH: Address;
+      },
+    };
+  });
+
+  addAddress({
+    abi: iwethABI,
+    addresses,
+    configKey: "WETH",
+    contractName: "WETH",
+    storedConfigs,
+  });
+
+  return toConfig(addresses);
+};
+
 const getSparksAddresses = () => {
   const chainIds = [7777777, 999999999];
 
@@ -305,6 +332,7 @@ export default defineConfig({
   contracts: [
     ...get1155Contracts(),
     ...getErc20zContracts(),
+    ...getSharedAddresses(),
     {
       abi: zoraSparksManagerImplABI,
       name: "ZoraSparksManagerImpl",

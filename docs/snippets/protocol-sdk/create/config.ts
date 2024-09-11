@@ -26,3 +26,4 @@ export const walletClient = createWalletClient({
 
 export const creatorAccount = (await walletClient.getAddresses())[0]!;
 export const minterAccount = (await walletClient.getAddresses())[1]!;
+export const randomAccount = (await walletClient.getAddresses())[2]!;

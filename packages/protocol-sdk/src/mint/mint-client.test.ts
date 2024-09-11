@@ -1,10 +1,7 @@
 import { describe, expect, vi } from "vitest";
-import { Address, erc20Abi, parseAbi, parseEther, zeroAddress } from "viem";
+import { Address, erc20Abi, parseAbi, parseEther } from "viem";
 import { zora, zoraSepolia } from "viem/chains";
-import {
-  zoraCreator1155ImplABI,
-  zoraTimedSaleStrategyAddress,
-} from "@zoralabs/protocol-deployments";
+import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import { forkUrls, makeAnvilTest, writeContractWithRetries } from "src/anvil";
 import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { getAllowListEntry } from "src/allow-list/allow-list-client";
@@ -15,7 +12,7 @@ import {
 import { SubgraphMintGetter } from "./subgraph-mint-getter";
 import { new1155ContractVersion } from "src/create/contract-setup";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
-import { TokenQueryResult } from "./subgraph-queries";
+import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
@@ -369,46 +366,21 @@ describe("mint-helper", () => {
 
       const { request: createRequest } =
         await publicClient.simulateContract(parameters);
-      await writeContractWithRetries(createRequest, walletClient, publicClient);
+      await writeContractWithRetries({
+        request: createRequest,
+        walletClient,
+        publicClient,
+      });
 
-      const zoraCreateToken: TokenQueryResult = {
-        contract: {
-          address: contractAddress,
-          contractVersion: new1155ContractVersion(chain.id),
-          // not used:
-          mintFeePerQuantity: "0",
-          name: "",
-          contractURI: "",
-          salesStrategies: [],
-        },
-        creator: creator,
-        maxSupply: "1000",
-        tokenStandard: "ERC1155",
-        totalMinted: "0",
-        uri: "",
-        tokenId: newTokenId.toString(),
-        salesStrategies: [
-          {
-            type: "ZORA_TIMED",
-            zoraTimedMinter: {
-              address:
-                zoraTimedSaleStrategyAddress[
-                  chain.id as keyof typeof zoraTimedSaleStrategyAddress
-                ],
-              mintFee: "111000000000000",
-              saleEnd: "0",
-              saleStart: "0",
-              erc20Z: {
-                // not needed
-                id: zeroAddress,
-                // note needed
-                pool: zeroAddress,
-              },
-              secondaryActivated: false,
-            },
-          },
-        ],
-      };
+      const zoraCreateToken = mockTimedSaleStrategyTokenQueryResult({
+        chainId: chain.id,
+        contractAddress,
+        contractVersion:
+          new1155ContractVersion[
+            chain.id as keyof typeof new1155ContractVersion
+          ],
+        tokenId: newTokenId,
+      });
 
       const mockQuery = vi.fn<ISubgraphQuerier["query"]>().mockResolvedValue({
         zoraCreateToken,

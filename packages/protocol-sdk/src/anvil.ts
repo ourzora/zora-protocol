@@ -16,6 +16,7 @@ import {
 } from "viem";
 import { foundry, zora } from "viem/chains";
 import { retries } from "./apis/http-api-base";
+import { SimulateContractParametersWithAccount } from "./types";
 
 export interface AnvilViemClientsTest {
   viemClients: {
@@ -115,11 +116,32 @@ export const anvilTest = makeAnvilTest({
   anvilChainId: zora.id,
 });
 
-export async function writeContractWithRetries(
-  request: SimulateContractReturnType<any, any, any, Chain, Account>["request"],
-  walletClient: WalletClient,
-  publicClient: PublicClient,
-) {
+export async function simulateAndWriteContractWithRetries({
+  parameters,
+  walletClient,
+  publicClient,
+}: {
+  parameters: SimulateContractParametersWithAccount;
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+}) {
+  const { request } = await publicClient.simulateContract(parameters);
+  return await writeContractWithRetries({
+    request,
+    walletClient,
+    publicClient,
+  });
+}
+
+export async function writeContractWithRetries({
+  request,
+  walletClient,
+  publicClient,
+}: {
+  request: SimulateContractReturnType<any, any, any, Chain, Account>["request"];
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+}) {
   let tryCount = 1;
   const tryFn = async () => {
     if (tryCount > 1) {

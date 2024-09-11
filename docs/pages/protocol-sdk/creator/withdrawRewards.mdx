@@ -1,0 +1,59 @@
+# withdrawRewards
+
+Protocol Rewards and [onchain Secondary Royalties](https://support.zora.co/en/articles/2519873) can be withdrawn in a single transaction by executing the parameters generated from calling `withdrawRewards` on the `creatorClient`. The `withdrawRewards` function prepares a multicall transaction that withdraws both the rewards and royalties balances for each ERC20 token associated with the specified account.
+
+When using the Protocol SDK, any account can execute the transaction to withdraw rewards on behalf of another account. However, the rewards and royalties will always be sent to the original balance holder. This feature allows for scenarios such as a bot withdrawing rewards and covering the gas costs on behalf of the creator.
+
+The `withdrawFor` parameter specifies the account for which to withdraw the rewards. The `account` parameter is set to the account that will execute the transaction.
+
+By default, both Protocol Rewards and Secondary Royalties are withdrawn. If you wish to exclude Secondary Royalties from the withdrawal, set the `claimSecondaryRoyalties` parameter to `false`.
+
+## Usage
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/create/withdrawRewards.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+```
+
+:::
+
+## Returns
+
+`{ parameters: SimulateContractParameters }`
+
+### parameters
+
+- **Type:** `SimulateContractParameters`
+
+Prepared parameters for simulating/writing a transaction using viem/wagmi.
+
+## Parameters
+
+### withdrawFor
+
+- **Type:** `Address`
+
+The account that holds the balance to withdraw for. Any outstanding ETH or ERC20 balance will be transferred to that account.
+
+### claimSecondaryRoyalties (optional)
+
+- **Type:** `boolean`
+
+Set this to `false` to disable claiming secondary royalties.
+
+### account
+
+- **Type:** `Address` | `Account`
+
+The account to execute the transaction. Any account can withdraw rewards for another account, but the rewards will always be sent to the account that holds the balance.
+

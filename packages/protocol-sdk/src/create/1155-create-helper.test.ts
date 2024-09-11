@@ -95,11 +95,11 @@ describe("create-helper", () => {
       });
 
       const { request } = await publicClient.simulateContract(parameters);
-      const receipt = await writeContractWithRetries(
+      const receipt = await writeContractWithRetries({
         request,
         walletClient,
         publicClient,
-      );
+      });
       expect(receipt).not.toBeNull();
       expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(1n);
@@ -171,7 +171,7 @@ describe("create-helper", () => {
 
       const { request } = await publicClient.simulateContract(parameters);
 
-      await writeContractWithRetries(request, walletClient, publicClient);
+      await writeContractWithRetries({ request, walletClient, publicClient });
 
       expect(
         await minterIsMinterOnToken({
@@ -213,11 +213,11 @@ describe("create-helper", () => {
         });
       const { request: simulateResponse } =
         await publicClient.simulateContract(request);
-      const receipt = await writeContractWithRetries(
-        simulateResponse,
+      const receipt = await writeContractWithRetries({
+        request: simulateResponse,
         walletClient,
         publicClient,
-      );
+      });
       const firstTokenId = getTokenIdFromCreateReceipt(receipt);
       expect(firstTokenId).to.be.equal(1n);
 
@@ -258,11 +258,11 @@ describe("create-helper", () => {
       const { request: simulateRequest } = await publicClient.simulateContract(
         newTokenOnExistingContract.parameters,
       );
-      const newReceipt = await writeContractWithRetries(
-        simulateRequest,
+      const newReceipt = await writeContractWithRetries({
+        request: simulateRequest,
         walletClient,
         publicClient,
-      );
+      });
 
       const tokenId = getTokenIdFromCreateReceipt(newReceipt);
       expect(tokenId).to.be.equal(2n);
@@ -294,11 +294,11 @@ describe("create-helper", () => {
       });
       const { request: simulationResponse } =
         await publicClient.simulateContract(request);
-      const receipt = await writeContractWithRetries(
-        simulationResponse,
+      const receipt = await writeContractWithRetries({
+        request: simulationResponse,
         walletClient,
         publicClient,
-      );
+      });
       expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(newTokenId);
 
@@ -337,11 +337,11 @@ describe("create-helper", () => {
       const { request: createSimulation } =
         await publicClient.simulateContract(request);
 
-      await writeContractWithRetries(
-        createSimulation,
+      await writeContractWithRetries({
+        request: createSimulation,
         walletClient,
         publicClient,
-      );
+      });
 
       const quantityToMint = 5n;
 
@@ -401,11 +401,11 @@ describe("create-helper", () => {
       });
       const { request: createSimulation } =
         await publicClient.simulateContract(request);
-      await writeContractWithRetries(
-        createSimulation,
+      await writeContractWithRetries({
+        request: createSimulation,
         walletClient,
         publicClient,
-      );
+      });
 
       const quantityToMint = 5n;
 

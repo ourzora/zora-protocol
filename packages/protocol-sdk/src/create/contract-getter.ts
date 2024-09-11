@@ -1,14 +1,8 @@
-import { NetworkConfig } from "src/apis/chain-constants";
-import {
-  ISubgraphQuerier,
-  ISubgraphQuery,
-  SubgraphQuerier,
-} from "src/apis/subgraph-querier";
-import { httpClient as defaultHttpClient } from "../apis/http-api-base";
+import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { Address } from "viem";
-import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
 import { buildContractInfoQuery } from "./subgraph-queries";
 import { retriesGeneric } from "src/retries";
+import { SubgraphGetter } from "src/apis/subgraph-getter";
 
 export interface IContractGetter {
   getContractInfo: (params: {
@@ -22,28 +16,12 @@ export interface IContractGetter {
   }>;
 }
 
-export class SubgraphContractGetter implements IContractGetter {
-  public readonly subgraphQuerier: ISubgraphQuerier;
-  networkConfig: NetworkConfig;
-
+export class SubgraphContractGetter
+  extends SubgraphGetter
+  implements IContractGetter
+{
   constructor(chainId: number, subgraphQuerier?: ISubgraphQuerier) {
-    this.subgraphQuerier =
-      subgraphQuerier || new SubgraphQuerier(defaultHttpClient);
-    this.networkConfig = getApiNetworkConfigForChain(chainId);
-  }
-
-  async querySubgraphWithRetries<T>({
-    query,
-    variables,
-    parseResponseData,
-  }: ISubgraphQuery<T>) {
-    const responseData = await this.subgraphQuerier.query({
-      subgraphUrl: this.networkConfig.subgraphUrl,
-      query,
-      variables,
-    });
-
-    return parseResponseData(responseData);
+    super(chainId, subgraphQuerier);
   }
 
   async getContractInfo({

@@ -1,0 +1,51 @@
+# getRewardsBalances
+
+The `getRewardsBalances` function on the `creatorClient` allows you to view the rewards and royalties balances for any account. This function returns two types of balances:
+
+1. Protocol Rewards: The total rewards balance from primary sales, stored in the Protocol Rewards contract.
+2. Royalties: The total royalties earned from [onchain secondary sales.]() The royalties balances are aggregated by ERC20 token and also include the sum for ETH. This provides a comprehensive view of an account's earnings from both primary and secondary sales.
+
+## Usage
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/protocol-sdk/create/getRewardsBalances.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/create/config.ts]
+```
+
+:::
+
+## Returns
+
+`{ protocolRewards: bigint, royalties: Record<string, bigint> }`
+
+### protocolRewards
+
+- **Type:** `bigint`
+
+The total rewards balance from the Protocol Rewards contract.
+
+### royalties
+
+- **Type:** `Record<string, bigint>`
+
+The total royalties balances from secondary sales, aggregated by ERC20 token and summed up for eth.
+
+## Parameters
+
+### account
+
+- **Type:** `Address` | `Account`
+
+The account to get the rewards balances for.
+
+

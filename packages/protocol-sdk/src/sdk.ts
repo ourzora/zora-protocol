@@ -12,6 +12,11 @@ import {
   IContractGetter,
   SubgraphContractGetter,
 } from "./create/contract-getter";
+import { RewardsClient } from "./rewards/rewards-client";
+import {
+  IRewardsGetter,
+  SubgraphRewardsGetter,
+} from "./rewards/subgraph-rewards-getter";
 
 export type CreatorClient = {
   createPremint: PremintClient["createPremint"];
@@ -19,6 +24,8 @@ export type CreatorClient = {
   deletePremint: PremintClient["deletePremint"];
   create1155: Create1155Client["createNew1155"];
   create1155OnExistingContract: Create1155Client["createNew1155OnExistingContract"];
+  withdrawRewards: RewardsClient["withdrawRewards"];
+  getRewardsBalances: RewardsClient["getRewardsBalances"];
 };
 
 export type CollectorClient = {
@@ -34,6 +41,7 @@ export type CreatorClientConfig = ClientConfig & {
   /** API for submitting and getting premints.  Defaults to the Zora Premint API */
   premintApi?: IPremintAPI;
   contractGetter?: IContractGetter;
+  rewardsGetter?: IRewardsGetter;
 };
 
 /**
@@ -60,6 +68,14 @@ export function createCreatorClient(
       new SubgraphContractGetter(clientConfig.chainId),
   });
 
+  const rewardsClient = new RewardsClient({
+    chainId: clientConfig.chainId,
+    publicClient: clientConfig.publicClient,
+    rewardsGetter:
+      clientConfig.rewardsGetter ||
+      new SubgraphRewardsGetter(clientConfig.chainId),
+  });
+
   return {
     createPremint: (p) => premintClient.createPremint(p),
     updatePremint: (p) => premintClient.updatePremint(p),
@@ -67,6 +83,8 @@ export function createCreatorClient(
     create1155: (p) => create1155CreatorClient.createNew1155(p),
     create1155OnExistingContract: (p) =>
       create1155CreatorClient.createNew1155OnExistingContract(p),
+    getRewardsBalances: (p) => rewardsClient.getRewardsBalances(p),
+    withdrawRewards: (p) => rewardsClient.withdrawRewards(p),
   };
 }
 
