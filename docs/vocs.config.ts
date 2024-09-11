@@ -171,10 +171,6 @@ export default defineConfig({
                   },
                 ],
               },
-              {
-                text: "view and withdraw protocol rewards and secondary royalties",
-                link: "/protocol-sdk/creator/rewards",
-              },
             ],
           },
           {
