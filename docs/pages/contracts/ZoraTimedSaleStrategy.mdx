@@ -24,7 +24,7 @@ As soon as the secondary market is launched the mint fees earned by the market w
 ## Contract Overview
 
 The ZoraTimedSaleStrategy contract is used to create a timed sale for a Zora 1155 token. When it is configured for an 1155 contract and token via the `setSale` function,
-specifying the `startTime` and `endTime` of the sale, it creates a new ERC20z token and corresponding Uniswap V3 pool for a WETH pair with the ERC20z with a 1% fee.
+specifying the `saleStart` and `saleEnd` of the sale, it creates a new ERC20z token and corresponding Uniswap V3 pool for a WETH pair with the ERC20z with a 1% fee.
 
 To mint an 1155 token, the `mint` function is called on the ZoraTimedSaleStrategy contract with the mint fee of 0.000111 eth x quantity to mint sent with the call. In the `mint` call, 0.0000111 eth x quantity is held in escrow to bootstrap liquidity for the Uniswap V3 pool, the rest is distributed as rewards.  
 via the [ProtocolRewards](./rewards) contract, and x quantity of 1155s is minted to the `recipient`.
