@@ -1,5 +1,12 @@
 # @zoralabs/erc20z
 
+## 2.0.2
+
+### Patch Changes
+
+- aba479af: Remove swap comments from SecondarySwap contract since it would be a breaking abi change
+- 27f1d5e9: SecondarySwap supports comment in safeTransfer method of selling
+
 ## 2.0.1
 
 ### Patch Changes

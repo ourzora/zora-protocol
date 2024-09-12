@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.10.0
+
+### Minor Changes
+
+- fc4a7f65: Support viewing and withdrawing protocol rewards and secondary royalties balances from the sdk, using the new methods `getRewardsBalances` and `withdrawRewards`.
+
 ## 0.9.6
 
 ### Patch Changes
