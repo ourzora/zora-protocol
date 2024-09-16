@@ -27,9 +27,7 @@ import {
   encodeFunctionData,
   zeroAddress,
 } from "viem";
-
-const addressOrAccountAddress = (address: Address | Account) =>
-  typeof address === "string" ? address : address.address;
+import { addressOrAccountAddress } from "src/utils";
 
 /**
  * Constructs the parameters to mint a MINT with ETH on the ZoraMintsManager based on the price of the currently mintable ETH token.

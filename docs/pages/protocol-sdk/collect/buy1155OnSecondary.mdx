@@ -1,0 +1,92 @@
+# buy1155OnSecondary
+
+The `buy1155OnSecondary` function on the `collectorClient` allows you to purchase ERC1155 tokens on the secondary market. This function prepares a transaction with slippage protection for buying a specified quantity of tokens using ETH.
+
+## Important Limitations
+
+Before using this function, ensure that the following conditions are met:
+
+1. The ERC1155 token must be configured to use the ZoraTimedSaleStrategy.
+2. The primary mint period for the token must have ended.
+3. The secondary market for the token must have been launched.
+4. There must be sufficient liquidity in the pool for the swap.
+5. The buyer must have enough ETH to cover the purchase price, including any slippage.
+
+If any of these conditions are not met, the function will return an error and the transaction cannot be executed. Always check the `error` field in the returned object before proceeding with the transaction.
+
+## Usage
+
+```ts twoslash [example.ts]
+// [!include ~/snippets/protocol-sdk/collect/buy1155OnSecondary.ts]
+```
+
+## Returns
+
+`{ error?: string, parameters?: SimulateContractParameters, price: QuotePrice }`
+
+### error
+
+- **Type:** `string | undefined`
+
+An error message if the operation cannot be completed. This could be due to reasons such as insufficient balance, market not being active, or other contract-specific issues.
+
+### parameters
+
+- **Type:** `SimulateContractParameters | undefined`
+
+Prepared parameters for simulating/writing a transaction using viem/wagmi. This will be undefined if there's an error.
+
+### price
+
+- **Type:** `QuotePrice`
+
+Detailed information about the price breakdown for the purchase. This includes:
+
+- **wei:** Price breakdown in wei
+  - **perToken:** Price per individual token in wei
+  - **total:** Total price for all tokens in wei
+- **sparks:** Price breakdown in sparks
+  - **perToken:** Price per individual token in sparks
+  - **total:** Total price for all tokens in sparks
+- **usdc:** Async function that returns the price breakdown in USDC
+  - **perToken:** Price per individual token in USDC
+  - **total:** Total price in USDC
+
+## Parameters
+
+### contract
+
+- **Type:** `Address`
+
+The address of the ERC1155 contract to buy an 1155 of.
+
+### tokenId
+
+- **Type:** `bigint`
+
+The ID of the ERC1155 token to buy.
+
+### quantity
+
+- **Type:** `bigint`
+
+The quantity of 1155 tokens to buy.
+
+### account
+
+- **Type:** `Address | Account`
+
+The account to use for the transaction. This can be either an Ethereum address or a full Account object.  This account will use its ETH balance to complete the purchase.
+
+### slippage (optional)
+
+- **Type:** `number`
+- **Default:** `0.0005` (0.5%)
+
+The maximum acceptable slippage percentage for the transaction. This helps protect against price movements between the time the transaction is submitted and when it's executed. Slippage protection when buying ensures that a minimum quantity of ERC1155 is received for the provided ETH. Additional ETH will be sent to account for slippage, and any excess ETH will be refunded at the end of the transaction.
+
+### recipient (optional)
+
+- **Type:** `Address`
+
+The address that will receive the purchased 1155 tokens. If not specified, the tokens will be sent to the `account` address.

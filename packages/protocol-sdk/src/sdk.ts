@@ -17,6 +17,7 @@ import {
   IRewardsGetter,
   SubgraphRewardsGetter,
 } from "./rewards/subgraph-rewards-getter";
+import { SecondaryClient } from "./secondary/secondary-client";
 
 export type CreatorClient = {
   createPremint: PremintClient["createPremint"];
@@ -35,6 +36,9 @@ export type CollectorClient = {
   getMintCosts: MintClient["getMintCosts"];
   getToken: MintClient["get"];
   getTokensOfContract: MintClient["getOfContract"];
+  buy1155OnSecondary: SecondaryClient["buy1155OnSecondary"];
+  sell1155OnSecondary: SecondaryClient["sell1155OnSecondary"];
+  getSecondaryInfo: SecondaryClient["getSecondaryInfo"];
 };
 
 export type CreatorClientConfig = ClientConfig & {
@@ -113,6 +117,10 @@ export function createCollectorClient(
     premintGetter: premintGetterToUse,
     mintGetter: mintGetterToUse,
   });
+  const secondaryClient = new SecondaryClient({
+    publicClient: params.publicClient,
+    chainId: params.chainId,
+  });
 
   return {
     getPremint: (p) =>
@@ -126,5 +134,8 @@ export function createCollectorClient(
     getTokensOfContract: (p) => mintClient.getOfContract(p),
     mint: (p) => mintClient.mint(p),
     getMintCosts: (p) => mintClient.getMintCosts(p),
+    buy1155OnSecondary: (p) => secondaryClient.buy1155OnSecondary(p),
+    sell1155OnSecondary: (p) => secondaryClient.sell1155OnSecondary(p),
+    getSecondaryInfo: (p) => secondaryClient.getSecondaryInfo(p),
   };
 }

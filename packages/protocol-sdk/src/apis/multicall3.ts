@@ -8,7 +8,7 @@ export const multicall3Abi = [
   "function aggregate(Call[] calldata calls) public payable returns (uint256 blockNumber, bytes[] memory returnData)",
   "function aggregate3(Call3[] calldata calls) public payable returns (Result[] memory returnData)",
   "function aggregate3Value(Call3Value[] calldata calls) public payable returns (Result[] memory returnData)",
-] as const;
+];
 
 export const multicall3Address = "0xcA11bde05977b3631167028862bE2a173976CA11";
 

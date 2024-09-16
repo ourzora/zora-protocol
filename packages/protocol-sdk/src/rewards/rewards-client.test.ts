@@ -1,86 +1,24 @@
 import { describe, expect, vi } from "vitest";
-import {
-  Address,
-  Chain,
-  encodeAbiParameters,
-  erc20Abi,
-  parseEther,
-  PublicClient,
-  WalletClient,
-} from "viem";
+import { encodeAbiParameters, erc20Abi, parseEther } from "viem";
 import { zoraSepolia } from "viem/chains";
 import {
   forkUrls,
   makeAnvilTest,
   simulateAndWriteContractWithRetries,
 } from "src/anvil";
-import { createCollectorClient, createCreatorClient } from "src/sdk";
-import {
-  demoContractMetadataURI,
-  demoTokenMetadataURI,
-} from "src/create/1155-create-helper.test";
+import { createCollectorClient } from "src/sdk";
 import { new1155ContractVersion } from "src/create/contract-setup";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
-import { SubgraphMintGetter } from "src/mint/subgraph-mint-getter";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
 import {
   secondarySwapABI,
   secondarySwapAddress,
   zoraCreator1155ImplABI,
-  zoraTimedSaleStrategyABI,
-  zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { makeContractParameters } from "src/utils";
-import { SubgraphRewardsGetter } from "./subgraph-rewards-getter";
 import { mockRewardsQueryResults } from "src/fixtures/rewards-query-results";
-
-async function setupContractAndToken({
-  chain,
-  publicClient,
-  creatorAccount,
-  walletClient,
-}: {
-  chain: Chain;
-  publicClient: PublicClient;
-  creatorAccount: Address;
-  walletClient: WalletClient;
-}) {
-  const rewardsGetter = new SubgraphRewardsGetter(chain.id);
-  const creatorClient = createCreatorClient({
-    chainId: chain.id,
-    publicClient,
-    rewardsGetter,
-  });
-
-  const mintGetter = new SubgraphMintGetter(chain.id);
-  // create a new 1155 contract
-
-  const { contractAddress, parameters, newTokenId } =
-    await creatorClient.create1155({
-      contract: {
-        uri: demoContractMetadataURI,
-        name: `Test 1155-${Math.round(Math.random() * 100_000_000_000)}`,
-      },
-      token: {
-        tokenMetadataURI: demoTokenMetadataURI,
-      },
-      account: creatorAccount,
-    });
-
-  await simulateAndWriteContractWithRetries({
-    parameters,
-    walletClient,
-    publicClient,
-  });
-
-  return {
-    creatorClient,
-    contractAddress,
-    newTokenId,
-    mintGetter,
-    rewardsGetter,
-  };
-}
+import { setupContractAndToken } from "src/fixtures/contract-setup";
+import { advanceToSaleAndAndLaunchMarket } from "src/secondary/secondary-client.test";
 
 describe("rewardsClient", () => {
   makeAnvilTest({
@@ -244,55 +182,21 @@ describe("rewardsClient", () => {
         publicClient,
       });
 
-      const saleEnd = (
-        await publicClient.readContract({
-          abi: zoraTimedSaleStrategyABI,
-          address:
-            zoraTimedSaleStrategyAddress[
-              chain.id as keyof typeof zoraTimedSaleStrategyAddress
-            ],
-          functionName: "saleV2",
-          args: [contractAddress, newTokenId],
-        })
-      ).saleEnd;
-
-      // advance to end of sale
-      await testClient.setNextBlockTimestamp({
-        timestamp: saleEnd,
-      });
-
-      await testClient.mine({
-        blocks: 1,
-      });
-
-      // advance to end of sale
-      // launch the market
-      await simulateAndWriteContractWithRetries({
-        parameters: makeContractParameters({
-          abi: zoraTimedSaleStrategyABI,
-          functionName: "launchMarket",
-          args: [contractAddress, newTokenId],
-          address:
-            zoraTimedSaleStrategyAddress[
-              chain.id as keyof typeof zoraTimedSaleStrategyAddress
-            ],
-          account: collectorAccount,
-        }),
+      await advanceToSaleAndAndLaunchMarket({
+        chainId: chain.id,
+        account: collectorAccount,
         publicClient,
         walletClient,
+        collectorClient,
+        testClient,
+        contractAddress,
+        tokenId: newTokenId,
       });
 
-      const erc20z = (
-        await publicClient.readContract({
-          abi: zoraTimedSaleStrategyABI,
-          address:
-            zoraTimedSaleStrategyAddress[
-              chain.id as keyof typeof zoraTimedSaleStrategyAddress
-            ],
-          functionName: "sale",
-          args: [contractAddress, newTokenId],
-        })
-      ).erc20zAddress;
+      const erc20z = (await collectorClient.getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+      }))!.erc20z!;
 
       // after market is launched, by 100 from the pool.  there should be some rewards
       // balances from secondary royalties

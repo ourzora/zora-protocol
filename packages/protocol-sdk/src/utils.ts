@@ -5,7 +5,10 @@ export const makeContractParameters = (
   args: SimulateContractParametersWithAccount,
 ) => args;
 
-export type PublicClient = Pick<BasePublicClient, "readContract" | "getBlock">;
+export type PublicClient = Pick<
+  BasePublicClient,
+  "readContract" | "getBlock" | "simulateContract" | "getBalance"
+>;
 
 export type ClientConfig = {
   /** The chain that the client is to run on. */
@@ -37,3 +40,6 @@ export function mintRecipientOrAccount({
 export type Concrete<Type> = {
   [Property in keyof Type]-?: Type[Property];
 };
+
+export const addressOrAccountAddress = (address: Address | Account) =>
+  typeof address === "string" ? address : address.address;

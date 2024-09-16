@@ -205,6 +205,14 @@ export default defineConfig({
                 text: "get mint costs",
                 link: "/protocol-sdk/collect/mint-costs",
               },
+              {
+                text: "buy1155OnSecondary",
+                link: "/protocol-sdk/collect/buy1155OnSecondary",
+              },
+              {
+                text: "sell1155OnSecondary",
+                link: "/protocol-sdk/collect/sell1155OnSecondary",
+              },
             ],
           },
         ],
