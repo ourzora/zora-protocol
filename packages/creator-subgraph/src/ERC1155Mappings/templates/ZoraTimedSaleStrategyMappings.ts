@@ -16,7 +16,7 @@ import {
   MintComment,
   ZoraTimedSaleStrategyRewardsDeposit,
   ERC20Z,
-  SalesConfigZoraTimedSaleStrategy
+  SalesConfigZoraTimedSaleStrategy,
 } from "../../../generated/schema";
 import { getMintCommentId } from "../../common/getMintCommentId";
 
@@ -110,7 +110,7 @@ export function handleZoraTimedSaleStrategySaleSetV2(event: SaleSetV2): void {
   let sale = SalesConfigZoraTimedSaleStrategy.load(id);
 
   if (sale) {
-    if (event.params.saleData.saleEnd !== BigInt.zero()) {
+    if (!event.params.saleData.saleEnd.equals(BigInt.zero())) {
       sale.saleEnd = event.params.saleData.saleEnd;
     } else {
       sale.saleStart = event.params.saleData.saleStart;

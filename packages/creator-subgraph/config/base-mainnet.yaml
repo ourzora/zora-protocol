@@ -1,7 +1,7 @@
 chainid: "8453"
 network: base
 grafting: 
-  base: "QmdQuZwUaV1zE7gS43rF9nVCc7xqVvrVxnGzfQZhZxDzqp"
+  base: "QmWaYJvydBF4fDkjwNs5xLW4WYQW5vjjuoWhFMtGEycU6M"
   block: "18703256"
 factories1155:
   - address: "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"

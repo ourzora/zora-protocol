@@ -1,8 +1,8 @@
 chainid: "10"
 network: optimism
 grafting: 
-  base: "QmNhZ47JcP8GjAMuMG8CDRktKacPSCMBJC1hNxwvZ5easG"
-  block: "124298713"
+  base: "QmeZpJiSf1TvewKgoS2PPtdxe2Rd9waVL5bypPoTXfYQ7a"
+  block: "125450000"
 factories1155:
   - address: "0x78b524931e9d847c40BcBf225c25e154a7B05fDA"
     startBlock: "97158995"
