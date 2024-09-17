@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.3
+
+### Patch Changes
+
+- b885539f: Publish weth addresses
+
 ## 0.3.2
 
 ### Patch Changes
