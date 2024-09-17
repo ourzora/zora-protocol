@@ -22,9 +22,9 @@ const { parameters, price, error } = await collectorClient.sell1155OnSecondary({
   quantity: 3n,
   // account that will execute the sell transaction
   account: address!,
-  // Slippage tolerance, ensuring that a minimum amount of ETH is received
-  // for the given quantity of 1155 tokens to sell.
-  slippage: 0.0005,
+  // (optional) Slippage tolerance, ensuring that a minimum amount of ETH is received
+  // for the given quantity of 1155 tokens to sell.  Defaults to 0.005 (0.5%)
+  slippage: 0.005,
 });
 
 if (error) {

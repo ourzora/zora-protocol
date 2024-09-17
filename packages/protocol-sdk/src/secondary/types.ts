@@ -43,7 +43,7 @@ export type BuyWithSlippageInput = {
   quantity: bigint;
   // Account to use for the transaction
   account: Address | Account;
-  // Slippage percentage (optional), defaults to 0.0005 (0.5%)
+  // Slippage percentage (optional), defaults to 0.005 (0.5%)
   slippage?: number;
   // Optional recipient address (if different from buyer/seller)
   recipient?: Address;

@@ -215,7 +215,7 @@ describe("secondary", () => {
         parseEther("0.000111"),
       );
 
-      // expected amount with slippage is total price * 1.0005 considering bigint:
+      // expected amount with slippage is total price * 1.005 considering bigint:
       const expectedTotalWithSlippage =
         buyResult.price!.wei.total + (buyResult.price!.wei.total * 5n) / 1000n;
 
