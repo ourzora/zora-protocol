@@ -158,18 +158,18 @@ export default defineConfig({
                 text: "create 1155s gaslessly (premints)",
                 link: "/protocol-sdk/creator/premint",
               },
+            ],
+          },
+          {
+            text: "Protocol Rewards and Secondary Royalties",
+            items: [
               {
-                text: "Protocol Rewards and Secondary Royalties",
-                items: [
-                  {
-                    text: "getRewardsBalances",
-                    link: "/protocol-sdk/creator/getRewardsBalances",
-                  },
-                  {
-                    text: "withdrawRewards",
-                    link: "/protocol-sdk/creator/withdrawRewards",
-                  },
-                ],
+                text: "getRewardsBalances",
+                link: "/protocol-sdk/creator/getRewardsBalances",
+              },
+              {
+                text: "withdrawRewards",
+                link: "/protocol-sdk/creator/withdrawRewards",
               },
             ],
           },
@@ -205,6 +205,12 @@ export default defineConfig({
                 text: "get mint costs",
                 link: "/protocol-sdk/collect/mint-costs",
               },
+             
+            ],
+          },
+          {
+            text: "Secondary Market",
+            items: [
               {
                 text: "buy1155OnSecondary",
                 link: "/protocol-sdk/collect/buy1155OnSecondary",
