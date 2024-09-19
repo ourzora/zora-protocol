@@ -4,9 +4,9 @@ import { defineConfig } from "vocs";
 export default defineConfig({
   title: "ZORA Docs",
   titleTemplate: "%s | ZORA Docs",
-  iconUrl: "/Zorb.png",
-  logoUrl: "/Zorb.png",
-  ogImageUrl: "https://docs.zora.co/og.png",
+  iconUrl: "https://docs.zora.co/Zorb.png",
+  logoUrl: "https://docs.zora.co/Zorb.png",
+  ogImageUrl: 'https://vocs.dev/api/og?logo=%logo&title=%title&description=%description', 
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [
