@@ -42,6 +42,7 @@ export default defineConfig({
       {
         text: "NFT Smart Contracts",
         items: [
+          { text: "Deployments", link: "/contracts/deployments" },
           {
             text: "Introduction",
             link: "/contracts/intro",
