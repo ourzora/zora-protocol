@@ -386,9 +386,13 @@ contract ZoraTimedSaleStrategyImpl is
         // Desired initial price
         bool tokenIsFirst = IUniswapV3Pool(saleStorage.poolAddress).token0() == saleStorage.erc20zAddress;
         uint160 desiredSqrtPriceX96 = tokenIsFirst ? UniswapV3LiquidityCalculator.SQRT_PRICE_X96_ERC20Z_0 : UniswapV3LiquidityCalculator.SQRT_PRICE_X96_WETH_0;
+        uint256 currentSqrtPriceX96 = IUniswapV3Pool(saleStorage.poolAddress).slot0().sqrtPriceX96;
 
-        if (IUniswapV3Pool(saleStorage.poolAddress).slot0().sqrtPriceX96 != desiredSqrtPriceX96) {
-            IUniswapV3Pool(saleStorage.poolAddress).swap(address(this), tokenIsFirst, 1, desiredSqrtPriceX96, "");
+        // Update the price if the pool price is incorrect before adding liquidity
+        // See https://github.com/Uniswap/v3-core/blob/d8b1c635c275d2a9450bd6a78f3fa2484fef73eb/contracts/UniswapV3Pool.sol#L612
+        if (currentSqrtPriceX96 != desiredSqrtPriceX96) {
+            bool swap0To1 = currentSqrtPriceX96 > desiredSqrtPriceX96;
+            IUniswapV3Pool(saleStorage.poolAddress).swap(address(this), swap0To1, 100, desiredSqrtPriceX96, "");
         }
 
         // Activate the secondary market on Uniswap via the ERC20Z contract
@@ -402,7 +406,7 @@ contract ZoraTimedSaleStrategyImpl is
     }
 
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
-        // no-op to pass through for force-setting the price
+        // no-op to allow swap
     }
 
     /// @notice Computes the rewards for a given quantity of tokens
