@@ -49,7 +49,7 @@ const chains: {
   subgraph: string;
   upgradeGates: Address[];
   additionalVersions?: {
-    [version: string]: Address;
+    [version: string]: Address | Address[];
   };
 }[] = [
   {
@@ -77,7 +77,10 @@ const chains: {
     ],
     subgraph: getSubgraph("zora-create-optimism", "stable"),
     additionalVersions: {
-      "1.4.0": "0x8Ca5e648C5dFEfcdDa06d627F4b490B719ccFD98",
+      "1.4.0": [
+        "0x8Ca5e648C5dFEfcdDa06d627F4b490B719ccFD98",
+        "0xeb29a4e5b84fef428c072deba2444e93c080ce87",
+      ],
     },
   },
   {
@@ -199,7 +202,7 @@ async function getVersions({
   publicClient: PublicClient;
   subgraphUrl: string;
   additionalVersions?: {
-    [version: string]: Address;
+    [version: string]: Address | Address[];
   };
 }) {
   // get upgrades of type 1155
@@ -253,9 +256,15 @@ async function getVersions({
     for (const [version, contractImplAddress] of Object.entries(
       additionalVersions,
     )) {
-      deployedVersions.push({
-        version,
-        contractImplAddress,
+      const contractImplAddresses =
+        typeof contractImplAddress === "string"
+          ? [contractImplAddress]
+          : contractImplAddress;
+      contractImplAddresses.forEach((contractImplAddress) => {
+        deployedVersions.push({
+          version,
+          contractImplAddress,
+        });
       });
     }
   }
@@ -286,23 +295,29 @@ async function validateConfiguredVersions({
   additionalVersions,
   publicClient,
 }: {
-  additionalVersions: { [version: string]: Address };
+  additionalVersions: { [version: string]: Address | Address[] };
   publicClient: PublicClient;
 }) {
   await Promise.all(
     Object.entries(additionalVersions).map(
-      async ([version, contractImplAddress]) => {
-        const existingVersion = await publicClient.readContract({
-          address: contractImplAddress,
-          abi: zoraCreator1155ImplABI,
-          functionName: "contractVersion",
-        });
+      async ([version, contractImplAddressOrAddresses]) => {
+        const contractImplAddresses =
+          typeof contractImplAddressOrAddresses === "string"
+            ? [contractImplAddressOrAddresses]
+            : contractImplAddressOrAddresses;
+        contractImplAddresses.forEach(async (contractImplAddress) => {
+          const existingVersion = await publicClient.readContract({
+            address: contractImplAddress,
+            abi: zoraCreator1155ImplABI,
+            functionName: "contractVersion",
+          });
 
-        if (existingVersion !== version) {
-          throw new Error(
-            `version ${existingVersion} on contract at ${contractImplAddress} mismatched from configured version ${version}`,
-          );
-        }
+          if (existingVersion !== version) {
+            throw new Error(
+              `version ${existingVersion} on contract at ${contractImplAddress} mismatched from configured version ${version}`,
+            );
+          }
+        });
       },
     ),
   );
@@ -457,7 +472,7 @@ const getMissingUpgradePathsForChain = async ({
   subgraphUrl: string;
   upgradeGates: Address[];
   additionalVersions?: {
-    [version: string]: Address;
+    [version: string]: Address | Address[];
   };
 }) => {
   const publicClient = makePublicClient({ chain, rpc });
