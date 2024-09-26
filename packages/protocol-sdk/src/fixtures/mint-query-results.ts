@@ -41,7 +41,7 @@ export const mockTimedSaleStrategyTokenQueryResult = ({
           ],
         mintFee: parseEther("0.000111").toString(),
         saleEnd: saleEnd.toString(),
-        saleStart: SALE_END_FOREVER.toString(),
+        saleStart: "0",
         erc20Z: {
           // not needed
           id: zeroAddress,

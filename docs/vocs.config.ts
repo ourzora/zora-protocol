@@ -191,22 +191,17 @@ export default defineConfig({
             text: "Collector Client",
             items: [
               {
-                text: "get an 1155, 721, or premint",
-                link: "/protocol-sdk/collect/get",
+                text: "getToken",
+                link: "/protocol-sdk/collect/getToken",
               },
               {
-                text: "getting tokens of an 1155 contract",
-                link: "/protocol-sdk/collect/get-of-contract",
+                text: "getTokensOfContract",
+                link: "/protocol-sdk/collect/getTokensOfContract",
               },
               {
                 text: "mint",
                 link: "/protocol-sdk/collect/mint",
-              },
-              {
-                text: "get mint costs",
-                link: "/protocol-sdk/collect/mint-costs",
-              },
-             
+              }
             ],
           },
           {

@@ -6,15 +6,19 @@ import {
   IOnchainMintGetter,
   SaleType,
   OnchainMintable,
-  OnchainSalesConfigAndTokenInfo,
   OnchainSalesStrategies,
+  GetMintableReturn,
 } from "./types";
 import {
   buildContractTokensQuery,
   buildNftTokenSalesQuery,
   buildPremintsOfContractQuery,
+  ERC20SaleStrategyResult,
+  FixedPriceSaleStrategyResult,
+  PresaleSalesStrategyResult,
   SalesStrategyResult,
   TokenQueryResult,
+  ZoraTimedMinterSaleStrategyResult,
 } from "./subgraph-queries";
 import { SubgraphGetter } from "src/apis/subgraph-getter";
 
@@ -24,90 +28,133 @@ export const getApiNetworkConfigForChain = (chainId: number): NetworkConfig => {
   }
   return networkConfigByChain[chainId]!;
 };
+type ParsedSalesConfig = {
+  salesStrategy: OnchainSalesStrategies;
+  saleActive: boolean;
+  saleEnd: bigint | undefined;
+  secondaryMarketActive?: boolean;
+};
+
+function parseFixedPriceSalesConfig(
+  fixedPrice: FixedPriceSaleStrategyResult["fixedPrice"],
+  contractMintFee: bigint,
+  blockTime: bigint,
+): ParsedSalesConfig {
+  const saleEnd = BigInt(fixedPrice.saleEnd);
+  return {
+    salesStrategy: {
+      saleType: "fixedPrice",
+      ...fixedPrice,
+      maxTokensPerAddress: BigInt(fixedPrice.maxTokensPerAddress),
+      pricePerToken: BigInt(fixedPrice.pricePerToken),
+      mintFeePerQuantity: contractMintFee,
+    },
+    saleEnd,
+    saleActive:
+      BigInt(fixedPrice.saleStart) <= blockTime && BigInt(saleEnd) > blockTime,
+  };
+}
+
+function parseERC20SalesConfig(
+  erc20Minter: ERC20SaleStrategyResult["erc20Minter"],
+  blockTime: bigint,
+): ParsedSalesConfig {
+  const saleEnd = BigInt(erc20Minter.saleEnd);
+  return {
+    salesStrategy: {
+      saleType: "erc20",
+      ...erc20Minter,
+      maxTokensPerAddress: BigInt(erc20Minter.maxTokensPerAddress),
+      pricePerToken: BigInt(erc20Minter.pricePerToken),
+      mintFeePerQuantity: 0n,
+    },
+    saleEnd,
+    saleActive:
+      BigInt(erc20Minter.saleStart) <= blockTime && saleEnd > blockTime,
+  };
+}
+
+function parsePresaleSalesConfig(
+  presale: PresaleSalesStrategyResult["presale"],
+  contractMintFee: bigint,
+  blockTime: bigint,
+): ParsedSalesConfig {
+  const saleEnd = BigInt(presale.presaleEnd);
+  return {
+    salesStrategy: {
+      saleType: "allowlist",
+      address: presale.address,
+      merkleRoot: presale.merkleRoot,
+      saleStart: presale.presaleStart,
+      saleEnd: presale.presaleEnd,
+      mintFeePerQuantity: contractMintFee,
+    },
+    saleEnd,
+    saleActive:
+      BigInt(presale.presaleStart) <= blockTime && saleEnd > blockTime,
+  };
+}
+
+function parseZoraTimedSalesConfig(
+  zoraTimedMinter: ZoraTimedMinterSaleStrategyResult["zoraTimedMinter"],
+  blockTime: bigint,
+): ParsedSalesConfig {
+  const saleEnd = BigInt(zoraTimedMinter.saleEnd);
+  const hasSaleEnd = saleEnd > 0n;
+  return {
+    salesStrategy: {
+      saleType: "timed",
+      address: zoraTimedMinter.address,
+      mintFee: BigInt(zoraTimedMinter.mintFee),
+      saleStart: zoraTimedMinter.saleStart,
+      saleEnd: zoraTimedMinter.saleEnd,
+      erc20Z: zoraTimedMinter.erc20Z.id,
+      pool: zoraTimedMinter.erc20Z.pool,
+      secondaryActivated: zoraTimedMinter.secondaryActivated,
+      mintFeePerQuantity: BigInt(zoraTimedMinter.mintFee),
+      marketCountdown: zoraTimedMinter.marketCountdown
+        ? BigInt(zoraTimedMinter.marketCountdown)
+        : undefined,
+      minimumMarketEth: zoraTimedMinter.minimumMarketEth
+        ? BigInt(zoraTimedMinter.minimumMarketEth)
+        : undefined,
+    },
+    saleEnd: hasSaleEnd ? saleEnd : undefined,
+    secondaryMarketActive: zoraTimedMinter.secondaryActivated,
+    saleActive:
+      BigInt(zoraTimedMinter.saleStart) <= blockTime &&
+      (hasSaleEnd ? saleEnd > blockTime : true),
+  };
+}
 
 function parseSalesConfig(
   targetStrategy: SalesStrategyResult,
   contractMintFee: bigint,
-): OnchainSalesStrategies {
-  if (targetStrategy.type === "FIXED_PRICE")
-    return {
-      saleType: "fixedPrice",
-      ...targetStrategy.fixedPrice,
-      maxTokensPerAddress: BigInt(
-        targetStrategy.fixedPrice.maxTokensPerAddress,
-      ),
-      pricePerToken: BigInt(targetStrategy.fixedPrice.pricePerToken),
-      mintFeePerQuantity: contractMintFee,
-    };
-
-  if (targetStrategy.type === "ERC_20_MINTER") {
-    return {
-      saleType: "erc20",
-      ...targetStrategy.erc20Minter,
-      maxTokensPerAddress: BigInt(
-        targetStrategy.erc20Minter.maxTokensPerAddress,
-      ),
-      pricePerToken: BigInt(targetStrategy.erc20Minter.pricePerToken),
-      mintFeePerQuantity: 0n,
-    };
-  }
-  if (targetStrategy.type === "PRESALE") {
-    return {
-      saleType: "allowlist",
-      address: targetStrategy.presale.address,
-      merkleRoot: targetStrategy.presale.merkleRoot,
-      saleStart: targetStrategy.presale.presaleStart,
-      saleEnd: targetStrategy.presale.presaleEnd,
-      mintFeePerQuantity: contractMintFee,
-    };
-  }
-  if (targetStrategy.type === "ZORA_TIMED") {
-    return {
-      saleType: "timed",
-      address: targetStrategy.zoraTimedMinter.address,
-      mintFee: BigInt(targetStrategy.zoraTimedMinter.mintFee),
-      saleStart: targetStrategy.zoraTimedMinter.saleStart,
-      saleEnd: targetStrategy.zoraTimedMinter.saleEnd,
-      erc20Z: targetStrategy.zoraTimedMinter.erc20Z.id,
-      pool: targetStrategy.zoraTimedMinter.erc20Z.pool,
-      secondaryActivated: targetStrategy.zoraTimedMinter.secondaryActivated,
-      mintFeePerQuantity: BigInt(targetStrategy.zoraTimedMinter.mintFee),
-      marketCountdown: targetStrategy.zoraTimedMinter.marketCountdown
-        ? BigInt(targetStrategy.zoraTimedMinter.marketCountdown)
-        : undefined,
-      minimumMarketEth: targetStrategy.zoraTimedMinter.minimumMarketEth
-        ? BigInt(targetStrategy.zoraTimedMinter.minimumMarketEth)
-        : undefined,
-    };
-  }
-
-  throw new Error("Unknown saleType");
-}
-
-function getSaleEnd(a: SalesStrategyResult) {
-  if (a.type === "FIXED_PRICE") return BigInt(a.fixedPrice.saleEnd);
-  if (a.type === "ERC_20_MINTER") return BigInt(a.erc20Minter.saleEnd);
-  if (a.type === "ZORA_TIMED") return BigInt(a.zoraTimedMinter.saleEnd);
-  return BigInt(a.presale.presaleEnd);
-}
-
-function strategyIsStillValid(
-  strategy: SalesStrategyResult,
   blockTime: bigint,
-): boolean {
-  if (strategy.type === "FIXED_PRICE") {
-    return BigInt(strategy.fixedPrice.saleEnd) > blockTime;
+): ParsedSalesConfig {
+  switch (targetStrategy.type) {
+    case "FIXED_PRICE":
+      return parseFixedPriceSalesConfig(
+        targetStrategy.fixedPrice,
+        contractMintFee,
+        blockTime,
+      );
+    case "ERC_20_MINTER":
+      return parseERC20SalesConfig(targetStrategy.erc20Minter, blockTime);
+    case "PRESALE":
+      return parsePresaleSalesConfig(
+        targetStrategy.presale,
+        contractMintFee,
+        blockTime,
+      );
+    case "ZORA_TIMED":
+      return parseZoraTimedSalesConfig(
+        targetStrategy.zoraTimedMinter,
+        blockTime,
+      );
+    default:
+      throw new Error("Unknown saleType");
   }
-  if (strategy.type === "ERC_20_MINTER") {
-    return BigInt(strategy.erc20Minter.saleEnd) > blockTime;
-  }
-  if (strategy.type === "ZORA_TIMED") {
-    return (
-      BigInt(strategy.zoraTimedMinter.saleEnd) === 0n ||
-      BigInt(strategy.zoraTimedMinter.saleEnd) > blockTime
-    );
-  }
-  return BigInt(strategy.presale.presaleEnd) > blockTime;
 }
 
 function getTargetStrategy({
@@ -115,39 +162,45 @@ function getTargetStrategy({
   preferredSaleType,
   token,
   blockTime,
+  contractMintFee,
 }: {
   tokenId?: GenericTokenIdTypes;
   preferredSaleType?: SaleType;
   token: TokenQueryResult;
   blockTime: bigint;
-}): SalesStrategyResult | undefined {
+  contractMintFee: bigint;
+}): ParsedSalesConfig | undefined {
   const allStrategies =
     (typeof tokenId !== "undefined"
       ? token.salesStrategies
       : token.contract.salesStrategies) || [];
 
-  const stillValidSalesStrategies = allStrategies.filter((strategy) =>
-    strategyIsStillValid(strategy, blockTime),
+  const parsedStrategies = allStrategies.map((strategy) =>
+    parseSalesConfig(strategy, contractMintFee, blockTime),
+  );
+
+  const stillValidSalesStrategies = parsedStrategies.filter(
+    (strategy) => strategy.saleActive,
   );
 
   const saleStrategies = stillValidSalesStrategies.sort((a, b) =>
-    getSaleEnd(a) > getSaleEnd(b) ? 1 : -1,
+    (a.saleEnd ?? 0n) > (b.saleEnd ?? 0n) ? 1 : -1,
   );
 
-  let targetStrategy: SalesStrategyResult | undefined;
+  let targetStrategy: ParsedSalesConfig | undefined;
 
   if (!preferredSaleType) {
     return saleStrategies[0];
   } else {
-    const mappedSaleType =
-      preferredSaleType === "erc20" ? "ERC_20_MINTER" : "FIXED_PRICE";
     targetStrategy = saleStrategies.find(
-      (strategy: SalesStrategyResult) => strategy.type === mappedSaleType,
+      ({ salesStrategy }) => salesStrategy.saleType === preferredSaleType,
     );
     if (!targetStrategy) {
       const targetStrategy = saleStrategies.find(
-        (strategy: SalesStrategyResult) =>
-          strategy.type === "FIXED_PRICE" || strategy.type === "ERC_20_MINTER",
+        ({ salesStrategy }) =>
+          salesStrategy.saleType === "timed" ||
+          salesStrategy.saleType === "fixedPrice" ||
+          salesStrategy.saleType === "erc20",
       );
       if (!targetStrategy) throw new Error("Cannot find valid sale strategy");
       return targetStrategy;
@@ -249,7 +302,7 @@ export class SubgraphMintGetter
   }
 }
 
-function getTargetStrategyAndMintFee({
+function getTargetStrategyAndMintFeeAndSaleActive({
   token,
   tokenId,
   preferredSaleType,
@@ -267,13 +320,10 @@ function getTargetStrategyAndMintFee({
     preferredSaleType: preferredSaleType,
     token,
     blockTime,
+    contractMintFee: defaultMintFee,
   });
 
-  if (!targetStrategy) return undefined;
-
-  const salesConfig = parseSalesConfig(targetStrategy, defaultMintFee);
-
-  return salesConfig;
+  return targetStrategy;
 }
 
 function parseTokenQueryResult({
@@ -288,8 +338,8 @@ function parseTokenQueryResult({
   preferredSaleType?: SaleType;
   defaultMintFee: bigint;
   blockTime: bigint;
-}): OnchainSalesConfigAndTokenInfo {
-  const salesConfig = getTargetStrategyAndMintFee({
+}): GetMintableReturn {
+  const salesStrategyAndMintInfo = getTargetStrategyAndMintFeeAndSaleActive({
     token,
     tokenId,
     preferredSaleType,
@@ -302,8 +352,14 @@ function parseTokenQueryResult({
   });
 
   return {
-    ...tokenInfo,
-    salesConfig,
+    salesConfigAndTokenInfo: {
+      ...tokenInfo,
+      salesConfig: salesStrategyAndMintInfo?.salesStrategy,
+    },
+    primaryMintActive: salesStrategyAndMintInfo?.saleActive ?? false,
+    primaryMintEnd: salesStrategyAndMintInfo?.saleEnd,
+    secondaryMarketActive:
+      salesStrategyAndMintInfo?.secondaryMarketActive ?? false,
   };
 }
 
@@ -311,7 +367,7 @@ function parseTokenInfo({
   token,
 }: {
   token: TokenQueryResult;
-}): OnchainMintable {
+}): Omit<OnchainMintable, "primaryMintActive" | "primaryMintEnd"> {
   return {
     contract: {
       address: token.contract.address,

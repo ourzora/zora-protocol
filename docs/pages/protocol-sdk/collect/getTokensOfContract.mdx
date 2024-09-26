@@ -1,10 +1,12 @@
-# Getting tokens of an 1155 contract
+# `getTokensOfContract`
 
 **Both onchain** and **premint (gaslessly created)** tokens of a Zora 1155 contract can be retrieved using the the Collector Client function 
 `getTokensOfContract()` and passing a token contract address. The function returns a `tokens` array with an item for each token of the contract.
 Each item in `tokens` contains information the token in the `token` object, and has a function
 `prepareMint`.  The `prepareMint` function takes a quantity to mint and returns the transaction parameters to mint the token, costs to mint the token, and any necessary
 erc20 approvals that must be executed before minting the token.
+
+## Usage
 
 ```tsx twoslash
 import { 
@@ -65,3 +67,23 @@ costs.
 
 
 ```
+
+## Return Type
+
+Returns an array of [MintableReturn](/protocol-sdk/collect/getToken#return-type) objects.
+
+## Parameters
+
+### tokenContract
+
+`Address`
+
+The address of the 1155 contract to get the tokens of.
+
+### preferredSaleType (optional)
+
+`"fixedPrice" | "erc20" | "allowlist" | "premint" | "timed"`
+
+Optional preferred sale type of the minter to use for the token, only applicable for onchain 1155s.
+
+

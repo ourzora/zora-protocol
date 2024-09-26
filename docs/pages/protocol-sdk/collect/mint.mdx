@@ -1,9 +1,11 @@
-# Mint 1155s, 721s, and Premints
+# `mint`
 
 The Collector Client can be used to prepare transactions for minting 1155s, 721s, and premints with
 a function `mint()`. The type of item to mint is determined by the `mintType` parameter, which
 can be set to either `1155`, `721`, or `premint`. Depending on the `mintType` additional parameters
 must be passed.
+
+## Usage
 
 ```tsx twoslash
 import { 
@@ -160,3 +162,159 @@ To earn a mint referral reward, pass in the `mintReferral` argument to the `mint
 ```
 
 :::
+
+### Getting mint costs
+
+The `cost` object returned from the `mint()` function can be used to get the costs to mint x quantity of the token.
+
+:::code-group
+
+```ts twoslash [example.ts]
+
+// @filename: data.ts
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+
+// @filename: example.ts
+// ---cut---
+import { usePublicClient, useAccount } from "wagmi";
+import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { chainId, publicClient } from "./config";
+import { tokenAddress, tokenId } from "./data";
+
+const publicClient = usePublicClient();
+
+const collectorClient = createCollectorClient({ chainId, publicClient });
+const { address } = useAccount();
+
+const { prepareMint } = await collectorClient.getToken({
+  // 1155 contract address
+  collection: tokenAddress,
+  // 1155 token id
+  tokenId,
+// @noErrors
+  mintType: "",
+//           ^|
+});
+
+
+// get the costs by calling the returned `prepareMint` function
+// with the quantity to mint
+const { costs } = prepareMint({
+  minterAccount: address!,
+  quantityToMint: 3n
+});
+
+// @noErrors
+costs.
+//    ^|
+
+
+
+```
+
+```ts twoslash [data.ts]
+// [!include ~/snippets/protocol-sdk/collect/data.ts]
+```
+
+:::
+
+
+## Parameters
+
+```ts twoslash
+import { type MakeMintParametersArguments } from "@zoralabs/protocol-sdk";
+
+const params: MakeMintParametersArguments = {
+  tokenContract: "0x1234567890123456789012345678901234567890",
+  mintType: "1155",
+  tokenId: 1n,
+  minterAccount: "0x1234567890123456789012345678901234567890",
+  quantityToMint: 5,
+  mintReferral: "0x1234567890123456789012345678901234567890",
+  mintRecipient: "0x1234567890123456789012345678901234567890",
+}
+```
+
+### tokenContract
+
+`Address`
+
+The address of the contract to mint from.
+
+### mintType
+
+`"1155" | "721" | "premint"`
+
+The type of token to mint.
+
+### tokenId
+
+`bigint` (only for 1155 mints)
+
+The token ID to mint for ERC1155 tokens.
+
+### uid
+
+`number` (only for premint mints)
+
+The unique identifier of the premint to mint.
+
+### minterAccount
+
+`Account | Address`
+
+The account that will execute the mint transaction.
+
+### quantityToMint
+
+`number | bigint`
+
+The quantity of tokens to mint. Defaults to 1.
+
+### mintComment
+
+`string` (optional)
+
+An optional comment to add to the mint transaction.
+
+### mintReferral
+
+`Address` (optional)
+
+The address that will receive the mint referral reward, if applicable.
+
+### mintRecipient
+
+`Address` (optional)
+
+The address that will receive the minted tokens. If not specified, defaults to the minting account.
+
+### firstMinter
+
+`Address` (optional)
+
+For premint mints, the address that will receive the first minter reward if this mint brings the premint onchain.
+
+Do note that premint is a deprecated feature as we have moved to being onchain first with our mints.
+
+### allowListEntry
+
+`AllowListEntry` (optional)
+
+For allowlist mints, the information for the allowlist entry.
+
+### preferredSaleType (optional)
+
+`"fixedPrice" | "erc20" | "allowlist" | "premint" | "timed"`
+
+Optional preferred sale type of the minter to use for the token, only applicable for onchain 1155s.
+
+## Return Type
+
+Returns an object with the following properties:
+
+- `parameters`: The parameters for the mint transaction.
+- `costs`: The costs for the mint transaction.
+
+
+

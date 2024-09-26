@@ -40,7 +40,11 @@ describe("mint-helper", () => {
         publicClient,
       });
 
-      const { token: mintable, prepareMint } = await collectorClient.getToken({
+      const {
+        token: mintable,
+        prepareMint,
+        primaryMintActive,
+      } = await collectorClient.getToken({
         tokenContract: targetContract,
         mintType: "1155",
         tokenId: targetTokenId,
@@ -51,7 +55,10 @@ describe("mint-helper", () => {
       mintable.tokenURI;
       mintable;
 
-      const { parameters, costs } = prepareMint({
+      expect(primaryMintActive).toBe(true);
+      expect(prepareMint).toBeDefined();
+
+      const { parameters, costs } = prepareMint!({
         minterAccount: creatorAccount,
         quantityToMint: 1,
       });
@@ -103,14 +110,18 @@ describe("mint-helper", () => {
         publicClient,
       });
 
-      const { prepareMint } = await collectorClient.getToken({
-        tokenContract: targetContract,
-        mintType: "721",
-      });
+      const { prepareMint, primaryMintActive } = await collectorClient.getToken(
+        {
+          tokenContract: targetContract,
+          mintType: "721",
+        },
+      );
 
       const quantityToMint = 3n;
 
-      const { parameters, costs } = prepareMint({
+      expect(primaryMintActive).toBe(true);
+
+      const { parameters, costs } = prepareMint!({
         minterAccount: creatorAccount,
         mintRecipient: creatorAccount,
         quantityToMint,
@@ -168,7 +179,7 @@ describe("mint-helper", () => {
         address: mockCollector,
       });
 
-      const { prepareMint } = await minter.getToken({
+      const { prepareMint, primaryMintActive } = await minter.getToken({
         mintType: "1155",
         tokenContract: targetContract,
         tokenId: targetTokenId,
@@ -176,7 +187,10 @@ describe("mint-helper", () => {
 
       const quantityToMint = 1n;
 
-      const { parameters, erc20Approval, costs } = prepareMint({
+      expect(primaryMintActive).toBe(true);
+      expect(prepareMint).toBeDefined();
+
+      const { parameters, erc20Approval, costs } = prepareMint!({
         minterAccount: mockCollector,
         quantityToMint,
       });
@@ -271,13 +285,15 @@ describe("mint-helper", () => {
       merkleRoot,
     });
 
-    const { prepareMint } = await collectorClient.getToken({
+    const { prepareMint, primaryMintActive } = await collectorClient.getToken({
       mintType: "1155",
       tokenContract: targetContract,
       tokenId,
     });
 
     const minter = (await walletClient.getAddresses())[0]!;
+
+    expect(primaryMintActive).toBe(true);
 
     await testClient.setBalance({
       address: minter,
@@ -286,7 +302,7 @@ describe("mint-helper", () => {
 
     const quantityToMint = allowListEntryResult.allowListEntry!.maxCanMint;
 
-    const { parameters } = prepareMint({
+    const { parameters } = prepareMint!({
       minterAccount: minter,
       quantityToMint,
       mintRecipient: allowListUser,
@@ -372,6 +388,8 @@ describe("mint-helper", () => {
         publicClient,
       });
 
+      const saleEnd =
+        BigInt(Math.round(new Date().getTime() / 1000)) + 1000000n;
       const zoraCreateToken = mockTimedSaleStrategyTokenQueryResult({
         chainId: chain.id,
         contractAddress,
@@ -380,6 +398,7 @@ describe("mint-helper", () => {
             chain.id as keyof typeof new1155ContractVersion
           ],
         tokenId: newTokenId,
+        saleEnd,
       });
 
       const mockQuery = vi.fn<ISubgraphQuerier["query"]>().mockResolvedValue({
@@ -397,15 +416,24 @@ describe("mint-helper", () => {
 
       const collector = (await walletClient.getAddresses())[1]!;
 
-      const { prepareMint } = await collectorClient.getToken({
+      const {
+        prepareMint,
+        primaryMintActive,
+        primaryMintEnd,
+        secondaryMarketActive,
+      } = await collectorClient.getToken({
         mintType: "1155",
         tokenContract: contractAddress,
         tokenId: newTokenId,
       });
 
+      expect(primaryMintActive).toBe(true);
+      expect(secondaryMarketActive).toBe(false);
+      expect(primaryMintEnd).toBe(saleEnd);
+
       const quantityToMint = 10n;
 
-      const { parameters: mintParameters, costs } = prepareMint({
+      const { parameters: mintParameters, costs } = prepareMint!({
         minterAccount: collector,
         quantityToMint,
       });

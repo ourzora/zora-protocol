@@ -226,17 +226,24 @@ export type SalesConfigAndTokenInfo =
   | OnchainSalesConfigAndTokenInfo
   | PremintMintable;
 
+export type GetMintableReturn = {
+  salesConfigAndTokenInfo: OnchainSalesConfigAndTokenInfo;
+  secondaryMarketActive: boolean;
+  primaryMintActive: boolean;
+  primaryMintEnd?: bigint;
+};
+
 export interface IOnchainMintGetter {
   getMintable(params: {
     tokenAddress: Address;
     tokenId?: GenericTokenIdTypes;
     preferredSaleType?: SaleType;
     blockTime: bigint;
-  }): Promise<OnchainSalesConfigAndTokenInfo>;
+  }): Promise<GetMintableReturn>;
 
   getContractMintable(params: {
     tokenAddress: Address;
-  }): Promise<OnchainSalesConfigAndTokenInfo[]>;
+  }): Promise<GetMintableReturn[]>;
 
   getContractPremintTokenIds(params: {
     tokenAddress: Address;
@@ -280,6 +287,17 @@ export type AsyncPrepareMint = (
 export type MintableReturn = {
   /** Token information */
   token: SalesConfigAndTokenInfo;
-  /** Function that takes a quantity of items to mint and returns a prepared transaction and the costs to mint that quantity */
-  prepareMint: PrepareMint;
-};
+  /** If the primary mint is active, the end time of the primary mint, if there is an end time */
+  primaryMintEnd?: bigint;
+  secondaryMarketActive: boolean;
+} & (
+  | {
+      primaryMintActive: true;
+      /** Function that takes a quantity of items to mint and returns a prepared transaction and the costs to mint that quantity.  If the primary mint is not active, it will be undefined. */
+      prepareMint: PrepareMint;
+    }
+  | {
+      primaryMintActive: false;
+      prepareMint?: undefined;
+    }
+);

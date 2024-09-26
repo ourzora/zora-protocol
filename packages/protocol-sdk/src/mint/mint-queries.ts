@@ -13,6 +13,7 @@ import {
   PrepareMint,
   is1155Mint,
   isOnChainMint,
+  GetMintableReturn,
 } from "./types";
 import { Address, zeroAddress } from "viem";
 import {
@@ -148,7 +149,7 @@ export async function getMintCosts({
   if (isOnChainMint(params)) {
     const tokenId = is1155Mint(params) ? params.tokenId : undefined;
     const blockTime = (await publicClient.getBlock()).timestamp;
-    const salesConfigAndTokenInfo = await mintGetter.getMintable({
+    const { salesConfigAndTokenInfo } = await mintGetter.getMintable({
       tokenId,
       tokenAddress: collection,
       blockTime,
@@ -219,6 +220,13 @@ async function getPremintsOfContractMintable({
   });
 }
 
+export function isPrimaryMintActive(
+  premint: Pick<PremintFromApi, "premint">["premint"],
+) {
+  const currentTime = new Date().getTime() / 1000;
+
+  return premint.premintConfig.tokenConfig.mintStart < currentTime;
+}
 /** Parsing */
 
 function parsePremint({
@@ -282,33 +290,49 @@ export const makeOnchainPrepareMint =
     };
   };
 
-function toMintableReturn(
-  result: OnchainSalesConfigAndTokenInfo,
-): MintableReturn {
-  return { token: result, prepareMint: makeOnchainPrepareMint(result) };
+function toMintableReturn(result: GetMintableReturn): MintableReturn {
+  const primaryMintActive = result.primaryMintActive;
+  if (!primaryMintActive) {
+    return {
+      token: result.salesConfigAndTokenInfo,
+      primaryMintActive,
+      primaryMintEnd: result.primaryMintEnd,
+      secondaryMarketActive: result.secondaryMarketActive,
+      prepareMint: undefined,
+    };
+  }
+  return {
+    token: result.salesConfigAndTokenInfo,
+    primaryMintActive,
+    primaryMintEnd: result.primaryMintEnd,
+    secondaryMarketActive: result.secondaryMarketActive,
+    prepareMint: makeOnchainPrepareMint(result.salesConfigAndTokenInfo),
+  };
 }
 
-const makePremintPrepareMint =
-  (
-    mintable: PremintSalesConfigAndTokenInfo,
-    mintFee: bigint,
-    premint: Pick<
-      PremintFromApi,
-      "premint" | "signer" | "collectionAddress" | "collection" | "signature"
-    >,
-  ): PrepareMint =>
-  (params: MintParametersBase) => ({
-    parameters: buildPremintMintCall({
-      mintArguments: params,
-      mintFee,
-      premint,
-    }),
-    costs: parseMintCosts({
-      quantityToMint: BigInt(params.quantityToMint),
-      salesConfig: mintable.salesConfig,
-      allowListEntry: params.allowListEntry,
-    }),
-  });
+const makePremintPrepareMint = (
+  mintable: PremintSalesConfigAndTokenInfo,
+  mintFee: bigint,
+  premint: Pick<
+    PremintFromApi,
+    "premint" | "signer" | "collectionAddress" | "collection" | "signature"
+  >,
+): PrepareMint => {
+  return (params: MintParametersBase) => {
+    return {
+      parameters: buildPremintMintCall({
+        mintArguments: params,
+        mintFee,
+        premint,
+      }),
+      costs: parseMintCosts({
+        quantityToMint: BigInt(params.quantityToMint),
+        salesConfig: mintable.salesConfig,
+        allowListEntry: params.allowListEntry,
+      }),
+    };
+  };
+};
 
 function toPremintMintReturn({
   premint,
@@ -322,11 +346,24 @@ function toPremintMintReturn({
 }): MintableReturn {
   const mintable = parsePremint({ premint, mintFee });
 
+  const primaryMintActive = isPrimaryMintActive(premint.premint);
+
+  if (!primaryMintActive) {
+    return {
+      token: mintable,
+      primaryMintActive,
+      prepareMint: undefined,
+      secondaryMarketActive: false,
+    };
+  }
   return {
     token: mintable,
+    primaryMintActive,
+    secondaryMarketActive: false,
     prepareMint: makePremintPrepareMint(mintable, mintFee, premint),
   };
 }
+
 export function getRequiredErc20Approvals(
   params: MintParametersBase,
   salesConfig: OnchainSalesConfigAndTokenInfo["salesConfig"],

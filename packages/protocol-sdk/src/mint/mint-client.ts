@@ -116,14 +116,18 @@ async function mint({
   mintGetter: IOnchainMintGetter;
   premintGetter: IPremintGetter;
 }): Promise<PrepareMintReturn> {
-  const { prepareMint } = await getMint({
+  const { prepareMint, primaryMintActive } = await getMint({
     params: parameters,
     mintGetter,
     premintGetter,
     publicClient,
   });
 
-  return prepareMint({
+  if (!primaryMintActive) {
+    throw new Error("Primary mint is not active");
+  }
+
+  return prepareMint!({
     minterAccount: parameters.minterAccount,
     quantityToMint: parameters.quantityToMint,
     firstMinter: parameters.firstMinter,
