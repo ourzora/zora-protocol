@@ -278,7 +278,13 @@ contract ZoraTimedSaleStrategyMarketTest is BaseTest {
         bool tokenIsFirst = erc20zAddress > address(WETH);
 
         console2.log("initial swap");
-        IUniswapV3Pool(poolAddress).swap(address(this), tokenIsFirst, 0.001 ether, !tokenIsFirst ? 14614467034852101032872730522039888223787239703 : 4295128759, bytes(""));
+        IUniswapV3Pool(poolAddress).swap(
+            address(this),
+            tokenIsFirst,
+            0.001 ether,
+            !tokenIsFirst ? 14614467034852101032872730522039888223787239703 : 4295128759,
+            bytes("")
+        );
 
         // mint 100 tokens
         saleStrategy.mint{value: 0.000111 ether * 100}(collector, 100, address(collection), tokenId, address(0), "");
@@ -296,7 +302,13 @@ contract ZoraTimedSaleStrategyMarketTest is BaseTest {
         vm.etch(collector, address(new CollectorUniswapCallback()).code);
 
         // MIN (plus a little) and MAX (minus a little) price being passed in here
-        IUniswapV3Pool(poolAddress).swap(address(collector), !tokenIsFirst, tokenIsFirst ? int256(-10000000000) : int256(100000000), tokenIsFirst ? 14614467034852101032872730522039888223787239703 : 4295128759, bytes(""));
+        IUniswapV3Pool(poolAddress).swap(
+            address(collector),
+            !tokenIsFirst,
+            tokenIsFirst ? int256(-10000000000) : int256(100000000),
+            tokenIsFirst ? 14614467034852101032872730522039888223787239703 : 4295128759,
+            bytes("")
+        );
 
         console2.log("WETH balance (from selling one zrtk): %", WETH.balanceOf(address(this)));
     }
