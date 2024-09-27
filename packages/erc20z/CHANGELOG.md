@@ -1,5 +1,11 @@
 # @zoralabs/erc20z
 
+## 2.0.3
+
+### Patch Changes
+
+- 66f33bbb: fix: update secondary swap helper contract address
+
 ## 2.0.2
 
 ### Patch Changes

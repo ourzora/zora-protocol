@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-sdk",
-  "version": "0.11.1",
+  "version": "0.11.2",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "type": "module",

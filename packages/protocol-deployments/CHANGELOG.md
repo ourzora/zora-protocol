@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.4
+
+### Patch Changes
+
+- 66f33bbb: fix: update secondary swap helper contract address
+
 ## 0.3.3
 
 ### Patch Changes
