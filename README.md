@@ -26,19 +26,19 @@ Install prerequisites:
 
 Install dependencies:
 
-    yarn
+    pnpm
 
 Build contracts:
 
-    yarn build
+    pnpm build
 
 Run tests:
 
-    yarn test
+    pnpm test
 
 Run in development mode (watch tests):
 
-    yarn dev
+    pnpm dev
 
 ## Bug Bounty
 
@@ -47,3 +47,14 @@ Run in development mode (watch tests):
 ## Development workflow
 
 See [DEVELOPING.md](./DEVELOPING.md)
+
+## Updating Build / Release Process
+
+After updating build settings with pnpm, run:
+
+* `pnpm install`
+* `pnpm run build:js`
+* `pnpm run release`
+
+This tests the full build and release flow. 
+Without authentication packages will not be published but staged for publish.
