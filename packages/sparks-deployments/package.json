@@ -18,10 +18,7 @@
     "unlink-contracts": "pnpm unlink-common && pnpm run unlink-sparks",
     "link-contracts": "rm -rf ./node_modules && cd .. && pnpm"
   },
-  "dependencies": {
-    "@zoralabs/sparks-contracts": "workspace:^",
-    "@zoralabs/shared-contracts": "workspace:^"
-  },
+  "dependencies": {},
   "devDependencies": {
     "@openzeppelin/contracts": "5.0.2",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
@@ -42,6 +39,8 @@
     "solmate": "6.1.0",
     "tsx": "^3.13.0",
     "typescript": "^5.2.2",
-    "@zoralabs/tsconfig": "workspace:^"
+    "@zoralabs/tsconfig": "workspace:^",
+    "@zoralabs/sparks-contracts": "workspace:^",
+    "@zoralabs/shared-contracts": "workspace:^"
   }
 }

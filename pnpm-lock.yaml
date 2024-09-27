@@ -269,32 +269,13 @@ importers:
         version: 0.3.0
 
   packages/erc20z:
-    dependencies:
+    devDependencies:
       '@openzeppelin/contracts':
         specifier: 5.0.2
         version: 5.0.2
       '@openzeppelin/contracts-upgradeable':
         specifier: 5.0.2
         version: 5.0.2(@openzeppelin/contracts@5.0.2)
-      '@zoralabs/protocol-rewards':
-        specifier: workspace:^
-        version: link:../protocol-rewards
-      '@zoralabs/shared-contracts':
-        specifier: workspace:^
-        version: link:../shared-contracts
-      '@zoralabs/zora-1155-contracts':
-        specifier: workspace:^
-        version: link:../1155-contracts
-      ds-test:
-        specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
-        version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
-      forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
-      solady:
-        specifier: 0.0.132
-        version: 0.0.132
-    devDependencies:
       '@turnkey/api-key-stamper':
         specifier: ^0.3.1
         version: 0.3.1
@@ -310,9 +291,24 @@ importers:
       '@wagmi/cli':
         specifier: ^1.0.1
         version: 1.5.2(@wagmi/core@2.13.0(@types/react@18.3.5)(react@18.3.1)(typescript@5.5.4)(viem@1.21.4(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)))(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(wagmi@2.12.0(@types/react@18.3.5)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(typescript@5.5.4)(utf-8-validate@5.0.10)(viem@1.21.4(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8))
+      '@zoralabs/protocol-rewards':
+        specifier: workspace:^
+        version: link:../protocol-rewards
+      '@zoralabs/shared-contracts':
+        specifier: workspace:^
+        version: link:../shared-contracts
       '@zoralabs/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
+      '@zoralabs/zora-1155-contracts':
+        specifier: workspace:^
+        version: link:../1155-contracts
+      ds-test:
+        specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
+        version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
+      forge-std:
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -325,6 +321,9 @@ importers:
       prettier-plugin-solidity:
         specifier: ^1.3.1
         version: 1.3.1(prettier@3.3.3)
+      solady:
+        specifier: 0.0.132
+        version: 0.0.132
       tsup:
         specifier: ^7.2.0
         version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
@@ -516,7 +515,7 @@ importers:
         version: 2.0.5(@types/node@20.14.12)(@vitest/ui@2.0.5)(terser@5.31.3)
 
   packages/shared-contracts:
-    dependencies:
+    devDependencies:
       '@openzeppelin/contracts':
         specifier: ^5.0.2
         version: 5.0.2
@@ -526,10 +525,6 @@ importers:
       forge-std:
         specifier: https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/705263c95892a906d7af65f0f73ce8a4a0c80b80
-      solady:
-        specifier: ^0.0.168
-        version: 0.0.168
-    devDependencies:
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -539,6 +534,9 @@ importers:
       prettier-plugin-solidity:
         specifier: ^1.3.1
         version: 1.3.1(prettier@3.3.3)
+      solady:
+        specifier: ^0.0.168
+        version: 0.0.168
       tsx:
         specifier: ^4.16.3
         version: 4.16.3
@@ -563,41 +561,40 @@ importers:
         version: 0.0.35(viem@2.18.0(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8))
 
   packages/sparks:
-    dependencies:
+    devDependencies:
+      '@lavamoat/preinstall-always-fail':
+        specifier: 2.0.0
+        version: 2.0.0
       '@openzeppelin/contracts':
         specifier: ^5.0.1
         version: 5.0.2
       '@openzeppelin/contracts-upgradeable':
         specifier: ^5.0.1
         version: 5.0.2(@openzeppelin/contracts@5.0.2)
-      '@zoralabs/shared-contracts':
-        specifier: workspace:^
-        version: link:../shared-contracts
-      ds-test:
-        specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
-        version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
-      forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/705263c95892a906d7af65f0f73ce8a4a0c80b80
-      graphql-request:
-        specifier: ^6.1.0
-        version: 6.1.0(encoding@0.1.13)(graphql@16.9.0)
-    devDependencies:
-      '@lavamoat/preinstall-always-fail':
-        specifier: 2.0.0
-        version: 2.0.0
       '@types/node':
         specifier: 20.3.2
         version: 20.3.2
       '@wagmi/cli':
         specifier: ^1.0.1
         version: 1.5.2(@wagmi/core@2.13.0(typescript@5.5.4))(typescript@5.5.4)(wagmi@2.12.0(encoding@0.1.13)(typescript@5.5.4))
+      '@zoralabs/shared-contracts':
+        specifier: workspace:^
+        version: link:../shared-contracts
       '@zoralabs/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
+      ds-test:
+        specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
+        version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
+      forge-std:
+        specifier: https://github.com/foundry-rs/forge-std#705263c95892a906d7af65f0f73ce8a4a0c80b80
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/705263c95892a906d7af65f0f73ce8a4a0c80b80
       glob:
         specifier: ^10.2.2
         version: 10.4.5
+      graphql-request:
+        specifier: ^6.1.0
+        version: 6.1.0(encoding@0.1.13)(graphql@16.9.0)
       pathe:
         specifier: ^1.1.2
         version: 1.1.2
@@ -618,13 +615,6 @@ importers:
         version: 5.5.4
 
   packages/sparks-deployments:
-    dependencies:
-      '@zoralabs/shared-contracts':
-        specifier: workspace:^
-        version: link:../shared-contracts
-      '@zoralabs/sparks-contracts':
-        specifier: workspace:^
-        version: link:../sparks
     devDependencies:
       '@inquirer/prompts':
         specifier: ^3.3.0
@@ -650,6 +640,12 @@ importers:
       '@types/node':
         specifier: ^20.1.2
         version: 20.14.12
+      '@zoralabs/shared-contracts':
+        specifier: workspace:^
+        version: link:../shared-contracts
+      '@zoralabs/sparks-contracts':
+        specifier: workspace:^
+        version: link:../sparks
       '@zoralabs/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
@@ -12016,7 +12012,7 @@ snapshots:
 
   '@metamask/safe-event-emitter@3.1.1': {}
 
-  '@metamask/sdk-communication-layer@0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
+  '@metamask/sdk-communication-layer@0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))':
     dependencies:
       bufferutil: 4.0.8
       cross-fetch: 4.0.0(encoding@0.1.13)
@@ -12031,7 +12027,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@metamask/sdk-communication-layer@0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5)':
+  '@metamask/sdk-communication-layer@0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5)':
     dependencies:
       bufferutil: 4.0.8
       cross-fetch: 4.0.0(encoding@0.1.13)
@@ -12060,7 +12056,7 @@ snapshots:
     dependencies:
       '@metamask/onboarding': 1.0.1
       '@metamask/providers': 16.1.0
-      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       '@metamask/sdk-install-modal-web': 0.26.5(i18next@23.11.5)(react-dom@18.3.1(react@18.3.1))(react-native@0.74.3(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.5)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
       '@types/dom-screen-wake-lock': 1.0.3
       bowser: 2.11.0
@@ -12095,7 +12091,7 @@ snapshots:
     dependencies:
       '@metamask/onboarding': 1.0.1
       '@metamask/providers': 16.1.0
-      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
+      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5(bufferutil@4.0.8)(utf-8-validate@5.0.10))
       '@metamask/sdk-install-modal-web': 0.26.5(i18next@23.11.5)(react-dom@18.3.1(react@18.3.1))(react-native@0.74.3(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.5)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
       '@types/dom-screen-wake-lock': 1.0.3
       bowser: 2.11.0
@@ -12128,7 +12124,7 @@ snapshots:
     dependencies:
       '@metamask/onboarding': 1.0.1
       '@metamask/providers': 16.1.0
-      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0)(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5)
+      '@metamask/sdk-communication-layer': 0.26.4(cross-fetch@4.0.0(encoding@0.1.13))(eciesjs@0.3.19)(eventemitter2@6.4.9)(readable-stream@3.6.2)(socket.io-client@4.7.5)
       '@metamask/sdk-install-modal-web': 0.26.5(i18next@23.11.5)(react-dom@18.3.1(react@18.3.1))(react-native@0.74.3(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.5)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)
       '@types/dom-screen-wake-lock': 1.0.3
       bowser: 2.11.0
