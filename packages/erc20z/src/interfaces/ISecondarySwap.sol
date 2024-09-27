@@ -85,4 +85,10 @@ interface ISecondarySwap {
 
     /// @notice Timed Sale has not been configured for the collection and token ID
     error SaleNotSet();
+
+    /// @notice Reverts if an address param is passed as zero address
+    error AddressZero();
+
+    /// @notice Reverts if the contract is already initialized
+    error AlreadyInitialized();
 }

@@ -25,6 +25,16 @@ contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
 
     /// @notice This must be called in the same transaction that the contract is created on.
     function initialize(IWETH weth_, ISwapRouter swapRouter_, uint24 uniswapFee_, IZoraTimedSaleStrategy zoraTimedSaleStrategy_) external {
+        // Ensure a non-zero WETH address is passed upon initialization
+        if (address(weth_) == address(0)) {
+            revert AddressZero();
+        }
+
+        // Ensure this contract cannot be reinitialized
+        if (address(WETH) != address(0)) {
+            revert AlreadyInitialized();
+        }
+
         WETH = weth_;
         swapRouter = swapRouter_;
         uniswapFee = uniswapFee_;

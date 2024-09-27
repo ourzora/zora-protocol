@@ -3,7 +3,7 @@ pragma solidity ^0.8.17;
 
 import "../BaseTest.sol";
 
-import {SecondarySwap} from "../../src/helper/SecondarySwap.sol";
+import {ISecondarySwap, SecondarySwap} from "../../src/helper/SecondarySwap.sol";
 
 contract SecondarySwapTest is BaseTest {
     SecondarySwap internal secondarySwap;
@@ -144,5 +144,15 @@ contract SecondarySwapTest is BaseTest {
 
         assertEq(collection.balanceOf(mockBuyer, 0), 0);
         assertTrue(afterEthBalance > beforeEthBalance);
+    }
+
+    function testRevertIfInitializedWithAddressZero() public {
+        vm.expectRevert(ISecondarySwap.AddressZero.selector);
+        secondarySwap.initialize(IWETH(address(0)), ISwapRouter(address(this)), 0, IZoraTimedSaleStrategy(address(this)));
+    }
+
+    function testRevertIfAlreadyInitialized() public {
+        vm.expectRevert(ISecondarySwap.AlreadyInitialized.selector);
+        secondarySwap.initialize(IWETH(address(this)), ISwapRouter(address(this)), 0, IZoraTimedSaleStrategy(address(this)));
     }
 }
