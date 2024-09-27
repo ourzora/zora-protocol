@@ -59,9 +59,6 @@ importers:
       '@zoralabs/protocol-sdk':
         specifier: workspace:*
         version: link:../packages/protocol-sdk
-      '@zoralabs/tsconfig':
-        specifier: workspace:*
-        version: link:../packages/tsconfig
       react:
         specifier: latest
         version: 18.3.1
@@ -89,6 +86,10 @@ importers:
       yaml:
         specifier: 2.3.4
         version: 2.3.4
+    devDependencies:
+      '@zoralabs/tsconfig':
+        specifier: workspace:*
+        version: link:../packages/tsconfig
 
   packages/1155-contracts:
     devDependencies:
