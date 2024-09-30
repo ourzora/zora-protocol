@@ -6,7 +6,8 @@ export default defineConfig({
   titleTemplate: "%s | ZORA Docs",
   iconUrl: "https://docs.zora.co/Zorb.png",
   logoUrl: "https://docs.zora.co/Zorb.png",
-  ogImageUrl: 'https://vocs.dev/api/og?logo=%logo&title=%title&description=%description', 
+  ogImageUrl:
+    "https://vocs.dev/api/og?logo=%logo&title=%title&description=%description",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [
@@ -201,7 +202,7 @@ export default defineConfig({
               {
                 text: "mint",
                 link: "/protocol-sdk/collect/mint",
-              }
+              },
             ],
           },
           {
@@ -263,11 +264,11 @@ export default defineConfig({
     ],
   },
   vite: {
-    plugins: process.env.GOOGLE_ANALYTICS_TAG_ID
+    plugins: process.env.NODE_ENV === 'production' 
       ? [
           VitePluginRadar({
             analytics: {
-              id: process.env.GOOGLE_ANALYTICS_TAG_ID as string,
+              id: "G-CDE92MLBTZ",
             },
           }),
         ]
