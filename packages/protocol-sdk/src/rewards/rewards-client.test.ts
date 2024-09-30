@@ -22,7 +22,7 @@ import { advanceToSaleAndAndLaunchMarket } from "src/secondary/secondary-client.
 
 describe("rewardsClient", () => {
   makeAnvilTest({
-    forkBlockNumber: 13914833,
+    forkBlockNumber: 14653556,
     forkUrl: forkUrls.zoraSepolia,
     anvilChainId: zoraSepolia.id,
   })(
@@ -117,7 +117,7 @@ describe("rewardsClient", () => {
     30_000,
   );
   makeAnvilTest({
-    forkBlockNumber: 13914833,
+    forkBlockNumber: 14653556,
     forkUrl: forkUrls.zoraSepolia,
     anvilChainId: zoraSepolia.id,
   })(

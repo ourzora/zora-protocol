@@ -80,7 +80,7 @@ export async function advanceToSaleAndAndLaunchMarket({
 
 describe("secondary", () => {
   makeAnvilTest({
-    forkBlockNumber: 13914833,
+    forkBlockNumber: 14653556,
     forkUrl: forkUrls.zoraSepolia,
     anvilChainId: zoraSepolia.id,
   })(
@@ -128,7 +128,7 @@ describe("secondary", () => {
   );
 
   makeAnvilTest({
-    forkBlockNumber: 13914833,
+    forkBlockNumber: 14653556,
     forkUrl: forkUrls.zoraSepolia,
     anvilChainId: zoraSepolia.id,
   })(
@@ -199,6 +199,13 @@ describe("secondary", () => {
         account: collectorAccount,
       });
 
+      const balanceBefore = await publicClient.readContract({
+        abi: zoraCreator1155ImplABI,
+        address: contractAddress,
+        functionName: "balanceOf",
+        args: [collectorAccount, newTokenId],
+      });
+
       // now get the price ot buy on secondary
       const quantityToBuy = 1000n;
 
@@ -236,7 +243,7 @@ describe("secondary", () => {
         args: [collectorAccount, newTokenId],
       });
 
-      expect(balance).toBe(quantityToBuy + quantityToMint);
+      expect(balance - balanceBefore).toBe(quantityToBuy);
 
       // now sell 10_000n tokens
       const quantityToSell = 10_000n;
