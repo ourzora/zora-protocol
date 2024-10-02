@@ -1,5 +1,6 @@
 import VitePluginRadar from "vite-plugin-radar";
 import { defineConfig } from "vocs";
+import vercel from "vite-plugin-vercel";
 
 export default defineConfig({
   title: "ZORA Docs",
@@ -7,7 +8,7 @@ export default defineConfig({
   iconUrl: "https://docs.zora.co/Zorb.png",
   logoUrl: "https://docs.zora.co/Zorb.png",
   ogImageUrl:
-    "https://vocs.dev/api/og?logo=%logo&title=%title&description=%description",
+    "https://docs.zora.co/og.png",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [
@@ -43,11 +44,11 @@ export default defineConfig({
       {
         text: "NFT Smart Contracts",
         items: [
-          { text: "Deployments", link: "/contracts/deployments" },
           {
             text: "Introduction",
             link: "/contracts/intro",
           },
+          { text: "Deployments", link: "/contracts/deployments" },
           {
             text: "Factories",
             link: "/contracts/factories",
@@ -264,15 +265,18 @@ export default defineConfig({
     ],
   },
   vite: {
-    plugins: process.env.NODE_ENV === 'production' 
-      ? [
-          VitePluginRadar({
-            analytics: {
-              id: "G-CDE92MLBTZ",
-            },
-          }),
-        ]
-      : [],
+    plugins: [
+      vercel(),
+      ...(process.env.NODE_ENV === "production"
+        ? [
+            VitePluginRadar({
+              analytics: {
+                id: "G-CDE92MLBTZ",
+              },
+            }),
+          ]
+        : []),
+    ],
     esbuild: {
       supported: {
         "top-level-await": true, //browsers can handle top-level-await features
