@@ -7,5 +7,12 @@
   "access": "public",
   "baseBranch": "main",
   "updateInternalDependencies": "patch",
-  "ignore": ["@zoralabs/protocol-deployments-gen"]
+  "ignore": [
+    "@zoralabs/protocol-deployments-gen",
+    "@zoralabs/frame-minter-contracts",
+    "docs",
+    "@zoralabs/1155-deployments",
+    "smart-wallet",
+    "@zoralabs/sparks-deployments"
+  ]
 }
