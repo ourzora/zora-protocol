@@ -63,7 +63,7 @@ export type SalesConfigParamsType =
   | TimedSaleParamsType;
 
 export type CreateNew1155ParamsBase = {
-  account: Address;
+  account: Address | Account;
   getAdditionalSetupActions?: (args: { tokenId: bigint }) => Hex[];
   token: CreateNew1155TokenProps;
 };

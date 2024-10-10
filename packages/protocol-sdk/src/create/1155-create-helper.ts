@@ -219,7 +219,7 @@ async function createNew1155ContractAndToken({
   });
 
   const contractAddress = await getDeterministicContractAddress({
-    account,
+    account: typeof account === "string" ? account : account.address,
     publicClient,
     setupActions: tokenSetupActions,
     chainId,
@@ -327,7 +327,7 @@ function prepareSetupActions({
     setupActions: tokenSetupActions,
   } = constructCreate1155TokenCalls({
     chainId: chainId,
-    ownerAddress: account,
+    ownerAddress: typeof account === "string" ? account : account.address,
     contractVersion,
     nextTokenId,
     ...token,

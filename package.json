@@ -41,5 +41,10 @@
   "engines": {
     "node": ">=16",
     "pnpm": ">=3"
+  },
+  "pnpm": {
+    "overrides": {
+      "viem": "^2.21.21"
+    }
   }
 }

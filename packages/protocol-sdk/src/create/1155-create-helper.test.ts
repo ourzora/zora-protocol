@@ -101,7 +101,9 @@ describe("create-helper", () => {
         publicClient,
       });
       expect(receipt).not.toBeNull();
-      expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
+      expect(receipt.to?.toLowerCase()).to.equal(
+        "0x777777c338d93e2c7adf08d102d45ca7cc4ed021".toLowerCase(),
+      );
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(1n);
       expect(getContractAddressFromReceipt(receipt)).to.be.equal(
         contractAddress,
@@ -299,7 +301,10 @@ describe("create-helper", () => {
         walletClient,
         publicClient,
       });
-      expect(receipt.to).to.equal("0x777777c338d93e2c7adf08d102d45ca7cc4ed021");
+
+      expect(receipt.to?.toLowerCase()).to.equal(
+        "0x777777c338d93e2c7adf08d102d45ca7cc4ed021".toLowerCase(),
+      );
       expect(getTokenIdFromCreateReceipt(receipt)).to.be.equal(newTokenId);
 
       expect(

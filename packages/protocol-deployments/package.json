@@ -22,18 +22,17 @@
     "prettier:write": "prettier --write 'src/**/*.ts' 'scripts/*'",
     "lint": "prettier --check 'src/**/*.ts' 'scripts/*'"
   },
-  "dependencies": {},
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
     "@types/node": "^20.3.2",
+    "@zoralabs/tsconfig": "workspace:^",
     "abitype": "^1.0.2",
     "es-main": "^1.2.0",
-    "tsup": "^7.2.0",
-    "tsx": "^3.13.0",
     "prettier": "^3.2.5",
     "prettier-plugin-solidity": "^1.1.3",
+    "tsup": "^7.2.0",
+    "tsx": "^3.13.0",
     "typescript": "^5.2.2",
-    "viem": "^2.11.1",
-    "@zoralabs/tsconfig": "workspace:^"
+    "viem": "^2.21.21"
   }
 }
