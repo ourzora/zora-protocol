@@ -29,7 +29,10 @@ export interface AnvilViemClientsTest {
 }
 
 async function waitForAnvilInit(anvil: any) {
-  return new Promise((resolve) => {
+  return new Promise((resolve, reject) => {
+    anvil.stderr.once("data", (data: Buffer) => {
+      reject(data.toString("utf-8"));
+    });
     anvil.stdout.once("data", () => {
       resolve(true);
     });
@@ -69,7 +72,9 @@ export const makeAnvilTest = ({
           killSignal: "SIGINT",
         },
       );
+
       const anvilHost = `http://0.0.0.0:${port}`;
+
       await waitForAnvilInit(anvil);
 
       const chain: Chain = {
