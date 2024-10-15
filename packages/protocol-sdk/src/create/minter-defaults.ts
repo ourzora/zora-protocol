@@ -9,9 +9,10 @@ import {
   ConcreteSalesConfig,
   TimedSaleParamsType,
 } from "./types";
+import { parseEther } from "viem";
 
-// 200 mints worth of eth
-export const DEFAULT_MINIMUM_MARKET_ETH = 2220000000000000n;
+// 1111 mints worth of eth - 0.000111 eth * 1,111 = 0.123321 eth
+export const DEFAULT_MINIMUM_MARKET_ETH = parseEther("0.123321");
 
 // 24 hour countdown
 export const DEFAULT_MARKET_COUNTDOWN = BigInt(24 * 60 * 60);
