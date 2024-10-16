@@ -18,7 +18,7 @@ import {
 import { makeContractParameters } from "src/utils";
 import { mockRewardsQueryResults } from "src/fixtures/rewards-query-results";
 import { setupContractAndToken } from "src/fixtures/contract-setup";
-import { advanceToSaleAndAndLaunchMarket } from "src/secondary/secondary-client.test";
+import { advanceToSaleAndAndLaunchMarket } from "src/fixtures/secondary";
 
 describe("rewardsClient", () => {
   makeAnvilTest({

@@ -1,12 +1,12 @@
 import { Address, Chain, PublicClient, WalletClient } from "viem";
 import { simulateAndWriteContractWithRetries } from "src/anvil";
 import { createCreatorClient } from "src/sdk";
-import {
-  demoContractMetadataURI,
-  demoTokenMetadataURI,
-} from "src/create/1155-create-helper.test";
 import { SubgraphMintGetter } from "src/mint/subgraph-mint-getter";
 import { SubgraphRewardsGetter } from "../rewards/subgraph-rewards-getter";
+
+export const demoTokenMetadataURI =
+  "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u";
+export const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
 
 export async function setupContractAndToken({
   chain,

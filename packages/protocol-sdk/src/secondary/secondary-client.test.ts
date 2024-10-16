@@ -1,12 +1,5 @@
 import { describe, expect, vi } from "vitest";
-import {
-  Address,
-  parseEther,
-  PublicClient,
-  TestClient,
-  WalletClient,
-  Account,
-} from "viem";
+import { parseEther } from "viem";
 import { zoraSepolia } from "viem/chains";
 import {
   forkUrls,
@@ -14,69 +7,13 @@ import {
   simulateAndWriteContractWithRetries,
 } from "src/anvil";
 import { createCollectorClient } from "src/sdk";
-import {
-  zoraCreator1155ImplABI,
-  zoraTimedSaleStrategyABI,
-  zoraTimedSaleStrategyAddress,
-} from "@zoralabs/protocol-deployments";
-import { makeContractParameters } from "src/utils";
+import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
 import { setupContractAndToken } from "src/fixtures/contract-setup";
-import { CollectorClient } from "src/sdk";
 import { ERROR_SECONDARY_NOT_STARTED } from "./secondary-client";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
 import { new1155ContractVersion } from "src/create/contract-setup";
-
-export async function advanceToSaleAndAndLaunchMarket({
-  contractAddress,
-  tokenId,
-  testClient,
-  publicClient,
-  walletClient,
-  collectorClient,
-  chainId,
-  account,
-}: {
-  contractAddress: Address;
-  tokenId: bigint;
-  testClient: TestClient;
-  publicClient: PublicClient;
-  walletClient: WalletClient;
-  collectorClient: CollectorClient;
-  chainId: number;
-  account: Address | Account;
-}) {
-  const saleEnd = (await collectorClient.getSecondaryInfo({
-    contract: contractAddress,
-    tokenId,
-  }))!.saleEnd!;
-
-  // advance to end of sale
-  await testClient.setNextBlockTimestamp({
-    timestamp: saleEnd,
-  });
-
-  await testClient.mine({
-    blocks: 1,
-  });
-
-  // advance to end of sale
-  // launch the market
-  await simulateAndWriteContractWithRetries({
-    parameters: makeContractParameters({
-      abi: zoraTimedSaleStrategyABI,
-      functionName: "launchMarket",
-      args: [contractAddress, tokenId],
-      address:
-        zoraTimedSaleStrategyAddress[
-          chainId as keyof typeof zoraTimedSaleStrategyAddress
-        ],
-      account: account,
-    }),
-    publicClient,
-    walletClient,
-  });
-}
+import { advanceToSaleAndAndLaunchMarket } from "src/fixtures/secondary";
 
 describe("secondary", () => {
   makeAnvilTest({

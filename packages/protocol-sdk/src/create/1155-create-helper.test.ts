@@ -22,10 +22,10 @@ import {
   DEFAULT_MINIMUM_MARKET_ETH,
   DEFAULT_MARKET_COUNTDOWN,
 } from "./minter-defaults";
-
-export const demoTokenMetadataURI =
-  "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u";
-export const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
+import {
+  demoContractMetadataURI,
+  demoTokenMetadataURI,
+} from "src/fixtures/contract-setup";
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
