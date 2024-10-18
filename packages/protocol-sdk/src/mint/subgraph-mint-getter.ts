@@ -180,7 +180,7 @@ function getTargetStrategy({
   );
 
   const stillValidSalesStrategies = parsedStrategies.filter(
-    (strategy) => strategy.saleActive,
+    (strategy) => strategy.saleActive || strategy.secondaryMarketActive,
   );
 
   const saleStrategies = stillValidSalesStrategies.sort((a, b) =>
