@@ -146,7 +146,7 @@ describe("rewardsClient", () => {
         value: parseEther("100"),
       });
 
-      const quantityToMint = 10_000n;
+      const quantityToMint = 1111n;
 
       mintGetter.subgraphQuerier.query = vi
         .fn<ISubgraphQuerier["query"]>()

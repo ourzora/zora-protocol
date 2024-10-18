@@ -10,10 +10,8 @@ import {
   TimedSaleParamsType,
 } from "./types";
 import { parseEther } from "viem";
-
-// 1111 mints worth of eth - 0.000111 eth * 1,111 = 0.123321 eth
-export const DEFAULT_MINIMUM_MARKET_ETH = parseEther("0.123321");
-
+// 1111 mints worth of market reward eth - 0.0000111 eth * 1,111 = 0.0123321 eth
+export const DEFAULT_MINIMUM_MARKET_ETH = parseEther("0.0123321");
 // 24 hour countdown
 export const DEFAULT_MARKET_COUNTDOWN = BigInt(24 * 60 * 60);
 

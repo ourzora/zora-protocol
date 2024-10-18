@@ -26,10 +26,20 @@ export async function advanceToSaleAndAndLaunchMarket({
   chainId: number;
   account: Address | Account;
 }) {
-  const saleEnd = (await collectorClient.getSecondaryInfo({
+  const saleInfo = await collectorClient.getSecondaryInfo({
     contract: contractAddress,
     tokenId,
-  }))!.saleEnd!;
+  });
+
+  if (!saleInfo) {
+    throw new Error("Sale not set");
+  }
+
+  if (!saleInfo.saleEnd) {
+    throw new Error("Sale end not set");
+  }
+
+  const saleEnd = saleInfo.saleEnd;
 
   // advance to end of sale
   await testClient.setNextBlockTimestamp({

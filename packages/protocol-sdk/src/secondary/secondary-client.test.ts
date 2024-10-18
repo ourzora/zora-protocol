@@ -89,8 +89,6 @@ describe("secondary", () => {
         value: parseEther("100"),
       });
 
-      const quantityToMint = 100_000n;
-
       mintGetter.subgraphQuerier.query = vi
         .fn<ISubgraphQuerier["query"]>()
         .mockResolvedValue({
@@ -111,10 +109,13 @@ describe("secondary", () => {
         mintGetter,
       });
 
+      // mint 1 less than expected minimum market.
+      // make sure that there is no sale end
       const { parameters: collectParameters } = await collectorClient.mint({
         minterAccount: collectorAccount,
         mintType: "1155",
-        quantityToMint,
+        // mint 1 less than expected minimum market.
+        quantityToMint: 1111n - 1n,
         tokenId: newTokenId,
         tokenContract: contractAddress,
       });
@@ -124,6 +125,37 @@ describe("secondary", () => {
         walletClient,
         publicClient,
       });
+
+      // make sure that there is no sale end
+      let saleEnd = (await collectorClient.getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+      }))!.saleEnd;
+
+      expect(saleEnd).toBeUndefined();
+
+      // mint 1 more - this should cause the countdown to start
+      const { parameters: collectMoreParameters } = await collectorClient.mint({
+        minterAccount: collectorAccount,
+        mintType: "1155",
+        quantityToMint: 1n,
+        tokenId: newTokenId,
+        tokenContract: contractAddress,
+      });
+
+      await simulateAndWriteContractWithRetries({
+        parameters: collectMoreParameters,
+        walletClient,
+        publicClient,
+      });
+
+      // now there should be a sale end
+      saleEnd = (await collectorClient.getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+      }))!.saleEnd;
+
+      expect(saleEnd).toBeDefined();
 
       await advanceToSaleAndAndLaunchMarket({
         contractAddress,
@@ -213,7 +245,7 @@ describe("secondary", () => {
         args: [collectorAccount, newTokenId],
       });
 
-      expect(balance).toBe(quantityToMint + quantityToBuy - quantityToSell);
+      expect(balance).toBe(1111n + quantityToBuy - quantityToSell);
     },
     30_000,
   );
