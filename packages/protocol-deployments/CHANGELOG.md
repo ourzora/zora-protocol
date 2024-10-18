@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.5
+
+### Patch Changes
+
+- 4a29c2b9: Bump viem to 2.21.21
+
 ## 0.3.4
 
 ### Patch Changes

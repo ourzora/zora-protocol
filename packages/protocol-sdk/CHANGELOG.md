@@ -1,5 +1,15 @@
 # @zoralabs/protocol-sdk
 
+## 0.11.3
+
+### Patch Changes
+
+- 364d7906: Change DEFAULT_MINIMUM_MARKET_ETH to 0.0123321 eth (1,111 mints) to match default that is set on zora.co
+- e68ce881: Fix filtering for active markets
+- 4a29c2b9: Bump viem to 2.21.21
+- Updated dependencies [4a29c2b9]
+  - @zoralabs/protocol-deployments@0.3.5
+
 ## 0.11.2
 
 ### Patch Changes
