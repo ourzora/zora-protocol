@@ -11,7 +11,7 @@ contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermiss
     /// @dev if multiple permissions are passed in this checks for any one of those permissions
     /// @return true or false if any of the passed in permissions apply
     function _hasAnyPermission(uint256 tokenId, address user, uint256 permissionBits) internal view returns (bool) {
-        // Does a bitwise and and checks if any of those permissions match
+        // Does a bitwise and checks if any of those permissions match
         return permissions[tokenId][user] & permissionBits > 0;
     }
 
@@ -19,7 +19,7 @@ contract CreatorPermissionControl is CreatorPermissionStorageV1, ICreatorPermiss
     /// @dev if multiple permissions are passed in this checks for any one of those permissions
     /// @return true or false if any of the passed in permissions apply
     function _hasAllPermissions(uint256 tokenId, address user, uint256 permissionBits) internal view returns (bool) {
-        // Does a bitwise and and checks if all of those permissions match
+        // Does a bitwise and checks if all of those permissions match
         return permissions[tokenId][user] & permissionBits == permissionBits;
     }
 

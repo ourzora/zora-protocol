@@ -166,7 +166,7 @@ contract Zora1155 is ERC1155 {
     }
 
     function _hasAnyPermission(uint256 tokenId, address user, uint256 permissionBits) internal view returns (bool) {
-        // Does a bitwise and and checks if any of those permissions match
+        // Does a bitwise and checks if any of those permissions match
         return permissions[tokenId][user] & permissionBits > 0;
     }
 
