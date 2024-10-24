@@ -5,7 +5,7 @@
 The Zora Protocol allows creators to create 1155 contracts and tokens without needing to pay any gas or have eth in their wallet. This
 is done by creating what's called a `Premint` - a signed intent to create and setup an 1155 contract and/or token.
 It is then uploading it to an API, where it can be retrieved later to bring onchain and mint by an account willing to pay the gas to do so.  This can either be the first collector, or the
-the original creator of the Premint. The account that brings the Premint onchain will earn the first minter reward.
+original creator of the Premint. The account that brings the Premint onchain will earn the first minter reward.
 
 In order for the Premint to be discoverable in the Zora network, it must be signed by the creator's wallet and uploaded to the Zora Premint API.
 Before the Premint is brought onchain, the creator of the Premint can sign a message to update or delete it.
@@ -61,7 +61,7 @@ One of the items returned from `create` is `signAndSubmit` which must be called 
 
 :::
 
-### Signing and Submitting Premint a Premint using Wagmi
+### Signing and Submitting Premint using Wagmi
 
 Sometimes it may be desirable to sign a premint with another library, and not using the sdk's `signAndSubmit` method.
 For this case, the `createPremint`, `updatePremint`, and `deletePremint` functions return a `typedDataDefinition` which is the typed data definition for the premint and must be signed.
@@ -132,7 +132,7 @@ This signature and deleted premint is then submitted to the Zora Premint API and
 :::
 
 
-### Earning Create Referral Referral Rewards
+### Earning Create Referral Rewards
 
 To earn a create referral reward, pass in the `createReferral` argument when creating a Premint:
 
