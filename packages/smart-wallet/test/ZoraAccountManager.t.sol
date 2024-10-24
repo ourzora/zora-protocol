@@ -19,7 +19,7 @@ contract ZoraAccountManagerTest is Test {
     address[] internal mockOwners;
 
     ZoraAccountManagerImpl internal managerImpl;
-    ZoraAccountManagerImpl internal manager;
+    ZoraAccountManager internal manager; // Corrected to use ZoraAccountManager
 
     ICoinbaseSmartWalletFactory internal constant smartWalletFactory = ICoinbaseSmartWalletFactory(0x0BA5ED0c6AA8c49038F819E587E2633c4A9F428a);
 
@@ -27,17 +27,16 @@ contract ZoraAccountManagerTest is Test {
         vm.createSelectFork(vm.envString("ZORA_SEPOLIA_RPC_URL"));
 
         users = Users({alice: makeAddr("alice"), bob: makeAddr("bob"), charlie: makeAddr("charlie"), owner: makeAddr("owner")});
-        mockOwners = new address[](3);
-        mockOwners[0] = users.alice;
+        mockOwners = new address      mockOwners[0] = users.alice;
         mockOwners[1] = users.bob;
         mockOwners[2] = users.charlie;
 
         managerImpl = new ZoraAccountManagerImpl();
-        manager = ZoraAccountManagerImpl(address(new ZoraAccountManager(address(managerImpl), "")));
+        manager = ZoraAccountManager(address(new ZoraAccountManager(address(managerImpl), ""))); // Corrected type instantiation
         manager.initialize(users.owner);
     }
 
-    function testDeploy() public view {
+    function testDeploy() public { // Removed 'view' modifier
         assertEq(manager.implementation(), address(managerImpl));
         assertEq(manager.owner(), users.owner);
     }
@@ -54,7 +53,7 @@ contract ZoraAccountManagerTest is Test {
     function encodeOwners(address[] memory owners) public pure returns (bytes[] memory) {
         bytes[] memory encodedOwners = new bytes[](owners.length);
 
-        for (uint256 i; i < owners.length; ++i) {
+        for (uint256 i = 0; i < owners.length; ++i) { // Explicitly initializing i
             encodedOwners[i] = abi.encode(owners[i]);
         }
 
