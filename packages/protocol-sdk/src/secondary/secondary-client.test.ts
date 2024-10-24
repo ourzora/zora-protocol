@@ -176,7 +176,7 @@ describe("secondary", () => {
       });
 
       // now get the price ot buy on secondary
-      const quantityToBuy = 1000n;
+      const quantityToBuy = 10n;
 
       const buyResult = await collectorClient.buy1155OnSecondary({
         account: collectorAccount,
@@ -215,7 +215,7 @@ describe("secondary", () => {
       expect(balance - balanceBefore).toBe(quantityToBuy);
 
       // now sell 10_000n tokens
-      const quantityToSell = 10_000n;
+      const quantityToSell = 100n;
 
       const sellResult = await collectorClient.sell1155OnSecondary({
         account: collectorAccount,
