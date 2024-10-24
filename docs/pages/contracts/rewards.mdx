@@ -121,12 +121,11 @@ function withdrawFor(address to, uint256 amount) external;
 ```solidity
 function withdrawWithSig(
     address from, 
-    address to
+    address to,
     uint256 amount, 
     uint256 deadline, 
     uint8 v, 
-    bytes32 
-    r, 
+    bytes32 r, 
     bytes32 s
 )
 ```
