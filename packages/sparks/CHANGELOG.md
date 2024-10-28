@@ -1,5 +1,11 @@
 # @zoralabs/sparks-contracts
 
+## 0.2.3
+
+### Patch Changes
+
+- 7089746b: Added ETH sponsored sparks spender arguments.
+
 ## 0.2.2
 
 ### Patch Changes

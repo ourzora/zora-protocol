@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.6
+
+### Patch Changes
+
+- d6aa9a00: Fixed the minter address for ZoraTimedSaleStrategy to point to the deterministically deployed address with the correct contract version.
+
 ## 0.3.5
 
 ### Patch Changes
