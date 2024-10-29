@@ -24,9 +24,15 @@ import {
 
 The Protocol SDK is a typescript package that simplifies interacting with the Zora protocol by generating required transactions for our contracts.
 
-```ts twoslash
-import { zora } from "viem/chains";
-import { http, createPublicClient } from "viem";
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/config.ts]
+
+// @filename: example.ts
+// ---cut---
+import { publicClient, chain } from './config';
 import { createCollectorClient } from "@zoralabs/protocol-sdk";
 
 const tokenContract = "0x1234567890123456789012345678901234567890";
@@ -35,14 +41,10 @@ const mintToAddress = "0x71907e8Ae7aeFb58ceC8eb46DAf4fc78c29E5173";
 const quantityToMint = 1;
 const minterAccount = "0xCb8454D64AFeB46455cB4847C53279F6cdCbFb5e";
 
-const publicClient = createPublicClient({
-  // this will determine which chain to interact with
-  chain: zora,
-  transport: http(),
-});
-
 const collectorClient = createCollectorClient({ 
-  chainId: zora.id, publicClient });
+  chainId: chain.id, 
+  publicClient 
+});
 
 // prepare a transaction to mint an 1155 token
 const { parameters } = await collectorClient.mint({
@@ -60,9 +62,15 @@ const { parameters } = await collectorClient.mint({
 });
 
 // simulate the transaction
-// @errors: 2322
 const { request } = await publicClient.simulateContract(parameters);
 ```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/config.ts]
+```
+
+
+:::
 
 ### Installation
 
@@ -96,17 +104,23 @@ The Zora Protocol SDK contains both a Creator Client and a Collector Client. The
 create and manage Zora creator 1155 contracts and tokens, while the Collector Client is used to mint 
 Zora creator 1155, 721, and premints.
 
-```ts twoslash
-import { useChainId, usePublicClient } from 'wagmi';
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/config.ts]
+
+// @filename: example.ts
+// ---cut---
+import { publicClient, chain } from './config';
 import { 
   createCreatorClient, 
   createCollectorClient } from "@zoralabs/protocol-sdk";
 
-// get the current chain id and PublicClient using wagmi
-const chainId = useChainId();
-const publicClient = usePublicClient();
-
-const creatorClient = createCreatorClient({ chainId, publicClient });
+const creatorClient = createCreatorClient({ 
+  chainId: chain.id, 
+  publicClient 
+});
 // @noErrors
 creatorClient.
 //            ^|
@@ -114,11 +128,24 @@ creatorClient.
 
 
 
-const collectorClient = createCollectorClient({ chainId, publicClient });
+
+const collectorClient = createCollectorClient({ 
+  chainId: chain.id, 
+  publicClient 
+});
 // @noErrors
-collectorClient.m
-//               ^|
+collectorClient.
+//              ^|
+
+
+
 
 
 
 ```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/config.ts]
+```
+
+:::
