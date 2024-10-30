@@ -79,24 +79,38 @@ export const parseNameIntoSymbol = (name: string) => {
   return result;
 };
 
+const getMinimumMarketEth = (
+  params: Pick<
+    TimedSaleParamsType,
+    "minimumMarketEth" | "minimumMintsForCountdown"
+  >,
+) => {
+  if (params.minimumMintsForCountdown) {
+    return params.minimumMintsForCountdown * parseEther("0.0000111");
+  }
+  return params.minimumMarketEth || DEFAULT_MINIMUM_MARKET_ETH;
+};
+
 const timedSaleSettingsWithDefaults = (
   params: TimedSaleParamsType,
   contractName: string,
 ): Concrete<TimedSaleParamsType> => {
   // If the name is not provided, try to fetch it from the metadata
   const erc20Name = params.erc20Name || contractName;
-  const symbol = params.erc20Symbol || parseNameIntoSymbol(erc20Name);
-  const start = params.saleStart || 0n;
-  const countdown = params.marketCountdown || DEFAULT_MARKET_COUNTDOWN;
-  const minimumEth = params.minimumMarketEth || DEFAULT_MINIMUM_MARKET_ETH;
+  const minimumMarketEth = getMinimumMarketEth({
+    minimumMarketEth: params.minimumMarketEth,
+    minimumMintsForCountdown: params.minimumMintsForCountdown,
+  });
+  const minimumMintsForCountdown = minimumMarketEth / parseEther("0.0000111");
 
   return {
     type: "timed",
     erc20Name: erc20Name,
-    erc20Symbol: symbol,
-    saleStart: start,
-    marketCountdown: countdown,
-    minimumMarketEth: minimumEth,
+    erc20Symbol: params.erc20Symbol || parseNameIntoSymbol(erc20Name),
+    saleStart: params.saleStart || 0n,
+    marketCountdown: params.marketCountdown || DEFAULT_MARKET_COUNTDOWN,
+    minimumMarketEth,
+    minimumMintsForCountdown,
   };
 };
 

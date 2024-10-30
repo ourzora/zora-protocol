@@ -1,5 +1,5 @@
 import { describe, expect, vi } from "vitest";
-import { parseEther } from "viem";
+import { parseEther, Address } from "viem";
 import { zoraSepolia } from "viem/chains";
 import {
   forkUrls,
@@ -8,7 +8,7 @@ import {
 } from "src/anvil";
 import { createCollectorClient } from "src/sdk";
 import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
-import { setupContractAndToken } from "src/fixtures/contract-setup";
+import { SubgraphMintGetter } from "src/mint/subgraph-mint-getter";
 import { ERROR_SECONDARY_NOT_STARTED } from "./secondary-client";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
@@ -17,7 +17,7 @@ import { advanceToSaleAndAndLaunchMarket } from "src/fixtures/secondary";
 
 describe("secondary", () => {
   makeAnvilTest({
-    forkBlockNumber: 14653556,
+    forkBlockNumber: 16072399,
     forkUrl: forkUrls.zoraSepolia,
     anvilChainId: zoraSepolia.id,
   })(
@@ -25,16 +25,11 @@ describe("secondary", () => {
     async ({
       viemClients: { publicClient, chain, walletClient, testClient },
     }) => {
-      const creatorAccount = (await walletClient.getAddresses()!)[0]!;
       const collectorAccount = (await walletClient.getAddresses()!)[1]!;
 
-      const { contractAddress, newTokenId } = await setupContractAndToken({
-        chain,
-        publicClient,
-        creatorAccount,
-        walletClient,
-      });
-
+      const contractAddress: Address =
+        "0xd42557f24034b53e7340a40bb5813ef9ba88f2b4";
+      const newTokenId = 4n;
       await testClient.setBalance({
         address: collectorAccount,
         value: parseEther("100"),
@@ -50,7 +45,10 @@ describe("secondary", () => {
         tokenId: newTokenId,
       });
 
-      expect(secondaryInfo?.secondaryActivated).toBe(false);
+      expect(secondaryInfo).toBeDefined();
+
+      expect(secondaryInfo!.minimumMintsForCountdown).toBe(1111n);
+      expect(secondaryInfo!.secondaryActivated).toBe(false);
 
       const buyResult = await collectorClient.buy1155OnSecondary({
         account: collectorAccount,
@@ -65,7 +63,7 @@ describe("secondary", () => {
   );
 
   makeAnvilTest({
-    forkBlockNumber: 14653556,
+    forkBlockNumber: 16072399,
     forkUrl: forkUrls.zoraSepolia,
     anvilChainId: zoraSepolia.id,
   })(
@@ -73,16 +71,12 @@ describe("secondary", () => {
     async ({
       viemClients: { publicClient, chain, walletClient, testClient },
     }) => {
-      const creatorAccount = (await walletClient.getAddresses()!)[0]!;
       const collectorAccount = (await walletClient.getAddresses()!)[1]!;
 
-      const { contractAddress, newTokenId, mintGetter } =
-        await setupContractAndToken({
-          chain,
-          publicClient,
-          creatorAccount,
-          walletClient,
-        });
+      const mintGetter = new SubgraphMintGetter(chain.id);
+      const contractAddress: Address =
+        "0xd42557f24034b53e7340a40bb5813ef9ba88f2b4";
+      const newTokenId = 4n;
 
       await testClient.setBalance({
         address: collectorAccount,
@@ -109,13 +103,25 @@ describe("secondary", () => {
         mintGetter,
       });
 
+      const secondaryInfo = await collectorClient.getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+      });
+
+      expect(secondaryInfo).toBeDefined();
+      expect(secondaryInfo!.mintCount).toBeGreaterThan(0n);
+
       // mint 1 less than expected minimum market.
       // make sure that there is no sale end
+      const quantityToMintFirst =
+        secondaryInfo!.minimumMintsForCountdown! -
+        secondaryInfo!.mintCount -
+        1n;
+
       const { parameters: collectParameters } = await collectorClient.mint({
         minterAccount: collectorAccount,
         mintType: "1155",
-        // mint 1 less than expected minimum market.
-        quantityToMint: 1111n - 1n,
+        quantityToMint: quantityToMintFirst,
         tokenId: newTokenId,
         tokenContract: contractAddress,
       });
@@ -245,7 +251,9 @@ describe("secondary", () => {
         args: [collectorAccount, newTokenId],
       });
 
-      expect(balance).toBe(1111n + quantityToBuy - quantityToSell);
+      expect(balance).toBe(
+        quantityToMintFirst + 1n + quantityToBuy - quantityToSell,
+      );
     },
     30_000,
   );

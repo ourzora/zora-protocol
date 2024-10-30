@@ -3,7 +3,7 @@ import {
   getContractAddressFromReceipt,
   getTokenIdFromCreateReceipt,
 } from "./1155-create-helper";
-import { createCreatorClient } from "src/sdk";
+import { createCollectorClient, createCreatorClient } from "src/sdk";
 import {
   zoraCreator1155ImplABI,
   zoraTimedSaleStrategyABI,
@@ -12,7 +12,12 @@ import {
 import { waitForSuccess } from "src/test-utils";
 import { Address, erc20Abi, parseEther, PublicClient } from "viem";
 import { makePrepareMint1155TokenParams } from "src/mint/mint-transactions";
-import { forkUrls, makeAnvilTest, writeContractWithRetries } from "src/anvil";
+import {
+  forkUrls,
+  makeAnvilTest,
+  simulateAndWriteContractWithRetries,
+  writeContractWithRetries,
+} from "src/anvil";
 import { zora } from "viem/chains";
 import { AllowList } from "src/allow-list/types";
 import { createAllowList } from "src/allow-list/allow-list-client";
@@ -143,6 +148,74 @@ describe("create-helper", () => {
             ],
         }),
       ).toBe(true);
+
+      // get secondary info, minimum mints count should be 1111, sale end should be undefined,
+      // market countdown should be 24 hours
+
+      const collectorClient = createCollectorClient({
+        chainId: chain.id,
+        publicClient,
+      });
+
+      const secondaryInfo = await collectorClient.getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+      });
+
+      expect(secondaryInfo).toBeDefined();
+      expect(secondaryInfo!.minimumMintsForCountdown).toBe(1111n);
+      expect(secondaryInfo!.secondaryActivated).toBe(false);
+      expect(secondaryInfo!.saleEnd).toBeUndefined();
+      expect(secondaryInfo!.marketCountdown).toBe(24n * 60n * 60n);
+    },
+    20 * 1000,
+  );
+  anvilTest(
+    "when minimumMintsForCountdown is set, it uses that as the minimum mints for countdown",
+    async ({ viemClients: { publicClient, walletClient, chain } }) => {
+      const addresses = await walletClient.getAddresses();
+      const creatorAddress = addresses[0]!;
+
+      const creatorClient = createCreatorClient({
+        chainId: chain.id,
+        publicClient: publicClient,
+      });
+
+      const saleStart = 5n;
+      const contract = randomNewContract();
+      const { parameters, contractAddress, newTokenId } =
+        await creatorClient.create1155({
+          contract,
+          token: {
+            tokenMetadataURI: demoTokenMetadataURI,
+            mintToCreatorCount: 1,
+            salesConfig: {
+              saleStart,
+              minimumMintsForCountdown: 500n,
+              marketCountdown: 100n,
+              type: "timed",
+            },
+          },
+          account: creatorAddress,
+        });
+
+      await simulateAndWriteContractWithRetries({
+        parameters,
+        walletClient,
+        publicClient,
+      });
+
+      const secondaryInfo = await createCollectorClient({
+        chainId: chain.id,
+        publicClient,
+      }).getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+      });
+
+      expect(secondaryInfo).toBeDefined();
+      expect(secondaryInfo!.minimumMintsForCountdown).toBe(500n);
+      expect(secondaryInfo!.marketCountdown).toBe(100n);
     },
     20 * 1000,
   );

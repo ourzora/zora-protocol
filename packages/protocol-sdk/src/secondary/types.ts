@@ -52,13 +52,26 @@ export type BuyWithSlippageInput = {
 // Same structure as BuyWithSlippageInput
 export type SellWithSlippageInput = BuyWithSlippageInput;
 
+// Base type for shared properties
 export type SecondaryInfo = {
-  // Whether the secondary market is activated
+  // Boolean if the secondary market has been launched
   secondaryActivated: boolean;
-  // Address of the liquidity pool for the erc20z to WETH pair
+  // The Uniswap pool address
   pool: Address;
-  // Address of the erc20z token
+  // The ERC20z address
   erc20z: Address;
-  // Timestamp when the secondary market will end
+  // The ERC20Z name
+  name: string;
+  // The ERC20Z symbol
+  symbol: string;
+  // Earliest time in seconds a token can be minted
+  saleStart: bigint;
+  // Latest time in seconds a token can be minted. Gets set after the market countdown has started.
   saleEnd?: bigint;
+  // The amount of time after the `minimumMarketEth` is reached until the secondary market can be launched, in seconds.
+  marketCountdown?: bigint;
+  // minimum quantity of tokens that must have been minted to launch the countdown.
+  minimumMintsForCountdown?: bigint;
+  // mints so far
+  mintCount: bigint;
 };

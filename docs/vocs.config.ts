@@ -7,8 +7,7 @@ export default defineConfig({
   titleTemplate: "%s | ZORA Docs",
   iconUrl: "https://docs.zora.co/Zorb.png",
   logoUrl: "https://docs.zora.co/Zorb.png",
-  ogImageUrl:
-    "https://docs.zora.co/og.png",
+  ogImageUrl: "https://docs.zora.co/og.png",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [
@@ -216,6 +215,10 @@ export default defineConfig({
               {
                 text: "sell1155OnSecondary",
                 link: "/protocol-sdk/collect/sell1155OnSecondary",
+              },
+              {
+                text: "getSecondaryInfo",
+                link: "/protocol-sdk/collect/getSecondaryInfo",
               },
             ],
           },

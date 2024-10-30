@@ -24,12 +24,16 @@ const { parameters, contractAddress } = await creatorClient.create1155({
   token: {
     tokenMetadataURI: "ipfs://DUMMY/token.json",
     salesConfig: {
-      type: "timed",
-      erc20Name: "testToken", // If not provided, uses the contract name
-      erc20Symbol: "TEST", // If not provided, extracts it from the name.
-      saleStart: 0n, // If not provided, sets to 0
-      marketCountdown: BigInt(24 * 60 * 60), // If not provided, sets to 24 hours
-      minimumMarketEth: 2220000000000000n, // If not provided, sets to 200 mints worth of ETH
+      // Name of the erc20z token to create for the secondary sale.  If not provided, uses the contract name
+      erc20Name: "testToken",
+      // Symbol of the erc20z token to create for the secondary sale.  If not provided, extracts it from the name.
+      erc20Symbol: "TEST",
+      // Earliest time a token can be minted.  If undefined or 0, then it can be minted immediately.  Defaults to 0n.
+      saleStart: 0n,
+      // Market countdown, in seconds, that will start once the minimum mints for countdown is reached. Defaults to 24 hours.
+      marketCountdown: BigInt(24 * 60 * 60),
+      // Minimum quantity of mints that will trigger the countdown.  Defaults to 1111n
+      minimumMintsForCountdown: 1111n,
     },
   },
   // account to execute the transaction (the creator)

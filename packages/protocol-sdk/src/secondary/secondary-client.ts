@@ -15,6 +15,7 @@ import {
   QuotePrice,
   BuyWithSlippageInput,
   SellWithSlippageInput,
+  SecondaryInfo,
 } from "./types";
 
 // uniswap's auto slippage for L2s is 0.5% -> 0.005
@@ -331,7 +332,7 @@ export class SecondaryClient {
   }: {
     contract: Address;
     tokenId: bigint;
-  }) {
+  }): Promise<SecondaryInfo | undefined> {
     return getSecondaryInfo({
       contract,
       tokenId,
