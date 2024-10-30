@@ -128,7 +128,7 @@ with the 1155 contract address and the token creation parameters.
 
 ## Setting a price per token
 
-A price per token can be optionally set to earn eth additional on the primary sale when each token is minted, by setting `token.salesConfig.pricePerToken`.  
+A price per token can be optionally set to earn additional ETH on the primary sale when each token is minted, by setting `token.salesConfig.pricePerToken`.  
 If the `pricePerToken` is set to more than 0, there will be no `creatorReward` earned on the mint fee. If a pricePerToken is set to more than 0, then the token is setup with the [ZoraCreatorFixedPriceSaleStrategy](https://github.com/ourzora/zora-protocol/blob/main/packages/1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol) as its minter.
 This will also result in not being able to [leverage the onchain secondary market feature](https://support.zora.co/en/articles/2519873) for tokens minted using
 this minter.
