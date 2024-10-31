@@ -56,6 +56,9 @@ contract SponsoredSparksSpender is EIP712, ERC1155TransferRecipientConstants, IS
     /// @notice Allowed verifiers for spending signatures
     mapping(address => bool) public allowedVerifiers;
 
+    /// @param _zoraSparks1155 Zora Sparks address, can be set to 0x0 for chains that do not have sparks
+    /// @param fundsManager Admin for this contract
+    /// @param defaultVerifiers Default verifier addresses
     constructor(IZoraSparks1155 _zoraSparks1155, address fundsManager, address[] memory defaultVerifiers) EIP712(NAME, VERSION) Ownable(fundsManager) {
         zoraSparks1155 = _zoraSparks1155;
 
