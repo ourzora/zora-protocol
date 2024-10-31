@@ -1,5 +1,11 @@
 # @zoralabs/sparks-contracts
 
+## 0.2.4
+
+### Patch Changes
+
+- c08ec3b3: Deployed SponsoredSparksSpender to more chains
+
 ## 0.2.3
 
 ### Patch Changes

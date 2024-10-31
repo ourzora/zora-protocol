@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.7
+
+### Patch Changes
+
+- c08ec3b3: Deployed SponsoredSparksSpender to more chains
+
 ## 0.3.6
 
 ### Patch Changes

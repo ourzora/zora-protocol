@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/sparks-contracts",
-  "version": "0.2.3",
+  "version": "0.2.4",
   "repository": "https://github.com/ourzora/zora-protocol.git",
   "license": "MIT",
   "main": "./dist/index.js",
