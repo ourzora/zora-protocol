@@ -4,6 +4,8 @@ fs_permissions = [
   { access = "read", path = "./chainConfigs" },
   { access = "read", path = "./package.json" },
   { access = "readwrite", path = "./deterministicConfig" },
+  { access = "read", path = "../shared-contracts/chainConfigs" },
+  { access = "readwrite", path = "../shared-contracts/deterministicConfig" }
 ]
 libs = ['node_modules', 'script']
 allow_paths = [

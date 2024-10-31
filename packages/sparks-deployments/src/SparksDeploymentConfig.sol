@@ -9,6 +9,8 @@ struct SparksDeployment {
     address sparksManagerImpl;
     string sparksImplVersion;
     address sparksEthUnwrapperAndCaller;
+    address sponsoredSparksSpender;
+    string sponsoredSparksSpenderVersion;
 }
 
 abstract contract SparksDeploymentConfig is Script {
@@ -17,12 +19,16 @@ abstract contract SparksDeploymentConfig is Script {
     string constant SPARKS_MANAGER_IMPL = "SPARKS_MANAGER_IMPL";
     string constant SPARKS_MANAGER_IMPL_VERSION = "SPARKS_MANAGER_IMPL_VERSION";
     string constant MINTS_ETH_UNWRAPPER_AND_CALLER = "MINTS_ETH_UNWRAPPER_AND_CALLER";
+    string constant SPONSORED_SPARKS_SPENDER = "SPONSORED_SPARKS_SPENDER";
+    string constant SPONSORED_SPARKS_SPENDER_VERSION = "SPONSORED_SPARKS_SPENDER_VERSION";
 
     function saveDeployment(SparksDeployment memory sparksDeployment) internal {
         string memory result = "sparksDeployment";
 
         vm.serializeAddress(result, SPARKS_MANAGER_IMPL, sparksDeployment.sparksManagerImpl);
         vm.serializeAddress(result, MINTS_ETH_UNWRAPPER_AND_CALLER, sparksDeployment.sparksEthUnwrapperAndCaller);
+        vm.serializeAddress(result, SPONSORED_SPARKS_SPENDER, sparksDeployment.sponsoredSparksSpender);
+        vm.serializeString(result, SPONSORED_SPARKS_SPENDER_VERSION, sparksDeployment.sponsoredSparksSpenderVersion);
         string memory finalOutput = vm.serializeString(result, SPARKS_MANAGER_IMPL_VERSION, sparksDeployment.sparksImplVersion);
 
         vm.writeJson(finalOutput, string.concat(string.concat("addresses/", vm.toString(block.chainid)), ".json"));
@@ -45,14 +51,27 @@ abstract contract SparksDeploymentConfig is Script {
         }
     }
 
-    function getDeployment() internal view returns (SparksDeployment memory) {
-        string memory json = vm.readFile(string.concat(string.concat("addresses/", vm.toString(block.chainid)), ".json"));
+    function readStringOrDefaultToZero(string memory json, string memory key) internal view returns (string memory str) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            str = json.readString(keyPrefix);
+        } else {
+            str = "";
+        }
+    }
+
+    function getDeployment() internal returns (SparksDeployment memory) {
+        string memory path = string.concat(string.concat("addresses/", vm.toString(block.chainid)), ".json");
+        string memory json = vm.isFile(path) ? vm.readFile(path) : "{}";
 
         return
             SparksDeployment({
                 sparksManagerImpl: readAddressOrDefaultToZero(json, SPARKS_MANAGER_IMPL),
-                sparksImplVersion: json.readString(getKeyPrefix(SPARKS_MANAGER_IMPL_VERSION)),
-                sparksEthUnwrapperAndCaller: readAddressOrDefaultToZero(json, MINTS_ETH_UNWRAPPER_AND_CALLER)
+                sparksImplVersion: readStringOrDefaultToZero(json, SPARKS_MANAGER_IMPL_VERSION),
+                sparksEthUnwrapperAndCaller: readAddressOrDefaultToZero(json, MINTS_ETH_UNWRAPPER_AND_CALLER),
+                sponsoredSparksSpender: readAddressOrDefaultToZero(json, SPONSORED_SPARKS_SPENDER),
+                sponsoredSparksSpenderVersion: readStringOrDefaultToZero(json, SPONSORED_SPARKS_SPENDER_VERSION)
             });
     }
 
