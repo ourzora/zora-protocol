@@ -219,21 +219,15 @@ const getSparksAddresses = () => {
   const chainIds = [7777777, 999999999];
 
   const sparksProxyConfig = JSON.parse(
-    readFileSync(
-      "../sparks-deployments/deterministicConfig/sparksProxy/params.json",
-      "utf-8",
-    ),
+    readFileSync("../sparks/deterministicConfig/sparksProxy.json", "utf-8"),
   );
 
   const mintsProxyConfig = JSON.parse(
-    readFileSync(
-      "../sparks-deployments/deterministicConfig/mintsProxy/params.json",
-      "utf-8",
-    ),
+    readFileSync("../sparks/deterministicConfig/mintsProxy.json", "utf-8"),
   );
 
   const mintsEthUnwrapperAndCallerAddress = JSON.parse(
-    readFileSync("../sparks-deployments/addresses/999999999.json", "utf-8"),
+    readFileSync("../sparks/addresses/999999999.json", "utf-8"),
   ).MINTS_ETH_UNWRAPPER_AND_CALLER as Address;
 
   const sparksManagerAddress = sparksProxyConfig.manager

@@ -2,10 +2,9 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {SparksDeploymentConfig, SparksDeployment} from "../src/SparksDeploymentConfig.sol";
-import {ProxyDeployerUtils} from "../src/ProxyDeployerUtils.sol";
+import {SparksDeploymentConfig, SparksDeployment} from "../src/deployment/SparksDeploymentConfig.sol";
 import {ImmutableCreate2FactoryUtils} from "@zoralabs/shared-contracts/utils/ImmutableCreate2FactoryUtils.sol";
-import {SparksEthUnwrapperAndCaller} from "@zoralabs/sparks-contracts/src/helpers/SparksEthUnwrapperAndCaller.sol";
+import {SparksEthUnwrapperAndCaller} from "../src/helpers/SparksEthUnwrapperAndCaller.sol";
 
 /// @dev Deploys a new sparks implementation at an expected determinstic address
 contract DeploySparksUnwrapperAndColler is SparksDeploymentConfig {

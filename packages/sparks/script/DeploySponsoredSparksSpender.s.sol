@@ -2,16 +2,16 @@
 pragma solidity ^0.8.20;
 
 import "forge-std/Script.sol";
-import {ZoraSparksManagerImpl} from "@zoralabs/sparks-contracts/src/ZoraSparksManagerImpl.sol";
-import {IZoraSparks1155} from "@zoralabs/sparks-contracts/src/interfaces/IZoraSparks1155.sol";
-import {SponsoredSparksSpender} from "@zoralabs/sparks-contracts/src/helpers/SponsoredSparksSpender.sol";
-import {SparksDeploymentConfig, SparksDeployment} from "../src/SparksDeploymentConfig.sol";
-import {ProxyDeployerUtils} from "../src/ProxyDeployerUtils.sol";
+import {ZoraSparksManagerImpl} from "../src/ZoraSparksManagerImpl.sol";
+import {IZoraSparks1155} from "../src/interfaces/IZoraSparks1155.sol";
+import {SponsoredSparksSpender} from "../src/helpers/SponsoredSparksSpender.sol";
+import {SparksDeploymentConfig, SparksDeployment} from "../src/deployment/SparksDeploymentConfig.sol";
+import {ProxyDeployerUtils} from "@zoralabs/shared-contracts/deployment/ProxyDeployerUtils.sol";
 import {ImmutableCreate2FactoryUtils} from "@zoralabs/shared-contracts/utils/ImmutableCreate2FactoryUtils.sol";
 import {ProxyDeployerScript, DeterministicDeployerAndCaller, DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 
 /// @dev Deploys a new sparks spender contract
-contract DeploySponsoredSparksSpender is SparksDeploymentConfig, ProxyDeployerScript {
+contract DeploySponsoredSparksSpender is SparksDeploymentConfig {
     function run() public {
         SparksDeployment memory deploymentConfig = getDeployment();
 
@@ -32,8 +32,8 @@ contract DeploySponsoredSparksSpender is SparksDeploymentConfig, ProxyDeployerSc
         address admin = getProxyAdmin();
         require(admin != address(0), "admin cannot be none");
 
-        console2.log("Admin:" , admin);
-        console2.log("Sparks:" , sparksAddress);
+        console2.log("Admin:", admin);
+        console2.log("Sparks:", sparksAddress);
         console2.log("Deploying to ", block.chainid);
 
         SponsoredSparksSpender sponsoredSparksSpender = new SponsoredSparksSpender(IZoraSparks1155(sparksAddress), admin, verifiedSigners);

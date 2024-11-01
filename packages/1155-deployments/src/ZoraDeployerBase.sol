@@ -154,6 +154,6 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
     }
 
     function determinsticUpgradeGateAddress() internal view returns (address) {
-        return vm.parseJsonAddress(vm.readFile("./deterministicConfig/upgradeGate/params.json"), ".upgradeGateAddress");
+        return vm.parseJsonAddress(vm.readFile("./deterministicConfig/upgradeGate.json"), ".upgradeGateAddress");
     }
 }

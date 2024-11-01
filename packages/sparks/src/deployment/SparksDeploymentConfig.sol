@@ -4,6 +4,8 @@ import "forge-std/Test.sol";
 import {CommonBase} from "forge-std/Base.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Script} from "forge-std/Script.sol";
+import {DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment/Config.sol";
+import {ProxyDeployerScript} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 
 struct SparksDeployment {
     address sparksManagerImpl;
@@ -13,7 +15,15 @@ struct SparksDeployment {
     string sponsoredSparksSpenderVersion;
 }
 
-abstract contract SparksDeploymentConfig is Script {
+// config for deploying the Sparks proxy,
+// this should be the same on all chains
+struct SparksDeterministicConfig {
+    address deploymentCaller;
+    DeterministicContractConfig manager;
+    DeterministicContractConfig sparks1155;
+}
+
+abstract contract SparksDeploymentConfig is ProxyDeployerScript {
     using stdJson for string;
 
     string constant SPARKS_MANAGER_IMPL = "SPARKS_MANAGER_IMPL";
@@ -81,5 +91,14 @@ abstract contract SparksDeploymentConfig is Script {
         string memory json = vm.readFile(sparksProxyConfig);
 
         return json.readAddress(".sparks1155.deployedAddress");
+    }
+
+    function writeSparksSparksDeterministicConfig(SparksDeterministicConfig memory config, string memory proxyName) internal {
+        string memory key = "some key";
+
+        vm.serializeString(key, "manager", determinsticConfigJson(config.manager, "manager"));
+        string memory finalJson = vm.serializeString(key, "sparks1155", determinsticConfigJson(config.sparks1155, "sparks1155"));
+
+        vm.writeJson(finalJson, string.concat(string.concat("deterministicConfig/", proxyName, "/params.json")));
     }
 }

@@ -101,10 +101,7 @@ type InitializationConfig = {
 const loadProxyDeployerAddress = async () => {
   const proxyDeployerConfig = JSON.parse(
     await readFile(
-      path.resolve(
-        __dirname,
-        "../deterministicConfig/proxyDeployer/params.json",
-      ),
+      path.resolve(__dirname, "../deterministicConfig/uupsProxyDeployer.json"),
       "utf-8",
     ),
   );
@@ -117,7 +114,7 @@ const loadDeterministicTransparentProxyConfig = async (
 ): Promise<SparksDeterminsticConfig> => {
   const filePath = path.resolve(
     __dirname,
-    `../deterministicConfig/${proxyName}/params.json`,
+    `../deterministicConfig/${proxyName}.json`,
   );
 
   // read file as json, casting it as return value:

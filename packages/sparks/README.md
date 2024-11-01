@@ -35,3 +35,27 @@ The `ZoraSparks1155` and `ZoraSparksManager` contracts are deployed deterministi
 
 - `ZoraSparks1155`: [0x7777777d57c1C6e472fa379b7b3B6c6ba3835073](https://explorer.zora.energy/address/0x7777777d57c1C6e472fa379b7b3B6c6ba3835073)
 - `ZoraSparksManager`: [0x77777770cA269366c7208aFcF36FE2C6F7f7608B](https://explorer.zora.energy/address/0x77777770cA269366c7208aFcF36FE2C6F7f7608B)
+
+## Deploying to a new chain
+
+Deploy the [ProxyDeployer](src/DeterministicUUPSProxyDeployer.sol):
+
+```sh
+forge script script/DeployProxyDeployer.s.sol {rest of deployment config}
+```
+
+Add an empty address.json in `addresses/${chainId}.json`
+
+Deploy the mints manager implementation, which will update the above created addresses.json with the new implementation address and version:
+
+```sh
+forge script script/DeploySparksManagerImpl.s.sol {rest of deployment config}
+```
+
+Deploy the `ZoraSparksManager`, which when initialized will deploy the `ZoraSparks1155` contract:
+
+```sh
+yarn tsx scripts/deploySparksDeterminisitic.ts {chain-name}
+```
+
+To verify that deployed proxy contract, run the printed out verification command from the above step.

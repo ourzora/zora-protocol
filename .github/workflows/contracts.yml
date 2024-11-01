@@ -39,7 +39,7 @@ jobs:
     secrets: inherit
     with:
       package_folder: packages/sparks
-      ignore_coverage_files: '"*Ownable*" "*Mock*" "*BatchDataHelper*" "*test*"'
+      ignore_coverage_files: '"*Ownable*" "*Mock*" "*BatchDataHelper*" "*test*" "*script*" "src/deployment/*"'
       skip_storage_layout: true
       name: Sparks
 
@@ -50,10 +50,3 @@ jobs:
     with:
       package_folder: packages/1155-deployments
       precache: "pnpm run generate"
-
-  contracts-sparks-deployments:
-    name: Sparks Deployments
-    uses: ./.github/workflows/deployment.yml
-    secrets: inherit
-    with:
-      package_folder: packages/sparks-deployments

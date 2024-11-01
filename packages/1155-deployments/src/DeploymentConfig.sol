@@ -113,7 +113,7 @@ abstract contract DeploymentConfig is Script {
     }
 
     function getDeterminsticSparksManagerAddress() internal view returns (address) {
-        string memory json = vm.readFile("../sparks-deployments/deterministicConfig/sparksProxy/params.json");
+        string memory json = vm.readFile("../sparks/deterministicConfig/sparksProxy.json");
         return json.readAddress(".manager.deployedAddress");
     }
 }

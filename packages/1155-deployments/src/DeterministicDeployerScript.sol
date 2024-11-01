@@ -57,7 +57,7 @@ contract DeterministicDeployerScript is Script {
     }
 
     function paramsFilePath(string memory proxyName) internal pure returns (string memory) {
-        return string.concat("deterministicConfig/", proxyName, "/params.json");
+        return string.concat("deterministicConfig/", proxyName, ".json");
     }
 
     function signaturesFilePath(string memory proxyName) internal pure returns (string memory) {
@@ -231,7 +231,7 @@ contract DeterministicDeployerScript is Script {
         string memory signatures = vm.readFile(signaturesFilePath("upgradeGate"));
         bytes memory signature = signatures.readBytes(string.concat(".", string.concat(vm.toString(chain))));
 
-        string memory upgradeGateParams = vm.readFile("./deterministicConfig/upgradeGate/params.json");
+        string memory upgradeGateParams = vm.readFile("./deterministicConfig/upgradeGate.json");
 
         bytes32 genericCreationSalt = vm.parseJsonBytes32(upgradeGateParams, ".salt");
         bytes memory creationCode = vm.parseJsonBytes(upgradeGateParams, ".creationCode");
