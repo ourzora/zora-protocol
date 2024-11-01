@@ -8,6 +8,10 @@ import {DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment
 import {ProxyDeployerScript} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 
 struct SparksDeployment {
+    address sparksManager;
+    address sparks1155;
+    address mintsManager;
+    address mints1155;
     address sparksManagerImpl;
     string sparksImplVersion;
     address sparksEthUnwrapperAndCaller;
@@ -26,6 +30,10 @@ struct SparksDeterministicConfig {
 abstract contract SparksDeploymentConfig is ProxyDeployerScript {
     using stdJson for string;
 
+    string constant SPARKS_MANAGER = "SPARKS_MANAGER";
+    string constant SPARKS_1155 = "SPARKS_1155";
+    string constant MINTS_MANAGER = "MINTS_MANAGER";
+    string constant MINTS_1155 = "MINTS_1155";
     string constant SPARKS_MANAGER_IMPL = "SPARKS_MANAGER_IMPL";
     string constant SPARKS_MANAGER_IMPL_VERSION = "SPARKS_MANAGER_IMPL_VERSION";
     string constant MINTS_ETH_UNWRAPPER_AND_CALLER = "MINTS_ETH_UNWRAPPER_AND_CALLER";
@@ -36,6 +44,10 @@ abstract contract SparksDeploymentConfig is ProxyDeployerScript {
         string memory result = "sparksDeployment";
 
         vm.serializeAddress(result, SPARKS_MANAGER_IMPL, sparksDeployment.sparksManagerImpl);
+        vm.serializeAddress(result, SPARKS_MANAGER, sparksDeployment.sparksManager);
+        vm.serializeAddress(result, SPARKS_1155, sparksDeployment.sparks1155);
+        vm.serializeAddress(result, MINTS_MANAGER, sparksDeployment.mintsManager);
+        vm.serializeAddress(result, MINTS_1155, sparksDeployment.mints1155);
         vm.serializeAddress(result, MINTS_ETH_UNWRAPPER_AND_CALLER, sparksDeployment.sparksEthUnwrapperAndCaller);
         vm.serializeAddress(result, SPONSORED_SPARKS_SPENDER, sparksDeployment.sponsoredSparksSpender);
         vm.serializeString(result, SPONSORED_SPARKS_SPENDER_VERSION, sparksDeployment.sponsoredSparksSpenderVersion);
@@ -79,6 +91,10 @@ abstract contract SparksDeploymentConfig is ProxyDeployerScript {
             SparksDeployment({
                 sparksManagerImpl: readAddressOrDefaultToZero(json, SPARKS_MANAGER_IMPL),
                 sparksImplVersion: readStringOrDefaultToZero(json, SPARKS_MANAGER_IMPL_VERSION),
+                sparksManager: readAddressOrDefaultToZero(json, SPARKS_MANAGER),
+                sparks1155: readAddressOrDefaultToZero(json, SPARKS_1155),
+                mintsManager: readAddressOrDefaultToZero(json, MINTS_MANAGER),
+                mints1155: readAddressOrDefaultToZero(json, MINTS_1155),
                 sparksEthUnwrapperAndCaller: readAddressOrDefaultToZero(json, MINTS_ETH_UNWRAPPER_AND_CALLER),
                 sponsoredSparksSpender: readAddressOrDefaultToZero(json, SPONSORED_SPARKS_SPENDER),
                 sponsoredSparksSpenderVersion: readStringOrDefaultToZero(json, SPONSORED_SPARKS_SPENDER_VERSION)
