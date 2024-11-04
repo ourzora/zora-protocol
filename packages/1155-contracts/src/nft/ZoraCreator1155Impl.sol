@@ -77,7 +77,7 @@ contract ZoraCreator1155Impl is
     /// @notice Factory contract
     IUpgradeGate internal immutable upgradeGate;
 
-    uint256 constant MINT_FEE = 0.000777 ether;
+    uint256 constant MINT_FEE = 0.000111 ether;
 
     constructor(address _mintFeeRecipient, address _upgradeGate, address _protocolRewards) RewardSplits(_protocolRewards, _mintFeeRecipient) initializer {
         upgradeGate = IUpgradeGate(_upgradeGate);

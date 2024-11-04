@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.13.0
+
+### Minor Changes
+
+- 737fbef9: Mint fee on the 1155 contract changed to 0.000111 eth
+
 ## 2.12.4
 
 ### Patch Changes
