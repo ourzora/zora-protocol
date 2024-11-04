@@ -6,10 +6,31 @@
     }
   ],
   "targetVersion": {
-    "version": "2.12.3",
-    "contractImplAddress": "0xC7598f8eAA1455f5b2B3f206A9af55B2BA248e3E"
+    "version": "2.13.0",
+    "contractImplAddress": "0x8a5027ea12f45a13deb6CB96A07913c6e192BE84"
   },
-  "missingUpgradePaths": [],
-  "missingUpgradePathTargets": [],
-  "missingUpgradePathCalls": []
+  "missingUpgradePaths": [
+    {
+      "from": [
+        {
+          "address": "0x7316777F0cBe4da5a52cd5e68d1C50af8E466AC1",
+          "version": "2.12.3"
+        }
+      ],
+      "to": {
+        "version": "2.13.0",
+        "address": "0x8a5027ea12f45a13deb6CB96A07913c6e192BE84"
+      },
+      "upgradeCall": {
+        "address": "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900",
+        "calldata": "0x92b60a4c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000008a5027ea12f45a13deb6cb96a07913c6e192be8400000000000000000000000000000000000000000000000000000000000000010000000000000000000000007316777f0cbe4da5a52cd5e68d1c50af8e466ac1"
+      }
+    }
+  ],
+  "missingUpgradePathTargets": [
+    "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900"
+  ],
+  "missingUpgradePathCalls": [
+    "0x92b60a4c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000008a5027ea12f45a13deb6cb96a07913c6e192be8400000000000000000000000000000000000000000000000000000000000000010000000000000000000000007316777f0cbe4da5a52cd5e68d1c50af8e466ac1"
+  ]
 }
