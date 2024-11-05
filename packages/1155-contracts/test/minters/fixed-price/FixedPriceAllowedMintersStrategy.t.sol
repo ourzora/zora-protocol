@@ -43,7 +43,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
         minters = new address[](1);
         minters[0] = allowedMinter;
 
-        targetImpl = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
+        targetImpl = new ZoraCreator1155Impl(zora, address(0x1234), address(new ProtocolRewards()), makeAddr("timedSaleStrategy"));
         target = ZoraCreator1155Impl(payable(address(new Zora1155(address(targetImpl)))));
 
         target.initialize("test", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, new bytes[](0));

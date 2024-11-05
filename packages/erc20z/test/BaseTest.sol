@@ -102,7 +102,7 @@ contract BaseTest is Test {
 
         vm.startPrank(users.creator);
 
-        collection = new Zora1155(users.creator);
+        collection = new Zora1155(users.creator, address(saleStrategy));
         tokenId = collection.setupNewTokenWithCreateReferral("token.uri", type(uint256).max, users.createReferral);
         collection.addPermission(tokenId, address(saleStrategy), collection.PERMISSION_BIT_MINTER());
 

@@ -14,6 +14,8 @@ struct ChainConfig {
     address mintFeeRecipient;
     /// @notice Protocol rewards contract address
     address protocolRewards;
+    /// @notice Timed Sale Strategy contract address
+    address timedSaleStrategy;
 }
 
 /// @notice Deployment addresses – set to new deployed addresses by the scripts.
@@ -83,6 +85,11 @@ abstract contract DeploymentConfig is Script {
         chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
         chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
         chainConfig.protocolRewards = json.readAddress(getKeyPrefix(PROTOCOL_REWARDS));
+    }
+
+    function getTimedSaleStrategyDeployment() internal view returns (address) {
+        string memory json = vm.readFile(string.concat("../erc20z/addresses/", Strings.toString(chainId()), ".json"));
+        return json.readAddress("SALE_STRATEGY");
     }
 
     function readAddressOrDefaultToZero(string memory json, string memory key) internal view returns (address addr) {

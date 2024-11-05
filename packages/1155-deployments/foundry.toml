@@ -6,6 +6,7 @@ fs_permissions = [
   { access = "read", path = "./package.json" },
   { access = "read", path = "../sparks/deterministicConfig" },
   { access = "read", path = "../sparks/addresses" },
+  { access = "read", path = "../erc20z/addresses" },
   { access = "readwrite", path = "./deterministicConfig" },
 ]
 libs = ['_imagine', 'node_modules', 'script']

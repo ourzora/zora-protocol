@@ -13,6 +13,8 @@ interface ICreatorRoyaltyErrors {
 }
 
 interface IZoraCreator1155Errors is ICreatorRoyaltyErrors, ILimitedMintPerAddressErrors, IMinterErrors {
+    error OnlyAllowedForTimedSaleStrategy();
+    error OnlyAllowedForRegisteredMinter();
     error OnlyTransfersFromZoraMints();
     error Call_TokenIdMismatch();
     error TokenIdMismatch(uint256 expected, uint256 actual);

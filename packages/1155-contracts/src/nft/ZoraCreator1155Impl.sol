@@ -76,11 +76,28 @@ contract ZoraCreator1155Impl is
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
     /// @notice Factory contract
     IUpgradeGate internal immutable upgradeGate;
+    /// @notice Timed sale strategy allowed to reduce supply
+    address internal immutable timedSaleStrategy;
 
     uint256 constant MINT_FEE = 0.000111 ether;
 
-    constructor(address _mintFeeRecipient, address _upgradeGate, address _protocolRewards) RewardSplits(_protocolRewards, _mintFeeRecipient) initializer {
+    /// @notice This is the immutable constructor for defining onchain addresses that is updated on contract updates
+    /// @param _mintFeeRecipient Recipient for the mint fee (used in rewards) (cannot be 0)
+    /// @param _upgradeGate Address to register the upgrade gate for these contracts (cannot be 0)
+    /// @param _protocolRewards Protocol rewards contract ddress (cannot be 0)
+    /// @param _timedSaleStrategy Timed sale strategy – used to control access to reduceSupply, can be 0 for when this contract is not supported
+    constructor(
+        address _mintFeeRecipient,
+        address _upgradeGate,
+        address _protocolRewards,
+        address _timedSaleStrategy
+    ) RewardSplits(_protocolRewards, _mintFeeRecipient) initializer {
+        if (address(_upgradeGate) == address(0)) {
+            revert INVALID_ADDRESS_ZERO();
+        }
+
         upgradeGate = IUpgradeGate(_upgradeGate);
+        timedSaleStrategy = _timedSaleStrategy;
     }
 
     /// @notice Initializes the contract
@@ -300,12 +317,16 @@ contract ZoraCreator1155Impl is
     /// @dev This allows enforcing that no more new tokens can be minted.
     /// @param tokenId The token id to reduce the supply for
     /// @param newMaxSupply The new max supply
-    function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
-        TokenData storage tokenData = tokens[tokenId];
-
-        if (newMaxSupply >= tokenData.maxSupply) {
-            revert CanOnlyReduceMaxSupply();
+    function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external {
+        if (msg.sender != timedSaleStrategy) {
+            revert OnlyAllowedForTimedSaleStrategy();
         }
+
+        if (!_hasAnyPermission(tokenId, msg.sender, PERMISSION_BIT_MINTER)) {
+            revert OnlyAllowedForRegisteredMinter();
+        }
+
+        TokenData storage tokenData = tokens[tokenId];
         if (newMaxSupply < tokenData.totalMinted) {
             revert CannotReduceMaxSupplyBelowMinted();
         }

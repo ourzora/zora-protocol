@@ -33,8 +33,10 @@ contract ZoraCreator1155FactoryTest is Test {
         address factoryShimAddress = address(new ProxyShim(zora));
         Zora1155Factory factoryProxy = new Zora1155Factory(factoryShimAddress, "");
 
+        address mockTimedSaleStrategy = makeAddr("timedSaleStrategy");
+
         ProtocolRewards protocolRewards = new ProtocolRewards();
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards));
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards), mockTimedSaleStrategy);
 
         factoryImpl = new ZoraCreator1155FactoryImpl(zoraCreator1155Impl, IMinter1155(address(1)), IMinter1155(address(2)), IMinter1155(address(3)));
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
@@ -287,7 +289,7 @@ contract ZoraCreator1155FactoryTest is Test {
         // * create a new version of the erc1155 implementation
         // * create a new factory that points to that new erc1155 implementation,
         // * upgrade the proxy to point to the new factory
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(zora, address(factory), address(new ProtocolRewards()));
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(zora, address(factory), address(new ProtocolRewards()), makeAddr("timedSaleStrategy"));
 
         ZoraCreator1155FactoryImpl newFactoryImpl = new ZoraCreator1155FactoryImpl(
             newZoraCreator,
@@ -336,7 +338,7 @@ contract ZoraCreator1155FactoryTest is Test {
         ZoraCreator1155Impl creatorProxy = ZoraCreator1155Impl(payable(createdAddress));
 
         // 2. upgrade the created contract by creating a new contract and upgrading the existing one to point to it.
-        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(zora, address(0), address(new ProtocolRewards()));
+        IZoraCreator1155 newZoraCreator = new ZoraCreator1155Impl(zora, address(upgradeGate), address(new ProtocolRewards()), makeAddr("timedSaleStrategy"));
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = address(factory.zora1155Impl());

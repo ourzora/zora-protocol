@@ -27,7 +27,7 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function setUp() external {
         zora = makeAddr("zora");
         protocolRewards = new ProtocolRewards();
-        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0), address(protocolRewards));
+        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(0x1234), address(protocolRewards), makeAddr("timedSaleStrategy"));
         target = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
         admin = payable(address(0x9));
         target.initialize("", "test", ICreatorRoyaltiesControl.RoyaltyConfiguration(0, 0, address(0)), admin, _emptyInitData());
@@ -52,6 +52,11 @@ contract ZoraCreator1155AccessControlGeneralTest is Test {
     function test_openAccessFails_assumeLastTokenIdMatches() public {
         vm.expectRevert();
         target.assumeLastTokenIdMatches(999);
+    }
+
+    function test_openAccessFails_reduceSupply() public {
+        vm.expectRevert();
+        target.reduceSupply(1, 100);
     }
 
     function test_openAccessFails_isAdminOrRole() public {

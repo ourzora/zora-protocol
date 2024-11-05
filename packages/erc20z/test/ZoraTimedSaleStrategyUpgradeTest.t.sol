@@ -44,7 +44,7 @@ contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
 
         vm.startPrank(users.creator);
 
-        collection = new Zora1155(users.creator);
+        collection = new Zora1155(users.creator, address(saleStrategy));
         tokenId = collection.setupNewTokenWithCreateReferral("token.uri", type(uint256).max, users.createReferral);
         collection.addPermission(tokenId, address(saleStrategy), collection.PERMISSION_BIT_MINTER());
 
@@ -330,6 +330,7 @@ contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
         });
 
         // launch market, it should be setup with the expected mint params
+        vm.prank(address(saleStrategy));
         vm.expectCall(address(nonfungiblePositionManager), 0, abi.encodeCall(nonfungiblePositionManager.mint, expectedMintParams));
         saleStrategy.launchMarket(address(collection), tokenId);
 
@@ -377,7 +378,6 @@ contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
         saleStrategy.mint{value: totalValue}(users.collector, numTokens, address(collection), tokenId, users.mintReferral, "");
 
         vm.warp(saleEnd + 1);
-
         saleStrategy.launchMarket(address(collection), tokenId);
 
         address erc20zAddress = saleStrategy.sale(address(collection), tokenId).erc20zAddress;

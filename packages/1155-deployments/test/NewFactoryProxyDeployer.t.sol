@@ -33,7 +33,8 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
             protocolRewards: protocolRewards,
             merkleMinter: IMinter1155(address(0)),
             redeemMinterFactory: IMinter1155(address(0)),
-            fixedPriceMinter: IMinter1155(address(0))
+            fixedPriceMinter: IMinter1155(address(0)),
+            timedSaleStrategy: address(0)
         });
 
         return factoryImplDeployment;

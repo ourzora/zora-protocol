@@ -18,6 +18,7 @@ contract Zora1155 is ERC1155 {
     error UserMissingRoleForToken(address user, uint256 tokenId, uint256 role);
     error CanOnlyReduceMaxSupply();
     error CannotReduceMaxSupplyBelowMinted();
+    error OnlyAllowedFromTimedSale();
 
     ///                                                          ///
     ///                                                          ///
@@ -39,8 +40,9 @@ contract Zora1155 is ERC1155 {
     ///                                                          ///
     ///                                                          ///
 
-    constructor(address _creator) ERC1155("") {
+    constructor(address _creator, address _timedSale) ERC1155("") {
         creator = _creator;
+        timedSale = _timedSale;
     }
 
     ///                                                          ///
@@ -48,6 +50,7 @@ contract Zora1155 is ERC1155 {
     ///                                                          ///
 
     address internal creator;
+    address internal timedSale;
 
     uint256 public nextTokenId;
 
@@ -127,6 +130,10 @@ contract Zora1155 is ERC1155 {
     ///                                                          ///
 
     function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external {
+        if (msg.sender != timedSale) {
+            revert OnlyAllowedFromTimedSale();
+        }
+
         TokenData storage tokenData = tokens[tokenId];
 
         if (newMaxSupply >= tokenData.maxSupply) {

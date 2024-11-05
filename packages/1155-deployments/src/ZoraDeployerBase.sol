@@ -58,7 +58,8 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
                 protocolRewards: chainConfig.protocolRewards,
                 merkleMinter: IMinter1155(deployment.merkleMintSaleStrategy),
                 redeemMinterFactory: IMinter1155(deployment.redeemMinterFactory),
-                fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy)
+                fixedPriceMinter: IMinter1155(deployment.fixedPriceSaleStrategy),
+                timedSaleStrategy: getTimedSaleStrategyDeployment()
             });
 
         deployment.factoryImpl = factoryImplDeployment;

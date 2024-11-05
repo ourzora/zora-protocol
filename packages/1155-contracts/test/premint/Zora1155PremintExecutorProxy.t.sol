@@ -297,7 +297,11 @@ contract Zora1155PremintExecutorProxyTest is Test, IHasContractName {
 
         // 2. upgrade to current version of preminter
         // first upgrade 1155 factory to current version
-        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(zora, IUpgradeGate(address(0)), fixedPriceMinter);
+        (, , ZoraCreator1155FactoryImpl newFactoryVersion) = Zora1155FactoryFixtures.setupNew1155AndFactory(
+            zora,
+            IUpgradeGate(address(0x1234)),
+            fixedPriceMinter
+        );
         ZoraCreator1155FactoryImpl factory = ZoraCreator1155FactoryImpl(address(forkedPreminterProxy.zora1155Factory()));
         vm.prank(factory.owner());
         factory.upgradeTo(address(newFactoryVersion));
