@@ -56,33 +56,6 @@ abstract contract SparksDeploymentConfig is ProxyDeployerScript {
         vm.writeJson(finalOutput, string.concat(string.concat("addresses/", vm.toString(block.chainid)), ".json"));
     }
 
-    /// @notice Return a prefixed key for reading with a ".".
-    /// @param key key to prefix
-    /// @return prefixed key
-    function getKeyPrefix(string memory key) internal pure returns (string memory) {
-        return string.concat(".", key);
-    }
-
-    function readAddressOrDefaultToZero(string memory json, string memory key) internal view returns (address addr) {
-        string memory keyPrefix = getKeyPrefix(key);
-
-        if (vm.keyExists(json, keyPrefix)) {
-            addr = json.readAddress(keyPrefix);
-        } else {
-            addr = address(0);
-        }
-    }
-
-    function readStringOrDefaultToZero(string memory json, string memory key) internal view returns (string memory str) {
-        string memory keyPrefix = getKeyPrefix(key);
-
-        if (vm.keyExists(json, keyPrefix)) {
-            str = json.readString(keyPrefix);
-        } else {
-            str = "";
-        }
-    }
-
     function getDeployment() internal returns (SparksDeployment memory) {
         string memory path = string.concat(string.concat("addresses/", vm.toString(block.chainid)), ".json");
         string memory json = vm.isFile(path) ? vm.readFile(path) : "{}";
@@ -90,14 +63,14 @@ abstract contract SparksDeploymentConfig is ProxyDeployerScript {
         return
             SparksDeployment({
                 sparksManagerImpl: readAddressOrDefaultToZero(json, SPARKS_MANAGER_IMPL),
-                sparksImplVersion: readStringOrDefaultToZero(json, SPARKS_MANAGER_IMPL_VERSION),
+                sparksImplVersion: readStringOrDefaultToEmpty(json, SPARKS_MANAGER_IMPL_VERSION),
                 sparksManager: readAddressOrDefaultToZero(json, SPARKS_MANAGER),
                 sparks1155: readAddressOrDefaultToZero(json, SPARKS_1155),
                 mintsManager: readAddressOrDefaultToZero(json, MINTS_MANAGER),
                 mints1155: readAddressOrDefaultToZero(json, MINTS_1155),
                 sparksEthUnwrapperAndCaller: readAddressOrDefaultToZero(json, MINTS_ETH_UNWRAPPER_AND_CALLER),
                 sponsoredSparksSpender: readAddressOrDefaultToZero(json, SPONSORED_SPARKS_SPENDER),
-                sponsoredSparksSpenderVersion: readStringOrDefaultToZero(json, SPONSORED_SPARKS_SPENDER_VERSION)
+                sponsoredSparksSpenderVersion: readStringOrDefaultToEmpty(json, SPONSORED_SPARKS_SPENDER_VERSION)
             });
     }
 

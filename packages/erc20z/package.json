@@ -27,7 +27,8 @@
     "copy-abis": "pnpm tsx script/bundle-abis.ts",
     "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
     "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
-    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate"
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
+    "update-contract-version": "pnpm tsx script/update-contract-version.ts"
   },
   "devDependencies": {
     "@turnkey/api-key-stamper": "^0.3.1",

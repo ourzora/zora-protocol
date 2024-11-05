@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: UNLICENSED
+// SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
@@ -6,55 +6,28 @@ import "forge-std/Script.sol";
 import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {IWETH} from "../src/interfaces/IWETH.sol";
 import {INonfungiblePositionManager} from "../src/interfaces/uniswap/INonfungiblePositionManager.sol";
-import {IZoraTimedSaleStrategy} from "../src/interfaces/IZoraTimedSaleStrategy.sol";
 
 import {ERC20Z} from "../src/ERC20Z.sol";
 import {ZoraTimedSaleStrategyImpl} from "../src/minter/ZoraTimedSaleStrategyImpl.sol";
-import {ZoraTimedSaleStrategy} from "../src/minter/ZoraTimedSaleStrategy.sol";
 import {Royalties} from "../src/royalties/Royalties.sol";
-import {ProxyDeployerScript, DeterministicDeployerAndCaller, DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
-import {ProxyShim} from "@zoralabs/shared-contracts/deployment/DeterministicDeployerAndCaller.sol";
+import {DeterministicDeployerAndCaller, DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
-import {ImmutableCreate2FactoryUtils} from "@zoralabs/shared-contracts/utils/ImmutableCreate2FactoryUtils.sol";
-import {LibString} from "solady/utils/LibString.sol";
+import {DeployerBase} from "./DeployerBase.sol";
 
-// Temp script
-contract DeployScript is ProxyDeployerScript {
-    address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
-
-    function saveDeployment(
-        address saleStrategy,
-        address saleStrategyImpl,
-        address erc20z,
-        address royalties,
-        address _nonfungiblePositionManager,
-        address _weth
-    ) internal {
-        string memory objectKey = "config";
-
-        vm.serializeAddress(objectKey, "SALE_STRATEGY", saleStrategy);
-        vm.serializeAddress(objectKey, "SALE_STRATEGY_IMPL", saleStrategyImpl);
-        vm.serializeAddress(objectKey, "ERC20Z", erc20z);
-        vm.serializeAddress(objectKey, "ROYALTIES", royalties);
-        vm.serializeAddress(objectKey, "NONFUNGIBLE_POSITION_MANAGER", _nonfungiblePositionManager);
-        string memory result = vm.serializeAddress(objectKey, "WETH", _weth);
-
-        vm.writeJson(result, string.concat("./addresses/", vm.toString(block.chainid), ".json"));
-    }
-
+/// @notice Deploy full erc20z protocol
+contract DeployScript is DeployerBase {
     function run() public {
         IProtocolRewards protocolRewards = IProtocolRewards(PROTOCOL_REWARDS);
         address owner = getProxyAdmin();
         address zoraRecipient = getZoraRecipient();
 
-        // get deployed implementation address.  it it's not deployed, revert
-        address zoraTimedSaleStrategyImplAddress = ImmutableCreate2FactoryUtils.immutableCreate2Address(type(ZoraTimedSaleStrategyImpl).creationCode);
-
-        if (zoraTimedSaleStrategyImplAddress.code.length == 0) {
-            revert("Impl not yet deployed.  Make sure to deploy it with DeployImpl.s.sol");
-        }
+        DeploymentConfig memory config = readDeployment();
 
         vm.startBroadcast();
+        // deploy impl
+        ZoraTimedSaleStrategyImpl impl = new ZoraTimedSaleStrategyImpl();
+
+        address zoraTimedSaleStrategyImplAddress = address(impl);
 
         // get deployer contract
         DeterministicDeployerAndCaller deployer = createOrGetDeployerAndCaller();
@@ -115,14 +88,16 @@ contract DeployScript is ProxyDeployerScript {
 
         vm.stopBroadcast();
 
+        // update the deployment config with the new addresses
+        config.saleStrategy = minterConfig.deployedAddress;
+        config.saleStrategyImpl = address(impl);
+        config.saleStrategyImplVersion = impl.contractVersion();
+        config.erc20z = address(erc20z);
+        config.royalties = deployedRoyalties;
+        config.nonfungiblePositionManager = address(nonfungiblePositionManager);
+        config.weth = address(weth);
+
         // save the deployment json
-        saveDeployment(
-            minterConfig.deployedAddress,
-            zoraTimedSaleStrategyImplAddress,
-            address(erc20z),
-            deployedRoyalties,
-            address(nonfungiblePositionManager),
-            address(weth)
-        );
+        saveDeployment(config);
     }
 }

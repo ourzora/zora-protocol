@@ -21,6 +21,34 @@ interface ISymbol {
 contract ProxyDeployerScript is Script {
     using stdJson for string;
 
+    /// @notice Return a prefixed key for reading with a ".".
+    /// @param key key to prefix
+    /// @return prefixed key
+    function getKeyPrefix(string memory key) internal pure returns (string memory) {
+        return string.concat(".", key);
+    }
+
+
+    function readAddressOrDefaultToZero(string memory json, string memory key) internal view returns (address) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            return json.readAddress(keyPrefix);
+        } else {
+            return address(0);
+        }
+    }
+
+    function readStringOrDefaultToEmpty(string memory json, string memory key) internal view returns (string memory) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            return json.readString(keyPrefix);
+        } else {
+            return "";
+        }
+    }
+
     // copied from: https://github.com/karmacoma-eth/foundry-playground/blob/main/script/MineSaltScript.sol#L17C1-L36C9
     function mineSalt(
         address deployer,

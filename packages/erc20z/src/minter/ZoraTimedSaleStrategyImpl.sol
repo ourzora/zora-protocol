@@ -18,6 +18,7 @@ import {ZoraTimedSaleStrategyConstants} from "./ZoraTimedSaleStrategyConstants.s
 import {ZoraTimedSaleStorageDataLocation} from "../storage/ZoraTimedSaleStorageDataLocation.sol";
 import {IUniswapV3SwapCallback} from "../interfaces/uniswap/IUniswapV3SwapCallback.sol";
 import {UniswapV3LiquidityCalculator} from "../uniswap/UniswapV3LiquidityCalculator.sol";
+import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 import {IUniswapV3Pool} from "../interfaces/uniswap/IUniswapV3Pool.sol";
 
 /*
@@ -54,6 +55,7 @@ contract ZoraTimedSaleStrategyImpl is
     IZoraTimedSaleStrategy,
     ZoraTimedSaleStorageDataLocation,
     ZoraTimedSaleStrategyConstants,
+    ContractVersionBase,
     IUniswapV3SwapCallback
 {
     /// @dev This is an upgradeable contract and this variable is at slot0. Do not move this variable.
@@ -556,11 +558,6 @@ contract ZoraTimedSaleStrategyImpl is
     /// @notice The URI of the contract
     function contractURI() external pure returns (string memory) {
         return "https://github.com/ourzora/zora-protocol/";
-    }
-
-    /// @notice The version of the contract
-    function contractVersion() external pure returns (string memory) {
-        return "2.0.0";
     }
 
     /// @notice Update the Zora reward recipient
