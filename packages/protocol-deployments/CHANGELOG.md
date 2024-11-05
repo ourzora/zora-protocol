@@ -1,5 +1,14 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.8
+
+### Patch Changes
+
+- ad707434: Updated the 1155 Implementation reduceSupply function to be gated to the `TimedSaleStrategy` constructor argument
+  to ensure markets are launched when desired.
+- 2e68a87c: Updated 1155 impl versions and addresses
+- 17cc9821: Publishing `SponsoredSparksSpender` addresses and abi
+
 ## 0.3.7
 
 ### Patch Changes

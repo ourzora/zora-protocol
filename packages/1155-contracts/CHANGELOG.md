@@ -1,5 +1,12 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.13.1
+
+### Patch Changes
+
+- ad707434: Updated the 1155 Implementation reduceSupply function to be gated to the `TimedSaleStrategy` constructor argument
+  to ensure markets are launched when desired.
+
 ## 2.13.0
 
 ### Minor Changes
