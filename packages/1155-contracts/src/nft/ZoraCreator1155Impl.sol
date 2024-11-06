@@ -35,6 +35,7 @@ import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {IZoraCreator1155DelegatedCreation, ISupportsAABasedDelegatedTokenCreation, IHasSupportedPremintSignatureVersions} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
+import {IHasContractName} from "../interfaces/IContractMetadata.sol";
 import {ZoraCreator1155Attribution, DecodedCreatorAttribution, PremintTokenSetup, PremintConfigV2, DelegatedTokenCreation, DelegatedTokenSetup} from "../delegation/ZoraCreator1155Attribution.sol";
 import {ContractCreationConfig, PremintConfig} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -61,6 +62,7 @@ contract ZoraCreator1155Impl is
     RewardSplits,
     ERC1155RewardsStorageV1,
     IERC7572,
+    IHasContractName,
     ERC1155DelegationStorageV1
 {
     /// @notice This user role allows for any action to be performed
@@ -658,6 +660,7 @@ contract ZoraCreator1155Impl is
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IZoraCreator1155).interfaceId ||
             ERC1155Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == type(IHasContractName).interfaceId ||
             interfaceId == type(IHasSupportedPremintSignatureVersions).interfaceId ||
             interfaceId == type(ISupportsAABasedDelegatedTokenCreation).interfaceId ||
             interfaceId == type(IMintWithRewardsRecipients).interfaceId ||
@@ -811,6 +814,10 @@ contract ZoraCreator1155Impl is
         if (!upgradeGate.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
+    }
+
+    function contractName() external view returns (string memory) {
+        return "Zora Creator 1155";
     }
 
     /// @notice Returns the current implementation address

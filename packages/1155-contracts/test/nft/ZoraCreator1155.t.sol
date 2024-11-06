@@ -16,6 +16,7 @@ import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {PremintConfigV2, TokenCreationConfigV2} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {ZoraCreator1155Attribution} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
+import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
 
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -1379,6 +1380,9 @@ contract ZoraCreator1155Test is Test {
 
         bytes4 reduceSupplyInterfaceId = type(IReduceSupply).interfaceId;
         assertTrue(target.supportsInterface(reduceSupplyInterfaceId));
+
+        bytes4 hasContractNameInterfaceId = type(IHasContractName).interfaceId;
+        assertTrue(target.supportsInterface(hasContractNameInterfaceId));
     }
 
     function test_burnBatch() external {
