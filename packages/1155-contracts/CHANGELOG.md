@@ -1,5 +1,11 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.13.2
+
+### Patch Changes
+
+- 1fd92cc8: Add contractName field.
+
 ## 2.13.1
 
 ### Patch Changes
