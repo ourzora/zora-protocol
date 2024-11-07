@@ -19,7 +19,7 @@ import { zoraSparksManagerImplABI } from "@zoralabs/protocol-deployments";
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
   anvilChainId: zora.id,
-  forkBlockNumber: 17667435,
+  forkBlockNumber: 22160611,
 });
 describe("Sponsored Mints Spender with Relay", () => {
   anvilTest(

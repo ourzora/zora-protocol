@@ -53,7 +53,7 @@ export const makeAnvilTest = ({
   test.extend<AnvilViemClientsTest>({
     viemClients: async ({ task }, use) => {
       console.log("setting up clients for", task.name);
-      const port = Math.floor(Math.random() * 2000) + 4000;
+      const port = Math.floor(Math.random() * 60000) + 4000;
 
       const anvil = spawn(
         "anvil",
