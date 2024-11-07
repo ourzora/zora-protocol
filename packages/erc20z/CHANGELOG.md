@@ -1,5 +1,11 @@
 # @zoralabs/erc20z
 
+## 2.1.1
+
+### Patch Changes
+
+- 63f9f6d4: Add a simple implementation() getter to the impl of the timed sale strategy for front-end and testing scripts.
+
 ## 2.0.3
 
 ### Patch Changes
