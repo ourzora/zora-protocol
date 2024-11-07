@@ -4,6 +4,7 @@ pragma solidity ^0.8.23;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
+import {ERC1967Utils} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -548,6 +549,11 @@ contract ZoraTimedSaleStrategyImpl is
     function supportsInterface(bytes4 interfaceId) public pure virtual returns (bool) {
         // Interface id 0x6890e5b3 is hardcoded due to header incompat but it's used by the 1155 contract to check for requestMint support.
         return interfaceId == type(IMinter1155).interfaceId || interfaceId == 0x6890e5b3 || interfaceId == type(IERC165).interfaceId;
+    }
+
+    /// @notice Getter to return the proxy implementation easily for scripts / front-end
+    function implementation() public view returns (address) {
+        return ERC1967Utils.getImplementation();
     }
 
     /// @notice The name of the contract
