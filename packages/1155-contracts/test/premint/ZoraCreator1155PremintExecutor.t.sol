@@ -124,7 +124,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
+        // retrieve the address created for a contract
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.
@@ -170,7 +170,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
+        // retrieve the address created for a contract
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.
@@ -226,7 +226,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
+        // retrieve the address created for a contract
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.
