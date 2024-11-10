@@ -35,7 +35,7 @@
 
 - [898c84a7](https://github.com/ourzora/zora-protocol/commit/898c84a7): [chore] Update dependencies and runtime scripts
 
-  This ensures jobs do not match binary names to make runs less ambigious and also that all deps are accounted for.
+  This ensures jobs do not match binary names to make runs less ambiguous and also that all deps are accounted for.
 
 - [2677c896](https://github.com/ourzora/zora-protocol/commit/2677c896): Add reduceSupply interface check to 1155
 
@@ -159,11 +159,11 @@
   }
   ```
 
-- [2475a4c9](https://github.com/ourzora/zora-protocol/commit/2475a4c9): Updates to Premint that enables preminting against contracts that were not created via premint, as well as adding collaborators to premint contracts by being able specify an array of additionalAdmins in a premint's contract creation config.
+- [2475a4c9](https://github.com/ourzora/zora-protocol/commit/2475a4c9): Updates to Premint that enables preminting against contracts that were not created via premint, as well as adding collaborators to premint contracts by being able to specify an array of additionalAdmins in a premint's contract creation config.
 
   #### No breaking changes
 
-  These updates are fully backwards compatible; the old functions on the contracts are still intact and will work. Additionally, these updates dont require a new premint config version to be signed; the only thing that could be affected is the deterministic address to be signed against, in the case there are additional contract admins.
+  These updates are fully backwards compatible; the old functions on the contracts are still intact and will work. Additionally, these updates don't require a new premint config version to be signed; the only thing that could be affected is the deterministic address to be signed against, in the case there are additional contract admins.
 
   #### Ability to add contract-wide additional admins with premint
 
@@ -551,7 +551,7 @@ Prior to 2.9.0, rewards were distributed based on a fixed value in ETH per token
 
 - 885ffa4: Premint executor can still execute premint mints that were created with V1 signatures for `delegateSetupNewToken`
 - ffb5cb7: Premint - added method getSupportedPremintSignatureVersions(contractAddress) that returns an array of the premint signature versions an 1155 contract supports. If the contract hasn't been created yet, assumes that when it will be created it will support the latest versions of the signatures, so the function returns all versions.
-- ffb5cb7: Added method `IZoraCreator1155PremintExecutor.supportedPremintSignatureVersions(contractAddress)` that tells what version of the premint signature the contract supports, and added corresponding method `ZoraCreator1155Impl.supportedPremintSignatureVersions()` to fetch supported version. If premint not supported, returns an empty array.
+- ffb5cb7: Added method `IZoraCreator1155PremintExecutor.supportedPremintSignatureVersions(contractAddress)` that tells what version of the premint signature the contract supports, and added corresponding method `ZoraCreator1155Impl.supportedPremintSignatureVersions()` to fetch supported version. If premint is not supported, returns an empty array.
 - cacb543: Added impl getter to premint executor
 
 ## 2.4.1
