@@ -14,7 +14,7 @@ Now that we have both gasless and on-chain minting the token creation event argu
 
 Creating new tokens can happen with a call to either [`setupNewToken()`](https://github.com/ourzora/zora-protocol/blob/HEAD/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L260) or [`delegateSetupNewToken()`](https://github.com/ourzora/zora-protocol/blob/f58ee955e6b50c13e90b4cfd72ab4b68dce86fad/packages/1155-contracts/src/nft/ZoraCreator1155Impl.sol#L765) (used by the gasless creation mint flow).
 
-Be aware that often creating a new token and minting often occur in the _same_ transaction.
+Be aware that often creating a new token and minting often occurs in the _same_ transaction.
 
 It is also possible to setup a new token without a mint event.
 
