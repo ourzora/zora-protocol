@@ -210,7 +210,7 @@ contract ZoraCreator1155PreminterTest is Test {
         vm.prank(premintExecutor);
         tokenId = preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments).tokenId;
 
-        // a new token shoudl have been created, with x tokens minted to the executor, on the same contract address
+        // a new token should have been created, with x tokens minted to the executor, on the same contract address
         // as before since the contract config didnt change
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
     }
