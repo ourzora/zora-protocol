@@ -235,7 +235,7 @@ async function getVersions({
 
       let contractImpl: Address | null = null;
 
-      // try to get contract fro rpc
+      // try to get contract for rpc
       try {
         contractImpl = await publicClient.readContract({
           address: factoryImpl as Address,
