@@ -1652,7 +1652,7 @@ contract ZoraCreator1155Test is Test {
         assertEq(protocolRewards.balanceOf(zora), firstMintZoraBalance);
         assertEq(protocolRewards.balanceOf(mintReferral), firstMintMintReferralBalance);
 
-        // update quanity to be fuzzy value - 1
+        // update quantity to be fuzzy value - 1
         quantity = quantity - 1;
 
         totalReward = target.computeTotalReward(target.mintFee(), quantity);
