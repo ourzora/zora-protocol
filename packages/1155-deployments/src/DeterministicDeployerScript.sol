@@ -149,7 +149,7 @@ contract DeterministicDeployerScript is Script {
         bytes memory proxyCreationCode,
         uint256 proxyShimSaltSuffix
     ) internal returns (DeterministicParams memory) {
-        // 1. Get salt with first bytes that match address, and resulting determinisitic factory proxy deployer address
+        // 1. Get salt with first bytes that match address, and resulting deterministic factory proxy deployer address
         (bytes32 proxyDeployerSalt, bytes memory proxyDeployerCreationCode, address proxyDeployerAddress) = getProxyDeployerParams();
         // replace first 20 characters of salt with deployer address, so that the salt can be used with
         // ImmutableCreate2Factory.safeCreate2 when called by this deployer's account:
