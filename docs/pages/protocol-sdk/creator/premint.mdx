@@ -70,7 +70,7 @@ One of the items returned from `create` is `signAndSubmit` which must be called 
 
 :::
 
-### Signing and Submitting Premint a Premint using Wagmi
+### Signing and Submitting Premint using Wagmi
 
 Sometimes it may be desirable to sign a premint with another library, and not using the sdk's `signAndSubmit` method.
 For this case, the `createPremint`, `updatePremint`, and `deletePremint` functions return a `typedDataDefinition` which is the typed data definition for the premint and must be signed.
@@ -141,7 +141,7 @@ This signature and deleted premint is then submitted to the Zora Premint API and
 :::
 
 
-### Earning Create Referral Referral Rewards
+### Earning Create Referral Rewards
 
 To earn a create referral reward, pass in the `createReferral` argument when creating a Premint:
 
