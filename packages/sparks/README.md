@@ -26,7 +26,7 @@ set of recipients in the form of fees and rewards, with the percentage split
 configured in the creator contract. When a SPARK is redeemed, the underlying
 value is distributed to a desired recipient, and the SPARK is burned.
 
-The `ZoraSparksManager` is an administrated and upgradeble that contract controls which SPARK token id can be minted for each currency type,
+The `ZoraSparksManager` is an administrated and upgradeable that contract controls which SPARK token id can be minted for each currency type,
 thus defining the current price for collecting a SPARK in that currency type.  
 While it controls the logic around which SPARKs can be minted, once a SPARK is minted, the corresponding value is deposited into the
 immutable `ZoraSparks1155` contract; only the owner of the SPARKs can access the underlying deposited funds by redeming the SPARKs or choose to do with their SPARKs, and since that contract is immutable these rules could never change.
