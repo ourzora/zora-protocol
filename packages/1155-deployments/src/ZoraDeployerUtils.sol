@@ -162,19 +162,4 @@ library ZoraDeployerUtils {
             );
     }
 
-    function getUpgradeCalldata(address targetImpl) internal pure returns (bytes memory upgradeCalldata) {
-        // simulate upgrade call
-        upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, targetImpl);
-    }
-
-    function simulateUpgrade(address targetProxy, address targetImpl) internal returns (bytes memory upgradeCalldata) {
-        // console log update information
-
-        upgradeCalldata = getUpgradeCalldata(targetImpl);
-
-        // upgrade the factory proxy to the new implementation
-        (bool success, ) = targetProxy.call(upgradeCalldata);
-
-        require(success, "upgrade failed");
-    }
 }

@@ -8,7 +8,7 @@ import {IZoraCreator1155Factory} from "@zoralabs/zora-1155-contracts/src/interfa
 import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
 import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
 import {ICreatorRoyaltiesControl} from "@zoralabs/zora-1155-contracts/src/interfaces/ICreatorRoyaltiesControl.sol";
-import {ScriptDeploymentConfig, Deployment, ChainConfig} from "./DeploymentConfig.sol";
+import {DeploymentConfig, Deployment, ChainConfig} from "./DeploymentConfig.sol";
 import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
 import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
 import {DeterministicDeployerScript} from "./DeterministicDeployerScript.sol";
@@ -16,7 +16,7 @@ import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/fact
 import {DeploymentTestingUtils} from "./DeploymentTestingUtils.sol";
 
 /// @notice Deployment drops for base where
-abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentConfig, DeterministicDeployerScript {
+abstract contract ZoraDeployerBase is DeploymentTestingUtils, DeploymentConfig, DeterministicDeployerScript {
     using stdJson for string;
 
     /// @notice File used for demo metadata on verification test mint
@@ -37,7 +37,12 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
         vm.serializeAddress(deploymentJsonKey, PREMINTER_IMPL, deployment.preminterImpl);
         vm.serializeAddress(deploymentJsonKey, UPGRADE_GATE, deployment.upgradeGate);
         vm.serializeAddress(deploymentJsonKey, ERC20_MINTER, deployment.erc20Minter);
+        vm.serializeUint(deploymentJsonKey, "timestamp", block.timestamp);
         deploymentJson = vm.serializeAddress(deploymentJsonKey, FACTORY_PROXY, deployment.factoryProxy);
+
+        string memory configPath = string.concat("./addresses/", vm.toString(block.chainid), ".json");
+        console2.log("Writing updated deployment file to ", configPath);
+        vm.writeJson(deploymentJson, configPath);
     }
 
     function deployMinters(Deployment memory deployment, ChainConfig memory chainConfig) internal {
@@ -104,7 +109,7 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
             proxyName: "factoryProxy",
             implementation: deployment.factoryImpl,
             owner: chainConfig.factoryOwner,
-            chain: chainId()
+            chain: block.chainid
         });
 
         require(factoryProxyAddress == determinticFactoryProxyAddress(), "address not expected deterministic address");
@@ -126,7 +131,7 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
             proxyName: "premintExecutorProxy",
             implementation: deployment.preminterImpl,
             owner: chainConfig.factoryOwner,
-            chain: chainId()
+            chain: block.chainid
         });
 
         require(preminterProxyAddress == determinsticPreminterProxyAddress(), "address not expected deterministic address");
@@ -139,7 +144,7 @@ abstract contract ZoraDeployerBase is DeploymentTestingUtils, ScriptDeploymentCo
 
         ensureCanOwn(chainConfig.factoryOwner);
 
-        address upgradeGateAddress = deployUpgradeGate({chain: chainId(), upgradeGateOwner: chainConfig.factoryOwner});
+        address upgradeGateAddress = deployUpgradeGate({chain: block.chainid, upgradeGateOwner: chainConfig.factoryOwner});
 
         require(upgradeGateAddress == determinsticUpgradeGateAddress(), "address not expected deterministic address");
 

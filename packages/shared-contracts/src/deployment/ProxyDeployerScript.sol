@@ -1,8 +1,9 @@
 // spdx-license-identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {stdJson, console2} from "forge-std/Script.sol";
 import {LibString} from "solady/utils/LibString.sol";
+import {CommonBase} from "forge-std/Base.sol";
 
 import {ProxyDeployerConfig, DeterministicContractConfig} from "./Config.sol";
 import {ProxyDeployerUtils} from "./ProxyDeployerUtils.sol";
@@ -18,7 +19,7 @@ interface ISymbol {
     function symbol() external view returns (string memory);
 }
 
-contract ProxyDeployerScript is Script {
+contract ProxyDeployerScript is CommonBase {
     using stdJson for string;
 
     /// @notice Return a prefixed key for reading with a ".".

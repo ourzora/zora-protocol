@@ -2,21 +2,21 @@ name: "Contract"
 on:
   workflow_call:
     inputs:
-        package_folder:
-          required: true
-          type: string
-        coverage_args:
-          required: false
-          type: string
-        name:
-          required: true
-          type: string
-        ignore_coverage_files:
-          required: false
-          type: string
-        skip_storage_layout:
-          type: boolean
-          default: false
+      package_folder:
+        required: true
+        type: string
+      coverage_args:
+        required: false
+        type: string
+      name:
+        required: true
+        type: string
+      ignore_coverage_files:
+        required: false
+        type: string
+      skip_storage_layout:
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -27,6 +27,7 @@ jobs:
   test:
     needs: build
     uses: ./.github/workflows/test.yml
+    secrets: inherit
     with:
       package_folder: ${{ inputs.package_folder }}
       name: ${{ inputs.name }}
@@ -45,7 +46,7 @@ jobs:
     with:
       package_folder: ${{ inputs.package_folder }}
       name: ${{ inputs.name }}
-  
+
   slither:
     needs: build
     uses: ./.github/workflows/slither.yml

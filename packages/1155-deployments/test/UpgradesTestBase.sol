@@ -5,8 +5,9 @@ import "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
-import {ForkDeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
-import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
+import {DeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
+import {ForkDeploymentConfig} from "@zoralabs/shared-contracts/deployment/ForkDeploymentConfig.sol";
+import {UpgradeBaseLib} from "@zoralabs/shared-contracts/upgrades/UpgradeBaseLib.sol";
 import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
 import {MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraSparksManager} from "@zoralabs/sparks-contracts/src/interfaces/IZoraSparksManager.sol";
@@ -56,16 +57,8 @@ interface IOwnable2StepUpgradeable {
     function acceptOwnership() external;
 }
 
-contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test {
+contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test, UpgradeBaseLib, DeploymentConfig {
     using stdJson for string;
-
-    struct UpgradeStatus {
-        string updateDescription;
-        bool upgradeNeeded;
-        address upgradeTarget;
-        address targetImpl;
-        bytes upgradeCalldata;
-    }
 
     function determine1155Upgrade(Deployment memory deployment) private view returns (UpgradeStatus memory) {
         address upgradeTarget = deployment.factoryProxy;
@@ -75,7 +68,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         bytes memory upgradeCalldata;
 
         if (upgradeNeeded) {
-            upgradeCalldata = ZoraDeployerUtils.getUpgradeCalldata(targetImpl);
+            upgradeCalldata = getUpgradeCalldata(targetImpl);
         }
 
         return UpgradeStatus("1155 Factory", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
@@ -89,7 +82,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
 
         bytes memory upgradeCalldata;
         if (upgradeNeeded) {
-            upgradeCalldata = ZoraDeployerUtils.getUpgradeCalldata(targetImpl);
+            upgradeCalldata = getUpgradeCalldata(targetImpl);
         }
 
         return UpgradeStatus("Preminter", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
@@ -104,13 +97,6 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
 
     function mintsIsDeployed() private view returns (bool) {
         return tryReadSparksImpl() != address(0);
-    }
-
-    function readMissingUpgradePaths() private view returns (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) {
-        string memory json = vm.readFile(string.concat("./versions/", string.concat(vm.toString(block.chainid), ".json")));
-
-        upgradePathTargets = json.readAddressArray(".missingUpgradePathTargets");
-        upgradePathCalls = json.readBytesArray(".missingUpgradePathCalls");
     }
 
     function determineSparksUpgrade() private view returns (UpgradeStatus memory) {
@@ -142,111 +128,6 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
         return UpgradeStatus("Sparks", upgradeNeeded, upgradeTarget, targetImpl, upgradeCalldata);
     }
 
-    function _buildSafeUrl(address safe, address target, bytes memory cd) internal view returns (string memory) {
-        address[] memory targets = new address[](1);
-        targets[0] = target;
-
-        bytes[] memory calldatas = new bytes[](1);
-        calldatas[0] = cd;
-
-        return _buildBatchSafeUrl(safe, targets, calldatas);
-    }
-
-    // pipe delimiter is url encoded | which is %7C
-    string constant PIPE_DELIMITER = "%7C";
-
-    function _buildBatchSafeUrl(address safe, address[] memory targets, bytes[] memory cd) internal view returns (string memory) {
-        string memory targetsString = "";
-
-        for (uint256 i = 0; i < targets.length; i++) {
-            targetsString = string.concat(targetsString, vm.toString(targets[i]));
-
-            if (i < targets.length - 1) {
-                targetsString = string.concat(targetsString, PIPE_DELIMITER);
-            }
-        }
-
-        string memory calldataString = "";
-
-        for (uint256 i = 0; i < cd.length; i++) {
-            calldataString = string.concat(calldataString, vm.toString(cd[i]));
-
-            if (i < cd.length - 1) {
-                calldataString = string.concat(calldataString, PIPE_DELIMITER);
-            }
-        }
-
-        string memory valuesString = "";
-
-        for (uint256 i = 0; i < cd.length; i++) {
-            valuesString = string.concat(valuesString, "0");
-
-            if (i < cd.length - 1) {
-                valuesString = string.concat(valuesString, PIPE_DELIMITER);
-            }
-        }
-
-        // sample url: https://ourzora.github.io/smol-safe/${chainId}/${safeAddress}&target={pipeDelimitedTargets}&calldata={pipeDelimitedCalldata}&value={pipeDelimitedValues}
-        string memory targetUrl = "https://ourzora.github.io/smol-safe/#safe/";
-        targetUrl = string.concat(targetUrl, vm.toString(block.chainid));
-        targetUrl = string.concat(targetUrl, "/");
-        targetUrl = string.concat(targetUrl, vm.toString(safe));
-        targetUrl = string.concat(targetUrl, "/new");
-        targetUrl = string.concat(targetUrl, "?");
-        targetUrl = string.concat(targetUrl, "targets=");
-        targetUrl = string.concat(targetUrl, targetsString);
-        targetUrl = string.concat(targetUrl, "&calldatas=");
-        targetUrl = string.concat(targetUrl, calldataString);
-        targetUrl = string.concat(targetUrl, "&values=");
-        targetUrl = string.concat(targetUrl, valuesString);
-
-        return targetUrl;
-    }
-
-    function getUpgradeCalls(UpgradeStatus[] memory upgradeStatuses) private pure returns (address[] memory upgradeTargets, bytes[] memory upgradeCalldatas) {
-        uint256 numberOfUpgrades = 0;
-        for (uint256 i = 0; i < upgradeStatuses.length; i++) {
-            if (upgradeStatuses[i].upgradeNeeded) {
-                numberOfUpgrades++;
-            }
-        }
-        upgradeCalldatas = new bytes[](numberOfUpgrades);
-        upgradeTargets = new address[](numberOfUpgrades);
-        uint256 currentUpgradeIndex = 0;
-        for (uint256 i = 0; i < upgradeStatuses.length; i++) {
-            if (upgradeStatuses[i].upgradeNeeded) {
-                upgradeCalldatas[currentUpgradeIndex] = upgradeStatuses[i].upgradeCalldata;
-                upgradeTargets[currentUpgradeIndex] = upgradeStatuses[i].upgradeTarget;
-                currentUpgradeIndex++;
-
-                // print out upgrade info
-                console2.log("upgrading: ", upgradeStatuses[i].updateDescription);
-                console2.log("target:", upgradeStatuses[i].upgradeTarget);
-                console2.log("calldata:", vm.toString(upgradeStatuses[i].upgradeCalldata));
-            }
-        }
-    }
-
-    function performNeededUpgrades(address upgrader, UpgradeStatus[] memory upgradeStatuses) private returns (bool anyUpgradePerformed) {
-        vm.startPrank(upgrader);
-        for (uint256 i = 0; i < upgradeStatuses.length; i++) {
-            UpgradeStatus memory upgradeStatus = upgradeStatuses[i];
-            if (upgradeStatus.upgradeNeeded) {
-                anyUpgradePerformed = true;
-                console2.log("simulating upgrade:", upgradeStatus.updateDescription);
-                if (upgradeStatus.upgradeCalldata.length == 0) {
-                    revert("upgrade calldata is empty");
-                }
-
-                (bool success, ) = upgradeStatus.upgradeTarget.call(upgradeStatus.upgradeCalldata);
-
-                if (!success) {
-                    revert("upgrade failed");
-                }
-            }
-        }
-        vm.stopPrank();
-    }
 
     function checkPremintingWorks() private {
         console2.log("testing preminting");
@@ -388,7 +269,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, DeploymentTestingUtils, Test 
 
             console2.log("---------------");
 
-            string memory smolSafeUrl = _buildBatchSafeUrl(chainConfig.factoryOwner, upgradeTargets, upgradeCalldatas);
+            string memory smolSafeUrl = buildBatchSafeUrl(chainConfig.factoryOwner, upgradeTargets, upgradeCalldatas);
 
             console2.log("smol safe url: ", smolSafeUrl);
 

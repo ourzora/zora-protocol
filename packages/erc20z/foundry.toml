@@ -9,6 +9,7 @@ optimizer_runs = 1_000_000
 fs_permissions = [
   { access = "readwrite", path = "./addresses" },
   { access = "read", path = "./package.json" },
+  { access = "read", path = "../1155-deployments/addresses" },
   { access = "readwrite", path = "./deterministicConfig" },
   { access = "read", path = "../shared-contracts/chainConfigs" }
 ]
@@ -29,8 +30,17 @@ quote_style = "double"
 tab_width = 4
 
 [rpc_endpoints]
+sepolia = "https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+base = "https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+base_sepolia = "https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
+optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
 zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"
+arbitrum_one = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+arbitrum_sepolia = "https://arb-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
+blast = "https://blast.gateway.tenderly.co/${TENDERLY_KEY}/"
+blast_sepolia = "https://sepolia.blast.io"
 
 [invariant]
 runs = 100

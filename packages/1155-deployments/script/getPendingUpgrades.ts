@@ -29,7 +29,7 @@ import {
   zoraCreator1155FactoryImplABI,
   zoraCreator1155ImplABI,
 } from "@zoralabs/zora-1155-contracts";
-import { readFile, writeFile } from "fs/promises";
+import { readFile, writeFile, readdir } from "fs/promises";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -503,11 +503,12 @@ const getMissingUpgradePathsForChain = async ({
 };
 
 async function getMissingUpgradePath(chainName: string) {
-  const configuredChain = await getChain(chainName);
+  const configuredChain =
+    chainName === zoraSepolia.name || chainName === `${zoraSepolia.id}`
+      ? {...zoraSepolia, rpcUrl: 'https://sepolia.rpc.zora.energy/'}
+      : await getChain(chainName);
 
-  if (configuredChain.id === 9999999) {
-    configuredChain.id = zoraSepolia.id;
-  }
+  console.log("Getting upgrade path updates for ", configuredChain.id);
 
   if (!configuredChain) {
     throw new Error(`No chain config found for chain name ${chainName}`);
@@ -516,7 +517,9 @@ async function getMissingUpgradePath(chainName: string) {
   const chainConfig = chains.find((x) => x.chain.id === configuredChain.id);
 
   if (!chainConfig) {
-    throw new Error(`No chain config found for chain id ${configuredChain.id}`);
+    throw new Error(
+      `No chain config found for chain id ${configuredChain.id} (attempting to find ${chainName})`,
+    );
   }
 
   const {
@@ -542,19 +545,26 @@ async function getMissingUpgradePath(chainName: string) {
     missingUpgradePaths,
   });
 }
-function getChainNamePositionalArg() {
+
+export const main = async () => {
   // parse chain id as first argument:
   const chainName = process.argv[2];
 
-  if (!chainName) {
-    throw new Error("Must provide chain name as first argument");
+  if (chainName) {
+    await getMissingUpgradePath(chainName);
+  } else {
+    for (const file of await readdir(join(__dirname, "../addresses"))) {
+      console.log(file);
+      if (!file.endsWith(".json")) {
+        continue;
+      }
+      try {
+        await getMissingUpgradePath(file.replace(/.json$/, ""));
+      } catch (err: any) {
+        console.error(err);
+      }
+    }
   }
-
-  return chainName;
-}
-
-export const main = async () => {
-  await getMissingUpgradePath(getChainNamePositionalArg());
 };
 
 main();

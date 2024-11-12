@@ -10,7 +10,7 @@
     "deterministicConfig.json"
   ],
   "scripts": {
-    "build:sizes": "forge build --sizes",
+    "build:sizes": "forge build --sizes --skip test --skip script",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test": "forge test",
     "build:contracts": "forge build --extra-output-files abi",

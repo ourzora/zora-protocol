@@ -9,7 +9,6 @@ import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/fact
 import {ZoraCreator1155Attribution} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
 import {ContractCreationConfig, PremintConfigV2, TokenCreationConfigV2, PremintConfig, TokenCreationConfig, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
-import {ScriptDeploymentConfig} from "./DeploymentConfig.sol";
 import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
 
 contract DeploymentTestingUtils is Script {

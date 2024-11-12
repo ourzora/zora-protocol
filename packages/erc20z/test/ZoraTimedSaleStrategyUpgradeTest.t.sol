@@ -56,7 +56,7 @@ contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
         saleStrategy.upgradeToAndCall(address(new ZoraTimedSaleStrategyImpl()), "");
         vm.stopPrank();
 
-        assertEq(saleStrategy.contractVersion(), "2.1.0");
+        assertEq(saleStrategy.contractVersion(), "2.1.1");
     }
 
     function testZoraTimedSetSale() public {

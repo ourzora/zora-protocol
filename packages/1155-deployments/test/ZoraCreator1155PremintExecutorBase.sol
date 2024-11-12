@@ -2,7 +2,7 @@
 pragma solidity 0.8.17;
 
 import "forge-std/Test.sol";
-import {ForkDeploymentConfig} from "../src/DeploymentConfig.sol";
+import {ForkDeploymentConfig} from "@zoralabs/shared-contracts/deployment/ForkDeploymentConfig.sol";
 import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
 import {ZoraCreator1155Attribution} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
 import {ContractCreationConfig, PremintConfig, PremintConfigV2, TokenCreationConfig, MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
@@ -10,8 +10,9 @@ import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {Zora1155PremintFixtures} from "../src/Zora1155PremintFixtures.sol";
+import {DeploymentConfig} from "../src/DeploymentConfig.sol";
 
-contract ZoraCreator1155PremintExecutorBase is ForkDeploymentConfig, Test {
+contract ZoraCreator1155PremintExecutorBase is ForkDeploymentConfig, Test, DeploymentConfig {
     ZoraCreator1155FactoryImpl factory;
     ZoraCreator1155PremintExecutorImpl preminter;
     address creator;

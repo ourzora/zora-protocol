@@ -6,31 +6,10 @@
     }
   ],
   "targetVersion": {
-    "version": "2.13.0",
-    "contractImplAddress": "0xe22C5ce67dc5077ca115FBe6ddbed1FB2703B125"
+    "version": "2.13.2",
+    "contractImplAddress": "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
   },
-  "missingUpgradePaths": [
-    {
-      "from": [
-        {
-          "address": "0x437A762fc2a8f898Aa7a2575Be21c41753DC4797",
-          "version": "2.7.0"
-        }
-      ],
-      "to": {
-        "version": "2.13.0",
-        "address": "0xe22C5ce67dc5077ca115FBe6ddbed1FB2703B125"
-      },
-      "upgradeCall": {
-        "address": "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900",
-        "calldata": "0x92b60a4c0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000e22c5ce67dc5077ca115fbe6ddbed1fb2703b1250000000000000000000000000000000000000000000000000000000000000001000000000000000000000000437a762fc2a8f898aa7a2575be21c41753dc4797"
-      }
-    }
-  ],
-  "missingUpgradePathTargets": [
-    "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900"
-  ],
-  "missingUpgradePathCalls": [
-    "0x92b60a4c0000000000000000000000000000000000000000000000000000000000000040000000000000000000000000e22c5ce67dc5077ca115fbe6ddbed1fb2703b1250000000000000000000000000000000000000000000000000000000000000001000000000000000000000000437a762fc2a8f898aa7a2575be21c41753dc4797"
-  ]
+  "missingUpgradePaths": [],
+  "missingUpgradePathTargets": [],
+  "missingUpgradePathCalls": []
 }
