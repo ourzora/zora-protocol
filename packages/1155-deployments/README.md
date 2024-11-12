@@ -4,5 +4,5 @@ Contains deployment scripts, deployed addresses and versions for the Zora 1155 C
 
 ## Package contents
 
-- [Deployment scripts](./script/) for deployment Zora Protocol Contracts
+- [Deployment scripts](./script/) for deploying Zora Protocol Contracts
 - [Deployed addresses](./addresses/) containing deployed addresses and contract versions by chain.
