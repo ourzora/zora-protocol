@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.11.7
+
+### Patch Changes
+
+- 041871d7: Fix royalties query for secondary tokens to query subgraph for royaltyRecipient instead of user.
+
 ## 0.11.6
 
 ### Patch Changes
