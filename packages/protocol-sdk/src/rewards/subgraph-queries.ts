@@ -26,7 +26,7 @@ export function buildCreatorERC20zs({
     query: `
     query ($address: Bytes!) {
       zoraCreateTokens(
-        where: { royalties_: { user: $address }, salesStrategies_: { type: "ZORA_TIMED" } }
+        where: { royalties_: { royaltyRecipient: $address }, salesStrategies_: { type: "ZORA_TIMED" } }
       ) {
         royalties {
           user
