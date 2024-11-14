@@ -1,12 +1,12 @@
 import { describe, expect, vi } from "vitest";
 import { encodeAbiParameters, erc20Abi, parseEther } from "viem";
-import { zoraSepolia } from "viem/chains";
+import { zoraSepolia, base } from "viem/chains";
 import {
   forkUrls,
   makeAnvilTest,
   simulateAndWriteContractWithRetries,
 } from "src/anvil";
-import { createCollectorClient } from "src/sdk";
+import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { new1155ContractVersion } from "src/create/contract-setup";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
@@ -16,11 +16,32 @@ import {
   zoraCreator1155ImplABI,
 } from "@zoralabs/protocol-deployments";
 import { makeContractParameters } from "src/utils";
-import { mockRewardsQueryResults } from "src/fixtures/rewards-query-results";
 import { setupContractAndToken } from "src/fixtures/contract-setup";
 import { advanceToSaleAndAndLaunchMarket } from "src/fixtures/secondary";
+import { CreatorERC20zQueryResult } from "./subgraph-queries";
 
 describe("rewardsClient", () => {
+  makeAnvilTest({
+    forkBlockNumber: 22375202,
+    forkUrl: forkUrls.baseMainnet,
+    anvilChainId: base.id,
+  })(
+    "it can query rewards balances where there are multiple minters",
+    async ({ viemClients: { publicClient, chain } }) => {
+      const creatorClient = createCreatorClient({
+        chainId: chain.id,
+        publicClient,
+      });
+      const rewardsBalance = await creatorClient.getRewardsBalances({
+        account: "0x129F04B140Acc1AA350be2F9f048C178103c62f3",
+      });
+
+      const erc20zKeys = Object.keys(rewardsBalance.secondaryRoyalties.erc20);
+
+      expect(erc20zKeys.length).toBeGreaterThan(0);
+    },
+    20_000,
+  );
   makeAnvilTest({
     forkBlockNumber: 14653556,
     forkUrl: forkUrls.zoraSepolia,
@@ -251,20 +272,31 @@ describe("rewardsClient", () => {
 
       // now we should be able to get rewards balances for these royalties
 
+      const mockResult: CreatorERC20zQueryResult = {
+        zoraCreateTokens: [
+          {
+            salesStrategies: [
+              {
+                zoraTimedMinter: {
+                  secondaryActivated: true,
+                  erc20Z: { id: erc20z },
+                },
+              },
+            ],
+          },
+        ],
+      };
+
       // we need to stub the subgraph return
       rewardsGetter.subgraphQuerier.query = vi
         .fn<ISubgraphQuerier["query"]>()
-        .mockResolvedValue(
-          mockRewardsQueryResults({
-            erc20z: [erc20z],
-          }),
-        );
+        .mockResolvedValue(mockResult);
 
       const rewardsBalance = await creatorClient.getRewardsBalances({
         account: creatorAccount,
       });
 
-      expect(rewardsBalance.secondaryRoyalties.eth).toBeGreaterThan(0);
+      expect(rewardsBalance.protocolRewards).toBeGreaterThan(0n);
       expect(rewardsBalance.secondaryRoyalties.erc20[erc20z]).toBeGreaterThan(
         0,
       );

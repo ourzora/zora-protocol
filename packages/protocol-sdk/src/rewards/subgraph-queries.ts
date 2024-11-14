@@ -4,7 +4,8 @@ import { Address } from "viem";
 export type RewardsToken = {
   salesStrategies: [
     {
-      zoraTimedMinter: {
+      zoraTimedMinter?: {
+        secondaryActivated: boolean;
         erc20Z: {
           id: Address;
         };
@@ -33,6 +34,7 @@ export function buildCreatorERC20zs({
         }
         salesStrategies {
           zoraTimedMinter {
+            secondaryActivated
             erc20Z {
               id
             }

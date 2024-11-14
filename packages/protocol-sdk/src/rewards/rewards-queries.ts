@@ -77,7 +77,13 @@ export const getRewardsBalance = async ({
   rewardsGetter: IRewardsGetter;
 }): Promise<RewardsBalance> => {
   const address = typeof account === "string" ? account : account.address;
-  const erc20Zs = await rewardsGetter.getErc20ZzForCreator({ address });
+  const erc20ZsAndSecondaryActivated = await rewardsGetter.getErc20ZzForCreator(
+    { address },
+  );
+
+  const validErc20Zs = erc20ZsAndSecondaryActivated
+    .filter(({ secondaryActivated }) => secondaryActivated)
+    .map(({ erc20z }) => erc20z);
 
   // Perform multicall to get protocol rewards balance and unclaimed fees
   const result = await (publicClient as PublicClientWithMulticall).multicall({
@@ -98,7 +104,7 @@ export const getRewardsBalance = async ({
           ],
         abi: erc20ZRoyaltiesABI,
         functionName: "getUnclaimedFeesBatch",
-        args: [erc20Zs],
+        args: [validErc20Zs],
       },
     ],
     multicallAddress: multicall3Address,
@@ -147,9 +153,13 @@ const makeClaimSecondaryRoyaltiesCalls = async ({
   chainId: number;
   rewardsGetter: IRewardsGetter;
 }) => {
-  const erc20z = await rewardsGetter.getErc20ZzForCreator({
-    address: claimFor,
-  });
+  const erc20ZsAndSecondaryActivated = await rewardsGetter.getErc20ZzForCreator(
+    { address: claimFor },
+  );
+
+  const erc20z = erc20ZsAndSecondaryActivated
+    .filter(({ secondaryActivated }) => secondaryActivated)
+    .map(({ erc20z }) => erc20z);
 
   const royaltiesAddress =
     erc20ZRoyaltiesAddress[chainId as keyof typeof erc20ZRoyaltiesAddress];
