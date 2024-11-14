@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.11.8
+
+### Patch Changes
+
+- 330f1131: Fix royalties queries to filter by erc20z that have secondary activated
+
 ## 0.11.7
 
 ### Patch Changes
