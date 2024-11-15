@@ -1,9 +1,9 @@
 {
-  "name": "smart-wallet",
+  "name": "@zoralabs/smart-wallet",
+  "version": "0.0.0",
   "main": "index.js",
   "license": "MIT",
   "private": true,
-  "version": "0.0.0",
   "scripts": {
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'"
