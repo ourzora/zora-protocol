@@ -1,16 +1,28 @@
 import { describe, expect, vi } from "vitest";
-import { Address, erc20Abi, parseAbi, parseEther } from "viem";
+import {
+  Address,
+  erc20Abi,
+  parseAbi,
+  parseEther,
+  TransactionReceipt,
+  parseEventLogs,
+} from "viem";
 import { zora, zoraSepolia } from "viem/chains";
-import { zoraCreator1155ImplABI } from "@zoralabs/protocol-deployments";
+import {
+  zoraCreator1155ImplABI,
+  CommentIdentifier,
+  commentsABI,
+  callerAndCommenterABI,
+} from "@zoralabs/protocol-deployments";
 import { forkUrls, makeAnvilTest, writeContractWithRetries } from "src/anvil";
 import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { getAllowListEntry } from "src/allow-list/allow-list-client";
+import { SubgraphMintGetter } from "./subgraph-mint-getter";
+import { new1155ContractVersion } from "src/create/contract-setup";
 import {
   demoContractMetadataURI,
   demoTokenMetadataURI,
-} from "src/create/1155-create-helper.test";
-import { SubgraphMintGetter } from "./subgraph-mint-getter";
-import { new1155ContractVersion } from "src/create/contract-setup";
+} from "src/fixtures/contract-setup";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
 
@@ -18,52 +30,64 @@ const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
 ] as const);
 
+const getCommentIdentifierFromReceipt = (
+  receipt: TransactionReceipt,
+): CommentIdentifier => {
+  const logs = parseEventLogs({
+    abi: commentsABI,
+    logs: receipt.logs,
+    eventName: "Commented",
+  });
+
+  if (logs.length === 0) {
+    throw new Error("No Commented event found in receipt");
+  }
+
+  return logs[0]!.args.commentIdentifier;
+};
+
 describe("mint-helper", () => {
   makeAnvilTest({
-    forkBlockNumber: 16028671,
-    forkUrl: forkUrls.zoraMainnet,
-    anvilChainId: zora.id,
+    forkBlockNumber: 16028124,
+    forkUrl: forkUrls.zoraSepolia,
+    anvilChainId: zoraSepolia.id,
   })(
-    "mints a new 1155 token",
+    "mints a new 1155 token with a comment",
     async ({ viemClients }) => {
-      const { testClient, walletClient, publicClient } = viemClients;
+      const { testClient, walletClient, publicClient, chain } = viemClients;
       const creatorAccount = (await walletClient.getAddresses())[0]!;
       await testClient.setBalance({
         address: creatorAccount,
         value: parseEther("2000"),
       });
       const targetContract: Address =
-        "0xa2fea3537915dc6c7c7a97a82d1236041e6feb2e";
-      const targetTokenId = 1n;
+        "0xD42557F24034b53e7340A40bb5813eF9Ba88F2b4";
+      const targetTokenId = 3n;
       const collectorClient = createCollectorClient({
-        chainId: zora.id,
+        chainId: chain.id,
         publicClient,
       });
 
-      const {
-        token: mintable,
-        prepareMint,
-        primaryMintActive,
-      } = await collectorClient.getToken({
-        tokenContract: targetContract,
-        mintType: "1155",
-        tokenId: targetTokenId,
-      });
-
-      mintable.maxSupply;
-      mintable.totalMinted;
-      mintable.tokenURI;
-      mintable;
+      const { prepareMint, primaryMintActive } = await collectorClient.getToken(
+        {
+          tokenContract: targetContract,
+          mintType: "1155",
+          tokenId: targetTokenId,
+        },
+      );
 
       expect(primaryMintActive).toBe(true);
       expect(prepareMint).toBeDefined();
 
+      const quantityToMint = 5n;
+
       const { parameters, costs } = prepareMint!({
         minterAccount: creatorAccount,
-        quantityToMint: 1,
+        quantityToMint,
+        mintComment: "This is a fun comment :)",
       });
 
-      expect(costs.totalCostEth).toBe(1n * parseEther("0.000777"));
+      expect(costs.totalCostEth).toBe(quantityToMint * parseEther("0.000111"));
 
       const oldBalance = await publicClient.readContract({
         abi: zoraCreator1155ImplABI,
@@ -84,7 +108,20 @@ describe("mint-helper", () => {
       });
       expect(receipt).to.not.be.null;
       expect(oldBalance).to.be.equal(0n);
-      expect(newBalance).to.be.equal(1n);
+      expect(newBalance).to.be.equal(quantityToMint);
+
+      // search for the Commented event in the logs
+      const commentIdentifier = getCommentIdentifierFromReceipt(receipt);
+
+      expect(commentIdentifier).toBeDefined();
+
+      const logs = parseEventLogs({
+        abi: callerAndCommenterABI,
+        logs: receipt.logs,
+        eventName: "MintedAndCommented",
+      });
+
+      expect(logs.length).toBe(1);
     },
     12 * 1000,
   );

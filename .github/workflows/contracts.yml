@@ -50,3 +50,13 @@ jobs:
     with:
       package_folder: packages/1155-deployments
       precache: "pnpm run generate"
+
+  contracts-comments:
+    name: Comments
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/comments
+      name: Comments
+      ignore_coverage_files: '"*lib*" "*mock*"'
+      skip_storage_layout: true

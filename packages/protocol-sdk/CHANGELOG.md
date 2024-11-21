@@ -1,5 +1,14 @@
 # @zoralabs/protocol-sdk
 
+## 0.11.9
+
+### Patch Changes
+
+- 9d5d1638: When minting + commenting, and using the timed sale strategy, protocol sdk will call the CallerAndCommenter contract
+- 088ec6fb: When buying on secondary, you can now add a comment, which will call the CallerAndCommenter's buyOnSecondaryAndComment function.
+- Updated dependencies [4928687d]
+  - @zoralabs/protocol-deployments@0.3.9
+
 ## 0.11.8
 
 ### Patch Changes

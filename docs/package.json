@@ -32,6 +32,7 @@
     "yaml": "2.3.4"
   },
   "devDependencies": {
+    "@reservoir0x/relay-sdk": "^1.3.3",
     "@zoralabs/tsconfig": "workspace:*"
   }
 }

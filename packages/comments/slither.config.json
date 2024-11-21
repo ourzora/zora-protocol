@@ -1,0 +1,7 @@
+{
+    "filter_paths": "(node_modules/,test/)",
+    "solc_remaps": [
+        "@zoralabs/=node_modules/@zoralabs/",
+        "@openzeppelin/=node_modules/@openzeppelin/"
+    ]
+}

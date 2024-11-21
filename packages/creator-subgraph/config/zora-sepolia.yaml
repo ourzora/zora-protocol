@@ -1,8 +1,8 @@
 chainid: "999999999"
 network: zora-sepolia
 grafting:
-  base: "Qma25UyHsDGAKHLAaVRgvW5zBAHMEuE6KSHYLWSLPuYeNi"
-  block: "13055000"
+  base: "QmcfePLEF39p1ZwULU3ckR2Xjrx4hqxrxJ3DkJerLUV2bH"
+  block: "14990000"
 factories1155:
   - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
     startBlock: "309965"
@@ -49,3 +49,7 @@ zoraTimedSaleStrategy:
   - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
     startBlock: "12271178"
     version: "2"
+comments: 
+  - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
+    startBlock: "14999570"
+    version: "1"

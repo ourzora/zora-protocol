@@ -21,16 +21,13 @@ import {
 import { zora } from "viem/chains";
 import { AllowList } from "src/allow-list/types";
 import { createAllowList } from "src/allow-list/allow-list-client";
-import { NewContractParams } from "./types";
 import { SubgraphContractGetter } from "./contract-getter";
 import {
   DEFAULT_MINIMUM_MARKET_ETH,
   DEFAULT_MARKET_COUNTDOWN,
 } from "./minter-defaults";
-import {
-  demoContractMetadataURI,
-  demoTokenMetadataURI,
-} from "src/fixtures/contract-setup";
+import { randomNewContract } from "src/test-utils";
+import { demoTokenMetadataURI } from "src/fixtures/contract-setup";
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
@@ -60,13 +57,6 @@ const minterIsMinterOnToken = async ({
     args: [minter, tokenId, PERMISSION_BITS.MINTER],
   });
 };
-
-function randomNewContract(): NewContractParams {
-  return {
-    name: `testContract-${Math.round(Math.random() * 1_000_000)}`,
-    uri: demoContractMetadataURI,
-  };
-}
 
 describe("create-helper", () => {
   anvilTest(

@@ -238,6 +238,7 @@ async function createNew1155ContractAndToken({
         publicClient,
         chainId,
       }),
+    chainId,
   });
 
   return {
@@ -294,6 +295,7 @@ async function createNew1155Token({
     result: newToken.salesConfig,
     tokenId: nextTokenId,
     getContractMintFee: async () => mintFee,
+    chainId,
   });
 
   return {

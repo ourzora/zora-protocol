@@ -11,6 +11,8 @@ import {
   erc20MinterABI,
   zoraCreator1155ImplABI,
   zoraTimedSaleStrategyABI,
+  callerAndCommenterABI,
+  callerAndCommenterAddress,
 } from "@zoralabs/protocol-deployments";
 import { zora721Abi, zora1155LegacyAbi } from "src/constants";
 import {
@@ -32,9 +34,11 @@ import { AllowListEntry } from "src/allow-list/types";
 export function makeOnchainMintCall({
   token,
   mintParams,
+  chainId,
 }: {
   token: Concrete<OnchainSalesConfigAndTokenInfo>;
   mintParams: Omit<MakeMintParametersArgumentsBase, "tokenContract">;
+  chainId: number;
 }): SimulateContractParametersWithAccount {
   if (token.mintType === "721") {
     return makePrepareMint721TokenParams({
@@ -48,6 +52,7 @@ export function makeOnchainMintCall({
     salesConfigAndTokenInfo: token,
     tokenContract: token.contract.address,
     tokenId: token.tokenId!,
+    chainId,
     ...mintParams,
   });
 }
@@ -56,6 +61,69 @@ export type MintableParameters = Pick<
   OnchainSalesConfigAndTokenInfo,
   "contractVersion" | "salesConfig"
 >;
+
+function makeZoraTimedSaleStrategyMintCall({
+  minterAccount,
+  salesConfigAndTokenInfo,
+  mintQuantity,
+  mintTo,
+  tokenContract,
+  tokenId,
+  mintReferral,
+  mintComment,
+  chainId,
+}: {
+  minterAccount: Address | Account;
+  salesConfigAndTokenInfo: Concrete<MintableParameters>;
+  mintQuantity: bigint;
+  mintTo: Address;
+  tokenContract: Address;
+  tokenId: GenericTokenIdTypes;
+  mintReferral?: Address;
+  mintComment?: string;
+  chainId: number;
+}) {
+  // if there is a mint comment, use the caller and commenter
+  if (mintComment && mintComment !== "") {
+    return makeContractParameters({
+      abi: callerAndCommenterABI,
+      address:
+        callerAndCommenterAddress[
+          chainId as keyof typeof callerAndCommenterAddress
+        ],
+      functionName: "timedSaleMintAndComment",
+      account: minterAccount,
+      value:
+        salesConfigAndTokenInfo.salesConfig.mintFeePerQuantity * mintQuantity,
+      args: [
+        mintTo,
+        mintQuantity,
+        tokenContract,
+        tokenId,
+        mintReferral || zeroAddress,
+        mintComment,
+      ],
+    });
+  }
+
+  return makeContractParameters({
+    abi: zoraTimedSaleStrategyABI,
+    functionName: "mint",
+    account: minterAccount,
+    address: salesConfigAndTokenInfo.salesConfig.address,
+    value:
+      salesConfigAndTokenInfo.salesConfig.mintFeePerQuantity * mintQuantity,
+    /* args: mintTo, quantity, collection, tokenId, mintReferral, comment */
+    args: [
+      mintTo,
+      mintQuantity,
+      tokenContract,
+      BigInt(tokenId),
+      mintReferral || zeroAddress,
+      "",
+    ],
+  });
+}
 
 export function makePrepareMint1155TokenParams({
   tokenContract: tokenContract,
@@ -67,9 +135,11 @@ export function makePrepareMint1155TokenParams({
   mintRecipient,
   quantityToMint,
   allowListEntry,
+  chainId,
 }: {
   salesConfigAndTokenInfo: Concrete<MintableParameters>;
   tokenId: GenericTokenIdTypes;
+  chainId: number;
 } & Pick<
   MakeMintParametersArgumentsBase,
   | "minterAccount"
@@ -101,22 +171,16 @@ export function makePrepareMint1155TokenParams({
   }
 
   if (saleType === "timed") {
-    return makeContractParameters({
-      abi: zoraTimedSaleStrategyABI,
-      functionName: "mint",
-      account: minterAccount,
-      address: salesConfigAndTokenInfo.salesConfig.address,
-      value:
-        salesConfigAndTokenInfo.salesConfig.mintFeePerQuantity * mintQuantity,
-      /* args: mintTo, quantity, collection, tokenId, mintReferral, comment */
-      args: [
-        mintTo,
-        mintQuantity,
-        tokenContract,
-        BigInt(tokenId),
-        mintReferral || zeroAddress,
-        mintComment || "",
-      ],
+    return makeZoraTimedSaleStrategyMintCall({
+      minterAccount,
+      salesConfigAndTokenInfo,
+      mintQuantity,
+      mintTo,
+      tokenContract,
+      tokenId,
+      mintReferral,
+      mintComment,
+      chainId,
     });
   }
 

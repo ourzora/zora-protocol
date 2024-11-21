@@ -47,6 +47,8 @@ export type BuyWithSlippageInput = {
   slippage?: number;
   // Optional recipient address (if different from buyer/seller)
   recipient?: Address;
+  // Optional comment to add to the swap
+  comment?: string;
 };
 
 // Same structure as BuyWithSlippageInput

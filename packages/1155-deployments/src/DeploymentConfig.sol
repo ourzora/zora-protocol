@@ -119,5 +119,15 @@ abstract contract DeploymentConfig is Script {
         string memory json = vm.readFile("../sparks/deterministicConfig/sparksProxy.json");
         return json.readAddress(".manager.deployedAddress");
     }
+
+    function getDeterminsticCommentsAddress() internal view returns (address) {
+        string memory json = vm.readFile("../comments/deterministicConfig/comments.json");
+        return json.readAddress(".deployedAddress");
+    }
+
+    function getDeterminsticZoraTimedSaleStrategyAddress() internal view returns (address) {
+        string memory json = vm.readFile("../erc20z/deterministicConfig/zoraTimedSaleStrategy.json");
+        return json.readAddress(".deployedAddress");
+    }
 }
 

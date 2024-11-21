@@ -179,5 +179,6 @@ describe("Sponsored Mints Spender with Relay", () => {
 
       expect(transferReceipt.status).toBe("success");
     },
+    20_000,
   );
 });

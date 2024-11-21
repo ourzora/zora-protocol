@@ -1,5 +1,17 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.9
+
+### Patch Changes
+
+- 4928687d: - Include the `Comments` and `CallerAndCommenter` abis and deployed addresses.
+  - Added new exports for Comments contract cross-chain functionality:
+    - Introduced `permitCommentTypedDataDefinition` function to generate typed data for cross-chain permit commenting
+    - Introduced `permitSparkCommentTypedDataDefinition` function to generate typed data for cross-chain permit sparking
+    - Introduced `permitTimedSaleMintAndCommentTypedDataType` to generate typed data for cross-chain permit minting and commenting.
+    - Introduced `permitBuyOnSecondaryAndCommentTypedDataDefinition` function to generate typed data for cross-chain permit buying on secondary and commenting.
+    - Added `sparkValue` helper function to get the value of a Spark
+
 ## 0.3.8
 
 ### Patch Changes

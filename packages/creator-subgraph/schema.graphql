@@ -727,3 +727,26 @@ type ZoraTimedSaleStrategyRewardsDeposit @entity {
   zora: Bytes!
   zoraReward: BigInt!
 }
+
+type Comment @entity {
+  # Begin – default data block
+  id: ID!
+  txn: TransactionInfo!
+  address: Bytes!
+  block: BigInt!
+  timestamp: BigInt!
+  # End – default data block
+
+  tokenAndContract: ZoraCreateToken!
+  commentText: String!
+  tokenId: BigInt!
+  nonce: Bytes!
+  commenter: Bytes!
+  contractAddress: Bytes!
+  replyToId: Bytes!
+  referrer: Bytes!
+  commentTimestamp: BigInt!
+  sparksQuantity: BigInt!
+  commentId: Bytes!
+  replyCount: BigInt!
+}

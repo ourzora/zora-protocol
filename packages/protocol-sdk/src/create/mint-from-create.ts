@@ -75,6 +75,7 @@ export function makeOnchainPrepareMintFromCreate({
   minter,
   getContractMintFee,
   contractVersion,
+  chainId,
 }: {
   contractAddress: Address;
   tokenId: bigint;
@@ -82,6 +83,7 @@ export function makeOnchainPrepareMintFromCreate({
   minter: Address;
   getContractMintFee: () => Promise<bigint>;
   contractVersion: string;
+  chainId: number;
 }): AsyncPrepareMint {
   return async (params: MintParametersBase): Promise<PrepareMintReturn> => {
     const subgraphSalesConfig = await toSalesStrategyFromSubgraph({
@@ -98,6 +100,7 @@ export function makeOnchainPrepareMintFromCreate({
         ...params,
         tokenContract: contractAddress,
         tokenId,
+        chainId,
       }),
       costs: parseMintCosts({
         allowListEntry: params.allowListEntry,

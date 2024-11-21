@@ -3,6 +3,8 @@ fs_permissions = [
   { access = "read", path = "./versions" },
   { access = "read", path = "./chainConfigs" },
   { access = "read", path = "./package.json" },
+  { access = "read", path = "../erc20z" },
+  { access = "read", path = "../comments" },
   { access = "read", path = "../sparks/deterministicConfig" },
   { access = "read", path = "../sparks/addresses" },
   { access = "read", path = "../erc20z/addresses" },

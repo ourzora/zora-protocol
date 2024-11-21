@@ -281,6 +281,32 @@ dataSources:
         - event: SaleSetV2(indexed address,indexed uint256,(uint64,uint64,uint64,bool,uint256,address,address,string,string),uint256)
           handler: handleZoraTimedSaleStrategySaleSetV2
 {{/zoraTimedSaleStrategy}}
+{{#comments}}
+  - name: Comments
+    kind: ethereum/contract
+    network: {{network}}
+    source:
+      abi: Comments
+      address: "{{address}}"
+      startBlock: {{startBlock}}
+    mapping:
+      kind: ethereum/events
+      apiVersion: 0.0.7
+      entities:
+        - Comment
+      language: wasm/assemblyscript
+      file: ./src/commentsMappings/templates/commentHandlers.ts
+      abis:
+        - name: Comments
+          file: ./abis/Comments.json
+      eventHandlers:
+        - event: Commented(indexed bytes32,(address,address,uint256,bytes32),bytes32,(address,address,uint256,bytes32),uint256,string,uint256,address)
+          handler: handleCommented
+        - event: SparkedComment(indexed bytes32,(address,address,uint256,bytes32),uint256,address,uint256,address)
+          handler: handleSparkedComment
+        - event: BackfilledComment(indexed bytes32,(address,address,uint256,bytes32),string,uint256,bytes32)
+          handler: handleBackfilledComment
+{{/comments}}
 templates:
   - name: MetadataInfo
     kind: file/ipfs

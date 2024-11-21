@@ -22,14 +22,6 @@ interface ISymbol {
 contract ProxyDeployerScript is CommonBase {
     using stdJson for string;
 
-    /// @notice Return a prefixed key for reading with a ".".
-    /// @param key key to prefix
-    /// @return prefixed key
-    function getKeyPrefix(string memory key) internal pure returns (string memory) {
-        return string.concat(".", key);
-    }
-
-
     function readAddressOrDefaultToZero(string memory json, string memory key) internal view returns (address) {
         string memory keyPrefix = getKeyPrefix(key);
 
@@ -37,16 +29,6 @@ contract ProxyDeployerScript is CommonBase {
             return json.readAddress(keyPrefix);
         } else {
             return address(0);
-        }
-    }
-
-    function readStringOrDefaultToEmpty(string memory json, string memory key) internal view returns (string memory) {
-        string memory keyPrefix = getKeyPrefix(key);
-
-        if (vm.keyExists(json, keyPrefix)) {
-            return json.readString(keyPrefix);
-        } else {
-            return "";
         }
     }
 
@@ -282,6 +264,31 @@ contract ProxyDeployerScript is CommonBase {
 
         if (address(deployer) != proxyDeployer.deployedAddress) {
             revert("Mimsatched deployer address");
+        }
+    }
+
+    /// @notice Return a prefixed key for reading with a ".".
+    /// @param key key to prefix
+    /// @return prefixed key
+    function getKeyPrefix(string memory key) internal pure returns (string memory) {
+        return string.concat(".", key);
+    }
+
+    function readStringOrDefaultToEmpty(string memory json, string memory key) internal view returns (string memory str) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            str = json.readString(keyPrefix);
+        } else {
+            str = "";
+        }
+    }
+
+    function readUintOrDefaultToZero(string memory json, string memory key) internal view returns (uint256 num) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            num = vm.parseUint(json.readString(keyPrefix));
         }
     }
 }

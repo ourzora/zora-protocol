@@ -24,19 +24,22 @@ export class MintClient {
   private readonly publicClient: IPublicClient;
   private readonly mintGetter: IOnchainMintGetter;
   private readonly premintGetter: IPremintGetter;
-
+  private readonly chainId: number;
   constructor({
     publicClient,
     premintGetter,
     mintGetter,
+    chainId,
   }: {
     publicClient: IPublicClient;
     premintGetter: IPremintGetter;
     mintGetter: IOnchainMintGetter;
+    chainId: number;
   }) {
     this.publicClient = publicClient;
     this.mintGetter = mintGetter;
     this.premintGetter = premintGetter;
+    this.chainId = chainId;
   }
 
   /**
@@ -54,6 +57,7 @@ export class MintClient {
       publicClient: this.publicClient,
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
+      chainId: this.chainId,
     });
   }
 
@@ -69,6 +73,7 @@ export class MintClient {
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
       publicClient: this.publicClient,
+      chainId: this.chainId,
     });
   }
 
@@ -87,6 +92,7 @@ export class MintClient {
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
       publicClient: this.publicClient,
+      chainId: this.chainId,
     });
   }
 
@@ -110,17 +116,20 @@ async function mint({
   publicClient,
   mintGetter,
   premintGetter,
+  chainId,
 }: {
   parameters: MakeMintParametersArguments;
   publicClient: IPublicClient;
   mintGetter: IOnchainMintGetter;
   premintGetter: IPremintGetter;
+  chainId: number;
 }): Promise<PrepareMintReturn> {
   const { prepareMint, primaryMintActive } = await getMint({
     params: parameters,
     mintGetter,
     premintGetter,
     publicClient,
+    chainId,
   });
 
   if (!primaryMintActive) {

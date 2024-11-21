@@ -13,6 +13,7 @@
     "@zoralabs/1155-deployments": "workspace:^",
     "@zoralabs/zora-1155-contracts": "workspace:^",
     "@zoralabs/sparks-contracts": "workspace:^",
+    "@zoralabs/comments-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^"
   },
   "devDependencies": {

@@ -116,4 +116,8 @@ interface IProtocolRewards {
     /// @param r R component of signature
     /// @param s S component of signature
     function withdrawWithSig(address from, address to, uint256 amount, uint256 deadline, uint8 v, bytes32 r, bytes32 s) external;
+
+    /// @notice Get the balance of an account
+    /// @param account The account to get the balance of
+    function balanceOf(address account) external view returns (uint256);
 }

@@ -124,6 +124,10 @@ export default defineConfig({
               },
             ],
           },
+          {
+            text: "Comments",
+            link: "/contracts/Comments",
+          },
         ],
       },
     ],

@@ -22,6 +22,8 @@ const { parameters, price, error } = await collectorClient.buy1155OnSecondary({
   quantity: 3n,
   // account that will execute the buy transaction
   account: address!,
+  // (optional) comment to add to the swap
+  comment: "test comment",
 });
 
 if (error) {

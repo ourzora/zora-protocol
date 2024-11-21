@@ -3,10 +3,16 @@ pragma solidity ^0.8.17;
 
 import {CommonBase} from "forge-std/Base.sol";
 import {console2, stdJson} from "forge-std/Script.sol";
+import {IVersionedContract} from "../interfaces/IVersionedContract.sol";
 
 interface UUPSUpgradeableUpgradeTo {
     function upgradeTo(address) external;
+
     function upgradeToAndCall(address, bytes calldata) external;
+}
+
+interface GetImplementation {
+    function implementation() external view returns (address);
 }
 
 contract UpgradeBaseLib is CommonBase {
@@ -145,11 +151,21 @@ contract UpgradeBaseLib is CommonBase {
         vm.stopPrank();
     }
 
-
     function readMissingUpgradePaths() internal view returns (address[] memory upgradePathTargets, bytes[] memory upgradePathCalls) {
         string memory json = vm.readFile(string.concat("./versions/", string.concat(vm.toString(block.chainid), ".json")));
 
         upgradePathTargets = json.readAddressArray(".missingUpgradePathTargets");
         upgradePathCalls = json.readBytesArray(".missingUpgradePathCalls");
+    }
+
+    function getUpgradeNeeded(address proxy, address targetImpl) internal view returns (bool) {
+        try GetImplementation(proxy).implementation() returns (address currentImpl) {
+            return currentImpl != targetImpl;
+        } catch {
+            // If implementation() call fails, compare contract versions
+            string memory proxyVersion = IVersionedContract(proxy).contractVersion();
+            string memory targetVersion = IVersionedContract(targetImpl).contractVersion();
+            return keccak256(abi.encodePacked(proxyVersion)) != keccak256(abi.encodePacked(targetVersion));
+        }
     }
 }

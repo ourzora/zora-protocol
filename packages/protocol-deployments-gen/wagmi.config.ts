@@ -19,6 +19,10 @@ import {
   secondarySwapABI,
   iwethABI,
 } from "@zoralabs/erc20z";
+import {
+  commentsImplABI,
+  callerAndCommenterImplABI,
+} from "@zoralabs/comments-contracts";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
 import { zora } from "viem/chains";
 
@@ -45,6 +49,10 @@ const zora1155Errors = [
 type AbiAndAddresses = {
   abi: Abi;
   address: Record<number, Address>;
+};
+
+const extractErrors = (abi: Abi) => {
+  return abi.filter((x) => x.type === "error");
 };
 
 const addAddress = <
@@ -354,12 +362,54 @@ const getErc20zContracts = (): ContractConfig[] => {
   ];
 };
 
+const getCommentsContracts = (): ContractConfig[] => {
+  const addresses: Addresses = {};
+
+  const addressesFiles = readdirSync("../comments/addresses");
+
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../comments/addresses/${file}`, "utf-8"),
+      ) as {
+        COMMENTS: Address;
+        CALLER_AND_COMMENTER: Address;
+      },
+    };
+  });
+
+  addAddress({
+    abi: commentsImplABI,
+    addresses,
+    configKey: "COMMENTS",
+    contractName: "Comments",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: [
+      ...callerAndCommenterImplABI,
+      ...extractErrors(zoraTimedSaleStrategyImplABI),
+      ...extractErrors(abis.zoraCreator1155ImplABI),
+      ...extractErrors(commentsImplABI),
+    ],
+    addresses,
+    configKey: "CALLER_AND_COMMENTER",
+    contractName: "CallerAndCommenter",
+    storedConfigs,
+  });
+
+  return toConfig(addresses);
+};
+
 export default defineConfig({
   out: "./generated/wagmi.ts",
   contracts: [
     ...get1155Contracts(),
     ...getErc20zContracts(),
     ...getSharedAddresses(),
+    ...getCommentsContracts(),
     ...getSparksAddresses(),
     {
       abi: iPremintDefinitionsABI,
