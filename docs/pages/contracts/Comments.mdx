@@ -7,11 +7,12 @@ Comments can be Sparked by anyone, meaning that the Sparker must send a Spark as
 
 ## Contracts
 
-The protocol consists of a single upgradeable contract called `Comments`, that is deployed deterministically to the same address on all chains.
+The protocol consists of a single upgradeable contract called `Comments`, that is deployed deterministically to the same address on all chains. There is also a helper contract called `CallerAndCommenter` that enables minting and commenting in a single transaction.
 
 | Contract | Deterministic Address |
 | ----- | ------- |
-| Comments | 0x7777777bE14a1F7Fd6896B5FBDa5ceD5FC6e501a |
+| Comments | [0x7777777bE14a1F7Fd6896B5FBDa5ceD5FC6e501a](https://explorer.zora.energy/address/0x7777777bE14a1F7Fd6896B5FBDa5ceD5FC6e501a) |
+| CallerAndCommenter | [0x77777775C5074b74540d9cC63Dd840A8c692B4B5](https://explorer.zora.energy/address/0x77777775C5074b74540d9cC63Dd840A8c692B4B5) |
 
 ## Spark value distribution
 
@@ -19,7 +20,7 @@ When a commenter pays a Spark to comment on a token, the Spark value (less a pro
 When a commenter pays a Spark to reply to a comment, the Spark value (less a protocol fee) is sent to the original commenter as a reward.
 When a Spark is used to Spark a comment, the Spark value (less a protocol fee) is sent to the commenter.
 
-For each Spark value transaction, a 30% protocol fee is taken. Part of that fee can be paid out to a referrer (if there is one). A referrer can be a third-party developer that surfaces the ability to comment on a site or app,
+For each Spark value transaction, a 30% protocol fee is taken. If a referrer is specified, 20% goes to the referrer and 10% goes to Zora. Otherwise, 30% goes to Zora. A referrer can be a third-party developer that surfaces the ability to comment on a site or app,
 and the referrer address is specified as an argument when commenting or Sparking.
 
 ## Building on comments and earning referral rewards
@@ -446,16 +447,35 @@ interface IComments {
 }
 ```
 
-When minting and commenting, the `MintedAndCommented` event is emitted from the minter contract, containing
-more contextual information about the mint and comment, as well as a link to the comment via the comment identifier:
+When minting and commenting, the `MintedAndCommented` event is emitted from the caller and commenter contract, containing
+more contextual information about the mint and comment, as well as a link to the comment via the comment identifier. When buying or selling on secondary and commenting, the `SwappedOnSecondaryAndCommented` event is emitted, containing the same contextual information as the minted and commented event, as well as the quantity of tokens bought or sold.
 
 ```solidity
-interface IZoraTimedSaleStrategy {
-  /// @notice MintedAndCommented Event, emitted when a user mints and comments
-  /// @param commentId The comment ID
-  /// @param commentIdentifier The comment identifier
-  /// @param mintQuantity The quantity of tokens minted
-  /// @param comment The comment
-  event MintedAndCommented(bytes32 indexed commentId, IComments.CommentIdentifier commentIdentifier, uint256 mintQuantity, string comment);
+interface ICallerAndCommenter {
+    /// @notice Emitted when tokens are minted and a comment is added
+    /// @param commentId The unique identifier of the comment
+    /// @param commentIdentifier The struct containing details about the comment
+    /// @param quantity The number of tokens minted
+    /// @param text The content of the comment
+    event MintedAndCommented(
+        bytes32 indexed commentId, 
+        IComments.CommentIdentifier commentIdentifier, 
+        uint256 quantity, 
+        string text
+    );
+
+    /// @notice Emitted when tokens are bought or sold on the secondary market and a comment is added
+    /// @param commentId The unique identifier of the comment
+    /// @param commentIdentifier The struct containing details about the comment
+    /// @param quantity The number of tokens bought
+    /// @param comment The content of the comment
+    /// @param swapDirection The direction of the swap (BUY or SELL)
+    event SwappedOnSecondaryAndCommented(
+        bytes32 indexed commentId,
+        IComments.CommentIdentifier commentIdentifier,
+        uint256 indexed quantity,
+        string comment,
+        SwapDirection indexed swapDirection
+    );
 }
 ```
