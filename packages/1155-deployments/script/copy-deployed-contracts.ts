@@ -23,8 +23,8 @@ async function copyEnvironmentRunFiles() {
 
       // a recent version of forge added a bug where the returns value with some sort of url based encoding.
       // the below code is a hack to fix this. It should be removed once forge is fixed.
-      // use string regex replace all to remove all instances of \\ from returns (this appeared in a wierd version of forge)
-      // also opening and closing quotes that incorrecly appear before opening bracket:
+      // use string regex replace all to remove all instances of \\ from returns (this appeared in a weird version of forge)
+      // also opening and closing quotes that incorrectly appear before opening bracket:
       const filtered = returns
         .replace(/\\/g, "")
         .replace('"{', "{")

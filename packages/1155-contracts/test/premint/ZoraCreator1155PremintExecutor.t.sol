@@ -122,7 +122,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
+        // retrieve the address created for a contract
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.
@@ -168,7 +168,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
+        // retrieve the address created for a contract
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.
@@ -208,7 +208,7 @@ contract ZoraCreator1155PreminterTest is Test {
         vm.prank(premintExecutor);
         tokenId = preminter.premintV2{value: mintCost}(contractConfig, premintConfig, signature, quantityToMint, defaultMintArguments).tokenId;
 
-        // a new token shoudl have been created, with x tokens minted to the executor, on the same contract address
+        // a new token should have been created, with x tokens minted to the executor, on the same contract address
         // as before since the contract config didnt change
         assertEq(created1155Contract.balanceOf(premintExecutor, tokenId), quantityToMint);
     }
@@ -224,7 +224,7 @@ contract ZoraCreator1155PreminterTest is Test {
         uint256 chainId = block.chainid;
 
         // get contract hash, which is unique per contract creation config, and can be used
-        // retreive the address created for a contract
+        // retrieve the address created for a contract
         address contractAddress = preminter.getContractAddress(contractConfig);
 
         // 2. Call smart contract to get digest to sign for creation params.

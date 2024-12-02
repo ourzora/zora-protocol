@@ -103,7 +103,7 @@ contract DeterministicProxyDeployerTest is DeterministicDeployerScript, Test {
         (address deployerAddress, uint256 deployerPrivateKey) = makeAddrAndKey("deployer");
 
         vm.assume(nonce > vm.getNonce(deployerAddress));
-        // we set the nonce to a random value, to prove this doesn't affect the deterministic addrss
+        // we set the nonce to a random value, to prove this doesn't affect the deterministic address
         vm.setNonce(deployerAddress, nonce);
 
         DeterministicProxyDeployer factoryProxyDeployer = _deployKnownZoraFactoryProxy(bytes32(0));
