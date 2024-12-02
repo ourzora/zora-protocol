@@ -1,5 +1,6 @@
+#!/usr/bin/env tsx
 import { promises as fs } from "fs";
-import { basename, extname, join, resolve } from "pathe";
+import { basename, extname, join } from "pathe";
 import { glob } from "glob";
 import { ContractConfig } from "@wagmi/cli";
 
@@ -26,11 +27,17 @@ const defaultExcludes = [
 // design inspired by https://github.com/wagmi-dev/wagmi/blob/main/packages/cli/src/plugins/foundry.ts
 
 export const readContracts = async ({
-  deployments = {} as any,
+  deployments = {},
   exclude = defaultExcludes,
   include = ["*.json"],
   namePrefix = "",
-  project_ = "./",
+  projectPath,
+}: {
+  deployments?: any;
+  exclude?: string[];
+  include?: string[];
+  namePrefix?: string;
+  projectPath: string;
 }) => {
   // get all the files in ./out
   function getContractName(artifactPath: string, usePrefix = true) {
@@ -57,14 +64,12 @@ export const readContracts = async ({
     ]);
   }
 
-  const project = resolve(process.cwd(), project_ ?? "");
-
   const config = {
     out: "out",
     src: "src",
   };
 
-  const artifactsDirectory = join(project, config.out);
+  const artifactsDirectory = join(projectPath, config.out);
 
   const artifactPaths = await getArtifactPaths(artifactsDirectory);
   const contracts = [];
@@ -76,10 +81,13 @@ export const readContracts = async ({
   return contracts;
 };
 
-async function saveContractsAbisJson(contracts: { abi: any; name: string }[]) {
+async function saveContractsAbisJson(
+  projectFolder: string,
+  contracts: { abi: any; name: string }[],
+) {
   // for each contract, write abi to ./abis/{contractName}.json
 
-  const abisFolder = "./abis";
+  const abisFolder = join(projectFolder, "abis");
 
   // mkdir - p ./abis:
   await fs.mkdir(abisFolder, { recursive: true });
@@ -100,10 +108,13 @@ async function saveContractsAbisJson(contracts: { abi: any; name: string }[]) {
   );
 }
 
-async function main() {
-  const contracts = await readContracts({});
+export const bundleAbis = async (projectPath: string = process.cwd()) => {
+  const contracts = await readContracts({ projectPath });
 
-  await saveContractsAbisJson(contracts);
+  await saveContractsAbisJson(projectPath, contracts);
+};
+
+const isMainModule = import.meta.url.startsWith("file:");
+if (isMainModule) {
+  bundleAbis().catch(console.error);
 }
-
-main();

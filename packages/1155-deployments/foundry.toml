@@ -44,3 +44,8 @@ blast = "https://blast.gateway.tenderly.co/${TENDERLY_KEY}/"
 blast_sepolia = "https://sepolia.blast.io"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
+[profile.default.zksync]
+compile = true
+fallback_oz = true
+mode = '1'
+zksolc='1.5.7'

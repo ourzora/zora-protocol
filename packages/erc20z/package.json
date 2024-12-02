@@ -24,12 +24,12 @@
     "storage-inspect:check": "./script/storage-check.sh check ZoraTimedSaleStrategyImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraTimedSaleStrategyImpl",
     "build:sizes": "forge build --sizes --skip test --skip script",
-    "copy-abis": "pnpm tsx script/bundle-abis.ts",
+    "copy-abis": "pnpm exec bundle-abis",
     "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
     "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
     "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
-    "update-contract-version": "pnpm tsx script/update-contract-version.ts",
-    "generate": "pnpm tsx scripts/generateForkTests"
+    "update-contract-version": "pnpm exec update-contract-version",
+    "generate": "pnpm exec generate-fork-tests"
   },
   "devDependencies": {
     "@openzeppelin/contracts": "5.0.2",
@@ -43,6 +43,7 @@
     "@zoralabs/shared-contracts": "workspace:^",
     "@zoralabs/tsconfig": "workspace:^",
     "@zoralabs/zora-1155-contracts": "workspace:^",
+    "@zoralabs/shared-scripts": "workspace:^",
     "dotenv": "^16.4.5",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
     "forge-std": "https://github.com/foundry-rs/forge-std#v1.9.1",

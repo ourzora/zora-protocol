@@ -85,8 +85,8 @@ contract ProxyDeployerScript is CommonBase {
         string[] memory args = new string[](8);
 
         args[0] = "pnpm";
-        args[1] = "tsx";
-        args[2] = "scripts/signDeployAndCall.ts";
+        args[1] = "exec";
+        args[2] = "sign-deploy-and-call-with-turnkey";
 
         args[3] = vm.toString(block.chainid);
 

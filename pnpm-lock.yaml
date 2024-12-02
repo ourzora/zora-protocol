@@ -126,6 +126,9 @@ importers:
       '@zoralabs/shared-contracts':
         specifier: workspace:^
         version: link:../shared-contracts
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
       '@zoralabs/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
@@ -195,6 +198,9 @@ importers:
       '@zoralabs/shared-contracts':
         specifier: workspace:^
         version: link:../shared-contracts
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
       '@zoralabs/sparks-contracts':
         specifier: workspace:^
         version: link:../sparks
@@ -283,6 +289,9 @@ importers:
       '@zoralabs/shared-contracts':
         specifier: workspace:^
         version: link:../shared-contracts
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
       '@zoralabs/sparks-contracts':
         specifier: workspace:^
         version: link:../sparks
@@ -398,6 +407,9 @@ importers:
       '@zoralabs/shared-contracts':
         specifier: workspace:^
         version: link:../shared-contracts
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
       '@zoralabs/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
@@ -652,6 +664,43 @@ importers:
         specifier: ^4.16.3
         version: 4.16.3
 
+  packages/shared-scripts:
+    dependencies:
+      '@turnkey/api-key-stamper':
+        specifier: ^0.3.1
+        version: 0.3.1
+      '@turnkey/http':
+        specifier: ^2.5.1
+        version: 2.12.0(encoding@0.1.13)
+      '@turnkey/viem':
+        specifier: ^0.4.4
+        version: 0.4.24(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.12)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10)(viem@2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8))
+      '@zoralabs/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      glob:
+        specifier: ^10.2.2
+        version: 10.4.5
+      tsup:
+        specifier: ^7.2.0
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
+      typescript:
+        specifier: ^5.2.2
+        version: 5.5.4
+      viem:
+        specifier: ^2.21.21
+        version: 2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)
+    devDependencies:
+      handlebars:
+        specifier: ^4.7.8
+        version: 4.7.8
+      pathe:
+        specifier: ^1.1.2
+        version: 1.1.2
+
   packages/smart-wallet:
     dependencies:
       '@openzeppelin/contracts':
@@ -703,6 +752,9 @@ importers:
       '@zoralabs/shared-contracts':
         specifier: workspace:^
         version: link:../shared-contracts
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
       '@zoralabs/tsconfig':
         specifier: workspace:^
         version: link:../tsconfig
@@ -5516,6 +5568,7 @@ packages:
 
   eciesjs@0.3.19:
     resolution: {integrity: sha512-b+PkRDZ3ym7HEcnbxc22CMVCpgsnr8+gGgST3U5PtgeX1luvINgfXW7efOyUtmn/jFtA/lg5ywBi/Uazf4oeaA==}
+    deprecated: Please upgrade to v0.4+
 
   ee-first@1.1.1:
     resolution: {integrity: sha512-WMwm9LhRUo+WUaRN+vRuETqG89IgZphVSNkdFgeb6sS/E4OrDIN7t48CAewSHXc6C8lefD8KKfr5vY61brQlow==}
@@ -5700,6 +5753,7 @@ packages:
   eslint@8.57.0:
     resolution: {integrity: sha512-dZ6+mexnaTIbSBZWgou51U6OmzIhYM2VcNdtiTtI7qPNZm35Akpr0f6vtw3w1Kmn5PYo+tZVfh13WrhpS6oLqQ==}
     engines: {node: ^12.22.0 || ^14.17.0 || >=16.0.0}
+    deprecated: This version is no longer supported. Please see https://eslint.org/version-support for other options.
     hasBin: true
 
   espree@9.6.1:
@@ -9378,6 +9432,11 @@ packages:
 
   tsx@4.19.0:
     resolution: {integrity: sha512-bV30kM7bsLZKZIOCHeMNVMJ32/LuJzLVajkQI/qf92J2Qr08ueLQvW00PUZGiuLPP760UINwupgUj8qrSCPUKg==}
+    engines: {node: '>=18.0.0'}
+    hasBin: true
+
+  tsx@4.19.2:
+    resolution: {integrity: sha512-pOUl6Vo2LUq/bSa8S5q7b91cgNSjctn9ugq/+Mvow99qW6x/UZYwzxy/3NmqoT66eHYfCVvFvACC58UBPFf28g==}
     engines: {node: '>=18.0.0'}
     hasBin: true
 
@@ -21248,6 +21307,13 @@ snapshots:
       fsevents: 2.3.3
 
   tsx@4.19.0:
+    dependencies:
+      esbuild: 0.23.1
+      get-tsconfig: 4.7.6
+    optionalDependencies:
+      fsevents: 2.3.3
+
+  tsx@4.19.2:
     dependencies:
       esbuild: 0.23.1
       get-tsconfig: 4.7.6

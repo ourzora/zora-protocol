@@ -1,8 +1,14 @@
+#!/usr/bin/env tsx
 import { Hex, Address } from "viem";
-import { loadTurnkeyAccount } from "./turnkey";
+import { loadTurnkeyAccount } from "./turnkey.js";
 
 const loadParameters = () => {
   const [, , chainId, salt, creationCode, init, deployerAddress] = process.argv;
+
+  // check that all arguments are present
+  if (!chainId || !salt || !creationCode || !init || !deployerAddress) {
+    throw new Error("missing arguments");
+  }
 
   return {
     chainId: +chainId,
