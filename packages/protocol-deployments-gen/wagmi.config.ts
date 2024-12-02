@@ -23,8 +23,8 @@ import {
   commentsImplABI,
   callerAndCommenterImplABI,
 } from "@zoralabs/comments-contracts";
+import { zoraAccountManagerImplABI } from "@zoralabs/smart-wallet";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
-import { zora } from "viem/chains";
 
 type Address = `0x${string}`;
 
@@ -305,6 +305,32 @@ const getSparksAddresses = () => {
   ];
 };
 
+const getSmartWalletContracts = () => {
+  const addresses: Addresses = {};
+  const addressesFiles = readdirSync("../smart-wallet/addresses");
+
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../smart-wallet/addresses/${file}`, "utf-8"),
+      ) as {
+        ZORA_ACCOUNT_MANAGER: Address;
+      },
+    };
+  });
+
+  addAddress({
+    abi: zoraAccountManagerImplABI,
+    addresses,
+    contractName: "ZoraAccountManager",
+    configKey: "ZORA_ACCOUNT_MANAGER",
+    storedConfigs,
+  });
+
+  return toConfig(addresses);
+};
+
 const getErc20zContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
@@ -411,6 +437,7 @@ export default defineConfig({
     ...getSharedAddresses(),
     ...getCommentsContracts(),
     ...getSparksAddresses(),
+    ...getSmartWalletContracts(),
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",

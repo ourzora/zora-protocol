@@ -1,12 +1,24 @@
 {
   "name": "@zoralabs/smart-wallet",
   "version": "0.0.0",
-  "main": "index.js",
   "license": "MIT",
-  "private": true,
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
   "scripts": {
-    "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
-    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'"
+    "build": "pnpm run wagmi:generate && pnpm run copy-abis && tsup",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
+    "update-contract-version": "pnpm exec update-contract-version",
+    "copy-abis": "pnpm exec bundle-abis"
   },
   "dependencies": {
     "@openzeppelin/contracts": "5.0.2",
@@ -15,6 +27,11 @@
     "forge-std": "https://github.com/foundry-rs/forge-std#v1.8.2"
   },
   "devDependencies": {
-    "permissionless": "^0.0.35"
+    "permissionless": "^0.0.35",
+    "tsup": "^7.2.0",
+    "typescript": "^5.2.2",
+    "@zoralabs/shared-scripts": "workspace:^",
+    "@zoralabs/tsconfig": "workspace:^",
+    "@wagmi/cli": "^1.0.1"
   }
 }

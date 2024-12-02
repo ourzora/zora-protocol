@@ -518,6 +518,9 @@ importers:
       '@zoralabs/erc20z':
         specifier: workspace:^
         version: link:../erc20z
+      '@zoralabs/smart-wallet':
+        specifier: workspace:^
+        version: link:../smart-wallet
       '@zoralabs/sparks-contracts':
         specifier: workspace:^
         version: link:../sparks
@@ -716,9 +719,24 @@ importers:
         specifier: https://github.com/foundry-rs/forge-std#v1.8.2
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/978ac6fadb62f5f0b723c996f64be52eddba6801
     devDependencies:
+      '@wagmi/cli':
+        specifier: ^1.0.1
+        version: 1.5.2(@wagmi/core@2.13.8(@tanstack/query-core@5.51.9)(@types/react@18.3.12)(react@18.3.1)(typescript@5.5.4)(viem@2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)))(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(wagmi@2.12.17(@tanstack/query-core@5.51.9)(@tanstack/react-query@5.51.11(react@18.3.1))(@types/react@18.3.12)(bufferutil@4.0.8)(encoding@0.1.13)(react-native@0.74.3(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.12)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(rollup@4.19.0)(typescript@5.5.4)(utf-8-validate@5.0.10)(viem@2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8))
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
+      '@zoralabs/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
       permissionless:
         specifier: ^0.0.35
         version: 0.0.35(viem@2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8))
+      tsup:
+        specifier: ^7.2.0
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
+      typescript:
+        specifier: ^5.2.2
+        version: 5.5.4
 
   packages/sparks:
     devDependencies:
