@@ -11,11 +11,14 @@ import {
   getAbiItem,
   keccak256,
   toHex,
+  parseEther,
 } from "viem";
 import {
   zoraMints1155Address,
   iPremintDefinitionsABI,
   sponsoredSparksSpenderAddress,
+  commentsAddress,
+  callerAndCommenterAddress,
 } from "./generated/wagmi";
 import {
   PremintConfigEncoded,
@@ -27,6 +30,10 @@ import {
   TokenCreationConfigV1,
   TokenCreationConfigV2,
   TokenCreationConfigV3,
+  PermitComment,
+  PermitSparkComment,
+  PermitMintAndComment,
+  PermitBuyOnSecondaryAndComment,
 } from "./types";
 
 const premintTypedDataDomain = ({
@@ -413,3 +420,258 @@ export const sponsoredSparksBatchTypedDataDefinition = ({
     verifyingContract: sponsoredSparksSpenderAddress[chainId],
   },
 });
+
+const commentIdentifierType = [
+  { name: "contractAddress", type: "address" },
+  { name: "tokenId", type: "uint256" },
+  { name: "commenter", type: "address" },
+  { name: "nonce", type: "bytes32" },
+] as const;
+
+const commentsDomain = ({
+  signingChainId,
+  destinationChainId,
+}: {
+  signingChainId: number;
+  destinationChainId: keyof typeof commentsAddress;
+}): TypedDataDomain => ({
+  chainId: signingChainId,
+  name: "Comments",
+  version: "1",
+  verifyingContract: commentsAddress[destinationChainId]!,
+});
+
+/**
+ * Generates the typed data definition for a permit comment, for cross-chain commenting.
+ *
+ * The permit allows a user to sign a comment message on one chain, which can then be
+ * submitted by anyone on the destination chain to execute the comment action.
+ *
+ * The permit includes details such as the comment text, the commenter's address,
+ * the comment being replied to, and chain IDs for the source and destination chains.
+ *
+ * The typed data is generated in a way that makes the signature happen on the source chain
+ * but be valid to be executed on the destination chain.
+ *
+ * @param message - The {@link PermitComment} containing the details of the comment permit.
+ * @param signingAccount - (optional) The account that is signing the message, if different thatn the commentor.
+ * Only needed if the commentor is a smart wallet; in this case the signing account should be an account
+ * that is one of the smart wallet owners.
+ * @returns A {@link TypedDataDefinition} object compatible with EIP-712 for structured data hashing and signing,
+ * including types, message, primary type, domain, and the signer's account address, which is
+ * the commenter's address.
+ */
+export const permitCommentTypedDataDefinition = (
+  message: PermitComment,
+  signingAccount?: Address,
+): TypedDataDefinition<typeof permitCommentTypedDataType, "PermitComment"> & {
+  account: Address;
+} => {
+  const permitCommentTypedDataType = {
+    PermitComment: [
+      { name: "contractAddress", type: "address" },
+      { name: "tokenId", type: "uint256" },
+      { name: "commenter", type: "address" },
+      { name: "replyTo", type: "CommentIdentifier" },
+      { name: "text", type: "string" },
+      { name: "deadline", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "commenterSmartWallet", type: "address" },
+      { name: "referrer", type: "address" },
+      { name: "sourceChainId", type: "uint32" },
+      { name: "destinationChainId", type: "uint32" },
+    ],
+    CommentIdentifier: commentIdentifierType,
+  } as const;
+  return {
+    types: permitCommentTypedDataType,
+    message,
+    primaryType: "PermitComment",
+    domain: commentsDomain({
+      signingChainId: message.sourceChainId,
+      destinationChainId:
+        message.destinationChainId as keyof typeof commentsAddress,
+    }),
+    account: signingAccount || message.commenter,
+  };
+};
+
+/**
+ * Generates the typed data definition for a permit spark comment, for cross-chain sparking (liking with value) of comments.
+ *
+ * The permit allows a user to sign a spark comment message on one chain, which can then be
+ * submitted by anyone on the destination chain to execute the spark action.
+ *
+ * The permit includes details such as the comment to be sparked, the sparker's address,
+ * the quantity of sparks, and the source and destination chain ids.
+ *
+ * The typed data is generated in a way that makes the signature happen on the source chain
+ * but be valid to be executed on the destination chain.
+ *
+ * @param message - The {@link PermitSparkComment} containing the details of the spark comment permit.
+ * @param signingAccount - (optional) The account that is signing the message, if different than the commenter.
+ * Only needed if the commenter is a smart wallet; in this case the signing account should be an account
+ * that is one of the smart wallet owners.
+ * @returns A {@link TypedDataDefinition} object compatible with EIP-712 for structured data hashing and signing,
+ * including types, message, primary type, domain, and the signer's account address, which is
+ * the sparker's address.
+ */
+export const permitSparkCommentTypedDataDefinition = (
+  message: PermitSparkComment,
+  signingAccount?: Address,
+): TypedDataDefinition<
+  typeof permitSparkCommentTypedDataType,
+  "PermitSparkComment"
+> & { account: Address } => {
+  const permitSparkCommentTypedDataType = {
+    PermitSparkComment: [
+      { name: "comment", type: "CommentIdentifier" },
+      { name: "sparker", type: "address" },
+      { name: "sparksQuantity", type: "uint256" },
+      { name: "deadline", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "referrer", type: "address" },
+      { name: "sourceChainId", type: "uint32" },
+      { name: "destinationChainId", type: "uint32" },
+    ],
+    CommentIdentifier: commentIdentifierType,
+  } as const;
+
+  return {
+    types: permitSparkCommentTypedDataType,
+    message,
+    primaryType: "PermitSparkComment",
+    domain: commentsDomain({
+      signingChainId: message.sourceChainId,
+      destinationChainId:
+        message.destinationChainId as keyof typeof commentsAddress,
+    }),
+    account: signingAccount || message.sparker,
+  };
+};
+
+// todo: explain
+export const sparkValue = () => parseEther("0.000001");
+
+/**
+ * Generates the typed data definition for a permit timed sale mint and comment operation.
+ *
+ * This function creates a structured data object that can be used for EIP-712 signing,
+ * allowing users to sign a message on one chain that permits a timed sale mint and comment
+ * action to be executed on another chain.
+ *
+ * @param message - The {@link PermitMintAndComment} containing the details of the permit.
+ * @param signingAccount - (optional) The account that is signing the message, if different from the commenter.
+ * This is typically used when the commenter is a smart wallet, and the signing account is one of its owners.
+ * @returns A {@link TypedDataDefinition} object compatible with EIP-712 for structured data hashing and signing,
+ * including types, message, primary type, domain, and the signer's account address.
+ */
+export const permitMintAndCommentTypedDataDefinition = (
+  message: PermitMintAndComment,
+  signingAccount?: Address,
+): TypedDataDefinition<
+  typeof permitTimedSaleMintAndCommentTypedDataType,
+  "PermitTimedSaleMintAndComment"
+> & { account: Address } => {
+  const permitTimedSaleMintAndCommentTypedDataType = {
+    PermitTimedSaleMintAndComment: [
+      { name: "commenter", type: "address" },
+      { name: "quantity", type: "uint256" },
+      { name: "collection", type: "address" },
+      { name: "tokenId", type: "uint256" },
+      { name: "mintReferral", type: "address" },
+      { name: "comment", type: "string" },
+      { name: "deadline", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "sourceChainId", type: "uint32" },
+      { name: "destinationChainId", type: "uint32" },
+    ],
+  } as const;
+
+  const callerAndCommenterDomain = ({
+    signingChainId,
+    destinationChainId,
+  }: {
+    signingChainId: number;
+    destinationChainId: keyof typeof callerAndCommenterAddress;
+  }) => ({
+    name: "CallerAndCommenter",
+    version: "1",
+    chainId: signingChainId,
+    verifyingContract: callerAndCommenterAddress[destinationChainId],
+  });
+
+  return {
+    types: permitTimedSaleMintAndCommentTypedDataType,
+    message,
+    primaryType: "PermitTimedSaleMintAndComment",
+    domain: callerAndCommenterDomain({
+      signingChainId: message.sourceChainId,
+      destinationChainId:
+        message.destinationChainId as keyof typeof callerAndCommenterAddress,
+    }),
+    account: signingAccount || message.commenter,
+  };
+};
+
+/**
+ * Generates the typed data definition for a permit buy on secondary and comment operation.
+ *
+ * This function creates a structured data object that can be used for EIP-712 signing,
+ * allowing users to sign a message on one chain that permits a buy on secondary market and comment
+ * action to be executed on another chain.
+ *
+ * @param message - The {@link PermitBuyOnSecondaryAndComment} containing the details of the permit.
+ * @param signingAccount - (optional) The account that is signing the message, if different from the commenter.
+ * This is typically used when the commenter is a smart wallet, and the signing account is one of its owners.
+ * @returns A {@link TypedDataDefinition} object compatible with EIP-712 for structured data hashing and signing,
+ * including types, message, primary type, domain, and the signer's account address.
+ */
+export const permitBuyOnSecondaryAndCommentTypedDataDefinition = (
+  message: PermitBuyOnSecondaryAndComment,
+  signingAccount?: Address,
+): TypedDataDefinition<
+  typeof permitBuyOnSecondaryAndCommentTypedDataType,
+  "PermitBuyOnSecondaryAndComment"
+> & { account: Address } => {
+  const permitBuyOnSecondaryAndCommentTypedDataType = {
+    PermitBuyOnSecondaryAndComment: [
+      { name: "commenter", type: "address" },
+      { name: "quantity", type: "uint256" },
+      { name: "collection", type: "address" },
+      { name: "tokenId", type: "uint256" },
+      { name: "maxEthToSpend", type: "uint256" },
+      { name: "sqrtPriceLimitX96", type: "uint160" },
+      { name: "comment", type: "string" },
+      { name: "deadline", type: "uint256" },
+      { name: "nonce", type: "bytes32" },
+      { name: "sourceChainId", type: "uint32" },
+      { name: "destinationChainId", type: "uint32" },
+    ],
+  } as const;
+
+  const callerAndCommenterDomain = ({
+    signingChainId,
+    destinationChainId,
+  }: {
+    signingChainId: number;
+    destinationChainId: keyof typeof callerAndCommenterAddress;
+  }) => ({
+    name: "CallerAndCommenter",
+    version: "1",
+    chainId: signingChainId,
+    verifyingContract: callerAndCommenterAddress[destinationChainId],
+  });
+
+  return {
+    types: permitBuyOnSecondaryAndCommentTypedDataType,
+    message,
+    primaryType: "PermitBuyOnSecondaryAndComment",
+    domain: callerAndCommenterDomain({
+      signingChainId: message.sourceChainId,
+      destinationChainId:
+        message.destinationChainId as keyof typeof callerAndCommenterAddress,
+    }),
+    account: signingAccount || message.commenter,
+  };
+};

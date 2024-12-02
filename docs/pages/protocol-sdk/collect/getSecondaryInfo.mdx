@@ -1,0 +1,112 @@
+# `getSecondaryInfo`
+
+The `getSecondaryInfo` function on the `collectorClient` allows you to retrieve information about the secondary market configuration and status for a specific ERC1155 token.
+
+## Usage
+
+```ts twoslash
+import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { useChainId, usePublicClient } from "wagmi";
+
+const chainId = useChainId();
+const publicClient = usePublicClient()!;
+
+const collectorClient = createCollectorClient({ chainId, publicClient });
+
+const secondaryInfo = await collectorClient.getSecondaryInfo({
+  contract: "0xd42557f24034b53e7340a40bb5813ef9ba88f2b4",
+  tokenId: 4n,
+});
+
+if (secondaryInfo) {
+// @noErrors
+  secondaryInfo.
+//              ^|
+}
+
+
+
+
+
+
+```
+
+## Returns
+
+`SecondaryInfo` | `undefined`
+
+If the minter is not configured to use the ZoraTimedSaleStrategy, then `undefined` is returned.
+
+### secondaryActivated
+
+- **Type:** `boolean`
+
+Boolean indicating if the secondary market has been launched.
+
+### pool
+
+- **Type:** `Address` 
+
+The Uniswap pool address for this token.
+
+### erc20z
+
+- **Type:** `Address`
+
+The ERC20z token address used for the secondary market.
+
+### name
+
+- **Type:** `string`
+
+The name of the ERC20z token.
+
+### symbol 
+
+- **Type:** `string`
+
+The symbol of the ERC20z token.
+
+### saleStart
+
+- **Type:** `bigint`
+
+Earliest time in seconds when tokens can be minted.
+
+### saleEnd
+
+- **Type:** `bigint | undefined`
+
+Latest time in seconds when tokens can be minted. This gets set after the market countdown has started.
+
+### marketCountdown
+
+- **Type:** `bigint | undefined`
+
+The amount of time in seconds after the `minimumMintsForCountdown` is reached until the secondary market can be launched.
+
+### minimumMintsForCountdown
+
+- **Type:** `bigint | undefined`
+
+The minimum quantity of tokens that must have been minted to launch the countdown.
+
+### mintCount
+
+- **Type:** `bigint`
+
+The total number of tokens that have been minted so far.
+
+## Parameters
+
+### contract
+
+- **Type:** `Address`
+
+The ERC1155 contract address to retrieve secondary market information for.
+
+### tokenId
+
+- **Type:** `bigint`
+
+The token ID to retrieve secondary market information for.

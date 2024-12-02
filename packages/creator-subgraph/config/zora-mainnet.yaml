@@ -1,8 +1,8 @@
 chainid: "7777777"
 network: zora-mainnet
 grafting: 
-  base: "QmS4F1XH8wztuiUXkFRCHu1drZrdFXpeGTUmQFyjU4Y4Y7"
-  block: "18750633"
+  base: "QmWZoNnJJQdzznpZcvFZvUMMJGq6zuD1tv5ovSfitNTyHT"
+  block: "21296000"
 factories1155:
   - address: "0x35ca784918bf11692708c1D530691704AAcEA95E"
     startBlock: "45420"
@@ -48,4 +48,8 @@ zoraSparks:
 zoraTimedSaleStrategy:
   - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
     startBlock: "17964312"
+    version: "1"
+comments: 
+  - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
+    startBlock: "21297000"
     version: "1"

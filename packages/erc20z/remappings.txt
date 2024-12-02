@@ -3,4 +3,5 @@ forge-std/=node_modules/forge-std/src/
 @openzeppelin/=node_modules/@openzeppelin/
 @zoralabs/protocol-rewards/=node_modules/@zoralabs/protocol-rewards/
 @zoralabs/shared-contracts/=node_modules/@zoralabs/shared-contracts/src/
+@zoralabs/zora-1155-contracts/=node_modules/@zoralabs/zora-1155-contracts/src/
 solady/=node_modules/solady/src/

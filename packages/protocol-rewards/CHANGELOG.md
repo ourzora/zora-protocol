@@ -1,5 +1,11 @@
 # @zoralabs/protocol-rewards
 
+## 1.2.5
+
+### Patch Changes
+
+- ffc695d3: Added balanceOf to interface IProtocolRewards
+
 ## 1.2.4
 
 ### Patch Changes

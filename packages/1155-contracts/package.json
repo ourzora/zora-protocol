@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/zora-1155-contracts",
-  "version": "2.12.4",
+  "version": "2.13.2",
   "repository": "git@github.com:ourzora/zora-protocol.git",
   "author": "Iain <iain@zora.co>",
   "license": "MIT",
@@ -29,7 +29,7 @@
     "build:contracts": "forge build",
     "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
     "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
-    "build:sizes": "forge build --sizes",
+    "build:sizes": "forge build --sizes --skip test --skip script",
     "storage-inspect:check": "./script/storage-check.sh check ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraCreator1155Impl ZoraCreator1155FactoryImpl",
     "update-contract-version": "node script/update-contract-version.mjs"

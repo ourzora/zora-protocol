@@ -16,6 +16,7 @@ import {UpgradeGate} from "../../src/upgrades/UpgradeGate.sol";
 import {PremintConfigV2, TokenCreationConfigV2} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {ZoraCreator1155Attribution} from "../../src/delegation/ZoraCreator1155Attribution.sol";
 import {PremintEncoding} from "@zoralabs/shared-contracts/premint/PremintEncoding.sol";
+import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
 
 import {IZoraCreator1155Errors} from "../../src/interfaces/IZoraCreator1155Errors.sol";
 import {IZoraCreator1155} from "../../src/interfaces/IZoraCreator1155.sol";
@@ -69,6 +70,7 @@ contract ZoraCreator1155Test is Test {
     address internal collector;
     address internal mintReferral;
     address internal createReferral;
+    address internal timedSaleStrategy;
     address internal zora;
     address[] internal rewardsRecipients;
     address[] internal defaultRewardsRecipients;
@@ -96,6 +98,7 @@ contract ZoraCreator1155Test is Test {
         mintReferral = makeAddr("mintReferral");
         createReferral = makeAddr("createReferral");
         zora = makeAddr("zora");
+        timedSaleStrategy = makeAddr("timedSaleStrategy");
 
         rewardsRecipients = new address[](1);
         rewardsRecipients[0] = mintReferral;
@@ -109,10 +112,11 @@ contract ZoraCreator1155Test is Test {
         protocolRewards = new ProtocolRewards();
         upgradeGate = new UpgradeGate();
         upgradeGate.initialize(admin);
-        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards));
-        target = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
         simpleMinter = new SimpleMinter();
         fixedPriceMinter = new ZoraCreatorFixedPriceSaleStrategy();
+
+        zoraCreator1155Impl = new ZoraCreator1155Impl(zora, address(upgradeGate), address(protocolRewards), address(simpleMinter));
+        target = ZoraCreator1155Impl(payable(address(new Zora1155(address(zoraCreator1155Impl)))));
 
         adminRole = target.PERMISSION_BIT_ADMIN();
         minterRole = target.PERMISSION_BIT_MINTER();
@@ -1376,6 +1380,9 @@ contract ZoraCreator1155Test is Test {
 
         bytes4 reduceSupplyInterfaceId = type(IReduceSupply).interfaceId;
         assertTrue(target.supportsInterface(reduceSupplyInterfaceId));
+
+        bytes4 hasContractNameInterfaceId = type(IHasContractName).interfaceId;
+        assertTrue(target.supportsInterface(hasContractNameInterfaceId));
     }
 
     function test_burnBatch() external {
@@ -1483,7 +1490,7 @@ contract ZoraCreator1155Test is Test {
     }
 
     function test_unauthorizedUpgradeFails() external {
-        address new1155Impl = address(new ZoraCreator1155Impl(zora, address(0), address(protocolRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(zora, address(0x1234), address(protocolRewards), address(0)));
 
         vm.expectRevert();
         target.upgradeTo(new1155Impl);
@@ -1495,7 +1502,7 @@ contract ZoraCreator1155Test is Test {
 
         oldImpls[0] = address(zoraCreator1155Impl);
 
-        address new1155Impl = address(new ZoraCreator1155Impl(zora, address(0), address(protocolRewards)));
+        address new1155Impl = address(new ZoraCreator1155Impl(zora, address(0x1234), address(protocolRewards), makeAddr("timedSaleStrategy")));
 
         vm.prank(upgradeGate.owner());
         upgradeGate.registerUpgradePath(oldImpls, new1155Impl);
@@ -1708,7 +1715,7 @@ contract ZoraCreator1155Test is Test {
         target.mint{value: totalReward}(simpleMinter, tokenId, quantity, rewardsRecipients, abi.encode(recipient));
     }
 
-    function test_ReduceSupply_revertsWhen_newSupplyGreaterThanMax() public {
+    function test_ReduceSupply_newSupplyGreaterThanMaxIsOkay() public {
         init();
 
         uint256 initialMaxSupply = 1_000_000;
@@ -1718,13 +1725,7 @@ contract ZoraCreator1155Test is Test {
         uint256 tokenId = target.setupNewToken("test", initialMaxSupply);
         target.addPermission(tokenId, address(simpleMinter), minterRole);
 
-        vm.stopPrank();
-
-        vm.expectRevert(IZoraCreator1155Errors.CanOnlyReduceMaxSupply.selector);
-        simpleMinter.settleMint(address(target), tokenId, initialMaxSupply);
-
-        vm.expectRevert(IZoraCreator1155Errors.CanOnlyReduceMaxSupply.selector);
-        simpleMinter.settleMint(address(target), tokenId, initialMaxSupply + 1);
+        simpleMinter.settleMint(address(target), tokenId, initialMaxSupply + 1000);
     }
 
     function test_ReduceSupply_revertsWhen_newSupplyLessThanTotalMinted() public {
@@ -1772,7 +1773,21 @@ contract ZoraCreator1155Test is Test {
         vm.prank(admin);
         target.removePermission(tokenId, address(simpleMinter), minterRole);
 
-        vm.expectRevert(abi.encodeWithSignature("UserMissingRoleForToken(address,uint256,uint256)", address(simpleMinter), tokenId, minterRole));
+        vm.expectRevert(IZoraCreator1155Errors.OnlyAllowedForRegisteredMinter.selector);
         simpleMinter.settleMint(address(target), tokenId, 0);
+    }
+
+    function testRevert_ReduceSupplyInvalidPermissionNotFromTimedSaleStrategy() public {
+        init();
+
+        uint256 initialMaxSupply = 1_000_000;
+
+        vm.startPrank(admin);
+
+        uint256 tokenId = target.setupNewToken("test", initialMaxSupply);
+        target.addPermission(tokenId, address(admin), minterRole);
+
+        vm.expectRevert(IZoraCreator1155Errors.OnlyAllowedForTimedSaleStrategy.selector);
+        target.reduceSupply(tokenId, 100000);
     }
 }

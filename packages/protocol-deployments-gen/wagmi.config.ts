@@ -19,6 +19,10 @@ import {
   secondarySwapABI,
   iwethABI,
 } from "@zoralabs/erc20z";
+import {
+  commentsImplABI,
+  callerAndCommenterImplABI,
+} from "@zoralabs/comments-contracts";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
 import { zora } from "viem/chains";
 
@@ -45,6 +49,10 @@ const zora1155Errors = [
 type AbiAndAddresses = {
   abi: Abi;
   address: Record<number, Address>;
+};
+
+const extractErrors = (abi: Abi) => {
+  return abi.filter((x) => x.type === "error");
 };
 
 const addAddress = <
@@ -216,59 +224,86 @@ const getSharedAddresses = () => {
 };
 
 const getSparksAddresses = () => {
-  const chainIds = [7777777, 999999999];
+  const addresses: Addresses = {};
+  const addressesFiles = readdirSync("../sparks/addresses");
 
-  const sparksProxyConfig = JSON.parse(
-    readFileSync(
-      "../sparks-deployments/deterministicConfig/sparksProxy/params.json",
-      "utf-8",
-    ),
-  );
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../sparks/addresses/${file}`, "utf-8"),
+      ) as {
+        SPARKS_MANAGER: Address;
+        SPARKS_1155: Address;
+        MINTS_MANAGER: Address;
+        MINTS_1155: Address;
+        SPARKS_MANAGER_IMPL: Address;
+        SPONSORED_SPARKS_SPENDER: Address;
+        MINTS_ETH_UNWRAPPER_AND_CALLER: Address;
+      },
+    };
+  });
 
-  const mintsProxyConfig = JSON.parse(
-    readFileSync(
-      "../sparks-deployments/deterministicConfig/mintsProxy/params.json",
-      "utf-8",
-    ),
-  );
+  addAddress({
+    abi: zoraSparksManagerImplABI,
+    addresses,
+    configKey: "SPARKS_MANAGER",
+    contractName: "ZoraSparksManagerImpl",
+    storedConfigs,
+  });
 
-  const mintsEthUnwrapperAndCallerAddress = JSON.parse(
-    readFileSync("../sparks-deployments/addresses/999999999.json", "utf-8"),
-  ).MINTS_ETH_UNWRAPPER_AND_CALLER as Address;
+  addAddress({
+    abi: zoraSparks1155ABI,
+    addresses,
+    contractName: "ZoraSparks1155",
+    configKey: "SPARKS_1155",
+    storedConfigs,
+  });
 
-  const sparksManagerAddress = sparksProxyConfig.manager
-    .deployedAddress as Address;
-  const zoraSparks1155Address = sparksProxyConfig.sparks1155
-    .deployedAddress as Address;
+  addAddress({
+    abi: sparksEthUnwrapperAndCallerABI,
+    addresses,
+    configKey: "MINTS_ETH_UNWRAPPER_AND_CALLER",
+    contractName: "MintsEthUnwrapperAndCaller",
+    storedConfigs,
+  });
 
-  return {
-    sparksManager: Object.fromEntries(
-      chainIds.map((chainId) => [chainId, sparksManagerAddress]),
-    ),
-    sparks1155: Object.fromEntries(
-      chainIds.map((chainId) => [chainId, zoraSparks1155Address as Address]),
-    ),
+  addAddress({
+    abi: zoraMintsManagerImplABI,
+    addresses,
+    contractName: "ZoraMintsManagerImpl",
+    configKey: "MINTS_MANAGER",
+    storedConfigs,
+  });
 
-    mintsEthUnwrapperAndCaller: Object.fromEntries(
-      chainIds.map((chainId) => [chainId, mintsEthUnwrapperAndCallerAddress]),
-    ),
-    // deprecated mints contracts
-    mintsManager: Object.fromEntries(
-      chainIds.map((chainId) => [
-        chainId,
-        mintsProxyConfig.manager.deployedAddress as Address,
-      ]),
-    ),
-    mints1155: Object.fromEntries(
-      chainIds.map((chainId) => [
-        chainId,
-        mintsProxyConfig.mints1155.deployedAddress as Address,
-      ]),
-    ),
-  };
+  addAddress({
+    abi: zoraMints1155ABI,
+    addresses,
+    contractName: "ZoraMints1155",
+    configKey: "MINTS_1155",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: sponsoredSparksSpenderABI,
+    addresses,
+    contractName: "SponsoredSparksSpender",
+    configKey: "SPONSORED_SPARKS_SPENDER",
+    storedConfigs,
+  });
+
+  return [
+    ...toConfig(addresses),
+    {
+      abi: iUnwrapAndForwardActionABI,
+      name: "IUnwrapAndForwardAction",
+    },
+    {
+      abi: iSponsoredSparksSpenderActionABI,
+      name: "ISponsoredSparksSpenderAction",
+    },
+  ];
 };
-
-const sparksAddresses = getSparksAddresses();
 
 const getErc20zContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
@@ -327,57 +362,58 @@ const getErc20zContracts = (): ContractConfig[] => {
   ];
 };
 
+const getCommentsContracts = (): ContractConfig[] => {
+  const addresses: Addresses = {};
+
+  const addressesFiles = readdirSync("../comments/addresses");
+
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../comments/addresses/${file}`, "utf-8"),
+      ) as {
+        COMMENTS: Address;
+        CALLER_AND_COMMENTER: Address;
+      },
+    };
+  });
+
+  addAddress({
+    abi: commentsImplABI,
+    addresses,
+    configKey: "COMMENTS",
+    contractName: "Comments",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: [
+      ...callerAndCommenterImplABI,
+      ...extractErrors(zoraTimedSaleStrategyImplABI),
+      ...extractErrors(abis.zoraCreator1155ImplABI),
+      ...extractErrors(commentsImplABI),
+    ],
+    addresses,
+    configKey: "CALLER_AND_COMMENTER",
+    contractName: "CallerAndCommenter",
+    storedConfigs,
+  });
+
+  return toConfig(addresses);
+};
+
 export default defineConfig({
   out: "./generated/wagmi.ts",
   contracts: [
     ...get1155Contracts(),
     ...getErc20zContracts(),
     ...getSharedAddresses(),
-    {
-      abi: zoraSparksManagerImplABI,
-      name: "ZoraSparksManagerImpl",
-      address: sparksAddresses.sparksManager,
-    },
-    {
-      abi: zoraSparks1155ABI,
-      name: "ZoraSparks1155",
-      address: sparksAddresses.sparks1155,
-    },
-    {
-      abi: sparksEthUnwrapperAndCallerABI,
-      name: "MintsEthUnwrapperAndCaller",
-      address: sparksAddresses.mintsEthUnwrapperAndCaller,
-    },
-    {
-      abi: iUnwrapAndForwardActionABI,
-      name: "IUnwrapAndForwardAction",
-    },
-    // legacy mints contracts
-    {
-      abi: zoraMints1155ABI,
-      name: "ZoraMints1155",
-      address: sparksAddresses.mints1155,
-    },
-    {
-      abi: zoraMintsManagerImplABI,
-      name: "ZoraMintsManagerImpl",
-      address: sparksAddresses.mintsManager,
-    },
-    // end legacy mints contract
+    ...getCommentsContracts(),
+    ...getSparksAddresses(),
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",
-    },
-    {
-      abi: sponsoredSparksSpenderABI,
-      name: "SponsoredSparksSpender",
-      address: {
-        [zora.id]: "0x29b75AbA7dc7FE26d90CD96fbB390B26e04C4EB2",
-      },
-    },
-    {
-      abi: iSponsoredSparksSpenderActionABI,
-      name: "ISponsoredSparksSpenderAction",
     },
   ],
 });

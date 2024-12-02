@@ -1,15 +1,52 @@
 {
   "deployedVersions": [
     {
-      "version": "2.7.0",
-      "contractImplAddress": "0x437A762fc2a8f898Aa7a2575Be21c41753DC4797"
+      "version": "2.13.2",
+      "contractImplAddress": "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
+    },
+    {
+      "version": "2.13.2",
+      "contractImplAddress": "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
+    },
+    {
+      "version": "2.12.0",
+      "contractImplAddress": "0xeB29A4e5b84fef428c072debA2444e93c080CE87"
+    },
+    {
+      "version": "2.12.3",
+      "contractImplAddress": "0xE578Df59a7F59b652772a8565Af276460c4FF44d"
     }
   ],
   "targetVersion": {
-    "version": "2.12.3",
-    "contractImplAddress": "0xE578Df59a7F59b652772a8565Af276460c4FF44d"
+    "version": "2.13.2",
+    "contractImplAddress": "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
   },
-  "missingUpgradePaths": [],
-  "missingUpgradePathTargets": [],
-  "missingUpgradePathCalls": []
+  "missingUpgradePaths": [
+    {
+      "from": [
+        {
+          "address": "0xeB29A4e5b84fef428c072debA2444e93c080CE87",
+          "version": "2.12.0"
+        },
+        {
+          "address": "0xE578Df59a7F59b652772a8565Af276460c4FF44d",
+          "version": "2.12.3"
+        }
+      ],
+      "to": {
+        "version": "2.13.2",
+        "address": "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
+      },
+      "upgradeCall": {
+        "address": "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900",
+        "calldata": "0x92b60a4c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000009b24fd165a371042e5ca81e8d066d25cad11ede70000000000000000000000000000000000000000000000000000000000000002000000000000000000000000eb29a4e5b84fef428c072deba2444e93c080ce87000000000000000000000000e578df59a7f59b652772a8565af276460c4ff44d"
+      }
+    }
+  ],
+  "missingUpgradePathTargets": [
+    "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900"
+  ],
+  "missingUpgradePathCalls": [
+    "0x92b60a4c00000000000000000000000000000000000000000000000000000000000000400000000000000000000000009b24fd165a371042e5ca81e8d066d25cad11ede70000000000000000000000000000000000000000000000000000000000000002000000000000000000000000eb29a4e5b84fef428c072deba2444e93c080ce87000000000000000000000000e578df59a7f59b652772a8565af276460c4ff44d"
+  ]
 }

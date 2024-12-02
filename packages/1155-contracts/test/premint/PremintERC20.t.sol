@@ -56,7 +56,7 @@ contract PremintERC20Test is Test {
         erc20Minter.initialize(zora, owner, 5, ethReward);
         protocolRewards = new ProtocolRewards();
 
-        zora1155Impl = address(new ZoraCreator1155Impl(zora, address(new UpgradeGate()), address(protocolRewards)));
+        zora1155Impl = address(new ZoraCreator1155Impl(zora, address(new UpgradeGate()), address(protocolRewards), makeAddr("timedSaleStrategy")));
         factoryImpl = address(
             new ZoraCreator1155FactoryImpl(IZoraCreator1155(zora1155Impl), IMinter1155(address(0)), IMinter1155(address(0)), IMinter1155(address(0)))
         );

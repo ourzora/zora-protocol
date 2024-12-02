@@ -9,8 +9,9 @@ import {SecondarySwap} from "../src/helper/SecondarySwap.sol";
 import {ProxyDeployerScript, DeterministicDeployerAndCaller, DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 import {IZoraTimedSaleStrategy} from "../src/interfaces/IZoraTimedSaleStrategy.sol";
 import {ISwapRouter} from "../src/interfaces/uniswap/ISwapRouter.sol";
+import {DeployerBase} from "./DeployerBase.sol";
 
-contract DeploySwapHelper is ProxyDeployerScript {
+contract DeploySwapHelper is DeployerBase {
     function getConfigAddressPath() internal view returns (string memory) {
         return string.concat("./addresses/", vm.toString(block.chainid), ".json");
     }
@@ -18,6 +19,8 @@ contract DeploySwapHelper is ProxyDeployerScript {
     function run() public {
         DeterministicContractConfig memory minterConfig = readDeterministicContractConfig("zoraTimedSaleStrategy");
         DeterministicContractConfig memory secondarySwap = readDeterministicContractConfig("secondarySwap");
+
+        DeploymentConfig memory config = readDeployment();
 
         vm.startBroadcast();
 
@@ -42,10 +45,12 @@ contract DeploySwapHelper is ProxyDeployerScript {
         bytes memory signature = signDeploymentWithTurnkey(secondarySwap, init, deployer);
 
         // deterministically deploy contract using the signature
-        address deployed = deployer.permitSafeCreate2AndCall(signature, secondarySwap.salt, secondarySwap.creationCode, init, secondarySwap.deployedAddress);
+        config.swapHelper = deployer.permitSafeCreate2AndCall(signature, secondarySwap.salt, secondarySwap.creationCode, init, secondarySwap.deployedAddress);
 
-        console2.log("deployed to ", vm.toString(block.chainid), deployed);
+        console2.log("deployed to ", vm.toString(block.chainid), config.swapHelper);
 
         vm.stopBroadcast();
+
+        saveDeployment(config);
     }
 }

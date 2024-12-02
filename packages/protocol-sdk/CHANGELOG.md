@@ -1,5 +1,61 @@
 # @zoralabs/protocol-sdk
 
+## 0.11.9
+
+### Patch Changes
+
+- 9d5d1638: When minting + commenting, and using the timed sale strategy, protocol sdk will call the CallerAndCommenter contract
+- 088ec6fb: When buying on secondary, you can now add a comment, which will call the CallerAndCommenter's buyOnSecondaryAndComment function.
+- Updated dependencies [4928687d]
+  - @zoralabs/protocol-deployments@0.3.9
+
+## 0.11.8
+
+### Patch Changes
+
+- 330f1131: Fix royalties queries to filter by erc20z that have secondary activated
+
+## 0.11.7
+
+### Patch Changes
+
+- 041871d7: Fix royalties query for secondary tokens to query subgraph for royaltyRecipient instead of user.
+
+## 0.11.6
+
+### Patch Changes
+
+- Updated dependencies [ad707434]
+- Updated dependencies [2e68a87c]
+- Updated dependencies [17cc9821]
+  - @zoralabs/protocol-deployments@0.3.8
+
+## 0.11.5
+
+### Patch Changes
+
+- 85d09fa5: - Adds new fields to `SecondaryInfo` type to expose more information about the secondary market configuration:
+
+  - `name`: The ERC20Z token name
+  - `symbol`: The ERC20Z token symbol
+  - `saleStart`: Earliest time tokens can be minted
+  - `marketCountdown`: Time after minimum mints reached until secondary market launches
+  - `minimumMintsForCountdown`: Minimum mints required to start countdown
+  - `mintCount`: Total number of tokens minted so far
+  - Deprecates `minimumMarketEth` parameter in favor of `minimumMintsForCountdown` when creating tokens:
+    - `minimumMintsForCountdown` directly specifies minimum number of mints (defaults to `1111`)
+    - `minimumMarketEth` is still supported but calculated internally as `minimumMintsForCountdown * 0.0000111 ETH`
+
+- Updated dependencies [c08ec3b3]
+  - @zoralabs/protocol-deployments@0.3.7
+
+## 0.11.4
+
+### Patch Changes
+
+- Updated dependencies [d6aa9a00]
+  - @zoralabs/protocol-deployments@0.3.6
+
 ## 0.11.3
 
 ### Patch Changes

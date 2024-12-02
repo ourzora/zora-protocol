@@ -41,13 +41,14 @@ library ZoraDeployerUtils {
         address upgradeGateAddress,
         address mintFeeRecipient,
         address protocolRewards,
+        address timedSaleStrategy,
         IMinter1155 merkleMinter,
         IMinter1155 redeemMinterFactory,
         IMinter1155 fixedPriceMinter
     ) internal returns (address factoryImplAddress, address contract1155ImplAddress, string memory contract1155ImplVersion) {
         ensureValidUpgradeGate(upgradeGateAddress);
 
-        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeRecipient, upgradeGateAddress, protocolRewards);
+        ZoraCreator1155Impl zoraCreator1155Impl = new ZoraCreator1155Impl(mintFeeRecipient, upgradeGateAddress, protocolRewards, timedSaleStrategy);
 
         contract1155ImplVersion = zoraCreator1155Impl.contractVersion();
 
@@ -161,19 +162,4 @@ library ZoraDeployerUtils {
             );
     }
 
-    function getUpgradeCalldata(address targetImpl) internal pure returns (bytes memory upgradeCalldata) {
-        // simulate upgrade call
-        upgradeCalldata = abi.encodeWithSelector(UUPSUpgradeable.upgradeTo.selector, targetImpl);
-    }
-
-    function simulateUpgrade(address targetProxy, address targetImpl) internal returns (bytes memory upgradeCalldata) {
-        // console log update information
-
-        upgradeCalldata = getUpgradeCalldata(targetImpl);
-
-        // upgrade the factory proxy to the new implementation
-        (bool success, ) = targetProxy.call(upgradeCalldata);
-
-        require(success, "upgrade failed");
-    }
 }

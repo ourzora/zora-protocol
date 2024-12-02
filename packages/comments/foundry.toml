@@ -1,0 +1,24 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["node_modules"]
+via_ir = true
+solc_version = '0.8.23'
+optimizer = true
+optimizer_runs = 1_000_000
+fs_permissions = [
+  { access = "readwrite", path = "./addresses" },
+  { access = "read", path = "./package.json" },
+  { access = "readwrite", path = "./deterministicConfig" },
+  { access = "read", path = "../shared-contracts/chainConfigs" },
+  { access = "readwrite", path = "../shared-contracts/deterministicConfig" }
+]
+
+[profile.dev]
+optimizer = false
+optimizer_runs = 0
+via_ir = true
+
+[rpc_endpoints]
+zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
+zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"

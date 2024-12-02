@@ -4,7 +4,8 @@ import { Address } from "viem";
 export type RewardsToken = {
   salesStrategies: [
     {
-      zoraTimedMinter: {
+      zoraTimedMinter?: {
+        secondaryActivated: boolean;
         erc20Z: {
           id: Address;
         };
@@ -26,13 +27,14 @@ export function buildCreatorERC20zs({
     query: `
     query ($address: Bytes!) {
       zoraCreateTokens(
-        where: { royalties_: { user: $address }, salesStrategies_: { type: "ZORA_TIMED" } }
+        where: { royalties_: { royaltyRecipient: $address }, salesStrategies_: { type: "ZORA_TIMED" } }
       ) {
         royalties {
           user
         }
         salesStrategies {
           zoraTimedMinter {
+            secondaryActivated
             erc20Z {
               id
             }

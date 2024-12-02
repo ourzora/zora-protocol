@@ -55,7 +55,7 @@ contract ZoraCreator1155PreminterTest is Test {
     ZoraCreator1155FactoryImpl factory;
 
     ICreatorRoyaltiesControl.RoyaltyConfiguration internal defaultRoyaltyConfig;
-    uint256 internal mintFeeAmount;
+    uint256 internal mintFeeAmount = 0.000111 ether;
 
     // setup contract config
     uint256 internal creatorPrivateKey;
@@ -82,9 +82,6 @@ contract ZoraCreator1155PreminterTest is Test {
         factory = ZoraCreator1155FactoryImpl(address(factoryProxy));
 
         preminter = new ZoraCreator1155PremintExecutorImpl(factory);
-
-        // get default mint fee from preminter by passing a noop contract address.
-        mintFeeAmount = preminter.mintFee(address(0));
 
         defaultMintArguments = MintArguments({mintRecipient: premintExecutor, mintComment: "blah", mintRewardsRecipients: new address[](0)});
     }

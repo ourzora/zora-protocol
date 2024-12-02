@@ -36,11 +36,13 @@ export async function getMint({
   mintGetter,
   premintGetter,
   publicClient,
+  chainId,
 }: {
   params: GetMintParameters;
   mintGetter: IOnchainMintGetter;
   premintGetter: IPremintGetter;
   publicClient: IPublicClient;
+  chainId: number;
 }): Promise<MintableReturn> {
   const { tokenContract } = params;
   if (isOnChainMint(params)) {
@@ -53,7 +55,7 @@ export async function getMint({
       blockTime: blockTime,
     });
 
-    return toMintableReturn(result);
+    return toMintableReturn(result, chainId);
   }
 
   const premint = await premintGetter.get({
@@ -103,17 +105,19 @@ export async function getMintsOfContract({
   mintGetter,
   premintGetter,
   publicClient,
+  chainId,
 }: {
   params: GetMintsOfContractParameters;
   mintGetter: IOnchainMintGetter;
   premintGetter: IPremintGetter;
   publicClient: IPublicClient;
+  chainId: number;
 }): Promise<{ contract?: ContractInfo; tokens: MintableReturn[] }> {
   const onchainMints = (
     await mintGetter.getContractMintable({
       tokenAddress: params.tokenContract,
     })
-  ).map(toMintableReturn);
+  ).map((result) => toMintableReturn(result, chainId));
 
   const offchainMints = await getPremintsOfContractMintable({
     mintGetter,
@@ -270,7 +274,7 @@ function parsePremint({
 }
 
 export const makeOnchainPrepareMint =
-  (result: OnchainSalesConfigAndTokenInfo): PrepareMint =>
+  (result: OnchainSalesConfigAndTokenInfo, chainId: number): PrepareMint =>
   (params: MintParametersBase) => {
     if (!result.salesConfig) {
       throw new Error("No valid sales config found for token");
@@ -280,6 +284,7 @@ export const makeOnchainPrepareMint =
       parameters: makeOnchainMintCall({
         token: result as Concrete<OnchainSalesConfigAndTokenInfo>,
         mintParams: params,
+        chainId,
       }),
       erc20Approval: getRequiredErc20Approvals(params, result.salesConfig),
       costs: parseMintCosts({
@@ -290,7 +295,10 @@ export const makeOnchainPrepareMint =
     };
   };
 
-function toMintableReturn(result: GetMintableReturn): MintableReturn {
+function toMintableReturn(
+  result: GetMintableReturn,
+  chainId: number,
+): MintableReturn {
   const primaryMintActive = result.primaryMintActive;
   if (!primaryMintActive) {
     return {
@@ -306,7 +314,10 @@ function toMintableReturn(result: GetMintableReturn): MintableReturn {
     primaryMintActive,
     primaryMintEnd: result.primaryMintEnd,
     secondaryMarketActive: result.secondaryMarketActive,
-    prepareMint: makeOnchainPrepareMint(result.salesConfigAndTokenInfo),
+    prepareMint: makeOnchainPrepareMint(
+      result.salesConfigAndTokenInfo,
+      chainId,
+    ),
   };
 }
 

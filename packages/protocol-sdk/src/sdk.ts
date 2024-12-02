@@ -116,6 +116,7 @@ export function createCollectorClient(
     publicClient: params.publicClient,
     premintGetter: premintGetterToUse,
     mintGetter: mintGetterToUse,
+    chainId: params.chainId,
   });
   const secondaryClient = new SecondaryClient({
     publicClient: params.publicClient,

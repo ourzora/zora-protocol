@@ -12,7 +12,7 @@ import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IVersionedNamedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedNamedContract.sol";
-import {ISponsoredSparksSpender, SponsoredMintBatch} from "../interfaces/ISponsoredSparksSpender.sol";
+import {ISponsoredSparksSpender, SponsoredMintBatch, SponsoredSpend} from "../interfaces/ISponsoredSparksSpender.sol";
 
 /// @notice Calling interface for the 1155 transfer action to this contract
 interface ISponsoredSparksSpenderAction {
@@ -44,12 +44,21 @@ contract SponsoredSparksSpender is EIP712, ERC1155TransferRecipientConstants, IS
             "SponsoredMintBatch(address verifier,address from,address destination,bytes data,uint256 expectedRedeemAmount,uint256 totalAmount,uint256[] ids,uint256[] quantities,uint256 nonce,uint256 deadline)"
         );
 
+    /// @notice Typehash for generic Sponsored Spend
+    bytes32 public constant SPONSORED_SPEND_TYPEHASH =
+        keccak256(
+            "SponsoredSpend(address verifier,address from,address destination,bytes data,uint256 expectedInputAmount,uint256 totalAmount,uint256 nonce,uint256 deadline)"
+        );
+
     /// @notice Used nonces from signatures
     mapping(address => mapping(uint256 => bool)) public usedNonces;
 
     /// @notice Allowed verifiers for spending signatures
     mapping(address => bool) public allowedVerifiers;
 
+    /// @param _zoraSparks1155 Zora Sparks address, can be set to 0x0 for chains that do not have sparks
+    /// @param fundsManager Admin for this contract
+    /// @param defaultVerifiers Default verifier addresses
     constructor(IZoraSparks1155 _zoraSparks1155, address fundsManager, address[] memory defaultVerifiers) EIP712(NAME, VERSION) Ownable(fundsManager) {
         zoraSparks1155 = _zoraSparks1155;
 
@@ -86,7 +95,7 @@ contract SponsoredSparksSpender is EIP712, ERC1155TransferRecipientConstants, IS
 
     /// @notice Informational version getter
     function contractVersion() external pure returns (string memory) {
-        return "1.0.0";
+        return "2.0.0";
     }
 
     /** Admin Functions */
@@ -143,6 +152,24 @@ contract SponsoredSparksSpender is EIP712, ERC1155TransferRecipientConstants, IS
         return _hashTypedDataV4(structHash);
     }
 
+    function hashSponsoredSpend(SponsoredSpend memory sponsoredSpend) public view returns (bytes32) {
+        bytes32 structHash = keccak256(
+            abi.encode(
+                SPONSORED_SPEND_TYPEHASH,
+                sponsoredSpend.verifier,
+                sponsoredSpend.from,
+                sponsoredSpend.destination,
+                keccak256(sponsoredSpend.data),
+                sponsoredSpend.expectedInputAmount,
+                sponsoredSpend.totalAmount,
+                sponsoredSpend.nonce,
+                sponsoredSpend.deadline
+            )
+        );
+
+        return _hashTypedDataV4(structHash);
+    }
+
     /** ERC1155 Callback Functions */
 
     function onERC1155Received(address, address from, uint256 id, uint256 value, bytes calldata data) external onlySparks returns (bytes4) {
@@ -173,6 +200,50 @@ contract SponsoredSparksSpender is EIP712, ERC1155TransferRecipientConstants, IS
         // Check verifier
         if (!allowedVerifiers[sponsoredMint.verifier]) {
             revert VerifierNotAllowed(sponsoredMint.verifier);
+        }
+    }
+
+    function sponsoredExecute(SponsoredSpend memory sponsoredSpend, bytes memory signature) external payable {
+        if (usedNonces[sponsoredSpend.verifier][sponsoredSpend.nonce]) {
+            revert NonceUsed();
+        }
+
+        usedNonces[sponsoredSpend.verifier][sponsoredSpend.nonce] = true;
+
+        if (sponsoredSpend.deadline < block.timestamp) {
+            revert SignatureExpired();
+        }
+
+        if (!allowedVerifiers[sponsoredSpend.verifier]) {
+            revert VerifierNotAllowed(sponsoredSpend.verifier);
+        }
+
+        if (msg.sender != sponsoredSpend.from) {
+            revert SenderNotAllowedInSignature();
+        }
+
+        if (!SignatureChecker.isValidSignatureNow(sponsoredSpend.verifier, hashSponsoredSpend(sponsoredSpend), signature)) {
+            revert InvalidSignature();
+        }
+
+        // Check amount received from the unwrap
+        if (msg.value != sponsoredSpend.expectedInputAmount) {
+            revert RedeemAmountIsIncorrect(sponsoredSpend.expectedInputAmount, transientReceivedAmount);
+        }
+
+        uint256 sponsorAmount = sponsoredSpend.totalAmount - sponsoredSpend.expectedInputAmount;
+
+        if (sponsorAmount > address(this).balance) {
+            revert NoMoreFundsToSponsor();
+        }
+
+        // Event for indexing
+        emit SentSponsoredCallFromMintBalances(sponsoredSpend.verifier, sponsoredSpend.from, sponsorAmount, address(this).balance);
+
+        // Send sponsored call
+        (bool success, bytes memory callResponseData) = sponsoredSpend.destination.call{value: sponsoredSpend.totalAmount}(sponsoredSpend.data);
+        if (!success) {
+            revert CallFailed(callResponseData);
         }
     }
 

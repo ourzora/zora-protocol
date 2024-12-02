@@ -1,5 +1,24 @@
 # @zoralabs/zora-1155-contracts
 
+## 2.13.2
+
+### Patch Changes
+
+- 1fd92cc8: Add contractName field.
+
+## 2.13.1
+
+### Patch Changes
+
+- ad707434: Updated the 1155 Implementation reduceSupply function to be gated to the `TimedSaleStrategy` constructor argument
+  to ensure markets are launched when desired.
+
+## 2.13.0
+
+### Minor Changes
+
+- 737fbef9: Mint fee on the 1155 contract changed to 0.000111 eth
+
 ## 2.12.4
 
 ### Patch Changes

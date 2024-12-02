@@ -4,6 +4,8 @@ import {
   zoraCreator1155ImplABI,
   safeTransferSwapAbiParameters,
   secondarySwapABI,
+  callerAndCommenterABI,
+  callerAndCommenterAddress,
 } from "@zoralabs/protocol-deployments";
 import { makeContractParameters, PublicClient } from "src/utils";
 import { getUniswapQuote } from "./uniswap/uniswapQuote";
@@ -15,6 +17,7 @@ import {
   QuotePrice,
   BuyWithSlippageInput,
   SellWithSlippageInput,
+  SecondaryInfo,
 } from "./types";
 
 // uniswap's auto slippage for L2s is 0.5% -> 0.005
@@ -26,6 +29,8 @@ const ERROR_INSUFFICIENT_POOL_SUPPLY = "Insufficient pool supply";
 const ERROR_SECONDARY_NOT_CONFIGURED =
   "Secondary not configured for given contract and token";
 export const ERROR_SECONDARY_NOT_STARTED = "Secondary market has not started";
+export const ERROR_RECIPIENT_MISMATCH =
+  "Recipient must be the same as the caller if there is a comment";
 
 // Helper function to create error objects
 function makeError(errorMessage: string) {
@@ -45,6 +50,8 @@ type Call =
     };
 
 async function makeBuy({
+  contract,
+  tokenId,
   erc20z,
   poolBalance,
   amount,
@@ -54,8 +61,11 @@ async function makeBuy({
   chainId,
   slippage,
   publicClient,
+  comment,
 }: {
   erc20z: Address;
+  contract: Address;
+  tokenId: bigint;
   poolBalance: { erc20z: bigint };
   amount: bigint;
   quantity: bigint;
@@ -63,27 +73,144 @@ async function makeBuy({
   recipient?: Address;
   chainId: number;
   slippage: number;
+  comment: string | undefined;
   publicClient: PublicClient;
 }): Promise<Call> {
   const costWithSlippage = calculateSlippageUp(amount, slippage);
-
-  // we cannot buy all the available tokens in a pool (the quote fails if we try doing that)
-  const availableToBuy = poolBalance.erc20z / BigInt(1e18) - 1n;
-
   const accountAddress = addressOrAccountAddress(account);
 
+  const validationResult = await validateBuyConditions({
+    poolBalance,
+    quantity,
+    costWithSlippage,
+    accountAddress,
+    publicClient,
+  });
+
+  if (validationResult.error) {
+    return makeError(validationResult.error);
+  }
+
+  if (comment && comment !== "") {
+    return handleBuyWithComment({
+      accountAddress,
+      recipient,
+      chainId,
+      quantity,
+      contract,
+      tokenId,
+      costWithSlippage,
+      comment,
+      account,
+    });
+  }
+
+  return handleBuyWithoutComment({
+    erc20z,
+    quantity,
+    recipient,
+    accountAddress,
+    costWithSlippage,
+    chainId,
+    account,
+  });
+}
+
+async function validateBuyConditions({
+  poolBalance,
+  quantity,
+  costWithSlippage,
+  accountAddress,
+  publicClient,
+}: {
+  poolBalance: { erc20z: bigint };
+  quantity: bigint;
+  costWithSlippage: bigint;
+  accountAddress: Address;
+  publicClient: PublicClient;
+}): Promise<{ error?: string }> {
+  const availableToBuy = poolBalance.erc20z / BigInt(1e18) - 1n;
   const availableToSpend = await publicClient.getBalance({
     address: accountAddress,
   });
 
   if (costWithSlippage > availableToSpend) {
-    return makeError(ERROR_INSUFFICIENT_WALLET_FUNDS);
+    return { error: ERROR_INSUFFICIENT_WALLET_FUNDS };
   }
 
   if (availableToBuy < BigInt(quantity)) {
-    return makeError(ERROR_INSUFFICIENT_POOL_SUPPLY);
+    return { error: ERROR_INSUFFICIENT_POOL_SUPPLY };
   }
 
+  return {};
+}
+
+function handleBuyWithComment({
+  accountAddress,
+  recipient,
+  chainId,
+  quantity,
+  contract,
+  tokenId,
+  costWithSlippage,
+  comment,
+  account,
+}: {
+  accountAddress: Address;
+  recipient?: Address;
+  chainId: number;
+  quantity: bigint;
+  contract: Address;
+  tokenId: bigint;
+  costWithSlippage: bigint;
+  comment: string;
+  account: Address | Account;
+}): Call {
+  if (recipient && recipient !== accountAddress) {
+    return makeError(ERROR_RECIPIENT_MISMATCH);
+  }
+
+  return {
+    parameters: makeContractParameters({
+      abi: callerAndCommenterABI,
+      address:
+        callerAndCommenterAddress[
+          chainId as keyof typeof callerAndCommenterAddress
+        ],
+      functionName: "buyOnSecondaryAndComment",
+      args: [
+        accountAddress,
+        quantity,
+        contract,
+        tokenId,
+        accountAddress,
+        costWithSlippage,
+        0n,
+        comment,
+      ],
+      account,
+      value: costWithSlippage,
+    }),
+  };
+}
+
+function handleBuyWithoutComment({
+  erc20z,
+  quantity,
+  recipient,
+  accountAddress,
+  costWithSlippage,
+  chainId,
+  account,
+}: {
+  erc20z: Address;
+  quantity: bigint;
+  recipient?: Address;
+  accountAddress: Address;
+  costWithSlippage: bigint;
+  chainId: number;
+  account: Address | Account;
+}): Call {
   return {
     parameters: makeContractParameters({
       abi: secondarySwapABI,
@@ -98,7 +225,7 @@ async function makeBuy({
         costWithSlippage,
         0n,
       ],
-      account: account,
+      account,
       value: costWithSlippage,
     }),
   };
@@ -124,6 +251,7 @@ export async function buyWithSlippage({
   account,
   slippage = UNISWAP_SLIPPAGE,
   recipient,
+  comment,
 }: BuyWithSlippageInput & {
   chainId: number;
   publicClient: PublicClient;
@@ -158,6 +286,8 @@ export async function buyWithSlippage({
 
   const call = await makeBuy({
     erc20z,
+    contract,
+    tokenId,
     poolBalance,
     amount,
     quantity,
@@ -165,6 +295,7 @@ export async function buyWithSlippage({
     recipient,
     chainId,
     slippage,
+    comment,
     publicClient,
   });
 
@@ -331,7 +462,7 @@ export class SecondaryClient {
   }: {
     contract: Address;
     tokenId: bigint;
-  }) {
+  }): Promise<SecondaryInfo | undefined> {
     return getSecondaryInfo({
       contract,
       tokenId,

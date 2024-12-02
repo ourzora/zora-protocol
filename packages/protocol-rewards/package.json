@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-rewards",
-  "version": "1.2.4",
+  "version": "1.2.5",
   "repository": "https://github.com/ourzora/zora-protocol.git",
   "license": "MIT",
   "files": [
@@ -10,7 +10,7 @@
     "deterministicConfig.json"
   ],
   "scripts": {
-    "build:sizes": "forge build --sizes",
+    "build:sizes": "forge build --sizes --skip test --skip script",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test": "forge test",
     "build:contracts": "forge build --extra-output-files abi",

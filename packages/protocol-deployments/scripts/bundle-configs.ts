@@ -111,7 +111,7 @@ async function bundleChainConfigs() {
         configType: "chainConfigs",
       },
       {
-        folder: "../sparks-deployments/addresses",
+        folder: "../sparks/addresses",
         configType: "addresses",
       },
     ],

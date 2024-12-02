@@ -7,6 +7,8 @@ import {
 } from "./generated/wagmi";
 import { Address } from "viem";
 
+import { commentsABI, callerAndCommenterABI } from "./generated/wagmi";
+
 export enum PremintConfigVersion {
   V1 = "1",
   V2 = "2",
@@ -119,5 +121,71 @@ export type SponsoredSparksBatch = AbiParametersToPrimitiveTypes<
   ExtractAbiFunction<
     typeof sponsoredSparksSpenderABI,
     "hashSponsoredMint"
+  >["inputs"]
+>[0];
+
+export type CommentIdentifier = AbiParametersToPrimitiveTypes<
+  ExtractAbiFunction<typeof commentsABI, "hashCommentIdentifier">["inputs"]
+>[0];
+
+export const emptyCommentIdentifier = (): CommentIdentifier => {
+  const zeroAddress = "0x0000000000000000000000000000000000000000";
+  const zeroHash =
+    "0x0000000000000000000000000000000000000000000000000000000000000000";
+  return {
+    commenter: zeroAddress,
+    contractAddress: zeroAddress,
+    tokenId: 0n,
+    nonce: zeroHash,
+  };
+};
+
+/**
+ * The PermitComment type represents the data structure for a permit comment,
+ * for cross-chain commenting, where a user can sign a comment message on one chain,
+ * which can then be submitted by anyone on the destination chain to execute the comment action.
+ *
+ * The permit includes details such as the comment text, the commenter's address,
+ * the comment being replied to, and chain IDs for the source and destination chains.
+ */
+export type PermitComment = AbiParametersToPrimitiveTypes<
+  ExtractAbiFunction<typeof commentsABI, "hashPermitComment">["inputs"]
+>[0];
+
+/**
+ * The PermitSparkComment type represents the data structure for a permit spark comment,
+ * for cross-chain sparking (liking with value) of comments, where a user can sign a spark comment message on one chain,
+ * which can then be submitted by anyone on the destination chain to execute the spark action.
+ *
+ * The permit includes details such as the comment to be sparked, the sparker's address,
+ * the quantity of sparks, and chain IDs for the source and destination chains.
+ */
+export type PermitSparkComment = AbiParametersToPrimitiveTypes<
+  ExtractAbiFunction<typeof commentsABI, "hashPermitSparkComment">["inputs"]
+>[0];
+
+/**
+ * The PermitTimedSaleMintAndComment type represents the data structure for a permit timed sale mint and comment,
+ * where a user can sign a message to mint during a timed sale and leave a comment in a single transaction.
+ * This can be executed on the destination chain by anyone.
+ *
+ * The permit includes details such as the minting parameters, comment text, and chain IDs for the source and destination chains.
+ */
+export type PermitMintAndComment = AbiParametersToPrimitiveTypes<
+  ExtractAbiFunction<
+    typeof callerAndCommenterABI,
+    "hashPermitTimedSaleMintAndComment"
+  >["inputs"]
+>[0];
+
+/**
+ * The PermitBuyOnSecondaryAndComment type represents the data structure for a permit buy on secondary market and comment,
+ * where a user can sign a message to buy on secondary market and leave a comment in a single transaction.
+ * This can be executed on the destination chain by anyone.
+ */
+export type PermitBuyOnSecondaryAndComment = AbiParametersToPrimitiveTypes<
+  ExtractAbiFunction<
+    typeof callerAndCommenterABI,
+    "hashPermitBuyOnSecondaryAndComment"
   >["inputs"]
 >[0];

@@ -7,8 +7,11 @@ import {
   Hex,
   PublicClient,
   encodeAbiParameters,
+  keccak256,
+  toBytes,
   parseAbiParameters,
 } from "viem";
+import { NewContractParams } from "./create/types";
 import { expect } from "vitest";
 
 export const waitForSuccess = async (hash: Hex, publicClient: PublicClient) => {
@@ -17,6 +20,8 @@ export const waitForSuccess = async (hash: Hex, publicClient: PublicClient) => {
   });
 
   expect(receipt.status).toBe("success");
+
+  return receipt;
 };
 
 export const getFixedPricedMinter = async ({
@@ -37,3 +42,17 @@ export const fixedPriceMinterMinterArguments = ({
 }: {
   mintRecipient: Address;
 }) => encodeAbiParameters(parseAbiParameters("address"), [mintRecipient]);
+
+const demoContractMetadataURI = "ipfs://DUMMY/contract.json";
+
+export function randomNewContract(): NewContractParams {
+  return {
+    name: `testContract-${Math.round(Math.random() * 1_000_000)}`,
+    uri: demoContractMetadataURI,
+  };
+}
+
+export const randomNonce = () =>
+  keccak256(toBytes(Math.round(Math.random() * 1000)));
+export const thirtySecondsFromNow = () =>
+  BigInt(Math.round(new Date().getTime() / 1000)) + 30n;

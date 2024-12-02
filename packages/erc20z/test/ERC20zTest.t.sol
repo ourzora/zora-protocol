@@ -341,6 +341,14 @@ contract ERC20zTest is BaseTest {
         vm.stopPrank();
     }
 
+    function testReduceSupplyWrongAddress() public {
+        setUpERC20z();
+        setUpTimedSale(uint64(block.timestamp));
+
+        vm.expectRevert();
+        collection.reduceSupply(tokenId, 1000000000000);
+    }
+
     function testERC20zConvertFuzz(uint256 tokens) public {
         vm.assume(tokens > 0 && tokens < 100_000_000);
 

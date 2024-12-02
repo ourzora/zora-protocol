@@ -16,8 +16,20 @@ struct SponsoredMintBatch {
     uint256 deadline;
 }
 
+struct SponsoredSpend {
+    address verifier;
+    address from;
+    address payable destination;
+    bytes data;
+    uint256 expectedInputAmount;
+    uint256 totalAmount;
+    uint256 nonce;
+    uint256 deadline;
+}
+
 /// @notice External interface for this function
 interface ISponsoredSparksSpender {
+    error NoMoreFundsToSponsor();
     error NotZoraSparks1155();
     error NotExpectingReceive();
     error ERC20NotSupported(uint256 tokenId);
@@ -35,6 +47,7 @@ interface ISponsoredSparksSpender {
     error LengthMismatch();
     error SignatureExpired();
     error InvalidSignature();
+    error SenderNotAllowedInSignature();
 
     event ContractFunded(address indexed sender, uint256 indexed amount);
     event SetVerifierStatus(address indexed verifier, bool indexed enabled);
@@ -42,6 +55,16 @@ interface ISponsoredSparksSpender {
 
     /// @notice Hashes the signature for a sponsored mint sponsorship
     function hashSponsoredMint(SponsoredMintBatch calldata sponsorship) external view returns (bytes32);
+
+    /// @notice Hashes the signature for a sponsored spend operation
+    /// @param sponsoredSpend Sponsored spend operation to hash
+    /// @return the hash of the sponsoredSpend operation
+    function hashSponsoredSpend(SponsoredSpend memory sponsoredSpend) external view returns (bytes32);
+
+    /// @notice Sponsored ETH operation execution function, this is payable to provide the base value and the rest is provided via a the signed amount
+    /// @param sponsoredSpend parameters for a sponsored spend operation
+    /// @param signature signature bytes from the signed sponsored spend
+    function sponsoredExecute(SponsoredSpend memory sponsoredSpend, bytes memory signature) external payable;
 
     /// @notice Withdraws a given amount from the contract's gas tank
     /// @param amount amount to withdraw, set to full amount if 0

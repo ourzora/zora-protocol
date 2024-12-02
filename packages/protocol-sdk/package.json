@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/protocol-sdk",
-  "version": "0.11.3",
+  "version": "0.11.9",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "type": "module",
@@ -25,11 +25,11 @@
     "lint": "prettier --check 'src/**/*.ts' 'test-integration/**/*.ts'"
   },
   "dependencies": {
-    "@zoralabs/protocol-deployments": "workspace:^",
-    "abitype": "^1.0.2"
+    "@zoralabs/protocol-deployments": "workspace:^"
   },
   "peerDependencies": {
-    "viem": "^2.21.21"
+    "viem": "^2.21.21",
+    "abitype": "^1.0.2"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",

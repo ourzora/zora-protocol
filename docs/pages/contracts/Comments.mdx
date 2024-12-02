@@ -1,0 +1,481 @@
+# Comments
+
+The Comments contract allows for comments to be made on any Zora 1155 token. Only 1155 token owners or holders can comment on that token. 
+If the commenter is an owner, they must pay a Spark to comment. If the commenter is a creator, they can comment for free.  
+
+Comments can be Sparked by anyone, meaning that the Sparker must send a Spark as a form of liking a comment.  
+
+## Contracts
+
+The protocol consists of a single upgradeable contract called `Comments`, that is deployed deterministically to the same address on all chains. There is also a helper contract called `CallerAndCommenter` that enables minting and commenting in a single transaction.
+
+| Contract | Deterministic Address |
+| ----- | ------- |
+| Comments | [0x7777777C2B3132e03a65721a41745C07170a5877](https://explorer.zora.energy/address/0x7777777C2B3132e03a65721a41745C07170a5877) |
+| CallerAndCommenter | [0x77777775C5074b74540d9cC63Dd840A8c692B4B5](https://explorer.zora.energy/address/0x77777775C5074b74540d9cC63Dd840A8c692B4B5) |
+
+## Spark value distribution
+
+When a commenter pays a Spark to comment on a token, the Spark value (less a protocol fee) is sent to the token's creator reward recipient.
+When a commenter pays a Spark to reply to a comment, the Spark value (less a protocol fee) is sent to the original commenter as a reward.
+When a Spark is used to Spark a comment, the Spark value (less a protocol fee) is sent to the commenter.
+
+For each Spark value transaction, a 30% protocol fee is taken. If a referrer is specified, 20% goes to the referrer and 10% goes to Zora. Otherwise, 30% goes to Zora. A referrer can be a third-party developer that surfaces the ability to comment on a site or app,
+and the referrer address is specified as an argument when commenting or Sparking.
+
+## Building on comments and earning referral rewards
+
+Developers can integrate the Comments contract into on their platform from day one and earn referral rewards when users when users spark a comment on their platform. 
+
+When a referral address is specified when minting or sparking, 20% of the total Spark value is paid out to the referrer.
+
+To earn referral rewards, developers should [specify a referrer address in the function calls](#specifying-a-referrer)
+
+## What is a Spark?
+
+[A Spark is a fundamental concept in the Zora ecosystem.](https://support.zora.co/en/articles/1829633)
+It serves as a unit of value and can be used to pay for mints and other interactions:
+
+- Sparks are [1155 tokens on the Zora network.](https://explorer.zora.energy/address/0x7777777b3eA6C126942BB14dD5C3C11D365C385D) They can be purchased with credit/debit cards or ETH, primarily used to cover minting fees for NFTs on Zora.
+- **Each Spark has an immutable value of 0.000001 ETH**
+- In the context of the Comments contract, Sparks are used to pay for comments (for non-creators) and to "like" or endorse comments made by others.
+- Sparks can be unwrapped by their owner, allowing the underlying ETH value to be used for other transactions.
+
+## Backfilled legacy comments
+
+Before the Comments contract's deployment, comments were made on other contracts that emitted `MintComment` events. To enable users to reply to or Spark these older comments, we backfill the new Comments contract with legacy comment data. This process:
+
+1. Saves onchain unique IDs for the legacy comments.
+2. Allows users to interact with pre-existing comments since they have an onchain ID.
+
+## Usage
+
+### Commenting 
+
+Commenting can be done by calling the `comment` function, paying with the equivalent value in Sparks:
+```solidity
+interface IComments {
+  struct CommentIdentifier {
+      address commenter;
+      address contractAddress;
+      uint256 tokenId;
+      bytes32 nonce;
+  }
+
+  /// @notice Creates a new comment. Equivalent Sparks value in ETH must be sent with the transaction. Must be a holder or creator of the referenced 1155 token.
+  /// If not the owner, must send at least 1 Spark. Sparks are transferred from the commenter to the Sparks recipient (either the creator when there is no replyTo, or the replyTo commenter).
+  /// @param contractAddress The address of the contract
+  /// @param tokenId The token ID
+  /// @param commenter The address of the commenter
+  /// @param text The text content of the comment
+  /// @param replyTo The identifier of the comment being replied to (if any)
+  /// @return commentIdentifier The identifier of the created comment, including the nonce
+  function comment(
+    address commenter,
+    address contractAddress,
+    uint256 tokenId,
+    string calldata text,
+    CommentIdentifier calldata replyTo,
+    address referrer
+  ) external payable returns (CommentIdentifier memory commentIdentifier) {
+  }
+}
+```
+
+Example usage with `@zoralabs/protocol-deployments` and `viem`:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/comment.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+
+:::
+
+Note: The `getSparksValue` function is used to calculate the equivalent ETH value for a given number of sparks. It's implementation is not shown here but is crucial for determining the correct payment amount.
+
+### Replying to a comment
+
+When a comment is created, it is associated with a unique identifier. This identifier is used to reply to the comment.
+The unique identifier contains an autoincrementing nonce generated by the contract that is used to ensure that the identifier is unique
+for a given commenter, contract, and tokenId. 
+
+When replying to a comment, the replyTo argument is the identifier of the comment being replied to.
+
+```solidity
+interface IComments {
+  struct CommentIdentifier {
+      address commenter;
+      address contractAddress;
+      uint256 tokenId;
+      bytes32 nonce;
+  }
+
+  function comment(
+    address commenter,
+    address contractAddress,
+    uint256 tokenId,
+    string calldata text,
+    // this identifies the comment that we are replying to 
+    CommentIdentifier calldata replyTo, // [!code focus]
+    address referrer
+  ) external payable returns (CommentIdentifier memory commentIdentifier) {
+  }
+}
+```
+
+Example usage with `@zoralabs/protocol-deployments` and `viem`:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: comment.ts
+// [!include ~/snippets/contracts/comments/comment.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/reply.ts]
+```
+
+```ts twoslash [comment.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: comment.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/comment.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+:::
+
+### Sparking a comment
+
+Sparking a comment is done by calling the `sparkComment` function, paying with the equivalent value in Sparks.
+Sparking a comment is similar to liking a comment, except it is liked with the value of Sparks attached. The Spark value gets sent to the commenter, with a fee taken out.
+
+```solidity
+interface IComments {
+  struct CommentIdentifier {
+      address commenter;
+      address contractAddress;
+      uint256 tokenId;
+      // nonce is a unique value that is generated when a comment is created. It is used to ensure that the comment identifier is unique
+      // for a given commenter, contract, and tokenId.
+      bytes32 nonce;
+  }
+
+  /// @notice Sparks a comment. Equivalent Sparks value in ETH to sparksQuantity must be sent with the transaction. Sparking a comment is
+  /// similar to liking it, except it is liked with the value of Sparks attached. The Spark value gets sent to the commenter, with a fee taken out.
+  /// @param commentIdentifier The identifier of the comment to Spark
+  /// @param sparksQuantity The quantity of Sparks to send
+  /// @param referrer The referrer of the comment
+  function sparkComment(CommentIdentifier calldata commentIdentifier, uint64 sparksQuantity, address referrer) public payable;
+}
+```
+
+Example usage with `@zoralabs/protocol-deployments` and `viem`:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/sparking.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+
+:::
+
+### Minting and commenting
+
+When minting with the `ZoraTimedSaleStrategy`, which is the default way to mint on Zora,
+a comment can be included at no additional cost by calling the function `timedSaleMintAndComment()` on the `CallerAndCommenter` helper contract. While the comment itself is free, the standard mint fee still needs to be sent with the transaction.
+
+```solidity
+// Deployed to 0x77777775C5074b74540d9cC63Dd840A8c692B4B5 on all chains supported by Zora.
+interface ICallerAndCommenter {
+    /// @notice Mints tokens and adds a comment, without needing to pay a spark for the comment.
+    /// @dev The payable amount should be the total mint fee. No spark value should be sent.
+    /// @param commenter The address of the commenter
+    /// @param quantity The number of tokens to mint
+    /// @param collection The address of the 1155 collection to mint from
+    /// @param tokenId The 1155 token Id to mint
+    /// @param mintReferral The address to receive mint referral rewards, if any
+    /// @param comment The comment to be added. If empty, no comment will be added.
+    /// @return The identifier of the newly created comment
+    function timedSaleMintAndComment(
+        address commenter,
+        uint256 quantity,
+        address collection,
+        uint256 tokenId,
+        address mintReferral,
+        string calldata comment
+    ) external payable returns (IComments.CommentIdentifier memory);
+}
+```
+
+Example usage with `@zoralabs/protocol-deployments` and `viem`:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/mintAndComment.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+::: 
+
+### Specifying a Referrer
+
+When calling the `comment`, `sparkComment`, or related functions, a referrer address can be specified. This allows third-party developers to earn a portion of the protocol fee when users interact with the Comments contract through on their platform.
+
+To specify a referrer, simply include the referrer's address as the last argument in the function call:
+
+:::code-group
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/referrer.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+:::
+
+### Commenting as a smart wallet owner
+
+An account that is a smart wallet owner can comment on a token, if a smart wallet 
+is an owner or creator of the token.  In this case, the smart wallet address should
+be passed as the `smartWallet` argument when calling the `comment` function.   The function
+will check if the smart wallet or the account that is creating the comment is an owner or creator of the token,
+but will attribute the comment to the account that is calling the comment function.  Correspondingly,
+the `commenter` argument must match the account that is creating the comment.
+
+Example usage with `@zoralabs/protocol-deployments` and `viem`:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/commentWithSmartWallet.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+
+:::
+
+
+### Cross-Chain commenting, sparking, and minting with comments
+
+An account can sign a permit to comment, spark a comment, or mint and comment on their behalf, and that permit can be used to execute the action onchain. 
+This enables cross-chain functionality for these actions by validating that the signer of the message is the original commenter, sparker, or minter. Here's how it works:
+
+1. When creating the permit, the user specifies two chain IDs:
+   - `sourceChainId`: The chain ID where the permit is being signed.
+   - `destinationChainId`: The chain ID where the permit should be executed.
+
+2. To enable cross-chain functionality:
+   - Set `sourceChainId` to the current chain where you're signing the permit.
+   - Set `destinationChainId` to the chain ID of the target blockchain where you want the action to be executed.
+
+3. The permit can then be signed on a source chain and submitted to the appropriate contract on the destination chain, allowing the action to be executed there.
+
+For example, if you're signing a permit on Base, but want the action to occur on Zora Network, you would set:
+- `sourceChainId` to 8453
+- `destinationChainId` to 7777777
+
+This process works for:
+- Commenting (using the `Comments` contract)
+- Sparking a comment (using the `Comments` contract)
+- Minting and commenting (using the `CallerAndCommenter` helper contract)
+
+1. Example cross-chain commenting with Relay:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/permitComment.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+
+:::
+
+2. Example cross-chain sparking with Relay:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: comment.ts
+// [!include ~/snippets/contracts/comments/comment.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/permitSparkComment.ts]
+```
+
+```ts twoslash [comment.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: comment.ts
+// --cut--
+// [!include ~/snippets/contracts/comments/comment.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+
+:::
+
+3. Example cross-chain minting and commenting with Relay:
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: comment.ts
+// [!include ~/snippets/contracts/comments/comment.ts]
+
+// @filename: example.ts
+// ---cut---
+// [!include ~/snippets/contracts/comments/permitMintAndComment.ts]
+```
+
+```ts twoslash [comment.ts]
+// @filename: config.ts
+// [!include ~/snippets/contracts/comments/config.ts]
+
+// @filename: comment.ts
+// --cut--
+// [!include ~/snippets/contracts/comments/comment.ts]
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/contracts/comments/config.ts]
+```
+
+:::
+
+## Events
+
+The `Comments` contract emits the following events:
+
+```solidity
+interface IComments {
+    /// @notice Event emitted when a comment is created
+    event Commented(
+        bytes32 indexed commentId, // Unique ID for the comment, generated from a hash of the commentIdentifier
+        CommentIdentifier commentIdentifier, // Identifier for the comment, containing details about the comment
+        bytes32 replyToId, // Unique ID of the comment being replied to (if any)
+        CommentIdentifier replyTo, // Identifier of the comment being replied to (if any)
+        uint256 sparksQuantity, // Number of sparks associated with this comment
+        string text, // The actual text content of the comment
+        uint256 timestamp, // Timestamp when the comment was created
+        address referrer // Address of the referrer who referred the commenter, if any
+    );
+
+    // Event emitted when a comment is backfilled
+    event BackfilledComment(
+        bytes32 indexed commentId, // Unique identifier for the backfilled comment
+        CommentIdentifier commentIdentifier, // Identifier for the comment
+        string text, // The actual text content of the backfilled comment
+        uint256 timestamp, // Timestamp when the original comment was created
+        bytes32 originalTransactionId // Transaction ID of the original comment (before backfilling)
+    );
+
+    // Event emitted when a comment is Sparked
+    event SparkedComment(
+        bytes32 indexed commentId, // Unique identifier of the comment being sparked
+        CommentIdentifier commentIdentifier, // Struct containing details about the comment and commenter
+        uint256 sparksQuantity, // Number of sparks added to the comment
+        address sparker, // Address of the user who sparked the comment
+        uint256 timestamp, // Timestamp when the spark action occurred
+        address referrer // Address of the referrer who referred the sparker, if any
+    );
+}
+```
+
+When minting and commenting, the `MintedAndCommented` event is emitted from the caller and commenter contract, containing
+more contextual information about the mint and comment, as well as a link to the comment via the comment identifier. When buying or selling on secondary and commenting, the `SwappedOnSecondaryAndCommented` event is emitted, containing the same contextual information as the minted and commented event, as well as the quantity of tokens bought or sold.
+
+```solidity
+interface ICallerAndCommenter {
+    /// @notice Emitted when tokens are minted and a comment is added
+    /// @param commentId The unique identifier of the comment
+    /// @param commentIdentifier The struct containing details about the comment
+    /// @param quantity The number of tokens minted
+    /// @param text The content of the comment
+    event MintedAndCommented(
+        bytes32 indexed commentId, 
+        IComments.CommentIdentifier commentIdentifier, 
+        uint256 quantity, 
+        string text
+    );
+
+    /// @notice Emitted when tokens are bought or sold on the secondary market and a comment is added
+    /// @param commentId The unique identifier of the comment
+    /// @param commentIdentifier The struct containing details about the comment
+    /// @param quantity The number of tokens bought
+    /// @param comment The content of the comment
+    /// @param swapDirection The direction of the swap (BUY or SELL)
+    event SwappedOnSecondaryAndCommented(
+        bytes32 indexed commentId,
+        IComments.CommentIdentifier commentIdentifier,
+        uint256 indexed quantity,
+        string comment,
+        SwapDirection indexed swapDirection
+    );
+}
+```

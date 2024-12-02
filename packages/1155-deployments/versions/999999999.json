@@ -33,6 +33,10 @@
       "contractImplAddress": "0xaDf7F654d8E416aaD85d4f06fDf4cA3D05BDA1A1"
     },
     {
+      "version": "2.13.1",
+      "contractImplAddress": "0xb30e0a41A3EC4b6Eb5415c70E32dc234432E48C2"
+    },
+    {
       "version": "2.9.0-DEV.0",
       "contractImplAddress": "0xea93DF17634cB8b2d929dC2cdb69B734ddAb732e"
     },
@@ -59,6 +63,10 @@
     {
       "version": "2.12.3",
       "contractImplAddress": "0xC04050e04708b33302E30E5A0fB1e8c38F4EBbB0"
+    },
+    {
+      "version": "2.13.2",
+      "contractImplAddress": "0x695C9A141748D308d26Bd4f8E9F9A5df5F0623f8"
     },
     {
       "version": "2.12.2",
@@ -89,6 +97,10 @@
       "contractImplAddress": "0x95Fa96979F1cCF30970872A05a1974f6295bD176"
     },
     {
+      "version": "2.13.0",
+      "contractImplAddress": "0x78C5f846e1dfBdbAD7AD4B3010233757aB2A1e9B"
+    },
+    {
       "version": "2.10.0",
       "contractImplAddress": "0xaDf7F654d8E416aaD85d4f06fDf4cA3D05BDA1A1"
     },
@@ -102,8 +114,8 @@
     }
   ],
   "targetVersion": {
-    "version": "2.12.3",
-    "contractImplAddress": "0xC04050e04708b33302E30E5A0fB1e8c38F4EBbB0"
+    "version": "2.13.2",
+    "contractImplAddress": "0x695C9A141748D308d26Bd4f8E9F9A5df5F0623f8"
   },
   "missingUpgradePaths": [],
   "missingUpgradePathTargets": [],

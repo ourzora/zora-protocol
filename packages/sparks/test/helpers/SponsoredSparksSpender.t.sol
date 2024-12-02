@@ -8,18 +8,21 @@ import {Mock1155} from "../mocks/Mock1155.sol";
 import {ContractCreationConfig, PremintConfigV2, TokenCreationConfigV2, MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {ZoraSparksManagerImpl} from "../../src/ZoraSparksManagerImpl.sol";
 import {ZoraSparksFixtures} from "../../test/fixtures/ZoraSparksFixtures.sol";
-import {SponsoredSparksSpender, SponsoredMintBatch, ISponsoredSparksSpenderAction, ISponsoredSparksSpender} from "../../src/helpers/SponsoredSparksSpender.sol";
+import {SponsoredSparksSpender, SponsoredMintBatch, ISponsoredSparksSpenderAction, ISponsoredSparksSpender, SponsoredSpend} from "../../src/helpers/SponsoredSparksSpender.sol";
 import {TokenConfig} from "../../src/ZoraSparksTypes.sol";
 import {IZoraSparks1155Managed} from "../../src/interfaces/IZoraSparks1155Managed.sol";
 
 contract MockReceiverContract {
     event HasCall(uint256 value, string argument);
 
+    bool public received;
+
     function mockReceiveFunction(string memory argument) external payable {
         if (bytes(argument).length == 0) {
             revert("Argument must not be empty");
         }
         emit HasCall(msg.value, argument);
+        received = true;
     }
 }
 
@@ -694,6 +697,172 @@ contract SponsoredSparksSpenderTest is Test {
         assertEq(address(mockReceiverContract).balance, totalAmount);
     }
 
+    function test_spendFunctionInvalidSignature() external {
+        sponsoredSparksSpender.fund{value: 10 ether}();
+
+        MockReceiverContract mockReceiverContract = new MockReceiverContract();
+
+        bytes memory mockReceiverCall = abi.encodeWithSelector(mockReceiverContract.mockReceiveFunction.selector, "randomArgument");
+
+        SponsoredSpend memory sponsoredSpend = SponsoredSpend({
+            verifier: verifier,
+            from: address(collector),
+            destination: payable(address(mockReceiverContract)),
+            data: mockReceiverCall,
+            totalAmount: 1.5 ether,
+            expectedInputAmount: 1.258 ether,
+            nonce: 1,
+            deadline: block.timestamp
+        });
+
+        vm.deal(collector, 2 ether);
+        vm.prank(collector);
+        vm.expectRevert(abi.encodeWithSelector(ISponsoredSparksSpender.InvalidSignature.selector));
+        sponsoredSparksSpender.sponsoredExecute{value: 1.258 ether}(sponsoredSpend, hex"cafecafe");
+    }
+
+    function test_spendFunctionWrongSpender() external {
+        sponsoredSparksSpender.fund{value: 10 ether}();
+
+        MockReceiverContract mockReceiverContract = new MockReceiverContract();
+
+        bytes memory mockReceiverCall = abi.encodeWithSelector(mockReceiverContract.mockReceiveFunction.selector, "randomArgument");
+
+        address badVerifier = makeAddr("badVerifier");
+
+        SponsoredSpend memory sponsoredSpend = SponsoredSpend({
+            verifier: badVerifier,
+            from: address(0x1234),
+            destination: payable(address(mockReceiverContract)),
+            data: mockReceiverCall,
+            totalAmount: 1.5 ether,
+            expectedInputAmount: 1.258 ether,
+            nonce: 1,
+            deadline: block.timestamp + 100
+        });
+
+        bytes memory signature = _signSponsoredSpendAction(sponsoredSpend, verifierPrivateKey);
+
+        vm.deal(collector, 2 ether);
+        vm.prank(collector);
+        vm.expectRevert(abi.encodeWithSelector(ISponsoredSparksSpender.VerifierNotAllowed.selector, badVerifier));
+        sponsoredSparksSpender.sponsoredExecute{value: 1.258 ether}(sponsoredSpend, signature);
+    }
+
+    function test_spendFunctionExpiredSignature() external {
+        sponsoredSparksSpender.fund{value: 10 ether}();
+
+        MockReceiverContract mockReceiverContract = new MockReceiverContract();
+
+        bytes memory mockReceiverCall = abi.encodeWithSelector(mockReceiverContract.mockReceiveFunction.selector, "randomArgument");
+
+        SponsoredSpend memory sponsoredSpend = SponsoredSpend({
+            verifier: verifier,
+            from: collector,
+            destination: payable(address(mockReceiverContract)),
+            data: mockReceiverCall,
+            totalAmount: 1.5 ether,
+            expectedInputAmount: 1.258 ether,
+            nonce: 1,
+            deadline: 0
+        });
+
+        vm.warp(100);
+
+        vm.deal(collector, 2 ether);
+
+        bytes memory signature = _signSponsoredSpendAction(sponsoredSpend, verifierPrivateKey);
+
+        vm.deal(collector, 2 ether);
+        vm.expectRevert(ISponsoredSparksSpender.SignatureExpired.selector);
+        vm.prank(collector);
+        sponsoredSparksSpender.sponsoredExecute{value: 1.258 ether}(sponsoredSpend, signature);
+    }
+
+    function test_spendFunctionNonceUsed() external {
+        sponsoredSparksSpender.fund{value: 10 ether}();
+
+        MockReceiverContract mockReceiverContract = new MockReceiverContract();
+
+        bytes memory mockReceiverCall = abi.encodeWithSelector(mockReceiverContract.mockReceiveFunction.selector, "randomArgument");
+
+        SponsoredSpend memory sponsoredSpend = SponsoredSpend({
+            verifier: verifier,
+            from: collector,
+            destination: payable(address(mockReceiverContract)),
+            data: mockReceiverCall,
+            totalAmount: 1.5 ether,
+            expectedInputAmount: 1.258 ether,
+            nonce: 1,
+            deadline: block.timestamp + 100
+        });
+
+        bytes memory signature = _signSponsoredSpendAction(sponsoredSpend, verifierPrivateKey);
+
+        vm.deal(collector, 4 ether);
+        vm.startPrank(collector);
+        sponsoredSparksSpender.sponsoredExecute{value: 1.258 ether}(sponsoredSpend, signature);
+
+        vm.expectRevert(ISponsoredSparksSpender.NonceUsed.selector);
+        sponsoredSparksSpender.sponsoredExecute{value: 1.258 ether}(sponsoredSpend, signature);
+    }
+
+    function test_spendFunctionDirectGoodCall() external {
+        sponsoredSparksSpender.fund{value: 10 ether}();
+
+        MockReceiverContract mockReceiverContract = new MockReceiverContract();
+
+        bytes memory mockReceiverCall = abi.encodeWithSelector(mockReceiverContract.mockReceiveFunction.selector, "randomArgument");
+
+        SponsoredSpend memory sponsoredSpend = SponsoredSpend({
+            verifier: verifier,
+            from: collector,
+            destination: payable(address(mockReceiverContract)),
+            data: mockReceiverCall,
+            totalAmount: 1.5 ether,
+            expectedInputAmount: 1.258 ether,
+            nonce: 1,
+            deadline: block.timestamp + 100
+        });
+
+        bytes memory signature = _signSponsoredSpendAction(sponsoredSpend, verifierPrivateKey);
+
+        vm.deal(collector, 2 ether);
+        vm.prank(collector);
+        sponsoredSparksSpender.sponsoredExecute{value: 1.258 ether}(sponsoredSpend, signature);
+
+        assertEq(mockReceiverContract.received(), true);
+        assertEq(address(mockReceiverContract).balance, 1.5 ether);
+    }
+
+    function test_spendFunctionDirectBadCall() external {
+        sponsoredSparksSpender.fund{value: 10 ether}();
+
+        MockReceiverContract mockReceiverContract = new MockReceiverContract();
+
+        bytes memory mockReceiverCall = abi.encode("whatever");
+
+        SponsoredSpend memory sponsoredSpend = SponsoredSpend({
+            verifier: verifier,
+            from: collector,
+            destination: payable(address(mockReceiverContract)),
+            data: mockReceiverCall,
+            totalAmount: 1.5 ether,
+            expectedInputAmount: 1.258 ether,
+            nonce: 1,
+            deadline: block.timestamp + 100
+        });
+
+        bytes memory signature = _signSponsoredSpendAction(sponsoredSpend, verifierPrivateKey);
+
+        vm.deal(collector, 2 ether);
+        vm.prank(collector);
+        // this is reverting because the function call whatever doesn't exist on the receiver contract
+
+        vm.expectRevert(abi.encodeWithSelector(ISponsoredSparksSpender.CallFailed.selector, bytes("")));
+        sponsoredSparksSpender.sponsoredExecute{value: 1.258 ether}(sponsoredSpend, signature);
+    }
+
     function test_sparksWithBadCall() external {
         // Fund Sponsored Sparks Spender
         sponsoredSparksSpender.fund{value: 10 ether}();
@@ -801,7 +970,7 @@ contract SponsoredSparksSpenderTest is Test {
 
     function testContractMetadata() public {
         assertEq(sponsoredSparksSpender.contractName(), "SponsoredSparksSpender");
-        assertEq(sponsoredSparksSpender.contractVersion(), "1.0.0");
+        assertEq(sponsoredSparksSpender.contractVersion(), "2.0.0");
     }
 
     function testAttemptUnknownTransferAction() public {
@@ -817,6 +986,12 @@ contract SponsoredSparksSpenderTest is Test {
         bytes32 digest = sponsoredSparksSpender.hashSponsoredMint(sponsoredMint);
 
         // create a signature with the digest for the params
+        signature = _sign(privateKey, digest);
+    }
+
+    function _signSponsoredSpendAction(SponsoredSpend memory sponsoredSpend, uint256 privateKey) private view returns (bytes memory signature) {
+        bytes32 digest = sponsoredSparksSpender.hashSponsoredSpend(sponsoredSpend);
+
         signature = _sign(privateKey, digest);
     }
 

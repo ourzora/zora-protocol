@@ -76,8 +76,12 @@ contract ZoraTimedSaleStrategyTest is BaseTest {
         assertEq(saleStrategy.contractURI(), "https://github.com/ourzora/zora-protocol/");
     }
 
+    function testZoraTimedImplementation() public view {
+        assertEq(saleStrategy.implementation(), address(saleStrategyImpl));
+    }
+
     function testZoraTimedContractVersion() public view {
-        assertEq(saleStrategy.contractVersion(), "2.0.0");
+        assertEq(saleStrategy.contractVersion(), "2.1.1");
     }
 
     function testZoraTimedRequestMintReverts() public {

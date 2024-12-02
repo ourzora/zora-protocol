@@ -35,6 +35,7 @@ import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
 import {ERC1155DelegationStorageV1} from "../delegation/ERC1155DelegationStorageV1.sol";
 import {IZoraCreator1155DelegatedCreation, ISupportsAABasedDelegatedTokenCreation, IHasSupportedPremintSignatureVersions} from "../interfaces/IZoraCreator1155DelegatedCreation.sol";
 import {IMintWithRewardsRecipients} from "../interfaces/IMintWithRewardsRecipients.sol";
+import {IHasContractName} from "../interfaces/IContractMetadata.sol";
 import {ZoraCreator1155Attribution, DecodedCreatorAttribution, PremintTokenSetup, PremintConfigV2, DelegatedTokenCreation, DelegatedTokenSetup} from "../delegation/ZoraCreator1155Attribution.sol";
 import {ContractCreationConfig, PremintConfig} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
@@ -61,6 +62,7 @@ contract ZoraCreator1155Impl is
     RewardSplits,
     ERC1155RewardsStorageV1,
     IERC7572,
+    IHasContractName,
     ERC1155DelegationStorageV1
 {
     /// @notice This user role allows for any action to be performed
@@ -76,11 +78,28 @@ contract ZoraCreator1155Impl is
     uint256 public constant PERMISSION_BIT_FUNDS_MANAGER = 2 ** 5;
     /// @notice Factory contract
     IUpgradeGate internal immutable upgradeGate;
+    /// @notice Timed sale strategy allowed to reduce supply
+    address internal immutable timedSaleStrategy;
 
-    uint256 constant MINT_FEE = 0.000777 ether;
+    uint256 constant MINT_FEE = 0.000111 ether;
 
-    constructor(address _mintFeeRecipient, address _upgradeGate, address _protocolRewards) RewardSplits(_protocolRewards, _mintFeeRecipient) initializer {
+    /// @notice This is the immutable constructor for defining onchain addresses that is updated on contract updates
+    /// @param _mintFeeRecipient Recipient for the mint fee (used in rewards) (cannot be 0)
+    /// @param _upgradeGate Address to register the upgrade gate for these contracts (cannot be 0)
+    /// @param _protocolRewards Protocol rewards contract ddress (cannot be 0)
+    /// @param _timedSaleStrategy Timed sale strategy – used to control access to reduceSupply, can be 0 for when this contract is not supported
+    constructor(
+        address _mintFeeRecipient,
+        address _upgradeGate,
+        address _protocolRewards,
+        address _timedSaleStrategy
+    ) RewardSplits(_protocolRewards, _mintFeeRecipient) initializer {
+        if (address(_upgradeGate) == address(0)) {
+            revert INVALID_ADDRESS_ZERO();
+        }
+
         upgradeGate = IUpgradeGate(_upgradeGate);
+        timedSaleStrategy = _timedSaleStrategy;
     }
 
     /// @notice Initializes the contract
@@ -300,12 +319,16 @@ contract ZoraCreator1155Impl is
     /// @dev This allows enforcing that no more new tokens can be minted.
     /// @param tokenId The token id to reduce the supply for
     /// @param newMaxSupply The new max supply
-    function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external onlyAdminOrRole(tokenId, PERMISSION_BIT_MINTER) {
-        TokenData storage tokenData = tokens[tokenId];
-
-        if (newMaxSupply >= tokenData.maxSupply) {
-            revert CanOnlyReduceMaxSupply();
+    function reduceSupply(uint256 tokenId, uint256 newMaxSupply) external {
+        if (msg.sender != timedSaleStrategy) {
+            revert OnlyAllowedForTimedSaleStrategy();
         }
+
+        if (!_hasAnyPermission(tokenId, msg.sender, PERMISSION_BIT_MINTER)) {
+            revert OnlyAllowedForRegisteredMinter();
+        }
+
+        TokenData storage tokenData = tokens[tokenId];
         if (newMaxSupply < tokenData.totalMinted) {
             revert CannotReduceMaxSupplyBelowMinted();
         }
@@ -637,6 +660,7 @@ contract ZoraCreator1155Impl is
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IZoraCreator1155).interfaceId ||
             ERC1155Upgradeable.supportsInterface(interfaceId) ||
+            interfaceId == type(IHasContractName).interfaceId ||
             interfaceId == type(IHasSupportedPremintSignatureVersions).interfaceId ||
             interfaceId == type(ISupportsAABasedDelegatedTokenCreation).interfaceId ||
             interfaceId == type(IMintWithRewardsRecipients).interfaceId ||
@@ -790,6 +814,10 @@ contract ZoraCreator1155Impl is
         if (!upgradeGate.isRegisteredUpgradePath(_getImplementation(), _newImpl)) {
             revert();
         }
+    }
+
+    function contractName() external view returns (string memory) {
+        return "Zora Creator 1155";
     }
 
     /// @notice Returns the current implementation address

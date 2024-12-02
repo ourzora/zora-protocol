@@ -33,12 +33,14 @@ export type TimedSaleParamsType = {
   erc20Name?: string;
   // Symbol of the erc20z token to create for the secondary sale.  If not provided, extracts it from the name.
   erc20Symbol?: string;
-  // Sale start time
+  // Earliest time a token can be minted.  If undefined or 0, then it can be minted immediately.  Defaults to 0n.
   saleStart?: bigint;
-  // Market countdown
+  // Market countdown that will start once the minimum mints for countdown is reached. Defaults to 24 hours.
   marketCountdown?: bigint;
-  // Minimum market ETH amount
+  // Deprecated: Use minimumMintsForCountdown instead.
   minimumMarketEth?: bigint;
+  // Minimum mints that will trigger the countdown.  Defaults to 1111
+  minimumMintsForCountdown?: bigint;
 };
 
 export type Erc20ParamsType = SaleStartAndEnd &

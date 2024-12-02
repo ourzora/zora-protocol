@@ -1,8 +1,9 @@
 // spdx-license-identifier: MIT
 pragma solidity ^0.8.20;
 
-import "forge-std/Script.sol";
+import {stdJson, console2} from "forge-std/Script.sol";
 import {LibString} from "solady/utils/LibString.sol";
+import {CommonBase} from "forge-std/Base.sol";
 
 import {ProxyDeployerConfig, DeterministicContractConfig} from "./Config.sol";
 import {ProxyDeployerUtils} from "./ProxyDeployerUtils.sol";
@@ -18,8 +19,18 @@ interface ISymbol {
     function symbol() external view returns (string memory);
 }
 
-contract ProxyDeployerScript is Script {
+contract ProxyDeployerScript is CommonBase {
     using stdJson for string;
+
+    function readAddressOrDefaultToZero(string memory json, string memory key) internal view returns (address) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            return json.readAddress(keyPrefix);
+        } else {
+            return address(0);
+        }
+    }
 
     // copied from: https://github.com/karmacoma-eth/foundry-playground/blob/main/script/MineSaltScript.sol#L17C1-L36C9
     function mineSalt(
@@ -253,6 +264,31 @@ contract ProxyDeployerScript is Script {
 
         if (address(deployer) != proxyDeployer.deployedAddress) {
             revert("Mimsatched deployer address");
+        }
+    }
+
+    /// @notice Return a prefixed key for reading with a ".".
+    /// @param key key to prefix
+    /// @return prefixed key
+    function getKeyPrefix(string memory key) internal pure returns (string memory) {
+        return string.concat(".", key);
+    }
+
+    function readStringOrDefaultToEmpty(string memory json, string memory key) internal view returns (string memory str) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            str = json.readString(keyPrefix);
+        } else {
+            str = "";
+        }
+    }
+
+    function readUintOrDefaultToZero(string memory json, string memory key) internal view returns (uint256 num) {
+        string memory keyPrefix = getKeyPrefix(key);
+
+        if (vm.keyExists(json, keyPrefix)) {
+            num = vm.parseUint(json.readString(keyPrefix));
         }
     }
 }
