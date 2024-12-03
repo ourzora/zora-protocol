@@ -14,7 +14,7 @@
     "@zoralabs/zora-1155-contracts": "workspace:^",
     "@zoralabs/sparks-contracts": "workspace:^",
     "@zoralabs/comments-contracts": "workspace:^",
-    "@zoralabs/smart-wallet": "workspace:^",
+    "@zoralabs/smart-wallet-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^"
   },
   "devDependencies": {

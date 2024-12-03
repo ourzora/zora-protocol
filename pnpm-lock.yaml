@@ -6,6 +6,7 @@ settings:
 
 overrides:
   viem: ^2.21.21
+  '@wagmi/cli': ^1.0.1
 
 importers:
 
@@ -518,7 +519,7 @@ importers:
       '@zoralabs/erc20z':
         specifier: workspace:^
         version: link:../erc20z
-      '@zoralabs/smart-wallet':
+      '@zoralabs/smart-wallet-contracts':
         specifier: workspace:^
         version: link:../smart-wallet
       '@zoralabs/sparks-contracts':
@@ -719,6 +720,9 @@ importers:
         specifier: https://github.com/foundry-rs/forge-std#v1.8.2
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/978ac6fadb62f5f0b723c996f64be52eddba6801
     devDependencies:
+      '@types/node':
+        specifier: ^20.1.2
+        version: 20.14.12
       '@wagmi/cli':
         specifier: ^1.0.1
         version: 1.5.2(@wagmi/core@2.13.8(@tanstack/query-core@5.51.9)(@types/react@18.3.12)(react@18.3.1)(typescript@5.5.4)(viem@2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)))(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(wagmi@2.12.17(@tanstack/query-core@5.51.9)(@tanstack/react-query@5.51.11(react@18.3.1))(@types/react@18.3.12)(bufferutil@4.0.8)(encoding@0.1.13)(react-native@0.74.3(@babel/core@7.24.9)(@babel/preset-env@7.24.8(@babel/core@7.24.9))(@types/react@18.3.12)(bufferutil@4.0.8)(encoding@0.1.13)(react@18.3.1)(utf-8-validate@5.0.10))(react@18.3.1)(rollup@4.19.0)(typescript@5.5.4)(utf-8-validate@5.0.10)(viem@2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8))(zod@3.23.8))
@@ -734,6 +738,9 @@ importers:
       tsup:
         specifier: ^7.2.0
         version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
+      tsx:
+        specifier: ^4.19.0
+        version: 4.19.2
       typescript:
         specifier: ^5.2.2
         version: 5.5.4
@@ -14351,7 +14358,7 @@ snapshots:
     dependencies:
       sha256-uint8array: 0.10.7
 
-  '@typechain/ethers-v5@10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@5.5.4))(typescript@4.6.3)':
+  '@typechain/ethers-v5@10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@4.6.3))(typescript@4.6.3)':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bytes': 5.7.0
@@ -15135,7 +15142,7 @@ snapshots:
   '@zoralabs/nft-drop-contracts@1.12.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
     dependencies:
       '@dotenv/cli': 2.2.2
-      '@typechain/ethers-v5': 10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@5.5.4))(typescript@4.6.3)
+      '@typechain/ethers-v5': 10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@4.6.3))(typescript@4.6.3)
       ethers: 5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       typechain: 8.0.0(typescript@4.6.3)
       typescript: 4.6.3
