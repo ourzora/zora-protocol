@@ -45,7 +45,7 @@
   "pnpm": {
     "overrides": {
       "viem": "^2.21.21",
-      "@wagmi/cli": "^1.0.1"
+      "@wagmi/cli": "^2.1.0"
     }
   }
 }

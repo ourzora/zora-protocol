@@ -7,12 +7,13 @@
   "version": "0.0.0",
   "scripts": {
     "build": "pnpm run wagmi:generate",
-    "wagmi:generate": "wagmi generate"
+    "wagmi:generate": "wagmi generate && pnpm exec rename-generated-abi-casing ./generated/wagmi.ts"
   },
   "dependencies": {
     "@zoralabs/1155-deployments": "workspace:^",
     "@zoralabs/zora-1155-contracts": "workspace:^",
     "@zoralabs/sparks-contracts": "workspace:^",
+    "@zoralabs/shared-scripts": "workspace:^",
     "@zoralabs/comments-contracts": "workspace:^",
     "@zoralabs/smart-wallet-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^"

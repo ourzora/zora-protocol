@@ -24,7 +24,7 @@
     "lint": "prettier --check 'src/**/*.sol' 'test/**/*.sol' ",
     "copy-abis": "pnpm exec bundle-abis",
     "build": "pnpm wagmi:generate && pnpm copy-abis && pnpm prettier:write && tsup",
-    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
     "update-contract-version": "pnpm exec update-contract-version"
   },
   "dependencies": {},

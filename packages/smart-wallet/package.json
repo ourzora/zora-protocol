@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "pnpm run wagmi:generate && pnpm run copy-abis && tsup",
-    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
     "update-contract-version": "pnpm exec update-contract-version",
     "copy-abis": "pnpm exec bundle-abis"
   },

@@ -27,7 +27,7 @@
     "copy-abis": "pnpm exec bundle-abis",
     "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
     "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
-    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
     "update-contract-version": "pnpm exec update-contract-version"
   },
   "devDependencies": {
