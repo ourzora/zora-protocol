@@ -17,7 +17,7 @@ const { parameters } = await creatorClient.withdrawRewards({
   // set this to false to disable claiming secondary royalties
   claimSecondaryRoyalties: true,
   // account to execute the transaction. Any account can withdraw rewards for another account,
-  // but the the rewards will always be pulled to the account that holds the balance
+  // but the rewards will always be pulled to the account that holds the balance
   account: randomAccount,
 });
 
