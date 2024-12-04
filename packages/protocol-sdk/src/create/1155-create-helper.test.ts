@@ -451,6 +451,8 @@ describe("create-helper", () => {
 
       const pricePerToken = parseEther("0.01");
 
+      const blockTime = (await publicClient.getBlock()).timestamp;
+
       const {
         parameters: request,
         contractAddress: collectionAddress,
@@ -463,6 +465,7 @@ describe("create-helper", () => {
           tokenMetadataURI: demoTokenMetadataURI,
           salesConfig: {
             pricePerToken,
+            saleStart: blockTime,
           },
         },
         account: creatorAddress,
@@ -507,6 +510,7 @@ describe("create-helper", () => {
           },
         },
         quantityToMint,
+        chainId: chain.id,
       });
 
       const { request: collectSimulation } =

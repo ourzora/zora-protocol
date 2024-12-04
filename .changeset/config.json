@@ -11,7 +11,6 @@
     "@zoralabs/protocol-deployments-gen",
     "@zoralabs/frame-minter-contracts",
     "docs",
-    "@zoralabs/1155-deployments",
-    "@zoralabs/smart-wallet"
+    "@zoralabs/1155-deployments"
   ]
 }
