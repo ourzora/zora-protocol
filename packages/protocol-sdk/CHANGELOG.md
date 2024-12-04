@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.11.10
+
+### Patch Changes
+
+- a1137e35: saleStart defaults to current timestamp in seconds
+- Updated dependencies [abbd6333]
+  - @zoralabs/protocol-deployments@0.3.10
+
 ## 0.11.9
 
 ### Patch Changes

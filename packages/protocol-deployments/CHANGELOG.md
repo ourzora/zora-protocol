@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.10
+
+### Patch Changes
+
+- abbd6333: Added smart wallet factory deployment and abi
+
 ## 0.3.9
 
 ### Patch Changes
