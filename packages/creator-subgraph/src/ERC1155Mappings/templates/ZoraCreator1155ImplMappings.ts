@@ -188,7 +188,7 @@ function _updateHolderTransfer(
   id: BigInt,
   value: BigInt
 ): BigInt {
-  let tokenHolderCountChange = new BigInt(0);
+  let tokenHolderCountChange = BigInt.zero();
   if (!to.equals(Address.zero())) {
     const holderId = getToken1155HolderId(to, contractAddress, id);
     let holder = Token1155Holder.load(holderId);
@@ -197,7 +197,7 @@ function _updateHolderTransfer(
       holder.balance = value;
       holder.tokenAndContract = getTokenId(contractAddress, id);
       holder.user = to;
-      tokenHolderCountChange = tokenHolderCountChange.plus(new BigInt(1));
+      tokenHolderCountChange = tokenHolderCountChange.plus(BigInt.fromU32(1));
     } else {
       holder.balance = holder.balance.plus(value);
     }
@@ -212,7 +212,7 @@ function _updateHolderTransfer(
       fromHolder.lastUpdatedBlock = blockNumber;
       fromHolder.save();
       if (fromHolder.balance.equals(BigInt.zero())) {
-        tokenHolderCountChange = tokenHolderCountChange.minus(new BigInt(1));
+        tokenHolderCountChange = tokenHolderCountChange.minus(BigInt.fromU32(1));
       }
     }
   }
@@ -269,7 +269,7 @@ export function handleUpdatedToken(event: UpdatedToken): void {
   let token = ZoraCreateToken.load(id);
   if (!token) {
     token = new ZoraCreateToken(id);
-    token.holders1155Number = new BigInt(0);
+    token.holders1155Number = BigInt.zero();
     token.tokenStandard = TOKEN_STANDARD_ERC1155;
     token.address = event.address;
     token.createdAtBlock = event.block.number;
@@ -318,7 +318,7 @@ export function handleTransferSingle(event: TransferSingle): void {
   } else if (event.params.to.equals(Address.zero())) {
     token.totalSupply = token.totalSupply.minus(event.params.value);
     token.holders1155Number = token.holders1155Number.plus(newHolderNumber);
-  } else if (newHolderNumber.gt(new BigInt(0))) {
+  } else if (newHolderNumber.gt(BigInt.zero())) {
     token.holders1155Number = token.holders1155Number.plus(newHolderNumber);
   }
 
@@ -425,7 +425,7 @@ export function handleSetupNewToken(event: SetupNewToken): void {
     getTokenId(event.address, event.params.tokenId)
   );
 
-  token.holders1155Number = new BigInt(0);
+  token.holders1155Number = BigInt.zero();
   token.createdAtBlock = event.block.number;
   token.tokenId = event.params.tokenId;
   token.uri = event.params.newURI;
