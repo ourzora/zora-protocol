@@ -2,30 +2,67 @@ import {
   IHttpClient,
   httpClient as defaultHttpClient,
 } from "src/apis/http-api-base";
-import { paths } from "../apis/generated/allow-list-api-types";
-import { Hex } from "viem";
+import { Address, decodeAbiParameters, encodeAbiParameters, Hex } from "viem";
 import { AllowList } from "./types";
 
-type AllowListCreateType = paths["/allowlist"]["post"];
-type AllowListCreateParameters =
-  AllowListCreateType["requestBody"]["content"]["application/json"];
-type AllowListCreateResponse = {
-  existing?: {
-    entries: AllowListCreateParameters["entries"];
-    root: string;
-    added: string;
-  };
-  success: boolean;
-  root: string;
-  associated_id?: string;
+type AllowListCreateParameters = {
+  unhashedLeaves: Hex[];
+  leafTypeDescriptor: string[];
+  packedEncoding: boolean;
 };
 
-const ALLOW_LIST_API_BASE = "http://allowlist.zora.co/";
-type AllowListAllowedResponse = {
+type AllowListCreateResponse = {
+  merkleRoot: Hex;
+};
+
+type LanyardResponse = {
+  proof: Hex[];
+  unhashedLeaf: Hex;
+};
+
+const ALLOWLIST_ABI_PARAMETERS = [
+  { type: "address", name: "user" },
+  { type: "uint256", name: "maxCanMint" },
+  { type: "uint256", name: "price" },
+];
+
+const ALLOW_LIST_API_BASE = "https://lanyard.org/api/v1/";
+type AllowlistEntry = {
+  user: Address;
   maxCanMint: number;
-  price: string;
-  proof: string[];
-}[];
+  price: bigint;
+  priceDecimal: number;
+  proof: Hex[];
+};
+
+function getZoraEntry(
+  lanyardResponse: LanyardResponse | undefined,
+  root: string | undefined,
+): AllowlistEntry | undefined {
+  if (!lanyardResponse || !root) {
+    return;
+  }
+
+  try {
+    const [user, maxCanMint, price] = decodeAbiParameters(
+      ALLOWLIST_ABI_PARAMETERS,
+      lanyardResponse.unhashedLeaf,
+    );
+
+    return {
+      user: user as Address,
+      maxCanMint: Number(maxCanMint),
+      price: price as bigint,
+      // This won't realistically overflow.
+      priceDecimal: Number(price),
+      proof: lanyardResponse.proof,
+    };
+  } catch (e: any) {
+    console.error(e);
+    // Silently error here because the format is unexpected
+    return;
+  }
+}
 
 export const createAllowList = async ({
   allowList,
@@ -39,25 +76,21 @@ export const createAllowList = async ({
   const { post, retries } = httpClient;
 
   const data: AllowListCreateParameters = {
-    entries: allowList.entries.map((entry) => ({
-      user: entry.user,
-      maxCanMint: entry.maxCanMint,
-      price: entry.price.toString(),
-    })),
+    unhashedLeaves: allowList.entries.map((entry) =>
+      encodeAbiParameters(ALLOWLIST_ABI_PARAMETERS, [
+        entry.user,
+        entry.maxCanMint,
+        entry.price,
+      ]),
+    ),
+    leafTypeDescriptor: ["address", "uint256", "uint256"],
+    packedEncoding: false,
   };
 
   return (
-    await retries(() =>
-      post<AllowListCreateResponse>(`${baseUrl}allowlist`, data),
-    )
-  ).root;
+    await retries(() => post<AllowListCreateResponse>(`${baseUrl}tree`, data))
+  ).merkleRoot;
 };
-
-function padHex(value: string): Hex {
-  if (value.startsWith("0x")) return value as Hex;
-
-  return `0x${value}`;
-}
 
 export const getAllowListEntry = async ({
   merkleRoot,
@@ -73,24 +106,16 @@ export const getAllowListEntry = async ({
   const { retries, get } = httpClient;
 
   const response = await retries(() =>
-    get<AllowListAllowedResponse>(
-      `${baseUrl}allowed?user=${address}&root=${merkleRoot}`,
+    get<LanyardResponse>(
+      `${baseUrl}proof?address=${address}&root=${merkleRoot}`,
     ),
   );
 
-  const entries = response?.map((x) => ({
-    maxCanMint: x.maxCanMint,
-    price: BigInt(x.price),
-    proof: x.proof.map(padHex),
-  }));
-
-  const entry = entries?.sort(
-    (a, b) => Number(a.price) - Number(b.price) || b.maxCanMint - a.maxCanMint,
-  )[0];
+  const allowListEntry = getZoraEntry(response, merkleRoot);
 
   return {
-    accessAllowed: entry && entry?.proof?.length,
-    allowListEntry: entry,
+    accessAllowed: allowListEntry && allowListEntry?.proof?.length,
+    allowListEntry,
   };
 };
 
