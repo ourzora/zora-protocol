@@ -18,12 +18,12 @@ export const DEFAULT_MARKET_COUNTDOWN = BigInt(24 * 60 * 60);
 // Sales end forever amount (uint64 max)
 export const SALE_END_FOREVER = 18446744073709551615n;
 
-const DEFAULT_SALE_START_AND_END: Concrete<SaleStartAndEnd> = {
-  // Sale start time – defaults to beginning of unix time
-  saleStart: 0n,
+const DEFAULT_SALE_START_AND_END = (): Concrete<SaleStartAndEnd> => ({
+  // Sale start time – defaults to current time in seconds
+  saleStart: BigInt(Math.floor(new Date().getTime() / 1000)),
   // This is the end of uint64, plenty of time
   saleEnd: SALE_END_FOREVER,
-};
+});
 
 const DEFAULT_MAX_TOKENS_PER_ADDRESS: Concrete<MaxTokensPerAddress> = {
   maxTokensPerAddress: 0n,
@@ -32,7 +32,7 @@ const DEFAULT_MAX_TOKENS_PER_ADDRESS: Concrete<MaxTokensPerAddress> = {
 const erc20SaleSettingsWithDefaults = (
   params: Erc20ParamsType,
 ): Concrete<Erc20ParamsType> => ({
-  ...DEFAULT_SALE_START_AND_END,
+  ...DEFAULT_SALE_START_AND_END(),
   ...DEFAULT_MAX_TOKENS_PER_ADDRESS,
   ...params,
 });
@@ -41,7 +41,7 @@ const allowListWithDefaults = (
   allowlist: AllowListParamType,
 ): Concrete<AllowListParamType> => {
   return {
-    ...DEFAULT_SALE_START_AND_END,
+    ...DEFAULT_SALE_START_AND_END(),
     ...allowlist,
   };
 };
@@ -49,7 +49,7 @@ const allowListWithDefaults = (
 const fixedPriceSettingsWithDefaults = (
   params: FixedPriceParamsType,
 ): Concrete<FixedPriceParamsType> => ({
-  ...DEFAULT_SALE_START_AND_END,
+  ...DEFAULT_SALE_START_AND_END(),
   ...DEFAULT_MAX_TOKENS_PER_ADDRESS,
   type: "fixedPrice",
   ...params,

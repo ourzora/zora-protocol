@@ -3,13 +3,17 @@
   "version": "0.2.4",
   "repository": "https://github.com/ourzora/zora-protocol.git",
   "license": "MIT",
-  "main": "./dist/index.js",
-  "types": "./dist/package/index.d.ts",
-  "files": [
-    "src/",
-    "abis/"
-  ],
-  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
   "scripts": {
     "build:sizes": "forge build --sizes --skip test --skip script",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
@@ -20,7 +24,7 @@
     "lint": "prettier --check 'src/**/*.sol' 'test/**/*.sol' ",
     "copy-abis": "pnpm exec bundle-abis",
     "build": "pnpm wagmi:generate && pnpm copy-abis && pnpm prettier:write && tsup",
-    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
     "update-contract-version": "pnpm exec update-contract-version"
   },
   "dependencies": {},

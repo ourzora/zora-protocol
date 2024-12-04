@@ -23,7 +23,7 @@ import {
   commentsImplABI,
   callerAndCommenterImplABI,
 } from "@zoralabs/comments-contracts";
-import { zoraAccountManagerImplABI } from "@zoralabs/smart-wallet";
+import { zoraAccountManagerImplABI } from "@zoralabs/smart-wallet-contracts";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
 
 type Address = `0x${string}`;

@@ -6,5 +6,6 @@ export default defineConfig({
   clean: true,
   dts: false,
   format: ["cjs", "esm"],
-  onSuccess: "tsc --emitDeclarationOnly --declaration --declarationMap",
+  onSuccess:
+    "tsc --project tsconfig.build.json  --emitDeclarationOnly --declaration --declarationMap",
 });
