@@ -338,7 +338,7 @@ const encodePremintOnManager = ({
  * @param chainId - The ID of the chain where the MINTs are to be used
  * @param deadline - The deadline of the permit.
  * @param nonce - Random nonce of the permit.
- * @param tokenIds - The mint token ids to to use
+ * @param tokenIds - The mint token ids to use
  * @param quantities - The quantities of each token to use to collect the Zora Creator 1155 token with.  The sum of these quantities will be the total quantity of the Zora Creator 1155 token collected.
  * @param premint - If this is for a premint, the configuration of the premint to collect
  * @param collect - If this is for a non-premint, the configuration of the non-premint to collect

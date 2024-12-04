@@ -1,6 +1,6 @@
 # Zora Timed Sale Strategy
 
-The Zora Sale Timed Sale Strategy introduces a new mint fee and [enables a secondary market that is powered by Uniswap V3](https://support.zora.co/en/categories/577345-secondary-market)
+The Zora Sale Timed Sale Strategy introduces a new mint fee and [enables a secondary market that is powered by Uniswap V3](https://support.zora.co/en/categories/577345-secondary-market).
 New tokens minted will have a mint fee of 0.000111 ETH (✧111).
 
 Upon calling `setSale()` a sale will be created for the Zora 1155 NFT along with creating an ERC20z token and a Uniswap V3 Pool.
@@ -26,8 +26,7 @@ As soon as the secondary market is launched the mint fees earned by the market w
 The ZoraTimedSaleStrategy contract is used to create a timed sale for a Zora 1155 token. When it is configured for an 1155 contract and token via the `setSale` function,
 specifying the `saleStart` and `saleEnd` of the sale, it creates a new ERC20z token and corresponding Uniswap V3 pool for a WETH pair with the ERC20z with a 1% fee.
 
-To mint an 1155 token, the `mint` function is called on the ZoraTimedSaleStrategy contract with the mint fee of 0.000111 eth x quantity to mint sent with the call. In the `mint` call, 0.0000111 eth x quantity is held in escrow to bootstrap liquidity for the Uniswap V3 pool, the rest is distributed as rewards.  
-via the [ProtocolRewards](./rewards) contract, and x quantity of 1155s is minted to the `recipient`.
+To mint an 1155 token, the `mint` function is called on the ZoraTimedSaleStrategy contract with the mint fee of 0.000111 eth x quantity to mint sent with the call. In the `mint` call, 0.0000111 eth x quantity is held in escrow to bootstrap liquidity for the Uniswap V3 pool, the rest is distributed as rewards via the [ProtocolRewards](./rewards) contract, and x quantity of 1155s is minted to the `recipient`.
 
 When the sale has ended, the `launchMarket` function can be called to launch the secondary market, which mints ERC20z tokens, wraps the escrowed ETH as WETH,
 and deposits the WETH and a portion of the minted ERC20z to the Uniswap V3 pool to launch the secondary market.
@@ -139,7 +138,7 @@ The logic for launching the secondary market is designed with a few requirements
 
 - The secondary market starting price should be 0.000111 eth per token
 - There should be an equal amount of ERC20 to ERC1155 tokens minted/total supply
-- Each owned ERC1155 should be backed and unwrappable by 1 ERC20, and visa versa.
+- Each owned ERC1155 should be backed and unwrappable by 1 ERC20, and vice versa.
 
 To achieve this, the following logic is used. For the sake of simplicity, one ERC20 represents 10^18 units:
 
