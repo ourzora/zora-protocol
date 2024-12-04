@@ -11,8 +11,7 @@
 
 ### Patch Changes
 
-- [ad707434](https://github.com/ourzora/zora-protocol/commit/ad707434): Updated the 1155 Implementation reduceSupply function to be gated to the `TimedSaleStrategy` constructor argument
-  to ensure markets are launched when desired.
+- [ad707434](https://github.com/ourzora/zora-protocol/commit/ad707434): Updated the 1155 Implementation reduceSupply function to be only allowed to be called by the known `TimedSaleStrategy` address to prevent supply from being reduced in the incorrect matter which would prevent markets from being launched.
 
 ## 2.13.0
 

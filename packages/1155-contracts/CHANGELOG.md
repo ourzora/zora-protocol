@@ -10,8 +10,7 @@
 
 ### Patch Changes
 
-- ad707434: Updated the 1155 Implementation reduceSupply function to be gated to the `TimedSaleStrategy` constructor argument
-  to ensure markets are launched when desired.
+- ad707434: Updated the 1155 Implementation reduceSupply function to be only allowed to be called by the known `TimedSaleStrategy` address to prevent supply from being reduced in the incorrect matter which would prevent markets from being launched.
 
 ## 2.13.0
 
@@ -119,7 +118,10 @@
 
   ```solidity
   interface ISetPremintSale {
-    function setPremintSale(uint256 tokenId, bytes calldata salesConfig) external;
+    function setPremintSale(
+      uint256 tokenId,
+      bytes calldata salesConfig
+    ) external;
   }
 
   // example implementation:
@@ -162,7 +164,8 @@
       return buildSalesConfigForPremint(premintSalesConfig);
     }
 
-    mapping(address => mapping(uint256 => IERC20Minter.SalesConfig)) public sale;
+    mapping(address => mapping(uint256 => IERC20Minter.SalesConfig))
+      public sale;
 
     function setPremintSale(
       uint256 tokenId,
