@@ -1,8 +1,8 @@
 chainid: "10"
 network: optimism
 grafting: 
-  base: "QmeZpJiSf1TvewKgoS2PPtdxe2Rd9waVL5bypPoTXfYQ7a"
-  block: "125450000"
+  base: "QmeJ4Jj8uXhcQcTorsby4EMQLv76rHTaq6qGLU954QjRC4"
+  block: "126971400"
 factories1155:
   - address: "0x78b524931e9d847c40BcBf225c25e154a7B05fDA"
     startBlock: "97158995"
@@ -28,4 +28,8 @@ erc20Minter:
 zoraTimedSaleStrategy:
   - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
     startBlock: "123513422"
+    version: "1"
+comments: 
+  - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
+    startBlock: "126971500"
     version: "1"

@@ -1,8 +1,8 @@
 chainid: "8453"
 network: base
 grafting: 
-  base: "QmWaYJvydBF4fDkjwNs5xLW4WYQW5vjjuoWhFMtGEycU6M"
-  block: "18703256"
+  base: "QmWTEsQA1GVWJ3KM7HF2dgbomJoa9mJoo6yFZACFdrJgtb"
+  block: "21374000"
 factories1155:
   - address: "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
     startBlock: "1496186"
@@ -28,4 +28,8 @@ erc20Minter:
 zoraTimedSaleStrategy:
   - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
     startBlock: "17918252"
+    version: "1"
+comments: 
+  - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
+    startBlock: "21374810"
     version: "1"

@@ -1,8 +1,8 @@
 chainid: "42161"
 network: arbitrum-one
 grafting: 
-  base: "QmY6tbk2xu2hzj5nvqHSTz7M7pfkM8Kbgy3AQuypyQCem5"
-  block: "254141000"
+  base: "QmSwRvJxBJyejA1ZFeYNChi8J7hwGBiWfb47wK1EviPg33"
+  block: "266242000"
 factories1155:
   - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
     startBlock: "169120898"
@@ -21,4 +21,8 @@ erc20Minter:
 zoraTimedSaleStrategy:
   - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
     startBlock: "238753372"
+    version: "1"
+comments: 
+  - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
+    startBlock: "266242040"
     version: "1"

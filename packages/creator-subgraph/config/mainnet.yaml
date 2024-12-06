@@ -1,8 +1,8 @@
 chainid: "1"
 network: mainnet
 grafting: 
-  base: "QmZgoiGNumW6ASuyF3j4GVJ395g2BXHsKr1X8tpzZQrpSE"
-  block: "20763000"
+  base: "QmRemfpRrUD3FcBLnDNqfN3PZEKM7mtuNYtmwuN2RAZzND"
+  block: "21123700"
 factories1155:
   # this factory unable to be controlled anymore
   - address: "0x784A410B891EE92612102521281a3e222a6E326D"
@@ -36,4 +36,8 @@ erc20Minter:
 zoraTimedSaleStrategy:
   - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
     startBlock: "20442953"
+    version: "1"
+comments: 
+  - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
+    startBlock: "21123810"
     version: "1"
