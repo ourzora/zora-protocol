@@ -50,6 +50,12 @@ interface IZoraTimedSaleStrategy {
         uint64 marketCountdown;
     }
 
+    /// @dev This is used to check which rewards version a sale uses
+    struct RewardsVersionStorage {
+        /// @notice The rewards version
+        uint8 rewardsVersion;
+    }
+
     /// @dev Sales data virutal struct used for emitting events having SaleV1 and SaleV2 structs
     struct SaleData {
         /// @notice Unix timestamp for the sale start
@@ -102,6 +108,12 @@ interface IZoraTimedSaleStrategy {
     struct ZoraTimedSaleStrategyStorageV2 {
         /// @notice The sales mapping
         mapping(address collection => mapping(uint256 tokenId => SaleStorageV2)) salesV2;
+    }
+
+    /// @notice The rewards version storage struct
+    struct ZoraTimedSaleStrategyRewardsVersionStorage {
+        /// @notice The rewards version mapping
+        mapping(address collection => mapping(uint256 tokenId => RewardsVersionStorage)) rewardsVersion;
     }
 
     struct RewardsSettings {

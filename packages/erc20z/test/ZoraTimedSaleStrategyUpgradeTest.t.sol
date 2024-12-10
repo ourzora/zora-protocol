@@ -13,6 +13,7 @@ import {ERC20Z} from "../src/ERC20Z.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IZoraTimedSaleStrategyV1} from "./legacy/IZoraTimedSaleStrategyV1.sol";
 import {UniswapV3LiquidityCalculator} from "../src/uniswap/UniswapV3LiquidityCalculator.sol";
+import {IZoraTimedSaleStrategy} from "../src/interfaces/IZoraTimedSaleStrategy.sol";
 
 // these tests simulate: using the existing strategy deployed on zora mainnet,
 // setting up a sale, upgrading the strategy to the latest version, and then testing
@@ -34,6 +35,26 @@ contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
 
         vm.label(saleStrategy.sale(address(collection), tokenId).erc20zAddress, "ERC20Z");
         vm.label(saleStrategy.sale(address(collection), tokenId).poolAddress, "V3_POOL");
+    }
+
+    function setUpSaleV2(uint64 saleStart) public {
+        IZoraTimedSaleStrategy.SalesConfigV2 memory salesConfig = IZoraTimedSaleStrategy.SalesConfigV2({
+            saleStart: saleStart,
+            marketCountdown: 24 hours,
+            minimumMarketEth: 0.0222 ether,
+            name: "Test",
+            symbol: "TST"
+        });
+
+        vm.prank(users.creator);
+        collection.callSale(
+            tokenId,
+            saleStrategy,
+            abi.encodeWithSelector(IZoraTimedSaleStrategy(address(saleStrategy)).setSaleV2.selector, tokenId, salesConfig)
+        );
+
+        vm.label(saleStrategy.saleV2(address(collection), tokenId).erc20zAddress, "ERC20Z");
+        vm.label(saleStrategy.saleV2(address(collection), tokenId).poolAddress, "V3_POOL");
     }
 
     function setTimedSaleStrategyToCurrentlyDeployed() private {
@@ -421,5 +442,47 @@ contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
         // Second Launch Market
         vm.expectRevert(abi.encodeWithSignature("MarketAlreadyLaunched()"));
         saleStrategy.launchMarket(address(collection), tokenId);
+    }
+
+    function testUpgradeToRewardsV2() public {
+        vm.rollFork(23583214);
+        saleStrategy = ZoraTimedSaleStrategyImpl(0x777777722D078c97c6ad07d9f36801e653E356Ae);
+        assertEq(saleStrategy.contractVersion(), "2.1.1");
+
+        vm.startPrank(users.creator);
+        collection = new Zora1155(users.creator, address(saleStrategy));
+        tokenId = collection.setupNewTokenWithCreateReferral("token.uri", type(uint256).max, users.createReferral);
+        collection.addPermission(tokenId, address(saleStrategy), collection.PERMISSION_BIT_MINTER());
+        vm.stopPrank();
+
+        // Create legacy sale pre-upgrade
+        setUpSaleV2(uint64(block.timestamp));
+
+        vm.startPrank(saleStrategy.owner());
+        saleStrategy.upgradeToAndCall(address(new ZoraTimedSaleStrategyImpl()), "");
+        vm.stopPrank();
+
+        // Mint legacy sale post-upgrade
+        uint256 numTokens = 1;
+        vm.deal(users.collector, 1 ether);
+        vm.prank(users.collector);
+        saleStrategy.mint{value: 0.000111 ether}(users.collector, numTokens, address(collection), tokenId, users.mintReferral, "");
+
+        // Ensure maintains legacy market reward post-upgrade
+        assertEq(saleStrategy.saleV2(address(collection), tokenId).erc20zAddress.balance, 0.0000111 ether);
+
+        // Create new sale post-upgrade
+        vm.startPrank(users.creator);
+        tokenId = collection.setupNewTokenWithCreateReferral("token.uri", type(uint256).max, users.createReferral);
+        collection.addPermission(tokenId, address(saleStrategy), collection.PERMISSION_BIT_MINTER());
+        vm.stopPrank();
+        setUpSaleV2(uint64(block.timestamp));
+
+        // Mint new sale post-upgrade
+        vm.prank(users.collector);
+        saleStrategy.mint{value: 0.000111 ether}(users.collector, numTokens, address(collection), tokenId, users.mintReferral, "");
+
+        // Ensure uses new market reward post-upgrade
+        assertEq(saleStrategy.saleV2(address(collection), tokenId).erc20zAddress.balance, 0.0000222 ether);
     }
 }

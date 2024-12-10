@@ -144,13 +144,13 @@ contract ERC20zTest is BaseTest {
         vm.expectEmit(true, true, true, true);
         emit IERC20Z.SecondaryMarketActivated({
             token0: wethFirst ? WETH_ADDRESS : erc20z,
-            amount0: wethFirst ? 22199999999999 : 199999999999999926,
+            amount0: wethFirst ? 44399999999999 : 399999999999999948,
             token1: wethFirst ? erc20z : WETH_ADDRESS,
-            amount1: wethFirst ? 199999999999999926 : 22199999999999,
+            amount1: wethFirst ? 399999999999999948 : 44399999999999,
             fee: 10000,
             positionId: newTokenId,
-            lpLiquidity: 2107130750570452,
-            erc20Excess: 800000000000000000,
+            lpLiquidity: 4214261501141000,
+            erc20Excess: 600000000000000000,
             erc1155Excess: 1
         });
 

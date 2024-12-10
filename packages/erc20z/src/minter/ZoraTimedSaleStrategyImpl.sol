@@ -123,12 +123,13 @@ contract ZoraTimedSaleStrategyImpl is
             revert ZoraCreator1155ContractNeedsToSupportReduceSupply();
         }
 
-        if (salesConfig.minimumMarketEth < MARKET_REWARD) {
+        if (salesConfig.minimumMarketEth < MARKET_REWARD_V2) {
             revert MinimumMarketEthNotMet();
         }
 
         SaleStorage storage saleStorage = _getZoraTimedSaleStrategyStorage().sales[collection][tokenId];
         SaleStorageV2 storage saleStorageV2 = _getZoraTimedSaleStrategyStorageV2().salesV2[collection][tokenId];
+        RewardsVersionStorage storage rewardsVersionStorage = _getZoraTimedSaleStrategyRewardsVersionStorage().rewardsVersion[collection][tokenId];
 
         if (saleStorage.erc20zAddress != address(0)) {
             revert SaleAlreadySet();
@@ -145,6 +146,7 @@ contract ZoraTimedSaleStrategyImpl is
         saleStorage.poolAddress = poolAddress;
         saleStorageV2.minimumMarketEth = salesConfig.minimumMarketEth;
         saleStorageV2.marketCountdown = salesConfig.marketCountdown;
+        rewardsVersionStorage.rewardsVersion = REWARDS_V2;
 
         SaleData memory saleData = SaleData({
             saleStart: salesConfig.saleStart,
@@ -280,8 +282,11 @@ contract ZoraTimedSaleStrategyImpl is
             // Get the amount of ETH currently reserved for the secondary market
             uint256 currentMarketEth = saleStorage.erc20zAddress.balance;
 
+            // Check if this sale uses a V1 or V2 rewards distribution
+            bool isRewardsV2 = _isRewardsV2(collection, tokenId);
+
             // Get the amount of ETH that will be added from this mint
-            uint256 incomingMarketEth = quantity * MARKET_REWARD;
+            uint256 incomingMarketEth = isRewardsV2 ? quantity * MARKET_REWARD_V2 : quantity * MARKET_REWARD;
 
             // If the market has not met the minimum ETH threshold, AND
             // If the amount of ETH from the incoming mint will satisfy the minimum amount of ETH needed
@@ -426,6 +431,20 @@ contract ZoraTimedSaleStrategyImpl is
             });
     }
 
+    /// @notice Computes the V2 rewards for a given quantity of tokens
+    /// @param quantity The quantity of tokens to compute rewards for
+    function computeRewardsV2(uint256 quantity) public pure returns (RewardsSettings memory) {
+        return
+            RewardsSettings({
+                totalReward: MINT_PRICE * quantity,
+                creatorReward: CREATOR_REWARD * quantity,
+                createReferralReward: CREATOR_REFERRER_REWARD * quantity,
+                mintReferralReward: MINT_REFERRER_REWARD_V2 * quantity,
+                marketReward: MARKET_REWARD_V2 * quantity,
+                zoraReward: ZORA_REWARD * quantity
+            });
+    }
+
     /// @notice Gets the create referral address for a given token
     /// @param collection The address of the token contract
     /// @param tokenId The ID of the token
@@ -455,7 +474,9 @@ contract ZoraTimedSaleStrategyImpl is
             mintReferral = zora;
         }
 
-        RewardsSettings memory rewards = computeRewards(quantity);
+        bool isRewardsV2 = _isRewardsV2(collection, tokenId);
+
+        RewardsSettings memory rewards = isRewardsV2 ? computeRewardsV2(quantity) : computeRewards(quantity);
 
         // slither-disable-next-line arbitrary-send-eth
         protocolRewards.depositRewards{value: rewards.totalReward - rewards.marketReward}(
@@ -509,6 +530,13 @@ contract ZoraTimedSaleStrategyImpl is
     ///      2. Checking if a stored sale is a V2 sale, which is distinguished by whether a `minimumMarketEth` >= MARKET_REWARD is set in storage.
     function _validateV2Sale(uint256 minimumMarketEth) internal pure returns (bool) {
         return minimumMarketEth >= MARKET_REWARD;
+    }
+
+    /// @dev If a sale for a given token uses the V2 mint referral and market rewards
+    /// @param collection The collection address
+    /// @param tokenId The token id
+    function _isRewardsV2(address collection, uint256 tokenId) internal view returns (bool) {
+        return _getZoraTimedSaleStrategyRewardsVersionStorage().rewardsVersion[collection][tokenId].rewardsVersion == REWARDS_V2;
     }
 
     /// @dev This sale strategy does not support minting via the requestMint function
