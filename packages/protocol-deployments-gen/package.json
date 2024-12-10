@@ -22,6 +22,7 @@
     "@zoralabs/tsconfig": "workspace:^",
     "typescript": "^5.2.2",
     "tsup": "^7.2.0",
+    "tsx": "^3.13.0",
     "glob": "^10.2.2",
     "es-main": "^1.2.0",
     "@wagmi/cli": "^1.0.1",
