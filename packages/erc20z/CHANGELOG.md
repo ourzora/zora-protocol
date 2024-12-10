@@ -1,5 +1,11 @@
 # @zoralabs/erc20z
 
+## 2.2.0
+
+### Minor Changes
+
+- 8358239c: This version bump updates the market reward from 0.0000111 ETH to 0.0000222 ETH and the mint referral reward from 0.0000222 ETH to 0.0000111 ETH 
+
 ## 2.1.1
 
 ### Patch Changes

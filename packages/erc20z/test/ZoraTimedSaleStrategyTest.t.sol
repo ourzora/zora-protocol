@@ -81,7 +81,7 @@ contract ZoraTimedSaleStrategyTest is BaseTest {
     }
 
     function testZoraTimedContractVersion() public view {
-        assertEq(saleStrategy.contractVersion(), "2.1.1");
+        assertEq(saleStrategy.contractVersion(), "2.2.0");
     }
 
     function testZoraTimedRequestMintReverts() public {
