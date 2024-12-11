@@ -1,11 +1,8 @@
 import { describe, expect, vi } from "vitest";
 import { encodeAbiParameters, erc20Abi, parseEther } from "viem";
 import { zoraSepolia, base } from "viem/chains";
-import {
-  forkUrls,
-  makeAnvilTest,
-  simulateAndWriteContractWithRetries,
-} from "src/anvil";
+import { forkUrls, makeAnvilTest } from "src/anvil";
+import { simulateAndWriteContractWithRetries } from "src/test-utils";
 import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { new1155ContractVersion } from "src/create/contract-setup";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";

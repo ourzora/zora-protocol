@@ -1,11 +1,8 @@
 import { describe, expect, vi } from "vitest";
 import { parseEther, Address, parseEventLogs } from "viem";
 import { zoraSepolia } from "viem/chains";
-import {
-  forkUrls,
-  makeAnvilTest,
-  simulateAndWriteContractWithRetries,
-} from "src/anvil";
+import { forkUrls, makeAnvilTest } from "src/anvil";
+import { simulateAndWriteContractWithRetries } from "src/test-utils";
 import { createCollectorClient } from "src/sdk";
 import {
   zoraCreator1155ImplABI,

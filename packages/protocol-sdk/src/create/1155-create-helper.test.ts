@@ -9,15 +9,14 @@ import {
   zoraTimedSaleStrategyABI,
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import { waitForSuccess } from "src/test-utils";
+import { waitForSuccess } from "src/waitForSuccess";
 import { Address, erc20Abi, parseEther, PublicClient } from "viem";
 import { makePrepareMint1155TokenParams } from "src/mint/mint-transactions";
+import { forkUrls, makeAnvilTest } from "src/anvil";
 import {
-  forkUrls,
-  makeAnvilTest,
   simulateAndWriteContractWithRetries,
   writeContractWithRetries,
-} from "src/anvil";
+} from "src/test-utils";
 import { zora } from "viem/chains";
 import { AllowList } from "src/allow-list/types";
 import { createAllowList } from "src/allow-list/allow-list-client";

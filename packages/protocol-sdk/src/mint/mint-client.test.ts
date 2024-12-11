@@ -14,7 +14,8 @@ import {
   commentsABI,
   callerAndCommenterABI,
 } from "@zoralabs/protocol-deployments";
-import { forkUrls, makeAnvilTest, writeContractWithRetries } from "src/anvil";
+import { forkUrls, makeAnvilTest } from "src/anvil";
+import { writeContractWithRetries } from "src/test-utils";
 import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { getAllowListEntry } from "src/allow-list/allow-list-client";
 import { SubgraphMintGetter } from "./subgraph-mint-getter";

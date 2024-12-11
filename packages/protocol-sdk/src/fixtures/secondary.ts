@@ -1,6 +1,6 @@
 import { Address, Account, PublicClient, TestClient, WalletClient } from "viem";
 import { CollectorClient } from "../sdk";
-import { simulateAndWriteContractWithRetries } from "../anvil";
+import { simulateAndWriteContractWithRetries } from "src/test-utils";
 import { makeContractParameters } from "../utils";
 import {
   zoraTimedSaleStrategyABI,

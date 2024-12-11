@@ -4,25 +4,19 @@ import {
 } from "@zoralabs/protocol-deployments";
 import {
   Address,
-  Hex,
   PublicClient,
   encodeAbiParameters,
   keccak256,
   toBytes,
   parseAbiParameters,
+  Chain,
+  WalletClient,
+  SimulateContractReturnType,
+  Account,
 } from "viem";
 import { NewContractParams } from "./create/types";
-import { expect } from "vitest";
-
-export const waitForSuccess = async (hash: Hex, publicClient: PublicClient) => {
-  const receipt = await publicClient.waitForTransactionReceipt({
-    hash,
-  });
-
-  expect(receipt.status).toBe("success");
-
-  return receipt;
-};
+import { retries } from "./apis/http-api-base";
+import { SimulateContractParametersWithAccount } from "./types";
 
 export const getFixedPricedMinter = async ({
   publicClient,
@@ -56,3 +50,53 @@ export const randomNonce = () =>
   keccak256(toBytes(Math.round(Math.random() * 1000)));
 export const thirtySecondsFromNow = () =>
   BigInt(Math.round(new Date().getTime() / 1000)) + 30n;
+
+export async function simulateAndWriteContractWithRetries({
+  parameters,
+  walletClient,
+  publicClient,
+}: {
+  parameters: SimulateContractParametersWithAccount;
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+}) {
+  const { request } = await publicClient.simulateContract(parameters);
+  return await writeContractWithRetries({
+    request,
+    walletClient,
+    publicClient,
+  });
+}
+
+export async function writeContractWithRetries({
+  request,
+  walletClient,
+  publicClient,
+}: {
+  request: SimulateContractReturnType<any, any, any, Chain, Account>["request"];
+  walletClient: WalletClient;
+  publicClient: PublicClient;
+}) {
+  let tryCount = 1;
+  const tryFn = async () => {
+    if (tryCount > 1) {
+      console.log("retrying try #", tryCount);
+    }
+    const hash = await walletClient.writeContract(request);
+    const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
+    if (receipt.status !== "success") {
+      console.log("failed try #", tryCount);
+      tryCount++;
+      throw new Error("transaction failed");
+    }
+
+    return receipt;
+  };
+
+  const shouldRetry = () => {
+    return true;
+  };
+
+  return await retries(tryFn, 3, 1000, shouldRetry);
+}

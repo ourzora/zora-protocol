@@ -1,5 +1,5 @@
 import { Address, Chain, PublicClient, WalletClient } from "viem";
-import { simulateAndWriteContractWithRetries } from "src/anvil";
+import { simulateAndWriteContractWithRetries } from "src/test-utils";
 import { createCreatorClient } from "src/sdk";
 import { SubgraphMintGetter } from "src/mint/subgraph-mint-getter";
 import { SubgraphRewardsGetter } from "../rewards/subgraph-rewards-getter";
