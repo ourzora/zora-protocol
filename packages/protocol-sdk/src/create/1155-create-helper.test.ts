@@ -561,7 +561,7 @@ describe("create-helper", () => {
             "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
           salesConfig: {
             type: "allowlistMint",
-            presaleMerkleRoot: `0x${root}`,
+            presaleMerkleRoot: root,
           },
         },
         account: creator,
