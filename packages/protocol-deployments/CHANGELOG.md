@@ -98,7 +98,7 @@
 
 - 898c84a7: [chore] Update dependencies and runtime scripts
 
-  This ensures jobs do not match binary names to make runs less ambigious and also that all deps are accounted for.
+  This ensures jobs do not match binary names to make runs less ambiguous and also that all deps are accounted for.
 
 - e0b5074d: Updated mainnet 1155 addresses and versions
 
