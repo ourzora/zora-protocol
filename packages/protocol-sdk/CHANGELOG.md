@@ -350,7 +350,7 @@
 
 ### Patch Changes
 
-- a07499d: Allows an `Account` object to be passed for `signTypedData` compatiblity with Local Accounts
+- a07499d: Allows an `Account` object to be passed for `signTypedData` compatibility with Local Accounts
 
 ## 0.5.2
 
@@ -430,7 +430,7 @@
 
 - 7eb5e3f: ### Changes to `preminter`
 
-  lower level `preminter.ts` now supports premint v2 by defining v2 typed data defintions.
+  lower level `preminter.ts` now supports premint v2 by defining v2 typed data definitions.
 
   - `isValidSignature` now takes either v1 or v2 of a premint config, along with the premint config version. and both recovers the signer address and validates if the signer can create a premint on the given contract.
   - new function `premintTypedDataDefinition` which takes a premint config version and returns the signable typed data definition for that version
