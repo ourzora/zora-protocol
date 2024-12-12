@@ -257,7 +257,7 @@
 
 ### Patch Changes
 
-- 128b05c: Updated determinstic preminter deployment script to not fail if already deployed
+- 128b05c: Updated deterministic preminter deployment script to not fail if already deployed
 - 1d58cd1: Deployed 2.5.2 to zora sepolia and zora goerli
 - 128b05c: Deployed 2.5.1 to zora sepolia and zora goerli
 - Updated dependencies [e4edaac]
