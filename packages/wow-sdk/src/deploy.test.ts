@@ -4,14 +4,11 @@ import { base } from "viem/chains";
 import { expect } from "vitest";
 import { deployWowToken } from "./deploy";
 import { TransactionReceipt } from "viem";
-
-export const forkUrls = {
-  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/6GhpfVtPzsbJkGjwfgUjBW`,
-};
+import { BASE_MAINNET_FORK_BLOCK_NUMBER, forkUrls } from "./test/constants";
 
 describe("deploy wow token", () => {
   makeAnvilTest({
-    forkBlockNumber: 23589888,
+    forkBlockNumber: BASE_MAINNET_FORK_BLOCK_NUMBER,
     forkUrl: forkUrls.baseMainnet,
     anvilChainId: base.id,
   })(

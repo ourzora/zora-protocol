@@ -1,14 +1,14 @@
 import { Address, parseEther, zeroAddress } from "viem";
 import { WowERC20ABI } from "./abi/WowERC20";
-import { getBuyQuote } from "./quote";
 import { WowTransactionBaseArgs } from "./types";
 import {
   calculateSlippage,
   isQuoteChangeExceedingSlippage,
-} from "./utils/quote";
-import { calculateQuoteWithFees } from "./utils/quote";
+  getBuyQuote,
+  calculateQuoteWithFees,
+} from "./quote";
 import { SlippageExceededError } from "./errors";
-import { getMarketTypeAndPoolAddress } from "./utils/transaction";
+import { getMarketTypeAndPoolAddress } from "./pool/transaction";
 
 export interface BuyWowTokenArgs extends WowTransactionBaseArgs {
   /**

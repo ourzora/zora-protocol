@@ -1,19 +1,16 @@
-import {
-  forkUrls,
-  makeAnvilTest,
-  waitForTransactionReceiptWithRetries,
-} from "./test";
+import { makeAnvilTest, waitForTransactionReceiptWithRetries } from "./test";
 import { describe } from "node:test";
 import { base } from "viem/chains";
 import { expect } from "vitest";
 import { parseEther } from "viem";
 import { buyTokens } from "./buy";
 import { getBuyQuote } from "./quote";
-import { getMarketTypeAndPoolAddress } from "./utils/transaction";
+import { getMarketTypeAndPoolAddress } from "./pool/transaction";
+import { BASE_MAINNET_FORK_BLOCK_NUMBER, forkUrls } from "./test/constants";
 
 describe("buy wow token", () => {
   makeAnvilTest({
-    forkBlockNumber: 23589888,
+    forkBlockNumber: BASE_MAINNET_FORK_BLOCK_NUMBER,
     forkUrl: forkUrls.baseMainnet,
     anvilChainId: base.id,
   })(

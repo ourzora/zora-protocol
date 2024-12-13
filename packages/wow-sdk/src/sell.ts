@@ -1,11 +1,13 @@
 import { zeroAddress } from "viem";
 import { WowERC20ABI } from "./abi/WowERC20";
 import { WowTransactionBaseArgs } from "./types";
-import { calculateSlippage } from "./utils/quote";
-import { isQuoteChangeExceedingSlippage } from "./utils/quote";
-import { getSellQuote } from "./quote";
+import {
+  calculateSlippage,
+  getSellQuote,
+  isQuoteChangeExceedingSlippage,
+} from "./quote";
 import { SlippageExceededError } from "./errors";
-import { getMarketTypeAndPoolAddress } from "./utils/transaction";
+import { getMarketTypeAndPoolAddress } from "./pool/transaction";
 
 export interface SellWowTokenArgs extends WowTransactionBaseArgs {
   /**

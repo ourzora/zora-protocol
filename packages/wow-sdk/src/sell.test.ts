@@ -6,15 +6,12 @@ import { parseEther, TransactionReceipt } from "viem";
 import { buyTokens } from "./buy";
 import { sellTokens } from "./sell";
 import { getBuyQuote, getSellQuote } from "./quote";
-import { getMarketTypeAndPoolAddress } from "./utils/transaction";
-
-export const forkUrls = {
-  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/6GhpfVtPzsbJkGjwfgUjBW`,
-};
+import { getMarketTypeAndPoolAddress } from "./pool/transaction";
+import { BASE_MAINNET_FORK_BLOCK_NUMBER, forkUrls } from "./test/constants";
 
 describe("sell wow token", () => {
   makeAnvilTest({
-    forkBlockNumber: 23589888,
+    forkBlockNumber: BASE_MAINNET_FORK_BLOCK_NUMBER,
     forkUrl: forkUrls.baseMainnet,
     anvilChainId: base.id,
   })(
