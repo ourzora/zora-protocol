@@ -6,7 +6,7 @@ import { deployWowToken } from "./deploy";
 import { TransactionReceipt } from "viem";
 
 export const forkUrls = {
-  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/${process.env["TENDERLY_API_KEY"]}`,
+  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/6GhpfVtPzsbJkGjwfgUjBW`,
 };
 
 describe("deploy wow token", () => {

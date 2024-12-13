@@ -1,4 +1,8 @@
-import { makeAnvilTest, waitForTransactionReceiptWithRetries } from "./test";
+import {
+  forkUrls,
+  makeAnvilTest,
+  waitForTransactionReceiptWithRetries,
+} from "./test";
 import { describe } from "node:test";
 import { base } from "viem/chains";
 import { expect } from "vitest";
@@ -6,10 +10,6 @@ import { parseEther } from "viem";
 import { buyTokens } from "./buy";
 import { getBuyQuote } from "./quote";
 import { getMarketTypeAndPoolAddress } from "./utils/transaction";
-
-export const forkUrls = {
-  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/${process.env["TENDERLY_API_KEY"]}`,
-};
 
 describe("buy wow token", () => {
   makeAnvilTest({

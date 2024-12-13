@@ -13,7 +13,7 @@ import {
   createWalletClient,
   http,
 } from "viem";
-import { foundry } from "viem/chains";
+import { base, foundry } from "viem/chains";
 import {
   AnvilForkSettings,
   AnvilViemClients,
@@ -159,3 +159,13 @@ export async function writeContractWithRetries({
 }
 
 export * from "./types";
+
+export const forkUrls = {
+  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/od-5_h-7L3nVoE30d4iQQn_hNiA-YCYe`,
+};
+
+makeAnvilTest({
+  forkBlockNumber: 23589888,
+  forkUrl: forkUrls.baseMainnet,
+  anvilChainId: base.id,
+});

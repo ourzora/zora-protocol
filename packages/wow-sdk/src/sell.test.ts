@@ -9,7 +9,7 @@ import { getBuyQuote, getSellQuote } from "./quote";
 import { getMarketTypeAndPoolAddress } from "./utils/transaction";
 
 export const forkUrls = {
-  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/${process.env["TENDERLY_API_KEY"]}`,
+  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/6GhpfVtPzsbJkGjwfgUjBW`,
 };
 
 describe("sell wow token", () => {
