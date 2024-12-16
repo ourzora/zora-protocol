@@ -24,20 +24,21 @@
     "test": "vitest src"
   },
   "devDependencies": {
-    "@types/node": "^20.11.24",
+    "@types/node": "^20.13.0",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "eslint": "^8.57.0",
     "prettier": "^3.0.3",
-    "tsup": "^8.0.2",
-    "typescript": "^5.3.3",
+    "tsup": "^7.2.0",
+    "typescript": "^5.2.2",
     "vitest": "^2.0.5",
     "ts-node": "^10.9.1"
   },
   "dependencies": {
-    "viem": "^2.21.54"
+    "viem": "^2.21.21"
   },
   "peerDependencies": {
-    "viem": "^2.21.54"
+    "viem": "^2.21.21",
+    "abitype": "^1.0.2"
   }
 }
