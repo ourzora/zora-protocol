@@ -1,5 +1,6 @@
 import { describe, expect } from "vitest";
-import { forkUrls, makeAnvilTest, writeContractWithRetries } from "src/anvil";
+import { forkUrls, makeAnvilTest } from "src/anvil";
+import { writeContractWithRetries } from "src/test-utils";
 import { base, zora } from "viem/chains";
 import {
   commentsABI,
@@ -25,7 +26,8 @@ import {
   hashTypedData,
 } from "viem";
 import { createCreatorClient } from "src/sdk";
-import { randomNewContract, waitForSuccess } from "src/test-utils";
+import { randomNewContract } from "src/test-utils";
+import { waitForSuccess } from "src/waitForSuccess";
 import { permitCommentTypedDataDefinition } from "@zoralabs/protocol-deployments";
 import { demoTokenMetadataURI } from "src/fixtures/contract-setup";
 import { randomNonce, thirtySecondsFromNow } from "src/test-utils";

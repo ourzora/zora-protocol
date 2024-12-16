@@ -9,13 +9,11 @@ import {
   zoraCreator1155ImplABI,
   zoraMints1155ABI,
   zoraMints1155Address,
-  zoraMintsManagerImplABI,
   zoraMintsManagerImplAddress,
   PremintMintArguments,
   premintTypedDataDefinition,
   zoraSparks1155Address,
   zoraSparks1155ABI,
-  zoraSparksManagerImplABI,
 } from "@zoralabs/protocol-deployments";
 import {
   Address,
@@ -39,10 +37,9 @@ import { zora } from "viem/chains";
 import {
   fixedPriceMinterMinterArguments,
   getFixedPricedMinter,
-  waitForSuccess,
 } from "src/test-utils";
 import { PublicClient } from "src/utils";
-
+import { waitForSuccess } from "src/waitForSuccess";
 const sparksMainnetDeployedBlock = 17655716;
 
 const anvilTest = makeAnvilTest({

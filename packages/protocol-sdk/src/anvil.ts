@@ -2,10 +2,8 @@ import { spawn } from "node:child_process";
 import { join } from "path";
 import { test } from "vitest";
 import {
-  Account,
   Chain,
   PublicClient,
-  SimulateContractReturnType,
   TestClient,
   Transport,
   WalletClient,
@@ -15,8 +13,6 @@ import {
   http,
 } from "viem";
 import { foundry, zora } from "viem/chains";
-import { retries } from "./apis/http-api-base";
-import { SimulateContractParametersWithAccount } from "./types";
 
 export interface AnvilViemClientsTest {
   viemClients: {
@@ -121,53 +117,3 @@ export const anvilTest = makeAnvilTest({
   forkBlockNumber: 7866332,
   anvilChainId: zora.id,
 });
-
-export async function simulateAndWriteContractWithRetries({
-  parameters,
-  walletClient,
-  publicClient,
-}: {
-  parameters: SimulateContractParametersWithAccount;
-  walletClient: WalletClient;
-  publicClient: PublicClient;
-}) {
-  const { request } = await publicClient.simulateContract(parameters);
-  return await writeContractWithRetries({
-    request,
-    walletClient,
-    publicClient,
-  });
-}
-
-export async function writeContractWithRetries({
-  request,
-  walletClient,
-  publicClient,
-}: {
-  request: SimulateContractReturnType<any, any, any, Chain, Account>["request"];
-  walletClient: WalletClient;
-  publicClient: PublicClient;
-}) {
-  let tryCount = 1;
-  const tryFn = async () => {
-    if (tryCount > 1) {
-      console.log("retrying try #", tryCount);
-    }
-    const hash = await walletClient.writeContract(request);
-    const receipt = await publicClient.waitForTransactionReceipt({ hash });
-
-    if (receipt.status !== "success") {
-      console.log("failed try #", tryCount);
-      tryCount++;
-      throw new Error("transaction failed");
-    }
-
-    return receipt;
-  };
-
-  const shouldRetry = () => {
-    return true;
-  };
-
-  return await retries(tryFn, 3, 1000, shouldRetry);
-}
