@@ -3,8 +3,10 @@ import { join } from "path";
 import { test } from "vitest";
 import {
   Account,
+  Address,
   Chain,
   PublicClient,
+  SimulateContractParameters,
   SimulateContractReturnType,
   TransactionReceipt,
   WalletClient,
@@ -14,11 +16,7 @@ import {
   http,
 } from "viem";
 import { foundry } from "viem/chains";
-import {
-  AnvilForkSettings,
-  AnvilViemClients,
-  SimulateContractParametersWithAccount,
-} from "./types";
+import { AnvilForkSettings, AnvilViemClients } from "./types";
 import { retries } from "./utils/http";
 import { privateKeyToAccount } from "viem/accounts";
 
@@ -106,10 +104,11 @@ export async function simulateAndWriteContractWithRetries({
   walletClient,
   publicClient,
 }: {
-  parameters: SimulateContractParametersWithAccount;
+  parameters: SimulateContractParameters<any, any, any, any, any, Address>;
   walletClient: WalletClient;
   publicClient: PublicClient;
 }) {
+  console.log({ parameters }, walletClient.account?.address);
   const { request } = await publicClient.simulateContract(parameters);
   return await writeContractWithRetries({
     request,

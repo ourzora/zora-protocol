@@ -1,4 +1,10 @@
-import { Address, parseEther, zeroAddress } from "viem";
+import {
+  Address,
+  ContractFunctionArgs,
+  parseEther,
+  SimulateContractParameters,
+  zeroAddress,
+} from "viem";
 import { WowERC20ABI } from "./abi/WowERC20";
 import { WowTransactionBaseArgs } from "./types";
 import {
@@ -9,6 +15,7 @@ import {
 } from "./quote";
 import { SlippageExceededError } from "./errors";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
+import { SimulateContractParametersWithAccount } from "./test";
 
 export interface BuyWowTokenArgs extends WowTransactionBaseArgs {
   /**
@@ -32,10 +39,10 @@ export async function buyTokens(args: BuyWowTokenArgs) {
   const {
     chainId,
     publicClient,
-    walletClient,
     tokenAddress,
     tokenRecipientAddress,
     refundRecipientAddress,
+    account,
     originalTokenQuote,
     slippageBps,
     ethAmount,
@@ -62,7 +69,6 @@ export async function buyTokens(args: BuyWowTokenArgs) {
     publicClient,
   });
 
-  console.log({ originalTokenQuote, updatedTokenQuote });
   if (
     isQuoteChangeExceedingSlippage(
       originalTokenQuote,
@@ -73,10 +79,17 @@ export async function buyTokens(args: BuyWowTokenArgs) {
     throw new SlippageExceededError(originalTokenQuote, updatedTokenQuote);
   }
 
-  const { request } = await publicClient.simulateContract({
+  const parameters: SimulateContractParameters<
+    typeof WowERC20ABI,
+    "buy",
+    ContractFunctionArgs<typeof WowERC20ABI, "nonpayable" | "payable", "buy">,
+    any,
+    any,
+    Address
+  > = {
     address: tokenAddress,
     abi: WowERC20ABI,
-    functionName: "buy",
+    functionName: "buy" as const,
     args: [
       tokenRecipientAddress,
       refundRecipientAddress,
@@ -88,18 +101,10 @@ export async function buyTokens(args: BuyWowTokenArgs) {
         slippageBps,
       ),
       0n,
-    ],
+    ] as const,
     value: parseEther(ethAmount),
-    account: walletClient.account?.address,
-  });
-
-  // Bump up the gas as due to the graduation logic, some wallets have issues with the gas limit
-  const requestWithExtraGas = {
-    ...request,
-    gas: request.gas ? (request.gas * 13n) / 10n : undefined,
+    account,
   };
 
-  const hash = await walletClient.writeContract(requestWithExtraGas);
-
-  return hash;
+  return parameters as SimulateContractParametersWithAccount;
 }

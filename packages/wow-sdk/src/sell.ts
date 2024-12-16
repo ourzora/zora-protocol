@@ -1,24 +1,30 @@
-import { zeroAddress } from "viem";
+import {
+  Address,
+  ContractFunctionArgs,
+  SimulateContractParameters,
+  zeroAddress,
+} from "viem";
 import { WowERC20ABI } from "./abi/WowERC20";
 import { WowTransactionBaseArgs } from "./types";
 import {
   calculateSlippage,
-  getSellQuote,
   isQuoteChangeExceedingSlippage,
+  getSellQuote,
 } from "./quote";
 import { SlippageExceededError } from "./errors";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
 
 export interface SellWowTokenArgs extends WowTransactionBaseArgs {
   /**
-   * Amount of Wow tokens to sell
+   * Amount of tokens to sell
    */
   tokenAmount: bigint;
 }
 
 /**
  * Simulates and executes a transaction to sell Wow tokens on the given WalletClient.
- * For more details on Wow mechanis, see https://wow.xyz/mechanics
+ * For more details on Wow mechanics, see https://wow.xyz/mechanics
+ * @returns
  * @throws {NoPoolAddressFoundError}
  * @throws {SlippageExceededError}
  */
@@ -26,14 +32,14 @@ export async function sellTokens(args: SellWowTokenArgs) {
   const {
     chainId,
     publicClient,
-    walletClient,
+    account,
     tokenAddress,
     tokenRecipientAddress,
-    poolAddress: passedInPoolAddress,
-    tokenAmount,
-    comment = "",
     originalTokenQuote,
     slippageBps,
+    tokenAmount,
+    poolAddress: passedInPoolAddress,
+    comment = "",
     referrerAddress = zeroAddress,
   } = args;
 
@@ -46,42 +52,47 @@ export async function sellTokens(args: SellWowTokenArgs) {
   /**
    * Get the quote again in case it has changed since the consumer fetched it
    */
-  const updatedQuote = await getSellQuote({
+  const updatedTokenQuote = await getSellQuote({
     chainId,
-    publicClient,
     tokenAddress,
     amount: tokenAmount,
     poolAddress,
     marketType,
+    publicClient,
   });
 
   if (
     isQuoteChangeExceedingSlippage(
       originalTokenQuote,
-      updatedQuote,
+      updatedTokenQuote,
       slippageBps,
     )
   ) {
-    throw new SlippageExceededError(originalTokenQuote, updatedQuote);
+    throw new SlippageExceededError(originalTokenQuote, updatedTokenQuote);
   }
 
-  const { request } = await publicClient.simulateContract({
+  const parameters: SimulateContractParameters<
+    typeof WowERC20ABI,
+    "sell",
+    ContractFunctionArgs<typeof WowERC20ABI, "nonpayable" | "payable", "sell">,
+    any,
+    any,
+    Address
+  > = {
     address: tokenAddress,
     abi: WowERC20ABI,
-    functionName: "sell",
+    functionName: "sell" as const,
     args: [
       tokenAmount,
       tokenRecipientAddress,
       referrerAddress,
       comment,
       marketType,
-      calculateSlippage(updatedQuote, slippageBps),
+      calculateSlippage(originalTokenQuote, slippageBps),
       0n,
-    ],
-    account: walletClient.account?.address,
-  });
+    ] as const,
+    account,
+  };
 
-  const hash = await walletClient.writeContract(request);
-
-  return hash;
+  return parameters;
 }

@@ -1,4 +1,4 @@
-import { Address, PublicClient, WalletClient, zeroAddress } from "viem";
+import { Address, zeroAddress } from "viem";
 import ERC20FactoryABI from "./abi/ERC20Factory";
 
 import { addresses } from "./addresses";
@@ -12,19 +12,15 @@ interface DeployWowTokenArgs {
   value?: bigint;
 }
 
-export const deployWowToken = async (
-  args: DeployWowTokenArgs,
-  publicClient: PublicClient,
-  walletClient: WalletClient,
-) => {
+export const getDeployTokenParameters = async (args: DeployWowTokenArgs) => {
   const { chainId, userAddress, cid, name, symbol, value = 0n } = args;
-  const { request } = await publicClient.simulateContract({
+
+  return {
     account: userAddress,
     address: addresses[chainId].WowFactory as Address,
     abi: ERC20FactoryABI,
-    functionName: "deploy",
-    args: [userAddress, zeroAddress, cid, name, symbol],
+    functionName: "deploy" as const,
+    args: [userAddress, zeroAddress, cid, name, symbol] as const,
     value,
-  });
-  return await walletClient.writeContract(request);
+  } as const;
 };

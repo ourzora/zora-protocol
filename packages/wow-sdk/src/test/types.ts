@@ -1,5 +1,5 @@
 import {
-  Account,
+  Address,
   Chain,
   PublicClient,
   TestClient,
@@ -15,11 +15,11 @@ export interface AnvilViemClients {
 }
 
 export interface SimulateContractParametersWithAccount {
-  account: Account;
+  account: Address;
   address: `0x${string}`;
-  abi: any[];
+  abi: readonly any[];
   functionName: string;
-  args: any[];
+  args: readonly any[];
   chain?: Chain;
 }
 

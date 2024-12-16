@@ -126,12 +126,6 @@ export async function getUniswapQuote({
     insufficientLiquidity = type === "buy" && amount > balanceOut;
     utilization = type === "buy" ? amount / balanceOut : utilization;
 
-    console.log({
-      amount,
-      balanceOut,
-      utilization,
-    });
-
     quote = await exactInputSingle(
       tokenIn,
       tokenOut,

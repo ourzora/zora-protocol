@@ -1,5 +1,4 @@
 import { Address } from "viem";
-import { WalletClient } from "viem";
 import { PublicClient } from "viem";
 import { base, baseSepolia, mainnet } from "viem/chains";
 
@@ -18,9 +17,9 @@ export type WowTransactionBaseArgs = {
    */
   publicClient: PublicClient;
   /**
-   * Wallet client
+   * Address of the account to use for the transaction
    */
-  walletClient: WalletClient;
+  account: Address;
   /**
    * Token address of the Wow token
    */
