@@ -177,9 +177,9 @@ describe("sell wow token", () => {
           tokenAmount: halfTokenBalance,
           publicClient,
           account: walletClient.account?.address!,
-        })
+        }),
       ).rejects.toThrow(SlippageExceededError);
     },
-    40_000
+    40_000,
   );
 });

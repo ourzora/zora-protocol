@@ -21,7 +21,8 @@
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "dev": "tsup --watch",
     "lint": "prettier --check 'src/**/*.ts'",
-    "test": "vitest src"
+    "test": "vitest src",
+    "prettier:write": "prettier --write 'src/**/*.ts'"
   },
   "devDependencies": {
     "@types/node": "^20.11.24",

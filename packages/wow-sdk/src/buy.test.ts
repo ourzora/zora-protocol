@@ -120,9 +120,9 @@ describe("buy wow token", () => {
           ethAmount: "1",
           publicClient,
           account: walletClient.account?.address!,
-        })
+        }),
       ).rejects.toThrow(SlippageExceededError);
     },
-    30_000
+    30_000,
   );
 });
