@@ -3,7 +3,7 @@ import ERC20FactoryABI from "./abi/ERC20Factory";
 
 import { addresses } from "./addresses";
 
-interface DeployWowTokenArgs {
+export interface DeployWowTokenArgs {
   chainId: 8453 | 84532;
   userAddress: Address;
   cid: `ipfs://${string}`;

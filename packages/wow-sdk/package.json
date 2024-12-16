@@ -16,7 +16,7 @@
     }
   },
   "scripts": {
-    "build": "tsup",
+    "build": "pnpm tsup",
     "prepack": "pnpm build",
     "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
     "dev": "tsup --watch",
@@ -28,6 +28,7 @@
     "@types/node": "^20.11.24",
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
+    "@zoralabs/tsconfig": "workspace:^",
     "eslint": "^8.57.0",
     "prettier": "^3.0.3",
     "tsup": "^8.0.2",
