@@ -135,7 +135,7 @@ describe("rewardsClient", () => {
     30_000,
   );
   makeAnvilTest({
-    forkBlockNumber: 14653556,
+    forkBlockNumber: 17938475,
     forkUrl: forkUrls.zoraSepolia,
     anvilChainId: zoraSepolia.id,
   })(
