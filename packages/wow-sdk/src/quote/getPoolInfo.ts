@@ -13,6 +13,12 @@ export interface PoolInfo {
   sqrtPriceX96: bigint;
 }
 
+/**
+ * Get pool info for a given pool address, used for tokens that have graduated to uniswap
+ * @param poolAddress - The address of the pool
+ * @param publicClient - Viem public client
+ * @returns Pool info
+ */
 export async function getPoolInfo(
   poolAddress: Address,
   publicClient: PublicClient,

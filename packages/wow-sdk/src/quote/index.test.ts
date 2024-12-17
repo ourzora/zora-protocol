@@ -8,8 +8,7 @@ import {
 } from ".";
 import { makeAnvilTest } from "../test";
 import { base } from "viem/chains";
-import { parseEther, zeroAddress } from "viem";
-import { MarketType } from "../marketType";
+import { parseEther } from "viem";
 import {
   BASE_GRADUATED_TOKEN_ADDRESS,
   BASE_MAINNET_FORK_BLOCK_NUMBER,

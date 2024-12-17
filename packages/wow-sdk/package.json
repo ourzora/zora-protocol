@@ -1,5 +1,5 @@
 {
-  "name": "@wow-monorepo/sdk",
+  "name": "@zoralabs/wow-sdk",
   "version": "0.1.0",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",

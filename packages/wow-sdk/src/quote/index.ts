@@ -41,7 +41,16 @@ export function isQuoteChangeExceedingSlippage(
   return quoteDiff < slippageBps * -1n;
 }
 
-/// BUY
+/**
+ * Get a buy quote for a given market type
+ * @param chainId - Chain ID
+ * @param tokenAddress - Token address
+ * @param amount - Amount of eth
+ * @param poolAddress - Pool address
+ * @param marketType - Market type
+ * @param publicClient - Viem public client
+ * @returns Quote
+ */
 export async function getBuyQuote({
   chainId,
   tokenAddress,
@@ -80,6 +89,16 @@ export async function getBuyQuote({
     : quote;
 }
 
+/**
+ * Get a sell quote for a given market type
+ * @param chainId - Chain ID
+ * @param tokenAddress - Token address
+ * @param amount - Amount of tokens
+ * @param poolAddress - Pool address
+ * @param marketType - Market type
+ * @param publicClient - Viem public client
+ * @returns Quote
+ */
 export async function getSellQuote({
   chainId,
   publicClient,

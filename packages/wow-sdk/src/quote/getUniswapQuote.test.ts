@@ -4,10 +4,12 @@ import { base } from "viem/chains";
 import { getUniswapQuote } from "./getUniswapQuote";
 import { parseEther, zeroAddress } from "viem";
 import { getMarketTypeAndPoolAddress } from "../pool/transaction";
-import { BASE_MAINNET_FORK_BLOCK_NUMBER, forkUrls } from "../test/constants";
+import {
+  BASE_GRADUATED_TOKEN_ADDRESS,
+  BASE_MAINNET_FORK_BLOCK_NUMBER,
+  forkUrls,
+} from "../test/constants";
 
-// Real token with existing pool on Base
-const REAL_TOKEN = "0x01aa2894773c091cc21a8880b3633ac173727440";
 // Non-existent pool address
 const FAKE_POOL = "0x1234567890123456789012345678901234567890";
 
@@ -21,7 +23,7 @@ describe("getUniswapQuote", () => {
     async ({ viemClients: { publicClient } }) => {
       // First get pool info to get the pool address
       const { poolAddress } = await getMarketTypeAndPoolAddress({
-        tokenAddress: REAL_TOKEN,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         publicClient,
       });
 
@@ -50,7 +52,7 @@ describe("getUniswapQuote", () => {
     "can fetch a sell uniswap quote",
     async ({ viemClients: { publicClient } }) => {
       const { poolAddress } = await getMarketTypeAndPoolAddress({
-        tokenAddress: REAL_TOKEN,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         publicClient,
       });
 

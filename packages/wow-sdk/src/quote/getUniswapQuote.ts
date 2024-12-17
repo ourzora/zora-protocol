@@ -75,6 +75,15 @@ async function exactInputSingle(
   };
 }
 
+/**
+ * Get a quote for a given pool address, used for tokens that have graduated to uniswap
+ * @param chainId - Chain ID
+ * @param poolAddress - Pool address - if not passed in, will fetch from the contract
+ * @param amount - Amount of eth if buy, tokens if sell
+ * @param type - Type of quote, buy or sell
+ * @param publicClient - Viem public client
+ * @returns Quote
+ */
 export async function getUniswapQuote({
   chainId,
   poolAddress,
