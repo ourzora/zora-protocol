@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.3.11
+
+### Patch Changes
+
+- ff8084fe: Update implementation contract versions and addresses for erc20z
+
 ## 0.3.10
 
 ### Patch Changes
