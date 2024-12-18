@@ -25,4 +25,4 @@ runs:
     - name: Install Foundry
       uses: foundry-rs/foundry-toolchain@v1
       with:
-        version: nightly-7f41280ee071193557f73f16bae9aee9a5548ee8
+        version: nightly-6b07c77eb1c1d1c4b56ffa7f79240254b73236d2
