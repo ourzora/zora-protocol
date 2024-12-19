@@ -16,6 +16,7 @@ script = 'script'
 src = 'src'
 solc_version = '0.8.20'
 via_ir = true
+evm_version = 'paris'
 
 [profile.dev]
 optimizer = false
