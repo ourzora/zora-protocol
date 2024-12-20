@@ -38,6 +38,7 @@ export const makeAnvilTest = ({
 }: AnvilForkSettings) =>
   test.extend<{ viemClients: AnvilViemClients }>({
     viemClients: async ({ task }, use) => {
+      console.log(process.env["TENDERLY_API_KEY"]);
       console.log("setting up clients for", task.name);
       const port = Math.floor(Math.random() * 60000) + 4000;
 
@@ -108,7 +109,6 @@ export async function simulateAndWriteContractWithRetries({
   walletClient: WalletClient;
   publicClient: PublicClient;
 }) {
-  console.log({ parameters }, walletClient.account?.address);
   const { request } = await publicClient.simulateContract(parameters);
   return await writeContractWithRetries({
     request,

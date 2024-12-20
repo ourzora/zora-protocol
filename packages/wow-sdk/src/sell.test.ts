@@ -7,7 +7,11 @@ import { buyTokens } from "./buy";
 import { sellTokens } from "./sell";
 import { getBuyQuote, getSellQuote } from "./quote";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
-import { BASE_MAINNET_FORK_BLOCK_NUMBER, forkUrls } from "./test/constants";
+import {
+  BASE_GRADUATED_TOKEN_ADDRESS,
+  BASE_MAINNET_FORK_BLOCK_NUMBER,
+  forkUrls,
+} from "./test/constants";
 import { SlippageExceededError } from "./errors";
 
 describe("sell wow token", () => {
@@ -18,19 +22,18 @@ describe("sell wow token", () => {
   })(
     "can buy and then sell token",
     async ({ viemClients: { publicClient, walletClient } }) => {
-      const tokenAddress = "0x01aa2894773c091cc21a8880b3633ac173727440";
       const ethAmount = "1";
 
       // First buy some tokens
       const { marketType, poolAddress } = await getMarketTypeAndPoolAddress({
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         publicClient,
       });
 
       const buyQuote = await getBuyQuote({
         chainId: base.id,
         publicClient,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther(ethAmount),
         marketType,
         poolAddress,
@@ -38,7 +41,7 @@ describe("sell wow token", () => {
       const buyArgs = await buyTokens({
         chainId: base.id,
         publicClient,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         tokenRecipientAddress: walletClient.account?.address!,
         refundRecipientAddress: walletClient.account?.address!,
         originalTokenQuote: buyQuote,
@@ -60,7 +63,7 @@ describe("sell wow token", () => {
       const sellQuote = await getSellQuote({
         chainId: base.id,
         publicClient,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: tokenBalance,
         marketType,
         poolAddress,
@@ -70,7 +73,7 @@ describe("sell wow token", () => {
         chainId: base.id,
         tokenRecipientAddress: walletClient.account?.address!,
         referrerAddress: walletClient.account?.address!,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         originalTokenQuote: sellQuote,
         slippageBps: 100n,
         tokenAmount: tokenBalance,

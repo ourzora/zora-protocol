@@ -6,7 +6,11 @@ import { parseEther } from "viem";
 import { buyTokens } from "./buy";
 import { getBuyQuote } from "./quote";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
-import { BASE_MAINNET_FORK_BLOCK_NUMBER, forkUrls } from "./test/constants";
+import {
+  BASE_GRADUATED_TOKEN_ADDRESS,
+  BASE_MAINNET_FORK_BLOCK_NUMBER,
+  forkUrls,
+} from "./test/constants";
 import { SlippageExceededError } from "./errors";
 
 describe("buy wow token", () => {
@@ -17,16 +21,15 @@ describe("buy wow token", () => {
   })(
     "can buy token",
     async ({ viemClients: { publicClient, walletClient } }) => {
-      const tokenAddress = "0x01aa2894773c091cc21a8880b3633ac173727440";
       const ethAmount = "1";
       const { marketType, poolAddress } = await getMarketTypeAndPoolAddress({
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         publicClient,
       });
       const quote = await getBuyQuote({
         chainId: base.id,
         publicClient,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther(ethAmount),
         marketType,
         poolAddress,
@@ -35,7 +38,7 @@ describe("buy wow token", () => {
       const params = await buyTokens({
         chainId: base.id,
         tokenRecipientAddress: walletClient.account?.address!,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         refundRecipientAddress: walletClient.account?.address!,
         originalTokenQuote: quote,
         slippageBps: 100n,
@@ -62,9 +65,8 @@ describe("buy wow token", () => {
   })(
     "throws SlippageExceededError when quote becomes stale",
     async ({ viemClients: { publicClient, walletClient } }) => {
-      const tokenAddress = "0x01aa2894773c091cc21a8880b3633ac173727440";
       const { marketType, poolAddress } = await getMarketTypeAndPoolAddress({
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         publicClient,
       });
 
@@ -72,7 +74,7 @@ describe("buy wow token", () => {
       const staleQuote = await getBuyQuote({
         chainId: base.id,
         publicClient,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther("1"),
         marketType,
         poolAddress,
@@ -83,7 +85,7 @@ describe("buy wow token", () => {
       const largeQuote = await getBuyQuote({
         chainId: base.id,
         publicClient,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther(largeAmount),
         marketType,
         poolAddress,
@@ -92,7 +94,7 @@ describe("buy wow token", () => {
       const largeParams = await buyTokens({
         chainId: base.id,
         tokenRecipientAddress: walletClient.account?.address!,
-        tokenAddress,
+        tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         refundRecipientAddress: walletClient.account?.address!,
         originalTokenQuote: largeQuote,
         slippageBps: 100n,
@@ -113,7 +115,7 @@ describe("buy wow token", () => {
         buyTokens({
           chainId: base.id,
           tokenRecipientAddress: walletClient.account?.address!,
-          tokenAddress,
+          tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
           refundRecipientAddress: walletClient.account?.address!,
           originalTokenQuote: staleQuote,
           slippageBps: 100n,

@@ -1,9 +1,6 @@
 import { defineConfig } from "vitest/config";
+import dotenv from "dotenv";
 
-export default defineConfig({
-  test: {
-    env: {
-      TENDERLY_API_KEY: "6GhpfVtPzsbJkGjwfgUjBW",
-    },
-  },
-});
+dotenv.config(); // This will load the .env file from the root
+
+export default defineConfig({});

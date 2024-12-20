@@ -31,6 +31,11 @@ export default defineConfig({
       link: "/zora-network/intro",
       match: "/zora-network",
     },
+    {
+      text: "Wow SDK",
+      link: "/wow-sdk/deploy/deploy",
+      match: "/wow-sdk",
+    },
   ],
   socials: [
     {
