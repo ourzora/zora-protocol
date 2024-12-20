@@ -77,6 +77,9 @@ interface ICointag {
     /// @notice Thrown when the upgrade to a new implementation has a mismatched contract name
     error UpgradeToMismatchedContractName(string current, string newName);
 
+    /// @notice Thrown when the pool is not a valid Uniswap V3 pool
+    error NotUniswapV3Pool();
+
     /// @notice Pulls rewards from protocol rewards and pushes them through the distribution flow
     function pull() external;
 

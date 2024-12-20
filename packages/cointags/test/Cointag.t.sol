@@ -96,6 +96,15 @@ contract CointagTest is BaseTest {
         assertEq(protocolRewards.balanceOf(creatorRewardRecipient), amountToSendToCreator, "creator reward recipient balance");
     }
 
+    function test_FailNonUniswapV3Pool() public {
+        setupBaseFork();
+
+        // this is a uniswap v2 pool - it should revert
+        IUniswapV3Pool pool = IUniswapV3Pool(vm.parseAddress("0x6d6391B9bD02Eefa00FA711fB1Cb828A6471d283"));
+        vm.expectRevert(abi.encodeWithSelector(ICointag.NotUniswapV3Pool.selector));
+        factory.getOrCreateCointag(creatorRewardRecipient, address(pool), 2000, emptyBytes);
+    }
+
     // Helper function to get current price from pool
     function getPrice(address _pool) internal view returns (uint256) {
         return IUniswapV3Pool(_pool).slot0().sqrtPriceX96;

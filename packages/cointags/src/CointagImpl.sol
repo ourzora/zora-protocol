@@ -39,7 +39,6 @@ contract CointagImpl is
     IProtocolRewards public immutable protocolRewards;
     IWETH public immutable weth;
     IUpgradeGate public immutable upgradeGate;
-
     uint256 public constant PERCENTAGE_BASIS = 10_000;
     bytes4 constant REWARD_RECEIVER_REASON = bytes4(keccak256("Cointag split to creator reward recipient"));
 
@@ -93,7 +92,12 @@ contract CointagImpl is
         cointagSettings.percentageToBuyBurn = percentageToBuyBurn;
         cointagSettings.erc20 = IBurnableERC20(_getERC20FromPool(IUniswapV3Pool(pool_)));
 
-        require(_onePoolTokenIsWeth(IUniswapV3Pool(cointagSettings.pool)), PoolNeedsOneTokenToBeWETH());
+        require(_onePoolTokenIsWeth(IUniswapV3Pool(pool_)), PoolNeedsOneTokenToBeWETH());
+        // v2 doesn't have a fee() function, so a simple way to prevent non-v3 pools from being used
+        // is to try to call it and revert if it fails
+        try IUniswapV3Pool(pool_).fee() returns (uint24) {} catch {
+            revert NotUniswapV3Pool();
+        }
 
         emit Initialized({
             creatorRewardRecipient: creatorRewardRecipient,

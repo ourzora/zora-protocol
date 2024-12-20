@@ -1,5 +1,11 @@
 # @zoralabs/cointags-contracts
 
+## 0.1.2
+
+### Patch Changes
+
+- 066c289a: Ensure that cointags can only be created with v3 Uniswap pools
+
 ## 0.1.1
 
 ### Patch Changes
