@@ -1,5 +1,12 @@
 # @zoralabs/protocol-deployments
 
+## 0.4.0
+
+### Minor Changes
+
+- fc8e86a8: - Added Cointags addresses and abis.
+  - Added IUniswapV3Pool ABI.
+
 ## 0.3.11
 
 ### Patch Changes
