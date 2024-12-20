@@ -41,7 +41,7 @@ The `ZoraSparks1155` and `ZoraSparksManager` contracts are deployed deterministi
 Deploy the [ProxyDeployer](src/DeterministicUUPSProxyDeployer.sol):
 
 ```sh
-forge script script/DeployProxyDeployer.s.sol {rest of deployment config}
+forge script script/DeployProxyDeployer.s.sol:DeployProxyDeployer {rest of deployment config}
 ```
 
 Add an empty address.json in `addresses/${chainId}.json`
@@ -49,13 +49,17 @@ Add an empty address.json in `addresses/${chainId}.json`
 Deploy the mints manager implementation, which will update the above created addresses.json with the new implementation address and version:
 
 ```sh
-forge script script/DeploySparksManagerImpl.s.sol {rest of deployment config}
+forge script script/DeploySparksManagerImpl.s.sol:DeploySparksManagerImpl {rest of deployment config}
 ```
 
 Deploy the `ZoraSparksManager`, which when initialized will deploy the `ZoraSparks1155` contract:
 
 ```sh
-yarn tsx scripts/deploySparksDeterminisitic.ts {chain-name}
+yarn tsx scripts/deploySparksDeterministic.ts {chain-name}
 ```
 
 To verify that deployed proxy contract, run the printed out verification command from the above step.
+
+To ensure verification completes, foundry may need to be downgraded to `nightly-c4a31a624874ab36284fca4e48d2197e43a62fbe` (using `foundryup --version nightly-c4a31a624874ab36284fca4e48d2197e43a62fbe`) to make sure the verification files match.
+
+After deploying, update the `addresses/CHAINID.json` files with the newly deployed proxy addresses manually from zero addresses.

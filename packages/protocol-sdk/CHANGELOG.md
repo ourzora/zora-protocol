@@ -1,5 +1,14 @@
 # @zoralabs/protocol-sdk
 
+## 0.11.11
+
+### Patch Changes
+
+- ff8084fe: Updates `minimumMintsForCountdown` and `mintCount` calculations to use the updated 0.0000222 ETH market reward live in v2.2.0 of the timed sale strategy
+- 2ce16ac7: Move from allowlist.zora.co to lanyard.org for allowlist manager service
+- Updated dependencies [ff8084fe]
+  - @zoralabs/protocol-deployments@0.3.11
+
 ## 0.11.10
 
 ### Patch Changes

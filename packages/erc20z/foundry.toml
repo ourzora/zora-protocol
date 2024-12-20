@@ -39,7 +39,7 @@ zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
 zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"
 arbitrum_one = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 arbitrum_sepolia = "https://arb-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
-blast = "https://blast.gateway.tenderly.co/${TENDERLY_KEY}/"
+blast = "https://blast-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}/"
 blast_sepolia = "https://sepolia.blast.io"
 
 [invariant]

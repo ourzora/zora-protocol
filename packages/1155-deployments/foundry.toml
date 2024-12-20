@@ -22,6 +22,7 @@ via_ir = true
 solc_version = '0.8.17'
 out = 'out'
 src = 'src'
+evm_version = 'cancun'
 
 [profile.dev]
 optimizer = false

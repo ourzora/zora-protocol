@@ -29,7 +29,7 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install node deps and founry
+      - name: Install node deps and foundry
         uses: ./.github/actions/setup_deps
 
       - name: Cache build
@@ -39,7 +39,7 @@ jobs:
           foundry_profile: coverage
 
       - name: Run Forge coverage
-        run: cd $package_folder && forge coverage --report lcov ${{ inputs.coverage_args }}
+        run: cd $package_folder && forge coverage --report lcov ${{ inputs.coverage_args }} --lcov-version 2
         env:
           TENDERLY_KEY: ${{ secrets.TENDERLY_KEY }}
           ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
@@ -52,13 +52,14 @@ jobs:
         run: |
           cd ./${{ env.package_folder }} && lcov --rc lcov_branch_coverage=1 \
           --remove lcov.info \
+          --ignore-errors unused \
           --output-file lcov.info "*node_modules*" "*test*" "*script*" ${{ inputs.files_to_ignore }}
 
       - name: Report code coverage
-        uses: zgosalvez/github-actions-report-lcov@v2
+        uses: iainnash/github-actions-report-lcov@v12
         with:
+          output-html: false
           coverage-files: ./${{ env.package_folder }}/lcov.info
           minimum-coverage: 87
-          artifact-name: code-coverage-report
           github-token: ${{ secrets.GITHUB_TOKEN }}
           working-directory: ./${{ env.package_folder }}
