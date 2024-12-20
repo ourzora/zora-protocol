@@ -1,5 +1,11 @@
 # @zoralabs/sparks-contracts
 
+## 0.2.5
+
+### Patch Changes
+
+- 761238d6: Added base-sepolia and base deployments to sparks.
+
 ## 0.2.4
 
 ### Patch Changes
