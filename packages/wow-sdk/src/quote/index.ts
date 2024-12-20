@@ -1,8 +1,8 @@
-import { Address, PublicClient } from "viem";
+import { Address, PublicClient, Transport } from "viem";
 import { WowERC20ABI } from "../abi/WowERC20";
 import { getUniswapQuote } from "./getUniswapQuote";
 import { MAX_SUPPLY_BEFORE_GRADUATION } from "../constants";
-import { ChainId } from "../types";
+import { SupportedChain } from "../types";
 import { MarketType } from "../marketType";
 import { ONE_HUNDRED_PERCENT_BPS, TX_FEE_BPS } from "../constants";
 
@@ -52,15 +52,13 @@ export function isQuoteChangeExceedingSlippage(
  * @returns Quote
  */
 export async function getBuyQuote({
-  chainId,
   tokenAddress,
   amount,
   poolAddress,
   marketType,
   publicClient,
 }: {
-  chainId: ChainId;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
   tokenAddress: Address;
   amount: bigint;
   poolAddress: Address;
@@ -69,7 +67,6 @@ export async function getBuyQuote({
   let quote = 0n;
   if (marketType === MarketType.GRADUATED) {
     const data = await getUniswapQuote({
-      chainId,
       poolAddress,
       amount,
       type: "buy",
@@ -100,15 +97,13 @@ export async function getBuyQuote({
  * @returns Quote
  */
 export async function getSellQuote({
-  chainId,
   publicClient,
   tokenAddress,
   amount,
   poolAddress,
   marketType,
 }: {
-  chainId: ChainId;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
   tokenAddress: Address;
   amount: bigint;
   poolAddress: Address;
@@ -117,7 +112,6 @@ export async function getSellQuote({
   let quote = 0n;
   if (marketType === MarketType.GRADUATED) {
     const data = await getUniswapQuote({
-      chainId,
       poolAddress,
       amount,
       type: "sell",

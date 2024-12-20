@@ -1,10 +1,11 @@
 import { NoPoolAddressFoundError } from "../errors";
 
-import { PublicClient } from "viem";
+import { PublicClient, Transport } from "viem";
 
 import { Address } from "viem";
 import { getMarketType } from "../marketType";
 import { WowERC20ABI } from "../abi/WowERC20";
+import { SupportedChain } from "../types";
 
 export async function getMarketTypeAndPoolAddress({
   tokenAddress,
@@ -12,7 +13,7 @@ export async function getMarketTypeAndPoolAddress({
   poolAddress: passedInPoolAddress,
 }: {
   tokenAddress: Address;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
   poolAddress?: Address;
 }) {
   const [marketType, poolAddressResult] = await Promise.all([

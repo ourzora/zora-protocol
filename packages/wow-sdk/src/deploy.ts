@@ -2,9 +2,10 @@ import { Address, zeroAddress } from "viem";
 import ERC20FactoryABI from "./abi/ERC20Factory";
 
 import { addresses } from "./addresses";
+import { ChainId } from "./types";
 
 export interface DeployWowTokenArgs {
-  chainId: 8453 | 84532;
+  chainId: Extract<ChainId, 8453 | 84532>;
   userAddress: Address;
   cid: `ipfs://${string}`;
   name: string;

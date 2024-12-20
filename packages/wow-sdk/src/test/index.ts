@@ -9,6 +9,7 @@ import {
   SimulateContractParameters,
   SimulateContractReturnType,
   TransactionReceipt,
+  Transport,
   WalletClient,
   createPublicClient,
   createTestClient,
@@ -19,6 +20,7 @@ import { foundry } from "viem/chains";
 import { AnvilForkSettings, AnvilViemClients } from "./types";
 import { retries } from "./utils/http";
 import { privateKeyToAccount } from "viem/accounts";
+import { SupportedChain } from "../types";
 
 async function waitForAnvilInit(anvil: any) {
   return new Promise((resolve, reject) => {
@@ -38,7 +40,6 @@ export const makeAnvilTest = ({
 }: AnvilForkSettings) =>
   test.extend<{ viemClients: AnvilViemClients }>({
     viemClients: async ({ task }, use) => {
-      console.log(process.env["TENDERLY_API_KEY"]);
       console.log("setting up clients for", task.name);
       const port = Math.floor(Math.random() * 60000) + 4000;
 
@@ -90,7 +91,7 @@ export const makeAnvilTest = ({
       });
 
       await use({
-        publicClient,
+        publicClient: publicClient as PublicClient<Transport, SupportedChain>,
         walletClient,
         testClient,
         chain,
@@ -107,7 +108,7 @@ export async function simulateAndWriteContractWithRetries({
 }: {
   parameters: SimulateContractParameters<any, any, any, any, any, Address>;
   walletClient: WalletClient;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
 }) {
   const { request } = await publicClient.simulateContract(parameters);
   return await writeContractWithRetries({
@@ -118,7 +119,7 @@ export async function simulateAndWriteContractWithRetries({
 }
 
 export async function waitForTransactionReceiptWithRetries(
-  publicClient: PublicClient,
+  publicClient: PublicClient<Transport, SupportedChain>,
   hash: `0x${string}`,
 ): Promise<TransactionReceipt> {
   let tryCount = 1;
@@ -151,7 +152,7 @@ export async function writeContractWithRetries({
 }: {
   request: SimulateContractReturnType<any, any, any, Chain, Account>["request"];
   walletClient: WalletClient;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
 }) {
   const hash = await walletClient.writeContract(request);
   return await waitForTransactionReceiptWithRetries(publicClient, hash);

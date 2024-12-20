@@ -27,7 +27,6 @@ describe("buy wow token", () => {
         publicClient,
       });
       const quote = await getBuyQuote({
-        chainId: base.id,
         publicClient,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther(ethAmount),
@@ -36,7 +35,6 @@ describe("buy wow token", () => {
       });
 
       const params = await buyTokens({
-        chainId: base.id,
         tokenRecipientAddress: walletClient.account?.address!,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         refundRecipientAddress: walletClient.account?.address!,
@@ -72,7 +70,6 @@ describe("buy wow token", () => {
 
       // Get initial quote for 1 ETH
       const staleQuote = await getBuyQuote({
-        chainId: base.id,
         publicClient,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther("1"),
@@ -83,7 +80,6 @@ describe("buy wow token", () => {
       // Buy 5 ETH to significantly impact the price
       const largeAmount = "5";
       const largeQuote = await getBuyQuote({
-        chainId: base.id,
         publicClient,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther(largeAmount),
@@ -92,7 +88,6 @@ describe("buy wow token", () => {
       });
 
       const largeParams = await buyTokens({
-        chainId: base.id,
         tokenRecipientAddress: walletClient.account?.address!,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         refundRecipientAddress: walletClient.account?.address!,
@@ -113,7 +108,6 @@ describe("buy wow token", () => {
       // Try to buy with the stale quote - should throw SlippageExceededError
       await expect(
         buyTokens({
-          chainId: base.id,
           tokenRecipientAddress: walletClient.account?.address!,
           tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
           refundRecipientAddress: walletClient.account?.address!,

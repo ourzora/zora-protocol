@@ -1,9 +1,15 @@
-import { Address, getContract, isAddressEqual, PublicClient } from "viem";
+import {
+  Address,
+  getContract,
+  isAddressEqual,
+  PublicClient,
+  Transport,
+} from "viem";
 import { base, baseSepolia, mainnet } from "viem/chains";
 import UniswapQuoterABI from "../abi/UniswapQuoter";
 import WETHABI from "../abi/WETH";
 import { PoolInfo } from "./getPoolInfo";
-import { ChainId } from "../types";
+import { ChainId, SupportedChain } from "../types";
 import { addresses } from "../addresses";
 import { getPoolInfo } from "./getPoolInfo";
 
@@ -50,7 +56,7 @@ async function exactInputSingle(
   amountIn: bigint,
   fee: number,
   chainId: ChainId,
-  publicClient: PublicClient,
+  publicClient: PublicClient<Transport, SupportedChain>,
 ): Promise<Omit<Quote, "price" | "balance" | "fee">> {
   const contract = getContract({
     address: UniswapQuoter.address[chainId],
@@ -85,17 +91,15 @@ async function exactInputSingle(
  * @returns Quote
  */
 export async function getUniswapQuote({
-  chainId,
   poolAddress,
   amount,
   type,
   publicClient,
 }: {
-  chainId: ChainId;
   poolAddress?: Address;
   amount: bigint;
   type: "buy" | "sell";
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
 }) {
   let pool: PoolInfo | undefined;
   let tokens: [`0x${string}`, `0x${string}`] | undefined;
@@ -103,6 +107,7 @@ export async function getUniswapQuote({
   let quote: Omit<Quote, "price" | "balance" | "fee"> | undefined;
   let utilization = 0n;
   let insufficientLiquidity = false;
+  const chainId = publicClient.chain?.id;
 
   const invalidPoolError = !poolAddress
     ? new Error("Invalid pool address")

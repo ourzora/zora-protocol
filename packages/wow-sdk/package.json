@@ -29,18 +29,19 @@
     "@typescript-eslint/eslint-plugin": "^7.1.1",
     "@typescript-eslint/parser": "^7.1.1",
     "@zoralabs/tsconfig": "workspace:^",
+    "dotenv": "^16.4.5",
     "eslint": "^8.57.0",
     "prettier": "^3.0.3",
+    "ts-node": "^10.9.1",
     "tsup": "^8.0.2",
     "typescript": "^5.3.3",
-    "vitest": "latest",
-    "ts-node": "^10.9.1"
+    "vitest": "latest"
   },
   "dependencies": {
     "viem": "^2.21.21"
   },
   "peerDependencies": {
-    "viem": "^2.21.21",
-    "abitype": "^1.0.2"
+    "abitype": "^1.0.2",
+    "viem": "^2.21.21"
   }
 }

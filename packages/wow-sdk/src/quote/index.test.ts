@@ -123,7 +123,6 @@ describe("getBuyQuote", () => {
         publicClient,
       });
       const result = await getBuyQuote({
-        chainId: base.id,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther("1"),
         marketType,
@@ -148,7 +147,6 @@ describe("getBuyQuote", () => {
         publicClient,
       });
       const result = await getBuyQuote({
-        chainId: base.id,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther("1"),
         marketType,
@@ -175,7 +173,6 @@ describe("getSellQuote", () => {
         publicClient,
       });
       const result = await getSellQuote({
-        chainId: base.id,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther("1000"),
         marketType,
@@ -200,7 +197,6 @@ describe("getSellQuote", () => {
         publicClient,
       });
       const result = await getSellQuote({
-        chainId: base.id,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther("1000"),
         marketType,

@@ -1,11 +1,13 @@
 import {
   Address,
   ContractFunctionArgs,
+  PublicClient,
+  Transport,
   SimulateContractParameters,
   zeroAddress,
 } from "viem";
 import { WowERC20ABI } from "./abi/WowERC20";
-import { WowTransactionBaseArgs } from "./types";
+import { SupportedChain, WowTransactionBaseArgs } from "./types";
 import {
   calculateSlippage,
   isQuoteChangeExceedingSlippage,
@@ -30,7 +32,6 @@ export interface SellWowTokenArgs extends WowTransactionBaseArgs {
  */
 export async function sellTokens(args: SellWowTokenArgs) {
   const {
-    chainId,
     publicClient,
     account,
     tokenAddress,
@@ -45,7 +46,7 @@ export async function sellTokens(args: SellWowTokenArgs) {
 
   const { marketType, poolAddress } = await getMarketTypeAndPoolAddress({
     tokenAddress,
-    publicClient,
+    publicClient: publicClient as PublicClient<Transport, SupportedChain>,
     poolAddress: passedInPoolAddress,
   });
 
@@ -53,7 +54,6 @@ export async function sellTokens(args: SellWowTokenArgs) {
    * Get the quote again in case it has changed since the consumer fetched it
    */
   const updatedTokenQuote = await getSellQuote({
-    chainId,
     tokenAddress,
     amount: tokenAmount,
     poolAddress,

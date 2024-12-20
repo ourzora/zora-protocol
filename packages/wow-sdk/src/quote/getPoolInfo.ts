@@ -1,7 +1,8 @@
-import { Address, getContract, PublicClient } from "viem";
+import { Address, getContract, PublicClient, Transport } from "viem";
 
 import UniswapV3PoolABI from "../abi/UniswapV3Pool";
 import { WowERC20ABI } from "../abi/WowERC20";
+import { SupportedChain } from "../types";
 
 export interface PoolInfo {
   token0: Address;
@@ -21,7 +22,7 @@ export interface PoolInfo {
  */
 export async function getPoolInfo(
   poolAddress: Address,
-  publicClient: PublicClient,
+  publicClient: PublicClient<Transport, SupportedChain>,
 ): Promise<PoolInfo> {
   const contract = getContract({
     address: poolAddress,

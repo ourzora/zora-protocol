@@ -1,4 +1,4 @@
-import { Address } from "viem";
+import { Address, Transport } from "viem";
 import { PublicClient } from "viem";
 import { base, baseSepolia, mainnet } from "viem/chains";
 
@@ -7,15 +7,13 @@ export type ChainId =
   | typeof baseSepolia.id
   | typeof mainnet.id;
 
+export type SupportedChain = typeof base | typeof baseSepolia | typeof mainnet;
+
 export type WowTransactionBaseArgs = {
-  /**
-   * Supported chain id
-   */
-  chainId: ChainId;
   /**
    * Public client
    */
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
   /**
    * Address of the account to use for the transaction
    */

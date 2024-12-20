@@ -1,5 +1,6 @@
 import { WowERC20ABI } from "./abi/WowERC20";
-import { Address, PublicClient } from "viem";
+import { Address, PublicClient, Transport } from "viem";
+import { SupportedChain } from "./types";
 
 export enum MarketType {
   BONDING = 0,
@@ -11,7 +12,7 @@ export const getMarketType = async ({
   publicClient,
 }: {
   tokenAddress: Address;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, SupportedChain>;
 }) => {
   const marketType = await publicClient.readContract({
     address: tokenAddress,

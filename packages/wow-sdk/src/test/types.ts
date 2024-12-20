@@ -6,10 +6,11 @@ import {
   Transport,
   WalletClient,
 } from "viem";
+import { SupportedChain } from "../types";
 
 export interface AnvilViemClients {
   walletClient: WalletClient;
-  publicClient: PublicClient<Transport, Chain>;
+  publicClient: PublicClient<Transport, SupportedChain>;
   testClient: TestClient;
   chain: Chain;
 }

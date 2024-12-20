@@ -31,7 +31,6 @@ describe("sell wow token", () => {
       });
 
       const buyQuote = await getBuyQuote({
-        chainId: base.id,
         publicClient,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: parseEther(ethAmount),
@@ -39,7 +38,6 @@ describe("sell wow token", () => {
         poolAddress,
       });
       const buyArgs = await buyTokens({
-        chainId: base.id,
         publicClient,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         tokenRecipientAddress: walletClient.account?.address!,
@@ -61,7 +59,6 @@ describe("sell wow token", () => {
       // Now sell all tokens received, taking into account the 1% fee
       const tokenBalance = (buyQuote * 99n) / 100n;
       const sellQuote = await getSellQuote({
-        chainId: base.id,
         publicClient,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         amount: tokenBalance,
@@ -70,7 +67,6 @@ describe("sell wow token", () => {
       });
 
       const sellArgs = await sellTokens({
-        chainId: base.id,
         tokenRecipientAddress: walletClient.account?.address!,
         referrerAddress: walletClient.account?.address!,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
@@ -109,7 +105,6 @@ describe("sell wow token", () => {
       });
 
       const buyQuote = await getBuyQuote({
-        chainId: base.id,
         publicClient,
         tokenAddress,
         amount: parseEther(ethAmount),
@@ -118,7 +113,6 @@ describe("sell wow token", () => {
       });
 
       const buyArgs = await buyTokens({
-        chainId: base.id,
         publicClient,
         tokenAddress,
         tokenRecipientAddress: walletClient.account?.address!,
@@ -141,7 +135,6 @@ describe("sell wow token", () => {
 
       // Get quote for selling half the tokens
       const sellQuote = await getSellQuote({
-        chainId: base.id,
         publicClient,
         tokenAddress,
         amount: halfTokenBalance,
@@ -151,7 +144,6 @@ describe("sell wow token", () => {
 
       // Sell first half of tokens
       const sellArgs = await sellTokens({
-        chainId: base.id,
         tokenRecipientAddress: walletClient.account?.address!,
         referrerAddress: walletClient.account?.address!,
         tokenAddress,
@@ -171,7 +163,6 @@ describe("sell wow token", () => {
       // Try to sell second half using the same (now stale) quote
       await expect(
         sellTokens({
-          chainId: base.id,
           tokenRecipientAddress: walletClient.account?.address!,
           referrerAddress: walletClient.account?.address!,
           tokenAddress,

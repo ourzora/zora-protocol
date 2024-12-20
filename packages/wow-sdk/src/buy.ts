@@ -37,7 +37,6 @@ export interface BuyWowTokenArgs extends WowTransactionBaseArgs {
  */
 export async function buyTokens(args: BuyWowTokenArgs) {
   const {
-    chainId,
     publicClient,
     tokenAddress,
     tokenRecipientAddress,
@@ -61,7 +60,6 @@ export async function buyTokens(args: BuyWowTokenArgs) {
    * Get the quote again in case it has changed since the consumer fetched it
    */
   const updatedTokenQuote = await getBuyQuote({
-    chainId,
     tokenAddress,
     amount: parseEther(ethAmount),
     poolAddress,
