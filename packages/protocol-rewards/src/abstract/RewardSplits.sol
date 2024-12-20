@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.17;
 
-import {IProtocolRewards} from "../interfaces/IProtocolRewards.sol";
+import {IProtocolRewards} from "@zoralabs/shared-contracts/interfaces/IProtocolRewards.sol";
 import {IRewardSplits} from "../interfaces/IRewardSplits.sol";
 
 library RewardSplitsLib {

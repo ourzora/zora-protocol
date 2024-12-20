@@ -1,6 +1,6 @@
 chainid: "7777777"
 network: zora-mainnet
-grafting: 
+grafting:
   base: "QmWZoNnJJQdzznpZcvFZvUMMJGq6zuD1tv5ovSfitNTyHT"
   block: "21296000"
 factories1155:
@@ -49,7 +49,11 @@ zoraTimedSaleStrategy:
   - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
     startBlock: "17964312"
     version: "1"
-comments: 
+comments:
   - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
     startBlock: "21297000"
+    version: "1"
+cointagsFactory:
+  - address: "0x7777777BbD0b88aD5F3b5f4c89C6B60D74b9774F"
+    startBlock: "23933056"
     version: "1"

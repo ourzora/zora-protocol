@@ -8,7 +8,7 @@ import {IHasContractName} from "@zoralabs/shared-contracts/interfaces/IContractM
 import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 import {IZoraCreator1155} from "./interfaces/IZoraCreator1155.sol";
 import {IComments} from "./interfaces/IComments.sol";
-import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
+import {IProtocolRewards} from "@zoralabs/shared-contracts/interfaces/IProtocolRewards.sol";
 import {UnorderedNoncesUpgradeable} from "@zoralabs/shared-contracts/utils/UnorderedNoncesUpgradeable.sol";
 import {EIP712UpgradeableWithChainId} from "./utils/EIP712UpgradeableWithChainId.sol";
 import {SignatureChecker} from "@openzeppelin/contracts/utils/cryptography/SignatureChecker.sol";

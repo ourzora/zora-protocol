@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 import {IERC20Z} from "../src/interfaces/IERC20Z.sol";
-import {IUniswapV3Pool} from "../src/interfaces/uniswap/IUniswapV3Pool.sol";
+import {IUniswapV3Pool} from "@zoralabs/shared-contracts/interfaces/uniswap/IUniswapV3Pool.sol";
 
 contract CollectorUniswapCallback {
     function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata) external {
@@ -36,6 +36,7 @@ contract ZoraTimedSaleStrategyMarketTest is BaseTest {
     }
 
     IERC20 WETH = IERC20(0x4200000000000000000000000000000000000006);
+
     function setUpTimedSale(uint64 saleStart, uint64 saleEnd) public returns (address erc20zAddress, address poolAddress) {
         IZoraTimedSaleStrategy.SalesConfig memory salesConfig = IZoraTimedSaleStrategy.SalesConfig({
             saleStart: saleStart,

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.17;
 
-import {IWETH} from "./IWETH.sol";
-import {INonfungiblePositionManager} from "./uniswap/INonfungiblePositionManager.sol";
+import {IWETH} from "@zoralabs/shared-contracts/interfaces/IWETH.sol";
+import {INonfungiblePositionManager} from "@zoralabs/shared-contracts/interfaces/uniswap/INonfungiblePositionManager.sol";
 
 interface IRoyalties {
     /// @notice RoyaltyClaim Event

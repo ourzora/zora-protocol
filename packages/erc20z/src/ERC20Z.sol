@@ -9,8 +9,8 @@ import {ERC1155Holder} from "@openzeppelin/contracts/token/ERC1155/utils/ERC1155
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC20Z} from "./interfaces/IERC20Z.sol";
-import {IWETH} from "./interfaces/IWETH.sol";
-import {INonfungiblePositionManager} from "./interfaces/uniswap/INonfungiblePositionManager.sol";
+import {IWETH} from "@zoralabs/shared-contracts/interfaces/IWETH.sol";
+import {INonfungiblePositionManager} from "@zoralabs/shared-contracts/interfaces/uniswap/INonfungiblePositionManager.sol";
 import {UniswapV3LiquidityCalculator} from "./uniswap/UniswapV3LiquidityCalculator.sol";
 import {IRoyalties} from "./interfaces/IRoyalties.sol";
 import {IZora1155} from "./interfaces/IZora1155.sol";

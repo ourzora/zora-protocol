@@ -1,0 +1,7 @@
+ds-test/=node_modules/ds-test/src/
+forge-std/=node_modules/forge-std/src/
+@openzeppelin/=node_modules/@openzeppelin/
+@zoralabs/protocol-rewards/=node_modules/@zoralabs/protocol-rewards/
+@zoralabs/shared-contracts/=node_modules/@zoralabs/shared-contracts/src/
+solady/=node_modules/solady/src/ 
+solemate/=/node_modules/solemate/src/

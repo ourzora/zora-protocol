@@ -7,9 +7,9 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 import {ERC721Holder} from "@openzeppelin/contracts/token/ERC721/utils/ERC721Holder.sol";
 import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 
-import {IWETH} from "../interfaces/IWETH.sol";
-import {INonfungiblePositionManager} from "../interfaces/uniswap/INonfungiblePositionManager.sol";
-import {IUniswapV3Pool} from "../interfaces/uniswap/IUniswapV3Pool.sol";
+import {IWETH} from "@zoralabs/shared-contracts/interfaces/IWETH.sol";
+import {INonfungiblePositionManager} from "@zoralabs/shared-contracts/interfaces/uniswap/INonfungiblePositionManager.sol";
+import {IUniswapV3Pool} from "@zoralabs/shared-contracts/interfaces/uniswap/IUniswapV3Pool.sol";
 import {IERC20Z} from "../interfaces/IERC20Z.sol";
 import {IZora1155} from "../interfaces/IZora1155.sol";
 import {IRoyalties} from "../interfaces/IRoyalties.sol";

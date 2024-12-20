@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.17;
+pragma solidity >=0.8.17;
 
 /// @title IProtocolRewards
 /// @notice The interface for deposits & withdrawals for Protocol Rewards
@@ -106,6 +106,11 @@ interface IProtocolRewards {
     /// @param to Withdraws from msg.sender to this address
     /// @param amount amount to withdraw
     function withdraw(address to, uint256 amount) external;
+
+    /// @notice Withdraw rewards on behalf of an address
+    /// @param to The address to withdraw for
+    /// @param amount The amount to withdraw (0 for total balance)
+    function withdrawFor(address to, uint256 amount) external;
 
     /// @notice Execute a withdraw of protocol rewards via signature
     /// @param from Withdraw from this address

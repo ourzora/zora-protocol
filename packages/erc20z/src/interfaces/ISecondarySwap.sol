@@ -36,17 +36,17 @@ interface ISecondarySwap {
     /// @param msgSender The sender of the message
     /// @param recipient The recipient of the 1155 tokens bought
     /// @param erc20zAddress The ERC20Z address
-    /// @param amountEthSold The amount of ETH sold
+    /// @param amountETHSold The amount of ETH sold
     /// @param num1155Purchased The number of 1155 tokens purchased
-    event SecondaryBuy(address indexed msgSender, address indexed recipient, address indexed erc20zAddress, uint256 amountEthSold, uint256 num1155Purchased);
+    event SecondaryBuy(address indexed msgSender, address indexed recipient, address indexed erc20zAddress, uint256 amountETHSold, uint256 num1155Purchased);
 
     /// @notice SecondarySell Event
     /// @param msgSender The sender of the message
     /// @param recipient The recipient of the ETH purchased
     /// @param erc20zAddress The ERC20Z address
-    /// @param amountEthPurchased The amount of ETH purchased
+    /// @param amountETHPurchased The amount of ETH purchased
     /// @param num1155Sold The number of 1155 tokens sold
-    event SecondarySell(address indexed msgSender, address indexed recipient, address indexed erc20zAddress, uint256 amountEthPurchased, uint256 num1155Sold);
+    event SecondarySell(address indexed msgSender, address indexed recipient, address indexed erc20zAddress, uint256 amountETHPurchased, uint256 num1155Sold);
 
     /// @notice SecondaryComment Event
     /// @param sender The sender of the comment

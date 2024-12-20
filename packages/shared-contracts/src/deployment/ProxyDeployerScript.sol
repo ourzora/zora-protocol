@@ -148,7 +148,23 @@ contract ProxyDeployerScript is CommonBase {
         config.salt = json.readBytes32(".salt");
         config.deployedAddress = json.readAddress(".deployedAddress");
         config.creationCode = json.readBytes(".creationCode");
+        config.contractName = json.readString(".contractName");
         config.constructorArgs = json.readBytes(".constructorArgs");
+    }
+
+    function printVerificationCommand(DeterministicContractConfig memory config) internal pure {
+        console2.log("to verify:");
+        console2.log(
+            string.concat(
+                "forge verify-contract ",
+                LibString.toHexString(config.deployedAddress),
+                " ",
+                config.contractName,
+                " --constructor-args ",
+                LibString.toHexString(config.constructorArgs),
+                " $(chains {chainName} --deploy)"
+            )
+        );
     }
 
     function chainConfigPath() internal view returns (string memory) {
@@ -159,7 +175,7 @@ contract ProxyDeployerScript is CommonBase {
         return vm.readFile(chainConfigPath());
     }
 
-    function getProxyAdmin() internal view returns (address) {
+    function getProxyAdmin() internal view virtual returns (address) {
         return validateMultisig(getChainConfigJson().readAddress(".PROXY_ADMIN"));
     }
 

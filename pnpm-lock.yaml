@@ -7,6 +7,7 @@ settings:
 overrides:
   viem: ^2.21.21
   '@wagmi/cli': ^2.1.0
+  '@solidity-parser/parser': 0.19.0
 
 importers:
 
@@ -28,8 +29,8 @@ importers:
         specifier: ^3.0.3
         version: 3.3.3
       prettier-plugin-solidity:
-        specifier: ^1.1.3
-        version: 1.3.1(prettier@3.3.3)
+        specifier: ^1.4.1
+        version: 1.4.1(prettier@3.3.3)
       tsx:
         specifier: ^4.19.0
         version: 4.19.0
@@ -153,13 +154,13 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.3.1
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
       solmate:
         specifier: 6.1.0
         version: 6.1.0
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^3.13.0
         version: 3.14.0
@@ -251,6 +252,63 @@ importers:
         specifier: ^2.21.21
         version: 2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)
 
+  packages/cointags:
+    devDependencies:
+      '@openzeppelin/contracts':
+        specifier: 5.0.2
+        version: 5.0.2
+      '@openzeppelin/contracts-upgradeable':
+        specifier: 5.0.2
+        version: 5.0.2(@openzeppelin/contracts@5.0.2)
+      '@solidity-parser/parser':
+        specifier: 0.19.0
+        version: 0.19.0
+      '@types/node':
+        specifier: ^20.1.2
+        version: 20.14.12
+      '@wagmi/cli':
+        specifier: ^2.1.0
+        version: 2.1.18(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)
+      '@zoralabs/shared-contracts':
+        specifier: workspace:^
+        version: link:../shared-contracts
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
+      '@zoralabs/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      ds-test:
+        specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
+        version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
+      forge-std:
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+      prettier:
+        specifier: ^3.0.3
+        version: 3.3.3
+      prettier-plugin-solidity:
+        specifier: ^1.4.1
+        version: 1.4.1(prettier@3.3.3)
+      solady:
+        specifier: 0.0.132
+        version: 0.0.132
+      solmate:
+        specifier: 6.1.0
+        version: 6.1.0
+      tsup:
+        specifier: ^7.2.0
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
+      tsx:
+        specifier: ^3.13.0
+        version: 3.14.0
+      typescript:
+        specifier: ^5.2.2
+        version: 5.5.4
+      viem:
+        specifier: ^2.21.21
+        version: 2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8)
+
   packages/comments:
     dependencies:
       abitype:
@@ -319,13 +377,13 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.3.1
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
       solady:
         specifier: 0.0.132
         version: 0.0.132
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^3.13.0
         version: 3.14.0
@@ -341,6 +399,9 @@ importers:
       '@graphprotocol/graph-ts':
         specifier: 0.29.3
         version: 0.29.3
+      '@zoralabs/cointags-contracts':
+        specifier: workspace:^
+        version: link:../cointags
       '@zoralabs/comments-contracts':
         specifier: workspace:^
         version: link:../comments
@@ -440,13 +501,13 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.3.1
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
       solady:
         specifier: 0.0.132
         version: 0.0.132
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^3.13.0
         version: 3.14.0
@@ -494,10 +555,10 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.1.3
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^3.13.0
         version: 3.14.0
@@ -513,6 +574,9 @@ importers:
       '@zoralabs/1155-deployments':
         specifier: workspace:^
         version: link:../1155-deployments
+      '@zoralabs/cointags-contracts':
+        specifier: workspace:^
+        version: link:../cointags
       '@zoralabs/comments-contracts':
         specifier: workspace:^
         version: link:../comments
@@ -552,7 +616,7 @@ importers:
         version: 10.4.5
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^3.13.0
         version: 3.14.0
@@ -565,6 +629,9 @@ importers:
 
   packages/protocol-rewards:
     dependencies:
+      '@zoralabs/shared-contracts':
+        specifier: workspace:*
+        version: link:../shared-contracts
       ds-test:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
@@ -583,7 +650,7 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.3.1
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
 
   packages/protocol-sdk:
     dependencies:
@@ -626,13 +693,13 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.1.3
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
       semver:
         specifier: ^7.6.3
         version: 7.6.3
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       typescript:
         specifier: ^5.2.2
         version: 5.5.4
@@ -666,7 +733,7 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.3.1
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
       solady:
         specifier: ^0.0.168
         version: 0.0.168
@@ -693,7 +760,7 @@ importers:
         version: 10.4.5
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^4.19.2
         version: 4.19.2
@@ -743,7 +810,7 @@ importers:
         version: 0.0.35(viem@2.21.21(bufferutil@4.0.8)(typescript@5.5.4)(utf-8-validate@5.0.10)(zod@3.23.8))
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^4.19.0
         version: 4.19.2
@@ -812,7 +879,7 @@ importers:
         version: 3.3.3
       prettier-plugin-solidity:
         specifier: ^1.3.1
-        version: 1.3.1(prettier@3.3.3)
+        version: 1.4.1(prettier@3.3.3)
       solady:
         specifier: 0.0.132
         version: 0.0.132
@@ -821,7 +888,7 @@ importers:
         version: 6.1.0
       tsup:
         specifier: ^7.2.0
-        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4)
+        version: 7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4)
       tsx:
         specifier: ^3.13.0
         version: 3.14.0
@@ -3814,8 +3881,8 @@ packages:
   '@socket.io/component-emitter@3.1.2':
     resolution: {integrity: sha512-9BCxFwvbGg/RsZK9tjXd8s4UcwR0MWeFQ1XEKIQVVvAGJyINdrqKMcTRyLoK8Rse1GjzLV9cwjWV1olXRWEXVA==}
 
-  '@solidity-parser/parser@0.17.0':
-    resolution: {integrity: sha512-Nko8R0/kUo391jsEHHxrGM07QFdnPGvlmox4rmH0kNiNAashItAilhy4Mv4pK5gQmW5f4sXAF58fwJbmlkGcVw==}
+  '@solidity-parser/parser@0.19.0':
+    resolution: {integrity: sha512-RV16k/qIxW/wWc+mLzV3ARyKUaMUTBy9tOLMzFhtNSKYeTAanQ3a5MudJKf/8arIFnA2L27SNjarQKmFg0w/jA==}
 
   '@stablelib/aead@1.0.1':
     resolution: {integrity: sha512-q39ik6sxGHewqtO0nP4BuSe3db5G1fEJE8ukvngS2gLkBXyy6E7pLubhbYgnkDFv6V8cWaxcE4Xn0t6LWcJkyg==}
@@ -8067,8 +8134,8 @@ packages:
     resolution: {integrity: sha512-vkcDPrRZo1QZLbn5RLGPpg/WmIQ65qoWWhcGKf/b5eplkkarX0m9z8ppCat4mlOqUsWpyNuYgO3VRyrYHSzX5g==}
     engines: {node: '>= 0.8.0'}
 
-  prettier-plugin-solidity@1.3.1:
-    resolution: {integrity: sha512-MN4OP5I2gHAzHZG1wcuJl0FsLS3c4Cc5494bbg+6oQWBPuEamjwDvmGfFMZ6NFzsh3Efd9UUxeT7ImgjNH4ozA==}
+  prettier-plugin-solidity@1.4.1:
+    resolution: {integrity: sha512-Mq8EtfacVZ/0+uDKTtHZGW3Aa7vEbX/BNx63hmVg6YTiTXSiuKP0amj0G6pGwjmLaOfymWh3QgXEZkjQbU8QRg==}
     engines: {node: '>=16'}
     peerDependencies:
       prettier: '>=2.3.0'
@@ -8779,9 +8846,6 @@ packages:
   solady@0.0.168:
     resolution: {integrity: sha512-7tgy21selT6Tg+8aAxkLUyjjCx9iQ3m3KE+5D4x/tIXr4wAfoVe6EK0lmmZjyIv8MRqQSx/vB6NfIC1LME3oZA==}
 
-  solidity-comments-extractor@0.0.8:
-    resolution: {integrity: sha512-htM7Vn6LhHreR+EglVMd2s+sZhcXAirB1Zlyrv5zBuTxieCvjfnRpd7iZk75m/u6NOlEyQ94C6TWbBn2cY7w8g==}
-
   solmate@6.1.0:
     resolution: {integrity: sha512-gxG4YU5nnAQ+Ac23R44GS3Xo3+X0+8XCe4/P1KvVobL5ERBzQBG/xMv7NSvVo/pkHSYGufgUAPjiueYxujKJAA==}
 
@@ -9006,6 +9070,7 @@ packages:
 
   sudo-prompt@9.2.1:
     resolution: {integrity: sha512-Mu7R0g4ig9TUuGSxJavny5Rv0egCEtpZRNMrZaYS1vxkiIxGiGUwoezU3LazIQ+KE04hTrTfNPgxU5gzi7F5Pw==}
+    deprecated: Package no longer supported. Contact Support at https://www.npmjs.com/support for more info.
 
   superstruct@1.0.4:
     resolution: {integrity: sha512-7JpaAoX2NGyoFlI9NBh66BQXGONc+uE+MRS5i2iOBKuS4e+ccgMDjATgZldkah+33DakBxDHiss9kvUcGAO8UQ==}
@@ -13891,7 +13956,7 @@ snapshots:
 
   '@socket.io/component-emitter@3.1.2': {}
 
-  '@solidity-parser/parser@0.17.0': {}
+  '@solidity-parser/parser@0.19.0': {}
 
   '@stablelib/aead@1.0.1': {}
 
@@ -14088,7 +14153,7 @@ snapshots:
     dependencies:
       sha256-uint8array: 0.10.7
 
-  '@typechain/ethers-v5@10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@5.5.4))(typescript@4.6.3)':
+  '@typechain/ethers-v5@10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@4.6.3))(typescript@4.6.3)':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bytes': 5.7.0
@@ -14343,7 +14408,7 @@ snapshots:
       '@vanilla-extract/integration': 6.5.0(@types/node@20.14.12)(terser@5.31.3)
       outdent: 0.8.0
       postcss: 8.4.40
-      postcss-load-config: 4.0.2(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))
+      postcss-load-config: 4.0.2(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))
       vite: 5.3.4(@types/node@20.14.12)(terser@5.31.3)
     transitivePeerDependencies:
       - '@types/node'
@@ -14874,7 +14939,7 @@ snapshots:
   '@zoralabs/nft-drop-contracts@1.12.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
     dependencies:
       '@dotenv/cli': 2.2.2
-      '@typechain/ethers-v5': 10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@5.5.4))(typescript@4.6.3)
+      '@typechain/ethers-v5': 10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@4.6.3))(typescript@4.6.3)
       ethers: 5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       typechain: 8.0.0(typescript@4.6.3)
       typescript: 4.6.3
@@ -19439,7 +19504,7 @@ snapshots:
       camelcase-css: 2.0.1
       postcss: 8.4.40
 
-  postcss-load-config@4.0.2(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4)):
+  postcss-load-config@4.0.2(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4)):
     dependencies:
       lilconfig: 3.1.2
       yaml: 2.3.4
@@ -19476,12 +19541,11 @@ snapshots:
 
   prelude-ls@1.2.1: {}
 
-  prettier-plugin-solidity@1.3.1(prettier@3.3.3):
+  prettier-plugin-solidity@1.4.1(prettier@3.3.3):
     dependencies:
-      '@solidity-parser/parser': 0.17.0
+      '@solidity-parser/parser': 0.19.0
       prettier: 3.3.3
       semver: 7.6.3
-      solidity-comments-extractor: 0.0.8
 
   prettier@1.19.1: {}
 
@@ -20403,8 +20467,6 @@ snapshots:
 
   solady@0.0.168: {}
 
-  solidity-comments-extractor@0.0.8: {}
-
   solmate@6.1.0: {}
 
   solmate@6.2.0: {}
@@ -20691,7 +20753,7 @@ snapshots:
       postcss: 8.4.40
       postcss-import: 15.1.0(postcss@8.4.40)
       postcss-js: 4.0.1(postcss@8.4.40)
-      postcss-load-config: 4.0.2(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))
+      postcss-load-config: 4.0.2(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))
       postcss-nested: 6.2.0(postcss@8.4.40)
       postcss-selector-parser: 6.1.1
       resolve: 1.22.8
@@ -20878,7 +20940,7 @@ snapshots:
 
   tslib@2.6.3: {}
 
-  tsup@7.3.0(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))(typescript@5.5.4):
+  tsup@7.3.0(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))(typescript@5.5.4):
     dependencies:
       bundle-require: 4.2.1(esbuild@0.19.12)
       cac: 6.7.14
@@ -20888,7 +20950,7 @@ snapshots:
       execa: 5.1.1
       globby: 11.1.0
       joycon: 3.1.1
-      postcss-load-config: 4.0.2(postcss@8.4.40)(ts-node@10.9.2(typescript@5.5.4))
+      postcss-load-config: 4.0.2(postcss@8.4.40)(ts-node@10.9.2(@types/node@20.14.12)(typescript@5.5.4))
       resolve-from: 5.0.0
       rollup: 4.19.0
       source-map: 0.8.0-beta.0

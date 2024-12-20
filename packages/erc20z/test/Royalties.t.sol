@@ -6,7 +6,7 @@ import {MockMintableERC721} from "./mock/MockMintableERC721.sol";
 import {IRoyalties} from "../src/interfaces/IRoyalties.sol";
 import {UniswapV3LiquidityCalculator} from "../src/uniswap/UniswapV3LiquidityCalculator.sol";
 import {ReceiveRejector} from "@zoralabs/shared-contracts/mocks/ReceiveRejector.sol";
-import {INonfungiblePositionManager} from "../src/interfaces/uniswap/INonfungiblePositionManager.sol";
+import {INonfungiblePositionManager} from "@zoralabs/shared-contracts/interfaces/uniswap/INonfungiblePositionManager.sol";
 
 import "./BaseTest.sol";
 

@@ -16,7 +16,7 @@ import {IOwnable2StepUpgradeable} from "../../src/utils/ownable/IOwnable2StepUpg
 import {IHasContractName} from "../../src/interfaces/IContractMetadata.sol";
 import {ZoraCreator1155PremintExecutorImplLib} from "../../src/delegation/ZoraCreator1155PremintExecutorImplLib.sol";
 import {IUpgradeGate} from "../../src/interfaces/IUpgradeGate.sol";
-import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
+import {IProtocolRewards} from "@zoralabs/shared-contracts/interfaces/IProtocolRewards.sol";
 import {IZoraCreator1155PremintExecutor, ILegacyZoraCreator1155PremintExecutor, IRemovedZoraCreator1155PremintExecutorFunctions} from "../../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
 

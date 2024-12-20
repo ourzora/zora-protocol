@@ -7,7 +7,7 @@ import {CommentsImpl} from "../src/CommentsImpl.sol";
 import {Comments} from "../src/proxy/Comments.sol";
 import {IComments} from "../src/interfaces/IComments.sol";
 import {Mock1155} from "./mocks/Mock1155.sol";
-import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
+import {IProtocolRewards} from "@zoralabs/shared-contracts/interfaces/IProtocolRewards.sol";
 import {ProtocolRewards} from "./mocks/ProtocolRewards.sol";
 import {CommentsTestBase} from "./CommentsTestBase.sol";
 import {UnorderedNoncesUpgradeable} from "@zoralabs/shared-contracts/utils/UnorderedNoncesUpgradeable.sol";

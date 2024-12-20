@@ -18,8 +18,9 @@ interface IUniswapV3Pool {
         bytes memory data
     ) external returns (int256 amount0, int256 amount1);
 
-    function token0() external returns (address);
-    function token1() external returns (address);
+    function token0() external view returns (address);
+
+    function token1() external view returns (address);
 
     struct Slot0 {
         // the current price
@@ -40,4 +41,10 @@ interface IUniswapV3Pool {
     }
 
     function slot0() external view returns (Slot0 memory slot0);
+
+    function fee() external view returns (uint24);
+
+    function increaseObservationCardinalityNext(uint16 observationCardinalityNext) external;
+
+    function observe(uint32[] calldata secondsAgos) external view returns (int56[] memory tickCumulatives, uint160[] memory secondsPerLiquidityCumulativeX128s);
 }

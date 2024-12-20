@@ -27,7 +27,8 @@
     "@zoralabs/protocol-rewards": "workspace:^",
     "@zoralabs/zora-1155-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^",
-    "@zoralabs/comments-contracts": "workspace:^"
+    "@zoralabs/comments-contracts": "workspace:^",
+    "@zoralabs/cointags-contracts": "workspace:^"
   },
   "devDependencies": {
     "@goldskycom/cli": "^7.1.0",

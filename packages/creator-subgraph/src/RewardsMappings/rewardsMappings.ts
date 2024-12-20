@@ -1,4 +1,4 @@
-import { Address, BigInt, Bytes, ethereum } from "@graphprotocol/graph-ts";
+import { Address, BigInt, Bytes, ethereum, log } from "@graphprotocol/graph-ts";
 import {
   RewardsPerUser,
   RewardsPerUserPerDay,
@@ -9,9 +9,11 @@ import {
   RewardsAggregate,
   RewardsPerSource,
   RewardsPerUserPerType,
+  Cointag,
 } from "../../generated/schema";
 import {
   Deposit as DepositEvent,
+  ProtocolRewards,
   RewardsDeposit as RewardsDepositEvent,
   Withdraw as WithdrawEvent,
 } from "../../generated/ProtocolRewardsV2/ProtocolRewards";
@@ -22,7 +24,7 @@ function addRewardInfoToUser(
   user: Address,
   amount: BigInt,
   timestamp: BigInt,
-  type: string | null
+  type: string | null,
 ): void {
   let creatorRewards = RewardsPerUser.load(user);
   if (!creatorRewards) {
@@ -109,10 +111,10 @@ function addSingleDeposit(
   from: Address,
   to: Address,
   amount: BigInt,
-  comment: string
+  comment: string,
 ): void {
   const customDeposit = new RewardsSingleDeposit(
-    `${event.transaction.hash.toHex()}-${event.transactionLogIndex}-${comment}`
+    `${event.transaction.hash.toHex()}-${event.transactionLogIndex}-${comment}`,
   );
   customDeposit.txn = makeTransaction(event);
   customDeposit.block = event.block.number;
@@ -129,9 +131,21 @@ function addSingleDeposit(
   addRewardInfoToUser(from, to, amount, event.block.timestamp, comment);
 }
 
+function updateCointagBalance(
+  cointagAddress: Address,
+  protocolRewardsAddress: Address,
+): void {
+  let cointag = Cointag.load(cointagAddress.toHexString());
+  if (cointag) {
+    const protocolRewards = ProtocolRewards.bind(protocolRewardsAddress);
+    cointag.protocolRewardsBalance = protocolRewards.balanceOf(cointagAddress);
+    cointag.save();
+  }
+}
+
 export function handleRewardsDeposit(event: RewardsDepositEvent): void {
   const rewardsDeposit = new RewardsDeposit(
-    `${event.transaction.hash.toHex()}-${event.transactionLogIndex}`
+    `${event.transaction.hash.toHex()}-${event.transactionLogIndex}`,
   );
   rewardsDeposit.address = event.address;
   rewardsDeposit.block = event.block.number;
@@ -159,7 +173,7 @@ export function handleRewardsDeposit(event: RewardsDepositEvent): void {
       event.params.from,
       event.params.createReferral,
       event.params.createReferralReward,
-      "create_referral"
+      "create_referral",
     );
   }
 
@@ -168,7 +182,7 @@ export function handleRewardsDeposit(event: RewardsDepositEvent): void {
     event.params.from,
     event.params.creator,
     event.params.creatorReward,
-    "creator"
+    "creator",
   );
 
   if (event.params.firstMinterReward.gt(BigInt.zero())) {
@@ -177,7 +191,7 @@ export function handleRewardsDeposit(event: RewardsDepositEvent): void {
       event.params.from,
       event.params.firstMinter,
       event.params.firstMinterReward,
-      "first_minter"
+      "first_minter",
     );
   }
 
@@ -187,7 +201,7 @@ export function handleRewardsDeposit(event: RewardsDepositEvent): void {
       event.params.from,
       event.params.mintReferral,
       event.params.mintReferralReward,
-      "mint_referral"
+      "mint_referral",
     );
   }
 
@@ -196,15 +210,17 @@ export function handleRewardsDeposit(event: RewardsDepositEvent): void {
     event.params.from,
     event.params.zora,
     event.params.zoraReward,
-    "zora"
+    "zora",
   );
 
   rewardsDeposit.save();
+
+  updateCointagBalance(event.params.creator, event.address);
 }
 
 export function handleWithdraw(event: WithdrawEvent): void {
   const withdraw = new RewardsWithdraw(
-    `${event.transaction.hash.toHex()}-${event.transactionLogIndex}`
+    `${event.transaction.hash.toHex()}-${event.transactionLogIndex}`,
   );
   withdraw.address = event.address;
   withdraw.amount = event.params.amount;
@@ -225,6 +241,8 @@ export function handleWithdraw(event: WithdrawEvent): void {
     rewardsTotal.withdrawn = rewardsTotal.withdrawn.plus(event.params.amount);
     rewardsTotal.save();
   }
+
+  updateCointagBalance(event.params.from, event.address);
 }
 
 export function handleDeposit(event: DepositEvent): void {
@@ -246,10 +264,12 @@ export function handleDeposit(event: DepositEvent): void {
     event.params.to,
     event.params.amount,
     event.block.timestamp,
-    null
+    null,
   );
 
   deposit.save();
+
+  updateCointagBalance(event.params.to, event.address);
 }
 
 function getEventId(event: ethereum.Event): string {

@@ -8,7 +8,7 @@ import {ERC1967Utils} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPS
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
+import {IProtocolRewards} from "@zoralabs/shared-contracts/interfaces/IProtocolRewards.sol";
 import {IReduceSupply} from "@zoralabs/shared-contracts/interfaces/IReduceSupply.sol";
 import {IZoraTimedSaleStrategy} from "../interfaces/IZoraTimedSaleStrategy.sol";
 import {IMinter1155} from "../interfaces/IMinter1155.sol";
@@ -17,10 +17,10 @@ import {IERC20Z} from "../interfaces/IERC20Z.sol";
 import {IZora1155} from "../interfaces/IZora1155.sol";
 import {ZoraTimedSaleStrategyConstants} from "./ZoraTimedSaleStrategyConstants.sol";
 import {ZoraTimedSaleStorageDataLocation} from "../storage/ZoraTimedSaleStorageDataLocation.sol";
-import {IUniswapV3SwapCallback} from "../interfaces/uniswap/IUniswapV3SwapCallback.sol";
+import {IUniswapV3SwapCallback} from "@zoralabs/shared-contracts/interfaces/uniswap/IUniswapV3SwapCallback.sol";
 import {UniswapV3LiquidityCalculator} from "../uniswap/UniswapV3LiquidityCalculator.sol";
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
-import {IUniswapV3Pool} from "../interfaces/uniswap/IUniswapV3Pool.sol";
+import {IUniswapV3Pool} from "@zoralabs/shared-contracts/interfaces/uniswap/IUniswapV3Pool.sol";
 
 /*
 

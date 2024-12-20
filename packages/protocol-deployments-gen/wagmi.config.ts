@@ -18,6 +18,8 @@ import {
   royaltiesABI,
   secondarySwapABI,
   iwethABI,
+  iSwapRouterABI,
+  iUniswapV3PoolABI,
 } from "@zoralabs/erc20z";
 import {
   commentsImplABI,
@@ -25,6 +27,10 @@ import {
 } from "@zoralabs/comments-contracts";
 import { zoraAccountManagerImplABI } from "@zoralabs/smart-wallet-contracts";
 import { iPremintDefinitionsABI } from "@zoralabs/zora-1155-contracts";
+import {
+  cointagFactoryImplABI,
+  cointagImplABI,
+} from "@zoralabs/cointags-contracts";
 
 type Address = `0x${string}`;
 
@@ -208,6 +214,7 @@ const getSharedAddresses = () => {
         readFileSync(`../shared-contracts/chainConfigs/${file}`, "utf-8"),
       ) as {
         WETH: Address;
+        UNISWAP_SWAP_ROUTER: Address;
       },
     };
   });
@@ -220,7 +227,21 @@ const getSharedAddresses = () => {
     storedConfigs,
   });
 
-  return toConfig(addresses);
+  addAddress({
+    abi: iSwapRouterABI,
+    addresses,
+    configKey: "UNISWAP_SWAP_ROUTER",
+    contractName: "UniswapV3SwapRouter",
+    storedConfigs,
+  });
+
+  return [
+    ...toConfig(addresses),
+    {
+      abi: iUniswapV3PoolABI,
+      name: "IUniswapV3Pool",
+    },
+  ];
 };
 
 const getSparksAddresses = () => {
@@ -429,6 +450,39 @@ const getCommentsContracts = (): ContractConfig[] => {
   return toConfig(addresses);
 };
 
+const getCointagsContracts = (): ContractConfig[] => {
+  const addresses: Addresses = {};
+
+  const addressesFiles = readdirSync("../cointags/addresses");
+
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../cointags/addresses/${file}`, "utf-8"),
+      ) as {
+        COINTAG_FACTORY: Address;
+      },
+    };
+  });
+
+  addAddress({
+    abi: cointagFactoryImplABI,
+    addresses,
+    configKey: "COINTAG_FACTORY",
+    contractName: "CointagFactory",
+    storedConfigs,
+  });
+
+  return [
+    ...toConfig(addresses),
+    {
+      abi: cointagImplABI,
+      name: "Cointag",
+    },
+  ];
+};
+
 export default defineConfig({
   out: "./generated/wagmi.ts",
   contracts: [
@@ -438,6 +492,7 @@ export default defineConfig({
     ...getCommentsContracts(),
     ...getSparksAddresses(),
     ...getSmartWalletContracts(),
+    ...getCointagsContracts(),
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",
