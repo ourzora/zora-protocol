@@ -35,7 +35,7 @@ export interface BuyWowTokenArgs extends WowTransactionBaseArgs {
  * @throws {NoPoolAddressFoundError}
  * @throws {SlippageExceededError}
  */
-export async function buyTokens(args: BuyWowTokenArgs) {
+export async function prepareTokenBuy(args: BuyWowTokenArgs) {
   const {
     publicClient,
     tokenAddress,
@@ -43,7 +43,7 @@ export async function buyTokens(args: BuyWowTokenArgs) {
     refundRecipientAddress,
     account,
     originalTokenQuote,
-    slippageBps,
+    slippageBps = 100n,
     ethAmount,
     poolAddress: passedInPoolAddress,
     comment = "",

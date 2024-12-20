@@ -1,6 +1,6 @@
 // Core functionality
-export { buyTokens, type BuyWowTokenArgs } from "./buy";
-export { sellTokens, type SellWowTokenArgs } from "./sell";
+export { prepareTokenBuy as buyTokens, type BuyWowTokenArgs } from "./buy";
+export { prepareTokenSell as sellTokens, type SellWowTokenArgs } from "./sell";
 export { getDeployTokenParameters, type DeployWowTokenArgs } from "./deploy";
 
 // Quote related exports

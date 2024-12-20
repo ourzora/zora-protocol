@@ -43,9 +43,9 @@ export type WowTransactionBaseArgs = {
    */
   originalTokenQuote: bigint;
   /**
-   * Slippage in bps
+   * Slippage in bps, defaults to 100 bps
    */
-  slippageBps: bigint;
+  slippageBps?: bigint;
   /**
    * Referrer address
    */

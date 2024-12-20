@@ -30,14 +30,14 @@ export interface SellWowTokenArgs extends WowTransactionBaseArgs {
  * @throws {NoPoolAddressFoundError}
  * @throws {SlippageExceededError}
  */
-export async function sellTokens(args: SellWowTokenArgs) {
+export async function prepareTokenSell(args: SellWowTokenArgs) {
   const {
     publicClient,
     account,
     tokenAddress,
     tokenRecipientAddress,
     originalTokenQuote,
-    slippageBps,
+    slippageBps = 100n,
     tokenAmount,
     poolAddress: passedInPoolAddress,
     comment = "",

@@ -3,7 +3,7 @@ import { describe } from "node:test";
 import { base } from "viem/chains";
 import { expect } from "vitest";
 import { parseEther } from "viem";
-import { buyTokens } from "./buy";
+import { prepareTokenBuy } from "./buy";
 import { getBuyQuote } from "./quote";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
 import {
@@ -34,7 +34,7 @@ describe("buy wow token", () => {
         poolAddress,
       });
 
-      const params = await buyTokens({
+      const params = await prepareTokenBuy({
         tokenRecipientAddress: walletClient.account?.address!,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         refundRecipientAddress: walletClient.account?.address!,
@@ -87,7 +87,7 @@ describe("buy wow token", () => {
         poolAddress,
       });
 
-      const largeParams = await buyTokens({
+      const largeParams = await prepareTokenBuy({
         tokenRecipientAddress: walletClient.account?.address!,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         refundRecipientAddress: walletClient.account?.address!,
@@ -107,7 +107,7 @@ describe("buy wow token", () => {
 
       // Try to buy with the stale quote - should throw SlippageExceededError
       await expect(
-        buyTokens({
+        prepareTokenBuy({
           tokenRecipientAddress: walletClient.account?.address!,
           tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
           refundRecipientAddress: walletClient.account?.address!,

@@ -3,8 +3,8 @@ import { describe } from "node:test";
 import { base } from "viem/chains";
 import { expect } from "vitest";
 import { parseEther } from "viem";
-import { buyTokens } from "./buy";
-import { sellTokens } from "./sell";
+import { prepareTokenBuy } from "./buy";
+import { prepareTokenSell } from "./sell";
 import { getBuyQuote, getSellQuote } from "./quote";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
 import {
@@ -37,7 +37,7 @@ describe("sell wow token", () => {
         marketType,
         poolAddress,
       });
-      const buyArgs = await buyTokens({
+      const buyArgs = await prepareTokenBuy({
         publicClient,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
         tokenRecipientAddress: walletClient.account?.address!,
@@ -66,7 +66,7 @@ describe("sell wow token", () => {
         poolAddress,
       });
 
-      const sellArgs = await sellTokens({
+      const sellArgs = await prepareTokenSell({
         tokenRecipientAddress: walletClient.account?.address!,
         referrerAddress: walletClient.account?.address!,
         tokenAddress: BASE_GRADUATED_TOKEN_ADDRESS,
@@ -112,7 +112,7 @@ describe("sell wow token", () => {
         poolAddress,
       });
 
-      const buyArgs = await buyTokens({
+      const buyArgs = await prepareTokenBuy({
         publicClient,
         tokenAddress,
         tokenRecipientAddress: walletClient.account?.address!,
@@ -143,7 +143,7 @@ describe("sell wow token", () => {
       });
 
       // Sell first half of tokens
-      const sellArgs = await sellTokens({
+      const sellArgs = await prepareTokenSell({
         tokenRecipientAddress: walletClient.account?.address!,
         referrerAddress: walletClient.account?.address!,
         tokenAddress,
@@ -162,7 +162,7 @@ describe("sell wow token", () => {
 
       // Try to sell second half using the same (now stale) quote
       await expect(
-        sellTokens({
+        prepareTokenSell({
           tokenRecipientAddress: walletClient.account?.address!,
           referrerAddress: walletClient.account?.address!,
           tokenAddress,
