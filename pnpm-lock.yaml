@@ -104,6 +104,9 @@ importers:
       '@zoralabs/tsconfig':
         specifier: workspace:*
         version: link:../packages/tsconfig
+      tsx:
+        specifier: ^4.19.2
+        version: 4.19.2
 
   packages/1155-contracts:
     devDependencies:
@@ -14153,7 +14156,7 @@ snapshots:
     dependencies:
       sha256-uint8array: 0.10.7
 
-  '@typechain/ethers-v5@10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@4.6.3))(typescript@4.6.3)':
+  '@typechain/ethers-v5@10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@5.5.4))(typescript@4.6.3)':
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@ethersproject/bytes': 5.7.0
@@ -14939,7 +14942,7 @@ snapshots:
   '@zoralabs/nft-drop-contracts@1.12.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(bufferutil@4.0.8)(utf-8-validate@5.0.10)':
     dependencies:
       '@dotenv/cli': 2.2.2
-      '@typechain/ethers-v5': 10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@4.6.3))(typescript@4.6.3)
+      '@typechain/ethers-v5': 10.0.0(@ethersproject/abi@5.7.0)(@ethersproject/bytes@5.7.0)(@ethersproject/providers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(ethers@5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10))(typechain@8.0.0(typescript@5.5.4))(typescript@4.6.3)
       ethers: 5.7.2(bufferutil@4.0.8)(utf-8-validate@5.0.10)
       typechain: 8.0.0(typescript@4.6.3)
       typescript: 4.6.3

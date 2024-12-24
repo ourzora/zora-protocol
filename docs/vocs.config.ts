@@ -128,6 +128,10 @@ export default defineConfig({
             text: "Comments",
             link: "/contracts/Comments",
           },
+          {
+            text: "Cointags",
+            link: "/contracts/cointags",
+          },
         ],
       },
     ],

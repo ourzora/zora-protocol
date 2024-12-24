@@ -1,0 +1,73 @@
+@startuml CointagObjects
+
+skinparam class {
+    BackgroundColor White
+    ArrowColor Black
+    BorderColor Black
+}
+
+class "CointagFactory" {
+    + getOrCreateCointag(\ncreator, pool, buyBurnPercentage)
+    
+}
+
+class "Cointag" {
+    + pull()
+    - percentageToBuyBurn
+    - creatorRewardRecipient
+    - uniswapV3Pool
+}
+
+class "Protocol\nRewards" {
+    + deposit()
+    + withdraw()
+    + balanceOf()
+}
+
+class "WETH" {
+    + deposit()
+}
+
+class "UniswapV3\nPool" {
+    + swap()
+    - tokenA: WETH
+    - tokenB: desired ERC20
+    - fee
+}
+
+class "ERC20" {
+    + burn()
+}
+
+class "1155" {
+    + getCreatorRewardRecipient(tokenId)
+}
+
+class "Minter" {
+    + mint()
+}
+
+CointagFactory ..> Cointag : creates
+Cointag --> "Protocol\nRewards" : 1. withdraws ETH during pull\n2. deposits remaining ETH for creator
+Cointag --> "UniswapV3\nPool" : swaps WETH for ERC20
+Cointag --> WETH : wraps buyburn percentage of ETH\nto swap with pool
+Cointag --> ERC20 : burns received tokens
+Minter --> 1155 : gets creator reward recipient
+Minter --> "Protocol\nRewards" : deposits rewards to
+1155 --> Cointag : configured as\ncreator reward recipient
+
+note right of Cointag
+  Each Cointag instance is uniquely
+  identified by:
+  - creator
+  - pool
+  - burn percentage
+end note
+
+note bottom of "Protocol\nRewards"
+  Escrows ETH for: 
+  1. Cointag balance from creator rewards
+  2. Creator ETH after pull
+end note
+
+@enduml 

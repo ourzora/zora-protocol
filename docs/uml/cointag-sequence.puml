@@ -1,0 +1,54 @@
+@startuml Cointag Sequence Diagram
+
+actor Creator
+actor "Anyone" as Caller
+participant "1155" as 1155 
+participant "Minter" as Minter
+participant "CointagFactory" as Factory
+participant "Cointag" as Cointag
+participant "ProtocolRewards" as ProtocolRewards
+participant "UniswapV3Pool" as Uniswap
+participant "ERC20" as ERC20
+
+== Setup Flow ==
+Creator -> Factory: Create Cointag
+note right: deterministic address based on combination of\ncreator, percentage, Uniswap pool
+Factory -> Cointag: Create
+
+Creator -> 1155: Set creator reward recipient
+note right: Set to Cointag address
+
+== Minting Flow ==
+Caller -> Minter: Mint Post
+Minter -> 1155: Get creator reward recipient
+1155 --> Minter: Return Cointag address
+Minter -> ProtocolRewards: Deposit rewards
+note right: Cointag as recipient
+
+== Pull Flow ==
+Caller -> Cointag: pull()
+note right: Anyone can trigger rewards distribution
+activate Cointag
+
+Cointag -> ProtocolRewards: withdraw()
+ProtocolRewards --> Cointag: Transfer ETH rewards
+
+Cointag -> Cointag: Calculate split
+note right: creator vs buyburn amounts
+
+Cointag -> Cointag: wrap ETH as WETH
+Cointag -> Uniswap: Swap WETH for ERC20
+Uniswap -> ERC20: Transfer
+ERC20 --> Cointag: amount of ERC20 for WETH
+Cointag -> ERC20: Burn current balance
+
+Cointag -> ProtocolRewards: Deposit remaining ETH
+note right: as rewards for creator
+
+== Creator Withdrawal of Rewards ==
+Creator -> ProtocolRewards: withdraw()
+ProtocolRewards --> Creator: Transfer ETH rewards
+
+deactivate Cointag
+
+@enduml
