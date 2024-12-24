@@ -249,6 +249,10 @@ export default defineConfig({
             text: "@zoralabs/zora-1155-contracts",
             link: "/changelogs/1155-contracts",
           },
+          {
+            text: "@zoralabs/cointags-contracts",
+            link: "/changelogs/cointags",
+          },
         ],
       },
     ],
