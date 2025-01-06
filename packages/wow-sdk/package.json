@@ -1,0 +1,47 @@
+{
+  "name": "@zoralabs/wow-sdk",
+  "version": "0.1.0",
+  "repository": "https://github.com/ourzora/zora-protocol",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "build": "pnpm tsup",
+    "prepack": "pnpm build",
+    "clean": "rm -rf .turbo && rm -rf node_modules && rm -rf dist",
+    "dev": "tsup --watch",
+    "lint": "prettier --check 'src/**/*.ts'",
+    "test": "vitest src",
+    "prettier:write": "prettier --write 'src/**/*.ts'"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "@typescript-eslint/eslint-plugin": "^7.1.1",
+    "@typescript-eslint/parser": "^7.1.1",
+    "@zoralabs/tsconfig": "workspace:^",
+    "dotenv": "^16.4.5",
+    "eslint": "^8.57.0",
+    "prettier": "^3.0.3",
+    "ts-node": "^10.9.1",
+    "tsup": "^8.0.2",
+    "typescript": "^5.3.3",
+    "vitest": "latest"
+  },
+  "dependencies": {
+    "viem": "^2.21.21"
+  },
+  "peerDependencies": {
+    "abitype": "^1.0.2",
+    "viem": "^2.21.21"
+  }
+}
