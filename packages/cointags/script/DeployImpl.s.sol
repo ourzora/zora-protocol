@@ -13,9 +13,9 @@ contract DeployImpl is CointagsDeployerBase {
         CointagsDeployment memory deployment = readDeployment();
         vm.startBroadcast();
 
-        deployment.cointag = address(deployCointagsImpl(deployment.upgradeGate));
-        deployment.cointagFactoryImpl = address(deployCointagFactoryImpl(deployment.cointag));
-        deployment.cointagVersion = IVersionedContract(deployment.cointag).contractVersion();
+        deployment.cointagImpl = address(deployCointagsImpl(deployment.upgradeGate));
+        deployment.cointagFactoryImpl = address(deployCointagFactoryImpl(deployment.cointagImpl));
+        deployment.cointagVersion = IVersionedContract(deployment.cointagImpl).contractVersion();
 
         vm.stopBroadcast();
 

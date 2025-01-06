@@ -10,6 +10,8 @@ import {CointagImpl} from "../src/CointagImpl.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
 import {IUpgradeGate} from "@zoralabs/shared-contracts/interfaces/IUpgradeGate.sol";
 import {UpgradeGate} from "../src/upgrades/UpgradeGate.sol";
+import {ICointag} from "../src/interfaces/ICointag.sol";
+import {ICointagFactory} from "../src/interfaces/ICointagFactory.sol";
 
 contract CointagsDeployerBase is ProxyDeployerScript {
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
@@ -22,7 +24,7 @@ contract CointagsDeployerBase is ProxyDeployerScript {
         address cointagFactoryImpl;
         string cointagVersion;
         // Implementation
-        address cointag;
+        address cointagImpl;
         address upgradeGate;
     }
 
@@ -38,7 +40,7 @@ contract CointagsDeployerBase is ProxyDeployerScript {
         vm.serializeString(objectKey, "COINTAG_VERSION", deployment.cointagVersion);
         vm.serializeAddress(objectKey, "UPGRADE_GATE", deployment.upgradeGate);
 
-        string memory result = vm.serializeAddress(objectKey, "COINTAG", deployment.cointag);
+        string memory result = vm.serializeAddress(objectKey, "COINTAG", deployment.cointagImpl);
 
         vm.writeJson(result, addressesFile());
     }
@@ -53,7 +55,7 @@ contract CointagsDeployerBase is ProxyDeployerScript {
         deployment.cointagFactory = readAddressOrDefaultToZero(json, "COINTAG_FACTORY");
         deployment.cointagFactoryImpl = readAddressOrDefaultToZero(json, "COINTAG_FACTORY_IMPL");
         deployment.cointagVersion = readStringOrDefaultToEmpty(json, "COINTAG_VERSION");
-        deployment.cointag = readAddressOrDefaultToZero(json, "COINTAG");
+        deployment.cointagImpl = readAddressOrDefaultToZero(json, "COINTAG");
         deployment.upgradeGate = readAddressOrDefaultToZero(json, "UPGRADE_GATE");
     }
 
@@ -81,9 +83,9 @@ contract CointagsDeployerBase is ProxyDeployerScript {
         DeterministicContractConfig memory cointagsConfig = readDeterministicContractConfig("cointagFactory");
 
         // Deploy implementation contracts
-        deployment.cointag = address(deployCointagsImpl(deployment.upgradeGate));
-        deployment.cointagFactoryImpl = address(deployCointagFactoryImpl(deployment.cointag));
-        deployment.cointagVersion = IVersionedContract(deployment.cointag).contractVersion();
+        deployment.cointagImpl = address(deployCointagsImpl(deployment.upgradeGate));
+        deployment.cointagFactoryImpl = address(deployCointagFactoryImpl(deployment.cointagImpl));
+        deployment.cointagVersion = IVersionedContract(deployment.cointagImpl).contractVersion();
 
         if (deployment.cointagFactoryImpl.code.length == 0) {
             revert("Factory Impl not yet deployed. Make sure to deploy it with DeployImpl.s.sol");
@@ -111,5 +113,24 @@ contract CointagsDeployerBase is ProxyDeployerScript {
 
         // validate that the cointag factory owner is the proxy admin
         require(CointagFactoryImpl(deployment.cointagFactory).owner() == getProxyAdmin(), "Cointag factory owner is not the proxy admin");
+    }
+
+    function createTestCointag(CointagsDeployment memory deployment) internal returns (ICointag) {
+        ICointagFactory factory = ICointagFactory(deployment.cointagFactory);
+
+        uint256 buyBurnPercentage = 20_000;
+        address creator = 0xf69fEc6d858c77e969509843852178bd24CAd2B6;
+
+        address pool;
+        if (block.chainid == 8453) {
+            // eth/degen
+            pool = vm.parseAddress("0xc9034c3e7f58003e6ae0c8438e7c8f4598d5acaa");
+        } else if (block.chainid == 7777777) {
+            // eth/enjoy
+            pool = vm.parseAddress("0x1ed9b524d6f395ecc61aa24537f87a0482933069");
+        } else {
+            revert("Unsupported chain");
+        }
+        return factory.getOrCreateCointag(creator, pool, buyBurnPercentage, bytes(""));
     }
 }
