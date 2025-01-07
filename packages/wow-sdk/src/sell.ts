@@ -13,7 +13,7 @@ import {
   isQuoteChangeExceedingSlippage,
   getSellQuote,
 } from "./quote";
-import { SlippageExceededError } from "./errors";
+import { NoQuoteFoundError, SlippageExceededError } from "./errors";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
 
 export interface SellWowTokenArgs extends WowTransactionBaseArgs {
@@ -29,6 +29,7 @@ export interface SellWowTokenArgs extends WowTransactionBaseArgs {
  * @returns
  * @throws {NoPoolAddressFoundError}
  * @throws {SlippageExceededError}
+ * @throws {NoQuoteFoundError}
  */
 export async function prepareTokenSell(args: SellWowTokenArgs) {
   const {
@@ -60,6 +61,10 @@ export async function prepareTokenSell(args: SellWowTokenArgs) {
     marketType,
     publicClient,
   });
+
+  if (!updatedTokenQuote) {
+    throw new NoQuoteFoundError();
+  }
 
   if (
     isQuoteChangeExceedingSlippage(

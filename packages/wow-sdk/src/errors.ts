@@ -19,3 +19,10 @@ export class NoPoolAddressFoundError extends Error {
     this.tokenAddress = tokenAddress;
   }
 }
+
+export class NoQuoteFoundError extends Error {
+  constructor() {
+    super("No quote found");
+    this.name = "NoQuoteFoundError";
+  }
+}

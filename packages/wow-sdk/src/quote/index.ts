@@ -1,7 +1,6 @@
 import { Address, PublicClient, Transport } from "viem";
 import { WowERC20ABI } from "../abi/WowERC20";
 import { getUniswapQuote } from "./getUniswapQuote";
-import { MAX_SUPPLY_BEFORE_GRADUATION } from "../constants";
 import { SupportedChain } from "../types";
 import { MarketType } from "../marketType";
 import { ONE_HUNDRED_PERCENT_BPS, TX_FEE_BPS } from "../constants";
@@ -81,9 +80,7 @@ export async function getBuyQuote({
       args: [amount],
     });
   }
-  return quote > MAX_SUPPLY_BEFORE_GRADUATION
-    ? MAX_SUPPLY_BEFORE_GRADUATION
-    : quote;
+  return quote;
 }
 
 /**
@@ -126,7 +123,5 @@ export async function getSellQuote({
       args: [amount],
     });
   }
-  return quote > MAX_SUPPLY_BEFORE_GRADUATION
-    ? MAX_SUPPLY_BEFORE_GRADUATION
-    : quote;
+  return quote;
 }
