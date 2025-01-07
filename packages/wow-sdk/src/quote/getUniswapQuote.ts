@@ -96,7 +96,7 @@ export async function getUniswapQuote({
   type,
   publicClient,
 }: {
-  poolAddress?: Address;
+  poolAddress: Address;
   amount: bigint;
   type: "buy" | "sell";
   publicClient: PublicClient<Transport, SupportedChain>;
@@ -109,14 +109,10 @@ export async function getUniswapQuote({
   let insufficientLiquidity = false;
   const chainId = publicClient.chain?.id;
 
-  const invalidPoolError = !poolAddress
-    ? new Error("Invalid pool address")
-    : undefined;
+  let fetchingError: Error | undefined;
 
   try {
-    const [poolInfo] = await Promise.all([
-      getPoolInfo(poolAddress!, publicClient),
-    ]);
+    const poolInfo = await getPoolInfo(poolAddress, publicClient);
 
     const { token0, token1, balance0, balance1, fee } = poolInfo;
 
@@ -148,21 +144,25 @@ export async function getUniswapQuote({
       chainId,
       publicClient,
     );
-  } catch (error) {
-    console.error(error);
+  } catch (error: any) {
+    if (error?.message?.includes("The address is not a contract.")) {
+      fetchingError = new Error("Failed fetching pool");
+    } else {
+      fetchingError = error;
+    }
   }
 
   insufficientLiquidity =
     (type === "sell" && !!pool && !quote) || insufficientLiquidity;
 
   const error = !pool
-    ? "Failed fetching pool"
+    ? new Error("Failed fetching pool")
     : insufficientLiquidity
-      ? "Insufficient liquidity"
+      ? new Error("Insufficient liquidity")
       : !quote && utilization >= 0.9
-        ? "Price impact too high"
+        ? new Error("Price impact too high")
         : !quote
-          ? "Failed fetching quote"
+          ? new Error("Failed fetching quote")
           : undefined;
 
   return {
@@ -182,6 +182,6 @@ export async function getUniswapQuote({
 
     // uniswap pool fee is scaled by 1000000 (1e6)
     fee: !!pool ? pool.fee / 1000000 : undefined,
-    error: invalidPoolError || error,
+    error: fetchingError || error,
   };
 }

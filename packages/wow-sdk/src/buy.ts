@@ -13,7 +13,7 @@ import {
   getBuyQuote,
   calculateQuoteWithFees,
 } from "./quote";
-import { SlippageExceededError } from "./errors";
+import { NoQuoteFoundError, SlippageExceededError } from "./errors";
 import { getMarketTypeAndPoolAddress } from "./pool/transaction";
 import { SimulateContractParametersWithAccount } from "./test";
 
@@ -34,6 +34,7 @@ export interface BuyWowTokenArgs extends WowTransactionBaseArgs {
  * @returns
  * @throws {NoPoolAddressFoundError}
  * @throws {SlippageExceededError}
+ * @throws {NoQuoteFoundError}
  */
 export async function prepareTokenBuy(args: BuyWowTokenArgs) {
   const {
@@ -67,6 +68,10 @@ export async function prepareTokenBuy(args: BuyWowTokenArgs) {
     publicClient,
   });
 
+  if (!updatedTokenQuote) {
+    throw new NoQuoteFoundError();
+  }
+
   if (
     isQuoteChangeExceedingSlippage(
       originalTokenQuote,
@@ -98,7 +103,7 @@ export async function prepareTokenBuy(args: BuyWowTokenArgs) {
         calculateQuoteWithFees(originalTokenQuote),
         slippageBps,
       ),
-      0n,
+      0n, // Uniswap slippage param we don't use
     ] as const,
     value: parseEther(ethAmount),
     account,

@@ -28,7 +28,6 @@ describe("getUniswapQuote", () => {
       });
 
       const quote = await getUniswapQuote({
-        chainId: base.id,
         poolAddress,
         amount: parseEther("1"),
         type: "buy",
@@ -42,6 +41,7 @@ describe("getUniswapQuote", () => {
       expect(quote.balance?.weth).toBeGreaterThan(0n);
       expect(quote.balance?.erc20z).toBeGreaterThan(0n);
     },
+    10_000,
   );
 
   makeAnvilTest({
@@ -57,7 +57,6 @@ describe("getUniswapQuote", () => {
       });
 
       const quote = await getUniswapQuote({
-        chainId: base.id,
         poolAddress,
         amount: parseEther("1000"),
         type: "sell",
@@ -69,25 +68,7 @@ describe("getUniswapQuote", () => {
       expect(quote.fee).toBeGreaterThan(0);
       expect(quote.balance).toBeDefined();
     },
-  );
-
-  makeAnvilTest({
-    forkBlockNumber: BASE_MAINNET_FORK_BLOCK_NUMBER,
-    forkUrl: forkUrls.baseMainnet,
-    anvilChainId: base.id,
-  })(
-    "should handle missing pool address",
-    async ({ viemClients: { publicClient } }) => {
-      const quote = await getUniswapQuote({
-        chainId: base.id,
-        amount: parseEther("1"),
-        type: "buy",
-        publicClient,
-      });
-
-      expect(quote.error).toEqual(new Error("Invalid pool address"));
-      expect(quote.amountOut).toBe(0n);
-    },
+    10_000,
   );
 
   makeAnvilTest({
@@ -98,14 +79,13 @@ describe("getUniswapQuote", () => {
     "should handle invalid pool address",
     async ({ viemClients: { publicClient } }) => {
       const quote = await getUniswapQuote({
-        chainId: base.id,
         poolAddress: FAKE_POOL,
         amount: parseEther("1"),
         type: "buy",
         publicClient,
       });
 
-      expect(quote.error).toBe("Failed fetching pool");
+      expect(quote.error?.message).toBe("Failed fetching pool");
       expect(quote.amountOut).toBe(0n);
     },
   );
@@ -118,14 +98,13 @@ describe("getUniswapQuote", () => {
     "should handle zero address pool",
     async ({ viemClients: { publicClient } }) => {
       const quote = await getUniswapQuote({
-        chainId: base.id,
         poolAddress: zeroAddress,
         amount: parseEther("1"),
         type: "buy",
         publicClient,
       });
 
-      expect(quote.error).toBe("Failed fetching pool");
+      expect(quote.error?.message).toBe("Failed fetching pool");
       expect(quote.amountOut).toBe(0n);
     },
   );

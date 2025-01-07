@@ -13,9 +13,14 @@ export interface DeployWowTokenArgs {
   value?: bigint;
 }
 
-export const getDeployTokenParameters = async (args: DeployWowTokenArgs) => {
-  const { chainId, userAddress, cid, name, symbol, value = 0n } = args;
-
+export const getDeployTokenParameters = async ({
+  chainId,
+  userAddress,
+  cid,
+  name,
+  symbol,
+  value = 0n,
+}: DeployWowTokenArgs) => {
   return {
     account: userAddress,
     address: addresses[chainId].WowFactory as Address,
