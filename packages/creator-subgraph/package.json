@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/nft-creator-subgraph",
-  "version": "0.3.20",
+  "version": "0.3.25",
   "license": "MIT",
   "repository": "https://github.com/ourzora/zora-creator-subgraph",
   "private": true,
@@ -27,7 +27,8 @@
     "@zoralabs/protocol-rewards": "workspace:^",
     "@zoralabs/zora-1155-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^",
-    "@zoralabs/comments-contracts": "workspace:^"
+    "@zoralabs/comments-contracts": "workspace:^",
+    "@zoralabs/cointags-contracts": "workspace:^"
   },
   "devDependencies": {
     "@goldskycom/cli": "^7.1.0",

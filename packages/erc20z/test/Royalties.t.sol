@@ -6,7 +6,7 @@ import {MockMintableERC721} from "./mock/MockMintableERC721.sol";
 import {IRoyalties} from "../src/interfaces/IRoyalties.sol";
 import {UniswapV3LiquidityCalculator} from "../src/uniswap/UniswapV3LiquidityCalculator.sol";
 import {ReceiveRejector} from "@zoralabs/shared-contracts/mocks/ReceiveRejector.sol";
-import {INonfungiblePositionManager} from "../src/interfaces/uniswap/INonfungiblePositionManager.sol";
+import {INonfungiblePositionManager} from "@zoralabs/shared-contracts/interfaces/uniswap/INonfungiblePositionManager.sol";
 
 import "./BaseTest.sol";
 
@@ -97,7 +97,7 @@ contract RoyaltiesTest is BaseTest {
 
         swapRouter.exactOutputSingle(params);
 
-        uint256 expectedTotalEth = 1132537496173;
+        uint256 expectedTotalEth = 1126846352977;
         uint256 totalEthAccrued = royalties.getUnclaimedFees(erc20zAddress).token1Amount;
 
         assertEq(totalEthAccrued, expectedTotalEth);
@@ -257,7 +257,7 @@ contract RoyaltiesTest is BaseTest {
             })
         );
 
-        uint256 expectedTotalEth = 2288188002473;
+        uint256 expectedTotalEth = 2265074992347;
         uint256 expectedTotalErc20 = 9999999999999999;
 
         uint256 totalErc20Accrued = royalties.getUnclaimedFees(erc20zAddress).token0Amount;

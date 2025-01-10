@@ -85,8 +85,8 @@ contract ProxyDeployerScript is CommonBase {
         string[] memory args = new string[](8);
 
         args[0] = "pnpm";
-        args[1] = "tsx";
-        args[2] = "scripts/signDeployAndCall.ts";
+        args[1] = "exec";
+        args[2] = "sign-deploy-and-call-with-turnkey";
 
         args[3] = vm.toString(block.chainid);
 
@@ -148,7 +148,23 @@ contract ProxyDeployerScript is CommonBase {
         config.salt = json.readBytes32(".salt");
         config.deployedAddress = json.readAddress(".deployedAddress");
         config.creationCode = json.readBytes(".creationCode");
+        config.contractName = json.readString(".contractName");
         config.constructorArgs = json.readBytes(".constructorArgs");
+    }
+
+    function printVerificationCommand(DeterministicContractConfig memory config) internal pure {
+        console2.log("to verify:");
+        console2.log(
+            string.concat(
+                "forge verify-contract ",
+                LibString.toHexString(config.deployedAddress),
+                " ",
+                config.contractName,
+                " --constructor-args ",
+                LibString.toHexString(config.constructorArgs),
+                " $(chains {chainName} --deploy)"
+            )
+        );
     }
 
     function chainConfigPath() internal view returns (string memory) {
@@ -159,7 +175,7 @@ contract ProxyDeployerScript is CommonBase {
         return vm.readFile(chainConfigPath());
     }
 
-    function getProxyAdmin() internal view returns (address) {
+    function getProxyAdmin() internal view virtual returns (address) {
         return validateMultisig(getChainConfigJson().readAddress(".PROXY_ADMIN"));
     }
 

@@ -10,20 +10,23 @@ import {
   TimedSaleParamsType,
 } from "./types";
 import { parseEther } from "viem";
-// 1111 mints worth of market reward eth - 0.0000111 eth * 1,111 = 0.0123321 eth
-export const DEFAULT_MINIMUM_MARKET_ETH = parseEther("0.0123321");
+
+// The amount of eth per mint for the secondary market
+export const MARKET_REWARD_V2 = parseEther("0.0000222");
+// 1111 mints worth of market reward eth - 0.0000222 eth * 1,111 = 0.0246642 eth
+export const DEFAULT_MINIMUM_MARKET_ETH = parseEther("0.0246642");
 // 24 hour countdown
 export const DEFAULT_MARKET_COUNTDOWN = BigInt(24 * 60 * 60);
 
 // Sales end forever amount (uint64 max)
 export const SALE_END_FOREVER = 18446744073709551615n;
 
-const DEFAULT_SALE_START_AND_END: Concrete<SaleStartAndEnd> = {
-  // Sale start time – defaults to beginning of unix time
-  saleStart: 0n,
+const DEFAULT_SALE_START_AND_END = (): Concrete<SaleStartAndEnd> => ({
+  // Sale start time – defaults to current time in seconds
+  saleStart: BigInt(Math.floor(new Date().getTime() / 1000)),
   // This is the end of uint64, plenty of time
   saleEnd: SALE_END_FOREVER,
-};
+});
 
 const DEFAULT_MAX_TOKENS_PER_ADDRESS: Concrete<MaxTokensPerAddress> = {
   maxTokensPerAddress: 0n,
@@ -32,7 +35,7 @@ const DEFAULT_MAX_TOKENS_PER_ADDRESS: Concrete<MaxTokensPerAddress> = {
 const erc20SaleSettingsWithDefaults = (
   params: Erc20ParamsType,
 ): Concrete<Erc20ParamsType> => ({
-  ...DEFAULT_SALE_START_AND_END,
+  ...DEFAULT_SALE_START_AND_END(),
   ...DEFAULT_MAX_TOKENS_PER_ADDRESS,
   ...params,
 });
@@ -41,7 +44,7 @@ const allowListWithDefaults = (
   allowlist: AllowListParamType,
 ): Concrete<AllowListParamType> => {
   return {
-    ...DEFAULT_SALE_START_AND_END,
+    ...DEFAULT_SALE_START_AND_END(),
     ...allowlist,
   };
 };
@@ -49,7 +52,7 @@ const allowListWithDefaults = (
 const fixedPriceSettingsWithDefaults = (
   params: FixedPriceParamsType,
 ): Concrete<FixedPriceParamsType> => ({
-  ...DEFAULT_SALE_START_AND_END,
+  ...DEFAULT_SALE_START_AND_END(),
   ...DEFAULT_MAX_TOKENS_PER_ADDRESS,
   type: "fixedPrice",
   ...params,
@@ -86,7 +89,7 @@ const getMinimumMarketEth = (
   >,
 ) => {
   if (params.minimumMintsForCountdown) {
-    return params.minimumMintsForCountdown * parseEther("0.0000111");
+    return params.minimumMintsForCountdown * MARKET_REWARD_V2;
   }
   return params.minimumMarketEth || DEFAULT_MINIMUM_MARKET_ETH;
 };
@@ -101,7 +104,7 @@ const timedSaleSettingsWithDefaults = (
     minimumMarketEth: params.minimumMarketEth,
     minimumMintsForCountdown: params.minimumMintsForCountdown,
   });
-  const minimumMintsForCountdown = minimumMarketEth / parseEther("0.0000111");
+  const minimumMintsForCountdown = minimumMarketEth / MARKET_REWARD_V2;
 
   return {
     type: "timed",

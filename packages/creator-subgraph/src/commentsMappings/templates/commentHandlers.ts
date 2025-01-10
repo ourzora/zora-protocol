@@ -37,11 +37,11 @@ export function setComment(
   comment.commentTimestamp = timestamp;
   comment.sparksQuantity = sparksQuantity;
   comment.commentId = commentId;
-  comment.replyCount = BigInt.fromI32(0);
+  comment.replyCount = BigInt.zero();
 
   const parentComment = Comment.load(getCommentId(replyToId));
   if (parentComment != null) {
-    parentComment.replyCount = parentComment.replyCount.plus(BigInt.fromI32(1));
+    parentComment.replyCount = parentComment.replyCount.plus(BigInt.fromU32(1));
     parentComment.save();
   }
 
@@ -71,7 +71,7 @@ export function handleCommented(event: Commented): void {
     event.params.replyToId,
     event.params.referrer,
     event.params.timestamp,
-    BigInt.fromI32(0),
+    BigInt.zero(),
     event.params.commentId,
   );
 
@@ -118,7 +118,7 @@ export function handleBackfilledComment(event: BackfilledComment): void {
     new Bytes(0),
     Bytes.fromHexString(ZERO_ADDRESS),
     event.params.timestamp,
-    BigInt.fromI32(0),
+    BigInt.zero(),
     event.params.commentId,
   );
 

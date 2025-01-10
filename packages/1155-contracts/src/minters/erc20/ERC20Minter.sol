@@ -4,7 +4,6 @@ pragma solidity ^0.8.17;
 import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IProtocolRewards} from "@zoralabs/protocol-rewards/src/interfaces/IProtocolRewards.sol";
 import {IERC20Minter} from "../../interfaces/IERC20Minter.sol";
 import {IMinterPremintSetup} from "../../interfaces/IMinterPremintSetup.sol";
 import {LimitedMintPerAddress} from "../../minters/utils/LimitedMintPerAddress.sol";

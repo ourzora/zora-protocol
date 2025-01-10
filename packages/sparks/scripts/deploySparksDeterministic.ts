@@ -18,7 +18,7 @@ import { ApiKeyStamper } from "@turnkey/api-key-stamper";
 import * as path from "path";
 import * as dotenv from "dotenv";
 import { readFile } from "fs/promises";
-import { zoraSparksManagerImplABI } from "@zoralabs/sparks-contracts";
+import { zoraSparksManagerImplABI } from "../package";
 import { abi as proxyDeployerAbi } from "../out/DeterministicUUPSProxyDeployer.sol/DeterministicUUPSProxyDeployer.json";
 import * as chains from "viem/chains";
 
@@ -31,26 +31,24 @@ const __dirname = dirname(__filename);
 // Load environment variables from `.env.local`
 dotenv.config({ path: path.resolve(__dirname, "../.env") });
 
-function getChainNamePositionalArg() {
+function getChainIdPositionalArg() {
   // parse chain id as first argument:
-  const chainName = process.argv[2];
+  const chainId = process.argv[2];
 
-  if (!chainName) {
-    throw new Error("Must provide chain name as first argument");
+  if (!chainId) {
+    throw new Error("Must provide chain ID as first argument");
   }
 
-  return chainName;
+  return chainId;
 }
 
-function getChain(chainName: string): Chain {
+function getChain(chainId: string): Chain {
   const allChains = Object.values(chains);
 
-  if (chainName === "zora") return chains.zora;
-
-  const result = allChains.find((chain) => chain.network === chainName);
+  const result = allChains.find((chain) => chain.id.toString() === chainId);
 
   if (!result) {
-    throw new Error(`Chain ${chainName} not found`);
+    throw new Error(`Chain ${chainId} not found`);
   }
 
   return result;
@@ -79,7 +77,7 @@ const loadTurnkeyAccount = async () => {
   });
 };
 
-type DeterminsticContractConfig = {
+type DeterministicContractConfig = {
   salt: Hex;
   creationCode: Hex;
   deployedAddress: Hex;
@@ -87,9 +85,9 @@ type DeterminsticContractConfig = {
   contractName: string;
 };
 
-type SparksDeterminsticConfig = {
-  manager: DeterminsticContractConfig;
-  sparks1155: DeterminsticContractConfig;
+type SparksDeterministicConfig = {
+  manager: DeterministicContractConfig;
+  sparks1155: DeterministicContractConfig;
 };
 
 type InitializationConfig = {
@@ -166,7 +164,7 @@ const generateInitializationConfig = async ({
 }): Promise<InitializationConfig> => {
   const chainConfigPath = path.resolve(
     __dirname,
-    `../chainConfigs/${chainId}.json`,
+    `../../shared-contracts/chainConfigs/${chainId}.json`,
   );
   const addressesPath = path.resolve(__dirname, `../addresses/${chainId}.json`);
 
@@ -240,11 +238,11 @@ async function deploySparksManagerProxy({
   publicClient,
   walletClient,
   account,
-  determinsticTransparentProxyConfig,
+  deterministicTransparentProxyConfig,
   initializationConfig,
   proxyDeployerAddress,
 }: {
-  determinsticTransparentProxyConfig: SparksDeterminsticConfig;
+  deterministicTransparentProxyConfig: SparksDeterministicConfig;
   initializationConfig: InitializationConfig;
   proxyDeployerAddress: `0x${string}`;
   publicClient: PublicClient;
@@ -255,11 +253,11 @@ async function deploySparksManagerProxy({
   //   abi: proxyDeployerAbi,
   //   functionName: "safeCreate2AndUpgradeToAndCall",
   //   args: [
-  //     determinsticTransparentProxyConfig.manager.salt,
-  //     determinsticTransparentProxyConfig.manager.creationCode,
+  //     deterministicTransparentProxyConfig.manager.salt,
+  //     deterministicTransparentProxyConfig.manager.creationCode,
   //     initializationConfig.initialImplementationAddress,
   //     initializationConfig.initialImplementationCall,
-  //     determinsticTransparentProxyConfig.manager.deployedAddress,
+  //     deterministicTransparentProxyConfig.manager.deployedAddress,
   //   ],
   // });
 
@@ -269,11 +267,11 @@ async function deploySparksManagerProxy({
     address: proxyDeployerAddress,
     functionName: "safeCreate2AndUpgradeToAndCall",
     args: [
-      determinsticTransparentProxyConfig.manager.salt,
-      determinsticTransparentProxyConfig.manager.creationCode,
+      deterministicTransparentProxyConfig.manager.salt,
+      deterministicTransparentProxyConfig.manager.creationCode,
       initializationConfig.initialImplementationAddress,
       initializationConfig.initialImplementationCall,
-      determinsticTransparentProxyConfig.manager.deployedAddress,
+      deterministicTransparentProxyConfig.manager.deployedAddress,
     ],
     account,
   });
@@ -285,12 +283,12 @@ function printVerificationCommand({
   deployedAddress,
   constructorArgs,
   contractName,
-  chainName,
-}: DeterminsticContractConfig & { chainName: string }) {
+  chainId,
+}: DeterminsticContractConfig & { chainId: string }) {
   console.log("verify the contract with the following command:");
 
   console.log(
-    `forge verify-contract  ${deployedAddress} ${contractName} $(chains ${chainName} --verify) --constructor-args ${constructorArgs}`,
+    `forge verify-contract ${deployedAddress} ${contractName} $(chains ${chainId} --verify) --constructor-args ${constructorArgs} --watch`,
   );
 }
 
@@ -300,13 +298,13 @@ async function main() {
   const turnkeyAccount = await loadTurnkeyAccount();
 
   // get the chain id from the first positional argument
-  const chainName = getChainNamePositionalArg();
+  const chainId = getChainIdPositionalArg();
 
-  // load the determinstic proxy config for the mints manager and 1155 contract
+  // load the deterministic proxy config for the mints manager and 1155 contract
   const mintsProxyConfig =
     await loadDeterministicTransparentProxyConfig("sparksProxy");
 
-  const chain = (await getChain(chainName)) as Chain;
+  const chain = (await getChain(chainId)) as Chain;
 
   const { publicClient, walletClient } = await makeClientsFromAccount({
     chain,
@@ -322,7 +320,7 @@ async function main() {
   });
 
   // get the deterministic proxy deployer address, which will be used to create the contracts
-  // at determinstic addresses
+  // at deterministic addresses
   const proxyDeployerAddress = await loadProxyDeployerAddress();
 
   // call the proxy deployer to deploy the contracts, using the known salts, creation codes, and constructor args
@@ -341,11 +339,11 @@ async function main() {
 
   printVerificationCommand({
     ...mintsProxyConfig.manager,
-    chainName,
+    chainId,
   });
   printVerificationCommand({
     ...mintsProxyConfig.sparks1155,
-    chainName,
+    chainId,
   });
 }
 

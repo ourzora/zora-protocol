@@ -172,7 +172,7 @@ export function handleCreatedDrop(event: CreatedDrop): void {
   const createTokenId = getDefaultTokenId(dropAddress);
   const newToken = new ZoraCreateToken(createTokenId);
 
-  newToken.holders1155Number = new BigInt(0);
+  newToken.holders1155Number = BigInt.zero();
   newToken.address = dropAddress;
   newToken.rendererContract = createdContract.rendererContract;
   newToken.totalSupply = BigInt.zero();

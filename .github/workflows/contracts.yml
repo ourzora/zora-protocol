@@ -60,3 +60,13 @@ jobs:
       name: Comments
       ignore_coverage_files: '"*lib*" "*mock*"'
       skip_storage_layout: true
+
+  contracts-cointags:
+    name: Cointags
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/cointags
+      name: Cointags
+      ignore_coverage_files: '"*script*"'
+      skip_storage_layout: true

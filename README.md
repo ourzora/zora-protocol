@@ -44,17 +44,13 @@ Run in development mode (watch tests):
 
 5 ETH for any critical bugs that could result in loss of funds. Rewards will be given for smaller bugs or ideas.
 
-## Development workflow
-
-See [DEVELOPING.md](./DEVELOPING.md)
-
 ## Updating Build / Release Process
 
 After updating build settings with pnpm, run:
 
-* `pnpm install`
-* `pnpm run build:js`
-* `pnpm run release`
+- `pnpm install`
+- `pnpm run build:js`
+- `pnpm run release`
 
-This tests the full build and release flow. 
+This tests the full build and release flow.
 Without authentication packages will not be published but staged for publish.

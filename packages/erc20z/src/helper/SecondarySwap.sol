@@ -9,9 +9,9 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 
 import {ISecondarySwap} from "../interfaces/ISecondarySwap.sol";
 import {IERC20Z} from "../interfaces/IERC20Z.sol";
-import {ISwapRouter} from "../interfaces/uniswap/ISwapRouter.sol";
+import {ISwapRouter} from "@zoralabs/shared-contracts/interfaces/uniswap/ISwapRouter.sol";
 import {IZoraTimedSaleStrategy} from "../interfaces/IZoraTimedSaleStrategy.sol";
-import {IWETH} from "../interfaces/IWETH.sol";
+import {IWETH} from "@zoralabs/shared-contracts/interfaces/IWETH.sol";
 
 contract SecondarySwap is ISecondarySwap, ReentrancyGuard, IERC1155Receiver {
     uint256 internal constant ONE_ERC_20 = 1e18;

@@ -9,15 +9,14 @@ import {
   zoraTimedSaleStrategyABI,
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-import { waitForSuccess } from "src/test-utils";
+import { waitForSuccess } from "src/waitForSuccess";
 import { Address, erc20Abi, parseEther, PublicClient } from "viem";
 import { makePrepareMint1155TokenParams } from "src/mint/mint-transactions";
+import { forkUrls, makeAnvilTest } from "src/anvil";
 import {
-  forkUrls,
-  makeAnvilTest,
   simulateAndWriteContractWithRetries,
   writeContractWithRetries,
-} from "src/anvil";
+} from "src/test-utils";
 import { zora } from "viem/chains";
 import { AllowList } from "src/allow-list/types";
 import { createAllowList } from "src/allow-list/allow-list-client";
@@ -451,6 +450,8 @@ describe("create-helper", () => {
 
       const pricePerToken = parseEther("0.01");
 
+      const blockTime = (await publicClient.getBlock()).timestamp;
+
       const {
         parameters: request,
         contractAddress: collectionAddress,
@@ -463,6 +464,7 @@ describe("create-helper", () => {
           tokenMetadataURI: demoTokenMetadataURI,
           salesConfig: {
             pricePerToken,
+            saleStart: blockTime,
           },
         },
         account: creatorAddress,
@@ -507,6 +509,7 @@ describe("create-helper", () => {
           },
         },
         quantityToMint,
+        chainId: chain.id,
       });
 
       const { request: collectSimulation } =
@@ -557,7 +560,7 @@ describe("create-helper", () => {
             "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u",
           salesConfig: {
             type: "allowlistMint",
-            presaleMerkleRoot: `0x${root}`,
+            presaleMerkleRoot: root,
           },
         },
         account: creator,

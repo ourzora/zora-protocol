@@ -1,0 +1,36 @@
+{
+  "name": "@zoralabs/shared-scripts",
+  "private": true,
+  "version": "0.0.0",
+  "description": "",
+  "type": "module",
+  "bin": {
+    "bundle-abis": "./src/bundle-abis.ts",
+    "update-contract-version": "./src/update-contract-version.ts",
+    "sign-deploy-and-call-with-turnkey": "./src/signDeployAndCall.ts",
+    "generate-fork-tests": "./src/generateForkTests.ts",
+    "rename-generated-abi-casing": "./src/renameGeneratedAbiCasing.ts"
+  },
+  "sideEffects": false,
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@turnkey/api-key-stamper": "^0.3.1",
+    "@turnkey/http": "^2.5.1",
+    "@turnkey/viem": "^0.4.4",
+    "@zoralabs/tsconfig": "workspace:^",
+    "glob": "^10.2.2",
+    "tsup": "^7.2.0",
+    "tsx": "^4.19.2",
+    "typescript": "^5.2.2",
+    "viem": "^1.10.0"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "handlebars": "^4.7.8",
+    "pathe": "^1.1.2"
+  }
+}

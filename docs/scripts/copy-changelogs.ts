@@ -52,6 +52,12 @@ async function main() {
     join(__dirname, "../pages/changelogs/1155-contracts.mdx"),
     "Zora 1155 Contracts",
   );
+
+  await copyChangelog(
+    join(__dirname, "../../packages/cointags/CHANGELOG.md"),
+    join(__dirname, "../pages/changelogs/cointags.mdx"),
+    "Cointags",
+  );
 }
 
 main();

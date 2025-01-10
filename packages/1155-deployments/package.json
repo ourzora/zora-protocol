@@ -15,7 +15,7 @@
     "unlink-contracts": "pnpm unlink-common && pnpm run unlink-protocol-rewards && pnpm run unlink-1155",
     "link-contracts": "rm -rf ./node_modules && cd .. && pnpm install",
     "update-pending-upgrades": "pnpm tsx script/getPendingUpgrades.ts",
-    "generate": "pnpm tsx script/generateForkTests.ts"
+    "generate": "pnpm exec generate-fork-tests"
   },
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
@@ -28,6 +28,7 @@
     "@zoralabs/protocol-rewards": "workspace:^",
     "@zoralabs/shared-contracts": "workspace:^",
     "@zoralabs/sparks-contracts": "workspace:^",
+    "@zoralabs/shared-scripts": "workspace:^",
     "@zoralabs/tsconfig": "workspace:^",
     "@zoralabs/zora-1155-contracts": "workspace:^",
     "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",

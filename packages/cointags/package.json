@@ -1,0 +1,50 @@
+{
+  "name": "@zoralabs/cointags-contracts",
+  "version": "0.1.2",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "sideEffects": false,
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "default": "./dist/index.cjs"
+    }
+  },
+  "scripts": {
+    "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "test": "forge test -vv",
+    "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
+    "test-gas": "forge test --gas-report",
+    "build:sizes": "forge build src/ --sizes",
+    "copy-abis": "pnpm exec bundle-abis",
+    "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
+    "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
+    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
+    "update-contract-version": "pnpm exec update-contract-version"
+  },
+  "devDependencies": {
+    "@openzeppelin/contracts": "5.0.2",
+    "@openzeppelin/contracts-upgradeable": "5.0.2",
+    "@types/node": "^20.1.2",
+    "@wagmi/cli": "^1.0.1",
+    "@solidity-parser/parser": "0.19.0",
+    "@zoralabs/shared-contracts": "workspace:^",
+    "@zoralabs/shared-scripts": "workspace:^",
+    "@zoralabs/tsconfig": "workspace:^",
+    "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
+    "forge-std": "https://github.com/foundry-rs/forge-std#v1.9.1",
+    "prettier": "^3.0.3",
+    "prettier-plugin-solidity": "^1.4.1",
+    "solady": "0.0.132",
+    "solmate": "6.1.0",
+    "tsup": "^7.2.0",
+    "tsx": "^3.13.0",
+    "typescript": "^5.2.2",
+    "viem": "^2.21.18"
+  }
+}

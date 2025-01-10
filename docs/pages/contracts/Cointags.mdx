@@ -1,0 +1,69 @@
+# Cointags
+
+Cointags lets creators connect their posts with onchain communities through by tagging their posts with their coins. When someone mints a creator's post, a portion of the creator rewards automatically:
+- Goes to buying and burning an ERC20 token of their choice
+- Goes to the creator as their reward
+
+For more details about using Cointags as a creator, see the [Cointags Support Article](https://support.zora.co/en/articles/4185217).
+
+> **Note**: Cointags use UniswapV3Pools to buy the corresponding ERC20 token for burning. Currently Cointags only work with Uniswap V3 pools. The pool must have WETH as one of its tokens.
+
+## Contract Architecture
+
+The protocol consists of two main contracts:
+
+| Contract | Description |
+| ----- | ------- |
+| [`CointagFactoryImpl.sol`](https://github.com/ourzora/zora-protocol/blob/main/packages/cointags/src/CointagFactoryImpl.sol) | CointagFactory implementation contract for deterministically deploying `Cointag` contracts|
+| [`CointagImpl.sol`](https://github.com/ourzora/zora-protocol/blob/main/packages/cointags/src/CointagImpl.sol) | Cointag implementation contract |
+
+### Deterministic Deployment
+
+The `CointagFactory` is deployed deterministically at the address `0x7777777BbD0b88aD5F3b5f4c89C6B60D74b9774F` on [Base](https://basescan.org/address/0x7777777BbD0b88aD5F3b5f4c89C6B60D74b9774F) and [Zora Network](https://explorer.zora.energy/address/0x7777777BbD0b88aD5F3b5f4c89C6B60D74b9774F?).
+
+The `CointagFactory` uses `solady`'s [CREATE3](https://github.com/Vectorized/solady/blob/main/src/utils/CREATE3.sol) for deterministically deploy `Cointag` contracts, ensuring that:
+- Each combination of creator, pool, and burn percentage results in the same address across all chains.
+- Deployed `Cointag` addresses are consistent regardless of implementation or code versions. 
+- `Cointag` addresses can be predicted before deployment.
+
+## Protocol Flow
+
+The following diagram illustrates the sequence of interactions in the protocol:
+
+![Cointag Sequence Diagram](/uml/cointag-sequence.svg)
+
+### Sequence Breakdown
+- **Setting Up a Cointag and 1155 Post**:
+  - The creator deploys a new `Cointag` instance through the `CointagFactory`.
+  - The creator sets their 1155 post's reward recipient to the `Cointag` address.
+
+- **Pulling to Buy, Burn, and Distribute Rewards**:
+  - When someone mints a post, creator rewards are deposited into the `ProtocolRewards` contract, with the `Cointag` as the recipient.
+  - Anyone can trigger the distribution of accumulated rewards by calling `pull()` on the `Cointag` contract; in the `pull()` function, the `Cointag`:
+    - Withdraws ETH from the protocol rewards.
+    - Wraps the buy/burn percentage as WETH.
+    - Swaps the WETH for the target ERC20.
+    - Burns the received ERC20 tokens.
+    - Deposits the remaining ETH back to the protocol rewards for the creator.
+
+- **Creator Reward Withdrawal**:
+  - The creator can withdraw their share of rewards that were deposited in the `pull()` step from the protocol rewards contract at any time.
+
+The following class diagram illustrates the contract relationships in the protocol:
+![Cointag Class Diagram](/uml/cointag-objects.svg)
+
+
+### Auto-pulling bot
+
+Zora has a bot that automatically searches for `Cointag`s with an outstanding protocol rewards balance and pulls them.
+
+## Error Handling
+
+If any step in the buy & burn process fails, all ETH is sent to the creator.
+
+## Upgradeability
+
+`Cointag`s are upgradeable using the UUPS (Universal Upgradeable Proxy Standard) pattern with additional safety checks:
+- Only the owner (creator) can initiate upgrades
+- Similar to the Zora 1155 contract's upgradeability, new implementations must be registered in the `UpgradeGate`, which is controlled by a Zora team multisig to prevent malicious upgrades.
+

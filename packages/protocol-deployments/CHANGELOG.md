@@ -1,5 +1,24 @@
 # @zoralabs/protocol-deployments
 
+## 0.4.0
+
+### Minor Changes
+
+- fc8e86a8: - Added Cointags addresses and abis.
+  - Added IUniswapV3Pool ABI.
+
+## 0.3.11
+
+### Patch Changes
+
+- ff8084fe: Update implementation contract versions and addresses for erc20z
+
+## 0.3.10
+
+### Patch Changes
+
+- abbd6333: Added smart wallet factory deployment and abi
+
 ## 0.3.9
 
 ### Patch Changes

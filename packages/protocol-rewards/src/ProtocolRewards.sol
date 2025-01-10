@@ -3,7 +3,7 @@ pragma solidity 0.8.17;
 
 import {Enjoy} from "../_imagine/Enjoy.sol";
 import {EIP712} from "./lib/EIP712.sol";
-import {IProtocolRewards} from "./interfaces/IProtocolRewards.sol";
+import {IProtocolRewards} from "@zoralabs/shared-contracts/interfaces/IProtocolRewards.sol";
 
 /// @title ProtocolRewards
 /// @notice Manager of deposits & withdrawals for protocol rewards

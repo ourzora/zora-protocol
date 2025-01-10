@@ -3,12 +3,12 @@ pragma solidity ^0.8.13;
 
 import "forge-std/Script.sol";
 
-import {IWETH} from "../src/interfaces/IWETH.sol";
+import {IWETH} from "@zoralabs/shared-contracts/interfaces/IWETH.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {SecondarySwap} from "../src/helper/SecondarySwap.sol";
 import {ProxyDeployerScript, DeterministicDeployerAndCaller, DeterministicContractConfig} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 import {IZoraTimedSaleStrategy} from "../src/interfaces/IZoraTimedSaleStrategy.sol";
-import {ISwapRouter} from "../src/interfaces/uniswap/ISwapRouter.sol";
+import {ISwapRouter} from "@zoralabs/shared-contracts/interfaces/uniswap/ISwapRouter.sol";
 import {DeployerBase} from "./DeployerBase.sol";
 
 contract DeploySwapHelper is DeployerBase {

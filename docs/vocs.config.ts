@@ -128,6 +128,10 @@ export default defineConfig({
             text: "Comments",
             link: "/contracts/Comments",
           },
+          {
+            text: "Cointags",
+            link: "/contracts/cointags",
+          },
         ],
       },
     ],
@@ -244,6 +248,10 @@ export default defineConfig({
           {
             text: "@zoralabs/zora-1155-contracts",
             link: "/changelogs/1155-contracts",
+          },
+          {
+            text: "@zoralabs/cointags-contracts",
+            link: "/changelogs/cointags",
           },
         ],
       },

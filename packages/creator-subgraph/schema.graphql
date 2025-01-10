@@ -438,6 +438,7 @@ type RoyaltyConfig @entity {
   royaltyMintSchedule: BigInt!
   contract: ZoraCreateContract
   tokenAndContract: ZoraCreateToken
+  cointag: Cointag
 }
 
 type Token1155Holder @entity {
@@ -749,4 +750,19 @@ type Comment @entity {
   sparksQuantity: BigInt!
   commentId: Bytes!
   replyCount: BigInt!
+}
+
+type Cointag @entity {
+  id: ID!
+  txn: TransactionInfo!
+  block: BigInt!
+  timestamp: BigInt!
+  creatorRewardRecipient: Bytes!
+  pool: Bytes!
+  percentageToBuyBurn: BigInt!
+  erc20: Bytes!
+  version: String!
+  createdOn: BigInt!
+  protocolRewardsBalance: BigInt!
+  royalties: [RoyaltyConfig!]! @derivedFrom(field: "cointag")
 }

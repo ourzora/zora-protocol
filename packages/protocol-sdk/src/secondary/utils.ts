@@ -5,6 +5,11 @@ import {
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
 import { SecondaryInfo } from "./types";
+
+const LEGACY_MINIMUM_MARKET_ETH = parseEther("0.0123321");
+const LEGACY_MARKET_REWARD = parseEther("0.0000111");
+const MARKET_REWARD = parseEther("0.0000222");
+
 export async function getSecondaryInfo({
   contract,
   tokenId,
@@ -38,6 +43,12 @@ export async function getSecondaryInfo({
     return undefined;
   }
 
+  const usesLegacyMarketReward =
+    result.minimumMarketEth === LEGACY_MINIMUM_MARKET_ETH;
+  const erc20zBalance = await publicClient.getBalance({
+    address: result.erc20zAddress,
+  });
+
   return {
     erc20z: result.erc20zAddress,
     pool: result.poolAddress,
@@ -51,10 +62,11 @@ export async function getSecondaryInfo({
     minimumMintsForCountdown:
       result.minimumMarketEth === 0n
         ? undefined
-        : result.minimumMarketEth / parseEther("0.0000111"),
-    mintCount:
-      (await publicClient.getBalance({
-        address: result.erc20zAddress,
-      })) / parseEther("0.0000111"),
+        : usesLegacyMarketReward
+          ? result.minimumMarketEth / LEGACY_MARKET_REWARD
+          : result.minimumMarketEth / MARKET_REWARD,
+    mintCount: usesLegacyMarketReward
+      ? erc20zBalance / LEGACY_MARKET_REWARD
+      : erc20zBalance / MARKET_REWARD,
   };
 }
