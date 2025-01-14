@@ -6,8 +6,10 @@ import {
 import type {
   Account,
   Address,
+  Chain,
   Hex,
   PublicClient,
+  Transport,
   TransactionReceipt,
 } from "viem";
 import { decodeEventLog } from "viem";
@@ -23,11 +25,12 @@ import {
   CreateNew1155ParamsBase,
   CreateNew1155TokenParams,
   CreateNew1155TokenReturn,
+  PrepareCreateReturn,
   NewContractParams,
 } from "./types";
 import { constructCreate1155TokenCalls } from "./token-setup";
 import { makeOnchainPrepareMintFromCreate } from "./mint-from-create";
-import { IContractGetter } from "./contract-getter";
+import { IContractGetter, SubgraphContractGetter } from "./contract-getter";
 
 // Default royalty bps
 const ROYALTY_BPS_DEFAULT = 1000;
@@ -118,7 +121,7 @@ export function makeCreateContractAndTokenCall({
   });
 }
 
-function makeCreateTokenCall({
+export function makeCreateTokenCall({
   contractAddress,
   account,
   tokenSetupActions,
@@ -134,21 +137,29 @@ function makeCreateTokenCall({
   });
 }
 
+/**
+ * @deprecated Please use functions directly without creating a client.
+ * Example: Instead of `new Create1155Client().createNew1155()`, use `createNew1155()`
+ * Import the functions you need directly from their respective modules:
+ * import { createNew1155, createNew1155OnExistingContract } from '@zoralabs/protocol-sdk'
+ */
 export class Create1155Client {
-  private readonly chainId: number;
-  private readonly publicClient: Pick<PublicClient, "readContract">;
+  private readonly publicClient: Pick<
+    PublicClient<Transport, Chain>,
+    "readContract" | "chain"
+  >;
   public readonly contractGetter: IContractGetter;
 
   constructor({
-    chainId,
     publicClient,
     contractGetter,
   }: {
-    chainId: number;
-    publicClient: Pick<PublicClient, "readContract">;
+    publicClient: Pick<
+      PublicClient<Transport, Chain>,
+      "readContract" | "chain"
+    >;
     contractGetter: IContractGetter;
   }) {
-    this.chainId = chainId;
     this.publicClient = publicClient;
     this.contractGetter = contractGetter;
   }
@@ -156,10 +167,9 @@ export class Create1155Client {
   async createNew1155(
     props: CreateNew1155ContractParams,
   ): Promise<CreateNew1155ContractAndTokenReturn> {
-    return createNew1155ContractAndToken({
+    return create1155({
       ...props,
       publicClient: this.publicClient,
-      chainId: this.chainId,
     });
   }
 
@@ -174,36 +184,84 @@ export class Create1155Client {
       account,
       token,
       getAdditionalSetupActions,
-      publicClient: this.publicClient,
-      chainId: this.chainId,
       contractGetter: this.contractGetter,
+      chainId: this.publicClient.chain.id,
     });
   }
 }
 
-async function createNew1155ContractAndToken({
+export async function create1155({
   contract,
   account,
-  chainId,
   token,
   publicClient,
   getAdditionalSetupActions,
 }: CreateNew1155ContractParams & {
-  publicClient: Pick<PublicClient, "readContract">;
-  chainId: number;
+  publicClient: Pick<PublicClient<Transport, Chain>, "readContract" | "chain">;
 }): Promise<CreateNew1155ContractAndTokenReturn> {
   const nextTokenId = 1n;
+  const chainId = publicClient.chain.id;
   const contractVersion = new1155ContractVersion(chainId);
 
-  const {
-    minter,
-    newToken,
-    setupActions: tokenSetupActions,
-  } = prepareSetupActions({
+  const result = prepareNew1155ContractAndToken({
+    contract,
+    account,
+    chainId,
+    token,
+    getAdditionalSetupActions,
+    nextTokenId,
+    contractVersion,
+  });
+
+  const contractAddress = await getDeterministicContractAddress({
+    account: typeof account === "string" ? account : account.address,
+    publicClient,
+    setupActions: result.setupActions,
+    contract,
+  });
+
+  const prepareMint = makeOnchainPrepareMintFromCreate({
+    contractAddress,
+    contractVersion,
+    minter: result.minter,
+    result: result.newToken.salesConfig,
+    tokenId: nextTokenId,
+    chainId,
+    // to get the contract wide mint fee, we get what it would be for a new contract
+    getContractMintFee: async () =>
+      getNewContractMintFee({
+        publicClient,
+        chainId,
+      }),
+  });
+
+  return {
+    ...result,
+    prepareMint,
+    contractAddress,
+    contractVersion,
+    newTokenId: nextTokenId,
+  };
+}
+
+function prepareNew1155ContractAndToken({
+  account,
+  chainId,
+  token,
+  getAdditionalSetupActions,
+  nextTokenId,
+  contractVersion,
+  contract,
+}: CreateNew1155ContractParams & {
+  chainId: number;
+  nextTokenId: bigint;
+  contractVersion: string;
+}): PrepareCreateReturn {
+  const { minter, newToken, setupActions } = prepareSetupActions({
     chainId,
     account,
-    contractVersion,
-    nextTokenId,
+    contractVersion: contractVersion,
+    nextTokenId: nextTokenId,
     token,
     getAdditionalSetupActions,
     contractName: contract.name,
@@ -213,61 +271,34 @@ async function createNew1155ContractAndToken({
     contract,
     account,
     chainId,
-    tokenSetupActions,
+    tokenSetupActions: setupActions,
     fundsRecipient: token.payoutRecipient,
     royaltyBPS: token.royaltyBPS,
   });
 
-  const contractAddress = await getDeterministicContractAddress({
-    account: typeof account === "string" ? account : account.address,
-    publicClient,
-    setupActions: tokenSetupActions,
-    chainId,
-    contract,
-  });
-
-  const prepareMint = makeOnchainPrepareMintFromCreate({
-    contractAddress: contractAddress,
-    contractVersion,
-    minter,
-    result: newToken.salesConfig,
-    tokenId: nextTokenId,
-    // to get the contract wide mint fee, we get what it would be for a new contract
-    getContractMintFee: async () =>
-      getNewContractMintFee({
-        publicClient,
-        chainId,
-      }),
-    chainId,
-  });
-
   return {
     parameters: request,
-    tokenSetupActions,
-    newTokenId: nextTokenId,
+    setupActions,
     newToken,
-    contractAddress: contractAddress,
-    contractVersion,
     minter,
-    prepareMint,
   };
 }
 
-async function createNew1155Token({
-  contractAddress: contractAddress,
+function prepareNew1155Token({
+  contractAddress,
   account,
   getAdditionalSetupActions,
   token,
   chainId,
-  contractGetter,
-}: CreateNew1155TokenParams & {
-  publicClient: Pick<PublicClient, "readContract">;
+  nextTokenId,
+  contractVersion,
+  contractName,
+}: Omit<CreateNew1155TokenParams, "contractGetter"> & {
   chainId: number;
-  contractGetter: IContractGetter;
-}): Promise<CreateNew1155TokenReturn> {
-  const { nextTokenId, contractVersion, mintFee, name } =
-    await contractGetter.getContractInfo({ contractAddress, retries: 5 });
-
+  nextTokenId: bigint;
+  contractVersion: string;
+  contractName: string;
+}): PrepareCreateReturn {
   const {
     minter,
     newToken,
@@ -279,7 +310,7 @@ async function createNew1155Token({
     nextTokenId,
     token,
     getAdditionalSetupActions,
-    contractName: name,
+    contractName,
   });
 
   const request = makeCreateTokenCall({
@@ -288,28 +319,63 @@ async function createNew1155Token({
     tokenSetupActions,
   });
 
+  return {
+    parameters: request,
+    setupActions: tokenSetupActions,
+    newToken,
+    minter,
+  };
+}
+
+export async function createNew1155Token({
+  contractAddress,
+  account,
+  getAdditionalSetupActions,
+  token,
+  chainId,
+  contractGetter,
+}: CreateNew1155TokenParams & {
+  chainId: number;
+  contractGetter?: IContractGetter;
+}): Promise<CreateNew1155TokenReturn> {
+  const contractGetterOrDefault =
+    contractGetter ?? new SubgraphContractGetter(chainId);
+  const { nextTokenId, contractVersion, mintFee, name } =
+    await contractGetterOrDefault.getContractInfo({
+      contractAddress,
+      retries: 5,
+    });
+
+  const preparedToken = prepareNew1155Token({
+    contractAddress,
+    account,
+    getAdditionalSetupActions,
+    token,
+    chainId,
+    nextTokenId,
+    contractVersion,
+    contractName: name,
+  });
+
   const prepareMint = makeOnchainPrepareMintFromCreate({
     contractAddress: contractAddress,
     contractVersion,
-    minter,
-    result: newToken.salesConfig,
+    minter: preparedToken.minter,
+    result: preparedToken.newToken.salesConfig,
     tokenId: nextTokenId,
     getContractMintFee: async () => mintFee,
     chainId,
   });
 
   return {
-    parameters: request,
-    tokenSetupActions,
-    newTokenId: nextTokenId,
-    newToken,
-    contractVersion,
-    minter,
+    ...preparedToken,
     prepareMint,
+    newTokenId: nextTokenId,
+    contractVersion,
   };
 }
 
-function prepareSetupActions({
+export function prepareSetupActions({
   chainId,
   account,
   contractVersion,

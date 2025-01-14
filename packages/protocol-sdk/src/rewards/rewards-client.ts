@@ -1,7 +1,7 @@
 import { IPublicClient } from "src/types";
 import { IRewardsGetter } from "./subgraph-rewards-getter";
 import { Account, Address } from "viem";
-import { getRewardsBalance, withdrawRewards } from "./rewards-queries";
+import { getRewardsBalances, withdrawRewards } from "./rewards-queries";
 
 export type WithdrawRewardsParams = {
   // account is the address that is withdrawing the rewards
@@ -17,6 +17,12 @@ export type GetRewardsBalancesParams = {
   account: Address | Account;
 };
 
+/**
+ * @deprecated Please use functions directly without creating a client.
+ * Example: Instead of `new RewardsClient().withdrawRewards()`, use `withdrawRewards()`
+ * Import the functions you need directly from their respective modules:
+ * import { withdrawRewards, getRewardsBalances } from '@zoralabs/protocol-sdk'
+ */
 export class RewardsClient {
   // Private properties to store chain ID, public client, and rewards getter
   private readonly chainId: number;
@@ -44,22 +50,19 @@ export class RewardsClient {
     withdrawFor,
     claimSecondaryRoyalties,
   }: WithdrawRewardsParams) {
-    return {
-      parameters: await withdrawRewards({
-        chainId: this.chainId,
-        rewardsGetter: this.rewardsGetter,
-        withdrawFor,
-        claimSecondaryRoyalties,
-        account,
-      }),
-    };
+    return await withdrawRewards({
+      chainId: this.chainId,
+      rewardsGetter: this.rewardsGetter,
+      withdrawFor,
+      claimSecondaryRoyalties,
+      account,
+    });
   }
 
   /** Retrieves the rewards balances for a given account */
   async getRewardsBalances(params: GetRewardsBalancesParams) {
-    return getRewardsBalance({
+    return getRewardsBalances({
       account: params.account,
-      chainId: this.chainId,
       publicClient: this.publicClient,
       rewardsGetter: this.rewardsGetter,
     });

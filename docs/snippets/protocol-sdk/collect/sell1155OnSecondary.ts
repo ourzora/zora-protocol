@@ -1,19 +1,11 @@
-import {
-  useAccount,
-  useChainId,
-  usePublicClient,
-  useWriteContract,
-} from "wagmi";
-import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { sell1155OnSecondary } from "@zoralabs/protocol-sdk";
 
-const chainId = useChainId();
 const publicClient = usePublicClient()!;
 const { address } = useAccount();
 
-const collectorClient = createCollectorClient({ chainId, publicClient });
-
 // Prepare the sell transaction
-const { parameters, price, error } = await collectorClient.sell1155OnSecondary({
+const { parameters, price, error } = await sell1155OnSecondary({
   // 1155 contract address
   contract: "0xCD860870DE521cDb0C5ae89E80bBa057Cd30Bf8C",
   // 1155 token id to sell
@@ -25,6 +17,7 @@ const { parameters, price, error } = await collectorClient.sell1155OnSecondary({
   // (optional) Slippage tolerance, ensuring that a minimum amount of ETH is received
   // for the given quantity of 1155 tokens to sell.  Defaults to 0.005 (0.5%)
   slippage: 0.005,
+  publicClient,
 });
 
 if (error) {

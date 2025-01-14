@@ -15,19 +15,17 @@ import {
   useAccount,
   useWriteContract 
 } from 'wagmi';
-import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { getTokensOfContract } from "@zoralabs/protocol-sdk";
 
 const chainId = useChainId();
 const publicClient = usePublicClient();
 
-// initiate the collector client
-const collectorClient = createCollectorClient({ chainId, publicClient });
-
 // get the item that can be minted, and a function to prepare 
 // a mint transaction
-const { tokens, contract } = await collectorClient.getTokensOfContract({
+const { tokens, contract } = await getTokensOfContract({
   // collection address to mint
   tokenContract: "0x1234567890123456789012345678901234567890",
+  publicClient
 });
 
 

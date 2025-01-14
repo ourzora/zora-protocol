@@ -1,19 +1,11 @@
-import {
-  useAccount,
-  useChainId,
-  usePublicClient,
-  useWriteContract,
-} from "wagmi";
-import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { buy1155OnSecondary } from "@zoralabs/protocol-sdk";
 
-const chainId = useChainId();
 const publicClient = usePublicClient()!;
 const { address } = useAccount();
 
-const collectorClient = createCollectorClient({ chainId, publicClient });
-
 // Prepare the buy transaction
-const { parameters, price, error } = await collectorClient.buy1155OnSecondary({
+const { parameters, price, error } = await buy1155OnSecondary({
   // 1155 contract address
   contract: "0xCD860870DE521cDb0C5ae89E80bBa057Cd30Bf8C",
   // 1155 token id to buy
@@ -24,6 +16,7 @@ const { parameters, price, error } = await collectorClient.buy1155OnSecondary({
   account: address!,
   // (optional) comment to add to the swap
   comment: "test comment",
+  publicClient,
 });
 
 if (error) {

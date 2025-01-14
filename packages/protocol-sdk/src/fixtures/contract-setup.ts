@@ -1,8 +1,8 @@
-import { Address, Chain, PublicClient, WalletClient } from "viem";
-import { simulateAndWriteContractWithRetries } from "src/test-utils";
+import { Address, Chain, PublicClient, WalletClient, Transport } from "viem";
 import { createCreatorClient } from "src/sdk";
 import { SubgraphMintGetter } from "src/mint/subgraph-mint-getter";
 import { SubgraphRewardsGetter } from "../rewards/subgraph-rewards-getter";
+import { simulateAndWriteContractWithRetries } from "src/test-utils";
 
 export const demoTokenMetadataURI =
   "ipfs://bafkreice23maski3x52tsfqgxstx3kbiifnt5jotg3a5ynvve53c4soi2u";
@@ -15,7 +15,7 @@ export async function setupContractAndToken({
   walletClient,
 }: {
   chain: Chain;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, Chain>;
   creatorAccount: Address;
   walletClient: WalletClient;
 }) {

@@ -1,16 +1,20 @@
 import { Address } from "viem";
 import { IPublicClient } from "src/types";
 import {
-  GetMintParameters,
+  GetMintParametersArguments,
   IOnchainMintGetter,
+  MakeMintParameters,
   MintCosts,
   PrepareMintReturn,
   SaleType,
 } from "./types";
-import { MakeMintParametersArguments, GetMintCostsParameters } from "./types";
+import {
+  MakeMintParametersArguments,
+  GetMintCostsParameterArguments,
+} from "./types";
 import { IPremintGetter } from "src/premint/premint-api-client";
 
-import { getMint, getMintCosts, getMintsOfContract } from "./mint-queries";
+import { getToken, getMintCosts, getTokensOfContract } from "./mint-queries";
 
 class MintError extends Error {}
 class MintInactiveError extends Error {}
@@ -20,26 +24,28 @@ export const Errors = {
   MintInactiveError,
 };
 
+/**
+ * @deprecated Please use functions directly without creating a client.
+ * Example: Instead of `new MintClient().mint()`, use `mint()`
+ * Import the functions you need directly from their respective modules:
+ * import { mint, getToken, getTokensOfContract, getMintCosts } from '@zoralabs/protocol-sdk'
+ */
 export class MintClient {
   private readonly publicClient: IPublicClient;
   private readonly mintGetter: IOnchainMintGetter;
   private readonly premintGetter: IPremintGetter;
-  private readonly chainId: number;
   constructor({
     publicClient,
     premintGetter,
     mintGetter,
-    chainId,
   }: {
     publicClient: IPublicClient;
     premintGetter: IPremintGetter;
     mintGetter: IOnchainMintGetter;
-    chainId: number;
   }) {
     this.publicClient = publicClient;
     this.mintGetter = mintGetter;
     this.premintGetter = premintGetter;
-    this.chainId = chainId;
   }
 
   /**
@@ -53,27 +59,25 @@ export class MintClient {
     parameters: MakeMintParametersArguments,
   ): Promise<PrepareMintReturn> {
     return mint({
-      parameters,
+      ...parameters,
       publicClient: this.publicClient,
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
-      chainId: this.chainId,
     });
   }
 
   /**
    * Gets an 1155, 721, or premint, and returns both information about it, and a function
    * that can be used to build a mint transaction for a quantity of items to mint.
-   * @param parameters - Token to get {@link GetMintParameters}
+   * @param parameters - Token to get {@link GetMintParametersArguments}
    * @Returns Information about the mint and a function to build a mint transaction {@link MintableReturn}
    */
-  async get(parameters: GetMintParameters) {
-    return getMint({
-      params: parameters,
+  async get(parameters: GetMintParametersArguments) {
+    return getToken({
+      ...parameters,
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
       publicClient: this.publicClient,
-      chainId: this.chainId,
     });
   }
 
@@ -87,21 +91,22 @@ export class MintClient {
     tokenContract: Address;
     preferredSaleType?: SaleType;
   }) {
-    return getMintsOfContract({
-      params,
+    return getTokensOfContract({
+      ...params,
       mintGetter: this.mintGetter,
       premintGetter: this.premintGetter,
       publicClient: this.publicClient,
-      chainId: this.chainId,
     });
   }
 
   /**
    * Gets the costs to mint the quantity of tokens specified for a mint.
-   * @param parameters - Parameters for the mint {@link GetMintCostsParameters}
+   * @param parameters - Parameters for the mint {@link GetMintCostsParameterArguments}
    * @returns Costs to mint the quantity of tokens specified
    */
-  async getMintCosts(parameters: GetMintCostsParameters): Promise<MintCosts> {
+  async getMintCosts(
+    parameters: GetMintCostsParameterArguments,
+  ): Promise<MintCosts> {
     return getMintCosts({
       params: parameters,
       mintGetter: this.mintGetter,
@@ -111,25 +116,24 @@ export class MintClient {
   }
 }
 
-async function mint({
-  parameters,
+/**
+ * Returns the parameters needed to prepare a transaction mint a token.
+ * Works with premint, onchain 1155, and onchain 721.
+ *
+ * @param parameters - Parameters for collecting the token {@link MakeMintParameters}
+ * @returns Parameters for simulating/executing the mint transaction, any necessary erc20 approval, and costs to mint
+ */
+export async function mint({
   publicClient,
   mintGetter,
   premintGetter,
-  chainId,
-}: {
-  parameters: MakeMintParametersArguments;
-  publicClient: IPublicClient;
-  mintGetter: IOnchainMintGetter;
-  premintGetter: IPremintGetter;
-  chainId: number;
-}): Promise<PrepareMintReturn> {
-  const { prepareMint, primaryMintActive } = await getMint({
-    params: parameters,
+  ...parameters
+}: MakeMintParameters): Promise<PrepareMintReturn> {
+  const { prepareMint, primaryMintActive } = await getToken({
+    ...parameters,
     mintGetter,
     premintGetter,
     publicClient,
-    chainId,
   });
 
   if (!primaryMintActive) {

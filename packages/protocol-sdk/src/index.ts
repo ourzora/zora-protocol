@@ -13,11 +13,11 @@ export * from "./mint/subgraph-mint-getter";
 export * from "./mint/mint-client";
 export {
   type MintParameters,
-  type GetMintParameters,
-  type GetMintsOfContractParameters,
+  type GetMintParametersArguments as GetMintParameters,
+  type GetMintsOfContractParametersArguments as GetMintsOfContractParameters,
   type MintTypes,
   type SaleType,
-  type GetMintCostsParameters,
+  type GetMintCostsParameterArguments as GetMintCostsParameters,
   type MakeMintParametersArguments,
   type SaleStrategies,
   type ContractInfo,
@@ -30,9 +30,25 @@ export {
   type MintableReturn,
   type PrepareMint,
   type MintParametersBase,
+  type OnChainMintParameters,
+  type Erc1155MintParameters,
+  type Erc721MintParameters,
+  isOnChainMint,
+  is1155Mint,
 } from "./mint/types";
 
-export * from "./create/1155-create-helper";
+export { getToken, getTokensOfContract } from "./mint/mint-queries";
+
+export { type TokenQueryResult } from "./mint/subgraph-queries";
+
+export * from "./create/create-client";
+
+export * from "./mint/strategies-parsing";
+
+export { toMintableReturn } from "./mint/mint-queries";
+
+export { new1155ContractVersion } from "./create/contract-setup";
+export { makeOnchainPrepareMintFromCreate } from "./create/mint-from-create";
 
 export * from "./sparks/mints-queries";
 
@@ -46,10 +62,24 @@ export {
 
 export * from "./create/types";
 
+export {
+  SubgraphContractGetter,
+  type IContractGetter,
+} from "./create/contract-getter";
+
 export * from "./sdk";
 
 export * from "./ipfs";
 
 export { createAllowList } from "./allow-list/allow-list-client";
 
+export { getRewardsBalances, withdrawRewards } from "./rewards/rewards-queries";
+
 export * from "./allow-list/types";
+
+export {
+  buy1155OnSecondary,
+  sell1155OnSecondary,
+} from "./secondary/secondary-client";
+
+export { getSecondaryInfo } from "./secondary/utils";

@@ -1,20 +1,13 @@
-import {
-  useAccount,
-  useChainId,
-  usePublicClient,
-  useWriteContract,
-} from "wagmi";
+import { useAccount, usePublicClient, useWriteContract } from "wagmi";
+import { create1155 } from "@zoralabs/protocol-sdk";
 import { parseEther } from "viem";
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
 
 // use wagmi hooks to get the chainId, publicClient, and account
-const chainId = useChainId();
-const publicClient = usePublicClient()!;
 const { address } = useAccount();
 
-const creatorClient = createCreatorClient({ chainId, publicClient });
+const publicClient = usePublicClient()!;
 
-const { parameters, contractAddress } = await creatorClient.create1155({
+const { parameters, contractAddress } = await create1155({
   // the contract will be created at a deterministic address
   contract: {
     // contract name
@@ -37,6 +30,7 @@ const { parameters, contractAddress } = await creatorClient.create1155({
   },
   // account to execute the transaction (the creator)
   account: address!,
+  publicClient,
 });
 
 const { writeContract } = useWriteContract();

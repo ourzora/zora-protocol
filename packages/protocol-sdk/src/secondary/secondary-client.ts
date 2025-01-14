@@ -58,7 +58,6 @@ async function makeBuy({
   quantity,
   account,
   recipient,
-  chainId,
   slippage,
   publicClient,
   comment,
@@ -71,7 +70,6 @@ async function makeBuy({
   quantity: bigint;
   account: Address | Account;
   recipient?: Address;
-  chainId: number;
   slippage: number;
   comment: string | undefined;
   publicClient: PublicClient;
@@ -95,7 +93,7 @@ async function makeBuy({
     return handleBuyWithComment({
       accountAddress,
       recipient,
-      chainId,
+      chainId: publicClient.chain.id,
       quantity,
       contract,
       tokenId,
@@ -111,7 +109,7 @@ async function makeBuy({
     recipient,
     accountAddress,
     costWithSlippage,
-    chainId,
+    chainId: publicClient.chain.id,
     account,
   });
 }
@@ -242,25 +240,22 @@ type BuyOrSellWithSlippageResult =
       parameters?: undefined;
     };
 
-export async function buyWithSlippage({
+export async function buy1155OnSecondary({
   contract,
   tokenId,
   publicClient,
   quantity,
-  chainId,
   account,
   slippage = UNISWAP_SLIPPAGE,
   recipient,
   comment,
 }: BuyWithSlippageInput & {
-  chainId: number;
   publicClient: PublicClient;
 }): Promise<BuyOrSellWithSlippageResult> {
   const secondaryInfo = await getSecondaryInfo({
     contract,
     tokenId,
     publicClient,
-    chainId,
   });
 
   if (!secondaryInfo) {
@@ -279,7 +274,6 @@ export async function buyWithSlippage({
       quantity,
       poolAddress: pool,
       erc20z,
-      chainId,
     },
     publicClient,
   );
@@ -293,7 +287,6 @@ export async function buyWithSlippage({
     quantity,
     account,
     recipient,
-    chainId,
     slippage,
     comment,
     publicClient,
@@ -313,7 +306,6 @@ async function makeSell({
   quantity,
   account,
   recipient,
-  chainId,
   slippage,
   publicClient,
 }: {
@@ -324,7 +316,6 @@ async function makeSell({
   quantity: bigint;
   account: Address | Account;
   recipient?: Address;
-  chainId: number;
   slippage: number;
   publicClient: PublicClient;
 }): Promise<Call> {
@@ -356,6 +347,8 @@ async function makeSell({
     0n,
   ]);
 
+  const chainId = publicClient.chain.id;
+
   return {
     parameters: makeContractParameters({
       abi: zoraCreator1155ImplABI,
@@ -373,24 +366,21 @@ async function makeSell({
   };
 }
 
-export async function sellWithSlippage({
+export async function sell1155OnSecondary({
   contract,
   tokenId,
   publicClient,
   quantity,
-  chainId,
   account,
   slippage = UNISWAP_SLIPPAGE,
   recipient,
 }: SellWithSlippageInput & {
-  chainId: number;
   publicClient: PublicClient;
 }): Promise<BuyOrSellWithSlippageResult> {
   const secondaryInfo = await getSecondaryInfo({
     contract,
     tokenId,
     publicClient,
-    chainId,
   });
 
   if (!secondaryInfo) {
@@ -404,7 +394,7 @@ export async function sellWithSlippage({
   }
 
   const { poolBalance, amount, price } = await getUniswapQuote(
-    { type: "sell", quantity, poolAddress: pool, chainId, erc20z },
+    { type: "sell", quantity, poolAddress: pool, erc20z },
     publicClient,
   );
 
@@ -416,7 +406,6 @@ export async function sellWithSlippage({
     quantity,
     account,
     recipient,
-    chainId,
     slippage,
     publicClient,
   });
@@ -428,26 +417,21 @@ export async function sellWithSlippage({
 }
 
 /**
- * A client for handling secondary market operations.
+ * @deprecated Please use functions directly without creating a client.
+ * Example: Instead of `new SecondaryClient().buy1155OnSecondary()`, use `buy1155OnSecondary()`
+ * Import the functions you need directly from their respective modules:
+ * import { buy1155OnSecondary, sell1155OnSecondary, getSecondaryInfo } from '@zoralabs/protocol-sdk'
  */
 export class SecondaryClient {
   private publicClient: PublicClient;
-  private chainId: number;
 
   /**
    * Creates a new SecondaryClient instance.
    * @param publicClient - The public client for interacting with the blockchain.
    * @param chainId - The ID of the blockchain network.
    */
-  constructor({
-    publicClient,
-    chainId,
-  }: {
-    publicClient: PublicClient;
-    chainId: number;
-  }) {
+  constructor({ publicClient }: { publicClient: PublicClient }) {
     this.publicClient = publicClient;
-    this.chainId = chainId;
   }
 
   /**
@@ -467,7 +451,6 @@ export class SecondaryClient {
       contract,
       tokenId,
       publicClient: this.publicClient,
-      chainId: this.chainId,
     });
   }
 
@@ -480,10 +463,9 @@ export class SecondaryClient {
     input: BuyWithSlippageInput,
   ): Promise<BuyOrSellWithSlippageResult> {
     // Call the buyWithSlippage function with the provided input and client details
-    return buyWithSlippage({
+    return buy1155OnSecondary({
       ...input,
       publicClient: this.publicClient,
-      chainId: this.chainId,
     });
   }
 
@@ -496,10 +478,9 @@ export class SecondaryClient {
     input: SellWithSlippageInput,
   ): Promise<BuyOrSellWithSlippageResult> {
     // Call the sellWithSlippage function with the provided input and client details
-    return sellWithSlippage({
+    return sell1155OnSecondary({
       ...input,
       publicClient: this.publicClient,
-      chainId: this.chainId,
     });
   }
 }

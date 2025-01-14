@@ -25,12 +25,12 @@ import {
   parseEventLogs,
   hashTypedData,
 } from "viem";
-import { createCreatorClient } from "src/sdk";
-import { randomNewContract } from "src/test-utils";
 import { waitForSuccess } from "src/waitForSuccess";
+import { randomNewContract } from "src/test-utils";
 import { permitCommentTypedDataDefinition } from "@zoralabs/protocol-deployments";
 import { demoTokenMetadataURI } from "src/fixtures/contract-setup";
 import { randomNonce, thirtySecondsFromNow } from "src/test-utils";
+import { create1155 } from "src/create/create-client";
 
 const getCommentIdentifierFromReceipt = (
   receipt: TransactionReceipt,
@@ -73,20 +73,15 @@ describe("comments", () => {
         Address,
       ];
 
-      // Create a creator client for interacting with the protocol
-      const creatorClient = createCreatorClient({
-        chainId,
-        publicClient,
-      });
-
       // Step 1: Create a new 1155 contract and token
       const { contractAddress, newTokenId, parameters, prepareMint } =
-        await creatorClient.create1155({
+        await create1155({
           contract: randomNewContract(),
           token: {
             tokenMetadataURI: demoTokenMetadataURI,
           },
           account: creatorAddress,
+          publicClient,
         });
 
       // Deploy the new contract
@@ -247,21 +242,15 @@ describe("comments", () => {
       const [commenterAddress, executorAddress] =
         (await walletClient.getAddresses()!) as [Address, Address, Address];
 
-      // Create a creator client for interacting with the protocol
-      const creatorClient = createCreatorClient({
-        chainId,
+      // Step 1: Create a new 1155 contract and token
+      const { contractAddress, newTokenId, parameters } = await create1155({
+        contract: randomNewContract(),
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+        },
+        account: commenterAddress,
         publicClient,
       });
-
-      // Step 1: Create a new 1155 contract and token
-      const { contractAddress, newTokenId, parameters } =
-        await creatorClient.create1155({
-          contract: randomNewContract(),
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-          },
-          account: commenterAddress,
-        });
 
       // Deploy the new contract
       const { request } = await publicClient.simulateContract(parameters);

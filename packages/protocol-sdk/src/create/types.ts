@@ -114,7 +114,7 @@ export type New1155Token = {
   salesConfig: ConcreteSalesConfig;
 };
 
-export type CreateNew1155TokenReturn = {
+export type PrepareCreateReturn = {
   parameters: SimulateContractParameters<
     any,
     any,
@@ -123,10 +123,13 @@ export type CreateNew1155TokenReturn = {
     any,
     Account | Address
   >;
-  tokenSetupActions: Hex[];
-  newTokenId: bigint;
+  setupActions: Hex[];
   newToken: New1155Token;
   minter: Address;
+};
+
+export type CreateNew1155TokenReturn = PrepareCreateReturn & {
+  newTokenId: bigint;
   contractVersion: string;
   prepareMint: AsyncPrepareMint;
 };
@@ -134,3 +137,10 @@ export type CreateNew1155TokenReturn = {
 export type CreateNew1155ContractAndTokenReturn = {
   contractAddress: Address;
 } & CreateNew1155TokenReturn;
+
+export type ContractInfo = {
+  nextTokenId: bigint;
+  contractVersion: string;
+  mintFee: bigint;
+  name: string;
+};

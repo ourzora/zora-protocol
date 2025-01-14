@@ -1,12 +1,10 @@
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chainId, creatorAccount } from "./config";
+import { create1155 } from "@zoralabs/protocol-sdk";
+import { publicClient, walletClient, creatorAccount } from "./config";
 import { contract } from "./data";
-
-const creatorClient = createCreatorClient({ chainId, publicClient });
 
 const erc20TokenAddress = "0xa6b280b42cb0b7c4a4f789ec6ccc3a7609a1bc39";
 
-const { parameters, contractAddress } = await creatorClient.create1155({
+const { parameters, contractAddress } = await create1155({
   contract,
   token: {
     tokenMetadataURI: "ipfs://DUMMY/token.json",
@@ -19,9 +17,8 @@ const { parameters, contractAddress } = await creatorClient.create1155({
       pricePerToken: 1000000000000000000n, // [!code hl]
     },
   },
-  // account to execute the transaction (the creator)
   account: creatorAccount,
-  // how many tokens to mint to the creator upon token creation
+  publicClient,
 });
 
 // simulate the transaction

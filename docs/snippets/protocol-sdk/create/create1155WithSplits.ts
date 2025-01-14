@@ -1,4 +1,4 @@
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
+import { create1155 } from "@zoralabs/protocol-sdk";
 import { publicClient, walletClient, chainId, creatorAccount } from "./config";
 import { SplitV1Client, SplitRecipient } from "@0xsplits/splits-sdk";
 import { Address, Chain, HttpTransport, PublicClient } from "viem";
@@ -55,15 +55,14 @@ const splitRecipient = predicted.splitAddress;
 
 /* ==== 2. Create the 1155 with the splits recipient as the payoutRecipient ===== */
 
-const creatorClient = createCreatorClient({ chainId, publicClient });
-
-const { parameters } = await creatorClient.create1155({
+const { parameters } = await create1155({
   contract,
   token: {
     tokenMetadataURI: "ipfs://DUMMY/token.json",
     payoutRecipient: splitRecipient,
   },
   account: creatorAccount,
+  publicClient,
 });
 
 // simulate the transaction

@@ -3,7 +3,6 @@ import { encodeAbiParameters, erc20Abi, parseEther } from "viem";
 import { zoraSepolia, base } from "viem/chains";
 import { forkUrls, makeAnvilTest } from "src/anvil";
 import { simulateAndWriteContractWithRetries } from "src/test-utils";
-import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { new1155ContractVersion } from "src/create/contract-setup";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
@@ -16,6 +15,9 @@ import { makeContractParameters } from "src/utils";
 import { setupContractAndToken } from "src/fixtures/contract-setup";
 import { advanceToSaleAndAndLaunchMarket } from "src/fixtures/secondary";
 import { CreatorERC20zQueryResult } from "./subgraph-queries";
+import { getRewardsBalances } from "./rewards-queries";
+import { mint } from "src/mint/mint-client";
+import { getSecondaryInfo } from "src/secondary/utils";
 
 describe("rewardsClient", () => {
   makeAnvilTest({
@@ -24,13 +26,10 @@ describe("rewardsClient", () => {
     anvilChainId: base.id,
   })(
     "it can query rewards balances where there are multiple minters",
-    async ({ viemClients: { publicClient, chain } }) => {
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient,
-      });
-      const rewardsBalance = await creatorClient.getRewardsBalances({
+    async ({ viemClients: { publicClient } }) => {
+      const rewardsBalance = await getRewardsBalances({
         account: "0x129F04B140Acc1AA350be2F9f048C178103c62f3",
+        publicClient,
       });
 
       const erc20zKeys = Object.keys(rewardsBalance.secondaryRoyalties.erc20);
@@ -80,18 +79,14 @@ describe("rewardsClient", () => {
           }),
         });
 
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-        mintGetter,
-      });
-
-      const { parameters: collectParameters } = await collectorClient.mint({
+      const { parameters: collectParameters } = await mint({
         minterAccount: collectorAccount,
         mintType: "1155",
         quantityToMint,
         tokenId: newTokenId,
         tokenContract: contractAddress,
+        publicClient,
+        mintGetter,
       });
 
       await simulateAndWriteContractWithRetries({
@@ -180,18 +175,14 @@ describe("rewardsClient", () => {
           }),
         });
 
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-        mintGetter,
-      });
-
-      const { parameters: collectParameters } = await collectorClient.mint({
+      const { parameters: collectParameters } = await mint({
         minterAccount: collectorAccount,
         mintType: "1155",
         quantityToMint,
         tokenId: newTokenId,
         tokenContract: contractAddress,
+        publicClient,
+        mintGetter,
       });
 
       await simulateAndWriteContractWithRetries({
@@ -201,19 +192,18 @@ describe("rewardsClient", () => {
       });
 
       await advanceToSaleAndAndLaunchMarket({
-        chainId: chain.id,
         account: collectorAccount,
         publicClient,
         walletClient,
-        collectorClient,
         testClient,
         contractAddress,
         tokenId: newTokenId,
       });
 
-      const erc20z = (await collectorClient.getSecondaryInfo({
+      const erc20z = (await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       }))!.erc20z!;
 
       // after market is launched, by 100 from the pool.  there should be some rewards

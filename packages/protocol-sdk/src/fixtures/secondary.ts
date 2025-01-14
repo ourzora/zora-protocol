@@ -1,34 +1,38 @@
-import { Address, Account, PublicClient, TestClient, WalletClient } from "viem";
-import { CollectorClient } from "../sdk";
-import { simulateAndWriteContractWithRetries } from "src/test-utils";
+import {
+  Address,
+  Account,
+  PublicClient,
+  TestClient,
+  WalletClient,
+  Transport,
+  Chain,
+} from "viem";
+import { simulateAndWriteContractWithRetries } from "../test-utils";
 import { makeContractParameters } from "../utils";
 import {
   zoraTimedSaleStrategyABI,
   zoraTimedSaleStrategyAddress,
 } from "@zoralabs/protocol-deployments";
-
+import { getSecondaryInfo } from "src/secondary/utils";
 export async function advanceToSaleAndAndLaunchMarket({
   contractAddress,
   tokenId,
   testClient,
   publicClient,
   walletClient,
-  collectorClient,
-  chainId,
   account,
 }: {
   contractAddress: Address;
   tokenId: bigint;
   testClient: TestClient;
-  publicClient: PublicClient;
+  publicClient: PublicClient<Transport, Chain>;
   walletClient: WalletClient;
-  collectorClient: CollectorClient;
-  chainId: number;
   account: Address | Account;
 }) {
-  const saleInfo = await collectorClient.getSecondaryInfo({
+  const saleInfo = await getSecondaryInfo({
     contract: contractAddress,
     tokenId,
+    publicClient,
   });
 
   if (!saleInfo) {
@@ -49,6 +53,8 @@ export async function advanceToSaleAndAndLaunchMarket({
   await testClient.mine({
     blocks: 1,
   });
+
+  const chainId = publicClient.chain.id;
 
   // advance to end of sale
   // launch the market

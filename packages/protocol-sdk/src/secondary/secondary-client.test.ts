@@ -3,7 +3,6 @@ import { parseEther, Address, parseEventLogs } from "viem";
 import { zoraSepolia } from "viem/chains";
 import { forkUrls, makeAnvilTest } from "src/anvil";
 import { simulateAndWriteContractWithRetries } from "src/test-utils";
-import { createCollectorClient } from "src/sdk";
 import {
   zoraCreator1155ImplABI,
   commentsABI,
@@ -14,12 +13,18 @@ import {
   sparkValue,
 } from "@zoralabs/protocol-deployments";
 import { SubgraphMintGetter } from "src/mint/subgraph-mint-getter";
-import { ERROR_SECONDARY_NOT_STARTED } from "./secondary-client";
+import {
+  buy1155OnSecondary,
+  ERROR_SECONDARY_NOT_STARTED,
+  sell1155OnSecondary,
+} from "./secondary-client";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
 import { new1155ContractVersion } from "src/create/contract-setup";
 import { advanceToSaleAndAndLaunchMarket } from "src/fixtures/secondary";
 import { randomNonce } from "src/test-utils";
+import { getSecondaryInfo } from "./utils";
+import { mint } from "src/mint/mint-client";
 
 describe("secondary", () => {
   makeAnvilTest({
@@ -28,9 +33,7 @@ describe("secondary", () => {
     anvilChainId: zoraSepolia.id,
   })(
     "it returns an error when the market is not launched",
-    async ({
-      viemClients: { publicClient, chain, walletClient, testClient },
-    }) => {
+    async ({ viemClients: { publicClient, walletClient, testClient } }) => {
       const collectorAccount = (await walletClient.getAddresses()!)[1]!;
 
       const contractAddress: Address =
@@ -41,14 +44,10 @@ describe("secondary", () => {
         value: parseEther("100"),
       });
 
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-      });
-
-      const secondaryInfo = await collectorClient.getSecondaryInfo({
+      const secondaryInfo = await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(secondaryInfo).toBeDefined();
@@ -56,11 +55,12 @@ describe("secondary", () => {
       expect(secondaryInfo!.minimumMintsForCountdown).toBe(1111n);
       expect(secondaryInfo!.secondaryActivated).toBe(false);
 
-      const buyResult = await collectorClient.buy1155OnSecondary({
+      const buyResult = await buy1155OnSecondary({
         account: collectorAccount,
         quantity: 100n,
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(buyResult.error).toEqual(ERROR_SECONDARY_NOT_STARTED);
@@ -103,15 +103,10 @@ describe("secondary", () => {
           }),
         });
 
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-        mintGetter,
-      });
-
-      const secondaryInfo = await collectorClient.getSecondaryInfo({
+      const secondaryInfo = await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(secondaryInfo).toBeDefined();
@@ -124,12 +119,14 @@ describe("secondary", () => {
         secondaryInfo!.mintCount -
         1n;
 
-      const { parameters: collectParameters } = await collectorClient.mint({
+      const { parameters: collectParameters } = await mint({
         minterAccount: collectorAccount,
         mintType: "1155",
         quantityToMint: quantityToMintFirst,
         tokenId: newTokenId,
         tokenContract: contractAddress,
+        publicClient,
+        mintGetter,
       });
 
       await simulateAndWriteContractWithRetries({
@@ -139,20 +136,23 @@ describe("secondary", () => {
       });
 
       // make sure that there is no sale end
-      let saleEnd = (await collectorClient.getSecondaryInfo({
+      let saleEnd = (await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       }))!.saleEnd;
 
       expect(saleEnd).toBeUndefined();
 
       // mint 1 more - this should cause the countdown to start
-      const { parameters: collectMoreParameters } = await collectorClient.mint({
+      const { parameters: collectMoreParameters } = await mint({
         minterAccount: collectorAccount,
         mintType: "1155",
         quantityToMint: 1n,
         tokenId: newTokenId,
         tokenContract: contractAddress,
+        publicClient,
+        mintGetter,
       });
 
       await simulateAndWriteContractWithRetries({
@@ -162,9 +162,10 @@ describe("secondary", () => {
       });
 
       // now there should be a sale end
-      saleEnd = (await collectorClient.getSecondaryInfo({
+      saleEnd = (await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       }))!.saleEnd;
 
       expect(saleEnd).toBeDefined();
@@ -175,8 +176,6 @@ describe("secondary", () => {
         testClient,
         publicClient,
         walletClient,
-        collectorClient,
-        chainId: chain.id,
         account: collectorAccount,
       });
 
@@ -190,11 +189,12 @@ describe("secondary", () => {
       // now get the price ot buy on secondary
       const quantityToBuy = 10n;
 
-      const buyResult = await collectorClient.buy1155OnSecondary({
+      const buyResult = await buy1155OnSecondary({
         account: collectorAccount,
         quantity: quantityToBuy,
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(buyResult.error).toBeUndefined();
@@ -229,11 +229,12 @@ describe("secondary", () => {
       // now sell 10_000n tokens
       const quantityToSell = 100n;
 
-      const sellResult = await collectorClient.sell1155OnSecondary({
+      const sellResult = await sell1155OnSecondary({
         account: collectorAccount,
         quantity: quantityToSell,
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(sellResult.error).toBeUndefined();
@@ -300,27 +301,24 @@ describe("secondary", () => {
           }),
         });
 
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-        mintGetter,
-      });
-
-      const secondaryInfo = await collectorClient.getSecondaryInfo({
+      const secondaryInfo = await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       // mint enough to start the countdown
       const quantityToMint =
         secondaryInfo!.minimumMintsForCountdown! - secondaryInfo!.mintCount;
 
-      const { parameters: collectParameters } = await collectorClient.mint({
+      const { parameters: collectParameters } = await mint({
         minterAccount: collectorAccount,
         mintType: "1155",
         quantityToMint: quantityToMint,
         tokenId: newTokenId,
         tokenContract: contractAddress,
+        publicClient,
+        mintGetter,
       });
 
       await simulateAndWriteContractWithRetries({
@@ -335,17 +333,16 @@ describe("secondary", () => {
         testClient,
         publicClient,
         walletClient,
-        collectorClient,
-        chainId: chain.id,
         account: collectorAccount,
       });
 
-      const buyResult = await collectorClient.buy1155OnSecondary({
+      const buyResult = await buy1155OnSecondary({
         account: collectorAccount,
         quantity: 5n,
         contract: contractAddress,
         tokenId: newTokenId,
         comment: "test comment",
+        publicClient,
       });
 
       const receipt = await simulateAndWriteContractWithRetries({
@@ -375,12 +372,13 @@ describe("secondary", () => {
       expect(boughtAndCommentedEvent[0]!.args.swapDirection).toBe(0);
 
       // PERMIT BUY TEST
-      const buyResultASecondTime = await collectorClient.buy1155OnSecondary({
+      const buyResultASecondTime = await buy1155OnSecondary({
         account: collectorAccount,
         quantity: 5n,
         contract: contractAddress,
         tokenId: newTokenId,
         comment: "test comment",
+        publicClient,
       });
 
       const valueToSend = (buyResultASecondTime.price!.wei.total * 105n) / 100n;
@@ -431,11 +429,12 @@ describe("secondary", () => {
       // now PERMIT SELL ON SECONDARY TEST
       const quantityToSell = 3n;
 
-      const sellResult = await collectorClient.sell1155OnSecondary({
+      const sellResult = await sell1155OnSecondary({
         account: collectorAccount,
         quantity: quantityToSell,
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(sellResult.error).toBeUndefined();

@@ -1,9 +1,7 @@
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, chainId, creatorAccount } from "./config";
+import { create1155 } from "@zoralabs/protocol-sdk";
+import { publicClient, creatorAccount } from "./config";
 
-const creatorClient = createCreatorClient({ chainId, publicClient });
-
-const { parameters } = await creatorClient.create1155({
+const { parameters } = await create1155({
   contract: {
     name: "testContract",
     uri: "ipfs://DUMMY/contract.json",
@@ -17,6 +15,7 @@ const { parameters } = await creatorClient.create1155({
     },
   },
   account: creatorAccount,
+  publicClient,
 });
 
 // simulate the transaction

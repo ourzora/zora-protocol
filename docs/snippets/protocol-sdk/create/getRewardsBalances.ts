@@ -1,16 +1,14 @@
-import { useAccount, useChainId, usePublicClient } from "wagmi";
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
+import { useAccount, usePublicClient } from "wagmi";
+import { getRewardsBalances } from "@zoralabs/protocol-sdk";
 
 // use wagmi hooks to get the chainId, publicClient, and account
-const chainId = useChainId();
 const publicClient = usePublicClient()!;
 const { address } = useAccount();
 
-const creatorClient = createCreatorClient({ chainId, publicClient });
-
 // get the rewards balance for the given account
-const rewardsBalance = await creatorClient.getRewardsBalances({
+const rewardsBalance = await getRewardsBalances({
   account: address!,
+  publicClient,
 });
 
 // get the protocol rewards balance of the account in ETH

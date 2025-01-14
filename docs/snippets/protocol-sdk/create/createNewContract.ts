@@ -1,9 +1,7 @@
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chainId, creatorAccount } from "./config";
+import { create1155 } from "@zoralabs/protocol-sdk";
+import { publicClient, walletClient, creatorAccount } from "./config";
 
-const creatorClient = createCreatorClient({ chainId, publicClient });
-
-const { parameters, contractAddress } = await creatorClient.create1155({
+const { parameters, contractAddress } = await create1155({
   // by providing a contract creation config, the contract will be created
   // if it does not exist at a deterministic address
   contract: {
@@ -17,7 +15,7 @@ const { parameters, contractAddress } = await creatorClient.create1155({
   },
   // account to execute the transaction (the creator)
   account: creatorAccount,
-  // how many tokens to mint to the creator upon token creation
+  publicClient,
 });
 
 // simulate the transaction

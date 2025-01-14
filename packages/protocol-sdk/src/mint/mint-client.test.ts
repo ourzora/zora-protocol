@@ -16,7 +16,6 @@ import {
 } from "@zoralabs/protocol-deployments";
 import { forkUrls, makeAnvilTest } from "src/anvil";
 import { writeContractWithRetries } from "src/test-utils";
-import { createCollectorClient, createCreatorClient } from "src/sdk";
 import { getAllowListEntry } from "src/allow-list/allow-list-client";
 import { SubgraphMintGetter } from "./subgraph-mint-getter";
 import { new1155ContractVersion } from "src/create/contract-setup";
@@ -26,6 +25,8 @@ import {
 } from "src/fixtures/contract-setup";
 import { ISubgraphQuerier } from "src/apis/subgraph-querier";
 import { mockTimedSaleStrategyTokenQueryResult } from "src/fixtures/mint-query-results";
+import { getToken, getTokensOfContract } from "./mint-queries";
+import { create1155 } from "src/create/create-client";
 
 const erc721ABI = parseAbi([
   "function balanceOf(address owner) public view returns (uint256)",
@@ -47,7 +48,7 @@ const getCommentIdentifierFromReceipt = (
   return logs[0]!.args.commentIdentifier;
 };
 
-describe("mint-helper", () => {
+describe("mint-client", () => {
   makeAnvilTest({
     forkBlockNumber: 16028124,
     forkUrl: forkUrls.zoraSepolia,
@@ -55,7 +56,7 @@ describe("mint-helper", () => {
   })(
     "mints a new 1155 token with a comment",
     async ({ viemClients }) => {
-      const { testClient, walletClient, publicClient, chain } = viemClients;
+      const { testClient, walletClient, publicClient } = viemClients;
       const creatorAccount = (await walletClient.getAddresses())[0]!;
       await testClient.setBalance({
         address: creatorAccount,
@@ -64,18 +65,13 @@ describe("mint-helper", () => {
       const targetContract: Address =
         "0xD42557F24034b53e7340A40bb5813eF9Ba88F2b4";
       const targetTokenId = 3n;
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
+
+      const { prepareMint, primaryMintActive } = await getToken({
+        tokenContract: targetContract,
+        mintType: "1155",
+        tokenId: targetTokenId,
         publicClient,
       });
-
-      const { prepareMint, primaryMintActive } = await collectorClient.getToken(
-        {
-          tokenContract: targetContract,
-          mintType: "1155",
-          tokenId: targetTokenId,
-        },
-      );
 
       expect(primaryMintActive).toBe(true);
       expect(prepareMint).toBeDefined();
@@ -143,17 +139,13 @@ describe("mint-helper", () => {
 
       const targetContract: Address =
         "0x7aae7e67515A2CbB8585C707Ca6db37BDd3EA839";
-      const collectorClient = createCollectorClient({
-        chainId: zora.id,
-        publicClient,
-      });
 
-      const { prepareMint, primaryMintActive } = await collectorClient.getToken(
-        {
-          tokenContract: targetContract,
-          mintType: "721",
-        },
-      );
+      const { prepareMint, primaryMintActive } = await getToken({
+        tokenContract: targetContract,
+        mintType: "721",
+        publicClient,
+        preferredSaleType: "fixedPrice",
+      });
 
       const quantityToMint = 3n;
 
@@ -165,7 +157,7 @@ describe("mint-helper", () => {
         quantityToMint,
       });
 
-      expect(costs.totalPurchaseCost).toBe(quantityToMint * parseEther(".08"));
+      expect(costs.totalPurchaseCost).toBe(quantityToMint * parseEther("0.08"));
       expect(costs.totalCostEth).toBe(
         quantityToMint * (parseEther("0.08") + parseEther("0.000777")),
       );
@@ -204,23 +196,22 @@ describe("mint-helper", () => {
   })(
     "mints an 1155 token with an ERC20 token",
     async ({ viemClients }) => {
-      const { testClient, walletClient, publicClient, chain } = viemClients;
+      const { testClient, walletClient, publicClient } = viemClients;
 
       const targetContract: Address =
         "0x689bc305456c38656856d12469aed282fbd89fe0";
       const targetTokenId = 16n;
-
-      const minter = createCollectorClient({ chainId: chain.id, publicClient });
 
       const mockCollector = "0xb6b701878a1f80197dF2c209D0BDd292EA73164D";
       await testClient.impersonateAccount({
         address: mockCollector,
       });
 
-      const { prepareMint, primaryMintActive } = await minter.getToken({
+      const { prepareMint, primaryMintActive } = await getToken({
         mintType: "1155",
         tokenContract: targetContract,
         tokenId: targetTokenId,
+        publicClient,
       });
 
       const quantityToMint = 1n;
@@ -303,12 +294,7 @@ describe("mint-helper", () => {
     forkBlockNumber: 10970943,
     anvilChainId: zoraSepolia.id,
   })("can mint allowlist tokens", async ({ viemClients }) => {
-    const { publicClient, chain, testClient, walletClient } = viemClients;
-
-    const collectorClient = createCollectorClient({
-      chainId: chain.id,
-      publicClient,
-    });
+    const { publicClient, testClient, walletClient } = viemClients;
 
     const targetContract = "0x440cF6a9f12b2f05Ec4Cee8eE0F317B0eC0c2eCD";
 
@@ -323,10 +309,11 @@ describe("mint-helper", () => {
       merkleRoot,
     });
 
-    const { prepareMint, primaryMintActive } = await collectorClient.getToken({
+    const { prepareMint, primaryMintActive } = await getToken({
       mintType: "1155",
       tokenContract: targetContract,
       tokenId,
+      publicClient,
     });
 
     const minter = (await walletClient.getAddresses())[0]!;
@@ -368,20 +355,15 @@ describe("mint-helper", () => {
     })(
       "gets onchain and premint mintables",
       async ({ viemClients }) => {
-        const { publicClient, chain } = viemClients;
+        const { publicClient } = viemClients;
 
         const targetContract: Address =
           "0xa33e4228843092bb0f2fcbb2eb237bcefc1046b3";
 
-        const minter = createCollectorClient({
-          chainId: chain.id,
+        const { tokens: mintables, contract } = await getTokensOfContract({
+          tokenContract: targetContract,
           publicClient,
         });
-
-        const { tokens: mintables, contract } =
-          await minter.getTokensOfContract({
-            tokenContract: targetContract,
-          });
 
         expect(mintables.length).toBe(4);
         expect(contract).toBeDefined();
@@ -400,23 +382,18 @@ describe("mint-helper", () => {
 
       const creator = (await walletClient.getAddresses())[0]!;
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
+      const { parameters, contractAddress, newTokenId } = await create1155({
+        account: creator,
+        contract: {
+          name: "Test Timed Sale",
+          uri: demoContractMetadataURI,
+          defaultAdmin: creator,
+        },
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+        },
         publicClient,
       });
-
-      const { parameters, contractAddress, newTokenId } =
-        await creatorClient.create1155({
-          account: creator,
-          contract: {
-            name: "Test Timed Sale",
-            uri: demoContractMetadataURI,
-            defaultAdmin: creator,
-          },
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-          },
-        });
 
       const { request: createRequest } =
         await publicClient.simulateContract(parameters);
@@ -446,12 +423,6 @@ describe("mint-helper", () => {
       const mintGetter = new SubgraphMintGetter(chain.id);
       mintGetter.subgraphQuerier.query = mockQuery;
 
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-        mintGetter,
-      });
-
       const collector = (await walletClient.getAddresses())[1]!;
 
       const {
@@ -459,10 +430,12 @@ describe("mint-helper", () => {
         primaryMintActive,
         primaryMintEnd,
         secondaryMarketActive,
-      } = await collectorClient.getToken({
+      } = await getToken({
         mintType: "1155",
         tokenContract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
+        mintGetter,
       });
 
       expect(primaryMintActive).toBe(true);

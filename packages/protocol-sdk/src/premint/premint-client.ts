@@ -42,7 +42,6 @@ import {
 import { IPremintAPI, IPremintGetter } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
 import { OPEN_EDITION_MINT_SIZE } from "../constants";
-import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
 import {
   makeContractParameters,
   mintRecipientOrAccount,
@@ -59,6 +58,7 @@ import {
 } from "src/mint/types";
 import { PremintFromApi } from "./conversions";
 import { SimulateContractParametersWithAccount } from "src/types";
+import { getApiNetworkConfigForChain } from "src/apis/network-config";
 
 type PremintedV2LogType = DecodeEventLogReturnType<
   typeof zoraCreator1155PremintExecutorImplABI,

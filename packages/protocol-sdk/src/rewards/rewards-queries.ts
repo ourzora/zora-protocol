@@ -14,7 +14,8 @@ import {
   multicall3Address,
   Multicall3Call3,
 } from "src/apis/multicall3";
-
+import { SubgraphRewardsGetter } from "./subgraph-rewards-getter";
+import { SimulateContractParametersWithAccount } from "src/types";
 // Aggregates unclaimed fees and separates ETH from other ERC20 tokens
 function aggregateUnclaimedFees(
   unclaimedFees: readonly {
@@ -65,21 +66,21 @@ type RewardsBalance = {
   };
 };
 
-export const getRewardsBalance = async ({
+export const getRewardsBalances = async ({
   account, // The account to check rewards for (Address or Account object)
   publicClient, // The public client for making blockchain queries
-  chainId, // The ID of the blockchain network
   rewardsGetter, // Interface for getting ERC20Z tokens for a creator
 }: {
   account: Account | Address;
   publicClient: PublicClient;
-  chainId: number;
-  rewardsGetter: IRewardsGetter;
+  rewardsGetter?: IRewardsGetter;
 }): Promise<RewardsBalance> => {
+  const chainId = publicClient.chain.id;
+  const rewardsGetterOrDefault =
+    rewardsGetter ?? new SubgraphRewardsGetter(chainId);
   const address = typeof account === "string" ? account : account.address;
-  const erc20ZsAndSecondaryActivated = await rewardsGetter.getErc20ZzForCreator(
-    { address },
-  );
+  const erc20ZsAndSecondaryActivated =
+    await rewardsGetterOrDefault.getErc20ZzForCreator({ address });
 
   const validErc20Zs = erc20ZsAndSecondaryActivated
     .filter(({ secondaryActivated }) => secondaryActivated)
@@ -151,11 +152,12 @@ const makeClaimSecondaryRoyaltiesCalls = async ({
 }: {
   claimFor: Address;
   chainId: number;
-  rewardsGetter: IRewardsGetter;
+  rewardsGetter?: IRewardsGetter;
 }) => {
-  const erc20ZsAndSecondaryActivated = await rewardsGetter.getErc20ZzForCreator(
-    { address: claimFor },
-  );
+  const rewardsGetterOrDefault =
+    rewardsGetter ?? new SubgraphRewardsGetter(chainId);
+  const erc20ZsAndSecondaryActivated =
+    await rewardsGetterOrDefault.getErc20ZzForCreator({ address: claimFor });
 
   const erc20z = erc20ZsAndSecondaryActivated
     .filter(({ secondaryActivated }) => secondaryActivated)
@@ -186,7 +188,7 @@ export async function withdrawSecondaryRoyalties({
 }: {
   claimFor: Address;
   chainId: number;
-  rewardsGetter: IRewardsGetter;
+  rewardsGetter?: IRewardsGetter;
 }) {
   const calls = await makeClaimSecondaryRoyaltiesCalls({
     claimFor,
@@ -230,7 +232,44 @@ const createMulticallParameters = (
     account,
   });
 
-// Main withdrawRewards function
+// Handle the simple case of protocol rewards only
+const handleProtocolRewardsOnly = ({
+  chainId,
+  withdrawFor,
+  account,
+}: {
+  chainId: number;
+  withdrawFor: Address;
+  account: Address | Account;
+}) => ({
+  ...withdrawProtocolRewards({ chainId, withdrawFor }),
+  account,
+});
+
+// Handle both protocol and secondary rewards
+const handleAllRewards = async ({
+  chainId,
+  withdrawFor,
+  account,
+  rewardsGetter,
+}: {
+  chainId: number;
+  withdrawFor: Address;
+  account: Address | Account;
+  rewardsGetter?: IRewardsGetter;
+}) => {
+  const protocolRewardsCall = createProtocolRewardsCall(chainId, withdrawFor);
+  const secondaryRoyaltiesCalls = await makeClaimSecondaryRoyaltiesCalls({
+    chainId,
+    claimFor: withdrawFor,
+    rewardsGetter,
+  });
+
+  const allCalls = [protocolRewardsCall, ...secondaryRoyaltiesCalls];
+  return createMulticallParameters(allCalls, account);
+};
+
+// Main withdrawRewards function now acts as a router
 export const withdrawRewards = async ({
   account,
   withdrawFor,
@@ -242,22 +281,11 @@ export const withdrawRewards = async ({
   withdrawFor: Address;
   claimSecondaryRoyalties?: boolean;
   chainId: number;
-  rewardsGetter: IRewardsGetter;
-}) => {
-  if (!claimSecondaryRoyalties) {
-    return {
-      ...withdrawProtocolRewards({ chainId, withdrawFor }),
-      account,
-    };
-  }
+  rewardsGetter?: IRewardsGetter;
+}): Promise<{ parameters: SimulateContractParametersWithAccount }> => {
+  const parameters = claimSecondaryRoyalties
+    ? await handleAllRewards({ chainId, withdrawFor, account, rewardsGetter })
+    : await handleProtocolRewardsOnly({ chainId, withdrawFor, account });
 
-  const protocolRewardsCall = createProtocolRewardsCall(chainId, withdrawFor);
-  const secondaryRoyaltiesCalls = await makeClaimSecondaryRoyaltiesCalls({
-    chainId,
-    claimFor: withdrawFor,
-    rewardsGetter,
-  });
-
-  const allCalls = [protocolRewardsCall, ...secondaryRoyaltiesCalls];
-  return createMulticallParameters(allCalls, account);
+  return { parameters };
 };

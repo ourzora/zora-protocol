@@ -1,19 +1,14 @@
-import { createCreatorClient } from "@zoralabs/protocol-sdk";
-import { publicClient, walletClient, chainId, creatorAccount } from "./config";
+import { createNew1155Token } from "@zoralabs/protocol-sdk";
+import { publicClient, walletClient, creatorAccount } from "./config";
 import { contractAddress } from "./createNewContract";
 
-const creatorClient = createCreatorClient({ chainId, publicClient });
-
-const { parameters } = await creatorClient.create1155OnExistingContract({
-  // by providing a contract address, the token will be created on an existing contract
-  // at that address
-  contractAddress, // [!code hl]
+const { parameters } = await createNew1155Token({
+  contractAddress,
   token: {
-    // token metadata uri
     tokenMetadataURI: "ipfs://DUMMY/token.json",
   },
-  // account to execute the transaction (the creator)
   account: creatorAccount,
+  chainId: publicClient.chain.id,
 });
 
 // simulate the transaction

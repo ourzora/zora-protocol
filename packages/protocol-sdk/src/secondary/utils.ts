@@ -14,14 +14,14 @@ export async function getSecondaryInfo({
   contract,
   tokenId,
   publicClient,
-  chainId,
 }: {
   contract: Address;
   tokenId: bigint;
   publicClient: PublicClient;
-  chainId: number;
 }): Promise<SecondaryInfo | undefined> {
   let result;
+
+  const chainId = publicClient.chain.id;
 
   try {
     result = await publicClient.readContract({

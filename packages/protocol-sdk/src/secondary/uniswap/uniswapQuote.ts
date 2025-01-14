@@ -66,13 +66,14 @@ type GetQuoteInput = {
   quantity: bigint;
   poolAddress: Address;
   erc20z: Address;
-  chainId: number;
 };
 export async function getUniswapQuote(
   input: GetQuoteInput,
   client: PublicClient,
 ): Promise<GetQuoteOutput> {
-  const { type, quantity, poolAddress, chainId, erc20z } = input;
+  const { type, quantity, poolAddress, erc20z } = input;
+
+  const chainId = client.chain.id;
 
   const WETH = wethAddresses[chainId as keyof typeof wethAddresses];
 

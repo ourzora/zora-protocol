@@ -1,4 +1,4 @@
-import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
+import { getApiNetworkConfigForChain } from "./network-config";
 import { NetworkConfig } from "./chain-constants";
 import {
   ISubgraphQuerier,

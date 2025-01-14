@@ -1,10 +1,12 @@
-import { IPremintGetter } from "src/premint/premint-api-client";
+import {
+  IPremintGetter,
+  PremintAPIClient,
+} from "src/premint/premint-api-client";
 import {
   ContractInfo,
   Erc20Approval,
-  GetMintCostsParameters,
+  GetMintCostsParameterArguments,
   GetMintParameters,
-  GetMintsOfContractParameters,
   IOnchainMintGetter,
   MintParametersBase,
   MintableReturn,
@@ -14,6 +16,8 @@ import {
   is1155Mint,
   isOnChainMint,
   GetMintableReturn,
+  GetMintsOfContractParameters,
+  WithPublicClientAndRequiredGetters,
 } from "./types";
 import { Address, zeroAddress } from "viem";
 import {
@@ -27,45 +31,51 @@ import {
 } from "src/premint/conversions";
 import { makeOnchainMintCall, parseMintCosts } from "./mint-transactions";
 import { buildPremintMintCall } from "src/premint/premint-client";
-import { IPublicClient } from "src/types";
 import { AllowListEntry } from "src/allow-list/types";
 import { Concrete } from "src/utils";
+import { parseAndFilterTokenQueryResult } from "./strategies-parsing";
+import { SubgraphMintGetter } from "./subgraph-mint-getter";
 
-export async function getMint({
-  params,
-  mintGetter,
-  premintGetter,
-  publicClient,
-  chainId,
-}: {
-  params: GetMintParameters;
-  mintGetter: IOnchainMintGetter;
-  premintGetter: IPremintGetter;
-  publicClient: IPublicClient;
-  chainId: number;
-}): Promise<MintableReturn> {
-  const { tokenContract } = params;
+/**
+ * Gets an 1155, 721, or premint, and returns both information about it, and a function
+ * that can be used to build a mint transaction for a quantity of items to mint.
+ * @param parameters - Token to get {@link GetMintParameters}
+ * @returns Information about the mint and a function to build a mint transaction {@link MintableReturn}
+ */
+export async function getToken(
+  params: GetMintParameters,
+): Promise<MintableReturn> {
+  const { premintGetter, publicClient } = params;
+  const chainId = publicClient.chain.id;
   if (isOnChainMint(params)) {
     const tokenId = is1155Mint(params) ? params.tokenId : undefined;
     const blockTime = (await publicClient.getBlock()).timestamp;
-    const result = await mintGetter.getMintable({
+    const mintGetterOrDefault =
+      params.mintGetter ?? new SubgraphMintGetter(chainId);
+    const result = await mintGetterOrDefault.getMintable({
       tokenId,
-      tokenAddress: tokenContract,
-      preferredSaleType: params.preferredSaleType,
-      blockTime: blockTime,
+      tokenAddress: params.tokenContract,
     });
 
-    return toMintableReturn(result, chainId);
+    const token = parseAndFilterTokenQueryResult({
+      token: result,
+      tokenId,
+      preferredSaleType: params.preferredSaleType,
+      blockTime,
+    });
+
+    return toMintableReturn(token, chainId);
   }
 
-  const premint = await premintGetter.get({
-    collectionAddress: tokenContract,
+  const premintGetterOrDefault = premintGetter ?? new PremintAPIClient(chainId);
+  const premint = await premintGetterOrDefault.get({
+    collectionAddress: params.tokenContract,
     uid: params.uid,
   });
 
   const mintFee = await getPremintMintFee({
     publicClient,
-    tokenContract: tokenContract,
+    tokenContract: params.tokenContract,
   });
 
   return toPremintMintReturn({ premint, mintFee });
@@ -100,28 +110,33 @@ export async function getPremintsOfCollectionWithTokenIds({
   };
 }
 
-export async function getMintsOfContract({
-  params,
+/**
+ * Gets onchain and premint tokens of an 1155 contract. For each token returns both information about it, and a function
+ * that can be used to build a mint transaction for a quantity of items to mint.
+ * @param parameters - Contract address to get tokens for {@link GetMintsOfContractParameters}
+ * @returns Array of tokens, each containing information about the token and a function to build a mint transaction.
+ */
+export async function getTokensOfContract({
   mintGetter,
   premintGetter,
   publicClient,
-  chainId,
-}: {
-  params: GetMintsOfContractParameters;
-  mintGetter: IOnchainMintGetter;
-  premintGetter: IPremintGetter;
-  publicClient: IPublicClient;
-  chainId: number;
-}): Promise<{ contract?: ContractInfo; tokens: MintableReturn[] }> {
+  ...params
+}: GetMintsOfContractParameters): Promise<{
+  contract?: ContractInfo;
+  tokens: MintableReturn[];
+}> {
+  const chainId = publicClient.chain.id;
+  const mintGetterOrDefault: IOnchainMintGetter =
+    mintGetter ?? new SubgraphMintGetter(chainId);
   const onchainMints = (
-    await mintGetter.getContractMintable({
+    await mintGetterOrDefault.getContractMintable({
       tokenAddress: params.tokenContract,
     })
   ).map((result) => toMintableReturn(result, chainId));
 
   const offchainMints = await getPremintsOfContractMintable({
-    mintGetter,
-    premintGetter,
+    mintGetter: mintGetterOrDefault,
+    premintGetter: premintGetter ?? new PremintAPIClient(chainId),
     publicClient,
     params: {
       tokenContract: params.tokenContract,
@@ -136,35 +151,42 @@ export async function getMintsOfContract({
   };
 }
 
+/**
+ * Gets the costs to mint the quantity of tokens specified for a mint.
+ * @param parameters - Parameters for the mint {@link GetMintCostsParameterArguments}
+ * @returns Costs to mint the quantity of tokens specified
+ */
 export async function getMintCosts({
   params,
   allowListEntry,
   mintGetter,
   premintGetter,
   publicClient,
-}: {
-  params: GetMintCostsParameters;
+}: WithPublicClientAndRequiredGetters<{
+  params: GetMintCostsParameterArguments;
   allowListEntry?: Pick<AllowListEntry, "price">;
-  mintGetter: IOnchainMintGetter;
-  premintGetter: IPremintGetter;
-  publicClient: IPublicClient;
-}) {
+}>) {
   const { quantityMinted: quantityToMint, collection } = params;
   if (isOnChainMint(params)) {
     const tokenId = is1155Mint(params) ? params.tokenId : undefined;
     const blockTime = (await publicClient.getBlock()).timestamp;
-    const { salesConfigAndTokenInfo } = await mintGetter.getMintable({
+    const result = await mintGetter.getMintable({
       tokenId,
       tokenAddress: collection,
+    });
+
+    const token = parseAndFilterTokenQueryResult({
+      token: result,
+      tokenId,
       blockTime,
     });
 
-    if (!salesConfigAndTokenInfo.salesConfig) {
+    if (!token.salesConfigAndTokenInfo.salesConfig) {
       throw new Error("No valid sales config found for token");
     }
 
     return parseMintCosts({
-      salesConfig: salesConfigAndTokenInfo.salesConfig,
+      salesConfig: token.salesConfigAndTokenInfo.salesConfig,
       quantityToMint: BigInt(quantityToMint),
       allowListEntry,
     });
@@ -184,12 +206,9 @@ async function getPremintsOfContractMintable({
   premintGetter,
   publicClient,
   params,
-}: {
-  mintGetter: IOnchainMintGetter;
-  premintGetter: IPremintGetter;
-  publicClient: IPublicClient;
+}: WithPublicClientAndRequiredGetters<{
   params: { tokenContract: Address };
-}): Promise<MintableReturn[]> {
+}>): Promise<MintableReturn[]> {
   const { premints, collection } = await getPremintsOfCollectionWithTokenIds({
     mintGetter,
     premintGetter,
@@ -295,7 +314,7 @@ export const makeOnchainPrepareMint =
     };
   };
 
-function toMintableReturn(
+export function toMintableReturn(
   result: GetMintableReturn,
   chainId: number,
 ): MintableReturn {

@@ -1,9 +1,10 @@
 import { describe, expect, vi } from "vitest";
 import {
+  create1155,
+  createNew1155Token,
   getContractAddressFromReceipt,
   getTokenIdFromCreateReceipt,
-} from "./1155-create-helper";
-import { createCollectorClient, createCreatorClient } from "src/sdk";
+} from "./create-client";
 import {
   zoraCreator1155ImplABI,
   zoraTimedSaleStrategyABI,
@@ -27,6 +28,7 @@ import {
 } from "./minter-defaults";
 import { randomNewContract } from "src/test-utils";
 import { demoTokenMetadataURI } from "src/fixtures/contract-setup";
+import { getSecondaryInfo } from "src/secondary/utils";
 
 const anvilTest = makeAnvilTest({
   forkUrl: forkUrls.zoraMainnet,
@@ -64,18 +66,13 @@ describe("create-helper", () => {
       const addresses = await walletClient.getAddresses();
       const creatorAddress = addresses[0]!;
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
-      });
-
       const saleStart = 5n;
       const contract = randomNewContract();
       const {
         parameters: parameters,
         contractAddress,
         newTokenId,
-      } = await creatorClient.create1155({
+      } = await create1155({
         contract,
         token: {
           tokenMetadataURI: demoTokenMetadataURI,
@@ -86,6 +83,7 @@ describe("create-helper", () => {
           },
         },
         account: creatorAddress,
+        publicClient,
       });
 
       const { request } = await publicClient.simulateContract(parameters);
@@ -141,14 +139,10 @@ describe("create-helper", () => {
       // get secondary info, minimum mints count should be 1111, sale end should be undefined,
       // market countdown should be 24 hours
 
-      const collectorClient = createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-      });
-
-      const secondaryInfo = await collectorClient.getSecondaryInfo({
+      const secondaryInfo = await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(secondaryInfo).toBeDefined();
@@ -165,28 +159,23 @@ describe("create-helper", () => {
       const addresses = await walletClient.getAddresses();
       const creatorAddress = addresses[0]!;
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
-      });
-
       const saleStart = 5n;
       const contract = randomNewContract();
-      const { parameters, contractAddress, newTokenId } =
-        await creatorClient.create1155({
-          contract,
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-            mintToCreatorCount: 1,
-            salesConfig: {
-              saleStart,
-              minimumMintsForCountdown: 500n,
-              marketCountdown: 100n,
-              type: "timed",
-            },
+      const { parameters, contractAddress, newTokenId } = await create1155({
+        contract,
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+          mintToCreatorCount: 1,
+          salesConfig: {
+            saleStart,
+            minimumMintsForCountdown: 500n,
+            marketCountdown: 100n,
+            type: "timed",
           },
-          account: creatorAddress,
-        });
+        },
+        account: creatorAddress,
+        publicClient,
+      });
 
       await simulateAndWriteContractWithRetries({
         parameters,
@@ -194,12 +183,10 @@ describe("create-helper", () => {
         publicClient,
       });
 
-      const secondaryInfo = await createCollectorClient({
-        chainId: chain.id,
-        publicClient,
-      }).getSecondaryInfo({
+      const secondaryInfo = await getSecondaryInfo({
         contract: contractAddress,
         tokenId: newTokenId,
+        publicClient,
       });
 
       expect(secondaryInfo).toBeDefined();
@@ -214,15 +201,11 @@ describe("create-helper", () => {
       const addresses = await walletClient.getAddresses();
       const creatorAddress = addresses[0]!;
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
-      });
       const {
         parameters: parameters,
         contractAddress,
         newTokenId,
-      } = await creatorClient.create1155({
+      } = await create1155({
         contract: randomNewContract(),
         token: {
           tokenMetadataURI: demoTokenMetadataURI,
@@ -231,6 +214,7 @@ describe("create-helper", () => {
           },
         },
         account: creatorAddress,
+        publicClient,
       });
 
       const { request } = await publicClient.simulateContract(parameters);
@@ -260,20 +244,15 @@ describe("create-helper", () => {
 
       const contractGetter = new SubgraphContractGetter(chain.id);
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
-        contractGetter,
-      });
-
       const { parameters: request, contractAddress: contractAddress } =
-        await creatorClient.create1155({
+        await create1155({
           contract: randomNewContract(),
           token: {
             tokenMetadataURI: demoTokenMetadataURI,
             mintToCreatorCount: 3,
           },
           account: creatorAccount,
+          publicClient,
         });
       const { request: simulateResponse } =
         await publicClient.simulateContract(request);
@@ -310,15 +289,16 @@ describe("create-helper", () => {
           nextTokenId: 2n,
         });
 
-      const newTokenOnExistingContract =
-        await creatorClient.create1155OnExistingContract({
-          contractAddress: contractAddress,
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-            mintToCreatorCount: 2,
-          },
-          account: creatorAccount,
-        });
+      const newTokenOnExistingContract = await createNew1155Token({
+        contractAddress: contractAddress,
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+          mintToCreatorCount: 2,
+        },
+        account: creatorAccount,
+        contractGetter,
+        chainId: publicClient.chain.id,
+      });
       const { request: simulateRequest } = await publicClient.simulateContract(
         newTokenOnExistingContract.parameters,
       );
@@ -340,21 +320,18 @@ describe("create-helper", () => {
       const creatorAddress = addresses[0]!;
       const createReferral = addresses[1]!;
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
-      });
       const {
         parameters: request,
         contractAddress: collectionAddress,
         newTokenId,
-      } = await creatorClient.create1155({
+      } = await create1155({
         contract: randomNewContract(),
         token: {
           tokenMetadataURI: demoTokenMetadataURI,
           createReferral,
         },
         account: creatorAddress,
+        publicClient,
       });
       const { request: simulationResponse } =
         await publicClient.simulateContract(request);
@@ -388,19 +365,14 @@ describe("create-helper", () => {
     }) => {
       const addresses = await walletClient.getAddresses();
       const creatorAddress = addresses[0]!;
-
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
+      const { parameters: request, prepareMint } = await create1155({
+        contract: randomNewContract(),
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+        },
+        account: creatorAddress,
+        publicClient,
       });
-      const { parameters: request, prepareMint } =
-        await creatorClient.create1155({
-          contract: randomNewContract(),
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-          },
-          account: creatorAddress,
-        });
       const { request: createSimulation } =
         await publicClient.simulateContract(request);
 
@@ -443,11 +415,6 @@ describe("create-helper", () => {
       const addresses = await walletClient.getAddresses();
       const creatorAddress = addresses[0]!;
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
-      });
-
       const pricePerToken = parseEther("0.01");
 
       const blockTime = (await publicClient.getBlock()).timestamp;
@@ -458,7 +425,7 @@ describe("create-helper", () => {
         newTokenId,
         minter,
         contractVersion,
-      } = await creatorClient.create1155({
+      } = await create1155({
         contract: randomNewContract(),
         token: {
           tokenMetadataURI: demoTokenMetadataURI,
@@ -468,6 +435,7 @@ describe("create-helper", () => {
           },
         },
         account: creatorAddress,
+        publicClient,
       });
       const { request: createSimulation } =
         await publicClient.simulateContract(request);
@@ -524,7 +492,7 @@ describe("create-helper", () => {
 
   anvilTest(
     "creates an allow list mint contract",
-    async ({ viemClients: { publicClient, walletClient, chain } }) => {
+    async ({ viemClients: { publicClient, walletClient } }) => {
       const creator = (await walletClient.getAddresses())[0]!;
       const allowList: AllowList = {
         entries: [
@@ -545,12 +513,7 @@ describe("create-helper", () => {
         allowList,
       });
 
-      const creatorClient = createCreatorClient({
-        chainId: chain.id,
-        publicClient: publicClient,
-      });
-
-      const { parameters: parameters } = await creatorClient.create1155({
+      const { parameters } = await create1155({
         contract: {
           name: "test allowlists",
           uri: "ipfs://bafkreiainxen4b4wz4ubylvbhons6rembxdet4a262nf2lziclqvv7au3e",
@@ -564,6 +527,7 @@ describe("create-helper", () => {
           },
         },
         account: creator,
+        publicClient,
       });
 
       const { request } = await publicClient.simulateContract(parameters);

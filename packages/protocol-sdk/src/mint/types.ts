@@ -2,8 +2,11 @@ import { Account, Address } from "viem";
 import {
   GenericTokenIdTypes,
   SimulateContractParametersWithAccount,
+  WithPublicClient,
 } from "src/types";
 import { AllowListEntry } from "src/allow-list/types";
+import { TokenQueryResult } from "./subgraph-queries";
+import { IPremintGetter } from "src/premint/premint-api-client";
 
 export type MintParameters<MintType> = {
   /** Type of the collection to be minted. */
@@ -33,17 +36,39 @@ export type MintTypes =
   | Erc721MintParameters
   | PremintMintParameters;
 
-export type GetMintParameters = MintTypes & {
+export type GetMintParametersArguments = MintTypes & {
   /** Address of the contract that the item belongs to */
   tokenContract: Address;
   preferredSaleType?: SaleType;
 };
 
-export type GetMintsOfContractParameters = {
+type WithOptionalGetters<T> = T & {
+  /** Optional override for getting onchain mints using indexed events */
+  mintGetter?: IOnchainMintGetter;
+  /** Optional override for getting premints */
+  premintGetter?: IPremintGetter;
+};
+
+export type WithPublicClientAndOptionalGetters<T> = WithOptionalGetters<
+  WithPublicClient<T>
+>;
+
+export type WithPublicClientAndRequiredGetters<T> = WithPublicClient<T> & {
+  mintGetter: IOnchainMintGetter;
+  premintGetter: IPremintGetter;
+};
+
+export type GetMintParameters =
+  WithPublicClientAndOptionalGetters<GetMintParametersArguments>;
+
+export type GetMintsOfContractParametersArguments = {
   /** Address of the contract to get the tokens of */
   tokenContract: Address;
   preferredSaleType?: SaleType;
 };
+
+export type GetMintsOfContractParameters =
+  WithPublicClientAndOptionalGetters<GetMintsOfContractParametersArguments>;
 
 export const isOnChainMint = (mint: MintTypes): mint is OnChainMintParameters =>
   mint.mintType !== "premint";
@@ -95,7 +120,13 @@ export type MakeMintParametersArguments =
   | Make721MintArguments
   | MakePremintMintParametersArguments;
 
-export type GetMintCostsParameters = {
+export type MakeMintParameters =
+  WithPublicClient<MakeMintParametersArguments> & {
+    mintGetter?: IOnchainMintGetter;
+    premintGetter?: IPremintGetter;
+  };
+
+export type GetMintCostsParameterArguments = {
   /** Address of token contract/collection to get the mint costs for */
   collection: Address;
   /** Quantity of tokens that will be minted */
@@ -144,7 +175,7 @@ type AllowListSaleStrategy = SaleStrategy<"allowlist"> & {
   merkleRoot: string;
 };
 
-type ZoraTimedSaleStrategy = SaleStrategy<"timed"> & {
+export type ZoraTimedSaleStrategy = SaleStrategy<"timed"> & {
   mintFee: bigint;
   erc20Z: Address;
   pool: Address;
@@ -237,9 +268,7 @@ export interface IOnchainMintGetter {
   getMintable(params: {
     tokenAddress: Address;
     tokenId?: GenericTokenIdTypes;
-    preferredSaleType?: SaleType;
-    blockTime: bigint;
-  }): Promise<GetMintableReturn>;
+  }): Promise<TokenQueryResult>;
 
   getContractMintable(params: {
     tokenAddress: Address;

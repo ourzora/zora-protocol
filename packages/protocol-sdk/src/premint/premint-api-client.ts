@@ -4,7 +4,6 @@ import {
 } from "../apis/http-api-base";
 import { components, paths } from "../apis/generated/premint-api-types";
 import { ZORA_API_BASE } from "../constants";
-import { getApiNetworkConfigForChain } from "src/mint/subgraph-mint-getter";
 import {
   PremintConfigVersion,
   PremintConfigWithVersion,
@@ -20,6 +19,7 @@ import {
   encodePostSignatureInput,
 } from "./conversions";
 import { ContractCreationConfigOrAddress } from "./contract-types";
+import { getApiNetworkConfigForChain } from "src/apis/network-config";
 
 type PremintNextUIDGetType =
   paths["/signature/{chain_name}/{collection_address}/next_uid"]["get"];

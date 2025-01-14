@@ -2,7 +2,7 @@ import {
   PremintClient,
   getDataFromPremintReceipt,
 } from "./premint/premint-client";
-import { Create1155Client } from "./create/1155-create-helper";
+import { Create1155Client } from "./create/create-client";
 import { MintClient } from "./mint/mint-client";
 import { ClientConfig } from "./utils";
 import { IPremintAPI, PremintAPIClient } from "./premint/premint-api-client";
@@ -49,7 +49,10 @@ export type CreatorClientConfig = ClientConfig & {
 };
 
 /**
- * Builds the sdk for creating/managing 1155 contracts and tokens
+ * @deprecated Please use functions directly without creating a client.
+ * Example: Instead of `createCreatorClient().create1155()`, use `create1155()`
+ * Import the functions you need directly from their respective modules:
+ * import { create1155 } from '@zoralabs/protocol-sdk'
  *
  * @param clientConfig - Configuration for the client {@link CreatorClientConfig}
  * @returns CreatorClient {@link CreatorClient}
@@ -65,7 +68,6 @@ export function createCreatorClient(
   });
 
   const create1155CreatorClient = new Create1155Client({
-    chainId: clientConfig.chainId,
     publicClient: clientConfig.publicClient,
     contractGetter:
       clientConfig.contractGetter ||
@@ -100,7 +102,10 @@ export type CollectorClientConfig = ClientConfig & {
 };
 
 /**
- * Builds the sdk for collecting Premints, 1155, and 721 tokens.
+ * @deprecated Please use functions directly without creating a client.
+ * Example: Instead of `createCollectorClient().mint()`, use `mint()`
+ * Import the functions you need directly from their respective modules:
+ * import { mint } from '@zoralabs/protocol-sdk'
  *
  * @param clientConfig - Configuration for the client {@link CollectorClientConfig}
  * @returns CollectorClient {@link CollectorClient}
@@ -116,11 +121,9 @@ export function createCollectorClient(
     publicClient: params.publicClient,
     premintGetter: premintGetterToUse,
     mintGetter: mintGetterToUse,
-    chainId: params.chainId,
   });
   const secondaryClient = new SecondaryClient({
     publicClient: params.publicClient,
-    chainId: params.chainId,
   });
 
   return {

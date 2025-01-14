@@ -1,4 +1,4 @@
-import { Address, Hex, PublicClient } from "viem";
+import { Address, Hex, PublicClient, Transport, Chain } from "viem";
 import {
   contracts1155,
   zoraCreator1155FactoryImplABI,
@@ -23,15 +23,14 @@ export async function getDeterministicContractAddress({
   account,
   setupActions,
   contract,
-  chainId,
 }: {
   account: Address;
-  publicClient: Pick<PublicClient, "readContract">;
+  publicClient: Pick<PublicClient<Transport, Chain>, "readContract" | "chain">;
   setupActions: Hex[];
   contract: NewContractParams;
-  chainId: number;
   // Account that is the creator of the contract
 }): Promise<Address> {
+  const chainId = publicClient.chain.id;
   const contractAddress = await publicClient.readContract({
     abi: zoraCreator1155FactoryImplABI,
     address:

@@ -1,4 +1,10 @@
-import { Account, Address, PublicClient as BasePublicClient } from "viem";
+import {
+  Account,
+  Address,
+  PublicClient as BasePublicClient,
+  Transport,
+  Chain,
+} from "viem";
 import { SimulateContractParametersWithAccount } from "./types";
 
 export const makeContractParameters = (
@@ -6,8 +12,8 @@ export const makeContractParameters = (
 ) => args;
 
 export type PublicClient = Pick<
-  BasePublicClient,
-  "readContract" | "getBlock" | "simulateContract" | "getBalance"
+  BasePublicClient<Transport, Chain>,
+  "readContract" | "getBlock" | "simulateContract" | "getBalance" | "chain"
 >;
 
 export type ClientConfig = {

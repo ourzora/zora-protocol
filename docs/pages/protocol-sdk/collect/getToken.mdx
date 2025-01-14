@@ -16,33 +16,26 @@ import {
   useAccount,
   useWriteContract 
 } from 'wagmi';
-import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { getToken } from "@zoralabs/protocol-sdk";
 
 const chainId = useChainId();
 const publicClient = usePublicClient();
 
-// initiate the collector client
-const collectorClient = createCollectorClient({ chainId, publicClient });
-
 // get the item that can be minted, and a function to prepare 
 // a mint transaction
-const { token, prepareMint } = await collectorClient.getToken({
+const { token, prepareMint } = await getToken({
+  publicClient,
   // contract address token belongs to
   tokenContract: "0x1234567890123456789012345678901234567890",
-  // can be set to 1155, 721, or premint
-// @noErrors
-  mintType: "",
-//           ^|
+  // can be set to 1155, 721
+  mintType: "1155",
 });
-
 
 // the function returns a `token` object 
 // containing information  about the item that can be minted
 // @noErrors
 token.
 //    ^|
-
-
 
 
 
@@ -86,27 +79,26 @@ import {
   useAccount,
   useWriteContract 
 } from 'wagmi';
-import { createCollectorClient } from "@zoralabs/protocol-sdk";
+import { getToken } from "@zoralabs/protocol-sdk";
  
 const chainId = useChainId();
 const publicClient = usePublicClient()!;
- 
-const collectorClient = createCollectorClient({ chainId, publicClient });
- 
+
 // get the item that can be minted, and a function to prepare 
 // a mint transaction
-const { prepareMint } = await collectorClient.getToken({
+const { prepareMint, primaryMintActive } = await getToken({
   // contract address token belongs to
   tokenContract: "0x1234567890123456789012345678901234567890",
   // can be set to 1155, 721, or premint
   mintType: "1155",
-  tokenId: 1n
+  tokenId: 1n,
+  publicClient
 });
 
 // The `prepareMint` function can be used to prepare a transaction
 // to mint x quantity of tokens to a recipient
 const { address } = useAccount();
-const { parameters, costs } = prepareMint({
+const data = prepareMint && prepareMint({
   minterAccount: address!,
   quantityToMint: 3n
 });
@@ -115,7 +107,7 @@ const { writeContract } = useWriteContract();
 
 // When the button is clicked, the transaction
 // to mint 3 tokens is written to the network
-<button onClick={() => writeContract(parameters)}></button>
+<button onClick={() => data && writeContract(data.parameters)}></button>
 ```
 
 ## Parameters
