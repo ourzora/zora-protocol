@@ -4,9 +4,7 @@ import { Address } from "viem";
 import { buildCreatorERC20zs } from "./subgraph-queries";
 
 export interface IRewardsGetter {
-  getErc20ZzForCreator: (params: {
-    address: Address;
-  }) => Promise<{ secondaryActivated: boolean; erc20z: Address }[]>;
+  getErc20ZzForCreator: (params: { address: Address }) => Promise<Address[]>;
 }
 
 export class SubgraphRewardsGetter
@@ -30,17 +28,9 @@ export class SubgraphRewardsGetter
           return null;
         }
 
-        return {
-          secondaryActivated: timedMinter.secondaryActivated,
-          erc20z: timedMinter.erc20Z.id,
-        };
+        return timedMinter.erc20Z.id;
       }) || []
-    ).filter(
-      (
-        idAndActivated,
-      ): idAndActivated is { secondaryActivated: boolean; erc20z: Address } =>
-        !!idAndActivated,
-    );
+    ).filter((id): id is Address => !!id);
 
     return results;
   }

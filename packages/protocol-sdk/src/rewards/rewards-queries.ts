@@ -66,6 +66,46 @@ type RewardsBalance = {
   };
 };
 
+const getErc20zsWithPositions = async ({
+  address,
+  publicClient,
+  rewardsGetter,
+}: {
+  address: Address;
+  publicClient: PublicClient;
+  rewardsGetter?: IRewardsGetter;
+}): Promise<Address[]> => {
+  const chainId = publicClient.chain.id;
+  const rewardsGetterOrDefault =
+    rewardsGetter ?? new SubgraphRewardsGetter(chainId);
+
+  const erc20zsForCreator = await rewardsGetterOrDefault.getErc20ZzForCreator({
+    address,
+  });
+
+  const royaltiesAddress =
+    erc20ZRoyaltiesAddress[chainId as keyof typeof erc20ZRoyaltiesAddress];
+
+  const positionsByErc20z = await (
+    publicClient as PublicClientWithMulticall
+  ).multicall({
+    contracts: erc20zsForCreator.map((erc20z) => ({
+      address: royaltiesAddress,
+      abi: erc20ZRoyaltiesABI,
+      functionName: "positionsByErc20z",
+      args: [erc20z],
+    })),
+    multicallAddress: multicall3Address,
+    allowFailure: false,
+  });
+
+  const erc20zsWithPositions = erc20zsForCreator.filter(
+    (_, i) => positionsByErc20z[i] !== 0n,
+  );
+
+  return erc20zsWithPositions;
+};
+
 export const getRewardsBalances = async ({
   account, // The account to check rewards for (Address or Account object)
   publicClient, // The public client for making blockchain queries
@@ -76,15 +116,14 @@ export const getRewardsBalances = async ({
   rewardsGetter?: IRewardsGetter;
 }): Promise<RewardsBalance> => {
   const chainId = publicClient.chain.id;
-  const rewardsGetterOrDefault =
-    rewardsGetter ?? new SubgraphRewardsGetter(chainId);
   const address = typeof account === "string" ? account : account.address;
-  const erc20ZsAndSecondaryActivated =
-    await rewardsGetterOrDefault.getErc20ZzForCreator({ address });
 
-  const validErc20Zs = erc20ZsAndSecondaryActivated
-    .filter(({ secondaryActivated }) => secondaryActivated)
-    .map(({ erc20z }) => erc20z);
+  // get erc20z that have positions in the royalties contract
+  const erc20zsWithPositions = await getErc20zsWithPositions({
+    address,
+    publicClient,
+    rewardsGetter,
+  });
 
   // Perform multicall to get protocol rewards balance and unclaimed fees
   const result = await (publicClient as PublicClientWithMulticall).multicall({
@@ -105,7 +144,7 @@ export const getRewardsBalances = async ({
           ],
         abi: erc20ZRoyaltiesABI,
         functionName: "getUnclaimedFeesBatch",
-        args: [validErc20Zs],
+        args: [erc20zsWithPositions],
       },
     ],
     multicallAddress: multicall3Address,
@@ -149,19 +188,18 @@ const makeClaimSecondaryRoyaltiesCalls = async ({
   claimFor,
   chainId,
   rewardsGetter,
+  publicClient,
 }: {
   claimFor: Address;
   chainId: number;
   rewardsGetter?: IRewardsGetter;
+  publicClient: PublicClient;
 }) => {
-  const rewardsGetterOrDefault =
-    rewardsGetter ?? new SubgraphRewardsGetter(chainId);
-  const erc20ZsAndSecondaryActivated =
-    await rewardsGetterOrDefault.getErc20ZzForCreator({ address: claimFor });
-
-  const erc20z = erc20ZsAndSecondaryActivated
-    .filter(({ secondaryActivated }) => secondaryActivated)
-    .map(({ erc20z }) => erc20z);
+  const erc20z = await getErc20zsWithPositions({
+    address: claimFor,
+    publicClient,
+    rewardsGetter,
+  });
 
   const royaltiesAddress =
     erc20ZRoyaltiesAddress[chainId as keyof typeof erc20ZRoyaltiesAddress];
@@ -185,15 +223,18 @@ export async function withdrawSecondaryRoyalties({
   claimFor,
   chainId,
   rewardsGetter,
+  publicClient,
 }: {
   claimFor: Address;
   chainId: number;
   rewardsGetter?: IRewardsGetter;
+  publicClient: PublicClient;
 }) {
   const calls = await makeClaimSecondaryRoyaltiesCalls({
     claimFor,
     chainId,
     rewardsGetter,
+    publicClient,
   });
 
   return makeContractParameters({
@@ -248,21 +289,23 @@ const handleProtocolRewardsOnly = ({
 
 // Handle both protocol and secondary rewards
 const handleAllRewards = async ({
-  chainId,
   withdrawFor,
   account,
   rewardsGetter,
+  publicClient,
 }: {
-  chainId: number;
   withdrawFor: Address;
   account: Address | Account;
   rewardsGetter?: IRewardsGetter;
+  publicClient: PublicClient;
 }) => {
+  const chainId = publicClient.chain.id;
   const protocolRewardsCall = createProtocolRewardsCall(chainId, withdrawFor);
   const secondaryRoyaltiesCalls = await makeClaimSecondaryRoyaltiesCalls({
     chainId,
     claimFor: withdrawFor,
     rewardsGetter,
+    publicClient,
   });
 
   const allCalls = [protocolRewardsCall, ...secondaryRoyaltiesCalls];
@@ -274,18 +317,27 @@ export const withdrawRewards = async ({
   account,
   withdrawFor,
   claimSecondaryRoyalties = true,
-  chainId,
   rewardsGetter,
+  publicClient,
 }: {
   account: Address | Account;
   withdrawFor: Address;
   claimSecondaryRoyalties?: boolean;
-  chainId: number;
   rewardsGetter?: IRewardsGetter;
+  publicClient: PublicClient;
 }): Promise<{ parameters: SimulateContractParametersWithAccount }> => {
   const parameters = claimSecondaryRoyalties
-    ? await handleAllRewards({ chainId, withdrawFor, account, rewardsGetter })
-    : await handleProtocolRewardsOnly({ chainId, withdrawFor, account });
+    ? await handleAllRewards({
+        withdrawFor,
+        account,
+        rewardsGetter,
+        publicClient,
+      })
+    : await handleProtocolRewardsOnly({
+        chainId: publicClient.chain.id,
+        withdrawFor,
+        account,
+      });
 
   return { parameters };
 };

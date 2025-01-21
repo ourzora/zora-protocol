@@ -25,21 +25,17 @@ export type GetRewardsBalancesParams = {
  */
 export class RewardsClient {
   // Private properties to store chain ID, public client, and rewards getter
-  private readonly chainId: number;
   private readonly publicClient: IPublicClient;
   private readonly rewardsGetter: IRewardsGetter;
 
   constructor({
-    chainId,
     publicClient,
     rewardsGetter,
   }: {
-    chainId: number;
     publicClient: IPublicClient;
     rewardsGetter: IRewardsGetter;
   }) {
     // Initialize the private properties
-    this.chainId = chainId;
     this.publicClient = publicClient;
     this.rewardsGetter = rewardsGetter;
   }
@@ -51,11 +47,11 @@ export class RewardsClient {
     claimSecondaryRoyalties,
   }: WithdrawRewardsParams) {
     return await withdrawRewards({
-      chainId: this.chainId,
       rewardsGetter: this.rewardsGetter,
       withdrawFor,
       claimSecondaryRoyalties,
       account,
+      publicClient: this.publicClient,
     });
   }
 

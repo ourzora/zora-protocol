@@ -75,7 +75,6 @@ export function createCreatorClient(
   });
 
   const rewardsClient = new RewardsClient({
-    chainId: clientConfig.chainId,
     publicClient: clientConfig.publicClient,
     rewardsGetter:
       clientConfig.rewardsGetter ||

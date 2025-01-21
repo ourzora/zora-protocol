@@ -16,7 +16,7 @@ const { parameters } = await withdrawRewards({
   // account to execute the transaction. Any account can withdraw rewards for another account,
   // but the rewards will always be pulled to the account that holds the balance
   account: randomAccount,
-  chainId: publicClient.chain.id,
+  publicClient,
 });
 
 // simulate the transaction

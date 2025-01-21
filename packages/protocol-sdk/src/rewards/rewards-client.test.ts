@@ -265,7 +265,6 @@ describe("rewardsClient", () => {
             salesStrategies: [
               {
                 zoraTimedMinter: {
-                  secondaryActivated: true,
                   erc20Z: { id: erc20z },
                 },
               },
@@ -323,6 +322,314 @@ describe("rewardsClient", () => {
       });
 
       expect(erc20balance).toBeGreaterThan(0);
+    },
+    30_000,
+  );
+  makeAnvilTest({
+    forkBlockNumber: 17938475,
+    forkUrl: forkUrls.zoraSepolia,
+    anvilChainId: zoraSepolia.id,
+  })(
+    "it can view and withdraw rewards and secondary royalties for mints",
+    async ({
+      viemClients: { publicClient, chain, walletClient, testClient },
+    }) => {
+      const creatorAccount = (await walletClient.getAddresses()!)[0]!;
+      const collectorAccount = (await walletClient.getAddresses()!)[1]!;
+
+      const {
+        creatorClient,
+        contractAddress,
+        newTokenId,
+        mintGetter,
+        rewardsGetter,
+      } = await setupContractAndToken({
+        chain,
+        publicClient,
+        creatorAccount,
+        walletClient,
+      });
+
+      await testClient.setBalance({
+        address: collectorAccount,
+        value: parseEther("100"),
+      });
+
+      const quantityToMint = 1111n;
+
+      mintGetter.subgraphQuerier.query = vi
+        .fn<ISubgraphQuerier["query"]>()
+        .mockResolvedValue({
+          zoraCreateToken: mockTimedSaleStrategyTokenQueryResult({
+            chainId: chain.id,
+            tokenId: newTokenId,
+            contractAddress,
+            contractVersion:
+              new1155ContractVersion[
+                chain.id as keyof typeof new1155ContractVersion
+              ],
+          }),
+        });
+
+      const { parameters: collectParameters } = await mint({
+        minterAccount: collectorAccount,
+        mintType: "1155",
+        quantityToMint,
+        tokenId: newTokenId,
+        tokenContract: contractAddress,
+        publicClient,
+        mintGetter,
+      });
+
+      await simulateAndWriteContractWithRetries({
+        parameters: collectParameters,
+        walletClient,
+        publicClient,
+      });
+
+      await advanceToSaleAndAndLaunchMarket({
+        account: collectorAccount,
+        publicClient,
+        walletClient,
+        testClient,
+        contractAddress,
+        tokenId: newTokenId,
+      });
+
+      const erc20z = (await getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+        publicClient,
+      }))!.erc20z!;
+
+      // after market is launched, by 100 from the pool.  there should be some rewards
+      // balances from secondary royalties
+      await simulateAndWriteContractWithRetries({
+        parameters: makeContractParameters({
+          abi: secondarySwapABI,
+          address:
+            secondarySwapAddress[chain.id as keyof typeof secondarySwapAddress],
+          functionName: "buy1155",
+          args: [
+            erc20z,
+            100n,
+            collectorAccount,
+            collectorAccount,
+            parseEther("1"),
+            0n,
+          ],
+          account: collectorAccount,
+          value: parseEther("1"),
+        }),
+        walletClient,
+        publicClient,
+      });
+
+      const abiParameters = [
+        { name: "recipient", internalType: "address payable", type: "address" },
+        { name: "minEthToAcquire", internalType: "uint256", type: "uint256" },
+        { name: "sqrtPriceLimitX96", internalType: "uint160", type: "uint160" },
+      ] as const;
+      const sellData = encodeAbiParameters(abiParameters, [
+        collectorAccount,
+        0n,
+        0n,
+      ]);
+      await simulateAndWriteContractWithRetries({
+        parameters: makeContractParameters({
+          functionName: "safeTransferFrom",
+          address: contractAddress,
+          abi: zoraCreator1155ImplABI,
+          account: collectorAccount,
+          args: [
+            collectorAccount,
+            secondarySwapAddress[chain.id as keyof typeof secondarySwapAddress],
+            newTokenId,
+            100n,
+            sellData,
+          ],
+        }),
+        walletClient,
+        publicClient,
+      });
+
+      // now we should be able to get rewards balances for these royalties
+
+      const mockResult: CreatorERC20zQueryResult = {
+        zoraCreateTokens: [
+          {
+            salesStrategies: [
+              {
+                zoraTimedMinter: {
+                  erc20Z: { id: erc20z },
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      // we need to stub the subgraph return
+      rewardsGetter.subgraphQuerier.query = vi
+        .fn<ISubgraphQuerier["query"]>()
+        .mockResolvedValue(mockResult);
+
+      const rewardsBalance = await creatorClient.getRewardsBalances({
+        account: creatorAccount,
+      });
+
+      expect(rewardsBalance.protocolRewards).toBeGreaterThan(0n);
+      expect(rewardsBalance.secondaryRoyalties.erc20[erc20z]).toBeGreaterThan(
+        0,
+      );
+
+      const beforeBalance = await publicClient.getBalance({
+        address: creatorAccount,
+      });
+
+      // it can withdraw all rewards
+      await simulateAndWriteContractWithRetries({
+        parameters: (
+          await creatorClient.withdrawRewards({
+            account: collectorAccount,
+            withdrawFor: creatorAccount,
+            claimSecondaryRoyalties: true,
+          })
+        ).parameters,
+        publicClient,
+        walletClient,
+      });
+
+      const afterBalance = await publicClient.getBalance({
+        address: creatorAccount,
+      });
+
+      // make sure that some additional royalties were withdrawn, this is how we can do greater than
+      // we cant get exact precision
+      expect(afterBalance - beforeBalance).toBeGreaterThan(
+        rewardsBalance.protocolRewards,
+      );
+
+      const erc20balance = await publicClient.readContract({
+        abi: erc20Abi,
+        address: erc20z,
+        functionName: "balanceOf",
+        args: [creatorAccount],
+      });
+
+      expect(erc20balance).toBeGreaterThan(0);
+    },
+    30_000,
+  );
+  makeAnvilTest({
+    forkBlockNumber: 17938475,
+    forkUrl: forkUrls.zoraSepolia,
+    anvilChainId: zoraSepolia.id,
+  })(
+    "it can view and withdraw rewards and secondary royalties for mints when secondary market is not activated yet",
+    async ({
+      viemClients: { publicClient, chain, walletClient, testClient },
+    }) => {
+      const creatorAccount = (await walletClient.getAddresses()!)[0]!;
+      const collectorAccount = (await walletClient.getAddresses()!)[1]!;
+
+      const {
+        creatorClient,
+        contractAddress,
+        newTokenId,
+        mintGetter,
+        rewardsGetter,
+      } = await setupContractAndToken({
+        chain,
+        publicClient,
+        creatorAccount,
+        walletClient,
+      });
+
+      await testClient.setBalance({
+        address: collectorAccount,
+        value: parseEther("100"),
+      });
+
+      const quantityToMint = 1111n;
+
+      mintGetter.subgraphQuerier.query = vi
+        .fn<ISubgraphQuerier["query"]>()
+        .mockResolvedValue({
+          zoraCreateToken: mockTimedSaleStrategyTokenQueryResult({
+            chainId: chain.id,
+            tokenId: newTokenId,
+            contractAddress,
+            contractVersion:
+              new1155ContractVersion[
+                chain.id as keyof typeof new1155ContractVersion
+              ],
+          }),
+        });
+
+      const { parameters: collectParameters } = await mint({
+        minterAccount: collectorAccount,
+        mintType: "1155",
+        quantityToMint,
+        tokenId: newTokenId,
+        tokenContract: contractAddress,
+        publicClient,
+        mintGetter,
+      });
+
+      await simulateAndWriteContractWithRetries({
+        parameters: collectParameters,
+        walletClient,
+        publicClient,
+      });
+
+      const erc20z = (await getSecondaryInfo({
+        contract: contractAddress,
+        tokenId: newTokenId,
+        publicClient,
+      }))!.erc20z!;
+
+      // now we should be able to get query rewards balances without any errors
+      // even though secondary market is not activated yet
+
+      const mockResult: CreatorERC20zQueryResult = {
+        zoraCreateTokens: [
+          {
+            salesStrategies: [
+              {
+                zoraTimedMinter: {
+                  erc20Z: { id: erc20z },
+                },
+              },
+            ],
+          },
+        ],
+      };
+
+      // we need to stub the subgraph return
+      rewardsGetter.subgraphQuerier.query = vi
+        .fn<ISubgraphQuerier["query"]>()
+        .mockResolvedValue(mockResult);
+
+      const rewardsBalance = await creatorClient.getRewardsBalances({
+        account: creatorAccount,
+      });
+
+      expect(rewardsBalance.protocolRewards).toBeGreaterThan(0n);
+      expect(rewardsBalance.secondaryRoyalties.erc20[erc20z]).toBeUndefined();
+
+      // it can withdraw all rewards
+      await simulateAndWriteContractWithRetries({
+        parameters: (
+          await creatorClient.withdrawRewards({
+            account: collectorAccount,
+            withdrawFor: creatorAccount,
+            claimSecondaryRoyalties: true,
+          })
+        ).parameters,
+        publicClient,
+        walletClient,
+      });
     },
     30_000,
   );
