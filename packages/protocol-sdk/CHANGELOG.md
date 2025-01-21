@@ -1,5 +1,15 @@
 # @zoralabs/protocol-sdk
 
+## 0.12.0
+
+### Minor Changes
+
+- 2a9d2e86: Changed how we determine which ERC20Z tokens have secondary royalties by querying the royalties contract directly instead of using the subgraph's secondaryActivated field.
+
+  BREAKING: The `withdrawRewards` and `getRewardsBalances` functions now require a `publicClient` parameter to query the royalties contract. Update your calls to include the publicClient when using these functions.
+
+- 615d81cf: Deprecated createCreatorClient and createCollectorClient in favor of using functions directly
+
 ## 0.11.12
 
 ### Patch Changes
