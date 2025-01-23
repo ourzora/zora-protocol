@@ -37,3 +37,7 @@ cointagsFactory:
   - address: "0x7777777BbD0b88aD5F3b5f4c89C6B60D74b9774F"
     startBlock: "23885333"
     version: "1"
+zoraSparks:
+  - address: "0x7777777b3eA6C126942BB14dD5C3C11D365C385D"
+    startBlock: "23920884"
+    version: "1"
