@@ -10,6 +10,7 @@ import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
+import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 import {CoinConstants} from "./utils/CoinConstants.sol";
 import {MultiOwnable} from "./utils/MultiOwnable.sol";
 import {TickMath} from "./utils/TickMath.sol";
@@ -32,7 +33,7 @@ import {IWETH} from "./interfaces/IWETH.sol";
     \$$$$$$  | $$$$$$  |$$$$$$\ $$ | \$$ |
      \______/  \______/ \______|\__|  \__|
 */
-contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, ERC20Upgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
+contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, ContractVersionBase, ERC20Upgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     address public immutable WETH;
@@ -335,11 +336,6 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, ERC20
     /// @notice The contract metadata
     function contractURI() external view returns (string memory) {
         return tokenURI;
-    }
-
-    /// @notice The contract version
-    function contractVersion() external pure returns (string memory) {
-        return "1.0.0";
     }
 
     /// @notice DEPRECATED: For backwards compatibility with legacy Wow coins

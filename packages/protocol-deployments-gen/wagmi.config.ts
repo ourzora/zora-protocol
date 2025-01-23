@@ -31,6 +31,10 @@ import {
   cointagFactoryImplABI,
   cointagImplABI,
 } from "@zoralabs/cointags-contracts";
+import {
+  zoraFactoryImplABI,
+  coinABI,
+} from "@zoralabs/coins";
 
 type Address = `0x${string}`;
 
@@ -483,6 +487,40 @@ const getCointagsContracts = (): ContractConfig[] => {
   ];
 };
 
+const getCoinsContracts = (): ContractConfig[] => {
+  const addresses: Addresses = {};
+
+  const addressesFiles = readdirSync("../coins/addresses");
+
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../coins/addresses/${file}`, "utf-8"),
+      ) as {
+        ZORA_FACTORY: Address;
+      },
+    };
+  });
+
+  addAddress({
+    abi: zoraFactoryImplABI,
+    addresses,
+    configKey: "ZORA_FACTORY",
+    contractName: "ZoraFactory",
+    storedConfigs,
+  });
+
+
+  return [
+    ...toConfig(addresses),
+    {
+      abi: coinABI,
+      name: "Coin",
+    },
+  ];
+};
+
 export default defineConfig({
   out: "./generated/wagmi.ts",
   contracts: [
@@ -493,6 +531,7 @@ export default defineConfig({
     ...getSparksAddresses(),
     ...getSmartWalletContracts(),
     ...getCointagsContracts(),
+    ...getCoinsContracts(),
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",

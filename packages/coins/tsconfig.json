@@ -1,0 +1,9 @@
+{
+  "extends": "@zoralabs/tsconfig/tsconfig.json",
+  "compilerOptions": {
+    "baseUrl": ".",
+    "outDir": "dist"
+  },
+  "exclude": ["node_modules/**", "dist/**"],
+  "include": ["package/**/*.ts", "script/*.ts"]
+}
