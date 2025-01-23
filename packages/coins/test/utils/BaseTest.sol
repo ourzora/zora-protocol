@@ -1,0 +1,174 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import "forge-std/Test.sol";
+
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
+import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
+import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
+import {Coin} from "../../src/Coin.sol";
+import {MultiOwnable} from "../../src/utils/MultiOwnable.sol";
+import {ICoin} from "../../src/interfaces/ICoin.sol";
+import {IERC7572} from "../../src/interfaces/IERC7572.sol";
+import {IWETH} from "../../src/interfaces/IWETH.sol";
+import {INonfungiblePositionManager} from "../../src/interfaces/INonfungiblePositionManager.sol";
+import {ISwapRouter} from "../../src/interfaces/ISwapRouter.sol";
+import {IUniswapV3Pool} from "../../src/interfaces/IUniswapV3Pool.sol";
+import {IProtocolRewards} from "../../src/interfaces/IProtocolRewards.sol";
+import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
+
+contract BaseTest is Test {
+    using stdStorage for StdStorage;
+
+    uint256 internal constant MAX_TOTAL_SUPPLY = 1_000_000_000e18;
+    uint256 internal constant MIN_ORDER_SIZE = 0.0000001 ether;
+    address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
+    address internal constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
+    address internal constant NONFUNGIBLE_POSITION_MANAGER = 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1;
+    address internal constant SWAP_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;
+    address internal constant USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    int24 internal constant USDC_TICK_LOWER = 57200;
+
+    struct Users {
+        address factoryOwner;
+        address feeRecipient;
+        address creator;
+        address platformReferrer;
+        address buyer;
+        address seller;
+        address coinRecipient;
+        address tradeReferrer;
+    }
+
+    uint256 internal forkId;
+    IERC20Metadata internal usdc;
+    IWETH internal weth;
+    ProtocolRewards internal protocolRewards;
+    INonfungiblePositionManager internal nonfungiblePositionManager;
+    ISwapRouter internal swapRouter;
+    Users internal users;
+
+    Coin internal coinImpl;
+    ZoraFactoryImpl internal factoryImpl;
+    ZoraFactoryImpl internal factory;
+    Coin internal coin;
+    IUniswapV3Pool internal pool;
+
+    function setUp() public virtual {
+        forkId = vm.createSelectFork("https://mainnet.base.org", 21179722);
+
+        weth = IWETH(WETH_ADDRESS);
+        usdc = IERC20Metadata(USDC_ADDRESS);
+        nonfungiblePositionManager = INonfungiblePositionManager(NONFUNGIBLE_POSITION_MANAGER);
+        swapRouter = ISwapRouter(SWAP_ROUTER);
+        protocolRewards = new ProtocolRewards();
+
+        users = Users({
+            factoryOwner: makeAddr("factoryOwner"),
+            feeRecipient: makeAddr("feeRecipient"),
+            creator: makeAddr("creator"),
+            platformReferrer: makeAddr("platformReferrer"),
+            buyer: makeAddr("buyer"),
+            seller: makeAddr("seller"),
+            coinRecipient: makeAddr("coinRecipient"),
+            tradeReferrer: makeAddr("tradeReferrer")
+        });
+
+        coinImpl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER);
+        factoryImpl = new ZoraFactoryImpl(address(coinImpl));
+        factory = ZoraFactoryImpl(
+            address(new ZoraFactory(address(factoryImpl), abi.encodeWithSelector(ZoraFactoryImpl.initialize.selector, users.factoryOwner)))
+        );
+
+        vm.label(address(factory), "WOW_FACTORY");
+        vm.label(address(protocolRewards), "PROTOCOL_REWARDS");
+        vm.label(address(nonfungiblePositionManager), "NONFUNGIBLE_POSITION_MANAGER");
+        vm.label(address(swapRouter), "SWAP_ROUTER");
+        vm.label(address(weth), "WETH");
+        vm.label(address(usdc), "USDC");
+    }
+
+    struct TradeRewards {
+        uint256 creator;
+        uint256 platformReferrer;
+        uint256 tradeReferrer;
+        uint256 protocol;
+    }
+
+    struct MarketRewards {
+        uint256 creator;
+        uint256 platformReferrer;
+        uint256 protocol;
+    }
+
+    function _deployCoin() internal {
+        vm.prank(users.creator);
+        coin = Coin(payable(factory.deploy(users.creator, users.platformReferrer, "https://test.com", "Testcoin", "TEST")));
+        pool = IUniswapV3Pool(coin.poolAddress());
+
+        vm.label(address(coin), "COIN");
+        vm.label(address(pool), "POOL");
+    }
+
+    function _deployCoinUSDCPair() internal {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        vm.prank(users.creator);
+        coin = Coin(
+            payable(
+                factory.deploy(
+                    users.creator,
+                    owners,
+                    "https://testusdccoin.com",
+                    "Testusdccoin",
+                    "TESTUSDCCOIN",
+                    users.platformReferrer,
+                    USDC_ADDRESS,
+                    USDC_TICK_LOWER,
+                    0
+                )
+            )
+        );
+        pool = IUniswapV3Pool(coin.poolAddress());
+
+        vm.label(address(coin), "COIN");
+        vm.label(address(pool), "POOL");
+    }
+
+    function _calculateTradeRewards(uint256 ethAmount) internal pure returns (TradeRewards memory) {
+        return
+            TradeRewards({
+                creator: (ethAmount * 5000) / 10_000,
+                platformReferrer: (ethAmount * 1500) / 10_000,
+                tradeReferrer: (ethAmount * 1500) / 10_000,
+                protocol: (ethAmount * 2000) / 10_000
+            });
+    }
+
+    function _calculateExpectedFee(uint256 ethAmount) internal pure returns (uint256) {
+        uint256 feeBps = 100; // 1%
+        return (ethAmount * feeBps) / 10_000;
+    }
+
+    function _calculateMarketRewards(uint256 ethAmount) internal pure returns (MarketRewards memory) {
+        uint256 creator = (ethAmount * 5000) / 10_000;
+        uint256 platformReferrer = (ethAmount * 2500) / 10_000;
+        uint256 protocol = ethAmount - creator - platformReferrer;
+
+        return MarketRewards({creator: creator, platformReferrer: platformReferrer, protocol: protocol});
+    }
+
+    function dealUSDC(address to, uint256 numUSDC) internal returns (uint256) {
+        uint256 amount = numUSDC * 1e6;
+        deal(address(usdc), to, amount);
+        return amount;
+    }
+
+    function uniswapV3SwapCallback(int256 amount0Delta, int256 amount1Delta, bytes calldata data) external {}
+}

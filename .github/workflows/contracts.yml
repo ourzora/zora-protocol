@@ -70,3 +70,14 @@ jobs:
       name: Cointags
       ignore_coverage_files: '"*script*"'
       skip_storage_layout: true
+
+  contracts-coins:
+    name: Coins
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/coins
+      name: Coins
+      skip_storage_layout: true
+      ignore_coverage_files: '"*test*" "*TickMath*"'
+      coverage_args: "--ir-minimum"

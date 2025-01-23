@@ -1,0 +1,16 @@
+# dependencies
+/node_modules
+
+# testing
+/coverage
+
+# misc
+.DS_Store
+*.pem
+
+# local env files
+.env*.local
+
+out
+cache
+broadcast

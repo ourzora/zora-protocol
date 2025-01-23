@@ -1,0 +1,22 @@
+{
+  "name": "@zoralabs/coins",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "build:sizes": "forge build src/ --sizes",
+    "coverage": "forge coverage --report lcov --ir-minimum --no-match-coverage '(test/|src/utils/TickMath.sol|script/)'",
+    "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "test": "forge test -vv"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "^5.0.2",
+    "@openzeppelin/contracts-upgradeable": "^5.0.2"
+  },
+  "devDependencies": {
+    "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
+    "forge-std": "https://github.com/foundry-rs/forge-std#v1.9.1",
+    "prettier": "^3.0.3",
+    "prettier-plugin-solidity": "^1.4.1"
+  }
+}
