@@ -35,7 +35,7 @@
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@turnkey/api-key-stamper": "^0.3.1",
     "@turnkey/http": "^2.5.1",
-    "@turnkey/viem": "^0.4.4",
+    "@turnkey/viem": "^0.6.8",
     "@types/node": "^20.1.2",
     "@wagmi/cli": "^1.0.1",
     "@zoralabs/chains": "^1.3.1",
