@@ -12,6 +12,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
 import {Coin} from "../../src/Coin.sol";
+import {CoinConstants} from "../../src/utils/CoinConstants.sol";
 import {MultiOwnable} from "../../src/utils/MultiOwnable.sol";
 import {ICoin} from "../../src/interfaces/ICoin.sol";
 import {IERC7572} from "../../src/interfaces/IERC7572.sol";
@@ -22,11 +23,9 @@ import {IUniswapV3Pool} from "../../src/interfaces/IUniswapV3Pool.sol";
 import {IProtocolRewards} from "../../src/interfaces/IProtocolRewards.sol";
 import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
 
-contract BaseTest is Test {
+contract BaseTest is Test, CoinConstants {
     using stdStorage for StdStorage;
 
-    uint256 internal constant MAX_TOTAL_SUPPLY = 1_000_000_000e18;
-    uint256 internal constant MIN_ORDER_SIZE = 0.0000001 ether;
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
     address internal constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
     address internal constant NONFUNGIBLE_POSITION_MANAGER = 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1;
