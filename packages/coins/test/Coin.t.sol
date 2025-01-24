@@ -333,14 +333,13 @@ contract CoinTest is BaseTest {
         coin.sell(1e18, badRecipient, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
     }
 
-    function test_receive_function_direct_buy() public {
+    function test_revert_receive_only_weth() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
+        vm.expectRevert(abi.encodeWithSelector(ICoin.OnlyWeth.selector));
         (bool success, ) = address(coin).call{value: 1 ether}("");
-
         assertTrue(success);
-
-        assertGt(coin.balanceOf(users.buyer), 0);
+        assertEq(address(coin).balance, 0, "coin balance");
     }
 
     function test_rewards() public {

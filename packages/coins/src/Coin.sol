@@ -338,13 +338,11 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
             interfaceId == type(IERC165).interfaceId;
     }
 
-    /// @notice Receives ETH and executes a buy order.
+    /// @notice Receives ETH converted from WETH
     receive() external payable {
-        if (msg.sender == WETH) {
-            return;
+        if (msg.sender != WETH) {
+            revert OnlyWeth();
         }
-
-        buy(msg.sender, msg.value, 0, 0, address(0));
     }
 
     /// @dev For receiving the Uniswap V3 LP NFT on market graduation.
