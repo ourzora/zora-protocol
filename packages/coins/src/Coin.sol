@@ -283,7 +283,7 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
     /// @notice Force claim any accrued secondary rewards from the market's liquidity position.
     /// @dev This function is a fallback, secondary rewards will be claimed automatically on each buy and sell.
     /// @param pushEthRewards Whether to push the ETH directly to the recipients.
-    function claimSecondaryRewards(bool pushEthRewards) external {
+    function claimSecondaryRewards(bool pushEthRewards) external nonReentrant {
         MarketRewards memory rewards = _handleMarketRewards();
 
         if (pushEthRewards && rewards.totalAmountCurrency > 0 && currency == WETH) {
