@@ -61,19 +61,6 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
 
         _handleFirstOrder(coin, orderSize);
 
-        emit WowTokenCreated(
-            address(this),
-            payoutRecipient,
-            coin.platformReferrer(),
-            coin.protocolRewardRecipient(),
-            address(0),
-            uri,
-            name,
-            symbol,
-            address(coin),
-            coin.poolAddress()
-        );
-
         emit CoinCreated(
             msg.sender,
             payoutRecipient,

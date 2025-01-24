@@ -98,32 +98,6 @@ interface ICoin {
         MarketRewards marketRewards
     );
 
-    /// @notice Emitted when a Wow token is bought
-    /// @param buyer The address of the buyer
-    /// @param recipient The address of the recipient
-    /// @param tradeReferrer The address of the trade referrer
-    /// @param totalEth The total ETH involved in the transaction
-    /// @param ethFee The ETH fee for the transaction
-    /// @param ethSold The amount of ETH sold
-    /// @param tokensBought The number of tokens bought
-    /// @param buyerTokenBalance The token balance of the buyer after the transaction
-    /// @param comment A comment associated with the transaction
-    /// @param totalSupply The total supply of tokens after the buy
-    /// @param marketType The type of market
-    event WowTokenBuy(
-        address indexed buyer,
-        address indexed recipient,
-        address indexed tradeReferrer,
-        uint256 totalEth,
-        uint256 ethFee,
-        uint256 ethSold,
-        uint256 tokensBought,
-        uint256 buyerTokenBalance,
-        string comment,
-        uint256 totalSupply,
-        MarketType marketType
-    );
-
     /// @notice Emitted when coins are bought
     /// @param buyer The address of the buyer
     /// @param recipient The address of the recipient
@@ -141,32 +115,6 @@ interface ICoin {
         uint256 amountFee,
         uint256 amountSold,
         string comment // TODO remove after backend approval
-    );
-
-    /// @notice Emitted when a Wow token is sold
-    /// @param seller The address of the seller
-    /// @param recipient The address of the recipient
-    /// @param tradeReferrer The address of the trade referrer
-    /// @param totalEth The total ETH involved in the transaction
-    /// @param ethFee The ETH fee for the transaction
-    /// @param ethBought The amount of ETH bought
-    /// @param tokensSold The number of tokens sold
-    /// @param sellerTokenBalance The token balance of the seller after the transaction
-    /// @param comment A comment associated with the transaction
-    /// @param totalSupply The total supply of tokens after the sell
-    /// @param marketType The type of market
-    event WowTokenSell(
-        address indexed seller,
-        address indexed recipient,
-        address indexed tradeReferrer,
-        uint256 totalEth,
-        uint256 ethFee,
-        uint256 ethBought,
-        uint256 tokensSold,
-        uint256 sellerTokenBalance,
-        string comment,
-        uint256 totalSupply,
-        MarketType marketType
     );
 
     /// @notice Emitted when coins are sold
@@ -188,15 +136,6 @@ interface ICoin {
         string comment // TODO remove after backend approval
     );
 
-    /// @notice Emitted when Wow tokens are transferred
-    /// @param from The address of the sender
-    /// @param to The address of the recipient
-    /// @param amount The amount of tokens transferred
-    /// @param fromTokenBalance The token balance of the sender after the transfer
-    /// @param toTokenBalance The token balance of the recipient after the transfer
-    /// @param totalSupply The total supply of tokens after the transfer
-    event WowTokenTransfer(address indexed from, address indexed to, uint256 amount, uint256 fromTokenBalance, uint256 toTokenBalance, uint256 totalSupply);
-
     /// @notice Emitted when a coin is transferred
     /// @param sender The address of the sender
     /// @param recipient The address of the recipient
@@ -204,26 +143,6 @@ interface ICoin {
     /// @param senderBalance The balance of the sender after the transfer
     /// @param recipientBalance The balance of the recipient after the transfer
     event CoinTransfer(address indexed sender, address indexed recipient, uint256 amount, uint256 senderBalance, uint256 recipientBalance);
-
-    /// @notice Emitted when fees are distributed
-    /// @param tokenCreator The address of the token creator
-    /// @param platformReferrer The address of the platform referrer
-    /// @param tradeReferrer The address of the trade referrer
-    /// @param protocolRewardRecipient The address of the protocol fee recipient
-    /// @param tokenCreatorFee The fee for the token creator
-    /// @param platformReferrerFee The fee for the platform referrer
-    /// @param traderReferrerFee The fee for the trade referrer
-    /// @param protocolFee The protocol fee
-    event WowTokenFees(
-        address indexed tokenCreator,
-        address indexed platformReferrer,
-        address indexed tradeReferrer,
-        address protocolRewardRecipient,
-        uint256 tokenCreatorFee,
-        uint256 platformReferrerFee,
-        uint256 traderReferrerFee,
-        uint256 protocolFee
-    );
 
     /// @notice Emitted when trade rewards are distributed
     /// @param creatorPayoutRecipient The address of the creator payout recipient

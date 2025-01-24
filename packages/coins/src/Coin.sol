@@ -174,20 +174,6 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
 
         _handleMarketRewards();
 
-        emit WowTokenBuy(
-            msg.sender,
-            recipient,
-            tradeReferrer,
-            msg.value,
-            tradeReward,
-            trueOrderSize,
-            amountOut,
-            balanceOf(recipient),
-            "",
-            totalSupply(),
-            marketType()
-        );
-
         emit CoinBuy(msg.sender, recipient, tradeReferrer, amountOut, currency, tradeReward, trueOrderSize, "");
 
         return amountOut;
@@ -247,20 +233,6 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
         _handleTradeRewards(tradeReward, tradeReferrer);
 
         _handleMarketRewards();
-
-        emit WowTokenSell(
-            msg.sender,
-            recipient,
-            tradeReferrer,
-            amountOut,
-            tradeReward,
-            payoutSize,
-            orderSize,
-            balanceOf(recipient),
-            "",
-            totalSupply(),
-            marketType()
-        );
 
         emit CoinSell(msg.sender, recipient, tradeReferrer, orderSize, currency, tradeReward, payoutSize, "");
 
@@ -390,8 +362,6 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
     ///      - Emit the superset `WowTokenTransfer` event with each ERC20 transfer.
     function _update(address from, address to, uint256 value) internal virtual override {
         super._update(from, to, value);
-
-        emit WowTokenTransfer(from, to, value, balanceOf(from), balanceOf(to), totalSupply());
 
         emit CoinTransfer(from, to, value, balanceOf(from), balanceOf(to));
     }
@@ -556,17 +526,6 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
             IERC20(currency).safeTransfer(protocolRewardRecipient, protocolFee);
         }
 
-        emit WowTokenFees(
-            payoutRecipient,
-            platformReferrer,
-            _tradeReferrer,
-            protocolRewardRecipient,
-            tokenCreatorFee,
-            platformReferrerFee,
-            tradeReferrerFee,
-            protocolFee
-        );
-
         emit CoinTradeRewards(
             payoutRecipient,
             platformReferrer,
@@ -576,7 +535,7 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
             platformReferrerFee,
             tradeReferrerFee,
             protocolFee,
-            address(0)
+            currency
         );
     }
 
