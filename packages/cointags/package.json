@@ -17,7 +17,8 @@
   "scripts": {
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
-    "test": "forge test -vv",
+    "test": "pnpm generate && forge test -vv",
+    "generate": "pnpm tsx test/integration/generator/generate-token-tests",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test-gas": "forge test --gas-report",
     "build:sizes": "forge build src/ --sizes",
@@ -31,6 +32,7 @@
     "@openzeppelin/contracts": "5.0.2",
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@types/node": "^20.1.2",
+    "handlebars": "^4.7.8",
     "@wagmi/cli": "^1.0.1",
     "@solidity-parser/parser": "0.19.0",
     "@zoralabs/shared-contracts": "workspace:^",
