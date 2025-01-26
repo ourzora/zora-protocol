@@ -86,7 +86,7 @@ contract MultiOwnableTest is BaseTest {
         coin.removeOwner(address(this));
     }
 
-    function test_can_remove_last_owner() public {
+    function test_revert_last_owner_must_revoke() public {
         address newOwner = makeAddr("NewOwner1");
 
         vm.prank(users.creator);
@@ -96,11 +96,16 @@ contract MultiOwnableTest is BaseTest {
         coin.removeOwner(users.creator);
 
         vm.prank(newOwner);
+        vm.expectRevert(abi.encodeWithSelector(MultiOwnable.UseRevokeOwnershipToRemoveSelf.selector));
         coin.removeOwner(newOwner);
+    }
+
+    function test_revoke_ownership() public {
+        vm.prank(users.creator);
+        coin.revokeOwnership();
 
         assertEq(coin.owners().length, 0);
         assertEq(coin.isOwner(users.creator), false);
-        assertEq(coin.isOwner(newOwner), false);
     }
 
     function test_revert_add_owners_with_zero_address() public {

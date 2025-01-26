@@ -16,6 +16,7 @@ contract MultiOwnable is Initializable {
     error OneOwnerRequired();
     error OwnerCannotBeAddressZero();
     error OnlyOwner();
+    error UseRevokeOwnershipToRemoveSelf();
 
     EnumerableSet.AddressSet internal _owners;
 
@@ -103,6 +104,10 @@ contract MultiOwnable is Initializable {
             revert OwnerCannotBeAddressZero();
         }
 
+        if (account == msg.sender) {
+            revert UseRevokeOwnershipToRemoveSelf();
+        }
+
         if (!isOwner(account)) {
             revert NotOwner();
         }
@@ -110,5 +115,12 @@ contract MultiOwnable is Initializable {
         _owners.remove(account);
 
         emit OwnerUpdated(msg.sender, account, address(0));
+    }
+
+    /// @notice Revokes ownership for the caller
+    function revokeOwnership() public onlyOwner {
+        _owners.remove(msg.sender);
+
+        emit OwnerUpdated(msg.sender, msg.sender, address(0));
     }
 }
