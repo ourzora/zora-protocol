@@ -1,16 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-/* 
-    !!!         !!!         !!!    
-    !!!         !!!         !!!    
-    !!!         !!!         !!!    
-    !!!         !!!         !!!    
-    !!!         !!!         !!!    
-    !!!         !!!         !!!    
-
-    WOW         WOW         WOW    
-*/
 interface ICoin {
     /// @notice Thrown when an operation is attempted with a zero address
     error AddressZero();
