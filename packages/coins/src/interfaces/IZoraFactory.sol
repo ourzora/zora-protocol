@@ -32,17 +32,25 @@ interface IZoraFactory {
     /// @notice Thrown when ETH is sent with a transaction but the currency is not WETH
     error EthTransferInvalid();
 
-    /// @notice Deploys a coin
-    /// @param _creator The address of the token creator
-    /// @param _platformReferrer The address of the platform referrer
-    /// @param _tokenURI The ERC20z token URI
-    /// @param _name The ERC20 token name
-    /// @param _symbol The ERC20 token symbol
+    /// @notice Creates a new coin contract
+    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
+    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
+    /// @param uri The coin metadata uri
+    /// @param name The name of the coin
+    /// @param symbol The symbol of the coin
+    /// @param platformReferrer The address to receive platform referral rewards
+    /// @param currency The address of the trading currency; address(0) for ETH/WETH
+    /// @param tickLower The lower tick for the Uniswap V3 LP position; ignored for ETH/WETH pairs
+    /// @param orderSize The order size for the first buy; must match msg.value for ETH/WETH pairs
     function deploy(
-        address _creator,
-        address _platformReferrer,
-        string memory _tokenURI,
-        string memory _name,
-        string memory _symbol
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        address platformReferrer,
+        address currency,
+        int24 tickLower,
+        uint256 orderSize
     ) external payable returns (address);
 }

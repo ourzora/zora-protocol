@@ -60,18 +60,6 @@ interface ICoin {
     /// @notice Thrown when the lower tick is not less than the maximum tick or not a multiple of 200
     error InvalidCurrencyLowerTick();
 
-    /// @notice Represents the type of market
-    enum MarketType {
-        BONDING_CURVE,
-        UNISWAP_POOL
-    }
-
-    /// @notice Represents the state of the market
-    struct MarketState {
-        MarketType marketType;
-        address marketAddress;
-    }
-
     /// @notice The rewards accrued from the market's liquidity position
     struct MarketRewards {
         uint256 totalAmountCurrency;
@@ -178,38 +166,26 @@ interface ICoin {
     /// @param name The coin name
     event ContractMetadataUpdated(address indexed caller, string newURI, string name);
 
-    /// @notice Executes an order to buy coins with ETH
+    /// @notice Executes a buy order
     /// @param recipient The recipient address of the coins
+    /// @param orderSize The amount of coins to buy
     /// @param tradeReferrer The address of the trade referrer
-    /// @param comment A comment associated with the buy order
-    /// @param minOrderSize The minimum coins to prevent slippage
     /// @param sqrtPriceLimitX96 The price limit for Uniswap V3 pool swap
     function buy(
         address recipient,
-        address /* refundRecipient - deprecated */,
-        address tradeReferrer,
-        string memory comment,
-        MarketType /* expectedMarketType - deprecated */,
-        uint256 minOrderSize,
-        uint160 sqrtPriceLimitX96
+        uint256 orderSize,
+        uint256 minAmountOut,
+        uint160 sqrtPriceLimitX96,
+        address tradeReferrer
     ) external payable returns (uint256);
 
-    /// @notice Executes an order to sell coins for ETH
-    /// @param amount The number of coins to sell
-    /// @param recipient The address to receive the ETH
+    /// @notice Executes a sell order
+    /// @param recipient The recipient of the currency
+    /// @param orderSize The amount of coins to sell
+    /// @param minAmountOut The minimum amount of currency to receive
+    /// @param sqrtPriceLimitX96 The price limit for the swap
     /// @param tradeReferrer The address of the trade referrer
-    /// @param comment A comment associated with the sell order
-    /// @param minPayoutSize The minimum ETH payout to prevent slippage
-    /// @param sqrtPriceLimitX96 The price limit for Uniswap V3 pool swap
-    function sell(
-        uint256 amount,
-        address recipient,
-        address tradeReferrer,
-        string memory comment,
-        MarketType /* expectedMarketType - deprecated */,
-        uint256 minPayoutSize,
-        uint160 sqrtPriceLimitX96
-    ) external returns (uint256);
+    function sell(address recipient, uint256 orderSize, uint256 minAmountOut, uint160 sqrtPriceLimitX96, address tradeReferrer) external returns (uint256);
 
     /// @notice Enables a user to burn their tokens
     /// @param amount The amount of tokens to burn

@@ -77,28 +77,6 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         return address(coin);
     }
 
-    /// @notice DEPRECATED: For backwards compatibility with legacy Wow
-    /// @dev This defaults to an ETH-based coin with the given `creator` as the payout recipient and only owner
-    /// @param creator The creator address
-    /// @param platformReferrer The platform referrer address
-    /// @param tokenURI The coin uri
-    /// @param name The coin name
-    /// @param symbol The coin symbol
-    function deploy(
-        address creator,
-        address platformReferrer,
-        string memory tokenURI,
-        string memory name,
-        string memory symbol
-    ) external payable returns (address) {
-        address[] memory initialOwners = new address[](1);
-        initialOwners[0] = creator;
-
-        address coin = deploy(creator, initialOwners, tokenURI, name, symbol, platformReferrer, address(0), 0, msg.value);
-
-        return coin;
-    }
-
     /// @dev Generates a unique salt for deterministic deployment
     function _generateSalt(address _creator, string memory _tokenURI) internal view returns (bytes32) {
         return

@@ -14,8 +14,11 @@ contract FactoryTest is BaseTest {
     }
 
     function test_deploy_no_eth() public {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
         vm.prank(users.creator);
-        coin = Coin(payable(factory.deploy(users.creator, users.platformReferrer, "https://test2.com", "Test2 Token", "TEST2")));
+        coin = Coin(payable(factory.deploy(users.creator, owners, "https://test2.com", "Test2 Token", "TEST2", users.platformReferrer, address(0), 0, 0)));
         pool = IUniswapV3Pool(coin.poolAddress());
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");
@@ -32,7 +35,7 @@ contract FactoryTest is BaseTest {
         console.log("POOL_ETH_BALANCE: ", poolEthBalance);
         console.log("");
 
-        assertEq(coin.tokenCreator(), users.creator, "creator");
+        assertEq(coin.payoutRecipient(), users.creator, "payoutRecipient");
         assertEq(coin.protocolRewardRecipient(), users.feeRecipient, "protocolRewardRecipient");
         assertEq(coin.platformReferrer(), users.platformReferrer, "platformReferrer");
         assertEq(coin.tokenURI(), "https://test2.com", "tokenURI");
@@ -50,9 +53,26 @@ contract FactoryTest is BaseTest {
         vm.assume(initialOrderSize > MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 10 ether);
 
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
         vm.deal(users.creator, initialOrderSize);
         vm.prank(users.creator);
-        coin = Coin(payable(factory.deploy{value: initialOrderSize}(users.creator, users.platformReferrer, "https://test2.com", "Test2 Token", "TEST2")));
+        coin = Coin(
+            payable(
+                factory.deploy{value: initialOrderSize}(
+                    users.creator,
+                    owners,
+                    "https://test2.com",
+                    "Test2 Token",
+                    "TEST2",
+                    users.platformReferrer,
+                    address(0),
+                    0,
+                    initialOrderSize
+                )
+            )
+        );
         pool = IUniswapV3Pool(coin.poolAddress());
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");

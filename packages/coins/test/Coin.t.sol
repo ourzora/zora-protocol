@@ -51,22 +51,26 @@ contract CoinTest is BaseTest {
     }
 
     function test_initialize_validation() public {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        coin = Coin(payable(factory.deploy(address(0), users.platformReferrer, "https://init.com", "Init Token", "INIT")));
+        coin = Coin(payable(factory.deploy(address(0), owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(0), 0, 0)));
 
-        coin = Coin(payable(factory.deploy(users.creator, address(0), "https://init.com", "Init Token", "INIT")));
+        coin = Coin(payable(factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", address(0), address(0), 0, 0)));
 
-        assertEq(coin.tokenCreator(), users.creator);
         assertEq(coin.payoutRecipient(), users.creator);
         assertEq(coin.platformReferrer(), users.feeRecipient);
         assertEq(coin.tokenURI(), "https://init.com");
         assertEq(coin.name(), "Init Token");
         assertEq(coin.symbol(), "INIT");
-        assertEq(uint8(coin.marketType()), uint8(ICoin.MarketType.UNISWAP_POOL));
     }
 
     function test_revert_already_initialized() public {
-        coin = Coin(payable(factory.deploy(users.creator, users.platformReferrer, "https://init.com", "Init Token", "INIT")));
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        coin = Coin(payable(factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(0), 0, 0)));
 
         vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
         coin.initialize(users.creator, new address[](0), "https://init.com", "Init Token", "INIT", users.platformReferrer, address(0), 0);
@@ -80,7 +84,7 @@ contract CoinTest is BaseTest {
     function test_buy_with_eth() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
 
         assertGt(coin.balanceOf(users.coinRecipient), 0);
         assertEq(users.seller.balance, 0);
@@ -97,7 +101,7 @@ contract CoinTest is BaseTest {
 
         vm.deal(users.buyer, ethOrderSize);
         vm.prank(users.buyer);
-        coin.buy{value: ethOrderSize}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: ethOrderSize}(users.coinRecipient, ethOrderSize, 0, 0, users.tradeReferrer);
 
         assertGt(coin.balanceOf(users.coinRecipient), 0, "coinRecipient coin balance");
         assertGt(protocolRewards.balanceOf(users.feeRecipient), feeRecipientBalanceBeforeSale, "feeRecipient eth balance");
@@ -108,14 +112,14 @@ contract CoinTest is BaseTest {
 
     function test_buy_with_eth_too_small() public {
         vm.expectRevert(abi.encodeWithSelector(ICoin.EthAmountTooSmall.selector));
-        coin.buy{value: MIN_ORDER_SIZE - 1}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: MIN_ORDER_SIZE - 1}(users.coinRecipient, MIN_ORDER_SIZE - 1, 0, 0, users.tradeReferrer);
     }
 
     function test_buy_with_minimum_eth() public {
-        uint256 minEth = 0.000001 ether;
+        uint256 minEth = MIN_ORDER_SIZE;
         vm.deal(users.buyer, minEth);
         vm.prank(users.buyer);
-        coin.buy{value: minEth}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: minEth}(users.coinRecipient, minEth, 0, 0, users.tradeReferrer);
 
         assertGt(coin.balanceOf(users.coinRecipient), 0, "coinRecipient coin balance");
     }
@@ -125,7 +129,7 @@ contract CoinTest is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(address(0), users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(address(0), 1 ether, 0, 0, users.tradeReferrer);
     }
 
     function test_revert_buy_zero_address_recipient() public {
@@ -163,11 +167,11 @@ contract CoinTest is BaseTest {
     function test_sell_for_eth() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.seller, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.seller, 1 ether, 0, 0, users.tradeReferrer);
 
         uint256 tokensToSell = coin.balanceOf(users.seller);
         vm.prank(users.seller);
-        coin.sell(tokensToSell, users.seller, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.sell(users.seller, tokensToSell, 0, 0, users.tradeReferrer);
 
         assertEq(coin.balanceOf(users.seller), 0, "seller coin balance");
         assertGt(users.seller.balance, 0, "seller eth balance");
@@ -179,7 +183,7 @@ contract CoinTest is BaseTest {
 
         vm.deal(users.buyer, ethOrderSize);
         vm.prank(users.buyer);
-        coin.buy{value: ethOrderSize}(users.seller, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: ethOrderSize}(users.seller, ethOrderSize, 0, 0, users.tradeReferrer);
 
         uint256 platformReferrerBalanceBeforeSale = users.platformReferrer.balance;
         uint256 orderReferrerBalanceBeforeSale = users.tradeReferrer.balance;
@@ -188,7 +192,7 @@ contract CoinTest is BaseTest {
 
         uint256 tokensToSell = coin.balanceOf(users.seller);
         vm.prank(users.seller);
-        coin.sell(tokensToSell, users.coinRecipient, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.sell(users.coinRecipient, tokensToSell, 0, 0, users.tradeReferrer);
 
         assertEq(coin.balanceOf(users.seller), 0, "seller coin balance");
         assertEq(coin.balanceOf(users.coinRecipient), 0, "coinRecipient coin balance");
@@ -220,29 +224,29 @@ contract CoinTest is BaseTest {
     function test_revert_sell_zero_address_recipient() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.seller, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.seller, 1 ether, 0, 0, users.tradeReferrer);
 
         uint256 tokensToSell = coin.balanceOf(users.seller);
         vm.prank(users.seller);
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        coin.sell(tokensToSell, address(0), users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.sell(address(0), tokensToSell, 0, 0, users.tradeReferrer);
     }
 
     function test_revert_sell_insufficient_liquidity() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.seller, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.seller, 1 ether, 0, 0, users.tradeReferrer);
 
         uint256 balance = coin.balanceOf(users.seller);
         vm.prank(users.seller);
         vm.expectRevert(abi.encodeWithSignature("ERC20InsufficientBalance(address,uint256,uint256)", users.seller, balance, balance + 1));
-        coin.sell(balance + 1, users.coinRecipient, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.sell(users.coinRecipient, balance + 1, 0, 0, users.tradeReferrer);
     }
 
     function test_burn() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, users.buyer, address(0), "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
 
         uint256 beforeBalance = coin.balanceOf(users.coinRecipient);
         uint256 beforeTotalSupply = coin.totalSupply();
@@ -261,7 +265,7 @@ contract CoinTest is BaseTest {
         uint256 orderSize = 1 ether;
         vm.deal(users.buyer, orderSize);
         vm.prank(users.buyer);
-        coin.buy{value: orderSize}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: orderSize}(users.coinRecipient, orderSize, 0, 0, users.tradeReferrer);
 
         vm.deal(WETH_ADDRESS, 1 ether);
         vm.prank(WETH_ADDRESS);
@@ -275,11 +279,14 @@ contract CoinTest is BaseTest {
     }
 
     function test_default_platform_referrer() public {
-        Coin newCoin = Coin(payable(factory.deploy(users.creator, address(0), "https://test.com", "Test Token", "TEST")));
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        Coin newCoin = Coin(payable(factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(0), 0, 0)));
 
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        newCoin.buy{value: 1 ether}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        newCoin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
 
         uint256 fee = _calculateExpectedFee(1 ether);
         TradeRewards memory expectedFees = _calculateTradeRewards(fee);
@@ -290,7 +297,7 @@ contract CoinTest is BaseTest {
     function test_default_order_referrer() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, users.buyer, address(0), "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, address(0));
 
         uint256 fee = _calculateExpectedFee(1 ether);
         TradeRewards memory expectedFees = _calculateTradeRewards(fee);
@@ -301,32 +308,16 @@ contract CoinTest is BaseTest {
     function test_market_slippage() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
 
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
         vm.expectRevert("Too little received"); // Uniswap V3 revert
-        coin.buy{value: 1 ether}(
-            users.coinRecipient,
-            users.buyer,
-            users.tradeReferrer,
-            "",
-            ICoin.MarketType.UNISWAP_POOL,
-            type(uint256).max, // Unreasonably high minOrderSize
-            0
-        );
+        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, type(uint256).max, 0, users.tradeReferrer);
 
         vm.prank(users.coinRecipient);
         vm.expectRevert("Too little received"); // Uniswap V3 revert
-        coin.sell(
-            1e18,
-            users.coinRecipient,
-            users.tradeReferrer,
-            "",
-            ICoin.MarketType.UNISWAP_POOL,
-            type(uint256).max, // Unreasonably high minPayoutSize
-            0
-        );
+        coin.sell(users.coinRecipient, 1e18, type(uint256).max, 0, users.tradeReferrer);
     }
 
     function test_uniswap_swap_callback() public {
@@ -338,7 +329,7 @@ contract CoinTest is BaseTest {
     function test_eth_transfer_fail() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
 
         // Recipient reverts on ETH receive
         address payable badRecipient = payable(makeAddr("badRecipient"));
@@ -346,7 +337,7 @@ contract CoinTest is BaseTest {
 
         vm.prank(users.coinRecipient);
         vm.expectRevert(abi.encodeWithSelector(Address.FailedInnerCall.selector));
-        coin.sell(1e18, badRecipient, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.sell(badRecipient, 1e18, 0, 0, users.tradeReferrer);
     }
 
     function test_revert_receive_only_weth() public {
@@ -367,7 +358,7 @@ contract CoinTest is BaseTest {
         uint256 buyAmount = 1 ether;
         vm.deal(users.buyer, buyAmount);
         vm.prank(users.buyer);
-        coin.buy{value: buyAmount}(users.coinRecipient, users.buyer, users.tradeReferrer, "", ICoin.MarketType.UNISWAP_POOL, 0, 0);
+        coin.buy{value: buyAmount}(users.coinRecipient, buyAmount, 0, 0, users.tradeReferrer);
 
         uint256 orderFee = _calculateExpectedFee(buyAmount); // 1 ETH * 1% --> 0.01 ETH
         TradeRewards memory orderFees = _calculateTradeRewards(orderFee);

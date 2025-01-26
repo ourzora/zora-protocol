@@ -106,8 +106,11 @@ contract BaseTest is Test, CoinConstants {
     }
 
     function _deployCoin() internal {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
         vm.prank(users.creator);
-        coin = Coin(payable(factory.deploy(users.creator, users.platformReferrer, "https://test.com", "Testcoin", "TEST")));
+        coin = Coin(payable(factory.deploy(users.creator, owners, "https://test.com", "Testcoin", "TEST", users.platformReferrer, address(0), 0, 0)));
         pool = IUniswapV3Pool(coin.poolAddress());
 
         vm.label(address(coin), "COIN");

@@ -250,41 +250,6 @@ contract Coin is
         return amountOut;
     }
 
-    /// @notice DEPRECATED: For backwards compatibility with buy orders on legacy Wow coins
-    /// @param recipient The recipient address of the coins
-    /// @param tradeReferrer The address of the trade referrer
-    /// @param minOrderSize The minimum coins to prevent slippage
-    /// @param sqrtPriceLimitX96 The price limit for Uniswap V3 pool swap
-    function buy(
-        address recipient,
-        address /* refundRecipient - deprecated */,
-        address tradeReferrer,
-        string memory /* comment - deprecated */,
-        MarketType /* expectedMarketType - deprecated */,
-        uint256 minOrderSize,
-        uint160 sqrtPriceLimitX96
-    ) public payable returns (uint256) {
-        return buy(recipient, msg.value, minOrderSize, sqrtPriceLimitX96, tradeReferrer);
-    }
-
-    /// @notice DEPRECATED: For backwards compatibility with sell orders on legacy Wow coins
-    /// @param amount The number of coins to sell
-    /// @param recipient The address to receive the ETH
-    /// @param tradeReferrer The address of the trade referrer
-    /// @param minPayoutSize The minimum ETH payout to prevent slippage
-    /// @param sqrtPriceLimitX96 The price limit for Uniswap V3 pool swap
-    function sell(
-        uint256 amount,
-        address recipient,
-        address tradeReferrer,
-        string memory /* comment - deprecated */,
-        MarketType /* expectedMarketType - deprecated */,
-        uint256 minPayoutSize,
-        uint160 sqrtPriceLimitX96
-    ) external returns (uint256) {
-        return sell(recipient, amount, minPayoutSize, sqrtPriceLimitX96, tradeReferrer);
-    }
-
     /// @notice Enables a user to burn their tokens
     /// @param amount The amount of tokens to burn
     function burn(uint256 amount) external {
@@ -319,24 +284,6 @@ contract Coin is
     /// @notice The contract metadata
     function contractURI() external view returns (string memory) {
         return tokenURI;
-    }
-
-    /// @notice DEPRECATED: For backwards compatibility with legacy Wow coins
-    /// @dev The creator's payout address
-    function tokenCreator() public view returns (address) {
-        return payoutRecipient;
-    }
-
-    /// @notice DEPRECATED: For backwards compatibility with legacy Wow coins
-    /// @dev The market type
-    function marketType() public pure returns (MarketType) {
-        return MarketType.UNISWAP_POOL;
-    }
-
-    /// @notice DEPRECATED: For backwards compatibility with legacy Wow coins
-    /// @dev The current coin market state and address
-    function state() external view returns (MarketState memory) {
-        return MarketState({marketType: marketType(), marketAddress: poolAddress});
     }
 
     /// @notice ERC165 interface support
