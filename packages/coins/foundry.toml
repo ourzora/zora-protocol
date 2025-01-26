@@ -3,6 +3,7 @@ src = "src"
 test = "test"
 libs = ["node_modules"]
 via_ir = true
+optimizer = true
 
 [profile.ci.fuzz]
 runs = 1000
