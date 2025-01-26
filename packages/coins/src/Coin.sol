@@ -6,7 +6,7 @@ import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Recei
 import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {ERC20Upgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
@@ -33,7 +33,17 @@ import {IWETH} from "./interfaces/IWETH.sol";
     \$$$$$$  | $$$$$$  |$$$$$$\ $$ | \$$ |
      \______/  \______/ \______|\__|  \__|
 */
-contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, ContractVersionBase, ERC20Upgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
+contract Coin is
+    ICoin,
+    IERC165,
+    IERC721Receiver,
+    IERC7572,
+    CoinConstants,
+    ContractVersionBase,
+    ERC20PermitUpgradeable,
+    MultiOwnable,
+    ReentrancyGuardUpgradeable
+{
     using SafeERC20 for IERC20;
 
     address public immutable WETH;
@@ -104,6 +114,7 @@ contract Coin is ICoin, IERC165, IERC721Receiver, IERC7572, CoinConstants, Contr
 
         // Set base contract state
         __ERC20_init(name_, symbol_);
+        __ERC20Permit_init(name_);
         __MultiOwnable_init(owners_);
         __ReentrancyGuard_init();
 
