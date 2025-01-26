@@ -60,7 +60,7 @@ abstract contract CoinConstants {
 
     /// @notice The LP's lower tick
     /// @dev This is only used if the currency is WETH
-    int24 internal constant LP_TICK_LOWER = -219200;
+    int24 internal constant LP_TICK_LOWER_WETH = -219200;
 
     /// @notice The LP's upper tick
     int24 internal constant LP_TICK_UPPER = 887200;

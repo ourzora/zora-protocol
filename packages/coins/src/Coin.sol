@@ -345,9 +345,9 @@ contract Coin is
 
     /// @dev Deploy the pool
     function _deployPool(int24 tickLower_) internal {
-        // If WETH is passed or set as the currency, set the default lower tick
-        if (currency == WETH) {
-            tickLower_ = LP_TICK_LOWER;
+        // If WETH is the pool's currency, validate the lower tick
+        if (currency == WETH && tickLower_ != LP_TICK_LOWER_WETH) {
+            revert InvalidWethLowerTick();
         }
 
         // Note: This validation happens on the Uniswap pool already; reverting early here for clarity
@@ -396,11 +396,11 @@ contract Coin is
         (lpTokenId, , , ) = INonfungiblePositionManager(nonfungiblePositionManager).mint(params);
     }
 
-    /// @dev Handles incoming currency for buy orders, either ETH/WETH or ERC20 tokens
+    /// @dev Handles incoming currency transfers for buy orders; if WETH is the currency the caller has the option to send native-ETH
     /// @param orderSize The total size of the order in the currency
     /// @param trueOrderSize The actual amount being used for the swap after fees
     function _handleIncomingCurrency(uint256 orderSize, uint256 trueOrderSize) internal {
-        if (currency == WETH) {
+        if (currency == WETH && msg.value > 0) {
             if (msg.value != orderSize) {
                 revert EthAmountMismatch();
             }

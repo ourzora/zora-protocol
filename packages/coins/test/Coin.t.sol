@@ -55,9 +55,11 @@ contract CoinTest is BaseTest {
         owners[0] = users.creator;
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        coin = Coin(payable(factory.deploy(address(0), owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(0), 0, 0)));
+        coin = Coin(
+            payable(factory.deploy(address(0), owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0))
+        );
 
-        coin = Coin(payable(factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", address(0), address(0), 0, 0)));
+        coin = Coin(payable(factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", address(0), address(weth), LP_TICK_LOWER_WETH, 0)));
 
         assertEq(coin.payoutRecipient(), users.creator);
         assertEq(coin.platformReferrer(), users.feeRecipient);
@@ -70,10 +72,14 @@ contract CoinTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        coin = Coin(payable(factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(0), 0, 0)));
+        coin = Coin(
+            payable(
+                factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
+            )
+        );
 
         vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
-        coin.initialize(users.creator, new address[](0), "https://init.com", "Init Token", "INIT", users.platformReferrer, address(0), 0);
+        coin.initialize(users.creator, new address[](0), "https://init.com", "Init Token", "INIT", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH);
     }
 
     function test_erc165_interface_support() public view {
@@ -282,7 +288,11 @@ contract CoinTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        Coin newCoin = Coin(payable(factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(0), 0, 0)));
+        Coin newCoin = Coin(
+            payable(
+                factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
+            )
+        );
 
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);

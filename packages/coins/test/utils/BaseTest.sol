@@ -84,7 +84,7 @@ contract BaseTest is Test, CoinConstants {
             address(new ZoraFactory(address(factoryImpl), abi.encodeWithSelector(ZoraFactoryImpl.initialize.selector, users.factoryOwner)))
         );
 
-        vm.label(address(factory), "WOW_FACTORY");
+        vm.label(address(factory), "ZORA_FACTORY");
         vm.label(address(protocolRewards), "PROTOCOL_REWARDS");
         vm.label(address(nonfungiblePositionManager), "NONFUNGIBLE_POSITION_MANAGER");
         vm.label(address(swapRouter), "SWAP_ROUTER");
@@ -110,7 +110,9 @@ contract BaseTest is Test, CoinConstants {
         owners[0] = users.creator;
 
         vm.prank(users.creator);
-        coin = Coin(payable(factory.deploy(users.creator, owners, "https://test.com", "Testcoin", "TEST", users.platformReferrer, address(0), 0, 0)));
+        coin = Coin(
+            payable(factory.deploy(users.creator, owners, "https://test.com", "Testcoin", "TEST", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0))
+        );
         pool = IUniswapV3Pool(coin.poolAddress());
 
         vm.label(address(coin), "COIN");

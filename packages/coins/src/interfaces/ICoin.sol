@@ -60,6 +60,9 @@ interface ICoin {
     /// @notice Thrown when the lower tick is not less than the maximum tick or not a multiple of 200
     error InvalidCurrencyLowerTick();
 
+    /// @notice Thrown when the lower tick is not set to the default value
+    error InvalidWethLowerTick();
+
     /// @notice The rewards accrued from the market's liquidity position
     struct MarketRewards {
         uint256 totalAmountCurrency;

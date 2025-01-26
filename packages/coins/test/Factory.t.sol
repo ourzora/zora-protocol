@@ -18,7 +18,11 @@ contract FactoryTest is BaseTest {
         owners[0] = users.creator;
 
         vm.prank(users.creator);
-        coin = Coin(payable(factory.deploy(users.creator, owners, "https://test2.com", "Test2 Token", "TEST2", users.platformReferrer, address(0), 0, 0)));
+        coin = Coin(
+            payable(
+                factory.deploy(users.creator, owners, "https://test2.com", "Test2 Token", "TEST2", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
+            )
+        );
         pool = IUniswapV3Pool(coin.poolAddress());
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");
@@ -67,8 +71,8 @@ contract FactoryTest is BaseTest {
                     "Test2 Token",
                     "TEST2",
                     users.platformReferrer,
-                    address(0),
-                    0,
+                    address(weth),
+                    LP_TICK_LOWER_WETH,
                     initialOrderSize
                 )
             )
@@ -108,8 +112,8 @@ contract FactoryTest is BaseTest {
                     "Test2 Token",
                     "TEST2",
                     users.platformReferrer,
-                    address(0),
-                    0,
+                    address(weth),
+                    LP_TICK_LOWER_WETH,
                     orderSize
                 )
             )
@@ -205,10 +209,11 @@ contract FactoryTest is BaseTest {
         assertEq(coin.platformReferrer(), coin.protocolRewardRecipient(), "platformReferrer");
     }
 
-    function test_deploy_with_usdc_currency_zero() public {
+    function test_revert_deploy_with_invalid_currency_tick() public {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
+        vm.expectRevert(abi.encodeWithSelector(ICoin.InvalidWethLowerTick.selector));
         coin = Coin(
             payable(
                 factory.deploy(
@@ -224,7 +229,6 @@ contract FactoryTest is BaseTest {
                 )
             )
         );
-        assertEq(coin.currency(), address(weth), "currency");
     }
 
     function test_deploy_with_usdc_revert_invalid_eth_transfer() public {
@@ -258,7 +262,11 @@ contract FactoryTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        coin = Coin(payable(factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(0), 0, 0)));
+        coin = Coin(
+            payable(
+                factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
+            )
+        );
 
         assertEq(coin.balanceOf(users.creator), 10_000_000e18, "Should only have initial creator allocation");
     }
