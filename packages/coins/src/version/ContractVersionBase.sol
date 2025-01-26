@@ -4,9 +4,11 @@ pragma solidity ^0.8.23;
 
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
 
+/// @title ContractVersionBase
+/// @notice Base contract for versioning contracts
 contract ContractVersionBase is IVersionedContract {
-    /// @notice The contract version
+    /// @notice The version of the contract
     function contractVersion() external pure override returns (string memory) {
-        return "0.0.0";
+        return "0.1.0";
     }
 }
