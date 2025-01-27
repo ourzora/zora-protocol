@@ -1,10 +1,17 @@
 # @zoralabs/protocol-deployments
 
+## 0.4.2
+
+### Patch Changes
+
+- 1e10ac74: - Fixed coins package visibility
+  - Renamed export to `coinFactory*`
+
 ## 0.4.1
 
 ### Patch Changes
 
-- 855112de: Add initial coins 
+- 855112de: Add initial coins
 
 ## 0.4.0
 
