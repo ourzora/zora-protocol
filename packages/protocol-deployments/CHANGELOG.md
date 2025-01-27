@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.4.1
+
+### Patch Changes
+
+- 855112de: Add initial coins 
+
 ## 0.4.0
 
 ### Minor Changes
