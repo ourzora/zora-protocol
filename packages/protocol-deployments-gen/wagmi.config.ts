@@ -507,7 +507,7 @@ const getCoinsContracts = (): ContractConfig[] => {
     abi: zoraFactoryImplABI,
     addresses,
     configKey: "ZORA_FACTORY",
-    contractName: "ZoraFactory",
+    contractName: "CoinFactory",
     storedConfigs,
   });
 
