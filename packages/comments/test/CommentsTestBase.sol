@@ -7,12 +7,14 @@ import {CommentsImpl} from "../src/CommentsImpl.sol";
 import {Comments} from "../src/proxy/Comments.sol";
 import {IComments} from "../src/interfaces/IComments.sol";
 import {Mock1155} from "./mocks/Mock1155.sol";
+import {MockCoin} from "./mocks/MockCoin.sol";
 import {ProtocolRewards} from "./mocks/ProtocolRewards.sol";
 
 contract CommentsTestBase is Test {
     CommentsImpl internal comments;
     CommentsImpl internal commentsImpl;
     Mock1155 internal mock1155;
+    MockCoin internal mockCoin;
 
     uint256 internal constant SPARKS_VALUE = 0.000001 ether;
 
@@ -30,6 +32,7 @@ contract CommentsTestBase is Test {
     address internal sparker;
     uint256 internal sparkerPrivateKey;
 
+    uint256 internal tokenId0 = 0;
     uint256 internal tokenId1 = 1;
     uint256 internal tokenId2 = 2;
 
@@ -52,6 +55,10 @@ contract CommentsTestBase is Test {
 
         (collectorWithToken, collectorWithTokenPrivateKey) = makeAddrAndKey("collectorWithToken");
         (sparker, sparkerPrivateKey) = makeAddrAndKey("sparker");
+
+        address[] memory owners = new address[](1);
+        owners[0] = tokenAdmin;
+        mockCoin = new MockCoin(tokenAdmin, owners);
     }
 
     function _expectedCommentIdentifier(

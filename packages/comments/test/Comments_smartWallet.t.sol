@@ -149,4 +149,101 @@ contract Comments_smartWallet is CommentsTestBase {
             referrer: address(0)
         });
     }
+
+    function test_commentWithSmartWalletOwner_whenCoinHolder() public {
+        address smartWallet = address(new MockMultiOwnable(address(collectorWithoutToken)));
+
+        mockCoin.mint(smartWallet, 1e18);
+
+        IComments.CommentIdentifier memory expectedCommentId = _expectedCommentIdentifier(address(mockCoin), tokenId0, collectorWithoutToken);
+
+        vm.deal(collectorWithoutToken, SPARKS_VALUE);
+        vm.prank(collectorWithoutToken);
+        comments.comment{value: SPARKS_VALUE}({
+            commenter: collectorWithoutToken,
+            contractAddress: address(mockCoin),
+            tokenId: tokenId0,
+            text: "test comment",
+            replyTo: emptyCommentIdentifier,
+            commenterSmartWallet: smartWallet,
+            referrer: address(0)
+        });
+
+        (, bool exists) = comments.hashAndCheckCommentExists(expectedCommentId);
+        assertTrue(exists);
+    }
+
+    function test_commentWithSmartWalletOwner_whenCoinOwner() public {
+        address smartWallet = address(new MockMultiOwnable(address(tokenAdmin)));
+
+        IComments.CommentIdentifier memory expectedCommentId = _expectedCommentIdentifier(address(mockCoin), tokenId0, tokenAdmin);
+
+        vm.prank(tokenAdmin);
+        comments.comment({
+            commenter: tokenAdmin,
+            contractAddress: address(mockCoin),
+            tokenId: tokenId0,
+            text: "test comment",
+            replyTo: emptyCommentIdentifier,
+            commenterSmartWallet: smartWallet,
+            referrer: address(0)
+        });
+
+        (, bool exists) = comments.hashAndCheckCommentExists(expectedCommentId);
+        assertTrue(exists);
+    }
+
+    function test_commentWithSmartWalletOwner_revertsWhenNotCoinHolder() public {
+        address smartWallet = address(new MockMultiOwnable(address(collectorWithoutToken)));
+
+        vm.expectRevert(abi.encodeWithSelector(IComments.NotTokenHolderOrAdmin.selector));
+        vm.prank(collectorWithoutToken);
+        vm.deal(collectorWithoutToken, SPARKS_VALUE);
+        comments.comment{value: SPARKS_VALUE}({
+            commenter: collectorWithoutToken,
+            contractAddress: address(mockCoin),
+            tokenId: tokenId0,
+            text: "test comment",
+            replyTo: emptyCommentIdentifier,
+            commenterSmartWallet: smartWallet,
+            referrer: address(0)
+        });
+    }
+
+    function test_commentWithSmartWalletOwner_revertsWhenNotCoinSmartWalletOwner() public {
+        address smartWallet = address(new MockMultiOwnable(address(makeAddr("notOwner"))));
+
+        mockCoin.mint(smartWallet, 1e18);
+
+        vm.expectRevert(IComments.NotSmartWalletOwner.selector);
+        vm.prank(collectorWithoutToken);
+        vm.deal(collectorWithoutToken, SPARKS_VALUE);
+        comments.comment{value: SPARKS_VALUE}({
+            commenter: collectorWithoutToken,
+            contractAddress: address(mockCoin),
+            tokenId: tokenId0,
+            text: "test comment",
+            replyTo: emptyCommentIdentifier,
+            commenterSmartWallet: smartWallet,
+            referrer: address(0)
+        });
+    }
+
+    function test_commentWithSmartWalletOwner_revertsWhenNotCoinSmartWallet() public {
+        address smartWallet = makeAddr("smartWallet");
+
+        mockCoin.mint(smartWallet, 1e18);
+
+        vm.expectRevert(IComments.NotSmartWallet.selector);
+        vm.prank(collectorWithoutToken);
+        comments.comment({
+            commenter: collectorWithoutToken,
+            contractAddress: address(mockCoin),
+            tokenId: tokenId0,
+            text: "test comment",
+            replyTo: emptyCommentIdentifier,
+            commenterSmartWallet: smartWallet,
+            referrer: address(0)
+        });
+    }
 }

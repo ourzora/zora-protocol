@@ -4,10 +4,12 @@ pragma solidity ^0.8.23;
 import {AccessControlUpgradeable} from "@openzeppelin/contracts-upgradeable/access/AccessControlUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IERC1155} from "@openzeppelin/contracts/token/ERC1155/IERC1155.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
 import {IHasContractName} from "@zoralabs/shared-contracts/interfaces/IContractMetadata.sol";
 import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 import {IZoraCreator1155} from "./interfaces/IZoraCreator1155.sol";
 import {IComments} from "./interfaces/IComments.sol";
+import {ICoinComments} from "./interfaces/ICoinComments.sol";
 import {IProtocolRewards} from "@zoralabs/shared-contracts/interfaces/IProtocolRewards.sol";
 import {UnorderedNoncesUpgradeable} from "@zoralabs/shared-contracts/utils/UnorderedNoncesUpgradeable.sol";
 import {EIP712UpgradeableWithChainId} from "./utils/EIP712UpgradeableWithChainId.sol";
@@ -365,31 +367,45 @@ contract CommentsImpl is
     }
 
     function _accountOrSmartWalletIsTokenAdmin(address contractAddress, uint256 tokenId, address user, address smartWallet) internal view returns (bool) {
-        if (_isTokenAdmin(contractAddress, tokenId, user)) {
-            return true;
+        bool isCoin = _isCoinComment(contractAddress, tokenId);
+
+        if (isCoin) {
+            return ICoinComments(contractAddress).isOwner(user) || (smartWallet != address(0) && ICoinComments(contractAddress).isOwner(smartWallet));
+        } else {
+            return _isTokenAdmin(contractAddress, tokenId, user) || (smartWallet != address(0) && _isTokenAdmin(contractAddress, tokenId, smartWallet));
         }
-        if (smartWallet != address(0)) {
-            return _isTokenAdmin(contractAddress, tokenId, smartWallet);
-        }
-        return false;
     }
 
     function _accountOrSmartWalletIsTokenHolder(address contractAddress, uint256 tokenId, address user, address smartWallet) internal view returns (bool) {
-        if (_isTokenHolder(contractAddress, tokenId, user)) {
-            return true;
+        bool isCoin = _isCoinComment(contractAddress, tokenId);
+
+        if (isCoin) {
+            return
+                ICoinComments(contractAddress).balanceOf(user) >= 1e18 ||
+                (smartWallet != address(0) && ICoinComments(contractAddress).balanceOf(smartWallet) >= 1e18);
+        } else {
+            return _isTokenHolder(contractAddress, tokenId, user) || (smartWallet != address(0) && _isTokenHolder(contractAddress, tokenId, smartWallet));
         }
-        if (smartWallet != address(0)) {
-            return _isTokenHolder(contractAddress, tokenId, smartWallet);
-        }
-        return false;
     }
 
     function _isTokenAdmin(address contractAddress, uint256 tokenId, address user) internal view returns (bool) {
-        return IZoraCreator1155(contractAddress).isAdminOrRole(user, tokenId, PERMISSION_BIT_ADMIN);
+        try IZoraCreator1155(contractAddress).isAdminOrRole(user, tokenId, PERMISSION_BIT_ADMIN) returns (bool isAdmin) {
+            return isAdmin;
+        } catch {
+            return false;
+        }
     }
 
     function _isTokenHolder(address contractAddress, uint256 tokenId, address user) internal view returns (bool) {
-        return IERC1155(contractAddress).balanceOf(user, tokenId) > 0;
+        try IERC1155(contractAddress).balanceOf(user, tokenId) returns (uint256 balance) {
+            return balance > 0;
+        } catch {
+            return false;
+        }
+    }
+
+    function _isCoinComment(address contractAddress, uint256 tokenId) internal view returns (bool) {
+        return tokenId == 0 && IERC165(contractAddress).supportsInterface(type(ICoinComments).interfaceId);
     }
 
     function _getCommentSparksRecipient(CommentIdentifier memory commentIdentifier, CommentIdentifier memory replyTo) internal view returns (address) {
@@ -629,6 +645,18 @@ contract CommentsImpl is
         }
     }
 
+    function _getCoinPayoutRecipient(address contractAddress, uint256 tokenId) internal view returns (address) {
+        if (_isCoinComment(contractAddress, tokenId)) {
+            try ICoinComments(contractAddress).payoutRecipient() returns (address payoutRecipient) {
+                return payoutRecipient;
+            } catch {
+                return address(0);
+            }
+        }
+
+        return address(0);
+    }
+
     function _getFundsRecipient(address contractAddress) internal view returns (address) {
         try IZoraCreator1155(contractAddress).config() returns (address, uint96, address payable fundsRecipient, uint96, address, uint96) {
             if (fundsRecipient != address(0)) {
@@ -654,6 +682,11 @@ contract CommentsImpl is
     }
 
     function _getCreatorRewardRecipient(CommentIdentifier memory commentIdentifier) internal view returns (address) {
+        address payoutRecipient = _getCoinPayoutRecipient(commentIdentifier.contractAddress, commentIdentifier.tokenId);
+        if (payoutRecipient != address(0)) {
+            return payoutRecipient;
+        }
+
         address creatorRecipient = _tryGetCreatorRewardRecipient(commentIdentifier);
         if (creatorRecipient != address(0)) {
             return creatorRecipient;

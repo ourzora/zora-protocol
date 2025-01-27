@@ -616,4 +616,70 @@ contract CommentsTest is CommentsTestBase {
         vm.expectRevert(abi.encodeWithSignature("AccessControlUnauthorizedAccount(address,bytes32)", notAdmin, no_role));
         comments.grantRole(BACKFILLER_ROLE, newBackfiller);
     }
+
+    function testCommentAsCoinAdmin() public {
+        IComments.CommentIdentifier memory expectedCommentId = _expectedCommentIdentifier(address(mockCoin), tokenId0, tokenAdmin);
+
+        vm.prank(tokenAdmin);
+        IComments.CommentIdentifier memory commentId = comments.comment(
+            tokenAdmin,
+            address(mockCoin),
+            tokenId0,
+            "test comment",
+            emptyCommentIdentifier,
+            address(0),
+            address(0)
+        );
+
+        (bytes32 commentIdHash, bool exists) = comments.hashAndCheckCommentExists(commentId);
+
+        assertEq(exists, true);
+        assertEq(commentIdHash, comments.hashCommentIdentifier(expectedCommentId));
+        assertEq(comments.commentSparksQuantity(commentId), 0);
+    }
+
+    function testCommentAsCoinHolder() public {
+        address commenter = makeAddr("commenter");
+
+        mockCoin.mint(commenter, 1e18);
+        vm.deal(commenter, SPARKS_VALUE);
+
+        IComments.CommentIdentifier memory expectedCommentId = _expectedCommentIdentifier(address(mockCoin), tokenId0, commenter);
+
+        vm.prank(commenter);
+        IComments.CommentIdentifier memory commentId = comments.comment{value: SPARKS_VALUE}(
+            commenter,
+            address(mockCoin),
+            tokenId0,
+            "test comment",
+            emptyCommentIdentifier,
+            address(0),
+            address(0)
+        );
+
+        (bytes32 commentIdHash, bool exists) = comments.hashAndCheckCommentExists(commentId);
+        assertEq(exists, true);
+        assertEq(commentIdHash, comments.hashCommentIdentifier(expectedCommentId));
+
+        uint256 zoraReward = (SPARKS_VALUE * (ZORA_REWARD_PCT + REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+        assertEq(protocolRewards.balanceOf(tokenAdmin), SPARKS_VALUE - zoraReward);
+    }
+
+    function testRevertCommentAsCoinHolderWithoutSparks() public {
+        address commenter = makeAddr("commenter");
+        mockCoin.mint(commenter, 1e18);
+
+        vm.expectRevert(abi.encodeWithSignature("MustSendAtLeastOneSpark()"));
+        vm.prank(commenter);
+        comments.comment(commenter, address(mockCoin), tokenId0, "test comment", emptyCommentIdentifier, address(0), address(0));
+    }
+
+    function testRevertCommentAsNonCoinHolder() public {
+        address nonHolder = makeAddr("nonHolder");
+        vm.deal(nonHolder, SPARKS_VALUE);
+
+        vm.expectRevert(abi.encodeWithSignature("NotTokenHolderOrAdmin()"));
+        vm.prank(nonHolder);
+        comments.comment{value: SPARKS_VALUE}(nonHolder, address(mockCoin), tokenId0, "test comment", emptyCommentIdentifier, address(0), address(0));
+    }
 }
