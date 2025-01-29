@@ -18,7 +18,7 @@ contract CommentsImplConstants {
     /// @notice Zora reward percentage when there is no referrer
     uint256 public constant ZORA_REWARD_NO_REFERRER_PCT = 30;
     /// @notice BPS to percent conversion
-    uint256 internal constant BPS_TO_PERCENT_2_DECIMAL_PERCISION = 100;
+    uint256 internal constant BPS_TO_PERCENT_2_DECIMAL_PRECISION = 100;
     /// @notice domain name for comments
     string public constant DOMAIN_NAME = "Comments";
     /// @notice domain version for comments
