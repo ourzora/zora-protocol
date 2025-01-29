@@ -330,12 +330,12 @@ contract CommentsImpl is
         bytes4[] memory reasons = new bytes4[](recipientCount);
 
         if (referrer != address(0)) {
-            uint256 zoraReward = (ZORA_REWARD_PCT * sparksValue) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+            uint256 zoraReward = (ZORA_REWARD_PCT * sparksValue) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
             recipients[0] = zoraRecipient;
             amounts[0] = zoraReward;
             reasons[0] = ZORA_REWARD_REASON;
 
-            uint256 referrerReward = (REFERRER_REWARD_PCT * sparksValue) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+            uint256 referrerReward = (REFERRER_REWARD_PCT * sparksValue) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
             recipients[1] = referrer;
             amounts[1] = referrerReward;
             reasons[1] = REFERRER_REWARD_REASON;
@@ -345,7 +345,7 @@ contract CommentsImpl is
             amounts[2] = sparksRecipientReward;
             reasons[2] = SPARKS_RECIPIENT_REWARD_REASON;
         } else {
-            uint256 zoraRewardNoReferrer = (ZORA_REWARD_NO_REFERRER_PCT * sparksValue) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+            uint256 zoraRewardNoReferrer = (ZORA_REWARD_NO_REFERRER_PCT * sparksValue) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
             recipients[0] = zoraRecipient;
             amounts[0] = zoraRewardNoReferrer;
             reasons[0] = ZORA_REWARD_REASON;
