@@ -14,7 +14,7 @@ import {Comments} from "../src/proxy/Comments.sol";
 contract CommentsTest is CommentsTestBase {
     uint256 public constant ZORA_REWARD_PCT = 10;
     uint256 public constant REFERRER_REWARD_PCT = 20;
-    uint256 internal constant BPS_TO_PERCENT_2_DECIMAL_PERCISION = 100;
+    uint256 internal constant BPS_TO_PERCENT_2_DECIMAL_PRECISION = 100;
 
     function _setupCommenterWithTokenAndSparks(address commenter, uint256 sparksQuantity) internal {
         vm.startPrank(commenter);
@@ -61,7 +61,7 @@ contract CommentsTest is CommentsTestBase {
         vm.prank(collectorWithToken);
         comments.comment{value: SPARKS_VALUE}(collectorWithToken, contractAddress, tokenId, "test comment", replyTo, address(0), address(0));
 
-        uint256 zoraReward = (SPARKS_VALUE * (ZORA_REWARD_PCT + REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+        uint256 zoraReward = (SPARKS_VALUE * (ZORA_REWARD_PCT + REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
         vm.assertEq(protocolRewards.balanceOf(collectorWithToken), 0);
         vm.assertEq(protocolRewards.balanceOf(zoraRecipient), zoraReward);
         vm.assertEq(protocolRewards.balanceOf(tokenAdmin), SPARKS_VALUE - zoraReward);
@@ -247,7 +247,7 @@ contract CommentsTest is CommentsTestBase {
         vm.prank(commenter2);
         comments.sparkComment{value: sparksQuantity * SPARKS_VALUE}(commentIdentifier, sparksQuantity, address(0));
 
-        uint256 zoraReward = (sparksQuantity * SPARKS_VALUE * (ZORA_REWARD_PCT + REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+        uint256 zoraReward = (sparksQuantity * SPARKS_VALUE * (ZORA_REWARD_PCT + REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
         vm.assertEq(protocolRewards.balanceOf(zoraRecipient) - zoraRecipientBalanceBeforeSpark, zoraReward);
         vm.assertEq(protocolRewards.balanceOf(collectorWithToken), (sparksQuantity * SPARKS_VALUE) - zoraReward);
     }
@@ -281,8 +281,8 @@ contract CommentsTest is CommentsTestBase {
         vm.prank(commenter2);
         comments.sparkComment{value: sparksQuantity * SPARKS_VALUE}(commentIdentifier, sparksQuantity, referrer);
 
-        uint256 zoraReward = (sparksQuantity * SPARKS_VALUE * ZORA_REWARD_PCT) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
-        uint256 referrerReward = (sparksQuantity * SPARKS_VALUE * REFERRER_REWARD_PCT) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+        uint256 zoraReward = (sparksQuantity * SPARKS_VALUE * ZORA_REWARD_PCT) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
+        uint256 referrerReward = (sparksQuantity * SPARKS_VALUE * REFERRER_REWARD_PCT) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
         vm.assertEq(protocolRewards.balanceOf(zoraRecipient) - zoraRecipientBalanceBeforeSpark, zoraReward);
         vm.assertEq(protocolRewards.balanceOf(referrer), referrerReward);
         vm.assertEq(protocolRewards.balanceOf(collectorWithToken), (sparksQuantity * SPARKS_VALUE) - zoraReward - referrerReward);
@@ -549,7 +549,7 @@ contract CommentsTest is CommentsTestBase {
             address(0)
         );
 
-        uint256 zoraReward = (sparksQuantity * SPARKS_VALUE * (ZORA_REWARD_PCT + REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+        uint256 zoraReward = (sparksQuantity * SPARKS_VALUE * (ZORA_REWARD_PCT + REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
         uint256 recipientReward = (sparksQuantity * SPARKS_VALUE) - zoraReward;
         vm.assertEq(protocolRewards.balanceOf(newFundsRecipient), recipientReward);
     }
