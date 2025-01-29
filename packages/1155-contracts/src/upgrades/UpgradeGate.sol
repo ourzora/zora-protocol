@@ -18,7 +18,7 @@ contract UpgradeGate is IUpgradeGate, Ownable2StepUpgradeable, UpgradeGateStorag
         emit UpgradeGateSetup();
     }
 
-    /// @notice The URI of the upgrade grate contract
+    /// @notice The URI of the upgrade gate contract
     function contractURI() external pure returns (string memory) {
         return "https://github.com/ourzora/zora-1155-contracts/";
     }
