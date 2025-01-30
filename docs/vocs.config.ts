@@ -164,10 +164,6 @@ export default defineConfig({
                   },
                 ],
               },
-              {
-                text: "create 1155s gaslessly (premints)",
-                link: "/protocol-sdk/creator/premint",
-              },
             ],
           },
           {

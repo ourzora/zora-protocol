@@ -29,17 +29,20 @@ export async function setupContractAndToken({
   const mintGetter = new SubgraphMintGetter(chain.id);
   // create a new 1155 contract
 
-  const { contractAddress, parameters, newTokenId } =
-    await creatorClient.create1155({
-      contract: {
-        uri: demoContractMetadataURI,
-        name: `Test 1155-${Math.round(Math.random() * 100_000_000_000)}`,
-      },
-      token: {
-        tokenMetadataURI: demoTokenMetadataURI,
-      },
-      account: creatorAccount,
-    });
+  const {
+    contractAddress,
+    parameters,
+    tokenId: newTokenId,
+  } = await creatorClient.create1155({
+    contract: {
+      uri: demoContractMetadataURI,
+      name: `Test 1155-${Math.round(Math.random() * 100_000_000_000)}`,
+    },
+    token: {
+      tokenMetadataURI: demoTokenMetadataURI,
+    },
+    account: creatorAccount,
+  });
 
   await simulateAndWriteContractWithRetries({
     parameters,

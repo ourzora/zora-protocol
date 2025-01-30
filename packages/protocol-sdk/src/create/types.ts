@@ -129,7 +129,7 @@ export type PrepareCreateReturn = {
 };
 
 export type CreateNew1155TokenReturn = PrepareCreateReturn & {
-  newTokenId: bigint;
+  tokenId: bigint;
   contractVersion: string;
   prepareMint: AsyncPrepareMint;
 };

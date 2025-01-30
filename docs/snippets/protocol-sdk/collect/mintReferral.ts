@@ -1,4 +1,4 @@
-import { collection, uid } from "./createPremint";
+import { collection, tokenId } from "./create1155";
 import { useAccount, usePublicClient, useWriteContract } from "wagmi";
 import { mint } from "@zoralabs/protocol-sdk";
 
@@ -7,8 +7,7 @@ const { address } = useAccount();
 
 const { parameters } = await mint({
   tokenContract: collection,
-  mintType: "premint",
-  uid,
+  tokenId,
   quantityToMint: 3,
   minterAccount: address!,
   // mintReferral address will get mint referral reward

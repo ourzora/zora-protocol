@@ -9,8 +9,6 @@ import type {
   WalletClient,
 } from "viem";
 import {
-  PremintConfigAndVersion,
-  TokenConfigWithVersion,
   encodePremintConfig,
   zoraCreator1155PremintExecutorImplABI,
 } from "@zoralabs/protocol-deployments";
@@ -18,12 +16,8 @@ import {
   getPremintCollectionAddress,
   isAuthorizedToCreatePremint,
   getPremintExecutorAddress,
-  applyUpdateToPremint,
-  makeNewPremint,
-  supportedPremintVersions,
   getPremintMintCosts,
   makeMintRewardsRecipient,
-  getDefaultFixedPriceMinterAddress,
   emptyContractCreationConfig,
   defaultAdditionalAdmins,
   toContractCreationConfigOrAddress,
@@ -32,25 +26,18 @@ import {
 import {
   PremintConfigVersion,
   ContractCreationConfig,
-  TokenCreationConfigV1,
-  TokenCreationConfigV2,
-  TokenCreationConfig,
   PremintConfigWithVersion,
   PremintMintArguments,
   premintTypedDataDefinition,
 } from "@zoralabs/protocol-deployments";
 import { IPremintAPI, IPremintGetter } from "./premint-api-client";
 import type { DecodeEventLogReturnType } from "viem";
-import { OPEN_EDITION_MINT_SIZE } from "../constants";
 import {
   makeContractParameters,
   mintRecipientOrAccount,
   PublicClient,
 } from "src/utils";
-import {
-  ContractCreationConfigAndAddress,
-  ContractCreationConfigOrAddress,
-} from "./contract-types";
+import { ContractCreationConfigAndAddress } from "./contract-types";
 import {
   MakeMintParametersArgumentsBase,
   MakePremintMintParametersArguments,
@@ -65,134 +52,10 @@ type PremintedV2LogType = DecodeEventLogReturnType<
   "PremintedV2"
 >["args"];
 
-export type URLSReturnType = {
+type URLSReturnType = {
   explorer: null | string;
   zoraCollect: null | string;
   zoraManage: null | string;
-};
-
-export const defaultTokenConfigV1MintArguments = (): Omit<
-  TokenCreationConfigV1,
-  "fixedPriceMinter" | "tokenURI" | "royaltyRecipient"
-> => ({
-  maxSupply: OPEN_EDITION_MINT_SIZE,
-  maxTokensPerAddress: 0n,
-  pricePerToken: 0n,
-  mintDuration: 0n,
-  mintStart: 0n,
-  royaltyMintSchedule: 0,
-  royaltyBPS: 1000, // 10%,
-});
-
-const pickTokenConfigV1 = (tokenConfig: TokenConfigInput) => ({
-  maxSupply: tokenConfig.maxSupply,
-  maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
-  pricePerToken: tokenConfig.pricePerToken,
-  mintDuration: tokenConfig.mintDuration,
-  mintStart: tokenConfig.mintStart,
-  royaltyBPS: tokenConfig.royaltyBPS,
-  tokenURI: tokenConfig.tokenURI,
-  royaltyRecipient: tokenConfig.payoutRecipient,
-});
-
-const pickTokenConfigV2 = (tokenConfig: TokenConfigInput) => ({
-  maxSupply: tokenConfig.maxSupply,
-  maxTokensPerAddress: tokenConfig.maxTokensPerAddress,
-  pricePerToken: tokenConfig.pricePerToken,
-  mintDuration: tokenConfig.mintDuration,
-  mintStart: tokenConfig.mintStart,
-  royaltyBPS: tokenConfig.royaltyBPS,
-  tokenURI: tokenConfig.tokenURI,
-  payoutRecipient: tokenConfig.payoutRecipient,
-  createReferral: tokenConfig.createReferral || zeroAddress,
-});
-
-const tokenConfigV1WithDefault = (
-  tokenConfig: TokenConfigInput,
-  fixedPriceMinter: Address,
-): TokenCreationConfigV1 => ({
-  ...pickTokenConfigV1(tokenConfig),
-  ...defaultTokenConfigV1MintArguments(),
-  fixedPriceMinter,
-});
-
-const tokenConfigV2WithDefault = (
-  tokenConfig: TokenConfigInput,
-  fixedPriceMinter: Address,
-): TokenCreationConfigV2 => ({
-  ...pickTokenConfigV2(tokenConfig),
-  ...defaultTokenConfigV2MintArguments(),
-  fixedPriceMinter,
-});
-
-export const defaultTokenConfigV2MintArguments = (): Omit<
-  TokenCreationConfigV2,
-  "fixedPriceMinter" | "tokenURI" | "payoutRecipient" | "createReferral"
-> => ({
-  maxSupply: OPEN_EDITION_MINT_SIZE,
-  maxTokensPerAddress: 0n,
-  pricePerToken: 0n,
-  mintDuration: 0n,
-  mintStart: 0n,
-  royaltyBPS: 1000, // 10%,
-});
-
-type TokenConfigInput = {
-  /** Metadata URI of the token to create. */
-  tokenURI: string;
-  /** Account to receive creator rewards if it's a free mint, and token price value if its a paid mint. Defaults to the premint signing account. */
-  payoutRecipient: Address;
-  /** Optional: account to receive the create referral award. */
-  createReferral?: Address;
-  /** Optional: max supply of tokens that can be minted.  Defaults to unlimited.  */
-  maxSupply?: bigint;
-  /** Optional: max tokens that can be minted for an address, 0 if unlimited. Defaults to unlimited. */
-  maxTokensPerAddress?: bigint;
-  /** Optional: price per token, if this is a paid mint. 0 if a free mint.  Defaults to 0, or a free mint. */
-  pricePerToken?: bigint;
-  /** Optional: duration of the mint, starting from the time the premint is brought onchain. 0 for infinite.  Defaults to infinite. */
-  mintDuration?: bigint;
-  /** Optional: earliest time the premint can be brought onchain and minted. 0 for immediately.  Defaults to immediately. */
-  mintStart?: bigint;
-  /** Optional: The royalty amount in basis points for secondary sales, in basis points.  Defaults to 1000. */
-  royaltyBPS?: number;
-};
-
-const makeTokenConfigWithDefaults = ({
-  chainId,
-  tokenCreationConfig,
-  supportedPremintVersions,
-}: {
-  chainId: number;
-  tokenCreationConfig: TokenConfigInput;
-  supportedPremintVersions: PremintConfigVersion[];
-}): TokenConfigWithVersion<
-  PremintConfigVersion.V1 | PremintConfigVersion.V2
-> => {
-  const fixedPriceMinter = getDefaultFixedPriceMinterAddress(chainId);
-
-  if (!supportedPremintVersions.includes(PremintConfigVersion.V2)) {
-    // we need to return a token config v1
-    if (tokenCreationConfig.createReferral) {
-      throw new Error("Contract does not support create referral");
-    }
-
-    return {
-      premintConfigVersion: PremintConfigVersion.V1,
-      tokenConfig: tokenConfigV1WithDefault(
-        tokenCreationConfig,
-        fixedPriceMinter,
-      ),
-    };
-  }
-
-  return {
-    premintConfigVersion: PremintConfigVersion.V2,
-    tokenConfig: tokenConfigV2WithDefault(
-      tokenCreationConfig,
-      fixedPriceMinter,
-    ),
-  };
 };
 
 /**
@@ -201,7 +64,7 @@ const makeTokenConfigWithDefaults = ({
  * @param receipt Preminted log from receipt
  * @returns Premint event arguments
  */
-export function getPremintedLogFromReceipt(
+function getPremintedLogFromReceipt(
   receipt: TransactionReceipt,
 ): PremintedV2LogType | undefined {
   for (const data of receipt.logs) {
@@ -247,21 +110,6 @@ export class PremintClient {
   }
 
   /**
-   * Prepares data for updating a premint
-   *
-   * @param parameters - Parameters for updating the premint {@link UpdatePremintParams}
-   * @returns A PremintReturn. {@link PremintReturn}
-   */
-  async updatePremint(args: UpdatePremintParams): Promise<PremintReturn<any>> {
-    return await updatePremint({
-      ...args,
-      apiClient: this.apiClient,
-      publicClient: this.publicClient,
-      chainId: this.chainId,
-    });
-  }
-
-  /**
    * Prepares data for deleting a premint
    *
    * @param parameters - Parameters for deleting the premint {@link DeletePremintParams}
@@ -274,23 +122,6 @@ export class PremintClient {
       ...params,
       apiClient: this.apiClient,
       publicClient: this.publicClient,
-      chainId: this.chainId,
-    });
-  }
-
-  /**
-   * Prepares data for creating a premint
-   *
-   * @param parameters - Parameters for creating the premint {@link CreatePremintParameters}
-   * @returns A PremintReturn. {@link PremintReturn}
-   */
-  async createPremint(
-    parameters: CreatePremintParameters,
-  ): Promise<PremintReturn<any>> {
-    return createPremint({
-      ...parameters,
-      publicClient: this.publicClient,
-      apiClient: this.apiClient,
       chainId: this.chainId,
     });
   }
@@ -394,19 +225,19 @@ type PremintContext = {
 
 /** ======= ADMIN ======= */
 
-export type SignAndSubmitParams = {
+type SignAndSubmitParams = {
   /** The WalletClient used to sign the premint */
   walletClient: WalletClient;
 } & CheckSignatureParams;
 
-export type SignAndSubmitReturn = {
+type SignAndSubmitReturn = {
   /** The signature of the Premint  */
   signature: Hex;
   /** The account that signed the Premint */
   signerAccount: Account | Address;
 };
 
-export type CheckSignatureParams =
+type CheckSignatureParams =
   | {
       /** If the premint signature should be validated before submitting to the API */
       checkSignature: true;
@@ -419,7 +250,7 @@ export type CheckSignatureParams =
       account?: Account | Address;
     };
 
-export type SubmitParams = {
+type SubmitParams = {
   /** The signature of the Premint */
   signature: Hex;
 } & CheckSignatureParams;
@@ -551,153 +382,9 @@ async function signPremint({
   };
 }
 
-/** CREATE */
-
-type CreatePremintParameters = {
-  /** tokenCreationConfig Token creation settings, optional settings are overridden with sensible defaults */
-  token: TokenConfigInput;
-  /** uid the UID to use – optional and retrieved as a fresh UID from ZORA by default. */
-  uid?: number;
-} & ContractCreationConfigOrAddress;
-
-async function createPremint({
-  token: tokenCreationConfig,
-  uid,
-  publicClient,
-  apiClient,
-  chainId,
-  ...collectionOrAddress
-}: CreatePremintParameters & PremintContext) {
-  const {
-    premintConfig,
-    premintConfigVersion,
-    collectionAddress: collectionAddressToUse,
-  } = await prepareCreatePremintConfig({
-    ...collectionOrAddress,
-    tokenCreationConfig,
-    uid,
-    publicClient,
-    apiClient,
-    chainId,
-  });
-
-  return makePremintReturn({
-    premintConfig,
-    premintConfigVersion,
-    collectionAddress: collectionAddressToUse,
-    collection: collectionOrAddress.contract,
-    publicClient,
-    apiClient,
-    chainId,
-  });
-}
-
-type PreparePremintReturn = {
-  collectionAddress: Address;
-} & PremintConfigAndVersion;
-
-async function prepareCreatePremintConfig({
-  tokenCreationConfig,
-  uid,
-  publicClient,
-  apiClient,
-  chainId,
-  ...collectionOrAddress
-}: {
-  tokenCreationConfig: TokenConfigInput;
-  uid?: number;
-} & PremintContext &
-  ContractCreationConfigOrAddress): Promise<PreparePremintReturn> {
-  const newContractAddress = await getPremintCollectionAddress({
-    publicClient,
-    ...collectionOrAddress,
-  });
-
-  let uidToUse = uid;
-
-  if (typeof uidToUse !== "number") {
-    uidToUse = await apiClient.getNextUID(newContractAddress);
-  }
-
-  const supportedVersions = await supportedPremintVersions({
-    tokenContract: newContractAddress,
-    publicClient,
-  });
-
-  const tokenConfigAndVersion = makeTokenConfigWithDefaults({
-    tokenCreationConfig,
-    chainId,
-    supportedPremintVersions: supportedVersions,
-  });
-
-  const premintConfig = makeNewPremint({
-    ...tokenConfigAndVersion,
-    uid: uidToUse,
-  });
-
-  const premintConfigAndVersion = {
-    premintConfig,
-    premintConfigVersion: tokenConfigAndVersion.premintConfigVersion,
-  } as PremintConfigAndVersion;
-
-  return {
-    ...premintConfigAndVersion,
-    collectionAddress: newContractAddress,
-  };
-}
-
-/** UPDATE */
-
-export type UpdatePremintParams = {
-  /** uid of the Premint to update */
-  uid: number;
-  /** address of the Premint to update */
-  collection: Address;
-  /** update to apply to the Premint */
-  tokenConfigUpdates: Partial<TokenCreationConfig>;
-};
-
-async function updatePremint({
-  uid,
-  collection,
-  tokenConfigUpdates,
-  apiClient,
-  publicClient,
-  chainId,
-}: UpdatePremintParams & {
-  apiClient: IPremintAPI;
-  publicClient: PublicClient;
-  chainId: number;
-}) {
-  const {
-    premint: { premintConfig, premintConfigVersion },
-    collection: collectionCreationConfig,
-  } = await apiClient.get({
-    collectionAddress: collection,
-    uid: uid,
-  });
-
-  const updatedPremint = applyUpdateToPremint({
-    uid: premintConfig.uid,
-    version: premintConfig.version,
-    tokenConfig: premintConfig.tokenConfig,
-    tokenConfigUpdates: tokenConfigUpdates,
-  });
-
-  return makePremintReturn({
-    premintConfig: updatedPremint,
-    premintConfigVersion,
-    collectionAddress: collection,
-    collection: collectionCreationConfig,
-    publicClient,
-    apiClient,
-    chainId,
-  });
-}
-
 /** DELETE */
 
-export type DeletePremintParams = {
+type DeletePremintParams = {
   /** id of the premint to delete */
   uid: number;
   /** collection address of the Premint to delete */
@@ -741,7 +428,7 @@ async function deletePremint({
   });
 }
 
-export type MakeMintParametersArguments = {
+type MakeMintParametersArguments = {
   /** uid of the Premint to mint */
   uid: number;
   /** Premint contract address */
@@ -765,7 +452,7 @@ export type MakeMintParametersArguments = {
 
 /** ======== MINTING ======== */
 
-export async function collectPremint({
+async function collectPremint({
   uid,
   tokenContract,
   minterAccount,
@@ -887,7 +574,7 @@ export const buildPremintMintCall = ({
   });
 };
 
-export function makeUrls({
+function makeUrls({
   uid,
   address,
   tokenId,

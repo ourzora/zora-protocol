@@ -382,7 +382,11 @@ describe("mint-client", () => {
 
       const creator = (await walletClient.getAddresses())[0]!;
 
-      const { parameters, contractAddress, newTokenId } = await create1155({
+      const {
+        parameters,
+        contractAddress,
+        tokenId: newTokenId,
+      } = await create1155({
         account: creator,
         contract: {
           name: "Test Timed Sale",

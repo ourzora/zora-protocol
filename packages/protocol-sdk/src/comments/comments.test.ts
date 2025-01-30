@@ -74,15 +74,19 @@ describe("comments", () => {
       ];
 
       // Step 1: Create a new 1155 contract and token
-      const { contractAddress, newTokenId, parameters, prepareMint } =
-        await create1155({
-          contract: randomNewContract(),
-          token: {
-            tokenMetadataURI: demoTokenMetadataURI,
-          },
-          account: creatorAddress,
-          publicClient,
-        });
+      const {
+        contractAddress,
+        tokenId: newTokenId,
+        parameters,
+        prepareMint,
+      } = await create1155({
+        contract: randomNewContract(),
+        token: {
+          tokenMetadataURI: demoTokenMetadataURI,
+        },
+        account: creatorAddress,
+        publicClient,
+      });
 
       // Deploy the new contract
       const { request } = await publicClient.simulateContract(parameters);
@@ -243,7 +247,11 @@ describe("comments", () => {
         (await walletClient.getAddresses()!) as [Address, Address, Address];
 
       // Step 1: Create a new 1155 contract and token
-      const { contractAddress, newTokenId, parameters } = await create1155({
+      const {
+        contractAddress,
+        tokenId: newTokenId,
+        parameters,
+      } = await create1155({
         contract: randomNewContract(),
         token: {
           tokenMetadataURI: demoTokenMetadataURI,

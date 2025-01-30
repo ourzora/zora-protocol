@@ -71,7 +71,7 @@ describe("create-helper", () => {
       const {
         parameters: parameters,
         contractAddress,
-        newTokenId,
+        tokenId: newTokenId,
       } = await create1155({
         contract,
         token: {
@@ -161,7 +161,11 @@ describe("create-helper", () => {
 
       const saleStart = 5n;
       const contract = randomNewContract();
-      const { parameters, contractAddress, newTokenId } = await create1155({
+      const {
+        parameters,
+        contractAddress,
+        tokenId: newTokenId,
+      } = await create1155({
         contract,
         token: {
           tokenMetadataURI: demoTokenMetadataURI,
@@ -204,7 +208,7 @@ describe("create-helper", () => {
       const {
         parameters: parameters,
         contractAddress,
-        newTokenId,
+        tokenId: newTokenId,
       } = await create1155({
         contract: randomNewContract(),
         token: {
@@ -323,7 +327,7 @@ describe("create-helper", () => {
       const {
         parameters: request,
         contractAddress: collectionAddress,
-        newTokenId,
+        tokenId: newTokenId,
       } = await create1155({
         contract: randomNewContract(),
         token: {
@@ -422,7 +426,7 @@ describe("create-helper", () => {
       const {
         parameters: request,
         contractAddress: collectionAddress,
-        newTokenId,
+        tokenId: newTokenId,
         minter,
         contractVersion,
       } = await create1155({

@@ -240,7 +240,7 @@ export async function create1155({
     prepareMint,
     contractAddress,
     contractVersion,
-    newTokenId: nextTokenId,
+    tokenId: nextTokenId,
   };
 }
 
@@ -370,7 +370,7 @@ export async function createNew1155Token({
   return {
     ...preparedToken,
     prepareMint,
-    newTokenId: nextTokenId,
+    tokenId: nextTokenId,
     contractVersion,
   };
 }

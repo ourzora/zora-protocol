@@ -23,8 +23,6 @@ import { getApiNetworkConfigForChain } from "src/apis/network-config";
 
 type PremintNextUIDGetType =
   paths["/signature/{chain_name}/{collection_address}/next_uid"]["get"];
-type PremintNextUIDGetPathParameters =
-  PremintNextUIDGetType["parameters"]["path"];
 export type PremintNextUIDGetResponse =
   PremintNextUIDGetType["responses"][200]["content"]["application/json"];
 
@@ -50,22 +48,6 @@ const postSignature = async ({
 }): Promise<PremintSignatureResponse> =>
   retries(() =>
     post<PremintSignatureResponse>(`${ZORA_API_BASE}premint/signature`, data),
-  );
-
-const getNextUID = async ({
-  chainId,
-  collection_address,
-  httpClient: { retries, get } = defaultHttpClient,
-}: Omit<PremintNextUIDGetPathParameters, "chain_name"> & {
-  chainId: number;
-  httpClient?: Pick<IHttpClient, "retries" | "get">;
-}): Promise<PremintNextUIDGetResponse> =>
-  retries(() =>
-    get<PremintNextUIDGetResponse>(
-      `${ZORA_API_BASE}premint/signature/${
-        getApiNetworkConfigForChain(chainId).zoraBackendChainName
-      }/${collection_address}/next_uid`,
-    ),
   );
 
 export const getSignature = async ({
@@ -124,8 +106,6 @@ export interface IPremintAPI {
 
   getOfCollection: IPremintGetter["getOfCollection"];
 
-  getNextUID(collectionAddress: Address): Promise<number>;
-
   postSignature<T extends PremintConfigVersion>(
     params: {
       signature: Hex;
@@ -156,15 +136,6 @@ class PremintAPIClient implements IPremintAPI {
       httpClient: this.httpClient,
     });
   };
-
-  getNextUID: IPremintAPI["getNextUID"] = async (collectionAddress) =>
-    (
-      await getNextUID({
-        collection_address: collectionAddress.toLowerCase(),
-        chainId: this.chainId,
-        httpClient: this.httpClient,
-      })
-    ).next_uid;
 
   get: IPremintAPI["get"] = async ({ collectionAddress, uid }) => {
     return getSignature({

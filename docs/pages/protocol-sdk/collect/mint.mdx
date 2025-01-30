@@ -38,29 +38,6 @@ const { writeContract } = useWriteContract();
 <button onClick={() => writeContract(parameters)}>Create</button>
 ```
 
-### Mint Premints
-
-Once a Premint has been created and submitted to the Zora Premint API, it can be collected by calling `mint()` with `mintType` set to `premint`, and the `uid` set to the premint's uid:
-
-:::code-group
-
-```ts twoslash [example.ts]
-// @filename: createPremint.ts
-// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
-
-// @filename: example.ts
-// ---cut---
-// [!include ~/snippets/protocol-sdk/collect/mintPremint.ts]
-```
-
-```ts twoslash [createPremint.ts]
-// @filename: createPremint.ts
-// ---cut---
-// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
-```
-
-:::
-
 ### Mint 1155s
 
 1155s can be minted by calling `mint()` with `mintType` set to `1155`, and the `tokenId` set to the token id to mint:
@@ -149,16 +126,16 @@ To earn a mint referral reward, pass in the `mintReferral` argument to the `mint
 :::code-group
 
 ```ts twoslash [example.ts]
-// @filename: createPremint.ts
-// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
+// @filename: create1155.ts
+// [!include ~/snippets/protocol-sdk/collect/create1155.ts]
 
 // @filename: example.ts
 // ---cut---
 // [!include ~/snippets/protocol-sdk/collect/mintReferral.ts]
 ```
 
-```ts twoslash [createPremint.ts]
-// [!include ~/snippets/protocol-sdk/collect/createPremint.ts]
+```ts twoslash [create1155.ts]
+// [!include ~/snippets/protocol-sdk/collect/create1155.ts]
 ```
 
 :::
