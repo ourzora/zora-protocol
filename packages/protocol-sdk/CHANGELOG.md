@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.13.0
+
+### Minor Changes
+
+- cf90efbc: Remove ability to create and update premints
+
 ## 0.12.2
 
 ### Patch Changes
