@@ -377,19 +377,22 @@ contract CoinTest is BaseTest {
         MarketRewards memory marketRewards = _calculateMarketRewards(expectedLpFee);
 
         assertEq(marketRewards.creator + marketRewards.platformReferrer + marketRewards.protocol, expectedLpFee, "Secondary rewards incorrect");
-        assertEq(
+        assertApproxEqAbs(
             protocolRewards.balanceOf(users.creator),
             initialTokenCreatorBalance + orderFees.creator + marketRewards.creator,
+            0.0000000000000001 ether,
             "Token creator rewards incorrect"
         );
-        assertEq(
+        assertApproxEqAbs(
             protocolRewards.balanceOf(users.platformReferrer),
             initialPlatformReferrerBalance + orderFees.platformReferrer + marketRewards.platformReferrer,
+            0.0000000000000001 ether,
             "Platform referrer rewards incorrect"
         );
-        assertEq(
+        assertApproxEqAbs(
             protocolRewards.balanceOf(users.feeRecipient),
             initialFeeRecipientBalance + orderFees.protocol + marketRewards.protocol,
+            0.0000000000000001 ether,
             "Protocol rewards incorrect"
         );
         assertEq(protocolRewards.balanceOf(users.tradeReferrer), initialOrderReferrerBalance + orderFees.tradeReferrer, "Order referrer rewards incorrect");

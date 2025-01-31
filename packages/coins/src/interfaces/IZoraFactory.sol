@@ -3,27 +3,27 @@ pragma solidity ^0.8.23;
 
 interface IZoraFactory {
     /// @notice Emitted when a coin is created
-    /// @param deployer The msg.sender address of coin creation
-    /// @param creator The address of the creator of the coin
+    /// @param caller The msg.sender address
     /// @param payoutRecipient The address of the creator payout recipient
     /// @param platformReferrer The address of the platform referrer
     /// @param currency The address of the currency
-    /// @param tokenURI The URI of the coin
+    /// @param uri The URI of the coin
     /// @param name The name of the coin
     /// @param symbol The symbol of the coin
     /// @param coin The address of the coin
     /// @param pool The address of the pool
+    /// @param version The coin contract version
     event CoinCreated(
-        address indexed deployer,
-        address indexed creator, // TODO remove after backend approval
+        address indexed caller,
         address indexed payoutRecipient,
-        address platformReferrer,
+        address indexed platformReferrer,
         address currency,
-        string tokenURI,
+        string uri,
         string name,
         string symbol,
         address coin,
-        address pool
+        address pool,
+        string version
     );
 
     /// @notice Thrown when the amount of ERC20 tokens transferred does not match the expected amount

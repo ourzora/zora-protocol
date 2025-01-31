@@ -66,13 +66,13 @@ interface ICoin {
     }
 
     /// @notice Emitted when market rewards are distributed
-    /// @param creatorPayoutAddress The address of the creator payout recipient
+    /// @param payoutRecipient The address of the creator rewards payout recipient
     /// @param platformReferrer The address of the platform referrer
     /// @param protocolRewardRecipient The address of the protocol reward recipient
     /// @param currency The address of the currency
     /// @param marketRewards The rewards accrued from the market's liquidity position
     event CoinMarketRewards(
-        address indexed creatorPayoutAddress,
+        address indexed payoutRecipient,
         address indexed platformReferrer,
         address protocolRewardRecipient,
         address currency,
@@ -94,8 +94,7 @@ interface ICoin {
         uint256 coinsPurchased,
         address currency,
         uint256 amountFee,
-        uint256 amountSold,
-        string comment // TODO remove after backend approval
+        uint256 amountSold
     );
 
     /// @notice Emitted when coins are sold
@@ -113,8 +112,7 @@ interface ICoin {
         uint256 coinsSold,
         address currency,
         uint256 amountFee,
-        uint256 amountPurchased,
-        string comment // TODO remove after backend approval
+        uint256 amountPurchased
     );
 
     /// @notice Emitted when a coin is transferred
@@ -126,7 +124,7 @@ interface ICoin {
     event CoinTransfer(address indexed sender, address indexed recipient, uint256 amount, uint256 senderBalance, uint256 recipientBalance);
 
     /// @notice Emitted when trade rewards are distributed
-    /// @param creatorPayoutRecipient The address of the creator payout recipient
+    /// @param payoutRecipient The address of the creator rewards payout recipient
     /// @param platformReferrer The address of the platform referrer
     /// @param tradeReferrer The address of the trade referrer
     /// @param protocolRewardRecipient The address of the protocol reward recipient
@@ -136,7 +134,7 @@ interface ICoin {
     /// @param protocolReward The reward for the protocol
     /// @param currency The address of the currency
     event CoinTradeRewards(
-        address indexed creatorPayoutRecipient,
+        address indexed payoutRecipient,
         address indexed platformReferrer,
         address indexed tradeReferrer,
         address protocolRewardRecipient,

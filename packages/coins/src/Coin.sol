@@ -185,7 +185,7 @@ contract Coin is
 
         _handleMarketRewards();
 
-        emit CoinBuy(msg.sender, recipient, tradeReferrer, amountOut, currency, tradeReward, trueOrderSize, "");
+        emit CoinBuy(msg.sender, recipient, tradeReferrer, amountOut, currency, tradeReward, trueOrderSize);
 
         return amountOut;
     }
@@ -245,7 +245,7 @@ contract Coin is
 
         _handleMarketRewards();
 
-        emit CoinSell(msg.sender, recipient, tradeReferrer, orderSize, currency, tradeReward, payoutSize, "");
+        emit CoinSell(msg.sender, recipient, tradeReferrer, orderSize, currency, tradeReward, payoutSize);
 
         return amountOut;
     }

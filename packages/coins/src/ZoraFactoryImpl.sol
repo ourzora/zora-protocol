@@ -54,14 +54,14 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         emit CoinCreated(
             msg.sender,
             payoutRecipient,
-            payoutRecipient,
             coin.platformReferrer(),
             coin.currency(),
             uri,
             name,
             symbol,
             address(coin),
-            coin.poolAddress()
+            coin.poolAddress(),
+            coin.contractVersion()
         );
 
         return address(coin);
