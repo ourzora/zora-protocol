@@ -1,12 +1,12 @@
 // spdx-license-identifier: mit
-pragma solidity ^0.8.17;
+pragma solidity >=0.8.17;
 
 import "forge-std/Script.sol";
 import {Deployment, ChainConfig} from "./DeploymentConfig.sol";
-import {ProxyShim} from "@zoralabs/zora-1155-contracts/src/utils/ProxyShim.sol";
+import {ProxyShim} from "../utils/ProxyShim.sol";
 import {DeterministicProxyDeployer} from "./DeterministicProxyDeployer.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
+import {UpgradeGate} from "../upgrades/UpgradeGate.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {ZoraDeployerUtils} from "./ZoraDeployerUtils.sol";
 import {ImmutableCreate2FactoryUtils} from "@zoralabs/shared-contracts/utils/ImmutableCreate2FactoryUtils.sol";

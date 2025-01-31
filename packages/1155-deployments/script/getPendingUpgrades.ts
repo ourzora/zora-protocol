@@ -331,7 +331,10 @@ const getCurrentConfiguredVersion = async ({
   chainId: number;
 }) => {
   const addressesConfig = JSON.parse(
-    await readFile(join(__dirname, `../addresses/${chainId}.json`), "utf-8"),
+    await readFile(
+      join(__dirname, `../../1155-contracts/addresses/${chainId}.json`),
+      "utf-8",
+    ),
   );
 
   const deployed1155Impl = addressesConfig.CONTRACT_1155_IMPL;
@@ -505,7 +508,7 @@ const getMissingUpgradePathsForChain = async ({
 async function getMissingUpgradePath(chainName: string) {
   const configuredChain =
     chainName === zoraSepolia.name || chainName === `${zoraSepolia.id}`
-      ? {...zoraSepolia, rpcUrl: 'https://sepolia.rpc.zora.energy/'}
+      ? { ...zoraSepolia, rpcUrl: "https://sepolia.rpc.zora.energy/" }
       : await getChain(chainName);
 
   console.log("Getting upgrade path updates for ", configuredChain.id);
@@ -553,7 +556,9 @@ export const main = async () => {
   if (chainName) {
     await getMissingUpgradePath(chainName);
   } else {
-    for (const file of await readdir(join(__dirname, "../addresses"))) {
+    for (const file of await readdir(
+      join(__dirname, "../../1155-contracts/addresses"),
+    )) {
       console.log(file);
       if (!file.endsWith(".json")) {
         continue;

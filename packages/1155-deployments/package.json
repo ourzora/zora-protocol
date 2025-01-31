@@ -20,9 +20,6 @@
   "devDependencies": {
     "@lavamoat/preinstall-always-fail": "2.0.0",
     "@openzeppelin/contracts": "4.9.2",
-    "@turnkey/api-key-stamper": "^0.3.1",
-    "@turnkey/http": "^2.5.1",
-    "@turnkey/viem": "^0.6.8",
     "@types/node": "^20.1.2",
     "@zoralabs/openzeppelin-contracts-upgradeable": "4.8.4",
     "@zoralabs/protocol-rewards": "workspace:^",
@@ -38,7 +35,6 @@
     "graphql-request": "^6.1.0",
     "handlebars": "^4.7.8",
     "semver": "^7.5.8",
-    "solady": "0.0.132",
     "solmate": "6.1.0",
     "toml": "^3.0.0",
     "tsx": "^3.13.0",

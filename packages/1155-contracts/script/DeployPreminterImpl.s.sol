@@ -4,9 +4,9 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
-import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
-import {Deployment} from "../src/DeploymentConfig.sol";
-import {DeterministicDeployerScript} from "../src/DeterministicDeployerScript.sol";
+import {ZoraDeployerBase} from "../src/deployment/ZoraDeployerBase.sol";
+import {Deployment} from "../src/deployment/DeploymentConfig.sol";
+import {DeterministicDeployerScript} from "../src/deployment/DeterministicDeployerScript.sol";
 
 /// @dev Deploys preminter implementation contract.
 /// @notice Run after deploying the minters

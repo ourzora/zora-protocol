@@ -4,12 +4,12 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
-import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
-import {Deployment} from "../src/DeploymentConfig.sol";
-import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
-import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
+import {ZoraDeployerBase} from "../src/deployment/ZoraDeployerBase.sol";
+import {Deployment} from "../src/deployment/DeploymentConfig.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
+import {DeploymentTestingUtils} from "../src/deployment/DeploymentTestingUtils.sol";
 import {MintArguments} from "@zoralabs/shared-contracts/entities/Premint.sol";
-import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
+import {IZoraCreator1155PremintExecutor} from "../src/interfaces/IZoraCreator1155PremintExecutor.sol";
 
 contract DeployProxiesToNewChain is ZoraDeployerBase {
     function run() public returns (string memory) {

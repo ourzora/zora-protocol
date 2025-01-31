@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity >=0.8.17;
 
 import "forge-std/Test.sol";
 import {Vm} from "forge-std/Vm.sol";
 import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
 import {ZoraCreator1155PremintExecutorImpl} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155PremintExecutorImpl.sol";
-import {DeploymentConfig, Deployment, ChainConfig} from "../src/DeploymentConfig.sol";
+import {DeploymentConfig, Deployment, ChainConfig} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentConfig.sol";
 import {ForkDeploymentConfig} from "@zoralabs/shared-contracts/deployment/ForkDeploymentConfig.sol";
 import {UpgradeBaseLib} from "@zoralabs/shared-contracts/upgrades/UpgradeBaseLib.sol";
-import {DeploymentTestingUtils} from "../src/DeploymentTestingUtils.sol";
+import {DeploymentTestingUtils} from "@zoralabs/zora-1155-contracts/src/deployment/DeploymentTestingUtils.sol";
 import {MintArguments, PremintResult} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {IZoraSparksManager} from "@zoralabs/sparks-contracts/src/interfaces/IZoraSparksManager.sol";
 import {IZoraCreator1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155.sol";
-import {IZoraCreator1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155PremintExecutor.sol";
 import {ContractCreationConfig, PremintConfigV2} from "@zoralabs/shared-contracts/entities/Premint.sol";
 import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";

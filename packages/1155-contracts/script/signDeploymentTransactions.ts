@@ -12,7 +12,7 @@ import {
   GenericDeploymentConfiguration,
   signDeployFactory,
   signGenericDeploy,
-} from "../package/deployment";
+} from "./deployment";
 import { fileURLToPath } from "url";
 import { dirname } from "path";
 

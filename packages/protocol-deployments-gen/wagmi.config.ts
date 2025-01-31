@@ -110,7 +110,7 @@ const toConfig = (
 const get1155Contracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../1155-deployments/addresses");
+  const addressesFiles = readdirSync("../1155-contracts/addresses");
 
   const protocolRewardsConfig = JSON.parse(
     readFileSync("../protocol-rewards/deterministicConfig.json", "utf-8"),
@@ -124,7 +124,7 @@ const get1155Contracts = (): ContractConfig[] => {
       chainId: parseInt(file.split(".")[0]),
       config: {
         ...(JSON.parse(
-          readFileSync(`../1155-deployments/addresses/${file}`, "utf-8"),
+          readFileSync(`../1155-contracts/addresses/${file}`, "utf-8"),
         ) as {
           FIXED_PRICE_SALE_STRATEGY: Address;
           MERKLE_MINT_SALE_STRATEGY: Address;

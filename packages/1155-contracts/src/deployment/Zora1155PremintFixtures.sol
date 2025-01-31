@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity >=0.8.17;
 
-import {ZoraCreator1155Impl} from "@zoralabs/zora-1155-contracts/src/nft/ZoraCreator1155Impl.sol";
-import {ZoraCreatorFixedPriceSaleStrategy} from "@zoralabs/zora-1155-contracts/src/minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
-import {IZoraCreator1155Errors} from "@zoralabs/zora-1155-contracts/src/interfaces/IZoraCreator1155Errors.sol";
-import {IMinter1155} from "@zoralabs/zora-1155-contracts/src/interfaces/IMinter1155.sol";
-import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
-import {ZoraCreator1155FactoryImpl} from "@zoralabs/zora-1155-contracts/src/factory/ZoraCreator1155FactoryImpl.sol";
+import {ZoraCreator1155Impl} from "../nft/ZoraCreator1155Impl.sol";
+import {ZoraCreatorFixedPriceSaleStrategy} from "../minters/fixed-price/ZoraCreatorFixedPriceSaleStrategy.sol";
+import {IZoraCreator1155Errors} from "../interfaces/IZoraCreator1155Errors.sol";
+import {IMinter1155} from "../interfaces/IMinter1155.sol";
+import {Zora1155Factory} from "../proxies/Zora1155Factory.sol";
+import {ZoraCreator1155FactoryImpl} from "../factory/ZoraCreator1155FactoryImpl.sol";
 import {ProtocolRewards} from "@zoralabs/protocol-rewards/src/ProtocolRewards.sol";
-import {ProxyShim} from "@zoralabs/zora-1155-contracts/src/utils/ProxyShim.sol";
-import {PremintConfig, PremintConfigV2, ContractCreationConfig, TokenCreationConfigV2, TokenCreationConfig} from "@zoralabs/zora-1155-contracts/src/delegation/ZoraCreator1155Attribution.sol";
+import {ProxyShim} from "../utils/ProxyShim.sol";
+import {PremintConfig, PremintConfigV2, ContractCreationConfig, TokenCreationConfigV2, TokenCreationConfig} from "../delegation/ZoraCreator1155Attribution.sol";
 
 library Zora1155PremintFixtures {
     function makeDefaultContractCreationConfig(address contractAdmin) internal pure returns (ContractCreationConfig memory) {

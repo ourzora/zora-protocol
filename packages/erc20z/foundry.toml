@@ -9,7 +9,7 @@ optimizer_runs = 1_000_000
 fs_permissions = [
   { access = "readwrite", path = "./addresses" },
   { access = "read", path = "./package.json" },
-  { access = "read", path = "../1155-deployments/addresses" },
+  { access = "read", path = "../1155-contracts/addresses" },
   { access = "readwrite", path = "./deterministicConfig" },
   { access = "read", path = "../shared-contracts/chainConfigs" }
 ]

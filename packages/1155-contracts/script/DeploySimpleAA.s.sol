@@ -4,7 +4,7 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
-import {SimpleAA} from "../src/SimpleAA.sol";
+import {SimpleAA} from "../src/deployment/SimpleAA.sol";
 
 contract DeployMockAA is Script {
     function run() public {

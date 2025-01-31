@@ -82,7 +82,7 @@ contract UpgradesTestBase is ForkDeploymentConfig, Test, UpgradeBaseLib, Deploye
         vm.deal(collector, 10 ether);
 
         address zora1155FactoryAddress = vm.parseJsonAddress(
-            vm.readFile(string.concat("../1155-deployments/addresses/", vm.toString(block.chainid), ".json")),
+            vm.readFile(string.concat("../1155-contracts/addresses/", vm.toString(block.chainid), ".json")),
             ".FACTORY_PROXY"
         );
 

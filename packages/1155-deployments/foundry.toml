@@ -1,15 +1,15 @@
 [profile.default]
 fs_permissions = [
   { access = "read", path = "./versions" },
-  { access = "read", path = "./chainConfigs" },
+  { access = "read", path = "../1155-contracts/chainConfigs" },
   { access = "read", path = "./package.json" },
   { access = "read", path = "../erc20z" },
   { access = "read", path = "../comments" },
   { access = "read", path = "../sparks/deterministicConfig" },
   { access = "read", path = "../sparks/addresses" },
   { access = "read", path = "../erc20z/addresses" },
-  { access = "readwrite", path = "./deterministicConfig" },
-  { access = "readwrite", path = "./addresses" },
+  { access = "readwrite", path = "../1155-contracts/deterministicConfig" },
+  { access = "readwrite", path = "../1155-contracts/addresses" },
 ]
 libs = ['_imagine', 'node_modules', 'script']
 allow_paths = [

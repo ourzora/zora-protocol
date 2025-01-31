@@ -4,15 +4,15 @@ pragma solidity ^0.8.17;
 import "forge-std/Script.sol";
 import "forge-std/console2.sol";
 
-import {ZoraDeployerBase} from "../src/ZoraDeployerBase.sol";
-import {Zora1155Factory} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155Factory.sol";
-import {ProxyShim} from "@zoralabs/zora-1155-contracts/src/utils/ProxyShim.sol";
-import {UpgradeGate} from "@zoralabs/zora-1155-contracts/src/upgrades/UpgradeGate.sol";
+import {ZoraDeployerBase} from "../src/deployment/ZoraDeployerBase.sol";
+import {Zora1155Factory} from "../src/proxies/Zora1155Factory.sol";
+import {ProxyShim} from "../src/utils/ProxyShim.sol";
+import {UpgradeGate} from "../src/upgrades/UpgradeGate.sol";
 import {LibString} from "solady/utils/LibString.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
-import {ZoraDeployerUtils} from "../src/ZoraDeployerUtils.sol";
-import {Zora1155PremintExecutor} from "@zoralabs/zora-1155-contracts/src/proxies/Zora1155PremintExecutor.sol";
-import {DeterministicDeployerScript, DeterministicParams} from "../src/DeterministicDeployerScript.sol";
+import {ZoraDeployerUtils} from "../src/deployment/ZoraDeployerUtils.sol";
+import {Zora1155PremintExecutor} from "../src/proxies/Zora1155PremintExecutor.sol";
+import {DeterministicDeployerScript, DeterministicParams} from "../src/deployment/DeterministicDeployerScript.sol";
 import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 
 /// @title Gets parameters for deterministically deploying a new 1155 factory proxy at an address starting with 0x777777, regardless of the chain.

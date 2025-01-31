@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.17;
+pragma solidity >=0.8.17;
 
 import "forge-std/Test.sol";
 import {CommonBase} from "forge-std/Base.sol";
@@ -77,7 +77,7 @@ abstract contract DeploymentConfig is Script {
     /// @notice Returns the chain configuration struct from the JSON configuration file
     /// @return chainConfig structure
     function getChainConfig() internal view returns (ChainConfig memory chainConfig) {
-        string memory json = vm.readFile(string.concat("chainConfigs/", Strings.toString(block.chainid), ".json"));
+        string memory json = vm.readFile(string.concat("../1155-contracts/chainConfigs/", Strings.toString(block.chainid), ".json"));
         chainConfig.factoryOwner = json.readAddress(getKeyPrefix(FACTORY_OWNER));
         chainConfig.mintFeeRecipient = json.readAddress(getKeyPrefix(MINT_FEE_RECIPIENT));
         chainConfig.protocolRewards = json.readAddress(getKeyPrefix(PROTOCOL_REWARDS));
@@ -101,7 +101,7 @@ abstract contract DeploymentConfig is Script {
     /// @notice Get the deployment configuration struct from the JSON configuration file
     /// @return deployment deployment configuration structure
     function getDeployment() internal view returns (Deployment memory deployment) {
-        string memory json = vm.readFile(string.concat("addresses/", Strings.toString(block.chainid), ".json"));
+        string memory json = vm.readFile(string.concat("../1155-contracts/addresses/", Strings.toString(block.chainid), ".json"));
         deployment.fixedPriceSaleStrategy = readAddressOrDefaultToZero(json, FIXED_PRICE_SALE_STRATEGY);
         deployment.merkleMintSaleStrategy = readAddressOrDefaultToZero(json, MERKLE_MINT_SALE_STRATEGY);
         deployment.redeemMinterFactory = readAddressOrDefaultToZero(json, REDEEM_MINTER_FACTORY);
@@ -130,4 +130,3 @@ abstract contract DeploymentConfig is Script {
         return json.readAddress(".deployedAddress");
     }
 }
-

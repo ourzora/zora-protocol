@@ -93,11 +93,11 @@ async function bundleChainConfigs() {
   await mergeAndSaveConfigs({
     configs: [
       {
-        folder: "../1155-deployments/chainConfigs",
+        folder: "../1155-contracts/chainConfigs",
         configType: "chainConfigs",
       },
       {
-        folder: "../1155-deployments/addresses",
+        folder: "../1155-contracts/addresses",
         configType: "addresses",
       },
     ],
