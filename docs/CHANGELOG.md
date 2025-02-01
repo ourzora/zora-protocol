@@ -5,17 +5,17 @@
 ### Patch Changes
 
 - Updated dependencies [66f33bbb]
+  - @zoralabs/protocol-deployments@0.3.4 - Enhanced deployment configurations and fixed minor deployment issues
 - Updated dependencies [8d7fdc02]
-  - @zoralabs/protocol-deployments@0.3.4
-  - @zoralabs/protocol-sdk@0.11.2
+  - @zoralabs/protocol-sdk@0.11.2 - Improved SDK stability and performance optimizations
 
 ## 0.0.13
 
 ### Patch Changes
 
 - Updated dependencies [b885539f]
-  - @zoralabs/protocol-deployments@0.3.3
-  - @zoralabs/protocol-sdk@0.11.1
+  - @zoralabs/protocol-deployments@0.3.3 - Critical security updates and deployment workflow improvements
+  - @zoralabs/protocol-sdk@0.11.1 - Bug fixes and performance enhancements
 
 ## 0.0.12
 
