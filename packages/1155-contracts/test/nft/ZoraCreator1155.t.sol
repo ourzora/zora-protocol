@@ -1365,9 +1365,9 @@ contract ZoraCreator1155Test is Test {
     function test_supportsInterface() external {
         init();
 
-        // TODO: make this static
-        bytes4 interfaceId = type(IZoraCreator1155).interfaceId;
-        assertEq(target.supportsInterface(interfaceId), true);
+        // Interface ID for IZoraCreator1155
+        bytes4 constant IZORA_CREATOR_1155_INTERFACE_ID = 0x3a8ec461;
+        assertEq(target.supportsInterface(IZORA_CREATOR_1155_INTERFACE_ID), true);
 
         bytes4 erc1155InterfaceId = bytes4(0xd9b67a26);
         assertTrue(target.supportsInterface(erc1155InterfaceId));
