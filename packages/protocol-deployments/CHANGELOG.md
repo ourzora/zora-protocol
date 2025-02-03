@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.5.0
+
+### Minor Changes
+
+- e1a3d68f: Refactored coin interface imports
+
 ## 0.4.2
 
 ### Patch Changes

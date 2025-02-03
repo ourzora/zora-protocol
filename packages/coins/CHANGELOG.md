@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 0.3.0
+
+### Minor Changes
+
+- e1a3d68f: Refactored coin interface imports
+
 ## 0.2.0
 
 ### Minor Changes
