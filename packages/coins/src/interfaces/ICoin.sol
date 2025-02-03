@@ -1,7 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-interface ICoin {
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
+import {IERC7572} from "./IERC7572.sol";
+
+interface ICoin is IERC165, IERC721Receiver, IERC7572 {
     /// @notice Thrown when an operation is attempted with a zero address
     error AddressZero();
 

@@ -2,18 +2,7 @@
 pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
-import {Initializable} from "@openzeppelin/contracts-upgradeable/proxy/utils/Initializable.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import {ContractVersionBase} from "./version/ContractVersionBase.sol";
-import {CoinConstants} from "./utils/CoinConstants.sol";
-import {MultiOwnable} from "./utils/MultiOwnable.sol";
-import {TickMath} from "./utils/TickMath.sol";
 import {ICoin} from "./interfaces/ICoin.sol";
 import {ICoinComments} from "./interfaces/ICoinComments.sol";
 import {IERC7572} from "./interfaces/IERC7572.sol";
@@ -22,6 +11,15 @@ import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
 import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 import {IProtocolRewards} from "./interfaces/IProtocolRewards.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
+
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ContractVersionBase} from "./version/ContractVersionBase.sol";
+import {CoinConstants} from "./utils/CoinConstants.sol";
+import {MultiOwnable} from "./utils/MultiOwnable.sol";
+import {TickMath} from "./utils/TickMath.sol";
 
 /*
      $$$$$$\   $$$$$$\  $$$$$$\ $$\   $$\ 
@@ -33,17 +31,7 @@ import {IWETH} from "./interfaces/IWETH.sol";
     \$$$$$$  | $$$$$$  |$$$$$$\ $$ | \$$ |
      \______/  \______/ \______|\__|  \__|
 */
-contract Coin is
-    ICoin,
-    IERC165,
-    IERC721Receiver,
-    IERC7572,
-    CoinConstants,
-    ContractVersionBase,
-    ERC20PermitUpgradeable,
-    MultiOwnable,
-    ReentrancyGuardUpgradeable
-{
+contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
 
     address public immutable WETH;
