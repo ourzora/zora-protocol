@@ -17,12 +17,18 @@ contract FactoryTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        vm.prank(users.creator);
-        coin = Coin(
-            payable(
-                factory.deploy(users.creator, owners, "https://test2.com", "Test2 Token", "TEST2", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
-            )
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://test2.com",
+            "Test2 Token",
+            "TEST2",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            0
         );
+        coin = Coin(payable(coinAddress));
         pool = IUniswapV3Pool(coin.poolAddress());
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");
@@ -62,21 +68,18 @@ contract FactoryTest is BaseTest {
 
         vm.deal(users.creator, initialOrderSize);
         vm.prank(users.creator);
-        coin = Coin(
-            payable(
-                factory.deploy{value: initialOrderSize}(
-                    users.creator,
-                    owners,
-                    "https://test2.com",
-                    "Test2 Token",
-                    "TEST2",
-                    users.platformReferrer,
-                    address(weth),
-                    LP_TICK_LOWER_WETH,
-                    initialOrderSize
-                )
-            )
+        (address coinAddress, ) = factory.deploy{value: initialOrderSize}(
+            users.creator,
+            owners,
+            "https://test2.com",
+            "Test2 Token",
+            "TEST2",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            initialOrderSize
         );
+        coin = Coin(payable(coinAddress));
         pool = IUniswapV3Pool(coin.poolAddress());
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");
@@ -102,22 +105,18 @@ contract FactoryTest is BaseTest {
         uint256 orderSize = 1 ether;
         vm.deal(users.creator, orderSize);
 
-        vm.prank(users.creator);
-        coin = Coin(
-            payable(
-                factory.deploy{value: orderSize}(
-                    users.creator,
-                    owners,
-                    "https://test2.com",
-                    "Test2 Token",
-                    "TEST2",
-                    users.platformReferrer,
-                    address(weth),
-                    LP_TICK_LOWER_WETH,
-                    orderSize
-                )
-            )
+        (address coinAddress, ) = factory.deploy{value: orderSize}(
+            users.creator,
+            owners,
+            "https://test2.com",
+            "Test2 Token",
+            "TEST2",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            orderSize
         );
+        coin = Coin(payable(coinAddress));
         pool = IUniswapV3Pool(coin.poolAddress());
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");
@@ -127,22 +126,18 @@ contract FactoryTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        vm.prank(users.creator);
-        coin = Coin(
-            payable(
-                factory.deploy(
-                    users.creator,
-                    owners,
-                    "https://testcoinusdcpair.com",
-                    "Testcoinusdcpair",
-                    "TESTCOINUSDCPAIR",
-                    users.platformReferrer,
-                    USDC_ADDRESS,
-                    USDC_TICK_LOWER,
-                    0
-                )
-            )
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://testcoinusdcpair.com",
+            "Testcoinusdcpair",
+            "TESTCOINUSDCPAIR",
+            users.platformReferrer,
+            USDC_ADDRESS,
+            USDC_TICK_LOWER,
+            0
         );
+        coin = Coin(payable(coinAddress));
         pool = IUniswapV3Pool(coin.poolAddress());
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");
@@ -190,21 +185,19 @@ contract FactoryTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        coin = Coin(
-            payable(
-                factory.deploy(
-                    users.creator,
-                    owners,
-                    "https://testcoinusdcpair.com",
-                    "Testcoinusdcpair",
-                    "TESTCOINUSDCPAIR",
-                    address(0),
-                    USDC_ADDRESS,
-                    USDC_TICK_LOWER,
-                    0
-                )
-            )
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://testcoinusdcpair.com",
+            "Testcoinusdcpair",
+            "TESTCOINUSDCPAIR",
+            address(0),
+            USDC_ADDRESS,
+            USDC_TICK_LOWER,
+            0
         );
+
+        coin = Coin(payable(coinAddress));
 
         assertEq(coin.platformReferrer(), coin.protocolRewardRecipient(), "platformReferrer");
     }
@@ -214,20 +207,17 @@ contract FactoryTest is BaseTest {
         owners[0] = users.creator;
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.InvalidWethLowerTick.selector));
-        coin = Coin(
-            payable(
-                factory.deploy(
-                    users.creator,
-                    owners,
-                    "https://testcoinusdcpair.com",
-                    "Testcoinusdcpair",
-                    "TESTCOINUSDCPAIR",
-                    users.platformReferrer,
-                    address(0),
-                    USDC_TICK_LOWER,
-                    0
-                )
-            )
+
+        factory.deploy(
+            users.creator,
+            owners,
+            "https://testcoinusdcpair.com",
+            "Testcoinusdcpair",
+            "TESTCOINUSDCPAIR",
+            users.platformReferrer,
+            address(0),
+            USDC_TICK_LOWER,
+            0
         );
     }
 
@@ -241,20 +231,17 @@ contract FactoryTest is BaseTest {
 
         vm.prank(users.creator);
         vm.expectRevert(abi.encodeWithSelector(ICoin.EthTransferInvalid.selector));
-        coin = Coin(
-            payable(
-                factory.deploy{value: 1e6}(
-                    users.creator,
-                    owners,
-                    "https://testcoinusdcpair.com",
-                    "Testcoinusdcpair",
-                    "TESTCOINUSDCPAIR",
-                    users.platformReferrer,
-                    USDC_ADDRESS,
-                    USDC_TICK_LOWER,
-                    0
-                )
-            )
+
+        factory.deploy{value: 1e6}(
+            users.creator,
+            owners,
+            "https://testcoinusdcpair.com",
+            "Testcoinusdcpair",
+            "TESTCOINUSDCPAIR",
+            users.platformReferrer,
+            USDC_ADDRESS,
+            USDC_TICK_LOWER,
+            0
         );
     }
 
@@ -262,11 +249,18 @@ contract FactoryTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        coin = Coin(
-            payable(
-                factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
-            )
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://test.com",
+            "Test Token",
+            "TEST",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            0
         );
+        coin = Coin(payable(coinAddress));
 
         assertEq(coin.balanceOf(users.creator), 10_000_000e18, "Should only have initial creator allocation");
     }

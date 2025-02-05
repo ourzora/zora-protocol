@@ -42,14 +42,14 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         address currency,
         int24 tickLower,
         uint256 orderSize
-    ) public payable nonReentrant returns (address) {
+    ) public payable nonReentrant returns (address, uint256) {
         bytes32 salt = _generateSalt(payoutRecipient, uri);
 
         Coin coin = Coin(payable(Clones.cloneDeterministic(coinImpl, salt)));
 
         coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, tickLower);
 
-        _handleFirstOrder(coin, orderSize);
+        uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
 
         emit CoinCreated(
             msg.sender,
@@ -64,17 +64,17 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
             coin.contractVersion()
         );
 
-        return address(coin);
+        return (address(coin), coinsPurchased);
     }
 
     /// @dev Generates a unique salt for deterministic deployment
-    function _generateSalt(address _creator, string memory _tokenURI) internal view returns (bytes32) {
+    function _generateSalt(address payoutRecipient, string memory uri) internal view returns (bytes32) {
         return
             keccak256(
                 abi.encodePacked(
                     msg.sender,
-                    _creator,
-                    keccak256(abi.encodePacked(_tokenURI)),
+                    payoutRecipient,
+                    keccak256(abi.encodePacked(uri)),
                     block.coinbase,
                     block.number,
                     block.prevrandao,
@@ -88,7 +88,7 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
     /// @dev Handles the first buy of a newly created coin
     /// @param coin The newly created coin contract
     /// @param orderSize The size of the first buy order; must match msg.value for ETH/WETH pairs
-    function _handleFirstOrder(Coin coin, uint256 orderSize) internal {
+    function _handleFirstOrder(Coin coin, uint256 orderSize) internal returns (uint256 coinsPurchased) {
         if (msg.value > 0 || orderSize > 0) {
             address currency = coin.currency();
             address payoutRecipient = coin.payoutRecipient();
@@ -102,9 +102,9 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
 
                 IERC20(currency).approve(address(coin), orderSize);
 
-                coin.buy(payoutRecipient, orderSize, 0, 0, address(0));
+                coinsPurchased = coin.buy(payoutRecipient, orderSize, 0, 0, address(0));
             } else {
-                coin.buy{value: msg.value}(payoutRecipient, orderSize, 0, 0, address(0));
+                coinsPurchased = coin.buy{value: msg.value}(payoutRecipient, orderSize, 0, 0, address(0));
             }
         }
     }

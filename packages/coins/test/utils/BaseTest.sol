@@ -110,9 +110,19 @@ contract BaseTest is Test, CoinConstants {
         owners[0] = users.creator;
 
         vm.prank(users.creator);
-        coin = Coin(
-            payable(factory.deploy(users.creator, owners, "https://test.com", "Testcoin", "TEST", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0))
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://test.com",
+            "Testcoin",
+            "TEST",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            0
         );
+
+        coin = Coin(payable(coinAddress));
         pool = IUniswapV3Pool(coin.poolAddress());
 
         vm.label(address(coin), "COIN");
@@ -124,21 +134,19 @@ contract BaseTest is Test, CoinConstants {
         owners[0] = users.creator;
 
         vm.prank(users.creator);
-        coin = Coin(
-            payable(
-                factory.deploy(
-                    users.creator,
-                    owners,
-                    "https://testusdccoin.com",
-                    "Testusdccoin",
-                    "TESTUSDCCOIN",
-                    users.platformReferrer,
-                    USDC_ADDRESS,
-                    USDC_TICK_LOWER,
-                    0
-                )
-            )
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://testusdccoin.com",
+            "Testusdccoin",
+            "TESTUSDCCOIN",
+            users.platformReferrer,
+            USDC_ADDRESS,
+            USDC_TICK_LOWER,
+            0
         );
+
+        coin = Coin(payable(coinAddress));
         pool = IUniswapV3Pool(coin.poolAddress());
 
         vm.label(address(coin), "COIN");

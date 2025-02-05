@@ -52,5 +52,5 @@ interface IZoraFactory {
         address currency,
         int24 tickLower,
         uint256 orderSize
-    ) external payable returns (address);
+    ) external payable returns (address, uint256);
 }

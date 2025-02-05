@@ -55,11 +55,21 @@ contract CoinTest is BaseTest {
         owners[0] = users.creator;
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        coin = Coin(
-            payable(factory.deploy(address(0), owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0))
+        (address coinAddress, ) = factory.deploy(
+            address(0),
+            owners,
+            "https://init.com",
+            "Init Token",
+            "INIT",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            0
         );
+        coin = Coin(payable(coinAddress));
 
-        coin = Coin(payable(factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", address(0), address(weth), LP_TICK_LOWER_WETH, 0)));
+        (coinAddress, ) = factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", address(0), address(weth), LP_TICK_LOWER_WETH, 0);
+        coin = Coin(payable(coinAddress));
 
         assertEq(coin.payoutRecipient(), users.creator);
         assertEq(coin.platformReferrer(), users.feeRecipient);
@@ -72,11 +82,18 @@ contract CoinTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        coin = Coin(
-            payable(
-                factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
-            )
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://init.com",
+            "Init Token",
+            "INIT",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            0
         );
+        coin = Coin(payable(coinAddress));
 
         vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
         coin.initialize(users.creator, new address[](0), "https://init.com", "Init Token", "INIT", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH);
@@ -288,11 +305,18 @@ contract CoinTest is BaseTest {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        Coin newCoin = Coin(
-            payable(
-                factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH, 0)
-            )
+        (address newCoinAddr, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://test.com",
+            "Test Token",
+            "TEST",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            0
         );
+        Coin newCoin = Coin(payable(newCoinAddr));
 
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
