@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.5.1
+
+### Patch Changes
+
+- 11854bbe: Updated factory impl abi to return coins purchased on deploy
+
 ## 0.5.0
 
 ### Minor Changes

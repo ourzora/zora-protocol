@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 0.3.1
+
+### Patch Changes
+
+- 11854bbe: Updated factory impl abi to return coins purchased on deploy
+
 ## 0.3.0
 
 ### Minor Changes
