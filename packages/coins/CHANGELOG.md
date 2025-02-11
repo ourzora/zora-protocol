@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 0.4.0
+
+### Minor Changes
+
+- e6ee19ce: Updated launch rewards - 10m coins for creator; remaining 990m for market
+
 ## 0.3.1
 
 ### Patch Changes
