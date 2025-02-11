@@ -14,10 +14,11 @@ contract LimitedMintPerAddress is ILimitedMintPerAddress {
     }
 
     function _requireMintNotOverLimitAndUpdate(uint256 limit, uint256 numRequestedMint, address tokenContract, uint256 tokenId, address wallet) internal {
-        mintedPerAddress[tokenContract][tokenId][wallet] += numRequestedMint;
-        if (mintedPerAddress[tokenContract][tokenId][wallet] > limit) {
-            revert UserExceedsMintLimit(wallet, limit, mintedPerAddress[tokenContract][tokenId][wallet]);
+        uint256 newMintCount = mintedPerAddress[tokenContract][tokenId][wallet] + numRequestedMint;
+        if (newMintCount > limit) {
+            revert UserExceedsMintLimit(wallet, limit, newMintCount);
         }
+        mintedPerAddress[tokenContract][tokenId][wallet] = newMintCount;
     }
 
     function supportsInterface(bytes4 interfaceId) public pure virtual override returns (bool) {
