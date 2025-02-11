@@ -117,10 +117,8 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         // Mint the total supply
         _mint(address(this), MAX_TOTAL_SUPPLY);
 
-        // Distribute launch rewards
+        // Distribute the creator launch reward
         _transfer(address(this), payoutRecipient, CREATOR_LAUNCH_REWARD);
-        _transfer(address(this), platformReferrer, PLATFORM_REFERRER_LAUNCH_REWARD);
-        _transfer(address(this), protocolRewardRecipient, PROTOCOL_LAUNCH_REWARD);
 
         // Approve the transfer of the remaining supply to the pool
         IERC20(address(this)).safeIncreaseAllowance(address(nonfungiblePositionManager), POOL_LAUNCH_SUPPLY);

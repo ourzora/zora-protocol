@@ -54,9 +54,7 @@ contract FactoryTest is BaseTest {
         assertEq(coin.currency(), address(weth), "currency");
         assertEq(coin.totalSupply(), 1_000_000_000e18, "totalSupply");
         assertEq(coin.balanceOf(users.creator), 10_000_000e18, "balanceOf creator");
-        assertGe(coin.balanceOf(users.platformReferrer), 5_000_000e18, "balanceOf platformReferrer");
-        assertGe(coin.balanceOf(users.feeRecipient), 5_000_000e18, "balanceOf protocolRewardRecipient");
-        assertGt(coin.balanceOf(coin.poolAddress()), 979_999_983e18, "balanceOf pool");
+        assertGt(coin.balanceOf(coin.poolAddress()), 989_999_999e18, "balanceOf pool");
     }
 
     function test_deploy_with_eth(uint256 initialOrderSize) public {

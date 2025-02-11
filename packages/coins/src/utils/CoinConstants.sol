@@ -7,20 +7,12 @@ abstract contract CoinConstants {
     uint256 public constant MAX_TOTAL_SUPPLY = 1_000_000_000e18;
 
     /// @notice The number of coins allocated to the liquidity pool
-    /// @dev Set to 980 million coins
-    uint256 internal constant POOL_LAUNCH_SUPPLY = 980_000_000e18;
+    /// @dev 990 million coins
+    uint256 internal constant POOL_LAUNCH_SUPPLY = 990_000_000e18;
 
     /// @notice The number of coins rewarded to the creator
-    /// @dev Set to 10 million coins
+    /// @dev 10 million coins
     uint256 internal constant CREATOR_LAUNCH_REWARD = 10_000_000e18;
-
-    /// @notice The number of coins rewarded to the platform referrer
-    /// @dev Set to 5 million coins
-    uint256 internal constant PLATFORM_REFERRER_LAUNCH_REWARD = 5_000_000e18;
-
-    /// @notice The number of coins rewarded to the protocol
-    /// @dev Set to 5 million coins
-    uint256 internal constant PROTOCOL_LAUNCH_REWARD = 5_000_000e18;
 
     /// @notice The minimum order size allowed for trades
     /// @dev Set to 0.0000001 ETH to prevent dust transactions

@@ -11,18 +11,14 @@ contract CoinTest is BaseTest {
     }
 
     function test_supply_constants() public view {
-        assertEq(MAX_TOTAL_SUPPLY, POOL_LAUNCH_SUPPLY + CREATOR_LAUNCH_REWARD + PLATFORM_REFERRER_LAUNCH_REWARD + PROTOCOL_LAUNCH_REWARD);
+        assertEq(MAX_TOTAL_SUPPLY, POOL_LAUNCH_SUPPLY + CREATOR_LAUNCH_REWARD);
 
         assertEq(MAX_TOTAL_SUPPLY, 1_000_000_000e18);
-        assertEq(POOL_LAUNCH_SUPPLY, 980_000_000e18);
+        assertEq(POOL_LAUNCH_SUPPLY, 990_000_000e18);
         assertEq(CREATOR_LAUNCH_REWARD, 10_000_000e18);
-        assertEq(PLATFORM_REFERRER_LAUNCH_REWARD, 5_000_000e18);
-        assertEq(PROTOCOL_LAUNCH_REWARD, 5_000_000e18);
 
         assertEq(coin.totalSupply(), MAX_TOTAL_SUPPLY);
         assertEq(coin.balanceOf(coin.payoutRecipient()), CREATOR_LAUNCH_REWARD);
-        assertEq(coin.balanceOf(coin.platformReferrer()), PLATFORM_REFERRER_LAUNCH_REWARD);
-        assertEq(coin.balanceOf(coin.protocolRewardRecipient()), PROTOCOL_LAUNCH_REWARD);
         assertApproxEqAbs(coin.balanceOf(address(pool)), POOL_LAUNCH_SUPPLY, 1e18);
     }
 
