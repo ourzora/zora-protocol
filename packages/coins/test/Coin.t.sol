@@ -11,7 +11,7 @@ contract CoinTest is BaseTest {
     }
 
     function test_contract_version() public view {
-        assertEq(coin.contractVersion(), "0.4.0");
+        assertEq(coin.contractVersion(), "0.5.0");
     }
 
     function test_supply_constants() public view {
@@ -185,6 +185,18 @@ contract CoinTest is BaseTest {
         vm.prank(users.buyer);
         vm.expectRevert("ERC20: transfer amount exceeds allowance");
         coin.buy(users.coinRecipient, 100e6, 0, 0, users.tradeReferrer);
+    }
+
+    function test_buy_validate_return_amounts(uint256 orderSize) public {
+        vm.assume(orderSize >= MIN_ORDER_SIZE);
+        vm.assume(orderSize < 10 ether);
+
+        vm.deal(users.buyer, orderSize);
+        vm.prank(users.buyer);
+        (uint256 amountIn, uint256 amountOut) = coin.buy{value: orderSize}(users.coinRecipient, orderSize, 0, 0, users.tradeReferrer);
+
+        assertEq(amountIn, orderSize, "amountIn");
+        assertGe(coin.balanceOf(users.coinRecipient), amountOut, "coinRecipient coin balance");
     }
 
     function test_sell_for_eth() public {

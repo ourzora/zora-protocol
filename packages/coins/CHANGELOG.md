@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 0.5.0
+
+### Minor Changes
+
+- 39ffa77c: Add coin refunds for large sells with little liquidity
+
 ## 0.4.0
 
 ### Minor Changes
