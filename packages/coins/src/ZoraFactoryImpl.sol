@@ -102,9 +102,9 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
 
                 IERC20(currency).approve(address(coin), orderSize);
 
-                coinsPurchased = coin.buy(payoutRecipient, orderSize, 0, 0, address(0));
+                (, coinsPurchased) = coin.buy(payoutRecipient, orderSize, 0, 0, address(0));
             } else {
-                coinsPurchased = coin.buy{value: msg.value}(payoutRecipient, orderSize, 0, 0, address(0));
+                (, coinsPurchased) = coin.buy{value: msg.value}(payoutRecipient, orderSize, 0, 0, address(0));
             }
         }
     }

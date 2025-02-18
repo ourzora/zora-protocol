@@ -138,7 +138,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         uint256 minAmountOut,
         uint160 sqrtPriceLimitX96,
         address tradeReferrer
-    ) public payable nonReentrant returns (uint256) {
+    ) public payable nonReentrant returns (uint256, uint256) {
         // Ensure the recipient is not the zero address
         if (recipient == address(0)) {
             revert AddressZero();
@@ -173,7 +173,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
 
         emit CoinBuy(msg.sender, recipient, tradeReferrer, amountOut, currency, tradeReward, trueOrderSize);
 
-        return amountOut;
+        return (orderSize, amountOut);
     }
 
     /// @notice Executes a sell order
@@ -188,11 +188,14 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         uint256 minAmountOut,
         uint160 sqrtPriceLimitX96,
         address tradeReferrer
-    ) public nonReentrant returns (uint256) {
+    ) public nonReentrant returns (uint256, uint256) {
         // Ensure the recipient is not the zero address
         if (recipient == address(0)) {
             revert AddressZero();
         }
+
+        // Record the coin balance of this contract before the swap
+        uint256 beforeCoinBalance = balanceOf(address(this));
 
         // Transfer the coins from the seller to this contract
         transfer(address(this), orderSize);
@@ -214,6 +217,21 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         // Execute the swap
         uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
 
+        // Record the coin balance of this contract after the swap
+        uint256 afterCoinBalance = balanceOf(address(this));
+
+        // If the swap was partially executed:
+        if (afterCoinBalance > beforeCoinBalance) {
+            // Calculate the refund
+            uint256 coinRefund = afterCoinBalance - beforeCoinBalance;
+
+            // Update the order size
+            orderSize -= coinRefund;
+
+            // Transfer the refund back to the seller
+            _transfer(address(this), recipient, coinRefund);
+        }
+
         // If currency is WETH, convert to ETH
         if (currency == WETH) {
             IWETH(WETH).withdraw(amountOut);
@@ -225,7 +243,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         // Calculate the payout after the fee
         uint256 payoutSize = amountOut - tradeReward;
 
-        _handleSellPayout(payoutSize, recipient);
+        _handlePayout(payoutSize, recipient);
 
         _handleTradeRewards(tradeReward, tradeReferrer);
 
@@ -233,7 +251,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
 
         emit CoinSell(msg.sender, recipient, tradeReferrer, orderSize, currency, tradeReward, payoutSize);
 
-        return amountOut;
+        return (orderSize, payoutSize);
     }
 
     /// @notice Enables a user to burn their tokens
@@ -415,10 +433,10 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         }
     }
 
-    /// @dev Handles sending ETH and ERC20 payouts from sell orders to recipients
+    /// @dev Handles sending ETH and ERC20 payouts and refunds to recipients
     /// @param orderPayout The amount of currency to pay out
     /// @param recipient The address to receive the payout
-    function _handleSellPayout(uint256 orderPayout, address recipient) internal {
+    function _handlePayout(uint256 orderPayout, address recipient) internal {
         if (currency == WETH) {
             Address.sendValue(payable(recipient), orderPayout);
         } else {

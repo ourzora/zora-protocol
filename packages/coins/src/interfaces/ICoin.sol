@@ -172,7 +172,7 @@ interface ICoin is IERC165, IERC721Receiver, IERC7572 {
         uint256 minAmountOut,
         uint160 sqrtPriceLimitX96,
         address tradeReferrer
-    ) external payable returns (uint256);
+    ) external payable returns (uint256, uint256);
 
     /// @notice Executes a sell order
     /// @param recipient The recipient of the currency
@@ -180,7 +180,13 @@ interface ICoin is IERC165, IERC721Receiver, IERC7572 {
     /// @param minAmountOut The minimum amount of currency to receive
     /// @param sqrtPriceLimitX96 The price limit for the swap
     /// @param tradeReferrer The address of the trade referrer
-    function sell(address recipient, uint256 orderSize, uint256 minAmountOut, uint160 sqrtPriceLimitX96, address tradeReferrer) external returns (uint256);
+    function sell(
+        address recipient,
+        uint256 orderSize,
+        uint256 minAmountOut,
+        uint160 sqrtPriceLimitX96,
+        address tradeReferrer
+    ) external returns (uint256, uint256);
 
     /// @notice Enables a user to burn their tokens
     /// @param amount The amount of tokens to burn

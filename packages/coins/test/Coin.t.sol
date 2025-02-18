@@ -10,6 +10,10 @@ contract CoinTest is BaseTest {
         _deployCoin();
     }
 
+    function test_contract_version() public view {
+        assertEq(coin.contractVersion(), "0.4.0");
+    }
+
     function test_supply_constants() public view {
         assertEq(MAX_TOTAL_SUPPLY, POOL_LAUNCH_SUPPLY + CREATOR_LAUNCH_REWARD);
 
@@ -262,6 +266,27 @@ contract CoinTest is BaseTest {
         coin.sell(users.coinRecipient, balance + 1, 0, 0, users.tradeReferrer);
     }
 
+    function test_sell_partial_execution() public {
+        vm.deal(users.creator, 1 ether);
+        vm.prank(users.creator);
+        coin.buy{value: 0.001 ether}(users.creator, 0.001 ether, 0, 0, users.tradeReferrer);
+
+        uint256 beforeBalance = coin.balanceOf(users.creator);
+        assertEq(beforeBalance, 10438320330337104517114132); // 10,438,320 coins
+
+        vm.prank(users.creator);
+        (uint256 amountSold, ) = coin.sell(users.creator, beforeBalance, 0, 0, users.tradeReferrer);
+        assertEq(amountSold, 442747808421317694054680); // 442,747 coins (max that could be sold)
+
+        uint256 afterBalance = coin.balanceOf(users.creator);
+        assertEq(afterBalance, 9997786260957893411529725); // 9,997,786 coins
+
+        uint256 expectedMarketReward = 2213739042106588470273; // 2,213 coins
+
+        // 9,997,786 = 10,438,320 order size - 442,747 true order size + 2,213 creator market reward
+        assertEq(afterBalance, ((beforeBalance - amountSold) + expectedMarketReward), "amountSold");
+    }
+
     function test_burn() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
@@ -458,9 +483,5 @@ contract CoinTest is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(MultiOwnable.OnlyOwner.selector));
         coin.setPayoutRecipient(newPayoutRecipient);
-    }
-
-    function test_contract_version() public view {
-        assertEq(coin.contractVersion(), "0.4.0");
     }
 }
