@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.5.2
+
+### Patch Changes
+
+- ed9f7741: Updated coin ABI for updated buy/sell return values
+
 ## 0.5.1
 
 ### Patch Changes
