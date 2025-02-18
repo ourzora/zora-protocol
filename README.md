@@ -1,6 +1,7 @@
 # Zora Protocol
 
 [![Contracts](https://github.com/ourzora/zora-protocol/actions/workflows/contracts.yml/badge.svg)](https://github.com/ourzora/zora-protocol/actions/workflows/contracts.yml)
+[![License](https://img.shields.io/github/license/ourzora/zora-protocol?color=blue)](https://github.com/ourzora/zora-protocol/blob/main/LICENSE)
 
 This repository is a monorepo for the Zora Protocol.
 
