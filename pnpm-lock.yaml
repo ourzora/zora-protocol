@@ -297,6 +297,9 @@ importers:
       prettier-plugin-solidity:
         specifier: ^1.4.1
         version: 1.4.2(prettier@3.4.2)
+      solady:
+        specifier: 0.0.132
+        version: 0.0.132
       tsup:
         specifier: ^7.2.0
         version: 7.3.0(postcss@8.5.1)(ts-node@10.9.2(@types/node@20.17.16)(typescript@5.7.3))(typescript@5.7.3)

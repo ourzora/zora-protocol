@@ -22,5 +22,11 @@ import {ERC1967Proxy} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Proxy.s
                OURS TRULY,
 */
 contract ZoraFactory is ERC1967Proxy {
-    constructor(address _logic, bytes memory _data) ERC1967Proxy(_logic, _data) {}
+    bytes32 internal immutable name;
+
+    constructor(address _logic) ERC1967Proxy(_logic, "") {
+        // added to create unique bytecode for this contract
+        // so that it can be properly verified as its own contract.
+        name = keccak256("ZoraFactory");
+    }
 }

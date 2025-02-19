@@ -113,6 +113,18 @@ contract CoinTest is BaseTest {
         assertEq(users.seller.balance, 0);
     }
 
+    function test_fork_buy_with_eth() public {
+        vm.rollFork(26603382);
+        factory = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
+        _deployCoin();
+        vm.deal(users.buyer, 1 ether);
+        vm.prank(users.buyer);
+        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
+
+        assertGt(coin.balanceOf(users.coinRecipient), 0);
+        assertEq(users.seller.balance, 0);
+    }
+
     function test_buy_with_eth_fuzz(uint256 ethOrderSize) public {
         vm.assume(ethOrderSize >= MIN_ORDER_SIZE);
         vm.assume(ethOrderSize < 10 ether);

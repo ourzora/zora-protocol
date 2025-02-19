@@ -1,14 +1,23 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.28;
 
-import {Script, console} from "forge-std/Script.sol";
+import {ProxyDeployerScript, DeterministicDeployerAndCaller} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
+import {CoinsDeployerBase} from "./CoinsDeployerBase.sol";
 
-contract Deploy is Script {
-    function setUp() public {}
-
+contract DeployScript is CoinsDeployerBase {
     function run() public {
+        CoinsDeployment memory deployment = readDeployment();
+
         vm.startBroadcast();
 
+        // get deployer contract
+        DeterministicDeployerAndCaller deployer = createOrGetDeployerAndCaller();
+
+        deployZoraDeterministic(deployment, deployer);
+
         vm.stopBroadcast();
+
+        // save the deployment json
+        saveDeployment(deployment);
     }
 }

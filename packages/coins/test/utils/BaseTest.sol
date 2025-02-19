@@ -80,9 +80,9 @@ contract BaseTest is Test, CoinConstants {
 
         coinImpl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER);
         factoryImpl = new ZoraFactoryImpl(address(coinImpl));
-        factory = ZoraFactoryImpl(
-            address(new ZoraFactory(address(factoryImpl), abi.encodeWithSelector(ZoraFactoryImpl.initialize.selector, users.factoryOwner)))
-        );
+        factory = ZoraFactoryImpl(address(new ZoraFactory(address(factoryImpl))));
+
+        ZoraFactoryImpl(factory).initialize(users.factoryOwner);
 
         vm.label(address(factory), "ZORA_FACTORY");
         vm.label(address(protocolRewards), "PROTOCOL_REWARDS");
