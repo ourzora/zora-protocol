@@ -7,3 +7,8 @@ optimizer = true
 
 [profile.ci.fuzz]
 runs = 1000
+
+[rpc_endpoints]
+base = "https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+zora = "https://rpc.zora.energy"
