@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.5.3
+
+### Patch Changes
+
+- 70b039ce: Deployed ZoraFactory for coins to determinisitic 7777777 addresses on base and base sepolia
+
 ## 0.5.2
 
 ### Patch Changes

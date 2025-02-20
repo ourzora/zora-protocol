@@ -1,5 +1,12 @@
 # @zoralabs/nft-creator-subgraph
 
+## 0.3.32
+
+### Patch Changes
+
+- Updated dependencies [70b039ce]
+  - @zoralabs/protocol-deployments@0.5.3
+
 ## 0.3.31
 
 ### Patch Changes
