@@ -96,6 +96,35 @@ contract FactoryTest is BaseTest {
         console.log("BUYER_COIN_BALANCE ", coin.balanceOf(users.creator) - 10_000_000e18);
     }
 
+    function test_deploy_with_weth(uint256 initialOrderSize) public {
+        vm.assume(initialOrderSize > MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize < 10 ether);
+
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        vm.deal(users.creator, initialOrderSize);
+
+        vm.startPrank(users.creator);
+        weth.deposit{value: initialOrderSize}();
+
+        weth.approve(address(factory), type(uint256).max);
+
+        // Expect this to revert because WETH needs to be sent with msg.value.
+        vm.expectRevert();
+        factory.deploy(
+            users.creator,
+            owners,
+            "https://test2.com",
+            "Test2 Token",
+            "TEST2",
+            users.platformReferrer,
+            address(weth),
+            LP_TICK_LOWER_WETH,
+            initialOrderSize
+        );
+    }
+
     function test_deploy_with_one_eth() public {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
@@ -270,6 +299,10 @@ contract FactoryTest is BaseTest {
         factory.upgradeToAndCall(address(newImpl), "");
 
         assertEq(factory.implementation(), address(newImpl), "implementation");
+    }
+
+    function test_implementation_address() public {
+        assertEq(factory.implementation(), address(factoryImpl));
     }
 
     function test_revert_invalid_upgrade_impl() public {

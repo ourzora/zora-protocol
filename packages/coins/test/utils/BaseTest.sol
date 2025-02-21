@@ -59,7 +59,7 @@ contract BaseTest is Test, CoinConstants {
     IUniswapV3Pool internal pool;
 
     function setUp() public virtual {
-        forkId = vm.createSelectFork("https://mainnet.base.org", 21179722);
+        forkId = vm.createSelectFork("base", 21179722);
 
         weth = IWETH(WETH_ADDRESS);
         usdc = IERC20Metadata(USDC_ADDRESS);

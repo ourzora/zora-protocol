@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "./utils/BaseTest.sol";
+import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 
 contract CoinTest is BaseTest {
     function setUp() public override {
@@ -211,6 +212,82 @@ contract CoinTest is BaseTest {
         assertGe(coin.balanceOf(users.coinRecipient), amountOut, "coinRecipient coin balance");
     }
 
+    function test_sell_for_eth_direct_and_claim_secondary() public {
+        vm.deal(users.buyer, 1 ether);
+
+        vm.prank(users.buyer);
+        weth.deposit{value: 100_000}();
+
+        vm.prank(users.buyer);
+        weth.approve(address(swapRouter), 100_000);
+
+        // Set up the swap parameters
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: WETH_ADDRESS,
+            tokenOut: address(coin),
+            fee: LP_FEE,
+            recipient: address(users.buyer),
+            amountIn: 100_000,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
+
+        // Execute the swap
+        vm.prank(users.buyer);
+        uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
+
+        assertEq(coin.balanceOf(users.buyer), 44294392087151, "buyer coin balance");
+        assertEq(amountOut, 44294392087151);
+        assertGt(users.buyer.balance, 0, "seller eth balance");
+
+        // now we have unclaimed secondary rewards to claim
+        vm.prank(users.buyer);
+
+        // don't push ETH
+        coin.claimSecondaryRewards(false);
+        assertEq(protocolRewards.balanceOf(users.creator), 499);
+        assertEq(protocolRewards.balanceOf(users.platformReferrer), 249);
+        assertEq(protocolRewards.balanceOf(users.feeRecipient), 251);
+    }
+
+    function test_sell_for_eth_direct_and_claim_secondary_push_eth() public {
+        vm.deal(users.buyer, 1 ether);
+
+        vm.prank(users.buyer);
+        weth.deposit{value: 100_000}();
+
+        vm.prank(users.buyer);
+        weth.approve(address(swapRouter), 100_000);
+
+        // Set up the swap parameters
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: WETH_ADDRESS,
+            tokenOut: address(coin),
+            fee: LP_FEE,
+            recipient: address(users.buyer),
+            amountIn: 100_000,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
+
+        // Execute the swap
+        vm.prank(users.buyer);
+        uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
+
+        assertEq(coin.balanceOf(users.buyer), 44294392087151, "buyer coin balance");
+        assertEq(amountOut, 44294392087151);
+        assertGt(users.buyer.balance, 0, "seller eth balance");
+
+        // Now we have unclaimed secondary rewards to claim
+        vm.prank(users.buyer);
+
+        uint256 initialBalance = users.creator.balance;
+
+        // Push ETH
+        coin.claimSecondaryRewards(true);
+        assertEq(users.creator.balance - initialBalance, 499);
+    }
+
     function test_sell_for_eth() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
@@ -371,6 +448,42 @@ contract CoinTest is BaseTest {
         TradeRewards memory expectedFees = _calculateTradeRewards(fee);
 
         assertGt(protocolRewards.balanceOf(users.feeRecipient), expectedFees.platformReferrer, "feeRecipient eth balance");
+    }
+
+    function test_invalid_weth_tick() public {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        vm.expectRevert(ICoin.InvalidWethLowerTick.selector);
+        (address newCoinAddr, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://test.com",
+            "Test Token",
+            "TEST",
+            users.platformReferrer,
+            address(weth),
+            20,
+            0
+        );
+    }
+
+    function test_invalid_currency_tick() public {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        vm.expectRevert(ICoin.InvalidCurrencyLowerTick.selector);
+        (address newCoinAddr, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://test.com",
+            "Test Token",
+            "TEST",
+            users.platformReferrer,
+            address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913),
+            20,
+            0
+        );
     }
 
     function test_default_order_referrer() public {
