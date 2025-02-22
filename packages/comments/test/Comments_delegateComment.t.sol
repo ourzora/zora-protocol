@@ -24,7 +24,7 @@ contract Comments_mintAndCommentTest is Test {
 
     uint256 internal constant ZORA_REWARD_PCT = 10;
     uint256 internal constant REFERRER_REWARD_PCT = 20;
-    uint256 internal constant BPS_TO_PERCENT_2_DECIMAL_PERCISION = 100;
+    uint256 internal constant BPS_TO_PERCENT_2_DECIMAL_PRECISION = 100;
 
     uint256 tokenId1 = 1;
 
@@ -94,8 +94,8 @@ contract Comments_mintAndCommentTest is Test {
         });
 
         // validate that the protocol creator received rewards
-        uint256 zoraReward = (SPARKS_VALUE * (ZORA_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
-        uint256 referrerReward = (SPARKS_VALUE * (REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+        uint256 zoraReward = (SPARKS_VALUE * (ZORA_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
+        uint256 referrerReward = (SPARKS_VALUE * (REFERRER_REWARD_PCT)) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
         vm.assertEq(comments.protocolRewards().balanceOf(zoraRecipient), zoraReward);
         vm.assertEq(comments.protocolRewards().balanceOf(referrer), referrerReward);
         vm.assertEq(comments.protocolRewards().balanceOf(tokenAdmin), SPARKS_VALUE - zoraReward - referrerReward);

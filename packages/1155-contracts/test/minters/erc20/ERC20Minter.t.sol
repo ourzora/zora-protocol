@@ -33,7 +33,7 @@ contract ERC20MinterTest is Test {
     uint256 internal constant MINT_REFERRAL_PAID_MINT_REWARD_PCT = 28_571400;
     uint256 internal constant ZORA_PAID_MINT_REWARD_PCT = 28_571400;
     uint256 internal constant FIRST_MINTER_REWARD_PCT = 14_228500;
-    uint256 immutable BPS_TO_PERCENT_8_DECIMAL_PERCISION = 100_000_000;
+    uint256 immutable BPS_TO_PERCENT_8_DECIMAL_PRECISION = 100_000_000;
     uint256 internal constant ethReward = 0.000111 ether;
 
     event ERC20RewardsDeposit(
@@ -370,9 +370,9 @@ contract ERC20MinterTest is Test {
         currency.approve(address(newMinter), totalValue);
 
         uint256 reward = (totalValue * rewardPct) / BPS_TO_PERCENT;
-        uint256 createReferralReward = (reward * CREATE_REFERRAL_PAID_MINT_REWARD_PCT) / BPS_TO_PERCENT_8_DECIMAL_PERCISION;
-        uint256 mintReferralReward = (reward * MINT_REFERRAL_PAID_MINT_REWARD_PCT) / BPS_TO_PERCENT_8_DECIMAL_PERCISION;
-        uint256 firstMinterReward = (reward * FIRST_MINTER_REWARD_PCT) / BPS_TO_PERCENT_8_DECIMAL_PERCISION;
+        uint256 createReferralReward = (reward * CREATE_REFERRAL_PAID_MINT_REWARD_PCT) / BPS_TO_PERCENT_8_DECIMAL_PRECISION;
+        uint256 mintReferralReward = (reward * MINT_REFERRAL_PAID_MINT_REWARD_PCT) / BPS_TO_PERCENT_8_DECIMAL_PRECISION;
+        uint256 firstMinterReward = (reward * FIRST_MINTER_REWARD_PCT) / BPS_TO_PERCENT_8_DECIMAL_PRECISION;
         uint256 zoraReward = reward - (createReferralReward + mintReferralReward + firstMinterReward);
 
         vm.startPrank(tokenRecipient);

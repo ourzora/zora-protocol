@@ -66,14 +66,14 @@ contract ERC20Minter is ReentrancyGuard, IERC20Minter, SaleStrategy, LimitedMint
     /// @notice Computes the total reward value for a given amount of ERC20 tokens
     /// @param totalValue The total number of ERC20 tokens
     function computeTotalReward(uint256 totalValue) public view returns (uint256) {
-        return (totalValue * minterConfig.rewardRecipientPercentage) / BPS_TO_PERCENT_2_DECIMAL_PERCISION;
+        return (totalValue * minterConfig.rewardRecipientPercentage) / BPS_TO_PERCENT_2_DECIMAL_PRECISION;
     }
 
     /// @notice Computes the rewards value given an amount and a reward percentage
     /// @param totalReward The total reward to be distributed
     /// @param rewardPct The percentage of the reward to be distributed
     function computeReward(uint256 totalReward, uint256 rewardPct) public pure returns (uint256) {
-        return (totalReward * rewardPct) / BPS_TO_PERCENT_8_DECIMAL_PERCISION;
+        return (totalReward * rewardPct) / BPS_TO_PERCENT_8_DECIMAL_PRECISION;
     }
 
     /// @notice Computes the rewards for an ERC20 mint
