@@ -123,7 +123,7 @@ contract ZoraCreator1155Impl is
         // Setup uups
         __UUPSUpgradeable_init();
 
-        // Setup re-entracy guard
+        // Setup re-entrancy guard
         __ReentrancyGuard_init();
 
         // Setup contract-default token ID
