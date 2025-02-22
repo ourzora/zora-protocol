@@ -72,3 +72,77 @@ Once you've configured your Hardhat project to work with Zora Network, you can p
 
 ### Verifying
 Zora Network uses Blockscout for chain exploration and contract verification. See Blockscout's [Hardhat plugin guide](https://docs.blockscout.com/for-users/verifying-a-smart-contract/hardhat-verification-plugin) to verify contracts with Hardhat and Blockscout.
+
+## Tenderly
+[Tenderly](https://tenderly.co?mtm_campaign=ext-docs&mtm_kwd=zora) is a full-stack Web3 development infrastructure that helps developers build, stage, test, and monitor decentralized applications. It provides Virtual TestNets for staging and testing in mainnet-like environments, debugging and simulation tools for transaction analysis, and real-time monitoring capabilities.
+
+Use Tenderly [**Virtual TestNets**]() to streamline user onboarding on Zora. Create hands-on onboarding experiences in a dedicated **staging environment**.
+
+With Tenderly, you can:
+- Deploy contracts on [Virtual TestNets](https://docs.tenderly.co/virtual-testnets?mtm_campaign=ext-docs&mtm_kwd=zora) and stage them in a mainnet-like environment for the rest of your team
+- Build [CI/CD pipelines](https://docs.tenderly.co/virtual-testnets/ci-cd/github-actions-foundry?mtm_campaign=ext-docs&mtm_kwd=zora) for smart contracts using Github Actions
+- Fix bugs and test changes in a safe environment using [Tenderly Debugger](https://docs.tenderly.co/debugger?mtm_campaign=ext-docs&mtm_kwd=zora)
+- Monitor and analyze transactions with [Developer Explorer]https://docs.tenderly.co/developer-explorer?mtm_campaign=ext-docs&mtm_kwd=zora)
+- [Verify contracts](https://docs.tenderly.co/contract-verification?mtm_campaign=ext-docs&mtm_kwd=zora) on mainnet in public and private mode
+
+### Foundry deployment and verification
+To deploy a contract to a Virtual TestNet with Foundry, use the `--rpc-url` flag with the Virtual TestNet RPC URL and the `--etherscan-api-key` flag with your Tenderly access token. 
+
+For example, to deploy and verify a Counter contract to a Virtual TestNet froom Foundry run the following command:
+
+```bash
+forge create Counter \
+  --rpc-url $TENDERLY_VIRTUAL_TESTNET_RPC_URL \
+  --etherscan-api-key $TENDERLY_ACCESS_TOKEN \
+  --private-key $PRIVATE_KEY  \
+  --verify \
+  --verifier-url $TENDERLY_VIRTUAL_TESTNET_RPC_URL/verify/etherscan
+```
+
+### Hardhat deployment and verification
+To [deploy and verify contracts](https://docs.tenderly.co/contract-verification/hardhat?mtm_campaign=ext-docs&mtm_kwd=zora) to a Virtual TestNet from Hardhat add the following configuration to `hardhat.config.ts` and proceed with deployment as usual.
+
+```ts
+import { HardhatUserConfig } from "hardhat/config";
+import "@nomicfoundation/hardhat-toolbox";
+import * as tdly from "@tenderly/hardhat-tenderly";
+
+const config: HardhatUserConfig = {
+  solidity: "0.8.19",
+  networks: {
+    tenderly_zora_virtual_testnet: {
+      // your Tenderly TestNet RPC
+      url: "https://virtual.zora.rpc.tenderly.co/872ac073-...",
+      chainId: 735717777777
+    }
+  },
+  tenderly: {
+    username: "Your account slug",
+    project: "Your project slug",
+
+    // Mainnet contract verification visible only in Tenderly.
+    // Omitting or setting to `false` makes it visible to the whole world.
+    // Alternatively, configure verification visibility using
+    // an environment variable `TENDERLY_PUBLIC_VERIFICATION`.
+    privateVerification: process.env.TENDERLY_PUBLIC_VERIFICATION !== 'true',
+  },
+  etherscan: {
+    apiKey: "YOUR_TENDERLY_API_KEY",
+    customChains: [
+      {
+        network: "tenderly_zora_virtual_testnet",
+        chainId: 735717777777,
+        urls: {
+          apiURL: `https://virtual.zora.rpc.tenderly.co/872ac073-.../verify/etherscan`,
+          browserURL: "https://virtual.zora.rpc.tenderly.co/872ac073-..."
+        }
+      }
+    ]
+  },
+};
+
+export default config;
+
+```
+
+### CI/CD with Github Actions
