@@ -41,7 +41,7 @@ function getSubgraph(name: string, version: string): string {
   return `${CONFIG_BASE}/${name}/${version}/gn`;
 }
 
-const determinsticUpgradeGateAddress =
+const deterministicUpgradeGateAddress =
   "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900";
 
 const chains: {
@@ -54,13 +54,13 @@ const chains: {
 }[] = [
   {
     chain: zoraSepolia,
-    upgradeGates: [determinsticUpgradeGateAddress],
+    upgradeGates: [deterministicUpgradeGateAddress],
     subgraph: getSubgraph("zora-create-zora-sepolia", "stable"),
   },
   {
     chain: mainnet,
     upgradeGates: [
-      determinsticUpgradeGateAddress,
+      deterministicUpgradeGateAddress,
       "0xA6C5f2DE915240270DaC655152C3f6A91748cb85",
     ],
     subgraph: getSubgraph("zora-create-mainnet", "stable"),
@@ -72,7 +72,7 @@ const chains: {
   {
     chain: optimism,
     upgradeGates: [
-      determinsticUpgradeGateAddress,
+      deterministicUpgradeGateAddress,
       "0x78b524931e9d847c40BcBf225c25e154a7B05fDA",
     ],
     subgraph: getSubgraph("zora-create-optimism", "stable"),
@@ -86,7 +86,7 @@ const chains: {
   {
     chain: base,
     upgradeGates: [
-      determinsticUpgradeGateAddress,
+      deterministicUpgradeGateAddress,
       "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7",
     ],
     subgraph: getSubgraph("zora-create-base-mainnet", "stable"),
@@ -97,7 +97,7 @@ const chains: {
   {
     chain: zora,
     upgradeGates: [
-      determinsticUpgradeGateAddress,
+      deterministicUpgradeGateAddress,
       "0x35ca784918bf11692708c1D530691704AAcEA95E",
     ],
     subgraph: getSubgraph("zora-create-zora-mainnet", "stable"),
@@ -107,28 +107,28 @@ const chains: {
   },
   {
     chain: arbitrum,
-    upgradeGates: [determinsticUpgradeGateAddress],
+    upgradeGates: [deterministicUpgradeGateAddress],
     subgraph: getSubgraph("zora-create-arbitrum-one", "stable"),
   },
   {
     chain: arbitrumSepolia,
-    upgradeGates: [determinsticUpgradeGateAddress],
+    upgradeGates: [deterministicUpgradeGateAddress],
     subgraph: getSubgraph("zora-create-arbitrum-sepolia", "stable"),
   },
   {
     chain: sepolia,
-    upgradeGates: [determinsticUpgradeGateAddress],
+    upgradeGates: [deterministicUpgradeGateAddress],
     subgraph: getSubgraph("zora-create-sepolia", "stable"),
   },
 
   {
     chain: baseSepolia,
-    upgradeGates: [determinsticUpgradeGateAddress],
+    upgradeGates: [deterministicUpgradeGateAddress],
     subgraph: getSubgraph("zora-create-base-sepolia", "stable"),
   },
   {
     chain: blast,
-    upgradeGates: [determinsticUpgradeGateAddress],
+    upgradeGates: [deterministicUpgradeGateAddress],
     subgraph: getSubgraph("zora-create-blast", "stable"),
   },
 ];
