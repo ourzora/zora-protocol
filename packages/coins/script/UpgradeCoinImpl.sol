@@ -13,9 +13,7 @@ contract DeployScript is CoinsDeployerBase {
         // get deployer contract
         DeterministicDeployerAndCaller deployer = createOrGetDeployerAndCaller();
 
-        address newCoinImpl = address(deployCoinImpl());
-
-        deployment.coinImpl = newCoinImpl;
+        deployment = deployImpls(deployment);
 
         vm.stopBroadcast();
 
