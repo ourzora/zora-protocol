@@ -235,17 +235,7 @@ contract FactoryTest is BaseTest {
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.InvalidWethLowerTick.selector));
 
-        factory.deploy(
-            users.creator,
-            owners,
-            "https://testcoinusdcpair.com",
-            "Testcoinusdcpair",
-            "TESTCOINUSDCPAIR",
-            users.platformReferrer,
-            address(0),
-            USDC_TICK_LOWER,
-            0
-        );
+        factory.deploy(users.creator, owners, "https://testcoin.com", "Testcoin", "TESTCOIN", users.platformReferrer, address(0), LP_TICK_LOWER_WETH - 1, 0);
     }
 
     function test_deploy_with_usdc_revert_invalid_eth_transfer() public {
@@ -301,7 +291,7 @@ contract FactoryTest is BaseTest {
         assertEq(factory.implementation(), address(newImpl), "implementation");
     }
 
-    function test_implementation_address() public {
+    function test_implementation_address() public view {
         assertEq(factory.implementation(), address(factoryImpl));
     }
 

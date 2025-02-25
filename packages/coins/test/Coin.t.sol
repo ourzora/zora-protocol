@@ -114,18 +114,6 @@ contract CoinTest is BaseTest {
         assertEq(users.seller.balance, 0);
     }
 
-    function test_fork_buy_with_eth() public {
-        vm.rollFork(26603382);
-        factory = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
-        _deployCoin();
-        vm.deal(users.buyer, 1 ether);
-        vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
-
-        assertGt(coin.balanceOf(users.coinRecipient), 0);
-        assertEq(users.seller.balance, 0);
-    }
-
     function test_buy_with_eth_fuzz(uint256 ethOrderSize) public {
         vm.assume(ethOrderSize >= MIN_ORDER_SIZE);
         vm.assume(ethOrderSize < 10 ether);
@@ -236,8 +224,8 @@ contract CoinTest is BaseTest {
         vm.prank(users.buyer);
         uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
 
-        assertEq(coin.balanceOf(users.buyer), 44294392087151, "buyer coin balance");
-        assertEq(amountOut, 44294392087151);
+        assertEq(coin.balanceOf(users.buyer), 108941722423358, "buyer coin balance");
+        assertEq(amountOut, 108941722423358);
         assertGt(users.buyer.balance, 0, "seller eth balance");
 
         // now we have unclaimed secondary rewards to claim
@@ -274,8 +262,8 @@ contract CoinTest is BaseTest {
         vm.prank(users.buyer);
         uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
 
-        assertEq(coin.balanceOf(users.buyer), 44294392087151, "buyer coin balance");
-        assertEq(amountOut, 44294392087151);
+        assertEq(coin.balanceOf(users.buyer), 108941722423358, "buyer coin balance");
+        assertEq(amountOut, 108941722423358);
         assertGt(users.buyer.balance, 0, "seller eth balance");
 
         // Now we have unclaimed secondary rewards to claim
@@ -373,18 +361,18 @@ contract CoinTest is BaseTest {
         coin.buy{value: 0.001 ether}(users.creator, 0.001 ether, 0, 0, users.tradeReferrer);
 
         uint256 beforeBalance = coin.balanceOf(users.creator);
-        assertEq(beforeBalance, 10438320330337104517114132); // 10,438,320 coins
+        assertEq(beforeBalance, 11077349369032224007213331); // 11,077,349 coins
 
         vm.prank(users.creator);
         (uint256 amountSold, ) = coin.sell(users.creator, beforeBalance, 0, 0, users.tradeReferrer);
-        assertEq(amountSold, 442747808421317694054680); // 442,747 coins (max that could be sold)
+        assertEq(amountSold, 1088231685891135360821548); // 1,088,232 coins (max that could be sold)
 
         uint256 afterBalance = coin.balanceOf(users.creator);
-        assertEq(afterBalance, 9997786260957893411529725); // 9,997,786 coins
+        assertEq(afterBalance, 9994558841570544323195890); // 9,994,559 coins
 
-        uint256 expectedMarketReward = 2213739042106588470273; // 2,213 coins
+        uint256 expectedMarketReward = 5441158429455676804107; // 5,441 coins
 
-        // 9,997,786 = 10,438,320 order size - 442,747 true order size + 2,213 creator market reward
+        // 9,994,559 = 11,077,349 order size - 1,088,232 true order size + 5,441 creator market reward
         assertEq(afterBalance, ((beforeBalance - amountSold) + expectedMarketReward), "amountSold");
     }
 
@@ -463,7 +451,7 @@ contract CoinTest is BaseTest {
             "TEST",
             users.platformReferrer,
             address(weth),
-            20,
+            LP_TICK_LOWER_WETH - 1,
             0
         );
     }

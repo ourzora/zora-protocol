@@ -350,7 +350,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
     /// @dev Deploy the pool
     function _deployPool(int24 tickLower_) internal {
         // If WETH is the pool's currency, validate the lower tick
-        if (currency == WETH && tickLower_ != LP_TICK_LOWER_WETH) {
+        if (currency == WETH && (tickLower_ < LP_TICK_LOWER_WETH || tickLower_ > LP_TICK_LOWER_WETH_V1)) {
             revert InvalidWethLowerTick();
         }
 
