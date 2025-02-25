@@ -50,10 +50,6 @@ abstract contract CoinConstants {
     /// @dev 10000 basis points = 1%
     uint24 internal constant LP_FEE = 10000;
 
-    /// @notice The LP's lower tick
-    /// @dev This is only used if the currency is WETH
-    int24 internal constant LP_TICK_LOWER_WETH_V1 = -199200;
-
     /// @notice The LP's minimum lower tick
     /// @dev This is only used if the currency is WETH
     int24 internal constant LP_TICK_LOWER_WETH = -208200;

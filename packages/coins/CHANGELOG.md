@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 0.6.0
+
+### Minor Changes
+
+- 55bc4bf3: Update WETH tick and use as the minimum
+
 ## 0.5.0
 
 ### Minor Changes
