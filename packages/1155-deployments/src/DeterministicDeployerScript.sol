@@ -200,9 +200,9 @@ contract DeterministicDeployerScript is Script {
         bytes32 proxyDeployerSalt = params.proxyDeployerSalt;
         bytes memory proxyDeployerCreationCode = params.proxyDeployerCreationCode;
 
-        address createdAddress = ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(proxyDeployerSalt, proxyDeployerCreationCode);
+        address createdAddresss = ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(proxyDeployerSalt, proxyDeployerCreationCode);
 
-        if (createdAddress != proxyDeployerAddress) revert("Mismatched address");
+        if (createdAddresss != proxyDeployerAddress) revert("Mismatched address");
 
         factoryDeployer = DeterministicProxyDeployer(proxyDeployerAddress);
     }
