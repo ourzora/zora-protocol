@@ -324,7 +324,7 @@ struct DelegatedTokenSetup {
 library DelegatedTokenCreation {
     /// @notice Decode and recover delegated token setup data from a signature. Works with multiple versions of
     /// a signature.  Takes an abi encoded premint config, version of the encoded premint config, and a signature,
-    /// decodes the config, and recoveres the signer of the config.  Based on the premint config, builds
+    /// decodes the config, and recovers the signer of the config.  Based on the premint config, builds
     /// setup actions for the token to be created.
     /// @param premintConfigEncoded The abi encoded premint config
     /// @param premintVersion The version of the premint config
