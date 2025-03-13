@@ -52,7 +52,7 @@ library ZoraCreator1155PremintExecutorImplLib {
         bytes[] memory setupActions = toSetupActions(contractConfig.additionalAdmins);
 
         // create the contract via the factory.
-        address newContractAddresss = zora1155Factory.createContractDeterministic(
+        address newContractAddress = zora1155Factory.createContractDeterministic(
             contractConfig.contractURI,
             contractConfig.contractName,
             // default royalty config is empty, since we set it on a token level
@@ -60,7 +60,7 @@ library ZoraCreator1155PremintExecutorImplLib {
             payable(contractConfig.contractAdmin),
             setupActions
         );
-        tokenContract = IZoraCreator1155(newContractAddresss);
+        tokenContract = IZoraCreator1155(newContractAddress);
     }
 
     function toSetupActions(address[] memory additionalAdmins) internal pure returns (bytes[] memory setupActions) {
