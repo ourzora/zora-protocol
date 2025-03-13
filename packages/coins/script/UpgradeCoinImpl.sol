@@ -4,7 +4,7 @@ pragma solidity ^0.8.26;
 import {ProxyDeployerScript, DeterministicDeployerAndCaller} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 import {CoinsDeployerBase} from "./CoinsDeployerBase.sol";
 
-contract DeployScript is CoinsDeployerBase {
+contract UpgradeCoinImpl is CoinsDeployerBase {
     function run() public {
         CoinsDeployment memory deployment = readDeployment();
 
