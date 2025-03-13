@@ -32,7 +32,7 @@ contract GenerateSecondarySwapParams is ProxyDeployerScript {
 
         vm.startBroadcast();
 
-        // create a proxy deployer, which we can use to generated determistic addresses and corresponding params.
+        // create a proxy deployer, which we can use to generated deterministic addresses and corresponding params.
         // proxy deployer code is based on code saved to file from running the script SaveProxyDeployerConfig.s.sol
         DeterministicDeployerAndCaller deployer = createOrGetDeployerAndCaller();
 
