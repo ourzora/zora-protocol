@@ -58,15 +58,21 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function deployZoraFactoryImpl(address coinImpl) internal returns (ZoraFactoryImpl) {
         return new ZoraFactoryImpl(coinImpl);
     }
+    
+    function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
+        // Deploy implementation contracts
+        deployment.coinImpl = address(deployCoinImpl());
+        deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinImpl));
+        deployment.coinVersion = IVersionedContract(deployment.coinImpl).contractVersion();
+        
+        return deployment;
+    }
 
     function deployZoraDeterministic(CoinsDeployment memory deployment, DeterministicDeployerAndCaller deployer) internal {
         // read previously saved deterministic config
         DeterministicContractConfig memory zoraConfig = readDeterministicContractConfig("zoraFactory");
 
-        // Deploy implementation contracts
-        deployment.coinImpl = address(deployCoinImpl());
-        deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinImpl));
-        deployment.coinVersion = IVersionedContract(deployment.coinImpl).contractVersion();
+        deployment = deployImpls(deployment);
 
         if (deployment.zoraFactoryImpl.code.length == 0) {
             revert("Factory Impl not yet deployed. Make sure to deploy it with DeployImpl.s.sol");
