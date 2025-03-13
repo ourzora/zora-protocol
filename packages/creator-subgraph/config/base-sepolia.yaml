@@ -1,8 +1,5 @@
 chainid: "84532"
 network: base-sepolia
-grafting:
-  base: "QmR8rbjvbc9M7E1Re49cBRra3U7AH18is9F6haTyJe42x9"
-  block: "19395901"
 factories1155:
   - address: "0x8cfbF874A12b346115003532119C29f6B56719CB"
     startBlock: "7861615"
