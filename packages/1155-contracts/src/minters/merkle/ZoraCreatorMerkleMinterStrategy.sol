@@ -157,7 +157,7 @@ contract ZoraCreatorMerkleMinterStrategy is Enjoy, SaleStrategy, LimitedMintPerA
     }
 
     /// @notice IERC165 interface
-    /// @param interfaceId intrfaceinterface id to match
+    /// @param interfaceId interface id to match
     function supportsInterface(bytes4 interfaceId) public pure virtual override(LimitedMintPerAddress, SaleStrategy) returns (bool) {
         return super.supportsInterface(interfaceId) || LimitedMintPerAddress.supportsInterface(interfaceId) || SaleStrategy.supportsInterface(interfaceId);
     }
