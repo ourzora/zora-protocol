@@ -42,7 +42,7 @@ Run in development mode (watch tests):
 
 ## Bug Bounty
 
-5 ETH for any critical bugs that could result in loss of funds. Rewards will be given for smaller bugs or ideas.
+Report security vulnerabilities and learn about our Bug Bounty Program [here](https://docs.zora.co/bug-bounty/bug-bounty-program).
 
 ## Updating Build / Release Process
 
