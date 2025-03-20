@@ -25,7 +25,7 @@ jobs:
     name: Coverage
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
         with:
           submodules: recursive
 
@@ -46,7 +46,7 @@ jobs:
           CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
 
       - name: Setup LCOV
-        uses: hrishikesh-kadam/setup-lcov@v1
+        uses: hrishikesh-kadam/setup-lcov@9c4c3fa1c712097933f8772c19b2d1f6d182f2d5 # v1
 
       - name: Filter files to ignore
         run: |
@@ -56,7 +56,7 @@ jobs:
           --output-file lcov.info "*node_modules*" "*test*" "*script*" ${{ inputs.files_to_ignore }}
 
       - name: Report code coverage
-        uses: iainnash/github-actions-report-lcov@v12
+        uses: iainnash/github-actions-report-lcov@31a379b009f70ff23695e3f952218c546ac71841 # v12
         with:
           output-html: false
           coverage-files: ./${{ env.package_folder }}/lcov.info

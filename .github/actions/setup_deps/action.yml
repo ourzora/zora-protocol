@@ -7,13 +7,13 @@ runs:
       run: corepack enable
       shell: bash
 
-    - uses: pnpm/action-setup@v4
+    - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
       name: Install pnpm
       with:
         run_install: false
 
     - name: Install Node.js
-      uses: actions/setup-node@v4
+      uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4
       with:
         node-version: 20.10.0
         cache: "pnpm"
@@ -23,6 +23,6 @@ runs:
       shell: bash
 
     - name: Install Foundry
-      uses: foundry-rs/foundry-toolchain@v1
+      uses: foundry-rs/foundry-toolchain@de808b1eea699e761c404bda44ba8f21aba30b2c # v1
       with:
         version: nightly-6b07c77eb1c1d1c4b56ffa7f79240254b73236d2
