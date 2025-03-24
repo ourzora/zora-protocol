@@ -1,0 +1,37 @@
+{
+  "mode": "pre",
+  "tag": "sdkalpha",
+  "initialVersions": {
+    "docs": "0.0.14",
+    "@zoralabs/zora-1155-contracts": "2.13.2",
+    "@zoralabs/1155-deployments": "0.0.0",
+    "@zoralabs/coins": "0.5.0",
+    "@zoralabs/coins-sdk": "0.0.1",
+    "@zoralabs/cointags-contracts": "0.1.2",
+    "@zoralabs/comments-contracts": "0.0.3",
+    "@zoralabs/nft-creator-subgraph": "0.3.32",
+    "@zoralabs/erc20z": "2.2.0",
+    "@zoralabs/frame-minter-contracts": "0.0.0",
+    "@zoralabs/protocol-deployments": "0.5.3",
+    "@zoralabs/protocol-deployments-gen": "0.0.0",
+    "@zoralabs/protocol-rewards": "1.2.5",
+    "@zoralabs/protocol-sdk": "0.13.4",
+    "@zoralabs/shared-contracts": "0.0.1",
+    "@zoralabs/shared-scripts": "0.0.0",
+    "@zoralabs/smart-wallet-contracts": "0.0.0",
+    "@zoralabs/sparks-contracts": "0.2.5",
+    "@zoralabs/tsconfig": "0.0.1",
+    "@zoralabs/wow-sdk": "0.1.0"
+  },
+  "changesets": [
+    "few-ducks-pretend",
+    "fifty-gifts-sin",
+    "red-olives-taste",
+    "silent-turtles-leave",
+    "thin-glasses-confess",
+    "tough-balloons-do",
+    "two-crabs-repeat",
+    "wild-elephants-tickle",
+    "wise-shrimps-dance"
+  ]
+}

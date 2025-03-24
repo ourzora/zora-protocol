@@ -22,10 +22,10 @@ import {
   cointagFactoryImplABI,
   cointagImplABI as cointagABI,
 } from "@zoralabs/cointags-contracts";
-import erc721Drop from "@zoralabs/nft-drop-contracts/dist/artifacts/ERC721Drop.sol/ERC721Drop.json" assert { type: "json" };
-import zoraNFTCreatorV1 from "@zoralabs/nft-drop-contracts/dist/artifacts/ZoraNFTCreatorV1.sol/ZoraNFTCreatorV1.json" assert { type: "json" };
-import editionMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/EditionMetadataRenderer.sol/EditionMetadataRenderer.json" assert { type: "json" };
-import dropMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/DropMetadataRenderer.sol/DropMetadataRenderer.json" assert { type: "json" };
+import erc721Drop from "@zoralabs/nft-drop-contracts/dist/artifacts/ERC721Drop.sol/ERC721Drop.json" with { type: "json" };
+import zoraNFTCreatorV1 from "@zoralabs/nft-drop-contracts/dist/artifacts/ZoraNFTCreatorV1.sol/ZoraNFTCreatorV1.json" with { type: "json" };
+import editionMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/EditionMetadataRenderer.sol/EditionMetadataRenderer.json" with { type: "json" };
+import dropMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/DropMetadataRenderer.sol/DropMetadataRenderer.json" with { type: "json" };
 import { commentsImplABI } from "@zoralabs/comments-contracts";
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
