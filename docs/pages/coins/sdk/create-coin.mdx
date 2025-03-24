@@ -1,0 +1,145 @@
+# Creating Coins
+
+The Coins SDK provides a set of functions to create new coins on the Zora protocol. This page details the process of creating a new coin, the parameters involved, and code examples to help you get started.
+
+## Overview
+
+Creating a coin involves deploying a new ERC20 contract with the necessary Zora protocol integrations. The `createCoin` function handles this process and provides access to the deployed contract.
+
+## Parameters
+
+To create a new coin, you'll need to provide the following parameters:
+
+```typescript
+type CreateCoinArgs = {
+  name: string;             // The name of the coin (e.g., "My Awesome Coin")
+  symbol: string;           // The trading symbol for the coin (e.g., "MAC")
+  uri: string;              // Metadata URI (an IPFS URI is recommended)
+  owners?: Address[];       // Optional array of owner addresses, defaults to [payoutRecipient]
+  tickLower?: number;       // Optional tick lower for Uniswap V3 pool, defaults to -199200
+  payoutRecipient: Address; // Address that receives creator earnings
+  platformReferrer?: Address; // Optional platform referrer address, earns referral fees
+  initialPurchaseWei?: bigint; // Optional initial purchase amount in wei
+}
+```
+
+### Metadata
+
+The `uri` parameter structure is described in the [Metadata](/coins/sdk/metadata) section.
+
+### Currency
+
+The `currency` parameter is the address of the currency that will be used to trade the coin.
+
+For now, only WETH/ETH pairs are supported by our user interface and indexer.
+
+### Tick Lower
+
+The `tickLower` parameter is the lower tick for the Uniswap V3 pool. It is not required when using the SDK for WETH pairs.
+
+### Initial Purchase
+
+The `initialPurchaseWei` parameter is the amount of currency to purchase for the initial liquidity.
+
+It should match the `msg.value` of the create call. It is fine to set to `0` to not process an additional purchase at time of creation.
+
+### More Information
+
+Further contract details can be found in the [Factory Contract](/coins/contracts/factory) section and the [Coin Contract](/coins/contracts/coin) section.
+
+
+## Usage
+
+### Basic Creation
+
+```typescript
+import { createCoin } from "@zoralabs/coins-sdk";
+import { createWalletClient, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+
+// Set up viem clients
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+const walletClient = createWalletClient({
+  account: "<YOUR_ACCOUNT>",
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+// Define coin parameters
+const coinParams = {
+  name: "My Awesome Coin",
+  symbol: "MAC",
+  uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy",
+  payoutRecipient: "0xYourAddress",
+  platformReferrer: "0xOptionalPlatformReferrerAddress", // Optional
+  initialPurchaseWei: 0n, // Optional: Initial amount to purchase in Wei
+};
+
+// Create the coin
+async function createMyCoin() {
+  try {
+    const result = await createCoin(coinParams, walletClient, publicClient);
+    
+    console.log("Transaction hash:", result.hash);
+    console.log("Coin address:", result.address);
+    console.log("Deployment details:", result.deployment);
+    
+    return result;
+  } catch (error) {
+    console.error("Error creating coin:", error);
+    throw error;
+  }
+}
+```
+
+### Using with WAGMI
+
+If you're using WAGMI in your frontend application, you can use the lower-level `createCoinCall` function:
+
+```typescript
+import { createCoinCall } from "@zoralabs/coins-sdk";
+import { useContractWrite, usePrepareContractWrite } from "wagmi";
+
+// Define coin parameters
+const coinParams = {
+  name: "My Awesome Coin",
+  symbol: "MAC",
+  uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy",
+  payoutRecipient: "0xYourAddress",
+  platformReferrer: "0xOptionalPlatformReferrerAddress",
+};
+
+// Create configuration for wagmi
+const contractCallParams = createCoinCall(coinParams);
+
+// In your component
+function CreateCoinComponent() {
+  const { config } = usePrepareContractWrite({
+    ...contractCallParams,
+  });
+  
+  const { data, isLoading, isSuccess, write } = useContractWrite(config);
+  
+  return (
+    <button disabled={!write || isLoading} onClick={() => write?.()}>
+      {isLoading ? 'Creating...' : 'Create Coin'}
+    </button>
+  );
+}
+```
+
+## Getting Coin Address from Transaction Receipt
+
+Once the transaction is complete, you can extract the deployed coin address from the transaction receipt logs using the `getCoinCreateFromLogs` function:
+
+```typescript
+import { getCoinCreateFromLogs } from "@zoralabs/coins-sdk";
+
+// Assuming you have a transaction receipt
+const coinDeployment = getCoinCreateFromLogs(receipt);
+console.log("Deployed coin address:", coinDeployment?.coin);
+```

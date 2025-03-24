@@ -1,0 +1,169 @@
+# `ZoraFactory.sol`
+
+The `ZoraFactory` contract is an upgradeable contract which is the canonical factory for coins.
+
+The contract is upgradable by the Zora team to update coin features, but any deployed coins are immutable and cannot be updated.
+
+## Overview
+
+The `CoinFactory` implements the `IZoraFactory` interface and serves as the entry point for creating new coins in the ZORA Coins Protocol. It handles the deployment of coin contracts, their associated Uniswap V3 pools, and the initial setup of liquidity.
+
+## Canonical Deployment Address
+
+| Chain       | Chain ID | Contract Name | Address                                                                 |
+|-------------|----------|---------------|-------------------------------------------------------------------------|
+| Base        | 8453     | `ZoraFactory` | [0x777777751622c0d3258f214F9DF38E35BF45baF3](https://basescan.org/address/0x777777751622c0d3258f214F9DF38E35BF45baF3) |
+| Base Sepolia| 84532    | `ZoraFactory` | [0x777777751622c0d3258f214F9DF38E35BF45baF3](https://sepolia.basescan.org/address/0x777777751622c0d3258f214F9DF38E35BF45baF3) |
+
+
+### Key Methods
+
+#### deploy
+
+```solidity
+function deploy(
+    address payoutRecipient,
+    address[] memory owners,
+    string memory uri,
+    string memory name,
+    string memory symbol,
+    address platformReferrer,
+    address currency,
+    int24 tickLower,
+    uint256 orderSize
+) external payable returns (address, uint256);
+```
+
+This function creates a new coin contract with the specified parameters and its associated Uniswap V3 liquidity pool.
+
+While the currency field can be set to any ERC20, only WETH/ETH pairs are supported by our user interface and indexer at this time.
+
+Parameters:
+- `payoutRecipient`: The recipient of creator reward payouts; this can be updated by any owner later on
+- `owners`: An array of addresses that will have permission to manage the coin's payout address and metadata URI. Owners can update the list of approved owners as well.
+- `uri`: The coin metadata URI (should be an IPFS URI). See [Metadata](/coins/sdk/metadata) for more information.
+- `name`: The name of the coin (e.g., "horse galloping").
+- `symbol`: The trading symbol for the coin (e.g., "HORSE")
+- `platformReferrer`: The address that will receive platform referral rewards from trades. Ensure to set this to your own address to receive protocol market rewards.
+- `currency`: The address of the trading currency; use address(0) for ETH/WETH. Only WETH/ETH pairs are supported by our user interface and indexer at this time.
+- `tickLower`: The lower tick for the Uniswap V3 LP position; needs to be set to -199200 for WETH/ETH pairs otherwise the coin will fail to initialize.
+- `orderSize`: The order size for the first buy; must match msg.value for ETH/WETH pairs or be an approved amount of ERC20 currency to trade otherwise creation will fail.
+
+Returns:
+- The address of the deployed coin contract
+- The amount of currency used for the initial purchase (if any)
+- __Note:__ When creating a coin, the return values are not accessible and the [`CoinCreated`](#coin-created) event needs to be parsed from the logs to find the resulting address.
+
+Notes:
+- When creating a coin with ETH/WETH, you must send ETH with the transaction equal to the `orderSize` parameter
+- For other currencies, the factory will pull the specified amount from your wallet (requires approval)
+
+### Events
+
+#### CoinCreated
+
+```solidity
+event CoinCreated(
+    address indexed caller,
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address currency,
+    string uri,
+    string name,
+    string symbol,
+    address coin,
+    address pool,
+    string version
+);
+```
+
+Emitted when a new coin is created through the factory.
+
+Event Parameters:
+- `caller`: The address that called the deploy function
+- `payoutRecipient`: The address of the creator payout recipient
+- `platformReferrer`: The address of the platform referrer
+- `currency`: The address of the trading currency
+- `uri`: The metadata URI of the coin
+- `name`: The name of the coin
+- `symbol`: The symbol of the coin
+- `coin`: The address of the newly created coin contract
+- `pool`: The address of the associated Uniswap V3 pool
+- `version`: The version string of the coin implementation
+
+### Error Handling
+
+The factory defines custom errors to provide specific information about failed operations:
+
+- `ERC20TransferAmountMismatch`: The amount of ERC20 tokens transferred does not match the expected amount
+- `EthTransferInvalid`: ETH is sent with a transaction but the currency is not WETH
+
+## Usage with SDK
+
+While you can interact directly with the factory contract, it's recommended to use the Zora Coins SDK which handles the complexities of coin creation:
+
+```typescript
+import { createCoin } from "@zoralabs/coins-sdk";
+import { createWalletClient, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+
+// Set up viem clients
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+const walletClient = createWalletClient({
+  account: "<YOUR_ACCOUNT>",
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+// Define coin parameters
+const coinParams = {
+  name: "My Awesome Coin",
+  symbol: "MAC",
+  uri: "ipfs://bafkreihz5knnvvsvmaxlpw3kout23te6yboquyvvs72wzfulgrkwj7r7dm",
+  payoutRecipient: "0xYourAddress",
+  platformReferrer: "0xYourPlatformReferrerAddress", // Optional
+  initialPurchaseWei: parseEther("0.1"), // Optional: Initial amount to purchase in Wei
+};
+
+// Create the coin
+const result = await createCoin(coinParams, walletClient, publicClient);
+console.log("Coin address:", result.address);
+```
+
+
+## Advanced Configuration
+
+### Currency Options
+
+When creating a coin, you have two options for the trading currency:
+
+1. **ETH/WETH**: Use `address(0)` for the currency parameter. This is the most common option, allowing users to buy and sell coins with ETH.
+
+2. **ERC20 Token**: Specify the address of an ERC20 token. This creates a coin that trades against that specific token.
+
+### Initial Purchase
+
+The `orderSize` parameter (or `initialPurchaseWei` in the SDK) determines the initial purchase amount when creating a coin:
+
+- Setting this to a non-zero value creates initial liquidity in the pool
+- For ETH/WETH coins, this amount must be sent with the transaction
+- For ERC20 coins, the factory must be approved to spend this amount
+
+### Tick Configuration
+
+The `tickLower` parameter affects the price curve for the Uniswap V3 pool:
+
+- For ETH/WETH pairs, this is ignored and set to a default value
+- For other currencies, this can be customized to affect the price range of the liquidity position
+
+## Security Considerations
+
+- The factory is the only contract allowed to create official ZORA protocol coins
+- Platform referrer addresses are permanently set at creation and cannot be changed
+- Owner addresses have some control over the coin (metadata, payout recipient)
+- Initial purchases are processed through Uniswap V3 pools, subject to their slippage and price impact mechanics
+
