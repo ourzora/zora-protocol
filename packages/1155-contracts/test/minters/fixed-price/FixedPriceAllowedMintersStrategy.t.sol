@@ -59,7 +59,7 @@ contract FixedPriceAllowedMintersStrategyTest is Test {
     }
 
     function test_Version() external {
-        assertEq(fixedPrice.contractVersion(), "1.0.0");
+        assertEq(fixedPrice.contractVersion(), "1.0.1");
     }
 
     function test_SetSale() external {
