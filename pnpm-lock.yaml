@@ -54,13 +54,16 @@ importers:
         version: 20.17.16
       '@types/react':
         specifier: latest
-        version: 19.0.8
+        version: 19.0.12
       '@vanilla-extract/css':
         specifier: ^1.15.3
         version: 1.17.0
       '@vercel/og':
         specifier: ^0.6.3
         version: 0.6.4
+      '@zoralabs/coins-sdk':
+        specifier: workspace:*
+        version: link:../packages/coins-sdk
       '@zoralabs/protocol-deployments':
         specifier: workspace:*
         version: link:../packages/protocol-deployments

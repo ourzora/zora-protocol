@@ -2,4 +2,4 @@
 "@zoralabs/coins-sdk": patch
 ---
 
-Fix package json inclusion
+Initial release
