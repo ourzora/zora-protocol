@@ -58,13 +58,13 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function deployZoraFactoryImpl(address coinImpl) internal returns (ZoraFactoryImpl) {
         return new ZoraFactoryImpl(coinImpl);
     }
-    
+
     function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
         deployment.coinImpl = address(deployCoinImpl());
         deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinImpl));
         deployment.coinVersion = IVersionedContract(deployment.coinImpl).contractVersion();
-        
+
         return deployment;
     }
 
