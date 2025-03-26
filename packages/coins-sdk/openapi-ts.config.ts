@@ -1,7 +1,7 @@
-import { defineConfig } from '@hey-api/openapi-ts';
+import { defineConfig } from "@hey-api/openapi-ts";
 
 export default defineConfig({
-  input: 'https://api-sdk.zora.engineering/openapi',
-  output: 'src/client',
-  plugins: ['@hey-api/client-fetch'],
+  input: "https://api-sdk.zora.engineering/openapi",
+  output: "src/client",
+  plugins: ["@hey-api/client-fetch"],
 });
