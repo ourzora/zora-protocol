@@ -448,137 +448,181 @@ It is strongly recommended to use the other API queries to fetch this informatio
 
 #### `getCoinsTopGainers`: Get top gaining coins
 **Parameters:**
-- `count`: (Optional) Number of items to return, type: `number`
-- `after`: (Optional) Pagination cursor, type: `string`
+- `query`: Object containing query parameters, type: `QueryInnerType`
+  - `query.count`: (Optional) Number of items to return, type: `number`
+  - `query.after`: (Optional) Pagination cursor, type: `string`
+- `options`: (Optional) Additional request options
 
 **Request Type:**
 ```typescript
-type Options<T extends boolean = false> = {
-  query?: {
+// Types from @zoralabs/coins-sdk
+export type RequestOptionsType = Omit<GetExploreData, "query">;
+
+export type QueryInnerType = {
+  query: {
     count?: number;
     after?: string;
+  };
+} & RequestOptionsType;
+
+export type ListType = "TOP_GAINERS" | "TOP_VOLUME_24H" | "MOST_VALUABLE" | 
+                       "NEW" | "LAST_TRADED" | "LAST_TRADED_UNIQUE";
+
+export type ExploreResponse = { 
+  data?: {
+    exploreList?: {
+      edges?: Array<{
+        node?: {
+          id?: string;
+          name?: string;
+          description?: string;
+          address?: string;
+          symbol?: string;
+          totalSupply?: string;
+          totalVolume?: string;
+          volume24h?: string;
+          createdAt?: string;
+          creatorAddress?: string;
+          creatorEarnings?: Array<{...}>;
+          marketCap?: string;
+          marketCapDelta24h?: string;
+          chainId?: number;
+          creatorProfile?: string;
+          handle?: string;
+          avatar?: {...};
+          media?: {...};
+          transfers?: { count?: number };
+          uniqueHolders?: number;
+        };
+        cursor?: string;
+      }>;
+      pageInfo?: {
+        endCursor?: string;
+        hasNextPage?: boolean;
+      };
+    };
   };
 };
 ```
 
-**Return Type:**
+**Function Signature:**
 ```typescript
-{
-  exploreList?: {
-    edges?: Array<{
-      node?: {
-        id?: string;
-        name?: string;
-        description?: string;
-        address?: string;
-        symbol?: string;
-        totalSupply?: string;
-        totalVolume?: string;
-        volume24h?: string;
-        createdAt?: string;
-        creatorAddress?: string;
-        creatorEarnings?: Array<{...}>;
-        marketCap?: string;
-        marketCapDelta24h?: string;
-        chainId?: number;
-        creatorProfile?: string;
-        handle?: string;
-        avatar?: {...};
-        media?: {...};
-        transfers?: { count?: number };
-        uniqueHolders?: number;
-      };
-      cursor?: string;
-    }>;
-    pageInfo?: {
-      endCursor?: string;
-      hasNextPage?: boolean;
-    };
-  };
-}
+function getCoinsTopGainers(
+  query: QueryInnerType,
+  options?: RequestOptionsType
+): Promise<ExploreResponse>
+```
+
+**Example Usage:**
+```typescript
+import { getCoinsTopGainers } from "@zoralabs/coins-sdk";
+
+// Basic usage
+const response = await getCoinsTopGainers({
+  query: {
+    count: 10
+  }
+});
+
+// With pagination
+const paginatedResponse = await getCoinsTopGainers({
+  query: {
+    count: 20,
+    after: "cursor-string"
+  }
+});
+
+// Accessing the data
+const coins = response.data?.exploreList?.edges?.map(edge => edge.node) || [];
+const nextCursor = response.data?.exploreList?.pageInfo?.endCursor;
 ```
 
 #### `getCoinsTopVolume24h`: Get coins with highest 24h volume
 **Parameters:**
-- `count`: (Optional) Number of items to return, type: `number`
-- `after`: (Optional) Pagination cursor, type: `string`
+- `query`: Object containing query parameters, type: `QueryInnerType`
+  - `query.count`: (Optional) Number of items to return, type: `number`
+  - `query.after`: (Optional) Pagination cursor, type: `string`
+- `options`: (Optional) Additional request options
 
-**Request Type:**
+**Function Signature:**
 ```typescript
-type Options<T extends boolean = false> = {
-  query?: {
-    count?: number;
-    after?: string;
-  };
-};
+function getCoinsTopVolume24h(
+  query: QueryInnerType,
+  options?: RequestOptionsType
+): Promise<ExploreResponse>
 ```
 
+**Request Type:** Same as `getCoinsTopGainers`
 **Return Type:** Same as `getCoinsTopGainers`
 
 #### `getCoinsMostValuable`: Get most valuable coins
 **Parameters:**
-- `count`: (Optional) Number of items to return, type: `number`
-- `after`: (Optional) Pagination cursor, type: `string`
+- `query`: Object containing query parameters, type: `QueryInnerType`
+  - `query.count`: (Optional) Number of items to return, type: `number`
+  - `query.after`: (Optional) Pagination cursor, type: `string`
+- `options`: (Optional) Additional request options
 
-**Request Type:**
+**Function Signature:**
 ```typescript
-type Options<T extends boolean = false> = {
-  query?: {
-    count?: number;
-    after?: string;
-  };
-};
+function getCoinsMostValuable(
+  query: QueryInnerType,
+  options?: RequestOptionsType
+): Promise<ExploreResponse>
 ```
 
+**Request Type:** Same as `getCoinsTopGainers`
 **Return Type:** Same as `getCoinsTopGainers`
 
 #### `getCoinsNew`: Get newly created coins
 **Parameters:**
-- `count`: (Optional) Number of items to return, type: `number`
-- `after`: (Optional) Pagination cursor, type: `string`
+- `query`: Object containing query parameters, type: `QueryInnerType`
+  - `query.count`: (Optional) Number of items to return, type: `number`
+  - `query.after`: (Optional) Pagination cursor, type: `string`
+- `options`: (Optional) Additional request options
 
-**Request Type:**
+**Function Signature:**
 ```typescript
-type Options<T extends boolean = false> = {
-  query?: {
-    count?: number;
-    after?: string;
-  };
-};
+function getCoinsNew(
+  query: QueryInnerType,
+  options?: RequestOptionsType
+): Promise<ExploreResponse>
 ```
 
+**Request Type:** Same as `getCoinsTopGainers`
 **Return Type:** Same as `getCoinsTopGainers`
 
 #### `getCoinsLastTraded`: Get recently traded coins
 **Parameters:**
-- `count`: (Optional) Number of items to return, type: `number`
-- `after`: (Optional) Pagination cursor, type: `string`
+- `query`: Object containing query parameters, type: `QueryInnerType`
+  - `query.count`: (Optional) Number of items to return, type: `number`
+  - `query.after`: (Optional) Pagination cursor, type: `string`
+- `options`: (Optional) Additional request options
 
-**Request Type:**
+**Function Signature:**
 ```typescript
-type Options<T extends boolean = false> = {
-  query?: {
-    count?: number;
-    after?: string;
-  };
-};
+function getCoinsLastTraded(
+  query: QueryInnerType,
+  options?: RequestOptionsType
+): Promise<ExploreResponse>
 ```
 
+**Request Type:** Same as `getCoinsTopGainers`
 **Return Type:** Same as `getCoinsTopGainers`
 
 #### `getCoinsLastTradedUnique`: Get recently traded unique coins
 **Parameters:**
-- `count`: (Optional) Number of items to return, type: `number`
-- `after`: (Optional) Pagination cursor, type: `string`
+- `query`: Object containing query parameters, type: `QueryInnerType`
+  - `query.count`: (Optional) Number of items to return, type: `number`
+  - `query.after`: (Optional) Pagination cursor, type: `string`
+- `options`: (Optional) Additional request options
 
-**Request Type:**
+**Function Signature:**
 ```typescript
-type Options<T extends boolean = false> = {
-  query?: {
-    count?: number;
-    after?: string;
-  };
-};
+function getCoinsLastTradedUnique(
+  query: QueryInnerType,
+  options?: RequestOptionsType
+): Promise<ExploreResponse>
 ```
 
+**Request Type:** Same as `getCoinsTopGainers`
 **Return Type:** Same as `getCoinsTopGainers`

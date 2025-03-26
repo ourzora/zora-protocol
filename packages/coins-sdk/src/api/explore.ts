@@ -1,15 +1,15 @@
 import { getExplore as getExploreSDK } from "../client/sdk.gen";
 import type { GetExploreData, GetExploreResponse } from "../client/types.gen";
-import { Options } from "@hey-api/client-fetch";
 import { getApiKeyMeta } from "./api-key";
 
+export type RequestOptionsType = Omit<GetExploreData, "query">;
 /**
  * The inner type for the explore queries that omits listType.
  * This is used to create the query object for the explore queries.
  */
 export type QueryInnerType = {
   query: Omit<GetExploreData["query"], "listType">;
-} & Omit<GetExploreData, "query">;
+} & RequestOptionsType;
 
 type ExploreResponse = { data?: GetExploreResponse };
 
@@ -20,43 +20,54 @@ export type { ExploreResponse };
 /**
  * Creates an explore query with the specified list type
  */
-const createExploreQuery = <T extends boolean = false>(
+const createExploreQuery = (
+  query: QueryInnerType,
   listType: ListType,
-  options?: Options<QueryInnerType, T>,
+  options?: RequestOptionsType,
 ): Promise<ExploreResponse> =>
   getExploreSDK({
     ...options,
-    query: { ...options?.query, listType },
+    query: { ...query, listType },
     meta: getApiKeyMeta(),
   });
 
 /** Get top gaining coins */
-export const getCoinsTopGainers = <T extends boolean = false>(
-  options?: Options<QueryInnerType, T>,
-): Promise<ExploreResponse> => createExploreQuery("TOP_GAINERS", options);
+export const getCoinsTopGainers = (
+  query: QueryInnerType,
+  options?: RequestOptionsType,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TOP_GAINERS", options);
 
 /** Get coins with highest 24h volume */
-export const getCoinsTopVolume24h = <T extends boolean = false>(
-  options?: Options<QueryInnerType, T>,
-): Promise<ExploreResponse> => createExploreQuery("TOP_VOLUME_24H", options);
+export const getCoinsTopVolume24h = (
+  query: QueryInnerType,
+  options?: RequestOptionsType,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TOP_VOLUME_24H", options);
 
 /** Get most valuable coins */
-export const getCoinsMostValuable = <T extends boolean = false>(
-  options?: Options<QueryInnerType, T>,
-): Promise<ExploreResponse> => createExploreQuery("MOST_VALUABLE", options);
+export const getCoinsMostValuable = (
+  query: QueryInnerType,
+  options?: RequestOptionsType,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "MOST_VALUABLE", options);
 
 /** Get newly created coins */
-export const getCoinsNew = <T extends boolean = false>(
-  options?: Options<QueryInnerType, T>,
-): Promise<ExploreResponse> => createExploreQuery("NEW", options);
+export const getCoinsNew = (
+  query: QueryInnerType,
+  options?: RequestOptionsType,
+): Promise<ExploreResponse> => createExploreQuery(query, "NEW", options);
 
 /** Get recently traded coins */
-export const getCoinsLastTraded = <T extends boolean = false>(
-  options?: Options<QueryInnerType, T>,
-): Promise<ExploreResponse> => createExploreQuery("LAST_TRADED", options);
+export const getCoinsLastTraded = (
+  query: QueryInnerType,
+  options?: RequestOptionsType,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "LAST_TRADED", options);
 
 /** Get recently traded unique coins */
-export const getCoinsLastTradedUnique = <T extends boolean = false>(
-  options?: Options<QueryInnerType, T>,
+export const getCoinsLastTradedUnique = (
+  query: QueryInnerType,
+  options?: RequestOptionsType,
 ): Promise<ExploreResponse> =>
-  createExploreQuery("LAST_TRADED_UNIQUE", options);
+  createExploreQuery(query, "LAST_TRADED_UNIQUE", options);
