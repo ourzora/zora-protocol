@@ -1,7 +1,6 @@
 import { zoraFactoryImplABI } from "@zoralabs/coins";
 import {
   Address,
-  PublicClient,
   TransactionReceipt,
   WalletClient,
   SimulateContractParameters,
@@ -10,6 +9,7 @@ import {
 } from "viem";
 import { COIN_FACTORY_ADDRESS } from "../constants";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
+import { GenericPublicClient } from "src/utils/genericPublicClient";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
@@ -83,7 +83,7 @@ export function getCoinCreateFromLogs(
 export async function createCoin(
   call: CreateCoinArgs,
   walletClient: WalletClient,
-  publicClient: PublicClient,
+  publicClient: GenericPublicClient,
   options?: {
     gasMultiplier?: number;
   },

@@ -56,7 +56,9 @@ async function fetchCoinDetails() {
 
 #### Parameters
 
-```typescript
+```ts twoslash
+import { Address } from "viem";
+
 type GetOnchainCoinDetailsParams = {
   coin: Address;              // The coin contract address
   user?: Address;             // Optional: User address to fetch balance for
@@ -68,7 +70,9 @@ type GetOnchainCoinDetailsParams = {
 
 The function returns a `CoinDetailsOnchain` object with the following properties:
 
-```typescript
+```ts twoslash
+import { Address } from "viem";
+
 interface CoinDetailsOnchain {
   // Basic Coin Information
   address: Address;            // The coin contract address
@@ -97,7 +101,7 @@ interface CoinDetailsOnchain {
 
 When you need to check a single user's balance without fetching their entire portfolio:
 
-```typescript
+```ts twoslash
 const userCoinBalance = await getOnchainCoinDetails({
   coin: "0xCoinAddress",
   user: "0xUserAddress",
@@ -111,7 +115,7 @@ console.log(`User has ${userCoinBalance.balance} tokens (${formatEther(userCoinB
 
 Useful for backend services where you might not want to manage API keys:
 
-```typescript
+```ts twoslash
 // In a Node.js backend service
 async function getCoinMarketCap(coinAddress) {
   const details = await getOnchainCoinDetails({
@@ -131,7 +135,7 @@ However, the best way to fetch information about multiple coins is to use the [`
 That query is optimized for fetching multiple coins in a single request and individual or large RPC calls can get quite expensive and slow.
 Additionally, this API does not support or retrieve metadata.
 
-```typescript
+```ts twoslash
 const coinAddresses = ["0xCoin1", "0xCoin2", "0xCoin3"];
 const detailsPromises = coinAddresses.map(address => 
   getOnchainCoinDetails({ coin: address, publicClient })

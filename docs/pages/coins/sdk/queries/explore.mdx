@@ -19,7 +19,7 @@ The `getCoinsTopGainers` function retrieves coins that have increased the most i
 
 #### Parameters
 
-```typescript
+```ts twoslash
 type ExploreQueryOptions = {
   after?: string;     // Optional: Pagination cursor for fetching next page
   count?: number;     // Optional: Number of coins to return per page (default: 20)
@@ -28,7 +28,7 @@ type ExploreQueryOptions = {
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getCoinsTopGainers } from "@zoralabs/coins-sdk";
 
 async function fetchTopGainers() {
@@ -71,7 +71,7 @@ The `getCoinsTopVolume24h` function retrieves coins with the highest trading vol
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getCoinsTopVolume24h } from "@zoralabs/coins-sdk";
 
 async function fetchTopVolumeCoins() {
@@ -110,7 +110,7 @@ The `getCoinsMostValuable` function retrieves coins with the highest market capi
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getCoinsMostValuable } from "@zoralabs/coins-sdk";
 
 async function fetchMostValuableCoins() {
@@ -149,7 +149,7 @@ The `getCoinsNew` function retrieves the most recently created coins.
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getCoinsNew } from "@zoralabs/coins-sdk";
 
 async function fetchNewCoins() {
@@ -192,7 +192,7 @@ The `getCoinsLastTraded` function retrieves coins that have been traded most rec
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getCoinsLastTraded } from "@zoralabs/coins-sdk";
 
 async function fetchLastTradedCoins() {
@@ -230,7 +230,7 @@ The `getCoinsLastTradedUnique` function retrieves coins that have been traded by
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getCoinsLastTradedUnique } from "@zoralabs/coins-sdk";
 
 async function fetchLastTradedUniqueCoins() {
@@ -267,7 +267,7 @@ async function fetchLastTradedUniqueCoins() {
 
 All explore queries return a similar response structure:
 
-```typescript
+```ts twoslash
 {
   zora20Tokens?: Array<{
     // Same structure as the coin object in getCoin response
@@ -297,7 +297,7 @@ All explore queries return a similar response structure:
 
 Most explore queries support pagination to handle large result sets. Here's an example of how to implement pagination to fetch all coins that match a particular explore query:
 
-```typescript
+```ts twoslash
 import { getCoinsTopGainers } from "@zoralabs/coins-sdk";
 
 async function fetchAllTopGainers() {
@@ -314,15 +314,15 @@ async function fetchAllTopGainers() {
       });
       
       // Add coins to our collection
-      if (response.zora20Tokens && response.zora20Tokens.length > 0) {
-        allCoins = [...allCoins, ...response.zora20Tokens];
+      if (response.data?.zora20Tokens && response.data?.zora20Tokens.length > 0) {
+        allCoins = [...allCoins, ...response.data!.zora20Tokens];
       }
       
       // Update cursor for next page
       cursor = response.pagination?.cursor;
       
       // Break if no more results
-      if (!cursor || response.zora20Tokens?.length === 0) {
+      if (!cursor || response.data?.zora20Tokens?.length === 0) {
         break;
       }
       

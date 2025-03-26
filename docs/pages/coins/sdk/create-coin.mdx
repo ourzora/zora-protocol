@@ -10,7 +10,9 @@ Creating a coin involves deploying a new ERC20 contract with the necessary Zora 
 
 To create a new coin, you'll need to provide the following parameters:
 
-```typescript
+```ts twoslash
+import { Address } from "viem";
+
 type CreateCoinArgs = {
   name: string;             // The name of the coin (e.g., "My Awesome Coin")
   symbol: string;           // The trading symbol for the coin (e.g., "MAC")
@@ -52,9 +54,9 @@ Further contract details can be found in the [Factory Contract](/coins/contracts
 
 ### Basic Creation
 
-```typescript
+```ts twoslash
 import { createCoin } from "@zoralabs/coins-sdk";
-import { createWalletClient, createPublicClient, http } from "viem";
+import { Hex, createWalletClient, createPublicClient, http, Address } from "viem";
 import { base } from "viem/chains";
 
 // Set up viem clients
@@ -64,7 +66,7 @@ const publicClient = createPublicClient({
 });
 
 const walletClient = createWalletClient({
-  account: "<YOUR_ACCOUNT>",
+  account: "0x<YOUR_ACCOUNT>" as Hex,
   chain: base,
   transport: http("<RPC_URL>"),
 });
@@ -74,8 +76,8 @@ const coinParams = {
   name: "My Awesome Coin",
   symbol: "MAC",
   uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy",
-  payoutRecipient: "0xYourAddress",
-  platformReferrer: "0xOptionalPlatformReferrerAddress", // Optional
+  payoutRecipient: "0xYourAddress" as Address,
+  platformReferrer: "0xOptionalPlatformReferrerAddress" as Address, // Optional
   initialPurchaseWei: 0n, // Optional: Initial amount to purchase in Wei
 };
 
@@ -101,16 +103,18 @@ async function createMyCoin() {
 If you're using WAGMI in your frontend application, you can use the lower-level `createCoinCall` function:
 
 ```typescript
+import * as React from "react";
 import { createCoinCall } from "@zoralabs/coins-sdk";
-import { useContractWrite, usePrepareContractWrite } from "wagmi";
+import { Address } from "viem";
+import { useWriteContract, useSimulateContract } from "wagmi";
 
 // Define coin parameters
 const coinParams = {
   name: "My Awesome Coin",
   symbol: "MAC",
   uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy",
-  payoutRecipient: "0xYourAddress",
-  platformReferrer: "0xOptionalPlatformReferrerAddress",
+  payoutRecipient: "0xYourAddress" as Address,
+  platformReferrer: "0xOptionalPlatformReferrerAddress" as Address,
 };
 
 // Create configuration for wagmi
@@ -118,15 +122,15 @@ const contractCallParams = createCoinCall(coinParams);
 
 // In your component
 function CreateCoinComponent() {
-  const { config } = usePrepareContractWrite({
+  const { data: writeConfig } = useSimulateContract({
     ...contractCallParams,
   });
   
-  const { data, isLoading, isSuccess, write } = useContractWrite(config);
+  const { writeContract, status } = useWriteContract(writeConfig);
   
   return (
-    <button disabled={!write || isLoading} onClick={() => write?.()}>
-      {isLoading ? 'Creating...' : 'Create Coin'}
+    <button disabled={!writeContract || status !== 'pending'} onClick={() => writeContract?.()}>
+      {status === 'pending' ? 'Creating...' : 'Create Coin'}
     </button>
   );
 }

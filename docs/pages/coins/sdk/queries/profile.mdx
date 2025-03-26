@@ -15,7 +15,7 @@ The `getProfile` function retrieves detailed information about a user's profile,
 
 #### Parameters
 
-```typescript
+```ts twoslash
 type GetProfileParams = {
   address: string;   // The user's wallet address
 };
@@ -23,7 +23,7 @@ type GetProfileParams = {
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getProfile } from "@zoralabs/coins-sdk";
 
 async function fetchUserProfile() {
@@ -68,7 +68,7 @@ async function fetchUserProfile() {
 
 The response includes a `profile` object with the following properties:
 
-```typescript
+```ts twoslash
 {
   profile?: {
     address?: string;         // User's wallet address
@@ -97,7 +97,7 @@ The `getProfileBalances` function retrieves a list of all coin balances held by 
 
 #### Parameters
 
-```typescript
+```ts twoslash
 type GetProfileBalancesParams = {
   address: string;    // The user's wallet address
   after?: string;     // Optional: Pagination cursor for fetching next page
@@ -107,7 +107,7 @@ type GetProfileBalancesParams = {
 
 #### Usage Example
 
-```typescript
+```ts twoslash
 import { getProfileBalances } from "@zoralabs/coins-sdk";
 
 async function fetchUserBalances() {
@@ -153,7 +153,7 @@ async function fetchUserBalances() {
 
 If a user holds many coins, you might need to paginate through all of their balances:
 
-```typescript
+```ts twoslash
 import { getProfileBalances } from "@zoralabs/coins-sdk";
 
 async function fetchAllUserBalances(userAddress) {
@@ -198,7 +198,7 @@ async function fetchAllUserBalances(userAddress) {
 
 The response includes a `balances` array and pagination information:
 
-```typescript
+```ts twoslash
 {
   balances?: Array<{
     id?: string;              // Unique identifier for this balance

@@ -6,6 +6,7 @@ export {
 export type { CreateCoinArgs } from "./actions/createCoin";
 
 export {
+  simulateBuy,
   tradeCoin,
   tradeCoinCall,
   getTradeFromLogs,

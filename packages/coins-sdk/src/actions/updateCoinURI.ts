@@ -3,10 +3,10 @@ import { validateClientNetwork } from "../utils/validateClientNetwork";
 import {
   Address,
   parseEventLogs,
-  PublicClient,
   SimulateContractParameters,
   WalletClient,
 } from "viem";
+import { GenericPublicClient } from "src/utils/genericPublicClient";
 
 export type UpdateCoinURIArgs = {
   coin: Address;
@@ -32,7 +32,7 @@ export function updateCoinURICall({
 export async function updateCoinURI(
   args: UpdateCoinURIArgs,
   walletClient: WalletClient,
-  publicClient: PublicClient,
+  publicClient: GenericPublicClient,
 ) {
   validateClientNetwork(publicClient);
   const call = updateCoinURICall(args);

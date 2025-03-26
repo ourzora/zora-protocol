@@ -26,7 +26,9 @@ If these requirements are not met, the update will fail with an error message.
 
 ### Update Coin URI Parameters
 
-```typescript
+```ts twoslash
+import { Address } from "viem";
+
 type UpdateCoinURIArgs = {
   coin: Address;    // The coin contract address
   newURI: string;   // The new URI for the coin metadata (must start with "ipfs://")
@@ -35,10 +37,11 @@ type UpdateCoinURIArgs = {
 
 ### Basic URI Update
 
-```typescript
+```ts twoslash
 import { updateCoinURI } from "@zoralabs/coins-sdk";
 import { createWalletClient, createPublicClient, http } from "viem";
 import { base } from "viem/chains";
+import { Address, Hex } from "viem";
 
 // Set up viem clients
 const publicClient = createPublicClient({
@@ -47,30 +50,25 @@ const publicClient = createPublicClient({
 });
 
 const walletClient = createWalletClient({
-  account: "<YOUR_ACCOUNT>",
+  account: "0x<YOUR_ACCOUNT>" as Hex,
   chain: base,
   transport: http("<RPC_URL>"),
 });
 
 // Define update parameters
 const updateParams = {
-  coin: "0xCoinContractAddress",
+  coin: "0xCoinContractAddress" as Address,
   newURI: "ipfs://bafkreihz5knnvvsvmaxlpw3kout23te6yboquyvvs72wzfulgrkwj7r7dm",
 };
 
 // Execute the update
 async function updateCoinMetadata() {
-  try {
-    const result = await updateCoinURI(updateParams, walletClient, publicClient);
-    
-    console.log("Transaction hash:", result.hash);
-    console.log("URI updated event:", result.uriUpdated);
-    
-    return result;
-  } catch (error) {
-    console.error("Error updating coin URI:", error);
-    throw error;
-  }
+  const result = await updateCoinURI(updateParams, walletClient, publicClient);
+  
+  console.log("Transaction hash:", result.hash);
+  console.log("URI updated event:", result.uriUpdated);
+  
+  return result;
 }
 ```
 
@@ -80,7 +78,7 @@ If you're using WAGMI in your frontend application, you can use the lower-level 
 
 ```typescript
 import { updateCoinURICall } from "@zoralabs/coins-sdk";
-import { useContractWrite, usePrepareContractWrite } from "wagmi";
+import { useContractWrite, useSimulateContract } from "wagmi";
 
 // Define update parameters
 const updateParams = {
@@ -93,15 +91,15 @@ const contractCallParams = updateCoinURICall(updateParams);
 
 // In your component
 function UpdateCoinURIComponent() {
-  const { config } = usePrepareContractWrite({
+  const { data: config } = useSimulateContract({
     ...contractCallParams,
   });
   
-  const { data, isLoading, isSuccess, write } = useContractWrite(config);
+  const { data, status, writeContract } = useContractWrite(config);
   
   return (
-    <button disabled={!write || isLoading} onClick={() => write?.()}>
-      {isLoading ? 'Updating...' : 'Update Coin URI'}
+    <button disabled={!writeContract || status !== 'pending'} onClick={() => writeContract?.()}>
+      {status === 'pending' ? 'Updating...' : 'Update Coin URI'}
     </button>
   );
 }
@@ -110,11 +108,11 @@ function UpdateCoinURIComponent() {
 ## Other Coin Updates
 ### Updating Payout Recipient
 
-After coin creation, the payout recipient (who receives creator rewards) can be updated using the SDK's `setPayoutRecipient` function:
+After coin creation, the payout recipient (who receives creator rewards) can be updated using the SDK's `updatePayoutRecipient` function:
 
-```typescript
-import { setPayoutRecipient } from "@zoralabs/coins-sdk";
-import { createWalletClient, createPublicClient, http } from "viem";
+```ts twoslash
+import { updatePayoutRecipient } from "@zoralabs/coins-sdk";
+import { Address, Hex, createWalletClient, createPublicClient, http } from "viem";
 import { base } from "viem/chains";
 
 // Set up viem clients
@@ -124,28 +122,19 @@ const publicClient = createPublicClient({
 });
 
 const walletClient = createWalletClient({
-  account: "<YOUR_ACCOUNT>", // Must be an owner of the coin
+  account: "0x<YOUR_ACCOUNT>" as Hex, // Must be an owner of the coin
   chain: base,
   transport: http("<RPC_URL>"),
 });
 
 // Update the payout recipient
-async function updatePayoutRecipient() {
-  try {
-    const result = await setPayoutRecipient({
-      coin: "0xCoinContractAddress",
-      newPayoutRecipient: "0xNewPayoutRecipientAddress",
-    }, walletClient, publicClient);
-    
-    console.log("Transaction hash:", result.hash);
-    console.log("Receipt:", result.receipt);
-    
-    return result;
-  } catch (error) {
-    console.error("Error updating payout recipient:", error);
-    throw error;
-  }
-}
+const result = await updatePayoutRecipient({
+  coin: "0xCoinContractAddress" as Address,
+  newPayoutRecipient: "0xNewPayoutRecipientAddress" as Address,
+}, walletClient, publicClient);
+
+console.log("Transaction hash:", result.hash);
+console.log("Receipt:", result.receipt);
 ```
 
 Note: Only owners of the coin can update the payout recipient. If the account used to sign the transaction is not an owner, the transaction will revert with an `OnlyOwner` error.

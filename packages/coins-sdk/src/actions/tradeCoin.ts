@@ -2,7 +2,6 @@ import { coinABI } from "@zoralabs/coins";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import {
   Address,
-  PublicClient,
   TransactionReceipt,
   WalletClient,
   SimulateContractParameters,
@@ -12,7 +11,7 @@ import {
   parseEventLogs,
 } from "viem";
 import { baseSepolia } from "viem/chains";
-
+import { GenericPublicClient } from "src/utils/genericPublicClient";
 // Define trade event args type
 
 export type SellEventArgs = ContractEventArgsFromTopics<
@@ -41,7 +40,7 @@ export async function simulateBuy({
 }: {
   target: Address;
   requestedOrderSize: bigint;
-  publicClient: PublicClient;
+  publicClient: GenericPublicClient;
 }): Promise<{ orderSize: bigint; amountOut: bigint }> {
   const numberResult = await publicClient.simulateContract({
     address: target,
@@ -157,7 +156,7 @@ export function getTradeFromLogs(
 export async function tradeCoin(
   params: TradeParams,
   walletClient: WalletClient,
-  publicClient: PublicClient,
+  publicClient: GenericPublicClient,
 ) {
   validateClientNetwork(publicClient);
   const { request } = await publicClient.simulateContract({

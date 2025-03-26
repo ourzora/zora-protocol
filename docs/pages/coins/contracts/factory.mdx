@@ -106,6 +106,7 @@ While you can interact directly with the factory contract, it's recommended to u
 import { createCoin } from "@zoralabs/coins-sdk";
 import { createWalletClient, createPublicClient, http } from "viem";
 import { base } from "viem/chains";
+import { Address, Hex, parseEther } from "viem";
 
 // Set up viem clients
 const publicClient = createPublicClient({
@@ -114,7 +115,7 @@ const publicClient = createPublicClient({
 });
 
 const walletClient = createWalletClient({
-  account: "<YOUR_ACCOUNT>",
+  account: "0x<YOUR_ACCOUNT>" as Hex,
   chain: base,
   transport: http("<RPC_URL>"),
 });
@@ -124,8 +125,8 @@ const coinParams = {
   name: "My Awesome Coin",
   symbol: "MAC",
   uri: "ipfs://bafkreihz5knnvvsvmaxlpw3kout23te6yboquyvvs72wzfulgrkwj7r7dm",
-  payoutRecipient: "0xYourAddress",
-  platformReferrer: "0xYourPlatformReferrerAddress", // Optional
+  payoutRecipient: "0xYourAddress" as Address,
+  platformReferrer: "0xYourPlatformReferrerAddress" as Address, // Optional
   initialPurchaseWei: parseEther("0.1"), // Optional: Initial amount to purchase in Wei
 };
 
