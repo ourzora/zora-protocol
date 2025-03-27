@@ -142,6 +142,7 @@ async function fetchAllUserBalances(userAddress: string) {
   let cursor = undefined;
   const pageSize = 20;
   
+
   // Continue fetching until no more pages
   do {
     const response = await getProfileBalances({
