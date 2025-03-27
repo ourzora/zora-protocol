@@ -28,7 +28,7 @@ async function fetchSingleCoin() {
     chain: 8453, // Optional: Base chain
   });
   
-  const coin = response.zora20Token;
+  const coin = response.data?.zora20Token;
   
   if (coin) {
     console.log("Coin Details:");
@@ -54,10 +54,10 @@ async function fetchSingleCoin() {
 
 #### Response Structure
 
-The response includes a `zora20Token` object with the following properties:
+The response includes a `data` object containing a `zora20Token` object with the following properties:
 
 ```ts twoslash
-{
+type Zora20Token = {
   zora20Token?: {
     id?: string;                 // Unique identifier
     name?: string;               // Coin name
@@ -118,6 +118,7 @@ type GetCoinsParams = {
 
 ```ts twoslash
 import { getCoins } from "@zoralabs/coins-sdk";
+import { base } from "viem/chains";
 
 async function fetchMultipleCoins() {
   const response = await getCoins({
@@ -126,11 +127,11 @@ async function fetchMultipleCoins() {
       "0xSecondCoinAddress",
       "0xThirdCoinAddress"
     ],
-    chainId: 8453, // Optional: Base chain
+    chainId: base.id, // Optional: Base chain
   });
   
   // Process each coin in the response
-  response.zora20Tokens?.forEach((coin, index) => {
+  response.data?.zora20Tokens?.forEach((coin: any, index: number) => {
     console.log(`Coin ${index + 1}: ${coin.name} (${coin.symbol})`);
     console.log(`- Market Cap: ${coin.marketCap}`);
     console.log(`- 24h Volume: ${coin.volume24h}`);
@@ -179,7 +180,7 @@ async function fetchCoinComments() {
   // Process comments
   console.log(`Found ${response.data?.zora20Token?.zoraComments?.edges?.length || 0} comments`);
   
-  response.data?.zora20Token?.zoraComments?.edges?.forEach((edge, index) => {
+  response.data?.zora20Token?.zoraComments?.edges?.forEach((edge: any, index: number) => {
     console.log(`Comment ${index + 1}:`);
     console.log(`- Author: ${edge.node.author?.handle || edge.node.author?.address}`);
     console.log(`- Text: ${edge.node.text}`);
@@ -197,8 +198,8 @@ async function fetchCoinComments() {
   });
   
   // For pagination
-  if (response.data?.pagination?.cursor) {
-    console.log("Next page cursor:", response.data?.pagination.cursor);
+  if (response.data?.zora20Token?.zoraComments?.pageInfo?.endCursor) {
+    console.log("Next page cursor:", response.data?.zora20Token?.zoraComments?.pageInfo?.endCursor);
   }
   
   return response;
@@ -212,8 +213,8 @@ To fetch all comments for a coin, you can use pagination:
 ```ts twoslash
 import { getCoinComments } from "@zoralabs/coins-sdk";
 
-async function fetchAllCoinComments(coinAddress) {
-  let allComments = [];
+async function fetchAllCoinComments(coinAddress: string) {
+  let allComments: any[] = [];
   let cursor = undefined;
   const pageSize = 20;
   
@@ -231,7 +232,7 @@ async function fetchAllCoinComments(coinAddress) {
     }
     
     // Update cursor for next page
-    cursor = response.data?.pagination?.cursor;
+    cursor = response.data?.zora20Token?.zoraComments?.pageInfo?.endCursor;
     
     // Break if no more results
     if (!cursor || response.data?.zora20Token?.zoraComments?.edges?.length === 0) {
@@ -283,12 +284,13 @@ All query functions follow the same error handling pattern. When an error occurs
 
 ```ts twoslash
 import { Address } from "viem";
+import { getCoin } from "@zoralabs/coins-sdk";
 
 try {
   const response = await getCoin({ address: "0xCoinAddress" as Address });
   //    ^^^
   // Process response...
-} catch (error) {
+} catch (error: any) {
   if (error.status === 404) {
     console.error("Coin not found");
   } else if (error.status === 401) {

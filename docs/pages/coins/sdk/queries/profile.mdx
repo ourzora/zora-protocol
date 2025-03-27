@@ -17,7 +17,7 @@ The `getProfile` function retrieves detailed information about a user's profile,
 
 ```ts twoslash
 type GetProfileParams = {
-  address: string;   // The user's wallet address
+  identifier: string;   // The user's wallet address or zora handle
 };
 ```
 
@@ -27,40 +27,36 @@ type GetProfileParams = {
 import { getProfile } from "@zoralabs/coins-sdk";
 
 async function fetchUserProfile() {
-  try {
-    const response = await getProfile({
-      address: "0xUserWalletAddress",
-    });
+  const response = await getProfile({
+    identifier: "0xUserWalletAddress",
+  });
+  
+  // TODO: fix profile graphql types
+  const profile: any = response?.data?.profile;
+  
+  if (profile) {
+    console.log("Profile Details:");
+    console.log("- Handle:", profile.handle);
+    console.log("- Display Name:", profile.displayName);
+    console.log("- Bio:", profile.bio);
     
-    const profile = response.profile;
-    
-    if (profile) {
-      console.log("Profile Details:");
-      console.log("- Handle:", profile.handle);
-      console.log("- Display Name:", profile.displayName);
-      console.log("- Bio:", profile.bio);
-      
-      // Access profile image if available
-      if (profile.profileImage?.previewImage) {
-        console.log("- Profile Image:", profile.profileImage.previewImage);
-      }
-      
-      // Access social links if available
-      if (profile.socialLinks && profile.socialLinks.length > 0) {
-        console.log("Social Links:");
-        profile.socialLinks.forEach(link => {
-          console.log(`- ${link.type}: ${link.url}`);
-        });
-      }
-    } else {
-      console.log("Profile not found or user has not set up a profile");
+    // Access profile image if available
+    if (profile.avatar?.medium) {
+      console.log("- Profile Image:", profile.avatar.medium);
     }
     
-    return response;
-  } catch (error) {
-    console.error("Error fetching user profile:", error);
-    throw error;
+    // Access social links if available
+    if (profile?.linkedWallets && profile?.linkedWallets?.edges?.length || 0 > 0) {
+      console.log("Linked Wallets:");
+      profile?.linkedWallets?.edges?.forEach((link: any) => {
+        console.log(`- ${link?.node?.walletType}: ${link?.node?.walletAddress}`);
+      });
+    }
+  } else {
+    console.log("Profile not found or user has not set up a profile");
   }
+  
+  return response;
 }
 ```
 
@@ -69,7 +65,7 @@ async function fetchUserProfile() {
 The response includes a `profile` object with the following properties:
 
 ```ts twoslash
-{
+type ProfileData = {
   profile?: {
     address?: string;         // User's wallet address
     handle?: string;          // Username/handle
@@ -77,13 +73,13 @@ The response includes a `profile` object with the following properties:
     bio?: string;             // User's biography/description
     joinedAt?: string;        // When the user joined
     profileImage?: {          // Profile image data
-      previewImage?: string;  // URL to profile image
       small?: string;         // Small version of profile image
+      medium?: string;        // Medium version of profile image
       blurhash?: string;      // Blurhash for image loading
     };
-    socialLinks?: Array<{     // Connected social accounts
-      type?: string;          // Platform (e.g., "twitter", "instagram")
-      url?: string;           // URL to social profile
+    linkedWallets?: Array<{     // Connected social accounts
+      type?: string;
+      url?: string;
     }>;
     followerCount?: number;   // Number of followers
     followingCount?: number;  // Number of accounts following
@@ -111,41 +107,26 @@ type GetProfileBalancesParams = {
 import { getProfileBalances } from "@zoralabs/coins-sdk";
 
 async function fetchUserBalances() {
-  try {
-    const response = await getProfileBalances({
-      address: "0xUserWalletAddress",
-      count: 20,        // Optional: number of balances per page
-      after: undefined, // Optional: for pagination
-    });
-    
-    console.log(`Found ${response.balances?.length || 0} coin balances`);
-    
-    response.balances?.forEach((balance, index) => {
-      const coinName = balance.token?.name || "Unknown";
-      const coinSymbol = balance.token?.symbol || "???";
-      const amount = balance.amount?.amountDecimal || 0;
-      const valueUsd = balance.valueUsd ? `$${parseFloat(balance.valueUsd).toFixed(2)}` : "N/A";
-      
-      console.log(`Balance ${index + 1}: ${amount} ${coinSymbol} (${coinName}) - Value: ${valueUsd}`);
-      
-      // Additional coin details if needed
-      if (balance.token) {
-        console.log(`  Coin Address: ${balance.token.address}`);
-        console.log(`  Market Cap: ${balance.token.marketCap || "N/A"}`);
-        console.log(`  24h Volume: ${balance.token.volume24h || "N/A"}`);
-      }
-    });
-    
-    // For pagination
-    if (response.pagination?.cursor) {
-      console.log("Next page cursor:", response.pagination.cursor);
-    }
-    
-    return response;
-  } catch (error) {
-    console.error("Error fetching user balances:", error);
-    throw error;
+  const response = await getProfileBalances({
+    identifier: "0xUserWalletAddress", // Can also be zora user profile handle
+    count: 20,        // Optional: number of balances per page
+    after: undefined, // Optional: for pagination
+  });
+
+  const profile: any = response.data?.profile;
+  
+  console.log(`Found ${profile.coinBalances?.length || 0} coin balances`);
+  
+  profile.coinBalances?.forEach((balance: any, index: number) => {
+    console.log(balance)
+  });
+  
+  // For pagination
+  if (profile.coinBalances?.pageInfo?.endCursor) {
+    console.log("Next page cursor:", profile.coinBalances?.pageInfo?.endCursor);
   }
+  
+  return response;
 }
 ```
 
@@ -156,41 +137,38 @@ If a user holds many coins, you might need to paginate through all of their bala
 ```ts twoslash
 import { getProfileBalances } from "@zoralabs/coins-sdk";
 
-async function fetchAllUserBalances(userAddress) {
-  let allBalances = [];
+async function fetchAllUserBalances(userAddress: string) {
+  let allBalances: any[] = [];
   let cursor = undefined;
   const pageSize = 20;
   
-  try {
-    // Continue fetching until no more pages
-    do {
-      const response = await getProfileBalances({
-        address: userAddress,
-        count: pageSize,
-        after: cursor,
-      });
-      
-      // Add balances to our collection
-      if (response.balances && response.balances.length > 0) {
-        allBalances = [...allBalances, ...response.balances];
-      }
-      
-      // Update cursor for next page
-      cursor = response.pagination?.cursor;
-      
-      // Break if no more results
-      if (!cursor || response.balances?.length === 0) {
-        break;
-      }
-      
-    } while (true);
+  // Continue fetching until no more pages
+  do {
+    const response = await getProfileBalances({
+      identifier: userAddress, // UserAddress or zora handle
+      count: pageSize,
+      after: cursor,
+    });
+
+    const profile: any = response.data?.profile;
     
-    console.log(`Fetched ${allBalances.length} total coin balances`);
-    return allBalances;
-  } catch (error) {
-    console.error("Error fetching all user balances:", error);
-    throw error;
-  }
+    // Add balances to our collection
+    if (profile && profile.coinBalances) {
+      allBalances = [...allBalances, ...profile.coinBalances.edges.map((edge: any) => edge.node)];
+    }
+    
+    // Update cursor for next page
+    cursor = profile?.coinBalances?.pageInfo?.endCursor;
+    
+    // Break if no more results
+    if (!cursor || profile?.coinBalances?.edges?.length === 0) {
+      break;
+    }
+    
+  } while (true);
+  
+  console.log(`Fetched ${allBalances.length} total coin balances`);
+  return allBalances;
 }
 ```
 
@@ -199,7 +177,7 @@ async function fetchAllUserBalances(userAddress) {
 The response includes a `balances` array and pagination information:
 
 ```ts twoslash
-{
+type Response = {
   balances?: Array<{
     id?: string;              // Unique identifier for this balance
     token?: {                 // Coin information

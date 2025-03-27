@@ -95,8 +95,8 @@ async function simulateCoinBuy() {
     publicClient,
   });
   
-  console.log("Actual order size:", simulation.orderSize);
-  console.log("Expected output amount:", simulation.amountOut);
+  console.log("Order size", simulation.orderSize);
+  console.log("Amount out", simulation.amountOut);
   
   return simulation;
 }
@@ -172,14 +172,14 @@ const contractCallParams = tradeCoinCall(tradeParams);
 function BuyCoinComponent() {
   const { config } = usePrepareContractWrite({
     ...contractCallParams,
-    value: tradeParams.direction === "buy" ? tradeParams.args.orderSize : 0n,
+    value: tradeParams.args.orderSize,
   });
   
-  const { data, isLoading, isSuccess, write } = useContractWrite(config);
+  const { writeContract, status, write } = useContractWrite(config);
   
   return (
-    <button disabled={!write || isLoading} onClick={() => write?.()}>
-      {isLoading ? 'Buying...' : 'Buy Coin'}
+    <button disabled={!writeContract || status === 'pending'} onClick={() => writeContract?.()}>
+      {status === 'pending' ? 'Buying...' : 'Buy Coin'}
     </button>
   );
 }
@@ -199,9 +199,8 @@ import { getTradeFromLogs } from "@zoralabs/coins-sdk";
 const tradeEvent = getTradeFromLogs(receipt, "buy"); // or "sell"
 
 if (tradeEvent) {
-  console.log("Trade size:", tradeEvent.orderSize);
-  console.log("Trade recipient:", tradeEvent.recipient);
-  // Access other trade event fields as needed
+  console.log(tradeEvent);
+  ///         ^?
 }
 ```
 

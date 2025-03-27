@@ -17,7 +17,7 @@ While the [API queries](/coins/sdk/queries/coin) provide extensive data with hig
 
 The `getOnchainCoinDetails` function fetches detailed information about a coin directly from the blockchain:
 
-```ts
+```ts twoslash
 import { getOnchainCoinDetails } from "@zoralabs/coins-sdk";
 import { createPublicClient, http } from "viem";
 import { base } from "viem/chains";
@@ -29,35 +29,30 @@ const publicClient = createPublicClient({
 });
 
 async function fetchCoinDetails() {
-  try {
-    const details = await getOnchainCoinDetails({
-      coin: "0xCoinContractAddress",
-      user: "0xOptionalUserAddress", // Optional: to get user's balance
-      publicClient,
-    });
-    
-    console.log("Coin market cap:", details.marketCap);
-    console.log("Coin liquidity:", details.liquidity);
-    console.log("Coin pool address:", details.pool);
-    console.log("Coin owners:", details.owners);
-    console.log("Payout recipient:", details.payoutRecipient);
-    
-    if (details.balance) {
-      console.log("User balance:", details.balance);
-    }
-    
-    return details;
-  } catch (error) {
-    console.error("Error fetching onchain coin details:", error);
-    throw error;
+  const details = await getOnchainCoinDetails({
+    coin: "0xCoinContractAddress",
+    user: "0xOptionalUserAddress", // Optional: to get user's balance
+    publicClient,
+  });
+  
+  console.log("Coin market cap:", details.marketCap);
+  console.log("Coin liquidity:", details.liquidity);
+  console.log("Coin pool address:", details.pool);
+  console.log("Coin owners:", details.owners);
+  console.log("Payout recipient:", details.payoutRecipient);
+  
+  if (details.balance) {
+    console.log("User balance:", details.balance);
   }
+  
+  return details;
 }
 ```
 
 #### Parameters
 
 ```ts twoslash
-import { Address } from "viem";
+import { Address, PublicClient } from "viem";
 
 type GetOnchainCoinDetailsParams = {
   coin: Address;              // The coin contract address
@@ -102,9 +97,18 @@ interface CoinDetailsOnchain {
 When you need to check a single user's balance without fetching their entire portfolio:
 
 ```ts twoslash
+import { Address, formatEther, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+import { getOnchainCoinDetails } from "@zoralabs/coins-sdk";
+
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
 const userCoinBalance = await getOnchainCoinDetails({
-  coin: "0xCoinAddress",
-  user: "0xUserAddress",
+  coin: "0xCoinAddress" as Address,
+  user: "0xUserAddress" as Address,
   publicClient,
 });
 
@@ -115,7 +119,7 @@ console.log(`User has ${userCoinBalance.balance} tokens (${formatEther(userCoinB
 
 Useful for backend services where you might not want to manage API keys:
 
-```ts twoslash
+```typescript
 // In a Node.js backend service
 async function getCoinMarketCap(coinAddress) {
   const details = await getOnchainCoinDetails({
@@ -135,7 +139,7 @@ However, the best way to fetch information about multiple coins is to use the [`
 That query is optimized for fetching multiple coins in a single request and individual or large RPC calls can get quite expensive and slow.
 Additionally, this API does not support or retrieve metadata.
 
-```ts twoslash
+```typescript
 const coinAddresses = ["0xCoin1", "0xCoin2", "0xCoin3"];
 const detailsPromises = coinAddresses.map(address => 
   getOnchainCoinDetails({ coin: address, publicClient })
