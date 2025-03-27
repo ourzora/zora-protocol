@@ -1,4 +1,4 @@
-import VitePluginRadar from "vite-plugin-radar";
+import { VitePluginRadar } from "vite-plugin-radar";
 import { defineConfig } from "vocs";
 import vercel from "vite-plugin-vercel";
 
@@ -12,24 +12,26 @@ export default defineConfig({
   rootDir: ".",
   topNav: [
     {
-      text: "Contracts",
-      link: "/contracts/intro",
-      match: "/contracts",
+      text: "Coins",
+      link: "/coins",
+      match: "/coins",
     },
     {
-      text: "SDKs",
-      link: "/protocol-sdk/introduction",
-      match: "/protocol-sdk",
-    },
-    {
-      text: "Changelogs",
-      link: "/changelogs/protocol-sdk",
-      match: "/changelogs",
+      text: "Mints",
+      items: [
+        { text: "Contracts", link: "/contracts/intro" },
+        { text: "SDKs", link: "/protocol-sdk/introduction" },
+      ],
     },
     {
       text: "Zora Network",
       link: "/zora-network/intro",
       match: "/zora-network",
+    },
+    {
+      text: "Changelogs",
+      link: "/changelogs/protocol-sdk",
+      match: "/changelogs",
     },
   ],
   socials: [
@@ -41,7 +43,7 @@ export default defineConfig({
   sidebar: {
     "/contracts": [
       {
-        text: "NFT Smart Contracts",
+        text: "Mint Contracts",
         items: [
           {
             text: "Introduction",
@@ -137,7 +139,7 @@ export default defineConfig({
     ],
     "/protocol-sdk": [
       {
-        text: "Protocol SDKs",
+        text: "Mint SDKs",
         items: [
           {
             text: "Introduction",
@@ -229,17 +231,99 @@ export default defineConfig({
         ],
       },
     ],
+    "/coins": [
+      {
+        text: "Coins",
+        items: [
+          {
+            text: "Introduction",
+            link: "/coins",
+          },
+          {
+            text: "SDK",
+            items: [
+              {
+                text: "Getting Started",
+                link: "/coins/sdk/getting-started",
+              },
+              {
+                text: "Create Coin",
+                link: "/coins/sdk/create-coin",
+              },
+              {
+                text: "Trade Coin",
+                link: "/coins/sdk/trade-coin",
+              },
+              {
+                text: "Update Coin",
+                link: "/coins/sdk/update-coin",
+              },
+              {
+                text: "Coins Metadata",
+                link: "/coins/sdk/metadata",
+              },
+              {
+                text: "Coin Queries",
+                items: [
+                  {
+                    text: "Queries Overview",
+                    link: "/coins/sdk/queries",
+                  },
+                  {
+                    text: "Coin Details",
+                    link: "/coins/sdk/queries/coin",
+                  },
+                  {
+                    text: "Profile Queries",
+                    link: "/coins/sdk/queries/profile",
+                  },
+                  {
+                    text: "Explore Coins",
+                    link: "/coins/sdk/queries/explore",
+                  },
+                  {
+                    text: "Onchain Queries",
+                    link: "/coins/sdk/queries/onchain",
+                  },
+                ],
+              },
+            ],
+          },
+          {
+            text: "Contracts",
+            items: [
+              {
+                text: "Coin Factory",
+                link: "/coins/contracts/factory",
+              },
+              {
+                text: "Coin Contract",
+                link: "/coins/contracts/coin",
+              },
+            ],
+          },
+        ],
+      },
+    ],
     "/changelogs": [
       {
         text: "Changelogs",
         items: [
           {
-            text: "@zoralabs/protocol-sdk",
-            link: "/changelogs/protocol-sdk",
+            text: "@zoralabs/coins",
+            link: "/changelogs/coins",
+          },
+          {
+            text: "@zoralabs/coins-sdk",
+            link: "/changelogs/coins-sdk",
           },
           {
             text: "@zoralabs/protocol-deployments",
             link: "/changelogs/protocol-deployments",
+          },
+          {
+            text: "@zoralabs/protocol-sdk",
+            link: "/changelogs/protocol-sdk",
           },
           {
             text: "@zoralabs/zora-1155-contracts",
@@ -284,7 +368,7 @@ export default defineConfig({
               analytics: {
                 id: "G-CDE92MLBTZ",
               },
-            }),
+            }) as any,
           ]
         : []),
     ],

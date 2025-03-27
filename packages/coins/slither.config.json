@@ -1,6 +1,4 @@
 {
-    "filter_paths": "(node_modules/,test/)",
-    "solc_remaps": [
-        "@openzeppelin/=node_modules/@openzeppelin/"
-    ]
+  "filter_paths": "(node_modules/,test/)",
+  "solc_remaps": ["@openzeppelin/=node_modules/@openzeppelin/"]
 }

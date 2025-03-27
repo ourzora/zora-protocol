@@ -8,29 +8,32 @@ import { HomePageLogo } from "../components/HomePageLogo";
 
 <HomePage.Root>
   <HomePageLogo dark="/zora-wordmark-white.svg" light="/zora-wordmark-black.svg" /> 
-  <HomePage.Tagline>Explore our guides and examples to integrate Zora </HomePage.Tagline>
+  <HomePage.Tagline>Explore our developer tools and resources to integrate Zora </HomePage.Tagline>
   <img src="/zora-docs-hero-image.png"  className="hero-image" />
-<p>Build your project using the Zora Protocol and plug into over $25m of rewards out of the box. We’ve created a series of tools that make it easy to get started building on Zora.</p>
+<p>
+  Build your project on Zora and plug into our business and distribution network.<br />
+  Our Coins SDK lets developers create engaging experiences for creators and traders.
+</p>
 </HomePage.Root>
 
   <CardContainer>
-    <Card title="Create a contract" icon="PaintBrush" href="/protocol-sdk/creator/premint">
-      Create a new ZORA ERC-1155 NFT contract without needing to pay any gas using the SDK
+    <Card title="Create a coin" icon="PaintBrush" href="/coins/sdk/create-coin">
+      Create Zora coins using the SDK
     </Card>
-    <Card title="Mint NFTs" icon="CubeTransparent" href="/protocol-sdk/collect/mint">
-      Mint any ZORA ERC-1155 or ERC-721 Token using the SDK
+    <Card title="Query coins" icon="CubeTransparent" href="/coins/sdk/query-coins">
+      Query coin details, profile balances, coin activity and more using the SDK
     </Card>
-    <Card title="Earn Protocol Rewards" icon="Rocket" href="/protocol-sdk/collect/mint#earning-mint-referral-rewards">
-      Earn by interacting with the ZORA protocol and referring users
+    <Card title="Coins contracts" icon="Rocket" href="/coins/contracts/coin">
+      Deepdive into the contracts powering the Coins experience on Zora
     </Card>
-    <Card title="Secondary Market" icon="Sparkles" href="/protocol-sdk/collect/buy1155OnSecondary">
-      Buy and sell 1155s on an onchain secondary market
+    <Card title="Coins metadata" icon="Sparkles" href="/coins/metadata">
+      Learn best practices for creating and updating coin metadata
     </Card>
-    <Card title="Get Support" icon="Info" href="//support.zora.co">
-      Learn more about the product or get in touch with support
+    <Card title="Support" icon="Info" href="//support.zora.co">
+      Learn more about the product or get in touch with the team
     </Card>
     <Card title="Visit Zora" icon="Plus" href="//zora.co">
-      Create and collect on Zora
+      Create and trade Zora coins
     </Card>
   </CardContainer>
 

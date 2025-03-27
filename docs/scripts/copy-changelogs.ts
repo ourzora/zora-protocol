@@ -36,6 +36,18 @@ async function copyChangelog(
 
 async function main() {
   await copyChangelog(
+    join(__dirname, "../../packages/coins/CHANGELOG.md"),
+    join(__dirname, "../pages/changelogs/coins.mdx"),
+    "Coins",
+  );
+
+  await copyChangelog(
+    join(__dirname, "../../packages/coins-sdk/CHANGELOG.md"),
+    join(__dirname, "../pages/changelogs/coins-sdk.mdx"),
+    "Coins SDK",
+  );
+
+  await copyChangelog(
     join(__dirname, "../../packages/protocol-sdk/CHANGELOG.md"),
     join(__dirname, "../pages/changelogs/protocol-sdk.mdx"),
     "@zoralabs/protocol-sdk",

@@ -1,0 +1,219 @@
+# Trading Coins
+
+The Coins SDK provides functionality to buy and sell coins on the Zora protocol. This page details the trading functions, their parameters, and includes code examples to help you integrate trading into your application.
+
+## Overview
+
+Trading coins involves either buying or selling an existing coin through the Zora protocol. The SDK provides two main approaches:
+
+1. **High-level functions**: Complete solutions that handle the entire trading process.
+2. **Low-level functions**: Building blocks for more customized implementations.
+
+## Trading Parameters
+
+When trading coins, you'll work with the following parameter structure:
+
+```ts twoslash
+import { Address } from "viem";
+
+type TradeParams = {
+  direction: "sell" | "buy";  // The trade direction
+  target: Address;            // The target coin contract address
+  args: {
+    recipient: Address;       // The recipient of the trade output
+    orderSize: bigint;        // The size of the order
+    minAmountOut?: bigint;    // Optional minimum amount to receive
+    sqrtPriceLimitX96?: bigint; // Optional price limit for the trade
+    tradeReferrer?: Address;  // Optional referrer address for the trade
+  };
+};
+```
+
+## Buying Coins
+
+### Basic Buy
+
+```ts twoslash
+import { tradeCoin } from "@zoralabs/coins-sdk";
+import { Address, createWalletClient, createPublicClient, http, parseEther, Hex } from "viem";
+import { base } from "viem/chains";
+
+// Set up viem clients
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+const walletClient = createWalletClient({
+  account: "0x<YOUR_ACCOUNT>" as Hex,
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+// Define buy parameters
+const buyParams = {
+  direction: "buy" as const,
+  target: "0xCoinContractAddress" as Address,
+  args: {
+    recipient: "0xYourAddress" as Address, // Where to receive the purchased coins
+    orderSize: parseEther("0.1"), // Amount of ETH to spend
+    minAmountOut: 0n, // Minimum amount of coins to receive (0 = no minimum)
+    tradeReferrer: "0xOptionalReferrerAddress" as Address, // Optional
+  }
+};
+
+// Execute the buy
+async function buyCoin() {
+  const result = await tradeCoin(buyParams, walletClient, publicClient);
+  
+  console.log("Transaction hash:", result.hash);
+  console.log("Trade details:", result.trade);
+  
+  return result;
+}
+```
+
+### Simulating a Buy
+
+Before executing a buy, you can simulate it to check the expected output:
+
+```ts twoslash
+import { simulateBuy } from "@zoralabs/coins-sdk";
+import { Address, parseEther, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+
+// Set up viem clients
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+async function simulateCoinBuy() {
+  const simulation = await simulateBuy({
+    target: "0xCoinContractAddress" as Address,
+    requestedOrderSize: parseEther("0.1"),
+    publicClient,
+  });
+  
+  console.log("Order size", simulation.orderSize);
+  console.log("Amount out", simulation.amountOut);
+  
+  return simulation;
+}
+```
+
+## Selling Coins
+
+```ts twoslash
+import { tradeCoin } from "@zoralabs/coins-sdk";
+import { Address, parseEther, Hex, createWalletClient, createPublicClient, http } from "viem";
+import { base } from "viem/chains";
+
+// Set up viem clients
+const publicClient = createPublicClient({
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+const walletClient = createWalletClient({
+  account: "0x<YOUR_ACCOUNT>" as Hex,
+  chain: base,
+  transport: http("<RPC_URL>"),
+});
+
+// Define sell parameters
+const sellParams = {
+  direction: "sell" as const,
+  target: "0xCoinContractAddress" as Address,
+  args: {
+    recipient: "0xYourAddress" as Address, // Where to receive the ETH
+    orderSize: parseEther("100"), // Amount of coins to sell
+    minAmountOut: parseEther("0.05"), // Minimum ETH to receive
+    tradeReferrer: "0xOptionalReferrerAddress" as Address, // Optional
+  }
+};
+
+// Execute the sell
+async function sellCoin() {
+  const result = await tradeCoin(sellParams, walletClient, publicClient);
+  
+  console.log("Transaction hash:", result.hash);
+  console.log("Trade details:", result.trade);
+  
+  return result;
+}
+```
+
+## Using with WAGMI
+
+If you're using WAGMI in your frontend application, you can use the lower-level `tradeCoinCall` function:
+
+```typescript
+import { tradeCoinCall } from "@zoralabs/coins-sdk";
+import { useContractWrite, usePrepareContractWrite } from "wagmi";
+import { Address, parseEther } from "viem";
+
+// Define trade parameters
+const tradeParams = {
+  direction: "buy" as const,
+  target: "0xCoinContractAddress" as Address,
+  args: {
+    recipient: "0xYourAddress" as Address,
+    orderSize: parseEther("0.1"),
+    minAmountOut: 0n,
+    tradeReferrer: "0x0000000000000000000000000000000000000000" as Address,
+  }
+};
+
+// Create configuration for wagmi
+const contractCallParams = tradeCoinCall(tradeParams);
+
+// In your component
+function BuyCoinComponent() {
+  const { config } = usePrepareContractWrite({
+    ...contractCallParams,
+    value: tradeParams.args.orderSize,
+  });
+  
+  const { writeContract, status, write } = useContractWrite(config);
+  
+  return (
+    <button disabled={!writeContract || status === 'pending'} onClick={() => writeContract?.()}>
+      {status === 'pending' ? 'Buying...' : 'Buy Coin'}
+    </button>
+  );
+}
+```
+
+## Reading Trade Events from Transaction Logs
+
+After a trade is completed, you can extract the trade event details from the transaction receipt:
+
+```ts twoslash
+const receipt: any = null;
+
+// ---- cut -----
+import { getTradeFromLogs } from "@zoralabs/coins-sdk";
+
+// Assuming you have a transaction receipt and know the direction
+const tradeEvent = getTradeFromLogs(receipt, "buy"); // or "sell"
+
+if (tradeEvent) {
+  console.log(tradeEvent);
+  ///         ^?
+}
+```
+
+## Best Practices
+
+1. **Referrers**: Creating platforms on top of coins allows you to earn from both platform creation and trading fees on both the create and trade side. Make sure to include your addresses in these fields.
+
+2. **Consider Slippage**: Always set a reasonable `minAmountOut` to protect against slippage in volatile markets.
+
+3. **Simulation First**: If not using the high level API, make sure to simulate and return reasonable errors to the user. This is done for you if using the higher-level `trade` function.
+
+4. **Error Handling**: Implement robust error handling for failed trades.
+
+5. **Gas Estimation**: Be aware that gas costs can vary, especially during network congestion.
+
+6. **Price Limits**: For advanced trading, consider setting `sqrtPriceLimitX96` to control the maximum price impact of your trade. 

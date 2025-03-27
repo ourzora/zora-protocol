@@ -1,0 +1,276 @@
+# Coins Queries
+
+## API Queries
+
+### Getting a Specific Coin
+
+To fetch detailed information about a specific coin:
+
+```typescript
+import { getCoin } from "@zoralabs/coins-sdk";
+
+async function fetchCoin() {
+  try {
+    const response = await getCoin({
+      address: "0xCoinContractAddress",
+      chain: 8453, // Optional: defaults to Base (8453)
+    });
+    
+    const coin = response.data?.zora20Token;
+    
+    console.log("Coin name:", coin?.name);
+    console.log("Coin symbol:", coin?.symbol);
+    console.log("Total supply:", coin?.totalSupply);
+    console.log("Market cap:", coin?.marketCap);
+    console.log("24h volume:", coin?.volume24h);
+    
+    return response;
+  } catch (error) {
+    console.error("Error fetching coin:", error);
+    throw error;
+  }
+}
+```
+
+### Getting Multiple Coins
+
+To fetch information about multiple coins at once:
+
+```typescript
+import { getCoins } from "@zoralabs/coins-sdk";
+import { Address } from "viem";
+
+async function fetchMultipleCoins() {
+  const response = await getCoins({
+    coinAddresses: [
+      "0xFirstCoinAddress" as Address,
+      "0xSecondCoinAddress" as Address,
+      "0xThirdCoinAddress" as Address
+    ],
+    chainId: 8453, // Optional: defaults to Base (8453)
+  });
+  
+  response.data?.zora20Tokens?.forEach((coin, index) => {
+    console.log(`Coin ${index + 1}:`);
+    console.log(`- Name: ${coin.name}`);
+    console.log(`- Symbol: ${coin.symbol}`);
+    console.log(`- Market Cap: ${coin.marketCap}`);
+  });
+  
+  return response;
+}
+```
+
+### Getting Coin Comments
+
+To fetch comments for a specific coin:
+
+```typescript
+import { getCoinComments } from "@zoralabs/coins-sdk";
+import { Address } from "viem";
+
+async function fetchCoinComments() {
+  const response = await getCoinComments({
+    address: "0xCoinContractAddress" as Address,
+    chain: 8453, // Optional: defaults to Base (8453)
+    after: "cursor-value", // Optional: for pagination
+    count: 20, // Optional: number of comments to return
+  });
+  
+  response.data?.zora20Token?.zoraComments?.edges?.forEach((edge, index) => {
+    console.log(`Comment ${index + 1}:`);
+    console.log(`- Text: ${edge.node.text}`);
+    console.log(`- Created at: ${edge.node.createdAt}`);
+    console.log(`- Author: ${edge.node.author?.handle || edge.node.author?.address}`);
+  });
+  
+  // For pagination
+  console.log("Next cursor:", response.data?.pagination?.cursor);
+  
+  return response.data;
+}
+```
+
+### Getting Profile Data
+
+To fetch information about a user profile:
+
+```typescript
+import { getProfile } from "@zoralabs/coins-sdk";
+
+async function fetchProfile() {
+  const response = await getProfile({
+    address: "0xUserAddress",
+  });
+  
+  const profile = response.data?.profile;
+  
+  console.log("Profile handle:", profile?.handle);
+  console.log("Profile display name:", profile?.displayName);
+  console.log("Profile bio:", profile?.bio);
+  
+  return profile;
+}
+```
+
+### Getting Profile Balances
+
+To fetch a user's coin balances:
+
+```typescript
+import { getProfileBalances } from "@zoralabs/coins-sdk";
+import { Address } from "viem";
+
+async function fetchProfileBalances() {
+  const response = await getProfileBalances({
+    address: "0xUserAddress" as Address,
+    after: "cursor-value", // Optional: for pagination
+    count: 20, // Optional: number of balances to return
+  });
+  
+  response.data?.profile?.balances?.forEach((balance, index) => {
+    console.log(`Balance ${index + 1}:`);
+    console.log(`- Coin: ${balance.token?.name} (${balance.token?.symbol})`);
+    console.log(`- Amount: ${balance.amount?.amountDecimal}`);
+    console.log(`- Value: ${balance.valueUsd}`);
+  });
+  
+  // For pagination
+  console.log("Next cursor:", response.data?.pagination?.cursor);
+  
+  return response.data;
+}
+```
+
+## Explore Queries
+
+The SDK also provides several exploration queries to discover coins based on different criteria:
+
+### Top Gainers
+
+```typescript
+import { getCoinsTopGainers } from "@zoralabs/coins-sdk";
+
+async function fetchTopGainers() {
+  try {
+    const response = await getCoinsTopGainers();
+    
+    response.zora20Tokens?.forEach((coin, index) => {
+      console.log(`Top Gainer ${index + 1}:`);
+      console.log(`- Name: ${coin.name}`);
+      console.log(`- 24h Change: ${coin.marketCapDelta24h}`);
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error fetching top gainers:", error);
+    throw error;
+  }
+}
+```
+
+### Top 24h Volume
+
+```typescript
+import { getCoinsTopVolume24h } from "@zoralabs/coins-sdk";
+
+async function fetchTopVolume() {
+  try {
+    const response = await getCoinsTopVolume24h();
+    
+    response.zora20Tokens?.forEach((coin, index) => {
+      console.log(`Top Volume ${index + 1}:`);
+      console.log(`- Name: ${coin.name}`);
+      console.log(`- 24h Volume: ${coin.volume24h}`);
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error fetching top volume coins:", error);
+    throw error;
+  }
+}
+```
+
+### Most Valuable Coins
+
+```typescript
+import { getCoinsMostValuable } from "@zoralabs/coins-sdk";
+
+async function fetchMostValuable() {
+  try {
+    const response = await getCoinsMostValuable();
+    
+    response.zora20Tokens?.forEach((coin, index) => {
+      console.log(`Most Valuable ${index + 1}:`);
+      console.log(`- Name: ${coin.name}`);
+      console.log(`- Market Cap: ${coin.marketCap}`);
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error fetching most valuable coins:", error);
+    throw error;
+  }
+}
+```
+
+### New Coins
+
+```typescript
+import { getCoinsNew } from "@zoralabs/coins-sdk";
+
+async function fetchNewCoins() {
+  try {
+    const response = await getCoinsNew();
+    
+    response.zora20Tokens?.forEach((coin, index) => {
+      console.log(`New Coin ${index + 1}:`);
+      console.log(`- Name: ${coin.name}`);
+      console.log(`- Created At: ${coin.createdAt}`);
+    });
+    
+    return response;
+  } catch (error) {
+    console.error("Error fetching new coins:", error);
+    throw error;
+  }
+}
+```
+
+## Pagination
+
+Many API queries support pagination through `after` and `count` parameters. Here's how to implement pagination:
+
+```typescript
+import { getCoinComments } from "@zoralabs/coins-sdk";
+
+async function paginateThroughComments() {
+  let cursor = null;
+  const allComments = [];
+  const pageSize = 20;
+  
+  do {
+    const response = await getCoinComments({
+      address: "0xCoinContractAddress",
+      count: pageSize,
+      after: cursor,
+    });
+    
+    // Add comments to our collection
+    if (response.data?.zora20Token?.zoraComments.edges) {
+      allComments.push(...response.data.zora20Token.zoraComments.edges.map((edge) => edge.node));
+    }
+    
+    // Update cursor for next page
+    cursor = response.pagination?.cursor;
+    
+    // Break if no more pages
+    if (!cursor) break;
+    
+  } while (true);
+  
+  console.log(`Fetched ${allComments.length} total comments`);
+  return allComments;
+}
+```

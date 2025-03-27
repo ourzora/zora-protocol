@@ -1,0 +1,236 @@
+# `Coin.sol`
+
+The `Coin` contract is the core contract for the Zora Coins Protocol. It is an non-upgradeable ERC20 contract that allows for the creation of media coins.
+
+## Overview
+
+The `Coin` contract implements the `ICoin` interface, which extends several standard interfaces:
+- `IERC165`: Standard interface detection
+- `IERC721Receiver`: Enables receiving ERC721 tokens (for LP tokens)
+- `IERC7572`: Standard for protocol-specific metadata
+
+Each coin is created with a Uniswap V3 liquidity pool, enabling immediate trading functionality.
+
+## Key Features
+
+- **ERC20 Functionality**: Basic token transfers, approvals, and balance tracking
+- **Trading**: Built-in buy and sell functions with Uniswap V3 integration. Allows for owners to trade without approvals on uniswap.
+- **Reward Distribution**: Mechanisms for distributing rewards to creators, referrers, and the protocol
+- **Metadata Management**: Updatable contract metadata via URI
+- **Multi-Ownership**: Support for multiple owners with permission control
+
+## Core Functions
+
+### Trading
+
+#### Buy
+
+```solidity
+function buy(
+    address recipient,
+    uint256 orderSize,
+    uint256 minAmountOut,
+    uint160 sqrtPriceLimitX96,
+    address tradeReferrer
+) external payable returns (uint256, uint256);
+```
+
+This function allows users to buy coins using ETH or the configured trading currency (typically WETH). The buyer sends the currency and receives newly minted coins in return.
+
+Parameters:
+- `recipient`: The address that will receive the purchased coins
+- `orderSize`: The amount of currency to spend (in wei)
+- `minAmountOut`: Minimum amount of coins to receive (slippage protection)
+- `sqrtPriceLimitX96`: Price limit for the UniswapV3 swap (0 for no limit)
+- `tradeReferrer`: Address that receives a portion of the trading fee (optional)
+
+Returns:
+- The actual amount of currency spent and coins purchased
+
+#### Sell
+
+```solidity
+function sell(
+    address recipient,
+    uint256 orderSize,
+    uint256 minAmountOut,
+    uint160 sqrtPriceLimitX96,
+    address tradeReferrer
+) external returns (uint256, uint256);
+```
+
+This function allows users to sell their coins in exchange for ETH or the configured trading currency. The coins are burned during the sale.
+
+Parameters:
+- `recipient`: The address that will receive the currency proceeds
+- `orderSize`: The amount of coins to sell
+- `minAmountOut`: Minimum amount of currency to receive (slippage protection)
+- `sqrtPriceLimitX96`: Price limit for the UniswapV3 swap (0 for no limit)
+- `tradeReferrer`: Address that receives a portion of the trading fee (optional)
+
+Returns:
+- The actual amount of coins sold and currency received
+
+#### Burn
+
+```solidity
+function burn(uint256 amount) external;
+```
+
+Allows users to burn their own tokens, permanently removing them from circulation.
+
+### Management Functions
+
+#### setContractURI
+
+```solidity
+function setContractURI(string memory newURI) external onlyOwner;
+```
+
+Updates the coin's metadata URI. This can only be called by an owner of the coin.
+
+#### setPayoutRecipient
+
+```solidity
+function setPayoutRecipient(address newPayoutRecipient) external onlyOwner;
+```
+
+Updates the address that receives creator rewards. This can only be called by an owner of the coin.
+
+### Query Functions
+
+```solidity
+function tokenURI() external view returns (string memory);
+function platformReferrer() external view returns (address);
+```
+
+These functions provide access to key coin information:
+- `tokenURI`: Returns the coin's metadata URI
+- `platformReferrer`: Returns the address of the platform referrer who earns fees from trades
+
+## Events
+
+The contract emits various events to track important actions:
+
+### CoinBuy
+
+```solidity
+event CoinBuy(
+    address indexed buyer,
+    address indexed recipient,
+    address indexed tradeReferrer,
+    uint256 coinsPurchased,
+    address currency,
+    uint256 amountFee,
+    uint256 amountSold
+);
+```
+
+Emitted when coins are purchased, tracking the buyer, recipient, trade referrer, amount of coins purchased, currency used, fees paid, and total amount spent.
+
+### CoinSell
+
+```solidity
+event CoinSell(
+    address indexed seller,
+    address indexed recipient,
+    address indexed tradeReferrer,
+    uint256 coinsSold,
+    address currency,
+    uint256 amountFee,
+    uint256 amountPurchased
+);
+```
+
+Emitted when coins are sold, tracking the seller, recipient, trade referrer, amount of coins sold, currency received, fees paid, and total amount received.
+
+### CoinTransfer
+
+```solidity
+event CoinTransfer(
+    address indexed sender,
+    address indexed recipient,
+    uint256 amount,
+    uint256 senderBalance,
+    uint256 recipientBalance
+);
+```
+
+Emitted on any token transfer, providing detailed information about the transfer including updated balances.
+
+### CoinTradeRewards
+
+```solidity
+event CoinTradeRewards(
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address indexed tradeReferrer,
+    address protocolRewardRecipient,
+    uint256 creatorReward,
+    uint256 platformReferrerReward,
+    uint256 traderReferrerReward,
+    uint256 protocolReward,
+    address currency
+);
+```
+
+Emitted when trade rewards are distributed, tracking all reward recipients and amounts.
+
+### CoinMarketRewards
+
+```solidity
+event CoinMarketRewards(
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address protocolRewardRecipient,
+    address currency,
+    MarketRewards marketRewards
+);
+```
+
+Emitted when market rewards (from liquidity pool fees) are distributed.
+
+### ContractMetadataUpdated
+
+```solidity
+event ContractMetadataUpdated(
+    address indexed caller,
+    string newURI,
+    string name
+);
+```
+
+Emitted when the contract metadata URI is updated.
+
+### CoinPayoutRecipientUpdated
+
+```solidity
+event CoinPayoutRecipientUpdated(
+    address indexed caller,
+    address indexed prevRecipient,
+    address indexed newRecipient
+);
+```
+
+Emitted when the payout recipient is updated.
+
+## Error Handling
+
+The contract defines several custom errors that provide specific information about failed operations:
+
+- `AddressZero`: Operation attempted with a zero address
+- `InsufficientFunds`: Insufficient funds for the operation
+- `InsufficientLiquidity`: Insufficient liquidity for a transaction
+- `SlippageBoundsExceeded`: Slippage bounds exceeded during a transaction
+- `InitialOrderSizeTooLarge`: Initial order size too large
+- `EthAmountMismatch`: ETH value doesn't match the currency amount
+- `EthAmountTooSmall`: ETH amount too small for the transaction
+- `ERC20TransferAmountMismatch`: Unexpected ERC20 transfer amount
+- `EthTransferInvalid`: Invalid ETH transfer
+- `EthTransferFailed`: ETH transfer failed
+- `OnlyPool`: Operation only available to the Uniswap pool
+- `OnlyWeth`: Operation only available to WETH
+- `MarketNotGraduated`: Market hasn't graduated yet
+- `MarketAlreadyGraduated`: Market has already graduated
+- `InvalidCurrencyLowerTick`: Invalid tick configuration
+- `InvalidWethLowerTick`: Invalid WETH tick configuration

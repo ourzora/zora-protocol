@@ -1,0 +1,310 @@
+# Coin Queries
+
+The Coins SDK provides several query functions to fetch information about specific coins. This page details the available coin query functions, their parameters, and includes usage examples.
+
+## Available Queries
+
+### getCoin
+
+The `getCoin` function retrieves detailed information about a specific coin, including its metadata, market data, and creator information.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinParams = {
+  address: string;   // The coin contract address
+  chain?: number;    // Optional: The chain ID (defaults to Base: 8453)
+};
+```
+
+#### Usage Example
+
+```ts
+import { getCoin } from "@zoralabs/coins-sdk";
+
+async function fetchSingleCoin() {
+  const response = await getCoin({
+    address: "0xCoinContractAddress",
+    chain: 8453, // Optional: Base chain
+  });
+  
+  const coin = response.data?.zora20Token;
+  
+  if (coin) {
+    console.log("Coin Details:");
+    console.log("- Name:", coin.name);
+    console.log("- Symbol:", coin.symbol);
+    console.log("- Description:", coin.description);
+    console.log("- Total Supply:", coin.totalSupply);
+    console.log("- Market Cap:", coin.marketCap);
+    console.log("- 24h Volume:", coin.volume24h);
+    console.log("- Creator:", coin.creatorAddress);
+    console.log("- Created At:", coin.createdAt);
+    console.log("- Unique Holders:", coin.uniqueHolders);
+    
+    // Access media if available
+    if (coin.media?.previewImage) {
+      console.log("- Preview Image:", coin.media.previewImage);
+    }
+  }
+  
+  return response;
+}
+```
+
+#### Response Structure
+
+The response includes a `data` object containing a `zora20Token` object with the following properties:
+
+```ts twoslash
+type Zora20Token = {
+  zora20Token?: {
+    id?: string;                 // Unique identifier
+    name?: string;               // Coin name
+    description?: string;        // Coin description
+    address?: string;            // Contract address
+    symbol?: string;             // Trading symbol
+    totalSupply?: string;        // Total supply (as string)
+    totalVolume?: string;        // All-time volume
+    volume24h?: string;          // 24-hour volume
+    createdAt?: string;          // Creation timestamp
+    creatorAddress?: string;     // Creator's address
+    creatorEarnings?: Array<{    // Creator earnings data
+      amount?: {
+        currency?: { address?: string };
+        amountRaw?: string;
+        amountDecimal?: number;
+      };
+      amountUsd?: string;
+    }>;
+    marketCap?: string;          // Current market cap
+    marketCapDelta24h?: string;  // 24-hour market cap change
+    chainId?: number;            // The chain ID
+    creatorProfile?: string;     // Creator's profile handle
+    handle?: string;             // Coin handle (if available)
+    avatar?: {                   // Avatar image data
+      previewImage?: string;
+      blurhash?: string;
+      small?: string;
+    };
+    media?: {                    // Media associated with the coin
+      mimeType?: string;
+      originalUri?: string;
+      format?: string;
+      previewImage?: string;
+      medium?: string;
+      blurhash?: string;
+    };
+    transfers?: { count?: number }; // Transfer count
+    uniqueHolders?: number;      // Number of unique holders
+  }
+}
+```
+
+### getCoins
+
+The `getCoins` function retrieves information about multiple coins at once, useful for batch processing or displaying multiple coins.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinsParams = {
+  coinAddresses: string[];  // Array of coin contract addresses
+  chainId?: number;         // Optional: The chain ID (defaults to Base: 8453)
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+import { getCoins } from "@zoralabs/coins-sdk";
+import { base } from "viem/chains";
+
+async function fetchMultipleCoins() {
+  const response = await getCoins({
+    coinAddresses: [
+      "0xFirstCoinAddress",
+      "0xSecondCoinAddress",
+      "0xThirdCoinAddress"
+    ],
+    chainId: base.id, // Optional: Base chain
+  });
+  
+  // Process each coin in the response
+  response.data?.zora20Tokens?.forEach((coin: any, index: number) => {
+    console.log(`Coin ${index + 1}: ${coin.name} (${coin.symbol})`);
+    console.log(`- Market Cap: ${coin.marketCap}`);
+    console.log(`- 24h Volume: ${coin.volume24h}`);
+    console.log(`- Holders: ${coin.uniqueHolders}`);
+    console.log('-----------------------------------');
+  });
+  
+  return response;
+}
+```
+
+#### Response Structure
+
+The response includes a `zora20Tokens` array containing objects with the same structure as the `zora20Token` object in the `getCoin` response.
+
+### getCoinComments
+
+The `getCoinComments` function retrieves comments associated with a specific coin, useful for displaying community engagement.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinCommentsParams = {
+  address: string;    // The coin contract address
+  chain?: number;     // Optional: The chain ID (defaults to Base: 8453)
+  after?: string;     // Optional: Pagination cursor for fetching next page
+  count?: number;     // Optional: Number of comments to return per page
+};
+```
+
+#### Usage Example
+
+```ts
+import { getCoinComments } from "@zoralabs/coins-sdk";
+import { Address } from "viem";
+
+async function fetchCoinComments() {
+  const response = await getCoinComments({
+    address: "0xCoinContractAddress" as Address,
+    chain: 8453,      // Optional: Base chain
+    after: undefined, // Optional: for pagination
+    count: 20,        // Optional: number of comments per page
+  });
+  //    ^?
+  
+  // Process comments
+  console.log(`Found ${response.data?.zora20Token?.zoraComments?.edges?.length || 0} comments`);
+  
+  response.data?.zora20Token?.zoraComments?.edges?.forEach((edge: any, index: number) => {
+    console.log(`Comment ${index + 1}:`);
+    console.log(`- Author: ${edge.node.author?.handle || edge.node.author?.address}`);
+    console.log(`- Text: ${edge.node.text}`);
+    console.log(`- Created At: ${edge.node.createdAt}`);
+    
+    // Check for reactions if available
+    if (edge.node.reactions && edge.node.reactions.length > 0) {
+      console.log(`- Reactions: ${edge.node.reactions.length}`);
+      edge.node.reactions.forEach(reaction => {
+        console.log(`  - ${reaction.type}: ${reaction.count}`);
+      });
+    }
+    
+    console.log('-----------------------------------');
+  });
+  
+  // For pagination
+  if (response.data?.zora20Token?.zoraComments?.pageInfo?.endCursor) {
+    console.log("Next page cursor:", response.data?.zora20Token?.zoraComments?.pageInfo?.endCursor);
+  }
+  
+  return response;
+}
+```
+
+#### Paginating Through All Comments
+
+To fetch all comments for a coin, you can use pagination:
+
+```ts twoslash
+import { getCoinComments } from "@zoralabs/coins-sdk";
+
+async function fetchAllCoinComments(coinAddress: string) {
+  let allComments: any[] = [];
+  let cursor = undefined;
+  const pageSize = 20;
+  
+  // Continue fetching until no more pages
+  do {
+    const response = await getCoinComments({
+      address: coinAddress,
+      count: pageSize,
+      after: cursor,
+    });
+    
+    // Add comments to our collection
+    if (response.data?.zora20Token?.zoraComments?.edges && response.data?.zora20Token?.zoraComments?.edges.length > 0) {
+      allComments = [...allComments, ...response.data?.zora20Token?.zoraComments?.edges];
+    }
+    
+    // Update cursor for next page
+    cursor = response.data?.zora20Token?.zoraComments?.pageInfo?.endCursor;
+    
+    // Break if no more results
+    if (!cursor || response.data?.zora20Token?.zoraComments?.edges?.length === 0) {
+      break;
+    }
+    
+  } while (true);
+  
+  console.log(`Fetched ${allComments.length} total comments`);
+  return allComments;
+}
+```
+
+#### Response Structure
+
+The response includes a `comments` array and pagination information:
+
+```ts twoslash
+type CommentsResponse = {
+  comments?: Array<{
+    id?: string;           // Comment ID
+    text?: string;         // Comment text
+    createdAt?: string;    // Creation timestamp
+    updatedAt?: string;    // Last update timestamp
+    author?: {             // Author information
+      address?: string;    // Author's wallet address
+      handle?: string;     // Author's handle/username
+      displayName?: string; // Author's display name
+      profileImage?: {     // Author's profile image
+        previewImage?: string;
+        small?: string;
+        blurhash?: string;
+      };
+    };
+    reactions?: Array<{    // Reactions to the comment
+      type?: string;       // Reaction type
+      count?: number;      // Reaction count
+    }>;
+  }>;
+  pagination?: {
+    cursor?: string;       // Cursor for the next page
+  };
+}
+```
+
+## Error Handling
+
+All query functions follow the same error handling pattern. When an error occurs, the promise is rejected with an error object that includes details about what went wrong.
+
+```ts twoslash
+import { Address } from "viem";
+import { getCoin } from "@zoralabs/coins-sdk";
+
+try {
+  const response = await getCoin({ address: "0xCoinAddress" as Address });
+  //    ^^^
+  // Process response...
+} catch (error: any) {
+  if (error.status === 404) {
+    console.error("Coin not found");
+  } else if (error.status === 401) {
+    console.error("API key invalid or missing");
+  } else {
+    console.error("Unexpected error:", error.message);
+  }
+}
+```
+
+## Best Practices
+
+1. **Cache Results**: Consider caching query results to reduce API calls and improve performance.
+2. **Use Batch Queries**: When fetching data for multiple coins, use `getCoins` instead of multiple `getCoin` calls.
+3. **Implement Pagination**: For `getCoinComments`, always implement pagination to handle potentially large datasets.
+4. **Handle Missing Data**: Always check for the existence of fields before accessing them, as some fields may be undefined.
+6. **Error Handling**: Implement robust error handling for all API queries to provide a good user experience.
