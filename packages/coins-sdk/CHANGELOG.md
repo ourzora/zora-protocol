@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.0.2
+
+### Patch Changes
+
+- d9eb5a40: Initial release
+
 ## 0.0.2-sdkalpha.8
 
 ### Patch Changes
