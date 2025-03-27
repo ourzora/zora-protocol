@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 0.6.1
+
+### Patch Changes
+
+- b9f717db: Export IUniswapV3Pool interface
+
 ## 0.6.0
 
 ### Minor Changes
