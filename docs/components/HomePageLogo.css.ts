@@ -2,13 +2,13 @@ import { globalStyle, style } from "@vanilla-extract/css";
 
 export const root = style({});
 
-export const logoDark = style({}, "logoDark");
-globalStyle(`:root:not(.dark) ${logoDark}`, {
+export const logoDark = style({});
+globalStyle(`:root:not(.dark) .${logoDark}`, {
   display: "none",
 });
 
-export const logoLight = style({}, "logoLight");
-globalStyle(`:root.dark ${logoLight}`, {
+export const logoLight = style({});
+globalStyle(`:root.dark .${logoLight}`, {
   display: "none",
 });
 
@@ -23,16 +23,13 @@ const viewportVars = {
   "min-1280px": "screen and (min-width: 1281px)",
 };
 
-export const logo = style(
-  {
-    display: "flex",
-    justifyContent: "center",
-    height: "48px",
-    "@media": {
-      [viewportVars["max-720px"]]: {
-        height: "36px",
-      },
+export const logo = style({
+  display: "flex",
+  justifyContent: "center",
+  height: "48px",
+  "@media": {
+    [viewportVars["max-720px"]]: {
+      height: "36px",
     },
   },
-  "logo",
-);
+});
