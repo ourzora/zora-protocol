@@ -7,7 +7,7 @@ export default defineConfig({
   titleTemplate: "%s | ZORA Docs",
   iconUrl: "https://docs.zora.co/brand/zorb-logo.png",
   logoUrl: "https://docs.zora.co/brand/zorb-logo.png",
-  ogImageUrl: "https://docs.zora.co/brand/og.png",
+  ogImageUrl: "https://docs.zora.co/brand/og.jpg",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [

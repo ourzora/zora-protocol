@@ -94,10 +94,6 @@
   line-height: 0.95;
 }
 
-/* .vocs_NavigationMenu_link {
-  font-family: Arial, Helvetica;
-} */
-
 .CardContainer {
   display: grid;
   padding: var(--four-space) 0;
