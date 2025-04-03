@@ -7,34 +7,46 @@ import { HomePage } from 'vocs/components'
 import { HomePageLogo } from "../components/HomePageLogo";
 
 <HomePage.Root>
-  <HomePageLogo dark="/zora-wordmark-white.svg" light="/zora-wordmark-black.svg" /> 
-  <HomePage.Tagline>Explore our developer tools and resources to integrate Zora </HomePage.Tagline>
-  <img src="/zora-docs-hero-image.png"  className="hero-image" />
-<p>
-  Build your project on Zora and plug into our business and distribution network.<br />
-  Our Coins SDK lets developers create engaging experiences for creators and traders.
-</p>
+  {/* <HomePageLogo dark="/zora-wordmark-white.svg" light="/zora-wordmark-black.svg" />  */}
+  {/* <HomePage.>Explore our developer tools and resources to integrate Zora </HomePage.Tagline> */}
+  {/* <HomePage.Tagline>Explore our developer tools and resources to integrate Zora </HomePage.Tagline> */}
+
+  <div className="HomePageBanner">
+  <div className="HomePageContent">
+    <h1>Zora for Developers</h1>
+    <h3>Explore our developer tools and<br /> resources to integrate Zora</h3>
+    </div>
+  </div>
+
+
+
+  {/* <img src="/zora-docs-hero-image.png"  className="hero-image" /> */}
+
+  <div class="HomePageTagline">Build your project on Zora and plug into our business and distribution network.<br />
+    Our Coins SDK lets developers create engaging experiences for creators and traders.</div>
 </HomePage.Root>
 
+  <div className="HomePageContent">
   <CardContainer>
-    <Card title="Create a coin" icon="PaintBrush" href="/coins/sdk/create-coin">
+    <Card title="Create a coin" icon="create-coin" href="/coins/sdk/create-coin">
       Create Zora coins using the SDK
     </Card>
-    <Card title="Query coins" icon="CubeTransparent" href="/coins/sdk/query-coins">
+    <Card title="Query coins" icon="query-coins" href="/coins/sdk/query-coins">
       Query coin details, profile balances, coin activity and more using the SDK
     </Card>
-    <Card title="Coins contracts" icon="Rocket" href="/coins/contracts/coin">
+    <Card title="Coins contracts" icon="coins-contracts" href="/coins/contracts/coin">
       Deepdive into the contracts powering the Coins experience on Zora
     </Card>
-    <Card title="Coins metadata" icon="Sparkles" href="/coins/metadata">
+    <Card title="Coins metadata" icon="coins-metadata" href="/coins/metadata">
       Learn best practices for creating and updating coin metadata
     </Card>
-    <Card title="Support" icon="Info" href="//support.zora.co">
+    <Card title="Support" icon="support" href="//support.zora.co">
       Learn more about the product or get in touch with the team
     </Card>
-    <Card title="Visit Zora" icon="Plus" href="//zora.co">
+    <Card title="Visit Zora" icon="visit-zora" href="//zora.co">
       Create and trade Zora coins
     </Card>
   </CardContainer>
+  </div>
 
   

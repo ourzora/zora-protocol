@@ -5,9 +5,9 @@ import vercel from "vite-plugin-vercel";
 export default defineConfig({
   title: "ZORA Docs",
   titleTemplate: "%s | ZORA Docs",
-  iconUrl: "https://docs.zora.co/Zorb.png",
-  logoUrl: "https://docs.zora.co/Zorb.png",
-  ogImageUrl: "https://docs.zora.co/og.png",
+  iconUrl: "https://docs.zora.co/brand/zorb-logo.png",
+  logoUrl: "https://docs.zora.co/brand/zorb-logo.png",
+  ogImageUrl: "https://docs.zora.co/brand/og.png",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [

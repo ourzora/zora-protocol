@@ -1,5 +1,5 @@
 .vocs_HomePage {
-  font-family: "Arial Narrow", sans-serif;
+  font-family: "Arial", sans-serif;
 }
 
 .vocs_HomePage .vocs_HomePage_tagline {
@@ -18,6 +18,75 @@
   width: 100%;
 }
 
+.vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_content, 
+.vocs_DocsLayout[data-layout="landing"] .vocs_Content {
+  max-width: inherit;
+  padding: 0;
+}
+
+.vocs_DocsLayout[data-layout="landing"] .vocs_Footer {
+  max-width: inherit;
+}
+
+.vocs_DocsLayout[data-layout="landing"] .vocs_HomePage {
+  padding: 0;
+  margin: 0;
+}
+
+
+.HomePageContent {
+  padding: var(--vocs-content_verticalPadding) var(--vocs-content_horizontalPadding);
+  max-width: var(--vocs-content_width);
+  margin: 0 auto;
+}
+
+.HomePageBanner h1 {
+  color: black;
+  font-size: 80px;
+  font-weight: 400;
+  letter-spacing: -4.756px;
+  line-height: 100%;
+  margin-top: 182px;
+}
+
+
+.HomePageBanner h3 {
+  color: black;
+  font-size: 35px;
+  line-height: 31px;
+  font-weight: 400;
+  /* margin-top: 32px; */
+  margin-top: 48px;
+  margin-bottom: 100px;
+  letter-spacing: -1.387px;
+}
+
+
+
+@media (max-width: 768px) {
+  body .HomePageBanner h1 {
+    font-size: 48px;
+    letter-spacing: -1.378px;
+  }
+  body .HomePageBanner h3 {
+    font-size: 24px;
+    line-height: 20px;
+    letter-spacing: -0.387px;
+  }
+  body .HomePageTagline {
+    font-size: 18px;
+    line-height: 110%;
+  }
+}
+
+
+.HomePageTagline {
+  font-size: 20px;
+  line-height: 100%;
+  font-weight: 400;
+  letter-spacing: -0.793px;
+}
+
 .vocs_HomePage p {
   font-size: 22px;
   font-weight: 400;
@@ -25,15 +94,27 @@
   line-height: 0.95;
 }
 
-.vocs_NavigationMenu_link {
-  font-family: "Arial Mono", monospace;
-}
+/* .vocs_NavigationMenu_link {
+  font-family: Arial, Helvetica;
+} */
 
 .CardContainer {
   display: grid;
   padding: var(--four-space) 0;
   gap: var(--four-space);
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+}
+
+.CardContainer .BoxCard > img {
+  width: 42px;
+  height: 42px;
+  object-fit: contain;
+}
+
+.HomePageBanner {
+  background: url(/brand/header-background.jpg) no-repeat center;
+  width: 100%;
+  position: relative;
 }
 
 .CustomIcon {
