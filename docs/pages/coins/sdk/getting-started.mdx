@@ -6,11 +6,55 @@ Most features available on the Zora product on web and native mobile apps are av
 
 ## Installation
 
-The SDK is available on NPM and can be installed using the following command:
+This SDK is designed to work with both client and server environments running both js and typescript.
 
-```bash
+The SDK can be installed from NPM by running:
+
+:::code-group
+
+```bash [npm]
 npm install @zoralabs/coins-sdk
 ```
+
+```bash [pnpm]
+pnpm install @zoralabs/coins-sdk
+```
+
+```bash [yarn]
+yarn install @zoralabs/coins-sdk
+```
+
+```bash [bun]
+bun install @zoralabs/coins-sdk
+```
+
+:::
+
+
+Additionally, the SDK requires `viem` to be installed as a peer dependency:
+
+:::code-group
+
+```bash [npm]
+npm install viem 
+```
+
+```bash [pnpm]
+pnpm install viem 
+```
+
+```bash [yarn]
+yarn install viem 
+```
+
+```bash [bun]
+bun install viem 
+```
+
+:::
+
+
+On-chain write operations will not work without `viem` installed.
 
 ## Usage
 
