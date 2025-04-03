@@ -10,6 +10,7 @@ import {
 import { COIN_FACTORY_ADDRESS } from "../constants";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import { GenericPublicClient } from "src/utils/genericPublicClient";
+import { validateMetadataURIContent, ValidMetadataURI } from "src/metadata";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
@@ -19,7 +20,7 @@ export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
 export type CreateCoinArgs = {
   name: string;
   symbol: string;
-  uri: string;
+  uri: ValidMetadataURI;
   owners?: Address[];
   tickLower?: number;
   payoutRecipient: Address;
@@ -27,7 +28,7 @@ export type CreateCoinArgs = {
   initialPurchaseWei?: bigint;
 };
 
-export function createCoinCall({
+export async function createCoinCall({
   name,
   symbol,
   uri,
@@ -36,14 +37,17 @@ export function createCoinCall({
   initialPurchaseWei = 0n,
   tickLower = -199200,
   platformReferrer = "0x0000000000000000000000000000000000000000",
-}: CreateCoinArgs): SimulateContractParameters<
-  typeof zoraFactoryImplABI,
-  "deploy"
+}: CreateCoinArgs): Promise<
+  SimulateContractParameters<typeof zoraFactoryImplABI, "deploy">
 > {
   if (!owners) {
     owners = [payoutRecipient];
   }
 
+  // This will throw an error if the metadata is not valid
+  await validateMetadataURIContent(uri);
+
+  // For now, we only support the base currency as WETH
   const currency = "0x4200000000000000000000000000000000000006";
   return {
     abi: zoraFactoryImplABI,
