@@ -31,9 +31,7 @@ export type GetCoinResponses = {
       creatorAddress?: string;
       creatorEarnings?: Array<{
         amount?: {
-          currency?: {
-            address?: string;
-          };
+          currencyAddress?: string;
           amountRaw?: string;
           amountDecimal?: number;
         };
@@ -49,14 +47,13 @@ export type GetCoinResponses = {
         blurhash?: string;
         small?: string;
       };
-      media?: {
-        mimeType?: string;
-        originalUri?: string;
-        format?: string;
-        previewImage?: string;
-        medium?: string;
-        blurhash?: string;
-      };
+      mediaContent?: string;
+      mimeType?: string;
+      originalUri?: string;
+      previewImage?: string;
+      small?: string;
+      medium?: string;
+      blurhash?: string;
       transfers?: {
         count?: number;
       };
@@ -154,7 +151,15 @@ export type GetCoinCommentsResponses = {
           replies?: {
             count?: number;
             edges?: Array<{
+              /**
+               * The name of the current Object type at runtime.
+               */
+              __typename?: string;
               node?: {
+                /**
+                 * The name of the current Object type at runtime.
+                 */
+                __typename?: string;
                 txHash?: string;
                 comment?: string;
                 userAddress?: string;
@@ -215,9 +220,7 @@ export type GetCoinsResponses = {
       creatorAddress?: string;
       creatorEarnings?: Array<{
         amount?: {
-          currency?: {
-            address?: string;
-          };
+          currencyAddress?: string;
           amountRaw?: string;
           amountDecimal?: number;
         };
@@ -233,14 +236,13 @@ export type GetCoinsResponses = {
         blurhash?: string;
         small?: string;
       };
-      media?: {
-        mimeType?: string;
-        originalUri?: string;
-        format?: string;
-        previewImage?: string;
-        medium?: string;
-        blurhash?: string;
-      };
+      mediaContent?: string;
+      mimeType?: string;
+      originalUri?: string;
+      previewImage?: string;
+      small?: string;
+      medium?: string;
+      blurhash?: string;
       transfers?: {
         count?: number;
       };
@@ -325,9 +327,7 @@ export type GetExploreResponses = {
           creatorAddress?: string;
           creatorEarnings?: Array<{
             amount?: {
-              currency?: {
-                address?: string;
-              };
+              currencyAddress?: string;
               amountRaw?: string;
               amountDecimal?: number;
             };
@@ -343,14 +343,13 @@ export type GetExploreResponses = {
             blurhash?: string;
             small?: string;
           };
-          media?: {
-            mimeType?: string;
-            originalUri?: string;
-            format?: string;
-            previewImage?: string;
-            medium?: string;
-            blurhash?: string;
-          };
+          mediaContent?: string;
+          mimeType?: string;
+          originalUri?: string;
+          previewImage?: string;
+          small?: string;
+          medium?: string;
+          blurhash?: string;
           transfers?: {
             count?: number;
           };
@@ -408,6 +407,17 @@ export type GetProfileResponses = {
     website?: string;
     publicWallet?: {
       walletAddress?: string;
+    };
+    socialAccounts?: {
+      instagram?: {
+        displayName?: string;
+      };
+      tiktok?: {
+        displayName?: string;
+      };
+      twitter?: {
+        displayName?: string;
+      };
     };
     linkedWallets?: {
       edges?: Array<{
@@ -475,9 +485,7 @@ export type GetProfileBalancesResponses = {
             creatorAddress?: string;
             creatorEarnings?: Array<{
               amount?: {
-                currency?: {
-                  address?: string;
-                };
+                currencyAddress?: string;
                 amountRaw?: string;
                 amountDecimal?: number;
               };
@@ -493,52 +501,17 @@ export type GetProfileBalancesResponses = {
               blurhash?: string;
               small?: string;
             };
-            media?: {
-              mimeType?: string;
-              originalUri?: string;
-              format?: string;
-              previewImage?: string;
-              medium?: string;
-              blurhash?: string;
-            };
+            mediaContent?: string;
+            mimeType?: string;
+            originalUri?: string;
+            previewImage?: string;
+            small?: string;
+            medium?: string;
+            blurhash?: string;
             transfers?: {
               count?: number;
             };
             uniqueHolders?: number;
-            zoraComments?: {
-              /**
-               * Information to aid in pagination.
-               */
-              pageInfo?: {
-                /**
-                 * When paginating forwards, the cursor to continue.
-                 */
-                endCursor?: string;
-                /**
-                 * When paginating forwards, are there more items?
-                 */
-                hasNextPage?: boolean;
-              };
-              count?: number;
-              edges?: Array<{
-                node?: string;
-                txHash?: string;
-                comment?: string;
-                userAddress?: string;
-                timestamp?: number;
-                userProfile?: string;
-                /**
-                 * The Globally Unique ID of this object
-                 */
-                id?: string;
-                handle?: string;
-                avatar?: {
-                  previewImage?: string;
-                  blurhash?: string;
-                  small?: string;
-                };
-              }>;
-            };
           };
         };
       }>;

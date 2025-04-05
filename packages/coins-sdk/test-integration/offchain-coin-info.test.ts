@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCoin, getExploreNew } from "../src";
+import { getCoin, getCoinsNew } from "../src";
 import { isAddress } from "viem";
 
 describe("Coin Offchain Details", () => {
@@ -12,7 +12,7 @@ describe("Coin Offchain Details", () => {
     );
   });
   it("gets the offchain explore query", async () => {
-    const newCoins = await getExploreNew();
+    const newCoins = await getCoinsNew();
     const newAddress = newCoins.data?.exploreList?.edges?.[0]?.node?.address;
     expect(isAddress(newAddress!)).to.eq(true);
   });

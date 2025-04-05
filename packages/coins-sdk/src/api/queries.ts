@@ -53,10 +53,12 @@ export const getCoins = async (
 ): APIQueryDataResponse<GetCoinsResponse> => {
   return await getCoinsSDK({
     query: {
-      coins: coinAddresses.map((collectionAddress) => ({
-        chainId,
-        collectionAddress,
-      })),
+      coins: coinAddresses.map((collectionAddress) =>
+        JSON.stringify({
+          chainId,
+          collectionAddress,
+        }),
+      ) as any,
     },
     meta: getApiKeyMeta(),
     ...options,
