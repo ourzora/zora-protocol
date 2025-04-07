@@ -1,5 +1,12 @@
 # @zoralabs/coins-sdk
 
+## 0.0.4
+
+### Patch Changes
+
+- de700d12: Updated intermediary types in coins-sdk to better handle nulls
+- b08b33ae: Fix multiple coins get and update types
+
 ## 0.0.3
 
 ### Patch Changes
