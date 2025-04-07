@@ -868,7 +868,7 @@ export type GetProfileBalancesData = {
     identifier: string;
     count?: number;
     after?: string;
-    chainIds: Array<number>;
+    chainIds?: Array<number>;
   };
   url: "/profileBalances";
 };
