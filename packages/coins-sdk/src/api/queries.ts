@@ -6,6 +6,7 @@ import {
   GetCoinsData,
   GetCoinsResponse,
   GetProfileBalancesData,
+  GetProfileBalancesResponse,
   GetProfileData,
   GetProfileResponse,
 } from "../client/types.gen";
@@ -18,10 +19,9 @@ import {
 } from "../client/sdk.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
+import { RequestResult } from "@hey-api/client-fetch";
 
-type APIQueryDataResponse<T> = Promise<{ data?: T }>;
-
-export type { APIQueryDataResponse };
+export type { RequestResult };
 
 type GetCoinQuery = GetCoinData["query"];
 export type { GetCoinQuery, GetCoinData };
@@ -32,7 +32,7 @@ export type CoinData = NonNullable<GetCoinResponse["zora20Token"]>;
 export const getCoin = async (
   query: GetCoinQuery,
   options?: RequestOptionsType<GetCoinData>,
-): Promise<{ data?: GetCoinResponse }> => {
+): Promise<RequestResult<GetCoinResponse>> => {
   return await getCoinSDK({
     ...options,
     query,
@@ -47,7 +47,7 @@ export type { GetCoinsResponse } from "../client/types.gen";
 export const getCoins = async (
   query: GetCoinsQuery,
   options?: RequestOptionsType<GetCoinsData>,
-): APIQueryDataResponse<GetCoinsResponse> => {
+): Promise<RequestResult<GetCoinsResponse>> => {
   return await getCoinsSDK({
     query: {
       coins: query.coins.map((coinData) => JSON.stringify(coinData)) as any,
@@ -64,7 +64,7 @@ export type { GetCoinCommentsResponse } from "../client/types.gen";
 export const getCoinComments = async (
   query: GetCoinCommentsQuery,
   options?: RequestOptionsType<GetCoinCommentsData>,
-): APIQueryDataResponse<GetCoinCommentsResponse> => {
+): Promise<RequestResult<GetCoinCommentsResponse>> => {
   return await getCoinCommentsSDK({
     query,
     meta: getApiKeyMeta(),
@@ -79,7 +79,7 @@ export type { GetProfileResponse } from "../client/types.gen";
 export const getProfile = async (
   query: GetProfileQuery,
   options?: RequestOptionsType<GetProfileData>,
-): APIQueryDataResponse<GetProfileResponse> => {
+): Promise<RequestResult<GetProfileResponse>> => {
   return await getProfileSDK({
     query,
     meta: getApiKeyMeta(),
@@ -92,9 +92,9 @@ export type { GetProfileBalancesQuery, GetProfileBalancesData };
 export type { GetProfileBalancesResponse } from "../client/types.gen";
 
 export const getProfileBalances = async (
-  query: GetProfileBalancesData["query"],
+  query: GetProfileBalancesQuery,
   options?: RequestOptionsType<GetProfileBalancesData>,
-) => {
+): Promise<RequestResult<GetProfileBalancesResponse>> => {
   return await getProfileBalancesSDK({
     query,
     meta: getApiKeyMeta(),
