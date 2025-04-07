@@ -17,6 +17,13 @@ export async function validateMetadataURIContent(
   if (!response.ok) {
     throw new Error("Metadata fetch failed");
   }
+  if (
+    !["application/json", "text/plain"].includes(
+      response.headers.get("content-type") ?? "",
+    )
+  ) {
+    throw new Error("Metadata is not a valid JSON or plain text response type");
+  }
   const metadataJson = await response.json();
   return validateMetadataJSON(metadataJson);
 }
