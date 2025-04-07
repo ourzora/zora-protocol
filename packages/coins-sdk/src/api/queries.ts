@@ -40,23 +40,17 @@ export const getCoin = async (
   });
 };
 
-type GetCoinsQuery = {
-  coinAddresses: string[];
-  chainId?: number;
-};
+type GetCoinsQuery = GetCoinsData["query"];
 export type { GetCoinsQuery, GetCoinsData };
 export type { GetCoinsResponse } from "../client/types.gen";
 
 export const getCoins = async (
-  { coinAddresses, chainId }: GetCoinsQuery,
+  query: GetCoinsQuery,
   options?: RequestOptionsType<GetCoinsData>,
 ): APIQueryDataResponse<GetCoinsResponse> => {
   return await getCoinsSDK({
     query: {
-      coins: coinAddresses.map((collectionAddress) => ({
-        chainId,
-        collectionAddress,
-      })),
+      coins: query.coins.map((coinData) => JSON.stringify(coinData)) as any,
     },
     meta: getApiKeyMeta(),
     ...options,

@@ -38,6 +38,9 @@ export type Options<
   meta?: Record<string, unknown>;
 };
 
+/**
+ * zoraSDK_coin query
+ */
 export const getCoin = <ThrowOnError extends boolean = false>(
   options: Options<GetCoinData, ThrowOnError>,
 ) => {
@@ -51,6 +54,9 @@ export const getCoin = <ThrowOnError extends boolean = false>(
   });
 };
 
+/**
+ * zoraSDK_coinComments query
+ */
 export const getCoinComments = <ThrowOnError extends boolean = false>(
   options: Options<GetCoinCommentsData, ThrowOnError>,
 ) => {
@@ -64,6 +70,9 @@ export const getCoinComments = <ThrowOnError extends boolean = false>(
   });
 };
 
+/**
+ * zoraSDK_coins query
+ */
 export const getCoins = <ThrowOnError extends boolean = false>(
   options: Options<GetCoinsData, ThrowOnError>,
 ) => {
@@ -77,6 +86,9 @@ export const getCoins = <ThrowOnError extends boolean = false>(
   });
 };
 
+/**
+ * zoraSDK_explore query
+ */
 export const getExplore = <ThrowOnError extends boolean = false>(
   options: Options<GetExploreData, ThrowOnError>,
 ) => {
@@ -90,6 +102,9 @@ export const getExplore = <ThrowOnError extends boolean = false>(
   });
 };
 
+/**
+ * zoraSDK_profile query
+ */
 export const getProfile = <ThrowOnError extends boolean = false>(
   options: Options<GetProfileData, ThrowOnError>,
 ) => {
@@ -103,6 +118,9 @@ export const getProfile = <ThrowOnError extends boolean = false>(
   });
 };
 
+/**
+ * zoraSDK_profileBalances query
+ */
 export const getProfileBalances = <ThrowOnError extends boolean = false>(
   options: Options<GetProfileBalancesData, ThrowOnError>,
 ) => {
