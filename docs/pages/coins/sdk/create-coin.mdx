@@ -118,7 +118,7 @@ const coinParams = {
 };
 
 // Create configuration for wagmi
-const contractCallParams = createCoinCall(coinParams);
+const contractCallParams = await createCoinCall(coinParams);
 
 // In your component
 function CreateCoinComponent() {
