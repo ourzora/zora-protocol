@@ -93,8 +93,10 @@ export async function createCoin(
   },
 ) {
   validateClientNetwork(publicClient);
+
+  const createCoinRequest = await createCoinCall(call);
   const { request } = await publicClient.simulateContract({
-    ...createCoinCall(call),
+    ...createCoinRequest,
     account: walletClient.account,
   });
 
