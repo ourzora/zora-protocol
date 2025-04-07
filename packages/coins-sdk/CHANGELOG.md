@@ -1,5 +1,10 @@
 # @zoralabs/coins-sdk
 
+## 0.0.5
+
+### Patch Changes
+
+- 514f8dd4: Added validation to URI used to create a coin matching a JSON object with URIs
 
 ## 0.0.4
 
