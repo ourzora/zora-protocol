@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import "./utils/BaseTest.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
+import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 
 contract CoinTest is BaseTest {
     function setUp() public override {
@@ -89,6 +90,20 @@ contract CoinTest is BaseTest {
         assertEq(coin.tokenURI(), "https://init.com");
         assertEq(coin.name(), "Init Token");
         assertEq(coin.symbol(), "INIT");
+    }
+
+    function test_invalid_pool_config_version() public {
+        bytes memory poolConfig = abi.encode(0, address(weth));
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidPoolVersion()"));
+        factory.deploy(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, users.platformReferrer, 0);
+    }
+
+    function test_invalid_pool_config_currency() public {
+        bytes memory poolConfig = abi.encode(CoinConfigurationVersions.LEGACY_POOL_VERSION);
+
+        vm.expectRevert();
+        factory.deploy(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, users.platformReferrer, 0);
     }
 
     function test_revert_already_initialized() public {
