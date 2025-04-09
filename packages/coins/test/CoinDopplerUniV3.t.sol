@@ -249,9 +249,9 @@ contract DopplerUniswapV3Test is BaseTest {
     }
 
     function test_invalid_pool_config() public {
-        bytes memory poolConfig = _generatePoolConfig(CoinConfigurationVersions.LEGACY_POOL_VERSION, address(weth), -100, 100, 0, 10);
+        bytes memory poolConfig = _generatePoolConfig(CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION, address(weth), -100, 100, 0, 10);
 
-        vm.expectRevert(abi.encodeWithSignature("InvalidWethLowerTick()"));
+        vm.expectRevert(abi.encodeWithSignature("NumDiscoveryPositionsOutOfRange()"));
         factory.deploy(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, users.platformReferrer, 0);
     }
 
