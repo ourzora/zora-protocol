@@ -248,6 +248,13 @@ contract DopplerUniswapV3Test is BaseTest {
         assertGt(weth.balanceOf(address(pool)), 0, "Pool WETH balance");
     }
 
+    function test_invalid_pool_config() public {
+        bytes memory poolConfig = _generatePoolConfig(CoinConfigurationVersions.LEGACY_POOL_VERSION, address(weth), -100, 100, 0, 10);
+
+        vm.expectRevert(abi.encodeWithSignature("InvalidWethLowerTick()"));
+        factory.deploy(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, users.platformReferrer, 0);
+    }
+
     function test_revert_deploy_invalid_discovery_supply_share() public {
         bytes memory poolConfig = _generatePoolConfig(
             CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
