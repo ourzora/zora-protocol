@@ -225,6 +225,30 @@ contract ProxyDeployerScript is CommonBase {
         }
     }
 
+    function getUniswapV3Factory() internal view returns (address uniswapV3Factory) {
+        uniswapV3Factory = getChainConfigJson().readAddress(".UNISWAP_V3_FACTORY");
+
+        if (uniswapV3Factory == address(0)) {
+            revert("UniswapV3Factory address not configured");
+        }
+
+        if (uniswapV3Factory.code.length == 0) {
+            revert("No code at UniswapV3Factory address");
+        }
+    }
+
+    function getDopplerAirlock() internal view returns (address airlock) {
+        airlock = getChainConfigJson().readAddress(".DOPPLER_AIRLOCK");
+
+        if (airlock == address(0)) {
+            revert("Airlock address not configured");
+        }
+
+        if (airlock.code.length == 0) {
+            revert("No code at Airlock address");
+        }
+    }
+
     function validateMultisig(address multisigAddress) internal view returns (address) {
         if (multisigAddress == address(0)) {
             revert("Cannot be address zero");

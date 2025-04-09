@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/coins",
-  "version": "0.6.1",
+  "version": "0.7.0",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",
@@ -17,7 +17,7 @@
     "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
     "build:sizes": "forge build src/ --sizes",
     "copy-abis": "pnpm exec bundle-abis",
-    "coverage": "forge coverage --report lcov --ir-minimum --no-match-coverage '(test/|src/utils/TickMath.sol|script/)'",
+    "coverage": "forge coverage --report lcov --ir-minimum --no-match-coverage '(test/|src/utils/uniswap/|script/)'",
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "test": "forge test -vv",

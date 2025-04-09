@@ -94,6 +94,8 @@ interface INonfungiblePositionManager {
 
     function safeTransferFrom(address from, address to, uint256 tokenId, bytes calldata data) external;
 
+    function factory() external view returns (address);
+
     /// @notice Emitted when tokens are collected for a position NFT
     /// @dev The amounts reported may not be exactly equivalent to the amounts transferred, due to rounding behavior
     /// @param tokenId The ID of the token for which underlying tokens were collected

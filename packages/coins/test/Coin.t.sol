@@ -12,7 +12,7 @@ contract CoinTest is BaseTest {
     }
 
     function test_contract_version() public view {
-        assertEq(coin.contractVersion(), "0.6.0");
+        assertEq(coin.contractVersion(), "0.7.0");
     }
 
     function test_supply_constants() public view {
@@ -29,25 +29,27 @@ contract CoinTest is BaseTest {
 
     function test_constructor_validation() public {
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        new Coin(address(0), address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER);
+        new Coin(address(0), address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER, DOPPLER_AIRLOCK);
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        new Coin(users.feeRecipient, address(0), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER);
+        new Coin(users.feeRecipient, address(0), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER, DOPPLER_AIRLOCK);
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        new Coin(users.feeRecipient, address(protocolRewards), address(0), NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER);
+        new Coin(users.feeRecipient, address(protocolRewards), address(0), NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER, DOPPLER_AIRLOCK);
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, address(0), SWAP_ROUTER);
+        new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, address(0), SWAP_ROUTER, DOPPLER_AIRLOCK);
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
-        new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, address(0));
+        new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, address(0), DOPPLER_AIRLOCK);
 
-        Coin newToken = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER);
+        vm.expectRevert(abi.encodeWithSelector(ICoin.AddressZero.selector));
+        new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER, address(0));
+
+        Coin newToken = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, NONFUNGIBLE_POSITION_MANAGER, SWAP_ROUTER, DOPPLER_AIRLOCK);
         assertEq(address(newToken.protocolRewardRecipient()), users.feeRecipient);
         assertEq(address(newToken.protocolRewards()), address(protocolRewards));
         assertEq(address(newToken.WETH()), WETH_ADDRESS);
-        assertEq(address(newToken.nonfungiblePositionManager()), NONFUNGIBLE_POSITION_MANAGER);
         assertEq(address(newToken.swapRouter()), SWAP_ROUTER);
     }
 
@@ -64,12 +66,22 @@ contract CoinTest is BaseTest {
             "INIT",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             0
         );
         coin = Coin(payable(coinAddress));
 
-        (coinAddress, ) = factory.deploy(users.creator, owners, "https://init.com", "Init Token", "INIT", address(0), address(weth), LP_TICK_LOWER_WETH, 0);
+        (coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://init.com",
+            "Init Token",
+            "INIT",
+            address(0),
+            address(weth),
+            MarketConstants.LP_TICK_LOWER_WETH,
+            0
+        );
         coin = Coin(payable(coinAddress));
 
         assertEq(coin.payoutRecipient(), users.creator);
@@ -91,13 +103,33 @@ contract CoinTest is BaseTest {
             "INIT",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             0
         );
         coin = Coin(payable(coinAddress));
 
         vm.expectRevert(abi.encodeWithSignature("InvalidInitialization()"));
-        coin.initialize(users.creator, new address[](0), "https://init.com", "Init Token", "INIT", users.platformReferrer, address(weth), LP_TICK_LOWER_WETH);
+        coin.initialize(users.creator, owners, "https://init.com", "Init Token", "INIT", abi.encode(""), users.platformReferrer);
+    }
+
+    function test_revert_pool_exists() public {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        vm.etch(address(0x1C61DAa59b45525d4fb139106EFEC97c2D8De9be), abi.encode(bytes32(uint256(1))));
+
+        vm.expectRevert();
+        factory.deploy(
+            users.creator,
+            owners,
+            "https://init.com",
+            "Init Token",
+            "INIT",
+            users.platformReferrer,
+            address(weth),
+            MarketConstants.LP_TICK_LOWER_WETH,
+            0
+        );
     }
 
     function test_erc165_interface_support() public view {
@@ -209,11 +241,13 @@ contract CoinTest is BaseTest {
         vm.prank(users.buyer);
         weth.approve(address(swapRouter), 100_000);
 
+        assertEq(coin.balanceOf(users.buyer), 0, "buyer coin balance initial");
+
         // Set up the swap parameters
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: WETH_ADDRESS,
             tokenOut: address(coin),
-            fee: LP_FEE,
+            fee: MarketConstants.LP_FEE,
             recipient: address(users.buyer),
             amountIn: 100_000,
             amountOutMinimum: 0,
@@ -235,7 +269,8 @@ contract CoinTest is BaseTest {
         coin.claimSecondaryRewards(false);
         assertEq(protocolRewards.balanceOf(users.creator), 499);
         assertEq(protocolRewards.balanceOf(users.platformReferrer), 249);
-        assertEq(protocolRewards.balanceOf(users.feeRecipient), 251);
+        assertEq(protocolRewards.balanceOf(users.feeRecipient), 202);
+        assertEq(dopplerFeeRecipient().balance, 49);
     }
 
     function test_sell_for_eth_direct_and_claim_secondary_push_eth() public {
@@ -251,7 +286,7 @@ contract CoinTest is BaseTest {
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: WETH_ADDRESS,
             tokenOut: address(coin),
-            fee: LP_FEE,
+            fee: MarketConstants.LP_FEE,
             recipient: address(users.buyer),
             amountIn: 100_000,
             amountOutMinimum: 0,
@@ -406,11 +441,6 @@ contract CoinTest is BaseTest {
         assertTrue(success);
     }
 
-    function test_only_pool_callback() public {
-        vm.expectRevert(abi.encodeWithSelector(ICoin.OnlyPool.selector));
-        coin.onERC721Received(address(0), address(0), 0, "");
-    }
-
     function test_default_platform_referrer() public {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
@@ -423,7 +453,7 @@ contract CoinTest is BaseTest {
             "TEST",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             0
         );
         Coin newCoin = Coin(payable(newCoinAddr));
@@ -436,42 +466,6 @@ contract CoinTest is BaseTest {
         TradeRewards memory expectedFees = _calculateTradeRewards(fee);
 
         assertGt(protocolRewards.balanceOf(users.feeRecipient), expectedFees.platformReferrer, "feeRecipient eth balance");
-    }
-
-    function test_invalid_weth_tick() public {
-        address[] memory owners = new address[](1);
-        owners[0] = users.creator;
-
-        vm.expectRevert(ICoin.InvalidWethLowerTick.selector);
-        (address newCoinAddr, ) = factory.deploy(
-            users.creator,
-            owners,
-            "https://test.com",
-            "Test Token",
-            "TEST",
-            users.platformReferrer,
-            address(weth),
-            LP_TICK_LOWER_WETH - 1,
-            0
-        );
-    }
-
-    function test_invalid_currency_tick() public {
-        address[] memory owners = new address[](1);
-        owners[0] = users.creator;
-
-        vm.expectRevert(ICoin.InvalidCurrencyLowerTick.selector);
-        (address newCoinAddr, ) = factory.deploy(
-            users.creator,
-            owners,
-            "https://test.com",
-            "Test Token",
-            "TEST",
-            users.platformReferrer,
-            address(0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913),
-            20,
-            0
-        );
     }
 
     function test_default_order_referrer() public {
@@ -500,12 +494,6 @@ contract CoinTest is BaseTest {
         coin.sell(users.coinRecipient, 1e18, type(uint256).max, 0, users.tradeReferrer);
     }
 
-    function test_uniswap_swap_callback() public {
-        // Test swap callback
-        vm.prank(address(pool));
-        coin.uniswapV3SwapCallback(100, -100, "");
-    }
-
     function test_eth_transfer_fail() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
@@ -524,7 +512,8 @@ contract CoinTest is BaseTest {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
         vm.expectRevert(abi.encodeWithSelector(ICoin.OnlyWeth.selector));
-        address(coin).call{value: 1 ether}("");
+        (bool ignoredSuccess, ) = address(coin).call{value: 1 ether}("");
+        (ignoredSuccess);
 
         assertEq(address(coin).balance, 0, "coin balance");
     }
@@ -534,6 +523,7 @@ contract CoinTest is BaseTest {
         uint256 initialTokenCreatorBalance = protocolRewards.balanceOf(users.creator);
         uint256 initialOrderReferrerBalance = protocolRewards.balanceOf(users.tradeReferrer);
         uint256 initialFeeRecipientBalance = protocolRewards.balanceOf(users.feeRecipient);
+        uint256 initialDopplerRecipientBalance = airlock.owner().balance;
 
         uint256 buyAmount = 1 ether;
         vm.deal(users.buyer, buyAmount);
@@ -546,7 +536,11 @@ contract CoinTest is BaseTest {
         uint256 expectedLpFee = 9900000000000000; // 0.99 ETH * 1% --> ~0.00989 ETH
         MarketRewards memory marketRewards = _calculateMarketRewards(expectedLpFee);
 
-        assertEq(marketRewards.creator + marketRewards.platformReferrer + marketRewards.protocol, expectedLpFee, "Secondary rewards incorrect");
+        assertEq(
+            marketRewards.creator + marketRewards.platformReferrer + marketRewards.protocol + marketRewards.doppler,
+            expectedLpFee,
+            "Secondary rewards incorrect"
+        );
         assertApproxEqAbs(
             protocolRewards.balanceOf(users.creator),
             initialTokenCreatorBalance + orderFees.creator + marketRewards.creator,
@@ -558,6 +552,12 @@ contract CoinTest is BaseTest {
             initialPlatformReferrerBalance + orderFees.platformReferrer + marketRewards.platformReferrer,
             0.0000000000000001 ether,
             "Platform referrer rewards incorrect"
+        );
+        assertApproxEqAbs(
+            airlock.owner().balance,
+            initialDopplerRecipientBalance + marketRewards.doppler,
+            0.0000000000000001 ether,
+            "Doppler rewards incorrect"
         );
         assertApproxEqAbs(
             protocolRewards.balanceOf(users.feeRecipient),

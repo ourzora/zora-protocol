@@ -2,10 +2,20 @@
 pragma solidity ^0.8.23;
 
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol";
 import {IERC7572} from "./IERC7572.sol";
+import {IDopplerErrors} from "./IDopplerErrors.sol";
 
-interface ICoin is IERC165, IERC721Receiver, IERC7572 {
+/// @notice The configuration of the pool
+/// @dev This is used to configure the pool's liquidity positions
+struct PoolConfiguration {
+    uint8 version;
+    int24 tickLower;
+    int24 tickUpper;
+    uint16 numPositions;
+    uint256 maxDiscoverySupplyShare;
+}
+
+interface ICoin is IERC165, IERC7572, IDopplerErrors {
     /// @notice Thrown when an operation is attempted with a zero address
     error AddressZero();
 
@@ -56,6 +66,12 @@ interface ICoin is IERC165, IERC721Receiver, IERC7572 {
 
     /// @notice Thrown when the lower tick is not set to the default value
     error InvalidWethLowerTick();
+
+    /// @notice Thrown when a legacy pool does not have one discovery position
+    error LegacyPoolMustHaveOneDiscoveryPosition();
+
+    /// @notice Thrown when a Doppler pool does not have more than 2 discovery positions
+    error DopplerPoolMustHaveMoreThan2DiscoveryPositions();
 
     /// @notice The rewards accrued from the market's liquidity position
     struct MarketRewards {

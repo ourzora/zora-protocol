@@ -25,7 +25,7 @@ contract FactoryTest is BaseTest {
             "TEST2",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             0
         );
         coin = Coin(payable(coinAddress));
@@ -74,7 +74,7 @@ contract FactoryTest is BaseTest {
             "TEST2",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             initialOrderSize
         );
         coin = Coin(payable(coinAddress));
@@ -120,7 +120,7 @@ contract FactoryTest is BaseTest {
             "TEST2",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             initialOrderSize
         );
     }
@@ -140,7 +140,7 @@ contract FactoryTest is BaseTest {
             "TEST2",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             orderSize
         );
         coin = Coin(payable(coinAddress));
@@ -171,6 +171,39 @@ contract FactoryTest is BaseTest {
 
         assertEq(coin.currency(), USDC_ADDRESS, "currency");
         assertEq(coin.payoutRecipient(), users.creator, "payoutRecipient");
+    }
+
+    function test_deploy_with_usdc_order() public {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        uint256 orderSize = dealUSDC(users.creator, 100);
+
+        vm.prank(users.creator);
+        usdc.approve(address(factory), orderSize);
+
+        assertEq(usdc.balanceOf(users.creator), orderSize);
+        assertEq(usdc.allowance(users.creator, address(factory)), orderSize);
+
+        vm.prank(users.creator);
+        (address coinAddress, uint256 coinsPurchased) = factory.deploy(
+            users.creator,
+            owners,
+            "https://testcoinusdcpair.com",
+            "Testcoinusdcpair",
+            "TESTCOINUSDCPAIR",
+            users.platformReferrer,
+            USDC_ADDRESS,
+            USDC_TICK_LOWER,
+            orderSize
+        );
+        coin = Coin(payable(coinAddress));
+        pool = IUniswapV3Pool(coin.poolAddress());
+        vm.label(address(coin), "COIN");
+        vm.label(address(pool), "POOL");
+
+        assertEq(coin.currency(), USDC_ADDRESS, "currency");
+        assertEq(coin.balanceOf(users.creator), CREATOR_LAUNCH_REWARD + coinsPurchased);
     }
 
     function test_deploy_with_usdc_revert_payout_recipient_zero() public {
@@ -234,8 +267,17 @@ contract FactoryTest is BaseTest {
         owners[0] = users.creator;
 
         vm.expectRevert(abi.encodeWithSelector(ICoin.InvalidWethLowerTick.selector));
-
-        factory.deploy(users.creator, owners, "https://testcoin.com", "Testcoin", "TESTCOIN", users.platformReferrer, address(0), LP_TICK_LOWER_WETH - 1, 0);
+        factory.deploy(
+            users.creator,
+            owners,
+            "https://testcoin.com",
+            "Testcoin",
+            "TESTCOIN",
+            users.platformReferrer,
+            address(0),
+            MarketConstants.LP_TICK_LOWER_WETH + 1,
+            0
+        );
     }
 
     function test_deploy_with_usdc_revert_invalid_eth_transfer() public {
@@ -274,7 +316,7 @@ contract FactoryTest is BaseTest {
             "TEST",
             users.platformReferrer,
             address(weth),
-            LP_TICK_LOWER_WETH,
+            MarketConstants.LP_TICK_LOWER_WETH,
             0
         );
         coin = Coin(payable(coinAddress));

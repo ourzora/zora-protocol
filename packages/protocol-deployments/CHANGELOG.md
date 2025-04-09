@@ -1,5 +1,17 @@
 # @zoralabs/protocol-deployments
 
+## 0.5.4
+
+### Patch Changes
+
+- 23f723dd: Integrate doppler for liquidity management with uniswap v3
+
+## 0.5.4-doppler.0
+
+### Patch Changes
+
+- 96ab8907: Integrate doppler for liquidity management with uniswap v3
+
 ## 0.5.3
 
 ### Patch Changes

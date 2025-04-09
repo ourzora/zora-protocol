@@ -39,21 +39,14 @@ abstract contract CoinConstants {
     uint256 public constant TRADE_REFERRER_FEE_BPS = 1500;
 
     /// @notice The percentage of the LP fee allocated to creators
-    /// @dev 5000 basis points = 50% of LP_FEE
+    /// @dev 5000 basis points = 50% of the 1% LP FEE
     uint256 internal constant CREATOR_MARKET_REWARD_BPS = 5000;
 
     /// @notice The percentage of the LP fee allocated to platform referrers
-    /// @dev 2500 basis points = 25% of LP_FEE
+    /// @dev 2500 basis points = 25% of the 1% LP FEE
     uint256 internal constant PLATFORM_REFERRER_MARKET_REWARD_BPS = 2500;
 
-    /// @notice The LP fee
-    /// @dev 10000 basis points = 1%
-    uint24 internal constant LP_FEE = 10000;
-
-    /// @notice The LP's minimum lower tick
-    /// @dev This is only used if the currency is WETH
-    int24 internal constant LP_TICK_LOWER_WETH = -208200;
-
-    /// @notice The LP's upper tick
-    int24 internal constant LP_TICK_UPPER = 887200;
+    /// @notice The percentage of the LP fee allocated to the Doppler protocol
+    /// @dev 500 basis points = 5% of the 1% LP FEE
+    uint256 internal constant DOPPLER_MARKET_REWARD_BPS = 500;
 }

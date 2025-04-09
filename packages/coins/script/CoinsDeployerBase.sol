@@ -52,7 +52,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function deployCoinImpl() internal returns (Coin) {
-        return new Coin(getZoraRecipient(), PROTOCOL_REWARDS, getWeth(), getNonFungiblePositionManager(), getUniswapSwapRouter());
+        return new Coin(getZoraRecipient(), PROTOCOL_REWARDS, getWeth(), getUniswapV3Factory(), getUniswapSwapRouter(), getDopplerAirlock());
     }
 
     function deployZoraFactoryImpl(address coinImpl) internal returns (ZoraFactoryImpl) {

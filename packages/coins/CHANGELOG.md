@@ -1,5 +1,17 @@
 # @zoralabs/coins
 
+## 0.7.0
+
+### Minor Changes
+
+- 23f723dd: Integrate doppler for liquidity management with uniswap v3
+
+## 0.7.0-doppler.0
+
+### Minor Changes
+
+- 96ab8907: Integrate doppler for liquidity management with uniswap v3
+
 ## 0.6.1
 
 ### Patch Changes

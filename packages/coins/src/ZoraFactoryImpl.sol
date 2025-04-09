@@ -8,6 +8,7 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {CoinConfigurationVersions} from "./libs/CoinConfigurationVersions.sol";
 
 import {IZoraFactory} from "./interfaces/IZoraFactory.sol";
 import {Coin} from "./Coin.sol";
@@ -20,6 +21,49 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
 
     constructor(address _coinImpl) initializer {
         coinImpl = _coinImpl;
+    }
+
+    /// @notice Creates a new coin contract
+    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
+    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
+    /// @param uri The coin metadata uri
+    /// @param name The name of the coin
+    /// @param symbol The symbol of the coin
+    /// @param poolConfig The config parameters for the Uniswap v3 pool; `abi.encode(address currency, int24 tickLower, int24 tickUpper, uint16 numDiscoveryPositions, uint256 maxDiscoverySupplyShare)`
+    /// @param platformReferrer The address of the platform referrer
+    /// @param orderSize The order size for the first buy; must match msg.value for ETH/WETH pairs
+    function deploy(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        uint256 orderSize
+    ) public payable nonReentrant returns (address, uint256) {
+        bytes32 salt = _generateSalt(payoutRecipient, uri);
+
+        Coin coin = Coin(payable(Clones.cloneDeterministic(coinImpl, salt)));
+
+        coin.initialize(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer);
+
+        uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
+
+        emit CoinCreated(
+            msg.sender,
+            payoutRecipient,
+            coin.platformReferrer(),
+            coin.currency(),
+            uri,
+            name,
+            symbol,
+            address(coin),
+            coin.poolAddress(),
+            coin.contractVersion()
+        );
+
+        return (address(coin), coinsPurchased);
     }
 
     /// @notice Creates a new coin contract
@@ -47,7 +91,9 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
 
         Coin coin = Coin(payable(Clones.cloneDeterministic(coinImpl, salt)));
 
-        coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, tickLower);
+        bytes memory poolConfig = abi.encode(CoinConfigurationVersions.LEGACY_POOL_VERSION, currency, tickLower);
+
+        coin.initialize(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer);
 
         uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
 

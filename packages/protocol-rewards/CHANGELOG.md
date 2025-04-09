@@ -1,5 +1,19 @@
 # @zoralabs/protocol-rewards
 
+## 1.2.6
+
+### Patch Changes
+
+- Updated dependencies [23f723dd]
+  - @zoralabs/shared-contracts@0.0.2
+
+## 1.2.6-doppler.0
+
+### Patch Changes
+
+- Updated dependencies [96ab8907]
+  - @zoralabs/shared-contracts@0.0.2-doppler.0
+
 ## 1.2.5
 
 ### Patch Changes
