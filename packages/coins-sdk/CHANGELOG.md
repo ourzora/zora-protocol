@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.0.7
+
+### Patch Changes
+
+- 529fe6f2: Fix coin create default value
+
 ## 0.0.6
 
 ### Patch Changes
