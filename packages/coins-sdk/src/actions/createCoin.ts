@@ -35,7 +35,7 @@ export async function createCoinCall({
   owners,
   payoutRecipient,
   initialPurchaseWei = 0n,
-  tickLower = -199200,
+  tickLower = -208200,
   platformReferrer = "0x0000000000000000000000000000000000000000",
 }: CreateCoinArgs): Promise<
   SimulateContractParameters<typeof zoraFactoryImplABI, "deploy">
