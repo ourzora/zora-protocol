@@ -8,7 +8,7 @@ export default defineConfig({
       deployments: {
         ZoraFactoryImpl: {
           84532: "0x777777751622c0d3258f214F9DF38E35BF45baF3",
-          8453: "0x02B2705500096Ff83F9eF78873ca5DFB06C00Ddc",
+          8453: "0x777777751622c0d3258f214F9DF38E35BF45baF3",
         },
       },
       forge: {
