@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 0.7.1
+
+### Patch Changes
+
+- 265dcbeb: Fixed factory address for wagmi
+
 ## 0.7.0
 
 ### Minor Changes
