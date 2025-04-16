@@ -6,6 +6,7 @@ import {
   SimulateContractParameters,
   ContractEventArgsFromTopics,
   parseEventLogs,
+  Hex,
 } from "viem";
 import { COIN_FACTORY_ADDRESS } from "../constants";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
@@ -17,12 +18,14 @@ export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   "CoinCreated"
 >;
 
+const POOL_CONFIG =
+  "0x00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc2f70fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffcf2c0000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000b1a2bc2ec50000" as Hex;
+
 export type CreateCoinArgs = {
   name: string;
   symbol: string;
   uri: ValidMetadataURI;
   owners?: Address[];
-  tickLower?: number;
   payoutRecipient: Address;
   platformReferrer?: Address;
   initialPurchaseWei?: bigint;
@@ -35,7 +38,6 @@ export async function createCoinCall({
   owners,
   payoutRecipient,
   initialPurchaseWei = 0n,
-  tickLower = -208200,
   platformReferrer = "0x0000000000000000000000000000000000000000",
 }: CreateCoinArgs): Promise<
   SimulateContractParameters<typeof zoraFactoryImplABI, "deploy">
@@ -44,11 +46,13 @@ export async function createCoinCall({
     owners = [payoutRecipient];
   }
 
+  const orderSize: bigint = initialPurchaseWei;
+  // The default pool config for
+  const poolConfig = POOL_CONFIG;
+
   // This will throw an error if the metadata is not valid
   await validateMetadataURIContent(uri);
 
-  // For now, we only support the base currency as WETH
-  const currency = "0x4200000000000000000000000000000000000006";
   return {
     abi: zoraFactoryImplABI,
     functionName: "deploy",
@@ -59,10 +63,9 @@ export async function createCoinCall({
       uri,
       name,
       symbol,
+      poolConfig,
       platformReferrer,
-      currency,
-      tickLower,
-      initialPurchaseWei,
+      orderSize,
     ],
     value: initialPurchaseWei,
   } as const;
