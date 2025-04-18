@@ -403,7 +403,7 @@ describe("ZoraCreator1155Preminter", () => {
         // EOA signs the premint.
         // When calling `premint` smart wallets address must be passed as an argument
 
-        // this was an AA contract that was deployed that has has the owner below as the
+        // this was an AA contract that was deployed that has the owner below as the
         // valid signer. See https://sepolia.explorer.zora.energy/address/0x74F5fAf983d54FEd6D937654Aa4FD258534F2d4B?tab=contract
         // it was deployed via the script `packages/1155-deployments/script/DeploySimpleAA.s.sol`
         const smartWalletAddress = "0x74F5fAf983d54FEd6D937654Aa4FD258534F2d4B";
