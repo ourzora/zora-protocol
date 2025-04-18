@@ -46,7 +46,7 @@ Parameters:
 - `symbol`: The trading symbol for the coin (e.g., "HORSE")
 - `platformReferrer`: The address that will receive platform referral rewards from trades. Ensure to set this to your own address to receive protocol market rewards.
 - `currency`: The address of the trading currency; use address(0) for ETH/WETH. Only WETH/ETH pairs are supported by our user interface and indexer at this time.
-- `tickLower`: The lower tick for the Uniswap V3 LP position; needs to be set to -199200 for WETH/ETH pairs otherwise the coin will fail to initialize.
+- `tickLower`: The lower tick for the Uniswap V3 LP position; needs to be set to -208200 for WETH/ETH pairs otherwise the coin will fail to initialize.
 - `orderSize`: The order size for the first buy; must match msg.value for ETH/WETH pairs or be an approved amount of ERC20 currency to trade otherwise creation will fail.
 
 Returns:
