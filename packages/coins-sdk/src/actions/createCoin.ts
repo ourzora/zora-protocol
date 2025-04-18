@@ -18,6 +18,7 @@ export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   "CoinCreated"
 >;
 
+// This is the default pool config matching zora.co front-end. TODO: Allow users to customize further parameters within safe contract limits.
 const POOL_CONFIG =
   "0x00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc2f70fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffcf2c0000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000b1a2bc2ec50000" as Hex;
 
