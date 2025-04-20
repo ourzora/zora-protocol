@@ -25,6 +25,11 @@ export type BuyEventArgs = ContractEventArgsFromTopics<
 
 export type TradeEventArgs = SellEventArgs | BuyEventArgs;
 
+// We'll use this address to ensure it will have funds to simulate an eth trade.
+// @dev: This only works on OP chains and is a fix for a bug. Another approach should be taken long term.
+const OP_BRIDGE_ADDRESS =
+  "0x4200000000000000000000000000000000000016" as Address;
+
 /**
  * Simulates a buy order to get the expected output amount
  * @param {Object} params - The simulation parameters
@@ -47,7 +52,7 @@ export async function simulateBuy({
     abi: coinABI,
     functionName: "buy",
     args: [
-      zeroAddress,
+      OP_BRIDGE_ADDRESS,
       requestedOrderSize,
       0n, // minAmountOut
       0n, // sqrtPriceLimitX96
