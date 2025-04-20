@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.1.0
+
+### Minor Changes
+
+- 67356470: Updated to use new low market cap settings on ZORA.co
+
 ## 0.0.8
 
 ### Patch Changes
