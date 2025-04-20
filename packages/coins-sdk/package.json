@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/coins-sdk",
-  "version": "0.0.8",
+  "version": "0.1.0",
   "repository": "https://github.com/ourzora/zora-protocol",
   "license": "MIT",
   "type": "module",
