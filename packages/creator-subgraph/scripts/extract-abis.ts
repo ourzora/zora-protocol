@@ -22,11 +22,19 @@ import {
   cointagFactoryImplABI,
   cointagImplABI as cointagABI,
 } from "@zoralabs/cointags-contracts";
-import erc721Drop from "@zoralabs/nft-drop-contracts/dist/artifacts/ERC721Drop.sol/ERC721Drop.json" with { type: "json" };
-import zoraNFTCreatorV1 from "@zoralabs/nft-drop-contracts/dist/artifacts/ZoraNFTCreatorV1.sol/ZoraNFTCreatorV1.json" with { type: "json" };
-import editionMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/EditionMetadataRenderer.sol/EditionMetadataRenderer.json" with { type: "json" };
-import dropMetadataRenderer from "@zoralabs/nft-drop-contracts/dist/artifacts/DropMetadataRenderer.sol/DropMetadataRenderer.json" with { type: "json" };
 import { commentsImplABI } from "@zoralabs/comments-contracts";
+
+// Import JSON files
+import erc721DropJSON from "@zoralabs/nft-drop-contracts/dist/artifacts/ERC721Drop.sol/ERC721Drop.json";
+import zoraNFTCreatorV1JSON from "@zoralabs/nft-drop-contracts/dist/artifacts/ZoraNFTCreatorV1.sol/ZoraNFTCreatorV1.json";
+import editionMetadataRendererJSON from "@zoralabs/nft-drop-contracts/dist/artifacts/EditionMetadataRenderer.sol/EditionMetadataRenderer.json";
+import dropMetadataRendererJSON from "@zoralabs/nft-drop-contracts/dist/artifacts/DropMetadataRenderer.sol/DropMetadataRenderer.json";
+
+// Extract ABIs from JSON imports
+const erc721Drop = erc721DropJSON.abi;
+const zoraNFTCreatorV1 = zoraNFTCreatorV1JSON.abi;
+const editionMetadataRenderer = editionMetadataRendererJSON.abi;
+const dropMetadataRenderer = dropMetadataRendererJSON.abi;
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -35,17 +43,17 @@ if (!fs.existsSync(abisPath)) {
   fs.mkdirSync(abisPath);
 }
 
-function output_abi(abiName, abi) {
+function output_abi(abiName: string, abi: any): void {
   fs.writeFileSync(
     path.join(abisPath, `${abiName}.json`),
     JSON.stringify(abi, null, 2),
   );
 }
 
-output_abi("ERC721Drop", erc721Drop.abi);
-output_abi("ZoraNFTCreatorV1", zoraNFTCreatorV1.abi);
-output_abi("EditionMetadataRenderer", editionMetadataRenderer.abi);
-output_abi("DropMetadataRenderer", dropMetadataRenderer.abi);
+output_abi("ERC721Drop", erc721Drop);
+output_abi("ZoraNFTCreatorV1", zoraNFTCreatorV1);
+output_abi("EditionMetadataRenderer", editionMetadataRenderer);
+output_abi("DropMetadataRenderer", dropMetadataRenderer);
 
 output_abi("ZoraCreator1155FactoryImpl", zoraCreator1155FactoryImplABI);
 output_abi("ZoraCreator1155Impl", zoraCreator1155ImplABI);
