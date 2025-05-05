@@ -65,6 +65,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
     /// @notice The address of the currency
     address public currency;
 
+    /// @notice deprecated
     PoolConfiguration public poolConfiguration;
 
     /// @notice Returns the state of the pool
