@@ -8,7 +8,7 @@ import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
 
-library CoinLegacy {
+library CoinLegacyMarket {
     function setupPool(
         bool isCoinToken0,
         bytes memory poolConfig_,

@@ -12,7 +12,7 @@ import {SqrtPriceMath} from "../utils/uniswap/SqrtPriceMath.sol";
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {IDopplerErrors} from "../interfaces/IDopplerErrors.sol";
 
-library CoinDopplerUniV3 {
+library CoinDopplerUniV3Market {
     function setupPool(bool isCoinToken0, bytes memory poolConfig_) internal pure returns (uint160 sqrtPriceX96, PoolConfiguration memory poolConfiguration) {
         (, , int24 tickLower_, int24 tickUpper_, uint16 numDiscoveryPositions_, uint256 maxDiscoverySupplyShare_) = abi.decode(
             poolConfig_,
