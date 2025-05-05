@@ -23,10 +23,11 @@ import {FullMath} from "./utils/uniswap/FullMath.sol";
 import {TickMath} from "./utils/uniswap/TickMath.sol";
 import {LiquidityAmounts} from "./utils/uniswap/LiquidityAmounts.sol";
 import {CoinConstants} from "./libs/CoinConstants.sol";
-import {CoinMarket} from "./libs/CoinMarket.sol";
 import {MarketConstants} from "./libs/MarketConstants.sol";
 import {LpPosition} from "./types/LpPosition.sol";
 import {PoolState} from "./types/PoolState.sol";
+import {CoinSetupV3, UniV3Config, CoinV3Config} from "./libs/CoinSetupV3.sol";
+import {UniV3BuySell, CoinConfig} from "./libs/UniV3BuySell.sol";
 
 /*
      $$$$$$\   $$$$$$\  $$$$$$\ $$\   $$\ 
@@ -40,7 +41,6 @@ import {PoolState} from "./types/PoolState.sol";
 */
 contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
-    using CoinMarket for bytes;
 
     /// @notice The address of the WETH contract
     address public immutable WETH;
@@ -194,8 +194,26 @@ contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnabl
         // Distribute the creator launch reward
         _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
 
+        UniV3Config memory uniswapV3Config = UniV3Config({weth: WETH, v3Factory: v3Factory, swapRouter: swapRouter, airlock: airlock});
+
         // Deploy the pool
-        _deployLiquidity(poolConfig_);
+        (currency, poolAddress, poolConfiguration) = CoinSetupV3.setupPool(poolConfig_, uniswapV3Config, address(this));
+
+        // Split out the deployment of liquidity to avoid stack too deep
+        CoinSetupV3.deployLiquidity(address(this), currency, poolConfiguration, poolAddress);
+    }
+
+    function buildCoinConfig() internal view returns (CoinConfig memory coinConfig) {
+        coinConfig = CoinConfig({
+            protocolRewardRecipient: protocolRewardRecipient,
+            platformReferrer: platformReferrer,
+            currency: currency,
+            payoutRecipient: payoutRecipient,
+            protocolRewards: protocolRewards,
+            poolConfiguration: poolConfiguration,
+            poolAddress: poolAddress,
+            uniswapV3Config: UniV3Config({weth: WETH, v3Factory: v3Factory, swapRouter: swapRouter, airlock: airlock})
+        });
     }
 
     /// @notice Executes a buy order
@@ -210,41 +228,7 @@ contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnabl
         uint160 sqrtPriceLimitX96,
         address tradeReferrer
     ) public payable nonReentrant returns (uint256, uint256) {
-        // Ensure the recipient is not the zero address
-        if (recipient == address(0)) {
-            revert AddressZero();
-        }
-
-        // Calculate the trade reward
-        uint256 tradeReward = _calculateReward(orderSize, CoinConstants.TOTAL_FEE_BPS);
-
-        // Calculate the remaining size
-        uint256 trueOrderSize = orderSize - tradeReward;
-
-        // Handle incoming currency
-        _handleIncomingCurrency(orderSize, trueOrderSize);
-
-        // Set up the swap parameters
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: currency,
-            tokenOut: address(this),
-            fee: MarketConstants.LP_FEE,
-            recipient: recipient,
-            amountIn: trueOrderSize,
-            amountOutMinimum: minAmountOut,
-            sqrtPriceLimitX96: sqrtPriceLimitX96
-        });
-
-        // Execute the swap
-        uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
-
-        _handleTradeRewards(tradeReward, tradeReferrer);
-
-        _handleMarketRewards();
-
-        emit CoinBuy(msg.sender, recipient, tradeReferrer, amountOut, currency, tradeReward, trueOrderSize);
-
-        return (orderSize, amountOut);
+        return UniV3BuySell.buy(recipient, orderSize, minAmountOut, sqrtPriceLimitX96, tradeReferrer, address(this), buildCoinConfig());
     }
 
     /// @notice Executes a sell order
@@ -260,11 +244,6 @@ contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnabl
         uint160 sqrtPriceLimitX96,
         address tradeReferrer
     ) public nonReentrant returns (uint256, uint256) {
-        // Ensure the recipient is not the zero address
-        if (recipient == address(0)) {
-            revert AddressZero();
-        }
-
         // Record the coin balance of this contract before the swap
         uint256 beforeCoinBalance = balanceOf(address(this));
 
@@ -274,55 +253,7 @@ contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnabl
         // Approve the Uniswap V3 swap router
         this.approve(swapRouter, orderSize);
 
-        // Set the swap parameters
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: address(this),
-            tokenOut: currency,
-            fee: MarketConstants.LP_FEE,
-            recipient: address(this),
-            amountIn: orderSize,
-            amountOutMinimum: minAmountOut,
-            sqrtPriceLimitX96: sqrtPriceLimitX96
-        });
-
-        // Execute the swap
-        uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
-
-        // Record the coin balance of this contract after the swap
-        uint256 afterCoinBalance = balanceOf(address(this));
-
-        // If the swap was partially executed:
-        if (afterCoinBalance > beforeCoinBalance) {
-            // Calculate the refund
-            uint256 coinRefund = afterCoinBalance - beforeCoinBalance;
-
-            // Update the order size
-            orderSize -= coinRefund;
-
-            // Transfer the refund back to the seller
-            _transfer(address(this), recipient, coinRefund);
-        }
-
-        // If currency is WETH, convert to ETH
-        if (currency == WETH) {
-            IWETH(WETH).withdraw(amountOut);
-        }
-
-        // Calculate the trade reward
-        uint256 tradeReward = _calculateReward(amountOut, CoinConstants.TOTAL_FEE_BPS);
-
-        // Calculate the payout after the fee
-        uint256 payoutSize = amountOut - tradeReward;
-
-        _handlePayout(payoutSize, recipient);
-
-        _handleTradeRewards(tradeReward, tradeReferrer);
-
-        _handleMarketRewards();
-
-        emit CoinSell(msg.sender, recipient, tradeReferrer, orderSize, currency, tradeReward, payoutSize);
-
-        return (orderSize, payoutSize);
+        return UniV3BuySell.sell(recipient, beforeCoinBalance, orderSize, minAmountOut, sqrtPriceLimitX96, tradeReferrer, buildCoinConfig());
     }
 
     /// @notice Enables a user to burn their tokens
@@ -336,7 +267,7 @@ contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnabl
     /// @dev This function is a fallback, secondary rewards will be claimed automatically on each buy and sell.
     /// @param pushEthRewards Whether to push the ETH directly to the recipients.
     function claimSecondaryRewards(bool pushEthRewards) external nonReentrant {
-        MarketRewards memory rewards = _handleMarketRewards();
+        MarketRewards memory rewards = UniV3BuySell.handleMarketRewards(address(this), buildCoinConfig());
 
         if (pushEthRewards && rewards.totalAmountCurrency > 0 && currency == WETH) {
             IProtocolRewards(protocolRewards).withdrawFor(payoutRecipient, rewards.creatorPayoutAmountCurrency);
@@ -379,7 +310,7 @@ contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnabl
 
     /// @dev Called by the pool after minting liquidity to transfer the associated coins
     function uniswapV3MintCallback(uint256 amount0Owed, uint256 amount1Owed, bytes calldata) external {
-        if (msg.sender != poolAddress) revert OnlyPool();
+        if (msg.sender != poolAddress) revert OnlyPool(msg.sender, poolAddress);
 
         IERC20(address(this)).safeTransfer(poolAddress, amount0Owed == 0 ? amount1Owed : amount0Owed);
     }
@@ -410,256 +341,5 @@ contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnabl
         emit ContractURIUpdated();
 
         tokenURI = newURI;
-    }
-
-    /// @dev Deploys the Uniswap V3 pool and mints initial liquidity based on the pool configuration
-    function _deployLiquidity(bytes memory poolConfig_) internal {
-        (uint8 version, address currency_) = abi.decode(poolConfig_, (uint8, address));
-
-        // Store the currency, defaulting to WETH if address(0)
-        currency = currency_ == address(0) ? WETH : currency_;
-
-        // Sort the token addresses
-        address token0 = address(this) < currency ? address(this) : currency;
-        address token1 = address(this) < currency ? currency : address(this);
-        bool isCoinToken0 = token0 == address(this);
-
-        (uint160 sqrtPriceX96, PoolConfiguration memory _poolConfig) = CoinMarket.setupPoolWithVersion(version, poolConfig_, isCoinToken0, WETH);
-
-        poolConfiguration = _poolConfig;
-
-        poolAddress = _createPool(token0, token1, sqrtPriceX96);
-
-        LpPosition[] memory positions = CoinMarket.calculatePositions(isCoinToken0, poolConfiguration);
-
-        _mintPositions(positions);
-    }
-
-    function _deployMarket(bytes memory marketConfig_) internal {
-        (uint8 version, bytes memory marketConfig) = abi.decode(marketConfig_, (uint8, bytes));
-
-        marketVersion = version;
-        market = market.setupMarket(version, marketConfig);
-    }
-
-    /// @dev Creates the Uniswap V3 pool for the coin/currency pair
-    function _createPool(address token0, address token1, uint160 sqrtPriceX96) internal returns (address pool) {
-        pool = IUniswapV3Factory(v3Factory).createPool(token0, token1, MarketConstants.LP_FEE);
-
-        // This pool should be new, if it has already been initialized
-        // then we will fail the creation step prompting the user to try again.
-        IUniswapV3Pool(pool).initialize(sqrtPriceX96);
-    }
-
-    /// @dev Mints the calculated liquidity positions into the Uniswap V3 pool
-    function _mintPositions(LpPosition[] memory lbpPositions) internal {
-        for (uint256 i; i < lbpPositions.length; i++) {
-            IUniswapV3Pool(poolAddress).mint(address(this), lbpPositions[i].tickLower, lbpPositions[i].tickUpper, lbpPositions[i].liquidity, "");
-        }
-    }
-
-    /// @dev Handles incoming currency transfers for buy orders; if WETH is the currency the caller has the option to send native-ETH
-    /// @param orderSize The total size of the order in the currency
-    /// @param trueOrderSize The actual amount being used for the swap after fees
-    function _handleIncomingCurrency(uint256 orderSize, uint256 trueOrderSize) internal {
-        if (currency == WETH && msg.value > 0) {
-            if (msg.value != orderSize) {
-                revert EthAmountMismatch();
-            }
-
-            if (msg.value < CoinConstants.MIN_ORDER_SIZE) {
-                revert EthAmountTooSmall();
-            }
-
-            IWETH(WETH).deposit{value: trueOrderSize}();
-            IWETH(WETH).approve(swapRouter, trueOrderSize);
-        } else {
-            // Ensure ETH is not sent with a non-ETH pair
-            if (msg.value != 0) {
-                revert EthTransferInvalid();
-            }
-
-            uint256 beforeBalance = IERC20(currency).balanceOf(address(this));
-            IERC20(currency).safeTransferFrom(msg.sender, address(this), orderSize);
-            uint256 afterBalance = IERC20(currency).balanceOf(address(this));
-
-            if ((afterBalance - beforeBalance) != orderSize) {
-                revert ERC20TransferAmountMismatch();
-            }
-
-            IERC20(currency).approve(swapRouter, trueOrderSize);
-        }
-    }
-
-    /// @dev Handles sending ETH and ERC20 payouts and refunds to recipients
-    /// @param orderPayout The amount of currency to pay out
-    /// @param recipient The address to receive the payout
-    function _handlePayout(uint256 orderPayout, address recipient) internal {
-        if (currency == WETH) {
-            Address.sendValue(payable(recipient), orderPayout);
-        } else {
-            IERC20(currency).safeTransfer(recipient, orderPayout);
-        }
-    }
-
-    /// @dev Handles calculating and depositing fees to an escrow protocol rewards contract
-    function _handleTradeRewards(uint256 totalValue, address _tradeReferrer) internal {
-        if (_tradeReferrer == address(0)) {
-            _tradeReferrer = protocolRewardRecipient;
-        }
-
-        uint256 tokenCreatorFee = _calculateReward(totalValue, CoinConstants.TOKEN_CREATOR_FEE_BPS);
-        uint256 platformReferrerFee = _calculateReward(totalValue, CoinConstants.PLATFORM_REFERRER_FEE_BPS);
-        uint256 tradeReferrerFee = _calculateReward(totalValue, CoinConstants.TRADE_REFERRER_FEE_BPS);
-        uint256 protocolFee = totalValue - tokenCreatorFee - platformReferrerFee - tradeReferrerFee;
-
-        if (currency == WETH) {
-            address[] memory recipients = new address[](4);
-            uint256[] memory amounts = new uint256[](4);
-            bytes4[] memory reasons = new bytes4[](4);
-
-            recipients[0] = payoutRecipient;
-            amounts[0] = tokenCreatorFee;
-            reasons[0] = bytes4(keccak256("COIN_CREATOR_REWARD"));
-
-            recipients[1] = platformReferrer;
-            amounts[1] = platformReferrerFee;
-            reasons[1] = bytes4(keccak256("COIN_PLATFORM_REFERRER_REWARD"));
-
-            recipients[2] = _tradeReferrer;
-            amounts[2] = tradeReferrerFee;
-            reasons[2] = bytes4(keccak256("COIN_TRADE_REFERRER_REWARD"));
-
-            recipients[3] = protocolRewardRecipient;
-            amounts[3] = protocolFee;
-            reasons[3] = bytes4(keccak256("COIN_PROTOCOL_REWARD"));
-
-            IProtocolRewards(protocolRewards).depositBatch{value: totalValue}(recipients, amounts, reasons, "");
-        }
-
-        if (currency != WETH) {
-            IERC20(currency).safeTransfer(payoutRecipient, tokenCreatorFee);
-            IERC20(currency).safeTransfer(platformReferrer, platformReferrerFee);
-            IERC20(currency).safeTransfer(_tradeReferrer, tradeReferrerFee);
-            IERC20(currency).safeTransfer(protocolRewardRecipient, protocolFee);
-        }
-
-        emit CoinTradeRewards(
-            payoutRecipient,
-            platformReferrer,
-            _tradeReferrer,
-            protocolRewardRecipient,
-            tokenCreatorFee,
-            platformReferrerFee,
-            tradeReferrerFee,
-            protocolFee,
-            currency
-        );
-    }
-
-    /// @dev Collects and distributes accrued fees from all LP positions
-    function _handleMarketRewards() internal returns (MarketRewards memory) {
-        uint256 totalAmountToken0;
-        uint256 totalAmountToken1;
-        uint256 amount0;
-        uint256 amount1;
-
-        bool isCoinToken0 = address(this) < currency;
-        LpPosition[] memory positions = CoinMarket.calculatePositions(isCoinToken0, poolConfiguration);
-
-        for (uint256 i; i < positions.length; i++) {
-            // Must burn to update the collect mapping on the pool
-            IUniswapV3Pool(poolAddress).burn(positions[i].tickLower, positions[i].tickUpper, 0);
-
-            (amount0, amount1) = IUniswapV3Pool(poolAddress).collect(
-                address(this),
-                positions[i].tickLower,
-                positions[i].tickUpper,
-                type(uint128).max,
-                type(uint128).max
-            );
-
-            totalAmountToken0 += amount0;
-            totalAmountToken1 += amount1;
-        }
-
-        address token0 = currency < address(this) ? currency : address(this);
-        address token1 = currency < address(this) ? address(this) : currency;
-
-        MarketRewards memory rewards;
-
-        rewards = _transferMarketRewards(token0, totalAmountToken0, rewards);
-        rewards = _transferMarketRewards(token1, totalAmountToken1, rewards);
-
-        emit CoinMarketRewards(payoutRecipient, platformReferrer, protocolRewardRecipient, currency, rewards);
-
-        return rewards;
-    }
-
-    function _transferMarketRewards(address token, uint256 totalAmount, MarketRewards memory rewards) internal returns (MarketRewards memory) {
-        if (totalAmount > 0) {
-            address dopplerRecipient = IAirlock(airlock).owner();
-            uint256 dopplerPayout = _calculateReward(totalAmount, CoinConstants.DOPPLER_MARKET_REWARD_BPS);
-            uint256 creatorPayout = _calculateReward(totalAmount, CoinConstants.CREATOR_MARKET_REWARD_BPS);
-            uint256 platformReferrerPayout = _calculateReward(totalAmount, CoinConstants.PLATFORM_REFERRER_MARKET_REWARD_BPS);
-            uint256 protocolPayout = totalAmount - creatorPayout - platformReferrerPayout - dopplerPayout;
-
-            if (token == WETH) {
-                IWETH(WETH).withdraw(totalAmount);
-
-                rewards.totalAmountCurrency = totalAmount;
-                rewards.creatorPayoutAmountCurrency = creatorPayout;
-                rewards.platformReferrerAmountCurrency = platformReferrerPayout;
-                rewards.protocolAmountCurrency = protocolPayout;
-
-                address[] memory recipients = new address[](4);
-                recipients[0] = payoutRecipient;
-                recipients[1] = platformReferrer;
-                recipients[2] = protocolRewardRecipient;
-                recipients[3] = dopplerRecipient;
-
-                uint256[] memory amounts = new uint256[](4);
-                amounts[0] = rewards.creatorPayoutAmountCurrency;
-                amounts[1] = rewards.platformReferrerAmountCurrency;
-                amounts[2] = rewards.protocolAmountCurrency;
-                amounts[3] = dopplerPayout;
-
-                bytes4[] memory reasons = new bytes4[](4);
-                reasons[0] = bytes4(keccak256("COIN_CREATOR_MARKET_REWARD"));
-                reasons[1] = bytes4(keccak256("COIN_PLATFORM_REFERRER_MARKET_REWARD"));
-                reasons[2] = bytes4(keccak256("COIN_PROTOCOL_MARKET_REWARD"));
-                reasons[3] = bytes4(keccak256("COIN_DOPPLER_MARKET_REWARD"));
-
-                IProtocolRewards(protocolRewards).depositBatch{value: totalAmount}(recipients, amounts, reasons, "");
-                IProtocolRewards(protocolRewards).withdrawFor(dopplerRecipient, dopplerPayout);
-            } else if (token == address(this)) {
-                rewards.totalAmountCoin = totalAmount;
-                rewards.creatorPayoutAmountCoin = creatorPayout;
-                rewards.platformReferrerAmountCoin = platformReferrerPayout;
-                rewards.protocolAmountCoin = protocolPayout;
-
-                _transfer(address(this), payoutRecipient, rewards.creatorPayoutAmountCoin);
-                _transfer(address(this), platformReferrer, rewards.platformReferrerAmountCoin);
-                _transfer(address(this), protocolRewardRecipient, rewards.protocolAmountCoin);
-                _transfer(address(this), dopplerRecipient, dopplerPayout);
-            } else {
-                rewards.totalAmountCurrency = totalAmount;
-                rewards.creatorPayoutAmountCurrency = creatorPayout;
-                rewards.platformReferrerAmountCurrency = platformReferrerPayout;
-                rewards.protocolAmountCurrency = protocolPayout;
-
-                IERC20(currency).safeTransfer(payoutRecipient, creatorPayout);
-                IERC20(currency).safeTransfer(platformReferrer, platformReferrerPayout);
-                IERC20(currency).safeTransfer(protocolRewardRecipient, protocolPayout);
-                IERC20(currency).safeTransfer(dopplerRecipient, dopplerPayout);
-            }
-        }
-
-        return rewards;
-    }
-
-    /// @dev Utility for computing amounts in basis points.
-    function _calculateReward(uint256 amount, uint256 bps) internal pure returns (uint256) {
-        return (amount * bps) / 10_000;
     }
 }

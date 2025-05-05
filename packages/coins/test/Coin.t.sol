@@ -512,7 +512,9 @@ contract CoinTest is BaseTest {
     function test_eth_transfer_fail() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
+        (, uint256 amountOut) = coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
+
+        assertEq(coin.balanceOf(users.coinRecipient), amountOut);
 
         // Recipient reverts on ETH receive
         address payable badRecipient = payable(makeAddr("badRecipient"));

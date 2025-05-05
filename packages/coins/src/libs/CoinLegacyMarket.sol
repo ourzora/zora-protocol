@@ -15,14 +15,10 @@ import {UniV3Errors} from "./UniV3Errors.sol";
 
 library CoinLegacyMarket {
     struct State {
-        address uniswapv3Factory;
         address poolAddress;
-        address pairedCurrency;
-        address weth;
         uint160 sqrtPriceX96;
-        bool isCoinToken0;
-        int24 tickLower;
-        int24 tickUpper;
+        PoolConfiguration poolConfiguration;
+        address pairedCurrency;
     }
 
     struct MarketConfig {
@@ -41,62 +37,50 @@ library CoinLegacyMarket {
             revert UniV3Errors.InvalidWeth();
         }
 
-        // TODO: validate tickLower
+        address weth = marketConfig.weth;
+        address currency = marketConfig.pairedCurrency;
+        int24 tickLower = marketConfig.tickLower;
+
+        // If WETH is the pool's currency, validate the lower tick
+        if ((currency == weth || currency == address(0)) && tickLower > MarketConstants.LP_TICK_LOWER_WETH) {
+            revert ICoin.InvalidWethLowerTick();
+        }
     }
 
-    function setupMarket(bytes memory _state, bytes memory _marketConfig) internal returns (bytes memory) {
-        State memory state = abi.decode(_state, (State));
+    function _isCoinToken0(address coin, address currency) internal pure returns (bool isCoinToken0, address token0, address token1) {
+        token0 = coin < currency ? coin : currency;
+        token1 = token1 = coin < currency ? currency : coin;
+        isCoinToken0 = token0 == coin;
+    }
+
+    function setupMarket(bytes memory _marketConfig, address coin) internal returns (bytes memory) {
         MarketConfig memory marketConfig = abi.decode(_marketConfig, (MarketConfig));
         _validateMarketConfig(marketConfig);
 
-        state.uniswapv3Factory = marketConfig.uniswapv3Factory;
-        state.weth = marketConfig.weth;
-        state.tickLower = marketConfig.tickLower;
+        (bool isCoinToken0, address token0, address token1) = _isCoinToken0(coin, marketConfig.pairedCurrency);
 
-        // If the pairedCurrency is not set, default to WETH
-        if (marketConfig.pairedCurrency == address(0)) {
-            state.pairedCurrency = marketConfig.weth;
-        } else {
-            state.pairedCurrency = marketConfig.pairedCurrency;
-        }
+        (uint160 sqrtPriceX96, PoolConfiguration memory poolConfiguration) = setupPool(
+            isCoinToken0,
+            marketConfig.pairedCurrency,
+            marketConfig.tickLower,
+            marketConfig.weth
+        );
 
-        address pairedCurrency = state.pairedCurrency;
-        int24 tickLower = state.tickLower;
+        address poolAddress = _createPool(token0, token1, sqrtPriceX96, marketConfig.uniswapv3Factory);
 
-        // Compute and store the pool configuration
-        address token0 = address(this) < pairedCurrency ? address(this) : pairedCurrency;
-        address token1 = address(this) < pairedCurrency ? pairedCurrency : address(this);
-        
-        bool isCoinToken0 = token0 == address(this);
-        state.isCoinToken0 = isCoinToken0;
-        
+        LpPosition[] memory positions = calculatePositions(isCoinToken0, poolConfiguration);
 
-        if ((pairedCurrency == state.weth || pairedCurrency == address(0)) && tickLower > MarketConstants.LP_TICK_LOWER_WETH) {
-            revert UniV3Errors.InvalidTickLower();
-        }
+        _mintPositions(positions, poolAddress);
 
-        int24 savedTickLower = isCoinToken0 ? tickLower : -MarketConstants.LP_TICK_UPPER;
-        int24 savedTickUpper = isCoinToken0 ? MarketConstants.LP_TICK_UPPER : -tickLower;
-
-        state.sqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? savedTickLower : savedTickUpper);
-        state.tickLower = savedTickLower;
-        state.tickUpper = savedTickUpper;
-
-
-        // Deploy the pool
-        state.poolAddress = _createPool(token0, token1, state.uniswapv3Factory, state.sqrtPriceX96);
-
-        // Mint the positions
-        uint160 farSqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? savedTickUpper : savedTickLower);
-        uint128 liquidity = isCoinToken0
-            ? LiquidityAmounts.getLiquidityForAmount0(state.sqrtPriceX96, farSqrtPriceX96, MarketConstants.POOL_LAUNCH_SUPPLY)
-            : LiquidityAmounts.getLiquidityForAmount1(state.sqrtPriceX96, farSqrtPriceX96, MarketConstants.POOL_LAUNCH_SUPPLY);
-        
-        IUniswapV3Pool(state.poolAddress).mint(address(this), state.tickLower, state.tickUpper, liquidity, "");
+        State memory state = State({
+            poolAddress: poolAddress,
+            sqrtPriceX96: sqrtPriceX96,
+            poolConfiguration: poolConfiguration,
+            pairedCurrency: marketConfig.pairedCurrency
+        });
 
         return abi.encode(state);
     }
-
 
     function buy(bytes memory _state, address recipient, uint256 orderSize, uint256 minAmountOut, bytes memory tradeData) internal returns (uint256, uint256) {
         State memory state = abi.decode(_state, (State));
@@ -144,21 +128,21 @@ library CoinLegacyMarket {
         return (orderSize, amountOut);
     }
 
-    function _createPool(address token0, address token1, address uniswapv3Factory, uint160 sqrtPriceX96) internal returns (address pool) {
-        pool = IUniswapV3Factory(uniswapv3Factory).createPool(token0, token1, MarketConstants.LP_FEE);
-        IUniswapV3Pool(pool).initialize(sqrtPriceX96);
+    /// @dev Creates the Uniswap V3 pool for the coin/currency pair
+    function _createPool(address token0, address token1, uint160 sqrtPriceX96, address v3Factory) internal returns (address pool) {
+        pool = IUniswapV3Factory(v3Factory).createPool(token0, token1, MarketConstants.LP_FEE);
 
-        return pool;
+        // This pool should be new, if it has already been initialized
+        // then we will fail the creation step prompting the user to try again.
+        IUniswapV3Pool(pool).initialize(sqrtPriceX96);
     }
 
-    /// @notice deprecated
     function setupPool(
         bool isCoinToken0,
-        bytes memory poolConfig_,
+        address currency,
+        int24 tickLower_,
         address weth
     ) internal pure returns (uint160 sqrtPriceX96, PoolConfiguration memory poolConfiguration) {
-        (, address currency, int24 tickLower_) = abi.decode(poolConfig_, (uint8, address, int24));
-
         // If WETH is the pool's currency, validate the lower tick
         if ((currency == weth || currency == address(0)) && tickLower_ > MarketConstants.LP_TICK_LOWER_WETH) {
             revert ICoin.InvalidWethLowerTick();
@@ -178,7 +162,6 @@ library CoinLegacyMarket {
         });
     }
 
-    /// @notice deprecated
     function calculatePositions(bool isCoinToken0, PoolConfiguration memory poolConfiguration) internal pure returns (LpPosition[] memory positions) {
         positions = new LpPosition[](1);
 
@@ -188,5 +171,12 @@ library CoinLegacyMarket {
             ? LiquidityAmounts.getLiquidityForAmount0(sqrtPriceX96, farSqrtPriceX96, MarketConstants.POOL_LAUNCH_SUPPLY)
             : LiquidityAmounts.getLiquidityForAmount1(sqrtPriceX96, farSqrtPriceX96, MarketConstants.POOL_LAUNCH_SUPPLY);
         positions[0] = LpPosition({tickLower: poolConfiguration.tickLower, tickUpper: poolConfiguration.tickUpper, liquidity: liquidity});
+    }
+
+    /// @dev Mints the calculated liquidity positions into the Uniswap V3 pool
+    function _mintPositions(LpPosition[] memory lbpPositions, address poolAddress) internal {
+        for (uint256 i; i < lbpPositions.length; i++) {
+            IUniswapV3Pool(poolAddress).mint(address(this), lbpPositions[i].tickLower, lbpPositions[i].tickUpper, lbpPositions[i].liquidity, "");
+        }
     }
 }

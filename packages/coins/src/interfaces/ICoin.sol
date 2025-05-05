@@ -50,7 +50,7 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors {
     error EthTransferFailed();
 
     /// @notice Thrown when an operation is attempted by an entity other than the pool
-    error OnlyPool();
+    error OnlyPool(address sender, address pool);
 
     /// @notice Thrown when an operation is attempted by an entity other than WETH
     error OnlyWeth();
