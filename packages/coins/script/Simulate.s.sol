@@ -3,12 +3,13 @@ pragma solidity ^0.8.13;
 
 import {Script, console} from "forge-std/Script.sol";
 
-import {Coin, CoinConstants} from "../src/Coin.sol";
+import {Coin} from "../src/Coin.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../src/proxy/ZoraFactory.sol";
 
 /// @dev For simulating pre-buys -- eg `forge script script/Simulate.s.sol --private-key $DEPLOYER_PK --rpc-url $BASE_MAINNET_RPC_URL -vvvv`
-contract Simulate is Script, CoinConstants { 
+contract Simulate is Script {
     // https://basescan.org/address/0x02B2705500096Ff83F9eF78873ca5DFB06C00Ddc
     address internal constant TEST_ZORA_FACTORY_ADDRESS_BASE_MAINNET = 0x02B2705500096Ff83F9eF78873ca5DFB06C00Ddc;
     address internal constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;

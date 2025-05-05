@@ -17,15 +17,15 @@ contract CoinTest is BaseTest {
     }
 
     function test_supply_constants() public view {
-        assertEq(MAX_TOTAL_SUPPLY, POOL_LAUNCH_SUPPLY + CREATOR_LAUNCH_REWARD);
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, CoinConstants.POOL_LAUNCH_SUPPLY + CoinConstants.CREATOR_LAUNCH_REWARD);
 
-        assertEq(MAX_TOTAL_SUPPLY, 1_000_000_000e18);
-        assertEq(POOL_LAUNCH_SUPPLY, 990_000_000e18);
-        assertEq(CREATOR_LAUNCH_REWARD, 10_000_000e18);
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, 1_000_000_000e18);
+        assertEq(CoinConstants.POOL_LAUNCH_SUPPLY, 990_000_000e18);
+        assertEq(CoinConstants.CREATOR_LAUNCH_REWARD, 10_000_000e18);
 
-        assertEq(coin.totalSupply(), MAX_TOTAL_SUPPLY);
-        assertEq(coin.balanceOf(coin.payoutRecipient()), CREATOR_LAUNCH_REWARD);
-        assertApproxEqAbs(coin.balanceOf(address(pool)), POOL_LAUNCH_SUPPLY, 1e18);
+        assertEq(coin.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY);
+        assertEq(coin.balanceOf(coin.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD);
+        assertApproxEqAbs(coin.balanceOf(address(pool)), CoinConstants.POOL_LAUNCH_SUPPLY, 1e18);
     }
 
     function test_constructor_validation() public {
@@ -162,7 +162,7 @@ contract CoinTest is BaseTest {
     }
 
     function test_buy_with_eth_fuzz(uint256 ethOrderSize) public {
-        vm.assume(ethOrderSize >= MIN_ORDER_SIZE);
+        vm.assume(ethOrderSize >= CoinConstants.MIN_ORDER_SIZE);
         vm.assume(ethOrderSize < 10 ether);
 
         uint256 platformReferrerBalanceBeforeSale = users.platformReferrer.balance;
@@ -183,11 +183,11 @@ contract CoinTest is BaseTest {
 
     function test_buy_with_eth_too_small() public {
         vm.expectRevert(abi.encodeWithSelector(ICoin.EthAmountTooSmall.selector));
-        coin.buy{value: MIN_ORDER_SIZE - 1}(users.coinRecipient, MIN_ORDER_SIZE - 1, 0, 0, users.tradeReferrer);
+        coin.buy{value: CoinConstants.MIN_ORDER_SIZE - 1}(users.coinRecipient, CoinConstants.MIN_ORDER_SIZE - 1, 0, 0, users.tradeReferrer);
     }
 
     function test_buy_with_minimum_eth() public {
-        uint256 minEth = MIN_ORDER_SIZE;
+        uint256 minEth = CoinConstants.MIN_ORDER_SIZE;
         vm.deal(users.buyer, minEth);
         vm.prank(users.buyer);
         coin.buy{value: minEth}(users.coinRecipient, minEth, 0, 0, users.tradeReferrer);
@@ -236,7 +236,7 @@ contract CoinTest is BaseTest {
     }
 
     function test_buy_validate_return_amounts(uint256 orderSize) public {
-        vm.assume(orderSize >= MIN_ORDER_SIZE);
+        vm.assume(orderSize >= CoinConstants.MIN_ORDER_SIZE);
         vm.assume(orderSize < 10 ether);
 
         vm.deal(users.buyer, orderSize);
@@ -341,7 +341,7 @@ contract CoinTest is BaseTest {
 
     function test_sell_for_eth_fuzz(uint256 ethOrderSize) public {
         vm.assume(ethOrderSize < 10 ether);
-        vm.assume(ethOrderSize >= MIN_ORDER_SIZE);
+        vm.assume(ethOrderSize >= CoinConstants.MIN_ORDER_SIZE);
 
         vm.deal(users.buyer, ethOrderSize);
         vm.prank(users.buyer);

@@ -2,6 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "./utils/BaseTest.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
 
 contract FactoryTest is BaseTest {
     function setUp() public override {
@@ -58,7 +59,7 @@ contract FactoryTest is BaseTest {
     }
 
     function test_deploy_with_eth(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 10 ether);
 
         address[] memory owners = new address[](1);
@@ -97,7 +98,7 @@ contract FactoryTest is BaseTest {
     }
 
     function test_deploy_with_weth(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 10 ether);
 
         address[] memory owners = new address[](1);
@@ -203,7 +204,7 @@ contract FactoryTest is BaseTest {
         vm.label(address(pool), "POOL");
 
         assertEq(coin.currency(), USDC_ADDRESS, "currency");
-        assertEq(coin.balanceOf(users.creator), CREATOR_LAUNCH_REWARD + coinsPurchased);
+        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased);
     }
 
     function test_deploy_with_usdc_revert_payout_recipient_zero() public {

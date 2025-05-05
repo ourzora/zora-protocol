@@ -18,11 +18,11 @@ import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ContractVersionBase} from "./version/ContractVersionBase.sol";
-import {CoinConstants} from "./utils/CoinConstants.sol";
 import {MultiOwnable} from "./utils/MultiOwnable.sol";
 import {FullMath} from "./utils/uniswap/FullMath.sol";
 import {TickMath} from "./utils/uniswap/TickMath.sol";
 import {LiquidityAmounts} from "./utils/uniswap/LiquidityAmounts.sol";
+import {CoinConstants} from "./libs/CoinConstants.sol";
 import {CoinMarket} from "./libs/CoinMarket.sol";
 import {MarketConstants} from "./libs/MarketConstants.sol";
 import {LpPosition} from "./types/LpPosition.sol";
@@ -38,7 +38,7 @@ import {PoolState} from "./types/PoolState.sol";
     \$$$$$$  | $$$$$$  |$$$$$$\ $$ | \$$ |
      \______/  \______/ \______|\__|  \__|
 */
-contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
+contract Coin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
     using CoinMarket for bytes;
 
@@ -107,7 +107,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         isInitialized = true;
         isExited = false;
         maxShareToBeSold = poolConfiguration.maxDiscoverySupplyShare;
-        totalTokensOnBondingCurve = POOL_LAUNCH_SUPPLY;
+        totalTokensOnBondingCurve = CoinConstants.POOL_LAUNCH_SUPPLY;
     }
 
     /**
@@ -189,10 +189,10 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         platformReferrer = platformReferrer_ == address(0) ? protocolRewardRecipient : platformReferrer_;
 
         // Mint the total supply
-        _mint(address(this), MAX_TOTAL_SUPPLY);
+        _mint(address(this), CoinConstants.MAX_TOTAL_SUPPLY);
 
         // Distribute the creator launch reward
-        _transfer(address(this), payoutRecipient, CREATOR_LAUNCH_REWARD);
+        _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
 
         // Deploy the pool
         _deployLiquidity(poolConfig_);
@@ -216,7 +216,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         }
 
         // Calculate the trade reward
-        uint256 tradeReward = _calculateReward(orderSize, TOTAL_FEE_BPS);
+        uint256 tradeReward = _calculateReward(orderSize, CoinConstants.TOTAL_FEE_BPS);
 
         // Calculate the remaining size
         uint256 trueOrderSize = orderSize - tradeReward;
@@ -309,7 +309,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         }
 
         // Calculate the trade reward
-        uint256 tradeReward = _calculateReward(amountOut, TOTAL_FEE_BPS);
+        uint256 tradeReward = _calculateReward(amountOut, CoinConstants.TOTAL_FEE_BPS);
 
         // Calculate the payout after the fee
         uint256 payoutSize = amountOut - tradeReward;
@@ -467,7 +467,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
                 revert EthAmountMismatch();
             }
 
-            if (msg.value < MIN_ORDER_SIZE) {
+            if (msg.value < CoinConstants.MIN_ORDER_SIZE) {
                 revert EthAmountTooSmall();
             }
 
@@ -508,9 +508,9 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
             _tradeReferrer = protocolRewardRecipient;
         }
 
-        uint256 tokenCreatorFee = _calculateReward(totalValue, TOKEN_CREATOR_FEE_BPS);
-        uint256 platformReferrerFee = _calculateReward(totalValue, PLATFORM_REFERRER_FEE_BPS);
-        uint256 tradeReferrerFee = _calculateReward(totalValue, TRADE_REFERRER_FEE_BPS);
+        uint256 tokenCreatorFee = _calculateReward(totalValue, CoinConstants.TOKEN_CREATOR_FEE_BPS);
+        uint256 platformReferrerFee = _calculateReward(totalValue, CoinConstants.PLATFORM_REFERRER_FEE_BPS);
+        uint256 tradeReferrerFee = _calculateReward(totalValue, CoinConstants.TRADE_REFERRER_FEE_BPS);
         uint256 protocolFee = totalValue - tokenCreatorFee - platformReferrerFee - tradeReferrerFee;
 
         if (currency == WETH) {
@@ -599,9 +599,9 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
     function _transferMarketRewards(address token, uint256 totalAmount, MarketRewards memory rewards) internal returns (MarketRewards memory) {
         if (totalAmount > 0) {
             address dopplerRecipient = IAirlock(airlock).owner();
-            uint256 dopplerPayout = _calculateReward(totalAmount, DOPPLER_MARKET_REWARD_BPS);
-            uint256 creatorPayout = _calculateReward(totalAmount, CREATOR_MARKET_REWARD_BPS);
-            uint256 platformReferrerPayout = _calculateReward(totalAmount, PLATFORM_REFERRER_MARKET_REWARD_BPS);
+            uint256 dopplerPayout = _calculateReward(totalAmount, CoinConstants.DOPPLER_MARKET_REWARD_BPS);
+            uint256 creatorPayout = _calculateReward(totalAmount, CoinConstants.CREATOR_MARKET_REWARD_BPS);
+            uint256 platformReferrerPayout = _calculateReward(totalAmount, CoinConstants.PLATFORM_REFERRER_MARKET_REWARD_BPS);
             uint256 protocolPayout = totalAmount - creatorPayout - platformReferrerPayout - dopplerPayout;
 
             if (token == WETH) {

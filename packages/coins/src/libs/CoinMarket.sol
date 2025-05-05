@@ -8,12 +8,14 @@ import {CoinLegacyMarket} from "./CoinLegacyMarket.sol";
 import {CoinDopplerUniV3Market} from "./CoinDopplerUniV3Market.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
 import {LpPosition} from "../types/LpPosition.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 library CoinMarket {
     using SafeERC20 for IERC20;
     error InvalidPoolVersion();
     error InvalidMarketVersion();
     error ERC20TransferAmountMismatch();
+    error ETHTransferAmountMismatch();
 
     function setupMarket(bytes memory marketState, uint8 version, bytes memory marketConfig) internal returns (bytes memory) {
         if (version == CoinConfigurationVersions.LEGACY_POOL_VERSION) {
@@ -36,6 +38,7 @@ library CoinMarket {
     ) internal returns (uint256, uint256) {
         // TODO: handle order referral rewards, market rewards, and payouts here
 
+        // TODO: ensure legacy buy function wraps ETH to WETH
         _handleIncomingCurrency(currencyIn, orderSize);
 
         if (version == CoinConfigurationVersions.LEGACY_POOL_VERSION) {
@@ -56,6 +59,10 @@ library CoinMarket {
         bytes memory tradeData
     ) internal returns (uint256, uint256) {
         // TODO: handle order referral rewards, market rewards, and payouts here
+        // Record the coin balance of this contract before the swap
+        uint256 beforeCoinBalance = IERC20(address(this)).balanceOf(address(this));
+        // Transfer the coins from the seller to this contract
+        IERC20(address(this)).transferFrom(msg.sender, address(this), orderSize);
 
         if (version == CoinConfigurationVersions.LEGACY_POOL_VERSION) {
             return CoinLegacyMarket.sell(_state, orderSize, minAmountOut, tradeData);
@@ -67,13 +74,24 @@ library CoinMarket {
     }
 
     function _handleIncomingCurrency(address currencyIn, uint256 orderSize) internal {
-        uint256 beforeBalance = IERC20(currencyIn).balanceOf(address(this));
-        IERC20(currencyIn).safeTransferFrom(msg.sender, address(this), orderSize);
-        uint256 afterBalance = IERC20(currencyIn).balanceOf(address(this));
+        if (currencyIn == address(0)) {
+            if (msg.value != orderSize) {
+                revert ETHTransferAmountMismatch();
+            }
+        } else {
+            uint256 beforeBalance = IERC20(currencyIn).balanceOf(address(this));
+            IERC20(currencyIn).safeTransferFrom(msg.sender, address(this), orderSize);
+            uint256 afterBalance = IERC20(currencyIn).balanceOf(address(this));
 
-        if ((afterBalance - beforeBalance) != orderSize) {
-            revert ERC20TransferAmountMismatch();
+            if ((afterBalance - beforeBalance) != orderSize) {
+                revert ERC20TransferAmountMismatch();
+            }
         }
+    }
+
+    /// @dev Utility for computing amounts in basis points.
+    function _calculateReward(uint256 amount, uint256 bps) internal pure returns (uint256) {
+        return (amount * bps) / 10_000;
     }
 
     /// @notice deprecated
