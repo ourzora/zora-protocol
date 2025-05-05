@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-
 // config for the determinstic proxy deployer, which should have the same config on all chains.
 // this should be the same on all chains
 struct ProxyDeployerConfig {

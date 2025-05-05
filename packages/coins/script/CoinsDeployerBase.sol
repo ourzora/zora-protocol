@@ -8,6 +8,8 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
 import {Coin} from "../src/Coin.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
+import {BuySupplyWithSwapRouterHook} from "../src/hooks/BuySupplyWithSwapRouterHook.sol";
+import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 
 contract CoinsDeployerBase is ProxyDeployerScript {
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
@@ -21,6 +23,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         // Implementation
         address coinImpl;
         string coinVersion;
+        // hooks
+        address buySupplyWithSwapRouterHook;
     }
 
     function addressesFile() internal view returns (string memory) {
@@ -33,6 +37,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "ZORA_FACTORY", deployment.zoraFactory);
         vm.serializeAddress(objectKey, "ZORA_FACTORY_IMPL", deployment.zoraFactoryImpl);
         vm.serializeString(objectKey, "COIN_VERSION", deployment.coinVersion);
+        vm.serializeAddress(objectKey, "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK", deployment.buySupplyWithSwapRouterHook);
         string memory result = vm.serializeAddress(objectKey, "COIN_IMPL", deployment.coinImpl);
 
         vm.writeJson(result, addressesFile());
@@ -49,6 +54,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.zoraFactoryImpl = readAddressOrDefaultToZero(json, "ZORA_FACTORY_IMPL");
         deployment.coinImpl = readAddressOrDefaultToZero(json, "COIN_IMPL");
         deployment.coinVersion = readStringOrDefaultToEmpty(json, "COIN_VERSION");
+        deployment.buySupplyWithSwapRouterHook = readAddressOrDefaultToZero(json, "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK");
     }
 
     function deployCoinImpl() internal returns (Coin) {
@@ -59,11 +65,16 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return new ZoraFactoryImpl(coinImpl);
     }
 
+    function deployBuySupplyWithSwapRouterHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithSwapRouterHook) {
+        return new BuySupplyWithSwapRouterHook(IZoraFactory(deployment.zoraFactory), getUniswapSwapRouter());
+    }
+
     function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
         deployment.coinImpl = address(deployCoinImpl());
         deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinImpl));
         deployment.coinVersion = IVersionedContract(deployment.coinImpl).contractVersion();
+        deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
 
         return deployment;
     }
@@ -100,5 +111,26 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
         // validate that the zora factory owner is the proxy admin
         require(ZoraFactoryImpl(deployment.zoraFactory).owner() == getProxyAdmin(), "Zora factory owner is not the proxy admin");
+    }
+
+    function printUpgradeFactoryCommand(CoinsDeployment memory deployment) internal view {
+        // build upgrade to and call for factory, with init call
+        bytes memory call = abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, deployment.zoraFactoryImpl, "");
+
+        address proxyAdmin = getProxyAdmin();
+
+        address target = address(deployment.zoraFactory);
+
+        // print the details for upgrading:
+
+        console.log("To upgrade the factory, this is the call information:");
+
+        console.log("Multisig:", proxyAdmin);
+        console.log("Target (the factory proxy):", target);
+        console.log("Upgrade call:");
+        console.logBytes(call);
+        console.log("Function to call: upgradeToAndCall");
+        // concat the args into a string, factoryImpl, ""
+        console.log("Args: ", string.concat(vm.toString(deployment.zoraFactoryImpl), ",", '"'));
     }
 }

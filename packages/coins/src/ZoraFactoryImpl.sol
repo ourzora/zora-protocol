@@ -9,11 +9,17 @@ import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.s
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CoinConfigurationVersions} from "./libs/CoinConfigurationVersions.sol";
-
+import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
+import {IWETH} from "./interfaces/IWETH.sol";
 import {IZoraFactory} from "./interfaces/IZoraFactory.sol";
+import {IHasAfterCoinDeploy} from "./hooks/BaseCoinDeployHook.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Coin} from "./Coin.sol";
+import {ICoin} from "./interfaces/ICoin.sol";
+import {IHasContractName} from "@zoralabs/shared-contracts/interfaces/IContractMetadata.sol";
+import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 
-contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable {
+contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable, IHasContractName, ContractVersionBase {
     using SafeERC20 for IERC20;
 
     /// @notice The coin contract implementation address
@@ -23,15 +29,7 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         coinImpl = _coinImpl;
     }
 
-    /// @notice Creates a new coin contract
-    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
-    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
-    /// @param uri The coin metadata uri
-    /// @param name The name of the coin
-    /// @param symbol The symbol of the coin
-    /// @param poolConfig The config parameters for the Uniswap v3 pool; `abi.encode(address currency, int24 tickLower, int24 tickUpper, uint16 numDiscoveryPositions, uint256 maxDiscoverySupplyShare)`
-    /// @param platformReferrer The address of the platform referrer
-    /// @param orderSize The order size for the first buy; must match msg.value for ETH/WETH pairs
+    /// @inheritdoc IZoraFactory
     function deploy(
         address payoutRecipient,
         address[] memory owners,
@@ -42,40 +40,39 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         address platformReferrer,
         uint256 orderSize
     ) public payable nonReentrant returns (address, uint256) {
-        bytes32 salt = _generateSalt(payoutRecipient, uri);
-
-        Coin coin = Coin(payable(Clones.cloneDeterministic(coinImpl, salt)));
-
-        coin.initialize(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer);
+        Coin coin = _createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer);
 
         uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
-
-        emit CoinCreated(
-            msg.sender,
-            payoutRecipient,
-            coin.platformReferrer(),
-            coin.currency(),
-            uri,
-            name,
-            symbol,
-            address(coin),
-            coin.poolAddress(),
-            coin.contractVersion()
-        );
 
         return (address(coin), coinsPurchased);
     }
 
-    /// @notice Creates a new coin contract
-    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
-    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
-    /// @param uri The coin metadata uri
-    /// @param name The name of the coin
-    /// @param symbol The symbol of the coin
-    /// @param platformReferrer The address to receive platform referral rewards
-    /// @param currency The address of the trading currency; address(0) for ETH/WETH
-    /// @param tickLower The lower tick for the Uniswap V3 LP position; ignored for ETH/WETH pairs
-    /// @param orderSize The order size for the first buy; must match msg.value for ETH/WETH pairs
+    /// @inheritdoc IZoraFactory
+    function deployWithHook(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        address hook,
+        bytes calldata hookData
+    ) public payable nonReentrant returns (address coin, bytes memory hookDataOut) {
+        coin = address(_createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer));
+
+        if (hook != address(0)) {
+            if (!IERC165(hook).supportsInterface(type(IHasAfterCoinDeploy).interfaceId)) {
+                revert InvalidHook();
+            }
+            hookDataOut = IHasAfterCoinDeploy(hook).afterCoinDeploy{value: msg.value}(msg.sender, ICoin(coin), hookData);
+        } else if (msg.value > 0) {
+            // cannot send eth without a hook
+            revert EthTransferInvalid();
+        }
+    }
+
+    /// @inheritdoc IZoraFactory
     function deploy(
         address payoutRecipient,
         address[] memory owners,
@@ -87,15 +84,29 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         int24 tickLower,
         uint256 orderSize
     ) public payable nonReentrant returns (address, uint256) {
+        bytes memory poolConfig = abi.encode(CoinConfigurationVersions.LEGACY_POOL_VERSION, currency, tickLower);
+
+        Coin coin = _createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer);
+
+        uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
+
+        return (address(coin), coinsPurchased);
+    }
+
+    function _createAndInitializeCoin(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer
+    ) internal returns (Coin) {
         bytes32 salt = _generateSalt(payoutRecipient, uri);
 
         Coin coin = Coin(payable(Clones.cloneDeterministic(coinImpl, salt)));
 
-        bytes memory poolConfig = abi.encode(CoinConfigurationVersions.LEGACY_POOL_VERSION, currency, tickLower);
-
         coin.initialize(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer);
-
-        uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
 
         emit CoinCreated(
             msg.sender,
@@ -110,7 +121,7 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
             coin.contractVersion()
         );
 
-        return (address(coin), coinsPurchased);
+        return coin;
     }
 
     /// @dev Generates a unique salt for deterministic deployment
@@ -182,7 +193,24 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         return ERC1967Utils.getImplementation();
     }
 
+    /// @inheritdoc IHasContractName
+    function contractName() public pure override returns (string memory) {
+        return "ZoraCoinFactory";
+    }
+
     /// @dev Authorizes an upgrade to a new implementation
     /// @param newImpl The new implementation address
-    function _authorizeUpgrade(address newImpl) internal override onlyOwner {}
+    function _authorizeUpgrade(address newImpl) internal override onlyOwner {
+        // try to get the existing contract name - if it reverts, the existing contract was an older version that didn't have the contract name
+        // unfortunately we cannot use supportsInterface here because the existing implementation did not have that function
+        try IHasContractName(newImpl).contractName() returns (string memory name) {
+            if (!_equals(name, contractName())) {
+                revert UpgradeToMismatchedContractName(contractName(), name);
+            }
+        } catch {}
+    }
+
+    function _equals(string memory a, string memory b) internal pure returns (bool) {
+        return (keccak256(bytes(a)) == keccak256(bytes(b)));
+    }
 }

@@ -17,10 +17,12 @@ import {
   zoraTimedSaleStrategyImplABI,
   royaltiesABI,
   secondarySwapABI,
+} from "@zoralabs/erc20z";
+import {
   iwethABI,
   iSwapRouterABI,
   iUniswapV3PoolABI,
-} from "@zoralabs/erc20z";
+} from "@zoralabs/shared-contracts";
 import {
   commentsImplABI,
   callerAndCommenterImplABI,
@@ -34,6 +36,7 @@ import {
 import {
   zoraFactoryImplABI,
   coinABI,
+  buySupplyWithSwapRouterHookABI,
 } from "@zoralabs/coins";
 
 type Address = `0x${string}`;
@@ -499,6 +502,7 @@ const getCoinsContracts = (): ContractConfig[] => {
         readFileSync(`../coins/addresses/${file}`, "utf-8"),
       ) as {
         ZORA_FACTORY: Address;
+        BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
       },
     };
   });
@@ -511,6 +515,13 @@ const getCoinsContracts = (): ContractConfig[] => {
     storedConfigs,
   });
 
+  addAddress({
+    abi: buySupplyWithSwapRouterHookABI,
+    addresses,
+    configKey: "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK",
+    contractName: "BuySupplyWithSwapRouterHook",
+    storedConfigs,
+  });
 
   return [
     ...toConfig(addresses),

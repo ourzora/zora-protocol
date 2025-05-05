@@ -1,4 +1,4 @@
-import { coinABI } from "@zoralabs/coins";
+import { coinABI } from "@zoralabs/protocol-deployments";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import {
   Address,

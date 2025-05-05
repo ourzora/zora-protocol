@@ -215,4 +215,8 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors {
     /// @notice Returns the address of the platform referrer
     /// @return The platform referrer's address
     function platformReferrer() external view returns (address);
+
+    /// @notice Returns the address of the currency
+    /// @return The currency's address
+    function currency() external view returns (address);
 }

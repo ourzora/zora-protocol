@@ -15,6 +15,7 @@
     "@zoralabs/sparks-contracts": "workspace:^",
     "@zoralabs/shared-scripts": "workspace:^",
     "@zoralabs/comments-contracts": "workspace:^",
+    "@zoralabs/shared-contracts": "workspace:^",
     "@zoralabs/smart-wallet-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^",
     "@zoralabs/cointags-contracts": "workspace:^",

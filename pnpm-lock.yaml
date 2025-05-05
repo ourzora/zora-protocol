@@ -326,9 +326,9 @@ importers:
       '@hey-api/client-fetch':
         specifier: ^0.8.3
         version: 0.8.3
-      '@zoralabs/coins':
+      '@zoralabs/protocol-deployments':
         specifier: workspace:^
-        version: link:../coins
+        version: link:../protocol-deployments
       abitype:
         specifier: ^1.0.8
         version: 1.0.8(typescript@5.8.3)(zod@3.24.1)
@@ -719,6 +719,9 @@ importers:
       '@zoralabs/erc20z':
         specifier: workspace:^
         version: link:../erc20z
+      '@zoralabs/shared-contracts':
+        specifier: workspace:^
+        version: link:../shared-contracts
       '@zoralabs/shared-scripts':
         specifier: workspace:^
         version: link:../shared-scripts
@@ -855,6 +858,18 @@ importers:
       '@openzeppelin/contracts':
         specifier: ^5.0.2
         version: 5.0.2
+      '@types/node':
+        specifier: ^20.1.2
+        version: 20.17.16
+      '@wagmi/cli':
+        specifier: ^2.1.0
+        version: 2.2.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
+      '@zoralabs/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
       ds-test:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
@@ -873,6 +888,9 @@ importers:
       solady:
         specifier: ^0.0.168
         version: 0.0.168
+      tsup:
+        specifier: ^8.4.0
+        version: 8.4.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.0)
       tsx:
         specifier: ^4.19.4
         version: 4.19.4
@@ -16000,7 +16018,7 @@ snapshots:
     dependencies:
       ws: 7.5.10(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
-  isows@1.0.6(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)):
+  isows@1.0.6(ws@8.18.0):
     dependencies:
       ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
 
@@ -19102,7 +19120,7 @@ snapshots:
       '@scure/bip32': 1.6.0
       '@scure/bip39': 1.5.0
       abitype: 1.0.7(typescript@5.8.3)(zod@3.24.1)
-      isows: 1.0.6(ws@8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10))
+      isows: 1.0.6(ws@8.18.0)
       ox: 0.6.5(typescript@5.8.3)(zod@3.24.1)
       ws: 8.18.0(bufferutil@4.0.9)(utf-8-validate@5.0.10)
     optionalDependencies:

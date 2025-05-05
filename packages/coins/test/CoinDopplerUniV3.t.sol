@@ -17,17 +17,6 @@ contract DopplerUniswapV3Test is BaseTest {
     uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = 10; // will be 11 total with tail position
     uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = 0.495e18; // half of the 990m total pool supply
 
-    function _generatePoolConfig(
-        uint8 version_,
-        address currency_,
-        int24 tickLower_,
-        int24 tickUpper_,
-        uint16 numDiscoveryPositions_,
-        uint256 maxDiscoverySupplyShare_
-    ) internal pure returns (bytes memory) {
-        return abi.encode(version_, currency_, tickLower_, tickUpper_, numDiscoveryPositions_, maxDiscoverySupplyShare_);
-    }
-
     function _deployCoin(bytes memory poolConfig_) internal {
         vm.prank(users.creator);
         (address coinAddress, ) = factory.deploy(

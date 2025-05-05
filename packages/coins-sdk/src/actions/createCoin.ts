@@ -1,4 +1,4 @@
-import { zoraFactoryImplABI } from "@zoralabs/coins";
+import { coinFactoryABI as zoraFactoryImplABI } from "@zoralabs/protocol-deployments";
 import {
   Address,
   TransactionReceipt,
