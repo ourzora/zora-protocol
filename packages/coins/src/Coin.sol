@@ -40,6 +40,7 @@ import {PoolState} from "./types/PoolState.sol";
 */
 contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
     using SafeERC20 for IERC20;
+    using CoinMarket for bytes;
 
     /// @notice The address of the WETH contract
     address public immutable WETH;
@@ -64,6 +65,10 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
     address public poolAddress;
     /// @notice The address of the currency
     address public currency;
+
+    /// @notice The state of the market
+    bytes public market;
+    uint8 public marketVersion;
 
     /// @notice deprecated
     PoolConfiguration public poolConfiguration;
@@ -428,6 +433,13 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         LpPosition[] memory positions = CoinMarket.calculatePositions(isCoinToken0, poolConfiguration);
 
         _mintPositions(positions);
+    }
+
+    function _deployMarket(bytes memory marketConfig_) internal {
+        (uint8 version, bytes memory marketConfig) = abi.decode(marketConfig_, (uint8, bytes));
+
+        marketVersion = version;
+        market = market.setupMarket(version, marketConfig);
     }
 
     /// @dev Creates the Uniswap V3 pool for the coin/currency pair

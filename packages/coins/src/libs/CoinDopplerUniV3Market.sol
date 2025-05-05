@@ -1,6 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IUniswapV3Factory} from "../interfaces/IUniswapV3Factory.sol";
+import {IUniswapV3Pool} from "../interfaces/IUniswapV3Pool.sol";
+import {ISwapRouter} from "../interfaces/ISwapRouter.sol";
+import {UniV3Errors} from "./UniV3Errors.sol";
 import {PoolConfiguration} from "../interfaces/ICoin.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
@@ -13,6 +18,180 @@ import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {IDopplerErrors} from "../interfaces/IDopplerErrors.sol";
 
 library CoinDopplerUniV3Market {
+    struct State {
+        address uniswapv3Factory;
+        address poolAddress;
+        address pairedCurrency;
+        address weth;
+        uint160 sqrtPriceX96;
+        bool isCoinToken0;
+        int24 tickLower;
+        int24 tickUpper;
+        uint16 numDiscoveryPositions;
+        uint256 maxDiscoverySupplyShare;
+    }
+
+    struct MarketConfig {
+        address uniswapv3Factory;
+        address weth;
+        address pairedCurrency;
+        int24 tickLower;
+        int24 tickUpper;
+        uint16 numDiscoveryPositions;
+        uint256 maxDiscoverySupplyShare;
+    }
+
+    function _validateMarketConfig(MarketConfig memory marketConfig) internal pure {
+        if (marketConfig.uniswapv3Factory == address(0)) {
+            revert UniV3Errors.InvalidUniswapV3Factory();
+        }
+        
+        if (marketConfig.weth == address(0)) {
+            revert UniV3Errors.InvalidWeth();
+        }
+
+        if (marketConfig.weth == address(0)) {
+            revert UniV3Errors.InvalidWeth();
+        }
+
+        if (marketConfig.numDiscoveryPositions < 2 || marketConfig.numDiscoveryPositions > 200) {
+            revert IDopplerErrors.NumDiscoveryPositionsOutOfRange();
+        }
+
+        if (marketConfig.maxDiscoverySupplyShare > MarketConstants.WAD) {
+            revert IDopplerErrors.MaxShareToBeSoldExceeded(marketConfig.maxDiscoverySupplyShare, MarketConstants.WAD);
+        }
+    }
+
+    function setupMarket(bytes memory _state, bytes memory _marketConfig) internal returns (bytes memory) {
+        State memory state = abi.decode(_state, (State));
+        MarketConfig memory marketConfig = abi.decode(_marketConfig, (MarketConfig));
+        _validateMarketConfig(marketConfig);
+
+        state.uniswapv3Factory = marketConfig.uniswapv3Factory;
+        state.weth = marketConfig.weth;
+        state.tickLower = marketConfig.tickLower;
+        state.tickUpper = marketConfig.tickUpper;
+        state.numDiscoveryPositions = marketConfig.numDiscoveryPositions;
+        state.maxDiscoverySupplyShare = marketConfig.maxDiscoverySupplyShare;
+
+        // If the pairedCurrency is not set, default to WETH
+        if (marketConfig.pairedCurrency == address(0)) {
+            state.pairedCurrency = marketConfig.weth;
+        } else {
+            state.pairedCurrency = marketConfig.pairedCurrency;
+        }
+
+        address pairedCurrency = state.pairedCurrency;
+        int24 tickLower = state.tickLower;
+        int24 tickUpper = state.tickUpper;
+
+        // Compute and store the pool configuration
+        address token0 = address(this) < pairedCurrency ? address(this) : pairedCurrency;
+        address token1 = address(this) < pairedCurrency ? pairedCurrency : address(this);
+
+        bool isCoinToken0 = token0 == address(this);
+        state.isCoinToken0 = isCoinToken0;
+
+        int24 savedTickLower = isCoinToken0 ? tickLower : -tickUpper;
+        int24 savedTickUpper = isCoinToken0 ? tickUpper : -tickLower;
+
+        state.sqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? savedTickLower : savedTickUpper);
+        state.tickLower = savedTickLower;
+        state.tickUpper = savedTickUpper;
+
+        // Deploy the pool
+        state.poolAddress = _createPool(token0, token1, state.uniswapv3Factory, state.sqrtPriceX96);
+
+        // Mint the positions
+        LpPosition[] memory positions = _calculatePositions(state);
+        for (uint256 i; i < positions.length; i++) {
+            IUniswapV3Pool(state.poolAddress).mint(address(this), positions[i].tickLower, positions[i].tickUpper, positions[i].liquidity, "");
+        }
+
+        return abi.encode(state);
+    }
+
+    function buy(bytes memory _state, address recipient, uint256 orderSize, uint256 minAmountOut, bytes memory tradeData) internal returns (uint256, uint256) {
+        State memory state = abi.decode(_state, (State));
+        (uint160 sqrtPriceLimitX96, address swapRouter) = abi.decode(tradeData, (uint160, address));
+
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: state.pairedCurrency,
+            tokenOut: address(this),
+            fee: MarketConstants.LP_FEE,
+            recipient: recipient,
+            amountIn: orderSize,
+            amountOutMinimum: minAmountOut,
+            sqrtPriceLimitX96: sqrtPriceLimitX96
+        });
+
+        uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
+
+        return (orderSize, amountOut);
+    }
+
+    function sell(bytes memory _state, uint256 orderSize, uint256 minAmountOut, bytes memory tradeData) internal returns (uint256, uint256) {
+        State memory state = abi.decode(_state, (State));
+        (uint160 sqrtPriceLimitX96, address swapRouter) = abi.decode(tradeData, (uint160, address));
+
+        // Approve the swap router to spend the coin
+        IERC20(address(this)).approve(swapRouter, orderSize);
+
+        // Set the swap parameters
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: address(this),
+            tokenOut: state.pairedCurrency,
+            fee: MarketConstants.LP_FEE,
+            recipient: address(this),
+            amountIn: orderSize,
+            amountOutMinimum: minAmountOut,
+            sqrtPriceLimitX96: sqrtPriceLimitX96
+        });
+
+        // Execute the swap
+        uint256 amountOut = ISwapRouter(swapRouter).exactInputSingle(params);
+
+        return (orderSize, amountOut);
+    }
+
+    function _createPool(address token0, address token1, address uniswapv3Factory, uint160 sqrtPriceX96) internal returns (address pool) {
+        pool = IUniswapV3Factory(uniswapv3Factory).createPool(token0, token1, MarketConstants.LP_FEE);
+
+        IUniswapV3Pool(pool).initialize(sqrtPriceX96);
+
+        return pool;
+    }
+
+    function _calculatePositions(State memory state) internal pure returns (LpPosition[] memory positions) {
+        positions = new LpPosition[](state.numDiscoveryPositions + 1);
+
+        uint256 discoverySupply = FullMath.mulDiv(MarketConstants.POOL_LAUNCH_SUPPLY, state.maxDiscoverySupplyShare, MarketConstants.WAD);
+
+        (positions, discoverySupply) = calculateLogNormalDistribution(
+            state.tickLower,
+            state.tickUpper,
+            MarketConstants.TICK_SPACING,
+            state.isCoinToken0,
+            discoverySupply,
+            // Populate all positions before the last position (the tail position)
+            uint16(positions.length - 1), // Only discovery positions
+            positions
+        );
+
+        uint256 tailSupply = MarketConstants.POOL_LAUNCH_SUPPLY - discoverySupply;
+
+        positions[positions.length - 1] = calculateLpTail(
+            state.tickLower,
+            state.tickUpper,
+            state.isCoinToken0,
+            tailSupply,
+            MarketConstants.TICK_SPACING
+        );
+    }
+
+
+    /// @notice deprecated
     function setupPool(bool isCoinToken0, bytes memory poolConfig_) internal pure returns (uint160 sqrtPriceX96, PoolConfiguration memory poolConfiguration) {
         (, , int24 tickLower_, int24 tickUpper_, uint16 numDiscoveryPositions_, uint256 maxDiscoverySupplyShare_) = abi.decode(
             poolConfig_,
@@ -39,6 +218,7 @@ library CoinDopplerUniV3Market {
         });
     }
 
+    /// @notice deprecated
     function calculatePositions(bool isCoinToken0, PoolConfiguration memory poolConfiguration) internal pure returns (LpPosition[] memory positions) {
         positions = new LpPosition[](poolConfiguration.numPositions);
 
