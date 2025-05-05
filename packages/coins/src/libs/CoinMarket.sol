@@ -7,7 +7,7 @@ import {CoinDopplerUniV3} from "./CoinDopplerUniV3.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 
-library CoinSetup {
+library CoinMarket {
     error InvalidPoolVersion();
 
     function setupPoolWithVersion(

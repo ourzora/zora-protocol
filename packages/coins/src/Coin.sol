@@ -23,7 +23,7 @@ import {MultiOwnable} from "./utils/MultiOwnable.sol";
 import {FullMath} from "./utils/uniswap/FullMath.sol";
 import {TickMath} from "./utils/uniswap/TickMath.sol";
 import {LiquidityAmounts} from "./utils/uniswap/LiquidityAmounts.sol";
-import {CoinSetup} from "./libs/CoinSetup.sol";
+import {CoinMarket} from "./libs/CoinMarket.sol";
 import {MarketConstants} from "./libs/MarketConstants.sol";
 import {LpPosition} from "./types/LpPosition.sol";
 import {PoolState} from "./types/PoolState.sol";
@@ -419,13 +419,13 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         address token1 = address(this) < currency ? currency : address(this);
         bool isCoinToken0 = token0 == address(this);
 
-        (uint160 sqrtPriceX96, PoolConfiguration memory _poolConfig) = CoinSetup.setupPoolWithVersion(version, poolConfig_, isCoinToken0, WETH);
+        (uint160 sqrtPriceX96, PoolConfiguration memory _poolConfig) = CoinMarket.setupPoolWithVersion(version, poolConfig_, isCoinToken0, WETH);
 
         poolConfiguration = _poolConfig;
 
         poolAddress = _createPool(token0, token1, sqrtPriceX96);
 
-        LpPosition[] memory positions = CoinSetup.calculatePositions(isCoinToken0, poolConfiguration);
+        LpPosition[] memory positions = CoinMarket.calculatePositions(isCoinToken0, poolConfiguration);
 
         _mintPositions(positions);
     }
@@ -553,7 +553,7 @@ contract Coin is ICoin, CoinConstants, ContractVersionBase, ERC20PermitUpgradeab
         uint256 amount1;
 
         bool isCoinToken0 = address(this) < currency;
-        LpPosition[] memory positions = CoinSetup.calculatePositions(isCoinToken0, poolConfiguration);
+        LpPosition[] memory positions = CoinMarket.calculatePositions(isCoinToken0, poolConfiguration);
 
         for (uint256 i; i < positions.length; i++) {
             // Must burn to update the collect mapping on the pool
