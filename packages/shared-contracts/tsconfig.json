@@ -1,10 +1,9 @@
 {
   "extends": "@zoralabs/tsconfig/tsconfig.json",
   "compilerOptions": {
-    "lib": ["es2021", "DOM"],
     "baseUrl": ".",
     "outDir": "dist"
   },
-  "exclude": ["node_modules/**", "dist/**", "**/*test.ts"],
-  "include": ["src/**/*.ts"]
+  "exclude": ["node_modules/**", "dist/**"],
+  "include": ["package/**/*.ts", "script/*.ts"]
 }

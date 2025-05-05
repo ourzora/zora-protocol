@@ -1,4 +1,4 @@
-import { coinABI, iUniswapV3PoolABI } from "@zoralabs/coins";
+import { coinABI, iUniswapV3PoolABI } from "@zoralabs/protocol-deployments";
 import {
   SUPERCHAIN_WETH_ADDRESS,
   USDC_WETH_POOLS_BY_CHAIN,

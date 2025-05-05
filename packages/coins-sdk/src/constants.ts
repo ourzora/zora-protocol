@@ -1,4 +1,4 @@
-import { zoraFactoryImplAddress } from "@zoralabs/coins";
+import { coinFactoryAddress as zoraFactoryImplAddress } from "@zoralabs/protocol-deployments";
 import { Address } from "viem";
 import { base } from "viem/chains";
 

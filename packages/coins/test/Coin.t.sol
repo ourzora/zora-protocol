@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "./utils/BaseTest.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
 
 contract CoinTest is BaseTest {
     function setUp() public override {

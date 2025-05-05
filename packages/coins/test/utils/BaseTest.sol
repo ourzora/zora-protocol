@@ -12,7 +12,6 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
 import {Coin} from "../../src/Coin.sol";
-import {CoinConstants} from "../../src/libs/CoinConstants.sol";
 import {MultiOwnable} from "../../src/utils/MultiOwnable.sol";
 import {ICoin} from "../../src/interfaces/ICoin.sol";
 import {IERC7572} from "../../src/interfaces/IERC7572.sol";
@@ -25,6 +24,7 @@ import {IUniswapV3Pool} from "../../src/interfaces/IUniswapV3Pool.sol";
 import {IProtocolRewards} from "../../src/interfaces/IProtocolRewards.sol";
 import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
 import {MarketConstants} from "../../src/libs/MarketConstants.sol";
+
 contract BaseTest is Test {
     using stdStorage for StdStorage;
 
@@ -65,7 +65,11 @@ contract BaseTest is Test {
     IUniswapV3Pool internal pool;
 
     function setUp() public virtual {
-        forkId = vm.createSelectFork("base", 28415528);
+        setUpWithBlockNumber(28415528);
+    }
+
+    function setUpWithBlockNumber(uint256 forkBlockNumber) public {
+        forkId = vm.createSelectFork("base", forkBlockNumber);
 
         weth = IWETH(WETH_ADDRESS);
         usdc = IERC20Metadata(USDC_ADDRESS);
@@ -201,5 +205,16 @@ contract BaseTest is Test {
 
     function dopplerFeeRecipient() internal view returns (address) {
         return airlock.owner();
+    }
+
+    function _generatePoolConfig(
+        uint8 version_,
+        address currency_,
+        int24 tickLower_,
+        int24 tickUpper_,
+        uint16 numDiscoveryPositions_,
+        uint256 maxDiscoverySupplyShare_
+    ) internal pure returns (bytes memory) {
+        return abi.encode(version_, currency_, tickLower_, tickUpper_, numDiscoveryPositions_, maxDiscoverySupplyShare_);
     }
 }
