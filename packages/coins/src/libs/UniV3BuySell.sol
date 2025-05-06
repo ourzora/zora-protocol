@@ -107,8 +107,6 @@ library UniV3BuySell {
             revert AddressZero();
         }
 
-        address _this = address(this);
-
         // Set the swap parameters
         ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
             tokenIn: address(this),
@@ -124,7 +122,7 @@ library UniV3BuySell {
         uint256 amountOut = ISwapRouter(coinConfig.uniswapV3Config.swapRouter).exactInputSingle(params);
 
         // Record the coin balance of this contract after the swap
-        uint256 afterCoinBalance = IERC20(_this).balanceOf(_this);
+        uint256 afterCoinBalance = IERC20(address(this)).balanceOf(address(this));
 
         // If the swap was partially executed:
         if (afterCoinBalance > beforeCoinBalance) {
@@ -135,7 +133,7 @@ library UniV3BuySell {
             orderSize -= coinRefund;
 
             // Transfer the refund back to the seller
-            IERC20(_this).safeTransfer(recipient, coinRefund);
+            IERC20(address(this)).safeTransfer(recipient, coinRefund);
         }
 
         // If currency is WETH, convert to ETH
@@ -330,8 +328,8 @@ library UniV3BuySell {
             uint256 platformReferrerPayout = _calculateReward(totalAmount, CoinConstants.PLATFORM_REFERRER_MARKET_REWARD_BPS);
             uint256 protocolPayout = totalAmount - creatorPayout - platformReferrerPayout - dopplerPayout;
 
-            if (token == coinConfig.uniswapV3Config.weth) {
-                IWETH(coinConfig.uniswapV3Config.weth).withdraw(totalAmount);
+            if (token == weth) {
+                IWETH(weth).withdraw(totalAmount);
 
                 rewards.totalAmountCurrency = totalAmount;
                 rewards.creatorPayoutAmountCurrency = creatorPayout;
@@ -389,7 +387,6 @@ library UniV3BuySell {
         return (amount * bps) / 10_000;
     }
 
-    /// @notice deprecated
     function calculatePositions(bool isCoinToken0, PoolConfiguration memory poolConfiguration) internal pure returns (LpPosition[] memory positions) {
         if (poolConfiguration.version == CoinConfigurationVersions.LEGACY_POOL_VERSION) {
             positions = CoinLegacyMarket.calculatePositions(isCoinToken0, poolConfiguration);
