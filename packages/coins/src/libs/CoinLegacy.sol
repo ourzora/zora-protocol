@@ -35,14 +35,14 @@ library CoinLegacy {
         });
     }
 
-    function calculatePositions(bool isCoinToken0, PoolConfiguration memory poolConfiguration) internal pure returns (LpPosition[] memory positions) {
+    function calculatePositions(bool isCoinToken0, int24 tickLower, int24 tickUpper) internal pure returns (LpPosition[] memory positions) {
         positions = new LpPosition[](1);
 
-        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? poolConfiguration.tickLower : poolConfiguration.tickUpper);
-        uint160 farSqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? poolConfiguration.tickUpper : poolConfiguration.tickLower);
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? tickLower : tickUpper);
+        uint160 farSqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? tickUpper : tickLower);
         uint128 liquidity = isCoinToken0
             ? LiquidityAmounts.getLiquidityForAmount0(sqrtPriceX96, farSqrtPriceX96, MarketConstants.POOL_LAUNCH_SUPPLY)
             : LiquidityAmounts.getLiquidityForAmount1(sqrtPriceX96, farSqrtPriceX96, MarketConstants.POOL_LAUNCH_SUPPLY);
-        positions[0] = LpPosition({tickLower: poolConfiguration.tickLower, tickUpper: poolConfiguration.tickUpper, liquidity: liquidity});
+        positions[0] = LpPosition({tickLower: tickLower, tickUpper: tickUpper, liquidity: liquidity});
     }
 }

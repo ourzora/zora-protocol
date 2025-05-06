@@ -12,7 +12,6 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
 import {Coin} from "../../src/Coin.sol";
-import {CoinConstants} from "../../src/utils/CoinConstants.sol";
 import {MultiOwnable} from "../../src/utils/MultiOwnable.sol";
 import {ICoin} from "../../src/interfaces/ICoin.sol";
 import {IERC7572} from "../../src/interfaces/IERC7572.sol";
@@ -26,7 +25,7 @@ import {IProtocolRewards} from "../../src/interfaces/IProtocolRewards.sol";
 import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
 import {MarketConstants} from "../../src/libs/MarketConstants.sol";
 
-contract BaseTest is Test, CoinConstants {
+contract BaseTest is Test {
     using stdStorage for StdStorage;
 
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;

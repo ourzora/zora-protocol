@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import "./utils/BaseTest.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
 
 contract CoinTest is BaseTest {
     function setUp() public override {
@@ -17,15 +18,15 @@ contract CoinTest is BaseTest {
     }
 
     function test_supply_constants() public view {
-        assertEq(MAX_TOTAL_SUPPLY, POOL_LAUNCH_SUPPLY + CREATOR_LAUNCH_REWARD);
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, CoinConstants.POOL_LAUNCH_SUPPLY + CoinConstants.CREATOR_LAUNCH_REWARD);
 
-        assertEq(MAX_TOTAL_SUPPLY, 1_000_000_000e18);
-        assertEq(POOL_LAUNCH_SUPPLY, 990_000_000e18);
-        assertEq(CREATOR_LAUNCH_REWARD, 10_000_000e18);
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, 1_000_000_000e18);
+        assertEq(CoinConstants.POOL_LAUNCH_SUPPLY, 990_000_000e18);
+        assertEq(CoinConstants.CREATOR_LAUNCH_REWARD, 10_000_000e18);
 
-        assertEq(coin.totalSupply(), MAX_TOTAL_SUPPLY);
-        assertEq(coin.balanceOf(coin.payoutRecipient()), CREATOR_LAUNCH_REWARD);
-        assertApproxEqAbs(coin.balanceOf(address(pool)), POOL_LAUNCH_SUPPLY, 1e18);
+        assertEq(coin.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY);
+        assertEq(coin.balanceOf(coin.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD);
+        assertApproxEqAbs(coin.balanceOf(address(pool)), CoinConstants.POOL_LAUNCH_SUPPLY, 1e18);
     }
 
     function test_constructor_validation() public {
@@ -162,7 +163,7 @@ contract CoinTest is BaseTest {
     }
 
     function test_buy_with_eth_fuzz(uint256 ethOrderSize) public {
-        vm.assume(ethOrderSize >= MIN_ORDER_SIZE);
+        vm.assume(ethOrderSize >= CoinConstants.MIN_ORDER_SIZE);
         vm.assume(ethOrderSize < 10 ether);
 
         uint256 platformReferrerBalanceBeforeSale = users.platformReferrer.balance;
@@ -183,11 +184,11 @@ contract CoinTest is BaseTest {
 
     function test_buy_with_eth_too_small() public {
         vm.expectRevert(abi.encodeWithSelector(ICoin.EthAmountTooSmall.selector));
-        coin.buy{value: MIN_ORDER_SIZE - 1}(users.coinRecipient, MIN_ORDER_SIZE - 1, 0, 0, users.tradeReferrer);
+        coin.buy{value: CoinConstants.MIN_ORDER_SIZE - 1}(users.coinRecipient, CoinConstants.MIN_ORDER_SIZE - 1, 0, 0, users.tradeReferrer);
     }
 
     function test_buy_with_minimum_eth() public {
-        uint256 minEth = MIN_ORDER_SIZE;
+        uint256 minEth = CoinConstants.MIN_ORDER_SIZE;
         vm.deal(users.buyer, minEth);
         vm.prank(users.buyer);
         coin.buy{value: minEth}(users.coinRecipient, minEth, 0, 0, users.tradeReferrer);
@@ -236,7 +237,7 @@ contract CoinTest is BaseTest {
     }
 
     function test_buy_validate_return_amounts(uint256 orderSize) public {
-        vm.assume(orderSize >= MIN_ORDER_SIZE);
+        vm.assume(orderSize >= CoinConstants.MIN_ORDER_SIZE);
         vm.assume(orderSize < 10 ether);
 
         vm.deal(users.buyer, orderSize);
@@ -341,7 +342,7 @@ contract CoinTest is BaseTest {
 
     function test_sell_for_eth_fuzz(uint256 ethOrderSize) public {
         vm.assume(ethOrderSize < 10 ether);
-        vm.assume(ethOrderSize >= MIN_ORDER_SIZE);
+        vm.assume(ethOrderSize >= CoinConstants.MIN_ORDER_SIZE);
 
         vm.deal(users.buyer, ethOrderSize);
         vm.prank(users.buyer);
@@ -411,14 +412,14 @@ contract CoinTest is BaseTest {
         coin.buy{value: 0.001 ether}(users.creator, 0.001 ether, 0, 0, users.tradeReferrer);
 
         uint256 beforeBalance = coin.balanceOf(users.creator);
-        assertEq(beforeBalance, 11077349369032224007213331); // 11,077,349 coins
+        assertEq(beforeBalance, 11077349369032224007213331, "before balance"); // 11,077,349 coins
 
         vm.prank(users.creator);
         (uint256 amountSold, ) = coin.sell(users.creator, beforeBalance, 0, 0, users.tradeReferrer);
-        assertEq(amountSold, 1088231685891135360821548); // 1,088,232 coins (max that could be sold)
+        assertEq(amountSold, 1088231685891135360821548, "amountSold"); // 1,088,232 coins (max that could be sold)
 
         uint256 afterBalance = coin.balanceOf(users.creator);
-        assertEq(afterBalance, 9994558841570544323195890); // 9,994,559 coins
+        assertEq(afterBalance, 9994558841570544323195890, "after balance"); // 9,994,559 coins
 
         uint256 expectedMarketReward = 5441158429455676804107; // 5,441 coins
 
@@ -512,7 +513,9 @@ contract CoinTest is BaseTest {
     function test_eth_transfer_fail() public {
         vm.deal(users.buyer, 1 ether);
         vm.prank(users.buyer);
-        coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
+        (, uint256 amountOut) = coin.buy{value: 1 ether}(users.coinRecipient, 1 ether, 0, 0, users.tradeReferrer);
+
+        assertEq(coin.balanceOf(users.coinRecipient), amountOut);
 
         // Recipient reverts on ETH receive
         address payable badRecipient = payable(makeAddr("badRecipient"));

@@ -12,6 +12,7 @@ import {ICoin} from "../src/interfaces/ICoin.sol";
 import {IHasAfterCoinDeploy} from "../src/hooks/BaseCoinDeployHook.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
 
 // Create a fake hook that doesn't support the IHasAfterCoinDeploy interface
 contract FakeHookNoInterface {
@@ -72,7 +73,7 @@ contract HooksTest is BaseTest {
     }
 
     function test_buySupplyWithEthUsingV3Hook_withExactInputSingle(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 1 ether);
 
         vm.deal(users.creator, initialOrderSize);
@@ -113,12 +114,12 @@ contract HooksTest is BaseTest {
         assertEq(coin.currency(), zora, "currency");
         assertGt(amountCurrency, 0, "amountCurrency > 0");
         assertGt(coinsPurchased, 0, "coinsPurchased > 0");
-        assertEq(coin.balanceOf(users.creator), CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
+        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
         assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
     }
 
     function test_buySupplyWithEthUsingV3Hook_withExactInputMultiHop(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 1 ether);
 
         vm.deal(users.creator, initialOrderSize);
@@ -160,7 +161,7 @@ contract HooksTest is BaseTest {
         assertEq(coin.currency(), zora, "currency");
         assertGt(amountCurrency, 0, "amountCurrency > 0");
         assertGt(coinsPurchased, 0, "coinsPurchased > 0");
-        assertEq(coin.balanceOf(users.creator), CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
+        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
         assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
     }
 

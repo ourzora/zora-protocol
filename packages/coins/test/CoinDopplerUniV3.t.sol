@@ -5,6 +5,7 @@ import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.s
 import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {BaseTest} from "./utils/BaseTest.sol";
 import {Coin} from "../src/Coin.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {LpPosition} from "../src/types/LpPosition.sol";
 import {IDopplerErrors} from "../src/interfaces/IDopplerErrors.sol";
@@ -76,7 +77,7 @@ contract DopplerUniswapV3Test is BaseTest {
         assertTrue(isInitialized);
         assertFalse(isExited);
         assertEq(maxShareToBeSold, 0);
-        assertEq(totalTokensOnBondingCurve, POOL_LAUNCH_SUPPLY);
+        assertEq(totalTokensOnBondingCurve, CoinConstants.POOL_LAUNCH_SUPPLY);
 
         bool isCoinToken0 = address(coin) < address(weth);
 
@@ -105,7 +106,7 @@ contract DopplerUniswapV3Test is BaseTest {
     }
 
     function test_deploy_legacy_eth_config_with_prebuy(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 10 ether);
 
         vm.deal(users.creator, initialOrderSize);
@@ -165,7 +166,7 @@ contract DopplerUniswapV3Test is BaseTest {
         vm.label(address(pool), "POOL");
 
         assertEq(coin.currency(), address(usdc), "currency");
-        assertEq(coin.balanceOf(users.creator), CREATOR_LAUNCH_REWARD + coinsPurchased);
+        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased);
     }
 
     function test_deploy_doppler_eth() public {
@@ -198,11 +199,11 @@ contract DopplerUniswapV3Test is BaseTest {
         assertTrue(isInitialized, "poolState.isInitialized");
         assertFalse(isExited, "poolState.isExited");
         assertEq(maxShareToBeSold, DEFAULT_DISCOVERY_SUPPLY_SHARE, "poolState.maxShareToBeSold");
-        assertEq(totalTokensOnBondingCurve, POOL_LAUNCH_SUPPLY, "poolState.totalTokensOnBondingCurve");
+        assertEq(totalTokensOnBondingCurve, CoinConstants.POOL_LAUNCH_SUPPLY, "poolState.totalTokensOnBondingCurve");
     }
 
     function test_deploy_doppler_eth_with_prebuy(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 1 ether);
 
         vm.deal(users.creator, initialOrderSize);
@@ -233,7 +234,7 @@ contract DopplerUniswapV3Test is BaseTest {
 
         assertEq(coin.currency(), address(weth), "currency");
         assertGt(coinsPurchased, 0, "coinsPurchased > 0");
-        assertEq(coin.balanceOf(users.creator), CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
+        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
         assertGt(weth.balanceOf(address(pool)), 0, "Pool WETH balance");
     }
 
