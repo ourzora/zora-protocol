@@ -84,7 +84,7 @@ library CoinLegacyMarket {
 
     function buy(bytes memory _state, address recipient, uint256 orderSize, uint256 minAmountOut, bytes memory tradeData) internal returns (uint256, uint256) {
         State memory state = abi.decode(_state, (State));
-        (uint160 sqrtPriceLimitX96, address swapRouter, address tradeReferrer) = abi.decode(tradeData, (uint160, address, address));
+        (uint160 sqrtPriceLimitX96, address swapRouter, ) = abi.decode(tradeData, (uint160, address, address));
 
         // Calculate the trade reward
         // uint256 tradeReward = _calculateReward(orderSize, TOTAL_FEE_BPS);

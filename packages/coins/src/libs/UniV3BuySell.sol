@@ -36,12 +36,7 @@ library UniV3BuySell {
     error AddressZero();
     error InvalidPoolVersion();
 
-    /// @notice Executes a buy order
-    /// @param recipient The recipient address of the coins
-    /// @param orderSize The amount of coins to buy
-    /// @param tradeReferrer The address of the trade referrer
-    /// @param sqrtPriceLimitX96 The price limit for Uniswap V3 pool swap
-    function buy(
+    function _handleBuy(
         address recipient,
         uint256 orderSize,
         uint256 minAmountOut,
@@ -49,17 +44,16 @@ library UniV3BuySell {
         address tradeReferrer,
         address coin,
         CoinConfig memory coinConfig
-    ) internal returns (uint256, uint256) {
-        // Ensure the recipient is not the zero address
+    ) internal returns (uint256 amountOut, uint256 tradeReward, uint256 trueOrderSize) {
         if (recipient == address(0)) {
             revert AddressZero();
         }
 
         // Calculate the trade reward
-        uint256 tradeReward = _calculateReward(orderSize, CoinConstants.TOTAL_FEE_BPS);
+        tradeReward = _calculateReward(orderSize, CoinConstants.TOTAL_FEE_BPS);
 
         // Calculate the remaining size
-        uint256 trueOrderSize = orderSize - tradeReward;
+        trueOrderSize = orderSize - tradeReward;
 
         // Handle incoming currency
         _handleIncomingCurrency(orderSize, trueOrderSize, coinConfig.currency, coinConfig.uniswapV3Config.weth, coinConfig.uniswapV3Config.swapRouter);
@@ -76,9 +70,34 @@ library UniV3BuySell {
         });
 
         // Execute the swap
-        uint256 amountOut = ISwapRouter(coinConfig.uniswapV3Config.swapRouter).exactInputSingle(params);
+        amountOut = ISwapRouter(coinConfig.uniswapV3Config.swapRouter).exactInputSingle(params);
 
         _handleTradeRewards(tradeReward, tradeReferrer, coinConfig);
+    }
+
+    /// @notice Executes a buy order
+    /// @param recipient The recipient address of the coins
+    /// @param orderSize The amount of coins to buy
+    /// @param tradeReferrer The address of the trade referrer
+    /// @param sqrtPriceLimitX96 The price limit for Uniswap V3 pool swap
+    function buy(
+        address recipient,
+        uint256 orderSize,
+        uint256 minAmountOut,
+        uint160 sqrtPriceLimitX96,
+        address tradeReferrer,
+        address coin,
+        CoinConfig memory coinConfig
+    ) internal returns (uint256, uint256) {
+        (uint256 amountOut, uint256 tradeReward, uint256 trueOrderSize) = _handleBuy(
+            recipient,
+            orderSize,
+            minAmountOut,
+            sqrtPriceLimitX96,
+            tradeReferrer,
+            coin,
+            coinConfig
+        );
 
         handleMarketRewards(coin, coinConfig);
 
@@ -87,13 +106,7 @@ library UniV3BuySell {
         return (orderSize, amountOut);
     }
 
-    /// @notice Executes a sell order
-    /// @param recipient The recipient of the currency
-    /// @param orderSize The amount of coins to sell
-    /// @param minAmountOut The minimum amount of currency to receive
-    /// @param sqrtPriceLimitX96 The price limit for the swap
-    /// @param tradeReferrer The address of the trade referrer
-    function sell(
+    function _handleSell(
         address recipient,
         uint256 beforeCoinBalance,
         uint256 orderSize,
@@ -101,7 +114,7 @@ library UniV3BuySell {
         uint160 sqrtPriceLimitX96,
         address tradeReferrer,
         CoinConfig memory coinConfig
-    ) internal returns (uint256, uint256) {
+    ) internal returns (uint256 payoutSize, uint256 tradeReward, uint256 trueOrderSize) {
         // Ensure the recipient is not the zero address
         if (recipient == address(0)) {
             revert AddressZero();
@@ -124,13 +137,15 @@ library UniV3BuySell {
         // Record the coin balance of this contract after the swap
         uint256 afterCoinBalance = IERC20(address(this)).balanceOf(address(this));
 
+        trueOrderSize = orderSize;
+
         // If the swap was partially executed:
         if (afterCoinBalance > beforeCoinBalance) {
             // Calculate the refund
             uint256 coinRefund = afterCoinBalance - beforeCoinBalance;
 
             // Update the order size
-            orderSize -= coinRefund;
+            trueOrderSize -= coinRefund;
 
             // Transfer the refund back to the seller
             IERC20(address(this)).safeTransfer(recipient, coinRefund);
@@ -142,20 +157,45 @@ library UniV3BuySell {
         }
 
         // Calculate the trade reward
-        uint256 tradeReward = _calculateReward(amountOut, CoinConstants.TOTAL_FEE_BPS);
+        tradeReward = _calculateReward(amountOut, CoinConstants.TOTAL_FEE_BPS);
 
         // Calculate the payout after the fee
-        uint256 payoutSize = amountOut - tradeReward;
+        payoutSize = amountOut - tradeReward;
 
         _handlePayout(payoutSize, recipient, coinConfig.currency, coinConfig.uniswapV3Config.weth);
 
         _handleTradeRewards(tradeReward, tradeReferrer, coinConfig);
+    }
+
+    /// @notice Executes a sell order
+    /// @param recipient The recipient of the currency
+    /// @param _orderSize The amount of coins to sell
+    /// @param minAmountOut The minimum amount of currency to receive
+    /// @param sqrtPriceLimitX96 The price limit for the swap
+    /// @param tradeReferrer The address of the trade referrer
+    function sell(
+        address recipient,
+        uint256 beforeCoinBalance,
+        uint256 _orderSize,
+        uint256 minAmountOut,
+        uint160 sqrtPriceLimitX96,
+        address tradeReferrer,
+        CoinConfig memory coinConfig
+    ) internal returns (uint256 trueOrderSize, uint256 payoutSize) {
+        uint256 tradeReward;
+        (payoutSize, tradeReward, trueOrderSize) = _handleSell(
+            recipient,
+            beforeCoinBalance,
+            _orderSize,
+            minAmountOut,
+            sqrtPriceLimitX96,
+            tradeReferrer,
+            coinConfig
+        );
 
         handleMarketRewards(address(this), coinConfig);
 
-        emit ICoin.CoinSell(msg.sender, recipient, tradeReferrer, orderSize, coinConfig.currency, tradeReward, payoutSize);
-
-        return (orderSize, payoutSize);
+        emit ICoin.CoinSell(msg.sender, recipient, tradeReferrer, trueOrderSize, coinConfig.currency, tradeReward, payoutSize);
     }
 
     /// @dev Handles incoming currency transfers for buy orders; if WETH is the currency the caller has the option to send native-ETH
@@ -264,18 +304,17 @@ library UniV3BuySell {
         );
     }
 
-    /// @dev Collects and distributes accrued fees from all LP positions
-    function handleMarketRewards(address coin, CoinConfig memory coinConfig) internal returns (ICoin.MarketRewards memory) {
+    function _distributeMarketRewards(
+        LpPosition[] memory positions,
+        address poolAddress,
+        address currency,
+        address coin,
+        CoinConfig memory coinConfig
+    ) internal returns (ICoin.MarketRewards memory) {
         uint256 totalAmountToken0;
         uint256 totalAmountToken1;
         uint256 amount0;
         uint256 amount1;
-
-        address poolAddress = coinConfig.poolAddress;
-        address currency = coinConfig.currency;
-
-        bool isCoinToken0 = coin < currency;
-        LpPosition[] memory positions = calculatePositions(isCoinToken0, coinConfig.poolConfiguration);
 
         for (uint256 i; i < positions.length; i++) {
             // Must burn to update the collect mapping on the pool
@@ -304,6 +343,17 @@ library UniV3BuySell {
         emit ICoin.CoinMarketRewards(coinConfig.payoutRecipient, coinConfig.platformReferrer, coinConfig.protocolRewardRecipient, coinConfig.currency, rewards);
 
         return rewards;
+    }
+
+    /// @dev Collects and distributes accrued fees from all LP positions
+    function handleMarketRewards(address coin, CoinConfig memory coinConfig) internal returns (ICoin.MarketRewards memory) {
+        address poolAddress = coinConfig.poolAddress;
+        address currency = coinConfig.currency;
+
+        bool isCoinToken0 = coin < currency;
+        LpPosition[] memory positions = calculatePositions(isCoinToken0, coinConfig.poolConfiguration);
+
+        return _distributeMarketRewards(positions, poolAddress, currency, coin, coinConfig);
     }
 
     function _transferMarketRewards(

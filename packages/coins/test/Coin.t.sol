@@ -412,14 +412,14 @@ contract CoinTest is BaseTest {
         coin.buy{value: 0.001 ether}(users.creator, 0.001 ether, 0, 0, users.tradeReferrer);
 
         uint256 beforeBalance = coin.balanceOf(users.creator);
-        assertEq(beforeBalance, 11077349369032224007213331); // 11,077,349 coins
+        assertEq(beforeBalance, 11077349369032224007213331, "before balance"); // 11,077,349 coins
 
         vm.prank(users.creator);
         (uint256 amountSold, ) = coin.sell(users.creator, beforeBalance, 0, 0, users.tradeReferrer);
-        assertEq(amountSold, 1088231685891135360821548); // 1,088,232 coins (max that could be sold)
+        assertEq(amountSold, 1088231685891135360821548, "amountSold"); // 1,088,232 coins (max that could be sold)
 
         uint256 afterBalance = coin.balanceOf(users.creator);
-        assertEq(afterBalance, 9994558841570544323195890); // 9,994,559 coins
+        assertEq(afterBalance, 9994558841570544323195890, "after balance"); // 9,994,559 coins
 
         uint256 expectedMarketReward = 5441158429455676804107; // 5,441 coins
 
