@@ -14,7 +14,7 @@ contract CoinTest is BaseTest {
     }
 
     function test_contract_version() public view {
-        assertEq(coin.contractVersion(), "0.7.1");
+        assertEq(coin.contractVersion(), "0.8.0");
     }
 
     function test_supply_constants() public view {

@@ -91,7 +91,7 @@ export const encodeBuySupplyWithSingleHopSwapRouterHookCall = ({
   });
 
   return {
-    hook: encodeBuySupplyWithSwapRouterHookCalldata(hook, callToSwapRouter),
+    hook,
     hookData: encodeBuySupplyWithSwapRouterHookCalldata(
       buyRecipient,
       callToSwapRouter,
@@ -135,7 +135,7 @@ export const encodeBuySupplyWithMultiHopSwapRouterHookCall = ({
   });
 
   return {
-    hook: encodeBuySupplyWithSwapRouterHookCalldata(hook, callToSwapRouter),
+    hook,
     hookData: encodeBuySupplyWithSwapRouterHookCalldata(
       buyRecipient,
       callToSwapRouter,
