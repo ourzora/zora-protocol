@@ -1,10 +1,19 @@
 # @zoralabs/erc20z
 
+## 2.2.1
+
+### Patch Changes
+
+- 9ed0ce76: - Publishing new coins hooks in `@zoralabs/protocol-deployments`
+  - In coins, pulling ISwapRouter from `@zoralabs/shared-contracts`, and updated the shared interface to match the full interface of the ISwapRouter. This new interface is published in `@zoralabs/protocol-deployments`.
+  - Removed publishing of the factory addresses directly in the wagmi config of the coins package, as that's inconsistent with the rest of the packages.
+  - Updated the `@zoralabs/coins-sdk` to use `@zoralabs/protocol-deployments` for abis and addresses, which significantly reduces the dependency tree of it and has it follow the patterns of the other sdk packages.
+
 ## 2.2.0
 
 ### Minor Changes
 
-- 8358239c: This version bump updates the market reward from 0.0000111 ETH to 0.0000222 ETH and the mint referral reward from 0.0000222 ETH to 0.0000111 ETH 
+- 8358239c: This version bump updates the market reward from 0.0000111 ETH to 0.0000222 ETH and the mint referral reward from 0.0000222 ETH to 0.0000111 ETH
 
 ## 2.1.1
 

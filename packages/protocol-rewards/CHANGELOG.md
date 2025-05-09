@@ -1,5 +1,12 @@
 # @zoralabs/protocol-rewards
 
+## 1.2.7
+
+### Patch Changes
+
+- Updated dependencies [9ed0ce76]
+  - @zoralabs/shared-contracts@0.0.3
+
 ## 1.2.6
 
 ### Patch Changes

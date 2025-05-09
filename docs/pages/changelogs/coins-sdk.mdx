@@ -1,11 +1,26 @@
 # Coins SDK Changelog
 
 
+## 0.1.1
+
+### Patch Changes
+
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): - Publishing new coins hooks in `@zoralabs/protocol-deployments`
+  - In coins, pulling ISwapRouter from `@zoralabs/shared-contracts`, and updated the shared interface to match the full interface of the ISwapRouter. This new interface is published in `@zoralabs/protocol-deployments`.
+  - Removed publishing of the factory addresses directly in the wagmi config of the coins package, as that's inconsistent with the rest of the packages.
+  - Updated the `@zoralabs/coins-sdk` to use `@zoralabs/protocol-deployments` for abis and addresses, which significantly reduces the dependency tree of it and has it follow the patterns of the other sdk packages.
+- Updated dependencies [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76)
+- Updated dependencies [ce3022d8](https://github.com/ourzora/zora-protocol/commit/ce3022d8)
+- Updated dependencies [ce3022d8](https://github.com/ourzora/zora-protocol/commit/ce3022d8)
+- Updated dependencies [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76)
+- Updated dependencies [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76)
+  - @zoralabs/protocol-deployments@0.5.5
+
 ## 0.1.0
 
 ### Minor Changes
 
-- [67356470](https://github.com/ourzora/zora-protocol/commit/67356470): Updated to use new low market cap settings on ZORA.co.
+- [67356470](https://github.com/ourzora/zora-protocol/commit/67356470): Updated to use new low market cap settings on ZORA.co
 
 ## 0.0.8
 

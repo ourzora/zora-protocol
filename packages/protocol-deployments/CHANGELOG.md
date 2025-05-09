@@ -1,5 +1,18 @@
 # @zoralabs/protocol-deployments
 
+## 0.5.5
+
+### Patch Changes
+
+- 9ed0ce76: - Publishing new coins hooks in `@zoralabs/protocol-deployments`
+  - In coins, pulling ISwapRouter from `@zoralabs/shared-contracts`, and updated the shared interface to match the full interface of the ISwapRouter. This new interface is published in `@zoralabs/protocol-deployments`.
+  - Removed publishing of the factory addresses directly in the wagmi config of the coins package, as that's inconsistent with the rest of the packages.
+  - Updated the `@zoralabs/coins-sdk` to use `@zoralabs/protocol-deployments` for abis and addresses, which significantly reduces the dependency tree of it and has it follow the patterns of the other sdk packages.
+- ce3022d8: Deployed latest Coins and Deployment hooks to base mainnet
+- ce3022d8: Fix hook return value from encode hook generators
+- 9ed0ce76: Added helper methods to encode data for the post deploy hooks when creating coins
+- 9ed0ce76: Deployed latest coin factory and hooks to base-sepolia
+
 ## 0.5.4
 
 ### Patch Changes
