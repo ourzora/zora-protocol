@@ -19,6 +19,8 @@ import {IZoraTimedSaleStrategy} from "../src/interfaces/IZoraTimedSaleStrategy.s
 // setting up a sale, upgrading the strategy to the latest version, and then testing
 // minting/launching a market
 contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
+    using stdJson for string;
+
     function setUpSale(uint64 saleStart, uint64 saleEnd) public {
         IZoraTimedSaleStrategyV1.SalesConfig memory salesConfig = IZoraTimedSaleStrategyV1.SalesConfig({
             saleStart: saleStart,
@@ -77,7 +79,8 @@ contract ZoraTimedSaleStrategyUpgradeTest is BaseTest {
         saleStrategy.upgradeToAndCall(address(new ZoraTimedSaleStrategyImpl()), "");
         vm.stopPrank();
 
-        assertEq(saleStrategy.contractVersion(), "2.2.0");
+        string memory package = vm.readFile("./package.json");
+        assertEq(saleStrategy.contractVersion(), package.readString(".version"));
     }
 
     function testZoraTimedSetSale() public {

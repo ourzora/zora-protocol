@@ -7,6 +7,8 @@ import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.s
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 
 contract CoinTest is BaseTest {
+    using stdJson for string;
+
     function setUp() public override {
         super.setUp();
 
@@ -14,7 +16,8 @@ contract CoinTest is BaseTest {
     }
 
     function test_contract_version() public view {
-        assertEq(coin.contractVersion(), "0.8.0");
+        string memory package = vm.readFile("./package.json");
+        assertEq(package.readString(".version"), coin.contractVersion());
     }
 
     function test_supply_constants() public view {

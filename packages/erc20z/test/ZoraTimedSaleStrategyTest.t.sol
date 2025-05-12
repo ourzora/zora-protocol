@@ -8,6 +8,8 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IMinter1155} from "../src/interfaces/IMinter1155.sol";
 
 contract ZoraTimedSaleStrategyTest is BaseTest {
+    using stdJson for string;
+
     function setUp() public override {
         super.setUp();
     }
@@ -81,7 +83,8 @@ contract ZoraTimedSaleStrategyTest is BaseTest {
     }
 
     function testZoraTimedContractVersion() public view {
-        assertEq(saleStrategy.contractVersion(), "2.2.0");
+        string memory package = vm.readFile("./package.json");
+        assertEq(package.readString(".version"), saleStrategy.contractVersion());
     }
 
     function testZoraTimedRequestMintReverts() public {
