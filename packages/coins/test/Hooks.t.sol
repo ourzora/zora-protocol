@@ -22,10 +22,6 @@ contract FakeHookNoInterface {
 }
 
 contract HooksTest is BaseTest {
-    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = -777000;
-    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = 222000;
-    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = 10; // will be 11 total with tail position
-    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = 0.495e18; // half of the 990m total pool supply
     address constant zora = 0x1111111111166b7FE7bd91427724B487980aFc69;
 
     function _generateDefaultPoolConfig(address currency) internal pure returns (bytes memory) {

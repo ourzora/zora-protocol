@@ -13,11 +13,6 @@ import {CoinDopplerUniV3} from "../src/libs/CoinDopplerUniV3.sol";
 import {TickMath} from "../src/utils/uniswap/TickMath.sol";
 
 contract DopplerUniswapV3Test is BaseTest {
-    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = -777000;
-    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = 222000;
-    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = 10; // will be 11 total with tail position
-    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = 0.495e18; // half of the 990m total pool supply
-
     function _deployCoin(bytes memory poolConfig_) internal {
         vm.prank(users.creator);
         (address coinAddress, ) = factory.deploy(
@@ -40,133 +35,6 @@ contract DopplerUniswapV3Test is BaseTest {
 
     function setUp() public override {
         super.setUp();
-    }
-
-    function test_deploy_legacy_eth_config() public {
-        bytes memory poolConfig = _generatePoolConfig(
-            CoinConfigurationVersions.LEGACY_POOL_VERSION,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
-            0,
-            1,
-            0
-        );
-
-        _deployCoin(poolConfig);
-
-        assertEq(coin.currency(), address(weth), "currency");
-        assertEq(coin.totalSupply(), 1_000_000_000e18, "totalSupply");
-        assertEq(coin.balanceOf(users.creator), 10_000_000e18, "balanceOf creator");
-        assertGt(coin.balanceOf(coin.poolAddress()), 989_999_999e18, "balanceOf pool");
-
-        (
-            address asset,
-            address numeraire,
-            int24 tickLower,
-            int24 tickUpper,
-            uint16 numPositions,
-            bool isInitialized,
-            bool isExited,
-            uint256 maxShareToBeSold,
-            uint256 totalTokensOnBondingCurve
-        ) = coin.poolState();
-
-        assertEq(asset, address(coin));
-        assertEq(numeraire, address(weth));
-        assertEq(numPositions, 1);
-        assertTrue(isInitialized);
-        assertFalse(isExited);
-        assertEq(maxShareToBeSold, 0);
-        assertEq(totalTokensOnBondingCurve, CoinConstants.POOL_LAUNCH_SUPPLY);
-
-        bool isCoinToken0 = address(coin) < address(weth);
-
-        if (isCoinToken0) {
-            assertEq(tickLower, MarketConstants.LP_TICK_LOWER_WETH);
-            assertEq(tickUpper, MarketConstants.LP_TICK_UPPER);
-        } else {
-            assertEq(tickLower, -MarketConstants.LP_TICK_UPPER);
-            assertEq(tickUpper, -MarketConstants.LP_TICK_LOWER_WETH);
-        }
-    }
-
-    function test_invalid_tick_range() public {
-        bytes memory poolConfig = _generatePoolConfig(CoinConfigurationVersions.LEGACY_POOL_VERSION, address(weth), -100, 100, 100, 0.5e18);
-
-        vm.expectRevert();
-        factory.deploy(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, users.platformReferrer, 0);
-    }
-
-    function test_inverted_tick_range_revert() public {
-        // These tick ranges are flipped
-        bytes memory poolConfig = _generatePoolConfig(CoinConfigurationVersions.LEGACY_POOL_VERSION, address(weth), 10000, -10000, 100, 0.5e18);
-
-        vm.expectRevert(abi.encodeWithSignature("InvalidWethLowerTick()"));
-        factory.deploy(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, users.platformReferrer, 0);
-    }
-
-    function test_deploy_legacy_eth_config_with_prebuy(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
-        vm.assume(initialOrderSize < 10 ether);
-
-        vm.deal(users.creator, initialOrderSize);
-
-        bytes memory poolConfig = _generatePoolConfig(
-            CoinConfigurationVersions.LEGACY_POOL_VERSION,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
-            0,
-            0,
-            0
-        );
-
-        vm.prank(users.creator);
-        (address coinAddress, ) = factory.deploy{value: initialOrderSize}(
-            users.creator,
-            _getDefaultOwners(),
-            "https://test.com",
-            "Testcoin",
-            "TEST",
-            poolConfig,
-            users.platformReferrer,
-            initialOrderSize
-        );
-
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-
-        assertGt(coin.balanceOf(users.creator), 10_000_000e18, "balanceOf creator");
-    }
-
-    function test_deploy_legacy_usdc_config_with_prebuy() public {
-        address[] memory owners = new address[](1);
-        owners[0] = users.creator;
-
-        uint256 orderSize = dealUSDC(users.creator, 100);
-
-        vm.prank(users.creator);
-        usdc.approve(address(factory), orderSize);
-
-        bytes memory poolConfig = _generatePoolConfig(CoinConfigurationVersions.LEGACY_POOL_VERSION, address(usdc), USDC_TICK_LOWER, 0, 0, 0);
-
-        vm.prank(users.creator);
-        (address coinAddress, uint256 coinsPurchased) = factory.deploy(
-            users.creator,
-            owners,
-            "https://testcoinusdcpair.com",
-            "Testcoinusdcpair",
-            "TESTCOINUSDCPAIR",
-            poolConfig,
-            users.platformReferrer,
-            orderSize
-        );
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-        vm.label(address(coin), "COIN");
-        vm.label(address(pool), "POOL");
-
-        assertEq(coin.currency(), address(usdc), "currency");
-        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased);
     }
 
     function test_deploy_doppler_eth() public {
@@ -200,6 +68,28 @@ contract DopplerUniswapV3Test is BaseTest {
         assertFalse(isExited, "poolState.isExited");
         assertEq(maxShareToBeSold, DEFAULT_DISCOVERY_SUPPLY_SHARE, "poolState.maxShareToBeSold");
         assertEq(totalTokensOnBondingCurve, CoinConstants.POOL_LAUNCH_SUPPLY, "poolState.totalTokensOnBondingCurve");
+    }
+
+    function test_supply_constants() public {
+        bytes memory poolConfig = _generatePoolConfig(
+            CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
+            address(weth),
+            DEFAULT_DISCOVERY_TICK_LOWER,
+            DEFAULT_DISCOVERY_TICK_UPPER,
+            DEFAULT_NUM_DISCOVERY_POSITIONS,
+            DEFAULT_DISCOVERY_SUPPLY_SHARE
+        );
+
+        _deployCoin(poolConfig);
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, CoinConstants.POOL_LAUNCH_SUPPLY + CoinConstants.CREATOR_LAUNCH_REWARD);
+
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, 1_000_000_000e18);
+        assertEq(CoinConstants.POOL_LAUNCH_SUPPLY, 990_000_000e18);
+        assertEq(CoinConstants.CREATOR_LAUNCH_REWARD, 10_000_000e18);
+
+        assertEq(coin.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY);
+        assertEq(coin.balanceOf(coin.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD);
+        assertApproxEqAbs(coin.balanceOf(address(pool)), CoinConstants.POOL_LAUNCH_SUPPLY, 1e18);
     }
 
     function test_deploy_doppler_eth_with_prebuy(uint256 initialOrderSize) public {

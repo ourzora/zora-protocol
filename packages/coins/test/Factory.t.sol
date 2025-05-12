@@ -11,7 +11,7 @@ contract FactoryTest is BaseTest {
 
     function test_constructor() public view {
         assertEq(factory.coinImpl(), address(coinImpl));
-        assertEq(factory.owner(), users.factoryOwner);
+        assertEq(ZoraFactoryImpl(address(factory)).owner(), users.factoryOwner);
     }
 
     function test_deploy_no_eth() public {
@@ -24,9 +24,8 @@ contract FactoryTest is BaseTest {
             "https://test2.com",
             "Test2 Token",
             "TEST2",
+            _generatePoolConfig(address(weth)),
             users.platformReferrer,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
             0
         );
         coin = Coin(payable(coinAddress));
@@ -73,9 +72,8 @@ contract FactoryTest is BaseTest {
             "https://test2.com",
             "Test2 Token",
             "TEST2",
+            _generatePoolConfig(address(weth)),
             users.platformReferrer,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
             initialOrderSize
         );
         coin = Coin(payable(coinAddress));
@@ -119,9 +117,8 @@ contract FactoryTest is BaseTest {
             "https://test2.com",
             "Test2 Token",
             "TEST2",
+            _generatePoolConfig(address(weth)),
             users.platformReferrer,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
             initialOrderSize
         );
     }
@@ -139,9 +136,8 @@ contract FactoryTest is BaseTest {
             "https://test2.com",
             "Test2 Token",
             "TEST2",
+            _generatePoolConfig(address(weth)),
             users.platformReferrer,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
             orderSize
         );
         coin = Coin(payable(coinAddress));
@@ -160,9 +156,8 @@ contract FactoryTest is BaseTest {
             "https://testcoinusdcpair.com",
             "Testcoinusdcpair",
             "TESTCOINUSDCPAIR",
+            _generatePoolConfig(USDC_ADDRESS),
             users.platformReferrer,
-            USDC_ADDRESS,
-            USDC_TICK_LOWER,
             0
         );
         coin = Coin(payable(coinAddress));
@@ -193,9 +188,8 @@ contract FactoryTest is BaseTest {
             "https://testcoinusdcpair.com",
             "Testcoinusdcpair",
             "TESTCOINUSDCPAIR",
+            _generatePoolConfig(USDC_ADDRESS),
             users.platformReferrer,
-            USDC_ADDRESS,
-            USDC_TICK_LOWER,
             orderSize
         );
         coin = Coin(payable(coinAddress));
@@ -218,9 +212,8 @@ contract FactoryTest is BaseTest {
             "https://testcoinusdcpair.com",
             "Testcoinusdcpair",
             "TESTCOINUSDCPAIR",
+            _generatePoolConfig(USDC_ADDRESS),
             users.platformReferrer,
-            USDC_ADDRESS,
-            USDC_TICK_LOWER,
             0
         );
     }
@@ -235,9 +228,8 @@ contract FactoryTest is BaseTest {
             "https://testcoinusdcpair.com",
             "Testcoinusdcpair",
             "TESTCOINUSDCPAIR",
+            _generatePoolConfig(USDC_ADDRESS),
             users.platformReferrer,
-            USDC_ADDRESS,
-            USDC_TICK_LOWER,
             0
         );
     }
@@ -252,33 +244,14 @@ contract FactoryTest is BaseTest {
             "https://testcoinusdcpair.com",
             "Testcoinusdcpair",
             "TESTCOINUSDCPAIR",
+            _generatePoolConfig(USDC_ADDRESS),
             address(0),
-            USDC_ADDRESS,
-            USDC_TICK_LOWER,
             0
         );
 
         coin = Coin(payable(coinAddress));
 
         assertEq(coin.platformReferrer(), coin.protocolRewardRecipient(), "platformReferrer");
-    }
-
-    function test_revert_deploy_with_invalid_currency_tick() public {
-        address[] memory owners = new address[](1);
-        owners[0] = users.creator;
-
-        vm.expectRevert(abi.encodeWithSelector(ICoin.InvalidWethLowerTick.selector));
-        factory.deploy(
-            users.creator,
-            owners,
-            "https://testcoin.com",
-            "Testcoin",
-            "TESTCOIN",
-            users.platformReferrer,
-            address(0),
-            MarketConstants.LP_TICK_LOWER_WETH + 1,
-            0
-        );
     }
 
     function test_deploy_with_usdc_revert_invalid_eth_transfer() public {
@@ -298,9 +271,8 @@ contract FactoryTest is BaseTest {
             "https://testcoinusdcpair.com",
             "Testcoinusdcpair",
             "TESTCOINUSDCPAIR",
+            _generatePoolConfig(USDC_ADDRESS),
             users.platformReferrer,
-            USDC_ADDRESS,
-            USDC_TICK_LOWER,
             0
         );
     }
@@ -315,9 +287,8 @@ contract FactoryTest is BaseTest {
             "https://test.com",
             "Test Token",
             "TEST",
+            _generatePoolConfig(address(weth)),
             users.platformReferrer,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
             0
         );
         coin = Coin(payable(coinAddress));
@@ -329,7 +300,7 @@ contract FactoryTest is BaseTest {
         ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinImpl));
 
         vm.prank(users.factoryOwner);
-        factory.upgradeToAndCall(address(newImpl), "");
+        ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
 
         assertEq(factory.implementation(), address(newImpl), "implementation");
     }
@@ -343,7 +314,7 @@ contract FactoryTest is BaseTest {
 
         vm.prank(users.factoryOwner);
         vm.expectRevert(abi.encodeWithSelector(ERC1967Utils.ERC1967InvalidImplementation.selector, address(newImpl)));
-        factory.upgradeToAndCall(address(newImpl), "");
+        ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
     }
 
     function test_revert_invalid_owner() public {
@@ -351,6 +322,6 @@ contract FactoryTest is BaseTest {
 
         vm.prank(users.creator);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, users.creator));
-        factory.upgradeToAndCall(address(newImpl), "");
+        ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
     }
 }

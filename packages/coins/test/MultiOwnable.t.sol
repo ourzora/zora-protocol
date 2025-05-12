@@ -135,22 +135,25 @@ contract MultiOwnableTest is BaseTest {
 
     function test_revert_init_with_zero_owners() public {
         address[] memory emptyOwners = new address[](0);
+        bytes memory poolConfig_ = _generatePoolConfig(address(weth));
         vm.expectRevert(MultiOwnable.OneOwnerRequired.selector);
-        factory.deploy(users.creator, emptyOwners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(0), 0, 0);
+        factory.deploy(users.creator, emptyOwners, "https://test.com", "Test Token", "TEST", poolConfig_, users.platformReferrer, 0);
     }
 
     function test_revert_init_with_zero_address() public {
         address[] memory owners = new address[](1);
         owners[0] = address(0);
+        bytes memory poolConfig_ = _generatePoolConfig(address(weth));
         vm.expectRevert(MultiOwnable.OwnerCannotBeAddressZero.selector);
-        factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(0), 0, 0);
+        factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", poolConfig_, users.platformReferrer, 0);
     }
 
     function test_revert_init_with_duplicate_owner() public {
         address[] memory owners = new address[](2);
         owners[0] = users.creator;
         owners[1] = users.creator;
+        bytes memory poolConfig_ = _generatePoolConfig(address(weth));
         vm.expectRevert(MultiOwnable.AlreadyOwner.selector);
-        factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", users.platformReferrer, address(0), 0, 0);
+        factory.deploy(users.creator, owners, "https://test.com", "Test Token", "TEST", poolConfig_, users.platformReferrer, 0);
     }
 }

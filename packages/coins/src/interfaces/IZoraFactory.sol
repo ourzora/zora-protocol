@@ -52,28 +52,6 @@ interface IZoraFactory {
         uint256 orderSize
     ) external payable returns (address, uint256);
 
-    /// @notice Creates a new coin contract
-    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
-    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
-    /// @param uri The coin metadata uri
-    /// @param name The name of the coin
-    /// @param symbol The symbol of the coin
-    /// @param platformReferrer The address to receive platform referral rewards
-    /// @param currency The address of the trading currency; address(0) for ETH/WETH
-    /// @param tickLower The lower tick for the Uniswap V3 LP position; ignored for ETH/WETH pairs
-    /// @param orderSize The order size for the first buy; must match msg.value for ETH/WETH pairs
-    function deploy(
-        address payoutRecipient,
-        address[] memory owners,
-        string memory uri,
-        string memory name,
-        string memory symbol,
-        address platformReferrer,
-        address currency,
-        int24 tickLower,
-        uint256 orderSize
-    ) external payable returns (address, uint256);
-
     /// @notice Creates a new coin contract with an optional hook that runs after the coin is deployed
     /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
     /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
@@ -98,6 +76,10 @@ interface IZoraFactory {
         bytes calldata hookData
     ) external payable returns (address coin, bytes memory hookDataOut);
 
+    function coinImpl() external view returns (address);
+
+    function implementation() external view returns (address);
+
     /// @notice Thrown when the hook is invalid
     error InvalidHook();
 
@@ -105,4 +87,7 @@ interface IZoraFactory {
     /// @param currentName The name of the current contract
     /// @param newName The name of the contract being upgraded to
     error UpgradeToMismatchedContractName(string currentName, string newName);
+
+    /// @notice Thrown when a method is deprecated
+    error Deprecated();
 }

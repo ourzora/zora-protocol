@@ -15,7 +15,6 @@ import {IUniswapV3Pool} from "../interfaces/IUniswapV3Pool.sol";
 import {IAirlock} from "../interfaces/IAirlock.sol";
 import {UniV3Config, CoinV3Config} from "./CoinSetupV3.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {CoinLegacyMarket} from "./CoinLegacyMarket.sol";
 import {CoinDopplerUniV3} from "./CoinDopplerUniV3.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
 
@@ -438,9 +437,7 @@ library UniV3BuySell {
     }
 
     function calculatePositions(bool isCoinToken0, PoolConfiguration memory poolConfiguration) internal pure returns (LpPosition[] memory positions) {
-        if (poolConfiguration.version == CoinConfigurationVersions.LEGACY_POOL_VERSION) {
-            positions = CoinLegacyMarket.calculatePositions(isCoinToken0, poolConfiguration);
-        } else if (poolConfiguration.version == CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION) {
+        if (poolConfiguration.version == CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION) {
             positions = CoinDopplerUniV3.calculatePositions(isCoinToken0, poolConfiguration);
         } else {
             revert InvalidPoolVersion();

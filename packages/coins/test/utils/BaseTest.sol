@@ -8,7 +8,7 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-
+import {IZoraFactory} from "../../src/interfaces/IZoraFactory.sol";
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
 import {Coin} from "../../src/Coin.sol";
@@ -24,6 +24,7 @@ import {IUniswapV3Pool} from "../../src/interfaces/IUniswapV3Pool.sol";
 import {IProtocolRewards} from "../../src/interfaces/IProtocolRewards.sol";
 import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
 import {MarketConstants} from "../../src/libs/MarketConstants.sol";
+import {CoinConfigurationVersions} from "../../src/libs/CoinConfigurationVersions.sol";
 
 contract BaseTest is Test {
     using stdStorage for StdStorage;
@@ -60,9 +61,70 @@ contract BaseTest is Test {
 
     Coin internal coinImpl;
     ZoraFactoryImpl internal factoryImpl;
-    ZoraFactoryImpl internal factory;
+    IZoraFactory internal factory;
     Coin internal coin;
     IUniswapV3Pool internal pool;
+
+    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = -777000;
+    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = 222000;
+    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = 10; // will be 11 total with tail position
+    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = 0.495e18; // half of the 990m total pool supply
+
+    function _deployCoin() internal {
+        bytes memory poolConfig_ = _generatePoolConfig(
+            CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
+            address(weth),
+            DEFAULT_DISCOVERY_TICK_LOWER,
+            DEFAULT_DISCOVERY_TICK_UPPER,
+            DEFAULT_NUM_DISCOVERY_POSITIONS,
+            DEFAULT_DISCOVERY_SUPPLY_SHARE
+        );
+        vm.prank(users.creator);
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            _getDefaultOwners(),
+            "https://test.com",
+            "Testcoin",
+            "TEST",
+            poolConfig_,
+            users.platformReferrer,
+            0
+        );
+
+        coin = Coin(payable(coinAddress));
+        pool = IUniswapV3Pool(coin.poolAddress());
+
+        vm.label(address(coin), "COIN");
+        vm.label(address(pool), "POOL");
+    }
+
+    function _deployCoinUSDCPair() internal {
+        bytes memory poolConfig_ = _generatePoolConfig(
+            CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
+            USDC_ADDRESS,
+            DEFAULT_DISCOVERY_TICK_LOWER,
+            DEFAULT_DISCOVERY_TICK_UPPER,
+            DEFAULT_NUM_DISCOVERY_POSITIONS,
+            DEFAULT_DISCOVERY_SUPPLY_SHARE
+        );
+        vm.prank(users.creator);
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            _getDefaultOwners(),
+            "https://test.com",
+            "Testcoin",
+            "TEST",
+            poolConfig_,
+            users.platformReferrer,
+            0
+        );
+
+        coin = Coin(payable(coinAddress));
+        pool = IUniswapV3Pool(coin.poolAddress());
+
+        vm.label(address(coin), "COIN");
+        vm.label(address(pool), "POOL");
+    }
 
     function setUp() public virtual {
         setUpWithBlockNumber(28415528);
@@ -94,7 +156,7 @@ contract BaseTest is Test {
         factoryImpl = new ZoraFactoryImpl(address(coinImpl));
         factory = ZoraFactoryImpl(address(new ZoraFactory(address(factoryImpl))));
 
-        ZoraFactoryImpl(factory).initialize(users.factoryOwner);
+        ZoraFactoryImpl(address(factory)).initialize(users.factoryOwner);
 
         vm.label(address(factory), "ZORA_FACTORY");
         vm.label(address(protocolRewards), "PROTOCOL_REWARDS");
@@ -118,54 +180,6 @@ contract BaseTest is Test {
         uint256 platformReferrer;
         uint256 doppler;
         uint256 protocol;
-    }
-
-    function _deployCoin() internal {
-        address[] memory owners = new address[](1);
-        owners[0] = users.creator;
-
-        vm.prank(users.creator);
-        (address coinAddress, ) = factory.deploy(
-            users.creator,
-            owners,
-            "https://test.com",
-            "Testcoin",
-            "TEST",
-            users.platformReferrer,
-            address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
-            0
-        );
-
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-
-        vm.label(address(coin), "COIN");
-        vm.label(address(pool), "POOL");
-    }
-
-    function _deployCoinUSDCPair() internal {
-        address[] memory owners = new address[](1);
-        owners[0] = users.creator;
-
-        vm.prank(users.creator);
-        (address coinAddress, ) = factory.deploy(
-            users.creator,
-            owners,
-            "https://testusdccoin.com",
-            "Testusdccoin",
-            "TESTUSDCCOIN",
-            users.platformReferrer,
-            USDC_ADDRESS,
-            USDC_TICK_LOWER,
-            0
-        );
-
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-
-        vm.label(address(coin), "COIN");
-        vm.label(address(pool), "POOL");
     }
 
     function _calculateTradeRewards(uint256 ethAmount) internal pure returns (TradeRewards memory) {
@@ -205,6 +219,18 @@ contract BaseTest is Test {
 
     function dopplerFeeRecipient() internal view returns (address) {
         return airlock.owner();
+    }
+
+    function _generatePoolConfig(address currency_) internal pure returns (bytes memory) {
+        return
+            _generatePoolConfig(
+                CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
+                currency_,
+                DEFAULT_DISCOVERY_TICK_LOWER,
+                DEFAULT_DISCOVERY_TICK_UPPER,
+                DEFAULT_NUM_DISCOVERY_POSITIONS,
+                DEFAULT_DISCOVERY_SUPPLY_SHARE
+            );
     }
 
     function _generatePoolConfig(

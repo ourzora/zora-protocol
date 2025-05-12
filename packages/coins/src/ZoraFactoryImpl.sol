@@ -72,7 +72,7 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         }
     }
 
-    /// @inheritdoc IZoraFactory
+    /// @dev deprecated Use deploy() with poolConfig instead
     function deploy(
         address payoutRecipient,
         address[] memory owners,
@@ -84,13 +84,7 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         int24 tickLower,
         uint256 orderSize
     ) public payable nonReentrant returns (address, uint256) {
-        bytes memory poolConfig = abi.encode(CoinConfigurationVersions.LEGACY_POOL_VERSION, currency, tickLower);
-
-        Coin coin = _createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer);
-
-        uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
-
-        return (address(coin), coinsPurchased);
+        revert Deprecated();
     }
 
     function _createAndInitializeCoin(
