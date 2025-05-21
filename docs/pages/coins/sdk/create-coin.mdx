@@ -18,7 +18,6 @@ type CreateCoinArgs = {
   symbol: string;           // The trading symbol for the coin (e.g., "MAC")
   uri: string;              // Metadata URI (an IPFS URI is recommended)
   owners?: Address[];       // Optional array of owner addresses, defaults to [payoutRecipient]
-  tickLower?: number;       // Optional tick lower for Uniswap V3 pool, defaults to -199200
   payoutRecipient: Address; // Address that receives creator earnings
   platformReferrer?: Address; // Optional platform referrer address, earns referral fees
   initialPurchaseWei?: bigint; // Optional initial purchase amount in wei
@@ -34,10 +33,6 @@ The `uri` parameter structure is described in the [Metadata](/coins/contracts/me
 The `currency` parameter is the address of the currency that will be used to trade the coin.
 
 For now, only WETH/ETH pairs are supported by our user interface and indexer.
-
-### Tick Lower
-
-The `tickLower` parameter is the lower tick for the Uniswap V3 pool. It is not required when using the SDK for WETH pairs.
 
 ### Initial Purchase
 
