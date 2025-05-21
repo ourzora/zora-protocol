@@ -1,5 +1,8 @@
 name: Vercel Preview Deployment
 
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_NFT_DOCS_PREVIEW_PROJECT_ID }}
 on:
   push:
     branches-ignore:
@@ -10,13 +13,11 @@ jobs:
 
   Deploy-Preview:
     needs: changed
-    if: ${{ contains(needs.changed.outputs.changed, 'docs') }}
+    if: ${{ contains(needs.changed.outputs.changed, 'nft-docs') }}
     runs-on: ubuntu-latest
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      VERCEL_PROJECT_ID: ${{ vars.VERCEL_DOCS_PREVIEW_PROJECT_ID }}
 
     steps:
       - name: Checkout
@@ -38,14 +39,14 @@ jobs:
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        # working-directory: ./nft-docs
 
       - name: Build Project Artifacts
         env:
           NODE_OPTIONS: " --max-old-space-size=8192"
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        # working-directory: ./nft-docs
 
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        # working-directory: ./nft-docs

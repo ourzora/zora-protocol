@@ -55,7 +55,7 @@
       "dependsOn": ["^lint"]
     },
     "docs#lint": {
-      "dependsOn": ["^@zoralabs/protocol-sdk#build"]
+      "dependsOn": ["^@zoralabs/coins-sdk#build"]
     },
     "update-contract-version": {
       "dependsOn": ["^update-contract-version"]

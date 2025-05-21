@@ -1,15 +1,14 @@
 {
-  "name": "docs",
+  "name": "nft-docs",
   "version": "0.0.14",
   "type": "module",
   "private": true,
   "scripts": {
     "dev": "vocs dev",
     "build": "tsc --noEmit",
-    "build:site": "vocs build",
+    "build:nft-site": "vocs build",
     "preview": "vocs preview",
-    "copy-changelog": "tsx scripts/copy-changelogs.ts",
-    "generate-uml": "tsx scripts/generateUml.ts"
+    "copy-changelog": "tsx scripts/copy-changelogs.ts"
   },
   "dependencies": {
     "@0xsplits/splits-sdk": "^4.0.2",

@@ -1,22 +1,17 @@
-name: Vercel Preview Deployment
-
+name: Vercel Deployment
+env:
+  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
 on:
   push:
-    branches-ignore:
+    branches:
       - main
 jobs:
-  changed:
-    uses: ./.github/workflows/turborepo-changed.yml
-
-  Deploy-Preview:
-    needs: changed
-    if: ${{ contains(needs.changed.outputs.changed, 'docs') }}
+  Deploy:
     runs-on: ubuntu-latest
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      VERCEL_PROJECT_ID: ${{ vars.VERCEL_DOCS_PREVIEW_PROJECT_ID }}
 
     steps:
       - name: Checkout
@@ -37,15 +32,16 @@ jobs:
         run: npm install --global vercel@latest
 
       - name: Pull Vercel Environment Information
-        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./nft-docs
 
       - name: Build Project Artifacts
+        run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./nft-docs
         env:
+          GOOGLE_ANALYTICS_TAG_ID: ${{ secrets.DOCS_GOOGLE_ANALYTICS_TAG_ID }}
           NODE_OPTIONS: " --max-old-space-size=8192"
-        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
 
       - name: Deploy Project Artifacts to Vercel
-        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        working-directory: ./nft-docs
+        run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}

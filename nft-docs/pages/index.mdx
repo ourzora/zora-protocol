@@ -1,0 +1,41 @@
+---
+layout: landing
+---
+
+import { Card, CardContainer } from "../components/Card";
+import { HomePage } from 'vocs/components'
+import { HomePageLogo } from "../components/HomePageLogo";
+
+<HomePage.Root>
+  <HomePageLogo dark="/zora-wordmark-white.svg" light="/zora-wordmark-black.svg" /> 
+  <HomePage.Tagline>Explore our developer tools and resources to integrate Zora </HomePage.Tagline>
+  <img src="/zora-docs-hero-image.png"  className="hero-image" />
+<p>
+This is legacy documentation for the Zora NFT protocol.
+<br />
+The current documentation for the Zora Coins protocol is available at [our main docs site](https://docs.zora.co/).
+</p>
+</HomePage.Root>
+
+  <CardContainer>
+    <Card title="NFT SDK" icon="PaintBrush" href="/protocol-sdk/introduction">
+      Create Zora NFTs using the SDK
+    </Card>
+    <Card title="Query NFTs" icon="CubeTransparent" href="/protocol-sdk/introduction">
+      Query NFT details, profile balances, NFT activity and more using the SDK
+    </Card>
+    <Card title="ZORA Network" icon="Rocket" href="/zora-network/intro">
+      Learn more about the ZORA network
+    </Card>
+    <Card title="Zora 1155 NFT Contracts" icon="Sparkles" href="/contracts/intro">
+      Build with (legacy) ZORA 1155 NFT contracts
+    </Card>
+    <Card title="Support" icon="Info" href="//support.zora.co">
+      Learn more about the product or get in touch with the team
+    </Card>
+    <Card title="Visit Zora" icon="Plus" href="//zora.co">
+      Create and trade Zora coins
+    </Card>
+  </CardContainer>
+
+  
