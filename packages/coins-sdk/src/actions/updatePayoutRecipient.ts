@@ -7,6 +7,7 @@ import {
   WalletClient,
 } from "viem";
 import { GenericPublicClient } from "src/utils/genericPublicClient";
+import { getAttribution } from "../utils/attribution";
 
 export type UpdatePayoutRecipientArgs = {
   coin: Address;
@@ -22,6 +23,7 @@ export function updatePayoutRecipientCall({
     address: coin,
     functionName: "setPayoutRecipient",
     args: [newPayoutRecipient],
+    dataSuffix: getAttribution(),
   };
 }
 

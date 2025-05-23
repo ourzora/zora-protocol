@@ -12,6 +12,7 @@ import {
 } from "viem";
 import { baseSepolia } from "viem/chains";
 import { GenericPublicClient } from "src/utils/genericPublicClient";
+import { getAttribution } from "../utils/attribution";
 // Define trade event args type
 
 export type SellEventArgs = ContractEventArgsFromTopics<
@@ -51,6 +52,7 @@ export async function simulateBuy({
     address: target,
     abi: coinABI,
     functionName: "buy",
+    dataSuffix: getAttribution(),
     args: [
       OP_BRIDGE_ADDRESS,
       requestedOrderSize,

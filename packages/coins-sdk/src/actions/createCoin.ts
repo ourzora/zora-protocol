@@ -12,6 +12,7 @@ import { COIN_FACTORY_ADDRESS } from "../constants";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import { GenericPublicClient } from "src/utils/genericPublicClient";
 import { validateMetadataURIContent, ValidMetadataURI } from "src/metadata";
+import { getAttribution } from "../utils/attribution";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
@@ -69,6 +70,7 @@ export async function createCoinCall({
       orderSize,
     ],
     value: initialPurchaseWei,
+    dataSuffix: getAttribution(),
   } as const;
 }
 
