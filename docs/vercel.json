@@ -2,6 +2,8 @@
   "git": {
     "deploymentEnabled": false
   },
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "outputDirectory": "dist",
   "redirects": [
     {
       "source": "/protocol-sdk/getting-started",

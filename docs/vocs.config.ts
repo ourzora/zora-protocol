@@ -1,6 +1,5 @@
 import { VitePluginRadar } from "vite-plugin-radar";
 import { defineConfig } from "vocs";
-import vercel from "vite-plugin-vercel";
 
 export default defineConfig({
   title: "ZORA Docs",
@@ -173,7 +172,6 @@ export default defineConfig({
   },
   vite: {
     plugins: [
-      vercel(),
       ...(process.env.NODE_ENV === "production"
         ? [
             VitePluginRadar({

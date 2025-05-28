@@ -1,4 +1,4 @@
-name: Vercel Preview Deployment
+name: Vercel NFT Docs Preview Deployment
 
 env:
   VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
@@ -39,14 +39,14 @@ jobs:
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./nft-docs
+        working-directory: ./nft-docs
 
       - name: Build Project Artifacts
         env:
           NODE_OPTIONS: " --max-old-space-size=8192"
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./nft-docs
+        working-directory: ./nft-docs
 
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./nft-docs
+        working-directory: ./nft-docs

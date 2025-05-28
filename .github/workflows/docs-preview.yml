@@ -1,4 +1,4 @@
-name: Vercel Preview Deployment
+name: Vercel Coins Docs Preview Deployment
 
 on:
   push:
@@ -38,14 +38,14 @@ jobs:
 
       - name: Pull Vercel Environment Information
         run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        working-directory: ./docs
 
       - name: Build Project Artifacts
         env:
           NODE_OPTIONS: " --max-old-space-size=8192"
         run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        working-directory: ./docs
 
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
-        # working-directory: ./docs
+        working-directory: ./docs

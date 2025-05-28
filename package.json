@@ -7,6 +7,8 @@
     "test": "turbo run test",
     "dev": "turbo run dev",
     "docs:preview": "pnpm run --filter docs preview",
+    "build:docs:coins": "pnpm turbo run 'docs#build:site'",
+    "build:docs:nft": "pnpm turbo run 'nft-docs#build:site'",
     "update-version": "changeset version && pnpm docs:copy-changelogs && turbo run update-contract-version",
     "docs:copy-changelogs": "pnpm --filter=docs copy-changelog",
     "lint": "turbo run lint",
