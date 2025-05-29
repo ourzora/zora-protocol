@@ -276,6 +276,9 @@ export default defineConfig({
     ],
   },
   vite: {
+    build: {
+      outDir: ".vercel/output",
+    },
     plugins: [
       ...(process.env.NODE_ENV === "production"
         ? [

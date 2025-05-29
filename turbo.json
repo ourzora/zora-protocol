@@ -7,7 +7,7 @@
     },
     "build:site": {
       "dependsOn": ["^build"],
-      "outputs": ["dist/**"]
+      "outputs": [".vercel/output/**"]
     },
     "@zoralabs/protocol-deployments-gen#build": {
       "dependsOn": ["^build"],

@@ -25,7 +25,7 @@ jobs:
         if: steps.check_pre.outputs.files_exists != 'true'
         run: echo "pre.json does not exist, enter prerelease mode with 'pnpm changeset pre enter {prereleaseName}'"; exit 1
 
-      - name: Install node deps and founry
+      - name: Install node deps and foundry
         uses: ./.github/actions/setup_deps
 
       - name: Create Release Pull Request or Publish to npm
