@@ -3,7 +3,7 @@
     "deploymentEnabled": false
   },
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "dist",
+  "outputDirectory": ".vercel/output",
   "redirects": [
     {
       "source": "/protocol-sdk/getting-started",
