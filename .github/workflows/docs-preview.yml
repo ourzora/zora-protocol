@@ -13,10 +13,10 @@ jobs:
     if: ${{ contains(needs.changed.outputs.changed, 'docs') }}
     runs-on: ubuntu-latest
     env:
-      VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
-      VERCEL_PROJECT_ID: ${{ vars.VERCEL_DOCS_PREVIEW_PROJECT_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_DOCS_PROJECT_ID }}
 
     steps:
       - name: Checkout

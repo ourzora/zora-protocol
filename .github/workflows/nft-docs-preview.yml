@@ -1,8 +1,4 @@
 name: Vercel NFT Docs Preview Deployment
-
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_NFT_DOCS_PREVIEW_PROJECT_ID }}
 on:
   push:
     branches-ignore:
@@ -18,6 +14,8 @@ jobs:
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_NFT_DOCS_PROJECT_ID }}
 
     steps:
       - name: Checkout

@@ -2,6 +2,5 @@
   "git": {
     "deploymentEnabled": false
   },
-  "$schema": "https://openapi.vercel.sh/vercel.json",
-  "outputDirectory": "dist"
+  "$schema": "https://openapi.vercel.sh/vercel.json"
 }
