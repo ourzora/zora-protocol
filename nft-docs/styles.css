@@ -3,7 +3,7 @@
 }
 
 .vocs_DocsLayout::before {
-  content: "This is legacy documentation for the Zora NFT protocol";
+  content: "This is legacy documentation for the Zora NFT protocol. New docs are at docs.zora.co";
   text-align: center;
   padding-top: 6px;
   border-bottom: 2px solid #eee;
@@ -17,9 +17,10 @@
   z-index: 1000;
 }
 
-.vocs_DocsLayout {
+.vocs_DocsLayout, .vocs_DocsLayout_gutterTop {
   margin-top: 40px;
 }
+
 
 .vocs_HomePage .vocs_HomePage_tagline {
   font-size: 30.8px;
