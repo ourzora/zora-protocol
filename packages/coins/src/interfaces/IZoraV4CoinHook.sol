@@ -4,9 +4,21 @@ pragma solidity ^0.8.23;
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {LpPosition} from "../types/LpPosition.sol";
 import {ICoin} from "./ICoin.sol";
 
 interface IZoraV4CoinHook {
+    /// @notice Emitted when a swap is executed.
+    /// @param sender The address of the sender.
+    /// @param swapSender The address of the swap sender.
+    /// @param isTrustedSwapSenderAddress Whether the swap sender is a trusted address. (Based on a registry of trusted addresses)
+    /// @param key The pool key struct to identify the pool.
+    /// @param poolKeyHash The hash of the pool key for indexing.
+    /// @param params The swap parameters.
+    /// @param amount0 The amount of token0.
+    /// @param amount1 The amount of token1.
+    /// @param isCoinBuy Whether the swap is a coin buy.
+    /// @param hookData The data passed into the hook for the swap.
     event Swapped(
         address indexed sender,
         address indexed swapSender,
@@ -20,10 +32,24 @@ interface IZoraV4CoinHook {
         bytes hookData
     );
 
-    /// Thrown when a non-coin is used to initialize a pool with this hook.
+    /// @notice Thrown when a non-coin is used to initialize a pool with this hook.
+    /// @param coin The address of the coin.
     error NotACoin(address coin);
 
+    /// @notice Thrown when a pool manager is set to the zero address.
+    error PoolManagerCannotBeZeroAddress();
+
+    /// @notice Thrown when a pool is not initialized for the hook.
+    /// @param key The pool key struct to identify the pool.
     error NoCoinForHook(PoolKey key);
+
+    /// @notice The pool coin struct. Lists all the contract-created positions for the coin.
+    struct PoolCoin {
+        /// @notice The address of the coin.
+        address coin;
+        /// @notice The positions of the pool coin.
+        LpPosition[] positions;
+    }
 
     /// @notice The rewards accrued from the market's liquidity position
     /// @param creatorPayoutAmountCurrency The amount of currency payed out to the creator
@@ -68,8 +94,19 @@ interface IZoraV4CoinHook {
         address dopplerRecipient,
         MarketRewardsV4 marketRewards
     );
-}
 
-interface IMsgSender {
-    function msgSender() external view returns (address);
+    /// @notice Returns the pool coin for a given pool key hash.
+    /// @param poolKeyHash The hash of the pool key for indexing.
+    /// @return poolCoin The pool coin confirmation data.
+    function getPoolCoinByHash(bytes23 poolKeyHash) external view returns (IZoraV4CoinHook.PoolCoin memory);
+
+    /// @notice Returns the pool coin for a given pool key.
+    /// @param key The pool key.
+    /// @return poolCoin The pool coin confirmation data.
+    function getPoolCoin(PoolKey memory key) external view returns (IZoraV4CoinHook.PoolCoin memory);
+
+    /// @notice Returns whether the sender is a trusted message sender.
+    /// @param sender The address of the sender.
+    /// @return isTrusted Whether the sender is a trusted message sender.
+    function isTrustedMessageSender(address sender) external view returns (bool);
 }

@@ -77,11 +77,26 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function deployCoinV3Impl() internal returns (Coin) {
-        return new Coin(getZoraRecipient(), PROTOCOL_REWARDS, getWeth(), getUniswapV3Factory(), getUniswapSwapRouter(), getDopplerAirlock());
+        return
+            new Coin({
+                protocolRewardRecipient_: getZoraRecipient(),
+                protocolRewards_: PROTOCOL_REWARDS,
+                weth_: getWeth(),
+                v3Factory_: getUniswapV3Factory(),
+                swapRouter_: getUniswapSwapRouter(),
+                airlock_: getDopplerAirlock()
+            });
     }
 
     function deployCoinV4Impl(address zoraV4CoinHook) internal returns (CoinV4) {
-        return new CoinV4(getZoraRecipient(), PROTOCOL_REWARDS, getUniswapV4PoolManager(), getDopplerAirlock(), IHooks(zoraV4CoinHook));
+        return
+            new CoinV4({
+                protocolRewardRecipient_: getZoraRecipient(),
+                protocolRewards_: PROTOCOL_REWARDS,
+                poolManager_: IPoolManager(getUniswapV4PoolManager()),
+                airlock_: getDopplerAirlock(),
+                hooks_: IHooks(zoraV4CoinHook)
+            });
     }
 
     function deployZoraFactoryImpl(address coinV3Impl, address coinV4Impl) internal returns (ZoraFactoryImpl) {

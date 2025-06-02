@@ -110,13 +110,13 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         _setPayoutRecipient(payoutRecipient_);
         _setContractURI(tokenURI_);
 
-        // Store the referrer if set
+        // Store the referrer or use the protocol reward recipient if not set
         platformReferrer = platformReferrer_ == address(0) ? protocolRewardRecipient : platformReferrer_;
 
-        // Mint the total supply
+        // Mint the total supply to the coin contract
         _mint(address(this), CoinConstants.MAX_TOTAL_SUPPLY);
 
-        // Distribute the creator launch reward
+        // Distribute the creator launch reward to the payout recipient
         _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
     }
 
@@ -183,6 +183,7 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         tokenURI = newURI;
     }
 
+    /// @notice Returns the owner of the Airlock contract
     function doppler() external view returns (address) {
         return IAirlock(airlock).owner();
     }

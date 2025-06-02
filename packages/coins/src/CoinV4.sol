@@ -17,32 +17,55 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {PoolConfiguration} from "./types/PoolConfiguration.sol";
 
 contract CoinV4 is BaseCoin, ICoinV4 {
+    /// @notice The Uniswap v4 pool manager singleton contract reference.
     IPoolManager public immutable poolManager;
+
+    /// @notice The hooks contract used by this coin.
     IHooks public immutable hooks;
 
+    /// @notice The pool key for the coin. Type from Uniswap V4 core.
     PoolKey private poolKey;
 
+    /// @notice The configuration for the pool.
     PoolConfiguration private poolConfiguration;
 
+    /// @notice The constructor for the static CoinV4 contract deployment shared across all Coins.
+    /// @dev All arguments are required and cannot be set to teh 0 address.
+    /// @param protocolRewardRecipient_ The address of the protocol reward recipient
+    /// @param protocolRewards_ The address of the protocol rewards contract
+    /// @param poolManager_ The address of the pool manager
+    /// @param airlock_ The address of the Airlock contract, ownership is used for a protocol fee split.
+    /// @param hooks_ The address of the hooks contract
+    /// @notice Returns the pool key for the coin
     constructor(
-        address _protocolRewardRecipient,
-        address _protocolRewards,
-        address _poolManager,
-        address _airlock,
-        IHooks _hooks
-    ) BaseCoin(_protocolRewardRecipient, _protocolRewards, _airlock) {
-        poolManager = IPoolManager(_poolManager);
-        hooks = _hooks;
+        address protocolRewardRecipient_,
+        address protocolRewards_,
+        IPoolManager poolManager_,
+        address airlock_,
+        IHooks hooks_
+    ) BaseCoin(protocolRewardRecipient_, protocolRewards_, airlock_) {
+        if (address(poolManager_) == address(0)) {
+            revert AddressZero();
+        }
+        if (address(hooks_) == address(0)) {
+            revert AddressZero();
+        }
+
+        poolManager = poolManager_;
+        hooks = hooks_;
     }
 
+    /// @inheritdoc ICoinV4
     function getPoolKey() public view returns (PoolKey memory) {
         return poolKey;
     }
 
+    /// @inheritdoc ICoinV4
     function getPoolConfiguration() public view returns (PoolConfiguration memory) {
         return poolConfiguration;
     }
 
+    /// @inheritdoc ICoinV4
     function initialize(
         address payoutRecipient_,
         address[] memory owners_,

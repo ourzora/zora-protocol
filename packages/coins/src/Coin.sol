@@ -58,37 +58,37 @@ contract Coin is BaseCoin, ICoinV3 {
 
     /**
      * @notice The constructor for the static Coin contract deployment shared across all Coins.
-     * @param _protocolRewardRecipient The address of the protocol reward recipient
-     * @param _protocolRewards The address of the protocol rewards contract
-     * @param _weth The address of the WETH contract
-     * @param _v3Factory The address of the Uniswap V3 factory
-     * @param _swapRouter The address of the Uniswap V3 swap router
-     * @param _airlock The address of the Airlock contract, ownership is used for a protocol fee split.
+     * @param protocolRewardRecipient_ The address of the protocol reward recipient
+     * @param protocolRewards_ The address of the protocol rewards contract
+     * @param weth_ The address of the WETH contract
+     * @param v3Factory_ The address of the Uniswap V3 factory
+     * @param swapRouter_ The address of the Uniswap V3 swap router
+     * @param airlock_ The address of the Airlock contract, ownership is used for a protocol fee split.
      */
     constructor(
-        address _protocolRewardRecipient,
-        address _protocolRewards,
-        address _weth,
-        address _v3Factory,
-        address _swapRouter,
-        address _airlock
-    ) BaseCoin(_protocolRewardRecipient, _protocolRewards, _airlock) initializer {
-        if (_v3Factory == address(0)) {
+        address protocolRewardRecipient_,
+        address protocolRewards_,
+        address weth_,
+        address v3Factory_,
+        address swapRouter_,
+        address airlock_
+    ) BaseCoin(protocolRewardRecipient_, protocolRewards_, airlock_) initializer {
+        if (v3Factory_ == address(0)) {
             revert AddressZero();
         }
-        if (_swapRouter == address(0)) {
+        if (swapRouter_ == address(0)) {
             revert AddressZero();
         }
-        if (_airlock == address(0)) {
+        if (airlock_ == address(0)) {
             revert AddressZero();
         }
-        if (_weth == address(0)) {
+        if (weth_ == address(0)) {
             revert AddressZero();
         }
-        swapRouter = _swapRouter;
-        v3Factory = _v3Factory;
+        swapRouter = swapRouter_;
+        v3Factory = v3Factory_;
 
-        WETH = _weth;
+        WETH = weth_;
     }
 
     /// @inheritdoc ICoinV3

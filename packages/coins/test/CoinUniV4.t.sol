@@ -15,7 +15,8 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {LpPosition} from "../src/types/LpPosition.sol";
 import {CoinCommon} from "../src/libs/CoinCommon.sol";
-import {IZoraV4CoinHook, IMsgSender} from "../src/interfaces/IZoraV4CoinHook.sol";
+import {IZoraV4CoinHook} from "../src/interfaces/IZoraV4CoinHook.sol";
+import {IMsgSender} from "../src/interfaces/IMsgSender.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {toBalanceDelta, BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
@@ -24,6 +25,8 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {FeeEstimatorHook} from "./utils/FeeEstimatorHook.sol";
 import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
 contract CoinUniV4Test is BaseTest {
     CoinV4 internal coinV4;
@@ -114,6 +117,28 @@ contract CoinUniV4Test is BaseTest {
         swapParams = FeeEstimatorHook(address(coinV4.hooks())).lastSwapParams();
 
         vm.revertToState(snapshot);
+    }
+
+    function test_setupZeroAddressForPoolManager() public {
+        vm.expectRevert(ICoin.AddressZero.selector);
+        new CoinV4({
+            protocolRewardRecipient_: address(0x1234),
+            protocolRewards_: address(0x1234),
+            poolManager_: IPoolManager(address(0)),
+            airlock_: address(0),
+            hooks_: IHooks(address(0))
+        });
+    }
+
+    function test_setupZeroAddressForHooks() public {
+        vm.expectRevert(ICoin.AddressZero.selector);
+        new CoinV4({
+            protocolRewardRecipient_: address(0x1234),
+            protocolRewards_: address(0x1234),
+            poolManager_: IPoolManager(address(0x1234)),
+            airlock_: address(0x1234),
+            hooks_: IHooks(address(0))
+        });
     }
 
     function test_estimateLpFees() public {

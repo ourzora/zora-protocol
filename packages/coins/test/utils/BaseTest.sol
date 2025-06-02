@@ -170,7 +170,7 @@ contract BaseTest is Test {
 
         zoraV4CoinHook = ZoraV4CoinHook(address(HooksDeployment.deployZoraV4CoinHookFromContract(V4_POOL_MANAGER, trustedMessageSenders)));
         coinV3Impl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, V3_FACTORY, SWAP_ROUTER, DOPPLER_AIRLOCK);
-        coinV4Impl = new CoinV4(users.feeRecipient, address(protocolRewards), V4_POOL_MANAGER, DOPPLER_AIRLOCK, zoraV4CoinHook);
+        coinV4Impl = new CoinV4(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK, zoraV4CoinHook);
         factoryImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
         factory = ZoraFactoryImpl(address(new ZoraFactory(address(factoryImpl))));
 
