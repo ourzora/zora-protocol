@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
+import {ProxyDeployerScript, DeterministicDeployerAndCaller} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 import {CoinsDeployerBase} from "./CoinsDeployerBase.sol";
-import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
 
-contract UpgradeFactoryImpl is CoinsDeployerBase {
+contract DeployScript is CoinsDeployerBase {
     function run() public {
         CoinsDeployment memory deployment = readDeployment();
 
         vm.startBroadcast();
 
-        ZoraFactoryImpl zoraFactoryImpl = deployZoraFactoryImpl(deployment.coinV3Impl, deployment.coinV4Impl);
-
-        deployment.zoraFactoryImpl = address(zoraFactoryImpl);
+        // get deployer contract
+        deployDevFactory(deployment);
 
         vm.stopBroadcast();
 
         // save the deployment json
         saveDeployment(deployment);
-        printUpgradeFactoryCommand(deployment);
     }
 }

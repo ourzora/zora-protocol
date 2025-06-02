@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {ICoin} from "../interfaces/ICoin.sol";
-import {IZoraFactory} from "../interfaces/IZoraFactory.sol";
-import {ICoinDeployHook} from "../interfaces/ICoinDeployHook.sol";
+import {ICoin} from "../../interfaces/ICoin.sol";
+import {IZoraFactory} from "../../interfaces/IZoraFactory.sol";
+import {ICoinDeployHook} from "../../interfaces/ICoinDeployHook.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 /// @title Immutable State

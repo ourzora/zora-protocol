@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 import {Test} from "forge-std/Test.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 
 contract BadImpl {
     function contractName() public pure returns (string memory) {
@@ -10,7 +11,7 @@ contract BadImpl {
     }
 }
 
-contract UpgradesTest is Test {
+contract UpgradesTest is BaseTest {
     ZoraFactoryImpl public factoryProxy;
 
     function test_canUpgradeFromVersionWithoutContractName() public {
@@ -19,7 +20,7 @@ contract UpgradesTest is Test {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.implementation());
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.coinImpl(), address(coinV4Impl));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -34,7 +35,7 @@ contract UpgradesTest is Test {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.implementation());
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.coinImpl(), address(coinV4Impl));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -52,12 +53,12 @@ contract UpgradesTest is Test {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.implementation());
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.coinImpl(), address(coinV4Impl));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
 
-        ZoraFactoryImpl newImpl2 = new ZoraFactoryImpl(factoryProxy.implementation());
+        ZoraFactoryImpl newImpl2 = new ZoraFactoryImpl(factoryProxy.coinImpl(), factoryProxy.coinV4Impl());
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl2), "");

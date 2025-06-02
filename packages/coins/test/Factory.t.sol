@@ -10,8 +10,9 @@ contract FactoryTest is BaseTest {
     }
 
     function test_constructor() public view {
-        assertEq(factory.coinImpl(), address(coinImpl));
+        assertEq(ZoraFactoryImpl(address(factory)).coinImpl(), address(coinV3Impl));
         assertEq(ZoraFactoryImpl(address(factory)).owner(), users.factoryOwner);
+        assertEq(ZoraFactoryImpl(address(factory)).coinV4Impl(), address(coinV4Impl));
     }
 
     function test_deploy_no_eth() public {
@@ -297,7 +298,7 @@ contract FactoryTest is BaseTest {
     }
 
     function test_upgrade() public {
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinImpl));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
 
         vm.prank(users.factoryOwner);
         ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
@@ -318,10 +319,71 @@ contract FactoryTest is BaseTest {
     }
 
     function test_revert_invalid_owner() public {
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinImpl));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
 
         vm.prank(users.creator);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, users.creator));
         ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
+    }
+
+    function test_coinAddress_canBePredicted(
+        bool msgSenderChanged,
+        bool saltChanged,
+        bool poolConfigChanged,
+        bool platformReferrerChanged,
+        bool nameChanged,
+        bool symbolChanged
+    ) public {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        address payoutRecipient = users.creator;
+
+        bytes32 salt = keccak256(abi.encode(bytes("randomSalt")));
+
+        address msgSender = makeAddr("msgSender");
+
+        string memory uri = "https://test.com";
+        string memory name = "Testcoin";
+        string memory symbol = "TEST";
+
+        address platformReferrer = users.platformReferrer;
+
+        bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(address(weth));
+        bytes memory poolConfigForGettingAddress = poolConfigChanged ? CoinConfigurationVersions.defaultDopplerUniV3(address(weth)) : poolConfig;
+
+        address expectedCoinAddress = factory.coinAddress(msgSender, name, symbol, poolConfigForGettingAddress, platformReferrer, salt);
+
+        if (msgSenderChanged) {
+            msgSender = makeAddr("msgSender2");
+        }
+
+        if (saltChanged) {
+            salt = keccak256(abi.encode(bytes("randomSalt2")));
+        }
+
+        if (platformReferrerChanged) {
+            platformReferrer = makeAddr("platformReferrer2");
+        }
+
+        if (nameChanged) {
+            name = "Testcoin2";
+        }
+
+        if (symbolChanged) {
+            symbol = "TEST2";
+        }
+
+        // now deploy the coin
+        vm.prank(msgSender);
+        (address coinAddress, ) = factory.deploy(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, address(0), bytes(""), salt);
+
+        bool addressShouldMismatch = msgSenderChanged || saltChanged || poolConfigChanged || platformReferrerChanged || nameChanged || symbolChanged;
+
+        if (addressShouldMismatch) {
+            assertNotEq(coinAddress, expectedCoinAddress, "coinAddress should mismatch");
+        } else {
+            assertEq(coinAddress, expectedCoinAddress, "coinAddress should match");
+        }
     }
 }

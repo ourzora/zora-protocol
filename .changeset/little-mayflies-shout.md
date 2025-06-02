@@ -2,4 +2,4 @@
 "@zoralabs/coins": patch
 ---
 
-Remove legacy coin creation
+Remove ability to create coin with legacy pool config

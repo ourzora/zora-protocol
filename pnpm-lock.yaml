@@ -9,7 +9,7 @@ overrides:
   '@wagmi/cli': ^2.1.0
   '@solidity-parser/parser': 0.19.0
   ds-test: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
-  forge-std: https://github.com/foundry-rs/forge-std#v1.9.1
+  forge-std: https://github.com/foundry-rs/forge-std#v1.9.4
   tsx: ^4.19.4
   typescript: ^5.8.3
   tsup: ^8.4.0
@@ -228,8 +228,8 @@ importers:
         specifier: ^1.2.0
         version: 1.3.0
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -300,8 +300,8 @@ importers:
         specifier: ^1.2.0
         version: 1.3.0
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -345,6 +345,18 @@ importers:
       '@types/node':
         specifier: ^20.1.2
         version: 20.17.16
+      '@uniswap/permit2':
+        specifier: https://github.com/Uniswap/permit2#cc56ad0f3439c502c246fc5cfcc3db92bb8b7219
+        version: https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219
+      '@uniswap/universal-router':
+        specifier: https://github.com/Uniswap/universal-router#3663f6db6e2fe121753cd2d899699c2dc75dca86
+        version: https://codeload.github.com/Uniswap/universal-router/tar.gz/3663f6db6e2fe121753cd2d899699c2dc75dca86
+      '@uniswap/v4-core':
+        specifier: https://github.com/Uniswap/v4-core#a7cf038cd568801a79a9b4cf92cd5b52c95c8585
+        version: https://codeload.github.com/Uniswap/v4-core/tar.gz/a7cf038cd568801a79a9b4cf92cd5b52c95c8585
+      '@uniswap/v4-periphery':
+        specifier: https://github.com/Uniswap/v4-periphery#eeb3eff28dd5f5f17aa94180fa3610ff59b0e1c8
+        version: https://codeload.github.com/Uniswap/v4-periphery/tar.gz/eeb3eff28dd5f5f17aa94180fa3610ff59b0e1c8
       '@wagmi/cli':
         specifier: ^2.1.0
         version: 2.2.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
@@ -361,8 +373,8 @@ importers:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       prettier:
         specifier: ^3.0.3
         version: 3.4.2
@@ -372,6 +384,9 @@ importers:
       solady:
         specifier: 0.0.132
         version: 0.0.132
+      solmate:
+        specifier: 6.8.0
+        version: 6.8.0
       tsup:
         specifier: ^8.4.0
         version: 8.4.0(jiti@2.4.2)(postcss@8.5.3)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.7.0)
@@ -473,8 +488,8 @@ importers:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       handlebars:
         specifier: ^4.7.8
         version: 4.7.8
@@ -558,8 +573,8 @@ importers:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -682,8 +697,8 @@ importers:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -839,8 +854,8 @@ importers:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
     devDependencies:
       '@lavamoat/preinstall-always-fail':
         specifier: 2.0.0
@@ -938,8 +953,8 @@ importers:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -1011,8 +1026,8 @@ importers:
         specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
         version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
     devDependencies:
       '@types/node':
         specifier: ^20.1.2
@@ -1087,8 +1102,8 @@ importers:
         specifier: ^1.2.0
         version: 1.3.0
       forge-std:
-        specifier: https://github.com/foundry-rs/forge-std#v1.9.1
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
       glob:
         specifier: ^10.2.2
         version: 10.4.5
@@ -3765,6 +3780,31 @@ packages:
   '@ungap/structured-clone@1.3.0':
     resolution: {integrity: sha512-WmoN8qaIAo7WTYWbAZuG8PYEhn5fkz7dZrqTBZ7dtt//lL2Gwms1IcnQ5yHqjDfX8Ft5j4YzDM23f87zBfDe9g==}
 
+  '@uniswap/permit2@https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219':
+    resolution: {tarball: https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219}
+    version: 1.0.0
+
+  '@uniswap/universal-router@https://codeload.github.com/Uniswap/universal-router/tar.gz/3663f6db6e2fe121753cd2d899699c2dc75dca86':
+    resolution: {tarball: https://codeload.github.com/Uniswap/universal-router/tar.gz/3663f6db6e2fe121753cd2d899699c2dc75dca86}
+    version: 2.0.0
+    engines: {node: '>=14'}
+
+  '@uniswap/v2-core@1.0.1':
+    resolution: {integrity: sha512-MtybtkUPSyysqLY2U210NBDeCHX+ltHt3oADGdjqoThZaFRDKwM6k1Nb3F0A3hk5hwuQvytFWhrWHOEq6nVJ8Q==}
+    engines: {node: '>=10'}
+
+  '@uniswap/v3-core@1.0.0':
+    resolution: {integrity: sha512-kSC4djMGKMHj7sLMYVnn61k9nu+lHjMIxgg9CDQT+s2QYLoA56GbSK9Oxr+qJXzzygbkrmuY6cwgP6cW2JXPFA==}
+    engines: {node: '>=10'}
+
+  '@uniswap/v4-core@https://codeload.github.com/Uniswap/v4-core/tar.gz/a7cf038cd568801a79a9b4cf92cd5b52c95c8585':
+    resolution: {tarball: https://codeload.github.com/Uniswap/v4-core/tar.gz/a7cf038cd568801a79a9b4cf92cd5b52c95c8585}
+    version: 1.0.1
+
+  '@uniswap/v4-periphery@https://codeload.github.com/Uniswap/v4-periphery/tar.gz/eeb3eff28dd5f5f17aa94180fa3610ff59b0e1c8':
+    resolution: {tarball: https://codeload.github.com/Uniswap/v4-periphery/tar.gz/eeb3eff28dd5f5f17aa94180fa3610ff59b0e1c8}
+    version: 1.0.1
+
   '@urql/core@4.3.0':
     resolution: {integrity: sha512-wT+FeL8DG4x5o6RfHEnONNFVDM3616ouzATMYUClB6CB+iIu2mwfBKd7xSUxYOZmwtxna5/hDRQdMl3nbQZlnw==}
 
@@ -5376,9 +5416,9 @@ packages:
   forever-agent@0.6.1:
     resolution: {integrity: sha512-j0KLYPhm6zeac4lz3oJ3o65qvgQCcPubiyotZrXqEaG4hNagNYO8qdlUrX5vwqv9ohqeT/Z3j6+yW067yWWdUw==}
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d:
-    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d}
-    version: 1.9.1
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262:
+    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262}
+    version: 1.9.4
 
   form-data@2.3.3:
     resolution: {integrity: sha512-1lLKB2Mu3aGP1Q/2eCOx0fNbRMe7XdwktwOruhfqqd0rIJWwN4Dh+E3hrPSlDCXnSR7UtZ1N38rVXm+6+MEhJQ==}
@@ -12086,6 +12126,22 @@ snapshots:
 
   '@ungap/structured-clone@1.3.0': {}
 
+  '@uniswap/permit2@https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219': {}
+
+  '@uniswap/universal-router@https://codeload.github.com/Uniswap/universal-router/tar.gz/3663f6db6e2fe121753cd2d899699c2dc75dca86':
+    dependencies:
+      '@openzeppelin/contracts': 5.0.2
+      '@uniswap/v2-core': 1.0.1
+      '@uniswap/v3-core': 1.0.0
+
+  '@uniswap/v2-core@1.0.1': {}
+
+  '@uniswap/v3-core@1.0.0': {}
+
+  '@uniswap/v4-core@https://codeload.github.com/Uniswap/v4-core/tar.gz/a7cf038cd568801a79a9b4cf92cd5b52c95c8585': {}
+
+  '@uniswap/v4-periphery@https://codeload.github.com/Uniswap/v4-periphery/tar.gz/eeb3eff28dd5f5f17aa94180fa3610ff59b0e1c8': {}
+
   '@urql/core@4.3.0(graphql@16.10.0)':
     dependencies:
       '@0no-co/graphql.web': 1.0.13(graphql@16.10.0)
@@ -14373,7 +14429,7 @@ snapshots:
 
   forever-agent@0.6.1: {}
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d: {}
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262: {}
 
   form-data@2.3.3:
     dependencies:

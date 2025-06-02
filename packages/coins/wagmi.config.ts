@@ -13,6 +13,7 @@ export default defineConfig({
         "ZoraFactoryImpl",
         "IUniswapV3Pool",
         "BuySupplyWithSwapRouterHook",
+        "IPoolConfigEncoding",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],

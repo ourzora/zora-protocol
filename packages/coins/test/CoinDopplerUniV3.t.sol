@@ -9,7 +9,7 @@ import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {LpPosition} from "../src/types/LpPosition.sol";
 import {IDopplerErrors} from "../src/interfaces/IDopplerErrors.sol";
-import {CoinDopplerUniV3} from "../src/libs/CoinDopplerUniV3.sol";
+import {DopplerMath, CoinDopplerUniV3} from "../src/libs/CoinDopplerUniV3.sol";
 import {TickMath} from "../src/utils/uniswap/TickMath.sol";
 
 contract DopplerUniswapV3Test is BaseTest {
@@ -35,39 +35,6 @@ contract DopplerUniswapV3Test is BaseTest {
 
     function setUp() public override {
         super.setUp();
-    }
-
-    function test_deploy_doppler_eth() public {
-        bytes memory poolConfig = _generatePoolConfig(
-            CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
-            address(weth),
-            DEFAULT_DISCOVERY_TICK_LOWER,
-            DEFAULT_DISCOVERY_TICK_UPPER,
-            DEFAULT_NUM_DISCOVERY_POSITIONS,
-            DEFAULT_DISCOVERY_SUPPLY_SHARE
-        );
-
-        _deployCoin(poolConfig);
-
-        (
-            address asset,
-            address numeraire,
-            ,
-            ,
-            uint16 numPositions,
-            bool isInitialized,
-            bool isExited,
-            uint256 maxShareToBeSold,
-            uint256 totalTokensOnBondingCurve
-        ) = coin.poolState();
-
-        assertEq(asset, address(coin), "poolState.asset");
-        assertEq(numeraire, address(weth), "poolState.numeraire");
-        assertEq(numPositions, DEFAULT_NUM_DISCOVERY_POSITIONS, "poolState.numPositions");
-        assertTrue(isInitialized, "poolState.isInitialized");
-        assertFalse(isExited, "poolState.isExited");
-        assertEq(maxShareToBeSold, DEFAULT_DISCOVERY_SUPPLY_SHARE, "poolState.maxShareToBeSold");
-        assertEq(totalTokensOnBondingCurve, CoinConstants.POOL_LAUNCH_SUPPLY, "poolState.totalTokensOnBondingCurve");
     }
 
     function test_supply_constants() public {
@@ -154,40 +121,40 @@ contract DopplerUniswapV3Test is BaseTest {
         int24 TICK_SPACING = 60;
         int24 expected = 12300;
 
-        assertEq(CoinDopplerUniV3.alignTickToTickSpacing(true, tick, TICK_SPACING), expected, "Align positive tick (token0)");
+        assertEq(DopplerMath.alignTickToTickSpacing(true, tick, TICK_SPACING), expected, "Align positive tick (token0)");
     }
 
     function test_alignTick_isToken0_negative() public pure {
         int24 tick = -12345;
         int24 TICK_SPACING = 60;
         int24 expected = -12360;
-        assertEq(CoinDopplerUniV3.alignTickToTickSpacing(true, tick, TICK_SPACING), expected, "Align negative tick (token0)");
+        assertEq(DopplerMath.alignTickToTickSpacing(true, tick, TICK_SPACING), expected, "Align negative tick (token0)");
     }
 
     function test_alignTick_isToken1_negative() public pure {
         int24 tick = -12345;
         int24 TICK_SPACING = 60;
         int24 expected = -12300;
-        assertEq(CoinDopplerUniV3.alignTickToTickSpacing(false, tick, TICK_SPACING), expected, "Align negative tick (token1)");
+        assertEq(DopplerMath.alignTickToTickSpacing(false, tick, TICK_SPACING), expected, "Align negative tick (token1)");
     }
 
     function test_alignTick_isToken1_zero() public pure {
         int24 tick = 0;
         int24 expected = 0;
-        assertEq(CoinDopplerUniV3.alignTickToTickSpacing(false, tick, MarketConstants.TICK_SPACING), expected, "Align zero tick (token1)");
+        assertEq(DopplerMath.alignTickToTickSpacing(false, tick, MarketConstants.TICK_SPACING), expected, "Align zero tick (token1)");
     }
 
     // Additional tick alignment test for full branch coverage
     function test_alignTick_isToken0_zero() public pure {
         int24 tick = 0;
         int24 expected = 0;
-        assertEq(CoinDopplerUniV3.alignTickToTickSpacing(true, tick, MarketConstants.TICK_SPACING), expected, "Align zero tick (token0)");
+        assertEq(DopplerMath.alignTickToTickSpacing(true, tick, MarketConstants.TICK_SPACING), expected, "Align zero tick (token0)");
     }
 
     function test_alignTick_isToken1_positive() public pure {
         int24 tick = 12345;
         int24 expected = 12400; // Round up for token1
-        assertEq(CoinDopplerUniV3.alignTickToTickSpacing(false, tick, MarketConstants.TICK_SPACING), expected, "Align positive tick (token1)");
+        assertEq(DopplerMath.alignTickToTickSpacing(false, tick, MarketConstants.TICK_SPACING), expected, "Align positive tick (token1)");
     }
 
     function test_calculateLpTail_isToken0() public pure {
@@ -196,10 +163,10 @@ contract DopplerUniswapV3Test is BaseTest {
         uint256 tailSupply = 1e18;
         bool isToken0 = true;
 
-        LpPosition memory tail = CoinDopplerUniV3.calculateLpTail(tickLower, tickUpper, isToken0, tailSupply, MarketConstants.TICK_SPACING);
+        LpPosition memory tail = DopplerMath.calculateLpTail(tickLower, tickUpper, isToken0, tailSupply, MarketConstants.TICK_SPACING);
 
         int24 expectedPosTickLower = tickUpper;
-        int24 expectedPosTickUpper = CoinDopplerUniV3.alignTickToTickSpacing(true, TickMath.MAX_TICK, MarketConstants.TICK_SPACING);
+        int24 expectedPosTickUpper = DopplerMath.alignTickToTickSpacing(true, TickMath.MAX_TICK, MarketConstants.TICK_SPACING);
 
         assertEq(tail.tickLower, expectedPosTickLower, "Tail tickLower (token0)");
         assertEq(tail.tickUpper, expectedPosTickUpper, "Tail tickUpper (token0)");
@@ -212,9 +179,9 @@ contract DopplerUniswapV3Test is BaseTest {
         uint256 tailSupply = 1e18;
         bool isToken0 = false;
 
-        LpPosition memory tail = CoinDopplerUniV3.calculateLpTail(tickLower, tickUpper, isToken0, tailSupply, MarketConstants.TICK_SPACING);
+        LpPosition memory tail = DopplerMath.calculateLpTail(tickLower, tickUpper, isToken0, tailSupply, MarketConstants.TICK_SPACING);
 
-        int24 expectedPosTickLower = CoinDopplerUniV3.alignTickToTickSpacing(false, TickMath.MIN_TICK, MarketConstants.TICK_SPACING);
+        int24 expectedPosTickLower = DopplerMath.alignTickToTickSpacing(false, TickMath.MIN_TICK, MarketConstants.TICK_SPACING);
         int24 expectedPosTickUpper = tickLower;
 
         assertEq(tail.tickLower, expectedPosTickLower, "Tail tickLower (token1)");
@@ -229,14 +196,15 @@ contract DopplerUniswapV3Test is BaseTest {
         uint256 discoverySupply = 100e18;
         LpPosition[] memory newPositions = new LpPosition[](DEFAULT_NUM_DISCOVERY_POSITIONS);
 
-        (LpPosition[] memory positions, uint256 totalAssetsSold) = CoinDopplerUniV3.calculateLogNormalDistribution(
+        (LpPosition[] memory positions, uint256 totalAssetsSold) = DopplerMath.calculateLogNormalDistribution(
             tickLower,
             tickUpper,
             MarketConstants.TICK_SPACING,
             isToken0,
             discoverySupply,
             DEFAULT_NUM_DISCOVERY_POSITIONS,
-            newPositions
+            newPositions,
+            0
         );
 
         assertEq(positions.length, DEFAULT_NUM_DISCOVERY_POSITIONS, "Correct number of positions (token0)");
@@ -260,14 +228,15 @@ contract DopplerUniswapV3Test is BaseTest {
         uint256 discoverySupply = 100e18;
         LpPosition[] memory newPositions = new LpPosition[](DEFAULT_NUM_DISCOVERY_POSITIONS);
 
-        (LpPosition[] memory positions, uint256 totalAssetsSold) = CoinDopplerUniV3.calculateLogNormalDistribution(
+        (LpPosition[] memory positions, uint256 totalAssetsSold) = DopplerMath.calculateLogNormalDistribution(
             tickLower,
             tickUpper,
             MarketConstants.TICK_SPACING,
             isToken0,
             discoverySupply,
             DEFAULT_NUM_DISCOVERY_POSITIONS,
-            newPositions
+            newPositions,
+            0
         );
 
         assertEq(positions.length, DEFAULT_NUM_DISCOVERY_POSITIONS, "Correct number of positions (token1)");
@@ -291,14 +260,15 @@ contract DopplerUniswapV3Test is BaseTest {
         uint256 discoverySupply = 0;
         LpPosition[] memory newPositions = new LpPosition[](DEFAULT_NUM_DISCOVERY_POSITIONS);
 
-        (LpPosition[] memory positions, uint256 totalAssetsSold) = CoinDopplerUniV3.calculateLogNormalDistribution(
+        (LpPosition[] memory positions, uint256 totalAssetsSold) = DopplerMath.calculateLogNormalDistribution(
             tickLower,
             tickUpper,
             MarketConstants.TICK_SPACING,
             isToken0,
             discoverySupply,
             DEFAULT_NUM_DISCOVERY_POSITIONS,
-            newPositions
+            newPositions,
+            0
         );
 
         assertEq(positions.length, DEFAULT_NUM_DISCOVERY_POSITIONS, "Correct number of positions (zero supply)");
@@ -322,14 +292,15 @@ contract DopplerUniswapV3Test is BaseTest {
         uint16 totalPositions = 1;
         LpPosition[] memory newPositions = new LpPosition[](totalPositions);
 
-        (LpPosition[] memory positions, uint256 totalAssetsSold) = CoinDopplerUniV3.calculateLogNormalDistribution(
+        (LpPosition[] memory positions, uint256 totalAssetsSold) = DopplerMath.calculateLogNormalDistribution(
             tickLower,
             tickUpper,
             MarketConstants.TICK_SPACING,
             isToken0,
             discoverySupply,
             totalPositions,
-            newPositions
+            newPositions,
+            0
         );
 
         assertEq(positions.length, totalPositions, "Correct number of positions");

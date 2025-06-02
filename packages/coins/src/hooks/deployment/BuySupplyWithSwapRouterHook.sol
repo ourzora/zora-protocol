@@ -2,11 +2,13 @@
 pragma solidity ^0.8.23;
 
 import {BaseCoinDeployHook} from "./BaseCoinDeployHook.sol";
-import {ICoin} from "../interfaces/ICoin.sol";
-import {IZoraFactory} from "../interfaces/IZoraFactory.sol";
-import {ISwapRouter} from "../interfaces/ISwapRouter.sol";
-import {IWETH} from "../interfaces/IWETH.sol";
+import {ICoin} from "../../interfaces/ICoin.sol";
+import {IZoraFactory} from "../../interfaces/IZoraFactory.sol";
+import {ISwapRouter} from "../../interfaces/ISwapRouter.sol";
+import {IWETH} from "../../interfaces/IWETH.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Coin} from "../../Coin.sol";
+import {ICoinV3} from "../../interfaces/ICoinV3.sol";
 
 /// @title BuySupplyWithSwapRouter
 /// @notice A hook that buys supply for a coin that is priced in an erc20 token with ETH, using a Uniswap SwapRouter.
@@ -69,7 +71,7 @@ contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
     function _handleBuy(address buyRecipient, ICoin coin, uint256 amountCurrency) internal returns (uint256 coinsPurchased) {
         IERC20(coin.currency()).approve(address(coin), amountCurrency);
 
-        (, coinsPurchased) = coin.buy(buyRecipient, amountCurrency, 0, 0, address(0));
+        (, coinsPurchased) = ICoinV3(payable(address(coin))).buy(buyRecipient, amountCurrency, 0, 0, address(0));
 
         // make sure that this contract has no balance of the coin remaining
         uint256 coinBalance = IERC20(address(coin)).balanceOf(address(this));

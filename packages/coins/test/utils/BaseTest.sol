@@ -12,6 +12,7 @@ import {IZoraFactory} from "../../src/interfaces/IZoraFactory.sol";
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
 import {Coin} from "../../src/Coin.sol";
+import {CoinV4} from "../../src/CoinV4.sol";
 import {MultiOwnable} from "../../src/utils/MultiOwnable.sol";
 import {ICoin} from "../../src/interfaces/ICoin.sol";
 import {IERC7572} from "../../src/interfaces/IERC7572.sol";
@@ -25,6 +26,10 @@ import {IProtocolRewards} from "../../src/interfaces/IProtocolRewards.sol";
 import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
 import {MarketConstants} from "../../src/libs/MarketConstants.sol";
 import {CoinConfigurationVersions} from "../../src/libs/CoinConfigurationVersions.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
+import {HooksDeployment} from "../../src/libs/HooksDeployment.sol";
+import {CoinConstants} from "../../src/libs/CoinConstants.sol";
 
 contract BaseTest is Test {
     using stdStorage for StdStorage;
@@ -36,6 +41,11 @@ contract BaseTest is Test {
     address internal constant SWAP_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;
     address internal constant DOPPLER_AIRLOCK = 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12;
     address internal constant USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address internal constant V4_POOL_MANAGER = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
+    address internal constant V4_POSITION_MANAGER = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
+    address internal constant V4_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+    address internal constant V4_QUOTER = 0x0d5e0F971ED27FBfF6c2837bf31316121532048D;
+    address internal constant UNIVERSAL_ROUTER = 0x6fF5693b99212Da76ad316178A184AB56D299b43;
     int24 internal constant USDC_TICK_LOWER = 57200;
 
     struct Users {
@@ -55,20 +65,23 @@ contract BaseTest is Test {
     ProtocolRewards internal protocolRewards;
     IUniswapV3Factory internal v3Factory;
     INonfungiblePositionManager internal nonfungiblePositionManager;
+
     ISwapRouter internal swapRouter;
     IAirlock internal airlock;
     Users internal users;
 
-    Coin internal coinImpl;
+    Coin internal coinV3Impl;
+    CoinV4 internal coinV4Impl;
     ZoraFactoryImpl internal factoryImpl;
     IZoraFactory internal factory;
+    ZoraV4CoinHook internal zoraV4CoinHook;
     Coin internal coin;
-    IUniswapV3Pool internal pool;
 
-    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = -777000;
-    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = 222000;
-    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = 10; // will be 11 total with tail position
-    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = 0.495e18; // half of the 990m total pool supply
+    IUniswapV3Pool internal pool;
+    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = CoinConstants.DEFAULT_DISCOVERY_TICK_LOWER;
+    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = CoinConstants.DEFAULT_DISCOVERY_TICK_UPPER;
+    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = CoinConstants.DEFAULT_NUM_DISCOVERY_POSITIONS;
+    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = CoinConstants.DEFAULT_DISCOVERY_SUPPLY_SHARE;
 
     function _deployCoin() internal {
         bytes memory poolConfig_ = _generatePoolConfig(
@@ -140,7 +153,6 @@ contract BaseTest is Test {
         swapRouter = ISwapRouter(SWAP_ROUTER);
         airlock = IAirlock(DOPPLER_AIRLOCK);
         protocolRewards = new ProtocolRewards();
-
         users = Users({
             factoryOwner: makeAddr("factoryOwner"),
             feeRecipient: makeAddr("feeRecipient"),
@@ -152,8 +164,14 @@ contract BaseTest is Test {
             tradeReferrer: makeAddr("tradeReferrer")
         });
 
-        coinImpl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, V3_FACTORY, SWAP_ROUTER, DOPPLER_AIRLOCK);
-        factoryImpl = new ZoraFactoryImpl(address(coinImpl));
+        address[] memory trustedMessageSenders = new address[](2);
+        trustedMessageSenders[0] = UNIVERSAL_ROUTER;
+        trustedMessageSenders[1] = V4_POSITION_MANAGER;
+
+        zoraV4CoinHook = ZoraV4CoinHook(address(HooksDeployment.deployZoraV4CoinHookFromContract(V4_POOL_MANAGER, trustedMessageSenders)));
+        coinV3Impl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, V3_FACTORY, SWAP_ROUTER, DOPPLER_AIRLOCK);
+        coinV4Impl = new CoinV4(users.feeRecipient, address(protocolRewards), V4_POOL_MANAGER, DOPPLER_AIRLOCK, zoraV4CoinHook);
+        factoryImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
         factory = ZoraFactoryImpl(address(new ZoraFactory(address(factoryImpl))));
 
         ZoraFactoryImpl(address(factory)).initialize(users.factoryOwner);

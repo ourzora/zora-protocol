@@ -4,18 +4,34 @@ pragma solidity ^0.8.23;
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC7572} from "./IERC7572.sol";
 import {IDopplerErrors} from "./IDopplerErrors.sol";
+import {PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PoolConfiguration} from "../types/PoolConfiguration.sol";
 
-/// @notice The configuration of the pool
-/// @dev This is used to configure the pool's liquidity positions
-struct PoolConfiguration {
+struct PoolConfigurationV4 {
     uint8 version;
-    int24 tickLower;
-    int24 tickUpper;
-    uint16 numPositions;
-    uint256 maxDiscoverySupplyShare;
+    PoolKey poolKey;
+    int24 tick;
 }
 
-interface ICoin is IERC165, IERC7572, IDopplerErrors {
+struct PoolKeyStruct {
+    address currency0;
+    address currency1;
+    uint24 fee;
+    int24 tickSpacing;
+    address hooks;
+}
+
+interface IHasRewardsRecipients {
+    function payoutRecipient() external view returns (address);
+
+    function platformReferrer() external view returns (address);
+
+    function protocolRewardRecipient() external view returns (address);
+
+    function doppler() external view returns (address);
+}
+
+interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients {
     /// @notice Thrown when an operation is attempted with a zero address
     error AddressZero();
 
@@ -72,6 +88,9 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors {
 
     /// @notice Thrown when a Doppler pool does not have more than 2 discovery positions
     error DopplerPoolMustHaveMoreThan2DiscoveryPositions();
+
+    /// @notice Thrown when an invalid pool version is specified
+    error InvalidPoolVersion();
 
     /// @notice The rewards accrued from the market's liquidity position
     struct MarketRewards {
@@ -177,33 +196,6 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors {
     /// @param name The coin name
     event ContractMetadataUpdated(address indexed caller, string newURI, string name);
 
-    /// @notice Executes a buy order
-    /// @param recipient The recipient address of the coins
-    /// @param orderSize The amount of coins to buy
-    /// @param tradeReferrer The address of the trade referrer
-    /// @param sqrtPriceLimitX96 The price limit for Uniswap V3 pool swap
-    function buy(
-        address recipient,
-        uint256 orderSize,
-        uint256 minAmountOut,
-        uint160 sqrtPriceLimitX96,
-        address tradeReferrer
-    ) external payable returns (uint256, uint256);
-
-    /// @notice Executes a sell order
-    /// @param recipient The recipient of the currency
-    /// @param orderSize The amount of coins to sell
-    /// @param minAmountOut The minimum amount of currency to receive
-    /// @param sqrtPriceLimitX96 The price limit for the swap
-    /// @param tradeReferrer The address of the trade referrer
-    function sell(
-        address recipient,
-        uint256 orderSize,
-        uint256 minAmountOut,
-        uint160 sqrtPriceLimitX96,
-        address tradeReferrer
-    ) external returns (uint256, uint256);
-
     /// @notice Enables a user to burn their tokens
     /// @param amount The amount of tokens to burn
     function burn(uint256 amount) external;
@@ -212,11 +204,11 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors {
     /// @return The token URI
     function tokenURI() external view returns (string memory);
 
-    /// @notice Returns the address of the platform referrer
-    /// @return The platform referrer's address
-    function platformReferrer() external view returns (address);
-
     /// @notice Returns the address of the currency
     /// @return The currency's address
     function currency() external view returns (address);
+
+    /// @notice Returns the address of the Airlock
+    /// @return The Airlock's address
+    function airlock() external view returns (address);
 }

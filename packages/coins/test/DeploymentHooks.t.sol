@@ -2,14 +2,14 @@
 pragma solidity ^0.8.13;
 
 import {BaseTest} from "./utils/BaseTest.sol";
-import {BuySupplyWithSwapRouterHook} from "../src/hooks/BuySupplyWithSwapRouterHook.sol";
+import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {Coin} from "../src/Coin.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ICoin} from "../src/interfaces/ICoin.sol";
-import {IHasAfterCoinDeploy} from "../src/hooks/BaseCoinDeployHook.sol";
+import {IHasAfterCoinDeploy} from "../src/hooks/deployment/BaseCoinDeployHook.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";

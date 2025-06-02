@@ -8,8 +8,15 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
 import {Coin} from "../src/Coin.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
-import {BuySupplyWithSwapRouterHook} from "../src/hooks/BuySupplyWithSwapRouterHook.sol";
+import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
+import {CoinV4} from "../src/CoinV4.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {ZoraV4CoinHook} from "../src/hooks/ZoraV4CoinHook.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {ZoraFactory} from "../src/proxy/ZoraFactory.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {HooksDeployment} from "../src/libs/HooksDeployment.sol";
 
 contract CoinsDeployerBase is ProxyDeployerScript {
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
@@ -21,10 +28,14 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address zoraFactory;
         address zoraFactoryImpl;
         // Implementation
-        address coinImpl;
+        address coinV3Impl;
+        address coinV4Impl;
         string coinVersion;
         // hooks
         address buySupplyWithSwapRouterHook;
+        address zoraV4CoinHook;
+        address devFactory;
+        address trustedMessageSenders;
     }
 
     function addressesFile() internal view returns (string memory) {
@@ -38,7 +49,11 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "ZORA_FACTORY_IMPL", deployment.zoraFactoryImpl);
         vm.serializeString(objectKey, "COIN_VERSION", deployment.coinVersion);
         vm.serializeAddress(objectKey, "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK", deployment.buySupplyWithSwapRouterHook);
-        string memory result = vm.serializeAddress(objectKey, "COIN_IMPL", deployment.coinImpl);
+        vm.serializeAddress(objectKey, "COIN_V3_IMPL", deployment.coinV3Impl);
+        vm.serializeAddress(objectKey, "DEV_FACTORY", deployment.devFactory);
+        vm.serializeAddress(objectKey, "ZORA_V4_COIN_HOOK", deployment.zoraV4CoinHook);
+        vm.serializeAddress(objectKey, "TRUSTED_MESSAGE_SENDERS", deployment.trustedMessageSenders);
+        string memory result = vm.serializeAddress(objectKey, "COIN_V4_IMPL", deployment.coinV4Impl);
 
         vm.writeJson(result, addressesFile());
     }
@@ -52,28 +67,49 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
         deployment.zoraFactory = readAddressOrDefaultToZero(json, "ZORA_FACTORY");
         deployment.zoraFactoryImpl = readAddressOrDefaultToZero(json, "ZORA_FACTORY_IMPL");
-        deployment.coinImpl = readAddressOrDefaultToZero(json, "COIN_IMPL");
+        deployment.coinV3Impl = readAddressOrDefaultToZero(json, "COIN_V3_IMPL");
+        deployment.coinV4Impl = readAddressOrDefaultToZero(json, "COIN_V4_IMPL");
         deployment.coinVersion = readStringOrDefaultToEmpty(json, "COIN_VERSION");
         deployment.buySupplyWithSwapRouterHook = readAddressOrDefaultToZero(json, "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK");
+        deployment.zoraV4CoinHook = readAddressOrDefaultToZero(json, "ZORA_V4_COIN_HOOK");
+        deployment.devFactory = readAddressOrDefaultToZero(json, "DEV_FACTORY");
+        deployment.trustedMessageSenders = readAddressOrDefaultToZero(json, "TRUSTED_MESSAGE_SENDERS");
     }
 
-    function deployCoinImpl() internal returns (Coin) {
+    function deployCoinV3Impl() internal returns (Coin) {
         return new Coin(getZoraRecipient(), PROTOCOL_REWARDS, getWeth(), getUniswapV3Factory(), getUniswapSwapRouter(), getDopplerAirlock());
     }
 
-    function deployZoraFactoryImpl(address coinImpl) internal returns (ZoraFactoryImpl) {
-        return new ZoraFactoryImpl(coinImpl);
+    function deployCoinV4Impl(address zoraV4CoinHook) internal returns (CoinV4) {
+        return new CoinV4(getZoraRecipient(), PROTOCOL_REWARDS, getUniswapV4PoolManager(), getDopplerAirlock(), IHooks(zoraV4CoinHook));
+    }
+
+    function deployZoraFactoryImpl(address coinV3Impl, address coinV4Impl) internal returns (ZoraFactoryImpl) {
+        return new ZoraFactoryImpl(coinV3Impl, coinV4Impl);
     }
 
     function deployBuySupplyWithSwapRouterHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithSwapRouterHook) {
         return new BuySupplyWithSwapRouterHook(IZoraFactory(deployment.zoraFactory), getUniswapSwapRouter());
     }
 
+    function deployZoraV4CoinHook() internal returns (IHooks) {
+        return HooksDeployment.deployZoraV4CoinHookFromScript(getUniswapV4PoolManager(), getDefaultTrustedMessageSenders());
+    }
+
+    function getDefaultTrustedMessageSenders() internal view returns (address[] memory) {
+        address[] memory trustedMessageSenders = new address[](2);
+        trustedMessageSenders[0] = getUniswapUniversalRouter();
+        trustedMessageSenders[1] = getUniswapV4PositionManager();
+        return trustedMessageSenders;
+    }
+
     function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
-        deployment.coinImpl = address(deployCoinImpl());
-        deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinImpl));
-        deployment.coinVersion = IVersionedContract(deployment.coinImpl).contractVersion();
+        deployment.coinV3Impl = address(deployCoinV3Impl());
+        deployment.zoraV4CoinHook = address(deployZoraV4CoinHook());
+        deployment.coinV4Impl = address(deployCoinV4Impl(deployment.zoraV4CoinHook));
+        deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinV3Impl, deployment.coinV4Impl));
+        deployment.coinVersion = IVersionedContract(deployment.coinV3Impl).contractVersion();
         deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
 
         return deployment;
@@ -111,6 +147,16 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
         // validate that the zora factory owner is the proxy admin
         require(ZoraFactoryImpl(deployment.zoraFactory).owner() == getProxyAdmin(), "Zora factory owner is not the proxy admin");
+    }
+
+    function deployDevFactory(CoinsDeployment memory deployment) internal returns (ZoraFactory devFactory) {
+        address owner = 0x63545B401283c993320A5b886ecF0fc6CB5668a9;
+
+        devFactory = new ZoraFactory(deployment.zoraFactoryImpl);
+
+        ZoraFactoryImpl(address(devFactory)).initialize(owner);
+
+        deployment.devFactory = address(devFactory);
     }
 
     function printUpgradeFactoryCommand(CoinsDeployment memory deployment) internal view {

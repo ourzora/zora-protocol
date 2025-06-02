@@ -49,4 +49,9 @@ library CoinConstants {
     /// @notice The percentage of the LP fee allocated to the Doppler protocol
     /// @dev 500 basis points = 5% of the 1% LP FEE
     uint256 public constant DOPPLER_MARKET_REWARD_BPS = 500;
+
+    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = -777000;
+    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = 222000;
+    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = 10; // will be 11 total with tail position
+    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = 0.495e18; // half of the 990m total pool supply
 }

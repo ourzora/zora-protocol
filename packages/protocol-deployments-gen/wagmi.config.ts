@@ -37,6 +37,7 @@ import {
   zoraFactoryImplABI,
   coinABI,
   buySupplyWithSwapRouterHookABI,
+  iPoolConfigEncodingABI,
 } from "@zoralabs/coins";
 
 type Address = `0x${string}`;
@@ -502,6 +503,7 @@ const getCoinsContracts = (): ContractConfig[] => {
         readFileSync(`../coins/addresses/${file}`, "utf-8"),
       ) as {
         ZORA_FACTORY: Address;
+        DEV_FACTORY: Address;
         BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
       },
     };
@@ -512,6 +514,14 @@ const getCoinsContracts = (): ContractConfig[] => {
     addresses,
     configKey: "ZORA_FACTORY",
     contractName: "CoinFactory",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: zoraFactoryImplABI,
+    addresses,
+    configKey: "DEV_FACTORY",
+    contractName: "DevCoinFactory",
     storedConfigs,
   });
 
@@ -528,6 +538,10 @@ const getCoinsContracts = (): ContractConfig[] => {
     {
       abi: coinABI,
       name: "Coin",
+    },
+    {
+      abi: iPoolConfigEncodingABI,
+      name: "PoolConfigEncoding",
     },
   ];
 };

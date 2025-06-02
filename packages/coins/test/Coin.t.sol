@@ -6,6 +6,7 @@ import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
+import {PoolConfiguration} from "../src/interfaces/ICoin.sol";
 
 contract CoinTest is BaseTest {
     using stdJson for string;
@@ -18,6 +19,19 @@ contract CoinTest is BaseTest {
         _deployCoin();
         string memory package = vm.readFile("./package.json");
         assertEq(package.readString(".version"), coin.contractVersion());
+    }
+
+    function test_supply_constants() public {
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, CoinConstants.POOL_LAUNCH_SUPPLY + CoinConstants.CREATOR_LAUNCH_REWARD);
+
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, 1_000_000_000e18);
+        assertEq(CoinConstants.POOL_LAUNCH_SUPPLY, 990_000_000e18);
+        assertEq(CoinConstants.CREATOR_LAUNCH_REWARD, 10_000_000e18);
+
+        _deployCoin();
+        assertEq(coin.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY);
+        assertEq(coin.balanceOf(coin.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD);
+        assertApproxEqAbs(coin.balanceOf(address(pool)), CoinConstants.POOL_LAUNCH_SUPPLY, 1e18);
     }
 
     function test_constructor_validation() public {
@@ -73,11 +87,10 @@ contract CoinTest is BaseTest {
         factory.deploy(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, users.platformReferrer, 0);
     }
 
-    function test_revert_legacy_deploy() public {
+    function test_legacy_deploy_deploys_with_default_config() public {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
-        vm.expectRevert(abi.encodeWithSelector(IZoraFactory.Deprecated.selector));
         (address coinAddress, ) = ZoraFactoryImpl(address(factory)).deploy(
             users.creator,
             owners,
@@ -86,9 +99,15 @@ contract CoinTest is BaseTest {
             "INIT",
             users.platformReferrer,
             address(weth),
-            MarketConstants.LP_TICK_LOWER_WETH,
+            0,
             0
         );
+
+        Coin coin = Coin(payable(coinAddress));
+
+        PoolConfiguration memory poolConfig = coin.getPoolConfiguration();
+
+        assertEq(poolConfig.version, CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION);
     }
 
     function test_erc165_interface_support() public {

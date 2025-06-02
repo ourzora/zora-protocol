@@ -249,6 +249,38 @@ contract ProxyDeployerScript is CommonBase {
         }
     }
 
+    function getUniswapV4PoolManager() internal view returns (address uniswapV4PoolManager) {
+        uniswapV4PoolManager = getChainConfigJson().readAddress(".UNISWAP_V4_POOL_MANAGER");
+
+        if (uniswapV4PoolManager == address(0)) {
+            revert("UniswapV4PoolManager address not configured");
+        }
+    }
+
+    function getUniswapV4PositionManager() internal view returns (address uniswapV4PositionManager) {
+        uniswapV4PositionManager = getChainConfigJson().readAddress(".UNISWAP_V4_POSITION_MANAGER");
+
+        if (uniswapV4PositionManager == address(0)) {
+            revert("UniswapV4PositionManager address not configured");
+        }
+    }
+
+    function getUniswapPermit2() internal view returns (address permit2) {
+        permit2 = getChainConfigJson().readAddress(".UNISWAP_PERMIT2");
+
+        if (permit2 == address(0)) {
+            revert("UniswapPermit2 address not configured");
+        }
+    }
+
+    function getUniswapUniversalRouter() internal view returns (address universalRouter) {
+        universalRouter = getChainConfigJson().readAddress(".UNISWAP_UNIVERSAL_ROUTER");
+
+        if (universalRouter == address(0)) {
+            revert("UniswapUniversalRouter address not configured");
+        }
+    }
+
     function validateMultisig(address multisigAddress) internal view returns (address) {
         if (multisigAddress == address(0)) {
             revert("Cannot be address zero");
