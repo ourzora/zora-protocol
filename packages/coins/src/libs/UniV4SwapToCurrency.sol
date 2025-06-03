@@ -15,7 +15,6 @@ import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLook
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
 
-
 library UniV4SwapToCurrency {
     using BalanceDeltaLibrary for BalanceDelta;
 

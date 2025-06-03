@@ -169,8 +169,8 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         tokenURI = newURI;
     }
 
-    /// @notice Returns the owner of the Airlock contract
-    function doppler() external view returns (address) {
+    /// @notice Returns the address of the Doppler protocol fee recipient
+    function dopplerFeeRecipient() public view returns (address) {
         return IAirlock(airlock).owner();
     }
 }

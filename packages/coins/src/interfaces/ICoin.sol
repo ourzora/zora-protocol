@@ -28,7 +28,7 @@ interface IHasRewardsRecipients {
 
     function protocolRewardRecipient() external view returns (address);
 
-    function doppler() external view returns (address);
+    function dopplerFeeRecipient() external view returns (address);
 }
 
 interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients {

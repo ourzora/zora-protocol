@@ -152,7 +152,7 @@ contract Coin is BaseCoin, ICoinV3 {
             IWETH(WETH)
         );
 
-        UniV3BuySell.handleMarketRewards(coinConfig, currency, poolAddress, positions, IWETH(WETH), _dopplerRecipient());
+        UniV3BuySell.handleMarketRewards(coinConfig, currency, poolAddress, positions, IWETH(WETH), dopplerFeeRecipient());
 
         emit CoinBuy(msg.sender, recipient, tradeReferrer, amountOut, currency, tradeReward, trueOrderSize);
 
@@ -196,7 +196,7 @@ contract Coin is BaseCoin, ICoinV3 {
             IWETH(WETH)
         );
 
-        UniV3BuySell.handleMarketRewards(coinConfig, currency, poolAddress, positions, IWETH(WETH), _dopplerRecipient());
+        UniV3BuySell.handleMarketRewards(coinConfig, currency, poolAddress, positions, IWETH(WETH), dopplerFeeRecipient());
 
         emit ICoin.CoinSell(msg.sender, recipient, tradeReferrer, result.trueOrderSize, currency, result.tradeReward, result.payoutSize);
 
@@ -207,17 +207,13 @@ contract Coin is BaseCoin, ICoinV3 {
     /// @dev This function is a fallback, secondary rewards will be claimed automatically on each buy and sell.
     /// @param pushEthRewards Whether to push the ETH directly to the recipients.
     function claimSecondaryRewards(bool pushEthRewards) external nonReentrant {
-        MarketRewards memory rewards = UniV3BuySell.handleMarketRewards(buildConfig(), currency, poolAddress, positions, IWETH(WETH), _dopplerRecipient());
+        MarketRewards memory rewards = UniV3BuySell.handleMarketRewards(buildConfig(), currency, poolAddress, positions, IWETH(WETH), dopplerFeeRecipient());
 
         if (pushEthRewards && rewards.totalAmountCurrency > 0 && currency == WETH) {
             IProtocolRewards(protocolRewards).withdrawFor(payoutRecipient, rewards.creatorPayoutAmountCurrency);
             IProtocolRewards(protocolRewards).withdrawFor(platformReferrer, rewards.platformReferrerAmountCurrency);
             IProtocolRewards(protocolRewards).withdrawFor(protocolRewardRecipient, rewards.protocolAmountCurrency);
         }
-    }
-
-    function _dopplerRecipient() internal view returns (address) {
-        return IAirlock(airlock).owner();
     }
 
     /// @dev Called by the pool after minting liquidity to transfer the associated coins

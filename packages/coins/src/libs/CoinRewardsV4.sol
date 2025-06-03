@@ -79,7 +79,7 @@ library CoinRewardsV4 {
         address payoutRecipient = coin.payoutRecipient();
         address platformReferrer = coin.platformReferrer();
         address protocolRewardRecipient = coin.protocolRewardRecipient();
-        address doppler = coin.doppler();
+        address doppler = coin.dopplerFeeRecipient();
 
         MarketRewards memory rewards = _distributeCurrencyRewards(
             currency,

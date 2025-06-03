@@ -346,7 +346,7 @@ contract CoinUniV4Test is BaseTest {
         router.execute(commands, inputs, block.timestamp + 20);
 
         assertEq(coinV4.balanceOf(coinV4.payoutRecipient()) - balanceBeforePayoutRecipient, 0, "backing reward coin");
-        assertEq(coinV4.balanceOf(coinV4.doppler()), 0, "doppler reward coin");
+        assertEq(coinV4.balanceOf(coinV4.dopplerFeeRecipient()), 0, "doppler reward coin");
         if (hasCreateReferral) {
             assertEq(coinV4.balanceOf(createReferral), 0, "create referral reward coin");
         }
@@ -356,7 +356,7 @@ contract CoinUniV4Test is BaseTest {
         assertEq(coinV4.balanceOf(coinV4.protocolRewardRecipient()), 0, "protocol reward coin");
 
         assertEq(mockERC20A.balanceOf(coinV4.payoutRecipient()), backingRewardsCurrency + backingRewardsCurrency2, "backing reward currency");
-        assertEq(mockERC20A.balanceOf(coinV4.doppler()), dopplerRewardsCurrency + dopplerRewardsCurrency2, "doppler reward currency");
+        assertEq(mockERC20A.balanceOf(coinV4.dopplerFeeRecipient()), dopplerRewardsCurrency + dopplerRewardsCurrency2, "doppler reward currency");
         if (hasCreateReferral) {
             assertEq(mockERC20A.balanceOf(createReferral), createReferralRewardsCurrency + createReferralRewardsCurrency2, "create referral reward currency");
         }
@@ -415,7 +415,7 @@ contract CoinUniV4Test is BaseTest {
             createReferral,
             tradeReferral,
             coinV4.protocolRewardRecipient(),
-            coinV4.doppler(),
+            coinV4.dopplerFeeRecipient(),
             IZoraV4CoinHook.MarketRewardsV4({
                 creatorPayoutAmountCurrency: backingRewardsCurrency,
                 creatorPayoutAmountCoin: 0,
