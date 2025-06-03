@@ -101,14 +101,14 @@ contract TestV4Swap is CoinsDeployerBase {
 
         // MockERC20 currency = _deployMockCurrency();
 
-        // ICoinV4 creatorCoin = _deployMockCoin(address(currency), trader, createReferral, bytes32("creator coin"));
-        // ICoinV4 contentCoin = _deployMockCoin(address(creatorCoin), trader, createReferral, bytes32("content coin"));
+        // ICoinV4 backingCoin = _deployMockCoin(address(currency), trader, createReferral, bytes32("backing coin"));
+        // ICoinV4 contentCoin = _deployMockCoin(address(backingCoin), trader, createReferral, bytes32("content coin"));
 
         MockERC20 currency = MockERC20(0x21E3bde504fF56C440851ACB6A16e7E35405B278);
-        ICoinV4 creatorCoin = ICoinV4(0xa8bb679A2be09eCCabdb76700170ec387C896570);
+        ICoinV4 backingCoin = ICoinV4(0xa8bb679A2be09eCCabdb76700170ec387C896570);
         ICoinV4 contentCoin = ICoinV4(0x3cfE4CE87A821FB2c7eAB4359dD6eA6F9e492c61);
 
-        console.log("creatorCoin", address(creatorCoin));
+        console.log("backingCoin", address(backingCoin));
         console.log("contentCoin", address(contentCoin));
         console.log("currency", address(currency));
 
@@ -122,11 +122,11 @@ contract TestV4Swap is CoinsDeployerBase {
         uint128 amountIn = 2 ether;
         currency.mint(trader, amountIn);
 
-        // swap some currency into the creator coin
-        uint256 creatorCoinReceived = _swap(address(currency), amountIn, creatorCoin, trader, tradeReferral);
+        // swap some currency into the backing coin
+        uint256 backingCoinReceived = _swap(address(currency), amountIn, backingCoin, trader, tradeReferral);
 
-        // swap balance of creator coin into the content coin
-        uint256 contentCoinReceived = _swap(address(creatorCoin), uint128(creatorCoinReceived), contentCoin, trader, tradeReferral);
+        // swap balance of backing coin into the content coin
+        uint256 contentCoinReceived = _swap(address(backingCoin), uint128(backingCoinReceived), contentCoin, trader, tradeReferral);
 
         // swap balance of content coin into the currency
         _swap(address(contentCoin), uint128(contentCoinReceived), contentCoin, trader, tradeReferral);
