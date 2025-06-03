@@ -6,28 +6,14 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ICoin, IHasRewardsRecipients} from "./interfaces/ICoin.sol";
 import {ICoinComments} from "./interfaces/ICoinComments.sol";
 import {IERC7572} from "./interfaces/IERC7572.sol";
-import {IUniswapV3Factory} from "./interfaces/IUniswapV3Factory.sol";
-import {IUniswapV3Pool} from "./interfaces/IUniswapV3Pool.sol";
-import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 import {IAirlock} from "./interfaces/IAirlock.sol";
-import {IProtocolRewards} from "./interfaces/IProtocolRewards.sol";
-import {IWETH} from "./interfaces/IWETH.sol";
 
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 import {MultiOwnable} from "./utils/MultiOwnable.sol";
-import {FullMath} from "./utils/uniswap/FullMath.sol";
-import {TickMath} from "./utils/uniswap/TickMath.sol";
-import {LiquidityAmounts} from "./utils/uniswap/LiquidityAmounts.sol";
 import {CoinConstants} from "./libs/CoinConstants.sol";
-import {MarketConstants} from "./libs/MarketConstants.sol";
-import {LpPosition} from "./types/LpPosition.sol";
-import {PoolState} from "./types/PoolState.sol";
-import {CoinSetupV3, UniV3Config, CoinV3Config} from "./libs/CoinSetupV3.sol";
-import {UniV3BuySell, CoinConfig} from "./libs/UniV3BuySell.sol";
 
 /*
      $$$$$$\   $$$$$$\  $$$$$$\ $$\   $$\ 

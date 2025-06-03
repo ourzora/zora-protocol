@@ -20,7 +20,7 @@ The factory automatically determines whether to deploy a V3 or V4 coin based on 
 
 ### Key Methods
 
-#### deploy
+#### deploy (Current Recommended Method)
 
 ```solidity
 function deploy(
@@ -31,32 +31,88 @@ function deploy(
     string memory symbol,
     bytes memory poolConfig,
     address platformReferrer,
-    uint256 orderSize,
-    string memory message,
-    bytes32 salt
-) external payable returns (address, uint256);
+    address postDeployHook,
+    bytes calldata postDeployHookData,
+    bytes32 coinSalt
+) external payable returns (address coin, bytes memory postDeployHookDataOut);
 ```
 
-This function creates a new coin contract with the specified parameters and its associated Uniswap pool (V3 or V4 depending on pool configuration).
-
-The factory automatically determines the coin version and pool type based on the `poolConfig` parameter.
+This is the current recommended function for creating a new coin contract with the specified parameters and its associated Uniswap pool.
 
 Parameters:
 - `payoutRecipient`: The recipient of creator reward payouts; this can be updated by any owner later on
-- `owners`: An array of addresses that will have permission to manage the coin's payout address and metadata URI. Owners can update the list of approved owners as well.
-- `uri`: The coin metadata URI (should be an IPFS URI). See [Metadata](/coins/contracts/metadata) for more information.
-- `name`: The name of the coin (e.g., "horse galloping").
+- `owners`: An array of addresses that will have permission to manage the coin's payout address and metadata URI
+- `uri`: The coin metadata URI (should be an IPFS URI)
+- `name`: The name of the coin (e.g., "horse galloping")
 - `symbol`: The trading symbol for the coin (e.g., "HORSE")
 - `poolConfig`: Encoded pool configuration that determines V3 vs V4 deployment and pool parameters
-- `platformReferrer`: The address that will receive platform referral rewards from trades. Ensure to set this to your own address to receive protocol market rewards.
-- `orderSize`: The order size for the first buy; must match msg.value for ETH/WETH pairs or be an approved amount of ERC20 currency to trade otherwise creation will fail.
-- `message`: Optional message associated with the coin creation
-- `salt`: Salt for deterministic deployment
+- `platformReferrer`: The address that will receive platform referral rewards from trades
+- `postDeployHook`: Address of a contract implementing the `IHasAfterCoinDeploy` interface that runs after deployment
+- `postDeployHookData`: Custom data to be passed to the post-deployment hook
+- `coinSalt`: Salt for deterministic deployment, enables predictable coin addresses
 
 Returns:
 - The address of the deployed coin contract
-- The amount of currency used for the initial purchase (if any)
-- __Note:__ When creating a coin, the return values are not accessible and the [`CoinCreated`](#coin-created) or [`CoinCreatedV4`](#coin-created-v4) event needs to be parsed from the logs to find the resulting address.
+- Any data returned from the post-deployment hook
+
+#### coinAddress
+
+```solidity
+function coinAddress(
+    address msgSender,
+    string memory name,
+    string memory symbol,
+    bytes memory poolConfig,
+    address platformReferrer,
+    bytes32 coinSalt
+) external view returns (address);
+```
+
+This function allows you to predict the address of a coin contract before it's deployed. Useful for preparing integrations.
+
+Parameters:
+- `msgSender`: The address that will call the deploy function
+- `name`: The name of the coin
+- `symbol`: The symbol of the coin
+- `poolConfig`: The pool configuration
+- `platformReferrer`: The platform referrer address
+- `coinSalt`: The salt to be used for deployment
+
+Returns:
+- The address where the coin will be deployed
+
+#### Deprecated Deploy Functions
+
+The factory also contains several deprecated deployment functions that are maintained for backward compatibility:
+
+```solidity
+// Deprecated: Use the recommended deploy function instead
+function deploy(
+    address payoutRecipient,
+    address[] memory owners,
+    string memory uri,
+    string memory name,
+    string memory symbol,
+    bytes memory poolConfig,
+    address platformReferrer,
+    uint256 orderSize
+) external payable returns (address, uint256);
+
+// Deprecated: Use the recommended deploy function instead
+function deployWithHook(
+    address payoutRecipient,
+    address[] memory owners,
+    string memory uri,
+    string memory name,
+    string memory symbol,
+    bytes memory poolConfig,
+    address platformReferrer,
+    address hook,
+    bytes calldata hookData
+) external payable returns (address coin, bytes memory hookDataOut);
+```
+
+These older functions don't use deterministic deployment, meaning you can't predict coin addresses before deployment. The current recommended `deploy` function supports deterministic addresses and post-deployment hooks in a single operation.
 
 #### Pool Configuration
 

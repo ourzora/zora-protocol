@@ -9,10 +9,17 @@ The `CoinV4` contract implements multiple interfaces:
 - `IHasPoolKey`: Provides access to the Uniswap V4 pool key
 - `IHasSwapPath`: Enables complex multi-hop reward distribution
 - `IERC165`: Standard interface detection
-- `IERC721Receiver`: Enables receiving ERC721 tokens (for LP tokens)
 - `IERC7572`: Standard for protocol-specific metadata
 
 Each coin is created with a Uniswap V4 liquidity pool and an advanced hook system that automatically handles fee collection and reward distribution.
+
+## Inheritance Structure
+
+`CoinV4` inherits from `BaseCoin`, which provides core ERC20 functionality, multi-ownership capabilities, and metadata management. The inheritance hierarchy is:
+
+```
+CoinV4 → BaseCoin → ERC20PermitUpgradeable → MultiOwnable → ReentrancyGuardUpgradeable → ContractVersionBase
+```
 
 ## Key Features
 
@@ -26,25 +33,43 @@ Each coin is created with a Uniswap V4 liquidity pool and an advanced hook syste
 
 ## Hook System
 
-The `CoinV4` contract uses the `ZoraV4CoinHook` which automatically executes on every swap to handle reward distribution. The hook performs three key operations:
+The `CoinV4` contract uses the `ZoraV4CoinHook` which automatically executes on every swap to handle reward distribution. The hook has permissions for `afterInitialize` and `afterSwap` operations on the Uniswap V4 pool and performs three key operations:
 
 ### 1. Collect LP Fees
-On every swap, the hook collects accrued fees from all liquidity positions in the pool. These fees are generated from trading activity and accumulate over time.
+On every swap, the hook collects accrued fees from all liquidity positions in the pool using the `V4Liquidity.collectFees` library function. These fees are generated from trading activity and accumulate over time.
 
 ### 2. Swap LP Fees to Backing Currency
-The collected fees are automatically swapped to the backing currency through optimal swap paths. For example:
+The collected fees are automatically swapped to the backing currency through optimal swap paths using the `UniV4SwapToCurrency.swapToPath` library function. For example:
 - If a coin is paired directly with USDC, fees are swapped directly to USDC
 - If a coin is paired with another coin (like a backing coin), the fees follow the swap path: `ContentCoin → BackingCoin → USDC`
 
 ### 3. Distribute Rewards
-The final backing currency is then distributed to reward recipients:
-- **Creator**: 50% to the payout recipient
-- **Create Referral**: 15% to the platform that referred the creator
-- **Trade Referral**: 15% to the platform that referred this specific trade
-- **Protocol**: 15% to the ZORA protocol treasury
-- **Doppler**: 5% to the governance entity
+The final backing currency is then distributed to reward recipients using predefined basis points (BPS):
+- **Creator**: 50% to the payout recipient (`CREATOR_REWARD_BPS = 5000`)
+- **Create Referral**: 15% to the platform that referred the creator (`CREATE_REFERRAL_REWARD_BPS = 1500`)
+- **Trade Referral**: 15% to the platform that referred this specific trade (`TRADE_REFERRAL_REWARD_BPS = 1500`)
+- **Protocol**: 20% to the ZORA protocol treasury (calculated as the remainder after other distributions)
+- **Doppler**: 5% to the governance entity (`DOPPLER_REWARD_BPS = 500`)
 
 All of this happens automatically in a single transaction whenever someone trades the coin.
+
+## Pool Configuration
+
+The pool configuration is defined by the `PoolConfiguration` struct which contains:
+```solidity
+struct PoolConfiguration {
+    uint8 version;           // Configuration version
+    uint16 numPositions;     // Number of liquidity positions
+    uint24 fee;              // Fee tier for the pool
+    int24 tickSpacing;       // Tick spacing for the pool
+    uint16[] numDiscoveryPositions;  // Number of discovery positions
+    int24[] tickLower;       // Lower tick bounds for positions
+    int24[] tickUpper;       // Upper tick bounds for positions
+    uint256[] maxDiscoverySupplyShare; // Maximum share for discovery supply
+}
+```
+
+This configuration allows for custom market curves with multiple liquidity positions.
 
 ## Core Functions
 
@@ -92,49 +117,7 @@ Example for a content coin paired with a backing coin:
 1. Content coin → Backing coin (first hop)
 2. Backing coin → USDC (second hop)
 
-### Trading Functions
-
-#### buy
-
-```solidity
-function buy(
-    address recipient,
-    uint256 orderSize,
-    uint256 minAmountOut,
-    uint160 sqrtPriceLimitX96,
-    address tradeReferrer
-) external payable returns (uint256, uint256);
-```
-
-Allows users to buy coins using ETH or the configured trading currency. The buyer sends currency and receives newly minted coins.
-
-Parameters:
-- `recipient`: Address that will receive the purchased coins
-- `orderSize`: Amount of currency to spend (in wei)
-- `minAmountOut`: Minimum amount of coins to receive (slippage protection)
-- `sqrtPriceLimitX96`: Price limit for the swap (0 for no limit)
-- `tradeReferrer`: Address that receives a portion of the trading fee (optional)
-
-#### sell
-
-```solidity
-function sell(
-    address recipient,
-    uint256 orderSize,
-    uint256 minAmountOut,
-    uint160 sqrtPriceLimitX96,
-    address tradeReferrer
-) external returns (uint256, uint256);
-```
-
-Allows users to sell their coins in exchange for the trading currency. Coins are burned during the sale.
-
-Parameters:
-- `recipient`: Address that will receive the currency proceeds
-- `orderSize`: Amount of coins to sell
-- `minAmountOut`: Minimum amount of currency to receive (slippage protection)
-- `sqrtPriceLimitX96`: Price limit for the swap (0 for no limit)
-- `tradeReferrer`: Address that receives a portion of the trading fee (optional)
+### Coin Trades
 
 #### burn
 
@@ -288,6 +271,32 @@ event CoinPayoutRecipientUpdated(
 
 Emitted when the payout recipient is updated.
 
+#### ContractURIUpdated
+
+```solidity
+event ContractURIUpdated();
+```
+
+Emitted when the contract URI is updated, used for standards compliance with ERC7572.
+
+#### CoinTradeRewards
+
+```solidity
+event CoinTradeRewards(
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address indexed tradeReferrer,
+    address protocolRewardRecipient,
+    uint256 creatorReward,
+    uint256 platformReferrerReward,
+    uint256 traderReferrerReward,
+    uint256 protocolReward,
+    address currency
+);
+```
+
+Emitted when trade rewards are distributed, showing the breakdown of rewards to each recipient.
+
 ## Error Handling
 
 The contract defines several custom errors that provide specific information about failed operations:
@@ -304,6 +313,15 @@ The contract defines several custom errors that provide specific information abo
 - `ERC20TransferAmountMismatch`: Unexpected ERC20 transfer amount
 - `EthTransferInvalid`: Invalid ETH transfer
 - `EthTransferFailed`: ETH transfer failed
+- `OnlyPool`: Operation attempted by an entity other than the pool
+- `OnlyWeth`: Operation attempted by an entity other than WETH
+- `MarketNotGraduated`: Market is not yet graduated
+- `MarketAlreadyGraduated`: Market is already graduated
+- `InvalidCurrencyLowerTick`: Lower tick is not less than maximum or not a multiple of 200
+- `InvalidWethLowerTick`: Lower tick is not set to the default value
+- `LegacyPoolMustHaveOneDiscoveryPosition`: Legacy pool does not have one discovery position
+- `DopplerPoolMustHaveMoreThan2DiscoveryPositions`: Doppler pool doesn't have enough discovery positions
+- `InvalidPoolVersion`: Invalid pool version specified
 
 ### Hook-Specific Errors
 
