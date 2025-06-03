@@ -1,5 +1,45 @@
 # @zoralabs/coins
 
+## 1.0.0
+
+### Major Changes
+
+- 73e95f69: Upgraded coins to use Uniswap V4:
+
+  **New CoinV4 Implementation:**
+
+  - Migrated from Uniswap V3 to Uniswap V4, with logic moved into a hook.
+  - Automatic LP fee collection and multi-hop reward distribution on every swap
+  - New `ZoraV4CoinHook` handles afterSwap operations
+  - Support for complex multi-position liquidity curves and discovery positions
+  - Multi-hop fee swapping through intermediate currencies (e.g., ContentCoin → BackingCoin → Zora)
+
+  **Factory Updates:**
+
+  - Updated `deploy()` function signature with new `poolConfig`, `message`, and `salt` parameters
+  - Automatic V3/V4 version selection based on pool configuration
+  - Deterministic coin deployment with salt support
+  - New `CoinCreatedV4` event for V4 coin deployments
+
+  **Reward System Changes:**
+
+  - Increased trade referral rewards from 10% to 15% (1500 basis points)
+  - Automatic reward distribution in single backing currency
+
+  **New Interfaces and Events:**
+
+  - Added `IHasPoolKey` and `IHasSwapPath` interfaces for V4 functionality
+  - New `Swapped` event with detailed swap and price information
+  - New `CoinMarketRewardsV4` event for reward distribution tracking
+
+  **Breaking Changes:**
+
+  - New deterministic factory deploy function with salt
+
+### Patch Changes
+
+- 6b8bdd9d: Remove ability to create coin with legacy pool config
+
 ## 0.9.0
 
 ### Minor Changes

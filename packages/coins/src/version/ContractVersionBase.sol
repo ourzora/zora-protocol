@@ -9,6 +9,6 @@ import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersion
 contract ContractVersionBase is IVersionedContract {
     /// @notice The version of the contract
     function contractVersion() external pure override returns (string memory) {
-        return "0.9.0";
+        return "1.0.0";
     }
 }

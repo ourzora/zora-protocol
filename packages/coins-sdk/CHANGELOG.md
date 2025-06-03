@@ -1,5 +1,13 @@
 # @zoralabs/coins-sdk
 
+## 0.1.2
+
+### Patch Changes
+
+- Updated dependencies [73e95f69]
+- Updated dependencies [0c50e8e7]
+  - @zoralabs/protocol-deployments@0.5.6
+
 ## 0.1.1
 
 ### Patch Changes

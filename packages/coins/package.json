@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/coins",
-  "version": "0.9.0",
+  "version": "1.0.0",
   "type": "module",
   "main": "./dist/index.cjs",
   "module": "./dist/index.js",

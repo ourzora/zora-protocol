@@ -1,98 +1,99 @@
-# @zoralabs/protocol-deployments
+# @zoralabs/protocol-deployments Changelog
+
 
 ## 0.5.6
 
 ### Patch Changes
 
-- 73e95f69: Published CoinsV4 pool config encoding helper
-- 0c50e8e7: Published uniswap v4 abis and addresses. Fixed encoding of v4 coin config
+- [73e95f69](https://github.com/ourzora/zora-protocol/commit/73e95f69): Published CoinsV4 pool config encoding helper
+- [0c50e8e7](https://github.com/ourzora/zora-protocol/commit/0c50e8e7): Published uniswap v4 abis and addresses. Fixed encoding of v4 coin config
 
 ## 0.5.5
 
 ### Patch Changes
 
-- 9ed0ce76: - Publishing new coins hooks in `@zoralabs/protocol-deployments`
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): - Publishing new coins hooks in `@zoralabs/protocol-deployments`
   - In coins, pulling ISwapRouter from `@zoralabs/shared-contracts`, and updated the shared interface to match the full interface of the ISwapRouter. This new interface is published in `@zoralabs/protocol-deployments`.
   - Removed publishing of the factory addresses directly in the wagmi config of the coins package, as that's inconsistent with the rest of the packages.
   - Updated the `@zoralabs/coins-sdk` to use `@zoralabs/protocol-deployments` for abis and addresses, which significantly reduces the dependency tree of it and has it follow the patterns of the other sdk packages.
-- ce3022d8: Deployed latest Coins and Deployment hooks to base mainnet
-- ce3022d8: Fix hook return value from encode hook generators
-- 9ed0ce76: Added helper methods to encode data for the post deploy hooks when creating coins
-- 9ed0ce76: Deployed latest coin factory and hooks to base-sepolia
+- [ce3022d8](https://github.com/ourzora/zora-protocol/commit/ce3022d8): Deployed latest Coins and Deployment hooks to base mainnet
+- [ce3022d8](https://github.com/ourzora/zora-protocol/commit/ce3022d8): Fix hook return value from encode hook generators
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): Added helper methods to encode data for the post deploy hooks when creating coins
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): Deployed latest coin factory and hooks to base-sepolia
 
 ## 0.5.4
 
 ### Patch Changes
 
-- 23f723dd: Integrate doppler for liquidity management with uniswap v3
+- [23f723dd](https://github.com/ourzora/zora-protocol/commit/23f723dd): Integrate doppler for liquidity management with uniswap v3
 
 ## 0.5.4-doppler.0
 
 ### Patch Changes
 
-- 96ab8907: Integrate doppler for liquidity management with uniswap v3
+- [96ab8907](https://github.com/ourzora/zora-protocol/commit/96ab8907): Integrate doppler for liquidity management with uniswap v3
 
 ## 0.5.3
 
 ### Patch Changes
 
-- 70b039ce: Deployed ZoraFactory for coins to deterministic 7777777 addresses on base and base sepolia
+- [70b039ce](https://github.com/ourzora/zora-protocol/commit/70b039ce): Deployed ZoraFactory for coins to deterministic 7777777 addresses on base and base sepolia
 
 ## 0.5.2
 
 ### Patch Changes
 
-- ed9f7741: Updated coin ABI for updated buy/sell return values
+- [ed9f7741](https://github.com/ourzora/zora-protocol/commit/ed9f7741): Updated coin ABI for updated buy/sell return values
 
 ## 0.5.1
 
 ### Patch Changes
 
-- 11854bbe: Updated factory impl abi to return coins purchased on deploy
+- [11854bbe](https://github.com/ourzora/zora-protocol/commit/11854bbe): Updated factory impl abi to return coins purchased on deploy
 
 ## 0.5.0
 
 ### Minor Changes
 
-- e1a3d68f: Refactored coin interface imports
+- [e1a3d68f](https://github.com/ourzora/zora-protocol/commit/e1a3d68f): Refactored coin interface imports
 
 ## 0.4.2
 
 ### Patch Changes
 
-- 1e10ac74: - Fixed coins package visibility
+- [1e10ac74](https://github.com/ourzora/zora-protocol/commit/1e10ac74): - Fixed coins package visibility
   - Renamed export to `coinFactory*`
 
 ## 0.4.1
 
 ### Patch Changes
 
-- 855112de: Add initial coins
+- [855112de](https://github.com/ourzora/zora-protocol/commit/855112de): Add initial coins
 
 ## 0.4.0
 
 ### Minor Changes
 
-- fc8e86a8: - Added Cointags addresses and abis.
+- [fc8e86a8](https://github.com/ourzora/zora-protocol/commit/fc8e86a8): - Added Cointags addresses and abis.
   - Added IUniswapV3Pool ABI.
 
 ## 0.3.11
 
 ### Patch Changes
 
-- ff8084fe: Update implementation contract versions and addresses for erc20z
+- [ff8084fe](https://github.com/ourzora/zora-protocol/commit/ff8084fe): Update implementation contract versions and addresses for erc20z
 
 ## 0.3.10
 
 ### Patch Changes
 
-- abbd6333: Added smart wallet factory deployment and abi
+- [abbd6333](https://github.com/ourzora/zora-protocol/commit/abbd6333): Added smart wallet factory deployment and abi
 
 ## 0.3.9
 
 ### Patch Changes
 
-- 4928687d: - Include the `Comments` and `CallerAndCommenter` abis and deployed addresses.
+- [4928687d](https://github.com/ourzora/zora-protocol/commit/4928687d): - Include the `Comments` and `CallerAndCommenter` abis and deployed addresses.
   - Added new exports for Comments contract cross-chain functionality:
     - Introduced `permitCommentTypedDataDefinition` function to generate typed data for cross-chain permit commenting
     - Introduced `permitSparkCommentTypedDataDefinition` function to generate typed data for cross-chain permit sparking
@@ -104,97 +105,97 @@
 
 ### Patch Changes
 
-- ad707434: Updated the 1155 Implementation reduceSupply function to be gated to the `TimedSaleStrategy` constructor argument
+- [ad707434](https://github.com/ourzora/zora-protocol/commit/ad707434): Updated the 1155 Implementation reduceSupply function to be gated to the `TimedSaleStrategy` constructor argument
   to ensure markets are launched when desired.
-- 2e68a87c: Updated 1155 impl versions and addresses
-- 17cc9821: Publishing `SponsoredSparksSpender` addresses and abi
+- [2e68a87c](https://github.com/ourzora/zora-protocol/commit/2e68a87c): Updated 1155 impl versions and addresses
+- [17cc9821](https://github.com/ourzora/zora-protocol/commit/17cc9821): Publishing `SponsoredSparksSpender` addresses and abi
 
 ## 0.3.7
 
 ### Patch Changes
 
-- c08ec3b3: Deployed SponsoredSparksSpender to more chains
+- [c08ec3b3](https://github.com/ourzora/zora-protocol/commit/c08ec3b3): Deployed SponsoredSparksSpender to more chains
 
 ## 0.3.6
 
 ### Patch Changes
 
-- d6aa9a00: Fixed the minter address for ZoraTimedSaleStrategy to point to the deterministically deployed address with the correct contract version.
+- [d6aa9a00](https://github.com/ourzora/zora-protocol/commit/d6aa9a00): Fixed the minter address for ZoraTimedSaleStrategy to point to the deterministically deployed address with the correct contract version.
 
 ## 0.3.5
 
 ### Patch Changes
 
-- 4a29c2b9: Bump viem to 2.21.21
+- [4a29c2b9](https://github.com/ourzora/zora-protocol/commit/4a29c2b9): Bump viem to 2.21.21
 
 ## 0.3.4
 
 ### Patch Changes
 
-- 66f33bbb: fix: update secondary swap helper contract address
+- [66f33bbb](https://github.com/ourzora/zora-protocol/commit/66f33bbb): fix: update secondary swap helper contract address
 
 ## 0.3.3
 
 ### Patch Changes
 
-- b885539f: Publish weth addresses
+- [b885539f](https://github.com/ourzora/zora-protocol/commit/b885539f): Publish weth addresses
 
 ## 0.3.2
 
 ### Patch Changes
 
-- 247ebc86: update for timed sales v2
-- 24520e9a: Fix sdk setSale for v2 params
+- [247ebc86](https://github.com/ourzora/zora-protocol/commit/247ebc86): update for timed sales v2
+- [24520e9a](https://github.com/ourzora/zora-protocol/commit/24520e9a): Fix sdk setSale for v2 params
 
 ## 0.3.1
 
 ### Patch Changes
 
-- d221894d: Fix royalties contract address. Include secondary swap address
-- f94e5f03: Deployed secondary swap to rest of chains
+- [d221894d](https://github.com/ourzora/zora-protocol/commit/d221894d): Fix royalties contract address. Include secondary swap address
+- [f94e5f03](https://github.com/ourzora/zora-protocol/commit/f94e5f03): Deployed secondary swap to rest of chains
 
 ## 0.3.0
 
 ### Minor Changes
 
-- 58f59243: Including erc20z contracts in protocol-deployments
+- [58f59243](https://github.com/ourzora/zora-protocol/commit/58f59243): Including erc20z contracts in protocol-deployments
 
 ### Patch Changes
 
-- b5a7fac4: Deployed latest 1155 to base and base sepolia
+- [b5a7fac4](https://github.com/ourzora/zora-protocol/commit/b5a7fac4): Deployed latest 1155 to base and base sepolia
 
 ## 0.2.2
 
 ### Patch Changes
 
-- 12909b5b: Export sparks sponsored mints spender abi, address, and typed data definition
-- 58914a0c: Deployed latest 1155 version to zora mainnet, zora sepolia, sepolia
+- [12909b5b](https://github.com/ourzora/zora-protocol/commit/12909b5b): Export sparks sponsored mints spender abi, address, and typed data definition
+- [58914a0c](https://github.com/ourzora/zora-protocol/commit/58914a0c): Deployed latest 1155 version to zora mainnet, zora sepolia, sepolia
 
 ## 0.2.1
 
 ### Patch Changes
 
-- 527aa518: Move from yarn to pnpm properly pinning deps packages
+- [527aa518](https://github.com/ourzora/zora-protocol/commit/527aa518): Move from yarn to pnpm properly pinning deps packages
 
 ## 0.2.0
 
 ### Minor Changes
 
-- 0ec838a4: Publishing Sparks contracts abis and addresses.
+- [0ec838a4](https://github.com/ourzora/zora-protocol/commit/0ec838a4): Publishing Sparks contracts abis and addresses.
 
 ### Patch Changes
 
-- 898c84a7: [chore] Update dependencies and runtime scripts
+- [898c84a7](https://github.com/ourzora/zora-protocol/commit/898c84a7): [chore] Update dependencies and runtime scripts
 
   This ensures jobs do not match binary names to make runs less ambigious and also that all deps are accounted for.
 
-- e0b5074d: Updated mainnet 1155 addresses and versions
+- [e0b5074d](https://github.com/ourzora/zora-protocol/commit/e0b5074d): Updated mainnet 1155 addresses and versions
 
 ## 0.1.13
 
 ### Patch Changes
 
-- 9cdd81ac: Deployed latest version of 1155 contracts, 1155 factory, preminter, and mints manager to:
+- [9cdd81ac](https://github.com/ourzora/zora-protocol/commit/9cdd81ac): Deployed latest version of 1155 contracts, 1155 factory, preminter, and mints manager to:
 
   - blast
   - Optimism mainnet
@@ -207,25 +208,25 @@
 
 ### Patch Changes
 
-- 7af9c4db: Deployed 1155 version 2.9.0 to mainnet, optimism, base, arbitrum one, arbitrum sepolia, blast
+- [7af9c4db](https://github.com/ourzora/zora-protocol/commit/7af9c4db): Deployed 1155 version 2.9.0 to mainnet, optimism, base, arbitrum one, arbitrum sepolia, blast
 
 ## 0.1.11
 
 ### Patch Changes
 
-- 399ba552: Deployed deterministic proxies to base sepolia. Deployed latest versions to base sepolia.
+- [399ba552](https://github.com/ourzora/zora-protocol/commit/399ba552): Deployed deterministic proxies to base sepolia. Deployed latest versions to base sepolia.
 
 ## 0.1.10
 
 ### Patch Changes
 
-- 16deff0c: Moved typed data definitions from `@zoralabs/protocol-sdk` to `@zoralabs/protocol-deployments`
+- [16deff0c](https://github.com/ourzora/zora-protocol/commit/16deff0c): Moved typed data definitions from `@zoralabs/protocol-sdk` to `@zoralabs/protocol-deployments`
 
 ## 0.1.9
 
 ### Patch Changes
 
-- f4641f4b: Removed dependencies from `zora-1155-contracts`, `1155-deployments`, `mints-contracts`, and `mints-deployments`
+- [f4641f4b](https://github.com/ourzora/zora-protocol/commit/f4641f4b): Removed dependencies from `zora-1155-contracts`, `1155-deployments`, `mints-contracts`, and `mints-deployments`
 
 ## 0.1.8
 
