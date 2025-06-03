@@ -103,9 +103,8 @@ contract TestV4Swap is CoinsDeployerBase {
 
         vm.startBroadcast(trader);
 
-        address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
+        // address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
         address tradeReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
-
         // ICoinV4 creatorCoin = _deployCoin(zora, trader, "TestCCoin", "CRE", "https://testc.com", createReferral, bytes32("creator"));
         // ICoinV4 contentCoin = _deployCoin(
         //     address(creatorCoin),

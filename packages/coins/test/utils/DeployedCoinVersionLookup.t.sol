@@ -5,7 +5,7 @@ import {BaseTest} from "../utils/BaseTest.sol";
 import {DeployedCoinVersionLookup} from "../../src/utils/DeployedCoinVersionLookup.sol";
 
 contract TestDeployedCoinVersionLookupImplementation is DeployedCoinVersionLookup {
-    function setVersionForTesting(address coin, uint32 version) external {
+    function setVersionForTesting(address coin, uint8 version) external {
         _setVersionForDeployedCoin(coin, version);
     }
 }
@@ -17,7 +17,7 @@ contract TestDeployedCoinVersionLookupImplementation is DeployedCoinVersionLooku
 contract DifferentNamespaceVersionLookup {
     /// @custom:storage-location erc7201:different.namespace
     struct DeployedCoinVersionStorage {
-        mapping(address => uint32) deployedCoinWithVersion;
+        mapping(address => uint8) deployedCoinWithVersion;
     }
 
     // keccak256(abi.encode(uint256(keccak256("different.namespace")) - 1)) & ~bytes32(uint256(0xff))
@@ -29,11 +29,11 @@ contract DifferentNamespaceVersionLookup {
         }
     }
 
-    function getVersionForDeployedCoin(address coin) public view returns (uint32) {
+    function getVersionForDeployedCoin(address coin) public view returns (uint8) {
         return _getDeployedCoinVersionStorage().deployedCoinWithVersion[coin];
     }
 
-    function setVersionForTesting(address coin, uint32 version) external {
+    function setVersionForTesting(address coin, uint8 version) external {
         _getDeployedCoinVersionStorage().deployedCoinWithVersion[coin] = version;
     }
 }

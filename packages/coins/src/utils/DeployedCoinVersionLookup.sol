@@ -9,9 +9,13 @@ import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLook
  * @dev Uses the ERC-7201 static storage slot pattern for upgradeable storage
  */
 contract DeployedCoinVersionLookup is IDeployedCoinVersionLookup {
+    struct DeployedCoinVersion {
+        uint8 version;
+    }
+
     /// @custom:storage-location erc7201:zora.coins.deployedcoinversionlookup.storage
     struct DeployedCoinVersionStorage {
-        mapping(address => uint32) deployedCoinWithVersion;
+        mapping(address => DeployedCoinVersion) deployedCoinWithVersion;
     }
 
     // keccak256(abi.encode(uint256(keccak256("zora.coins.deployedcoinversionlookup.storage")) - 1)) & ~bytes32(uint256(0xff))
@@ -32,8 +36,8 @@ contract DeployedCoinVersionLookup is IDeployedCoinVersionLookup {
      * @param coin The address of the coin
      * @return version The version of the coin (0 if not found)
      */
-    function getVersionForDeployedCoin(address coin) public view returns (uint32) {
-        return _getDeployedCoinVersionStorage().deployedCoinWithVersion[coin];
+    function getVersionForDeployedCoin(address coin) public view returns (uint8) {
+        return _getDeployedCoinVersionStorage().deployedCoinWithVersion[coin].version;
     }
 
     /**
@@ -42,7 +46,7 @@ contract DeployedCoinVersionLookup is IDeployedCoinVersionLookup {
      * @param coin The address of the coin
      * @param version The version to set
      */
-    function _setVersionForDeployedCoin(address coin, uint32 version) internal {
-        _getDeployedCoinVersionStorage().deployedCoinWithVersion[coin] = version;
+    function _setVersionForDeployedCoin(address coin, uint8 version) internal {
+        _getDeployedCoinVersionStorage().deployedCoinWithVersion[coin] = DeployedCoinVersion({version: version});
     }
 }

@@ -655,7 +655,17 @@ contract CoinUniV4Test is BaseTest {
         IHasSwapPath.PayoutSwapPath memory swapPath = coinV4.getPayoutSwapPath(IDeployedCoinVersionLookup(address(factory)));
 
         assertEq(swapPath.path.length, 1);
-        assertEq(abi.encode(swapPath.path[0]), abi.encode(coinV4.getPoolKey()));
+        _assertPathKeyEqual(
+            swapPath.path[0],
+            PathKey({
+                intermediateCurrency: Currency.wrap(address(mockERC20A)),
+                fee: coinV4.getPoolKey().fee,
+                tickSpacing: coinV4.getPoolKey().tickSpacing,
+                hooks: coinV4.getPoolKey().hooks,
+                hookData: bytes("")
+            }),
+            "path key"
+        );
     }
 
     function test_getSwapPath_whenBackingCurrencyProvidesPath() public {

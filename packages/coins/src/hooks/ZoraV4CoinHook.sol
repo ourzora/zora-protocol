@@ -9,6 +9,7 @@ import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/Bala
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IMsgSender} from "../interfaces/IMsgSender.sol";
+import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {V4Liquidity} from "../libs/V4Liquidity.sol";
 import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
@@ -17,11 +18,11 @@ import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLook
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {CoinCommon} from "../libs/CoinCommon.sol";
 import {PoolConfiguration} from "../types/PoolConfiguration.sol";
-import {CoinFactoryConfigurationVersions} from "../types/CoinFactoryConfigurationVersions.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
 import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
+import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
 
 contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
@@ -99,7 +100,7 @@ contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
     /// @return selector The selector of the afterInitialize hook to confirm the action.
     function _afterInitialize(address sender, PoolKey calldata key, uint160, int24) internal override returns (bytes4) {
         address coin = sender;
-        if (coinVersionLookup.getVersionForDeployedCoin(coin) < CoinFactoryConfigurationVersions.V4_0) {
+        if (!CoinConfigurationVersions.isV4(coinVersionLookup.getVersionForDeployedCoin(coin))) {
             revert NotACoin(coin);
         }
 

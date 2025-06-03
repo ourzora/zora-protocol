@@ -42,16 +42,7 @@ contract Simulate is Script {
 
         // Prebuy order size
         uint256 orderSize = 0.000111 ether;
-        (address coinAddress, uint256 coinsPurchased) = factory.deploy{value: orderSize}(
-            payoutAddress,
-            owners,
-            uri,
-            name,
-            symbol,
-            poolConfig,
-            payoutAddress,
-            orderSize
-        );
+        factory.deploy{value: orderSize}(payoutAddress, owners, uri, name, symbol, poolConfig, payoutAddress, orderSize);
 
         vm.stopBroadcast();
     }

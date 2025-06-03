@@ -12,8 +12,9 @@ import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
-import {CoinFactoryConfigurationVersions} from "../types/CoinFactoryConfigurationVersions.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
+import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
+
 
 library UniV4SwapToCurrency {
     using BalanceDeltaLibrary for BalanceDelta;
@@ -101,7 +102,7 @@ library UniV4SwapToCurrency {
     }
 
     function _hasSwapPath(address currency, IDeployedCoinVersionLookup coinVersionLookup) private view returns (bool) {
-        if (coinVersionLookup.getVersionForDeployedCoin(currency) >= CoinFactoryConfigurationVersions.V4_0) {
+        if (CoinConfigurationVersions.isV4(coinVersionLookup.getVersionForDeployedCoin(currency))) {
             return IERC165(currency).supportsInterface(type(IHasSwapPath).interfaceId);
         }
         return false;
