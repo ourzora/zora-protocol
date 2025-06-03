@@ -29,7 +29,8 @@ interface IZoraV4CoinHook {
         int128 amount0,
         int128 amount1,
         bool isCoinBuy,
-        bytes hookData
+        bytes hookData,
+        uint160 sqrtPriceX96
     );
 
     /// @notice Thrown when a non-coin is used to initialize a pool with this hook.

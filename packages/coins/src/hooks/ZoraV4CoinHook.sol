@@ -21,6 +21,7 @@ import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {CoinCommon} from "../libs/CoinCommon.sol";
 import {PoolConfiguration} from "../types/PoolConfiguration.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
+import {PoolStateReader} from "../libs/PoolStateReader.sol";
 
 contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
@@ -133,7 +134,19 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         {
             (address swapper, bool isTrustedSwapSenderAddress) = _getOriginalMsgSender(sender);
             bool isCoinBuy = params.zeroForOne ? Currency.unwrap(key.currency1) == address(coin) : Currency.unwrap(key.currency0) == address(coin);
-            emit Swapped(sender, swapper, isTrustedSwapSenderAddress, key, poolKeyHash, params, delta.amount0(), delta.amount1(), isCoinBuy, hookData);
+            emit Swapped(
+                sender,
+                swapper,
+                isTrustedSwapSenderAddress,
+                key,
+                poolKeyHash,
+                params,
+                delta.amount0(),
+                delta.amount1(),
+                isCoinBuy,
+                hookData,
+                PoolStateReader.getSqrtPriceX96(key, poolManager)
+            );
         }
 
         return (BaseHook.afterSwap.selector, 0);

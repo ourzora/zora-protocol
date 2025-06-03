@@ -27,6 +27,7 @@ import {FeeEstimatorHook} from "./utils/FeeEstimatorHook.sol";
 import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PoolStateReader} from "../src/libs/PoolStateReader.sol";
 
 contract CoinUniV4Test is BaseTest {
     CoinV4 internal coinV4;
@@ -105,7 +106,10 @@ contract CoinUniV4Test is BaseTest {
     }
 
     /// and then reverting the state after the swap
-    function _estimateSwap(bytes memory commands, bytes[] memory inputs) internal returns (BalanceDelta delta, SwapParams memory swapParams) {
+    function _estimateSwap(
+        bytes memory commands,
+        bytes[] memory inputs
+    ) internal returns (BalanceDelta delta, SwapParams memory swapParams, uint160 sqrtPriceX96) {
         uint256 snapshot = vm.snapshot();
         deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager)), address(coinV4.hooks()));
 
@@ -115,6 +119,8 @@ contract CoinUniV4Test is BaseTest {
 
         delta = FeeEstimatorHook(address(coinV4.hooks())).lastDelta();
         swapParams = FeeEstimatorHook(address(coinV4.hooks())).lastSwapParams();
+
+        sqrtPriceX96 = PoolStateReader.getSqrtPriceX96(coinV4.getPoolKey(), poolManager);
 
         vm.revertToState(snapshot);
     }
@@ -483,7 +489,7 @@ contract CoinUniV4Test is BaseTest {
 
         address sender = UNIVERSAL_ROUTER;
 
-        (BalanceDelta delta, SwapParams memory swapParams) = _estimateSwap(commands, inputs);
+        (BalanceDelta delta, SwapParams memory swapParams, uint160 sqrtPriceX96) = _estimateSwap(commands, inputs);
 
         address[] memory _trustedMessageSenders = new address[](1);
         _trustedMessageSenders[0] = UNIVERSAL_ROUTER;
@@ -517,7 +523,8 @@ contract CoinUniV4Test is BaseTest {
             delta.amount0(),
             delta.amount1(),
             isCoinBuy,
-            ""
+            "",
+            sqrtPriceX96
         );
         router.execute(commands, inputs, deadline);
     }
