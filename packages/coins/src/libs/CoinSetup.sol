@@ -32,7 +32,13 @@ library CoinSetup {
         Currency currency0 = isCoinToken0 ? Currency.wrap(coin) : Currency.wrap(currency);
         Currency currency1 = isCoinToken0 ? Currency.wrap(currency) : Currency.wrap(coin);
 
-        poolKey = PoolKey({currency0: currency0, currency1: currency1, fee: MarketConstants.LP_FEE, tickSpacing: MarketConstants.TICK_SPACING, hooks: hooks});
+        poolKey = PoolKey({
+            currency0: currency0,
+            currency1: currency1,
+            fee: MarketConstants.LP_FEE_V4,
+            tickSpacing: MarketConstants.TICK_SPACING,
+            hooks: hooks
+        });
     }
 
     function setupPoolWithVersion(

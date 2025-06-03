@@ -23,7 +23,7 @@ library CoinRewardsV4 {
     uint256 public constant CREATE_REFERRAL_REWARD_BPS = 1500;
 
     // trade referrer gets 10% of the total fee
-    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 1000;
+    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 1500;
 
     // doppler gets 5% of the total fee
     uint256 public constant DOPPLER_REWARD_BPS = 500;

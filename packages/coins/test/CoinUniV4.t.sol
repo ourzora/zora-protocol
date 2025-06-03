@@ -185,7 +185,7 @@ contract CoinUniV4Test is BaseTest {
 
     uint256 public constant CREATOR_REWARD_BPS = 5000;
     uint256 public constant CREATE_REFERRAL_REWARD_BPS = 1500;
-    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 1000;
+    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 1500;
     uint256 public constant DOPPLER_REWARD_BPS = 500;
 
     function computeExpectedRewards(

@@ -85,7 +85,7 @@ library CoinDopplerMultiCurve {
         poolConfiguration = PoolConfiguration({
             version: CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION,
             numPositions: uint16(totalDiscoveryPositions + 1), // Add one for the final tail position
-            fee: MarketConstants.V4_LP_FEE,
+            fee: MarketConstants.LP_FEE_V4,
             tickSpacing: MarketConstants.TICK_SPACING,
             numDiscoveryPositions: numDiscoveryPositions_,
             tickLower: tickLower_,
