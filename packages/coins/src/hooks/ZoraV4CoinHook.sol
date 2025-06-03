@@ -5,19 +5,15 @@ import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IMsgSender} from "../interfaces/IMsgSender.sol";
 import {LpPosition} from "../types/LpPosition.sol";
-import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {V4Liquidity} from "../libs/V4Liquidity.sol";
 import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
 import {ICoinV4} from "../interfaces/ICoinV4.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
-import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {CoinCommon} from "../libs/CoinCommon.sol";
 import {PoolConfiguration} from "../types/PoolConfiguration.sol";
@@ -177,7 +173,7 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     /// @param data The data.
     /// @return selector The selector of the unlockCallback hook to confirm the action.
     function unlockCallback(bytes calldata data) external onlyPoolManager returns (bytes memory) {
-        return abi.encode(V4Liquidity.handleCallback(poolManager, data));
+        return abi.encode(V4Liquidity.handleMintPositionsCallback(poolManager, data));
     }
 
     /// @notice Internal fn to get the original message sender.

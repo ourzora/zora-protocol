@@ -42,6 +42,9 @@ library HookMinerWithCreationCodeArgs {
 }
 
 library HooksDeployment {
+    error HookNotDeployed();
+    error InvalidHookAddress(address expected, address actual);
+
     function deployZoraV4CoinHook(address deployer, bytes memory hookCreationCode) internal returns (IHooks hook) {
         uint160 flags = uint160(Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_INITIALIZE_FLAG) ^ (0x4444 << 144);
 
@@ -49,9 +52,9 @@ library HooksDeployment {
 
         hook = IHooks(Create2.deploy(0, salt, hookCreationCode));
 
-        require(address(hook).code.length > 0, IHookDeployer.HookNotDeployed());
+        require(address(hook).code.length > 0, HookNotDeployed());
 
-        require(hookAddress == address(hook), IHookDeployer.InvalidHookAddress(hookAddress, address(hook)));
+        require(hookAddress == address(hook), InvalidHookAddress(hookAddress, address(hook)));
     }
 
     function zoraV4CoinHookCreationCode(
@@ -78,9 +81,4 @@ library HooksDeployment {
         address deployer = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
         return deployZoraV4CoinHook(deployer, zoraV4CoinHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders));
     }
-}
-
-interface IHookDeployer {
-    error HookNotDeployed();
-    error InvalidHookAddress(address expected, address actual);
 }

@@ -13,11 +13,10 @@ import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
 import {CoinFactoryConfigurationVersions} from "../types/CoinFactoryConfigurationVersions.sol";
+import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 
 library UniV4SwapToCurrency {
     using BalanceDeltaLibrary for BalanceDelta;
-
-    error PathMustHaveAtLeastOneStep();
 
     function swapToPath(
         IPoolManager poolManager,
@@ -26,7 +25,7 @@ library UniV4SwapToCurrency {
         Currency currencyIn,
         PathKey[] memory path
     ) internal returns (Currency lastCurrency, uint128 lastCurrencyBalance) {
-        require(path.length > 0, PathMustHaveAtLeastOneStep());
+        require(path.length > 0, IZoraV4CoinHook.PathMustHaveAtLeastOneStep());
 
         // do first swap - the first swap updates output the balance with the initial balance that existed before the swap
         (lastCurrency, lastCurrencyBalance) = _doFirstSwapFromCoinToCurrency(poolManager, path[0], currencyIn, amount0, amount1);
@@ -93,8 +92,6 @@ library UniV4SwapToCurrency {
         zeroForOne = currencyIn == currency0;
         poolKey = PoolKey(currency0, currency1, params.fee, params.tickSpacing, params.hooks);
     }
-
-    error NoPoolKeyForCurrency(Currency currency);
 
     function getSubSwapPath(address currency, IDeployedCoinVersionLookup coinVersionLookup) internal view returns (PathKey[] memory) {
         if (!_hasSwapPath(currency, coinVersionLookup)) {

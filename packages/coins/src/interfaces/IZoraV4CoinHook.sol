@@ -44,6 +44,9 @@ interface IZoraV4CoinHook {
     /// @param key The pool key struct to identify the pool.
     error NoCoinForHook(PoolKey key);
 
+    /// @notice Thrown when a attempting to swap with a path that has no steps.
+    error PathMustHaveAtLeastOneStep();
+
     /// @notice The pool coin struct. Lists all the contract-created positions for the coin.
     struct PoolCoin {
         /// @notice The address of the coin.

@@ -2,7 +2,6 @@
 pragma solidity ^0.8.28;
 
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {CoinV4} from "../CoinV4.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {V4Liquidity} from "./V4Liquidity.sol";
@@ -12,14 +11,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICoin} from "../interfaces/ICoin.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
-import {BalanceDeltaLibrary, BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
-import {ICoinV4} from "../interfaces/ICoinV4.sol";
 import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 
 library CoinRewardsV4 {
     using SafeERC20 for IERC20;
-    using BalanceDeltaLibrary for BalanceDelta;
 
     // creator gets 50% of the total fee
     uint256 public constant CREATOR_REWARD_BPS = 5000;
@@ -68,11 +64,18 @@ library CoinRewardsV4 {
 
         // Step 3: Transfer the final converted currency amount to this contract for distribution
         // This makes the tokens available for the subsequent reward distribution
-        V4Liquidity.takeFees(poolManager, receivedCurrency, receivedAmount);
+        if (receivedAmount > 0) {
+            poolManager.take(receivedCurrency, address(this), receivedAmount);
+        }
     }
 
+    /// @notice Distributes collected market fees as rewards to various recipients including creator, referrers, protocol, and doppler
+    /// @dev Calculates reward amounts based on predefined basis points and transfers the specified currency to each recipient
+    /// @param currency The currency token to distribute as rewards (can be native ETH if address is zero)
+    /// @param fees The total amount of fees collected to be distributed
+    /// @param coin The coin contract instance that implements IHasRewardsRecipients to get recipient addresses
+    /// @param tradeReferrer The address of the trade referrer who should receive trade referral rewards (can be zero address)
     function distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal {
-        // todo: fill this out
         address payoutRecipient = coin.payoutRecipient();
         address platformReferrer = coin.platformReferrer();
         address protocolRewardRecipient = coin.protocolRewardRecipient();

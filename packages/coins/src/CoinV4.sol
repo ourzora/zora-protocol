@@ -4,18 +4,9 @@ pragma solidity ^0.8.23;
 import {IPoolManager, PoolKey, Currency, IHooks} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 
 import {BaseCoin} from "./BaseCoin.sol";
-import {LpPosition} from "./types/LpPosition.sol";
-import {HooksDeployment} from "./libs/HooksDeployment.sol";
-import {IHookDeployer} from "./libs/HooksDeployment.sol";
-import {ZoraV4CoinHook} from "./hooks/ZoraV4CoinHook.sol";
 import {ICoinV4, IHasPoolKey, IHasSwapPath} from "./interfaces/ICoinV4.sol";
-import {V4Liquidity} from "./libs/V4Liquidity.sol";
-import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
-import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
-import {CoinRewardsV4} from "./libs/CoinRewardsV4.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {PoolConfiguration} from "./types/PoolConfiguration.sol";
-import {ISwapPathRouter} from "./interfaces/ISwapPathRouter.sol";
 import {UniV4SwapToCurrency} from "./libs/UniV4SwapToCurrency.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {IDeployedCoinVersionLookup} from "./interfaces/IDeployedCoinVersionLookup.sol";
@@ -98,8 +89,8 @@ contract CoinV4 is BaseCoin, ICoinV4 {
         return interfaceId == type(IHasPoolKey).interfaceId || type(IHasSwapPath).interfaceId == interfaceId || super.supportsInterface(interfaceId);
     }
 
-    /// @notice Get the swap path for the coin.  Recursively gets a swap path, by combining this pool key with the swap path of the backing currency.
-    function getPayoutSwapPath(IDeployedCoinVersionLookup coinVersionLookup) external view virtual returns (IHasSwapPath.PayoutSwapPath memory payoutSwapPath) {
+    /// @inheritdoc IHasSwapPath
+    function getPayoutSwapPath(IDeployedCoinVersionLookup coinVersionLookup) external view returns (IHasSwapPath.PayoutSwapPath memory payoutSwapPath) {
         // if to swap in is this currency,
         // if backing currency is a coin, then recursively get the path from the coin
         payoutSwapPath.currencyIn = Currency.wrap(address(this));

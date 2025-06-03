@@ -47,7 +47,6 @@ contract CoinUniV4Test is BaseTest {
 
         poolManager = IPoolManager(V4_POOL_MANAGER);
         permit2 = IPermit2(V4_PERMIT2);
-        // positionManager = IPositionManager(V4_POSITION_MANAGER);
         router = IUniversalRouter(UNIVERSAL_ROUTER);
         quoter = IV4Quoter(V4_QUOTER);
         mockERC20A = new MockERC20("MockERC20A", "MCKA");
@@ -219,7 +218,7 @@ contract CoinUniV4Test is BaseTest {
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, type(uint128).max, uint48(block.timestamp + 1 days));
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(coinV4), type(uint128).max, uint48(block.timestamp + 1 days));
 
-        // do a fake swap, so we can es_estimateLpFeesees
+        // do a fake swap, so we can estimate LP fees
         FeeEstimatorHook.FeeEstimatorState memory feeState = _estimateLpFees(commands, inputs);
 
         bool isCoinToken0 = Currency.unwrap(coinV4.getPoolKey().currency0) == address(coinV4);
@@ -312,7 +311,7 @@ contract CoinUniV4Test is BaseTest {
         vm.startPrank(trader);
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
 
-        // do a fake swap, so we can es_estimateLpFeesees
+        // do a fake swap, so we can estimate LP fees
         FeeEstimatorHook.FeeEstimatorState memory feeState = _estimateLpFees(commands, inputs);
 
         (
@@ -332,7 +331,7 @@ contract CoinUniV4Test is BaseTest {
         // approve the coinV4 to spend the coin
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(coinV4), amountIn, uint48(block.timestamp + 1 days));
 
-        // estimate the new fees_estimateLpFees
+        // estimate the new LP fees
         FeeEstimatorHook.FeeEstimatorState memory newFeeState = _estimateLpFees(commands, inputs);
 
         (
@@ -397,7 +396,7 @@ contract CoinUniV4Test is BaseTest {
         vm.startPrank(trader);
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
 
-        // do a fake swap, so we can es_estimateLpFeesees
+        // do a fake swap, so we can estimate LP fees
         FeeEstimatorHook.FeeEstimatorState memory feeState = _estimateLpFees(commands, inputs);
 
         (
