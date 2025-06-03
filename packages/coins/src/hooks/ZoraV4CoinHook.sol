@@ -21,8 +21,9 @@ import {CoinFactoryConfigurationVersions} from "../types/CoinFactoryConfiguratio
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
 import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
-contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
+contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     mapping(address => bool) internal trustedMessageSender;
