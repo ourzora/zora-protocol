@@ -679,8 +679,7 @@ contract CoinUniV4Test is BaseTest {
         // swap path should be:
         // 1. content coin -> backing coin
         // 2. backing coin -> zora coin
-        // 3. zora coin -> usdc
-        assertEq(path.length, 3);
+        assertEq(path.length, 2);
         _assertPathKeyEqual(
             path[0],
             PathKey({
