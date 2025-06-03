@@ -37,8 +37,8 @@ interface IZoraV4CoinHook {
     /// @param coin The address of the coin.
     error NotACoin(address coin);
 
-    /// @notice Thrown when a pool manager is set to the zero address.
-    error PoolManagerCannotBeZeroAddress();
+    /// @notice Coin version lookup cannot be the zero address.
+    error CoinVersionLookupCannotBeZeroAddress();
 
     /// @notice Thrown when a pool is not initialized for the hook.
     /// @param key The pool key struct to identify the pool.

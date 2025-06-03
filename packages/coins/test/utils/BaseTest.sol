@@ -8,6 +8,7 @@ import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {IZoraFactory} from "../../src/interfaces/IZoraFactory.sol";
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
@@ -30,6 +31,7 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
 import {HooksDeployment} from "../../src/libs/HooksDeployment.sol";
 import {CoinConstants} from "../../src/libs/CoinConstants.sol";
+import {ProxyShim} from "./ProxyShim.sol";
 
 contract BaseTest is Test {
     using stdStorage for StdStorage;
@@ -168,11 +170,15 @@ contract BaseTest is Test {
         trustedMessageSenders[0] = UNIVERSAL_ROUTER;
         trustedMessageSenders[1] = V4_POSITION_MANAGER;
 
-        zoraV4CoinHook = ZoraV4CoinHook(address(HooksDeployment.deployZoraV4CoinHookFromContract(V4_POOL_MANAGER, trustedMessageSenders)));
+        ProxyShim mockUpgradeableImpl = new ProxyShim();
+        factory = IZoraFactory(address(new ZoraFactory(address(mockUpgradeableImpl))));
+        zoraV4CoinHook = ZoraV4CoinHook(address(HooksDeployment.deployZoraV4CoinHookFromContract(V4_POOL_MANAGER, address(factory), trustedMessageSenders)));
         coinV3Impl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, V3_FACTORY, SWAP_ROUTER, DOPPLER_AIRLOCK);
         coinV4Impl = new CoinV4(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK, zoraV4CoinHook);
         factoryImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
-        factory = ZoraFactoryImpl(address(new ZoraFactory(address(factoryImpl))));
+        UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
+        factory = IZoraFactory(address(factory));
+        // factory = ZoraFactoryImpl(address(new ZoraFactory(address(factoryImpl))));
 
         ZoraFactoryImpl(address(factory)).initialize(users.factoryOwner);
 

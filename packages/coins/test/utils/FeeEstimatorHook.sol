@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
 import {IPoolManager, PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {IDeployedCoinVersionLookup} from "../../src/interfaces/IDeployedCoinVersionLookup.sol";
 import {IHasRewardsRecipients} from "../../src/interfaces/ICoin.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
@@ -13,7 +14,7 @@ import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
 
 /// @dev Test util - meant to be able to etched where a normal zora hook is, to gather the fees from swaps but not distribute them
 contract FeeEstimatorHook is ZoraV4CoinHook {
-    constructor(IPoolManager _poolManager) ZoraV4CoinHook(_poolManager, new address[](0)) {}
+    constructor(IPoolManager _poolManager, IDeployedCoinVersionLookup _coinVersionLookup) ZoraV4CoinHook(_poolManager, _coinVersionLookup, new address[](0)) {}
 
     uint128 public fees0;
     uint128 public fees1;

@@ -1,5 +1,5 @@
 ---
-"@zoralabs/coins": minor
+"@zoralabs/coins": major
 ---
 
 Upgraded coins to use Uniswap V4:

@@ -54,17 +54,29 @@ library HooksDeployment {
         require(hookAddress == address(hook), IHookDeployer.InvalidHookAddress(hookAddress, address(hook)));
     }
 
-    function zoraV4CoinHookCreationCode(address poolManager, address[] memory trustedMessageSenders) internal pure returns (bytes memory) {
-        return abi.encodePacked(type(ZoraV4CoinHook).creationCode, abi.encode(poolManager, trustedMessageSenders));
+    function zoraV4CoinHookCreationCode(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders
+    ) internal pure returns (bytes memory) {
+        return abi.encodePacked(type(ZoraV4CoinHook).creationCode, abi.encode(poolManager, coinVersionLookup, trustedMessageSenders));
     }
 
-    function deployZoraV4CoinHookFromContract(address poolManager, address[] memory trustedMessageSenders) internal returns (IHooks hook) {
-        return deployZoraV4CoinHook(address(this), zoraV4CoinHookCreationCode(poolManager, trustedMessageSenders));
+    function deployZoraV4CoinHookFromContract(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders
+    ) internal returns (IHooks hook) {
+        return deployZoraV4CoinHook(address(this), zoraV4CoinHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders));
     }
 
-    function deployZoraV4CoinHookFromScript(address poolManager, address[] memory trustedMessageSenders) internal returns (IHooks hook) {
+    function deployZoraV4CoinHookFromScript(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders
+    ) internal returns (IHooks hook) {
         address deployer = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
-        return deployZoraV4CoinHook(deployer, zoraV4CoinHookCreationCode(poolManager, trustedMessageSenders));
+        return deployZoraV4CoinHook(deployer, zoraV4CoinHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders));
     }
 }
 

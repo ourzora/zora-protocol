@@ -28,6 +28,8 @@ import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolStateReader} from "../src/libs/PoolStateReader.sol";
+import {CustomRevert} from "@uniswap/v4-core/src/libraries/CustomRevert.sol";
+import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 
 contract CoinUniV4Test is BaseTest {
     CoinV4 internal coinV4;
@@ -93,7 +95,7 @@ contract CoinUniV4Test is BaseTest {
     /// and then reverting the state after the swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (uint128 fee0, uint128 fee1) {
         uint256 snapshot = vm.snapshot();
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager)), address(coinV4.hooks()));
+        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
@@ -111,7 +113,7 @@ contract CoinUniV4Test is BaseTest {
         bytes[] memory inputs
     ) internal returns (BalanceDelta delta, SwapParams memory swapParams, uint160 sqrtPriceX96) {
         uint256 snapshot = vm.snapshot();
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager)), address(coinV4.hooks()));
+        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
@@ -410,18 +412,6 @@ contract CoinUniV4Test is BaseTest {
 
         uint128 amountIn = uint128(0.00001 ether);
 
-        bool isCoinToken0 = CoinCommon.sortTokens(address(coinV4), currency);
-
-        // we want to pay with currency and receive coin
-        bool zeroForOne = !isCoinToken0;
-
-        IV4Quoter.QuoteExactSingleParams memory quoteParams = IV4Quoter.QuoteExactSingleParams({
-            poolKey: coinV4.getPoolKey(),
-            zeroForOne: zeroForOne,
-            exactAmount: amountIn,
-            hookData: bytes("")
-        });
-
         uint128 minAmountOut = 0;
 
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
@@ -456,12 +446,66 @@ contract CoinUniV4Test is BaseTest {
         router.execute(commands, inputs, deadline);
     }
 
-    function test_swappingEmitsSwapEvent(bool swapIsFromTrustedMessageSender, bool trustedSenderReverts) public {
+    function testSwappingEmitsSwapEventFromSenderNoRevert() public {
+        _callSwappingEmitsSwapEvent(false, false);
+    }
+
+    function testSwappingEmitsSwapEventFromSenderReverts() public {
+        _callSwappingEmitsSwapEvent(false, true);
+    }
+
+    function testSwappingEmitsSwapEventFromTrustedMessageSenderNoRevert() public {
+        _callSwappingEmitsSwapEvent(true, false);
+    }
+
+    function testSwappingEmitsSwapEventFromTrustedMessageSenderReverts() public {
+        _callSwappingEmitsSwapEvent(true, true);
+    }
+
+    function test_afterInitializeRevertsWhenSenderIsNotACoin() public {
+        // First deploy a coin so we have a valid hook to test against
+        address currency = address(mockERC20A);
+        _deployV4Coin(currency);
+
+        // Deploy a mock contract that is not a coin
+        MockERC20 notACoin = new MockERC20("NotACoin", "NAC");
+
+        bool isCoinToken0 = CoinCommon.sortTokens(address(coinV4), address(notACoin));
+
+        // Create a valid pool key
+        PoolKey memory key = PoolKey({
+            currency0: isCoinToken0 ? Currency.wrap(address(coinV4)) : Currency.wrap(address(notACoin)),
+            currency1: isCoinToken0 ? Currency.wrap(address(notACoin)) : Currency.wrap(address(coinV4)),
+            fee: 3000,
+            tickSpacing: 60,
+            hooks: IHooks(address(coinV4.hooks()))
+        });
+
+        // We need to prank the call to come from the non-coin contract
+        vm.startPrank(address(notACoin));
+
+        // The hook should revert with NotACoin error when initializing
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                CustomRevert.WrappedError.selector,
+                address(coinV4.hooks()),
+                IHooks.afterInitialize.selector,
+                abi.encodeWithSelector(IZoraV4CoinHook.NotACoin.selector, address(notACoin)),
+                abi.encodeWithSelector(Hooks.HookCallFailed.selector)
+            )
+        );
+
+        // Call the pool manager to initialize, the hook should revert because the calling coin is not a coin
+        poolManager.initialize(key, uint160(1049428825694136384760392514097686388));
+
+        vm.stopPrank();
+    }
+
+    function _callSwappingEmitsSwapEvent(bool swapIsFromTrustedMessageSender, bool trustedSenderReverts) internal {
         uint64 amountIn = uint64(0.1 ether);
         address currency = address(mockERC20A);
         _deployV4Coin(currency);
 
-        vm.assume(amountIn > 0.00001 ether);
         uint128 minAmountOut = uint128(0);
 
         PoolKey memory key = coinV4.getPoolKey();

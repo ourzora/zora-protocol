@@ -28,11 +28,22 @@ import {UniV3Config} from "./libs/CoinSetupV3.sol";
 import {CoinSetupV3} from "./libs/CoinSetupV3.sol";
 import {PoolConfiguration} from "./types/PoolConfiguration.sol";
 import {LpPosition} from "./types/LpPosition.sol";
+import {CoinFactoryConfigurationVersions} from "./types/CoinFactoryConfigurationVersions.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
 import {CoinSetup} from "./libs/CoinSetup.sol";
 import {CoinDopplerMultiCurve} from "./libs/CoinDopplerMultiCurve.sol";
 
-contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgradeable, OwnableUpgradeable, IHasContractName, ContractVersionBase {
+import {DeployedCoinVersionLookup} from "./utils/DeployedCoinVersionLookup.sol";
+
+contract ZoraFactoryImpl is
+    IZoraFactory,
+    UUPSUpgradeable,
+    ReentrancyGuardUpgradeable,
+    OwnableUpgradeable,
+    IHasContractName,
+    ContractVersionBase,
+    DeployedCoinVersionLookup
+{
     using SafeERC20 for IERC20;
 
     /// @notice The coin contract implementation address
@@ -192,6 +203,8 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
 
         LpPosition[] memory positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, poolConfiguration);
 
+        _setVersionForDeployedCoin(address(coin), CoinFactoryConfigurationVersions.V3_3);
+
         // Initialize coin with pre-configured pool
         coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolAddress, poolConfiguration, positions);
 
@@ -223,6 +236,8 @@ contract ZoraFactoryImpl is IZoraFactory, UUPSUpgradeable, ReentrancyGuardUpgrad
         address platformReferrer
     ) internal {
         PoolKey memory poolKey = CoinSetup.buildPoolKey(address(coin), currency, isCoinToken0, coin.hooks());
+
+        _setVersionForDeployedCoin(address(coin), CoinFactoryConfigurationVersions.V4_0);
 
         // Initialize coin with pre-configured pool
         coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);

@@ -16,10 +16,12 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 import {V4Liquidity} from "../libs/V4Liquidity.sol";
 import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
 import {ICoinV4} from "../interfaces/ICoinV4.sol";
+import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
 import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {CoinCommon} from "../libs/CoinCommon.sol";
 import {PoolConfiguration} from "../types/PoolConfiguration.sol";
+import {CoinFactoryConfigurationVersions} from "../types/CoinFactoryConfigurationVersions.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
 
@@ -27,6 +29,8 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     mapping(address => bool) internal trustedMessageSender;
+
+    IDeployedCoinVersionLookup internal immutable coinVersionLookup;
 
     /// @inheritdoc IZoraV4CoinHook
     function isTrustedMessageSender(address sender) external view returns (bool) {
@@ -36,10 +40,12 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     /// @notice The constructor for the ZoraV4CoinHook.
     /// @param poolManager_ The pool manager for the coin.
     /// @param trustedMessageSenders_ The addresses of the trusted message senders.
-    constructor(IPoolManager poolManager_, address[] memory trustedMessageSenders_) BaseHook(poolManager_) {
-        if (address(poolManager_) == address(0)) {
-            revert PoolManagerCannotBeZeroAddress();
+    constructor(IPoolManager poolManager_, IDeployedCoinVersionLookup coinVersionLookup_, address[] memory trustedMessageSenders_) BaseHook(poolManager_) {
+        if (address(coinVersionLookup_) == address(0)) {
+            revert CoinVersionLookupCannotBeZeroAddress();
         }
+
+        coinVersionLookup = coinVersionLookup_;
 
         for (uint256 i = 0; i < trustedMessageSenders_.length; i++) {
             trustedMessageSender[trustedMessageSenders_[i]] = true;
@@ -95,7 +101,7 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     /// @return selector The selector of the afterInitialize hook to confirm the action.
     function _afterInitialize(address sender, PoolKey calldata key, uint160, int24) internal override returns (bytes4) {
         address coin = sender;
-        if (!V4Liquidity.isCoin(coin)) {
+        if (coinVersionLookup.getVersionForDeployedCoin(coin) < CoinFactoryConfigurationVersions.V4_0) {
             revert NotACoin(coin);
         }
 
@@ -167,8 +173,11 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     function _getOriginalMsgSender(address sender) internal view returns (address swapper, bool senderIsTrusted) {
         senderIsTrusted = trustedMessageSender[sender];
 
+        // If getter function reverts, we return a 0 address by default and continue execution.
         try IMsgSender(sender).msgSender() returns (address _swapper) {
             swapper = _swapper;
-        } catch {}
+        } catch {
+            swapper = address(0);
+        }
     }
 }
