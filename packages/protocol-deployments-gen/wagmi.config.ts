@@ -38,6 +38,9 @@ import {
   coinABI,
   buySupplyWithSwapRouterHookABI,
   iPoolConfigEncodingABI,
+  iUniversalRouterABI,
+  iPermit2ABI,
+  coinV4ABI,
 } from "@zoralabs/coins";
 
 type Address = `0x${string}`;
@@ -223,6 +226,8 @@ const getSharedAddresses = () => {
       ) as {
         WETH: Address;
         UNISWAP_SWAP_ROUTER: Address;
+        UNISWAP_UNIVERSAL_ROUTER: Address;
+        UNISWAP_PERMIT2: Address;
       },
     };
   });
@@ -240,6 +245,22 @@ const getSharedAddresses = () => {
     addresses,
     configKey: "UNISWAP_SWAP_ROUTER",
     contractName: "UniswapV3SwapRouter",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iUniversalRouterABI,
+    addresses,
+    configKey: "UNISWAP_UNIVERSAL_ROUTER",
+    contractName: "UniswapUniversalRouter",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iPermit2ABI,
+    addresses,
+    configKey: "UNISWAP_PERMIT2",
+    contractName: "Permit2",
     storedConfigs,
   });
 
@@ -538,6 +559,10 @@ const getCoinsContracts = (): ContractConfig[] => {
     {
       abi: coinABI,
       name: "Coin",
+    },
+    {
+      abi: coinV4ABI,
+      name: "CoinV4",
     },
     {
       abi: iPoolConfigEncodingABI,

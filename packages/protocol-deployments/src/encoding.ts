@@ -3,6 +3,7 @@ import {
   decodeAbiParameters,
   encodeAbiParameters,
   encodeFunctionData,
+  getAbiItem,
 } from "viem";
 import {
   uniswapV3SwapRouterABI,
@@ -197,16 +198,17 @@ export const encodeMultiCurvePoolConfig = ({
   numDiscoveryPositions: number[];
   maxDiscoverySupplyShare: bigint[];
 }) => {
-  return encodeFunctionData({
+  const abiItem = getAbiItem({
     abi: poolConfigEncodingABI,
-    functionName: "encodeMultiCurvePoolConfig",
-    args: [
-      UNISWAP_V4_MULTICURVE_POOL_VERSION,
-      currency,
-      tickLower,
-      tickUpper,
-      numDiscoveryPositions,
-      maxDiscoverySupplyShare,
-    ],
+    name: "encodeMultiCurvePoolConfig",
   });
+
+  return encodeAbiParameters(abiItem.inputs, [
+    UNISWAP_V4_MULTICURVE_POOL_VERSION,
+    currency,
+    tickLower,
+    tickUpper,
+    numDiscoveryPositions,
+    maxDiscoverySupplyShare,
+  ]);
 };

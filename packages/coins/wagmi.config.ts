@@ -10,10 +10,13 @@ export default defineConfig({
       },
       include: [
         "Coin",
+        "CoinV4",
         "ZoraFactoryImpl",
         "IUniswapV3Pool",
         "BuySupplyWithSwapRouterHook",
         "IPoolConfigEncoding",
+        "IUniversalRouter",
+        "IPermit2",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],
