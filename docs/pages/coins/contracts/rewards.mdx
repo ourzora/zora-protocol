@@ -21,7 +21,50 @@ Rewards v1.1 is deployed at the same address on all networks.
 
 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B
 
-## Fee Split (Per Mint)
+## Coin Trading Rewards (V4)
+
+The latest V4 coins use an advanced hook-based reward system that automatically converts and distributes rewards through multi-hop swaps to reach the target payout currency.
+
+### V4 Reward Distribution
+
+| Recipient       | Percentage |
+| --------------- | ---------- |
+| Creator         | 50% |
+| Create Referral | 15% |
+| Trade Referral  | 15% |
+| Protocol        | 15% |
+| Doppler         | 5% |
+
+### Key V4 Features
+
+- **Multi-Hop Reward Swapping**: Automatically converts rewards through intermediate tokens to reach the final payout currency
+- **Gas Efficient**: All conversions happen in a single transaction through the hook system
+- **Unified Currency Distribution**: All recipients receive rewards in the same target currency (e.g., USDC)
+- **Recursive Path Resolution**: Handles complex coin-to-coin-to-currency conversion paths
+
+For example, if a content coin is paired with a creator coin, which is paired with USDC:
+1. LP fees are collected in both the content coin and creator coin
+2. Content coins are swapped to creator coins
+3. Creator coins are swapped to USDC
+4. All rewards are distributed in USDC to recipients
+
+## Legacy Trading Rewards (V3)
+
+V3 coins use the original reward distribution system with separate currency and coin rewards.
+
+### V3 Reward Distribution
+
+| Recipient       | Percentage |
+| --------------- | ---------- |
+| Creator         | 50% |
+| Create Referral | 15% |
+| Trade Referral  | 15% |
+| Protocol        | 15% |
+| Doppler         | 5% |
+
+Note: V3 rewards are distributed in both the coin and its backing currency separately.
+
+## NFT Mint Fee Split (Per Mint)
 
 #### Free Mint
 
@@ -61,52 +104,82 @@ Rewards v1.1 is deployed at the same address on all networks.
 
 **First Minter**: Only for premints, this is the first collector to execute the premint. In a non-premint context, this reward is paid out to the creator of the NFT. *Note: For ERC20 Mints, the creator is set as the First Minter and earns First Minter rewards by default.*
 
+## Coin Rewards Terminology
+
+**Trade Referral**: The platform or address that referred a specific trade/swap of a coin. In V4, this is passed through hook data and can trigger referral rewards.
+
+**Create Referral**: The platform that referred the creator to deploy the coin. This is set at coin creation time and earns a percentage of all trading fees.
+
+**Creator/Payout Recipient**: The address designated to receive creator rewards from trading activity. This can be updated by coin owners.
+
+**Protocol**: The ZORA protocol treasury that receives a portion of trading fees.
+
+**Doppler**: The governance entity that receives a small percentage of trading fees.
 
 ## How It Works: Creator
 
-1. Creator selects the **"Free + Rewards"** pricing option when creating their 721 or 1155 NFT
+1. Creator selects coin creation parameters including payout recipient
 2. Creator specifies a wallet address eligible to claim their rewards
-3. Creator opens up their edition for minting -- **that's it!**
+3. Creator opens up their coin for trading -- **that's it!**
 
-The creator's total ETH generated from rewards is aggregated into an [escrow contract](https://github.com/ourzora/zora-protocol/blob/main/packages/protocol-rewards/src/ProtocolRewards.sol) and can be withdrawn at any time.
+The creator's total rewards are automatically distributed with each trade:
+- **V4**: Converted to target currency and sent directly to payout recipient
+- **V3**: Accumulated in escrow and can be withdrawn at any time
 
 ## How It Works: Developer
 
 ### Create Referral Reward
 
-The create referral reward is paid out to the developer or platform that referred the creator to deploy their NFT collection using Zora's contracts.
+The create referral reward is paid out to the developer or platform that referred the creator to deploy their coin using Zora's contracts.
 
-#### Creating an ERC-1155 Token with Rewards
+#### Creating a Coin with Rewards
 
-The `createReferral` address is specified upon token creation.
+The `createReferral` address is specified upon coin creation through the factory's deploy function.
 
+```solidity
+function deploy(
+    address payoutRecipient,
+    address[] memory owners,
+    string memory uri,
+    string memory name,
+    string memory symbol,
+    bytes memory poolConfig,
+    address platformReferrer, // This is the create referral
+    uint256 orderSize,
+    string memory message,
+    bytes32 salt
+) external payable returns (address, uint256);
 ```
-function setupNewTokenWithCreateReferral(
-    string calldata newURI,
-    uint256 maxSupply,
-    address createReferral
-) public
-```
 
-### Mint Referral Reward
+### Trade Referral Reward
 
-The mint referral reward is paid out to the party that referred the collector to mint an NFT.
+The trade referral reward is paid out to the party that referred a specific trade.
 
-#### ERC-1155 Minting with Rewards
+#### V4 Trading with Referrals
 
-```
-function mintWithRewards(
-    IMinter1155 minter,
-    uint256 tokenId,
-    uint256 quantity,
-    bytes calldata minterArguments,
-    address mintReferral
-)
+For V4 coins, trade referrals are passed through the hook data when executing swaps via the Universal Router or other compatible interfaces.
+
+#### V3 Trading with Referrals
+
+For V3 coins, trade referrals are specified in the buy/sell functions:
+
+```solidity
+function buy(
+    address recipient,
+    uint256 orderSize,
+    uint256 minAmountOut,
+    uint160 sqrtPriceLimitX96,
+    address tradeReferrer
+) external payable returns (uint256, uint256);
 ```
 
 ## Withdrawing Rewards
 
-Rewards must be withdrawn from the escrow contract, which the address can be found [in the readme](https://github.com/ourzora/zora-protocol/tree/main/packages/protocol-rewards).
+### V4 Coins
+Rewards are automatically distributed on each trade - no withdrawal needed!
+
+### V3 Coins and NFT Rewards
+Rewards must be withdrawn from the escrow contract, which address can be found [in the readme](https://github.com/ourzora/zora-protocol/tree/main/packages/protocol-rewards).
 
 ```solidity
 function withdraw(address to, uint256 amount) external;

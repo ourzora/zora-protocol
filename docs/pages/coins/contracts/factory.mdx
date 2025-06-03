@@ -6,7 +6,9 @@ The contract is upgradable by the Zora team to update coin features, but any dep
 
 ## Overview
 
-The `CoinFactory` implements the `IZoraFactory` interface and serves as the entry point for creating new coins in the ZORA Coins Protocol. It handles the deployment of coin contracts, their associated Uniswap V3 pools, and the initial setup of liquidity.
+The `ZoraFactory` implements the `IZoraFactory` interface and serves as the entry point for creating new coins in the ZORA Coins Protocol. It handles the deployment of both V3 (Uniswap V3) and V4 (Uniswap V4) coin contracts, their associated pools, and the initial setup of liquidity.
+
+The factory automatically determines whether to deploy a V3 or V4 coin based on the pool configuration provided.
 
 ## Canonical Deployment Address
 
@@ -27,16 +29,17 @@ function deploy(
     string memory uri,
     string memory name,
     string memory symbol,
+    bytes memory poolConfig,
     address platformReferrer,
-    address currency,
-    int24 tickLower,
-    uint256 orderSize
+    uint256 orderSize,
+    string memory message,
+    bytes32 salt
 ) external payable returns (address, uint256);
 ```
 
-This function creates a new coin contract with the specified parameters and its associated Uniswap V3 liquidity pool.
+This function creates a new coin contract with the specified parameters and its associated Uniswap pool (V3 or V4 depending on pool configuration).
 
-While the currency field can be set to any ERC20, only WETH/ETH pairs are supported by our user interface and indexer at this time.
+The factory automatically determines the coin version and pool type based on the `poolConfig` parameter.
 
 Parameters:
 - `payoutRecipient`: The recipient of creator reward payouts; this can be updated by any owner later on
@@ -44,23 +47,37 @@ Parameters:
 - `uri`: The coin metadata URI (should be an IPFS URI). See [Metadata](/coins/contracts/metadata) for more information.
 - `name`: The name of the coin (e.g., "horse galloping").
 - `symbol`: The trading symbol for the coin (e.g., "HORSE")
+- `poolConfig`: Encoded pool configuration that determines V3 vs V4 deployment and pool parameters
 - `platformReferrer`: The address that will receive platform referral rewards from trades. Ensure to set this to your own address to receive protocol market rewards.
-- `currency`: The address of the trading currency; use address(0) for ETH/WETH. Only WETH/ETH pairs are supported by our user interface and indexer at this time.
-- `tickLower`: The lower tick for the Uniswap V3 LP position; needs to be set to -199200 for WETH/ETH pairs otherwise the coin will fail to initialize.
 - `orderSize`: The order size for the first buy; must match msg.value for ETH/WETH pairs or be an approved amount of ERC20 currency to trade otherwise creation will fail.
+- `message`: Optional message associated with the coin creation
+- `salt`: Salt for deterministic deployment
 
 Returns:
 - The address of the deployed coin contract
 - The amount of currency used for the initial purchase (if any)
-- __Note:__ When creating a coin, the return values are not accessible and the [`CoinCreated`](#coin-created) event needs to be parsed from the logs to find the resulting address.
+- __Note:__ When creating a coin, the return values are not accessible and the [`CoinCreated`](#coin-created) or [`CoinCreatedV4`](#coin-created-v4) event needs to be parsed from the logs to find the resulting address.
+
+#### Pool Configuration
+
+The `poolConfig` parameter is a bytes-encoded configuration that determines:
+- **Version**: Whether to deploy V3 or V4 coin
+- **Currency**: The trading pair currency (can be address(0) for ETH/WETH)
+- **Pool Parameters**: Fee tier, tick spacing, and other pool-specific settings
+
+For V4 coins, additional parameters include:
+- **Hook Configuration**: Advanced pool behavior settings
+- **Multi-Position Setup**: Support for complex liquidity curves
+- **Reward Routing**: Multi-hop swap path configuration
 
 Notes:
 - When creating a coin with ETH/WETH, you must send ETH with the transaction equal to the `orderSize` parameter
 - For other currencies, the factory will pull the specified amount from your wallet (requires approval)
+- V4 coins support more advanced features like multi-hop reward distribution
 
 ### Events
 
-#### CoinCreated
+#### CoinCreated (V3)
 
 ```solidity
 event CoinCreated(
@@ -77,7 +94,7 @@ event CoinCreated(
 );
 ```
 
-Emitted when a new coin is created through the factory.
+Emitted when a new V3 coin is created through the factory.
 
 Event Parameters:
 - `caller`: The address that called the deploy function
@@ -91,6 +108,39 @@ Event Parameters:
 - `pool`: The address of the associated Uniswap V3 pool
 - `version`: The version string of the coin implementation
 
+#### CoinCreatedV4 (V4)
+
+```solidity
+event CoinCreatedV4(
+    address indexed caller,
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address currency,
+    string uri,
+    string name,
+    string symbol,
+    address coin,
+    PoolKey poolKey,
+    bytes32 poolKeyHash,
+    string version
+);
+```
+
+Emitted when a new V4 coin is created through the factory.
+
+Event Parameters:
+- `caller`: The address that called the deploy function
+- `payoutRecipient`: The address of the creator payout recipient
+- `platformReferrer`: The address of the platform referrer
+- `currency`: The address of the trading currency
+- `uri`: The metadata URI of the coin
+- `name`: The name of the coin
+- `symbol`: The symbol of the coin
+- `coin`: The address of the newly created coin contract
+- `poolKey`: The Uniswap V4 pool key struct
+- `poolKeyHash`: Hash of the pool key for efficient indexing
+- `version`: The version string of the coin implementation
+
 ### Error Handling
 
 The factory defines custom errors to provide specific information about failed operations:
@@ -100,7 +150,7 @@ The factory defines custom errors to provide specific information about failed o
 
 ## Usage with SDK
 
-While you can interact directly with the factory contract, it's recommended to use the Zora Coins SDK which handles the complexities of coin creation:
+While you can interact directly with the factory contract, it's recommended to use the Zora Coins SDK which handles the complexities of coin creation and automatically selects the appropriate version:
 
 ```typescript
 import { createCoin } from "@zoralabs/coins-sdk";
@@ -128,23 +178,48 @@ const coinParams = {
   payoutRecipient: "0xYourAddress" as Address,
   platformReferrer: "0xYourPlatformReferrerAddress" as Address, // Optional
   initialPurchaseWei: parseEther("0.1"), // Optional: Initial amount to purchase in Wei
+  // The SDK will automatically select V4 for new coins unless specified otherwise
+  version: "v4", // Optional: Force specific version
 };
 
 // Create the coin
 const result = await createCoin(coinParams, walletClient, publicClient);
 console.log("Coin address:", result.address);
+console.log("Coin version:", result.version); // "v3" or "v4"
 ```
 
+## Version Selection
+
+The factory automatically determines which version to deploy based on several factors:
+
+1. **Pool Configuration**: V4-specific configurations will deploy V4 coins
+2. **Currency Type**: Certain currency configurations may prefer specific versions
+3. **Feature Requirements**: Advanced features like multi-hop rewards require V4
+
+### V3 vs V4 Feature Comparison
+
+| Feature | V3 | V4 |
+|---------|----|----|
+| Basic Trading | ✅ | ✅ |
+| ERC20 Functionality | ✅ | ✅ |
+| Simple Reward Distribution | ✅ | ✅ |
+| Multi-Hop Reward Swapping | ❌ | ✅ |
+| Advanced Hook System | ❌ | ✅ |
+| Complex Liquidity Curves | ❌ | ✅ |
+| Gas Efficiency | Good | Better |
+| Pool Customization | Limited | Extensive |
 
 ## Advanced Configuration
 
 ### Currency Options
 
-When creating a coin, you have two options for the trading currency:
+When creating a coin, you have multiple options for the trading currency:
 
 1. **ETH/WETH**: Use `address(0)` for the currency parameter. This is the most common option, allowing users to buy and sell coins with ETH.
 
 2. **ERC20 Token**: Specify the address of an ERC20 token. This creates a coin that trades against that specific token.
+
+3. **Other Coins (V4 Only)**: V4 coins can be paired with other coins, enabling complex reward distribution chains.
 
 ### Initial Purchase
 
@@ -154,17 +229,20 @@ The `orderSize` parameter (or `initialPurchaseWei` in the SDK) determines the in
 - For ETH/WETH coins, this amount must be sent with the transaction
 - For ERC20 coins, the factory must be approved to spend this amount
 
-### Tick Configuration
+### V4-Specific Configuration
 
-The `tickLower` parameter affects the price curve for the Uniswap V3 pool:
+V4 coins support additional configuration options:
 
-- For ETH/WETH pairs, this is ignored and set to a default value
-- For other currencies, this can be customized to affect the price range of the liquidity position
+- **Multi-Position Liquidity**: Automatically create multiple liquidity positions for better price discovery
+- **Custom Hook Logic**: Advanced pool behavior and fee collection
+- **Swap Path Optimization**: Intelligent routing for multi-hop reward distribution
 
 ## Security Considerations
 
 - The factory is the only contract allowed to create official ZORA protocol coins
 - Platform referrer addresses are permanently set at creation and cannot be changed
 - Owner addresses have some control over the coin (metadata, payout recipient)
-- Initial purchases are processed through Uniswap V3 pools, subject to their slippage and price impact mechanics
+- V3 coins are processed through Uniswap V3 pools, subject to their slippage and price impact mechanics
+- V4 coins benefit from improved hooks and better MEV protection
+- All coin versions maintain the same security guarantees for immutability after deployment
 
