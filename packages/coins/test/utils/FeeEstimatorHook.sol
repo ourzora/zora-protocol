@@ -11,22 +11,38 @@ import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {CoinCommon} from "../../src/libs/CoinCommon.sol";
 import {V4Liquidity} from "../../src/libs/V4Liquidity.sol";
 import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
+import {ICoinV4, IHasSwapPath} from "../../src/interfaces/ICoinV4.sol";
+import {UniV4SwapToCurrency} from "../../src/libs/UniV4SwapToCurrency.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {CoinRewardsV4} from "../../src/libs/CoinRewardsV4.sol";
 
 /// @dev Test util - meant to be able to etched where a normal zora hook is, to gather the fees from swaps but not distribute them
 contract FeeEstimatorHook is ZoraV4CoinHook {
+    struct FeeEstimatorState {
+        uint128 fees0;
+        uint128 fees1;
+        Currency afterSwapCurrency;
+        uint128 afterSwapCurrencyAmount;
+        BalanceDelta lastDelta;
+        SwapParams lastSwapParams;
+        uint256 currencyBalanceChange;
+        uint256 coinBalanceChange;
+    }
+
     constructor(IPoolManager _poolManager, IDeployedCoinVersionLookup _coinVersionLookup) ZoraV4CoinHook(_poolManager, _coinVersionLookup, new address[](0)) {}
 
-    uint128 public fees0;
-    uint128 public fees1;
-    BalanceDelta public lastDelta;
-    SwapParams public _lastSwapParams;
+    FeeEstimatorState public feeState;
+
+    function getFeeState() public view returns (FeeEstimatorState memory) {
+        return feeState;
+    }
 
     function _afterSwap(
-        address sender,
+        address,
         PoolKey calldata key,
         SwapParams calldata params,
         BalanceDelta _delta,
-        bytes calldata hookData
+        bytes calldata
     ) internal override returns (bytes4, int128) {
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(key);
 
@@ -35,19 +51,34 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         require(coin != address(0), NoCoinForHook(key));
 
         {
-            (int128 fee0, int128 fee1) = V4Liquidity.collectAndTakeFees(poolManager, key, poolCoins[poolKeyHash].positions);
+            uint256 coinBalanceBefore = IERC20(coin).balanceOf(address(this));
+            uint256 currencyBalanceBefore = IERC20(ICoinV4(coin).currency()).balanceOf(address(this));
 
-            fees0 += uint128(fee0);
-            fees1 += uint128(fee1);
+            IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
+
+            int128 fee0;
+            int128 fee1;
+
+            (fee0, fee1, feeState.afterSwapCurrency, feeState.afterSwapCurrencyAmount) = CoinRewardsV4.collectFeesAndConvertToPayout(
+                poolManager,
+                key,
+                poolCoins[poolKeyHash].positions,
+                payoutSwapPath
+            );
+
+            feeState.fees0 += uint128(fee0);
+            feeState.fees1 += uint128(fee1);
+
+            uint256 coinBalanceAfter = IERC20(coin).balanceOf(address(this));
+            uint256 currencyBalanceAfter = IERC20(ICoinV4(coin).currency()).balanceOf(address(this));
+
+            feeState.coinBalanceChange = coinBalanceAfter - coinBalanceBefore;
+            feeState.currencyBalanceChange = currencyBalanceAfter - currencyBalanceBefore;
         }
 
-        lastDelta = _delta;
-        _lastSwapParams = params;
+        feeState.lastDelta = _delta;
+        feeState.lastSwapParams = params;
 
         return (BaseHook.afterSwap.selector, 0);
-    }
-
-    function lastSwapParams() public view returns (SwapParams memory) {
-        return _lastSwapParams;
     }
 }

@@ -12,9 +12,14 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ICoin} from "../interfaces/ICoin.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
+import {BalanceDeltaLibrary, BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {ICoinV4} from "../interfaces/ICoinV4.sol";
+import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
+import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 
 library CoinRewardsV4 {
     using SafeERC20 for IERC20;
+    using BalanceDeltaLibrary for BalanceDelta;
 
     // creator gets 50% of the total fee
     uint256 public constant CREATOR_REWARD_BPS = 5000;
@@ -28,41 +33,54 @@ library CoinRewardsV4 {
     // doppler gets 5% of the total fee
     uint256 public constant DOPPLER_REWARD_BPS = 500;
 
-    function collectAndDistributeMarketRewards(
-        IPoolManager poolManager,
-        PoolKey memory key,
-        LpPosition[] storage positions,
-        bytes calldata hookData,
-        IHasRewardsRecipients coin
-    ) internal {
-        // Collect lp fees to get balances
-        (int128 fees0, int128 fees1) = V4Liquidity.collectAndTakeFees(poolManager, key, positions);
-
-        // distribute the fees as market rewards
-        CoinRewardsV4.distributeMarketRewards(key.currency0, key.currency1, uint128(fees0), uint128(fees1), coin, getTradeReferral(hookData));
-    }
-
-    function getTradeReferral(bytes calldata hookData) internal view returns (address) {
+    function getTradeReferral(bytes calldata hookData) internal pure returns (address) {
         return hookData.length > 0 ? abi.decode(hookData, (address)) : address(0);
     }
 
-    function distributeMarketRewards(
-        Currency currencyA,
-        Currency currencyB,
-        uint128 fee0,
-        uint128 fee1,
-        IHasRewardsRecipients coin,
-        address tradeReferrer
-    ) internal {
+    /// @notice Collects fees from LP positions, swaps them to target payout currency, and transfers to hook contract, so
+    /// that they can later be distributed as rewards.
+    /// @param poolManager The pool manager instance
+    /// @param key The pool key
+    /// @param positions The LP positions to collect fees from
+    /// @param payoutSwapPath The swap path to convert fees to target currency
+    /// @return fees0 The amount of fees collected in currency0
+    /// @return fees1 The amount of fees collected in currency1
+    /// @return receivedCurrency The final currency after swapping
+    /// @return receivedAmount The final amount after swapping
+    function collectFeesAndConvertToPayout(
+        IPoolManager poolManager,
+        PoolKey memory key,
+        LpPosition[] storage positions,
+        IHasSwapPath.PayoutSwapPath memory payoutSwapPath
+    ) internal returns (int128 fees0, int128 fees1, Currency receivedCurrency, uint128 receivedAmount) {
+        // Step 1: Collect accrued fees from all LP positions in both token0 and token1
+        (fees0, fees1) = V4Liquidity.collectFees(poolManager, key, positions);
+
+        // Step 2: Swap the collected fees through the specified path to convert them to the target payout currency
+        // This handles multi-hop swaps if needed (e.g. coin -> backingCoin -> backingCoin's currency)
+        (receivedCurrency, receivedAmount) = UniV4SwapToCurrency.swapToPath(
+            poolManager,
+            uint128(fees0),
+            uint128(fees1),
+            payoutSwapPath.currencyIn,
+            payoutSwapPath.path
+        );
+
+        // Step 3: Transfer the final converted currency amount to this contract for distribution
+        // This makes the tokens available for the subsequent reward distribution
+        V4Liquidity.takeFees(poolManager, receivedCurrency, receivedAmount);
+    }
+
+    function distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal {
         // todo: fill this out
         address payoutRecipient = coin.payoutRecipient();
         address platformReferrer = coin.platformReferrer();
         address protocolRewardRecipient = coin.protocolRewardRecipient();
         address doppler = coin.doppler();
 
-        MarketRewards memory rewardsA = _distributeCurrencyRewards(
-            currencyA,
-            fee0,
+        MarketRewards memory rewards = _distributeCurrencyRewards(
+            currency,
+            fees,
             payoutRecipient,
             platformReferrer,
             protocolRewardRecipient,
@@ -70,42 +88,28 @@ library CoinRewardsV4 {
             tradeReferrer
         );
 
-        MarketRewards memory rewardsB = _distributeCurrencyRewards(
-            currencyB,
-            fee1,
-            payoutRecipient,
-            platformReferrer,
-            protocolRewardRecipient,
-            doppler,
-            tradeReferrer
-        );
-
-        bool currencyAIsCoin = Currency.unwrap(currencyA) == address(coin);
-        MarketRewards memory rewardsCoin = currencyAIsCoin ? rewardsA : rewardsB;
-        MarketRewards memory rewardsCurrency = currencyAIsCoin ? rewardsB : rewardsA;
-
-        IZoraV4CoinHook.MarketRewardsV4 memory rewards = IZoraV4CoinHook.MarketRewardsV4({
-            creatorPayoutAmountCurrency: rewardsCurrency.creatorAmount,
-            creatorPayoutAmountCoin: rewardsCoin.creatorAmount,
-            platformReferrerAmountCurrency: rewardsCurrency.platformReferrerAmount,
-            platformReferrerAmountCoin: rewardsCoin.platformReferrerAmount,
-            tradeReferrerAmountCurrency: rewardsCurrency.tradeReferrerAmount,
-            tradeReferrerAmountCoin: rewardsCoin.tradeReferrerAmount,
-            protocolAmountCurrency: rewardsCurrency.protocolAmount,
-            protocolAmountCoin: rewardsCoin.protocolAmount,
-            dopplerAmountCurrency: rewardsCurrency.dopplerAmount,
-            dopplerAmountCoin: rewardsCoin.dopplerAmount
+        IZoraV4CoinHook.MarketRewardsV4 memory marketRewards = IZoraV4CoinHook.MarketRewardsV4({
+            creatorPayoutAmountCurrency: rewards.creatorAmount,
+            creatorPayoutAmountCoin: 0,
+            platformReferrerAmountCurrency: rewards.platformReferrerAmount,
+            platformReferrerAmountCoin: 0,
+            tradeReferrerAmountCurrency: rewards.tradeReferrerAmount,
+            tradeReferrerAmountCoin: 0,
+            protocolAmountCurrency: rewards.protocolAmount,
+            protocolAmountCoin: 0,
+            dopplerAmountCurrency: rewards.dopplerAmount,
+            dopplerAmountCoin: 0
         });
 
         emit IZoraV4CoinHook.CoinMarketRewardsV4(
             address(coin),
-            Currency.unwrap(currencyAIsCoin ? currencyB : currencyA),
+            Currency.unwrap(currency),
             payoutRecipient,
             platformReferrer,
             tradeReferrer,
             protocolRewardRecipient,
             doppler,
-            rewards
+            marketRewards
         );
     }
 

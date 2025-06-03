@@ -26,24 +26,27 @@ contract TestV4Swap is CoinsDeployerBase {
     uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = 10; // will be 11 total with tail position
     uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = 0.495e18; //
 
-    function _deployMockCurrency() internal returns (MockERC20 currency) {
-        currency = new MockERC20("Testcoin", "TEST");
-        currency.mint(getUniswapV4PoolManager(), 1000000 ether);
-    }
-
-    function _deployMockCoin(address currency, address creator, address createReferral, bytes32 salt) internal returns (ICoinV4 coin) {
+    function _deployCoin(
+        address currency,
+        address creator,
+        string memory name,
+        string memory symbol,
+        string memory uri,
+        address createReferral,
+        bytes32 salt
+    ) internal returns (ICoinV4 coin) {
         CoinsDeployment memory deployment = readDeployment();
         address[] memory owners = new address[](1);
         owners[0] = creator;
 
         bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(address(currency));
 
-        (address coinAddress, ) = IZoraFactory(deployment.zoraFactory).deploy(
+        (address coinAddress, ) = IZoraFactory(deployment.devFactory).deploy(
             creator,
             owners,
-            "https://test.com",
-            "Testcoin",
-            "TEST",
+            uri,
+            name,
+            symbol,
             poolConfig,
             createReferral,
             address(0),
@@ -94,23 +97,31 @@ contract TestV4Swap is CoinsDeployerBase {
     function run() public {
         address trader = vm.envAddress("TRADER");
 
+        require(block.chainid == 8453, "only on base");
+
+        address zora = 0x1111111111166b7FE7bd91427724B487980aFc69;
+
         vm.startBroadcast(trader);
 
         address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
         address tradeReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
 
-        // MockERC20 currency = _deployMockCurrency();
-
-        // ICoinV4 creatorCoin = _deployMockCoin(address(currency), trader, createReferral, bytes32("creator coin"));
-        // ICoinV4 contentCoin = _deployMockCoin(address(creatorCoin), trader, createReferral, bytes32("content coin"));
-
-        MockERC20 currency = MockERC20(0x21E3bde504fF56C440851ACB6A16e7E35405B278);
-        ICoinV4 creatorCoin = ICoinV4(0xa8bb679A2be09eCCabdb76700170ec387C896570);
-        ICoinV4 contentCoin = ICoinV4(0x3cfE4CE87A821FB2c7eAB4359dD6eA6F9e492c61);
+        // ICoinV4 creatorCoin = _deployCoin(zora, trader, "TestCCoin", "CRE", "https://testc.com", createReferral, bytes32("creator"));
+        // ICoinV4 contentCoin = _deployCoin(
+        //     address(creatorCoin),
+        //     trader,
+        //     "Content Coin",
+        //     "CONTENT",
+        //     "https://content.com",
+        //     createReferral,
+        //     bytes32("content coin")
+        // );
+        ICoinV4 creatorCoin = ICoinV4(0xeA734b5997F35cD469921cCa7BB9A03C104f2f64);
+        ICoinV4 contentCoin = ICoinV4(0x72218BFEEc7D556BD3Dd8eFf2a317CEd49533769);
 
         console.log("creatorCoin", address(creatorCoin));
         console.log("contentCoin", address(contentCoin));
-        console.log("currency", address(currency));
+        // console.log("currency", address(currency));
 
         // (MockERC20 currency, address coinAddress) = _deployMockCurrencyAndCoin(trader, createReferral);
 
@@ -119,13 +130,13 @@ contract TestV4Swap is CoinsDeployerBase {
         // console.log("coinAddress", coinAddress);
 
         // swap in 2 ether of currency into the coin
-        uint128 amountIn = 2 ether;
-        currency.mint(trader, amountIn);
+        uint128 amountIn = uint128(IERC20(zora).balanceOf(trader));
+        // currency.mint(trader, amountIn);
 
-        // swap some currency into the creator coin
-        uint256 creatorCoinReceived = _swap(address(currency), amountIn, creatorCoin, trader, tradeReferral);
+        // // swap some currency into the creator coin
+        uint256 creatorCoinReceived = _swap(zora, amountIn, creatorCoin, trader, tradeReferral);
 
-        // swap balance of creator coin into the content coin
+        // // swap balance of creator coin into the content coin
         uint256 contentCoinReceived = _swap(address(creatorCoin), uint128(creatorCoinReceived), contentCoin, trader, tradeReferral);
 
         // swap balance of content coin into the currency

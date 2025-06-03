@@ -6,12 +6,26 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {PoolConfiguration} from "../types/PoolConfiguration.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {IDeployedCoinVersionLookup} from "./IDeployedCoinVersionLookup.sol";
 
-interface ICoinV4 is ICoin {
-    /// @notice Returns the pool key for the coin
+/// @notice Returns the pool key for the coin
+interface IHasPoolKey {
     function getPoolKey() external view returns (PoolKey memory);
+}
 
-    /// @notice Returns the pool configuration for the coin
+/// @notice Returns the pool configuration for the coin
+interface IHasSwapPath {
+    struct PayoutSwapPath {
+        PathKey[] path;
+        Currency currencyIn;
+    }
+
+    function getPayoutSwapPath(IDeployedCoinVersionLookup coinVersionLookup) external view returns (PayoutSwapPath memory);
+}
+
+interface ICoinV4 is ICoin, IHasPoolKey, IHasSwapPath {
     function getPoolConfiguration() external view returns (PoolConfiguration memory);
 
     /// @notice Returns the hooks contract used by this coin

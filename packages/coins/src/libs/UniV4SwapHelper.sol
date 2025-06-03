@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.13;
+pragma solidity ^0.8.23;
 
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Commands} from "@uniswap/universal-router/contracts/libraries/Commands.sol";
@@ -9,6 +9,19 @@ import {CoinCommon} from "./CoinCommon.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {ISwapPathRouter} from "../interfaces/ISwapPathRouter.sol";
+import {IHasPoolKey} from "../interfaces/ICoinV4.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+
+// struct PathKey {
+//     Currency intermediateCurrency;
+//     uint24 fee;
+//     int24 tickSpacing;
+//     IHooks hooks;
+//     bytes hookData;
+// }
 
 library UniV4SwapHelper {
     function buildExactInputSingleSwapCommand(
@@ -46,6 +59,31 @@ library UniV4SwapHelper {
         // Third parameter: specify output tokens from the swap
         // encode TAKE_ALL parameters
         params[2] = abi.encode(currencyOut, minAmountOut);
+
+        inputs = new bytes[](1);
+
+        // Combine actions and params into inputs
+        inputs[0] = abi.encode(actions, params);
+    }
+
+    function buildExactInputSwapCommand(
+        Currency currencyIn,
+        Currency currencyOut,
+        PathKey[] memory path,
+        uint128 amountIn,
+        uint128 amountOutMinimum
+    ) internal pure returns (bytes memory commands, bytes[] memory inputs) {
+        commands = abi.encodePacked(uint8(Commands.V4_SWAP));
+
+        bytes memory actions = abi.encodePacked(uint8(Actions.SWAP_EXACT_IN), uint8(Actions.SETTLE_ALL), uint8(Actions.TAKE_ALL));
+
+        bytes[] memory params = new bytes[](3);
+
+        params[0] = abi.encode(IV4Router.ExactInputParams({currencyIn: currencyIn, path: path, amountIn: amountIn, amountOutMinimum: amountOutMinimum}));
+
+        params[1] = abi.encode(currencyIn, amountIn);
+
+        params[2] = abi.encode(currencyOut, amountOutMinimum);
 
         inputs = new bytes[](1);
 

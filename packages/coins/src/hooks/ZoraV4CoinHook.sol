@@ -24,6 +24,7 @@ import {PoolConfiguration} from "../types/PoolConfiguration.sol";
 import {CoinFactoryConfigurationVersions} from "../types/CoinFactoryConfigurationVersions.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
+import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 
 contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
@@ -135,7 +136,20 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         address coin = poolCoins[poolKeyHash].coin;
         require(coin != address(0), NoCoinForHook(key));
 
-        CoinRewardsV4.collectAndDistributeMarketRewards(poolManager, key, poolCoins[poolKeyHash].positions, hookData, ICoinV4(coin));
+        // get path for swapping the payout to a single currency
+        IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
+
+        // Collect accrued LP fees from all positions, swap them to the target payout currency,
+        // and transfer the converted amount to this hook contract for distribution
+        (, , Currency receivedCurrency, uint128 receivedAmount) = CoinRewardsV4.collectFeesAndConvertToPayout(
+            poolManager,
+            key,
+            poolCoins[poolKeyHash].positions,
+            payoutSwapPath
+        );
+
+        // Distribute the collected and converted fees to all reward recipients (creator, referrers, protocol, etc.)
+        CoinRewardsV4.distributeMarketRewards(receivedCurrency, receivedAmount, ICoinV4(coin), CoinRewardsV4.getTradeReferral(hookData));
 
         {
             (address swapper, bool isTrustedSwapSenderAddress) = _getOriginalMsgSender(sender);

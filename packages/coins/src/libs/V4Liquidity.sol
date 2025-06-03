@@ -16,6 +16,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
+import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+
 // command = 1; mint
 struct CallbackData {
     uint8 command;
@@ -84,20 +88,38 @@ library V4Liquidity {
         }
     }
 
-    function collectAndTakeFees(
-        IPoolManager poolManager,
-        PoolKey memory key,
-        LpPosition[] storage positions
-    ) internal returns (int128 balance0, int128 balance1) {
-        (balance0, balance1) = collectFees(poolManager, key, positions);
-
-        // take the fees into this contract, to be distributed below
-        if (balance0 > 0) {
-            poolManager.take(key.currency0, address(this), uint256(uint128(balance0)));
+    function swapFullAmount(IPoolManager poolManager, PoolKey memory key, bool zeroForOne, uint128 amountToSwap) internal returns (uint128 amountReceived) {
+        if (amountToSwap == 0) {
+            return 0;
         }
 
-        if (balance1 > 0) {
-            poolManager.take(key.currency1, address(this), uint256(uint128(balance1)));
+        SwapParams memory swapParams = SwapParams({
+            zeroForOne: zeroForOne,
+            // we put in a negative amount to swap, because we want to swap exact amount in
+            amountSpecified: -int128(amountToSwap),
+            sqrtPriceLimitX96: zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
+        });
+
+        BalanceDelta swapDelta = poolManager.swap(key, swapParams, "");
+
+        amountReceived = zeroForOne ? uint128(swapDelta.amount1()) : uint128(swapDelta.amount0());
+    }
+
+    struct Path {
+        PoolKey key;
+    }
+
+    // function getSwapPath(PoolKey memory key, Currency toSwapOut) internal view returns (Path[] memory path) {
+
+    // }
+
+    function isCoin(Currency currency) internal view returns (bool) {
+        return IERC165(Currency.unwrap(currency)).supportsInterface(type(IHasRewardsRecipients).interfaceId);
+    }
+
+    function takeFees(IPoolManager poolManager, Currency currency, uint256 amount) internal {
+        if (amount > 0) {
+            poolManager.take(currency, address(this), amount);
         }
     }
 

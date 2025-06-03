@@ -8,13 +8,17 @@ import {LpPosition} from "./types/LpPosition.sol";
 import {HooksDeployment} from "./libs/HooksDeployment.sol";
 import {IHookDeployer} from "./libs/HooksDeployment.sol";
 import {ZoraV4CoinHook} from "./hooks/ZoraV4CoinHook.sol";
-import {ICoinV4} from "./interfaces/ICoinV4.sol";
+import {ICoinV4, IHasPoolKey, IHasSwapPath} from "./interfaces/ICoinV4.sol";
 import {V4Liquidity} from "./libs/V4Liquidity.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {CoinRewardsV4} from "./libs/CoinRewardsV4.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {PoolConfiguration} from "./types/PoolConfiguration.sol";
+import {ISwapPathRouter} from "./interfaces/ISwapPathRouter.sol";
+import {UniV4SwapToCurrency} from "./libs/UniV4SwapToCurrency.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+import {IDeployedCoinVersionLookup} from "./interfaces/IDeployedCoinVersionLookup.sol";
 
 contract CoinV4 is BaseCoin, ICoinV4 {
     /// @notice The Uniswap v4 pool manager singleton contract reference.
@@ -55,7 +59,7 @@ contract CoinV4 is BaseCoin, ICoinV4 {
         hooks = hooks_;
     }
 
-    /// @inheritdoc ICoinV4
+    /// @inheritdoc IHasPoolKey
     function getPoolKey() public view returns (PoolKey memory) {
         return poolKey;
     }
@@ -88,5 +92,39 @@ contract CoinV4 is BaseCoin, ICoinV4 {
         _transfer(address(this), address(hooks), balanceOf(address(this)));
         // initialize the pool - the hook will mint its positions in the afterInitialize callback
         poolManager.initialize(poolKey, sqrtPriceX96);
+    }
+
+    function supportsInterface(bytes4 interfaceId) public pure virtual override(BaseCoin, IERC165) returns (bool) {
+        return interfaceId == type(IHasPoolKey).interfaceId || type(IHasSwapPath).interfaceId == interfaceId || super.supportsInterface(interfaceId);
+    }
+
+    /// @notice Get the swap path for the coin.  Recursively gets a swap path, by combining this pool key with the swap path of the backing currency.
+    function getPayoutSwapPath(IDeployedCoinVersionLookup coinVersionLookup) external view virtual returns (IHasSwapPath.PayoutSwapPath memory payoutSwapPath) {
+        // if to swap in is this currency,
+        // if backing currency is a coin, then recursively get the path from the coin
+        payoutSwapPath.currencyIn = Currency.wrap(address(this));
+
+        // swap to backing currency
+        PathKey memory thisPathKey = PathKey({
+            intermediateCurrency: Currency.wrap(currency),
+            fee: poolKey.fee,
+            tickSpacing: poolKey.tickSpacing,
+            hooks: poolKey.hooks,
+            hookData: ""
+        });
+
+        // get backing currency swap path - if the backing currency is a v4 coin and has a swap path.
+        PathKey[] memory subPath = UniV4SwapToCurrency.getSubSwapPath(currency, coinVersionLookup);
+
+        if (subPath.length > 0) {
+            payoutSwapPath.path = new PathKey[](1 + subPath.length);
+            payoutSwapPath.path[0] = thisPathKey;
+            for (uint256 i = 0; i < subPath.length; i++) {
+                payoutSwapPath.path[i + 1] = subPath[i];
+            }
+        } else {
+            payoutSwapPath.path = new PathKey[](1);
+            payoutSwapPath.path[0] = thisPathKey;
+        }
     }
 }
