@@ -5,6 +5,8 @@ on:
       - main
 jobs:
   Deploy:
+    # only publish when running on the zora-protocol repo
+    if: github.event.repository.name == 'zora-protocol'
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
