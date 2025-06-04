@@ -11,7 +11,7 @@ contract UpgradeCoinImpl is CoinsDeployerBase {
         vm.startBroadcast();
 
         // get deployer contract
-        deployment = deployImpls(deployment);
+        deployment = deployImpls(deployment, deployment.devFactory);
 
         vm.stopBroadcast();
 

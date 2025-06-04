@@ -103,20 +103,21 @@ contract TestV4Swap is CoinsDeployerBase {
 
         vm.startBroadcast(trader);
 
-        // address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
+        address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
         address tradeReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
-        // ICoinV4 backingCoin = _deployCoin(zora, trader, "TestCCoin", "CRE", "https://testc.com", createReferral, bytes32("creator"));
-        // ICoinV4 contentCoin = _deployCoin(
-        //     address(backingCoin),
-        //     trader,
-        //     "Content Coin",
-        //     "CONTENT",
-        //     "https://content.com",
-        //     createReferral,
-        //     bytes32("content coin")
-        // );
-        ICoinV4 backingCoin = ICoinV4(0xeA734b5997F35cD469921cCa7BB9A03C104f2f64);
-        ICoinV4 contentCoin = ICoinV4(0x72218BFEEc7D556BD3Dd8eFf2a317CEd49533769);
+
+        ICoinV4 backingCoin = _deployCoin(zora, trader, "Backing Coin", "BACK", "https://testc.com", createReferral, bytes32("creator"));
+        ICoinV4 contentCoin = _deployCoin(
+            address(backingCoin),
+            trader,
+            "Content Coin",
+            "CONTENT",
+            "https://content.com",
+            createReferral,
+            bytes32("content coin")
+        );
+        // ICoinV4 backingCoin = ICoinV4(0xeA734b5997F35cD469921cCa7BB9A03C104f2f64);
+        // ICoinV4 contentCoin = ICoinV4(0x72218BFEEc7D556BD3Dd8eFf2a317CEd49533769);
 
         console.log("backingCoin", address(backingCoin));
         console.log("contentCoin", address(contentCoin));
@@ -128,18 +129,18 @@ contract TestV4Swap is CoinsDeployerBase {
         // console.log("currency", address(currency));
         // console.log("coinAddress", coinAddress);
 
-        // swap in 2 ether of currency into the coin
-        uint128 amountIn = uint128(IERC20(zora).balanceOf(trader));
-        // currency.mint(trader, amountIn);
+        // // swap in 2 ether of currency into the coin
+        // uint128 amountIn = uint128(IERC20(zora).balanceOf(trader));
+        // // currency.mint(trader, amountIn);
 
-        // // swap some currency into the backing coin
-        uint256 backingCoinReceived = _swap(zora, amountIn, backingCoin, trader, tradeReferral);
+        // // // swap some currency into the backing coin
+        // uint256 backingCoinReceived = _swap(zora, amountIn, backingCoin, trader, tradeReferral);
 
-        // // swap balance of backing coin into the content coin
-        uint256 contentCoinReceived = _swap(address(backingCoin), uint128(backingCoinReceived), contentCoin, trader, tradeReferral);
+        // // // swap balance of backing coin into the content coin
+        // uint256 contentCoinReceived = _swap(address(backingCoin), uint128(backingCoinReceived), contentCoin, trader, tradeReferral);
 
-        // swap balance of content coin into the currency
-        _swap(address(contentCoin), uint128(contentCoinReceived), contentCoin, trader, tradeReferral);
+        // // swap balance of content coin into the currency
+        // _swap(address(contentCoin), uint128(contentCoinReceived), contentCoin, trader, tradeReferral);
 
         vm.stopBroadcast();
     }

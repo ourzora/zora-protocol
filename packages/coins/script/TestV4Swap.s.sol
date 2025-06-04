@@ -38,7 +38,7 @@ contract TestV4Swap is CoinsDeployerBase {
 
         bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(address(currency));
 
-        (address coinAddress, ) = IZoraFactory(deployment.zoraFactory).deploy(
+        (address coinAddress, ) = IZoraFactory(deployment.devFactory).deploy(
             creator,
             owners,
             "https://test.com",
@@ -96,7 +96,7 @@ contract TestV4Swap is CoinsDeployerBase {
 
         vm.startBroadcast(trader);
 
-        // address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
+        address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
         address tradeReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
 
         // MockERC20 currency = _deployMockCurrency();
@@ -104,13 +104,13 @@ contract TestV4Swap is CoinsDeployerBase {
         // ICoinV4 backingCoin = _deployMockCoin(address(currency), trader, createReferral, bytes32("backing coin"));
         // ICoinV4 contentCoin = _deployMockCoin(address(backingCoin), trader, createReferral, bytes32("content coin"));
 
-        MockERC20 currency = MockERC20(0x21E3bde504fF56C440851ACB6A16e7E35405B278);
-        ICoinV4 backingCoin = ICoinV4(0xa8bb679A2be09eCCabdb76700170ec387C896570);
-        ICoinV4 contentCoin = ICoinV4(0x3cfE4CE87A821FB2c7eAB4359dD6eA6F9e492c61);
+        MockERC20 currency = MockERC20(0x1b183Bd0E2c03Fc830F4d813bA37E82F9F97cA21);
+        ICoinV4 backingCoin = ICoinV4(0x7D74416C4c295A592Fc6F9232911C945354b253C);
+        ICoinV4 contentCoin = ICoinV4(0xf6d6660bcdA588F7f99e2961f279f500fB501730);
 
+        console.log("currency", address(currency));
         console.log("backingCoin", address(backingCoin));
         console.log("contentCoin", address(contentCoin));
-        console.log("currency", address(currency));
 
         // (MockERC20 currency, address coinAddress) = _deployMockCurrencyAndCoin(trader, createReferral);
 

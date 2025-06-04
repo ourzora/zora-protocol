@@ -118,16 +118,14 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return trustedMessageSenders;
     }
 
-    function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
-        address zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinV3Impl, deployment.coinV4Impl));
-
+    function deployImpls(CoinsDeployment memory deployment, address factory) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
         deployment.coinV3Impl = address(deployCoinV3Impl());
-        deployment.zoraV4CoinHook = address(deployZoraV4CoinHook(zoraFactoryImpl));
+        deployment.zoraV4CoinHook = address(deployZoraV4CoinHook(factory));
         deployment.coinV4Impl = address(deployCoinV4Impl(deployment.zoraV4CoinHook));
-        deployment.zoraFactoryImpl = zoraFactoryImpl;
-        deployment.coinVersion = IVersionedContract(deployment.coinV3Impl).contractVersion();
-        deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
+        deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinV3Impl, deployment.coinV4Impl));
+        deployment.coinVersion = IVersionedContract(deployment.coinV4Impl).contractVersion();
+        // deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
 
         return deployment;
     }
@@ -136,7 +134,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         // read previously saved deterministic config
         DeterministicContractConfig memory zoraConfig = readDeterministicContractConfig("zoraFactory");
 
-        deployment = deployImpls(deployment);
+        deployment = deployImpls(deployment, deployment.zoraFactory);
 
         if (deployment.zoraFactoryImpl.code.length == 0) {
             revert("Factory Impl not yet deployed. Make sure to deploy it with DeployImpl.s.sol");
