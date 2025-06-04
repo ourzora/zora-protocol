@@ -11,10 +11,10 @@ import {Coin} from "../../Coin.sol";
 import {ICoinV3} from "../../interfaces/ICoinV3.sol";
 import {ICoinV4} from "../../interfaces/ICoinV4.sol";
 import {CoinConfigurationVersions} from "../../libs/CoinConfigurationVersions.sol";
-import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {UniV4SwapHelper} from "../../libs/UniV4SwapHelper.sol";
-import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {IPoolManager, SwapParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 
 /// @title BuySupplyWithSwapRouter
 /// @notice A hook that buys supply for a coin that is priced in an erc20 token a backing currency, using a Uniswap V3 SwapRouter.
@@ -22,8 +22,8 @@ import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 /// @author @oveddan
 contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
     ISwapRouter immutable swapRouter;
-    IUniversalRouter immutable universalRouter;
-    IPermit2 immutable permit2;
+    IPoolManager immutable poolManager;
+    using BalanceDeltaLibrary for BalanceDelta;
 
     error Erc20NotReceived();
     error InvalidSwapRouterCall();
@@ -31,10 +31,9 @@ contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
     error CoinBalanceNot0(uint256 balance);
     error CurrencyBalanceNot0(uint256 balance);
 
-    constructor(IZoraFactory _factory, address _swapRouter, address _universalRouter, address _permit2) BaseCoinDeployHook(_factory) {
+    constructor(IZoraFactory _factory, address _swapRouter, address _poolManager) BaseCoinDeployHook(_factory) {
         swapRouter = ISwapRouter(_swapRouter);
-        universalRouter = IUniversalRouter(_universalRouter);
-        permit2 = IPermit2(_permit2);
+        poolManager = IPoolManager(_poolManager);
     }
 
     /// @notice Hook that buys supply for a coin that is priced in an erc20 token with ETH, using a Uniswap SwapRouter.
@@ -102,30 +101,40 @@ contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
     }
 
     function _executeV4Buy(address buyRecipient, ICoinV4 coin, uint256 amountCurrency) internal returns (uint256 coinsPurchased) {
-        // zeroForOne is if we want to swap backing currency for coin
+        bytes memory data = abi.encode(buyRecipient, coin, amountCurrency);
+
+        bytes memory result = poolManager.unlock(data);
+
+        coinsPurchased = abi.decode(result, (uint256));
+    }
+
+    error OnlyPoolManager();
+
+    /// @notice Internal fn called when the PoolManager is unlocked.  Used to swap the backing currency for the coin.
+    function unlockCallback(bytes calldata data) external returns (bytes memory) {
+        require(msg.sender == address(poolManager), OnlyPoolManager());
+
+        (address buyRecipient, ICoinV4 coin, uint256 amountCurrency) = abi.decode(data, (address, ICoinV4, uint256));
+
         bool zeroForOne = coin.currency() == Currency.unwrap(coin.getPoolKey().currency0);
 
-        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            coin.currency(),
-            uint128(amountCurrency),
-            address(coin),
-            0,
+        BalanceDelta delta = poolManager.swap(
             coin.getPoolKey(),
+            SwapParams(zeroForOne, -(int128(uint128(amountCurrency))), zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1),
             ""
         );
 
-        UniV4SwapHelper.approveTokenWithPermit2(
-            permit2,
-            address(universalRouter),
-            coin.currency(),
-            uint128(amountCurrency),
-            uint48(block.timestamp + 30 seconds)
-        );
+        int128 amountCoin = zeroForOne ? delta.amount1() : delta.amount0();
 
-        universalRouter.execute(commands, inputs, block.timestamp + 30 seconds);
+        // sync the currency balance before transferring to the pool manager
+        poolManager.sync(Currency.wrap(coin.currency()));
+        // transfer the currency to the pool manager for the swap
+        IERC20(coin.currency()).transfer(address(poolManager), uint256(uint128(amountCurrency)));
+        // collect the coin from the pool manager
+        poolManager.take(Currency.wrap(address(coin)), buyRecipient, uint256(uint128(amountCoin)));
 
-        // coins were transferred to the hook, so we need to get the balance of the coin, then transfer it to the buy recipient
-        coinsPurchased = IERC20(address(coin)).balanceOf(address(this));
-        IERC20(address(coin)).transfer(buyRecipient, coinsPurchased);
+        poolManager.settle();
+
+        return abi.encode(uint256(uint128(amountCoin)));
     }
 }

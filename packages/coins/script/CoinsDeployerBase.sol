@@ -107,7 +107,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function deployBuySupplyWithSwapRouterHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithSwapRouterHook) {
-        return new BuySupplyWithSwapRouterHook(IZoraFactory(deployment.zoraFactory), getUniswapSwapRouter(), getUniswapUniversalRouter(), getUniswapPermit2());
+        return new BuySupplyWithSwapRouterHook(IZoraFactory(deployment.zoraFactory), getUniswapSwapRouter(), getUniswapV4PoolManager());
     }
 
     function deployZoraV4CoinHook(address zoraFactory) internal returns (IHooks, bytes32) {

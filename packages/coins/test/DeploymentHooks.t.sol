@@ -40,7 +40,7 @@ contract HooksTest is BaseTest {
     function setUp() public override {
         super.setUpWithBlockNumber(29585474);
 
-        hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter), address(UNIVERSAL_ROUTER), address(V4_PERMIT2));
+        hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter), address(V4_POOL_MANAGER));
     }
 
     function _deployWithHook(address hook, bytes memory hookData, address currency) internal returns (address, bytes memory) {
