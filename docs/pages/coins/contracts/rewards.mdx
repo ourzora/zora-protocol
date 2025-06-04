@@ -23,7 +23,7 @@ Rewards v1.1 is deployed at the same address on all networks.
 
 ## Coin Trading Rewards (V4)
 
-The latest V4 coins use an advanced hook-based reward system that automatically converts and distributes rewards through multi-hop swaps to reach the target payout currency.
+The latest V4 coins use a UniswapV4 hook to collect fees, swap to a backing currency, and distribute rewards to recipients on every swap.
 
 ### V4 Reward Distribution
 
@@ -37,16 +37,8 @@ The latest V4 coins use an advanced hook-based reward system that automatically 
 
 ### Key V4 Features
 
-- **Multi-Hop Reward Swapping**: Automatically converts rewards through intermediate tokens to reach the final payout currency
-- **Gas Efficient**: All conversions happen in a single transaction through the hook system
-- **Unified Currency Distribution**: All recipients receive rewards in the same target currency (e.g., USDC)
-- **Recursive Path Resolution**: Handles complex coin-to-coin-to-currency conversion paths
-
-For example, if a content coin is paired with a creator coin, which is paired with USDC:
-1. LP fees are collected in both the content coin and creator coin
-2. Content coins are swapped to creator coins
-3. Creator coins are swapped to USDC
-4. All rewards are distributed in USDC to recipients
+- **Multi-Hop Reward Swapping**: Automatically converts rewards through intermediate tokens to reach the final payout currency, which is ZORA.
+- **Unified Currency Distribution**: All recipients receive rewards in the same target currency (e.g., ZORA)
 
 ## Legacy Trading Rewards (V3)
 
