@@ -21,7 +21,6 @@ import {PoolConfiguration} from "../types/PoolConfiguration.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
 import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
-import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
 
 /// @title ZoraV4CoinHook
@@ -34,7 +33,7 @@ import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
 ///      2. Swaps collected fees to the backing currency through multi-hop paths
 ///      3. Distributes converted fees as rewards
 /// @author oveddan
-contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
+contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a

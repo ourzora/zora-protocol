@@ -363,4 +363,13 @@ contract ProxyDeployerScript is CommonBase {
             num = vm.parseUint(json.readString(keyPrefix));
         }
     }
+
+    // Helper function for reading bytes32 from JSON
+    function readBytes32OrDefaultToZero(string memory json, string memory key) internal view returns (bytes32 data) {
+        string memory keyPrefix = getKeyPrefix(key);
+        if (vm.keyExists(json, keyPrefix)) {
+            data = json.readBytes32(keyPrefix);
+        }
+        // else returns bytes32(0) by default
+    }
 }

@@ -15,7 +15,6 @@ import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {ZoraV4CoinHook} from "../src/hooks/ZoraV4CoinHook.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {ZoraFactory} from "../src/proxy/ZoraFactory.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {HooksDeployment} from "../src/libs/HooksDeployment.sol";
 
 contract CoinsDeployerBase is ProxyDeployerScript {
@@ -36,6 +35,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address zoraV4CoinHook;
         address devFactory;
         address trustedMessageSenders;
+        // Hook deployment salt (for deterministic deployment)
+        bytes32 zoraV4CoinHookSalt;
     }
 
     function addressesFile() internal view returns (string memory) {
@@ -53,6 +54,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "DEV_FACTORY", deployment.devFactory);
         vm.serializeAddress(objectKey, "ZORA_V4_COIN_HOOK", deployment.zoraV4CoinHook);
         vm.serializeAddress(objectKey, "TRUSTED_MESSAGE_SENDERS", deployment.trustedMessageSenders);
+        vm.serializeBytes32(objectKey, "ZORA_V4_COIN_HOOK_SALT", deployment.zoraV4CoinHookSalt);
         string memory result = vm.serializeAddress(objectKey, "COIN_V4_IMPL", deployment.coinV4Impl);
 
         vm.writeJson(result, addressesFile());
@@ -74,6 +76,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.zoraV4CoinHook = readAddressOrDefaultToZero(json, "ZORA_V4_COIN_HOOK");
         deployment.devFactory = readAddressOrDefaultToZero(json, "DEV_FACTORY");
         deployment.trustedMessageSenders = readAddressOrDefaultToZero(json, "TRUSTED_MESSAGE_SENDERS");
+        deployment.zoraV4CoinHookSalt = readBytes32OrDefaultToZero(json, "ZORA_V4_COIN_HOOK_SALT");
     }
 
     function deployCoinV3Impl() internal returns (Coin) {
@@ -107,8 +110,17 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return new BuySupplyWithSwapRouterHook(IZoraFactory(deployment.zoraFactory), getUniswapSwapRouter());
     }
 
-    function deployZoraV4CoinHook(address zoraFactory) internal returns (IHooks) {
-        return HooksDeployment.deployZoraV4CoinHookFromScript(getUniswapV4PoolManager(), zoraFactory, getDefaultTrustedMessageSenders());
+    function deployZoraV4CoinHook(address zoraFactory) internal returns (IHooks, bytes32) {
+        // Read existing deployment to get stored salt
+        CoinsDeployment memory deployment = readDeployment();
+
+        return
+            HooksDeployment.deployZoraV4CoinHookFromScript(
+                getUniswapV4PoolManager(),
+                zoraFactory,
+                getDefaultTrustedMessageSenders(),
+                deployment.zoraV4CoinHookSalt
+            );
     }
 
     function getDefaultTrustedMessageSenders() internal view returns (address[] memory) {
@@ -121,11 +133,16 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function deployImpls(CoinsDeployment memory deployment, address factory) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
         deployment.coinV3Impl = address(deployCoinV3Impl());
-        deployment.zoraV4CoinHook = address(deployZoraV4CoinHook(factory));
+
+        // Deploy hook first, then use its address for coin v4 impl
+        (IHooks zoraV4CoinHook, bytes32 usedSalt) = deployZoraV4CoinHook(factory);
+        deployment.zoraV4CoinHook = address(zoraV4CoinHook);
+        deployment.zoraV4CoinHookSalt = usedSalt;
+
         deployment.coinV4Impl = address(deployCoinV4Impl(deployment.zoraV4CoinHook));
         deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinV3Impl, deployment.coinV4Impl));
         deployment.coinVersion = IVersionedContract(deployment.coinV4Impl).contractVersion();
-        // deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
+        deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
 
         return deployment;
     }
