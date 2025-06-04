@@ -3,8 +3,9 @@ pragma solidity ^0.8.23;
 
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolKeyStruct} from "./ICoin.sol";
+import {IDeployedCoinVersionLookup} from "./IDeployedCoinVersionLookup.sol";
 
-interface IZoraFactory {
+interface IZoraFactory is IDeployedCoinVersionLookup {
     /// @notice Emitted when a coin is created
     /// @param caller The msg.sender address
     /// @param payoutRecipient The address of the creator payout recipient

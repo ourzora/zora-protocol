@@ -23,6 +23,7 @@ contract FakeHookNoInterface {
 
 contract HooksTest is BaseTest {
     address constant zora = 0x1111111111166b7FE7bd91427724B487980aFc69;
+    BuySupplyWithSwapRouterHook hook;
 
     function _generateDefaultPoolConfig(address currency) internal pure returns (bytes memory) {
         return
@@ -38,6 +39,8 @@ contract HooksTest is BaseTest {
 
     function setUp() public override {
         super.setUpWithBlockNumber(29585474);
+
+        hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter), address(UNIVERSAL_ROUTER), address(V4_PERMIT2));
     }
 
     function _deployWithHook(address hook, bytes memory hookData, address currency) internal returns (address, bytes memory) {
@@ -73,8 +76,6 @@ contract HooksTest is BaseTest {
         vm.assume(initialOrderSize < 1 ether);
 
         vm.deal(users.creator, initialOrderSize);
-
-        BuySupplyWithSwapRouterHook hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter));
 
         bytes memory hookData = _encodeExactInputSingle(
             users.creator,
@@ -114,7 +115,7 @@ contract HooksTest is BaseTest {
         assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
     }
 
-    function test_buySupplyWithEthUsingV3Hook_withExactInputMultiHop(uint256 initialOrderSize) public {
+    function test_buySupplyWithEthUsingV4Hook_withExactInputMultiHop(uint256 initialOrderSize) public {
         vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
         vm.assume(initialOrderSize < 1 ether);
 
@@ -122,7 +123,51 @@ contract HooksTest is BaseTest {
 
         // lets try weth to usdc to zora
 
-        BuySupplyWithSwapRouterHook hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter));
+        uint24 poolFee = 3000;
+
+        bytes memory hookData = _encodeExactInput(
+            users.creator,
+            ISwapRouter.ExactInputParams({
+                path: abi.encodePacked(address(weth), poolFee, USDC_ADDRESS, poolFee, zora),
+                recipient: address(hook),
+                amountIn: initialOrderSize,
+                amountOutMinimum: 0
+            })
+        );
+
+        bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(zora);
+
+        vm.prank(users.creator);
+        (address coinAddress, bytes memory hookDataOut) = factory.deployWithHook{value: initialOrderSize}(
+            users.creator,
+            _getDefaultOwners(),
+            "https://test.com",
+            "Testcoin",
+            "TEST",
+            poolConfig,
+            users.platformReferrer,
+            address(hook),
+            hookData
+        );
+
+        coin = Coin(payable(coinAddress));
+
+        (uint256 amountCurrency, uint256 coinsPurchased) = abi.decode(hookDataOut, (uint256, uint256));
+
+        assertEq(coin.currency(), zora, "currency");
+        assertGt(amountCurrency, 0, "amountCurrency > 0");
+        assertGt(coinsPurchased, 0, "coinsPurchased > 0");
+        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
+        // assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
+    }
+
+    function test_buySupplyWithEthUsingV3Hook_withExactInputMultiHop(uint256 initialOrderSize) public {
+        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize < 1 ether);
+
+        vm.deal(users.creator, initialOrderSize);
+
+        // lets try weth to usdc to zora
 
         uint24 poolFee = 3000;
 
@@ -164,8 +209,6 @@ contract HooksTest is BaseTest {
     function test_buySupplyWithEthUsingV3Hook_revertsWhenBadCall() public {
         vm.deal(users.creator, 0.0001 ether);
 
-        BuySupplyWithSwapRouterHook hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter));
-
         uint24 poolFee = 3000;
 
         // exact output single is not supported
@@ -200,8 +243,6 @@ contract HooksTest is BaseTest {
     function test_buySupplyWithEthUsingV3Hook_revertsWhenHookNotRecipient() public {
         uint256 initialOrderSize = 0.0001 ether;
         vm.deal(users.creator, initialOrderSize);
-
-        BuySupplyWithSwapRouterHook hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter));
 
         bytes memory hookData = _encodeExactInputSingle(
             users.creator,
