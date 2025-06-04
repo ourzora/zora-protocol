@@ -181,3 +181,23 @@
   font-weight: 600;
   font-size: 1.1em;
 }
+
+.vocs_Footer::after {
+  content: "Built on the Superchain";
+  background-image: url("/brand/superchain-logo.svg");
+  background-repeat: no-repeat;
+  background-position: left center;
+  background-size: 40px;
+  padding-left: 40px;
+  font-family: "Inter", sans-serif;
+  font-size: 0.850rem;
+}
+
+.vocs_Footer a {
+  color: inherit;
+  text-decoration: none;
+}
+
+.vocs_Footer a:hover {
+  text-decoration: underline;
+}

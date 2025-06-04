@@ -24,6 +24,7 @@ type GetProfileParams = {
 #### Usage Example
 
 ```ts twoslash
+// @errors: 2307
 import { getProfile } from "@zoralabs/coins-sdk";
 
 async function fetchUserProfile() {
@@ -81,8 +82,6 @@ type ProfileData = {
       type?: string;
       url?: string;
     }>;
-    followerCount?: number;   // Number of followers
-    followingCount?: number;  // Number of accounts following
   }
 }
 ```
@@ -104,6 +103,7 @@ type GetProfileBalancesParams = {
 #### Usage Example
 
 ```ts twoslash
+// @errors: 2307
 import { getProfileBalances } from "@zoralabs/coins-sdk";
 
 async function fetchUserBalances() {
@@ -135,6 +135,7 @@ async function fetchUserBalances() {
 If a user holds many coins, you might need to paginate through all of their balances:
 
 ```ts twoslash
+// @errors: 2307
 import { getProfileBalances } from "@zoralabs/coins-sdk";
 
 async function fetchAllUserBalances(userAddress: string) {

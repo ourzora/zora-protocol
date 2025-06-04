@@ -46,6 +46,10 @@ export default defineConfig({
       icon: "github",
       link: "https://github.com/ourzora/zora-protocol",
     },
+    {
+      icon: "x",
+      link: "https://x.com/zoradevs",
+    },
   ],
   sidebar: {
     "/coins/contracts": [
