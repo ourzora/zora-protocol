@@ -24,21 +24,33 @@ import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
 
+/// @title ZoraV4CoinHook
+/// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
+/// paying out all rewards in a backing currency.
+/// @dev This hook executes on afterSwap withdraw fees, swap for a backing currency, and distribute rewards.
+///      On pool initialization, it creates multiple liquidity positions based on the coin's pool configuration.
+///      On every swap, it automatically:
+///      1. Collects accrued LP fees from all positions
+///      2. Swaps collected fees to the backing currency through multi-hop paths
+///      3. Distributes converted fees as rewards
+/// @author oveddan
 contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
 
+    /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
+    /// an original msg.sender
     mapping(address => bool) internal trustedMessageSender;
 
+    /// @notice Mapping of pool keys to coins.
+    mapping(bytes32 => IZoraV4CoinHook.PoolCoin) internal poolCoins;
+
+    /// @notice The coin version lookup contract - used to determine if an address is a coin and what version it is.
     IDeployedCoinVersionLookup internal immutable coinVersionLookup;
 
-    /// @inheritdoc IZoraV4CoinHook
-    function isTrustedMessageSender(address sender) external view returns (bool) {
-        return trustedMessageSender[sender];
-    }
-
     /// @notice The constructor for the ZoraV4CoinHook.
-    /// @param poolManager_ The pool manager for the coin.
-    /// @param trustedMessageSenders_ The addresses of the trusted message senders.
+    /// @param poolManager_ The Uniswap V4 pool manager
+    /// @param coinVersionLookup_ The coin version lookup contract - used to determine if an address is a coin and what version it is.
+    /// @param trustedMessageSenders_ The addresses of the trusted message senders - these are addresses that are trusted to provide a
     constructor(IPoolManager poolManager_, IDeployedCoinVersionLookup coinVersionLookup_, address[] memory trustedMessageSenders_) BaseHook(poolManager_) {
         if (address(coinVersionLookup_) == address(0)) {
             revert CoinVersionLookupCannotBeZeroAddress();
@@ -73,12 +85,17 @@ contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
             });
     }
 
-    mapping(bytes32 => IZoraV4CoinHook.PoolCoin) internal poolCoins;
+    /// @inheritdoc IZoraV4CoinHook
+    function isTrustedMessageSender(address sender) external view returns (bool) {
+        return trustedMessageSender[sender];
+    }
 
+    /// @inheritdoc IZoraV4CoinHook
     function getPoolCoinByHash(bytes23 poolKeyHash) external view returns (IZoraV4CoinHook.PoolCoin memory) {
         return poolCoins[poolKeyHash];
     }
 
+    /// @inheritdoc IZoraV4CoinHook
     function getPoolCoin(PoolKey memory key) external view returns (IZoraV4CoinHook.PoolCoin memory) {
         return poolCoins[CoinCommon.hashPoolKey(key)];
     }
@@ -115,6 +132,10 @@ contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
 
     /// @notice Internal fn called when a swap is executed.
     /// @dev This hook is called from BaseHook library from uniswap v4.
+    /// This hook:
+    /// 1. Collects accrued LP fees from all positions
+    /// 2. Swaps collected fees to the backing currency through multi-hop paths
+    /// 3. Distributes converted fees as rewards
     /// @param sender The address of the sender.
     /// @param key The pool key.
     /// @param params The swap parameters.
@@ -170,10 +191,7 @@ contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook {
         return (BaseHook.afterSwap.selector, 0);
     }
 
-    /// @notice Internal fn called when a liquidity is unlocked. Only callable from the PoolManager.
-    /// @dev This hook is called from BaseHook library from uniswap v4.
-    /// @param data The data.
-    /// @return selector The selector of the unlockCallback hook to confirm the action.
+    /// @notice Internal fn called when the PoolManager is unlocked.  Used to mint initial liquidity positions.
     function unlockCallback(bytes calldata data) external onlyPoolManager returns (bytes memory) {
         return abi.encode(V4Liquidity.handleMintPositionsCallback(poolManager, data));
     }
