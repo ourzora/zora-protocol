@@ -4,6 +4,12 @@ import {Test} from "forge-std/Test.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
 import {BaseTest} from "./utils/BaseTest.sol";
+import {CoinsDeployerBase} from "../src/deployment/CoinsDeployerBase.sol";
+import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
+import {ICoinV4} from "../src/interfaces/ICoinV4.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
+import {IWETH} from "../src/interfaces/IWETH.sol";
 
 contract BadImpl {
     function contractName() public pure returns (string memory) {
@@ -11,7 +17,7 @@ contract BadImpl {
     }
 }
 
-contract UpgradesTest is BaseTest {
+contract UpgradesTest is BaseTest, CoinsDeployerBase {
     ZoraFactoryImpl public factoryProxy;
 
     function test_canUpgradeFromVersionWithoutContractName() public {
@@ -64,5 +70,59 @@ contract UpgradesTest is BaseTest {
         factoryProxy.upgradeToAndCall(address(newImpl2), "");
 
         assertEq(factoryProxy.implementation(), address(newImpl2));
+    }
+
+    function test_canUpgradeAndSwap() public {
+        vm.createSelectFork("base");
+
+        factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
+
+        CoinsDeployment memory deployment = readDeployment();
+
+        vm.prank(factoryProxy.owner());
+        factoryProxy.upgradeToAndCall(deployment.zoraFactoryImpl, "");
+
+        // deploy a v4 coin
+
+        bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(ZORA);
+
+        uint128 amountIn = 1 ether;
+
+        // build weth to usdc swap
+        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
+            tokenIn: WETH_ADDRESS,
+            tokenOut: ZORA,
+            fee: 3000,
+            recipient: deployment.zoraV4CoinHook,
+            amountIn: amountIn,
+            amountOutMinimum: 0,
+            sqrtPriceLimitX96: 0
+        });
+
+        address trader = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
+
+        vm.startPrank(trader);
+        vm.deal(trader, amountIn);
+        IWETH(WETH_ADDRESS).deposit{value: amountIn}();
+        IWETH(WETH_ADDRESS).approve(address(swapRouter), amountIn);
+
+        (address coinAddress, ) = factoryProxy.deploy(
+            users.creator,
+            _getDefaultOwners(),
+            "https://test.com",
+            "Testcoin",
+            "TEST",
+            poolConfig,
+            users.platformReferrer,
+            deployment.zoraV4CoinHook,
+            abi.encode(params),
+            keccak256("test")
+        );
+
+        // do some swaps to test out
+        _swapSomeCurrencyForCoin(ICoinV4(coinAddress), ZORA, uint128(IERC20(ZORA).balanceOf(trader)), trader);
+
+        // do some swaps to test out
+        _swapSomeCoinForCurrency(ICoinV4(coinAddress), ZORA, uint128(IERC20(coinAddress).balanceOf(trader)), trader);
     }
 }

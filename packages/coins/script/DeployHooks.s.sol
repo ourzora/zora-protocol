@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {CoinsDeployerBase} from "./CoinsDeployerBase.sol";
+import {CoinsDeployerBase} from "../src/deployment/CoinsDeployerBase.sol";
 import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
 
 contract DeployHooks is CoinsDeployerBase {

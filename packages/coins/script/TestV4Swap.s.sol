@@ -2,7 +2,7 @@
 pragma solidity ^0.8.28;
 
 import {ProxyDeployerScript, DeterministicDeployerAndCaller} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
-import {CoinsDeployerBase} from "./CoinsDeployerBase.sol";
+import {CoinsDeployerBase} from "../src/deployment/CoinsDeployerBase.sol";
 
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
@@ -38,7 +38,7 @@ contract TestV4Swap is CoinsDeployerBase {
 
         bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(address(currency));
 
-        (address coinAddress, ) = IZoraFactory(deployment.devFactory).deploy(
+        (address coinAddress, ) = IZoraFactory(deployment.zoraFactory).deploy(
             creator,
             owners,
             "https://test.com",

@@ -43,7 +43,7 @@ contract HooksTest is BaseTest {
         hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter), address(V4_POOL_MANAGER));
     }
 
-    function _deployWithHook(address hook, bytes memory hookData, address currency) internal returns (address, bytes memory) {
+    function _deployWithHook(address _hook, bytes memory hookData, address currency) internal returns (address, bytes memory) {
         bytes memory poolConfig = _generateDefaultPoolConfig(currency);
         return
             factory.deployWithHook(
@@ -54,7 +54,7 @@ contract HooksTest is BaseTest {
                 "TEST",
                 poolConfig,
                 users.platformReferrer,
-                hook,
+                _hook,
                 hookData
             );
     }

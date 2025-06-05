@@ -36,8 +36,7 @@ contract CoinUniV4Test is BaseTest {
     CoinV4 internal coinV4;
 
     IPoolManager internal poolManager;
-    IPermit2 internal permit2;
-    IUniversalRouter internal router;
+
     IV4Quoter internal quoter;
     MockERC20 internal mockERC20A;
     MockERC20 internal mockERC20B;
@@ -46,8 +45,7 @@ contract CoinUniV4Test is BaseTest {
         super.setUpWithBlockNumber(30267794);
 
         poolManager = IPoolManager(V4_POOL_MANAGER);
-        permit2 = IPermit2(V4_PERMIT2);
-        router = IUniversalRouter(UNIVERSAL_ROUTER);
+
         quoter = IV4Quoter(V4_QUOTER);
         mockERC20A = new MockERC20("MockERC20A", "MCKA");
         mockERC20B = new MockERC20("MockERC20B", "MCKB");
@@ -104,50 +102,6 @@ contract CoinUniV4Test is BaseTest {
         feeState = FeeEstimatorHook(address(coinV4.hooks())).getFeeState();
 
         vm.revertToState(snapshot);
-    }
-
-    function _swapSomeCurrencyForCoin(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
-        uint128 minAmountOut = uint128(0);
-
-        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            currency,
-            amountIn,
-            address(_coin),
-            minAmountOut,
-            _coin.getPoolKey(),
-            bytes("")
-        );
-
-        vm.startPrank(trader);
-        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
-
-        // Execute the swap
-        uint256 deadline = block.timestamp + 20;
-        router.execute(commands, inputs, deadline);
-
-        vm.stopPrank();
-    }
-
-    function _swapSomeCoinForCurrency(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
-        uint128 minAmountOut = uint128(0);
-
-        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            address(_coin),
-            amountIn,
-            currency,
-            minAmountOut,
-            _coin.getPoolKey(),
-            bytes("")
-        );
-
-        vm.startPrank(trader);
-        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(_coin), amountIn, uint48(block.timestamp + 1 days));
-
-        // Execute the swap
-        uint256 deadline = block.timestamp + 20;
-        router.execute(commands, inputs, deadline);
-
-        vm.stopPrank();
     }
 
     /// and then reverting the state after the swap

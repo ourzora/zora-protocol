@@ -8,6 +8,7 @@ solc_version = '0.8.28'
 optimizer_runs = 200
 fs_permissions = [
   { access = "readwrite", path = "./addresses" },
+  { access = "readwrite", path = "./addresses/dev" },
   { access = "read", path = "./package.json" },
   { access = "readwrite", path = "./deterministicConfig" },
   { access = "read", path = "../shared-contracts/chainConfigs" },

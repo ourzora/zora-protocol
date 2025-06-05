@@ -515,7 +515,11 @@ const getCointagsContracts = (): ContractConfig[] => {
 const getCoinsContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../coins/addresses");
+  const addressesFiles = readdirSync("../coins/addresses", {
+    withFileTypes: true,
+  })
+    .filter((dirent) => dirent.isFile())
+    .map((dirent) => dirent.name);
 
   const storedConfigs = addressesFiles.map((file) => {
     return {
@@ -524,7 +528,20 @@ const getCoinsContracts = (): ContractConfig[] => {
         readFileSync(`../coins/addresses/${file}`, "utf-8"),
       ) as {
         ZORA_FACTORY: Address;
-        DEV_FACTORY: Address;
+        BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
+      },
+    };
+  });
+
+  const devAddressesFiles = readdirSync("../coins/addresses/dev");
+
+  const devConfigs = devAddressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../coins/addresses/dev/${file}`, "utf-8"),
+      ) as {
+        ZORA_FACTORY: Address;
         BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
       },
     };
@@ -541,9 +558,17 @@ const getCoinsContracts = (): ContractConfig[] => {
   addAddress({
     abi: zoraFactoryImplABI,
     addresses,
-    configKey: "DEV_FACTORY",
+    configKey: "ZORA_FACTORY",
     contractName: "DevCoinFactory",
-    storedConfigs,
+    storedConfigs: devConfigs,
+  });
+
+  addAddress({
+    abi: buySupplyWithSwapRouterHookABI,
+    addresses,
+    configKey: "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK",
+    contractName: "DevBuySupplyWithSwapRouterHook",
+    storedConfigs: devConfigs,
   });
 
   addAddress({

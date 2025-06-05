@@ -32,11 +32,18 @@ import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
 import {HooksDeployment} from "../../src/libs/HooksDeployment.sol";
 import {CoinConstants} from "../../src/libs/CoinConstants.sol";
 import {ProxyShim} from "./ProxyShim.sol";
+import {ICoinV4} from "../../src/interfaces/ICoinV4.sol";
+import {UniV4SwapHelper} from "../../src/libs/UniV4SwapHelper.sol";
+import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
+import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
+import {Commands} from "@uniswap/universal-router/contracts/libraries/Commands.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 
 contract BaseTest is Test {
     using stdStorage for StdStorage;
 
-    address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
     address internal constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
     address internal constant V3_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
     address internal constant NONFUNGIBLE_POSITION_MANAGER = 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1;
@@ -67,6 +74,8 @@ contract BaseTest is Test {
     ProtocolRewards internal protocolRewards;
     IUniswapV3Factory internal v3Factory;
     INonfungiblePositionManager internal nonfungiblePositionManager;
+    IPermit2 internal permit2;
+    IUniversalRouter internal router;
 
     ISwapRouter internal swapRouter;
     IAirlock internal airlock;
@@ -141,6 +150,50 @@ contract BaseTest is Test {
         vm.label(address(pool), "POOL");
     }
 
+    function _swapSomeCurrencyForCoin(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
+        uint128 minAmountOut = uint128(0);
+
+        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
+            currency,
+            amountIn,
+            address(_coin),
+            minAmountOut,
+            _coin.getPoolKey(),
+            bytes("")
+        );
+
+        vm.startPrank(trader);
+        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
+
+        // Execute the swap
+        uint256 deadline = block.timestamp + 20;
+        router.execute(commands, inputs, deadline);
+
+        vm.stopPrank();
+    }
+
+    function _swapSomeCoinForCurrency(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
+        uint128 minAmountOut = uint128(0);
+
+        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
+            address(_coin),
+            amountIn,
+            currency,
+            minAmountOut,
+            _coin.getPoolKey(),
+            bytes("")
+        );
+
+        vm.startPrank(trader);
+        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(_coin), amountIn, uint48(block.timestamp + 1 days));
+
+        // Execute the swap
+        uint256 deadline = block.timestamp + 20;
+        router.execute(commands, inputs, deadline);
+
+        vm.stopPrank();
+    }
+
     function setUp() public virtual {
         setUpWithBlockNumber(28415528);
     }
@@ -155,6 +208,8 @@ contract BaseTest is Test {
         swapRouter = ISwapRouter(SWAP_ROUTER);
         airlock = IAirlock(DOPPLER_AIRLOCK);
         protocolRewards = new ProtocolRewards();
+        permit2 = IPermit2(V4_PERMIT2);
+        router = IUniversalRouter(UNIVERSAL_ROUTER);
         users = Users({
             factoryOwner: makeAddr("factoryOwner"),
             feeRecipient: makeAddr("feeRecipient"),
