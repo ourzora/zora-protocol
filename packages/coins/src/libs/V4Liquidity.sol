@@ -43,19 +43,12 @@ library V4Liquidity {
         IPoolManager(poolManager).unlock(data);
     }
 
-    function handleMintPositionsCallback(IPoolManager poolManager, bytes memory data) internal returns (UnlockData memory) {
+    function handleMintPositionsCallback(IPoolManager poolManager, bytes memory data) internal {
         CallbackData memory callbackData = abi.decode(data, (CallbackData));
 
-        uint256 amount0;
-        uint256 amount1;
-        int128 fees0;
-        int128 fees1;
-
-        (fees0, fees1) = _mintPositions(poolManager, callbackData.poolKey, callbackData.positions);
+        _mintPositions(poolManager, callbackData.poolKey, callbackData.positions);
 
         _settleUp(poolManager, callbackData.poolKey);
-
-        return UnlockData({amount0: amount0, amount1: amount1, fees0: fees0, fees1: fees1});
     }
 
     function collectFees(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] storage positions) internal returns (int128 balance0, int128 balance1) {

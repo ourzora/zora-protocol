@@ -192,7 +192,7 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
 
     /// @notice Internal fn called when the PoolManager is unlocked.  Used to mint initial liquidity positions.
     function unlockCallback(bytes calldata data) external onlyPoolManager returns (bytes memory) {
-        return abi.encode(V4Liquidity.handleMintPositionsCallback(poolManager, data));
+        V4Liquidity.handleMintPositionsCallback(poolManager, data);
     }
 
     /// @notice Internal fn to get the original message sender.
