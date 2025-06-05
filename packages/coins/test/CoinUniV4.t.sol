@@ -100,7 +100,7 @@ contract CoinUniV4Test is BaseTest {
     /// and then reverting the state after the swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (FeeEstimatorHook.FeeEstimatorState memory feeState) {
         uint256 snapshot = vm.snapshot();
-        deployCodeTo("MockERC20.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
+        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;

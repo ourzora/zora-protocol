@@ -12,6 +12,7 @@ import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {IWETH} from "../src/interfaces/IWETH.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -92,25 +93,30 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         uint128 amountIn = 1 ether;
 
+        address buySupplyWithSwapRouterHook = deployment.buySupplyWithSwapRouterHook;
+
         // build weth to usdc swap
-        ISwapRouter.ExactInputSingleParams memory params = ISwapRouter.ExactInputSingleParams({
-            tokenIn: WETH_ADDRESS,
-            tokenOut: ZORA,
-            fee: 3000,
-            recipient: deployment.zoraV4CoinHook,
-            amountIn: amountIn,
-            amountOutMinimum: 0,
-            sqrtPriceLimitX96: 0
-        });
+        bytes memory call = abi.encodeWithSelector(
+            ISwapRouter.exactInputSingle.selector,
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: WETH_ADDRESS,
+                tokenOut: ZORA,
+                fee: 3000,
+                recipient: buySupplyWithSwapRouterHook,
+                amountIn: amountIn,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            })
+        );
+
+        address buyRecipient = makeAddr("buyRecipient");
 
         address trader = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
 
         vm.startPrank(trader);
         vm.deal(trader, amountIn);
-        IWETH(WETH_ADDRESS).deposit{value: amountIn}();
-        IWETH(WETH_ADDRESS).approve(address(swapRouter), amountIn);
 
-        (address coinAddress, ) = factoryProxy.deploy(
+        (address coinAddress, ) = factoryProxy.deploy{value: amountIn}(
             users.creator,
             _getDefaultOwners(),
             "https://test.com",
@@ -118,8 +124,8 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
             "TEST",
             poolConfig,
             users.platformReferrer,
-            deployment.zoraV4CoinHook,
-            abi.encode(params),
+            buySupplyWithSwapRouterHook,
+            abi.encode(buyRecipient, call),
             keccak256("test")
         );
 
