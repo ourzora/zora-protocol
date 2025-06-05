@@ -65,6 +65,9 @@ contract CoinUniV4Test is BaseTest {
         return _deployV4Coin(currency, address(0), salt);
     }
 
+    string constant DEFAULT_NAME = "Testcoin";
+    string constant DEFAULT_SYMBOL = "TEST";
+
     function _deployV4Coin(address currency, address createReferral, bytes32 salt) internal returns (ICoinV4) {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
@@ -76,8 +79,8 @@ contract CoinUniV4Test is BaseTest {
             users.creator,
             owners,
             "https://test.com",
-            "Testcoin",
-            "TEST",
+            DEFAULT_NAME,
+            DEFAULT_SYMBOL,
             poolConfig,
             createReferral,
             address(0),
@@ -89,11 +92,15 @@ contract CoinUniV4Test is BaseTest {
         return coinV4;
     }
 
+    function _getCoinAddress(address currency, address createReferral, bytes32 salt) internal view returns (address) {
+        return factory.coinAddress(users.creator, DEFAULT_NAME, DEFAULT_SYMBOL, _defaultPoolConfig(currency), createReferral, salt);
+    }
+
     /// @dev Estimates the fees from a swap, by deploying a test hook that doesn't distribute the fees
     /// and then reverting the state after the swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (FeeEstimatorHook.FeeEstimatorState memory feeState) {
         uint256 snapshot = vm.snapshot();
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
+        deployCodeTo("MockERC20.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
@@ -409,13 +416,56 @@ contract CoinUniV4Test is BaseTest {
         assertGt(amountOut, 0);
     }
 
-    function test_canSwapCurrencyForCoin() public {
+    function _findCoinAddress(address currency, bool isCoinToken0) internal view returns (bytes32 salt, address coinAddress) {
+        uint256 i = 0;
+
+        while (true) {
+            salt = bytes32(keccak256(abi.encode(i)));
+            coinAddress = _getCoinAddress(currency, address(0), salt);
+            bool coinIsToken0 = coinAddress < currency;
+            if (coinIsToken0 == isCoinToken0) {
+                break;
+            }
+            i++;
+        }
+    }
+
+    function test_canSwapCurrencyForCoinCoinIsFirst(uint128 amountIn) public {
+        vm.assume(amountIn > 0.00001 ether);
+        vm.assume(amountIn < 10000000000000 ether);
         address currency = address(mockERC20A);
-        _deployV4Coin(currency);
 
-        uint128 amountIn = uint128(0.00001 ether);
+        (bytes32 salt, ) = _findCoinAddress(currency, true);
 
+        _deployV4Coin(currency, address(0), salt);
+
+        bool isCoinToken0 = CoinCommon.sortTokens(address(coinV4), currency);
+
+        assertTrue(isCoinToken0);
+
+        _testSwapCurrencyForCoin(currency, amountIn);
+    }
+
+    function test_canSwapCurrencyForCoinCoinIsSecond(uint128 amountIn) public {
+        vm.assume(amountIn > 0.00001 ether);
+        vm.assume(amountIn < 10000000000000 ether);
+
+        // make a currency with a small number, that will always be less than the coin
+        address currency = address(mockERC20A);
+
+        (bytes32 salt, ) = _findCoinAddress(currency, false);
+
+        _deployV4Coin(currency, address(0), salt);
+
+        assertTrue(coinV4.getPoolKey().currency0 == Currency.wrap(currency));
+
+        _testSwapCurrencyForCoin(currency, amountIn);
+    }
+
+    function _testSwapCurrencyForCoin(address currency, uint128 amountIn) private {
         uint128 minAmountOut = 0;
+
+        MockERC20(currency).mint(address(poolManager), 100000000000000000000000000000 ether);
 
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
             currency,
@@ -428,10 +478,8 @@ contract CoinUniV4Test is BaseTest {
 
         address trader = makeAddr("trader");
 
-        uint128 initialTraderBalance = uint128(1 ether);
-
         // mint some mockERC20 to the trader, so they can use it to buy the coin
-        mockERC20A.mint(trader, initialTraderBalance);
+        mockERC20A.mint(trader, amountIn);
 
         // have trader approve to permit2
         vm.startPrank(trader);
@@ -441,16 +489,33 @@ contract CoinUniV4Test is BaseTest {
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        assertEq(mockERC20A.balanceOf(trader), initialTraderBalance - amountIn);
+        assertEq(mockERC20A.balanceOf(trader), 0);
         assertGt(coinV4.balanceOf(trader), minAmountOut);
     }
 
-    function test_canSwapCoinForCurrency() public {
+    function test_canSwapCoinForCurrencyCoinIsFirst(uint128 amountIn) public {
+        vm.assume(amountIn > 0.00001 ether);
+        vm.assume(amountIn < 10000000000000 ether);
+
         address currency = address(mockERC20A);
-        _deployV4Coin(currency);
 
-        uint128 currencyIn = uint128(0.00001 ether);
+        (bytes32 salt, ) = _findCoinAddress(currency, true);
 
+        _deployV4Coin(currency, address(0), salt);
+    }
+
+    function test_canSwapCoinForCurrencyCoinIsSecond(uint128 amountIn) public {
+        vm.assume(amountIn > 0.00001 ether);
+        vm.assume(amountIn < 10000000000000 ether);
+
+        address currency = address(mockERC20A);
+
+        (bytes32 salt, ) = _findCoinAddress(currency, false);
+
+        _deployV4Coin(currency, address(0), salt);
+    }
+
+    function _testSwapCoinForCurrency(address currency, uint128 currencyIn) private {
         address trader = makeAddr("trader");
 
         mockERC20A.mint(trader, currencyIn);

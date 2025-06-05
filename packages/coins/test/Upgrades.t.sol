@@ -10,6 +10,10 @@ import {ICoinV4} from "../src/interfaces/ICoinV4.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {IWETH} from "../src/interfaces/IWETH.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+
+import {console} from "forge-std/console.sol";
 
 contract BadImpl {
     function contractName() public pure returns (string memory) {
@@ -124,5 +128,26 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         // do some swaps to test out
         _swapSomeCoinForCurrency(ICoinV4(coinAddress), ZORA, uint128(IERC20(coinAddress).balanceOf(trader)), trader);
+    }
+
+    function test_realSwapUsingCurrentCode() external {
+        bytes[] memory inputs = new bytes[](5);
+
+        vm.createSelectFork("base", 31138268);
+
+        address trader = vm.parseAddress("0xa3c881f39972925d865b300bcd65e72a6222c10a");
+
+        ICoinV4 coin = ICoinV4(vm.parseAddress("0xca1de5b8e8336326d5749fde43e245285cd1daf1"));
+
+        PoolKey memory key = coin.getPoolKey();
+
+        address[] memory trustedMessageSenders = new address[](0);
+        deployCodeTo(
+            "ZoraV4CoinHook.sol:ZoraV4CoinHook",
+            abi.encode(V4_POOL_MANAGER, 0x3d7A3f3351855e135CF89AB412A7C2AA449f9296, trustedMessageSenders),
+            address(coin.hooks())
+        );
+
+        _swapSomeCurrencyForCoin(coin, ZORA, uint128(IERC20(ZORA).balanceOf(trader)), trader);
     }
 }

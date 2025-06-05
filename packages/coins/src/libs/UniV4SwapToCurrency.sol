@@ -47,17 +47,17 @@ library UniV4SwapToCurrency {
     ) private returns (Currency outputCurrency, uint128 outputAmount) {
         (PoolKey memory poolKey, bool zeroForOne) = _getPoolAndSwapDirection(pathKey, coin);
 
-        uint128 coinAmount = zeroForOne ? amount0 : amount1;
+        uint128 inputAmount = zeroForOne ? amount0 : amount1;
 
         outputCurrency = zeroForOne ? poolKey.currency1 : poolKey.currency0;
 
         uint128 initialAmountCurrency = zeroForOne ? amount1 : amount0;
 
         // if not swapping any coin for currency, output amount is amount of currency
-        if (coinAmount == 0) {
+        if (inputAmount == 0) {
             outputAmount = initialAmountCurrency;
         } else {
-            outputAmount = uint128(_swap(poolManager, poolKey, zeroForOne, -int128(coinAmount), bytes("")));
+            outputAmount = initialAmountCurrency + uint128(_swap(poolManager, poolKey, zeroForOne, -int128(inputAmount), bytes("")));
         }
     }
 

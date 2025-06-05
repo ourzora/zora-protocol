@@ -52,7 +52,6 @@ library CoinRewardsV4 {
         // Step 1: Collect accrued fees from all LP positions in both token0 and token1
         (fees0, fees1) = V4Liquidity.collectFees(poolManager, key, positions);
 
-        // Step 2: Swap the collected fees through the specified path to convert them to the target payout currency
         // This handles multi-hop swaps if needed (e.g. coin -> backingCoin -> backingCoin's currency)
         (receivedCurrency, receivedAmount) = UniV4SwapToCurrency.swapToPath(
             poolManager,
