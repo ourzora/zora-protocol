@@ -538,6 +538,12 @@ contract CoinUniV4Test is BaseTest {
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(coinV4), coinIn, uint48(block.timestamp + 1 days));
 
         router.execute(commands, inputs, block.timestamp + 20);
+
+        // do some more swaps back and forth
+        _swapSomeCurrencyForCoin(coinV4, currency, uint128(IERC20(address(currency)).balanceOf(trader)), trader);
+
+        // swap back to coin
+        _swapSomeCoinForCurrency(coinV4, currency, uint128(IERC20(address(coinV4)).balanceOf(trader)), trader);
     }
 
     function testSwappingEmitsSwapEventFromSenderNoRevert() public {
