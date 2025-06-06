@@ -2,6 +2,7 @@ export {
   createCoin,
   createCoinCall,
   getCoinCreateFromLogs,
+  DeployCurrency,
 } from "./actions/createCoin";
 export type { CreateCoinArgs } from "./actions/createCoin";
 

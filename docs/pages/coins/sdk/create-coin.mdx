@@ -12,6 +12,7 @@ To create a new coin, you'll need to provide the following parameters:
 
 ```ts twoslash
 import { Address } from "viem";
+import { DeployCurrency } from "@zoralabs/coins-sdk";
 
 type CreateCoinArgs = {
   name: string;             // The name of the coin (e.g., "My Awesome Coin")
@@ -21,12 +22,8 @@ type CreateCoinArgs = {
   owners?: Address[];       // Optional array of owner addresses, defaults to [payoutRecipient]
   payoutRecipient: Address; // Address that receives creator earnings
   platformReferrer?: Address; // Optional platform referrer address, earns referral fees
+  // DeployCurrency.ETH or DeployCurrency.ZORA
   currency?: DeployCurrency; // Optional currency for trading (ETH or ZORA)
-}
-
-enum DeployCurrency {
-  ZORA = 1,
-  ETH = 2,
 }
 ```
 
