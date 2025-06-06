@@ -6,32 +6,62 @@ import {
   SimulateContractParameters,
   ContractEventArgsFromTopics,
   parseEventLogs,
+  zeroAddress,
+  keccak256,
+  toBytes,
   Hex,
+  Account,
 } from "viem";
 import { COIN_FACTORY_ADDRESS } from "../constants";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import { GenericPublicClient } from "src/utils/genericPublicClient";
 import { validateMetadataURIContent, ValidMetadataURI } from "src/metadata";
 import { getAttribution } from "../utils/attribution";
+import { base, baseSepolia } from "viem/chains";
+import {
+  COIN_ETH_PAIR_POOL_CONFIG,
+  COIN_ZORA_PAIR_POOL_CONFIG,
+} from "src/utils/poolConfigUtils";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
-  "CoinCreated"
+  "CoinCreatedV4"
 >;
 
-// This is the default pool config matching zora.co front-end. TODO: Allow users to customize further parameters within safe contract limits.
-const POOL_CONFIG =
-  "0x00000000000000000000000000000000000000000000000000000000000000020000000000000000000000000000000000000000000000000000000000000000fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffc2f70fffffffffffffffffffffffffffffffffffffffffffffffffffffffffffcf2c0000000000000000000000000000000000000000000000000000000000000000a00000000000000000000000000000000000000000000000000b1a2bc2ec50000" as Hex;
+export enum DeployCurrency {
+  ZORA = 1,
+  ETH = 2,
+}
 
 export type CreateCoinArgs = {
   name: string;
   symbol: string;
   uri: ValidMetadataURI;
+  chainId: number;
   owners?: Address[];
   payoutRecipient: Address;
   platformReferrer?: Address;
-  initialPurchaseWei?: bigint;
+  currency?: DeployCurrency;
 };
+
+function getPoolConfig(currency: DeployCurrency, chainId: number) {
+  if (currency === DeployCurrency.ZORA && chainId == baseSepolia.id) {
+    throw new Error("ZORA is not supported on Base Sepolia");
+  }
+
+  switch (currency) {
+    case DeployCurrency.ZORA:
+      return COIN_ZORA_PAIR_POOL_CONFIG[
+        chainId as keyof typeof COIN_ZORA_PAIR_POOL_CONFIG
+      ];
+    case DeployCurrency.ETH:
+      return COIN_ETH_PAIR_POOL_CONFIG[
+        chainId as keyof typeof COIN_ETH_PAIR_POOL_CONFIG
+      ];
+    default:
+      throw new Error("Invalid currency");
+  }
+}
 
 export async function createCoinCall({
   name,
@@ -39,7 +69,8 @@ export async function createCoinCall({
   uri,
   owners,
   payoutRecipient,
-  initialPurchaseWei = 0n,
+  currency,
+  chainId = base.id,
   platformReferrer = "0x0000000000000000000000000000000000000000",
 }: CreateCoinArgs): Promise<
   SimulateContractParameters<typeof zoraFactoryImplABI, "deploy">
@@ -48,9 +79,11 @@ export async function createCoinCall({
     owners = [payoutRecipient];
   }
 
-  const orderSize: bigint = initialPurchaseWei;
-  // The default pool config for
-  const poolConfig = POOL_CONFIG;
+  if (!currency) {
+    currency = chainId !== base.id ? DeployCurrency.ETH : DeployCurrency.ZORA;
+  }
+
+  const poolConfig = getPoolConfig(currency, chainId);
 
   // This will throw an error if the metadata is not valid
   await validateMetadataURIContent(uri);
@@ -67,9 +100,10 @@ export async function createCoinCall({
       symbol,
       poolConfig,
       platformReferrer,
-      orderSize,
+      zeroAddress, // hookAddress
+      "0x" as Hex, // hookData
+      keccak256(toBytes(Math.random().toString())), // coinSalt
     ],
-    value: initialPurchaseWei,
     dataSuffix: getAttribution(),
   } as const;
 }
@@ -86,7 +120,8 @@ export function getCoinCreateFromLogs(
     abi: zoraFactoryImplABI,
     logs: receipt.logs,
   });
-  return eventLogs.find((log) => log.eventName === "CoinCreated")?.args;
+
+  return eventLogs.find((log) => log.eventName === "CoinCreatedV4")?.args;
 }
 
 // Update createCoin to return both receipt and coin address
@@ -96,6 +131,7 @@ export async function createCoin(
   publicClient: GenericPublicClient,
   options?: {
     gasMultiplier?: number;
+    account?: Account | Address;
   },
 ) {
   validateClientNetwork(publicClient);
@@ -103,7 +139,7 @@ export async function createCoin(
   const createCoinRequest = await createCoinCall(call);
   const { request } = await publicClient.simulateContract({
     ...createCoinRequest,
-    account: walletClient.account,
+    account: options?.account ?? walletClient.account,
   });
 
   // Add a 2/5th buffer on gas.

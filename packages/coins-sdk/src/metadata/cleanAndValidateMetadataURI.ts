@@ -21,7 +21,8 @@ export function cleanAndValidateMetadataURI(uri: ValidMetadataURI) {
     return uri.replace("ar://", "http://arweave.net/");
   }
   if (uri.startsWith("data:")) {
-    throw new Error("Data URIs are not supported");
+    return uri;
+    // throw new Error("Data URIs are not supported");
   }
   if (uri.startsWith("http://") || uri.startsWith("https://")) {
     return uri;
