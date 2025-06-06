@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 1.0.1
+
+### Patch Changes
+
+- 8cd56863: BuySupplyWithSwapRouterHook supports v4 coins
+
 ## 1.0.0
 
 ### Major Changes

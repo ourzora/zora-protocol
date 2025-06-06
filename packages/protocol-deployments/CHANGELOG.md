@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.5.10
+
+### Patch Changes
+
+- 8cd56863: BuySupplyWithSwapRouterHook supports v4 coins
+
 ## 0.5.6
 
 ### Patch Changes

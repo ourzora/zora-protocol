@@ -1,19 +1,25 @@
 # Coins Changelog
 
 
+## 1.0.1
+
+### Patch Changes
+
+- [8cd56863](https://github.com/ourzora/zora-protocol/commit/8cd56863): BuySupplyWithSwapRouterHook supports v4 coins
+
 ## 1.0.0
 
 ### Major Changes
 
-- [73e95f69](https://github.com/ourzora/zora-protocol/commit/73e95f69): Upgraded coins to use Uniswap V4 with major breaking changes:
+- [73e95f69](https://github.com/ourzora/zora-protocol/commit/73e95f69): Upgraded coins to use Uniswap V4:
 
   **New CoinV4 Implementation:**
 
-  - Migrated from Uniswap V3 to Uniswap V4 with advanced hook system
+  - Migrated from Uniswap V3 to Uniswap V4, with logic moved into a hook.
   - Automatic LP fee collection and multi-hop reward distribution on every swap
-  - New `ZoraV4CoinHook` handles afterSwap operations for seamless reward processing
+  - New `ZoraV4CoinHook` handles afterSwap operations
   - Support for complex multi-position liquidity curves and discovery positions
-  - Multi-hop fee swapping through intermediate currencies (e.g., ContentCoin → BackingCoin → USDC)
+  - Multi-hop fee swapping through intermediate currencies (e.g., ContentCoin → BackingCoin → Zora)
 
   **Factory Updates:**
 
@@ -25,8 +31,7 @@
   **Reward System Changes:**
 
   - Increased trade referral rewards from 10% to 15% (1500 basis points)
-  - Automatic reward distribution in unified backing currency (no manual withdrawal needed)
-  - Real-time fee conversion and payout on every trade
+  - Automatic reward distribution in single backing currency
 
   **New Interfaces and Events:**
 
@@ -36,9 +41,7 @@
 
   **Breaking Changes:**
 
-  - Factory deploy function parameters changed significantly
-  - New pool configuration system replaces individual parameters
-  - V4 coins use different reward distribution mechanism than V3
+  - New deterministic factory deploy function with salt
 
 ### Patch Changes
 
