@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.0
+
+### Minor Changes
+
+- 74885b84: Support creating uniswap v4 coins
+
 ## 0.1.3
 
 ### Patch Changes
