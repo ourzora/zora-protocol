@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.1
+
+### Patch Changes
+
+- aa2bc7cd: Add new backend queries to SDK
+
 ## 0.2.0
 
 ### Minor Changes

@@ -1,5 +1,12 @@
 # @zoralabs/shared-contracts
 
+## 0.0.4
+
+### Patch Changes
+
+- 67b84355: Publish shared-contracts
+- bc366e3e: Reading chain configs from node_modules folder
+
 ## 0.0.3
 
 ### Patch Changes
