@@ -64,26 +64,21 @@ The SDK integrates with `fetch` and `viem` for on-chain interactions and writes.
 
 It can be used on both client and server environments.
 
-## API Key Setup
+## API Key
 
-If your product does not support or use a javascript environment, you can use the API endpoints and ABIs directly to interact with the protocol.
+The Coins SDK should be used with an API key to prevent rate limiting and unlock all features.
 
-The [Coins SDK API](/coins/sdk/queries#non-javascript-usage) can be used in any language that supports HTTP requests.
-
-
-```ts twoslash
-import { setApiKey } from "@zoralabs/coins-sdk";
-
-// Set up your API key
-setApiKey("your-api-key-here");
-```
-
-To set up an API key:
+To set up your API key:
 1. Log in or create an account on [Zora](https://zora.co)
 2. Navigate to [Developer Settings on Zora](https://zora.co/settings/developer)
 3. Create an API key
 4. Use the API key in the SDK
 
+The API key can be set using the `setApiKey` function:
 
+```ts twoslash
+import { setApiKey } from "@zoralabs/coins-sdk";
 
-
+// Set up your API key before making any SDK requests
+setApiKey("your-api-key-here");
+```
