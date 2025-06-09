@@ -1,17 +1,21 @@
+import { Callout } from "@zora-docs/components/Callout";
+
 ---
 id: rewards
 title: Protocol Rewards
 ---
+
+import { Callout } from 'vocs/components'
 
 # Protocol Rewards
 
 ## Introduction
 
 At Zora, we are passionate about providing the best experience to create and earn onchain.
-**Protocol Rewards** is a split of the Zora mint fee allowing:
+**Protocol Rewards** is a split of the Zora fee allowing:
 
 - Creators to monetize their work
-- Developers to earn from NFT mints and creations they facilitate
+- Developers to earn from facilitating coin creation and trading
 
 [Rewards escrow contract code](https://github.com/ourzora/zora-protocol/tree/main/packages/protocol-rewards)
 
@@ -22,6 +26,12 @@ Rewards v1.1 is deployed at the same address on all networks.
 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B
 
 ## Coin Trading Rewards (V4)
+
+Coin trading rewards are distributed to the creator, create referral, trade referral, protocol, and doppler.
+
+<Callout type="success">
+All coins created on the Zora app including web and mobile after June 6th 2025 use the V4 configuration.
+</Callout>
 
 The latest V4 coins use a UniswapV4 hook to collect fees, swap to a backing currency, and distribute rewards to recipients on every swap.
 
@@ -40,7 +50,11 @@ The latest V4 coins use a UniswapV4 hook to collect fees, swap to a backing curr
 - **Multi-Hop Reward Swapping**: Automatically converts rewards through intermediate tokens to reach the final payout currency, which is ZORA.
 - **Unified Currency Distribution**: All recipients receive rewards in the same target currency (e.g., ZORA)
 
-## Legacy Trading Rewards (V3)
+## V3 Rewards Distribution (Legacy)
+
+<Callout type="warning">
+To ensure compatibility, we recommend integrating the V4 configuration into your clients.
+</Callout>
 
 V3 coins use the original reward distribution system with separate currency and coin rewards.
 
@@ -56,46 +70,6 @@ V3 coins use the original reward distribution system with separate currency and 
 
 Note: V3 rewards are distributed in both the coin and its backing currency separately.
 
-## NFT Mint Fee Split (Per Mint)
-
-#### Free Mint
-
-| Recipient       | Amount       |
-| --------------- | ------------ |
-| Creator         | 0.0000555 ETH |
-| Create Referral | 0.0000111 ETH |
-| Mint Referral   | 0.0000222 ETH |
-| Zora            | 0.0000111 ETH |
-| Market          | 0.0000111 ETH | 
-
-#### Paid Mint
-
-| Recipient       | Amount       |
-| --------------- | ------------ |
-| Creator | 100% of token price |
-| Create Referral | 0.000222 ETH |
-| Mint Referral   | 0.000222 ETH |
-| First Minter    | 0.000111 ETH |
-| Zora            | 0.000222 ETH |
-
-#### ERC20 Mint
-
-| Recipient       | Amount       |
-| --------------- | ------------ |
-| Creator | 95% of earnings from sales |
-| Mint Fee | 5% of listed purchase price|
-| Create Referral | 28.57% of Mint Fee |
-| Mint Referral   | 28.57% of Mint Fee |
-| First Minter    | 14.23% of Mint Fee |
-| Zora            | 28.63% of Mint Fee |
-
-
-**Mint Referral**: The platform that referred a specific mint of an NFT  
-
-**Create Referral**: The platform that referred the creator to deploy the NFT collection. The creator is determined by the royaltyRecipient of the token followed by the funds recipient of the contract.
-
-**First Minter**: Only for premints, this is the first collector to execute the premint. In a non-premint context, this reward is paid out to the creator of the NFT. *Note: For ERC20 Mints, the creator is set as the First Minter and earns First Minter rewards by default.*
-
 ## Coin Rewards Terminology
 
 **Trade Referral**: The platform or address that referred a specific trade/swap of a coin. In V4, this is passed through hook data and can trigger referral rewards.
@@ -104,15 +78,15 @@ Note: V3 rewards are distributed in both the coin and its backing currency separ
 
 **Creator/Payout Recipient**: The address designated to receive creator rewards from trading activity. This can be updated by coin owners.
 
-**Protocol**: The ZORA protocol treasury that receives a portion of trading fees.
+**Protocol**: The Zora protocol treasury that receives a portion of trading fees.
 
-**Doppler**: The governance entity that receives a small percentage of trading fees.
+**Doppler**: The Doppler protocol treasury that receives a portion of trading fees.
 
 ## How It Works: Creator
 
 1. Creator selects coin creation parameters including payout recipient
 2. Creator specifies a wallet address eligible to claim their rewards
-3. Creator opens up their coin for trading -- **that's it!**
+3. Creator launches their coin -- **that's it!**
 
 The creator's total rewards are automatically distributed with each trade:
 - **V4**: Converted to target currency and sent directly to payout recipient
@@ -122,7 +96,7 @@ The creator's total rewards are automatically distributed with each trade:
 
 ### Create Referral Reward
 
-The create referral reward is paid out to the developer or platform that referred the creator to deploy their coin using Zora's contracts.
+The Create Referral Reward is paid out to the developer or platform that referred the creator to deploy their coin using Zora's contracts.
 
 #### Creating a Coin with Rewards
 
@@ -145,7 +119,7 @@ function deploy(
 
 ### Trade Referral Reward
 
-The trade referral reward is paid out to the party that referred a specific trade.
+The Trade Referral Reward is paid out to the platform that referred a specific trade.
 
 #### V4 Trading with Referrals
 
