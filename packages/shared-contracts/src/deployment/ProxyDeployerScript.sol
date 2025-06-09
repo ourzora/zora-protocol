@@ -168,7 +168,7 @@ contract ProxyDeployerScript is CommonBase {
     }
 
     function chainConfigPath() internal view returns (string memory) {
-        return string.concat("../shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json");
+        return string.concat("./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json");
     }
 
     function getChainConfigJson() internal view returns (string memory) {
