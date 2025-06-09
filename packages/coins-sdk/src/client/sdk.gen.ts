@@ -6,18 +6,24 @@ import type {
   Client,
 } from "@hey-api/client-fetch";
 import type {
+  GetApiKeyData,
+  GetApiKeyResponse,
   GetCoinData,
   GetCoinResponse,
   GetCoinCommentsData,
   GetCoinCommentsResponse,
   GetCoinsData,
   GetCoinsResponse,
+  SetCreateUploadJwtData,
+  SetCreateUploadJwtResponse,
   GetExploreData,
   GetExploreResponse,
   GetProfileData,
   GetProfileResponse,
   GetProfileBalancesData,
   GetProfileBalancesResponse,
+  GetProfileCoinsData,
+  GetProfileCoinsResponse,
 } from "./types.gen";
 import { client as _heyApiClient } from "./client.gen";
 
@@ -39,6 +45,28 @@ export type Options<
 };
 
 /**
+ * zoraSDK_apiKey query
+ */
+export const getApiKey = <ThrowOnError extends boolean = false>(
+  options: Options<GetApiKeyData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetApiKeyResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/apiKey",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_coin query
  */
 export const getCoin = <ThrowOnError extends boolean = false>(
@@ -49,6 +77,12 @@ export const getCoin = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
     url: "/coin",
     ...options,
   });
@@ -65,6 +99,12 @@ export const getCoinComments = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
     url: "/coinComments",
     ...options,
   });
@@ -81,8 +121,40 @@ export const getCoins = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
     url: "/coins",
     ...options,
+  });
+};
+
+/**
+ * zoraSDK_createUploadJWT mutation
+ */
+export const setCreateUploadJwt = <ThrowOnError extends boolean = false>(
+  options?: Options<SetCreateUploadJwtData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).post<
+    SetCreateUploadJwtResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/createUploadJWT",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
   });
 };
 
@@ -97,6 +169,12 @@ export const getExplore = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
     url: "/explore",
     ...options,
   });
@@ -113,6 +191,12 @@ export const getProfile = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
     url: "/profile",
     ...options,
   });
@@ -129,7 +213,35 @@ export const getProfileBalances = <ThrowOnError extends boolean = false>(
     unknown,
     ThrowOnError
   >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
     url: "/profileBalances",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_profileCoins query
+ */
+export const getProfileCoins = <ThrowOnError extends boolean = false>(
+  options: Options<GetProfileCoinsData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetProfileCoinsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/profileCoins",
     ...options,
   });
 };

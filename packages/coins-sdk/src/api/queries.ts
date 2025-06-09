@@ -7,6 +7,8 @@ import {
   GetCoinsResponse,
   GetProfileBalancesData,
   GetProfileBalancesResponse,
+  GetProfileCoinsData,
+  GetProfileCoinsResponse,
   GetProfileData,
   GetProfileResponse,
 } from "../client/types.gen";
@@ -16,6 +18,7 @@ import {
   getCoinComments as getCoinCommentsSDK,
   getProfile as getProfileSDK,
   getProfileBalances as getProfileBalancesSDK,
+  getProfileCoins as getProfileCoinsSDK,
 } from "../client/sdk.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
@@ -81,6 +84,21 @@ export const getProfile = async (
   options?: RequestOptionsType<GetProfileData>,
 ): Promise<RequestResult<GetProfileResponse>> => {
   return await getProfileSDK({
+    query,
+    meta: getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetProfileCoinsQuery = GetProfileCoinsData["query"];
+export type { GetProfileCoinsQuery, GetProfileCoinsData };
+export type { GetProfileCoinsResponse } from "../client/types.gen";
+
+export const getProfileCoins = async (
+  query: GetProfileCoinsQuery,
+  options?: RequestOptionsType<GetProfileCoinsData>,
+): Promise<RequestResult<GetProfileCoinsResponse>> => {
+  return await getProfileCoinsSDK({
     query,
     meta: getApiKeyMeta(),
     ...options,
