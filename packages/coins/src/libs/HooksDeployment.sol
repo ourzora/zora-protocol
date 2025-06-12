@@ -8,7 +8,8 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 
-// copy of hook miner from v4 periphery
+// Copy of hook miner from v4 periphery
+// https://github.com/Uniswap/v4-periphery/blob/ad04c9f24a170accf5ea1b2836bbafd514537ca6/src/utils/HookMiner.sol#L23-L41
 library HookMinerWithCreationCodeArgs {
     // mask to slice out the bottom 14 bit of the address
     uint160 constant FLAG_MASK = Hooks.ALL_HOOK_MASK; // 0000 ... 0000 0011 1111 1111 1111

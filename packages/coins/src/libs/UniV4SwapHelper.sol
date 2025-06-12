@@ -26,7 +26,6 @@ library UniV4SwapHelper {
     ) internal pure returns (bytes memory commands, bytes[] memory inputs) {
         bool zeroForOne = Currency.unwrap(key.currency0) == currencyIn;
 
-        // now buy some coin for usdc
         commands = abi.encodePacked(uint8(Commands.V4_SWAP));
 
         bytes memory actions = abi.encodePacked(uint8(Actions.SWAP_EXACT_IN_SINGLE), uint8(Actions.SETTLE_ALL), uint8(Actions.TAKE_ALL));
