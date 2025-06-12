@@ -22,6 +22,7 @@ import {
   iwethABI,
   iSwapRouterABI,
   iUniswapV3PoolABI,
+  iQuoterV2ABI,
 } from "@zoralabs/shared-contracts";
 import {
   commentsImplABI,
@@ -41,6 +42,7 @@ import {
   iUniversalRouterABI,
   iPermit2ABI,
   coinV4ABI,
+  autoSwapperABI,
 } from "@zoralabs/coins";
 
 type Address = `0x${string}`;
@@ -228,6 +230,7 @@ const getSharedAddresses = () => {
         UNISWAP_SWAP_ROUTER: Address;
         UNISWAP_UNIVERSAL_ROUTER: Address;
         UNISWAP_PERMIT2: Address;
+        UNISWAP_QUOTER_V2: Address;
       },
     };
   });
@@ -245,6 +248,14 @@ const getSharedAddresses = () => {
     addresses,
     configKey: "UNISWAP_SWAP_ROUTER",
     contractName: "UniswapV3SwapRouter",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iQuoterV2ABI,
+    addresses,
+    configKey: "UNISWAP_QUOTER_V2",
+    contractName: "UniswapQuoterV2",
     storedConfigs,
   });
 
@@ -584,6 +595,10 @@ const getCoinsContracts = (): ContractConfig[] => {
     {
       abi: coinABI,
       name: "Coin",
+    },
+    {
+      abi: autoSwapperABI,
+      name: "AutoSwapper",
     },
     {
       abi: coinV4ABI,

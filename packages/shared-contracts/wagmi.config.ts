@@ -5,7 +5,7 @@ export default defineConfig({
   out: "package/wagmiGenerated.ts",
   plugins: [
     foundry({
-      include: ["ISwapRouter", "IWETH", "IUniswapV3Pool"].map(
+      include: ["ISwapRouter", "IWETH", "IUniswapV3Pool", "IQuoterV2"].map(
         (contractName) => `${contractName}.json`,
       ),
     }),

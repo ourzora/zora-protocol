@@ -17,6 +17,7 @@ export default defineConfig({
         "IPoolConfigEncoding",
         "IUniversalRouter",
         "IPermit2",
+        "AutoSwapper",
       ].map((contractName) => `${contractName}.json`),
     }),
   ],
