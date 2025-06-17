@@ -184,6 +184,12 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients {
         address currency
     );
 
+    /// @notice Emitted when the coin name is updated
+    /// @param caller The msg.sender address
+    /// @param newName The new coin name
+    /// @param newSymbol The new coin symbol
+    event NameAndSymbolUpdated(address indexed caller, string newName, string newSymbol);
+
     /// @notice Emitted when the creator's payout address is updated
     /// @param caller The msg.sender address
     /// @param prevRecipient The previous payout recipient address
@@ -211,4 +217,9 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients {
     /// @notice Returns the address of the Airlock
     /// @return The Airlock's address
     function airlock() external view returns (address);
+
+    /// @notice Updates the name and symbol of the coin
+    /// @param newName The new coin name
+    /// @param newSymbol The new coin symbol
+    function setNameAndSymbol(string memory newName, string memory newSymbol) external;
 }

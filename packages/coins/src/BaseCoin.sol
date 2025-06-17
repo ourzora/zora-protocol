@@ -58,6 +58,11 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
     /// @notice The address of the currency
     address public currency;
 
+    /// @notice The name of the token
+    string private _name;
+    /// @notice The symbol of the token
+    string private _symbol;
+
     /**
      * @notice The constructor for the static Coin contract deployment shared across all Coins.
      * @param _protocolRewardRecipient The address of the protocol reward recipient
@@ -99,6 +104,9 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         if (payoutRecipient_ == address(0)) {
             revert AddressZero();
         }
+
+        _name = name_;
+        _symbol = symbol_;
 
         // Set base contract state
         __ERC20_init(name_, symbol_);
@@ -142,6 +150,27 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
     /// @notice The contract metadata
     function contractURI() external view returns (string memory) {
         return tokenURI;
+    }
+
+    /**
+     * @dev Returns the name of the token.
+     */
+    function name() public view override returns (string memory) {
+        return _name;
+    }
+
+    function setNameAndSymbol(string memory newName, string memory newSymbol) external onlyOwner {
+        _name = newName;
+        _symbol = newSymbol;
+        emit NameAndSymbolUpdated(msg.sender, newName, newSymbol);
+    }
+
+    /**
+     * @dev Returns the symbol of the token, usually a shorter version of the
+     * name.
+     */
+    function symbol() public view override returns (string memory) {
+        return _symbol;
     }
 
     /// @notice ERC165 interface support
