@@ -49,7 +49,9 @@ contract ZoraFactoryImpl is
     address public immutable coinImpl;
     address public immutable coinV4Impl;
 
-    constructor(address _coinImpl, address _coinV4Impl) initializer {
+    constructor(address _coinImpl, address _coinV4Impl) {
+        _disableInitializers();
+
         coinImpl = _coinImpl;
         coinV4Impl = _coinV4Impl;
     }
