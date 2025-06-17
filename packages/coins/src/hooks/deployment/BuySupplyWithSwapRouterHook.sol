@@ -1,20 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {IPoolManager, SwapParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {BaseCoinDeployHook} from "./BaseCoinDeployHook.sol";
 import {ICoin} from "../../interfaces/ICoin.sol";
 import {IZoraFactory} from "../../interfaces/IZoraFactory.sol";
 import {ISwapRouter} from "../../interfaces/ISwapRouter.sol";
 import {IWETH} from "../../interfaces/IWETH.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Coin} from "../../Coin.sol";
 import {ICoinV3} from "../../interfaces/ICoinV3.sol";
 import {ICoinV4} from "../../interfaces/ICoinV4.sol";
 import {CoinConfigurationVersions} from "../../libs/CoinConfigurationVersions.sol";
-import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {IPoolManager, SwapParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
-import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 
 /// @title BuySupplyWithSwapRouter
 /// @notice A hook that buys supply for a coin that is priced in an erc20 token a backing currency, using a Uniswap V3 SwapRouter.
@@ -129,7 +130,7 @@ contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
         // sync the currency balance before transferring to the pool manager
         poolManager.sync(Currency.wrap(coin.currency()));
         // transfer the currency to the pool manager for the swap
-        IERC20(coin.currency()).transfer(address(poolManager), uint256(uint128(amountCurrency)));
+        SafeERC20.safeTransfer(IERC20(coin.currency()), address(poolManager), uint256(uint128(amountCurrency)));
         // collect the coin from the pool manager
         poolManager.take(Currency.wrap(address(coin)), buyRecipient, uint256(uint128(amountCoin)));
 
