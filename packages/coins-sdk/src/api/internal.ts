@@ -17,7 +17,7 @@ export const setCreateUploadJwt = async (
 ): Promise<RequestResult<SetCreateUploadJwtResponse>> => {
   return await setCreateUploadJwtSDK({
     query,
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
     ...options,
   });
 };

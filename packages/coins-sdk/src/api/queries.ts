@@ -39,7 +39,7 @@ export const getCoin = async (
   return await getCoinSDK({
     ...options,
     query,
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
   });
 };
 
@@ -55,7 +55,7 @@ export const getCoins = async (
     query: {
       coins: query.coins.map((coinData) => JSON.stringify(coinData)) as any,
     },
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
     ...options,
   });
 };
@@ -70,7 +70,7 @@ export const getCoinComments = async (
 ): Promise<RequestResult<GetCoinCommentsResponse>> => {
   return await getCoinCommentsSDK({
     query,
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
     ...options,
   });
 };
@@ -85,7 +85,7 @@ export const getProfile = async (
 ): Promise<RequestResult<GetProfileResponse>> => {
   return await getProfileSDK({
     query,
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
     ...options,
   });
 };
@@ -100,7 +100,7 @@ export const getProfileCoins = async (
 ): Promise<RequestResult<GetProfileCoinsResponse>> => {
   return await getProfileCoinsSDK({
     query,
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
     ...options,
   });
 };
@@ -115,7 +115,7 @@ export const getProfileBalances = async (
 ): Promise<RequestResult<GetProfileBalancesResponse>> => {
   return await getProfileBalancesSDK({
     query,
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
     ...options,
   });
 };

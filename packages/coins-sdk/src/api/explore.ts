@@ -28,7 +28,7 @@ const createExploreQuery = (
   getExploreSDK({
     ...options,
     query: { ...query, listType },
-    meta: getApiKeyMeta(),
+    ...getApiKeyMeta(),
   });
 
 /** Get top gaining coins */
