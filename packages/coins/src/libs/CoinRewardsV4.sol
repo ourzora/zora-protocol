@@ -3,16 +3,17 @@ pragma solidity ^0.8.28;
 
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {LpPosition} from "../types/LpPosition.sol";
-import {V4Liquidity} from "./V4Liquidity.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
-import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {LpPosition} from "../types/LpPosition.sol";
+import {IHasRewardsRecipients} from "../interfaces/IHasRewardsRecipients.sol";
 import {ICoin} from "../interfaces/ICoin.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
-import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {V4Liquidity} from "./V4Liquidity.sol";
+import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 
 library CoinRewardsV4 {
     using SafeERC20 for IERC20;

@@ -4,7 +4,7 @@ pragma solidity ^0.8.13;
 import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
 import {IPoolManager, PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IDeployedCoinVersionLookup} from "../../src/interfaces/IDeployedCoinVersionLookup.sol";
-import {IHasRewardsRecipients} from "../../src/interfaces/ICoin.sol";
+import {IHasRewardsRecipients} from "../../src/interfaces/IHasRewardsRecipients.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";

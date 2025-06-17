@@ -6,6 +6,7 @@ import {IERC7572} from "./IERC7572.sol";
 import {IDopplerErrors} from "./IDopplerErrors.sol";
 import {PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolConfiguration} from "../types/PoolConfiguration.sol";
+import {IHasRewardsRecipients} from "./IHasRewardsRecipients.sol";
 
 struct PoolConfigurationV4 {
     uint8 version;
@@ -19,16 +20,6 @@ struct PoolKeyStruct {
     uint24 fee;
     int24 tickSpacing;
     address hooks;
-}
-
-interface IHasRewardsRecipients {
-    function payoutRecipient() external view returns (address);
-
-    function platformReferrer() external view returns (address);
-
-    function protocolRewardRecipient() external view returns (address);
-
-    function dopplerFeeRecipient() external view returns (address);
 }
 
 interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients {

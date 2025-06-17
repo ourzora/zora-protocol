@@ -3,7 +3,8 @@ pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {ICoin, IHasRewardsRecipients} from "./interfaces/ICoin.sol";
+import {ICoin} from "./interfaces/ICoin.sol";
+import {IHasRewardsRecipients} from "./interfaces/IHasRewardsRecipients.sol";
 import {ICoinComments} from "./interfaces/ICoinComments.sol";
 import {IERC7572} from "./interfaces/IERC7572.sol";
 import {IUniswapV3Factory} from "./interfaces/IUniswapV3Factory.sol";

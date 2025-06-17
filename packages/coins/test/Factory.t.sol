@@ -9,10 +9,18 @@ contract FactoryTest is BaseTest {
         super.setUp();
     }
 
-    function test_constructor() public view {
+    function test_factory_constructor_and_proxy_setup() public {
+        // Impl constructor test
+        ZoraFactoryImpl impl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
         assertEq(ZoraFactoryImpl(address(factory)).coinImpl(), address(coinV3Impl));
         assertEq(ZoraFactoryImpl(address(factory)).owner(), users.factoryOwner);
         assertEq(ZoraFactoryImpl(address(factory)).coinV4Impl(), address(coinV4Impl));
+
+        // proxy initialization test
+        address initialOwner = makeAddr("initialOwner");
+        ZoraFactory factory = new ZoraFactory(address(impl));
+        ZoraFactoryImpl(address(factory)).initialize(address(initialOwner));
+        assertEq(ZoraFactoryImpl(address(factory)).owner(), initialOwner);
     }
 
     function test_deploy_no_eth() public {

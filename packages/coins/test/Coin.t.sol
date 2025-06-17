@@ -6,6 +6,7 @@ import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
+import {IHasRewardsRecipients} from "../src/interfaces/IHasRewardsRecipients.sol";
 import {PoolConfiguration} from "../src/interfaces/ICoin.sol";
 
 contract CoinTest is BaseTest {
@@ -110,9 +111,18 @@ contract CoinTest is BaseTest {
         assertEq(poolConfig.version, CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION);
     }
 
+    function test_uniswap_v3_mint_callback_wrong_sender() public {
+        _deployCoin();
+        address random = makeAddr("random");
+        vm.prank(random);
+        vm.expectRevert(abi.encodeWithSelector(ICoin.OnlyPool.selector, random, address(pool)));
+        coin.uniswapV3MintCallback(1 ether, 1 ether, "");
+    }
+
     function test_erc165_interface_support() public {
         _deployCoin();
         assertEq(coin.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(coin.supportsInterface(type(IHasRewardsRecipients).interfaceId), true);
         assertEq(coin.supportsInterface(type(IERC7572).interfaceId), true);
     }
 
@@ -435,6 +445,15 @@ contract CoinTest is BaseTest {
         vm.prank(WETH_ADDRESS);
         (bool success, ) = address(coin).call{value: 1 ether}("");
         assertTrue(success);
+    }
+
+    function test_revert_receive_from_weth_wrong_sender() public {
+        _deployCoin();
+        address random = makeAddr("random");
+        vm.prank(random);
+        vm.expectRevert(abi.encodeWithSelector(ICoin.OnlyWeth.selector, random));
+        (bool success, ) = address(coin).call{value: 1 ether}("");
+        assertFalse(success);
     }
 
     function test_default_platform_referrer() public {
