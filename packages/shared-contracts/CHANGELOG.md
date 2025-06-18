@@ -1,5 +1,11 @@
 # @zoralabs/shared-contracts
 
+## 0.0.5
+
+### Patch Changes
+
+- 9adcb702: Added uniswap QuoterV2 to protocol-deployments
+
 ## 0.0.4
 
 ### Patch Changes

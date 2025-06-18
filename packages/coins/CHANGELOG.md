@@ -1,5 +1,18 @@
 # @zoralabs/coins
 
+## 1.1.0
+
+### Minor Changes
+
+- 73784d07: Added creator coins, contracts and hooks, enabling creator coins with vesting to be created.
+
+### Patch Changes
+
+- 3d5e77fe: Coin name and symbol can be updated by an owner
+- 9adcb702: Added the AutoSwapper contract
+- 52edc9d5: Don't auto-withdraw vested creator coins on every swap
+- 73784d07: A coins initial liquidity can be migrated from one hook to the next, given that the upgrade path is approved
+
 ## 1.0.1
 
 ### Patch Changes
