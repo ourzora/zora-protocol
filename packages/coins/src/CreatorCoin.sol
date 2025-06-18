@@ -48,9 +48,8 @@ contract CreatorCoin is ICreatorCoin, CoinV4 {
     /// @notice Allows the creator payout recipient to claim vested tokens
     /// @dev Optimized for frequent calls from Uniswap V4 hooks
     /// @return claimAmount The amount of tokens claimed
-    function claimVesting() public returns (uint256) {
-        require(payoutRecipient != address(0), AddressZero());
-
+    function claimVesting() external returns (uint256) {
+        require(msg.sender == payoutRecipient || isOwner(msg.sender), OnlyPayoutRecipientOrOwner());
         uint256 claimAmount = getClaimableAmount();
 
         // Early return if nothing to claim (gas efficient for frequent calls)

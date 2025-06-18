@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ICreatorCoin} from "../interfaces/ICreatorCoin.sol";
 import {CreatorCoinConstants} from "../libs/CreatorCoinConstants.sol";
 import {CreatorCoinRewards} from "../libs/CreatorCoinRewards.sol";
 import {IPoolManager, IDeployedCoinVersionLookup, IHasRewardsRecipients, Currency, BaseZoraV4CoinHook} from "./BaseZoraV4CoinHook.sol";
@@ -18,7 +17,5 @@ contract CreatorCoinHook is BaseZoraV4CoinHook {
     /// @dev Override for distributing market rewards and vested coins to the creator
     function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address) internal override {
         CreatorCoinRewards.distributeMarketRewards(currency, fees, coin);
-
-        ICreatorCoin(address(coin)).claimVesting();
     }
 }
