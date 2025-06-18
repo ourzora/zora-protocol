@@ -160,9 +160,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
             });
     }
 
-    function deployUpgradeGate() internal returns (CoinsDeployment memory deployment) {
-        deployment = readDeployment();
-
+    function deployUpgradeGate(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         deployment.hookUpgradeGate = address(new HookUpgradeGate(getProxyAdmin()));
 
         return deployment;
