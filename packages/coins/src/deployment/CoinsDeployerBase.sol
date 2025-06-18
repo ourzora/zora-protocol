@@ -125,21 +125,39 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function deployCreatorCoinImpl(address creatorCoinHook) internal returns (CreatorCoin) {
-        return new CreatorCoin(getZoraRecipient(), PROTOCOL_REWARDS, IPoolManager(getUniswapV4PoolManager()), getDopplerAirlock());
+        return
+            new CreatorCoin({
+                _protocolRewardRecipient: getZoraRecipient(),
+                _protocolRewards: PROTOCOL_REWARDS,
+                _poolManager: IPoolManager(getUniswapV4PoolManager()),
+                _airlock: getDopplerAirlock()
+            });
     }
 
     function deployZoraFactoryImpl(
-        address coinV3Impl,
-        address coinV4Impl,
-        address creatorCoinImpl,
-        address zoraV4CoinHook,
-        address creatorCoinHook
+        address _coinV3Impl,
+        address _coinV4Impl,
+        address _creatorCoinImpl,
+        address _contentCoinHook,
+        address _creatorCoinHook
     ) internal returns (ZoraFactoryImpl) {
-        return new ZoraFactoryImpl(coinV3Impl, coinV4Impl, creatorCoinImpl, zoraV4CoinHook, creatorCoinHook);
+        return
+            new ZoraFactoryImpl({
+                _coinImpl: _coinV3Impl,
+                _coinV4Impl: _coinV4Impl,
+                _creatorCoinImpl: _creatorCoinImpl,
+                _contentCoinHook: _contentCoinHook,
+                _creatorCoinHook: _creatorCoinHook
+            });
     }
 
     function deployBuySupplyWithSwapRouterHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithSwapRouterHook) {
-        return new BuySupplyWithSwapRouterHook(IZoraFactory(deployment.zoraFactory), getUniswapSwapRouter(), getUniswapV4PoolManager());
+        return
+            new BuySupplyWithSwapRouterHook({
+                _factory: IZoraFactory(deployment.zoraFactory),
+                _swapRouter: getUniswapSwapRouter(),
+                _poolManager: getUniswapV4PoolManager()
+            });
     }
 
     function deployUpgradeGate() internal returns (CoinsDeployment memory deployment) {
@@ -203,13 +221,13 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.coinV4Impl = address(deployCoinV4Impl(deployment.zoraV4CoinHook));
         deployment.creatorCoinImpl = address(deployCreatorCoinImpl(deployment.creatorCoinHook));
         deployment.zoraFactoryImpl = address(
-            deployZoraFactoryImpl(
-                deployment.coinV3Impl,
-                deployment.coinV4Impl,
-                deployment.creatorCoinImpl,
-                deployment.zoraV4CoinHook,
-                deployment.creatorCoinHook
-            )
+            deployZoraFactoryImpl({
+                _coinV3Impl: deployment.coinV3Impl,
+                _coinV4Impl: deployment.coinV4Impl,
+                _creatorCoinImpl: deployment.creatorCoinImpl,
+                _contentCoinHook: deployment.zoraV4CoinHook,
+                _creatorCoinHook: deployment.creatorCoinHook
+            })
         );
         deployment.coinVersion = IVersionedContract(deployment.coinV4Impl).contractVersion();
         deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
