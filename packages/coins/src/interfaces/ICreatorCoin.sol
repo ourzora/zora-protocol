@@ -15,9 +15,6 @@ interface ICreatorCoin is ICoinV4 {
     /// @notice Thrown when an invalid currency is used for creator coin operations
     error InvalidCurrency();
 
-    /// @notice Thrown when the caller is not the payout recipient or owner
-    error OnlyPayoutRecipientOrOwner();
-
     /// @notice Allows the creator payout recipient to claim vested tokens
     /// @return claimAmount The amount of tokens claimed
     function claimVesting() external returns (uint256);

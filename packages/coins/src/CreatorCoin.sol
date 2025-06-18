@@ -49,7 +49,6 @@ contract CreatorCoin is ICreatorCoin, CoinV4 {
     /// @dev Optimized for frequent calls from Uniswap V4 hooks
     /// @return claimAmount The amount of tokens claimed
     function claimVesting() external returns (uint256) {
-        require(msg.sender == payoutRecipient || isOwner(msg.sender), OnlyPayoutRecipientOrOwner());
         uint256 claimAmount = getClaimableAmount();
 
         // Early return if nothing to claim (gas efficient for frequent calls)

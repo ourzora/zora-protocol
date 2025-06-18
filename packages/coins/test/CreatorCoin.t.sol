@@ -165,7 +165,6 @@ contract CreatorCoinTest is BaseTest {
     }
 
     function test_claimVesting_at_launch() public {
-        vm.prank(creatorCoin.payoutRecipient());
         uint256 claimedAmount = creatorCoin.claimVesting();
         assertEq(claimedAmount, 0);
         assertEq(creatorCoin.totalClaimed(), 0);
@@ -189,7 +188,6 @@ contract CreatorCoinTest is BaseTest {
             creatorCoin.vestingEndTime()
         );
 
-        vm.prank(creatorCoin.payoutRecipient());
         uint256 claimedAmount = creatorCoin.claimVesting();
 
         assertEq(claimedAmount, expectedClaimable);
@@ -204,7 +202,6 @@ contract CreatorCoinTest is BaseTest {
         // First claim after 1 year
         vm.warp(creatorCoin.vestingStartTime() + oneYear);
         uint256 expectedClaim1 = (CreatorCoinConstants.CREATOR_VESTING_SUPPLY * oneYear) / CreatorCoinConstants.CREATOR_VESTING_DURATION;
-        vm.startPrank(creatorCoin.owners()[0]);
         uint256 claimed1 = creatorCoin.claimVesting();
 
         assertEq(claimed1, expectedClaim1);
@@ -228,7 +225,6 @@ contract CreatorCoinTest is BaseTest {
         vm.warp(creatorCoin.vestingStartTime() + oneYear);
 
         // First claim
-        vm.startPrank(creatorCoin.owners()[0]);
         uint256 claimed1 = creatorCoin.claimVesting();
         assertGt(claimed1, 0);
 
@@ -243,7 +239,6 @@ contract CreatorCoinTest is BaseTest {
     function test_claimVesting_after_full_vesting() public {
         vm.warp(creatorCoin.vestingEndTime());
 
-        vm.startPrank(creatorCoin.owners()[0]);
         uint256 claimedAmount = creatorCoin.claimVesting();
 
         assertEq(claimedAmount, CreatorCoinConstants.CREATOR_VESTING_SUPPLY);
@@ -260,7 +255,6 @@ contract CreatorCoinTest is BaseTest {
 
         // Claim half way through vesting
         vm.warp(creatorCoin.vestingStartTime() + halfVesting);
-        vm.startPrank(creatorCoin.owners()[0]);
         uint256 partialClaim = creatorCoin.claimVesting();
         assertEq(partialClaim, CreatorCoinConstants.CREATOR_VESTING_SUPPLY / 2);
 
@@ -300,7 +294,6 @@ contract CreatorCoinTest is BaseTest {
         uint256 startTime = creatorCoin.vestingStartTime();
         uint256 totalClaimed = 0;
 
-        vm.startPrank(creatorCoin.owners()[0]);
         // Make small claims every day for a week
         for (uint256 i = 1; i <= 7; i++) {
             vm.warp(startTime + i * 1 days);
@@ -312,16 +305,6 @@ contract CreatorCoinTest is BaseTest {
         uint256 expectedTotal = (CreatorCoinConstants.CREATOR_VESTING_SUPPLY * 7 days) / CreatorCoinConstants.CREATOR_VESTING_DURATION;
         assertEq(totalClaimed, expectedTotal);
         assertEq(creatorCoin.totalClaimed(), expectedTotal);
-    }
-
-    function test_claimVesting_reverts_if_not_payout_recipient_or_owner() public {
-        vm.prank(makeAddr("randomUser"));
-        vm.expectRevert(ICreatorCoin.OnlyPayoutRecipientOrOwner.selector);
-        creatorCoin.claimVesting();
-
-        vm.warp(creatorCoin.vestingEndTime());
-        vm.prank(creatorCoin.payoutRecipient());
-        creatorCoin.claimVesting();
     }
 
     function test_buy(uint128 amountIn) public {
@@ -356,7 +339,6 @@ contract CreatorCoinTest is BaseTest {
         // payout recipient should not have coins balance, until they claim
         assertEq(creatorCoin.balanceOf(payoutRecipient), 0);
 
-        vm.prank(payoutRecipient);
         creatorCoin.claimVesting();
 
         assertGt(creatorCoin.balanceOf(payoutRecipient), 0);
