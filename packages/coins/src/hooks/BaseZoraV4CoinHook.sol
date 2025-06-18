@@ -6,6 +6,7 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IMsgSender} from "../interfaces/IMsgSender.sol";
@@ -15,13 +16,14 @@ import {V4Liquidity} from "../libs/V4Liquidity.sol";
 import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
 import {ICoinV4} from "../interfaces/ICoinV4.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
-import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {CoinCommon} from "../libs/CoinCommon.sol";
-import {PoolConfiguration} from "../types/PoolConfiguration.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
-import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
 import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
+import {IUpgradeableV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
+import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
+import {MultiOwnable} from "../utils/MultiOwnable.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -33,7 +35,7 @@ import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
 ///      2. Swaps collected fees to the backing currency through multi-hop paths
 ///      3. Distributes converted fees as rewards
 /// @author oveddan
-contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
+abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
@@ -46,16 +48,30 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     /// @notice The coin version lookup contract - used to determine if an address is a coin and what version it is.
     IDeployedCoinVersionLookup internal immutable coinVersionLookup;
 
+    /// @notice The upgrade gate contract - used to verify allowed upgrade paths
+    IHooksUpgradeGate internal immutable upgradeGate;
+
+    uint256 internal immutable totalSupplyForPositions;
+
     /// @notice The constructor for the ZoraV4CoinHook.
     /// @param poolManager_ The Uniswap V4 pool manager
     /// @param coinVersionLookup_ The coin version lookup contract - used to determine if an address is a coin and what version it is.
     /// @param trustedMessageSenders_ The addresses of the trusted message senders - these are addresses that are trusted to provide a
-    constructor(IPoolManager poolManager_, IDeployedCoinVersionLookup coinVersionLookup_, address[] memory trustedMessageSenders_) BaseHook(poolManager_) {
-        if (address(coinVersionLookup_) == address(0)) {
-            revert CoinVersionLookupCannotBeZeroAddress();
-        }
+    /// @param upgradeGate_ The upgrade gate contract for managing hook upgrades
+    constructor(
+        IPoolManager poolManager_,
+        IDeployedCoinVersionLookup coinVersionLookup_,
+        address[] memory trustedMessageSenders_,
+        IHooksUpgradeGate upgradeGate_,
+        uint256 totalSupplyForPositions_
+    ) BaseHook(poolManager_) {
+        require(address(coinVersionLookup_) != address(0), CoinVersionLookupCannotBeZeroAddress());
+
+        require(address(upgradeGate_) != address(0), UpgradeGateCannotBeZeroAddress());
 
         coinVersionLookup = coinVersionLookup_;
+        upgradeGate = upgradeGate_;
+        totalSupplyForPositions = totalSupplyForPositions_;
 
         for (uint256 i = 0; i < trustedMessageSenders_.length; i++) {
             trustedMessageSender[trustedMessageSenders_[i]] = true;
@@ -106,7 +122,7 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     function _generatePositions(ICoinV4 coin, PoolKey memory key) internal view returns (LpPosition[] memory positions) {
         bool isCoinToken0 = Currency.unwrap(key.currency0) == address(coin);
 
-        positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, coin.getPoolConfiguration());
+        positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, coin.getPoolConfiguration(), totalSupplyForPositions);
     }
 
     /// @notice Internal fn called when a pool is initialized.
@@ -122,19 +138,24 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
 
         LpPosition[] memory positions = _generatePositions(ICoinV4(coin), key);
 
+        _initializeForPositions(key, coin, positions);
+
+        return BaseHook.afterInitialize.selector;
+    }
+
+    function _initializeForPositions(PoolKey memory key, address coin, LpPosition[] memory positions) internal {
         poolCoins[CoinCommon.hashPoolKey(key)] = PoolCoin({coin: coin, positions: positions});
 
         V4Liquidity.lockAndMint(poolManager, key, positions);
-
-        return BaseHook.afterInitialize.selector;
     }
 
     /// @notice Internal fn called when a swap is executed.
     /// @dev This hook is called from BaseHook library from uniswap v4.
     /// This hook:
     /// 1. Collects accrued LP fees from all positions
-    /// 2. Swaps collected fees to the backing currency through multi-hop paths
-    /// 3. Distributes converted fees as rewards
+    /// 2. Mints a new LP position back into the pool
+    /// 3. Swaps remaining collected fees to the backing currency through multi-hop paths
+    /// 4. Distributes converted fees as rewards
     /// @param sender The address of the sender.
     /// @param key The pool key.
     /// @param params The swap parameters.
@@ -157,17 +178,21 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         // get path for swapping the payout to a single currency
         IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
 
-        // Collect accrued LP fees from all positions, swap them to the target payout currency,
-        // and transfer the converted amount to this hook contract for distribution
-        (, , Currency receivedCurrency, uint128 receivedAmount) = CoinRewardsV4.collectFeesAndConvertToPayout(
+        // collect lp fees
+        (int128 fees0, int128 fees1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
+
+        // mint the lp reward
+        (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) = CoinRewardsV4.mintLpReward(poolManager, key, fees0, fees1);
+
+        // convert remaining fees to payout currency for market rewards
+        (Currency payoutCurrency, uint128 payoutAmount) = CoinRewardsV4.convertToPayoutCurrency(
             poolManager,
-            key,
-            poolCoins[poolKeyHash].positions,
+            marketRewardsAmount0,
+            marketRewardsAmount1,
             payoutSwapPath
         );
 
-        // Distribute the collected and converted fees to all reward recipients (creator, referrers, protocol, etc.)
-        CoinRewardsV4.distributeMarketRewards(receivedCurrency, receivedAmount, ICoinV4(coin), CoinRewardsV4.getTradeReferral(hookData));
+        _distributeMarketRewards(payoutCurrency, payoutAmount, ICoinV4(coin), CoinRewardsV4.getTradeReferral(hookData));
 
         {
             (address swapper, bool isTrustedSwapSenderAddress) = _getOriginalMsgSender(sender);
@@ -190,9 +215,12 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         return (BaseHook.afterSwap.selector, 0);
     }
 
+    /// @dev Internal fn to allow for overriding market reward distribution logic
+    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal virtual;
+
     /// @notice Internal fn called when the PoolManager is unlocked.  Used to mint initial liquidity positions.
     function unlockCallback(bytes calldata data) external onlyPoolManager returns (bytes memory) {
-        V4Liquidity.handleMintPositionsCallback(poolManager, data);
+        return V4Liquidity.handleCallback(poolManager, data);
     }
 
     /// @notice Internal fn to get the original message sender.
@@ -208,5 +236,20 @@ contract ZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         } catch {
             swapper = address(0);
         }
+    }
+
+    /// @inheritdoc IUpgradeableV4Hook
+    function migrateLiquidity(address newHook, PoolKey memory poolKey, bytes calldata additionalData) external override returns (PoolKey memory newPoolKey) {
+        bytes32 poolKeyHash = CoinCommon.hashPoolKey(poolKey);
+        PoolCoin storage poolCoin = poolCoins[poolKeyHash];
+        // check that the coin associated with the poolkey is the caller
+        require(poolCoin.coin == msg.sender, OnlyCoin(msg.sender, poolCoin.coin));
+
+        // Verify upgrade path is allowed
+        if (!upgradeGate.isRegisteredUpgradePath(address(this), newHook)) {
+            revert IUpgradeableV4Hook.UpgradePathNotRegistered(address(this), newHook);
+        }
+
+        newPoolKey = V4Liquidity.lockAndMigrate(poolManager, poolKey, poolCoin.positions, poolCoin.coin, newHook, additionalData);
     }
 }

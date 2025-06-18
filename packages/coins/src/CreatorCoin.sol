@@ -1,0 +1,99 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
+import {CreatorCoinConstants} from "./libs/CreatorCoinConstants.sol";
+import {IHooks, PoolConfiguration, PoolKey, IPoolManager, ICoinV4, CoinV4} from "./CoinV4.sol";
+
+contract CreatorCoin is ICreatorCoin, CoinV4 {
+    uint256 public vestingStartTime;
+    uint256 public vestingEndTime;
+    uint256 public totalClaimed;
+
+    constructor(
+        address _protocolRewardRecipient,
+        address _protocolRewards,
+        IPoolManager _poolManager,
+        address _airlock
+    ) CoinV4(_protocolRewardRecipient, _protocolRewards, _poolManager, _airlock) initializer {}
+
+    function initialize(
+        address payoutRecipient_,
+        address[] memory owners_,
+        string memory tokenURI_,
+        string memory name_,
+        string memory symbol_,
+        address platformReferrer_,
+        address currency_,
+        PoolKey memory poolKey_,
+        uint160 sqrtPriceX96,
+        PoolConfiguration memory poolConfiguration_
+    ) public override(CoinV4, ICoinV4) {
+        require(currency_ == CreatorCoinConstants.CURRENCY, InvalidCurrency());
+
+        super.initialize(payoutRecipient_, owners_, tokenURI_, name_, symbol_, platformReferrer_, currency_, poolKey_, sqrtPriceX96, poolConfiguration_);
+
+        vestingStartTime = block.timestamp;
+        vestingEndTime = block.timestamp + CreatorCoinConstants.CREATOR_VESTING_DURATION;
+    }
+
+    /// @dev The initial mint and distribution of the coin supply.
+    ///      Overrides the CoinV4._handleInitialDistribution to transfer the market supply to the hook.
+    function _handleInitialDistribution() internal override {
+        _mint(address(this), CreatorCoinConstants.TOTAL_SUPPLY);
+
+        _transfer(address(this), address(poolKey.hooks), CreatorCoinConstants.MARKET_SUPPLY);
+    }
+
+    /// @notice Allows the creator payout recipient to claim vested tokens
+    /// @dev Optimized for frequent calls from Uniswap V4 hooks
+    /// @return claimAmount The amount of tokens claimed
+    function claimVesting() public returns (uint256) {
+        require(payoutRecipient != address(0), AddressZero());
+
+        uint256 claimAmount = getClaimableAmount();
+
+        // Early return if nothing to claim (gas efficient for frequent calls)
+        if (claimAmount == 0) {
+            return 0;
+        }
+
+        // Update total claimed before transfer
+        totalClaimed += claimAmount;
+
+        // Transfer directly to the payout recipient
+        _transfer(address(this), payoutRecipient, claimAmount);
+
+        emit CreatorVestingClaimed(payoutRecipient, claimAmount, totalClaimed, vestingStartTime, vestingEndTime);
+
+        return claimAmount;
+    }
+
+    /// @notice Get currently claimable amount without claiming
+    /// @return The amount that can be claimed right now
+    function getClaimableAmount() public view returns (uint256) {
+        uint256 vestedAmount = _calculateVestedAmount(block.timestamp);
+        return vestedAmount > totalClaimed ? vestedAmount - totalClaimed : 0;
+    }
+
+    /// @notice Calculate total vested amount at given timestamp
+    /// @param timestamp The timestamp to calculate vesting for
+    /// @return The total amount vested at the given timestamp
+    function _calculateVestedAmount(uint256 timestamp) internal view returns (uint256) {
+        // Before vesting starts
+        if (timestamp <= vestingStartTime) {
+            return 0;
+        }
+
+        // After vesting ends - fully vested
+        if (timestamp >= vestingEndTime) {
+            return CreatorCoinConstants.CREATOR_VESTING_SUPPLY;
+        }
+
+        // Linear vesting: (elapsed_time / total_duration) * total_amount
+        uint256 elapsedTime = timestamp - vestingStartTime;
+
+        // Multiply first to avoid precision loss
+        return (CreatorCoinConstants.CREATOR_VESTING_SUPPLY * elapsedTime) / CreatorCoinConstants.CREATOR_VESTING_DURATION;
+    }
+}

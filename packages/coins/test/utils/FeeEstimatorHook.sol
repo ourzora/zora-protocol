@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
+import {ContentCoinHook} from "../../src/hooks/ContentCoinHook.sol";
 import {IPoolManager, PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IDeployedCoinVersionLookup} from "../../src/interfaces/IDeployedCoinVersionLookup.sol";
 import {IHasRewardsRecipients} from "../../src/interfaces/IHasRewardsRecipients.sol";
@@ -15,9 +15,11 @@ import {ICoinV4, IHasSwapPath} from "../../src/interfaces/ICoinV4.sol";
 import {UniV4SwapToCurrency} from "../../src/libs/UniV4SwapToCurrency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoinRewardsV4} from "../../src/libs/CoinRewardsV4.sol";
+import {BaseZoraV4CoinHook} from "../../src/hooks/BaseZoraV4CoinHook.sol";
+import {IHooksUpgradeGate} from "../../src/interfaces/IHooksUpgradeGate.sol";
 
 /// @dev Test util - meant to be able to etched where a normal zora hook is, to gather the fees from swaps but not distribute them
-contract FeeEstimatorHook is ZoraV4CoinHook {
+contract FeeEstimatorHook is BaseZoraV4CoinHook {
     struct FeeEstimatorState {
         uint128 fees0;
         uint128 fees1;
@@ -29,7 +31,12 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         uint256 coinBalanceChange;
     }
 
-    constructor(IPoolManager _poolManager, IDeployedCoinVersionLookup _coinVersionLookup) ZoraV4CoinHook(_poolManager, _coinVersionLookup, new address[](0)) {}
+    constructor(
+        IPoolManager _poolManager,
+        IDeployedCoinVersionLookup _coinVersionLookup,
+        IHooksUpgradeGate upgradeGate,
+        uint256 initialSupplyForPositions
+    ) BaseZoraV4CoinHook(_poolManager, _coinVersionLookup, new address[](0), upgradeGate, initialSupplyForPositions) {}
 
     FeeEstimatorState public feeState;
 
@@ -59,10 +66,14 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
             int128 fee0;
             int128 fee1;
 
-            (fee0, fee1, feeState.afterSwapCurrency, feeState.afterSwapCurrencyAmount) = CoinRewardsV4.collectFeesAndConvertToPayout(
+            (fee0, fee1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
+
+            (uint128 remainingFee0, uint128 remainingFee1) = CoinRewardsV4.mintLpReward(poolManager, key, fee0, fee1);
+
+            (feeState.afterSwapCurrency, feeState.afterSwapCurrencyAmount) = CoinRewardsV4.convertToPayoutCurrency(
                 poolManager,
-                key,
-                poolCoins[poolKeyHash].positions,
+                remainingFee0,
+                remainingFee1,
                 payoutSwapPath
             );
 
@@ -81,4 +92,6 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
 
         return (BaseHook.afterSwap.selector, 0);
     }
+
+    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {}
 }

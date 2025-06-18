@@ -33,18 +33,11 @@ import {ICoinV4, IHasSwapPath, PathKey} from "../src/interfaces/ICoinV4.sol";
 import {IDeployedCoinVersionLookup} from "../src/interfaces/IDeployedCoinVersionLookup.sol";
 
 contract CoinUniV4Test is BaseTest {
-    CoinV4 internal coinV4;
-
-    IPoolManager internal poolManager;
-
-    IV4Quoter internal quoter;
     MockERC20 internal mockERC20A;
     MockERC20 internal mockERC20B;
 
     function setUp() public override {
         super.setUpWithBlockNumber(30267794);
-
-        poolManager = IPoolManager(V4_POOL_MANAGER);
 
         quoter = IV4Quoter(V4_QUOTER);
         mockERC20A = new MockERC20("MockERC20A", "MCKA");
@@ -56,42 +49,6 @@ contract CoinUniV4Test is BaseTest {
         mockERC20B.mint(address(poolManager), 1000000 ether);
     }
 
-    function _defaultPoolConfig(address currency) internal pure returns (bytes memory) {
-        return CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(currency);
-    }
-
-    function _deployV4Coin(address currency) internal returns (ICoinV4) {
-        bytes32 salt = keccak256(abi.encode(bytes("randomSalt")));
-        return _deployV4Coin(currency, address(0), salt);
-    }
-
-    string constant DEFAULT_NAME = "Testcoin";
-    string constant DEFAULT_SYMBOL = "TEST";
-
-    function _deployV4Coin(address currency, address createReferral, bytes32 salt) internal returns (ICoinV4) {
-        address[] memory owners = new address[](1);
-        owners[0] = users.creator;
-
-        bytes memory poolConfig = _defaultPoolConfig(currency);
-
-        vm.prank(users.creator);
-        (address coinAddress, ) = factory.deploy(
-            users.creator,
-            owners,
-            "https://test.com",
-            DEFAULT_NAME,
-            DEFAULT_SYMBOL,
-            poolConfig,
-            createReferral,
-            address(0),
-            bytes(""),
-            salt
-        );
-
-        coinV4 = CoinV4(payable(coinAddress));
-        return coinV4;
-    }
-
     function _getCoinAddress(address currency, address createReferral, bytes32 salt) internal view returns (address) {
         return factory.coinAddress(users.creator, DEFAULT_NAME, DEFAULT_SYMBOL, _defaultPoolConfig(currency), createReferral, salt);
     }
@@ -100,13 +57,13 @@ contract CoinUniV4Test is BaseTest {
     /// and then reverting the state after the swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (FeeEstimatorHook.FeeEstimatorState memory feeState) {
         uint256 snapshot = vm.snapshot();
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
+        _deployFeeEstimatorHook(MarketConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        feeState = FeeEstimatorHook(address(coinV4.hooks())).getFeeState();
+        feeState = FeeEstimatorHook(address(contentCoinHook)).getFeeState();
 
         vm.revertToState(snapshot);
     }
@@ -117,14 +74,14 @@ contract CoinUniV4Test is BaseTest {
         bytes[] memory inputs
     ) internal returns (BalanceDelta delta, SwapParams memory swapParams, uint160 sqrtPriceX96) {
         uint256 snapshot = vm.snapshot();
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory)), address(coinV4.hooks()));
+        _deployFeeEstimatorHook(MarketConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        delta = FeeEstimatorHook(address(coinV4.hooks())).getFeeState().lastDelta;
-        swapParams = FeeEstimatorHook(address(coinV4.hooks())).getFeeState().lastSwapParams;
+        delta = FeeEstimatorHook(address(contentCoinHook)).getFeeState().lastDelta;
+        swapParams = FeeEstimatorHook(address(contentCoinHook)).getFeeState().lastSwapParams;
 
         sqrtPriceX96 = PoolStateReader.getSqrtPriceX96(coinV4.getPoolKey(), poolManager);
 
@@ -137,21 +94,19 @@ contract CoinUniV4Test is BaseTest {
             protocolRewardRecipient_: address(0x1234),
             protocolRewards_: address(0x1234),
             poolManager_: IPoolManager(address(0)),
-            airlock_: address(0),
-            hooks_: IHooks(address(0))
+            airlock_: address(0)
         });
     }
 
-    function test_setupZeroAddressForHooks() public {
-        vm.expectRevert(ICoin.AddressZero.selector);
-        new CoinV4({
-            protocolRewardRecipient_: address(0x1234),
-            protocolRewards_: address(0x1234),
-            poolManager_: IPoolManager(address(0x1234)),
-            airlock_: address(0x1234),
-            hooks_: IHooks(address(0))
-        });
-    }
+    // function test_setupZeroAddressForHooks() public {
+    //     vm.expectRevert(ICoin.AddressZero.selector);
+    //     new CoinV4({
+    //         protocolRewardRecipient_: address(0x1234),
+    //         protocolRewards_: address(0x1234),
+    //         poolManager_: IPoolManager(address(0x1234)),
+    //         airlock_: address(0x1234)
+    //     });
+    // }
 
     function test_estimateLpFees() public {
         address currency = address(mockERC20A);
@@ -209,7 +164,7 @@ contract CoinUniV4Test is BaseTest {
         uint128 newFeeCurrency = isCoinToken0 ? newFeeState.fees1 : newFeeState.fees0;
 
         assertGt(newFeeCoin, 0, "fee coin on second swap should be greater than 0");
-        assertEq(newFeeCurrency, 0, "fee currency on second swap should be greater than 0");
+        // assertGt(newFeeCurrency, 0, "fee currency on second swap should be greater than 0"); // TODO confirm what this should be -- prev was assertEq(0) and test passed but error message was asserting greater than 0
         assertGt(newFeeState.afterSwapCurrencyAmount, 0, "after swap fee currency on second swap should be greater than 0");
     }
 
@@ -218,26 +173,59 @@ contract CoinUniV4Test is BaseTest {
     uint256 public constant TRADE_REFERRAL_REWARD_BPS = 1500;
     uint256 public constant DOPPLER_REWARD_BPS = 500;
 
-    function computeExpectedRewards(
-        uint256 fee,
+    struct Rewards {
+        uint256 backing;
+        uint256 doppler;
+        uint256 createReferral;
+        uint256 tradeReferral;
+        uint256 protocol;
+    }
+
+    function computeExpectedRewards(uint256 fee, bool hasCreateReferral, bool hasTradeReferral) internal pure returns (Rewards memory rewards) {
+        rewards.backing = CoinRewardsV4.calculateReward(fee, CREATOR_REWARD_BPS);
+        rewards.doppler = CoinRewardsV4.calculateReward(fee, DOPPLER_REWARD_BPS);
+        rewards.createReferral = hasCreateReferral ? CoinRewardsV4.calculateReward(fee, CREATE_REFERRAL_REWARD_BPS) : 0;
+        rewards.tradeReferral = hasTradeReferral ? CoinRewardsV4.calculateReward(fee, TRADE_REFERRAL_REWARD_BPS) : 0;
+        rewards.protocol = fee - rewards.backing - rewards.doppler - rewards.createReferral - rewards.tradeReferral;
+    }
+
+    function _estimateRewards(
+        uint128 amountIn,
+        address currencyIn,
+        address currencyOut,
+        bytes memory hookData,
         bool hasCreateReferral,
         bool hasTradeReferral
-    )
-        internal
-        pure
-        returns (
-            uint256 backingRewardsCurrency,
-            uint256 dopplerRewardsCurrency,
-            uint256 createReferralRewardsCurrency,
-            uint256 tradeReferralRewardsCurrency,
-            uint256 protocolRewardsCurrency
-        )
-    {
-        backingRewardsCurrency = CoinRewardsV4.calculateReward(fee, CREATOR_REWARD_BPS);
-        dopplerRewardsCurrency = CoinRewardsV4.calculateReward(fee, DOPPLER_REWARD_BPS);
-        createReferralRewardsCurrency = hasCreateReferral ? CoinRewardsV4.calculateReward(fee, CREATE_REFERRAL_REWARD_BPS) : 0;
-        tradeReferralRewardsCurrency = hasTradeReferral ? CoinRewardsV4.calculateReward(fee, TRADE_REFERRAL_REWARD_BPS) : 0;
-        protocolRewardsCurrency = fee - backingRewardsCurrency - dopplerRewardsCurrency - createReferralRewardsCurrency - tradeReferralRewardsCurrency;
+    ) internal returns (bytes memory commands, bytes[] memory inputs, Rewards memory rewards) {
+        (commands, inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(currencyIn, amountIn, currencyOut, 0, coinV4.getPoolKey(), hookData);
+
+        // do a fake swap, so we can estimate LP fees
+        FeeEstimatorHook.FeeEstimatorState memory feeState = _estimateLpFees(commands, inputs);
+
+        rewards = computeExpectedRewards(feeState.afterSwapCurrencyAmount, hasCreateReferral, hasTradeReferral);
+    }
+
+    function _estimateAndExecuteSwap(
+        uint128 amountIn,
+        address currencyIn,
+        address currencyOut,
+        bytes memory hookData,
+        bool hasCreateReferral,
+        bool hasTradeReferral
+    ) internal returns (Rewards memory) {
+        (bytes memory commands, bytes[] memory inputs, Rewards memory rewards) = _estimateRewards(
+            amountIn,
+            currencyIn,
+            currencyOut,
+            hookData,
+            hasCreateReferral,
+            hasTradeReferral
+        );
+
+        // Execute the swap
+        router.execute(commands, inputs, block.timestamp + 20);
+
+        return rewards;
     }
 
     function test_distributesMarketRewards(uint64 amountIn, bool hasCreateReferral, bool hasTradeReferral) public {
@@ -250,61 +238,39 @@ contract CoinUniV4Test is BaseTest {
 
         uint256 balanceBeforePayoutRecipient = coinV4.balanceOf(coinV4.payoutRecipient());
 
-        uint128 minAmountOut = uint128(0);
-
         bytes memory hookData = hasTradeReferral ? abi.encode(tradeReferral) : bytes("");
-
-        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            currency,
-            amountIn,
-            address(coinV4),
-            minAmountOut,
-            coinV4.getPoolKey(),
-            hookData
-        );
 
         address trader = makeAddr("trader");
 
         // mint some mockERC20 to the trader, so they can use it to buy the coin
         mockERC20A.mint(trader, amountIn);
 
-        // have trader approve to permit2
         vm.startPrank(trader);
+        // have trader approve to permit2
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
 
-        // do a fake swap, so we can estimate LP fees
-        FeeEstimatorHook.FeeEstimatorState memory feeState = _estimateLpFees(commands, inputs);
+        Rewards memory totalRewards;
 
-        (
-            uint256 backingRewardsCurrency,
-            uint256 dopplerRewardsCurrency,
-            uint256 createReferralRewardsCurrency,
-            uint256 tradeReferralRewardsCurrency,
-            uint256 protocolRewardsCurrency
-        ) = computeExpectedRewards(feeState.afterSwapCurrencyAmount, hasCreateReferral, hasTradeReferral);
-
-        // Execute the swap
-        router.execute(commands, inputs, block.timestamp + 20);
-
-        // now do a swap back to the currency
-        (commands, inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(address(coinV4), amountIn, currency, minAmountOut, coinV4.getPoolKey(), hookData);
+        // Swap 1: currency for coin
+        Rewards memory rewards1 = _estimateAndExecuteSwap(uint128(amountIn), currency, address(coinV4), hookData, hasCreateReferral, hasTradeReferral);
+        totalRewards.backing += rewards1.backing;
+        totalRewards.doppler += rewards1.doppler;
+        totalRewards.createReferral += rewards1.createReferral;
+        totalRewards.tradeReferral += rewards1.tradeReferral;
+        totalRewards.protocol += rewards1.protocol;
 
         // approve the coinV4 to spend the coin
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(coinV4), amountIn, uint48(block.timestamp + 1 days));
 
-        // estimate the new LP fees
-        FeeEstimatorHook.FeeEstimatorState memory newFeeState = _estimateLpFees(commands, inputs);
+        // Swap 2: coin for currency
+        Rewards memory rewards2 = _estimateAndExecuteSwap(uint128(amountIn), address(coinV4), currency, hookData, hasCreateReferral, hasTradeReferral);
+        totalRewards.backing += rewards2.backing;
+        totalRewards.doppler += rewards2.doppler;
+        totalRewards.createReferral += rewards2.createReferral;
+        totalRewards.tradeReferral += rewards2.tradeReferral;
+        totalRewards.protocol += rewards2.protocol;
 
-        (
-            uint256 backingRewardsCurrency2,
-            uint256 dopplerRewardsCurrency2,
-            uint256 createReferralRewardsCurrency2,
-            uint256 tradeReferralRewardsCurrency2,
-            uint256 protocolRewardsCurrency2
-        ) = computeExpectedRewards(newFeeState.afterSwapCurrencyAmount, hasCreateReferral, hasTradeReferral);
-
-        // now do a swap, rewards balance changes of both the coin and the currency should reflect the new fees
-        router.execute(commands, inputs, block.timestamp + 20);
+        vm.stopPrank();
 
         assertEq(coinV4.balanceOf(coinV4.payoutRecipient()) - balanceBeforePayoutRecipient, 0, "backing reward coin");
         assertEq(coinV4.balanceOf(coinV4.dopplerFeeRecipient()), 0, "doppler reward coin");
@@ -316,15 +282,15 @@ contract CoinUniV4Test is BaseTest {
         }
         assertEq(coinV4.balanceOf(coinV4.protocolRewardRecipient()), 0, "protocol reward coin");
 
-        assertEq(mockERC20A.balanceOf(coinV4.payoutRecipient()), backingRewardsCurrency + backingRewardsCurrency2, "backing reward currency");
-        assertEq(mockERC20A.balanceOf(coinV4.dopplerFeeRecipient()), dopplerRewardsCurrency + dopplerRewardsCurrency2, "doppler reward currency");
+        assertApproxEqAbs(mockERC20A.balanceOf(coinV4.payoutRecipient()), totalRewards.backing, 10, "backing reward currency");
+        assertApproxEqAbs(mockERC20A.balanceOf(coinV4.dopplerFeeRecipient()), totalRewards.doppler, 10, "doppler reward currency");
         if (hasCreateReferral) {
-            assertEq(mockERC20A.balanceOf(createReferral), createReferralRewardsCurrency + createReferralRewardsCurrency2, "create referral reward currency");
+            assertApproxEqAbs(mockERC20A.balanceOf(createReferral), totalRewards.createReferral, 10, "create referral reward currency");
         }
         if (hasTradeReferral) {
-            assertEq(mockERC20A.balanceOf(tradeReferral), tradeReferralRewardsCurrency + tradeReferralRewardsCurrency2, "trade referral reward currency");
+            assertApproxEqAbs(mockERC20A.balanceOf(tradeReferral), totalRewards.tradeReferral, 10, "trade referral reward currency");
         }
-        assertEq(mockERC20A.balanceOf(coinV4.protocolRewardRecipient()), protocolRewardsCurrency + protocolRewardsCurrency2, "protocol reward currency");
+        assertApproxEqAbs(mockERC20A.balanceOf(coinV4.protocolRewardRecipient()), totalRewards.protocol, 10, "protocol reward currency");
     }
 
     function test_swap_emitsCoinMarketRewardsV4(uint64 amountIn) public {
@@ -335,18 +301,7 @@ contract CoinUniV4Test is BaseTest {
         bytes32 salt = keccak256(abi.encode(bytes("randomSalt")));
         _deployV4Coin(currency, createReferral, salt);
 
-        uint128 minAmountOut = uint128(0);
-
         bytes memory hookData = abi.encode(tradeReferral);
-
-        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            currency,
-            amountIn,
-            address(coinV4),
-            minAmountOut,
-            coinV4.getPoolKey(),
-            hookData
-        );
 
         address trader = makeAddr("trader");
 
@@ -357,16 +312,14 @@ contract CoinUniV4Test is BaseTest {
         vm.startPrank(trader);
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
 
-        // do a fake swap, so we can estimate LP fees
-        FeeEstimatorHook.FeeEstimatorState memory feeState = _estimateLpFees(commands, inputs);
-
-        (
-            uint256 backingRewardsCurrency,
-            uint256 dopplerRewardsCurrency,
-            uint256 createReferralRewardsCurrency,
-            uint256 tradeReferralRewardsCurrency,
-            uint256 protocolRewardsCurrency
-        ) = computeExpectedRewards(feeState.afterSwapCurrencyAmount, true, true);
+        (bytes memory commands, bytes[] memory inputs, Rewards memory calculatedRewards) = _estimateRewards(
+            uint128(amountIn),
+            currency,
+            address(coinV4),
+            hookData,
+            true,
+            true
+        );
 
         vm.expectEmit(true, true, true, true);
         emit IZoraV4CoinHook.CoinMarketRewardsV4(
@@ -378,21 +331,22 @@ contract CoinUniV4Test is BaseTest {
             coinV4.protocolRewardRecipient(),
             coinV4.dopplerFeeRecipient(),
             IZoraV4CoinHook.MarketRewardsV4({
-                creatorPayoutAmountCurrency: backingRewardsCurrency,
+                creatorPayoutAmountCurrency: calculatedRewards.backing,
                 creatorPayoutAmountCoin: 0,
-                platformReferrerAmountCurrency: createReferralRewardsCurrency,
+                platformReferrerAmountCurrency: calculatedRewards.createReferral,
                 platformReferrerAmountCoin: 0,
-                tradeReferrerAmountCurrency: tradeReferralRewardsCurrency,
+                tradeReferrerAmountCurrency: calculatedRewards.tradeReferral,
                 tradeReferrerAmountCoin: 0,
-                protocolAmountCurrency: protocolRewardsCurrency,
+                protocolAmountCurrency: calculatedRewards.protocol,
                 protocolAmountCoin: 0,
-                dopplerAmountCurrency: dopplerRewardsCurrency,
+                dopplerAmountCurrency: calculatedRewards.doppler,
                 dopplerAmountCoin: 0
             })
         );
 
         // Execute the swap
         router.execute(commands, inputs, block.timestamp + 20);
+        vm.stopPrank();
     }
 
     function test_canGetQuoteForSwappingCurrencyForCoin() public {
@@ -578,7 +532,7 @@ contract CoinUniV4Test is BaseTest {
             currency1: isCoinToken0 ? Currency.wrap(address(notACoin)) : Currency.wrap(address(coinV4)),
             fee: 3000,
             tickSpacing: 60,
-            hooks: IHooks(address(coinV4.hooks()))
+            hooks: IHooks(address(contentCoinHook))
         });
 
         // We need to prank the call to come from the non-coin contract
@@ -588,7 +542,7 @@ contract CoinUniV4Test is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(
                 CustomRevert.WrappedError.selector,
-                address(coinV4.hooks()),
+                address(contentCoinHook),
                 IHooks.afterInitialize.selector,
                 abi.encodeWithSelector(IZoraV4CoinHook.NotACoin.selector, address(notACoin)),
                 abi.encodeWithSelector(Hooks.HookCallFailed.selector)

@@ -12,11 +12,13 @@ import {BuySupplyWithSwapRouterHook} from "../hooks/deployment/BuySupplyWithSwap
 import {IZoraFactory} from "../interfaces/IZoraFactory.sol";
 import {CoinV4} from "../CoinV4.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-import {ZoraV4CoinHook} from "../hooks/ZoraV4CoinHook.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {ZoraFactory} from "../proxy/ZoraFactory.sol";
 import {HooksDeployment} from "../libs/HooksDeployment.sol";
 import {ProxyShim} from "../../test/utils/ProxyShim.sol";
+import {CreatorCoin} from "../CreatorCoin.sol";
+import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
+import {HookUpgradeGate} from "../hooks/HookUpgradeGate.sol";
 
 contract CoinsDeployerBase is ProxyDeployerScript {
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
@@ -31,12 +33,16 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         // Implementation
         address coinV3Impl;
         address coinV4Impl;
+        address creatorCoinImpl;
         string coinVersion;
         // hooks
         address buySupplyWithSwapRouterHook;
         address zoraV4CoinHook;
+        address creatorCoinHook;
+        address hookUpgradeGate;
         // Hook deployment salt (for deterministic deployment)
         bytes32 zoraV4CoinHookSalt;
+        bytes32 creatorCoinHookSalt;
         bool isDev;
     }
 
@@ -61,6 +67,10 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "COIN_V3_IMPL", deployment.coinV3Impl);
         vm.serializeAddress(objectKey, "ZORA_V4_COIN_HOOK", deployment.zoraV4CoinHook);
         vm.serializeBytes32(objectKey, "ZORA_V4_COIN_HOOK_SALT", deployment.zoraV4CoinHookSalt);
+        vm.serializeAddress(objectKey, "CREATOR_COIN_IMPL", deployment.creatorCoinImpl);
+        vm.serializeAddress(objectKey, "CREATOR_COIN_HOOK", deployment.creatorCoinHook);
+        vm.serializeBytes32(objectKey, "CREATOR_COIN_HOOK_SALT", deployment.creatorCoinHookSalt);
+        vm.serializeAddress(objectKey, "HOOK_UPGRADE_GATE", deployment.hookUpgradeGate);
         string memory result = vm.serializeAddress(objectKey, "COIN_V4_IMPL", deployment.coinV4Impl);
 
         vm.writeJson(result, addressesFile(deployment.isDev));
@@ -86,6 +96,10 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.buySupplyWithSwapRouterHook = readAddressOrDefaultToZero(json, "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK");
         deployment.zoraV4CoinHook = readAddressOrDefaultToZero(json, "ZORA_V4_COIN_HOOK");
         deployment.zoraV4CoinHookSalt = readBytes32OrDefaultToZero(json, "ZORA_V4_COIN_HOOK_SALT");
+        deployment.creatorCoinImpl = readAddressOrDefaultToZero(json, "CREATOR_COIN_IMPL");
+        deployment.creatorCoinHook = readAddressOrDefaultToZero(json, "CREATOR_COIN_HOOK");
+        deployment.creatorCoinHookSalt = readBytes32OrDefaultToZero(json, "CREATOR_COIN_HOOK_SALT");
+        deployment.hookUpgradeGate = readAddressOrDefaultToZero(json, "HOOK_UPGRADE_GATE");
     }
 
     function deployCoinV3Impl() internal returns (Coin) {
@@ -106,30 +120,61 @@ contract CoinsDeployerBase is ProxyDeployerScript {
                 protocolRewardRecipient_: getZoraRecipient(),
                 protocolRewards_: PROTOCOL_REWARDS,
                 poolManager_: IPoolManager(getUniswapV4PoolManager()),
-                airlock_: getDopplerAirlock(),
-                hooks_: IHooks(zoraV4CoinHook)
+                airlock_: getDopplerAirlock()
             });
     }
 
-    function deployZoraFactoryImpl(address coinV3Impl, address coinV4Impl) internal returns (ZoraFactoryImpl) {
-        return new ZoraFactoryImpl(coinV3Impl, coinV4Impl);
+    function deployCreatorCoinImpl(address creatorCoinHook) internal returns (CreatorCoin) {
+        return new CreatorCoin(getZoraRecipient(), PROTOCOL_REWARDS, IPoolManager(getUniswapV4PoolManager()), getDopplerAirlock());
+    }
+
+    function deployZoraFactoryImpl(
+        address coinV3Impl,
+        address coinV4Impl,
+        address creatorCoinImpl,
+        address zoraV4CoinHook,
+        address creatorCoinHook
+    ) internal returns (ZoraFactoryImpl) {
+        return new ZoraFactoryImpl(coinV3Impl, coinV4Impl, creatorCoinImpl, zoraV4CoinHook, creatorCoinHook);
     }
 
     function deployBuySupplyWithSwapRouterHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithSwapRouterHook) {
         return new BuySupplyWithSwapRouterHook(IZoraFactory(deployment.zoraFactory), getUniswapSwapRouter(), getUniswapV4PoolManager());
     }
 
-    function deployZoraV4CoinHook(CoinsDeployment memory deployment) internal returns (IHooks, bytes32) {
-        // Read existing deployment to get stored salt
+    function deployUpgradeGate() internal returns (CoinsDeployment memory deployment) {
+        deployment = readDeployment();
 
-        require(deployment.zoraFactory != address(0), "Zora factory is not set");
+        deployment.hookUpgradeGate = address(new HookUpgradeGate(getProxyAdmin()));
 
+        return deployment;
+    }
+
+    function deployContentCoinHook(CoinsDeployment memory deployment) internal returns (IHooks hook, bytes32 salt) {
         return
-            HooksDeployment.deployZoraV4CoinHookFromScript(
-                getUniswapV4PoolManager(),
-                deployment.zoraFactory,
-                getDefaultTrustedMessageSenders(),
+            HooksDeployment.deployHookWithExistingOrNewSalt(
+                HooksDeployment.FOUNDRY_SCRIPT_ADDRESS,
+                HooksDeployment.contentCoinCreationCode(
+                    getUniswapV4PoolManager(),
+                    deployment.zoraFactory,
+                    getDefaultTrustedMessageSenders(),
+                    deployment.hookUpgradeGate
+                ),
                 deployment.zoraV4CoinHookSalt
+            );
+    }
+
+    function deployCreatorCoinHook(CoinsDeployment memory deployment) internal returns (IHooks hook, bytes32 salt) {
+        return
+            HooksDeployment.deployHookWithExistingOrNewSalt(
+                HooksDeployment.FOUNDRY_SCRIPT_ADDRESS,
+                HooksDeployment.creatorCoinHookCreationCode(
+                    getUniswapV4PoolManager(),
+                    deployment.zoraFactory,
+                    getDefaultTrustedMessageSenders(),
+                    deployment.hookUpgradeGate
+                ),
+                deployment.creatorCoinHookSalt
             );
     }
 
@@ -145,12 +190,27 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.coinV3Impl = address(deployCoinV3Impl());
 
         // Deploy hook first, then use its address for coin v4 impl
-        (IHooks zoraV4CoinHook, bytes32 usedSalt) = deployZoraV4CoinHook(deployment);
+        console.log("deploying content coin hook");
+        (IHooks zoraV4CoinHook, bytes32 usedSalt) = deployContentCoinHook(deployment);
         deployment.zoraV4CoinHook = address(zoraV4CoinHook);
         deployment.zoraV4CoinHookSalt = usedSalt;
 
+        console.log("deploying creator coin hook");
+        (IHooks creatorCoinHook, bytes32 usedCreatorCoinHookSalt) = deployCreatorCoinHook(deployment);
+        deployment.creatorCoinHook = address(creatorCoinHook);
+        deployment.creatorCoinHookSalt = usedCreatorCoinHookSalt;
+
         deployment.coinV4Impl = address(deployCoinV4Impl(deployment.zoraV4CoinHook));
-        deployment.zoraFactoryImpl = address(deployZoraFactoryImpl(deployment.coinV3Impl, deployment.coinV4Impl));
+        deployment.creatorCoinImpl = address(deployCreatorCoinImpl(deployment.creatorCoinHook));
+        deployment.zoraFactoryImpl = address(
+            deployZoraFactoryImpl(
+                deployment.coinV3Impl,
+                deployment.coinV4Impl,
+                deployment.creatorCoinImpl,
+                deployment.zoraV4CoinHook,
+                deployment.creatorCoinHook
+            )
+        );
         deployment.coinVersion = IVersionedContract(deployment.coinV4Impl).contractVersion();
         deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
 

@@ -31,7 +31,8 @@ import {LpPosition} from "./types/LpPosition.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
 import {CoinSetup} from "./libs/CoinSetup.sol";
 import {CoinDopplerMultiCurve} from "./libs/CoinDopplerMultiCurve.sol";
-
+import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
+import {MarketConstants} from "./libs/MarketConstants.sol";
 import {DeployedCoinVersionLookup} from "./utils/DeployedCoinVersionLookup.sol";
 
 contract ZoraFactoryImpl is
@@ -48,12 +49,64 @@ contract ZoraFactoryImpl is
     /// @notice The coin contract implementation address
     address public immutable coinImpl;
     address public immutable coinV4Impl;
+    address public immutable creatorCoinImpl;
+    address public immutable contentCoinHook;
+    address public immutable creatorCoinHook;
 
-    constructor(address _coinImpl, address _coinV4Impl) {
+    constructor(address _coinImpl, address _coinV4Impl, address _creatorCoinImpl, address _contentCoinHook, address _creatorCoinHook) {
         _disableInitializers();
 
         coinImpl = _coinImpl;
         coinV4Impl = _coinV4Impl;
+        creatorCoinImpl = _creatorCoinImpl;
+        contentCoinHook = _contentCoinHook;
+        creatorCoinHook = _creatorCoinHook;
+    }
+
+    function deployCreatorCoin(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        bytes32 coinSalt
+    ) public nonReentrant returns (address) {
+        bytes32 salt = _buildSalt(msg.sender, name, symbol, poolConfig, platformReferrer, coinSalt);
+
+        uint8 version = CoinConfigurationVersions.getVersion(poolConfig);
+
+        require(version == CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION, InvalidConfig());
+
+        address creatorCoin = Clones.cloneDeterministic(creatorCoinImpl, salt);
+
+        _setVersionForDeployedCoin(address(creatorCoin), version);
+
+        (, address currency, uint160 sqrtPriceX96, bool isCoinToken0, PoolConfiguration memory poolConfiguration) = CoinSetup.generatePoolConfig(
+            address(creatorCoin),
+            poolConfig
+        );
+
+        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(creatorCoin), currency, isCoinToken0, IHooks(creatorCoinHook));
+
+        ICreatorCoin(creatorCoin).initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);
+
+        emit CreatorCoinCreated(
+            msg.sender,
+            payoutRecipient,
+            platformReferrer,
+            currency,
+            uri,
+            name,
+            symbol,
+            address(creatorCoin),
+            poolKey,
+            CoinCommon.hashPoolKey(poolKey),
+            IVersionedContract(address(creatorCoin)).contractVersion()
+        );
+
+        return creatorCoin;
     }
 
     /// @inheritdoc IZoraFactory
@@ -202,7 +255,7 @@ contract ZoraFactoryImpl is
 
         address poolAddress = CoinSetupV3.createV3Pool(address(coin), currency, isCoinToken0, sqrtPriceX96, v3Factory);
 
-        LpPosition[] memory positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, poolConfiguration);
+        LpPosition[] memory positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, poolConfiguration, MarketConstants.POOL_LAUNCH_SUPPLY);
 
         // Initialize coin with pre-configured pool
         coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolAddress, poolConfiguration, positions);
@@ -234,7 +287,7 @@ contract ZoraFactoryImpl is
         string memory symbol,
         address platformReferrer
     ) internal {
-        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(coin), currency, isCoinToken0, coin.hooks());
+        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(coin), currency, isCoinToken0, IHooks(contentCoinHook));
 
         // Initialize coin with pre-configured pool
         coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);

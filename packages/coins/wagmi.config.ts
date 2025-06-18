@@ -11,6 +11,7 @@ export default defineConfig({
       include: [
         "Coin",
         "CoinV4",
+        "CreatorCoin",
         "ZoraFactoryImpl",
         "IUniswapV3Pool",
         "BuySupplyWithSwapRouterHook",

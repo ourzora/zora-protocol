@@ -10,19 +10,19 @@ import {PoolConfiguration} from "./types/PoolConfiguration.sol";
 import {UniV4SwapToCurrency} from "./libs/UniV4SwapToCurrency.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {IDeployedCoinVersionLookup} from "./interfaces/IDeployedCoinVersionLookup.sol";
+import {CoinConstants} from "./libs/CoinConstants.sol";
+import {IUpgradeableV4Hook} from "./interfaces/IUpgradeableV4Hook.sol";
+import {CoinCommon} from "./libs/CoinCommon.sol";
 
 contract CoinV4 is BaseCoin, ICoinV4 {
     /// @notice The Uniswap v4 pool manager singleton contract reference.
     IPoolManager public immutable poolManager;
 
-    /// @notice The hooks contract used by this coin.
-    IHooks public immutable hooks;
-
     /// @notice The pool key for the coin. Type from Uniswap V4 core.
-    PoolKey private poolKey;
+    PoolKey internal poolKey;
 
     /// @notice The configuration for the pool.
-    PoolConfiguration private poolConfiguration;
+    PoolConfiguration internal poolConfiguration;
 
     /// @notice The constructor for the static CoinV4 contract deployment shared across all Coins.
     /// @dev All arguments are required and cannot be set to teh 0 address.
@@ -30,24 +30,18 @@ contract CoinV4 is BaseCoin, ICoinV4 {
     /// @param protocolRewards_ The address of the protocol rewards contract
     /// @param poolManager_ The address of the pool manager
     /// @param airlock_ The address of the Airlock contract, ownership is used for a protocol fee split.
-    /// @param hooks_ The address of the hooks contract
     /// @notice Returns the pool key for the coin
     constructor(
         address protocolRewardRecipient_,
         address protocolRewards_,
         IPoolManager poolManager_,
-        address airlock_,
-        IHooks hooks_
+        address airlock_
     ) BaseCoin(protocolRewardRecipient_, protocolRewards_, airlock_) {
         if (address(poolManager_) == address(0)) {
             revert AddressZero();
         }
-        if (address(hooks_) == address(0)) {
-            revert AddressZero();
-        }
 
         poolManager = poolManager_;
-        hooks = hooks_;
     }
 
     /// @inheritdoc IHasPoolKey
@@ -72,17 +66,47 @@ contract CoinV4 is BaseCoin, ICoinV4 {
         PoolKey memory poolKey_,
         uint160 sqrtPriceX96,
         PoolConfiguration memory poolConfiguration_
-    ) public initializer {
-        super._initialize(payoutRecipient_, owners_, tokenURI_, name_, symbol_, platformReferrer_);
-
+    ) public virtual initializer {
         currency = currency_;
+        // we need to set this before initialization, because
+        // distributing currency relies on the poolkey being set since the hooks
+        // are retrieved from there
         poolKey = poolKey_;
         poolConfiguration = poolConfiguration_;
 
-        // transfer the supply to the hook
-        _transfer(address(this), address(hooks), balanceOf(address(this)));
+        super._initialize(payoutRecipient_, owners_, tokenURI_, name_, symbol_, platformReferrer_);
+
         // initialize the pool - the hook will mint its positions in the afterInitialize callback
         poolManager.initialize(poolKey, sqrtPriceX96);
+    }
+
+    /// @dev The initial mint and distribution of the coin supply.
+    ///      Overrides the BaseCoin._handleInitialDistribution to transfer the market supply to the hook.
+    function _handleInitialDistribution() internal virtual override {
+        // Mint the total supply to the coin contract
+        _mint(address(this), CoinConstants.MAX_TOTAL_SUPPLY);
+
+        // Distribute the creator launch reward to the payout recipient
+        _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
+
+        // Transfer the market supply to the hook for liquidity
+        _transfer(address(this), address(poolKey.hooks), balanceOf(address(this)));
+    }
+
+    /// @inheritdoc ICoinV4
+    function hooks() external view returns (IHooks) {
+        return poolKey.hooks;
+    }
+
+    /// @notice Migrate liquidity from current hook to a new hook implementation
+    /// @param newHook Address of the new hook implementation
+    /// @param additionalData Additional data to pass to the new hook during initialization
+    function migrateLiquidity(address newHook, bytes calldata additionalData) external onlyOwner returns (PoolKey memory newPoolKey) {
+        newPoolKey = IUpgradeableV4Hook(address(poolKey.hooks)).migrateLiquidity(newHook, poolKey, additionalData);
+
+        emit LiquidityMigrated(poolKey, CoinCommon.hashPoolKey(poolKey), newPoolKey, CoinCommon.hashPoolKey(newPoolKey));
+
+        poolKey = newPoolKey;
     }
 
     function supportsInterface(bytes4 interfaceId) public pure virtual override(BaseCoin, IERC165) returns (bool) {

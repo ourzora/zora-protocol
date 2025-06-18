@@ -1,0 +1,17 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+contract ContractAddresses {
+    address internal constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
+    address internal constant ZORA_TOKEN_ADDRESS = 0x1111111111166b7FE7bd91427724B487980aFc69;
+    address internal constant V3_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
+    address internal constant NONFUNGIBLE_POSITION_MANAGER = 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1;
+    address internal constant SWAP_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;
+    address internal constant DOPPLER_AIRLOCK = 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12;
+    address internal constant USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
+    address internal constant V4_POOL_MANAGER = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
+    address internal constant V4_POSITION_MANAGER = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
+    address internal constant V4_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+    address internal constant V4_QUOTER = 0x0d5e0F971ED27FBfF6c2837bf31316121532048D;
+    address internal constant UNIVERSAL_ROUTER = 0x6fF5693b99212Da76ad316178A184AB56D299b43;
+}

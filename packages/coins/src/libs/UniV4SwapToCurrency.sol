@@ -28,7 +28,7 @@ library UniV4SwapToCurrency {
         require(path.length > 0, IZoraV4CoinHook.PathMustHaveAtLeastOneStep());
 
         // do first swap - the first swap updates output the balance with the initial balance that existed before the swap
-        (lastCurrency, lastCurrencyBalance) = _doFirstSwapFromCoinToCurrency(poolManager, path[0], currencyIn, amount0, amount1);
+        (lastCurrency, lastCurrencyBalance) = doFirstSwapFromCoinToCurrency(poolManager, path[0], currencyIn, amount0, amount1);
 
         // for each path, swap the currency to the next currency
         for (uint256 i = 1; i < path.length; i++) {
@@ -38,13 +38,13 @@ library UniV4SwapToCurrency {
         }
     }
 
-    function _doFirstSwapFromCoinToCurrency(
+    function doFirstSwapFromCoinToCurrency(
         IPoolManager poolManager,
         PathKey memory pathKey,
         Currency coin,
         uint128 amount0,
         uint128 amount1
-    ) private returns (Currency outputCurrency, uint128 outputAmount) {
+    ) internal returns (Currency outputCurrency, uint128 outputAmount) {
         (PoolKey memory poolKey, bool zeroForOne) = _getPoolAndSwapDirection(pathKey, coin);
 
         uint128 inputAmount = zeroForOne ? amount0 : amount1;

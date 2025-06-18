@@ -3,11 +3,20 @@ pragma solidity ^0.8.28;
 
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+import {ModifyLiquidityParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
+import {LpPosition} from "../types/LpPosition.sol";
+import {V4Liquidity} from "./V4Liquidity.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {LpPosition} from "../types/LpPosition.sol";
+import {DopplerMath} from "../libs/DopplerMath.sol";
+import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {IHasRewardsRecipients} from "../interfaces/IHasRewardsRecipients.sol";
 import {ICoin} from "../interfaces/ICoin.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
@@ -18,54 +27,130 @@ import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 library CoinRewardsV4 {
     using SafeERC20 for IERC20;
 
-    // creator gets 50% of the total fee
+    // creator gets 50% of the market rewards
+    // market rewards are 2/3 of the total fee
     uint256 public constant CREATOR_REWARD_BPS = 5000;
 
-    // create referrer gets 15% of the total fee
+    // create referrer gets 15% of the market rewards
+    // market rewards are 2/3 of the total fee
     uint256 public constant CREATE_REFERRAL_REWARD_BPS = 1500;
 
-    // trade referrer gets 10% of the total fee
+    // trade referrer gets 10% of the market rewards
+    // market rewards are 2/3 of the total fee
     uint256 public constant TRADE_REFERRAL_REWARD_BPS = 1500;
 
-    // doppler gets 5% of the total fee
+    // doppler gets 5% of the market rewards
+    // market rewards are 2/3 of the total fee
     uint256 public constant DOPPLER_REWARD_BPS = 500;
+
+    // LPs get 1/3 of the total fee
+    uint256 public constant LP_REWARD_BPS = 3333;
 
     function getTradeReferral(bytes calldata hookData) internal pure returns (address) {
         return hookData.length > 0 ? abi.decode(hookData, (address)) : address(0);
     }
 
-    /// @notice Collects fees from LP positions, swaps them to target payout currency, and transfers to hook contract, so
-    /// that they can later be distributed as rewards.
+    /// @dev Converts collected fees from LP positions into target payout currency, and transfers to hook contract, so
+    ///      that they can later be distributed as rewards.
     /// @param poolManager The pool manager instance
-    /// @param key The pool key
-    /// @param positions The LP positions to collect fees from
+    /// @param fees0 The amount of fees collected in currency0
+    /// @param fees1 The amount of fees collected in currency1
     /// @param payoutSwapPath The swap path to convert fees to target currency
-    /// @return fees0 The amount of fees collected in currency0
-    /// @return fees1 The amount of fees collected in currency1
     /// @return receivedCurrency The final currency after swapping
     /// @return receivedAmount The final amount after swapping
-    function collectFeesAndConvertToPayout(
+    function convertToPayoutCurrency(
         IPoolManager poolManager,
-        PoolKey memory key,
-        LpPosition[] storage positions,
+        uint128 fees0,
+        uint128 fees1,
         IHasSwapPath.PayoutSwapPath memory payoutSwapPath
-    ) internal returns (int128 fees0, int128 fees1, Currency receivedCurrency, uint128 receivedAmount) {
-        // Step 1: Collect accrued fees from all LP positions in both token0 and token1
-        (fees0, fees1) = V4Liquidity.collectFees(poolManager, key, positions);
-
+    ) internal returns (Currency receivedCurrency, uint128 receivedAmount) {
         // This handles multi-hop swaps if needed (e.g. coin -> backingCoin -> backingCoin's currency)
-        (receivedCurrency, receivedAmount) = UniV4SwapToCurrency.swapToPath(
-            poolManager,
-            uint128(fees0),
-            uint128(fees1),
-            payoutSwapPath.currencyIn,
-            payoutSwapPath.path
-        );
+        (receivedCurrency, receivedAmount) = UniV4SwapToCurrency.swapToPath(poolManager, fees0, fees1, payoutSwapPath.currencyIn, payoutSwapPath.path);
 
-        // Step 3: Transfer the final converted currency amount to this contract for distribution
+        // Transfer the final converted currency amount to this contract for distribution
         // This makes the tokens available for the subsequent reward distribution
         if (receivedAmount > 0) {
             poolManager.take(receivedCurrency, address(this), receivedAmount);
+        }
+    }
+
+    /// @dev Computes the LP reward and remaining amount for market rewards from the total amount
+    function computeLpReward(uint128 totalBackingAmount) internal pure returns (uint128 lpRewardAmount) {
+        lpRewardAmount = uint128(calculateReward(uint256(totalBackingAmount), LP_REWARD_BPS));
+    }
+
+    /// @notice Mints LP rewards by creating new liquidity positions from collected fees
+    /// @dev Splits collected fees between LP rewards and market rewards, then mints new LP positions
+    ///      with the LP reward portion. The remaining amount becomes market rewards for distribution.
+    /// @param poolManager The pool manager instance
+    /// @param key The pool key identifying the specific pool
+    /// @param fees0 The amount of fees collected in currency0
+    /// @param fees1 The amount of fees collected in currency1
+    /// @return marketRewardsAmount0 The amount of currency0 remaining for market rewards
+    /// @return marketRewardsAmount1 The amount of currency1 remaining for market rewards
+    function mintLpReward(
+        IPoolManager poolManager,
+        PoolKey calldata key,
+        int128 fees0,
+        int128 fees1
+    ) internal returns (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) {
+        if (fees0 > 0) {
+            uint128 lpRewardAmount0 = computeLpReward(uint128(fees0));
+            if (lpRewardAmount0 > 0) {
+                _modifyLiquidity(poolManager, key, lpRewardAmount0, true);
+            }
+
+            marketRewardsAmount0 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0)));
+        }
+
+        if (fees1 > 0) {
+            uint128 lpRewardAmount1 = computeLpReward(uint128(fees1));
+            if (lpRewardAmount1 > 0) {
+                _modifyLiquidity(poolManager, key, lpRewardAmount1, false);
+            }
+
+            marketRewardsAmount1 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1)));
+        }
+    }
+
+    /// @notice Mints a single-sided LP position
+    /// @dev The position is created for a single tick spacing range, either entirely above or below the current tick, to ensure only one currency is required
+    function _modifyLiquidity(IPoolManager poolManager, PoolKey calldata key, uint128 lpRewardAmount, bool isFeesToken0) private {
+        // Get the current tick to determine where to place the new position.
+        (, int24 currentTick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
+
+        int24 tickLower;
+        int24 tickUpper;
+
+        if (isFeesToken0) {
+            // For token0 fees, the position must be entirely above the current tick
+            // We set the lower tick to be at least two tick spacings away to ensure it's not in the active range
+            int24 minTickLower = currentTick + (key.tickSpacing * 2);
+            tickLower = DopplerMath.alignTickToTickSpacing(true, minTickLower, key.tickSpacing);
+            tickUpper = tickLower + key.tickSpacing;
+        } else {
+            // For token1 fees, the position must be entirely below the current tick
+            // We set the upper tick to be at least two tick spacings away
+            int24 maxTickUpper = currentTick - (key.tickSpacing * 2);
+            tickUpper = DopplerMath.alignTickToTickSpacing(false, maxTickUpper, key.tickSpacing);
+            tickLower = tickUpper - key.tickSpacing;
+        }
+
+        uint160 sqrtPriceA = TickMath.getSqrtPriceAtTick(tickLower);
+        uint160 sqrtPriceB = TickMath.getSqrtPriceAtTick(tickUpper);
+
+        uint128 liquidity = isFeesToken0
+            ? LiquidityAmounts.getLiquidityForAmount0(sqrtPriceA, sqrtPriceB, lpRewardAmount)
+            : LiquidityAmounts.getLiquidityForAmount1(sqrtPriceA, sqrtPriceB, lpRewardAmount);
+
+        if (liquidity > 0) {
+            ModifyLiquidityParams memory params = ModifyLiquidityParams({
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: SafeCast.toInt256(liquidity),
+                salt: 0
+            });
+            poolManager.modifyLiquidity(key, params, "");
         }
     }
 

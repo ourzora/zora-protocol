@@ -38,6 +38,11 @@ interface ICoinV4 is ICoin, IHasPoolKey, IHasSwapPath {
     /// @return PoolConfiguration struct containing pool-specific settings and parameters
     function getPoolConfiguration() external view returns (PoolConfiguration memory);
 
+    /// @notice Emitted when a hook is upgraded
+    /// @param fromPoolKey The pool key being upgraded
+    /// @param toPoolKey The new pool key returned from the destination hook
+    event LiquidityMigrated(PoolKey fromPoolKey, bytes32 fromPoolKeyHash, PoolKey toPoolKey, bytes32 toPoolKeyHash);
+
     /// @notice Returns the hooks contract used by this coin's Uniswap V4 pool
     /// @return The IHooks contract interface that handles pool lifecycle events
     function hooks() external view returns (IHooks);

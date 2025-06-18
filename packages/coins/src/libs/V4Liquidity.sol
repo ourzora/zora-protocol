@@ -19,36 +19,114 @@ import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
 import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
 import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+import {Position} from "@uniswap/v4-core/src/libraries/Position.sol";
+import {BurnedPosition, Delta, MigratedLiquidityResult, IUpgradeableV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
+import {PoolStateReader} from "../libs/PoolStateReader.sol";
+import {IUpgradeableDestinationV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
+import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 
 // command = 1; mint
-struct CallbackData {
+struct MintCallbackData {
     PoolKey poolKey;
     LpPosition[] positions;
 }
 
-struct UnlockData {
-    uint256 amount0;
-    uint256 amount1;
-    int128 fees0;
-    int128 fees1;
+struct BurnAllPositionsCallbackData {
+    PoolKey poolKey;
+    LpPosition[] positions;
+    address coin;
+    address newHook;
 }
 
 library V4Liquidity {
     using BalanceDeltaLibrary for BalanceDelta;
     using CurrencyLibrary for Currency;
 
+    uint8 constant MINT_CALLBACK_ID = 1;
+    uint8 constant BURN_ALL_POSITIONS_CALLBACK_ID = 2;
+
+    error InvalidCallbackId(uint8 callbackId);
+
+    /// @notice Locks the pool, and mint initial positions to the hook
     function lockAndMint(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] memory positions) internal {
-        bytes memory data = abi.encode(CallbackData({poolKey: poolKey, positions: positions}));
+        bytes memory data = abi.encode(MINT_CALLBACK_ID, abi.encode(MintCallbackData({poolKey: poolKey, positions: positions})));
 
         IPoolManager(poolManager).unlock(data);
     }
 
-    function handleMintPositionsCallback(IPoolManager poolManager, bytes memory data) internal {
-        CallbackData memory callbackData = abi.decode(data, (CallbackData));
+    /// @notice Locks the pool, burns positions, and transfers deltas to the new hook
+    function lockAndMigrate(
+        IPoolManager poolManager,
+        PoolKey memory poolKey,
+        LpPosition[] memory positions,
+        address coin,
+        address newHook,
+        bytes calldata additionalData
+    ) internal returns (PoolKey memory) {
+        bytes memory data = abi.encode(
+            BURN_ALL_POSITIONS_CALLBACK_ID,
+            abi.encode(BurnAllPositionsCallbackData({poolKey: poolKey, positions: positions, coin: coin, newHook: newHook}))
+        );
 
-        _mintPositions(poolManager, callbackData.poolKey, callbackData.positions);
+        // lock the pool and burn positions - this hook will then have a balance of the deltas
+        bytes memory result = IPoolManager(poolManager).unlock(data);
+
+        MigratedLiquidityResult memory migratedLiquidityResult = abi.decode(result, (MigratedLiquidityResult));
+
+        // Check if new hook supports the upgradeable destination interface
+        require(IERC165(newHook).supportsInterface(type(IUpgradeableDestinationV4Hook).interfaceId), IUpgradeableV4Hook.InvalidNewHook(newHook));
+        // Initialize new hook with migration data
+        IUpgradeableDestinationV4Hook(address(newHook)).initializeFromMigration(
+            poolKey,
+            coin,
+            migratedLiquidityResult.sqrtPriceX96,
+            migratedLiquidityResult.burnedPositions,
+            additionalData
+        );
+
+        return
+            PoolKey({currency0: poolKey.currency0, currency1: poolKey.currency1, fee: poolKey.fee, tickSpacing: poolKey.tickSpacing, hooks: IHooks(newHook)});
+    }
+
+    /// @notice Handles the callback from the pool manager.  Called by the hook upon unlock.
+    function handleCallback(IPoolManager poolManager, bytes memory data) internal returns (bytes memory) {
+        (uint8 callbackId, bytes memory contents) = abi.decode(data, (uint8, bytes));
+
+        if (callbackId == MINT_CALLBACK_ID) {
+            _handleMintPositionsCallback(poolManager, abi.decode(contents, (MintCallbackData)));
+            return bytes("");
+        }
+        if (callbackId == BURN_ALL_POSITIONS_CALLBACK_ID) {
+            return _handleBurnAllPositionsCallback(poolManager, abi.decode(contents, (BurnAllPositionsCallbackData)));
+        }
+        revert InvalidCallbackId(callbackId);
+    }
+
+    function _handleMintPositionsCallback(IPoolManager poolManager, MintCallbackData memory callbackData) private {
+        mintPositions(poolManager, callbackData.poolKey, callbackData.positions);
 
         _settleUp(poolManager, callbackData.poolKey);
+    }
+
+    function _handleBurnAllPositionsCallback(IPoolManager poolManager, BurnAllPositionsCallbackData memory callbackData) private returns (bytes memory) {
+        uint160 sqrtPriceX96 = PoolStateReader.getSqrtPriceX96(callbackData.poolKey, poolManager);
+        BurnedPosition[] memory burnedPositions = burnPositions(poolManager, callbackData.poolKey, callbackData.positions);
+
+        int256 deltas0 = TransientStateLibrary.currencyDelta(poolManager, address(this), callbackData.poolKey.currency0);
+        int256 deltas1 = TransientStateLibrary.currencyDelta(poolManager, address(this), callbackData.poolKey.currency1);
+
+        // settle deltas, transferring the balance to destination hook contract
+        _settleDeltas(poolManager, callbackData.poolKey, deltas0, deltas1, callbackData.newHook);
+
+        // transfer deltas to the new hook
+        MigratedLiquidityResult memory result = MigratedLiquidityResult({
+            sqrtPriceX96: sqrtPriceX96,
+            burnedPositions: burnedPositions,
+            totalAmount0: uint256(deltas0),
+            totalAmount1: uint256(deltas1)
+        });
+
+        return abi.encode(result);
     }
 
     function collectFees(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] storage positions) internal returns (int128 balance0, int128 balance1) {
@@ -71,7 +149,46 @@ library V4Liquidity {
         }
     }
 
-    function _mintPositions(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] memory positions) private returns (int128 amount0, int128 amount1) {
+    function burnPositions(
+        IPoolManager poolManager,
+        PoolKey memory poolKey,
+        LpPosition[] memory positions
+    ) internal returns (BurnedPosition[] memory burnedPositions) {
+        burnedPositions = new BurnedPosition[](positions.length);
+
+        for (uint256 i; i < positions.length; i++) {
+            uint128 liquidity = getLiquidity(poolManager, address(this), poolKey, positions[i].tickLower, positions[i].tickUpper);
+
+            ModifyLiquidityParams memory params = ModifyLiquidityParams({
+                tickLower: positions[i].tickLower,
+                tickUpper: positions[i].tickUpper,
+                liquidityDelta: -SafeCast.toInt256(liquidity),
+                salt: 0
+            });
+
+            (BalanceDelta liquidityDelta, BalanceDelta feesAccrued) = poolManager.modifyLiquidity(poolKey, params, "");
+
+            burnedPositions[i] = BurnedPosition({
+                tickLower: positions[i].tickLower,
+                tickUpper: positions[i].tickUpper,
+                amount0Received: uint128(liquidityDelta.amount0() + feesAccrued.amount0()),
+                amount1Received: uint128(liquidityDelta.amount1() + feesAccrued.amount1())
+            });
+        }
+    }
+
+    function getLiquidity(
+        IPoolManager poolManager,
+        address owner,
+        PoolKey memory poolKey,
+        int24 tickLower,
+        int24 tickUpper
+    ) internal view returns (uint128 liquidity) {
+        bytes32 positionId = Position.calculatePositionKey(owner, tickLower, tickUpper, bytes32(0));
+        liquidity = StateLibrary.getPositionLiquidity(poolManager, poolKey.toId(), positionId);
+    }
+
+    function mintPositions(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] memory positions) internal returns (int128 amount0, int128 amount1) {
         ModifyLiquidityParams memory params;
         uint256 numPositions = positions.length;
 
@@ -95,16 +212,16 @@ library V4Liquidity {
         currency0Delta = TransientStateLibrary.currencyDelta(poolManager, address(this), poolKey.currency0);
         currency1Delta = TransientStateLibrary.currencyDelta(poolManager, address(this), poolKey.currency1);
 
-        _settleDeltas(poolManager, poolKey, currency0Delta, currency1Delta);
+        _settleDeltas(poolManager, poolKey, currency0Delta, currency1Delta, address(this));
     }
 
-    function _settleDeltas(IPoolManager poolManager, PoolKey memory poolKey, int256 currency0Delta, int256 currency1Delta) private {
+    function _settleDeltas(IPoolManager poolManager, PoolKey memory poolKey, int256 currency0Delta, int256 currency1Delta, address to) private {
         if (currency0Delta > 0) {
-            poolManager.take(poolKey.currency0, address(this), uint256(currency0Delta));
+            poolManager.take(poolKey.currency0, to, uint256(currency0Delta));
         }
 
         if (currency1Delta > 0) {
-            poolManager.take(poolKey.currency1, address(this), uint256(currency1Delta));
+            poolManager.take(poolKey.currency1, to, uint256(currency1Delta));
         }
 
         if (currency0Delta < 0) {

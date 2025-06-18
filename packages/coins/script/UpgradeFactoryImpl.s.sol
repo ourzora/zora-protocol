@@ -10,7 +10,13 @@ contract UpgradeFactoryImpl is CoinsDeployerBase {
 
         vm.startBroadcast();
 
-        ZoraFactoryImpl zoraFactoryImpl = deployZoraFactoryImpl(deployment.coinV3Impl, deployment.coinV4Impl);
+        ZoraFactoryImpl zoraFactoryImpl = deployZoraFactoryImpl(
+            deployment.coinV3Impl,
+            deployment.coinV4Impl,
+            deployment.creatorCoinImpl,
+            deployment.zoraV4CoinHook,
+            deployment.creatorCoinHook
+        );
 
         deployment.zoraFactoryImpl = address(zoraFactoryImpl);
 

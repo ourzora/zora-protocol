@@ -31,7 +31,13 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.coinImpl(), address(coinV4Impl));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            factoryProxy.coinImpl(),
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -46,7 +52,13 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.coinImpl(), address(coinV4Impl));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            factoryProxy.coinImpl(),
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -64,12 +76,24 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(factoryProxy.coinImpl(), address(coinV4Impl));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            factoryProxy.coinImpl(),
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
 
-        ZoraFactoryImpl newImpl2 = new ZoraFactoryImpl(factoryProxy.coinImpl(), factoryProxy.coinV4Impl());
+        ZoraFactoryImpl newImpl2 = new ZoraFactoryImpl(
+            factoryProxy.coinImpl(),
+            factoryProxy.coinV4Impl(),
+            factoryProxy.creatorCoinImpl(),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl2), "");
@@ -134,26 +158,5 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         // do some swaps to test out
         _swapSomeCoinForCurrency(ICoinV4(coinAddress), ZORA, uint128(IERC20(coinAddress).balanceOf(trader)), trader);
-    }
-
-    function test_realSwapUsingCurrentCode() external {
-        bytes[] memory inputs = new bytes[](5);
-
-        vm.createSelectFork("base", 31138268);
-
-        address trader = vm.parseAddress("0xa3c881f39972925d865b300bcd65e72a6222c10a");
-
-        ICoinV4 coin = ICoinV4(vm.parseAddress("0xca1de5b8e8336326d5749fde43e245285cd1daf1"));
-
-        PoolKey memory key = coin.getPoolKey();
-
-        address[] memory trustedMessageSenders = new address[](0);
-        deployCodeTo(
-            "ZoraV4CoinHook.sol:ZoraV4CoinHook",
-            abi.encode(V4_POOL_MANAGER, 0x3d7A3f3351855e135CF89AB412A7C2AA449f9296, trustedMessageSenders),
-            address(coin.hooks())
-        );
-
-        _swapSomeCurrencyForCoin(coin, ZORA, uint128(IERC20(ZORA).balanceOf(trader)), trader);
     }
 }

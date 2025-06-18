@@ -6,8 +6,9 @@ import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {ICoin} from "./ICoin.sol";
+import {IUpgradeableV4Hook} from "./IUpgradeableV4Hook.sol";
 
-interface IZoraV4CoinHook {
+interface IZoraV4CoinHook is IUpgradeableV4Hook {
     /// @notice Emitted when a swap is executed.
     /// @param sender The address of the sender.
     /// @param swapSender The address of the swap sender.
@@ -40,12 +41,18 @@ interface IZoraV4CoinHook {
     /// @notice Coin version lookup cannot be the zero address.
     error CoinVersionLookupCannotBeZeroAddress();
 
+    /// @notice Upgrade gate cannot be the zero address.
+    error UpgradeGateCannotBeZeroAddress();
+
     /// @notice Thrown when a pool is not initialized for the hook.
     /// @param key The pool key struct to identify the pool.
     error NoCoinForHook(PoolKey key);
 
     /// @notice Thrown when a attempting to swap with a path that has no steps.
     error PathMustHaveAtLeastOneStep();
+
+    /// @notice Thrown when a non-coin is used to access the functionality of a coin.
+    error OnlyCoin(address caller, address expectedCoin);
 
     /// @notice The pool coin struct. Lists all the contract-created positions for the coin.
     struct PoolCoin {
@@ -98,6 +105,14 @@ interface IZoraV4CoinHook {
         address dopplerRecipient,
         MarketRewardsV4 marketRewards
     );
+
+    /// @notice Emitted when LP rewards are distributed
+    /// @param coin The address of the coin
+    /// @param currency The address of the currency
+    /// @param amountCurrency The amount paid out
+    /// @param tick The current tick
+    /// @param liquidity The current liquidity
+    event LpReward(address indexed coin, address indexed currency, uint256 amountCurrency, int24 tick, uint128 liquidity);
 
     /// @notice Returns the pool coin for a given pool key hash.
     /// @param poolKeyHash The hash of the pool key for indexing.

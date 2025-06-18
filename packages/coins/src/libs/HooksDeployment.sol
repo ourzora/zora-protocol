@@ -2,13 +2,17 @@
 pragma solidity ^0.8.23;
 
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
-import {ZoraV4CoinHook} from "../hooks/ZoraV4CoinHook.sol";
+import {Vm} from "forge-std/Vm.sol";
+import {ContentCoinHook} from "../hooks/ContentCoinHook.sol";
+import {CreatorCoinHook} from "../hooks/CreatorCoinHook.sol";
 import {HookMiner} from "@uniswap/v4-periphery/src/utils/HookMiner.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 
-// Copy of hook miner from v4 periphery
+Vm constant vm = Vm(address(bytes20(uint160(uint256(keccak256("hevm cheat code"))))));
+
+// copy of hook miner from v4 periphery
 // https://github.com/Uniswap/v4-periphery/blob/ad04c9f24a170accf5ea1b2836bbafd514537ca6/src/utils/HookMiner.sol#L23-L41
 library HookMinerWithCreationCodeArgs {
     // mask to slice out the bottom 14 bit of the address
@@ -18,7 +22,7 @@ library HookMinerWithCreationCodeArgs {
     // (arbitrarily set)
     uint256 constant MAX_LOOP = 160_444;
 
-    function deterministicHookAddress(address deployer, bytes32 salt, bytes memory creationCode) internal view returns (address) {
+    function deterministicHookAddress(address deployer, bytes32 salt, bytes memory creationCode) internal pure returns (address) {
         return Create2.computeAddress(salt, keccak256(creationCode), deployer);
     }
 
@@ -33,7 +37,6 @@ library HookMinerWithCreationCodeArgs {
 
         address hookAddress;
 
-        bytes32 creationCodeHash = keccak256(creationCodeWithArgs);
         for (uint256 salt; salt < MAX_LOOP; salt++) {
             hookAddress = deterministicHookAddress(deployer, bytes32(salt), creationCodeWithArgs);
 
@@ -50,26 +53,72 @@ library HooksDeployment {
     error HookNotDeployed();
     error InvalidHookAddress(address expected, address actual);
 
-    function mineForSaltAndDeployHook(address deployer, bytes memory hookCreationCode) internal returns (IHooks hook, bytes32 salt) {
+    bytes32 constant VALID_CONTENT_COIN_SALT = 0x0000000000000000000000000000000000000000000000000000000000002200;
+    bytes32 constant VALID_CREATOR_COIN_SALT = 0x00000000000000000000000000000000000000000000000000000000000031af;
+
+    function mineForSalt(address deployer, bytes memory hookCreationCode) internal view returns (address hookAddress, bytes32 salt) {
         uint160 flags = uint160(Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_INITIALIZE_FLAG) ^ (0x4444 << 144);
+        return HookMinerWithCreationCodeArgs.find(deployer, flags, hookCreationCode);
+    }
 
-        address hookAddress;
-        (hookAddress, salt) = HookMinerWithCreationCodeArgs.find(deployer, flags, hookCreationCode);
+    function mineAndCacheSalt(address deployer, bytes memory hookCreationCode) internal returns (bytes32 salt, bool wasCached) {
+        // look up in env the salt
+        bytes32 envVarHash = keccak256(abi.encodePacked(deployer, hookCreationCode));
+        string memory envKey = vm.toString(envVarHash);
 
-        // check if the hook is already deployed
+        salt = vm.envOr(envKey, bytes32(0));
+
+        if (salt == bytes32(0)) {
+            (, salt) = mineForSalt(deployer, hookCreationCode);
+            vm.setEnv(envKey, vm.toString(salt));
+            wasCached = false;
+        } else {
+            wasCached = true;
+        }
+    }
+
+    function mineForCreatorCoinSalt(
+        address deployer,
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders,
+        address upgradeGate
+    ) internal returns (address hookAddress, bytes32 salt) {
+        bytes memory hookCreationCode = creatorCoinHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+        (salt, ) = mineAndCacheSalt(deployer, hookCreationCode);
+        hookAddress = HookMinerWithCreationCodeArgs.deterministicHookAddress(deployer, salt, hookCreationCode);
+    }
+
+    function mineForContentCoinSalt(
+        address deployer,
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders,
+        address upgradeGate
+    ) internal returns (address hookAddress, bytes32 salt) {
+        bytes memory hookCreationCode = contentCoinCreationCode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+        (salt, ) = mineAndCacheSalt(deployer, hookCreationCode);
+        hookAddress = HookMinerWithCreationCodeArgs.deterministicHookAddress(deployer, salt, hookCreationCode);
+    }
+
+    function deployHookWithSalt(bytes memory hookCreationCode, bytes32 salt) internal returns (IHooks hook) {
+        address deployer = address(this);
+        // Check if hook is already deployed
         (bool isDeployed, address existingHookAddress) = hooksIsDeployed(deployer, hookCreationCode, salt);
         if (isDeployed) {
-            return (IHooks(existingHookAddress), salt);
+            return IHooks(existingHookAddress);
         }
 
+        // Deploy the hook with the provided salt
         hook = IHooks(Create2.deploy(0, salt, hookCreationCode));
 
         require(address(hook).code.length > 0, HookNotDeployed());
 
-        require(hookAddress == address(hook), InvalidHookAddress(hookAddress, address(hook)));
+        address expectedAddress = HookMinerWithCreationCodeArgs.deterministicHookAddress(address(this), salt, hookCreationCode);
+        require(expectedAddress == address(hook), InvalidHookAddress(expectedAddress, address(hook)));
     }
 
-    /// @notice Checks if ZoraV4CoinHook is already deployed for given parameters
+    /// @notice Checks if ContentCoinHook is already deployed for given parameters
     /// @param deployer The address that will deploy the hook
     /// @param hookCreationCode The creation code of the hook
     /// @param existingSalt The salt of the existing hook
@@ -86,44 +135,78 @@ library HooksDeployment {
         isDeployed = hookAddress.code.length > 0;
     }
 
-    function deployOrGetHook(address deployer, bytes memory hookCreationCode, bytes32 existingSalt) internal returns (IHooks hook, bytes32 salt) {
-        (bool isDeployed, address existingHookAddress) = hooksIsDeployed(deployer, hookCreationCode, existingSalt);
-        if (isDeployed) {
-            return (IHooks(existingHookAddress), existingSalt);
-        }
-
-        (hook, salt) = mineForSaltAndDeployHook(deployer, hookCreationCode);
-    }
-
-    function zoraV4CoinHookCreationCode(
-        address poolManager,
-        address coinVersionLookup,
-        address[] memory trustedMessageSenders
-    ) internal pure returns (bytes memory) {
-        return abi.encodePacked(type(ZoraV4CoinHook).creationCode, abi.encode(poolManager, coinVersionLookup, trustedMessageSenders));
-    }
-
-    function deployZoraV4CoinHookFromContract(
-        address poolManager,
-        address coinVersionLookup,
-        address[] memory trustedMessageSenders
-    ) internal returns (IHooks hook) {
-        bytes memory hookCreationCode = zoraV4CoinHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders);
-        (hook, ) = deployOrGetHook(address(this), hookCreationCode, bytes32(0));
-    }
-
-    /// @notice Deploys or returns existing ZoraV4CoinHook using deterministic deployment.  Ensures that if a hooks is already
-    /// deployed with an existing salt, it will be returned.
-    function deployZoraV4CoinHookFromScript(
+    function contentCoinConstructorArgs(
         address poolManager,
         address coinVersionLookup,
         address[] memory trustedMessageSenders,
-        bytes32 existingSalt
-    ) internal returns (IHooks hook, bytes32 salt) {
-        address deployer = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+        address upgradeGate
+    ) internal pure returns (bytes memory) {
+        return abi.encode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+    }
 
-        bytes memory hookCreationCode = zoraV4CoinHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders);
+    function contentCoinCreationCode(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders,
+        address upgradeGate
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                type(ContentCoinHook).creationCode,
+                contentCoinConstructorArgs(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate)
+            );
+    }
 
-        (hook, salt) = deployOrGetHook(deployer, hookCreationCode, existingSalt);
+    /// @notice Deploys or returns existing ContentCoinHook using deterministic deployment.  Ensures that if a hooks is already
+    /// deployed with the provided salt, it will be returned.
+    function deployContentCoinHook(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders,
+        address upgradeGate,
+        bytes32 salt
+    ) internal returns (IHooks hook) {
+        bytes memory hookCreationCode = contentCoinCreationCode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+        return deployHookWithSalt(hookCreationCode, salt);
+    }
+
+    function creatorCoinConstructorArgs(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders,
+        address upgradeGate
+    ) internal pure returns (bytes memory) {
+        return abi.encode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+    }
+
+    function creatorCoinHookCreationCode(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders,
+        address upgradeGate
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                type(CreatorCoinHook).creationCode,
+                creatorCoinConstructorArgs(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate)
+            );
+    }
+
+    address constant FOUNDRY_SCRIPT_ADDRESS = 0x4e59b44847b379578588920cA78FbF26c0B4956C;
+
+    function deployHookWithExistingOrNewSalt(
+        address deployer,
+        bytes memory hookCreationCode,
+        bytes32 salt
+    ) internal returns (IHooks hook, bytes32 resultingSalt) {
+        (bool isDeployed, address existingHookAddress) = hooksIsDeployed(deployer, hookCreationCode, salt);
+
+        if (isDeployed) {
+            hook = IHooks(existingHookAddress);
+            resultingSalt = salt;
+        } else {
+            (, resultingSalt) = mineForSalt(deployer, hookCreationCode);
+            hook = IHooks(Create2.deploy(0, resultingSalt, hookCreationCode));
+        }
     }
 }

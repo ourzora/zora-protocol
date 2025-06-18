@@ -11,7 +11,13 @@ contract FactoryTest is BaseTest {
 
     function test_factory_constructor_and_proxy_setup() public {
         // Impl constructor test
-        ZoraFactoryImpl impl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
+        ZoraFactoryImpl impl = new ZoraFactoryImpl(
+            address(coinV3Impl),
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
         assertEq(ZoraFactoryImpl(address(factory)).coinImpl(), address(coinV3Impl));
         assertEq(ZoraFactoryImpl(address(factory)).owner(), users.factoryOwner);
         assertEq(ZoraFactoryImpl(address(factory)).coinV4Impl(), address(coinV4Impl));
@@ -306,7 +312,13 @@ contract FactoryTest is BaseTest {
     }
 
     function test_upgrade() public {
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            address(coinV3Impl),
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
 
         vm.prank(users.factoryOwner);
         ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
@@ -327,7 +339,13 @@ contract FactoryTest is BaseTest {
     }
 
     function test_revert_invalid_owner() public {
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            address(coinV3Impl),
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
 
         vm.prank(users.creator);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, users.creator));

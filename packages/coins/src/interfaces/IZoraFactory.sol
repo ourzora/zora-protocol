@@ -55,11 +55,47 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
         string version
     );
 
+    /// @notice Emitted when a creator coin is created
+    /// @param caller The msg.sender address
+    /// @param payoutRecipient The address of the creator payout recipient
+    /// @param platformReferrer The address of the platform referrer
+    /// @param currency The address of the currency
+    /// @param uri The URI of the coin
+    /// @param name The name of the coin
+    /// @param symbol The symbol of the coin
+    /// @param coin The address of the coin
+    /// @param poolKey The uniswap v4 pool key
+    /// @param version The coin contract version
+    event CreatorCoinCreated(
+        address indexed caller,
+        address indexed payoutRecipient,
+        address indexed platformReferrer,
+        address currency,
+        string uri,
+        string name,
+        string symbol,
+        address coin,
+        PoolKey poolKey,
+        bytes32 poolKeyHash,
+        string version
+    );
+
     /// @notice Thrown when the amount of ERC20 tokens transferred does not match the expected amount
     error ERC20TransferAmountMismatch();
 
     /// @notice Thrown when ETH is sent with a transaction but the currency is not WETH
     error EthTransferInvalid();
+
+    function deployCreatorCoin(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        bytes32 coinSalt
+    ) external returns (address);
 
     /// @notice Creates a new coin contract with an optional hook that runs after the coin is deployed.
     /// Requires a salt to be specified, which enabled the coin to be deployed deterministically, and at
@@ -144,4 +180,7 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
 
     /// @notice Thrown when a method is deprecated
     error Deprecated();
+
+    /// @notice Thrwon when an invalid config version is provided
+    error InvalidConfig();
 }

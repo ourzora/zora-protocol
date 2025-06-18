@@ -122,6 +122,12 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         // Store the referrer or use the protocol reward recipient if not set
         platformReferrer = platformReferrer_ == address(0) ? protocolRewardRecipient : platformReferrer_;
 
+        // Distribute the initial supply
+        _handleInitialDistribution();
+    }
+
+    /// @dev The initial mint and distribution of the coin supply.
+    function _handleInitialDistribution() internal virtual {
         // Mint the total supply to the coin contract
         _mint(address(this), CoinConstants.MAX_TOTAL_SUPPLY);
 

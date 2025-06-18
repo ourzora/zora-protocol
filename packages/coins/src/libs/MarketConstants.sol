@@ -14,8 +14,8 @@ library MarketConstants {
     uint24 internal constant LP_FEE = 10000;
 
     /// @notice The LP fee
-    /// @dev 20000 basis points = 2%
-    uint24 internal constant LP_FEE_V4 = 20000;
+    /// @dev 30000 basis points = 3%
+    uint24 internal constant LP_FEE_V4 = 30000;
 
     /// @notice The spacing for 1% pools
     /// @dev 200 ticks

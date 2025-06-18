@@ -28,7 +28,7 @@ import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
 import {MarketConstants} from "../../src/libs/MarketConstants.sol";
 import {CoinConfigurationVersions} from "../../src/libs/CoinConfigurationVersions.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
+import {ContentCoinHook} from "../../src/hooks/ContentCoinHook.sol";
 import {HooksDeployment} from "../../src/libs/HooksDeployment.sol";
 import {CoinConstants} from "../../src/libs/CoinConstants.sol";
 import {ProxyShim} from "./ProxyShim.sol";
@@ -36,25 +36,20 @@ import {ICoinV4} from "../../src/interfaces/ICoinV4.sol";
 import {UniV4SwapHelper} from "../../src/libs/UniV4SwapHelper.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
+import {IV4Quoter} from "@uniswap/v4-periphery/src/interfaces/IV4Quoter.sol";
 import {Commands} from "@uniswap/universal-router/contracts/libraries/Commands.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {CreatorCoin} from "../../src/CreatorCoin.sol";
+import {CreatorCoinHook} from "../../src/hooks/CreatorCoinHook.sol";
+import {ContractAddresses} from "./ContractAddresses.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {HookUpgradeGate} from "../../src/hooks/HookUpgradeGate.sol";
 
-contract BaseTest is Test {
+contract BaseTest is Test, ContractAddresses {
     using stdStorage for StdStorage;
 
-    address internal constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
-    address internal constant V3_FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
-    address internal constant NONFUNGIBLE_POSITION_MANAGER = 0x03a520b32C04BF3bEEf7BEb72E919cf822Ed34f1;
-    address internal constant SWAP_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;
-    address internal constant DOPPLER_AIRLOCK = 0x660eAaEdEBc968f8f3694354FA8EC0b4c5Ba8D12;
-    address internal constant USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-    address internal constant V4_POOL_MANAGER = 0x498581fF718922c3f8e6A244956aF099B2652b2b;
-    address internal constant V4_POSITION_MANAGER = 0x7C5f5A4bBd8fD63184577525326123B519429bDc;
-    address internal constant V4_PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
-    address internal constant V4_QUOTER = 0x0d5e0F971ED27FBfF6c2837bf31316121532048D;
-    address internal constant UNIVERSAL_ROUTER = 0x6fF5693b99212Da76ad316178A184AB56D299b43;
     int24 internal constant USDC_TICK_LOWER = 57200;
 
     struct Users {
@@ -69,13 +64,18 @@ contract BaseTest is Test {
     }
 
     uint256 internal forkId;
+    IERC20Metadata internal zoraToken;
     IERC20Metadata internal usdc;
     IWETH internal weth;
+
     ProtocolRewards internal protocolRewards;
     IUniswapV3Factory internal v3Factory;
     INonfungiblePositionManager internal nonfungiblePositionManager;
     IPermit2 internal permit2;
     IUniversalRouter internal router;
+    IPoolManager internal poolManager;
+    IV4Quoter internal quoter;
+    CoinV4 internal coinV4;
 
     ISwapRouter internal swapRouter;
     IAirlock internal airlock;
@@ -83,9 +83,12 @@ contract BaseTest is Test {
 
     Coin internal coinV3Impl;
     CoinV4 internal coinV4Impl;
+    CreatorCoin internal creatorCoinImpl;
     ZoraFactoryImpl internal factoryImpl;
     IZoraFactory internal factory;
-    ZoraV4CoinHook internal zoraV4CoinHook;
+    ContentCoinHook internal contentCoinHook;
+    CreatorCoinHook internal creatorCoinHook;
+    HookUpgradeGate internal hookUpgradeGate;
     Coin internal coin;
 
     IUniswapV3Pool internal pool;
@@ -120,6 +123,42 @@ contract BaseTest is Test {
 
         vm.label(address(coin), "COIN");
         vm.label(address(pool), "POOL");
+    }
+
+    function _defaultPoolConfig(address currency) internal pure returns (bytes memory) {
+        return CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(currency);
+    }
+
+    function _deployV4Coin(address currency) internal returns (ICoinV4) {
+        bytes32 salt = keccak256(abi.encode(bytes("randomSalt")));
+        return _deployV4Coin(currency, address(0), salt);
+    }
+
+    string constant DEFAULT_NAME = "Testcoin";
+    string constant DEFAULT_SYMBOL = "TEST";
+
+    function _deployV4Coin(address currency, address createReferral, bytes32 salt) internal returns (ICoinV4) {
+        address[] memory owners = new address[](1);
+        owners[0] = users.creator;
+
+        bytes memory poolConfig = _defaultPoolConfig(currency);
+
+        vm.prank(users.creator);
+        (address coinAddress, ) = factory.deploy(
+            users.creator,
+            owners,
+            "https://test.com",
+            DEFAULT_NAME,
+            DEFAULT_SYMBOL,
+            poolConfig,
+            createReferral,
+            address(0),
+            bytes(""),
+            salt
+        );
+
+        coinV4 = CoinV4(payable(coinAddress));
+        return coinV4;
     }
 
     function _deployCoinUSDCPair() internal {
@@ -194,6 +233,55 @@ contract BaseTest is Test {
         vm.stopPrank();
     }
 
+    function _deployFeeEstimatorHook(uint256 initialSupplyForPositions, address hooks) internal {
+        deployCodeTo("FeeEstimatorHook.sol", abi.encode(V4_POOL_MANAGER, address(factory), hookUpgradeGate, initialSupplyForPositions), hooks);
+    }
+
+    function getSalts(address[] memory trustedMessageSenders) public returns (bytes32 contentCoinSalt, bytes32 creatorCoinSalt) {
+        address deployer = address(this);
+
+        (, contentCoinSalt) = HooksDeployment.mineForContentCoinSalt(
+            deployer,
+            V4_POOL_MANAGER,
+            address(factory),
+            trustedMessageSenders,
+            address(hookUpgradeGate)
+        );
+
+        (, creatorCoinSalt) = HooksDeployment.mineForCreatorCoinSalt(
+            deployer,
+            V4_POOL_MANAGER,
+            address(factory),
+            trustedMessageSenders,
+            address(hookUpgradeGate)
+        );
+    }
+
+    function _deployHooks() internal {
+        address[] memory trustedMessageSenders = new address[](2);
+        trustedMessageSenders[0] = UNIVERSAL_ROUTER;
+        trustedMessageSenders[1] = V4_POSITION_MANAGER;
+
+        (bytes32 contentCoinSalt, bytes32 creatorCoinSalt) = getSalts(trustedMessageSenders);
+
+        contentCoinHook = ContentCoinHook(
+            address(
+                HooksDeployment.deployHookWithSalt(
+                    HooksDeployment.contentCoinCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
+                    contentCoinSalt
+                )
+            )
+        );
+        creatorCoinHook = CreatorCoinHook(
+            address(
+                HooksDeployment.deployHookWithSalt(
+                    HooksDeployment.creatorCoinHookCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
+                    creatorCoinSalt
+                )
+            )
+        );
+    }
+
     function setUp() public virtual {
         setUpWithBlockNumber(28415528);
     }
@@ -203,6 +291,7 @@ contract BaseTest is Test {
 
         weth = IWETH(WETH_ADDRESS);
         usdc = IERC20Metadata(USDC_ADDRESS);
+        zoraToken = IERC20Metadata(ZORA_TOKEN_ADDRESS);
         v3Factory = IUniswapV3Factory(V3_FACTORY);
         nonfungiblePositionManager = INonfungiblePositionManager(NONFUNGIBLE_POSITION_MANAGER);
         swapRouter = ISwapRouter(SWAP_ROUTER);
@@ -210,6 +299,8 @@ contract BaseTest is Test {
         protocolRewards = new ProtocolRewards();
         permit2 = IPermit2(V4_PERMIT2);
         router = IUniversalRouter(UNIVERSAL_ROUTER);
+        poolManager = IPoolManager(V4_POOL_MANAGER);
+        quoter = IV4Quoter(V4_QUOTER);
         users = Users({
             factoryOwner: makeAddr("factoryOwner"),
             feeRecipient: makeAddr("feeRecipient"),
@@ -221,19 +312,27 @@ contract BaseTest is Test {
             tradeReferrer: makeAddr("tradeReferrer")
         });
 
-        address[] memory trustedMessageSenders = new address[](2);
-        trustedMessageSenders[0] = UNIVERSAL_ROUTER;
-        trustedMessageSenders[1] = V4_POSITION_MANAGER;
-
         ProxyShim mockUpgradeableImpl = new ProxyShim();
         factory = IZoraFactory(address(new ZoraFactory(address(mockUpgradeableImpl))));
-        zoraV4CoinHook = ZoraV4CoinHook(address(HooksDeployment.deployZoraV4CoinHookFromContract(V4_POOL_MANAGER, address(factory), trustedMessageSenders)));
         coinV3Impl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, V3_FACTORY, SWAP_ROUTER, DOPPLER_AIRLOCK);
-        coinV4Impl = new CoinV4(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK, zoraV4CoinHook);
-        factoryImpl = new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl));
+
+        hookUpgradeGate = new HookUpgradeGate(users.factoryOwner);
+
+        _deployHooks();
+
+        coinV4Impl = new CoinV4(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
+
+        creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
+
+        factoryImpl = new ZoraFactoryImpl(
+            address(coinV3Impl),
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook)
+        );
         UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
         factory = IZoraFactory(address(factory));
-        // factory = ZoraFactoryImpl(address(new ZoraFactory(address(factoryImpl))));
 
         ZoraFactoryImpl(address(factory)).initialize(users.factoryOwner);
 
@@ -245,6 +344,13 @@ contract BaseTest is Test {
         vm.label(address(weth), "WETH");
         vm.label(address(usdc), "USDC");
         vm.label(address(airlock), "AIRLOCK");
+        vm.label(address(zoraToken), "$ZORA");
+        vm.label(address(V4_POOL_MANAGER), "V4_POOL_MANAGER");
+        vm.label(address(V4_POSITION_MANAGER), "V4_POSITION_MANAGER");
+        vm.label(address(V4_QUOTER), "V4_QUOTER");
+        vm.label(address(V4_PERMIT2), "V4_PERMIT2");
+        vm.label(address(UNIVERSAL_ROUTER), "UNIVERSAL_ROUTER");
+        vm.label(address(creatorCoinHook), "CREATOR_COIN_HOOK");
     }
 
     struct TradeRewards {

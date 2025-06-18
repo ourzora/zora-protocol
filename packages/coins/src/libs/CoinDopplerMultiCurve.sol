@@ -95,7 +95,11 @@ library CoinDopplerMultiCurve {
     }
 
     /// @notice Calculates the LP positions for a given multi-curve configuration
-    function calculatePositions(bool isCoinToken0, PoolConfiguration memory poolConfiguration) internal pure returns (LpPosition[] memory positions) {
+    function calculatePositions(
+        bool isCoinToken0,
+        PoolConfiguration memory poolConfiguration,
+        uint256 totalSupply
+    ) internal pure returns (LpPosition[] memory positions) {
         positions = new LpPosition[](poolConfiguration.numPositions);
 
         uint256 discoverySupply;
@@ -103,7 +107,7 @@ library CoinDopplerMultiCurve {
         uint256 numCurves = poolConfiguration.tickLower.length;
 
         for (uint256 i; i < numCurves; i++) {
-            uint256 curveSupply = FullMath.mulDiv(MarketConstants.POOL_LAUNCH_SUPPLY, poolConfiguration.maxDiscoverySupplyShare[i], MarketConstants.WAD);
+            uint256 curveSupply = FullMath.mulDiv(totalSupply, poolConfiguration.maxDiscoverySupplyShare[i], MarketConstants.WAD);
 
             (positions, curveSupply) = DopplerMath.calculateLogNormalDistribution(
                 poolConfiguration.tickLower[i],
@@ -120,7 +124,7 @@ library CoinDopplerMultiCurve {
             currentPositionOffset += poolConfiguration.numDiscoveryPositions[i];
         }
 
-        uint256 tailSupply = MarketConstants.POOL_LAUNCH_SUPPLY - discoverySupply;
+        uint256 tailSupply = totalSupply - discoverySupply;
 
         // Calculate the tail position (the last position in the array)
         positions[poolConfiguration.numPositions - 1] = DopplerMath.calculateLpTail(
