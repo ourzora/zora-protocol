@@ -6,7 +6,7 @@ import {CoinsDeployerBase} from "../src/deployment/CoinsDeployerBase.sol";
 
 contract DeployScript is CoinsDeployerBase {
     function run() public {
-        CoinsDeployment memory deployment = readDeployment(true);
+        CoinsDeployment memory deployment = readDeployment(false);
 
         vm.startBroadcast();
 
