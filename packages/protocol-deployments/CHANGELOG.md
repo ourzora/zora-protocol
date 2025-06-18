@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.6.1
+
+### Patch Changes
+
+- 9035ce3b: Upgrade coins factory to support creator coins
+
 ## 0.6.0
 
 ### Minor Changes
