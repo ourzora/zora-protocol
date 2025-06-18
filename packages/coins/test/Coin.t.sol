@@ -658,4 +658,14 @@ contract CoinTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(MultiOwnable.OnlyOwner.selector));
         coin.setNameAndSymbol(newName, newSymbol);
     }
+
+    function test_update_metadata_reverts_if_name_is_blank() public {
+        _deployCoin();
+        string memory newName = "";
+        string memory newSymbol = "NEW";
+
+        vm.prank(users.creator);
+        vm.expectRevert(abi.encodeWithSelector(ICoin.NameIsRequired.selector));
+        coin.setNameAndSymbol(newName, newSymbol);
+    }
 }

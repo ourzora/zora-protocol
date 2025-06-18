@@ -23,6 +23,9 @@ struct PoolKeyStruct {
 }
 
 interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients {
+    /// @notice Thrown when the name is required for the coin
+    error NameIsRequired();
+
     /// @notice Thrown when an operation is attempted with a zero address
     error AddressZero();
 

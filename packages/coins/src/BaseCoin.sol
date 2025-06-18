@@ -106,12 +106,14 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
             revert AddressZero();
         }
 
-        _name = name_;
-        _symbol = symbol_;
+        _setNameAndSymbol(name_, symbol_);
 
-        // Set base contract state
-        __ERC20_init(name_, symbol_);
-        __ERC20Permit_init(name_);
+        // Set base contract state, leave name and symbol empty to save space.
+        __ERC20_init("", "");
+
+        // Set permit support without name later overriding name to match contract name.
+        __ERC20Permit_init("");
+
         __MultiOwnable_init(owners_);
         __ReentrancyGuard_init();
 
@@ -133,6 +135,13 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
 
         // Distribute the creator launch reward to the payout recipient
         _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
+    }
+
+    /// @notice Returns the name of the token for EIP712 domain.
+    /// @notice This can change when the user changes the "name" of the token.
+    /// @dev Overrides the default implementation to align name getter with Permit support.
+    function _EIP712Name() internal view override returns (string memory) {
+        return "Coin";
     }
 
     /// @notice Enables a user to burn their tokens
@@ -167,6 +176,13 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
     }
 
     function setNameAndSymbol(string memory newName, string memory newSymbol) external onlyOwner {
+        _setNameAndSymbol(newName, newSymbol);
+    }
+
+    function _setNameAndSymbol(string memory newName, string memory newSymbol) internal {
+        if (bytes(newName).length == 0) {
+            revert NameIsRequired();
+        }
         _name = newName;
         _symbol = newSymbol;
         emit NameAndSymbolUpdated(msg.sender, newName, newSymbol);
