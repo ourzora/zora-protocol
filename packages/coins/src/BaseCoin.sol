@@ -16,6 +16,7 @@ import {IWETH} from "./interfaces/IWETH.sol";
 
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
+import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ContractVersionBase} from "./version/ContractVersionBase.sol";
@@ -40,7 +41,7 @@ import {UniV3BuySell, CoinConfig} from "./libs/UniV3BuySell.sol";
     \$$$$$$  | $$$$$$  |$$$$$$\ $$ | \$$ |
      \______/  \______/ \______|\__|  \__|
 */
-abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable {
+abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable, ERC165Upgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice The address of the protocol rewards contract
@@ -140,7 +141,7 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
     /// @notice Returns the name of the token for EIP712 domain.
     /// @notice This can change when the user changes the "name" of the token.
     /// @dev Overrides the default implementation to align name getter with Permit support.
-    function _EIP712Name() internal view override returns (string memory) {
+    function _EIP712Name() internal pure override returns (string memory) {
         return "Coin";
     }
 
@@ -198,12 +199,12 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
 
     /// @notice ERC165 interface support
     /// @param interfaceId The interface ID to check
-    function supportsInterface(bytes4 interfaceId) public pure virtual returns (bool) {
+    function supportsInterface(bytes4 interfaceId) public view virtual override(IERC165, ERC165Upgradeable) returns (bool) {
         return
+            super.supportsInterface(interfaceId) ||
             interfaceId == type(ICoin).interfaceId ||
             interfaceId == type(ICoinComments).interfaceId ||
             interfaceId == type(IERC7572).interfaceId ||
-            interfaceId == type(IERC165).interfaceId ||
             interfaceId == type(IHasRewardsRecipients).interfaceId;
     }
 

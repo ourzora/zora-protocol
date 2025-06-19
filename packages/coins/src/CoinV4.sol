@@ -109,8 +109,8 @@ contract CoinV4 is BaseCoin, ICoinV4 {
         poolKey = newPoolKey;
     }
 
-    function supportsInterface(bytes4 interfaceId) public pure virtual override(BaseCoin, IERC165) returns (bool) {
-        return interfaceId == type(IHasPoolKey).interfaceId || type(IHasSwapPath).interfaceId == interfaceId || super.supportsInterface(interfaceId);
+    function supportsInterface(bytes4 interfaceId) public view virtual override(BaseCoin, IERC165) returns (bool) {
+        return super.supportsInterface(interfaceId) || interfaceId == type(IHasPoolKey).interfaceId || type(IHasSwapPath).interfaceId == interfaceId;
     }
 
     /// @inheritdoc IHasSwapPath

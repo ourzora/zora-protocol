@@ -8,12 +8,25 @@ import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {IHasRewardsRecipients} from "../src/interfaces/IHasRewardsRecipients.sol";
 import {PoolConfiguration} from "../src/interfaces/ICoin.sol";
+import {IERC165, IERC7572, ICoin, ICoinComments, IERC20} from "../src/BaseCoin.sol";
+import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 
 contract CoinTest is BaseTest {
     using stdJson for string;
 
     function setUp() public override {
         super.setUp();
+    }
+
+    function test_contract_ierc165_support() public {
+        _deployCoin();
+        assertEq(coin.supportsInterface(type(IZoraFactory).interfaceId), false);
+        assertEq(coin.supportsInterface(bytes4(0x00000000)), false);
+        assertEq(coin.supportsInterface(type(IERC165).interfaceId), true);
+        assertEq(coin.supportsInterface(type(IERC7572).interfaceId), true);
+        assertEq(coin.supportsInterface(type(ICoin).interfaceId), true);
+        assertEq(coin.supportsInterface(type(ICoinComments).interfaceId), true);
+        assertEq(coin.supportsInterface(type(IERC7572).interfaceId), true);
     }
 
     function test_contract_version() public {
