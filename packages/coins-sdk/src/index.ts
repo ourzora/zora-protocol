@@ -7,14 +7,6 @@ export {
 export type { CreateCoinArgs } from "./actions/createCoin";
 
 export {
-  simulateBuy,
-  tradeCoin,
-  tradeCoinCall,
-  getTradeFromLogs,
-} from "./actions/tradeCoin";
-export type { TradeParams } from "./actions/tradeCoin";
-
-export {
   getOnchainCoinDetails,
   type OnchainCoinDetails,
 } from "./actions/getOnchainCoinDetails";
