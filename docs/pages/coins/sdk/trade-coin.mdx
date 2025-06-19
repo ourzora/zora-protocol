@@ -9,26 +9,6 @@ Trading coins involves either buying or selling an existing coin through the Zor
 1. **High-level functions**: Complete solutions that handle the entire trading process.
 2. **Low-level functions**: Building blocks for more customized implementations.
 
-## Trading Parameters
-
-When trading coins, you'll work with the following parameter structure:
-
-```ts twoslash
-import { Address } from "viem";
-
-type TradeParams = {
-  direction: "sell" | "buy";  // The trade direction
-  target: Address;            // The target coin contract address
-  args: {
-    recipient: Address;       // The recipient of the trade output
-    orderSize: bigint;        // The size of the order
-    minAmountOut?: bigint;    // Optional minimum amount to receive
-    sqrtPriceLimitX96?: bigint; // Optional price limit for the trade
-    tradeReferrer?: Address;  // Optional referrer address for the trade
-  };
-};
-```
-
 ## Buying Coins
 
 ### Basic Buy

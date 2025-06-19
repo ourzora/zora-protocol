@@ -201,38 +201,6 @@ Emitted when market rewards are distributed, showing exactly how much each recip
 
 ### Coin Events
 
-#### CoinBuy
-
-```solidity
-event CoinBuy(
-    address indexed buyer,
-    address indexed recipient,
-    address indexed tradeReferrer,
-    uint256 coinsPurchased,
-    address currency,
-    uint256 amountFee,
-    uint256 amountSold
-);
-```
-
-Emitted when coins are purchased, tracking the buyer, recipient, trade referrer, amount of coins purchased, currency used, fees paid, and total amount spent.
-
-#### CoinSell
-
-```solidity
-event CoinSell(
-    address indexed seller,
-    address indexed recipient,
-    address indexed tradeReferrer,
-    uint256 coinsSold,
-    address currency,
-    uint256 amountFee,
-    uint256 amountPurchased
-);
-```
-
-Emitted when coins are sold, tracking the seller, recipient, trade referrer, amount of coins sold, currency received, fees paid, and total amount received.
-
 #### CoinTransfer
 
 ```solidity
