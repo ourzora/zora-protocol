@@ -43,7 +43,7 @@ export type CreateCoinArgs = {
   name: string;
   symbol: string;
   uri: ValidMetadataURI;
-  chainId: number;
+  chainId?: number;
   owners?: Address[];
   payoutRecipient: Address;
   platformReferrer?: Address;

@@ -6,7 +6,7 @@ import {
   SimulateContractParameters,
   WalletClient,
 } from "viem";
-import { GenericPublicClient } from "src/utils/genericPublicClient";
+import { GenericPublicClient } from "../utils/genericPublicClient";
 import { getAttribution } from "../utils/attribution";
 
 export type UpdateCoinURIArgs = {
