@@ -3,7 +3,10 @@ import { base } from "viem/chains";
 import { Address, parseEther } from "viem";
 import { makeAnvilTest, forkUrls } from "./util/anvil";
 import { createCoin } from "../src";
-import { DeployCurrency } from "../src/actions/createCoin";
+import {
+  DeployCurrency,
+  InitialPurchaseCurrency,
+} from "../src/actions/createCoin";
 import { ZORA_ADDRESS } from "../src/utils/poolConfigUtils";
 
 // Create a base sepolia anvil test instance
@@ -134,6 +137,51 @@ describe("Create ETH Coin on Base", () => {
         console.log("Deployed coin address:", result.address);
         console.log("Transaction hash:", result.hash);
       }
+    },
+    60_000, // Increase timeout to 60 seconds
+  );
+  baseAnvilTest(
+    "creates a new coin using ZORA on Base with pre-purchase",
+    async ({
+      viemClients: { publicClient, walletClient, testClient, chain },
+    }) => {
+      // Get test addresses
+      const [creatorAddress] = await walletClient.getAddresses();
+      expect(creatorAddress).toBeDefined();
+
+      // Fund the wallet with test ETH
+      await testClient.setBalance({
+        address: creatorAddress as Address,
+        value: parseEther("10"),
+      });
+
+      // Define coin parameters
+      const coinName = "Test Base ZORA Coin";
+      const coinSymbol = "TBZC";
+      const coinUri =
+        "ipfs://bafybeif47yyhfhcevqdnadyjdyzej3nuhggtbycerde4dg6ln46nnrykje";
+
+      // Create the coin
+      const result = await createCoin(
+        {
+          name: coinName,
+          symbol: coinSymbol,
+          uri: coinUri,
+          owners: [creatorAddress!],
+          payoutRecipient: creatorAddress!,
+          chainId: chain.id,
+          initialPurchase: {
+            currency: InitialPurchaseCurrency.ZORA,
+            amount: parseEther("1"),
+          },
+        },
+        walletClient,
+        publicClient,
+        {
+          account: creatorAddress!,
+          gasMultiplier: 120, // 20% buffer on gas
+        },
+      );
     },
     60_000, // Increase timeout to 60 seconds
   );

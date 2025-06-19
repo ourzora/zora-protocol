@@ -12,16 +12,17 @@ import {
   Hex,
   Account,
 } from "viem";
+import { base, baseSepolia } from "viem/chains";
 import { COIN_FACTORY_ADDRESS } from "../constants";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
-import { GenericPublicClient } from "src/utils/genericPublicClient";
-import { validateMetadataURIContent, ValidMetadataURI } from "src/metadata";
+import { GenericPublicClient } from "../utils/genericPublicClient";
+import { validateMetadataURIContent, ValidMetadataURI } from "../metadata";
 import { getAttribution } from "../utils/attribution";
-import { base, baseSepolia } from "viem/chains";
 import {
   COIN_ETH_PAIR_POOL_CONFIG,
   COIN_ZORA_PAIR_POOL_CONFIG,
-} from "src/utils/poolConfigUtils";
+} from "../utils/poolConfigUtils";
+import { getPrepurchaseHook } from "../utils/getPrepurchaseHook";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
@@ -33,6 +34,11 @@ export enum DeployCurrency {
   ETH = 2,
 }
 
+export enum InitialPurchaseCurrency {
+  ETH = 1,
+  // TODO: Add USDC and ZORA support with signature approvals
+}
+
 export type CreateCoinArgs = {
   name: string;
   symbol: string;
@@ -42,6 +48,10 @@ export type CreateCoinArgs = {
   payoutRecipient: Address;
   platformReferrer?: Address;
   currency?: DeployCurrency;
+  initialPurchase?: {
+    currency: InitialPurchaseCurrency;
+    amount: bigint;
+  };
 };
 
 function getPoolConfig(currency: DeployCurrency, chainId: number) {
@@ -72,6 +82,7 @@ export async function createCoinCall({
   currency,
   chainId = base.id,
   platformReferrer = "0x0000000000000000000000000000000000000000",
+  initialPurchase,
 }: CreateCoinArgs): Promise<
   SimulateContractParameters<typeof zoraFactoryImplABI, "deploy">
 > {
@@ -88,6 +99,19 @@ export async function createCoinCall({
   // This will throw an error if the metadata is not valid
   await validateMetadataURIContent(uri);
 
+  let deployHook = {
+    hook: zeroAddress as Address,
+    hookData: "0x" as Hex,
+    value: 0n,
+  };
+  if (initialPurchase) {
+    deployHook = await getPrepurchaseHook({
+      initialPurchase,
+      payoutRecipient,
+      chainId,
+    });
+  }
+
   return {
     abi: zoraFactoryImplABI,
     functionName: "deploy",
@@ -100,10 +124,11 @@ export async function createCoinCall({
       symbol,
       poolConfig,
       platformReferrer,
-      zeroAddress, // hookAddress
-      "0x" as Hex, // hookData
+      deployHook.hook,
+      deployHook.hookData,
       keccak256(toBytes(Math.random().toString())), // coinSalt
     ],
+    value: deployHook.value,
     dataSuffix: getAttribution(),
   } as const;
 }

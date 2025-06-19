@@ -24,6 +24,11 @@ type CreateCoinArgs = {
   platformReferrer?: Address; // Optional platform referrer address, earns referral fees
   // DeployCurrency.ETH or DeployCurrency.ZORA
   currency?: DeployCurrency; // Optional currency for trading (ETH or ZORA)
+  initialPurchase?: {       // Optional initial supply purchase
+    currency: InitialPurchaseCurrency; // The currency to use for the initial purchase (InitialPurchaseCurrency.ETH)
+    amount: bigint; // Amount of the coin to pre-purchase in InitialPurchaseCurrency (only ETH -> ZORA is supported currently)
+    amountOutMinimum?: bigint; // Optional minimum amount of tokens to receive (slippage protection). Not typically needed for initial purchases of ETH or USDC.
+  };
 }
 ```
 
@@ -48,6 +53,29 @@ By default:
 
 Note that ZORA is not supported on Base Sepolia.
 
+### Initial Supply Purchase
+
+The `initialPurchase` parameter allows you to purchase an initial supply of your coin at the time of creation. This helps to seed the liquidity pool with some initial value.
+
+```ts
+enum InitialPurchaseCurrency {
+  ZORA = 1,
+  ETH = 2,
+  USDC = 3,
+}
+```
+
+Currently, initial purchase is only supported on Base mainnet with ETH as the input currency and the coin denominated in ZORA.
+
+The system will swap ETH to ZORA through a multi-hop swap (ETH → USDC → ZORA) to establish initial liquidity and provide a better ZORA price than using the WETH pool directly.
+
+Parameters:
+- `currency`: The currency to use for the initial purchase (currently only ETH is supported)
+- `amount`: The amount of ETH to use for the initial purchase (in wei)
+- `amountOutMinimum`: Optional minimum amount of tokens to receive (slippage protection)
+
+Initial supply purchase only works on Base mainnet for now.
+
 ### Chain ID
 
 The `chainId` parameter defaults to Base mainnet. Make sure it matches the chain you're deploying to.
@@ -62,7 +90,7 @@ Further contract details can be found in the [Factory Contract](/coins/contracts
 ### Basic Creation
 
 ```ts twoslash
-import { createCoin, DeployCurrency } from "@zoralabs/coins-sdk";
+import { createCoin, DeployCurrency, InitialPurchaseCurrency } from "@zoralabs/coins-sdk";
 import { Hex, createWalletClient, createPublicClient, http, Address } from "viem";
 import { base } from "viem/chains";
 
@@ -87,6 +115,11 @@ const coinParams = {
   platformReferrer: "0xOptionalPlatformReferrerAddress" as Address, // Optional
   chainId: base.id, // Optional: defaults to base.id
   currency: DeployCurrency.ZORA, // Optional: ZORA or ETH
+  initialPurchase: { // Optional: Purchase initial supply during creation
+    currency: InitialPurchaseCurrency.ETH,
+    amount: 0.01n * 10n ** 18n, // 0.01 ETH in wei
+    amountOutMinimum: 0n, // Optional: minimum amount to receive (slippage protection)
+  },
 };
 
 // Create the coin
@@ -115,7 +148,7 @@ If you're using WAGMI in your frontend application, you can use the lower-level 
 
 ```typescript
 import * as React from "react";
-import { createCoinCall, DeployCurrency } from "@zoralabs/coins-sdk";
+import { createCoinCall, DeployCurrency, InitialPurchaseCurrency } from "@zoralabs/coins-sdk";
 import { Address } from "viem";
 import { useWriteContract, useSimulateContract } from "wagmi";
 
@@ -128,6 +161,10 @@ const coinParams = {
   platformReferrer: "0xOptionalPlatformReferrerAddress" as Address,
   // chainId: base.id, // Optional: defaults to base.id
   // currency: DeployCurrency.ZORA, // Optional: ZORA or ETH
+  // initialPurchase: { // Optional: Purchase initial supply during creation
+  //   currency: InitialPurchaseCurrency.ETH,
+  //   amount: 0.01n * 10n ** 18n, // 0.01 ETH in wei
+  // },
 };
 
 // Create configuration for wagmi

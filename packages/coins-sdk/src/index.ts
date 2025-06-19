@@ -3,8 +3,12 @@ export {
   createCoinCall,
   getCoinCreateFromLogs,
   DeployCurrency,
+  InitialPurchaseCurrency,
 } from "./actions/createCoin";
-export type { CreateCoinArgs } from "./actions/createCoin";
+export type {
+  CreateCoinArgs,
+  CoinDeploymentLogArgs,
+} from "./actions/createCoin";
 
 export {
   getOnchainCoinDetails,
