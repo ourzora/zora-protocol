@@ -181,7 +181,6 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         // collect lp fees
         (int128 fees0, int128 fees1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
 
-        // mint the lp reward
         (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) = CoinRewardsV4.mintLpReward(poolManager, key, fees0, fees1);
 
         // convert remaining fees to payout currency for market rewards

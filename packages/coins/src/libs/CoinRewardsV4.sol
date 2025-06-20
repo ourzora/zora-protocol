@@ -99,8 +99,6 @@ library CoinRewardsV4 {
             if (lpRewardAmount0 > 0) {
                 _modifyLiquidity(poolManager, key, lpRewardAmount0, true);
             }
-
-            marketRewardsAmount0 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0)));
         }
 
         if (fees1 > 0) {
@@ -108,9 +106,10 @@ library CoinRewardsV4 {
             if (lpRewardAmount1 > 0) {
                 _modifyLiquidity(poolManager, key, lpRewardAmount1, false);
             }
-
-            marketRewardsAmount1 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1)));
         }
+
+        marketRewardsAmount0 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0)));
+        marketRewardsAmount1 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1)));
     }
 
     /// @notice Mints a single-sided LP position

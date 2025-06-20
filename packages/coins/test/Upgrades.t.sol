@@ -13,8 +13,12 @@ import {IWETH} from "../src/interfaces/IWETH.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
-
+import {ContentCoinHook} from "../src/hooks/ContentCoinHook.sol";
 import {console} from "forge-std/console.sol";
+import {IDeployedCoinVersionLookup} from "../src/interfaces/IDeployedCoinVersionLookup.sol";
+import {IHooksUpgradeGate} from "../src/interfaces/IHooksUpgradeGate.sol";
+import {HooksDeployment} from "../src/libs/HooksDeployment.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 
 contract BadImpl {
     function contractName() public pure returns (string memory) {
@@ -158,5 +162,32 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         // do some swaps to test out
         _swapSomeCoinForCurrency(ICoinV4(coinAddress), ZORA, uint128(IERC20(coinAddress).balanceOf(trader)), trader);
+    }
+
+    function test_canSwapForJacob() public {
+        vm.createSelectFork("base", 31835069);
+
+        address trader = 0xf69fEc6d858c77e969509843852178bd24CAd2B6;
+
+        address contentCoin = 0x4E93A01c90f812284F71291a8d1415a904957156;
+
+        address creatorCoin = ICoinV4(contentCoin).currency();
+
+        uint256 amountIn = IERC20(creatorCoin).balanceOf(trader);
+
+        address coinVersionLookup = 0x777777751622c0d3258f214F9DF38E35BF45baF3;
+        address upgradeGate = 0xD88f6BdD765313CaFA5888C177c325E2C3AbF2D2;
+
+        bytes memory creationCode = HooksDeployment.contentCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+
+        (IHooks hookCopy, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
+
+        vm.etch(0xd3D133469ADC85e01A4887404D8AC12d630e9040, address(hookCopy).code);
+
+        console.log("currency 0", Currency.unwrap(ICoinV4(contentCoin).getPoolKey().currency0));
+        console.log("currency 1", Currency.unwrap(ICoinV4(contentCoin).getPoolKey().currency1));
+
+        // do some swaps to test out
+        _swapSomeCurrencyForCoin(ICoinV4(contentCoin), creatorCoin, uint128(amountIn), trader);
     }
 }
