@@ -1,5 +1,13 @@
 # nft-docs
 
+## 0.0.21
+
+### Patch Changes
+
+- Updated dependencies [3d5f9152]
+- Updated dependencies [d8727949]
+  - @zoralabs/coins-sdk@0.2.4
+
 ## 0.0.20
 
 ### Patch Changes

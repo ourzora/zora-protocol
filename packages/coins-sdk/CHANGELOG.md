@@ -1,5 +1,12 @@
 # @zoralabs/coins-sdk
 
+## 0.2.4
+
+### Patch Changes
+
+- 3d5f9152: Removing `tradeCoin` function as its currently incompatible with UniswapV4 backed coins
+- d8727949: Add create coin $ZORA initial buy
+
 ## 0.2.3
 
 ### Patch Changes

@@ -1,5 +1,13 @@
 # @zoralabs/coins
 
+## 1.1.1
+
+### Patch Changes
+
+- 604cd3ab: When migrating liquidity to a new hook, dont execute any after swap logic in the original hook
+- 588da84e: Fix market supply calculation
+- f6300031: Added ability for hooks to have liquidity be migrated to
+
 ## 1.1.0
 
 ### Minor Changes
