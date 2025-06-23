@@ -201,6 +201,19 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return trustedMessageSenders;
     }
 
+    function deployFactoryImpl(CoinsDeployment memory deployment) internal returns (address) {
+        return
+            address(
+                deployZoraFactoryImpl({
+                    _coinV3Impl: deployment.coinV3Impl,
+                    _coinV4Impl: deployment.coinV4Impl,
+                    _creatorCoinImpl: deployment.creatorCoinImpl,
+                    _contentCoinHook: deployment.zoraV4CoinHook,
+                    _creatorCoinHook: deployment.creatorCoinHook
+                })
+            );
+    }
+
     function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
         deployment.coinV3Impl = address(deployCoinV3Impl());
@@ -218,17 +231,24 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
         deployment.coinV4Impl = address(deployCoinV4Impl(deployment.zoraV4CoinHook));
         deployment.creatorCoinImpl = address(deployCreatorCoinImpl(deployment.creatorCoinHook));
-        deployment.zoraFactoryImpl = address(
-            deployZoraFactoryImpl({
-                _coinV3Impl: deployment.coinV3Impl,
-                _coinV4Impl: deployment.coinV4Impl,
-                _creatorCoinImpl: deployment.creatorCoinImpl,
-                _contentCoinHook: deployment.zoraV4CoinHook,
-                _creatorCoinHook: deployment.creatorCoinHook
-            })
-        );
+        deployment.zoraFactoryImpl = deployFactoryImpl(deployment);
         deployment.coinVersion = IVersionedContract(deployment.coinV4Impl).contractVersion();
         deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
+
+        return deployment;
+    }
+
+    function deployHooks(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
+        // Deploy hook first, then use its address for coin v4 impl
+        (IHooks zoraV4CoinHook, bytes32 usedSalt) = deployContentCoinHook(deployment);
+        deployment.zoraV4CoinHook = address(zoraV4CoinHook);
+        deployment.zoraV4CoinHookSalt = usedSalt;
+
+        (IHooks creatorCoinHook, bytes32 usedCreatorCoinHookSalt) = deployCreatorCoinHook(deployment);
+        deployment.creatorCoinHook = address(creatorCoinHook);
+        deployment.creatorCoinHookSalt = usedCreatorCoinHookSalt;
+
+        deployment.zoraFactoryImpl = deployFactoryImpl(deployment);
 
         return deployment;
     }

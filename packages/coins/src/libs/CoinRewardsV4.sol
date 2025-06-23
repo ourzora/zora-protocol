@@ -79,6 +79,18 @@ library CoinRewardsV4 {
         lpRewardAmount = uint128(calculateReward(uint256(totalBackingAmount), LP_REWARD_BPS));
     }
 
+    function getCurrencyZeroBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (int256) {
+        return TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0);
+    }
+
+    function getCurrencyOneBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (int256) {
+        return TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1);
+    }
+
+    function asUint128(int256 value) internal pure returns (uint128) {
+        return uint128(uint256(value));
+    }
+
     /// @notice Mints LP rewards by creating new liquidity positions from collected fees
     /// @dev Splits collected fees between LP rewards and market rewards, then mints new LP positions
     ///      with the LP reward portion. The remaining amount becomes market rewards for distribution.
@@ -108,8 +120,8 @@ library CoinRewardsV4 {
             }
         }
 
-        marketRewardsAmount0 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0)));
-        marketRewardsAmount1 = uint128(uint256(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1)));
+        marketRewardsAmount0 = asUint128(getCurrencyZeroBalance(poolManager, key));
+        marketRewardsAmount1 = asUint128(getCurrencyOneBalance(poolManager, key));
     }
 
     /// @notice Mints a single-sided LP position

@@ -24,6 +24,12 @@ import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
 import {IUpgradeableV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
 import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
 import {MultiOwnable} from "../utils/MultiOwnable.sol";
+import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
+import {IUpgradeableDestinationV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
+import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
+import {TickMath} from "../utils/uniswap/TickMath.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -35,7 +41,7 @@ import {MultiOwnable} from "../utils/MultiOwnable.sol";
 ///      2. Swaps collected fees to the backing currency through multi-hop paths
 ///      3. Distributes converted fees as rewards
 /// @author oveddan
-abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
+abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpgradeableDestinationV4Hook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
@@ -115,6 +121,10 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         return poolCoins[CoinCommon.hashPoolKey(key)];
     }
 
+    function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
+        return interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId;
+    }
+
     /// @notice Internal fn generating the positions for a given pool key.
     /// @param coin The coin address.
     /// @param key The pool key for the coin.
@@ -131,6 +141,10 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
     /// @param key The pool key.
     /// @return selector The selector of the afterInitialize hook to confirm the action.
     function _afterInitialize(address sender, PoolKey calldata key, uint160, int24) internal override returns (bytes4) {
+        if (sender == address(this)) {
+            return BaseHook.afterInitialize.selector;
+        }
+
         address coin = sender;
         if (!CoinConfigurationVersions.isV4(coinVersionLookup.getVersionForDeployedCoin(coin))) {
             revert NotACoin(coin);
@@ -143,9 +157,91 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook {
         return BaseHook.afterInitialize.selector;
     }
 
+    function initializeFromMigration(
+        PoolKey calldata poolKey,
+        address coin,
+        uint160 sqrtPriceX96,
+        BurnedPosition[] calldata migratedLiquidity,
+        bytes calldata
+    ) external {
+        // Verify that the caller is authorized to perform this migration
+        // Only registered upgrade paths in the upgrade gate are allowed to migrate liquidity
+        if (!upgradeGate.isRegisteredUpgradePath(msg.sender, address(this))) {
+            revert IUpgradeableV4Hook.UpgradePathNotRegistered(msg.sender, address(this));
+        }
+
+        // Create a new pool key with the same parameters but pointing to this hook
+        // This ensures the migrated pool uses the new hook implementation
+        PoolKey memory newKey = PoolKey({
+            currency0: poolKey.currency0,
+            currency1: poolKey.currency1,
+            fee: poolKey.fee,
+            tickSpacing: poolKey.tickSpacing,
+            hooks: IHooks(address(this)) // Point to this new hook implementation
+        });
+
+        // Initialize the new pool with the migrated price
+        // This creates the actual Uniswap V4 pool with the current market price
+        poolManager.initialize(newKey, sqrtPriceX96);
+
+        // Convert the burned/migrated liquidity positions into new LP positions
+        // This recreates the liquidity structure from the old hook in the new hook
+        LpPosition[] memory positions = V4Liquidity.generatePositionsFromMigratedLiquidity(sqrtPriceX96, migratedLiquidity);
+
+        // Store the positions and mint the initial liquidity into the new pool
+        _initializeForPositions(newKey, coin, positions);
+
+        // Handle any remaining token balances by adding them to the last position
+        // This ensures no tokens are left unminted during the migration process
+        _mintExtraLiquidityAtLastPosition(sqrtPriceX96, newKey);
+    }
+
+    function _mintExtraLiquidityAtLastPosition(uint160 sqrtPriceX96, PoolKey memory poolKey) internal {
+        // Check if there are any leftover token balances in the hook after migration
+        // These could result from rounding or partial liquidity transfers
+        uint256 currency0Balance = poolKey.currency0.balanceOfSelf();
+        uint256 currency1Balance = poolKey.currency1.balanceOfSelf();
+
+        // Get the stored positions for this pool to access the last position
+        LpPosition[] storage positions = poolCoins[CoinCommon.hashPoolKey(poolKey)].positions;
+
+        // Only proceed if there are actually leftover tokens to mint
+        if (currency0Balance > 0 || currency1Balance > 0) {
+            // Get reference to the last position where we'll add the extra liquidity
+            LpPosition storage lastPosition = positions[positions.length - 1];
+
+            // Calculate how much liquidity we can create with the remaining token balances
+            // This uses the current pool price and the last position's tick range
+            uint128 newLiquidity = LiquidityAmounts.getLiquidityForAmounts(
+                sqrtPriceX96,
+                TickMath.getSqrtPriceAtTick(lastPosition.tickLower),
+                TickMath.getSqrtPriceAtTick(lastPosition.tickUpper),
+                currency0Balance,
+                currency1Balance
+            );
+
+            // Create a temporary array with just the last position to mint the extra liquidity
+            LpPosition[] memory newPositions = new LpPosition[](1);
+            newPositions[0] = lastPosition;
+            newPositions[0].liquidity = newLiquidity; // Set the calculated liquidity amount
+
+            // Mint the extra liquidity into the pool using the V4 liquidity manager
+            V4Liquidity.lockAndMint(poolManager, poolKey, newPositions);
+
+            // Update our internal tracking of the last position's liquidity
+            // This keeps our records in sync with the actual pool state
+            positions[positions.length - 1].liquidity += newPositions[0].liquidity;
+        }
+    }
+
+    /// @notice Saves the positions for the coin and mints them into the pool
     function _initializeForPositions(PoolKey memory key, address coin, LpPosition[] memory positions) internal {
+        // Store the association between this pool and its coin + positions
+        // This creates the internal mapping that tracks which coin owns which positions
         poolCoins[CoinCommon.hashPoolKey(key)] = PoolCoin({coin: coin, positions: positions});
 
+        // Mint all the calculated liquidity positions into the Uniswap V4 pool
+        // This actually provides the liquidity that users can trade against
         V4Liquidity.lockAndMint(poolManager, key, positions);
     }
 

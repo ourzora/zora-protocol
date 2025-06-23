@@ -129,6 +129,24 @@ library V4Liquidity {
         return abi.encode(result);
     }
 
+    function generatePositionsFromMigratedLiquidity(
+        uint160 sqrtPriceX96,
+        BurnedPosition[] calldata migratedLiquidity
+    ) internal pure returns (LpPosition[] memory positions) {
+        positions = new LpPosition[](migratedLiquidity.length);
+
+        for (uint256 i = 0; i < migratedLiquidity.length; i++) {
+            uint128 liquidity = LiquidityAmounts.getLiquidityForAmounts(
+                sqrtPriceX96,
+                TickMath.getSqrtPriceAtTick(migratedLiquidity[i].tickLower),
+                TickMath.getSqrtPriceAtTick(migratedLiquidity[i].tickUpper),
+                migratedLiquidity[i].amount0Received,
+                migratedLiquidity[i].amount1Received
+            );
+            positions[i] = LpPosition({liquidity: liquidity, tickLower: migratedLiquidity[i].tickLower, tickUpper: migratedLiquidity[i].tickUpper});
+        }
+    }
+
     function collectFees(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] storage positions) internal returns (int128 balance0, int128 balance1) {
         ModifyLiquidityParams memory params;
         uint256 numPositions = positions.length;

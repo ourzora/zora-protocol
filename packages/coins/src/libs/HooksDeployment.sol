@@ -157,6 +157,19 @@ library HooksDeployment {
             );
     }
 
+    function creatorCoinCreationCode(
+        address poolManager,
+        address coinVersionLookup,
+        address[] memory trustedMessageSenders,
+        address upgradeGate
+    ) internal pure returns (bytes memory) {
+        return
+            abi.encodePacked(
+                type(CreatorCoinHook).creationCode,
+                creatorCoinConstructorArgs(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate)
+            );
+    }
+
     /// @notice Deploys or returns existing ContentCoinHook using deterministic deployment.  Ensures that if a hooks is already
     /// deployed with the provided salt, it will be returned.
     function deployContentCoinHook(
