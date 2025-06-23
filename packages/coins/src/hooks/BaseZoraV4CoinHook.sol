@@ -52,9 +52,6 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
     /// @notice Mapping of pool keys to coins.
     mapping(bytes32 => IZoraV4CoinHook.PoolCoin) internal poolCoins;
 
-    /// @notice If the liquidity has been migrated for a pool key, this is true.
-    mapping(bytes32 => bool) internal liquidityMigrated;
-
     /// @notice The coin version lookup contract - used to determine if an address is a coin and what version it is.
     IDeployedCoinVersionLookup internal immutable coinVersionLookup;
 
@@ -293,26 +290,23 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
         address coin = poolCoins[poolKeyHash].coin;
         require(coin != address(0), NoCoinForHook(key));
 
-        // if liquidity has been migrated, we don't need to collect fees or distribute rewards
-        if (!liquidityMigrated[poolKeyHash]) {
-            // get path for swapping the payout to a single currency
-            IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
+        // get path for swapping the payout to a single currency
+        IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
 
-            // collect lp fees
-            (int128 fees0, int128 fees1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
+        // collect lp fees
+        (int128 fees0, int128 fees1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
 
-            (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) = CoinRewardsV4.mintLpReward(poolManager, key, fees0, fees1);
+        (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) = CoinRewardsV4.mintLpReward(poolManager, key, fees0, fees1);
 
-            // convert remaining fees to payout currency for market rewards
-            (Currency payoutCurrency, uint128 payoutAmount) = CoinRewardsV4.convertToPayoutCurrency(
-                poolManager,
-                marketRewardsAmount0,
-                marketRewardsAmount1,
-                payoutSwapPath
-            );
+        // convert remaining fees to payout currency for market rewards
+        (Currency payoutCurrency, uint128 payoutAmount) = CoinRewardsV4.convertToPayoutCurrency(
+            poolManager,
+            marketRewardsAmount0,
+            marketRewardsAmount1,
+            payoutSwapPath
+        );
 
-            _distributeMarketRewards(payoutCurrency, payoutAmount, ICoinV4(coin), CoinRewardsV4.getTradeReferral(hookData));
-        }
+        _distributeMarketRewards(payoutCurrency, payoutAmount, ICoinV4(coin), CoinRewardsV4.getTradeReferral(hookData));
 
         {
             (address swapper, bool isTrustedSwapSenderAddress) = _getOriginalMsgSender(sender);
@@ -361,15 +355,9 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
     /// @inheritdoc IUpgradeableV4Hook
     function migrateLiquidity(address newHook, PoolKey memory poolKey, bytes calldata additionalData) external returns (PoolKey memory newPoolKey) {
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(poolKey);
-
         PoolCoin storage poolCoin = poolCoins[poolKeyHash];
-
-        // require(!poolCoin.liquidityMigrated, LiquidityAlreadyMigrated(poolKey));
         // check that the coin associated with the poolkey is the caller
         require(poolCoin.coin == msg.sender, OnlyCoin(msg.sender, poolCoin.coin));
-
-        require(!liquidityMigrated[poolKeyHash], LiquidityAlreadyMigrated(poolKey));
-        liquidityMigrated[poolKeyHash] = true;
 
         // Verify upgrade path is allowed
         if (!upgradeGate.isRegisteredUpgradePath(address(this), newHook)) {

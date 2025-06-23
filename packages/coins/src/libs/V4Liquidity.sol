@@ -155,6 +155,12 @@ library V4Liquidity {
         uint256 numPositions = positions.length;
 
         for (uint256 i; i < numPositions; i++) {
+            // if there is no liquidity, skip
+            uint128 liquidity = getLiquidity(poolManager, address(this), poolKey, positions[i].tickLower, positions[i].tickUpper);
+            if (liquidity == 0) {
+                continue;
+            }
+
             params = ModifyLiquidityParams({
                 tickLower: positions[i].tickLower,
                 tickUpper: positions[i].tickUpper,
