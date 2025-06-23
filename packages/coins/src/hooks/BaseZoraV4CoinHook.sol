@@ -30,6 +30,7 @@ import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
+import {ContractVersionBase, IVersionedContract} from "../version/ContractVersionBase.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -41,7 +42,7 @@ import {TickMath} from "../utils/uniswap/TickMath.sol";
 ///      2. Swaps collected fees to the backing currency through multi-hop paths
 ///      3. Distributes converted fees as rewards
 /// @author oveddan
-abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, ERC165, IUpgradeableDestinationV4Hook {
+abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook, ERC165, IUpgradeableDestinationV4Hook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
@@ -123,7 +124,10 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, ERC165, IUpgr
 
     /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return super.supportsInterface(interfaceId) || interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId;
+        return
+            super.supportsInterface(interfaceId) ||
+            interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId ||
+            interfaceId == type(IVersionedContract).interfaceId;
     }
 
     /// @notice Internal fn generating the positions for a given pool key.
