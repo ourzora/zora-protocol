@@ -123,6 +123,33 @@ contract LiquidityMigrationTest is BaseTest {
         assertEq(newPoolKey.tickSpacing, poolKey.tickSpacing, "poolkey tickSpacing");
     }
 
+    function test_migrateLiquidity_enablesSwapsOnOldPoolKey() public {
+        address currency = address(mockERC20A);
+        mockERC20A.mint(address(poolManager), 1_000_000_000 ether);
+        _deployV4Coin(currency);
+
+        address trader = makeAddr("trader");
+
+        mockERC20A.mint(trader, 10 ether);
+
+        // do some swaps
+        _swapSomeCurrencyForCoin(coinV4, currency, 1 ether, trader);
+        _swapSomeCoinForCurrency(coinV4, currency, uint128(coinV4.balanceOf(trader)), trader);
+
+        address newHook = address(new LiquidityMigrationReceiver());
+
+        PoolKey memory poolKey = coinV4.getPoolKey();
+
+        registerUpgradePath(address(poolKey.hooks), address(newHook));
+
+        // migrate the liquidity
+        vm.prank(users.creator);
+        coinV4.migrateLiquidity(address(newHook), "");
+
+        // now swap using the existing pool key, it should succeed
+        _swapSomeCurrencyForCoin(poolKey, coinV4, currency, uint128(mockERC20A.balanceOf(trader)), trader);
+    }
+
     function test_migrateLiquidity_emitsLiquidityMigrated() public {
         address currency = address(mockERC20A);
         _deployV4Coin(currency);

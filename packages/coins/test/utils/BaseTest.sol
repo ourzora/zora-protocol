@@ -190,6 +190,10 @@ contract BaseTest is Test, ContractAddresses {
     }
 
     function _swapSomeCurrencyForCoin(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
+        _swapSomeCurrencyForCoin(_coin.getPoolKey(), _coin, currency, amountIn, trader);
+    }
+
+    function _swapSomeCurrencyForCoin(PoolKey memory poolKey, ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
         uint128 minAmountOut = uint128(0);
 
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
@@ -197,7 +201,7 @@ contract BaseTest is Test, ContractAddresses {
             amountIn,
             address(_coin),
             minAmountOut,
-            _coin.getPoolKey(),
+            poolKey,
             bytes("")
         );
 

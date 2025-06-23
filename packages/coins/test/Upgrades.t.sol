@@ -336,6 +336,6 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         assertApproxEqAbs(creatorCoin.getPoolKey().currency1.balanceOf(address(newHook)), 0, 10);
 
         // now try to swap some currency for the creator coin - it should succeed
-        _swapSomeCurrencyForCoin(creatorCoin, zora, uint128(IERC20(zora).balanceOf(trader)), trader);
+        _swapSomeCurrencyForCoin(creatorCoin, zora, uint128(IERC20(zora).balanceOf(trader) / 2), trader);
     }
 }

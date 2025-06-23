@@ -54,6 +54,9 @@ interface IZoraV4CoinHook is IUpgradeableV4Hook {
     /// @notice Thrown when a non-coin is used to access the functionality of a coin.
     error OnlyCoin(address caller, address expectedCoin);
 
+    /// @notice Thrown when liquidity
+    error LiquidityAlreadyMigrated(PoolKey key);
+
     /// @notice The pool coin struct. Lists all the contract-created positions for the coin.
     struct PoolCoin {
         /// @notice The address of the coin.
