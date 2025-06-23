@@ -48,6 +48,9 @@ library V4Liquidity {
     error InvalidCallbackId(uint8 callbackId);
 
     /// @notice Locks the pool, and mint initial positions to the hook
+    /// @param poolManager The pool manager.
+    /// @param poolKey The pool key.
+    /// @param positions The positions.
     function lockAndMint(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] memory positions) internal {
         bytes memory data = abi.encode(MINT_CALLBACK_ID, abi.encode(MintCallbackData({poolKey: poolKey, positions: positions})));
 

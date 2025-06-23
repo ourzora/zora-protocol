@@ -79,16 +79,19 @@ library CoinRewardsV4 {
         lpRewardAmount = uint128(calculateReward(uint256(totalBackingAmount), LP_REWARD_BPS));
     }
 
-    function getCurrencyZeroBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (int256) {
-        return TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0);
+    function convertDeltaToPositiveUint128(int256 delta) internal pure returns (uint128) {
+        if (delta < 0) {
+            revert SafeCast.SafeCastOverflow();
+        }
+        return uint128(uint256(delta));
     }
 
-    function getCurrencyOneBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (int256) {
-        return TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1);
+    function getCurrencyZeroBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
+        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0));
     }
 
-    function asUint128(int256 value) internal pure returns (uint128) {
-        return uint128(uint256(value));
+    function getCurrencyOneBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
+        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1));
     }
 
     /// @notice Mints LP rewards by creating new liquidity positions from collected fees
@@ -120,8 +123,8 @@ library CoinRewardsV4 {
             }
         }
 
-        marketRewardsAmount0 = asUint128(getCurrencyZeroBalance(poolManager, key));
-        marketRewardsAmount1 = asUint128(getCurrencyOneBalance(poolManager, key));
+        marketRewardsAmount0 = getCurrencyZeroBalance(poolManager, key);
+        marketRewardsAmount1 = getCurrencyOneBalance(poolManager, key);
     }
 
     /// @notice Mints a single-sided LP position

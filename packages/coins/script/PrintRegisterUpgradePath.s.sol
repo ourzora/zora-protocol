@@ -11,12 +11,8 @@ contract DeployScript is CoinsDeployerBase {
     function run() public {
         CoinsDeployment memory deployment = readDeployment(false);
 
-        address upgradeGate = deployment.hookUpgradeGate;
-
         address existingContentCoinHook = 0xd3D133469ADC85e01A4887404D8AC12d630e9040;
         address existingCreatorCoinHook = 0xffF800B76768dA8AB6aab527021e4a6A91219040;
-
-        address target = deployment.hookUpgradeGate;
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = existingContentCoinHook;
@@ -27,7 +23,9 @@ contract DeployScript is CoinsDeployerBase {
 
         bytes memory creatorCoinUpgradeCall = abi.encodeWithSelector(IHooksUpgradeGate.registerUpgradePath.selector, baseImpls, deployment.creatorCoinHook);
 
-        console.log("target", target);
+        printUpgradeFactoryCommand(deployment);
+
+        console.log("register upgrade gate target", deployment.hookUpgradeGate);
 
         console.log("contentCoinUpgradeCall");
         console.logBytes(contentCoinUpgradeCall);

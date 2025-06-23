@@ -24,7 +24,7 @@ import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
 import {IUpgradeableV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
 import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
 import {MultiOwnable} from "../utils/MultiOwnable.sol";
-import {IERC165} from "@openzeppelin/contracts/interfaces/IERC165.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
 import {IUpgradeableDestinationV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
@@ -41,7 +41,7 @@ import {TickMath} from "../utils/uniswap/TickMath.sol";
 ///      2. Swaps collected fees to the backing currency through multi-hop paths
 ///      3. Distributes converted fees as rewards
 /// @author oveddan
-abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpgradeableDestinationV4Hook {
+abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, ERC165, IUpgradeableDestinationV4Hook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
@@ -121,8 +121,9 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
         return poolCoins[CoinCommon.hashPoolKey(key)];
     }
 
+    /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId;
+        return super.supportsInterface(interfaceId) || interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId;
     }
 
     /// @notice Internal fn generating the positions for a given pool key.
@@ -141,10 +142,12 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
     /// @param key The pool key.
     /// @return selector The selector of the afterInitialize hook to confirm the action.
     function _afterInitialize(address sender, PoolKey calldata key, uint160, int24) internal override returns (bytes4) {
+        // If the sender is the hook itself, we assume this is a migration and we return early.
         if (sender == address(this)) {
             return BaseHook.afterInitialize.selector;
         }
 
+        // Otherwise, we initialize the hook positions.
         address coin = sender;
         if (!CoinConfigurationVersions.isV4(coinVersionLookup.getVersionForDeployedCoin(coin))) {
             revert NotACoin(coin);
@@ -157,6 +160,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
         return BaseHook.afterInitialize.selector;
     }
 
+    /// @inheritdoc IUpgradeableDestinationV4Hook
     function initializeFromMigration(
         PoolKey calldata poolKey,
         address coin,
@@ -164,10 +168,13 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
         BurnedPosition[] calldata migratedLiquidity,
         bytes calldata
     ) external {
-        // Verify that the caller is authorized to perform this migration
+        address oldHook = msg.sender;
+        address newHook = address(this);
+
+        // Verify that the caller (new hook) is authorized to perform this migration
         // Only registered upgrade paths in the upgrade gate are allowed to migrate liquidity
-        if (!upgradeGate.isRegisteredUpgradePath(msg.sender, address(this))) {
-            revert IUpgradeableV4Hook.UpgradePathNotRegistered(msg.sender, address(this));
+        if (!upgradeGate.isRegisteredUpgradePath(oldHook, newHook)) {
+            revert IUpgradeableV4Hook.UpgradePathNotRegistered(oldHook, newHook);
         }
 
         // Create a new pool key with the same parameters but pointing to this hook
@@ -177,11 +184,13 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
             currency1: poolKey.currency1,
             fee: poolKey.fee,
             tickSpacing: poolKey.tickSpacing,
-            hooks: IHooks(address(this)) // Point to this new hook implementation
+            hooks: IHooks(newHook)
         });
 
         // Initialize the new pool with the migrated price
         // This creates the actual Uniswap V4 pool with the current market price
+        // A side effect is that the _afterInitialize hook is called here, so we find self-referential calls there and return early.
+        // This preserves the previous sqrtPriceX96 in the new pools.
         poolManager.initialize(newKey, sqrtPriceX96);
 
         // Convert the burned/migrated liquidity positions into new LP positions
@@ -196,6 +205,9 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
         _mintExtraLiquidityAtLastPosition(sqrtPriceX96, newKey);
     }
 
+    /// @notice Internal fn to add any remaining token balances to the last liquidity position.
+    /// @param sqrtPriceX96 The sqrt price x96.
+    /// @param poolKey The pool key.
     function _mintExtraLiquidityAtLastPosition(uint160 sqrtPriceX96, PoolKey memory poolKey) internal {
         // Check if there are any leftover token balances in the hook after migration
         // These could result from rounding or partial liquidity transfers
@@ -235,6 +247,9 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
     }
 
     /// @notice Saves the positions for the coin and mints them into the pool
+    /// @param key The pool key.
+    /// @param coin The coin address.
+    /// @param positions The positions.
     function _initializeForPositions(PoolKey memory key, address coin, LpPosition[] memory positions) internal {
         // Store the association between this pool and its coin + positions
         // This creates the internal mapping that tracks which coin owns which positions
@@ -334,7 +349,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, IZoraV4CoinHook, IERC165, IUpg
     }
 
     /// @inheritdoc IUpgradeableV4Hook
-    function migrateLiquidity(address newHook, PoolKey memory poolKey, bytes calldata additionalData) external override returns (PoolKey memory newPoolKey) {
+    function migrateLiquidity(address newHook, PoolKey memory poolKey, bytes calldata additionalData) external returns (PoolKey memory newPoolKey) {
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(poolKey);
         PoolCoin storage poolCoin = poolCoins[poolKeyHash];
         // check that the coin associated with the poolkey is the caller
