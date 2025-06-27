@@ -1,7 +1,4 @@
-export {
-  cleanAndValidateMetadataURI,
-  type ValidMetadataURI,
-} from "./cleanAndValidateMetadataURI";
+export { cleanAndValidateMetadataURI } from "./cleanAndValidateMetadataURI";
 export { validateMetadataJSON } from "./validateMetadataJSON";
 export type { ValidMetadataJSON } from "./validateMetadataJSON";
 export { validateMetadataURIContent } from "./validateMetadataURIContent";

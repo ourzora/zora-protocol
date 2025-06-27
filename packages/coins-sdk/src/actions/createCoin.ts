@@ -16,7 +16,8 @@ import { base, baseSepolia } from "viem/chains";
 import { COIN_FACTORY_ADDRESS } from "../constants";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import { GenericPublicClient } from "../utils/genericPublicClient";
-import { validateMetadataURIContent, ValidMetadataURI } from "../metadata";
+import { validateMetadataURIContent } from "../metadata";
+import { ValidMetadataURI } from "../uploader/types";
 import { getAttribution } from "../utils/attribution";
 import {
   COIN_ETH_PAIR_POOL_CONFIG,

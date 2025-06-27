@@ -15,12 +15,7 @@ contract ContentCoinHook is BaseZoraV4CoinHook {
     ) BaseZoraV4CoinHook(poolManager_, coinVersionLookup_, trustedMessageSenders_, upgradeGate, MarketConstants.POOL_LAUNCH_SUPPLY) {}
 
     /// @dev Override for market reward distribution
-    function _distributeMarketRewards(
-        Currency currency,
-        uint128 fees,
-        IHasRewardsRecipients coin,
-        address tradeReferrer
-    ) internal override {
+    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {
         CoinRewardsV4.distributeMarketRewards(currency, fees, coin, tradeReferrer);
     }
 }

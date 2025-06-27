@@ -15,9 +15,7 @@ const baseAnvilTest = makeAnvilTest({
 describe("Create Coin Call", () => {
   baseAnvilTest(
     "create coin call valid uri with simulateContract and writeContract",
-    async ({
-      viemClients: { publicClient, walletClient, testClient, chain },
-    }) => {
+    async ({ viemClients: { publicClient, walletClient, testClient } }) => {
       // Get test addresses
       const [creatorAddress] = await walletClient.getAddresses();
       expect(creatorAddress).toBeDefined();
@@ -68,9 +66,7 @@ describe("Create Coin Call", () => {
 
   baseAnvilTest(
     "create coin call invalid uri",
-    async ({
-      viemClients: { publicClient, walletClient, testClient, chain },
-    }) => {
+    async ({ viemClients: { walletClient, testClient, chain } }) => {
       // Get test addresses
       const [creatorAddress] = await walletClient.getAddresses();
       expect(creatorAddress).toBeDefined();

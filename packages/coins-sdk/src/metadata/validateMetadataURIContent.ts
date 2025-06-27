@@ -1,7 +1,5 @@
-import {
-  cleanAndValidateMetadataURI,
-  ValidMetadataURI,
-} from "./cleanAndValidateMetadataURI";
+import { cleanAndValidateMetadataURI } from "./cleanAndValidateMetadataURI";
+import { ValidMetadataURI } from "../uploader/types";
 import { validateMetadataJSON } from "./validateMetadataJSON";
 
 /**

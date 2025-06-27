@@ -10,31 +10,50 @@ Creating a coin involves deploying a new ERC20 contract with the necessary Zora 
 
 To create a new coin, you'll need to provide the following parameters:
 
-```ts twoslash
+```ts
 import { Address } from "viem";
-import { DeployCurrency, InitialPurchaseCurrency } from "@zoralabs/coins-sdk";
+import { DeployCurrency, InitialPurchaseCurrency, ValidMetadataURI } from "@zoralabs/coins-sdk";
 
 type CreateCoinArgs = {
   name: string;             // The name of the coin (e.g., "My Awesome Coin")
   symbol: string;           // The trading symbol for the coin (e.g., "MAC")
-  uri: string;              // Metadata URI (an IPFS URI is recommended)
+  uri: ValidMetadataURI;              // Metadata URI (an IPFS URI is recommended)
   chainId?: number;         // The chain ID (defaults to base mainnet)
   owners?: Address[];       // Optional array of owner addresses, defaults to [payoutRecipient]
   payoutRecipient: Address; // Address that receives creator earnings
   platformReferrer?: Address; // Optional platform referrer address, earns referral fees
   // DeployCurrency.ETH or DeployCurrency.ZORA
   currency?: DeployCurrency; // Optional currency for trading (ETH or ZORA)
-  initialPurchase?: {       // Optional initial supply purchase
-    currency: InitialPurchaseCurrency; // The currency to use for the initial purchase (InitialPurchaseCurrency.ETH)
-    amount: bigint; // Amount of the coin to pre-purchase in InitialPurchaseCurrency (only ETH -> ZORA is supported currently)
-    amountOutMinimum?: bigint; // Optional minimum amount of tokens to receive (slippage protection). Not typically needed for initial purchases of ETH or USDC.
-  };
 }
 ```
 
 ### Metadata
 
 The `uri` parameter structure is described in the [Metadata](/coins/contracts/metadata) section.
+
+One should utilize our [Metadata Builder](/coins/sdk/metadata-builder) tool to create a valid metadata URI.
+
+Example metadata builder usage:
+
+```ts twoslash
+import { Address } from "viem";
+import { createMetadataBuilder, DeployCurrency, createZoraUploaderForCreator } from "@zoralabs/coins-sdk";
+
+const creatorAddress = "0xYourAddress" as Address;
+
+const { createMetadataParameters } = await createMetadataBuilder()
+  .withName("Test Base ZORA Coin")
+  .withSymbol("TBZC")
+  .withDescription("Test Description")
+  .withImage(new File(['FILE'], "test.png", { type: "image/png" }))
+  .upload(createZoraUploaderForCreator(creatorAddress as Address));
+
+const createCoinArgs = {
+  ...createMetadataParameters,
+  payoutRecipient: "0xYourAddress" as Address,
+  currency: DeployCurrency.ZORA,
+};
+```
 
 ### Currency
 
@@ -90,7 +109,7 @@ Further contract details can be found in the [Factory Contract](/coins/contracts
 ### Basic Creation
 
 ```ts twoslash
-import { createCoin, DeployCurrency, InitialPurchaseCurrency } from "@zoralabs/coins-sdk";
+import { createCoin, DeployCurrency, ValidMetadataURI } from "@zoralabs/coins-sdk";
 import { Hex, createWalletClient, createPublicClient, http, Address } from "viem";
 import { base } from "viem/chains";
 
@@ -110,16 +129,11 @@ const walletClient = createWalletClient({
 const coinParams = {
   name: "My Awesome Coin",
   symbol: "MAC",
-  uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy",
+  uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy" as ValidMetadataURI,
   payoutRecipient: "0xYourAddress" as Address,
   platformReferrer: "0xOptionalPlatformReferrerAddress" as Address, // Optional
   chainId: base.id, // Optional: defaults to base.id
   currency: DeployCurrency.ZORA, // Optional: ZORA or ETH
-  initialPurchase: { // Optional: Purchase initial supply during creation
-    currency: InitialPurchaseCurrency.ETH,
-    amount: 0.01n * 10n ** 18n, // 0.01 ETH in wei
-    amountOutMinimum: 0n, // Optional: minimum amount to receive (slippage protection)
-  },
 };
 
 // Create the coin
@@ -148,7 +162,7 @@ If you're using WAGMI in your frontend application, you can use the lower-level 
 
 ```typescript
 import * as React from "react";
-import { createCoinCall, DeployCurrency, InitialPurchaseCurrency } from "@zoralabs/coins-sdk";
+import { createCoinCall, DeployCurrency, InitialPurchaseCurrency, ValidMetadataURI } from "@zoralabs/coins-sdk";
 import { Address } from "viem";
 import { useWriteContract, useSimulateContract } from "wagmi";
 
@@ -156,7 +170,7 @@ import { useWriteContract, useSimulateContract } from "wagmi";
 const coinParams = {
   name: "My Awesome Coin",
   symbol: "MAC",
-  uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy",
+  uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy" as ValidMetadataURI,
   payoutRecipient: "0xYourAddress" as Address,
   platformReferrer: "0xOptionalPlatformReferrerAddress" as Address,
   // chainId: base.id, // Optional: defaults to base.id

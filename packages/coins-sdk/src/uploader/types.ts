@@ -1,8 +1,14 @@
+export type ValidMetadataURI =
+  | `ipfs://${string}`
+  | `ar://${string}`
+  | `data:${string}`
+  | `https://${string}`;
+
 /**
  * Result from uploading a file to a storage provider
  */
 export type UploadResult = {
-  url: string;
+  url: ValidMetadataURI;
   size: number | undefined;
   mimeType: string | undefined;
 };

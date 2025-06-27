@@ -1,8 +1,4 @@
-export type ValidMetadataURI =
-  | `ipfs://${string}`
-  | `ar://${string}`
-  | `data:${string}`
-  | `https://${string}`;
+import { ValidMetadataURI } from "../uploader/types";
 
 /**
  * Clean the metadata URI to HTTPS format

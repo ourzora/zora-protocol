@@ -1,4 +1,9 @@
-import { CreateMetadataParameters, Uploader, UploadResult } from "./types";
+import {
+  CreateMetadataParameters,
+  Uploader,
+  UploadResult,
+  ValidMetadataURI,
+} from "./types";
 
 type Metadata = {
   name: string;
@@ -171,7 +176,7 @@ export class CoinMetadataBuilder {
   }
 
   async upload(uploader: Uploader): Promise<{
-    url: URL;
+    url: ValidMetadataURI;
     createMetadataParameters: CreateMetadataParameters;
     metadata: Metadata;
   }> {
@@ -193,7 +198,7 @@ export class CoinMetadataBuilder {
     );
 
     return {
-      url: getURLFromUploadResult(uploadResult),
+      url: getURLFromUploadResult(uploadResult).toString() as ValidMetadataURI,
       createMetadataParameters: {
         name: this.name!,
         symbol: this.symbol!,
