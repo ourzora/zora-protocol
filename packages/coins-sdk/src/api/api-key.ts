@@ -1,6 +1,10 @@
 let apiKey: string | undefined;
-export function setApiKey(key: string) {
+export function setApiKey(key: string | undefined) {
   apiKey = key;
+}
+
+export function getApiKey() {
+  return apiKey;
 }
 
 export function getApiKeyMeta() {
