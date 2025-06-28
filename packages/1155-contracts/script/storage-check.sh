@@ -10,9 +10,9 @@ generate() {
   fi
 
   echo "=======================" > "$file"
-  echo "👁👁 STORAGE LAYOUT snapshot 👁👁" >"$file"
+  echo "👁👁 STORAGE LAYOUT snapshot 👁👁" >> "$file"
   echo "=======================" >> "$file"
-# shellcheck disable=SC2068
+  # shellcheck disable=SC2068
   for contract in ${contracts[@]}
   do
     { echo -e "\n======================="; echo "➡ $contract" ; echo -e "=======================\n"; } >> "$file"
