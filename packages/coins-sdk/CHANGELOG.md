@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.5
+
+### Patch Changes
+
+- 4153eddc: Added metadata uploading feature
+
 ## 0.2.4
 
 ### Patch Changes
