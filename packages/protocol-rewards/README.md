@@ -24,7 +24,7 @@ Current Supported Chains:
 - OP Mainnet
 - OP Goerli
 - Base Mainnet
-- Base Goerli
+- Base Sepolia
 
 ## Install
 
