@@ -1,0 +1,90 @@
+License
+
+All source code specified as: SPDX-Identifier: ZORA-DELAYED-OSL-v1
+follows this license.
+
+Other licenses are specified on a file by file basis 
+
+Definitions:
+"Licensed Work" means the software, code, or content distributed under this License, 
+including any copies or derivative works thereof.
+
+"Licensor" means Zora Labs, Inc., a Delaware corporation.
+
+"Commercial Purpose" means any use that generates, or is intended to generate, revenue, 
+monetary value, or other commercial benefit, whether through fees, subscriptions, token 
+issuance, staking incentives, or other monetization mechanisms.
+
+"Competitive Product" means a Product provided for Commercial Purposes, and provides 
+functionality substantially similar to or substitutable for, in whole or in part, the 
+Licensed Work, and that is made available to third parties directly or indirectly, 
+whether operated independently or as part of a broader offering.
+
+"Product" means any software application, protocol, service, or system that (i) makes 
+the Licensed Work (or any derivative work thereof) available for third-party 
+interaction, directly or indirectly, including but not limited to through interfaces, 
+middleware, aggregators, composable integrations, or smart contract deployment; (ii) 
+uses the Licensed Work (or any derivative work thereof) in a production environment or 
+mainnet context; (iii) integrates or incorporates the Licensed Work as part of a 
+broader software or financial service offering; or (iv) is operated for a Commercial 
+Purpose, whether or not publicly accessible.
+
+"Open Date" means the earlier of: (i) the third anniversary of the first public 
+distribution of the Licensed Work, and (ii) the date specified by the Licensor as the 
+official date the Licensed Work shall become available under the MIT License.
+
+Terms:
+
+The Licensor hereby grants you a non-exclusive, non-transferable, worldwide, 
+royalty-free license to (i) use, copy, modify, and create derivative works of the 
+Licensed Work; (ii) distribute the Licensed Work (or any derivative works thereof), in 
+each of (i) and (ii), solely for purposes other than (a) Commercial Purposes, or (b) as 
+a Competitive Product. You are not granted rights to, and you may not exploit, the 
+Licensed Work for Commercial Purposes or as a Competitive Product. For the avoidance of 
+doubt, deploying modified versions of the Licensed Work that preserve the core 
+functionality or interface of the Licensed Work shall be considered a derivative work 
+and subject to this License. This License governs your use even if you receive the 
+Licensed Work from a third party, whether in its original form or in a derivative or 
+modified form.
+
+You must retain, in all copies and substantial portions of the Licensed Work and in all 
+derivative works, (i) all copyright notices, author credits, and licensing notices 
+included by the Licensor, and (ii) a notice stating, "This software includes original 
+work licensed under the Delayed Open Source License by Zora Labs, Inc."
+
+Your rights under this License terminate immediately for all versions of the Licensed 
+Work if you violate its terms.
+
+THE LICENSED WORK IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR 
+A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE LICENSED 
+WORK OR THE USE OR OTHER DEALINGS IN THE LICENSED WORK.
+
+Effective on the Open Date, the Licensed Work becomes available under the MIT License 
+(attached hereto as Appendix A).
+
+Contact:
+
+To request written consent for unlicensed uses, please contact: support@zora.co
+
+Appendix A – MIT License
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of this 
+software and associated documentation files (the "Software"), to deal in the Software 
+without restriction, including without limitation the rights to use, copy, modify, 
+merge, publish, distribute, sublicense, and/or sell copies of the Software, and to 
+permit persons to whom the Software is furnished to do so, subject to the following 
+conditions:
+
+The above copyright notice and this permission notice shall be included in all copies 
+or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, 
+INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A 
+PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT 
+HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF 
+CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE 
+OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
