@@ -23,6 +23,9 @@ export {
 } from "./actions/updatePayoutRecipient";
 export type { UpdatePayoutRecipientArgs } from "./actions/updatePayoutRecipient";
 
+export { tradeCoin, createTradeCall } from "./actions/tradeCoin";
+export type { TradeParameters } from "./actions/tradeCoin";
+
 // API Read Actions
 export * from "./api/queries";
 export type * from "./api/queries";

@@ -171,7 +171,7 @@ describe("Create ETH Coin on Base", () => {
           payoutRecipient: creatorAddress!,
           chainId: chain.id,
           initialPurchase: {
-            currency: InitialPurchaseCurrency.ZORA,
+            currency: InitialPurchaseCurrency.ETH,
             amount: parseEther("1"),
           },
         },

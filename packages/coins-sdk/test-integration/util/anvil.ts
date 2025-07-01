@@ -2,6 +2,7 @@ import { spawn } from "node:child_process";
 import { join } from "path";
 import { test } from "vitest";
 import {
+  Account,
   Chain,
   PublicClient,
   TestClient,
@@ -13,6 +14,7 @@ import {
   http,
 } from "viem";
 import { base, foundry } from "viem/chains";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 
 export interface AnvilViemClientsTest {
   viemClients: {
@@ -21,6 +23,7 @@ export interface AnvilViemClientsTest {
     publicClient: PublicClient<Transport, Chain>;
     testClient: TestClient;
     chain: Chain;
+    account: Account;
   };
 }
 
@@ -39,6 +42,7 @@ export type AnvilTestForkSettings = {
   forkUrl: string;
   forkBlockNumber: number;
   anvilChainId?: number;
+  anvilAccount?: Account;
 };
 
 export const makeAnvilTest = ({
@@ -78,9 +82,12 @@ export const makeAnvilTest = ({
         id: anvilChainId,
       };
 
+      const account = privateKeyToAccount(generatePrivateKey());
+
       const walletClient = createWalletClient({
         chain,
         transport: http(anvilHost),
+        account,
       });
 
       const testClient = createTestClient({
@@ -99,6 +106,7 @@ export const makeAnvilTest = ({
         walletClient,
         testClient,
         chain,
+        account,
       });
 
       // clean up function, called once after all tests run

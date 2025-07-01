@@ -204,6 +204,20 @@ export type GetCoinResponses = {
        * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
        */
       uniqueHolders: number;
+      uniswapV4PoolKey: {
+        token0Address: string;
+        token1Address: string;
+        /**
+         * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+         */
+        fee: number;
+        /**
+         * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+         */
+        tickSpacing: number;
+        hookAddress: string;
+      };
+      uniswapV3PoolAddress: string;
       zoraComments: {
         pageInfo: {
           /**
@@ -582,6 +596,20 @@ export type GetCoinsResponses = {
        * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
        */
       uniqueHolders: number;
+      uniswapV4PoolKey: {
+        token0Address: string;
+        token1Address: string;
+        /**
+         * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+         */
+        fee: number;
+        /**
+         * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+         */
+        tickSpacing: number;
+        hookAddress: string;
+      };
+      uniswapV3PoolAddress: string;
       zoraComments: {
         pageInfo: {
           /**
@@ -858,6 +886,20 @@ export type GetExploreResponses = {
            * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
            */
           uniqueHolders: number;
+          uniswapV4PoolKey: {
+            token0Address: string;
+            token1Address: string;
+            /**
+             * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+             */
+            fee: number;
+            /**
+             * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+             */
+            tickSpacing: number;
+            hookAddress: string;
+          };
+          uniswapV3PoolAddress: string;
         };
         /**
          * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
@@ -1187,6 +1229,20 @@ export type GetProfileBalancesResponses = {
                * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
                */
               uniqueHolders: number;
+              uniswapV4PoolKey: {
+                token0Address: string;
+                token1Address: string;
+                /**
+                 * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+                 */
+                fee: number;
+                /**
+                 * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+                 */
+                tickSpacing: number;
+                hookAddress: string;
+              };
+              uniswapV3PoolAddress: string;
             };
           };
         }>;
@@ -1406,6 +1462,20 @@ export type GetProfileCoinsResponses = {
              * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
              */
             uniqueHolders: number;
+            uniswapV4PoolKey: {
+              token0Address: string;
+              token1Address: string;
+              /**
+               * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+               */
+              fee: number;
+              /**
+               * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+               */
+              tickSpacing: number;
+              hookAddress: string;
+            };
+            uniswapV3PoolAddress: string;
             zoraComments: {
               pageInfo: {
                 /**
@@ -1484,6 +1554,97 @@ export type GetProfileCoinsResponses = {
 
 export type GetProfileCoinsResponse =
   GetProfileCoinsResponses[keyof GetProfileCoinsResponses];
+
+export type PostQuoteData = {
+  body?: {
+    signatures?: Array<{
+      permit: {
+        details: {
+          token: string;
+          amount: string;
+          expiration: number;
+          nonce: number;
+        };
+        spender: string;
+        sigDeadline: string;
+      };
+      signature: string;
+    }>;
+    permitActiveSeconds?: number;
+    chainId?: number;
+    tokenOut?: {
+      type: "eth" | "erc20";
+      address?: string;
+    };
+    tokenIn?: {
+      type: "eth" | "erc20";
+      address?: string;
+    };
+    amountIn?: string;
+    slippage?: number;
+    recipient?: string;
+    sender?: string;
+  };
+  path?: never;
+  query?: never;
+  url: "/quote";
+};
+
+export type PostQuoteErrors = {
+  /**
+   * Error
+   */
+  500: {
+    error?: string;
+  };
+};
+
+export type PostQuoteError = PostQuoteErrors[keyof PostQuoteErrors];
+
+export type PostQuoteResponses = {
+  /**
+   * Success
+   */
+  200: {
+    success: boolean;
+    call: {
+      data: string;
+      value: string;
+      target: string;
+    };
+    /**
+     * The approval information for the token
+     */
+    permits?: Array<{
+      signature: string;
+      permit: {
+        sigDeadline: string;
+        spender: string;
+        details: {
+          token: string;
+          amount: string;
+          expiration: number;
+          nonce: number;
+        };
+      };
+    }>;
+    trade?: {
+      commands: Array<string>;
+      value: string;
+      inputs: Array<string>;
+    };
+    quote: {
+      amountOut: string;
+      slippage: number;
+      tokenIn?: {
+        type?: string;
+        address?: string;
+      };
+    };
+  };
+};
+
+export type PostQuoteResponse = PostQuoteResponses[keyof PostQuoteResponses];
 
 export type ClientOptions = {
   baseUrl:

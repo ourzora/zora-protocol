@@ -24,6 +24,9 @@ import type {
   GetProfileBalancesResponse,
   GetProfileCoinsData,
   GetProfileCoinsResponse,
+  PostQuoteData,
+  PostQuoteResponse,
+  PostQuoteError,
 } from "./types.gen";
 import { client as _heyApiClient } from "./client.gen";
 
@@ -243,5 +246,28 @@ export const getProfileCoins = <ThrowOnError extends boolean = false>(
     ],
     url: "/profileCoins",
     ...options,
+  });
+};
+
+export const postQuote = <ThrowOnError extends boolean = false>(
+  options?: Options<PostQuoteData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).post<
+    PostQuoteResponse,
+    PostQuoteError,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/quote",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
   });
 };
