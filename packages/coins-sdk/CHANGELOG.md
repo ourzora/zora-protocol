@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.7
+
+### Patch Changes
+
+- bd371420: Small trade types fixes
+
 ## 0.2.6
 
 ### Patch Changes
