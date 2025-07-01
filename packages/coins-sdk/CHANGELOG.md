@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.8
+
+### Patch Changes
+
+- d8f29ef0: Fixed import paths
+
 ## 0.2.7
 
 ### Patch Changes
