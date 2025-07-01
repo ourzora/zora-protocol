@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.6
+
+### Patch Changes
+
+- 86a3d4f3: Add tradeCoin function to trade creator and content coins
+
 ## 0.2.5
 
 ### Patch Changes

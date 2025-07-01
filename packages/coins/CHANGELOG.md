@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 1.1.2
+
+### Patch Changes
+
+- 522a7c33: Update LICENSE for coins
+
 ## 1.1.1
 
 ### Patch Changes
