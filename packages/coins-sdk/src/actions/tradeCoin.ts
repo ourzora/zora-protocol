@@ -1,6 +1,4 @@
 import { permit2ABI, permit2Address } from "@zoralabs/protocol-deployments";
-import { postQuote, PostQuoteResponse } from "src/client";
-import { GenericPublicClient } from "src/utils/genericPublicClient";
 import {
   Account,
   Address,
@@ -10,6 +8,8 @@ import {
   Hex,
 } from "viem";
 import { base } from "viem/chains";
+import { postQuote, PostQuoteResponse } from "../client";
+import { GenericPublicClient } from "../utils/genericPublicClient";
 
 type TradeERC20 = {
   type: "erc20";

@@ -96,6 +96,10 @@ export default defineConfig({
                 link: "/coins/sdk/create-coin",
               },
               {
+                text: "Coins Metadata Builder",
+                link: "/coins/sdk/metadata-builder",
+              },
+              {
                 text: "Trade Coin",
                 link: "/coins/sdk/trade-coin",
               },
@@ -152,6 +156,10 @@ export default defineConfig({
               {
                 text: "Protocol Rewards",
                 link: "/coins/contracts/rewards",
+              },
+              {
+                text: "Coins License",
+                link: "/coins/license",
               },
             ],
           },
