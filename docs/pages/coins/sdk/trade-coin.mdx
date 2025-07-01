@@ -43,12 +43,12 @@ const tradeParameters: TradeParameters = {
   sender: account.address,
 };
 
-const receipt = await tradeCoin(
+const receipt = await tradeCoin({
   tradeParameters,
   walletClient,
   account,
-  publicClient
-);
+  publicClient,
+});
 ```
 
 ### Trading Creator Coin for ETH
@@ -65,12 +65,12 @@ const tradeParameters: TradeParameters = {
   sender: account.address,
 };
 
-const receipt = await tradeCoin(
+const receipt = await tradeCoin({
   tradeParameters,
   walletClient,
   account,
-  publicClient
-);
+  publicClient,
+});
 ```
 
 ### Trading USDC for Creator Coin (with Permits)
@@ -94,12 +94,12 @@ const tradeParameters: TradeParameters = {
   sender: account.address,
 };
 
-const receipt = await tradeCoin(
+const receipt = await tradeCoin({
   tradeParameters,
   walletClient,
   account,
-  publicClient
-);
+  publicClient,
+});
 ```
 
 ### Trading Between ERC20 Tokens
@@ -124,12 +124,44 @@ const tradeParameters: TradeParameters = {
   sender: account.address,
 };
 
-const receipt = await tradeCoin(
+const receipt = await tradeCoin({
   tradeParameters,
   walletClient,
   account,
-  publicClient
-);
+  publicClient,
+});
+```
+
+### Disabling Transaction Validation
+
+By default, `tradeCoin` validates transactions before execution. You can disable this for faster execution:
+
+```typescript
+const receipt = await tradeCoin({
+  tradeParameters,
+  walletClient,
+  account,
+  publicClient,
+  validateTransaction: false, // Skip validation and gas estimation
+});
+```
+
+## Function Signature
+
+```typescript
+async function tradeCoin({
+  tradeParameters,
+  walletClient,
+  account,
+  publicClient,
+  validateTransaction = true,
+}: {
+  tradeParameters: TradeParameters;
+  walletClient: WalletClient;
+  account: Account;
+  publicClient: GenericPublicClient;
+  validateTransaction?: boolean;
+})
 ```
 
 ## Trade Parameters

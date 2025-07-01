@@ -17,7 +17,7 @@ import { DeployCurrency, InitialPurchaseCurrency, ValidMetadataURI } from "@zora
 type CreateCoinArgs = {
   name: string;             // The name of the coin (e.g., "My Awesome Coin")
   symbol: string;           // The trading symbol for the coin (e.g., "MAC")
-  uri: ValidMetadataURI;              // Metadata URI (an IPFS URI is recommended)
+  uri: ValidMetadataURI;    // Metadata URI (an IPFS URI is recommended)
   chainId?: number;         // The chain ID (defaults to base mainnet)
   owners?: Address[];       // Optional array of owner addresses, defaults to [payoutRecipient]
   payoutRecipient: Address; // Address that receives creator earnings
@@ -163,8 +163,9 @@ If you're using WAGMI in your frontend application, you can use the lower-level 
 ```typescript
 import * as React from "react";
 import { createCoinCall, DeployCurrency, InitialPurchaseCurrency, ValidMetadataURI } from "@zoralabs/coins-sdk";
-import { Address } from "viem";
+import { Address, parseEther } from "viem";
 import { useWriteContract, useSimulateContract } from "wagmi";
+import { base } from "viem/chains";
 
 // Define coin parameters
 const coinParams = {
@@ -173,12 +174,12 @@ const coinParams = {
   uri: "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy" as ValidMetadataURI,
   payoutRecipient: "0xYourAddress" as Address,
   platformReferrer: "0xOptionalPlatformReferrerAddress" as Address,
-  // chainId: base.id, // Optional: defaults to base.id
-  // currency: DeployCurrency.ZORA, // Optional: ZORA or ETH
-  // initialPurchase: { // Optional: Purchase initial supply during creation
-  //   currency: InitialPurchaseCurrency.ETH,
-  //   amount: 0.01n * 10n ** 18n, // 0.01 ETH in wei
-  // },
+  chainId: base.id, // Optional: defaults to base.id
+  currency: DeployCurrency.ZORA, // Optional: ZORA or ETH
+  initialPurchase: { // Optional: Purchase initial supply during creation
+    currency: InitialPurchaseCurrency.ETH,
+    amount: parseEther("0.01"), // 0.01 ETH in wei
+  },
 };
 
 // Create configuration for wagmi

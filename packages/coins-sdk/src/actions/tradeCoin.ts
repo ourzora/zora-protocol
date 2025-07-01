@@ -92,20 +92,32 @@ export type TradeParameters = {
   permitActiveSeconds?: number;
 };
 
-export async function tradeCoin(
-  tradeParameters: TradeParameters,
-  walletClient: WalletClient,
-  account: Account,
-  publicClient: GenericPublicClient,
+export async function tradeCoin({
+  tradeParameters,
+  walletClient,
+  account,
+  publicClient,
   validateTransaction = true,
-) {
+}: {
+  tradeParameters: TradeParameters;
+  walletClient: WalletClient;
+  account: Account;
+  publicClient: GenericPublicClient;
+  validateTransaction?: boolean;
+}) {
   const quote = await createTradeCall(tradeParameters);
+
+  // Set default recipient to wallet sender address if not provided
+  if (!tradeParameters.recipient) {
+    tradeParameters.recipient = account.address;
+  }
 
   // todo replace any
   const signatures: { signature: Hex; permit: any }[] = [];
   if (quote.permits) {
     for (const permit of quote.permits) {
-      const [, nonce] = await publicClient.readContract({
+      // return values: amount, expiration, nonce
+      const [, , nonce] = await publicClient.readContract({
         abi: permit2ABI,
         address: permit2Address[base.id],
         functionName: "allowance",
@@ -120,7 +132,7 @@ export async function tradeCoin(
         abi: erc20Abi,
         address: permitToken,
         functionName: "allowance",
-        args: [permitToken, permit2Address[base.id]],
+        args: [account.address, permit2Address[base.id]],
       });
       if (allowance < BigInt(permit.permit.details.amount)) {
         const approvalTx = await walletClient.writeContract({
@@ -223,6 +235,7 @@ export async function createTradeCall(
   });
 
   if (!quote.data) {
+    console.error(quote);
     throw new Error("Quote failed");
   }
 
