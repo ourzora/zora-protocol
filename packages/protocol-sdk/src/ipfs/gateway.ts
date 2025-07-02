@@ -1,7 +1,7 @@
 import { isArweaveURL } from "./arweave";
 import { isNormalizeableIPFSUrl, normalizeIPFSUrl } from "./ipfs";
 
-const IPFS_GATEWAY = "https://magic.decentralized-content.com";
+const IPFS_GATEWAY = "https://ipfs.io";
 
 const ARWEAVE_GATEWAY = "https://arweave.net";
 

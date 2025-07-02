@@ -10,7 +10,7 @@ export function cleanAndValidateMetadataURI(uri: ValidMetadataURI) {
   if (uri.startsWith("ipfs://")) {
     return uri.replace(
       "ipfs://",
-      "https://magic.decentralized-content.com/ipfs/",
+      "https://ipfs.io/ipfs/",
     );
   }
   if (uri.startsWith("ar://")) {
