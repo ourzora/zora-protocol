@@ -5,6 +5,7 @@
 ### Patch Changes
 
 - 522a7c33: Update LICENSE for coins
+- 5c561b01: Fixed bug where hooks could not receive taken eth for paying out rewards
 
 ## 1.1.1
 

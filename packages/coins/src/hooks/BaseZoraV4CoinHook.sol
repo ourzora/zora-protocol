@@ -372,4 +372,6 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
 
         newPoolKey = V4Liquidity.lockAndMigrate(poolManager, poolKey, poolCoin.positions, poolCoin.coin, newHook, additionalData);
     }
+
+    receive() external payable onlyPoolManager {}
 }

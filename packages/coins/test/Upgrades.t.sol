@@ -225,21 +225,21 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
     }
 
     function test_canUpgradeBrokenContentCoinAndSwap() public {
-        vm.createSelectFork("base", 31835069);
+        vm.createSelectFork("base", 32613149);
 
         address trader = 0xf69fEc6d858c77e969509843852178bd24CAd2B6;
 
-        address contentCoin = 0x4E93A01c90f812284F71291a8d1415a904957156;
+        address contentCoin = 0xB9799C839818bF50240CE683363D00c43a2E23b8;
 
         address creatorCoin = ICoinV4(contentCoin).currency();
 
-        address existingHook = 0xd3D133469ADC85e01A4887404D8AC12d630e9040;
-
-        uint256 amountIn = IERC20(creatorCoin).balanceOf(trader);
+        uint256 amountIn = 0.000111 ether;
 
         bytes memory creationCode = HooksDeployment.contentCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
+
+        address existingHook = address(ICoinV4(contentCoin).hooks());
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = existingHook;

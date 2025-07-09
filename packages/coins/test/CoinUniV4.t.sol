@@ -63,7 +63,7 @@ contract CoinUniV4Test is BaseTest {
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        feeState = FeeEstimatorHook(address(contentCoinHook)).getFeeState();
+        feeState = FeeEstimatorHook(payable(address(contentCoinHook))).getFeeState();
 
         vm.revertToState(snapshot);
     }
@@ -80,8 +80,8 @@ contract CoinUniV4Test is BaseTest {
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        delta = FeeEstimatorHook(address(contentCoinHook)).getFeeState().lastDelta;
-        swapParams = FeeEstimatorHook(address(contentCoinHook)).getFeeState().lastSwapParams;
+        delta = FeeEstimatorHook(payable(address(contentCoinHook))).getFeeState().lastDelta;
+        swapParams = FeeEstimatorHook(payable(address(contentCoinHook))).getFeeState().lastSwapParams;
 
         sqrtPriceX96 = PoolStateReader.getSqrtPriceX96(coinV4.getPoolKey(), poolManager);
 
@@ -291,6 +291,62 @@ contract CoinUniV4Test is BaseTest {
             assertApproxEqAbs(mockERC20A.balanceOf(tradeReferral), totalRewards.tradeReferral, 10, "trade referral reward currency");
         }
         assertApproxEqAbs(mockERC20A.balanceOf(coinV4.protocolRewardRecipient()), totalRewards.protocol, 10, "protocol reward currency");
+    }
+
+    function test_distributesMarketRewardsInEth() public {
+        uint64 amountIn = 0.1 ether;
+
+        // Use address(0) as currency to price the coin in ETH
+        address currency = address(0);
+        bytes32 salt = keccak256(abi.encodePacked("eth-rewards-test"));
+        _deployV4Coin(currency, address(0), salt);
+
+        address trader = makeAddr("trader");
+
+        // Give trader ETH
+        vm.deal(trader, amountIn);
+
+        // Record initial ETH balance of payout recipient
+        uint256 initialPayoutBalance = coinV4.payoutRecipient().balance;
+
+        // Swap ETH for coin
+        _swapSomeCurrencyForCoin(coinV4, currency, amountIn, trader);
+
+        // Verify that rewards were paid out in ETH
+        assertGt(coinV4.payoutRecipient().balance, initialPayoutBalance, "backing reward should be paid in ETH");
+    }
+
+    function test_canSwapEthForCoin(uint128 amountIn) public {
+        vm.assume(amountIn > 0.00001 ether);
+        vm.assume(amountIn < 1 ether);
+
+        // Use address(0) as currency to price the coin in ETH
+        address currency = address(0);
+        bytes32 salt = keccak256(abi.encodePacked("eth-coin-test"));
+        _deployV4Coin(currency, address(0), salt);
+
+        address trader = makeAddr("trader");
+
+        // Give trader ETH
+        vm.deal(trader, amountIn);
+
+        uint256 initialEthBalance = trader.balance;
+
+        // Swap ETH for coin
+        _swapSomeCurrencyForCoin(coinV4, currency, amountIn, trader);
+
+        // Verify the swap worked
+        assertEq(trader.balance, initialEthBalance - amountIn, "trader should have spent ETH");
+        assertGt(coinV4.balanceOf(trader), 0, "trader should have received coin");
+
+        // Now swap some coin back for ETH
+        uint128 coinBalance = uint128(coinV4.balanceOf(trader));
+
+        _swapSomeCoinForCurrency(coinV4, currency, coinBalance, trader);
+
+        // Verify the reverse swap worked
+        assertEq(coinV4.balanceOf(trader), 0, "trader should have no coins left");
+        assertGt(trader.balance, 0, "trader should have received ETH back");
     }
 
     function test_swap_emitsCoinMarketRewardsV4(uint64 amountIn) public {

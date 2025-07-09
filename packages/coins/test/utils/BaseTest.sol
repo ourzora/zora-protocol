@@ -206,11 +206,15 @@ contract BaseTest is Test, ContractAddresses {
         );
 
         vm.startPrank(trader);
-        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
+        if (currency != address(0)) {
+            UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), currency, amountIn, uint48(block.timestamp + 1 days));
+        }
+
+        uint256 value = currency == address(0) ? amountIn : 0;
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
-        router.execute(commands, inputs, deadline);
+        router.execute{value: value}(commands, inputs, deadline);
 
         vm.stopPrank();
     }
@@ -269,18 +273,22 @@ contract BaseTest is Test, ContractAddresses {
         (bytes32 contentCoinSalt, bytes32 creatorCoinSalt) = getSalts(trustedMessageSenders);
 
         contentCoinHook = ContentCoinHook(
-            address(
-                HooksDeployment.deployHookWithSalt(
-                    HooksDeployment.contentCoinCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
-                    contentCoinSalt
+            payable(
+                address(
+                    HooksDeployment.deployHookWithSalt(
+                        HooksDeployment.contentCoinCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
+                        contentCoinSalt
+                    )
                 )
             )
         );
         creatorCoinHook = CreatorCoinHook(
-            address(
-                HooksDeployment.deployHookWithSalt(
-                    HooksDeployment.creatorCoinHookCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
-                    creatorCoinSalt
+            payable(
+                address(
+                    HooksDeployment.deployHookWithSalt(
+                        HooksDeployment.creatorCoinHookCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
+                        creatorCoinSalt
+                    )
                 )
             )
         );
