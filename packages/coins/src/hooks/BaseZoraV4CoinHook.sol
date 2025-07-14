@@ -119,7 +119,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
     }
 
     /// @inheritdoc IZoraV4CoinHook
-    function getPoolCoinByHash(bytes23 poolKeyHash) external view returns (IZoraV4CoinHook.PoolCoin memory) {
+    function getPoolCoinByHash(bytes32 poolKeyHash) external view returns (IZoraV4CoinHook.PoolCoin memory) {
         return poolCoins[poolKeyHash];
     }
 

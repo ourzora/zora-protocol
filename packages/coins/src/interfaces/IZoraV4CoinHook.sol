@@ -117,7 +117,7 @@ interface IZoraV4CoinHook is IUpgradeableV4Hook {
     /// @notice Returns the pool coin for a given pool key hash.
     /// @param poolKeyHash The hash of the pool key for indexing.
     /// @return poolCoin The pool coin confirmation data.
-    function getPoolCoinByHash(bytes23 poolKeyHash) external view returns (IZoraV4CoinHook.PoolCoin memory);
+    function getPoolCoinByHash(bytes32 poolKeyHash) external view returns (IZoraV4CoinHook.PoolCoin memory);
 
     /// @notice Returns the pool coin for a given pool key.
     /// @param key The pool key.
