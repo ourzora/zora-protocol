@@ -116,10 +116,14 @@ const toConfig = (
   }));
 };
 
+const legacyBaseFolder = "../../legacy/";
+
 const get1155Contracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../1155-contracts/addresses");
+  const addressesFiles = readdirSync(
+    `${legacyBaseFolder}/1155-contracts/addresses`,
+  );
 
   const protocolRewardsConfig = JSON.parse(
     readFileSync("../protocol-rewards/deterministicConfig.json", "utf-8"),
@@ -133,7 +137,10 @@ const get1155Contracts = (): ContractConfig[] => {
       chainId: parseInt(file.split(".")[0]),
       config: {
         ...(JSON.parse(
-          readFileSync(`../1155-contracts/addresses/${file}`, "utf-8"),
+          readFileSync(
+            `${legacyBaseFolder}/1155-contracts/addresses/${file}`,
+            "utf-8",
+          ),
         ) as {
           FIXED_PRICE_SALE_STRATEGY: Address;
           MERKLE_MINT_SALE_STRATEGY: Address;
@@ -286,13 +293,13 @@ const getSharedAddresses = () => {
 
 const getSparksAddresses = () => {
   const addresses: Addresses = {};
-  const addressesFiles = readdirSync("../sparks/addresses");
+  const addressesFiles = readdirSync(`${legacyBaseFolder}/sparks/addresses`);
 
   const storedConfigs = addressesFiles.map((file) => {
     return {
       chainId: parseInt(file.split(".")[0]),
       config: JSON.parse(
-        readFileSync(`../sparks/addresses/${file}`, "utf-8"),
+        readFileSync(`${legacyBaseFolder}/sparks/addresses/${file}`, "utf-8"),
       ) as {
         SPARKS_MANAGER: Address;
         SPARKS_1155: Address;
@@ -395,14 +402,14 @@ const getSmartWalletContracts = () => {
 const getErc20zContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../erc20z/addresses");
+  const addressesFiles = readdirSync(`${legacyBaseFolder}/erc20z/addresses`);
 
   const storedConfigs = addressesFiles.map((file) => {
     return {
       chainId: parseInt(file.split(".")[0]),
       config: {
         ...(JSON.parse(
-          readFileSync(`../erc20z/addresses/${file}`, "utf-8"),
+          readFileSync(`${legacyBaseFolder}/erc20z/addresses/${file}`, "utf-8"),
         ) as {
           SWAP_HELPER: Address;
           ERC20Z: Address;
@@ -493,13 +500,13 @@ const getCommentsContracts = (): ContractConfig[] => {
 const getCointagsContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../cointags/addresses");
+  const addressesFiles = readdirSync(`${legacyBaseFolder}/cointags/addresses`);
 
   const storedConfigs = addressesFiles.map((file) => {
     return {
       chainId: parseInt(file.split(".")[0]),
       config: JSON.parse(
-        readFileSync(`../cointags/addresses/${file}`, "utf-8"),
+        readFileSync(`${legacyBaseFolder}/cointags/addresses/${file}`, "utf-8"),
       ) as {
         COINTAG_FACTORY: Address;
       },

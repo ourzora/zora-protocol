@@ -85,6 +85,8 @@ async function mergeAndSaveConfigs({
   );
 }
 
+const legacyBaseFolder = "../../legacy/";
+
 async function bundleChainConfigs() {
   // ensure the directories are there
   mkdirSync("./src/generated", { recursive: true });
@@ -93,11 +95,11 @@ async function bundleChainConfigs() {
   await mergeAndSaveConfigs({
     configs: [
       {
-        folder: "../1155-contracts/chainConfigs",
+        folder: `${legacyBaseFolder}/1155-contracts/chainConfigs`,
         configType: "chainConfigs",
       },
       {
-        folder: "../1155-contracts/addresses",
+        folder: `${legacyBaseFolder}/1155-contracts/addresses`,
         configType: "addresses",
       },
     ],
@@ -111,7 +113,7 @@ async function bundleChainConfigs() {
         configType: "chainConfigs",
       },
       {
-        folder: "../sparks/addresses",
+        folder: `${legacyBaseFolder}/sparks/addresses`,
         configType: "addresses",
       },
     ],

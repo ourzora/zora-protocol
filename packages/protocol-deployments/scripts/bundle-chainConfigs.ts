@@ -7,9 +7,12 @@ import { readdirSync, readFileSync, writeFileSync } from "fs";
 //    ...chainConfig
 //  }
 //}
+
+const legacyBaseFolder = "../../legacy/";
+
 function makeConfig() {
   // read all files in the chainConfigs folder
-  const files = readdirSync("../1155-contracts/chainConfigs");
+  const files = readdirSync(`${legacyBaseFolder}/1155-contracts/chainConfigs`);
 
   // combine them into a single mapping
   const chainConfigsInner = files
@@ -17,7 +20,10 @@ function makeConfig() {
       const chainId = fileName.split(".")[0];
 
       const fileContents = JSON.parse(
-        readFileSync(`../1155-contracts/chainConfigs/${fileName}`, "utf-8"),
+        readFileSync(
+          `${legacyBaseFolder}/1155-contracts/chainConfigs/${fileName}`,
+          "utf-8",
+        ),
       );
 
       return `[${chainId}]: ${JSON.stringify(fileContents, null, 2)}`;

@@ -1,0 +1,53 @@
+name: "Legacy Contracts"
+
+on: 
+  workflow_dispatch:
+
+jobs:
+  contracts-erc20z:
+    name: ERC20Z Contracts
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: legacy/erc20z
+      name: ERC20Z
+      ignore_coverage_files: '"*lib*" "*Zora1155*" "*uniswap*"'
+      # fixes stack too deep temporarily
+      coverage_args: "--ir-minimum"
+
+  contracts-1155:
+    name: 1155 Contracts
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: legacy/1155-contracts
+      ignore_coverage_files: '"*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*" "*test*"'
+      name: 1155 Contracts
+
+  contracts-sparks:
+    name: Sparks
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: legacy/sparks
+      ignore_coverage_files: '"*Ownable*" "*Mock*" "*BatchDataHelper*" "*test*" "*script*" "src/deployment/*"'
+      skip_storage_layout: true
+      name: Sparks
+
+  contracts-1155-deployments:
+    name: 1155 Deployments
+    uses: ./.github/workflows/deployment.yml
+    secrets: inherit
+    with:
+      package_folder: legacy/1155-deployments
+      precache: "pnpm run generate"
+
+  contracts-cointags:
+    name: Cointags
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: legacy/cointags
+      name: Cointags
+      ignore_coverage_files: '"*script*"'
+      skip_storage_layout: true

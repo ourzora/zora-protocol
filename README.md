@@ -6,12 +6,17 @@ This repository is a monorepo for the Zora Protocol.
 
 In it you will find:
 
-- [Zora 1155 Contracts](./packages/1155-contracts)
-- [Zora 1155 Deployment Scripts](./packages/1155-deployments)
+### Active Packages
+- [Coins](./packages/coins)
+- [Comments](./packages/comments)
+- [Coins SDK](./packages/coins-sdk)
 - [Zora Creator Subgraph](./packages/creator-subgraph)
 - [Protocol Deployments](./packages/protocol-deployments)
 - [Protocol Rewards](./packages/protocol-rewards)
 - [Protocol SDK](./packages/protocol-sdk)
+
+### Legacy Packages
+- [Legacy Contracts](./legacy) - Contains legacy contract packages (1155-contracts, erc20z, sparks, cointags, etc.)
 
 ## Official docs
 

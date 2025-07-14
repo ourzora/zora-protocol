@@ -60,13 +60,13 @@ async function main() {
   );
 
   await copyChangelog(
-    join(__dirname, "../../packages/1155-contracts/CHANGELOG.md"),
+    join(__dirname, "../../legacy/1155-contracts/CHANGELOG.md"),
     join(__dirname, "../pages/changelogs/1155-contracts.mdx"),
     "Zora 1155 Contracts",
   );
 
   await copyChangelog(
-    join(__dirname, "../../packages/cointags/CHANGELOG.md"),
+    join(__dirname, "../../legacy/cointags/CHANGELOG.md"),
     join(__dirname, "../pages/changelogs/cointags.mdx"),
     "Cointags",
   );
