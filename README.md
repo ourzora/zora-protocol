@@ -13,10 +13,9 @@ In it you will find:
 - [Zora Creator Subgraph](./packages/creator-subgraph)
 - [Protocol Deployments](./packages/protocol-deployments)
 - [Protocol Rewards](./packages/protocol-rewards)
-- [Protocol SDK](./packages/protocol-sdk)
 
 ### Legacy Packages
-- [Legacy Contracts](./legacy) - Contains legacy contract packages (1155-contracts, erc20z, sparks, cointags, etc.)
+- [Legacy Contracts](./legacy) - Contains legacy contract packages (1155-contracts, erc20z, sparks, cointags, protocol-sdk, etc.)
 
 ## Official docs
 

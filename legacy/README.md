@@ -9,6 +9,7 @@ This directory contains legacy contract packages that are no longer under active
 - **erc20z** - ERC20Z token contracts
 - **sparks** - Sparks protocol contracts
 - **cointags** - Cointags contract system
+- **protocol-sdk** - Protocol SDK for interacting with Zora contracts
 
 ## Development
 

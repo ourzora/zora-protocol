@@ -48,7 +48,7 @@ async function main() {
   );
 
   await copyChangelog(
-    join(__dirname, "../../packages/protocol-sdk/CHANGELOG.md"),
+    join(__dirname, "../../legacy/protocol-sdk/CHANGELOG.md"),
     join(__dirname, "../pages/changelogs/protocol-sdk.mdx"),
     "@zoralabs/protocol-sdk",
   );

@@ -18,7 +18,7 @@
   "scripts": {
     "build": "pnpm tsup",
     "prepack": "pnpm build",
-    "test:js": "vitest src",
+    "test:js:legacy": "vitest src",
     "test:integration": "vitest test-integration",
     "generate-types": "echo 'npx is used here because this is a rare operation' && npx openapi-typescript https://api.zora.co/premint/openapi.json -o src/apis/generated/premint-api-types.ts",
     "prettier:write": "prettier --write 'src/**/*.ts' 'test-integration/**/*.ts'",
