@@ -29,6 +29,47 @@ contract FactoryTest is BaseTest {
         assertEq(ZoraFactoryImpl(address(factory)).owner(), initialOwner);
     }
 
+    function test_ownable2Step() public {
+        // old current impl
+        assertEq(ZoraFactoryImpl(address(factory)).owner(), users.factoryOwner);
+
+        // 1st ensure owner slot is set at expected address
+
+        bytes32 ownableSlot = hex"9016d09d72d40fdae2fd8ceac6b6234c7706214fd39c1cd1e609a0528c199300";
+        bytes32 ownable2StepSlot = hex"237e158222e3e6968b72b9db0d8043aacf074ad9f650f0d1606b4d82ee432c00";
+
+        address ownerAddress = address(uint160(uint256(vm.load(address(factory), ownableSlot))));
+        assertEq(ownerAddress, users.factoryOwner);
+
+        assertEq(ZoraFactoryImpl(address(factory)).pendingOwner(), address(0));
+
+        address newFactoryImpl = address(
+            new ZoraFactoryImpl(address(coinV3Impl), address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook))
+        );
+
+        // Upgrade to current / new impl
+        vm.prank(users.factoryOwner);
+        ZoraFactoryImpl(address(factory)).upgradeToAndCall(newFactoryImpl, "");
+
+        // 2nd ensure owner is read from correct slot
+        assertEq(ZoraFactoryImpl(address(factory)).owner(), users.factoryOwner);
+
+        address newOwner = makeAddr("newOwner");
+
+        // 3rd ensure pending owner is set correctly
+        vm.prank(users.factoryOwner);
+        ZoraFactoryImpl(address(factory)).transferOwnership(newOwner);
+        assertEq(ZoraFactoryImpl(address(factory)).pendingOwner(), newOwner);
+
+        address ownerAddress2Step = address(uint160(uint256(vm.load(address(factory), ownable2StepSlot))));
+        assertEq(ownerAddress2Step, newOwner);
+
+        // 4th ensure owner is set correctly
+        vm.prank(newOwner);
+        ZoraFactoryImpl(address(factory)).acceptOwnership();
+        assertEq(ZoraFactoryImpl(address(factory)).owner(), newOwner);
+    }
+
     function test_deploy_no_eth() public {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
