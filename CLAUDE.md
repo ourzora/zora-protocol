@@ -4,6 +4,15 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Development Commands
 
+### GitHub Actions Integration
+
+**Claude Code Review Workflow:**
+- Automatically runs on PRs with contract code changes
+- Validates changeset presence for contract modifications
+- Uses sticky comments to update reviews instead of creating multiple comments
+- Configured with specific file path triggers and allowed tools for comprehensive validation
+- Can be customized with different prompts based on PR author or file types
+
 ### Package Management
 
 - `pnpm install` - Install dependencies
@@ -32,6 +41,15 @@ When making changes that affect public APIs or require version updates:
 **Package Selection Guidelines:**
 - When updating contract code, make a changeset for the corresponding contract package
 - When updating a deployed address, make a changeset for `@zoralabs/protocol-deployments`
+
+**Automated Changeset Validation:**
+The Claude Code Review GitHub Action automatically validates that changesets are included when contract code is modified:
+- Triggers on PRs that modify `.sol` files in `packages/*/src/`
+- Also triggers on PR updates (`synchronize` event) not just creation
+- Checks for presence of changeset files in `.changeset/` directory
+- Reminds authors to add changesets when missing
+- Uses `use_sticky_comment: true` to update existing comments rather than creating new ones
+- Provides Claude with tools to inspect changesets: `pnpm changeset status`, `ls .changeset/`, etc.
 
 ### Protocol Deployments Architecture
 
@@ -105,15 +123,45 @@ Uses Turbo for monorepo task orchestration with dependency management:
 
 Uses Graphite for branch management:
 
-- `gt create {new_branch}` - Create a new branch for features or bug fixes
-- `gt commit create -m "message"` - Create commit with message
-- `gt submit` - Submit pull request
-- Make changes to existing branch, then:
-  - `git add` - Stage changes
-  - `gt modify` - Modify existing diff
-  - `gt submit` - Update pull request after modifications
+**Creating Branches:**
+- `gt create {branch_name}` - Create a new branch stacked on current branch
+- `gt create -a -m "message"` - Create branch, stage all changes, and commit with message
+- `gt create --ai` - Auto-generate branch name and commit message from changes
+- `gt commit create -m "message"` - Create commit on current branch (doesn't create new branch)
 
-Break up changes/features into small branches for easier review and integration.
+**Modifying Existing Branches:**
+- `git add` - Stage changes manually, OR
+- `gt modify -a` - Stage all changes and amend current commit
+- `gt modify -c` - Create new commit instead of amending
+- `gt modify -m "message"` - Amend with new commit message
+- `gt submit` - Submit/update pull request
+
+**Graphite Create Options:**
+- `-a, --all`: Stage all changes including untracked files
+- `-i, --insert`: Insert branch between current and its child
+- `-m, --message`: Specify commit message
+- `-p, --patch`: Interactively select changes to stage
+- `-u, --update`: Stage updates to tracked files only
+- `--ai`: Auto-generate branch name and commit message
+
+**Graphite Modify Options:**
+- `-a, --all`: Stage all changes before committing
+- `-c, --commit`: Create new commit instead of amending  
+- `-e, --edit`: Open editor to edit commit message
+- `-m, --message`: Specify commit message
+- `-u, --update`: Stage updates to tracked files
+
+**Key Differences:**
+- `gt create` creates a NEW branch stacked on current branch
+- `gt commit create` creates a commit on the CURRENT branch
+- `gt modify` modifies the most recent commit on current branch
+
+**Graphite Stacking Best Practices:**
+- Break up changes/features into small branches for easier review and integration
+- Use `gt create` to stack related changes on top of each other
+- Each branch should represent a logical unit of work
+- Submit stacked branches as separate PRs that can be reviewed independently
+- Use descriptive branch names that reflect the specific change being made
 
 ### Legacy Integration
 

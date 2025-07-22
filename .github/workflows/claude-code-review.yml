@@ -2,13 +2,17 @@ name: Claude Code Review
 
 on:
   pull_request:
-    types: [opened]
-    # Optional: Only run on specific file changes
-    # paths:
-    #   - "src/**/*.ts"
-    #   - "src/**/*.tsx"
-    #   - "src/**/*.js"
-    #   - "src/**/*.jsx"
+    types: [opened, synchronize]
+    # Run on contract code changes and other important files
+    paths:
+      - "packages/*/src/**/*.sol"
+      - "packages/*/test/**/*.sol"
+      - "packages/*/script/**/*.sol" 
+      - ".changeset/**/*.md"
+      - "src/**/*.ts"
+      - "src/**/*.tsx"
+      - "src/**/*.js"
+      - "src/**/*.jsx"
 
 jobs:
   claude-review:
@@ -49,10 +53,16 @@ jobs:
             - Security concerns
             - Test coverage
             
+            **Important: Changeset Validation**
+            If this PR modifies contract code (*.sol files in packages/*/src/), please check:
+            1. Is there a changeset file in .changeset/ directory?
+            2. If contract code changed but no changeset exists, remind the author to add one using `pnpm changeset add --empty` and manually edit it
+            3. According to CLAUDE.md: "When updating contract code, make a changeset for the corresponding contract package"
+            
             Be constructive and helpful in your feedback.
 
-          # Optional: Use sticky comments to make Claude reuse the same comment on subsequent pushes to the same PR
-          # use_sticky_comment: true
+          # Use sticky comments to update existing comment instead of creating new ones
+          use_sticky_comment: true
           
           # Optional: Customize review based on file types
           # direct_prompt: |
@@ -68,8 +78,8 @@ jobs:
           #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
           #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
           
-          # Optional: Add specific tools for running tests or linting
-          # allowed_tools: "Bash(npm run test),Bash(npm run lint),Bash(npm run typecheck)"
+          # Allow Claude to inspect changesets and run validation commands
+          allowed_tools: "Bash(ls .changeset/),Bash(pnpm changeset status),Bash(find packages -name '*.sol' -path '*/src/*'),Bash(git diff --name-only main...HEAD)"
           
           # Optional: Skip review for certain conditions
           # if: |
