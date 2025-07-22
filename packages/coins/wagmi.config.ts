@@ -10,7 +10,7 @@ export default defineConfig({
       },
       include: [
         "Coin",
-        "CoinV4",
+        "ContentCoin",
         "CreatorCoin",
         "ZoraFactoryImpl",
         "IUniswapV3Pool",

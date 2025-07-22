@@ -20,7 +20,12 @@ import {CoinConstants} from "./libs/CoinConstants.sol";
 import {IUpgradeableV4Hook} from "./interfaces/IUpgradeableV4Hook.sol";
 import {CoinCommon} from "./libs/CoinCommon.sol";
 
-contract CoinV4 is BaseCoin, ICoinV4 {
+/**
+ * @title BaseCoinV4
+ * @notice Abstract base contract for Uniswap V4 integrated coins
+ * @dev Provides shared V4 functionality for both content coins and creator coins
+ */
+abstract contract BaseCoinV4 is BaseCoin, ICoinV4 {
     /// @notice The Uniswap v4 pool manager singleton contract reference.
     IPoolManager public immutable poolManager;
 
@@ -30,8 +35,8 @@ contract CoinV4 is BaseCoin, ICoinV4 {
     /// @notice The configuration for the pool.
     PoolConfiguration internal poolConfiguration;
 
-    /// @notice The constructor for the static CoinV4 contract deployment shared across all Coins.
-    /// @dev All arguments are required and cannot be set to teh 0 address.
+    /// @notice The constructor for the static BaseCoinV4 contract deployment shared across all Coins.
+    /// @dev All arguments are required and cannot be set to the 0 address.
     /// @param protocolRewardRecipient_ The address of the protocol reward recipient
     /// @param protocolRewards_ The address of the protocol rewards contract
     /// @param poolManager_ The address of the pool manager
@@ -84,19 +89,6 @@ contract CoinV4 is BaseCoin, ICoinV4 {
 
         // initialize the pool - the hook will mint its positions in the afterInitialize callback
         poolManager.initialize(poolKey, sqrtPriceX96);
-    }
-
-    /// @dev The initial mint and distribution of the coin supply.
-    ///      Overrides the BaseCoin._handleInitialDistribution to transfer the market supply to the hook.
-    function _handleInitialDistribution() internal virtual override {
-        // Mint the total supply to the coin contract
-        _mint(address(this), CoinConstants.MAX_TOTAL_SUPPLY);
-
-        // Distribute the creator launch reward to the payout recipient
-        _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
-
-        // Transfer the market supply to the hook for liquidity
-        _transfer(address(this), address(poolKey.hooks), balanceOf(address(this)));
     }
 
     /// @inheritdoc ICoinV4

@@ -21,7 +21,7 @@ import {HooksDeployment} from "../src/libs/HooksDeployment.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MultiOwnable} from "../src/utils/MultiOwnable.sol";
-import {CoinV4} from "../src/CoinV4.sol";
+import {ContentCoin} from "../src/ContentCoin.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {IZoraV4CoinHook} from "../src/interfaces/IZoraV4CoinHook.sol";
@@ -248,7 +248,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         IHooksUpgradeGate(upgradeGate).registerUpgradePath(baseImpls, address(newHook));
 
         vm.prank(MultiOwnable(contentCoin).owners()[0]);
-        CoinV4(contentCoin).migrateLiquidity(address(newHook), "");
+        ContentCoin(contentCoin).migrateLiquidity(address(newHook), "");
 
         // do some swaps to test out
         _swapSomeCurrencyForCoin(ICoinV4(contentCoin), creatorCoin, uint128(amountIn), trader);
@@ -305,7 +305,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         uint160 beforePrice = PoolStateReader.getSqrtPriceX96(creatorCoin.getPoolKey(), poolManager);
 
         vm.prank(MultiOwnable(address(creatorCoin)).owners()[0]);
-        CoinV4(address(creatorCoin)).migrateLiquidity(address(newHook), "");
+        ContentCoin(address(creatorCoin)).migrateLiquidity(address(newHook), "");
 
         // get liquidity of original positions after migration
         uint128[] memory liquidityOfPositionsAfterMigration = getLiquidityForPositions(beforeKey, beforePositions);

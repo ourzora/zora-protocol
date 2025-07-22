@@ -13,7 +13,7 @@ import {IZoraFactory} from "../../src/interfaces/IZoraFactory.sol";
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
 import {Coin} from "../../src/Coin.sol";
-import {CoinV4} from "../../src/CoinV4.sol";
+import {ContentCoin} from "../../src/ContentCoin.sol";
 import {MultiOwnable} from "../../src/utils/MultiOwnable.sol";
 import {ICoin} from "../../src/interfaces/ICoin.sol";
 import {IERC7572} from "../../src/interfaces/IERC7572.sol";
@@ -75,14 +75,14 @@ contract BaseTest is Test, ContractAddresses {
     IUniversalRouter internal router;
     IPoolManager internal poolManager;
     IV4Quoter internal quoter;
-    CoinV4 internal coinV4;
+    ContentCoin internal coinV4;
 
     ISwapRouter internal swapRouter;
     IAirlock internal airlock;
     Users internal users;
 
     Coin internal coinV3Impl;
-    CoinV4 internal coinV4Impl;
+    ContentCoin internal coinV4Impl;
     CreatorCoin internal creatorCoinImpl;
     ZoraFactoryImpl internal factoryImpl;
     IZoraFactory internal factory;
@@ -157,7 +157,7 @@ contract BaseTest is Test, ContractAddresses {
             salt
         );
 
-        coinV4 = CoinV4(payable(coinAddress));
+        coinV4 = ContentCoin(payable(coinAddress));
         return coinV4;
     }
 
@@ -332,7 +332,7 @@ contract BaseTest is Test, ContractAddresses {
 
         _deployHooks();
 
-        coinV4Impl = new CoinV4(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
+        coinV4Impl = new ContentCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
 
         creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
 

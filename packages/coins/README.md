@@ -1,6 +1,6 @@
 # Coins
 
-A comprehensive protocol for creating and trading tokenized coins with Uniswap V4 integration and customizable hooks.
+A protocol for creating and trading creator and content coins with automatic rewards distribution on top of Uniswap V4 hooks.
 
 ## Architecture Overview
 
@@ -17,19 +17,27 @@ The abstract base contract that provides core ERC20 functionality with additiona
 - **Reward Distribution**: Distributes rewards on swaps
 - **Comment System**: Support for on-chain comments via `ICoinComments`
 
-#### CoinV4 (Content Coins)
+#### BaseCoinV4
 
-Content coins that extend `BaseCoin` with Uniswap V4 integration:
+Abstract base contract that provides shared Uniswap V4 functionality:
 
 - **V4 Pool Manager**: Direct integration with Uniswap V4's singleton pool manager
 - **Pool Configuration**: Flexible pool setup with custom parameters
+- **Hook System**: Customizable hooks for advanced trading logic
+- **Swap Path Management**: Support for multi-hop swaps through `IHasSwapPath`
+- **Liquidity Migration**: Ability to migrate liquidity between hook implementations
+
+#### ContentCoin
+
+Content coin implementation that inherits from `BaseCoinV4`:
+
 - **Creator Coin Backing**: Always uses the creator's CreatorCoin as the backing currency
 - **Supply**: 1 billion total supply (990M for liquidity pool, 10M creator reward)
 - **Multiple per Creator**: Each creator can have multiple content coins
 
 #### CreatorCoin
 
-Specialized coin implementation for creators (one per creator) that inherits from CoinV4:
+Specialized coin implementation for creators (one per creator) that inherits from `BaseCoinV4`:
 
 - **Vesting Schedule**: Built-in token vesting for creator rewards (5-year vesting)
 - **Fixed Currency**: Always uses ZORA token as backing currency

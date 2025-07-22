@@ -90,7 +90,7 @@ contract CoinUniV4Test is BaseTest {
 
     function test_setupZeroAddressForPoolManager() public {
         vm.expectRevert(ICoin.AddressZero.selector);
-        new CoinV4({
+        new ContentCoin({
             protocolRewardRecipient_: address(0x1234),
             protocolRewards_: address(0x1234),
             poolManager_: IPoolManager(address(0)),
@@ -100,7 +100,7 @@ contract CoinUniV4Test is BaseTest {
 
     // function test_setupZeroAddressForHooks() public {
     //     vm.expectRevert(ICoin.AddressZero.selector);
-    //     new CoinV4({
+    //     new ContentCoin({
     //         protocolRewardRecipient_: address(0x1234),
     //         protocolRewards_: address(0x1234),
     //         poolManager_: IPoolManager(address(0x1234)),

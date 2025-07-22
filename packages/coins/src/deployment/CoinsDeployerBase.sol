@@ -10,7 +10,7 @@ import {Coin} from "../Coin.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
 import {BuySupplyWithSwapRouterHook} from "../hooks/deployment/BuySupplyWithSwapRouterHook.sol";
 import {IZoraFactory} from "../interfaces/IZoraFactory.sol";
-import {CoinV4} from "../CoinV4.sol";
+import {ContentCoin} from "../ContentCoin.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {ZoraFactory} from "../proxy/ZoraFactory.sol";
@@ -114,9 +114,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
             });
     }
 
-    function deployCoinV4Impl(address zoraV4CoinHook) internal returns (CoinV4) {
+    function deployCoinV4Impl(address zoraV4CoinHook) internal returns (ContentCoin) {
         return
-            new CoinV4({
+            new ContentCoin({
                 protocolRewardRecipient_: getZoraRecipient(),
                 protocolRewards_: PROTOCOL_REWARDS,
                 poolManager_: IPoolManager(getUniswapV4PoolManager()),

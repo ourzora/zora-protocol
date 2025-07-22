@@ -21,7 +21,7 @@ import {IZoraFactory} from "./interfaces/IZoraFactory.sol";
 import {IHasAfterCoinDeploy} from "./hooks/deployment/BaseCoinDeployHook.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {Coin} from "./Coin.sol";
-import {CoinV4} from "./CoinV4.sol";
+import {ContentCoin} from "./ContentCoin.sol";
 import {ICoin, PoolKeyStruct} from "./interfaces/ICoin.sol";
 import {ICoinV3} from "./interfaces/ICoinV3.sol";
 import {ICoinV4} from "./interfaces/ICoinV4.sol";

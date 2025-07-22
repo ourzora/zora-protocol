@@ -8,7 +8,7 @@ import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
-import {CoinV4} from "../src/CoinV4.sol";
+import {ContentCoin} from "../src/ContentCoin.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";

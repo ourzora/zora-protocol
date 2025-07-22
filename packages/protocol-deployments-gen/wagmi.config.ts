@@ -41,7 +41,7 @@ import {
   iPoolConfigEncodingABI,
   iUniversalRouterABI,
   iPermit2ABI,
-  coinV4ABI,
+  creatorCoinABI,
   autoSwapperABI,
 } from "@zoralabs/coins";
 
@@ -608,7 +608,7 @@ const getCoinsContracts = (): ContractConfig[] => {
       name: "AutoSwapper",
     },
     {
-      abi: coinV4ABI,
+      abi: creatorCoinABI,
       name: "CoinV4",
     },
     {
