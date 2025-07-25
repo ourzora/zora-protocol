@@ -71,3 +71,15 @@ export const getCoinsLastTradedUnique = (
   options?: RequestOptionsType<GetExploreData>,
 ): Promise<ExploreResponse> =>
   createExploreQuery(query, "LAST_TRADED_UNIQUE", options);
+
+export const getCreatorCoins = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "NEW_CREATORS", options);
+
+export const getMostValuableCreatorCoins = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "MOST_VALUABLE_CREATORS", options);

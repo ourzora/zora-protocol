@@ -132,6 +132,17 @@ export type GetCoinResponses = {
          */
         decimals?: number;
       };
+      tokenPrice?: {
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        priceInUsdc?: string;
+        currencyAddress: string;
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        priceInPoolToken: string;
+      };
       /**
        * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
        */
@@ -524,6 +535,17 @@ export type GetCoinsResponses = {
          */
         decimals?: number;
       };
+      tokenPrice?: {
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        priceInUsdc?: string;
+        currencyAddress: string;
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        priceInPoolToken: string;
+      };
       /**
        * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
        */
@@ -723,7 +745,9 @@ export type GetExploreData = {
       | "LAST_TRADED"
       | "LAST_TRADED_UNIQUE"
       | "FEATURED"
-      | "FEATURED_VIDEOS";
+      | "FEATURED_VIDEOS"
+      | "NEW_CREATORS"
+      | "MOST_VALUABLE_CREATORS";
     count?: number;
     after?: string;
   };
@@ -813,6 +837,17 @@ export type GetExploreResponses = {
              * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
              */
             decimals?: number;
+          };
+          tokenPrice?: {
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            priceInUsdc?: string;
+            currencyAddress: string;
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            priceInPoolToken: string;
           };
           /**
            * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
@@ -1017,6 +1052,17 @@ export type GetProfileResponses = {
           };
         }>;
       };
+      creatorCoin?: {
+        address: string;
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        marketCap: string;
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        marketCapDelta24h: string;
+      };
     };
   };
 };
@@ -1156,6 +1202,17 @@ export type GetProfileBalancesResponses = {
                  * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
                  */
                 decimals?: number;
+              };
+              tokenPrice?: {
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                priceInUsdc?: string;
+                currencyAddress: string;
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                priceInPoolToken: string;
               };
               /**
                * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
@@ -1389,6 +1446,17 @@ export type GetProfileCoinsResponses = {
                * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
                */
               decimals?: number;
+            };
+            tokenPrice?: {
+              /**
+               * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+               */
+              priceInUsdc?: string;
+              currencyAddress: string;
+              /**
+               * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+               */
+              priceInPoolToken: string;
             };
             /**
              * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
