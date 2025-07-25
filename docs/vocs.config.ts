@@ -127,8 +127,8 @@ export default defineConfig({
                     link: "/coins/sdk/queries/explore",
                   },
                   {
-                    text: "Onchain Queries",
-                    link: "/coins/sdk/queries/onchain",
+                    text: "Metadata Builder",
+                    link: "/coins/sdk/metadata-builder",
                   },
                 ],
               },

@@ -24,6 +24,7 @@ import {
   COIN_ZORA_PAIR_POOL_CONFIG,
 } from "../utils/poolConfigUtils";
 import { getPrepurchaseHook } from "../utils/getPrepurchaseHook";
+import { getChainFromId } from "../utils/getChainFromId";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
@@ -182,5 +183,6 @@ export async function createCoin(
     receipt,
     address: deployment?.coin,
     deployment,
+    chain: getChainFromId(publicClient.chain.id),
   };
 }

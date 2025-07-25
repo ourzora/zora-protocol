@@ -101,15 +101,23 @@ export async function tradeCoin({
 }: {
   tradeParameters: TradeParameters;
   walletClient: WalletClient;
-  account: Account;
+  account?: Account | Address;
   publicClient: GenericPublicClient;
   validateTransaction?: boolean;
 }) {
   const quote = await createTradeCall(tradeParameters);
 
+  if (!account) {
+    account = walletClient.account;
+  }
+  if (!account) {
+    throw new Error("Account is required");
+  }
+
   // Set default recipient to wallet sender address if not provided
   if (!tradeParameters.recipient) {
-    tradeParameters.recipient = account.address;
+    tradeParameters.recipient =
+      typeof account === "string" ? account : account.address;
   }
 
   // todo replace any
@@ -123,7 +131,7 @@ export async function tradeCoin({
         functionName: "allowance",
         args: [
           permit.permit.details.token as Address,
-          account.address,
+          typeof account === "string" ? account : account.address,
           permit.permit.spender as Address,
         ],
       });
@@ -132,7 +140,10 @@ export async function tradeCoin({
         abi: erc20Abi,
         address: permitToken,
         functionName: "allowance",
-        args: [account.address, permit2Address[base.id]],
+        args: [
+          typeof account === "string" ? account : account.address,
+          permit2Address[base.id],
+        ],
       });
       if (allowance < BigInt(permit.permit.details.amount)) {
         const approvalTx = await walletClient.writeContract({
@@ -166,7 +177,7 @@ export async function tradeCoin({
         primaryType: "PermitSingle",
         types: PERMIT_SINGLE_TYPES,
         message,
-        account,
+        account: typeof account === "string" ? account : account.address,
       });
       signatures.push({
         signature,
