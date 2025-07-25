@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.9
+
+### Patch Changes
+
+- 3c36f8ed: Small documentation and types fixes
+
 ## 0.2.8
 
 ### Patch Changes
