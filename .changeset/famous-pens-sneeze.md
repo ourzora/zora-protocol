@@ -5,10 +5,12 @@
 Remove Uniswap V3 support and refactor coin architecture
 
 **Removal of V3 Support:**
+- Removed support for creating coins based on Uniswap V3 - only V4 coins are supported
+- Default coin deployment now creates Uniswap V4 coins when no config is provided (previously created V3)
 - Removed V3-specific test files and utilities
 - Updated remaining tests to use V4 deployment methods  
 - Removed V3 configuration functions and encoders
-- Added revert logic for V3 deployment attempts
+- Added revert logic for V3 deployment attempts in factory deploy functions
 
 **Architecture Refactoring:**
 - Merged BaseCoinV4 functionality into BaseCoin.sol to consolidate Uniswap V4 integration

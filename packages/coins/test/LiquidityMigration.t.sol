@@ -282,4 +282,110 @@ contract LiquidityMigrationTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
         hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
     }
+
+    function test_hookUpgradeGate_registerMultipleUpgradePaths() public {
+        address baseImpl1 = makeAddr("baseImpl1");
+        address baseImpl2 = makeAddr("baseImpl2");
+        address baseImpl3 = makeAddr("baseImpl3");
+        address upgradeImpl = makeAddr("upgradeImpl");
+
+        address[] memory baseImpls = new address[](3);
+        baseImpls[0] = baseImpl1;
+        baseImpls[1] = baseImpl2;
+        baseImpls[2] = baseImpl3;
+
+        // Register multiple upgrade paths at once
+        vm.prank(hookUpgradeGate.owner());
+        vm.expectEmit(true, true, false, false);
+        emit IHooksUpgradeGate.UpgradeRegistered(baseImpl1, upgradeImpl);
+        vm.expectEmit(true, true, false, false);
+        emit IHooksUpgradeGate.UpgradeRegistered(baseImpl2, upgradeImpl);
+        vm.expectEmit(true, true, false, false);
+        emit IHooksUpgradeGate.UpgradeRegistered(baseImpl3, upgradeImpl);
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
+
+        // Verify all paths are registered
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(baseImpl1, upgradeImpl));
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(baseImpl2, upgradeImpl));
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(baseImpl3, upgradeImpl));
+    }
+
+    function test_hookUpgradeGate_registerEmptyArray() public {
+        address upgradeImpl = makeAddr("upgradeImpl");
+        address[] memory baseImpls = new address[](0);
+
+        // Register with empty array - should succeed but do nothing
+        vm.prank(hookUpgradeGate.owner());
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
+
+        // No events should be emitted, no state changes
+    }
+
+    function test_hookUpgradeGate_removeNonexistentUpgradePath() public {
+        address baseImpl = makeAddr("baseImpl");
+        address upgradeImpl = makeAddr("upgradeImpl");
+
+        // Try to remove a path that was never registered
+        vm.prank(hookUpgradeGate.owner());
+        vm.expectEmit(true, true, false, false);
+        emit IHooksUpgradeGate.UpgradeRemoved(baseImpl, upgradeImpl);
+        hookUpgradeGate.removeUpgradePath(baseImpl, upgradeImpl);
+
+        // Should still be false (was already false)
+        assertFalse(hookUpgradeGate.isRegisteredUpgradePath(baseImpl, upgradeImpl));
+    }
+
+    function test_hookUpgradeGate_registerSamePathTwice() public {
+        address baseImpl = makeAddr("baseImpl");
+        address upgradeImpl = makeAddr("upgradeImpl");
+
+        address[] memory baseImpls = new address[](1);
+        baseImpls[0] = baseImpl;
+
+        // Register once
+        vm.prank(hookUpgradeGate.owner());
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(baseImpl, upgradeImpl));
+
+        // Register again - should succeed and overwrite (true -> true)
+        vm.prank(hookUpgradeGate.owner());
+        vm.expectEmit(true, true, false, false);
+        emit IHooksUpgradeGate.UpgradeRegistered(baseImpl, upgradeImpl);
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(baseImpl, upgradeImpl));
+    }
+
+    function test_hookUpgradeGate_zeroAddressHandling() public {
+        address[] memory baseImpls = new address[](2);
+        baseImpls[0] = address(0);
+        baseImpls[1] = makeAddr("baseImpl");
+        address upgradeImpl = address(0);
+
+        // Should allow zero addresses (no validation in contract)
+        vm.prank(hookUpgradeGate.owner());
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
+
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(address(0), address(0)));
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(makeAddr("baseImpl"), address(0)));
+    }
+
+    function test_hookUpgradeGate_isAllowedHookUpgradeMapping() public {
+        address baseImpl = makeAddr("baseImpl");
+        address upgradeImpl = makeAddr("upgradeImpl");
+
+        // Test direct mapping access
+        assertFalse(hookUpgradeGate.isAllowedHookUpgrade(baseImpl, upgradeImpl));
+
+        // Register upgrade path
+        address[] memory baseImpls = new address[](1);
+        baseImpls[0] = baseImpl;
+        vm.prank(hookUpgradeGate.owner());
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
+
+        // Test direct mapping access
+        assertTrue(hookUpgradeGate.isAllowedHookUpgrade(baseImpl, upgradeImpl));
+
+        // Should match isRegisteredUpgradePath
+        assertEq(hookUpgradeGate.isAllowedHookUpgrade(baseImpl, upgradeImpl), hookUpgradeGate.isRegisteredUpgradePath(baseImpl, upgradeImpl));
+    }
 }
