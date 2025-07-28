@@ -9,12 +9,12 @@ pragma solidity ^0.8.23;
 
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {ISwapPathRouter} from "../interfaces/ISwapPathRouter.sol";
-import {IHasPoolKey} from "../interfaces/ICoinV4.sol";
+import {IHasPoolKey} from "../interfaces/ICoin.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IPoolManager, PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
-import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {IHasSwapPath} from "../interfaces/ICoin.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";

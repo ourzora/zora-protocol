@@ -29,7 +29,7 @@ import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {PoolStateReader} from "../src/libs/PoolStateReader.sol";
 import {CustomRevert} from "@uniswap/v4-core/src/libraries/CustomRevert.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
-import {ICoinV4, IHasSwapPath, PathKey} from "../src/interfaces/ICoinV4.sol";
+import {ICoin, IHasSwapPath, PathKey} from "../src/interfaces/ICoin.sol";
 import {IDeployedCoinVersionLookup} from "../src/interfaces/IDeployedCoinVersionLookup.sol";
 
 contract CoinUniV4Test is BaseTest {
@@ -705,9 +705,9 @@ contract CoinUniV4Test is BaseTest {
 
     function test_getSwapPath_whenBackingCurrencyProvidesPath() public {
         address zora = address(mockERC20A);
-        ICoinV4 backingCoin = _deployV4Coin(zora);
+        ICoin backingCoin = _deployV4Coin(zora);
         // now create a final coin paired with the backing coin
-        ICoinV4 contentCoin = _deployV4Coin(address(backingCoin));
+        ICoin contentCoin = _deployV4Coin(address(backingCoin));
 
         PathKey[] memory path = contentCoin.getPayoutSwapPath(IDeployedCoinVersionLookup(address(factory))).path;
 
@@ -746,9 +746,9 @@ contract CoinUniV4Test is BaseTest {
         mockERC20A.mint(address(poolManager), 10000000000000000 ether);
 
         // backing coin is a mock coin that is paired with zora
-        ICoinV4 backingCoin = _deployV4Coin(zora);
+        ICoin backingCoin = _deployV4Coin(zora);
         // now create a final coin paired with the backing coin
-        ICoinV4 contentCoin = _deployV4Coin(address(backingCoin));
+        ICoin contentCoin = _deployV4Coin(address(backingCoin));
 
         vm.assume(amountIn > 0.000000000001 ether);
         vm.assume(amountIn < 10000000000000000 ether);

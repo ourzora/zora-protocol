@@ -12,7 +12,6 @@ import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/U
 import {IZoraFactory} from "../../src/interfaces/IZoraFactory.sol";
 import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
-import {Coin} from "../../src/Coin.sol";
 import {ContentCoin} from "../../src/ContentCoin.sol";
 import {MultiOwnable} from "../../src/utils/MultiOwnable.sol";
 import {ICoin} from "../../src/interfaces/ICoin.sol";
@@ -32,7 +31,7 @@ import {ContentCoinHook} from "../../src/hooks/ContentCoinHook.sol";
 import {HooksDeployment} from "../../src/libs/HooksDeployment.sol";
 import {CoinConstants} from "../../src/libs/CoinConstants.sol";
 import {ProxyShim} from "./ProxyShim.sol";
-import {ICoinV4} from "../../src/interfaces/ICoinV4.sol";
+import {ICoin} from "../../src/interfaces/ICoin.sol";
 import {UniV4SwapHelper} from "../../src/libs/UniV4SwapHelper.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
@@ -81,7 +80,7 @@ contract BaseTest is Test, ContractAddresses {
     IAirlock internal airlock;
     Users internal users;
 
-    Coin internal coinV3Impl;
+    // Coin internal coinV3Impl;
     ContentCoin internal coinV4Impl;
     CreatorCoin internal creatorCoinImpl;
     ZoraFactoryImpl internal factoryImpl;
@@ -89,47 +88,16 @@ contract BaseTest is Test, ContractAddresses {
     ContentCoinHook internal contentCoinHook;
     CreatorCoinHook internal creatorCoinHook;
     HookUpgradeGate internal hookUpgradeGate;
-    Coin internal coin;
-
-    IUniswapV3Pool internal pool;
     int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = CoinConstants.DEFAULT_DISCOVERY_TICK_LOWER;
     int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = CoinConstants.DEFAULT_DISCOVERY_TICK_UPPER;
     uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = CoinConstants.DEFAULT_NUM_DISCOVERY_POSITIONS;
     uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = CoinConstants.DEFAULT_DISCOVERY_SUPPLY_SHARE;
 
-    function _deployCoin() internal {
-        bytes memory poolConfig_ = _generatePoolConfig(
-            CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
-            address(weth),
-            DEFAULT_DISCOVERY_TICK_LOWER,
-            DEFAULT_DISCOVERY_TICK_UPPER,
-            DEFAULT_NUM_DISCOVERY_POSITIONS,
-            DEFAULT_DISCOVERY_SUPPLY_SHARE
-        );
-        vm.prank(users.creator);
-        (address coinAddress, ) = factory.deploy(
-            users.creator,
-            _getDefaultOwners(),
-            "https://test.com",
-            "Testcoin",
-            "TEST",
-            poolConfig_,
-            users.platformReferrer,
-            0
-        );
-
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-
-        vm.label(address(coin), "COIN");
-        vm.label(address(pool), "POOL");
-    }
-
     function _defaultPoolConfig(address currency) internal pure returns (bytes memory) {
         return CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(currency);
     }
 
-    function _deployV4Coin(address currency) internal returns (ICoinV4) {
+    function _deployV4Coin(address currency) internal returns (ICoin) {
         bytes32 salt = keccak256(abi.encode(bytes("randomSalt")));
         return _deployV4Coin(currency, address(0), salt);
     }
@@ -137,7 +105,7 @@ contract BaseTest is Test, ContractAddresses {
     string constant DEFAULT_NAME = "Testcoin";
     string constant DEFAULT_SYMBOL = "TEST";
 
-    function _deployV4Coin(address currency, address createReferral, bytes32 salt) internal returns (ICoinV4) {
+    function _deployV4Coin(address currency, address createReferral, bytes32 salt) internal returns (ICoin) {
         address[] memory owners = new address[](1);
         owners[0] = users.creator;
 
@@ -161,15 +129,13 @@ contract BaseTest is Test, ContractAddresses {
         return coinV4;
     }
 
+    function _deployV4Coin() internal returns (ICoin) {
+        // deploy with eth and no referral
+        return _deployV4Coin(address(0), address(0), bytes32(0));
+    }
+
     function _deployCoinUSDCPair() internal {
-        bytes memory poolConfig_ = _generatePoolConfig(
-            CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
-            USDC_ADDRESS,
-            DEFAULT_DISCOVERY_TICK_LOWER,
-            DEFAULT_DISCOVERY_TICK_UPPER,
-            DEFAULT_NUM_DISCOVERY_POSITIONS,
-            DEFAULT_DISCOVERY_SUPPLY_SHARE
-        );
+        bytes memory poolConfig_ = _defaultPoolConfig(USDC_ADDRESS);
         vm.prank(users.creator);
         (address coinAddress, ) = factory.deploy(
             users.creator,
@@ -182,18 +148,14 @@ contract BaseTest is Test, ContractAddresses {
             0
         );
 
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-
-        vm.label(address(coin), "COIN");
-        vm.label(address(pool), "POOL");
+        vm.label(coinAddress, "COIN");
     }
 
-    function _swapSomeCurrencyForCoin(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
+    function _swapSomeCurrencyForCoin(ICoin _coin, address currency, uint128 amountIn, address trader) internal {
         _swapSomeCurrencyForCoin(_coin.getPoolKey(), _coin, currency, amountIn, trader);
     }
 
-    function _swapSomeCurrencyForCoin(PoolKey memory poolKey, ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
+    function _swapSomeCurrencyForCoin(PoolKey memory poolKey, ICoin _coin, address currency, uint128 amountIn, address trader) internal {
         uint128 minAmountOut = uint128(0);
 
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
@@ -219,7 +181,7 @@ contract BaseTest is Test, ContractAddresses {
         vm.stopPrank();
     }
 
-    function _swapSomeCoinForCurrency(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
+    function _swapSomeCoinForCurrency(ICoin _coin, address currency, uint128 amountIn, address trader) internal {
         uint128 minAmountOut = uint128(0);
 
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
@@ -326,7 +288,6 @@ contract BaseTest is Test, ContractAddresses {
 
         ProxyShim mockUpgradeableImpl = new ProxyShim();
         factory = IZoraFactory(address(new ZoraFactory(address(mockUpgradeableImpl))));
-        coinV3Impl = new Coin(users.feeRecipient, address(protocolRewards), WETH_ADDRESS, V3_FACTORY, SWAP_ROUTER, DOPPLER_AIRLOCK);
 
         hookUpgradeGate = new HookUpgradeGate(users.factoryOwner);
 
@@ -336,13 +297,7 @@ contract BaseTest is Test, ContractAddresses {
 
         creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
 
-        factoryImpl = new ZoraFactoryImpl(
-            address(coinV3Impl),
-            address(coinV4Impl),
-            address(creatorCoinImpl),
-            address(contentCoinHook),
-            address(creatorCoinHook)
-        );
+        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
         UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
         factory = IZoraFactory(address(factory));
 
@@ -419,15 +374,7 @@ contract BaseTest is Test, ContractAddresses {
     }
 
     function _generatePoolConfig(address currency_) internal pure returns (bytes memory) {
-        return
-            _generatePoolConfig(
-                CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
-                currency_,
-                DEFAULT_DISCOVERY_TICK_LOWER,
-                DEFAULT_DISCOVERY_TICK_UPPER,
-                DEFAULT_NUM_DISCOVERY_POSITIONS,
-                DEFAULT_DISCOVERY_SUPPLY_SHARE
-            );
+        return CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(currency_);
     }
 
     function _generatePoolConfig(

@@ -36,7 +36,7 @@ import {
 } from "@zoralabs/cointags-contracts";
 import {
   zoraFactoryImplABI,
-  coinABI,
+  baseCoinABI,
   buySupplyWithSwapRouterHookABI,
   iPoolConfigEncodingABI,
   iUniversalRouterABI,
@@ -600,7 +600,7 @@ const getCoinsContracts = (): ContractConfig[] => {
   return [
     ...toConfig(addresses),
     {
-      abi: coinABI,
+      abi: baseCoinABI,
       name: "Coin",
     },
     {

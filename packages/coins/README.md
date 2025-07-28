@@ -17,19 +17,9 @@ The abstract base contract that provides core ERC20 functionality with additiona
 - **Reward Distribution**: Distributes rewards on swaps
 - **Comment System**: Support for on-chain comments via `ICoinComments`
 
-#### BaseCoinV4
-
-Abstract base contract that provides shared Uniswap V4 functionality:
-
-- **V4 Pool Manager**: Direct integration with Uniswap V4's singleton pool manager
-- **Pool Configuration**: Flexible pool setup with custom parameters
-- **Hook System**: Customizable hooks for advanced trading logic
-- **Swap Path Management**: Support for multi-hop swaps through `IHasSwapPath`
-- **Liquidity Migration**: Ability to migrate liquidity between hook implementations
-
 #### ContentCoin
 
-Content coin implementation that inherits from `BaseCoinV4`:
+Content coin implementation that inherits from `BaseCoin`:
 
 - **Creator Coin Backing**: Always uses the creator's CreatorCoin as the backing currency
 - **Supply**: 1 billion total supply (990M for liquidity pool, 10M creator reward)
@@ -37,7 +27,7 @@ Content coin implementation that inherits from `BaseCoinV4`:
 
 #### CreatorCoin
 
-Specialized coin implementation for creators (one per creator) that inherits from `BaseCoinV4`:
+Specialized coin implementation for creators (one per creator) that inherits from `BaseCoin`:
 
 - **Vesting Schedule**: Built-in token vesting for creator rewards (5-year vesting)
 - **Fixed Currency**: Always uses ZORA token as backing currency

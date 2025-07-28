@@ -20,18 +20,13 @@ import {IWETH} from "./interfaces/IWETH.sol";
 import {IZoraFactory} from "./interfaces/IZoraFactory.sol";
 import {IHasAfterCoinDeploy} from "./hooks/deployment/BaseCoinDeployHook.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {Coin} from "./Coin.sol";
-import {ContentCoin} from "./ContentCoin.sol";
 import {ICoin, PoolKeyStruct} from "./interfaces/ICoin.sol";
-import {ICoinV3} from "./interfaces/ICoinV3.sol";
-import {ICoinV4} from "./interfaces/ICoinV4.sol";
+import {ICoin} from "./interfaces/ICoin.sol";
 import {IHasContractName} from "@zoralabs/shared-contracts/interfaces/IContractMetadata.sol";
 import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {CoinCommon} from "./libs/CoinCommon.sol";
-import {UniV3Config} from "./libs/CoinSetupV3.sol";
-import {CoinSetupV3} from "./libs/CoinSetupV3.sol";
 import {PoolConfiguration} from "./types/PoolConfiguration.sol";
 import {LpPosition} from "./types/LpPosition.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
@@ -53,16 +48,14 @@ contract ZoraFactoryImpl is
     using SafeERC20 for IERC20;
 
     /// @notice The coin contract implementation address
-    address public immutable coinImpl;
     address public immutable coinV4Impl;
     address public immutable creatorCoinImpl;
     address public immutable contentCoinHook;
     address public immutable creatorCoinHook;
 
-    constructor(address _coinImpl, address _coinV4Impl, address _creatorCoinImpl, address _contentCoinHook, address _creatorCoinHook) {
+    constructor(address _coinV4Impl, address _creatorCoinImpl, address _contentCoinHook, address _creatorCoinHook) {
         _disableInitializers();
 
-        coinImpl = _coinImpl;
         coinV4Impl = _coinV4Impl;
         creatorCoinImpl = _creatorCoinImpl;
         contentCoinHook = _contentCoinHook;
@@ -180,13 +173,13 @@ contract ZoraFactoryImpl is
         string memory symbol,
         bytes memory poolConfig,
         address platformReferrer,
-        uint256 orderSize
+        uint256 /*orderSize*/
     ) public payable nonReentrant returns (address, uint256) {
         bytes32 salt = _randomSalt(payoutRecipient, uri, bytes32(0));
 
         ICoin coin = _createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, salt);
 
-        uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
+        uint256 coinsPurchased = 0;
 
         return (address(coin), coinsPurchased);
     }
@@ -225,15 +218,11 @@ contract ZoraFactoryImpl is
 
         ICoin coin = _createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, salt);
 
-        uint256 coinsPurchased = _handleFirstOrder(coin, orderSize);
-
-        return (address(coin), coinsPurchased);
+        return (address(coin), 0);
     }
 
     function getCoinImpl(uint8 version) internal view returns (address) {
-        if (CoinConfigurationVersions.isV3(version)) {
-            return coinImpl;
-        } else if (CoinConfigurationVersions.isV4(version)) {
+        if (CoinConfigurationVersions.isV4(version)) {
             return coinV4Impl;
         }
 
@@ -244,44 +233,8 @@ contract ZoraFactoryImpl is
         return payable(Clones.cloneDeterministic(getCoinImpl(version), salt));
     }
 
-    function _setupV3Coin(
-        ICoinV3 coin,
-        address currency,
-        bool isCoinToken0,
-        uint160 sqrtPriceX96,
-        PoolConfiguration memory poolConfiguration,
-        address payoutRecipient,
-        address[] memory owners,
-        string memory uri,
-        string memory name,
-        string memory symbol,
-        address platformReferrer
-    ) internal {
-        address v3Factory = coin.v3Factory();
-
-        address poolAddress = CoinSetupV3.createV3Pool(address(coin), currency, isCoinToken0, sqrtPriceX96, v3Factory);
-
-        LpPosition[] memory positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, poolConfiguration, MarketConstants.POOL_LAUNCH_SUPPLY);
-
-        // Initialize coin with pre-configured pool
-        coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolAddress, poolConfiguration, positions);
-
-        emit CoinCreated(
-            msg.sender,
-            payoutRecipient,
-            platformReferrer,
-            currency,
-            uri,
-            name,
-            symbol,
-            address(coin),
-            poolAddress,
-            IVersionedContract(address(coin)).contractVersion()
-        );
-    }
-
     function _setupV4Coin(
-        ICoinV4 coin,
+        ICoin coin,
         address currency,
         bool isCoinToken0,
         uint160 sqrtPriceX96,
@@ -335,9 +288,10 @@ contract ZoraFactoryImpl is
         );
 
         if (CoinConfigurationVersions.isV3(version)) {
-            _setupV3Coin(ICoinV3(coin), currency, isCoinToken0, sqrtPriceX96, poolConfiguration, payoutRecipient, owners, uri, name, symbol, platformReferrer);
+            // V3 is no longer supported
+            revert ICoin.InvalidPoolVersion();
         } else if (CoinConfigurationVersions.isV4(version)) {
-            _setupV4Coin(ICoinV4(coin), currency, isCoinToken0, sqrtPriceX96, poolConfiguration, payoutRecipient, owners, uri, name, symbol, platformReferrer);
+            _setupV4Coin(ICoin(coin), currency, isCoinToken0, sqrtPriceX96, poolConfiguration, payoutRecipient, owners, uri, name, symbol, platformReferrer);
         } else {
             revert ICoin.InvalidPoolVersion();
         }
@@ -373,43 +327,6 @@ contract ZoraFactoryImpl is
                     coinSalt
                 )
             );
-    }
-
-    /// @dev Handles the first buy of a newly created coin
-    /// @param coin The newly created coin contract
-    /// @param orderSize The size of the first buy order; must match msg.value for ETH/WETH pairs
-    function _handleFirstOrder(ICoin coin, uint256 orderSize) internal returns (uint256 coinsPurchased) {
-        if (msg.value > 0 || orderSize > 0) {
-            address currency = coin.currency();
-            address payoutRecipient = coin.payoutRecipient();
-
-            if (currency != Coin(payable(address(coin))).WETH()) {
-                if (msg.value != 0) {
-                    revert EthTransferInvalid();
-                }
-
-                _handleIncomingCurrency(currency, orderSize);
-
-                IERC20(currency).approve(address(coin), orderSize);
-
-                (, coinsPurchased) = Coin(payable(address(coin))).buy(payoutRecipient, orderSize, 0, 0, address(0));
-            } else {
-                (, coinsPurchased) = Coin(payable(address(coin))).buy{value: msg.value}(payoutRecipient, orderSize, 0, 0, address(0));
-            }
-        }
-    }
-
-    /// @dev Safely transfers ERC20 tokens from the caller to this contract to be sent to the newly created coin
-    /// @param currency The ERC20 token address to transfer
-    /// @param orderSize The amount of tokens to transfer for the order
-    function _handleIncomingCurrency(address currency, uint256 orderSize) internal {
-        uint256 beforeBalance = IERC20(currency).balanceOf(address(this));
-        IERC20(currency).safeTransferFrom(msg.sender, address(this), orderSize);
-        uint256 afterBalance = IERC20(currency).balanceOf(address(this));
-
-        if ((afterBalance - beforeBalance) != orderSize) {
-            revert ERC20TransferAmountMismatch();
-        }
     }
 
     /// @notice Initializes the factory proxy contract

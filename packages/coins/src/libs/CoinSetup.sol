@@ -19,7 +19,6 @@ import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionMa
 import {MarketConstants} from "./MarketConstants.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {CoinDopplerMultiCurve, PoolConfiguration} from "./CoinDopplerMultiCurve.sol";
-import {CoinDopplerUniV3} from "./CoinDopplerUniV3.sol";
 
 library CoinSetup {
     function generatePoolConfig(
@@ -52,9 +51,7 @@ library CoinSetup {
         bytes memory poolConfig_,
         bool isCoinToken0
     ) internal pure returns (uint160 sqrtPriceX96, PoolConfiguration memory poolConfiguration) {
-        if (version == CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION) {
-            (sqrtPriceX96, poolConfiguration) = CoinDopplerUniV3.setupPool(isCoinToken0, poolConfig_);
-        } else if (version == CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION) {
+        if (version == CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION) {
             (sqrtPriceX96, poolConfiguration) = CoinDopplerMultiCurve.setupPool(isCoinToken0, poolConfig_);
         } else {
             revert ICoin.InvalidPoolVersion();

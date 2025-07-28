@@ -6,7 +6,7 @@ import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
 import {BaseTest} from "./utils/BaseTest.sol";
 import {CoinsDeployerBase} from "../src/deployment/CoinsDeployerBase.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
-import {ICoinV4} from "../src/interfaces/ICoinV4.sol";
+import {ICoin} from "../src/interfaces/ICoin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {IWETH} from "../src/interfaces/IWETH.sol";
@@ -43,13 +43,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
-            factoryProxy.coinImpl(),
-            address(coinV4Impl),
-            address(creatorCoinImpl),
-            address(contentCoinHook),
-            address(creatorCoinHook)
-        );
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -64,13 +58,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
-            factoryProxy.coinImpl(),
-            address(coinV4Impl),
-            address(creatorCoinImpl),
-            address(contentCoinHook),
-            address(creatorCoinHook)
-        );
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -88,19 +76,12 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
-            factoryProxy.coinImpl(),
-            address(coinV4Impl),
-            address(creatorCoinImpl),
-            address(contentCoinHook),
-            address(creatorCoinHook)
-        );
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
 
         ZoraFactoryImpl newImpl2 = new ZoraFactoryImpl(
-            factoryProxy.coinImpl(),
             factoryProxy.coinV4Impl(),
             factoryProxy.creatorCoinImpl(),
             address(contentCoinHook),
@@ -166,16 +147,16 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         );
 
         // do some swaps to test out
-        _swapSomeCurrencyForCoin(ICoinV4(coinAddress), ZORA, uint128(IERC20(ZORA).balanceOf(trader)), trader);
+        _swapSomeCurrencyForCoin(ICoin(coinAddress), ZORA, uint128(IERC20(ZORA).balanceOf(trader)), trader);
 
         // do some swaps to test out
-        _swapSomeCoinForCurrency(ICoinV4(coinAddress), ZORA, uint128(IERC20(coinAddress).balanceOf(trader)), trader);
+        _swapSomeCoinForCurrency(ICoin(coinAddress), ZORA, uint128(IERC20(coinAddress).balanceOf(trader)), trader);
     }
 
     address coinVersionLookup = 0x777777751622c0d3258f214F9DF38E35BF45baF3;
     address upgradeGate = 0xD88f6BdD765313CaFA5888C177c325E2C3AbF2D2;
 
-    function _swapSomeCurrencyForCoinAndExpectRevert(ICoinV4 _coin, address currency, uint128 amountIn, address trader) internal {
+    function _swapSomeCurrencyForCoinAndExpectRevert(ICoin _coin, address currency, uint128 amountIn, address trader) internal {
         uint128 minAmountOut = uint128(0);
 
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
@@ -205,23 +186,23 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         address contentCoin = 0x4E93A01c90f812284F71291a8d1415a904957156;
 
-        address creatorCoin = ICoinV4(contentCoin).currency();
+        address creatorCoin = ICoin(contentCoin).currency();
 
         uint256 amountIn = IERC20(creatorCoin).balanceOf(trader);
 
         require(amountIn > 0, "no balance");
 
         // this swap should revert because the content coin is broken
-        _swapSomeCurrencyForCoinAndExpectRevert(ICoinV4(contentCoin), creatorCoin, uint128(amountIn), trader);
+        _swapSomeCurrencyForCoinAndExpectRevert(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
 
         bytes memory creationCode = HooksDeployment.contentCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
         // etch new hook into the content coin, it shouldn't revert anymore when swapping
-        vm.etch(address(ICoinV4(contentCoin).hooks()), address(newHook).code);
+        vm.etch(address(ICoin(contentCoin).hooks()), address(newHook).code);
 
-        _swapSomeCurrencyForCoin(ICoinV4(contentCoin), creatorCoin, uint128(amountIn), trader);
+        _swapSomeCurrencyForCoin(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
     }
 
     function test_canUpgradeBrokenContentCoinAndSwap() public {
@@ -231,7 +212,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         address contentCoin = 0xB9799C839818bF50240CE683363D00c43a2E23b8;
 
-        address creatorCoin = ICoinV4(contentCoin).currency();
+        address creatorCoin = ICoin(contentCoin).currency();
 
         uint256 amountIn = 0.000111 ether;
 
@@ -239,7 +220,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
-        address existingHook = address(ICoinV4(contentCoin).hooks());
+        address existingHook = address(ICoin(contentCoin).hooks());
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = existingHook;
@@ -251,7 +232,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         ContentCoin(contentCoin).migrateLiquidity(address(newHook), "");
 
         // do some swaps to test out
-        _swapSomeCurrencyForCoin(ICoinV4(contentCoin), creatorCoin, uint128(amountIn), trader);
+        _swapSomeCurrencyForCoin(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
     }
 
     function getPositionInfo(
@@ -272,7 +253,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         }
     }
 
-    function getLiquidityForPoolCoin(ICoinV4 coin) internal view returns (uint128[] memory liquidityForPositions) {
+    function getLiquidityForPoolCoin(ICoin coin) internal view returns (uint128[] memory liquidityForPositions) {
         return getLiquidityForPositions(coin.getPoolKey(), IZoraV4CoinHook(address(coin.hooks())).getPoolCoin(coin.getPoolKey()).positions);
     }
 
@@ -281,7 +262,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         address trader = 0xf69fEc6d858c77e969509843852178bd24CAd2B6;
 
-        ICoinV4 creatorCoin = ICoinV4(0x2F03aB8fD97F5874bc3274C296Bb954Ae92EdA34);
+        ICoin creatorCoin = ICoin(0x2F03aB8fD97F5874bc3274C296Bb954Ae92EdA34);
 
         address zora = creatorCoin.currency();
 

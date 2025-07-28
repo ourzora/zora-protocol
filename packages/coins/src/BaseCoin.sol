@@ -19,6 +19,15 @@ import {IAirlock} from "./interfaces/IAirlock.sol";
 import {IProtocolRewards} from "./interfaces/IProtocolRewards.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
 
+import {IPoolManager, PoolKey, Currency, IHooks} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {IHasPoolKey, IHasSwapPath} from "./interfaces/ICoin.sol";
+import {PoolConfiguration} from "./types/PoolConfiguration.sol";
+import {UniV4SwapToCurrency} from "./libs/UniV4SwapToCurrency.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+import {IDeployedCoinVersionLookup} from "./interfaces/IDeployedCoinVersionLookup.sol";
+import {IUpgradeableV4Hook} from "./interfaces/IUpgradeableV4Hook.sol";
+import {CoinCommon} from "./libs/CoinCommon.sol";
+
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
@@ -33,8 +42,6 @@ import {CoinConstants} from "./libs/CoinConstants.sol";
 import {MarketConstants} from "./libs/MarketConstants.sol";
 import {LpPosition} from "./types/LpPosition.sol";
 import {PoolState} from "./types/PoolState.sol";
-import {CoinSetupV3, UniV3Config, CoinV3Config} from "./libs/CoinSetupV3.sol";
-import {UniV3BuySell, CoinConfig} from "./libs/UniV3BuySell.sol";
 
 /*
      $$$$$$\   $$$$$$\  $$$$$$\ $$\   $$\ 
@@ -56,6 +63,15 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
     /// @notice The address of the Airlock contract, ownership is used for a protocol fee split.
     address public immutable airlock;
 
+    /// @notice The Uniswap v4 pool manager singleton contract reference.
+    IPoolManager public immutable poolManager;
+
+    /// @notice The pool key for the coin. Type from Uniswap V4 core.
+    PoolKey internal poolKey;
+
+    /// @notice The configuration for the pool.
+    PoolConfiguration internal poolConfiguration;
+
     /// @notice The metadata URI
     string public tokenURI;
     /// @notice The address of the coin creator
@@ -76,24 +92,53 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
      * @param _protocolRewards The address of the protocol rewards contract
      * @param _airlock The address of the Airlock contract
      */
-    constructor(address _protocolRewardRecipient, address _protocolRewards, address _airlock) initializer {
+    constructor(address _protocolRewardRecipient, address _protocolRewards, IPoolManager poolManager_, address _airlock) initializer {
         if (_protocolRewardRecipient == address(0)) {
             revert AddressZero();
         }
         if (_protocolRewards == address(0)) {
             revert AddressZero();
         }
-
+        if (address(poolManager_) == address(0)) {
+            revert AddressZero();
+        }
         if (_airlock == address(0)) {
             revert AddressZero();
         }
 
         protocolRewardRecipient = _protocolRewardRecipient;
         protocolRewards = _protocolRewards;
+        poolManager = poolManager_;
         airlock = _airlock;
     }
 
-    /// @notice Initializes a new coin
+    /// @inheritdoc ICoin
+    function initialize(
+        address payoutRecipient_,
+        address[] memory owners_,
+        string memory tokenURI_,
+        string memory name_,
+        string memory symbol_,
+        address platformReferrer_,
+        address currency_,
+        PoolKey memory poolKey_,
+        uint160 sqrtPriceX96,
+        PoolConfiguration memory poolConfiguration_
+    ) public virtual initializer {
+        currency = currency_;
+        // we need to set this before initialization, because
+        // distributing currency relies on the poolkey being set since the hooks
+        // are retrieved from there
+        poolKey = poolKey_;
+        poolConfiguration = poolConfiguration_;
+
+        _initialize(payoutRecipient_, owners_, tokenURI_, name_, symbol_, platformReferrer_);
+
+        // initialize the pool - the hook will mint its positions in the afterInitialize callback
+        poolManager.initialize(poolKey, sqrtPriceX96);
+    }
+
+    /// @notice Initializes a new coin (internal version)
     /// @param payoutRecipient_ The address of the coin creator
     /// @param tokenURI_ The metadata URI
     /// @param name_ The coin name
@@ -210,7 +255,9 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
             interfaceId == type(ICoin).interfaceId ||
             interfaceId == type(ICoinComments).interfaceId ||
             interfaceId == type(IERC7572).interfaceId ||
-            interfaceId == type(IHasRewardsRecipients).interfaceId;
+            interfaceId == type(IHasRewardsRecipients).interfaceId ||
+            interfaceId == type(IHasPoolKey).interfaceId ||
+            type(IHasSwapPath).interfaceId == interfaceId;
     }
 
     /// @dev Overrides ERC20's _update function to emit a superset `CoinTransfer` event
@@ -244,5 +291,61 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
     /// @notice Returns the address of the Doppler protocol fee recipient
     function dopplerFeeRecipient() public view returns (address) {
         return IAirlock(airlock).owner();
+    }
+
+    /// @inheritdoc IHasPoolKey
+    function getPoolKey() public view returns (PoolKey memory) {
+        return poolKey;
+    }
+
+    /// @inheritdoc ICoin
+    function getPoolConfiguration() public view returns (PoolConfiguration memory) {
+        return poolConfiguration;
+    }
+
+    /// @inheritdoc ICoin
+    function hooks() external view returns (IHooks) {
+        return poolKey.hooks;
+    }
+
+    /// @notice Migrate liquidity from current hook to a new hook implementation
+    /// @param newHook Address of the new hook implementation
+    /// @param additionalData Additional data to pass to the new hook during initialization
+    function migrateLiquidity(address newHook, bytes calldata additionalData) external onlyOwner returns (PoolKey memory newPoolKey) {
+        newPoolKey = IUpgradeableV4Hook(address(poolKey.hooks)).migrateLiquidity(newHook, poolKey, additionalData);
+
+        emit LiquidityMigrated(poolKey, CoinCommon.hashPoolKey(poolKey), newPoolKey, CoinCommon.hashPoolKey(newPoolKey));
+
+        poolKey = newPoolKey;
+    }
+
+    /// @inheritdoc IHasSwapPath
+    function getPayoutSwapPath(IDeployedCoinVersionLookup coinVersionLookup) external view returns (IHasSwapPath.PayoutSwapPath memory payoutSwapPath) {
+        // if to swap in is this currency,
+        // if backing currency is a coin, then recursively get the path from the coin
+        payoutSwapPath.currencyIn = Currency.wrap(address(this));
+
+        // swap to backing currency
+        PathKey memory thisPathKey = PathKey({
+            intermediateCurrency: Currency.wrap(currency),
+            fee: poolKey.fee,
+            tickSpacing: poolKey.tickSpacing,
+            hooks: poolKey.hooks,
+            hookData: ""
+        });
+
+        // get backing currency swap path - if the backing currency is a v4 coin and has a swap path.
+        PathKey[] memory subPath = UniV4SwapToCurrency.getSubSwapPath(currency, coinVersionLookup);
+
+        if (subPath.length > 0) {
+            payoutSwapPath.path = new PathKey[](1 + subPath.length);
+            payoutSwapPath.path[0] = thisPathKey;
+            for (uint256 i = 0; i < subPath.length; i++) {
+                payoutSwapPath.path[i + 1] = subPath[i];
+            }
+        } else {
+            payoutSwapPath.path = new PathKey[](1);
+            payoutSwapPath.path[0] = thisPathKey;
+        }
     }
 }

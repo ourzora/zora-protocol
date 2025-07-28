@@ -80,9 +80,6 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
         string version
     );
 
-    /// @notice Thrown when the amount of ERC20 tokens transferred does not match the expected amount
-    error ERC20TransferAmountMismatch();
-
     /// @notice Thrown when ETH is sent with a transaction but the currency is not WETH
     error EthTransferInvalid();
 
@@ -165,8 +162,6 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
         address hook,
         bytes calldata hookData
     ) external payable returns (address coin, bytes memory hookDataOut);
-
-    function coinImpl() external view returns (address);
 
     function implementation() external view returns (address);
 

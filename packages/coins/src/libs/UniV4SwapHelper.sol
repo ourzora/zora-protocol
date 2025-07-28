@@ -16,7 +16,7 @@ import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {ISwapPathRouter} from "../interfaces/ISwapPathRouter.sol";
-import {IHasPoolKey} from "../interfaces/ICoinV4.sol";
+import {IHasPoolKey} from "../interfaces/ICoin.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";

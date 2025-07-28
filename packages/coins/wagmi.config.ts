@@ -9,7 +9,7 @@ export default defineConfig({
         build: false,
       },
       include: [
-        "Coin",
+        "BaseCoin",
         "ContentCoin",
         "CreatorCoin",
         "ZoraFactoryImpl",

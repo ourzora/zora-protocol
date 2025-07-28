@@ -16,11 +16,11 @@ import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IMsgSender} from "../interfaces/IMsgSender.sol";
-import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {IHasSwapPath} from "../interfaces/ICoin.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {V4Liquidity} from "../libs/V4Liquidity.sol";
 import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
-import {ICoinV4} from "../interfaces/ICoinV4.sol";
+import {ICoin} from "../interfaces/ICoin.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
 import {CoinCommon} from "../libs/CoinCommon.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
@@ -140,7 +140,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
     /// @param coin The coin address.
     /// @param key The pool key for the coin.
     /// @return positions The contract-created liquidity positions the positions for the coin's pool.
-    function _generatePositions(ICoinV4 coin, PoolKey memory key) internal view returns (LpPosition[] memory positions) {
+    function _generatePositions(ICoin coin, PoolKey memory key) internal view returns (LpPosition[] memory positions) {
         bool isCoinToken0 = Currency.unwrap(key.currency0) == address(coin);
 
         positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, coin.getPoolConfiguration(), totalSupplyForPositions);
@@ -163,7 +163,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
             revert NotACoin(coin);
         }
 
-        LpPosition[] memory positions = _generatePositions(ICoinV4(coin), key);
+        LpPosition[] memory positions = _generatePositions(ICoin(coin), key);
 
         _initializeForPositions(key, coin, positions);
 
@@ -312,7 +312,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
             payoutSwapPath
         );
 
-        _distributeMarketRewards(payoutCurrency, payoutAmount, ICoinV4(coin), CoinRewardsV4.getTradeReferral(hookData));
+        _distributeMarketRewards(payoutCurrency, payoutAmount, ICoin(coin), CoinRewardsV4.getTradeReferral(hookData));
 
         {
             (address swapper, bool isTrustedSwapSenderAddress) = _getOriginalMsgSender(sender);

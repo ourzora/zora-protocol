@@ -22,7 +22,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
-import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {IHasSwapPath} from "../interfaces/ICoin.sol";
 import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {Position} from "@uniswap/v4-core/src/libraries/Position.sol";

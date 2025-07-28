@@ -8,15 +8,15 @@
 pragma solidity ^0.8.23;
 
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {BaseCoinV4} from "./BaseCoinV4.sol";
+import {BaseCoin} from "./BaseCoin.sol";
 import {CoinConstants} from "./libs/CoinConstants.sol";
 
 /**
  * @title ContentCoin
  * @notice Content coin implementation that uses creator coins as backing currency
- * @dev Inherits from BaseCoinV4 and implements content-specific distribution logic
+ * @dev Inherits from BaseCoin and implements content-specific distribution logic
  */
-contract ContentCoin is BaseCoinV4 {
+contract ContentCoin is BaseCoin {
     /// @notice The constructor for the static ContentCoin contract deployment shared across all content coins.
     /// @dev All arguments are required and cannot be set to the 0 address.
     /// @param protocolRewardRecipient_ The address of the protocol reward recipient
@@ -28,7 +28,7 @@ contract ContentCoin is BaseCoinV4 {
         address protocolRewards_,
         IPoolManager poolManager_,
         address airlock_
-    ) BaseCoinV4(protocolRewardRecipient_, protocolRewards_, poolManager_, airlock_) {}
+    ) BaseCoin(protocolRewardRecipient_, protocolRewards_, poolManager_, airlock_) {}
 
     /// @dev The initial mint and distribution of the coin supply.
     ///      Implements content coin specific distribution: 990M to liquidity pool, 10M to creator.

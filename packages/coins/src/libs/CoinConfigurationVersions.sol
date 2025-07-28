@@ -30,33 +30,6 @@ library CoinConfigurationVersions {
         (version, currency) = abi.decode(poolConfig, (uint8, address));
     }
 
-    function decodeDopplerUniV3(
-        bytes memory poolConfig
-    )
-        internal
-        pure
-        returns (uint8 version, address currency, int24 tickLower_, int24 tickUpper_, uint16 numDiscoveryPositions_, uint256 maxDiscoverySupplyShare_)
-    {
-        (version, currency, tickLower_, tickUpper_, numDiscoveryPositions_, maxDiscoverySupplyShare_) = abi.decode(
-            poolConfig,
-            (uint8, address, int24, int24, uint16, uint256)
-        );
-    }
-
-    function encodeDopplerUniV3(
-        address currency,
-        int24 tickLower_,
-        int24 tickUpper_,
-        uint16 numDiscoveryPositions_,
-        uint256 maxDiscoverySupplyShare_
-    ) internal pure returns (bytes memory) {
-        return abi.encode(DOPPLER_UNI_V3_POOL_VERSION, currency, tickLower_, tickUpper_, numDiscoveryPositions_, maxDiscoverySupplyShare_);
-    }
-
-    function decodeLegacy(bytes memory poolConfig) internal pure returns (uint8 version, address currency, int24 tickLower_) {
-        (version, currency, tickLower_) = abi.decode(poolConfig, (uint8, address, int24));
-    }
-
     function decodeVanillaUniV4(bytes memory poolConfig) internal pure returns (uint8 version, address currency, int24 tickLower_) {
         (version, currency, tickLower_) = abi.decode(poolConfig, (uint8, address, int24));
     }
@@ -91,17 +64,6 @@ library CoinConfigurationVersions {
         );
     }
 
-    function defaultDopplerUniV3(address currency) internal pure returns (bytes memory) {
-        return
-            encodeDopplerUniV3(
-                currency,
-                CoinConstants.DEFAULT_DISCOVERY_TICK_LOWER,
-                CoinConstants.DEFAULT_DISCOVERY_TICK_UPPER,
-                CoinConstants.DEFAULT_NUM_DISCOVERY_POSITIONS,
-                CoinConstants.DEFAULT_DISCOVERY_SUPPLY_SHARE
-            );
-    }
-
     function defaultDopplerMultiCurveUniV4(address currency) internal pure returns (bytes memory) {
         int24[] memory tickLower = new int24[](2);
         int24[] memory tickUpper = new int24[](2);
@@ -125,6 +87,6 @@ library CoinConfigurationVersions {
     }
 
     function defaultConfig(address currency) internal pure returns (bytes memory) {
-        return defaultDopplerUniV3(currency);
+        return defaultDopplerMultiCurveUniV4(currency);
     }
 }

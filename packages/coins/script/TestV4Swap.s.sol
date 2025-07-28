@@ -16,7 +16,7 @@ import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ICoinV4} from "../src/interfaces/ICoinV4.sol";
+import {ICoin} from "../src/interfaces/ICoin.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -31,7 +31,7 @@ contract TestV4Swap is CoinsDeployerBase {
         currency.mint(getUniswapV4PoolManager(), 1000000 ether);
     }
 
-    function _deployMockCoin(address currency, address creator, address createReferral, bytes32 salt) internal returns (ICoinV4 coin) {
+    function _deployMockCoin(address currency, address creator, address createReferral, bytes32 salt) internal returns (ICoin coin) {
         CoinsDeployment memory deployment = readDeployment();
         address[] memory owners = new address[](1);
         owners[0] = creator;
@@ -51,10 +51,10 @@ contract TestV4Swap is CoinsDeployerBase {
             salt
         );
 
-        coin = ICoinV4(coinAddress);
+        coin = ICoin(coinAddress);
     }
 
-    function _swap(address currencyIn, uint128 amountIn, ICoinV4 coin, address trader, address tradeReferral) internal returns (uint256 amountOut) {
+    function _swap(address currencyIn, uint128 amountIn, ICoin coin, address trader, address tradeReferral) internal returns (uint256 amountOut) {
         uint128 minAmountOut = 0;
 
         PoolKey memory poolKey = coin.getPoolKey();
@@ -101,12 +101,12 @@ contract TestV4Swap is CoinsDeployerBase {
 
         // MockERC20 currency = _deployMockCurrency();
 
-        // ICoinV4 backingCoin = _deployMockCoin(address(currency), trader, createReferral, bytes32("backing coin"));
-        // ICoinV4 contentCoin = _deployMockCoin(address(backingCoin), trader, createReferral, bytes32("content coin"));
+        // ICoin backingCoin = _deployMockCoin(address(currency), trader, createReferral, bytes32("backing coin"));
+        // ICoin contentCoin = _deployMockCoin(address(backingCoin), trader, createReferral, bytes32("content coin"));
 
         MockERC20 currency = MockERC20(0x1b183Bd0E2c03Fc830F4d813bA37E82F9F97cA21);
-        ICoinV4 backingCoin = ICoinV4(0x7D74416C4c295A592Fc6F9232911C945354b253C);
-        ICoinV4 contentCoin = ICoinV4(0xf6d6660bcdA588F7f99e2961f279f500fB501730);
+        ICoin backingCoin = ICoin(0x7D74416C4c295A592Fc6F9232911C945354b253C);
+        ICoin contentCoin = ICoin(0xf6d6660bcdA588F7f99e2961f279f500fB501730);
 
         console.log("currency", address(currency));
         console.log("backingCoin", address(backingCoin));

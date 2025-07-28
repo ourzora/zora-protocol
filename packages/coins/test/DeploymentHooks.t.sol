@@ -5,7 +5,6 @@ import {BaseTest} from "./utils/BaseTest.sol";
 import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
-import {Coin} from "../src/Coin.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ICoin} from "../src/interfaces/ICoin.sol";
@@ -13,6 +12,7 @@ import {IHasAfterCoinDeploy} from "../src/hooks/deployment/BaseCoinDeployHook.so
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
+import {ContentCoin} from "../src/ContentCoin.sol";
 
 // Create a fake hook that doesn't support the IHasAfterCoinDeploy interface
 contract FakeHookNoInterface {
@@ -26,15 +26,7 @@ contract HooksTest is BaseTest {
     BuySupplyWithSwapRouterHook hook;
 
     function _generateDefaultPoolConfig(address currency) internal pure returns (bytes memory) {
-        return
-            _generatePoolConfig(
-                CoinConfigurationVersions.DOPPLER_UNI_V3_POOL_VERSION,
-                currency,
-                DEFAULT_DISCOVERY_TICK_LOWER,
-                DEFAULT_DISCOVERY_TICK_UPPER,
-                DEFAULT_NUM_DISCOVERY_POSITIONS,
-                DEFAULT_DISCOVERY_SUPPLY_SHARE
-            );
+        return _generatePoolConfig(currency);
     }
 
     function setUp() public override {
@@ -69,50 +61,6 @@ contract HooksTest is BaseTest {
 
     function _encodeExactInput(address buyRecipient, ISwapRouter.ExactInputParams memory params) internal pure returns (bytes memory) {
         return _encodeAfterCoinDeploy(buyRecipient, abi.encodeWithSelector(ISwapRouter.exactInput.selector, params));
-    }
-
-    function test_buySupplyWithEthUsingV3Hook_withExactInputSingle(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
-        vm.assume(initialOrderSize < 1 ether);
-
-        vm.deal(users.creator, initialOrderSize);
-
-        bytes memory hookData = _encodeExactInputSingle(
-            users.creator,
-            ISwapRouter.ExactInputSingleParams({
-                tokenIn: address(weth),
-                tokenOut: zora,
-                fee: 3000,
-                recipient: address(hook),
-                amountIn: initialOrderSize,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            })
-        );
-
-        vm.prank(users.creator);
-        (address coinAddress, bytes memory hookDataOut) = factory.deployWithHook{value: initialOrderSize}(
-            users.creator,
-            _getDefaultOwners(),
-            "https://test.com",
-            "Testcoin",
-            "TEST",
-            _generateDefaultPoolConfig(zora),
-            users.platformReferrer,
-            address(hook),
-            hookData
-        );
-
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-
-        (uint256 amountCurrency, uint256 coinsPurchased) = abi.decode(hookDataOut, (uint256, uint256));
-
-        assertEq(coin.currency(), zora, "currency");
-        assertGt(amountCurrency, 0, "amountCurrency > 0");
-        assertGt(coinsPurchased, 0, "coinsPurchased > 0");
-        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
-        assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
     }
 
     function test_buySupplyWithEthUsingV4Hook_withExactInputMultiHop(uint256 initialOrderSize) public {
@@ -150,60 +98,15 @@ contract HooksTest is BaseTest {
             hookData
         );
 
-        coin = Coin(payable(coinAddress));
+        coinV4 = ContentCoin(payable(coinAddress));
 
         (uint256 amountCurrency, uint256 coinsPurchased) = abi.decode(hookDataOut, (uint256, uint256));
 
-        assertEq(coin.currency(), zora, "currency");
+        assertEq(coinV4.currency(), zora, "currency");
         assertGt(amountCurrency, 0, "amountCurrency > 0");
         assertGt(coinsPurchased, 0, "coinsPurchased > 0");
-        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
+        assertEq(coinV4.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
         // assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
-    }
-
-    function test_buySupplyWithEthUsingV3Hook_withExactInputMultiHop(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
-        vm.assume(initialOrderSize < 1 ether);
-
-        vm.deal(users.creator, initialOrderSize);
-
-        // lets try weth to usdc to zora
-
-        uint24 poolFee = 3000;
-
-        bytes memory hookData = _encodeExactInput(
-            users.creator,
-            ISwapRouter.ExactInputParams({
-                path: abi.encodePacked(address(weth), poolFee, USDC_ADDRESS, poolFee, zora),
-                recipient: address(hook),
-                amountIn: initialOrderSize,
-                amountOutMinimum: 0
-            })
-        );
-
-        vm.prank(users.creator);
-        (address coinAddress, bytes memory hookDataOut) = factory.deployWithHook{value: initialOrderSize}(
-            users.creator,
-            _getDefaultOwners(),
-            "https://test.com",
-            "Testcoin",
-            "TEST",
-            _generateDefaultPoolConfig(zora),
-            users.platformReferrer,
-            address(hook),
-            hookData
-        );
-
-        coin = Coin(payable(coinAddress));
-        pool = IUniswapV3Pool(coin.poolAddress());
-
-        (uint256 amountCurrency, uint256 coinsPurchased) = abi.decode(hookDataOut, (uint256, uint256));
-
-        assertEq(coin.currency(), zora, "currency");
-        assertGt(amountCurrency, 0, "amountCurrency > 0");
-        assertGt(coinsPurchased, 0, "coinsPurchased > 0");
-        assertEq(coin.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
-        assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
     }
 
     function test_buySupplyWithEthUsingV3Hook_revertsWhenBadCall() public {

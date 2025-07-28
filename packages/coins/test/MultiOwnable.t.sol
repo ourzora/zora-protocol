@@ -7,13 +7,13 @@ contract MultiOwnableTest is BaseTest {
     function setUp() public override {
         super.setUp();
 
-        _deployCoin();
+        _deployV4Coin();
     }
 
     function test_initial_owners() public view {
-        assertEq(coin.owners().length, 1);
-        assertEq(coin.owners()[0], users.creator);
-        assertEq(coin.isOwner(users.creator), true);
+        assertEq(coinV4.owners().length, 1);
+        assertEq(coinV4.owners()[0], users.creator);
+        assertEq(coinV4.isOwner(users.creator), true);
     }
 
     function test_add_owners() public {
@@ -22,21 +22,21 @@ contract MultiOwnableTest is BaseTest {
         newOwners[1] = makeAddr("NewOwner2");
 
         vm.prank(users.creator);
-        coin.addOwners(newOwners);
+        coinV4.addOwners(newOwners);
 
-        assertEq(coin.owners().length, 3);
-        assertEq(coin.isOwner(users.creator), true);
-        assertEq(coin.isOwner(newOwners[0]), true);
-        assertEq(coin.isOwner(newOwners[1]), true);
+        assertEq(coinV4.owners().length, 3);
+        assertEq(coinV4.isOwner(users.creator), true);
+        assertEq(coinV4.isOwner(newOwners[0]), true);
+        assertEq(coinV4.isOwner(newOwners[1]), true);
     }
 
     function test_add_owner() public {
         vm.prank(users.creator);
-        coin.addOwner(address(this));
+        coinV4.addOwner(address(this));
 
-        assertEq(coin.owners().length, 2);
-        assertEq(coin.isOwner(users.creator), true);
-        assertEq(coin.isOwner(address(this)), true);
+        assertEq(coinV4.owners().length, 2);
+        assertEq(coinV4.isOwner(users.creator), true);
+        assertEq(coinV4.isOwner(address(this)), true);
     }
 
     function test_remove_owners() public {
@@ -45,67 +45,67 @@ contract MultiOwnableTest is BaseTest {
         newOwners[1] = makeAddr("NewOwner2");
 
         vm.prank(users.creator);
-        coin.addOwners(newOwners);
+        coinV4.addOwners(newOwners);
 
         vm.prank(users.creator);
-        coin.removeOwners(newOwners);
+        coinV4.removeOwners(newOwners);
 
-        assertEq(coin.owners().length, 1);
-        assertEq(coin.isOwner(users.creator), true);
-        assertEq(coin.isOwner(newOwners[0]), false);
-        assertEq(coin.isOwner(newOwners[1]), false);
+        assertEq(coinV4.owners().length, 1);
+        assertEq(coinV4.isOwner(users.creator), true);
+        assertEq(coinV4.isOwner(newOwners[0]), false);
+        assertEq(coinV4.isOwner(newOwners[1]), false);
     }
 
     function test_remove_owner() public {
         vm.prank(users.creator);
-        coin.addOwner(address(this));
+        coinV4.addOwner(address(this));
 
         vm.prank(address(this));
-        coin.removeOwner(users.creator);
+        coinV4.removeOwner(users.creator);
 
-        assertEq(coin.owners().length, 1);
-        assertEq(coin.isOwner(users.creator), false);
-        assertEq(coin.isOwner(address(this)), true);
+        assertEq(coinV4.owners().length, 1);
+        assertEq(coinV4.isOwner(users.creator), false);
+        assertEq(coinV4.isOwner(address(this)), true);
     }
 
     function test_revert_only_owner_can_add() public {
         vm.expectRevert(abi.encodeWithSelector(MultiOwnable.OnlyOwner.selector));
-        coin.addOwner(address(this));
+        coinV4.addOwner(address(this));
     }
 
     function test_revert_only_owner_can_remove() public {
         vm.expectRevert(abi.encodeWithSelector(MultiOwnable.OnlyOwner.selector));
 
         vm.prank(address(this));
-        coin.removeOwner(users.creator);
+        coinV4.removeOwner(users.creator);
     }
 
     function test_revert_cannot_remove_not_owner() public {
         vm.expectRevert(abi.encodeWithSelector(MultiOwnable.NotOwner.selector));
         vm.prank(users.creator);
-        coin.removeOwner(address(this));
+        coinV4.removeOwner(address(this));
     }
 
     function test_revert_last_owner_must_revoke() public {
         address newOwner = makeAddr("NewOwner1");
 
         vm.prank(users.creator);
-        coin.addOwner(newOwner);
+        coinV4.addOwner(newOwner);
 
         vm.prank(newOwner);
-        coin.removeOwner(users.creator);
+        coinV4.removeOwner(users.creator);
 
         vm.prank(newOwner);
         vm.expectRevert(abi.encodeWithSelector(MultiOwnable.UseRevokeOwnershipToRemoveSelf.selector));
-        coin.removeOwner(newOwner);
+        coinV4.removeOwner(newOwner);
     }
 
     function test_revoke_ownership() public {
         vm.prank(users.creator);
-        coin.revokeOwnership();
+        coinV4.revokeOwnership();
 
-        assertEq(coin.owners().length, 0);
-        assertEq(coin.isOwner(users.creator), false);
+        assertEq(coinV4.owners().length, 0);
+        assertEq(coinV4.isOwner(users.creator), false);
     }
 
     function test_revert_add_owners_with_zero_address() public {
@@ -116,7 +116,7 @@ contract MultiOwnableTest is BaseTest {
 
         vm.prank(users.creator);
         vm.expectRevert(MultiOwnable.OwnerCannotBeAddressZero.selector);
-        coin.addOwners(newOwners);
+        coinV4.addOwners(newOwners);
     }
 
     function test_revert_add_owners_with_duplicate() public {
@@ -126,11 +126,11 @@ contract MultiOwnableTest is BaseTest {
         newOwners[1] = newOwner;
 
         vm.prank(users.creator);
-        coin.addOwner(newOwner);
+        coinV4.addOwner(newOwner);
 
         vm.expectRevert(MultiOwnable.AlreadyOwner.selector);
         vm.prank(users.creator);
-        coin.addOwners(newOwners);
+        coinV4.addOwners(newOwners);
     }
 
     function test_revert_init_with_zero_owners() public {

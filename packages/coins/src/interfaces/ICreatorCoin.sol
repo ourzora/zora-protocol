@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.23;
 
-import {ICoinV4} from "./ICoinV4.sol";
+import {ICoin} from "./ICoin.sol";
 
-interface ICreatorCoin is ICoinV4 {
+interface ICreatorCoin is ICoin {
     /// @notice Emitted when creator vesting tokens are claimed
     /// @param recipient The address that received the vested tokens
     /// @param claimAmount The amount of tokens claimed in this transaction

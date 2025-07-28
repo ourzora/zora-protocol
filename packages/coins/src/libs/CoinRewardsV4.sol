@@ -26,7 +26,7 @@ import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {IHasRewardsRecipients} from "../interfaces/IHasRewardsRecipients.sol";
 import {ICoin} from "../interfaces/ICoin.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
-import {IHasSwapPath} from "../interfaces/ICoinV4.sol";
+import {IHasSwapPath} from "../interfaces/ICoin.sol";
 import {V4Liquidity} from "./V4Liquidity.sol";
 import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 

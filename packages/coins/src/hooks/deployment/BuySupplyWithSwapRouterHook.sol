@@ -12,9 +12,8 @@ import {ICoin} from "../../interfaces/ICoin.sol";
 import {IZoraFactory} from "../../interfaces/IZoraFactory.sol";
 import {ISwapRouter} from "../../interfaces/ISwapRouter.sol";
 import {IWETH} from "../../interfaces/IWETH.sol";
-import {Coin} from "../../Coin.sol";
 import {ICoinV3} from "../../interfaces/ICoinV3.sol";
-import {ICoinV4} from "../../interfaces/ICoinV4.sol";
+import {ICoin} from "../../interfaces/ICoin.sol";
 import {CoinConfigurationVersions} from "../../libs/CoinConfigurationVersions.sol";
 
 /// @title BuySupplyWithSwapRouter
@@ -84,7 +83,7 @@ contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
         IERC20(coin.currency()).approve(address(coin), amountCurrency);
 
         if (CoinConfigurationVersions.isV4(factory.getVersionForDeployedCoin(address(coin)))) {
-            coinsPurchased = _executeV4Buy(buyRecipient, ICoinV4(payable(address(coin))), amountCurrency);
+            coinsPurchased = _executeV4Buy(buyRecipient, ICoin(payable(address(coin))), amountCurrency);
         } else {
             coinsPurchased = _executeV3Buy(buyRecipient, ICoinV3(payable(address(coin))), amountCurrency);
         }
@@ -101,7 +100,7 @@ contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
         (, coinsPurchased) = ICoinV3(payable(address(coin))).buy(buyRecipient, amountCurrency, 0, 0, address(0));
     }
 
-    function _executeV4Buy(address buyRecipient, ICoinV4 coin, uint256 amountCurrency) internal returns (uint256 coinsPurchased) {
+    function _executeV4Buy(address buyRecipient, ICoin coin, uint256 amountCurrency) internal returns (uint256 coinsPurchased) {
         bytes memory data = abi.encode(buyRecipient, coin, amountCurrency);
 
         bytes memory result = poolManager.unlock(data);
@@ -115,7 +114,7 @@ contract BuySupplyWithSwapRouterHook is BaseCoinDeployHook {
     function unlockCallback(bytes calldata data) external returns (bytes memory) {
         require(msg.sender == address(poolManager), OnlyPoolManager());
 
-        (address buyRecipient, ICoinV4 coin, uint256 amountCurrency) = abi.decode(data, (address, ICoinV4, uint256));
+        (address buyRecipient, ICoin coin, uint256 amountCurrency) = abi.decode(data, (address, ICoin, uint256));
 
         bool zeroForOne = coin.currency() == Currency.unwrap(coin.getPoolKey().currency0);
 

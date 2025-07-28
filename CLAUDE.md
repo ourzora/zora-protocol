@@ -33,10 +33,26 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 When making changes that affect public APIs or require version updates:
 
-- `pnpm changeset` - Create a changeset describing your changes
+- `pnpm changeset` - Create a changeset describing your changes (interactive mode)
+- `pnpm changeset add --empty` - Create an empty changeset file to manually edit
 - Follow the interactive prompts to select packages and change types (patch, minor, major)
 - Commit the generated changeset file along with your changes
 - Changesets are used for automated version management and release notes
+
+**Creating Empty Changesets for Manual Editing:**
+- Use `pnpm changeset add --empty` to create an empty changeset file
+- This generates a .changeset/*.md file that you can manually edit
+- The file format should follow this structure:
+  ```md
+  ---
+  "@zoralabs/package-name": patch | minor | major
+  ---
+  
+  Description of changes
+  
+  - Bullet point details of what changed
+  - Additional context or breaking changes
+  ```
 
 **Package Selection Guidelines:**
 - When updating contract code, make a changeset for the corresponding contract package
@@ -70,6 +86,30 @@ Tests are primarily Solidity-based using Foundry. For individual packages:
 - `forge test --watch -vvv` - Run tests in watch mode
 - `forge test -vvv --match-test {test_name}` - Run specific test
 - `pnpm test` - Run JavaScript/TypeScript tests
+
+### Coverage Analysis
+
+To check test coverage for contracts:
+
+**Generate Coverage Report:**
+- `cd packages/{package-name}` (e.g., `cd packages/coins`)
+- `pnpm run coverage` - Generate LCOV coverage report
+- This runs: `forge coverage --report lcov --ir-minimum --no-match-coverage '(test/|src/utils/uniswap/|script/)'`
+
+**Analyze Coverage Results:**
+- Coverage report saved to `lcov.info` file
+- Parse with: `awk '/^SF:src\// { file = $0; gsub("SF:", "", file); } /^LF:/ { total = $0; gsub("LF:", "", total); } /^LH:/ { covered = $0; gsub("LH:", "", covered); if (total > 0) printf "%-50s %3d/%3d lines (%5.1f%%)\n", file, covered, total, (covered/total)*100; }' lcov.info`
+
+**Coverage Exclusions:**
+- Check `.github/workflows/contracts.yml` for package-specific `ignore_coverage_files`
+- Each package may exclude different files (e.g., `*test*`, `*lib*`, `*uniswap*`, etc.)
+- Scripts and deployment files typically excluded via forge coverage flags
+
+**CI Coverage:**
+- Coverage checked automatically in GitHub Actions
+- Minimum threshold varies by package (check contracts.yml)
+- Coverage artifacts uploaded for failed runs
+- LCOV reports available for download from CI runs
 
 ### Bug Fix Workflow
 
@@ -134,7 +174,13 @@ Uses Graphite for branch management:
 - `gt modify -a` - Stage all changes and amend current commit
 - `gt modify -c` - Create new commit instead of amending
 - `gt modify -m "message"` - Amend with new commit message
+- `gt modify -a -m "message"` - Stage all changes and amend with new message
 - `gt submit` - Submit/update pull request
+
+**Common Workflow:**
+1. Make code changes
+2. `gt modify -a -m "descriptive commit message"` - Stage and amend with message
+3. `gt submit` - Update the PR with changes
 
 **Graphite Create Options:**
 - `-a, --all`: Stage all changes including untracked files

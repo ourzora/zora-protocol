@@ -13,9 +13,11 @@ import {LpPosition} from "../src/types/LpPosition.sol";
 import {V4Liquidity} from "../src/libs/V4Liquidity.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IZoraV4CoinHook} from "../src/interfaces/IZoraV4CoinHook.sol";
-import {ICoinV4} from "../src/interfaces/ICoinV4.sol";
+import {ICoin} from "../src/interfaces/ICoin.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {CoinCommon} from "../src/libs/CoinCommon.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {IHooksUpgradeGate} from "../src/interfaces/IHooksUpgradeGate.sol";
 
 contract LiquidityMigrationReceiver is IUpgradeableDestinationV4Hook, IERC165 {
     function initializeFromMigration(
@@ -175,7 +177,7 @@ contract LiquidityMigrationTest is BaseTest {
         // migrate the liquidity
         vm.prank(users.creator);
         vm.expectEmit(true, true, true, true);
-        emit ICoinV4.LiquidityMigrated(poolKey, fromPoolKeyHash, newPoolKey, toPoolKeyHash);
+        emit ICoin.LiquidityMigrated(poolKey, fromPoolKeyHash, newPoolKey, toPoolKeyHash);
         coinV4.migrateLiquidity(address(newHook), "");
     }
 
@@ -229,5 +231,55 @@ contract LiquidityMigrationTest is BaseTest {
         vm.prank(users.creator);
         vm.expectRevert(abi.encodeWithSelector(IZoraV4CoinHook.OnlyCoin.selector, users.creator, address(coinV4)));
         IUpgradeableV4Hook(originalHook).migrateLiquidity(address(newHook), poolKey, "");
+    }
+
+    // Hook Upgrade Gate Tests
+    function test_hookUpgradeGate_removeUpgradePath() public {
+        address baseImpl = makeAddr("baseImpl");
+        address upgradeImpl = makeAddr("upgradeImpl");
+
+        // First register the upgrade path
+        address[] memory baseImpls = new address[](1);
+        baseImpls[0] = baseImpl;
+
+        vm.prank(hookUpgradeGate.owner());
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
+
+        // Verify it's registered
+        assertTrue(hookUpgradeGate.isRegisteredUpgradePath(baseImpl, upgradeImpl));
+
+        // Remove the upgrade path
+        vm.prank(hookUpgradeGate.owner());
+        vm.expectEmit(true, true, false, false);
+        emit IHooksUpgradeGate.UpgradeRemoved(baseImpl, upgradeImpl);
+        hookUpgradeGate.removeUpgradePath(baseImpl, upgradeImpl);
+
+        // Verify it's removed
+        assertFalse(hookUpgradeGate.isRegisteredUpgradePath(baseImpl, upgradeImpl));
+    }
+
+    function test_hookUpgradeGate_removeUpgradePath_onlyOwner() public {
+        address baseImpl = makeAddr("baseImpl");
+        address upgradeImpl = makeAddr("upgradeImpl");
+        address nonOwner = makeAddr("nonOwner");
+
+        // Try to remove upgrade path as non-owner
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
+        hookUpgradeGate.removeUpgradePath(baseImpl, upgradeImpl);
+    }
+
+    function test_hookUpgradeGate_registerUpgradePath_onlyOwner() public {
+        address baseImpl = makeAddr("baseImpl");
+        address upgradeImpl = makeAddr("upgradeImpl");
+        address nonOwner = makeAddr("nonOwner");
+
+        address[] memory baseImpls = new address[](1);
+        baseImpls[0] = baseImpl;
+
+        // Try to register upgrade path as non-owner
+        vm.prank(nonOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, nonOwner));
+        hookUpgradeGate.registerUpgradePath(baseImpls, upgradeImpl);
     }
 }

@@ -16,7 +16,7 @@ import {MockERC20} from "../test/mocks/MockERC20.sol";
 import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ICoinV4} from "../src/interfaces/ICoinV4.sol";
+import {ICoin} from "../src/interfaces/ICoin.sol";
 
 import {console} from "forge-std/console.sol";
 
@@ -34,7 +34,7 @@ contract TestV4Swap is CoinsDeployerBase {
         string memory uri,
         address createReferral,
         bytes32 salt
-    ) internal returns (ICoinV4 coin) {
+    ) internal returns (ICoin coin) {
         CoinsDeployment memory deployment = readDeployment();
         address[] memory owners = new address[](1);
         owners[0] = creator;
@@ -54,10 +54,10 @@ contract TestV4Swap is CoinsDeployerBase {
             salt
         );
 
-        coin = ICoinV4(coinAddress);
+        coin = ICoin(coinAddress);
     }
 
-    function _swap(address currencyIn, uint128 amountIn, ICoinV4 coin, address trader, address tradeReferral) internal returns (uint256 amountOut) {
+    function _swap(address currencyIn, uint128 amountIn, ICoin coin, address trader, address tradeReferral) internal returns (uint256 amountOut) {
         uint128 minAmountOut = 0;
 
         PoolKey memory poolKey = coin.getPoolKey();
@@ -106,8 +106,8 @@ contract TestV4Swap is CoinsDeployerBase {
         address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
         address tradeReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
 
-        ICoinV4 backingCoin = _deployCoin(zora, trader, "Backing Coin", "BACK", "https://testc.com", createReferral, bytes32("creator"));
-        ICoinV4 contentCoin = _deployCoin(
+        ICoin backingCoin = _deployCoin(zora, trader, "Backing Coin", "BACK", "https://testc.com", createReferral, bytes32("creator"));
+        ICoin contentCoin = _deployCoin(
             address(backingCoin),
             trader,
             "Content Coin",
@@ -116,8 +116,8 @@ contract TestV4Swap is CoinsDeployerBase {
             createReferral,
             bytes32("content coin")
         );
-        // ICoinV4 backingCoin = ICoinV4(0xeA734b5997F35cD469921cCa7BB9A03C104f2f64);
-        // ICoinV4 contentCoin = ICoinV4(0x72218BFEEc7D556BD3Dd8eFf2a317CEd49533769);
+        // ICoin backingCoin = ICoin(0xeA734b5997F35cD469921cCa7BB9A03C104f2f64);
+        // ICoin contentCoin = ICoin(0x72218BFEEc7D556BD3Dd8eFf2a317CEd49533769);
 
         console.log("backingCoin", address(backingCoin));
         console.log("contentCoin", address(contentCoin));

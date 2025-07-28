@@ -9,11 +9,11 @@ pragma solidity ^0.8.28;
 
 import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
 import {CreatorCoinConstants} from "./libs/CreatorCoinConstants.sol";
-import {IHooks, PoolConfiguration, PoolKey, ICoinV4} from "./interfaces/ICoinV4.sol";
+import {IHooks, PoolConfiguration, PoolKey, ICoin} from "./interfaces/ICoin.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {BaseCoinV4} from "./BaseCoinV4.sol";
+import {BaseCoin} from "./BaseCoin.sol";
 
-contract CreatorCoin is ICreatorCoin, BaseCoinV4 {
+contract CreatorCoin is ICreatorCoin, BaseCoin {
     uint256 public vestingStartTime;
     uint256 public vestingEndTime;
     uint256 public totalClaimed;
@@ -23,7 +23,7 @@ contract CreatorCoin is ICreatorCoin, BaseCoinV4 {
         address _protocolRewards,
         IPoolManager _poolManager,
         address _airlock
-    ) BaseCoinV4(_protocolRewardRecipient, _protocolRewards, _poolManager, _airlock) initializer {}
+    ) BaseCoin(_protocolRewardRecipient, _protocolRewards, _poolManager, _airlock) initializer {}
 
     function initialize(
         address payoutRecipient_,
@@ -36,7 +36,7 @@ contract CreatorCoin is ICreatorCoin, BaseCoinV4 {
         PoolKey memory poolKey_,
         uint160 sqrtPriceX96,
         PoolConfiguration memory poolConfiguration_
-    ) public override(BaseCoinV4, ICoinV4) {
+    ) public override(BaseCoin, ICoin) {
         require(currency_ == CreatorCoinConstants.CURRENCY, InvalidCurrency());
 
         super.initialize(payoutRecipient_, owners_, tokenURI_, name_, symbol_, platformReferrer_, currency_, poolKey_, sqrtPriceX96, poolConfiguration_);

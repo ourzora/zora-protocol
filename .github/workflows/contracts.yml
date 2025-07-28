@@ -31,5 +31,5 @@ jobs:
       package_folder: packages/coins
       name: Coins
       skip_storage_layout: true
-      ignore_coverage_files: '"*test*" "*src/utils/uniswap/*" "*src/libs/CoinLegacy.sol"'
+      ignore_coverage_files: '"*test*" "*src/utils/uniswap/*" "*src/libs/CoinLegacy.sol" "*src/deployment/CoinsDeployerBase.sol"'
       coverage_args: "--ir-minimum"

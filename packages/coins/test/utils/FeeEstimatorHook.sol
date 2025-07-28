@@ -11,7 +11,7 @@ import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {CoinCommon} from "../../src/libs/CoinCommon.sol";
 import {V4Liquidity} from "../../src/libs/V4Liquidity.sol";
 import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
-import {ICoinV4, IHasSwapPath} from "../../src/interfaces/ICoinV4.sol";
+import {ICoin, IHasSwapPath} from "../../src/interfaces/ICoin.sol";
 import {UniV4SwapToCurrency} from "../../src/libs/UniV4SwapToCurrency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoinRewardsV4} from "../../src/libs/CoinRewardsV4.sol";
@@ -59,7 +59,7 @@ contract FeeEstimatorHook is BaseZoraV4CoinHook {
 
         {
             uint256 coinBalanceBefore = IERC20(coin).balanceOf(address(this));
-            uint256 currencyBalanceBefore = IERC20(ICoinV4(coin).currency()).balanceOf(address(this));
+            uint256 currencyBalanceBefore = IERC20(ICoin(coin).currency()).balanceOf(address(this));
 
             IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
 
@@ -81,7 +81,7 @@ contract FeeEstimatorHook is BaseZoraV4CoinHook {
             feeState.fees1 += uint128(fee1);
 
             uint256 coinBalanceAfter = IERC20(coin).balanceOf(address(this));
-            uint256 currencyBalanceAfter = IERC20(ICoinV4(coin).currency()).balanceOf(address(this));
+            uint256 currencyBalanceAfter = IERC20(ICoin(coin).currency()).balanceOf(address(this));
 
             feeState.coinBalanceChange = coinBalanceAfter - coinBalanceBefore;
             feeState.currencyBalanceChange = currencyBalanceAfter - currencyBalanceBefore;
