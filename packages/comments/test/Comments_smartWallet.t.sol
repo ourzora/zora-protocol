@@ -90,12 +90,11 @@ contract Comments_smartWallet is CommentsTestBase {
         assertTrue(exists);
     }
 
-    function test_commentWithSmartWalletOwner_revertsWhenNotHolder() public {
+    function test_commentWithSmartWalletOwner_canCommentWithSpark() public {
         address smartWallet = address(new MockMultiOwnable(address(collectorWithoutToken)));
 
         IComments.CommentIdentifier memory emptyReplyTo;
 
-        vm.expectRevert(abi.encodeWithSelector(IComments.NotTokenHolderOrAdmin.selector));
         vm.prank(collectorWithoutToken);
         vm.deal(collectorWithoutToken, SPARKS_VALUE);
         comments.comment{value: SPARKS_VALUE}({
@@ -193,10 +192,9 @@ contract Comments_smartWallet is CommentsTestBase {
         assertTrue(exists);
     }
 
-    function test_commentWithSmartWalletOwner_revertsWhenNotCoinHolder() public {
+    function test_commentWithSmartWalletOwner_nonCoinHolderCanCommentWithSpark() public {
         address smartWallet = address(new MockMultiOwnable(address(collectorWithoutToken)));
 
-        vm.expectRevert(abi.encodeWithSelector(IComments.NotTokenHolderOrAdmin.selector));
         vm.prank(collectorWithoutToken);
         vm.deal(collectorWithoutToken, SPARKS_VALUE);
         comments.comment{value: SPARKS_VALUE}({

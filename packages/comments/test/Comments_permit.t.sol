@@ -124,13 +124,13 @@ contract CommentsPermitTest is CommentsTestBase {
         _assertCommentExists(expectedCommentIdentifier);
     }
 
-    function testPermitComment_Not1155Holder() public {
+    function testPermitComment_Non1155HolderCanCommentWithSpark() public {
         IComments.PermitComment memory permitComment = _createPermitComment(collectorWithToken, "test comment");
         bytes memory signature = _signPermitComment(permitComment, collectorWithTokenPrivateKey);
 
         address executor = makeAddr("executor");
         vm.deal(executor, SPARKS_VALUE);
-        vm.expectRevert(IComments.NotTokenHolderOrAdmin.selector);
+
         _executePermitComment(executor, permitComment, signature);
     }
 

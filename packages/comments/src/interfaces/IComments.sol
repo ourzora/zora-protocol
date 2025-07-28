@@ -133,8 +133,6 @@ interface IComments {
     /// @param actual The actual address that attempted to comment
     error CommenterMismatch(address expected, address actual);
 
-    /// @notice Occurs when a non-token holder or non-admin attempts an action restricted to token holders or admins
-    error NotTokenHolderOrAdmin();
 
     /// @notice Occurs when attempting to spark a comment without sending at least one spark
     error MustSendAtLeastOneSpark();

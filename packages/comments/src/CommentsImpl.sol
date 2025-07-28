@@ -142,7 +142,7 @@ contract CommentsImpl is
         }
     }
 
-    /// @notice Creates a new comment.  Equivalant sparks value in eth must be sent with the transaction.  Must be a holder or creator of the referenced 1155 token.
+    /// @notice Creates a new comment.  Equivalant sparks value in eth must be sent with the transaction.
     /// If not the owner, must send 1 spark.
     /// @param contractAddress The address of the contract
     /// @param tokenId The token ID
@@ -309,13 +309,7 @@ contract CommentsImpl is
         ) {
             return;
         }
-        // if they aren't, commenter or smart wallet must be a token holder, and have included at least 1 spark
-        if (
-            !_accountOrSmartWalletIsTokenHolder(commentIdentifier.contractAddress, commentIdentifier.tokenId, commentIdentifier.commenter, commenterSmartWallet)
-        ) {
-            revert NotTokenHolderOrAdmin();
-        }
-
+        // if they aren't an admin, they must include at least 1 spark
         if (mustSendAtLeastOneSpark && sparksQuantity == 0) {
             revert MustSendAtLeastOneSpark();
         }
@@ -373,18 +367,6 @@ contract CommentsImpl is
             return ICoinComments(contractAddress).isOwner(user) || (smartWallet != address(0) && ICoinComments(contractAddress).isOwner(smartWallet));
         } else {
             return _isTokenAdmin(contractAddress, tokenId, user) || (smartWallet != address(0) && _isTokenAdmin(contractAddress, tokenId, smartWallet));
-        }
-    }
-
-    function _accountOrSmartWalletIsTokenHolder(address contractAddress, uint256 tokenId, address user, address smartWallet) internal view returns (bool) {
-        bool isCoin = _isCoinComment(contractAddress, tokenId);
-
-        if (isCoin) {
-            return
-                ICoinComments(contractAddress).balanceOf(user) >= 1e18 ||
-                (smartWallet != address(0) && ICoinComments(contractAddress).balanceOf(smartWallet) >= 1e18);
-        } else {
-            return _isTokenHolder(contractAddress, tokenId, user) || (smartWallet != address(0) && _isTokenHolder(contractAddress, tokenId, smartWallet));
         }
     }
 

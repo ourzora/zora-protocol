@@ -470,14 +470,13 @@ contract CommentsTest is CommentsTestBase {
         postComment(commenter, address(mock1155), tokenId1, "", emptyCommentIdentifier);
     }
 
-    function testRevertOnNotTokenHolderOrAdmin() public {
+    function testNonHolderCanCommentWithSpark() public {
         address nonHolder = makeAddr("nonHolder");
 
-        // We don't set up the commenter with a token, so they're neither a holder nor an admin
+        // We don't set up the commenter with a token, but they should be able to comment with a spark
         vm.deal(nonHolder, SPARKS_VALUE);
 
-        vm.expectRevert(IComments.NotTokenHolderOrAdmin.selector);
-        postComment(nonHolder, address(mock1155), tokenId1, "Attempting to comment without holding token", emptyCommentIdentifier);
+        postComment(nonHolder, address(mock1155), tokenId1, "Commenting without holding token", emptyCommentIdentifier);
     }
 
     function testCommentRevertsWhenSendTooMuchValue() public {
@@ -674,11 +673,10 @@ contract CommentsTest is CommentsTestBase {
         comments.comment(commenter, address(mockCoin), tokenId0, "test comment", emptyCommentIdentifier, address(0), address(0));
     }
 
-    function testRevertCommentAsNonCoinHolder() public {
+    function testNonCoinHolderCanCommentWithSpark() public {
         address nonHolder = makeAddr("nonHolder");
         vm.deal(nonHolder, SPARKS_VALUE);
 
-        vm.expectRevert(abi.encodeWithSignature("NotTokenHolderOrAdmin()"));
         vm.prank(nonHolder);
         comments.comment{value: SPARKS_VALUE}(nonHolder, address(mockCoin), tokenId0, "test comment", emptyCommentIdentifier, address(0), address(0));
     }

@@ -3,6 +3,9 @@ cache/
 out/
 abis/
 
+# IDE files
+.idea/
+
 # Ignores development broadcast logs
 # !/broadcast
 # /broadcast/*/31337/
