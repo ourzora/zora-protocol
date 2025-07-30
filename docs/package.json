@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "vocs dev",
     "build": "tsc --noEmit",
-    "build:site": "vocs build",
+    "build:site": "playwright install --with-deps chromium && vocs build",
     "preview": "vocs preview",
     "copy-changelog": "tsx scripts/copy-changelogs.ts",
     "generate-uml": "tsx scripts/generateUml.ts"
@@ -21,8 +21,11 @@
     "@zoralabs/coins-sdk": "workspace:*",
     "@zoralabs/protocol-deployments": "workspace:*",
     "@zoralabs/protocol-sdk": "workspace:*",
+    "clsx": "^2.1.1",
+    "playwright": "^1.54.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
+    "remark-mermaidjs": "^7.0.0",
     "typescript": "^5.2.2",
     "viem": "^2.21.21",
     "vite": "^5.4.8",

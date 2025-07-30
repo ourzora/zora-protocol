@@ -1,21 +1,77 @@
 ---
 id: intro
-title: Coins
-description: ZORA Coins Protocol
+title: Zora Coins Protocol
+description: The new creator economy
 ---
 
-# Coins
+# Zora Coins Protocol
 
-### ZORA's Coins Protocol
+The Zora Coins Protocol is a way to participate in the new creator economy—one where users trade on attention, creativity, and cultural momentum. Every post becomes an instantly tradeable cryptocurrency token, transforming social media content into a tradeable asset.
 
-ZORA's Coins Protocol is a protocol for creating and managing ERC-20 media coins.
+This is the first time creators earn across posts, creators, and the platform. **Open, free, and valuable.**
 
-These coins support:
+## How It Works
 
-    * Multiple owners
-    * Customizable payout addresses
-    * Customizable media via EIP-7572
-    * Fair markets with Uniswap V3 and locked liquidity
-    * Creator earnings from primary and secondary trading
+Every coin has a **backing currency** and trades through a dedicated Uniswap V4 pool that with a custom hook that:
+- **Distributes rewards** to creators, referrers, and the protocol on every trade
+- **Preserves liquidity** by locking 33% of trading fees as permanent pool depth
+- **Converts fees** through multi-hop swaps to ensure all rewards are paid in ZORA
+- **Deposits initial liquidity** using [Doppler protocol](https://whetstone.cc/doppler) for optimized multi-curve positioning
 
-These contracts along with our coins SDK allows anyone to deploy a ZORA coin in seconds.
+## How Coins Work
+
+**Creator Coins are profile-level tokens on Zora** - each account has its own coin where the username becomes the ticker ($username).
+
+### Creator Coins
+- **One coin per profile** - Each creator gets a single coin representing their brand
+- **Fixed supply** - 1 billion total per coin
+- **50% to creator** - Automatically distributed over 5 years  
+- **50% tradeable** - Instantly available on the open market
+- **Earn from every trade** - Creators earn $ZORA from trade activity
+
+### Content Coins  
+- **Post-level tokens** - Every post becomes an instantly tradeable coin
+- **Creator-backed** - Uses the creator's coin as backing currency
+- **Instant creator allocation** - 10M tokens go directly to creators at launch
+- **990M tradeable** - Available on the market immediately
+
+![Zora Coins Protocol Overview](/coins-overview.png)
+
+## Token Supply Distribution
+
+All coins have a **1 billion token supply** with different allocation strategies:
+
+### CreatorCoin Distribution
+| Allocation | Amount | Details |
+|------------|--------|---------|
+| **Liquidity Pool** | 500M tokens | Available for trading immediately |
+| **Creator Vesting** | 500M tokens | Linear vesting over 5 years |
+| **Total Supply** | 1B tokens | Fixed maximum supply |
+
+### ContentCoin Distribution  
+| Allocation | Amount | Details |
+|------------|--------|---------|
+| **Liquidity Pool** | 990M tokens | Available for trading immediately |
+| **Creator Reward** | 10M tokens | Instant allocation to creator |
+| **Total Supply** | 1B tokens | Fixed maximum supply |
+
+> **Vesting Details**: Creator coins vest linearly over 5 years, meaning creators can claim their tokens gradually using the `claimVesting()` function.
+
+## Developer Resources
+
+### SDK Integration
+
+- **[Getting Started](/coins/sdk)** - JavaScript SDK for creating and managing coins
+- **[Create Coin](/coins/sdk/create-coin)** - Deploy coins programmatically
+- **[Metadata Builder](/coins/sdk/metadata-builder)** - Generate valid metadata URIs
+
+### Contract Integration
+
+- **[Creating a Coin](/coins/contracts/creating-a-coin)** - Deploy coins using the factory contract
+- **[Contract Architecture](/coins/contracts/architecture)** - Deep dive into the protocol design
+
+### Protocol Information
+
+- **[Coin Rewards](/coins/contracts/rewards)** - How automatic reward distribution works
+- **[Earning Rewards as a Developer](/coins/contracts/earning-referral-rewards)** - How to earn referral rewards from coin creation and trading
+- **[Metadata Standards](/coins/contracts/metadata)** - EIP-7572 metadata format specification

@@ -1,0 +1,150 @@
+# Contract Architecture
+
+This page provides a technical overview of how the Coins protocol contracts work together to enable coin creation, trading, and automatic reward distribution.
+
+## Architecture Overview
+
+```mermaid
+classDiagram
+    %% Uniswap V4 Package
+    class IPoolManager {
+        +initialize()
+        +modifyLiquidity()
+        +swap()
+        +take()
+    }
+    
+    %% Factory Package
+    class ZoraFactoryImpl {
+        +deploy(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, postDeployHook, postDeployHookData, coinSalt)
+        +deployCreatorCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, coinSalt)
+        +coinAddress(msgSender, name, symbol, poolConfig, platformReferrer, coinSalt)
+        +coinImpl()
+    }
+    
+    %% Coins Package
+    class BaseCoinV4 {
+        <<abstract>>
+        #poolManager: IPoolManager
+        #poolKey: PoolKey
+        +migrateLiquidity()
+        +getPayoutSwapPath()
+    }
+    
+    class CreatorCoin {
+        -currency: ZORA
+        -vestingSchedule: VestingSchedule
+        +claimVesting()
+        +getClaimableAmount()
+    }
+    
+    class ContentCoin {
+        -backingCurrency: CreatorCoin
+        +rewardsDistributionMethodology()
+    }
+    
+    %% Hooks Package
+    class BaseZoraV4CoinHook {
+        <<abstract>>
+        +afterInitialize()
+        +afterSwap()
+        -collectFees()
+        -mintLpReward()
+        +_distributeMarketRewards()
+    }
+    
+    class ContentCoinHook {
+        +_distributeMarketRewards()
+    }
+    
+    class CreatorCoinHook {
+        +_distributeMarketRewards()
+    }
+    
+    class ZORAToken {
+        ZORA Token
+    }
+    
+    %% Inheritance relationships
+    BaseCoinV4 <|-- CreatorCoin
+    BaseCoinV4 <|-- ContentCoin
+    BaseZoraV4CoinHook <|-- ContentCoinHook
+    BaseZoraV4CoinHook <|-- CreatorCoinHook
+    
+    %% Factory relationships
+    ZoraFactoryImpl ..> CreatorCoin : creates
+    ZoraFactoryImpl ..> ContentCoin : creates
+    
+    %% Hook relationships
+    BaseZoraV4CoinHook --> IPoolManager : uses
+    ContentCoinHook --> BaseCoinV4 : manages rewards
+    CreatorCoinHook --> BaseCoinV4 : manages rewards
+    
+    %% Pool Manager relationships
+    BaseCoinV4 --> IPoolManager : integrates with
+    CreatorCoin --> CreatorCoinHook : uses hook
+    ContentCoin --> ContentCoinHook : uses hook
+    
+    %% Currency relationships
+    ContentCoin --> CreatorCoin : backed by
+    CreatorCoin --> ZORAToken : backed by
+```
+
+*Visual overview of how contracts work together in the Zora Coins system*
+
+## Core Components
+
+### Coins Contracts
+
+**BaseCoinV4 (Abstract)**
+- Base implementation for both coin types
+- Integrates with Uniswap V4 PoolManager
+- Handles liquidity migration between hook versions
+- Manages pool key and basic coin functionality
+
+**CreatorCoin**
+- One per creator, backed by ZORA tokens
+- 1 billion total supply with 5-year vesting schedule
+- 500M tokens vest to creator, 500M available for trading
+- Simpler reward distribution (creator + protocol)
+
+**ContentCoin**
+- Multiple per creator, backed by creator's coin
+- 1 billion total supply with instant creator allocation
+- 10M tokens to creator immediately, 990M available for trading
+- Complex reward distribution including referrals
+
+### Factory Contract
+
+**ZoraFactoryImpl**
+- Deploys new coins with deterministic addresses
+- Supports custom pool configurations and post-deployment hooks
+- Creates Uniswap V4 pools automatically with appropriate hook contracts
+- Provides address prediction before deployment
+
+Key functions:
+- `deploy()` - General coin deployment with full customization
+- `deployCreatorCoin()` - Simplified Creator Coin deployment
+- `coinAddress()` - Predict deployment address before deploying
+
+### Hook System
+
+The protocol uses an inheritance-based hook architecture:
+
+**BaseZoraV4CoinHook (Abstract)**
+- Contains all shared hook functionality for both coin types
+- Implements Uniswap V4 hook interface (`afterSwap`, `afterInitialize`)
+- Handles pool initialization, fee collection, and currency conversion
+- Supports migration to new hook versions while preserving liquidity
+
+**ContentCoinHook & CreatorCoinHook**
+- Inherit from `BaseZoraV4CoinHook` but override reward distribution
+- ContentCoinHook: Distributes rewards to create referral, trade referral, creator, protocol, and Doppler
+- CreatorCoinHook: Distributes rewards to creator and protocol only
+
+Core shared functionality:
+- Collects trading fees from liquidity positions
+- Splits fees between LP rewards (33.33%) and market rewards (66.67%)
+- Converts fees to backing currency via multi-hop swaps
+- Distributes rewards based on coin-specific methodology
+

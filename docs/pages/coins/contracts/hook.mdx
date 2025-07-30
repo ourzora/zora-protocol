@@ -1,0 +1,254 @@
+# Hook System
+
+The Zora protocol uses specialized Uniswap V4 hooks to automatically manage pool interactions and reward distribution for different coin types.
+
+## Overview
+
+The hook system consists of two specialized hook contracts that inherit from `BaseZoraV4CoinHook`:
+
+- **ContentCoinHook** - Automatically manages pools for Content Coins with full referral reward distribution
+- **CreatorCoinHook** - Automatically manages pools for Creator Coins with simplified reward distribution
+
+Both hooks automatically implement fee collection, currency conversion, and reward distribution on every swap transaction.
+
+## Inheritance Structure
+
+The hook system uses inheritance to share common functionality while allowing specialized reward distribution:
+
+### BaseZoraV4CoinHook (Abstract Base)
+
+Contains all core hook functionality shared between coin types:
+
+**Automated Operations:**
+- Pool initialization and automatic liquidity position creation
+- Automatic fee collection from all LP positions on every swap
+- Multi-hop currency conversion through optimal swap paths
+- Hook upgrade and [migration support](/coins/contracts/liquidity-migration)
+- Comprehensive event emission and transaction logging
+
+**Technical Features:**
+- Uniswap V4 `afterInitialize` and `afterSwap` hook permissions
+- Doppler multi-curve liquidity positioning
+- Trusted message sender validation
+- Pool-to-coin mapping and position tracking
+
+### ContentCoinHook (Inherits from Base)
+
+Implements specialized reward distribution for Content Coins by overriding the `_distributeMarketRewards()` function:
+
+- **Full referral rewards**: Both create referral (15%) and trade referral (15%)
+- **Creator rewards**: 50% of market rewards
+- **Doppler rewards**: 5% of market rewards
+- **Protocol rewards**: Remaining percentage
+
+### CreatorCoinHook (Inherits from Base) 
+
+Implements simplified reward distribution for Creator Coins by overriding the `_distributeMarketRewards()` function:
+
+- **Creator rewards**: 50% of market rewards
+- **Protocol rewards**: 50% of market rewards
+- **No referral or Doppler rewards**
+
+**Key Insight**: The only difference between the two hooks is their reward distribution methodology - all other functionality (pool management, fee collection, currency conversion, [migration](/coins/contracts/liquidity-migration)) is identical and handled by the base contract.
+
+## Deployment Addresses
+
+| Chain | Chain ID | Hook Contract | Address |
+|-------|----------|---------------|---------|
+| Base  | 8453     | ContentCoinHook | `0x9ea932730A7787000042e34390B8E435dD839040` |
+| Base  | 8453     | CreatorCoinHook | `0xd61A675F8a0c67A73DC3B54FB7318B4D91409040` |
+
+## Hook Permissions
+
+Both hooks have the following Uniswap V4 permissions:
+
+```solidity
+function getHookPermissions() external pure override returns (Hooks.Permissions memory) {
+    return Hooks.Permissions({
+        beforeInitialize: false,
+        afterInitialize: true,      // ✅ Enabled
+        beforeAddLiquidity: false,
+        afterAddLiquidity: false,
+        beforeRemoveLiquidity: false,
+        afterRemoveLiquidity: false,
+        beforeSwap: false,
+        afterSwap: true,           // ✅ Enabled
+        beforeDonate: false,
+        afterDonate: false,
+        beforeSwapReturnDelta: false,
+        afterSwapReturnDelta: false,
+        afterAddLiquidityReturnDelta: false,
+        afterRemoveLiquidityReturnDelta: false
+    });
+}
+```
+
+## Core Functionality
+
+### After Initialize Hook
+
+When a new pool is initialized, the hooks automatically:
+
+1. **Validate Pool Setup**: Ensure the pool is properly configured for the coin type
+2. **Create Initial Positions**: Set up liquidity positions based on the coin's configuration
+3. **Register Pool**: Link the pool to the appropriate coin contract
+4. **Configure Reward Distribution**: Set up the reward distribution mechanism
+
+### After Swap Hook
+
+On every swap, the hooks automatically:
+
+1. **Collect LP Fees**: Gather accrued fees from all liquidity positions
+2. **Convert to Payout Currency**: Swap collected fees through optimal paths
+3. **Distribute Rewards**: Allocate rewards based on coin type and configuration
+4. **Emit Events**: Log detailed swap and reward information
+
+## Reward Distribution
+
+The hooks automatically implement different reward distribution logic for different coin types:
+
+### Content Coins
+
+**Total Fee Split**: 33.33% reminted as LP rewards, 66.67% distributed as market rewards
+
+**Market Rewards Distribution**:
+- **Creator**: 50% (5000 BPS)
+- **Create Referral**: 15% (1500 BPS)
+- **Trade Referral**: 15% (1500 BPS)  
+- **Doppler**: 5% (500 BPS)
+- **Protocol**: ~15% (remaining)
+
+### Creator Coins
+
+**Total Fee Split**: 33.33% reminted as LP rewards, 66.67% distributed as market rewards
+
+**Market Rewards Distribution**:
+- **Creator**: 50% (5000 BPS)
+- **Protocol**: 50% (remaining)
+
+*Note: Creator Coins do not have referral or Doppler rewards*
+
+## Multi-Hop Reward Swapping
+
+The hooks automatically support complex swap paths for coins that aren't directly paired with the final payout currency:
+
+### Example: Content Coin → Creator Coin → ZORA
+
+1. **Content Coin fees** automatically collected in Content Coin tokens
+2. **First hop**: Content Coin → Creator Coin (backing currency)
+3. **Second hop**: Creator Coin → ZORA token (final payout currency)
+4. **Distribution**: ZORA tokens automatically distributed to reward recipients
+
+This automatically enables complex token economies where Content Coins can be backed by Creator Coins, which are in turn backed by ZORA tokens.
+
+## Liquidity Management
+
+The hooks automatically manage liquidity positions throughout the pool lifecycle:
+
+### Automatic Position Creation
+
+During pool initialization, the hooks automatically create:
+
+- **Discovery Positions**: Initial price discovery ranges
+- **Market Positions**: Main trading ranges  
+- **Multi-Position Support**: Complex liquidity curves with multiple ranges
+
+### Position Structure
+
+```solidity
+struct LiquidityPosition {
+    int24 tickLower;           // Lower price bound
+    int24 tickUpper;           // Upper price bound
+    uint128 liquidity;         // Liquidity amount
+    uint256 feeGrowthInside0X128; // Fee tracking
+    uint256 feeGrowthInside1X128; // Fee tracking
+}
+```
+
+## Migration Support
+
+The hooks automatically support controlled liquidity migration to enable upgrades to new hook versions while preserving all existing liquidity. 
+
+**Migration Resources:**
+- [Complete Migration Guide](/coins/contracts/liquidity-migration) - Step-by-step migration process and security considerations
+- [Migration Flow Diagram](/coins/contracts/liquidity-migration#how-it-works) - Visual sequence diagram of the migration process
+- [Migration Events](/coins/contracts/liquidity-migration#events) - Event emission details for tracking migrations
+
+## Events
+
+### Swapped Event
+
+```solidity
+event Swapped(
+    address indexed sender,
+    address indexed swapSender,
+    bool isTrustedSwapSenderAddress,
+    PoolKey key,
+    bytes32 indexed poolKeyHash,
+    SwapParams params,
+    int128 amount0,
+    int128 amount1,
+    bool isCoinBuy,
+    bytes hookData,
+    uint160 sqrtPriceX96
+);
+```
+
+Emitted on every swap with detailed transaction information including:
+- **sender**: The address that initiated the swap transaction
+- **swapSender**: The original message sender (may differ from sender if using trusted message senders)
+- **isTrustedSwapSenderAddress**: Whether the sender is registered as a trusted message sender
+- **key**: The complete pool key identifying the pool
+- **poolKeyHash**: Indexed hash of the pool key for efficient filtering
+- **params**: The swap parameters (amount, direction, etc.)
+- **amount0/amount1**: The actual token amounts exchanged
+- **isCoinBuy**: Whether this swap is purchasing the coin (true) or selling it (false)
+- **hookData**: Additional data passed to the hook (often contains referral information)
+- **sqrtPriceX96**: The final sqrt price after the swap
+
+### CoinMarketRewardsV4 Event
+
+```solidity
+event CoinMarketRewardsV4(
+    address coin,
+    address currency,
+    address payoutRecipient,
+    address platformReferrer,
+    address tradeReferrer,
+    address protocolRewardRecipient,
+    address dopplerRecipient,
+    MarketRewardsV4 marketRewards
+);
+```
+
+Emitted when market rewards are distributed from collected fees, showing exact amounts to each recipient:
+- **coin**: The coin contract that generated the rewards
+- **currency**: The currency in which rewards are paid out
+- **payoutRecipient**: The creator's reward recipient address
+- **platformReferrer**: Address receiving platform referral rewards (Content Coins only)
+- **tradeReferrer**: Address receiving trade referral rewards (Content Coins only)
+- **protocolRewardRecipient**: Protocol treasury address
+- **dopplerRecipient**: Doppler rewards recipient (Content Coins only)
+- **marketRewards**: Detailed breakdown of reward amounts for each recipient
+
+### LpReward Event
+
+```solidity
+event LpReward(
+    address indexed coin,
+    address indexed currency,
+    uint256 amountCurrency,
+    int24 tick,
+    uint128 liquidity
+);
+```
+
+Emitted when liquidity provider rewards are reminted back into the pool:
+- **coin**: The coin contract generating the LP rewards
+- **currency**: The currency of the reminted LP position
+- **amountCurrency**: The amount of currency reminted as new liquidity
+- **tick**: The current pool tick when the reward was reminted
+- **liquidity**: The amount of liquidity reminted back into the pool
+
+This event tracks the 33.33% portion of collected fees that are automatically reminted as liquidity rather than distributed as market rewards.
+

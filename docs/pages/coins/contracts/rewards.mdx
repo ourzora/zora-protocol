@@ -1,26 +1,18 @@
 ---
 id: rewards
-title: Protocol Rewards
+title: Coin Rewards
 ---
 import { Callout } from 'vocs/components'
 
-# Protocol Rewards
+# Coin Rewards
 
 ## Introduction
 
 At Zora, we are passionate about providing the best experience to create and earn onchain.
-**Protocol Rewards** is a split of the Zora fee allowing:
+**Coin Rewards** is a split of the Zora fee allowing:
 
 - Creators to monetize their work
 - Developers to earn from facilitating coin creation and trading
-
-[Rewards escrow contract code](https://github.com/ourzora/zora-protocol/tree/main/packages/protocol-rewards)
-
-## Address
-
-Rewards v1.1 is deployed at the same address on all networks.
-
-0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B
 
 ## Coin Trading Rewards (V4)
 
@@ -32,40 +24,87 @@ All coins created on the Zora app including web and mobile after June 6th 2025 u
 
 The latest V4 coins use a UniswapV4 hook to collect fees, swap to a backing currency, and distribute rewards to recipients on every swap.
 
-### V4 Reward Distribution
+## How V4 Rewards Work
 
-| Recipient       | Percentage |
-| --------------- | ---------- |
-| Creator         | 50% |
-| Create Referral | 15% |
-| Trade Referral  | 15% |
-| Protocol        | 15% |
-| Doppler         | 5% |
+V4 coins generate rewards through a sophisticated automated system that operates on every swap:
+
+### Fee Collection and Distribution
+
+When users trade coins, the Uniswap V4 hook automatically:
+
+1. **Collects LP fees** (3% standard Uniswap V4 fees) from all liquidity positions
+2. **Splits fees** into two parts:
+   - **33.33% for LP Rewards** - Used to create new liquidity positions
+   - **66.67% for Market Rewards** - Distributed to stakeholders
+
+### LP Reward Mechanism: Liquidity Preservation
+
+The 33.33% allocated to LP rewards doesn't go to liquidity providers directly. Instead, it's used to **mint new single-sided liquidity positions** that are strategically placed outside the current trading range:
+
+- **Token0 fees** → New position created **above** current price (inactive until price moves up)
+- **Token1 fees** → New position created **below** current price (inactive until price moves down)
+
+These positions are essentially **locked and burned** - they don't earn future fees but serve a crucial purpose: **maintaining pool liquidity**. Instead of extracting 33.33% of fees from the pool, this mechanism keeps them as permanent liquidity, ensuring the pool becomes deeper and more liquid over time.
+
+### Market Reward Distribution
+
+The remaining 66.67% of collected fees becomes "market rewards" and is distributed differently based on coin type.
+
+### V4 Market Reward Distribution
+
+The market rewards (66.67% of total fees) are distributed differently based on coin type:
+
+#### Content Coins
+| Recipient       | % of Market Rewards | % of Total Fees |
+| --------------- | ------------------- | --------------- |
+| Creator         | 50%                 | 33.33%          |
+| Create Referral | 15%                 | 10%             |
+| Trade Referral  | 15%                 | 10%             |
+| Doppler         | 5%                  | 3.33%           |
+| Protocol        | 15%                 | 10%             |
+| --------------- | ------------------- | --------------- |
+| LP Rewards      | -                   | 33.33%          |
+
+#### Creator Coins
+| Recipient       | % of Market Rewards | % of Total Fees |
+| --------------- | ------------------- | --------------- |
+| Creator         | 50%                 | 33.33%          |
+| Protocol        | 50%                 | 33.33%          |
+| --------------- | ------------------- | --------------- |
+| LP Rewards      | -                   | 33.33%          |
+
+### Multi-Hop Currency Conversion
+
+All market rewards are automatically converted to the final backing currency before distribution:
+
+#### Currency Hierarchy
+- **Content Coins** are paired with **Creator Coins** (configured during [deployment](/coins/contracts/creating-a-coin#content-coin-configurable-currency))
+- **Creator Coins** are paired with **ZORA** (configured during [deployment](/coins/contracts/creating-a-coin#creator-coin-zora-paired))
+
+#### Conversion Process
+
+When fees are collected, the hook automatically performs multi-hop swaps to reach the final payout currency:
+
+1. **Content Coin fees** → **Creator Coin** (first hop)
+2. **Creator Coin** → **ZORA** (second hop)
+
+This ensures that all stakeholders receive rewards in **ZORA**, regardless of which coin type generated the fees.
+
+#### Example Flow
+
+```
+Content Coin Trading → Fees Collected → Multi-hop Swap → All Recipients Receive ZORA
+                   ↓
+            Content Coin → Creator Coin → ZORA
+```
 
 ### Key V4 Features
 
-- **Multi-Hop Reward Swapping**: Automatically converts rewards through intermediate tokens to reach the final payout currency, which is ZORA.
-- **Unified Currency Distribution**: All recipients receive rewards in the same target currency (e.g., ZORA)
+- **Automated Distribution**: Rewards are distributed on every single swap, no manual claiming required
+- **Multi-Hop Conversion**: Automatically converts rewards through intermediate tokens to reach ZORA
+- **Unified Currency**: All recipients receive rewards in the same target currency (ZORA)
+- **Liquidity Preservation**: 33.33% of fees remain in pools as permanent liquidity
 
-## V3 Rewards Distribution (Legacy)
-
-<Callout type="warning">
-To ensure compatibility, we recommend integrating the V4 configuration into your clients.
-</Callout>
-
-V3 coins use the original reward distribution system with separate currency and coin rewards.
-
-### V3 Reward Distribution
-
-| Recipient       | Percentage |
-| --------------- | ---------- |
-| Creator         | 50% |
-| Create Referral | 15% |
-| Trade Referral  | 15% |
-| Protocol        | 15% |
-| Doppler         | 5% |
-
-Note: V3 rewards are distributed in both the coin and its backing currency separately.
 
 ## Coin Rewards Terminology
 
@@ -108,60 +147,17 @@ function deploy(
     string memory symbol,
     bytes memory poolConfig,
     address platformReferrer, // This is the create referral
-    uint256 orderSize,
-    string memory message,
-    bytes32 salt
-) external payable returns (address, uint256);
+    address postDeployHook,
+    bytes calldata postDeployHookData,
+    bytes32 coinSalt
+) external payable returns (address coin, bytes memory postDeployHookDataOut);
 ```
 
 ### Trade Referral Reward
 
 The Trade Referral Reward is paid out to the platform that referred a specific trade.
 
-#### V4 Trading with Referrals
+#### Trading with Referrals
 
-For V4 coins, trade referrals are passed through the hook data when executing swaps via the Universal Router or other compatible interfaces.
+Trade referrals are passed through the hook data when executing swaps via the Universal Router or other compatible interfaces.
 
-#### V3 Trading with Referrals
-
-For V3 coins, trade referrals are specified in the buy/sell functions:
-
-```solidity
-function buy(
-    address recipient,
-    uint256 orderSize,
-    uint256 minAmountOut,
-    uint160 sqrtPriceLimitX96,
-    address tradeReferrer
-) external payable returns (uint256, uint256);
-```
-
-## Withdrawing Rewards
-
-### V4 Coins
-Rewards are automatically distributed on each trade - no withdrawal needed!
-
-### V3 Coins and NFT Rewards
-Rewards must be withdrawn from the escrow contract, which address can be found [in the readme](https://github.com/ourzora/zora-protocol/tree/main/packages/protocol-rewards).
-
-```solidity
-function withdraw(address to, uint256 amount) external;
-```
-
-Withdraw for another address directly.
-
-```solidity
-function withdrawFor(address to, uint256 amount) external;
-```
-
-```solidity
-function withdrawWithSig(
-    address from, 
-    address to,
-    uint256 amount, 
-    uint256 deadline, 
-    uint8 v, 
-    bytes32 r, 
-    bytes32 s
-)
-```

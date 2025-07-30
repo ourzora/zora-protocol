@@ -2,6 +2,26 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Documentation Philosophy
+
+### Contract Documentation Guidelines
+
+When documenting contracts, focus on **how to use** and **how it works** rather than technical reference material:
+
+- **Prioritize user goals**: What does someone want to accomplish? (e.g., "Create a coin", "Understand rewards")
+- **Use practical examples**: Show real code snippets and configuration values
+- **Explain the "why"**: Help users understand the purpose and trade-offs of different options
+- **Visual diagrams**: Use UML diagrams to show relationships and processes
+- **Avoid redundancy**: Don't repeat information covered in other sections
+- **Remove deprecated methods**: Only document current recommended approaches
+
+### Writing Style for Contracts
+
+- Use action-oriented headings (e.g., "Creating a Coin" vs "Coin Creation")
+- Lead with benefits and outcomes, not implementation details
+- Include decision-making guidance (e.g., "Use this configuration if...", "Choose based on...")
+- Link strategically to related concepts and next steps
+
 ## Development Commands
 
 ### GitHub Actions Integration

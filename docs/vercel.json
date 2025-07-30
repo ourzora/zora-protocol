@@ -78,6 +78,26 @@
       "source": "/changelogs/cointag-contracts",
       "destination": "https://nft.docs.zora.co/changelogs/cointag-contracts",
       "permanent": true
+    },
+    {
+      "source": "/coins/contracts/factory",
+      "destination": "/coins/contracts/creating-a-coin",
+      "permanent": true
+    },
+    {
+      "source": "/coins/contracts/getting-started",
+      "destination": "/coins/contracts",
+      "permanent": true
+    },
+    {
+      "source": "/coins/contracts/coin",
+      "destination": "/coins/contracts/architecture",
+      "permanent": true
+    },
+    {
+      "source": "/coins/contracts",
+      "destination": "/coins",
+      "permanent": true
     }
   ]
 }

@@ -55,7 +55,7 @@ async function fetchUserProfile() {
       });
     }
     
-    // Access creator coin if available
+    // Access Creator Coin if available
     if (profile?.creatorCoin) {
       console.log("Creator Coin:");
       console.log("- Address:", profile.creatorCoin.address);
@@ -110,8 +110,8 @@ type ProfileData = {
         };
       }>;
     };
-    creatorCoin?: {           // User's creator coin (if they have one)
-      address?: string;       // Creator coin contract address
+    creatorCoin?: {           // User's Creator Coin (if they have one)
+      address?: string;       // Creator Coin contract address
       marketCap?: string;     // Current market capitalization
       marketCapDelta24h?: string; // 24-hour market cap change
     };

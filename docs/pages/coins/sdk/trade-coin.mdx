@@ -1,13 +1,13 @@
 # Trading Coins
 
-The Coins SDK provides powerful trading functionality through the `tradeCoin` function, which enables swapping between ETH and ERC20 tokens (including creator coins) using Externally Owned Accounts (EOAs) with permit signatures for secure, gasless approvals.
+The Coins SDK provides powerful trading functionality through the `tradeCoin` function, which enables swapping between ETH and ERC20 tokens (including Creator Coins) using Externally Owned Accounts (EOAs) with permit signatures for secure, gasless approvals.
 
 ## Overview
 
 The `tradeCoin` function supports:
 - **ETH ↔ ERC20 token swaps** with semi-automatic routing
-- **Creator coin ↔ Creator coin swaps** with semi-automatic routing
-- **Content coin ↔ Creator coin swaps** with semi-automatic routing
+- **Creator Coin ↔ Creator Coin swaps** with semi-automatic routing
+- **Content Coin ↔ Creator Coin swaps** with semi-automatic routing
 - **ERC20 ↔ ERC20 token swaps** using permit signatures
 - **Permit-based approvals** (via permit2) for secure token spending without separate approval transactions
 - **Slippage protection** and customizable trade parameters
@@ -36,7 +36,7 @@ const tradeParameters: TradeParameters = {
   sell: { type: "eth" },
   buy: {
     type: "erc20",
-    address: "0x4e93a01c90f812284f71291a8d1415a904957156", // Creator coin address
+    address: "0x4e93a01c90f812284f71291a8d1415a904957156", // Creator Coin address
   },
   amountIn: parseEther("0.001"), // 0.001 ETH
   slippage: 0.05, // 5% slippage tolerance
@@ -57,7 +57,7 @@ const receipt = await tradeCoin({
 const tradeParameters: TradeParameters = {
   sell: { 
     type: "erc20", 
-    address: "0x4e93a01c90f812284f71291a8d1415a904957156" // Creator coin address
+    address: "0x4e93a01c90f812284f71291a8d1415a904957156" // Creator Coin address
   },
   buy: { type: "eth" },
   amountIn: parseEther("100"), // 100 tokens (adjust decimals as needed)
@@ -87,7 +87,7 @@ const tradeParameters: TradeParameters = {
   },
   buy: {
     type: "erc20", 
-    address: "0x9b13358e3a023507e7046c18f508a958cda75f54", // @jacob creator coin
+    address: "0x9b13358e3a023507e7046c18f508a958cda75f54", // @jacob Creator Coin
   },
   amountIn: BigInt(4 * 10 ** 6), // 4 USDC (6 decimals)
   slippage: 0.05, // 5% slippage
@@ -104,8 +104,8 @@ const receipt = await tradeCoin({
 
 ### Trading Between ERC20 Tokens
 
-Only creator coins, USDC, and ZORA are supported for trading between ERC20 tokens.
-Content coins _can_ currently be traded when the creator is the same but the current flow requires selling for ZORA, USDC, or ETH, then buying the new coin separately.
+Only Creator Coins, USDC, and ZORA are supported for trading between ERC20 tokens.
+Content Coins _can_ currently be traded when the creator is the same but the current flow requires selling for ZORA, USDC, or ETH, then buying the new coin separately.
 
 ```typescript
 import { TradeParameters, tradeCoin } from "@zoralabs/coins-sdk";
@@ -117,7 +117,7 @@ const tradeParameters: TradeParameters = {
   },
   buy: {
     type: "erc20",
-    address: "0x9b13358e3a023507e7046c18f508a958cda75f54", // @jacob creator coin
+    address: "0x9b13358e3a023507e7046c18f508a958cda75f54", // @jacob Creator Coin
   },
   amountIn: BigInt(4 * 10 ** 6), // 4 USDC (6 decimals)
   slippage: 0.04, // 4% slippage

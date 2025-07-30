@@ -1,5 +1,6 @@
 import { VitePluginRadar } from "vite-plugin-radar";
 import { defineConfig } from "vocs";
+import remarkMermaid from "remark-mermaidjs";
 
 export default defineConfig({
   title: "ZORA Docs",
@@ -16,9 +17,9 @@ export default defineConfig({
       match: "/coins/sdk",
     },
     {
-      text: "Coins Contracts",
-      link: "/coins/contracts",
-      match: "/coins/contracts",
+      text: "Coins Protocol",
+      link: "/coins",
+      match: "/coins",
     },
     {
       text: "Changelogs",
@@ -57,21 +58,32 @@ export default defineConfig({
         text: "Coins Contracts",
         items: [
           {
-            text: "Introduction",
-            link: "/coins/contracts",
-          },
-          { text: "Coins Factory", link: "/coins/contracts/factory" },
-          {
-            text: "Coins Contract",
-            link: "/coins/contracts/coin",
+            text: "Creating a Coin",
+            link: "/coins/contracts/creating-a-coin",
           },
           {
-            text: "Coins Metadata",
-            link: "/coins/contracts/metadata",
+            text: "Architecture",
+            link: "/coins/contracts/architecture",
           },
           {
-            text: "Protocol Rewards",
+            text: "Hook System",
+            link: "/coins/contracts/hook",
+          },
+          {
+            text: "Coin Rewards",
             link: "/coins/contracts/rewards",
+          },
+          {
+            text: "Earning Rewards as a Developer",
+            link: "/coins/contracts/earning-referral-rewards",
+          },
+          {
+            text: "Liquidity Migration",
+            link: "/coins/contracts/liquidity-migration",
+          },
+          {
+            text: "Metadata",
+            link: "/coins/contracts/metadata",
           },
         ],
       },
@@ -126,10 +138,6 @@ export default defineConfig({
                     text: "Explore Coins",
                     link: "/coins/sdk/queries/explore",
                   },
-                  {
-                    text: "Metadata Builder",
-                    link: "/coins/sdk/metadata-builder",
-                  },
                 ],
               },
             ],
@@ -138,24 +146,32 @@ export default defineConfig({
             text: "Contracts",
             items: [
               {
-                text: "Getting Started",
-                link: "/coins/contracts",
+                text: "Creating a Coin",
+                link: "/coins/contracts/creating-a-coin",
               },
               {
-                text: "Coin Factory",
-                link: "/coins/contracts/factory",
+                text: "Architecture",
+                link: "/coins/contracts/architecture",
               },
               {
-                text: "Coin Contract",
-                link: "/coins/contracts/coin",
+                text: "Hook System",
+                link: "/coins/contracts/hook",
               },
               {
-                text: "Coin Metadata",
-                link: "/coins/contracts/metadata",
-              },
-              {
-                text: "Protocol Rewards",
+                text: "Coin Rewards",
                 link: "/coins/contracts/rewards",
+              },
+              {
+                text: "Earning Rewards as a Developer",
+                link: "/coins/contracts/earning-referral-rewards",
+              },
+              {
+                text: "Liquidity Migration",
+                link: "/coins/contracts/liquidity-migration",
+              },
+              {
+                text: "Metadata",
+                link: "/coins/contracts/metadata",
               },
               {
                 text: "Coins License",
@@ -181,6 +197,9 @@ export default defineConfig({
         ],
       },
     ],
+  },
+  markdown: {
+    remarkPlugins: [remarkMermaid],
   },
   vite: {
     build: {

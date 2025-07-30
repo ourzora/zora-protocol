@@ -1,0 +1,85 @@
+# Earning Rewards as a Developer
+
+Earn automatic rewards by facilitating coin creation and trading on the [Zora Coins Protocol](/coins). Developers can earn from both creating coins and facilitating trades, with rewards distributed automatically in the backing currency.
+
+## SDK Integration
+
+For the easiest implementation, use the Zora SDK:
+- [Creating Coins](/coins/sdk/create-coin) - SDK guide for coin creation with referrals
+- [Trading Coins](/coins/sdk/trade-coin) - SDK guide for trading with referrals
+
+## Reward Types and Distribution
+
+There are two types of referral rewards available to developers:
+
+### Create Referral Rewards
+- **Set once** during coin creation
+- **Earns from all future trades** for the coin's entire lifespan
+- **Sticky** - permanently associated with the coin
+
+### Trade Referral Rewards  
+- **Set per individual swap**
+- **Earns only from that specific trade**
+- Can be different for each transaction
+
+### Reward Percentages
+
+The reward distribution varies by coin type:
+
+#### Content Coins - Developer Earnings from Swaps
+| Recipient         | % of Market Rewards | % of Total Fees |
+| ----------------- | ------------------- | --------------- |
+| **Create Referral** | **15%**             | **10%**         |
+| **Trade Referral**  | **15%**             | **10%**         |
+| Creator           | 50%                 | 33.33%          |
+| Protocol          | 15%                 | 10%             |
+| Doppler           | 5%                  | 3.33%           |
+
+#### Creator Coins - No Developer Rewards Available
+
+**Creator Coins do not offer referral rewards to developers.**
+
+## Technical Implementation
+
+### Create Referral Setup
+
+Set the `platformReferrer` parameter when creating coins to earn from all future trades. This address is permanently set for the coin's entire lifespan:
+
+```solidity
+// Deploy a Content Coin with create referral
+address coin = factory.deploy(
+    payoutRecipient,         
+    owners,                  
+    uri,                     
+    name,                    
+    symbol,                  
+    poolConfig,              
+    YOUR_PLATFORM_ADDRESS,   // 🎯 This address earns create referral rewards
+    postDeployHook,          
+    postDeployHookData,      
+    coinSalt                 
+);
+```
+
+### Trade Referral Setup
+
+Include your address in the `hookData` parameter when facilitating swaps. Unlike create referrals, trade referrals are set on a per-swap basis.
+
+#### Building Hook Data
+
+When executing swaps through Uniswap V4, encode your platform address as the hook data:
+
+```solidity
+// Encode your platform address as hookData
+bytes memory hookData = abi.encode(YOUR_PLATFORM_ADDRESS);
+```
+
+This `hookData` should be included in your swap parameters when calling the Uniswap V4 router. The hook data tells the Zora Coins hook which address should receive trade referral rewards for that specific swap.
+
+## How Rewards Work
+
+- **Automatic Distribution**: Rewards are distributed automatically on every swap - no manual claiming required
+- **Multi-Hop Conversion**: All rewards are automatically converted to the backing currency (typically ZORA) before distribution
+- **Immediate Payout**: Rewards are sent directly to recipient addresses with each trade
+
+For complete information about reward distribution, fee structures, and economics, see [Coin Rewards](/coins/contracts/rewards).
