@@ -126,7 +126,10 @@ const get1155Contracts = (): ContractConfig[] => {
   );
 
   const protocolRewardsConfig = JSON.parse(
-    readFileSync("../protocol-rewards/deterministicConfig.json", "utf-8"),
+    readFileSync(
+      `${legacyBaseFolder}/protocol-rewards/deterministicConfig.json`,
+      "utf-8",
+    ),
   ) as {
     expectedAddress: Address;
   };

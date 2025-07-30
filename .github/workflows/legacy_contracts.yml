@@ -52,6 +52,16 @@ jobs:
       ignore_coverage_files: '"*script*"'
       skip_storage_layout: true
 
+  contracts-protocol-rewards:
+    name: Protocol Rewards
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: legacy/protocol-rewards
+      name: Rewards
+      ignore_coverage_files: '"*lib*"'
+      skip_storage_layout: true
+
   js-protocol-sdk:
     name: Protocol SDK
     runs-on: ubuntu-latest

@@ -10,9 +10,8 @@ In it you will find:
 - [Coins](./packages/coins)
 - [Comments](./packages/comments)
 - [Coins SDK](./packages/coins-sdk)
-- [Zora Creator Subgraph](./packages/creator-subgraph)
 - [Protocol Deployments](./packages/protocol-deployments)
-- [Protocol Rewards](./packages/protocol-rewards)
+- [Smart Wallet](./packages/smart-wallet)
 
 ### Legacy Packages
 - [Legacy Contracts](./legacy) - Contains legacy contract packages (1155-contracts, erc20z, sparks, cointags, protocol-sdk, etc.)

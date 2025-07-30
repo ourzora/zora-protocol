@@ -9,6 +9,8 @@ This directory contains legacy contract packages that are no longer under active
 - **erc20z** - ERC20Z token contracts
 - **sparks** - Sparks protocol contracts
 - **cointags** - Cointags contract system
+- **protocol-rewards** - Protocol rewards distribution contracts (moved from packages/)
+- **creator-subgraph** - Legacy subgraph for indexing the Zora Protocol
 - **protocol-sdk** - Protocol SDK for interacting with Zora contracts
 
 ## Development
@@ -21,6 +23,7 @@ Legacy contracts are built and tested using a separate CI workflow that runs onl
 ## Maintenance
 
 These contracts are:
+
 - ✅ Maintained for security updates
 - ✅ Available for reference and historical purposes
 - ❌ Not actively developed with new features

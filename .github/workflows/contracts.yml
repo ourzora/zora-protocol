@@ -3,16 +3,6 @@ name: "Contracts"
 on: "push"
 
 jobs:
-  contracts-protocol-rewards:
-    name: Protocol Rewards
-    uses: ./.github/workflows/contract.yml
-    secrets: inherit
-    with:
-      package_folder: packages/protocol-rewards
-      name: Rewards
-      ignore_coverage_files: '"*lib*"'
-      skip_storage_layout: true
-
   contracts-comments:
     name: Comments
     uses: ./.github/workflows/contract.yml
