@@ -3,10 +3,12 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
 jobs:
   Deploy:
-    # only publish when running on the zora-protocol repo
-    if: github.event.repository.name == 'zora-protocol'
+    # only publish when running on the zora-protocol repo or when manually triggered
+    if: github.event.repository.name == 'zora-protocol' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
