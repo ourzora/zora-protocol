@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.6.2
+
+### Patch Changes
+
+- 262d1539: updating deployments abis for new factory functions for coins
+
 ## 0.6.1
 
 ### Patch Changes

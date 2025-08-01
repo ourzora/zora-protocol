@@ -1,5 +1,12 @@
 # @zoralabs/protocol-sdk
 
+## 0.13.11
+
+### Patch Changes
+
+- Updated dependencies [262d1539]
+  - @zoralabs/protocol-deployments@0.6.2
+
 ## 0.13.10
 
 ### Patch Changes
