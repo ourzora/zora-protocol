@@ -1,5 +1,12 @@
 # @zoralabs/nft-creator-subgraph
 
+## 0.3.40
+
+### Patch Changes
+
+- Updated dependencies [e4938846]
+  - @zoralabs/comments-contracts@0.1.0
+
 ## 0.3.39
 
 ### Patch Changes
