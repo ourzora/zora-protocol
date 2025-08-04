@@ -1029,15 +1029,27 @@ export type GetProfileResponses = {
           /**
            * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
            */
+          username?: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
           displayName?: string;
         };
         tiktok?: {
           /**
            * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
            */
+          username?: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
           displayName?: string;
         };
         twitter?: {
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          username?: string;
           /**
            * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
            */
