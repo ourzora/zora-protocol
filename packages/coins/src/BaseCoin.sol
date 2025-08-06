@@ -4,7 +4,8 @@
 // non-commercial purposes only. Commercial use and competitive products are prohibited
 // until the "Open Date" (3 years from first public distribution or earlier at Zora's discretion),
 // at which point this software automatically becomes available under the MIT License.
-// Full license terms available at: https://docs.zora.co/coins/licensepragma solidity ^0.8.23;
+// Full license terms available at: https://docs.zora.co/coins/license
+pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
