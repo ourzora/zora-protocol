@@ -57,7 +57,7 @@ contract CoinUniV4Test is BaseTest {
     /// and then reverting the state after the swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (FeeEstimatorHook.FeeEstimatorState memory feeState) {
         uint256 snapshot = vm.snapshot();
-        _deployFeeEstimatorHook(MarketConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
+        _deployFeeEstimatorHook(CoinConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
@@ -74,7 +74,7 @@ contract CoinUniV4Test is BaseTest {
         bytes[] memory inputs
     ) internal returns (BalanceDelta delta, SwapParams memory swapParams, uint160 sqrtPriceX96) {
         uint256 snapshot = vm.snapshot();
-        _deployFeeEstimatorHook(MarketConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
+        _deployFeeEstimatorHook(CoinConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;

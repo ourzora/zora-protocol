@@ -2,10 +2,6 @@
 pragma solidity ^0.8.23;
 
 library MarketConstants {
-    /// @notice The number of coins allocated to the liquidity pool
-    /// @dev 990 million coins
-    uint256 internal constant POOL_LAUNCH_SUPPLY = 990_000_000e18;
-
     /// @dev Constant used to increase precision during calculations
     uint256 constant WAD = 1e18;
 
