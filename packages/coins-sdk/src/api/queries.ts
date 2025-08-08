@@ -2,9 +2,13 @@ import {
   GetCoinCommentsData,
   GetCoinCommentsResponse,
   GetCoinData,
+  GetCoinHoldersData,
+  GetCoinHoldersResponse,
   GetCoinResponse,
   GetCoinsData,
   GetCoinsResponse,
+  GetCoinSwapsData,
+  GetCoinSwapsResponse,
   GetProfileBalancesData,
   GetProfileBalancesResponse,
   GetProfileCoinsData,
@@ -16,6 +20,8 @@ import {
   getCoin as getCoinSDK,
   getCoins as getCoinsSDK,
   getCoinComments as getCoinCommentsSDK,
+  getCoinHolders as getCoinHoldersSDK,
+  getCoinSwaps as getCoinSwapsSDK,
   getProfile as getProfileSDK,
   getProfileBalances as getProfileBalancesSDK,
   getProfileCoins as getProfileCoinsSDK,
@@ -55,6 +61,36 @@ export const getCoins = async (
     query: {
       coins: query.coins.map((coinData) => JSON.stringify(coinData)) as any,
     },
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinHoldersQuery = GetCoinHoldersData["query"];
+export type { GetCoinHoldersQuery, GetCoinHoldersData };
+export type { GetCoinHoldersResponse } from "../client/types.gen";
+
+export const getCoinHolders = async (
+  query: GetCoinHoldersQuery,
+  options?: RequestOptionsType<GetCoinHoldersData>,
+): Promise<RequestResult<GetCoinHoldersResponse>> => {
+  return await getCoinHoldersSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinSwapsQuery = GetCoinSwapsData["query"];
+export type { GetCoinSwapsQuery, GetCoinSwapsData };
+export type { GetCoinSwapsResponse } from "../client/types.gen";
+
+export const getCoinSwaps = async (
+  query: GetCoinSwapsQuery,
+  options?: RequestOptionsType<GetCoinSwapsData>,
+): Promise<RequestResult<GetCoinSwapsResponse>> => {
+  return await getCoinSwapsSDK({
+    query,
     ...getApiKeyMeta(),
     ...options,
   });
