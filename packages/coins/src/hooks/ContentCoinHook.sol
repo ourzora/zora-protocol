@@ -9,7 +9,7 @@ pragma solidity ^0.8.28;
 
 import {IPoolManager, IDeployedCoinVersionLookup, IHasRewardsRecipients, Currency, BaseZoraV4CoinHook} from "./BaseZoraV4CoinHook.sol";
 import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
-import {MarketConstants} from "../libs/MarketConstants.sol";
+import {CoinConstants} from "../libs/CoinConstants.sol";
 import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
 
 contract ContentCoinHook is BaseZoraV4CoinHook {
@@ -18,7 +18,7 @@ contract ContentCoinHook is BaseZoraV4CoinHook {
         IDeployedCoinVersionLookup coinVersionLookup_,
         address[] memory trustedMessageSenders_,
         IHooksUpgradeGate upgradeGate
-    ) BaseZoraV4CoinHook(poolManager_, coinVersionLookup_, trustedMessageSenders_, upgradeGate, MarketConstants.POOL_LAUNCH_SUPPLY) {}
+    ) BaseZoraV4CoinHook(poolManager_, coinVersionLookup_, trustedMessageSenders_, upgradeGate, CoinConstants.POOL_LAUNCH_SUPPLY) {}
 
     /// @dev Override for market reward distribution
     function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {

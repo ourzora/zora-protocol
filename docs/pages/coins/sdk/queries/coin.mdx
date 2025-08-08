@@ -68,6 +68,91 @@ type GetCoinsParams = {
 
 The response includes a `zora20Tokens` array containing objects with the same structure as the `zora20Token` object in the `getCoin` response.
 
+### getCoinHolders
+
+The `getCoinHolders` function retrieves information about who holds a specific coin, including their balances and profile information.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinHoldersParams = {
+  chainId: number;    // The chain ID
+  address: string;    // The coin contract address
+  after?: string;     // Optional: Pagination cursor for fetching next page
+  count?: number;     // Optional: Number of holders to return per page
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+import { getCoinHolders } from "@zoralabs/coins-sdk";
+
+const response = await getCoinHolders({
+  chainId: 8453, // Base mainnet
+  address: "0x1234567890123456789012345678901234567890",
+  count: 20, // Get first 20 holders
+});
+
+if (response.data?.zora20Token?.tokenBalances) {
+  const holders = response.data.zora20Token.tokenBalances.edges;
+  console.log(`Found ${holders.length} holders`);
+  
+  holders.forEach(({ node }) => {
+    console.log(`Address: ${node.ownerAddress}`);
+    console.log(`Balance: ${node.balance}`);
+    console.log(`Profile: ${node.ownerProfile?.handle || 'No profile'}`);
+  });
+}
+```
+
+#### Response Structure
+
+The response includes holder information with balances and profile data, plus pagination support.
+
+### getCoinSwaps
+
+The `getCoinSwaps` function retrieves swap activities for a specific coin, showing buy/sell transactions and trading activity.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinSwapsParams = {
+  address: string;    // The coin contract address
+  chain?: number;     // Optional: The chain ID (defaults to Base: 8453)
+  after?: string;     // Optional: Pagination cursor for fetching next page
+  first?: number;     // Optional: Number of swaps to return per page
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+import { getCoinSwaps } from "@zoralabs/coins-sdk";
+
+const response = await getCoinSwaps({
+  address: "0x1234567890123456789012345678901234567890",
+  chain: 8453, // Base mainnet
+  first: 10, // Get first 10 swaps
+});
+
+if (response.data?.zora20Token?.swapActivities) {
+  const swaps = response.data.zora20Token.swapActivities.edges;
+  console.log(`Found ${swaps.length} swaps`);
+  
+  swaps.forEach(({ node }) => {
+    console.log(`Activity: ${node.activityType}`); // "BUY" or "SELL"
+    console.log(`Amount: ${node.coinAmount}`);
+    console.log(`From: ${node.senderAddress}`);
+    console.log(`Timestamp: ${node.blockTimestamp}`);
+  });
+}
+```
+
+#### Response Structure
+
+The response includes swap activity data with transaction details, amounts, and user information.
+
 ### getCoinComments
 
 The `getCoinComments` function retrieves comments associated with a specific coin, useful for displaying community engagement.

@@ -53,7 +53,7 @@ library CoinRewardsV4 {
     uint256 public constant LP_REWARD_BPS = 3333;
 
     function getTradeReferral(bytes calldata hookData) internal pure returns (address) {
-        return hookData.length >= 32 ? abi.decode(hookData, (address)) : address(0);
+        return hookData.length >= 20 ? abi.decode(hookData, (address)) : address(0);
     }
 
     /// @dev Converts collected fees from LP positions into target payout currency, and transfers to hook contract, so

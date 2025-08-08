@@ -12,6 +12,10 @@ import type {
   GetCoinResponse,
   GetCoinCommentsData,
   GetCoinCommentsResponse,
+  GetCoinHoldersData,
+  GetCoinHoldersResponse,
+  GetCoinSwapsData,
+  GetCoinSwapsResponse,
   GetCoinsData,
   GetCoinsResponse,
   SetCreateUploadJwtData,
@@ -109,6 +113,50 @@ export const getCoinComments = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/coinComments",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_coinHolders query
+ */
+export const getCoinHolders = <ThrowOnError extends boolean = false>(
+  options: Options<GetCoinHoldersData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetCoinHoldersResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/coinHolders",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_coinSwaps query
+ */
+export const getCoinSwaps = <ThrowOnError extends boolean = false>(
+  options: Options<GetCoinSwapsData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetCoinSwapsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/coinSwaps",
     ...options,
   });
 };
