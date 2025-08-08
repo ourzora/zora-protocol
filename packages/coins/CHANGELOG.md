@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 2.1.1
+
+### Patch Changes
+
+- 498e5c9d: Consolidated POOL_LAUNCH_SUPPLY into a single constant
+
 ## 2.1.0
 
 ### Minor Changes

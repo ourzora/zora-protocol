@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.2.11
+
+### Patch Changes
+
+- a60f441b: Adding new getCoinSwaps and getCoinHolders endpoints
+
 ## 0.2.10
 
 ### Patch Changes
