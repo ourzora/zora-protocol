@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 2.1.2
+
+### Patch Changes
+
+- 8b85ab94: Removed some unused constants
+
 ## 2.1.1
 
 ### Patch Changes
