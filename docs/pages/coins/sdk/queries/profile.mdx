@@ -93,13 +93,20 @@ type ProfileData = {
     };
     socialAccounts?: {        // Connected social accounts
       instagram?: {
+        username?: string;
         displayName?: string;
       };
       tiktok?: {
+        username?: string;
         displayName?: string;
       };
       twitter?: {
+        username?: string;
         displayName?: string;
+      };
+      "farcaster": {
+        "username": "string";
+        "displayName": "string";
       };
     };
     linkedWallets?: {         // Connected wallets
