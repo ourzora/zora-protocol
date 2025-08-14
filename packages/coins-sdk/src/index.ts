@@ -2,18 +2,16 @@ export {
   createCoin,
   createCoinCall,
   getCoinCreateFromLogs,
-  DeployCurrency,
-  InitialPurchaseCurrency,
+  CreateConstants,
 } from "./actions/createCoin";
 export type {
   CreateCoinArgs,
   CoinDeploymentLogArgs,
+  RawUriMetadata,
+  StartingMarketCap,
+  ContentCoinCurrency,
 } from "./actions/createCoin";
 
-export {
-  getOnchainCoinDetails,
-  type OnchainCoinDetails,
-} from "./actions/getOnchainCoinDetails";
 export { updateCoinURI, updateCoinURICall } from "./actions/updateCoinURI";
 export type { UpdateCoinURIArgs } from "./actions/updateCoinURI";
 

@@ -31,6 +31,12 @@ import type {
   PostQuoteData,
   PostQuoteResponse,
   PostQuoteError,
+  GetCreateContentPoolConfigData,
+  GetCreateContentPoolConfigResponse,
+  GetCreateContentPoolConfigError,
+  PostCreateContentData,
+  PostCreateContentResponse,
+  PostCreateContentError,
 } from "./types.gen";
 import { client as _heyApiClient } from "./client.gen";
 
@@ -312,6 +318,50 @@ export const postQuote = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/quote",
+    ...options,
+    headers: {
+      "Content-Type": "application/json",
+      ...options?.headers,
+    },
+  });
+};
+
+export const getCreateContentPoolConfig = <
+  ThrowOnError extends boolean = false,
+>(
+  options?: Options<GetCreateContentPoolConfigData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetCreateContentPoolConfigResponse,
+    GetCreateContentPoolConfigError,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/create/content/pool-config",
+    ...options,
+  });
+};
+
+export const postCreateContent = <ThrowOnError extends boolean = false>(
+  options?: Options<PostCreateContentData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).post<
+    PostCreateContentResponse,
+    PostCreateContentError,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/create/content",
     ...options,
     headers: {
       "Content-Type": "application/json",

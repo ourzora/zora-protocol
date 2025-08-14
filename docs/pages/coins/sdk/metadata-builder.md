@@ -9,7 +9,7 @@ You are welcome to implement your own uploader or connect another IPFS provider 
 ## Example Usage
 
 ```ts twoslash
-import { createMetadataBuilder, DeployCurrency, createZoraUploaderForCreator, CreateCoinArgs } from "@zoralabs/coins-sdk";
+import { createMetadataBuilder, createZoraUploaderForCreator } from "@zoralabs/coins-sdk";
 import { Address } from "viem";
 
 const creatorAddress = "0x17cd072cBd45031EFc21Da538c783E0ed3b25DCc";
@@ -23,11 +23,9 @@ const { createMetadataParameters } = await createMetadataBuilder()
   )
   .upload(createZoraUploaderForCreator(creatorAddress as Address));
 
-const createCoin: CreateCoinArgs = {
-  ...createMetadataParameters,
-  payoutRecipient: "0xYourAddress" as Address,
-  currency: DeployCurrency.ZORA,
-};
+// Use this directly with the create coin APIs:
+// metadata: createMetadataParameters.metadata
+const metadata = createMetadataParameters.metadata;
 ```
 
 ## Metadata Validation

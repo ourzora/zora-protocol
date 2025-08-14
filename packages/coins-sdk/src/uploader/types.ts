@@ -23,5 +23,8 @@ export interface Uploader {
 export type CreateMetadataParameters = {
   name: string;
   symbol: string;
-  uri: `ipfs://${string}`;
+  metadata: {
+    type: "RAW_URI";
+    uri: ValidMetadataURI;
+  };
 };

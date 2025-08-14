@@ -1,9 +1,9 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect } from "vitest";
 import { createCoinCall } from "../src";
 import { base } from "viem/chains";
 import { Address, parseEther } from "viem";
 import { makeAnvilTest, forkUrls } from "./util/anvil";
-import { DeployCurrency } from "../src/actions/createCoin";
+import { CreateConstants } from "../src/actions/createCoin";
 
 // Create a base mainnet anvil test instance
 const baseAnvilTest = makeAnvilTest({
@@ -26,30 +26,36 @@ describe("Create Coin Call", () => {
         value: parseEther("10"),
       });
 
-      // Get the contract parameters using createCoinCall
-      const createCoinRequest = await createCoinCall({
+      // Get the transaction parameters using createCoinCall
+      const txCalls = await createCoinCall({
+        creator: creatorAddress as Address,
         name: "Test Coin",
         symbol: "TEST",
-        uri: "ipfs://bafybeif47yyhfhcevqdnadyjdyzej3nuhggtbycerde4dg6ln46nnrykje",
-        payoutRecipient: creatorAddress as Address,
-        currency: DeployCurrency.ETH,
+        metadata: {
+          type: "RAW_URI",
+          uri: "ipfs://bafybeif47yyhfhcevqdnadyjdyzej3nuhggtbycerde4dg6ln46nnrykje",
+        },
+        currency: CreateConstants.ContentCoinCurrencies.ETH,
       });
 
-      console.log("Contract request parameters:", createCoinRequest);
+      const tx = txCalls[0];
 
-      // Simulate the contract call
-      const { request } = await publicClient.simulateContract({
-        ...createCoinRequest,
-        account: creatorAddress,
+      // Simulate the call
+      await publicClient.call({ ...tx, account: creatorAddress as Address });
+
+      // Estimate gas and send
+      const gas = await publicClient.estimateGas({
+        ...tx,
+        account: creatorAddress as Address,
       });
-
-      // Add gas buffer (20%)
-      if (request.gas) {
-        request.gas = (request.gas * 120n) / 100n;
-      }
-
-      // Execute the contract call
-      const hash = await walletClient.writeContract(request);
+      const gasPrice = await publicClient.getGasPrice();
+      const hash = await walletClient.sendTransaction({
+        ...tx,
+        gas,
+        gasPrice,
+        chain: publicClient.chain,
+        account: creatorAddress as Address,
+      });
 
       // Wait for transaction confirmation
       const receipt = await publicClient.waitForTransactionReceipt({ hash });
@@ -80,14 +86,15 @@ describe("Create Coin Call", () => {
       // Try to create a coin with invalid URI
       await expect(
         createCoinCall({
+          creator: creatorAddress as Address,
           name: "Test Coin",
           symbol: "TEST",
-          // resolves to an image
-          uri: "ipfs://bafybeibx5wpwwztdhoijwot2ja634kmtlnlzl5mjdk3gtibpf4cttwvhzq",
-          owners: [creatorAddress as Address],
-          payoutRecipient: creatorAddress as Address,
+          metadata: {
+            type: "RAW_URI",
+            uri: "ipfs://bafybeibx5wpwwztdhoijwot2ja634kmtlnlzl5mjdk3gtibpf4cttwvhzq",
+          },
+          currency: CreateConstants.ContentCoinCurrencies.ETH,
           chainId: chain.id,
-          currency: DeployCurrency.ETH,
         }),
       ).rejects.toThrow(
         "Metadata is not a valid JSON or plain text response type",

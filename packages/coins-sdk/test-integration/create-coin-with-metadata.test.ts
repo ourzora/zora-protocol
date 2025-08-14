@@ -7,6 +7,7 @@ import {
   setApiKey,
   createMetadataBuilder,
   createZoraUploaderForCreator,
+  CreateConstants,
 } from "../src";
 import { ZORA_ADDRESS } from "../src/utils/poolConfigUtils";
 import { testPng } from "./util/test-png";
@@ -44,20 +45,22 @@ describe("Create ETH Coin on Base with metadata", () => {
         .upload(createZoraUploaderForCreator(creatorAddress as Address));
 
       // Create the coin
-      const result = await createCoin(
-        {
-          ...createMetadataParameters,
-          owners: [creatorAddress as Address],
-          payoutRecipient: creatorAddress as Address,
+      const result = await createCoin({
+        call: {
+          creator: creatorAddress as Address,
+          name: createMetadataParameters.name,
+          symbol: createMetadataParameters.symbol,
+          metadata: createMetadataParameters.metadata,
+          currency: CreateConstants.ContentCoinCurrencies.ZORA,
           chainId: chain.id,
         },
         walletClient,
         publicClient,
-        {
+        options: {
           account: creatorAddress as Address,
           gasMultiplier: 120, // 20% buffer on gas
         },
-      );
+      });
 
       // Verify the result
       expect(result.hash).toBeDefined();

@@ -1,5 +1,5 @@
 import { describe, it, beforeEach, expect } from "vitest";
-import { createCoin } from "../src";
+import { createCoin, CreateConstants } from "../src";
 
 import {
   Address,
@@ -39,18 +39,21 @@ describe("Coin Creation", () => {
   });
 
   it("creates a new coin", async () => {
-    const response = await createCoin(
-      {
+    const response = await createCoin({
+      call: {
+        creator: creatorAccount.address as Address,
         name: "name",
         symbol: "symbol",
-        uri: "data:application/json;charset=utf-8;base64,eyJkZXNjcmlwdGlvbiI6ImhlbG8iLCJuYW1lIjoiaGVsbyJ9",
-        payoutRecipient: creatorAccount.address,
+        metadata: {
+          type: "RAW_URI",
+          uri: "data:application/json;charset=utf-8;base64,eyJkZXNjcmlwdGlvbiI6ImhlbG8iLCJuYW1lIjoiaGVsbyJ9",
+        },
+        currency: CreateConstants.ContentCoinCurrencies.ETH,
+        chainId: baseSepolia.id,
       },
       walletClient,
       publicClient,
-    );
-
-    console.log({ response });
+    });
 
     expect(response.address).toBeDefined();
     expect(response.deployment).toBeDefined();

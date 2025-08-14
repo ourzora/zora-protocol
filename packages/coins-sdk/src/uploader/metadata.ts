@@ -202,7 +202,10 @@ export class CoinMetadataBuilder {
       createMetadataParameters: {
         name: this.name!,
         symbol: this.symbol!,
-        uri: uploadResult.url as `ipfs://${string}`,
+        metadata: {
+          type: "RAW_URI",
+          uri: uploadResult.url,
+        },
       },
       metadata,
     };

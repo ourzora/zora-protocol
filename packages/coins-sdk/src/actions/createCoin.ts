@@ -1,138 +1,113 @@
-import { coinFactoryABI as zoraFactoryImplABI } from "@zoralabs/protocol-deployments";
+import {
+  coinFactoryAddress,
+  coinFactoryABI as zoraFactoryImplABI,
+} from "@zoralabs/protocol-deployments";
 import {
   Address,
   TransactionReceipt,
   WalletClient,
-  SimulateContractParameters,
   ContractEventArgsFromTopics,
   parseEventLogs,
-  zeroAddress,
-  keccak256,
-  toBytes,
   Hex,
   Account,
+  isAddressEqual,
 } from "viem";
-import { base, baseSepolia } from "viem/chains";
-import { COIN_FACTORY_ADDRESS } from "../constants";
+import { base } from "viem/chains";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import { GenericPublicClient } from "../utils/genericPublicClient";
 import { validateMetadataURIContent } from "../metadata";
 import { ValidMetadataURI } from "../uploader/types";
-import { getAttribution } from "../utils/attribution";
-import {
-  COIN_ETH_PAIR_POOL_CONFIG,
-  COIN_ZORA_PAIR_POOL_CONFIG,
-} from "../utils/poolConfigUtils";
-import { getPrepurchaseHook } from "../utils/getPrepurchaseHook";
 import { getChainFromId } from "../utils/getChainFromId";
+import { postCreateContent } from "../api";
+import { rethrowDecodedRevert } from "../utils/rethrowDecodedRevert";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
   "CoinCreatedV4"
 >;
 
-export enum DeployCurrency {
-  ZORA = 1,
-  ETH = 2,
+const STARTING_MARKET_CAPS = {
+  LOW: "LOW",
+  HIGH: "HIGH",
+} as const;
+export type StartingMarketCap = keyof typeof STARTING_MARKET_CAPS;
+
+export interface RawUriMetadata {
+  type: "RAW_URI";
+  uri: string;
 }
 
-export enum InitialPurchaseCurrency {
-  ETH = 1,
-  // TODO: Add USDC and ZORA support with signature approvals
-}
+const CONTENT_COIN_CURRENCIES = {
+  CREATOR_COIN: "CREATOR_COIN",
+  ZORA: "ZORA",
+  ETH: "ETH",
+  CREATOR_COIN_OR_ZORA: "CREATOR_COIN_OR_ZORA",
+} as const;
+export type ContentCoinCurrency = keyof typeof CONTENT_COIN_CURRENCIES;
+
+export const CreateConstants = {
+  StartingMarketCaps: STARTING_MARKET_CAPS,
+  ContentCoinCurrencies: CONTENT_COIN_CURRENCIES,
+} as const;
 
 export type CreateCoinArgs = {
+  creator: string;
   name: string;
   symbol: string;
-  uri: ValidMetadataURI;
+  metadata: RawUriMetadata;
+  currency: ContentCoinCurrency;
   chainId?: number;
-  owners?: Address[];
-  payoutRecipient: Address;
-  platformReferrer?: Address;
-  currency?: DeployCurrency;
-  initialPurchase?: {
-    currency: InitialPurchaseCurrency;
-    amount: bigint;
-  };
+  startingMarketCap?: StartingMarketCap;
+  platformReferrer?: string;
+  additionalOwners?: Address[];
+  payoutRecipientOverride?: Address;
+  skipMetadataValidation?: boolean;
 };
 
-function getPoolConfig(currency: DeployCurrency, chainId: number) {
-  if (currency === DeployCurrency.ZORA && chainId == baseSepolia.id) {
-    throw new Error("ZORA is not supported on Base Sepolia");
-  }
-
-  switch (currency) {
-    case DeployCurrency.ZORA:
-      return COIN_ZORA_PAIR_POOL_CONFIG[
-        chainId as keyof typeof COIN_ZORA_PAIR_POOL_CONFIG
-      ];
-    case DeployCurrency.ETH:
-      return COIN_ETH_PAIR_POOL_CONFIG[
-        chainId as keyof typeof COIN_ETH_PAIR_POOL_CONFIG
-      ];
-    default:
-      throw new Error("Invalid currency");
-  }
-}
+type TransactionParameters = {
+  to: Address;
+  data: Hex;
+  value: bigint;
+};
 
 export async function createCoinCall({
+  creator,
   name,
   symbol,
-  uri,
-  owners,
-  payoutRecipient,
+  metadata,
   currency,
   chainId = base.id,
-  platformReferrer = "0x0000000000000000000000000000000000000000",
-  initialPurchase,
-}: CreateCoinArgs): Promise<
-  SimulateContractParameters<typeof zoraFactoryImplABI, "deploy">
-> {
-  if (!owners) {
-    owners = [payoutRecipient];
+  payoutRecipientOverride,
+  additionalOwners,
+  platformReferrer,
+  skipMetadataValidation = false,
+}: CreateCoinArgs): Promise<TransactionParameters[]> {
+  // Validate metadata URI
+  if (!skipMetadataValidation) {
+    await validateMetadataURIContent(metadata.uri as ValidMetadataURI);
   }
 
-  if (!currency) {
-    currency = chainId !== base.id ? DeployCurrency.ETH : DeployCurrency.ZORA;
+  const createContentRequest = await postCreateContent({
+    currency,
+    chainId,
+    metadata,
+    creator,
+    name,
+    symbol,
+    platformReferrer,
+    additionalOwners,
+    payoutRecipientOverride,
+  });
+
+  if (!createContentRequest.data?.calls) {
+    throw new Error("Failed to create content calldata");
   }
 
-  const poolConfig = getPoolConfig(currency, chainId);
-
-  // This will throw an error if the metadata is not valid
-  await validateMetadataURIContent(uri);
-
-  let deployHook = {
-    hook: zeroAddress as Address,
-    hookData: "0x" as Hex,
-    value: 0n,
-  };
-  if (initialPurchase) {
-    deployHook = await getPrepurchaseHook({
-      initialPurchase,
-      payoutRecipient,
-      chainId,
-    });
-  }
-
-  return {
-    abi: zoraFactoryImplABI,
-    functionName: "deploy",
-    address: COIN_FACTORY_ADDRESS,
-    args: [
-      payoutRecipient,
-      owners,
-      uri,
-      name,
-      symbol,
-      poolConfig,
-      platformReferrer,
-      deployHook.hook,
-      deployHook.hookData,
-      keccak256(toBytes(Math.random().toString())), // coinSalt
-    ],
-    value: deployHook.value,
-    dataSuffix: getAttribution(),
-  } as const;
+  return createContentRequest.data.calls.map((data) => ({
+    to: data.to as Address,
+    data: data.data as Hex,
+    value: BigInt(data.value),
+  }));
 }
 
 /**
@@ -152,30 +127,97 @@ export function getCoinCreateFromLogs(
 }
 
 // Update createCoin to return both receipt and coin address
-export async function createCoin(
-  call: CreateCoinArgs,
-  walletClient: WalletClient,
-  publicClient: GenericPublicClient,
+export async function createCoin({
+  call,
+  walletClient,
+  publicClient,
+  options,
+}: {
+  call: CreateCoinArgs;
+  walletClient: WalletClient;
+  publicClient: GenericPublicClient;
   options?: {
     gasMultiplier?: number;
     account?: Account | Address;
-  },
-) {
+    skipValidateTransaction?: boolean;
+  };
+}) {
   validateClientNetwork(publicClient);
 
-  const createCoinRequest = await createCoinCall(call);
-  const { request } = await publicClient.simulateContract({
-    ...createCoinRequest,
-    account: options?.account ?? walletClient.account,
+  const callRequest = await createCoinCall(call);
+
+  if (callRequest.length !== 1) {
+    throw new Error("Only one call is supported for this SDK version");
+  }
+
+  const createContentCall = callRequest[0];
+
+  if (!createContentCall) {
+    throw new Error("Failed to load create content calldata from API");
+  }
+
+  const coinFactoryAddressForChain =
+    coinFactoryAddress[call.chainId as keyof typeof coinFactoryAddress];
+
+  // Sanity check that the call is for the correct factory contract
+  if (!isAddressEqual(createContentCall.to, coinFactoryAddressForChain)) {
+    throw new Error("Creator coin is not supported for this SDK version");
+  }
+
+  // Sanity check to ensure no buy orders are sent with there parameters
+  if (createContentCall.value !== 0n) {
+    throw new Error(
+      "Creator coin and purchase is not supported for this SDK version.",
+    );
+  }
+
+  // Prefer a LocalAccount from the wallet client when available to ensure
+  // offline signing (eth_sendRawTransaction) instead of wallet_sendTransaction
+  // which can error when a `from` field is present.
+  const selectedAccount =
+    (typeof options?.account === "string" ? undefined : options?.account) ??
+    walletClient.account;
+
+  if (!selectedAccount) {
+    throw new Error("Account is required");
+  }
+
+  const viemCall = {
+    ...createContentCall,
+    account: selectedAccount,
+  };
+
+  // simulate call
+  if (!options?.skipValidateTransaction) {
+    try {
+      await publicClient.call(viemCall);
+    } catch (err) {
+      rethrowDecodedRevert(err, zoraFactoryImplABI);
+    }
+  }
+
+  const gasEstimate = options?.skipValidateTransaction
+    ? 10_000_000n
+    : await publicClient.estimateGas(viemCall);
+  const gasPrice = await publicClient.getGasPrice();
+
+  const hash = await (async () => {
+    try {
+      return await walletClient.sendTransaction({
+        ...viemCall,
+        gasPrice,
+        gas: gasEstimate,
+        chain: publicClient.chain,
+      });
+    } catch (err) {
+      rethrowDecodedRevert(err, zoraFactoryImplABI);
+    }
+  })();
+
+  const receipt = await publicClient.waitForTransactionReceipt({
+    hash,
   });
 
-  // Add a 2/5th buffer on gas.
-  if (request.gas) {
-    // Gas limit multiplier is a percentage argument.
-    request.gas = (request.gas * BigInt(options?.gasMultiplier ?? 100)) / 100n;
-  }
-  const hash = await walletClient.writeContract(request);
-  const receipt = await publicClient.waitForTransactionReceipt({ hash });
   const deployment = getCoinCreateFromLogs(receipt);
 
   return {
