@@ -14,7 +14,7 @@
     "docs:copy-changelogs": "pnpm --filter=docs copy-changelog",
     "lint": "turbo run lint",
     "format": "turbo run format",
-    "release": "turbo run build && changeset publish",
+    "release": "turbo run build:js && changeset publish",
     "changesets": "changesets",
     "prepare": "husky install",
     "run-lint-staged": "lint-staged"
