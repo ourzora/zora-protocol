@@ -18,11 +18,13 @@ After `git clone` run `yarn` to install dependencies.
 Steps to build:
 
 ```sh
-NETWORK=zora pnpm run build
+NETWORK=zora pnpm run build:subgraph
 
 ```
 
 NETWORK needs to be a name of a valid network configuration file in `config/`.
+
+**Note:** This package has been moved to legacy and uses `build:subgraph` instead of `build` to avoid conflicts with the root build system. Use `build:subgraph` for subgraph-specific builds.
 
 
 After building, you can use the graph cli or goldsky cli to deploy the built subgraph for the network specified above.

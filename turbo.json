@@ -5,16 +5,24 @@
       "dependsOn": ["^build"],
       "outputs": ["dist/**"]
     },
+    "build:js": {
+      "dependsOn": ["^build:js"],
+      "outputs": ["dist/**"]
+    },
     "build:site": {
-      "dependsOn": ["^build"],
+      "dependsOn": ["^build:js"],
       "outputs": [".vercel/output/**"]
     },
-    "@zoralabs/protocol-deployments-gen#build": {
-      "dependsOn": ["^build"],
+    "@zoralabs/protocol-deployments-gen#build:js": {
+      "dependsOn": ["^build:js"],
       "outputs": ["generated/**"]
     },
-    "@zoralabs/protocol-deployments#build": {
-      "dependsOn": ["@zoralabs/protocol-deployments-gen#build"],
+    "@zoralabs/protocol-deployments#build:js": {
+      "dependsOn": ["@zoralabs/protocol-deployments-gen#build:js"],
+      "outputs": ["dist/**"]
+    },
+    "@zoralabs/coins-sdk#build": {
+      "dependsOn": ["^build:js"],
       "outputs": ["dist/**"]
     },
     "@zoralabs/zora-1155-contracts#build": {
@@ -55,7 +63,7 @@
       "dependsOn": ["^lint"]
     },
     "docs#lint": {
-      "dependsOn": ["^@zoralabs/coins-sdk#build"]
+      "dependsOn": ["^@zoralabs/coins-sdk#build:js"]
     },
     "update-contract-version": {
       "dependsOn": ["^update-contract-version"]

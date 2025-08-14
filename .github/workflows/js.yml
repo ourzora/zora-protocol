@@ -31,7 +31,7 @@ jobs:
 
       - name: Build js package
         run: |
-          pnpm turbo run build
+          pnpm turbo run build:js
 
       - name: Test js package
         run: |

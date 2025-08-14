@@ -23,11 +23,13 @@
     "test-gas": "forge test --gas-report",
     "storage-inspect:check": "./script/storage-check.sh check ZoraTimedSaleStrategyImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraTimedSaleStrategyImpl",
+    "build:contracts:minimal": "forge build --skip test --skip script --no-metadata",
     "build:sizes": "forge build src/ --sizes",
     "copy-abis": "pnpm exec bundle-abis",
     "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
-    "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
-    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
+    "build": "forge build",
+    "build:js": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
+    "wagmi:generate": "pnpm run build:contracts:minimal && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
     "update-contract-version": "pnpm exec update-contract-version"
   },
   "devDependencies": {

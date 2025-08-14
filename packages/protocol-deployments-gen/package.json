@@ -7,6 +7,7 @@
   "version": "0.0.0",
   "scripts": {
     "build": "pnpm run wagmi:generate",
+    "build:js": "pnpm run build",
     "wagmi:generate": "wagmi generate && pnpm exec rename-generated-abi-casing ./generated/wagmi.ts"
   },
   "dependencies": {

@@ -4,6 +4,7 @@
   "license": "MIT",
   "scripts": {
     "build": "turbo run build",
+    "build:js": "turbo run build:js",
     "test": "turbo run test",
     "dev": "turbo run dev",
     "docs:preview": "pnpm run --filter docs preview",

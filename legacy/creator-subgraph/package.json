@@ -7,7 +7,8 @@
   "scripts": {
     "codegen": "pnpm run gen-yaml-config && pnpm run extract-abis && graph codegen && echo 'import { Address } from \"@graphprotocol/graph-ts\";' >> generated/templates.ts",
     "extract-abis": "tsx scripts/extract-abis.ts",
-    "build": "pnpm run codegen && graph build",
+    "build:subgraph": "pnpm run codegen && graph build",
+    "build:js": "echo 'Skipping creator-subgraph build - use build:subgraph if needed'",
     "gen-yaml-config": "cat template_warning.md > subgraph.yaml && yaml2json config/${NETWORK:-zora-sepolia}.yaml | mustache - subgraph.template.yaml >> subgraph.yaml && yaml2json config/${NETWORK:-zora-sepolia}.yaml | mustache - src/constants/chainid.ts.template > src/constants/chainid.ts",
     "deploy-hosted": "graph deploy --node https://api.thegraph.com/deploy/ ${DEPLOYMENT_PATH}",
     "test": "graph test . -v 0.5.4"

@@ -47,3 +47,6 @@ package/chainConfigs.ts
 
 **/vocs.config.ts.*
 .vercel
+
+# Claude Code local settings
+.claude/settings.local.json

@@ -17,6 +17,7 @@
   },
   "scripts": {
     "build": "pnpm tsup",
+    "build:js": "pnpm run build",
     "prepack": "pnpm build",
     "test:js:legacy": "vitest src",
     "test:integration": "vitest test-integration",
