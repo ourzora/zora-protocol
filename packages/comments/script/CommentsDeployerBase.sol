@@ -64,7 +64,7 @@ contract CommentsDeployerBase is ProxyDeployerScript {
         deployment.callerAndCommenterVersion = readStringOrDefaultToEmpty(json, "CALLER_AND_COMMENTER_VERSION");
     }
 
-    function commentsImplCreationCode() internal pure returns (bytes memory) {
+    function commentsImplCreationCode() internal returns (bytes memory) {
         return abi.encodePacked(type(CommentsImpl).creationCode, abi.encode(SPARK_VALUE, PROTOCOL_REWARDS));
     }
 
