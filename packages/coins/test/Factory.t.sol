@@ -13,7 +13,13 @@ contract FactoryTest is BaseTest {
 
     function test_factory_constructor_and_proxy_setup() public {
         // Impl constructor test
-        ZoraFactoryImpl impl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
+        ZoraFactoryImpl impl = new ZoraFactoryImpl(
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook),
+            address(zoraHookRegistry)
+        );
         assertEq(ZoraFactoryImpl(address(factory)).owner(), users.factoryOwner);
         assertEq(ZoraFactoryImpl(address(factory)).coinV4Impl(), address(coinV4Impl));
 
@@ -39,7 +45,7 @@ contract FactoryTest is BaseTest {
         assertEq(ZoraFactoryImpl(address(factory)).pendingOwner(), address(0));
 
         address newFactoryImpl = address(
-            new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook))
+            new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook), address(zoraHookRegistry))
         );
 
         // Upgrade to current / new impl
@@ -66,7 +72,13 @@ contract FactoryTest is BaseTest {
     }
 
     function test_upgrade() public {
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook),
+            address(zoraHookRegistry)
+        );
 
         vm.prank(users.factoryOwner);
         ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
@@ -82,12 +94,18 @@ contract FactoryTest is BaseTest {
         address newImpl = address(this);
 
         vm.prank(users.factoryOwner);
-        vm.expectRevert(abi.encodeWithSelector(ERC1967Utils.ERC1967InvalidImplementation.selector, address(newImpl)));
+        vm.expectRevert();
         ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
     }
 
     function test_revert_invalid_owner() public {
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook),
+            address(zoraHookRegistry)
+        );
 
         vm.prank(users.creator);
         vm.expectRevert(abi.encodeWithSelector(OwnableUpgradeable.OwnableUnauthorizedAccount.selector, users.creator));
@@ -162,6 +180,32 @@ contract FactoryTest is BaseTest {
         vm.prank(users.factoryOwner);
         vm.expectRevert(abi.encodeWithSelector(IZoraFactory.UpgradeToMismatchedContractName.selector, "ZoraCoinFactory", "BadFactory"));
         ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(badImpl), "");
+    }
+
+    function test_upgrade_auto_registers_hooks() public {
+        address[] memory registeredHooks;
+
+        registeredHooks = zoraHookRegistry.getHookAddresses();
+        assertEq(registeredHooks.length, 0);
+
+        _deployHooks(); // Deploys new content and creator coin hook addresses
+
+        // Deploy new factory impl with new content and creator coin hook addresses
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook),
+            address(zoraHookRegistry)
+        );
+
+        vm.prank(users.factoryOwner);
+        ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
+
+        registeredHooks = zoraHookRegistry.getHookAddresses();
+        assertEq(registeredHooks.length, 2);
+        assertTrue(zoraHookRegistry.isRegisteredHook(address(contentCoinHook)));
+        assertTrue(zoraHookRegistry.isRegisteredHook(address(creatorCoinHook)));
     }
 }
 

@@ -43,6 +43,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         bytes32 zoraV4CoinHookSalt;
         bytes32 creatorCoinHookSalt;
         bool isDev;
+        // Hook registry
+        address zoraHookRegistry;
     }
 
     function addressesFile() internal view returns (string memory) {
@@ -70,6 +72,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "CREATOR_COIN_HOOK", deployment.creatorCoinHook);
         vm.serializeBytes32(objectKey, "CREATOR_COIN_HOOK_SALT", deployment.creatorCoinHookSalt);
         vm.serializeAddress(objectKey, "HOOK_UPGRADE_GATE", deployment.hookUpgradeGate);
+        vm.serializeAddress(objectKey, "ZORA_HOOK_REGISTRY", deployment.zoraHookRegistry);
         string memory result = vm.serializeAddress(objectKey, "COIN_V4_IMPL", deployment.coinV4Impl);
 
         vm.writeJson(result, addressesFile(deployment.isDev));
@@ -99,6 +102,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.creatorCoinHook = readAddressOrDefaultToZero(json, "CREATOR_COIN_HOOK");
         deployment.creatorCoinHookSalt = readBytes32OrDefaultToZero(json, "CREATOR_COIN_HOOK_SALT");
         deployment.hookUpgradeGate = readAddressOrDefaultToZero(json, "HOOK_UPGRADE_GATE");
+        deployment.zoraHookRegistry = readAddressOrDefaultToZero(json, "ZORA_HOOK_REGISTRY");
     }
 
     function deployCoinV4Impl(address zoraV4CoinHook) internal returns (ContentCoin) {
@@ -125,14 +129,16 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address _coinV4Impl,
         address _creatorCoinImpl,
         address _contentCoinHook,
-        address _creatorCoinHook
+        address _creatorCoinHook,
+        address _zoraHookRegistry
     ) internal returns (ZoraFactoryImpl) {
         return
             new ZoraFactoryImpl({
                 _coinV4Impl: _coinV4Impl,
                 _creatorCoinImpl: _creatorCoinImpl,
                 _contentCoinHook: _contentCoinHook,
-                _creatorCoinHook: _creatorCoinHook
+                _creatorCoinHook: _creatorCoinHook,
+                _zoraHookRegistry: _zoraHookRegistry
             });
     }
 
@@ -193,7 +199,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
                     _coinV4Impl: deployment.coinV4Impl,
                     _creatorCoinImpl: deployment.creatorCoinImpl,
                     _contentCoinHook: deployment.zoraV4CoinHook,
-                    _creatorCoinHook: deployment.creatorCoinHook
+                    _creatorCoinHook: deployment.creatorCoinHook,
+                    _zoraHookRegistry: deployment.zoraHookRegistry
                 })
             );
     }

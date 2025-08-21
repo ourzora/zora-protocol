@@ -70,6 +70,10 @@ export default defineConfig({
             link: "/coins/contracts/hook",
           },
           {
+            text: "Hook Registry",
+            link: "/coins/contracts/hook-registry",
+          },
+          {
             text: "Coin Rewards",
             link: "/coins/contracts/rewards",
           },
@@ -156,6 +160,10 @@ export default defineConfig({
               {
                 text: "Hook System",
                 link: "/coins/contracts/hook",
+              },
+              {
+                text: "Hook Registry",
+                link: "/coins/contracts/hook-registry",
               },
               {
                 text: "Coin Rewards",

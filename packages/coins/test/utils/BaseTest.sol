@@ -45,11 +45,16 @@ import {CreatorCoinHook} from "../../src/hooks/CreatorCoinHook.sol";
 import {ContractAddresses} from "./ContractAddresses.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {HookUpgradeGate} from "../../src/hooks/HookUpgradeGate.sol";
+import {ZoraHookRegistry} from "../../src/hook-registry/ZoraHookRegistry.sol";
 
 contract BaseTest is Test, ContractAddresses {
     using stdStorage for StdStorage;
 
     int24 internal constant USDC_TICK_LOWER = 57200;
+    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = CoinConstants.DEFAULT_DISCOVERY_TICK_LOWER;
+    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = CoinConstants.DEFAULT_DISCOVERY_TICK_UPPER;
+    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = CoinConstants.DEFAULT_NUM_DISCOVERY_POSITIONS;
+    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = CoinConstants.DEFAULT_DISCOVERY_SUPPLY_SHARE;
 
     struct Users {
         address factoryOwner;
@@ -88,10 +93,7 @@ contract BaseTest is Test, ContractAddresses {
     ContentCoinHook internal contentCoinHook;
     CreatorCoinHook internal creatorCoinHook;
     HookUpgradeGate internal hookUpgradeGate;
-    int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = CoinConstants.DEFAULT_DISCOVERY_TICK_LOWER;
-    int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = CoinConstants.DEFAULT_DISCOVERY_TICK_UPPER;
-    uint16 internal constant DEFAULT_NUM_DISCOVERY_POSITIONS = CoinConstants.DEFAULT_NUM_DISCOVERY_POSITIONS;
-    uint256 internal constant DEFAULT_DISCOVERY_SUPPLY_SHARE = CoinConstants.DEFAULT_DISCOVERY_SUPPLY_SHARE;
+    ZoraHookRegistry internal zoraHookRegistry;
 
     function _defaultPoolConfig(address currency) internal pure returns (bytes memory) {
         return CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(currency);
@@ -291,13 +293,26 @@ contract BaseTest is Test, ContractAddresses {
 
         hookUpgradeGate = new HookUpgradeGate(users.factoryOwner);
 
+        zoraHookRegistry = new ZoraHookRegistry();
+
+        address[] memory initialOwners = new address[](2);
+        initialOwners[0] = users.factoryOwner;
+        initialOwners[1] = address(factory);
+        zoraHookRegistry.initialize(initialOwners);
+
         _deployHooks();
 
         coinV4Impl = new ContentCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
 
         creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
 
-        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook));
+        factoryImpl = new ZoraFactoryImpl(
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(contentCoinHook),
+            address(creatorCoinHook),
+            address(zoraHookRegistry)
+        );
         UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
         factory = IZoraFactory(address(factory));
 

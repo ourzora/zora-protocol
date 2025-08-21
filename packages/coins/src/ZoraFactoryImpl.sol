@@ -35,6 +35,7 @@ import {CoinDopplerMultiCurve} from "./libs/CoinDopplerMultiCurve.sol";
 import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
 import {MarketConstants} from "./libs/MarketConstants.sol";
 import {DeployedCoinVersionLookup} from "./utils/DeployedCoinVersionLookup.sol";
+import {IZoraHookRegistry} from "./interfaces/IZoraHookRegistry.sol";
 
 contract ZoraFactoryImpl is
     IZoraFactory,
@@ -52,16 +53,27 @@ contract ZoraFactoryImpl is
     address public immutable creatorCoinImpl;
     address public immutable contentCoinHook;
     address public immutable creatorCoinHook;
+    address public immutable zoraHookRegistry;
 
-    constructor(address _coinV4Impl, address _creatorCoinImpl, address _contentCoinHook, address _creatorCoinHook) {
+    constructor(address _coinV4Impl, address _creatorCoinImpl, address _contentCoinHook, address _creatorCoinHook, address _zoraHookRegistry) {
         _disableInitializers();
 
         coinV4Impl = _coinV4Impl;
         creatorCoinImpl = _creatorCoinImpl;
         contentCoinHook = _contentCoinHook;
         creatorCoinHook = _creatorCoinHook;
+        zoraHookRegistry = _zoraHookRegistry;
     }
 
+    /// @notice Creates a new creator coin contract
+    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
+    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
+    /// @param uri The coin metadata uri
+    /// @param name The name of the coin
+    /// @param symbol The symbol of the coin
+    /// @param poolConfig The config parameters for the coin's pool
+    /// @param platformReferrer The address of the platform referrer
+    /// @param coinSalt The salt used to deploy the coin
     function deployCreatorCoin(
         address payoutRecipient,
         address[] memory owners,
@@ -358,6 +370,17 @@ contract ZoraFactoryImpl is
                 revert UpgradeToMismatchedContractName(contractName(), name);
             }
         } catch {}
+
+        // Auto-register the new hooks in the Zora hook registry
+        address[] memory hooks = new address[](2);
+        string[] memory tags = new string[](2);
+
+        hooks[0] = IZoraFactory(newImpl).contentCoinHook();
+        hooks[1] = IZoraFactory(newImpl).creatorCoinHook();
+        tags[0] = "ContentCoinHook";
+        tags[1] = "CreatorCoinHook";
+
+        IZoraHookRegistry(zoraHookRegistry).registerHooks(hooks, tags);
     }
 
     function _equals(string memory a, string memory b) internal pure returns (bool) {

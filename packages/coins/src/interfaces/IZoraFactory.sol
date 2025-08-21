@@ -83,6 +83,29 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
     /// @notice Thrown when ETH is sent with a transaction but the currency is not WETH
     error EthTransferInvalid();
 
+    /// @notice Thrown when the hook is invalid
+    error InvalidHook();
+
+    /// @notice Occurs when attempting to upgrade to a contract with a name that doesn't match the current contract's name
+    /// @param currentName The name of the current contract
+    /// @param newName The name of the contract being upgraded to
+    error UpgradeToMismatchedContractName(string currentName, string newName);
+
+    /// @notice Thrown when a method is deprecated
+    error Deprecated();
+
+    /// @notice Thrwon when an invalid config version is provided
+    error InvalidConfig();
+
+    /// @notice Creates a new creator coin contract
+    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
+    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
+    /// @param uri The coin metadata uri
+    /// @param name The name of the coin
+    /// @param symbol The symbol of the coin
+    /// @param poolConfig The config parameters for the coin's pool
+    /// @param platformReferrer The address of the platform referrer
+    /// @param coinSalt The salt used to deploy the coin
     function deployCreatorCoin(
         address payoutRecipient,
         address[] memory owners,
@@ -163,19 +186,15 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
         bytes calldata hookData
     ) external payable returns (address coin, bytes memory hookDataOut);
 
+    /// @notice The implementation address of the factory contract
     function implementation() external view returns (address);
 
-    /// @notice Thrown when the hook is invalid
-    error InvalidHook();
+    /// @notice The address of the latest content coin hook
+    function contentCoinHook() external view returns (address);
 
-    /// @notice Occurs when attempting to upgrade to a contract with a name that doesn't match the current contract's name
-    /// @param currentName The name of the current contract
-    /// @param newName The name of the contract being upgraded to
-    error UpgradeToMismatchedContractName(string currentName, string newName);
+    /// @notice The address of the latestcreator coin hook
+    function creatorCoinHook() external view returns (address);
 
-    /// @notice Thrown when a method is deprecated
-    error Deprecated();
-
-    /// @notice Thrwon when an invalid config version is provided
-    error InvalidConfig();
+    /// @notice The address of the Zora hook registry
+    function zoraHookRegistry() external view returns (address);
 }

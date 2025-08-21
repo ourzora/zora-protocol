@@ -1,0 +1,47 @@
+# Hook Registry
+
+A canonical registry of Zora Uniswap V4 hook addresses to discover and track changes.
+
+## Overview
+
+- Tracks Uniswap V4 hook contract addresses used by Zora Coins
+- Onchain lookup of hooks, tags, and versions
+- Emits events on add/remove (includes tag and version)
+- `tag` is a label set to distinguish hook types (e.g. `CONTENT` vs `CREATOR`)
+- `version` is read via `contractVersion()` on the hook contract if it exists
+
+## Deployment
+
+| Chain | Chain ID | Hook Contract | Address |
+|-------|----------|---------------|---------|
+| Base | 8453 | ZoraHookRegistry | `0x777777C4c14b133858c3982D41Dbf02509fc18d7` |
+
+
+## Interface
+
+### Events
+
+```solidity
+event ZoraHookRegistered(address indexed hook, string tag, string version);
+event ZoraHookRemoved(address indexed hook, string tag, string version);
+```
+
+### Structs
+
+```solidity
+struct ZoraHook {
+    address hook;
+    string tag;
+    string version;
+}
+```
+
+### Read Functions
+
+```solidity
+function isRegisteredHook(address hook) external view returns (bool);
+function getHooks() external view returns (ZoraHook[] memory);
+function getHookAddresses() external view returns (address[] memory);
+function getHookTag(address hook) external view returns (string memory);
+function getHookVersion(address hook) external view returns (string memory);
+```
