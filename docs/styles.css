@@ -18,6 +18,42 @@
   width: 100%;
 }
 
+/* Ensure links in tables maintain proper styling */
+table a,
+table td a,
+table th a {
+  color: #0066cc !important;
+  text-decoration: underline;
+}
+
+table a:hover,
+table td a:hover,
+table th a:hover {
+  color: #0052a3 !important;
+}
+
+/* Contract Address Component */
+.contract-address-wrapper {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.copy-button {
+  border: none;
+  background: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: 0.8em;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.copy-button:hover {
+  opacity: 1;
+}
+
+
 .vocs_DocsLayout[data-layout="landing"] .vocs_DocsLayout_content,
 .vocs_DocsLayout[data-layout="landing"] .vocs_Content {
   max-width: inherit;

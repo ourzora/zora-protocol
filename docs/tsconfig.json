@@ -8,6 +8,12 @@
     "resolveJsonModule": true,
     "jsx": "react-jsx",
 
+    /* Path mapping */
+    "baseUrl": ".",
+    "paths": {
+      "@components/*": ["components/*"]
+    },
+
     /* Linting */
     "strict": true,
     "noUnusedLocals": true,

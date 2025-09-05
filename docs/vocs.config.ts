@@ -1,6 +1,7 @@
 import { VitePluginRadar } from "vite-plugin-radar";
 import { defineConfig } from "vocs";
 import remarkMermaid from "remark-mermaidjs";
+import path from "path";
 
 export default defineConfig({
   title: "ZORA Docs",
@@ -212,6 +213,11 @@ export default defineConfig({
   vite: {
     build: {
       outDir: ".vercel/output",
+    },
+    resolve: {
+      alias: {
+        '@components': path.resolve(process.cwd(), 'components')
+      }
     },
     plugins: [
       ...(process.env.NODE_ENV === "production"
