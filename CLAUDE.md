@@ -39,7 +39,8 @@ When documenting contracts, focus on **how to use** and **how it works** rather 
 ### Package Management
 
 - `pnpm install` - Install dependencies
-- `pnpm build` - Build all packages
+- `pnpm build` - Build all packages (full contract compilation + TypeScript builds)
+- `pnpm build:js` - Build TypeScript packages only (faster, for docs/development)
 - `pnpm test` - Run tests across all packages
 - `pnpm dev` - Run development mode with watch tests
 - `pnpm lint` - Run linting
@@ -240,3 +241,112 @@ Uses Graphite for branch management:
 - Each branch should represent a logical unit of work
 - Submit stacked branches as separate PRs that can be reviewed independently
 - Use descriptive branch names that reflect the specific change being made
+
+## Documentation Development
+
+### Prerequisites for Documentation Work
+
+Before working with the documentation, build the packages that are imported:
+
+1. **Install dependencies** from the root directory:
+   ```bash
+   pnpm install
+   ```
+
+2. **Build packages** from the root directory:
+   ```bash
+   pnpm build:js
+   ```
+   Note: Documentation builds use `build:js` to avoid unnecessary contract compilation. If the build fails due to missing TypeScript dependencies, check individual package devDependencies.
+
+3. **Start docs development server**:
+   ```bash
+   cd docs
+   pnpm dev
+   ```
+
+### Common Build Issues
+
+#### Missing TypeScript Dependencies
+
+Some packages may fail during `build:js` if TypeScript is not available as a devDependency:
+
+**Error Pattern**: `tsc: command not found` during tsup build
+**Solution**: Add TypeScript as devDependency to the failing package:
+```json
+{
+  "devDependencies": {
+    "typescript": "^5.0.0"
+  }
+}
+```
+
+This commonly affects packages that use tsup configs with `onSuccess` hooks calling `tsc` directly.
+
+### UML Diagrams
+
+#### Generating UML Diagrams
+
+When creating or updating PlantUML diagrams in the `uml/` directory:
+
+1. **Create/update the .puml file** in `uml/` directory
+2. **Generate the SVG** by running:
+   ```bash
+   cd docs
+   pnpm generate-uml
+   ```
+3. **Reference the generated SVG** in documentation using the path: `public/uml/filename.svg`
+
+#### UML File Locations
+
+- **Source files**: `uml/*.puml` (PlantUML format)
+- **Generated files**: `public/uml/*.svg` (SVG format for web display)
+
+#### Example
+
+For a file `uml/my-diagram.puml`, the generated SVG will be at `public/uml/my-diagram.svg` and can be referenced in documentation as:
+
+```markdown
+![My Diagram](/uml/my-diagram.svg)
+```
+
+Note: Use the `/uml/` path (not `public/uml/`) when referencing diagrams in documentation.
+
+### Writing Guidelines
+
+- **Avoid second person language**: Never use "you", "your", "yours" in documentation. Use third person (e.g., "the user", "developers", "coin creators") or imperative voice (e.g., "Call the function", "Set the parameter") instead.
+
+### Redirects Management
+
+#### When Renaming or Moving Documentation Files
+
+When renaming or moving documentation files, always add redirects to `docs/vercel.json` to prevent broken links:
+
+1. **Add redirect entries** in the `redirects` array
+2. **Use permanent redirects** (`"permanent": true`) for renamed pages
+3. **Use temporary redirects** (`"permanent": false`) for content that may change
+
+#### Example Redirect Entry
+
+```json
+{
+  "source": "/coins/contracts/factory",
+  "destination": "/coins/contracts/creating-a-coin", 
+  "permanent": true
+}
+```
+
+#### Common Redirect Scenarios
+
+- **Page renamed**: Redirect old URL to new URL
+- **Page moved**: Redirect old path to new path  
+- **Page removed**: Redirect to most relevant existing page
+- **Section reorganized**: Redirect old structure to new structure
+
+Always test redirects after deployment to ensure they work correctly.
+
+### Documentation Commands
+
+- `pnpm generate-uml` - Generate SVG files from PlantUML source files
+- `pnpm dev` - Start development server (from docs directory)
+- `pnpm build` - Build documentation site (from docs directory)
