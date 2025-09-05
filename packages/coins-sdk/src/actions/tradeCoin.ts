@@ -130,8 +130,8 @@ export async function tradeCoin({
         address: permit2Address[base.id],
         functionName: "allowance",
         args: [
-          permit.permit.details.token as Address,
           typeof account === "string" ? account : account.address,
+          permit.permit.details.token as Address,
           permit.permit.spender as Address,
         ],
       });
