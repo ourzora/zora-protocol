@@ -7,8 +7,14 @@ on:
     paths:
       - "packages/*/src/**/*.sol"
       - "packages/*/test/**/*.sol"
-      - "packages/*/script/**/*.sol" 
+      - "packages/*/script/**/*.sol"
+      - "packages/*/src/**/*.ts"
+      - "packages/*/src/**/*.tsx"
+      - "packages/*/src/**/*.js"
+      - "packages/*/src/**/*.jsx"
       - ".changeset/**/*.md"
+      - ".github/**/*"
+      - "docs/**/*"
       - "src/**/*.ts"
       - "src/**/*.tsx"
       - "src/**/*.js"
@@ -22,14 +28,14 @@ jobs:
     #   github.event.pull_request.user.login == 'external-contributor' ||
     #   github.event.pull_request.user.login == 'new-developer' ||
     #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
-    
+
     runs-on: ubuntu-latest
     permissions:
       contents: read
       pull-requests: read
       issues: read
       id-token: write
-    
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
@@ -44,7 +50,7 @@ jobs:
 
           # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
           # model: "claude-opus-4-20250514"
-          
+
           # Direct prompt for automated review (no @claude mention needed)
           direct_prompt: |
             Please review this pull request and provide feedback on:
@@ -53,18 +59,18 @@ jobs:
             - Performance considerations
             - Security concerns
             - Test coverage
-            
+
             **Important: Changeset Validation**
             If this PR modifies contract code (*.sol files in packages/*/src/), please check:
             1. Is there a changeset file in .changeset/ directory?
             2. If contract code changed but no changeset exists, remind the author to add one using `pnpm changeset add --empty` and manually edit it
             3. According to CLAUDE.md: "When updating contract code, make a changeset for the corresponding contract package"
-            
+
             Be constructive and helpful in your feedback.
 
           # Use sticky comments to update existing comment instead of creating new ones
           use_sticky_comment: true
-          
+
           # Optional: Customize review based on file types
           # direct_prompt: |
           #   Review this PR focusing on:
@@ -72,18 +78,17 @@ jobs:
           #   - For API endpoints: Security, input validation, and error handling
           #   - For React components: Performance, accessibility, and best practices
           #   - For tests: Coverage, edge cases, and test quality
-          
+
           # Optional: Different prompts for different authors
           # direct_prompt: |
-          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' && 
+          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' &&
           #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
           #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
-          
+
           # Allow Claude to inspect changesets and run validation commands
           allowed_tools: "Bash(ls .changeset/),Bash(pnpm changeset status),Bash(find packages -name '*.sol' -path '*/src/*'),Bash(git diff --name-only main...HEAD)"
-          
+
           # Optional: Skip review for certain conditions
           # if: |
           #   !contains(github.event.pull_request.title, '[skip-review]') &&
           #   !contains(github.event.pull_request.title, '[WIP]')
-
