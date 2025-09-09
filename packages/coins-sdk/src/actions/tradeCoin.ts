@@ -177,7 +177,7 @@ export async function tradeCoin({
         primaryType: "PermitSingle",
         types: PERMIT_SINGLE_TYPES,
         message,
-        account: typeof account === "string" ? account : account,
+        account,
       });
       signatures.push({
         signature,

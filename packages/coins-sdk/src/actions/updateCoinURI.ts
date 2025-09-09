@@ -1,6 +1,7 @@
 import { coinABI } from "@zoralabs/protocol-deployments";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 import {
+  Account,
   Address,
   parseEventLogs,
   SimulateContractParameters,
@@ -35,12 +36,13 @@ export async function updateCoinURI(
   args: UpdateCoinURIArgs,
   walletClient: WalletClient,
   publicClient: GenericPublicClient,
+  account?: Account | Address,
 ) {
   validateClientNetwork(publicClient);
   const call = updateCoinURICall(args);
   const { request } = await publicClient.simulateContract({
     ...call,
-    account: walletClient.account!,
+    account: account ?? walletClient.account,
   });
   const hash = await walletClient.writeContract(request);
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
