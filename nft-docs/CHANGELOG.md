@@ -1,5 +1,12 @@
 # nft-docs
 
+## 0.0.30
+
+### Patch Changes
+
+- Updated dependencies [37006b7d]
+  - @zoralabs/protocol-sdk@0.13.12
+
 ## 0.0.29
 
 ### Patch Changes

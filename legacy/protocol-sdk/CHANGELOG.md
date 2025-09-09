@@ -1,5 +1,11 @@
 # @zoralabs/protocol-sdk
 
+## 0.13.12
+
+### Patch Changes
+
+- 37006b7d: Rewriting account input for SDK calls
+
 ## 0.13.11
 
 ### Patch Changes
