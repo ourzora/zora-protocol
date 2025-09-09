@@ -1,6 +1,6 @@
 # Bug Bounty Program
 
-_Updated September 2024_
+_Updated August 2025_
 
 ### Security at Zora
 
@@ -8,19 +8,22 @@ At Zora, we prioritize the safety and security for all of our users and communit
 
 ### Report Submission Guidelines
 
-To submit your report, send an email to [security@zora.co](mailto:security@zora.co) and include the following details:
+To submit your report, please email [security@zora.co](mailto:security@zora.co) and include the following information:
 
-- **Issue Description**: Provide a detailed description of the issue, outlining its potential impact.
-- **Location**: Specify the location where the vulnerability was identified.
-- **Steps to Reproduce**: Outline detailed steps to reproduce the issue.
+- **Issue Description**: A clear explanation of the vulnerability and its potential impact.
+- **Location**: The exact location or component where the issue was found.
+- **Steps to Reproduce**: Include detailed steps to reproduce the issue.
 - **Proof of Concept**: Include proof-of-concept code, screenshots, videos, logs, etc. demonstrating the vulnerability.
 
-Upon receiving your report, a member of our security team will promptly confirm receipt and initiate an investigation into the reported issue. We are committed to keeping you informed with regular updates on the progress of the investigation. If we require additional information or clarification, we will reach out to you directly.
+Upon receiving your report, a member of our security team will confirm receipt and initiate an investigation into the reported issue. We are committed to keeping you informed with the progress of the investigation. If we require additional information or clarification, we will reach out to you directly.
 
 ### Bug Bounty Rewards
 
-- Rewards of up to $40,000 for any **critical** bugs that could result in loss of funds.
-- Rewards may also be awarded for smaller bugs or improvements deemed valid. Considerations include the exploit scenario, product affected, likelihood, and impact.
+- Critical vulnerabilities that could lead to loss of funds may earn up to $40,000.
+
+Rewards are paid in USDC (USD-denominated) and require:
+- An ERC20 compatible wallet address.
+- KYC verification in cases where a reward is issued.
 
 ### Scope
 
@@ -28,35 +31,37 @@ The assets listed below are considered in-scope within our bug bounty program. I
 
 | Asset                                                                                                                      | Type                     | Scope        | Eligible Reward |
 | -------------------------------------------------------------------------------------------------------------------------- | ------------------------ | ------------ | --------------- |
-| [zora.co/create](https://zora.co/create) <br /> zora.co/collect/[chain]:[contract address]<br /> zora.co/[profile address] | Website and Applications | In scope     | Up to $10,000   |
+| [zora.co/create](https://zora.co/create) <br /> zora.co/coin/base:[contract address]<br /> zora.co/[profile address] | Website and Applications | In scope     | Up to $10,000   |
 | [api.zora.co](https://api.zora.co)                                                                                         | Website and Applications | In scope     | Up to $2,000    |
-| [docs.zora.co](https://docs.zora.co)                                                                                       | Website and Applications | In scope     | Up to $5000     |
-| https://github.com/ourzora/zora-protocol                                                                                   | Smart Contracts          | In scope     | Up to $40,000   |
-| https://github.com/ourzora/zora-drops-contracts                                                                            | Smart Contracts          | Out of scope | Deprecated      |
+| [docs.zora.co](https://docs.zora.co)                                                                                       | Website and Applications | In scope     | Up to $5,000     |
+| [zora protocol](https://github.com/ourzora/zora-protocol)                                                                                   | Smart Contracts          | In scope     | Up to $40,000   |
+| [Zora iOS App](https://apps.apple.com/us/app/zora-post-and-trade-content/id6474192103)                                         | Mobile Applications      | In scope     | Up to $5,000    |
+| [Zora Android App](https://play.google.com/store/apps/details?id=co.ourzora.app&hl=en_AU)                                      | Mobile Applications      | In scope     | Up to $5,000    |
 
-_Please note: All bounty rewards will be denoted as USD and will be paid out as USDC. Rewards will require the recipient to have an erc20 wallet address. KYC verification is required and will be specifically requested in cases of valid reports that meet the criteria for a reward payout._
 
 ### Out of scope vulnerabilities
 
-- Any activity that could lead to the disruption of our service (DDOS/DOS).
-- Theoretical impacts without proof or demonstration.
-- Vulnerabilities that require physical access to a user's device.
-- Clickjacking on pages with no sensitive actions.
-- Attacks requiring leaked keys or credentials.
-- Self-XSS.
-- Lack of Secure/HTTPOnly flags on non-sensitive Cookies.
-- SPF/DMARC misconfigured records.
-- Lack of DNSSEC or CAA records.
-- Automated scanner reports without demonstrated impact.
-- Issues that are not reproducible or do not present a clear security risk.
+The following issues are not eligible for rewards:
+
+- Denial-of-Service (DoS/DDoS) or any activity that disrupts service availability.
+- Vulnerabilities requiring physical access to a user’s device.
+- Theoretical or speculative issues without proof-of-concept.
+- Clickjacking on non-sensitive pages.
+- Attacks requiring leaked keys or compromised credentials.
+- Self-XSS issues.
+- Missing cookie flags on non-sensitive cookies.
+- Misconfigured or lack of SPF/DMARC/DNSSEC/CAA records without demonstrated impact.
+- Automated scanner output without demonstrated impact.
+- Issues that cannot be reliably reproduced or that present negligible security risk.
+- Best practice recommendations.
 
 ### Program Rules
 
-- Only submit one vulnerability per report.
+- Submit one vulnerability per report.
 - When duplicates occur, we will only accept the first report that was received, as long as it fulfills our submission criteria and can be fully reproduced.
-- Social engineering targeted to Zora employees is prohibited.
+- Social engineering attacks targeting Zora staff are strictly prohibited.
 - Publishing sensitive information discovered during security testing is prohibited.
-- Vulnerabilities that Zora is aware of will not be rewarded.
+- Vulnerabilities already known to Zora are ineligible for rewards.
 - Please provide thorough reports with clear steps that can be replicated. If your report lacks sufficient detail to reproduce the issue, it will not be accepted.
 
 ### Disclosure Policy
