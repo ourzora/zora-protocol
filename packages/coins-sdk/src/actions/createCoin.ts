@@ -144,7 +144,12 @@ export async function createCoin({
 }) {
   validateClientNetwork(publicClient);
 
-  const callRequest = await createCoinCall(call);
+  const chainId = call.chainId ?? publicClient.chain.id;
+
+  const callRequest = await createCoinCall({
+    ...call,
+    chainId,
+  });
 
   if (callRequest.length !== 1) {
     throw new Error("Only one call is supported for this SDK version");
