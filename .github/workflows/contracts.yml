@@ -23,3 +23,13 @@ jobs:
       skip_storage_layout: true
       ignore_coverage_files: '"*test*" "*src/utils/uniswap/*" "*src/libs/CoinLegacy.sol" "*src/deployment/CoinsDeployerBase.sol"'
       coverage_args: "--ir-minimum"
+
+  contracts-incentive:
+    name: Incentive
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/incentive-contracts
+      name: Incentive
+      ignore_coverage_files: '"*test*" "*script*"'
+      skip_storage_layout: true

@@ -1,0 +1,14 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["node_modules", "lib"]
+via_ir = true
+optimizer = true
+solc_version = '0.8.28'
+optimizer_runs = 200
+fs_permissions = [
+  { access = "read", path = "../shared-contracts/chainConfigs" }
+]
+
+[profile.ci.fuzz]
+runs = 100
