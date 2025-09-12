@@ -33,13 +33,13 @@ Adds platform referral and trade referral functionality to creator coins, and un
 **After (All Coins - 1% total fee):**
 | Recipient         | % of Market Rewards | % of Total Fee |
 | ----------------- | ------------------- | -------------- |
-| Creator           | 62.5%               | 0.50%          |
-| Platform Referral | 25%                 | 0.20%          |
-| Trade Referral    | 5%                  | 0.04%          |
-| Doppler           | 1.25%               | 0.01%          |
-| Protocol          | 6.25%               | 0.05%          |
+| Creator           | 62.5%               | 50%          |
+| Platform Referral | 25%                 | 20%          |
+| Trade Referral    | 5%                  | 4%          |
+| Doppler           | 1.25%               | 1%          |
+| Protocol          | 6.25%               | 5%          |
 | ----------------- | ------------------- | -------------- |
-| LP Rewards        | -                   | 0.20%          |
+| LP Rewards        | -                   | 20%          |
 
 **Implementation Changes:**
 
