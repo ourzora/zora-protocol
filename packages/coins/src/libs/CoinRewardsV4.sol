@@ -29,28 +29,26 @@ import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IHasSwapPath} from "../interfaces/ICoin.sol";
 import {V4Liquidity} from "./V4Liquidity.sol";
 import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
+import {ICreatorCoinHook} from "../interfaces/ICreatorCoinHook.sol";
 
 library CoinRewardsV4 {
     using SafeERC20 for IERC20;
 
-    // creator gets 50% of the market rewards
-    // market rewards are 2/3 of the total fee
-    uint256 public constant CREATOR_REWARD_BPS = 5000;
+    // Creator gets 62.5% of market rewards (0.50% of total 1% fee)
+    // Market rewards = 80% of total fee (0.80% of 1%)
+    uint256 public constant CREATOR_REWARD_BPS = 6250;
 
-    // create referrer gets 15% of the market rewards
-    // market rewards are 2/3 of the total fee
-    uint256 public constant CREATE_REFERRAL_REWARD_BPS = 1500;
+    // Platform referrer gets 25% of market rewards (0.20% of total 1% fee)  
+    uint256 public constant CREATE_REFERRAL_REWARD_BPS = 2500;
 
-    // trade referrer gets 10% of the market rewards
-    // market rewards are 2/3 of the total fee
-    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 1500;
+    // Trade referrer gets 5% of market rewards (0.04% of total 1% fee)
+    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 500;
 
-    // doppler gets 5% of the market rewards
-    // market rewards are 2/3 of the total fee
-    uint256 public constant DOPPLER_REWARD_BPS = 500;
+    // Doppler gets 1.25% of market rewards (0.01% of total 1% fee)
+    uint256 public constant DOPPLER_REWARD_BPS = 125;
 
-    // LPs get 1/3 of the total fee
-    uint256 public constant LP_REWARD_BPS = 3333;
+    // LPs get 20% of total fee (0.20% of 1%)
+    uint256 public constant LP_REWARD_BPS = 2000;
 
     function getTradeReferral(bytes calldata hookData) internal pure returns (address) {
         return hookData.length >= 20 ? abi.decode(hookData, (address)) : address(0);
@@ -180,7 +178,7 @@ library CoinRewardsV4 {
     /// @param fees The total amount of fees collected to be distributed
     /// @param coin The coin contract instance that implements IHasRewardsRecipients to get recipient addresses
     /// @param tradeReferrer The address of the trade referrer who should receive trade referral rewards (can be zero address)
-    function distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal {
+    function distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer, bool isCreatorCoin) internal {
         address payoutRecipient = coin.payoutRecipient();
         address platformReferrer = coin.platformReferrer();
         address protocolRewardRecipient = coin.protocolRewardRecipient();
@@ -219,6 +217,17 @@ library CoinRewardsV4 {
             doppler,
             marketRewards
         );
+
+        if (isCreatorCoin) {
+            emit ICreatorCoinHook.CreatorCoinRewards(
+                address(coin),
+                Currency.unwrap(currency),
+                payoutRecipient,
+                protocolRewardRecipient,
+                rewards.creatorAmount,
+                rewards.protocolAmount
+            );
+        }
     }
 
     struct MarketRewards {

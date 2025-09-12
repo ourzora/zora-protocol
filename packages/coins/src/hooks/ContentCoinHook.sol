@@ -22,6 +22,6 @@ contract ContentCoinHook is BaseZoraV4CoinHook {
 
     /// @dev Override for market reward distribution
     function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {
-        CoinRewardsV4.distributeMarketRewards(currency, fees, coin, tradeReferrer);
+        CoinRewardsV4.distributeMarketRewards(currency, fees, coin, tradeReferrer, false);
     }
 }

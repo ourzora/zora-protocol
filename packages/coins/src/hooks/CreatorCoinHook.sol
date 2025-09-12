@@ -8,9 +8,9 @@
 pragma solidity ^0.8.28;
 
 import {CreatorCoinConstants} from "../libs/CreatorCoinConstants.sol";
-import {CreatorCoinRewards} from "../libs/CreatorCoinRewards.sol";
 import {IPoolManager, IDeployedCoinVersionLookup, IHasRewardsRecipients, Currency, BaseZoraV4CoinHook} from "./BaseZoraV4CoinHook.sol";
 import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
+import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
 
 contract CreatorCoinHook is BaseZoraV4CoinHook {
     constructor(
@@ -21,7 +21,7 @@ contract CreatorCoinHook is BaseZoraV4CoinHook {
     ) BaseZoraV4CoinHook(poolManager_, coinVersionLookup_, trustedMessageSenders_, upgradeGate, CreatorCoinConstants.MARKET_SUPPLY) {}
 
     /// @dev Override for distributing market rewards and vested coins to the creator
-    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address) internal override {
-        CreatorCoinRewards.distributeMarketRewards(currency, fees, coin);
+    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {
+        CoinRewardsV4.distributeMarketRewards(currency, fees, coin, tradeReferrer, true);
     }
 }
