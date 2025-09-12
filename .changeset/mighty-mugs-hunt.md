@@ -1,5 +1,5 @@
 ---
-"@zoralabs/zora-coins": minor
+"@zoralabs/coins": minor
 ---
 
 Adds platform referral and trade referral functionality to creator coins, and unifies the fee structure between content and creator coins with a simplified 1% total fee.
