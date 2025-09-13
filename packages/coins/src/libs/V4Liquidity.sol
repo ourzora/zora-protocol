@@ -167,6 +167,12 @@ library V4Liquidity {
                 continue;
             }
 
+            // skip lps with no fees to collect
+            (uint256 feeGrowthInside0DeltaX128, uint256 feeGrowthInside1DeltaX128) = getFeeGrowth(poolManager, poolKey, positions[i]);
+            if (feeGrowthInside0DeltaX128 == 0 && feeGrowthInside1DeltaX128 == 0) {
+                continue;
+            }
+
             params = ModifyLiquidityParams({
                 tickLower: positions[i].tickLower,
                 tickUpper: positions[i].tickUpper,
@@ -219,6 +225,30 @@ library V4Liquidity {
     ) internal view returns (uint128 liquidity) {
         bytes32 positionId = Position.calculatePositionKey(owner, tickLower, tickUpper, bytes32(0));
         liquidity = StateLibrary.getPositionLiquidity(poolManager, poolKey.toId(), positionId);
+    }
+
+    function getFeeGrowth(
+        IPoolManager poolManager,
+        PoolKey memory poolKey,
+        LpPosition memory position
+    ) private view returns (uint256 feeGrowthInside0DeltaX128, uint256 feeGrowthInside1DeltaX128) {
+        (, uint256 feeGrowthInside0LastX128, uint256 feeGrowthInside1LastX128) = StateLibrary.getPositionInfo(
+            poolManager,
+            poolKey.toId(),
+            address(this),
+            position.tickLower,
+            position.tickUpper,
+            bytes32(0)
+        );
+        (uint256 feeGrowthInside0X128, uint256 feeGrowthInside1X128) = StateLibrary.getFeeGrowthInside(
+            poolManager,
+            poolKey.toId(),
+            position.tickLower,
+            position.tickUpper
+        );
+
+        feeGrowthInside0DeltaX128 = feeGrowthInside0X128 - feeGrowthInside0LastX128;
+        feeGrowthInside1DeltaX128 = feeGrowthInside1X128 - feeGrowthInside1LastX128;
     }
 
     function mintPositions(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] memory positions) internal returns (int128 amount0, int128 amount1) {
