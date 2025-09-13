@@ -12,16 +12,11 @@ contract DeployScript is CoinsDeployerBase {
         CoinsDeployment memory deployment = readDeployment(false);
 
         address existingContentCoinHook = 0xd3D133469ADC85e01A4887404D8AC12d630e9040;
-        address existingCreatorCoinHook = 0xffF800B76768dA8AB6aab527021e4a6A91219040;
 
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = existingContentCoinHook;
 
         bytes memory contentCoinUpgradeCall = abi.encodeWithSelector(IHooksUpgradeGate.registerUpgradePath.selector, baseImpls, deployment.zoraV4CoinHook);
-
-        baseImpls[0] = existingCreatorCoinHook;
-
-        bytes memory creatorCoinUpgradeCall = abi.encodeWithSelector(IHooksUpgradeGate.registerUpgradePath.selector, baseImpls, deployment.creatorCoinHook);
 
         printUpgradeFactoryCommand(deployment);
 
@@ -29,7 +24,5 @@ contract DeployScript is CoinsDeployerBase {
 
         console.log("contentCoinUpgradeCall");
         console.logBytes(contentCoinUpgradeCall);
-        console.log("creatorCoinUpgradeCall");
-        console.logBytes(creatorCoinUpgradeCall);
     }
 }

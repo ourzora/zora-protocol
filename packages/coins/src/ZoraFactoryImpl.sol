@@ -8,6 +8,7 @@
 pragma solidity ^0.8.23;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {Strings} from "@openzeppelin/contracts/utils/Strings.sol";
 import {Ownable2StepUpgradeable} from "@openzeppelin/contracts-upgradeable/access/Ownable2StepUpgradeable.sol";
 import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -51,18 +52,16 @@ contract ZoraFactoryImpl is
     /// @notice The coin contract implementation address
     address public immutable coinV4Impl;
     address public immutable creatorCoinImpl;
-    address public immutable contentCoinHook;
-    address public immutable creatorCoinHook;
+    address public immutable hook;
     address public immutable zoraHookRegistry;
 
-    constructor(address _coinV4Impl, address _creatorCoinImpl, address _contentCoinHook, address _creatorCoinHook, address _zoraHookRegistry) {
+    constructor(address coinV4Impl_, address creatorCoinImpl_, address hook_, address zoraHookRegistry_) {
         _disableInitializers();
 
-        coinV4Impl = _coinV4Impl;
-        creatorCoinImpl = _creatorCoinImpl;
-        contentCoinHook = _contentCoinHook;
-        creatorCoinHook = _creatorCoinHook;
-        zoraHookRegistry = _zoraHookRegistry;
+        coinV4Impl = coinV4Impl_;
+        creatorCoinImpl = creatorCoinImpl_;
+        hook = hook_;
+        zoraHookRegistry = zoraHookRegistry_;
     }
 
     /// @notice Creates a new creator coin contract
@@ -99,7 +98,7 @@ contract ZoraFactoryImpl is
             poolConfig
         );
 
-        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(creatorCoin), currency, isCoinToken0, IHooks(creatorCoinHook));
+        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(creatorCoin), currency, isCoinToken0, IHooks(hook));
 
         ICreatorCoin(creatorCoin).initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);
 
@@ -157,17 +156,17 @@ contract ZoraFactoryImpl is
         string memory symbol,
         bytes memory poolConfig,
         address platformReferrer,
-        address hook,
+        address deployHook,
         bytes calldata hookData,
         bytes32 salt
     ) internal returns (address coin, bytes memory hookDataOut) {
         coin = address(_createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, salt));
 
-        if (hook != address(0)) {
-            if (!IERC165(hook).supportsInterface(type(IHasAfterCoinDeploy).interfaceId)) {
+        if (deployHook != address(0)) {
+            if (!IERC165(deployHook).supportsInterface(type(IHasAfterCoinDeploy).interfaceId)) {
                 revert InvalidHook();
             }
-            hookDataOut = IHasAfterCoinDeploy(hook).afterCoinDeploy{value: msg.value}(msg.sender, ICoin(coin), hookData);
+            hookDataOut = IHasAfterCoinDeploy(deployHook).afterCoinDeploy{value: msg.value}(msg.sender, ICoin(coin), hookData);
         } else if (msg.value > 0) {
             // cannot send eth without a hook
             revert EthTransferInvalid();
@@ -205,11 +204,11 @@ contract ZoraFactoryImpl is
         string memory symbol,
         bytes memory poolConfig,
         address platformReferrer,
-        address hook,
+        address hook_,
         bytes calldata hookData
     ) public payable nonReentrant returns (address coin, bytes memory hookDataOut) {
         bytes32 salt = _randomSalt(payoutRecipient, uri, bytes32(0));
-        return _deployWithHook(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, hook, hookData, salt);
+        return _deployWithHook(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, hook_, hookData, salt);
     }
 
     /// @dev deprecated Use deploy() with poolConfig instead
@@ -222,8 +221,9 @@ contract ZoraFactoryImpl is
         address platformReferrer,
         address currency,
         // tickLower is no longer used
-        int24 /*tickLower*/,
-        uint256 orderSize
+        int24 /* tickLower */,
+        // orderSize is no longer used
+        uint256 /* orderSize */
     ) public payable nonReentrant returns (address, uint256) {
         bytes memory poolConfig = CoinConfigurationVersions.defaultConfig(currency);
         bytes32 salt = _randomSalt(payoutRecipient, uri, bytes32(0));
@@ -258,7 +258,7 @@ contract ZoraFactoryImpl is
         string memory symbol,
         address platformReferrer
     ) internal {
-        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(coin), currency, isCoinToken0, IHooks(contentCoinHook));
+        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(coin), currency, isCoinToken0, IHooks(hook));
 
         // Initialize coin with pre-configured pool
         coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);
@@ -366,24 +366,30 @@ contract ZoraFactoryImpl is
         // try to get the existing contract name - if it reverts, the existing contract was an older version that didn't have the contract name
         // unfortunately we cannot use supportsInterface here because the existing implementation did not have that function
         try IHasContractName(newImpl).contractName() returns (string memory name) {
-            if (!_equals(name, contractName())) {
+            if (!Strings.equal(name, contractName())) {
                 revert UpgradeToMismatchedContractName(contractName(), name);
             }
         } catch {}
 
         // Auto-register the new hooks in the Zora hook registry
-        address[] memory hooks = new address[](2);
-        string[] memory tags = new string[](2);
+        address[] memory hooks = new address[](1);
+        string[] memory tags = new string[](1);
 
-        hooks[0] = IZoraFactory(newImpl).contentCoinHook();
-        hooks[1] = IZoraFactory(newImpl).creatorCoinHook();
-        tags[0] = "ContentCoinHook";
-        tags[1] = "CreatorCoinHook";
+        hooks[0] = IZoraFactory(newImpl).hook();
+        tags[0] = "CoinHook";
 
         IZoraHookRegistry(zoraHookRegistry).registerHooks(hooks, tags);
     }
 
-    function _equals(string memory a, string memory b) internal pure returns (bool) {
-        return (keccak256(bytes(a)) == keccak256(bytes(b)));
+    /// @notice The address of the latest creator coin hook
+    /// @dev Deprecated: use `hook` instead
+    function creatorCoinHook() external view returns (address) {
+        return hook;
+    }
+
+    /// @notice The address of the latest coin hook
+    /// @dev Deprecated: use `hook` instead
+    function contentCoinHook() external view returns (address) {
+        return hook;
     }
 }

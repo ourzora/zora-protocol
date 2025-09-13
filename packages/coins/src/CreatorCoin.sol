@@ -12,6 +12,8 @@ import {CreatorCoinConstants} from "./libs/CreatorCoinConstants.sol";
 import {IHooks, PoolConfiguration, PoolKey, ICoin} from "./interfaces/ICoin.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {BaseCoin} from "./BaseCoin.sol";
+import {IHasCoinType} from "./interfaces/ICoin.sol";
+import {MarketConstants} from "./libs/MarketConstants.sol";
 
 contract CreatorCoin is ICreatorCoin, BaseCoin {
     uint256 public vestingStartTime;
@@ -19,11 +21,19 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
     uint256 public totalClaimed;
 
     constructor(
-        address _protocolRewardRecipient,
-        address _protocolRewards,
-        IPoolManager _poolManager,
-        address _airlock
-    ) BaseCoin(_protocolRewardRecipient, _protocolRewards, _poolManager, _airlock) initializer {}
+        address protocolRewardRecipient_,
+        address protocolRewards_,
+        IPoolManager poolManager_,
+        address airlock_
+    ) BaseCoin(protocolRewardRecipient_, protocolRewards_, poolManager_, airlock_) initializer {}
+
+    function totalSupplyForPositions() external pure override returns (uint256) {
+        return MarketConstants.CREATOR_COIN_MARKET_SUPPLY;
+    }
+
+    function coinType() external pure override returns (IHasCoinType.CoinType) {
+        return IHasCoinType.CoinType.Creator;
+    }
 
     function initialize(
         address payoutRecipient_,
@@ -39,7 +49,18 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
     ) public override(BaseCoin, ICoin) {
         require(currency_ == CreatorCoinConstants.CURRENCY, InvalidCurrency());
 
-        super.initialize(payoutRecipient_, owners_, tokenURI_, name_, symbol_, platformReferrer_, currency_, poolKey_, sqrtPriceX96, poolConfiguration_);
+        super.initialize({
+            payoutRecipient_: payoutRecipient_,
+            owners_: owners_,
+            tokenURI_: tokenURI_,
+            name_: name_,
+            symbol_: symbol_,
+            platformReferrer_: platformReferrer_,
+            currency_: currency_,
+            poolKey_: poolKey_,
+            sqrtPriceX96: sqrtPriceX96,
+            poolConfiguration_: poolConfiguration_
+        });
 
         vestingStartTime = block.timestamp;
         vestingEndTime = block.timestamp + CreatorCoinConstants.CREATOR_VESTING_DURATION;
@@ -50,7 +71,7 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
     function _handleInitialDistribution() internal override {
         _mint(address(this), CreatorCoinConstants.TOTAL_SUPPLY);
 
-        _transfer(address(this), address(poolKey.hooks), CreatorCoinConstants.MARKET_SUPPLY);
+        _transfer(address(this), address(poolKey.hooks), MarketConstants.CREATOR_COIN_MARKET_SUPPLY);
     }
 
     /// @notice Allows the creator payout recipient to claim vested tokens

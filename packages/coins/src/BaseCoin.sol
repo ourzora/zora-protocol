@@ -9,7 +9,7 @@ pragma solidity ^0.8.23;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
-import {ICoin} from "./interfaces/ICoin.sol";
+import {ICoin, IHasTotalSupplyForPositions, IHasCoinType} from "./interfaces/ICoin.sol";
 import {IHasRewardsRecipients} from "./interfaces/IHasRewardsRecipients.sol";
 import {ICoinComments} from "./interfaces/ICoinComments.sol";
 import {IERC7572} from "./interfaces/IERC7572.sol";
@@ -89,28 +89,29 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
 
     /**
      * @notice The constructor for the static Coin contract deployment shared across all Coins.
-     * @param _protocolRewardRecipient The address of the protocol reward recipient
-     * @param _protocolRewards The address of the protocol rewards contract
-     * @param _airlock The address of the Airlock contract
+     * @param protocolRewardRecipient_ The address of the protocol reward recipient
+     * @param protocolRewards_ The address of the protocol rewards contract
+     * @param poolManager_ The address of the pool manager
+     * @param airlock_ The address of the Airlock contract
      */
-    constructor(address _protocolRewardRecipient, address _protocolRewards, IPoolManager poolManager_, address _airlock) initializer {
-        if (_protocolRewardRecipient == address(0)) {
+    constructor(address protocolRewardRecipient_, address protocolRewards_, IPoolManager poolManager_, address airlock_) initializer {
+        if (protocolRewardRecipient_ == address(0)) {
             revert AddressZero();
         }
-        if (_protocolRewards == address(0)) {
+        if (protocolRewards_ == address(0)) {
             revert AddressZero();
         }
         if (address(poolManager_) == address(0)) {
             revert AddressZero();
         }
-        if (_airlock == address(0)) {
+        if (airlock_ == address(0)) {
             revert AddressZero();
         }
 
-        protocolRewardRecipient = _protocolRewardRecipient;
-        protocolRewards = _protocolRewards;
+        protocolRewardRecipient = protocolRewardRecipient_;
+        protocolRewards = protocolRewards_;
         poolManager = poolManager_;
-        airlock = _airlock;
+        airlock = airlock_;
     }
 
     /// @inheritdoc ICoin
@@ -258,7 +259,9 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
             interfaceId == type(IERC7572).interfaceId ||
             interfaceId == type(IHasRewardsRecipients).interfaceId ||
             interfaceId == type(IHasPoolKey).interfaceId ||
-            type(IHasSwapPath).interfaceId == interfaceId;
+            interfaceId == type(IHasCoinType).interfaceId ||
+            interfaceId == type(IHasTotalSupplyForPositions).interfaceId ||
+            interfaceId == type(IHasSwapPath).interfaceId;
     }
 
     /// @dev Overrides ERC20's _update function to emit a superset `CoinTransfer` event

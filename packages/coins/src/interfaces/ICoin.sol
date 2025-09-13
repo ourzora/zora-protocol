@@ -50,7 +50,25 @@ interface IHasSwapPath {
     function getPayoutSwapPath(IDeployedCoinVersionLookup coinVersionLookup) external view returns (PayoutSwapPath memory);
 }
 
-interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients, IHasPoolKey, IHasSwapPath {
+interface IHasTotalSupplyForPositions {
+    /// @notice Returns the total supply of all positions for this coin
+    /// @return The total supply of all positions
+    function totalSupplyForPositions() external view returns (uint256);
+}
+
+interface IHasCoinType {
+    /// @notice The type of coin
+    enum CoinType {
+        Creator,
+        Content
+    }
+
+    /// @notice Returns the type of coin
+    /// @return The type of coin
+    function coinType() external view returns (CoinType);
+}
+
+interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients, IHasPoolKey, IHasSwapPath, IHasTotalSupplyForPositions, IHasCoinType {
     /// @notice Thrown when the name is required for the coin
     error NameIsRequired();
 

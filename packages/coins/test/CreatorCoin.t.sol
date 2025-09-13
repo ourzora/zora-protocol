@@ -69,7 +69,7 @@ contract CreatorCoinTest is BaseTest {
         assertEq(creatorCoin.totalSupply(), CreatorCoinConstants.TOTAL_SUPPLY);
 
         assertEq(creatorCoin.balanceOf(address(creatorCoin)), CreatorCoinConstants.CREATOR_VESTING_SUPPLY);
-        assertEq(creatorCoin.balanceOf(address(creatorCoin.poolManager())), CreatorCoinConstants.MARKET_SUPPLY);
+        assertEq(creatorCoin.balanceOf(address(creatorCoin.poolManager())), MarketConstants.CREATOR_COIN_MARKET_SUPPLY);
     }
 
     function test_deploy_creator_coin_with_invalid_currency_reverts() public {

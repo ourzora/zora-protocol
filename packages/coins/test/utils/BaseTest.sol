@@ -27,7 +27,7 @@ import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
 import {MarketConstants} from "../../src/libs/MarketConstants.sol";
 import {CoinConfigurationVersions} from "../../src/libs/CoinConfigurationVersions.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
-import {ContentCoinHook} from "../../src/hooks/ContentCoinHook.sol";
+import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
 import {HooksDeployment} from "../../src/libs/HooksDeployment.sol";
 import {CoinConstants} from "../../src/libs/CoinConstants.sol";
 import {ProxyShim} from "./ProxyShim.sol";
@@ -41,7 +41,6 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {CreatorCoin} from "../../src/CreatorCoin.sol";
-import {CreatorCoinHook} from "../../src/hooks/CreatorCoinHook.sol";
 import {ContractAddresses} from "./ContractAddresses.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {HookUpgradeGate} from "../../src/hooks/HookUpgradeGate.sol";
@@ -90,8 +89,7 @@ contract BaseTest is Test, ContractAddresses {
     CreatorCoin internal creatorCoinImpl;
     ZoraFactoryImpl internal factoryImpl;
     IZoraFactory internal factory;
-    ContentCoinHook internal contentCoinHook;
-    CreatorCoinHook internal creatorCoinHook;
+    ZoraV4CoinHook internal hook;
     HookUpgradeGate internal hookUpgradeGate;
     ZoraHookRegistry internal zoraHookRegistry;
 
@@ -205,28 +203,14 @@ contract BaseTest is Test, ContractAddresses {
         vm.stopPrank();
     }
 
-    function _deployFeeEstimatorHook(uint256 initialSupplyForPositions, address hooks) internal {
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(V4_POOL_MANAGER, address(factory), hookUpgradeGate, initialSupplyForPositions), hooks);
+    function _deployFeeEstimatorHook(address hooks) internal {
+        deployCodeTo("FeeEstimatorHook.sol", abi.encode(V4_POOL_MANAGER, address(factory), hookUpgradeGate), hooks);
     }
 
-    function getSalts(address[] memory trustedMessageSenders) public returns (bytes32 contentCoinSalt, bytes32 creatorCoinSalt) {
+    function getSalt(address[] memory trustedMessageSenders) public returns (bytes32 hookSalt) {
         address deployer = address(this);
 
-        (, contentCoinSalt) = HooksDeployment.mineForContentCoinSalt(
-            deployer,
-            V4_POOL_MANAGER,
-            address(factory),
-            trustedMessageSenders,
-            address(hookUpgradeGate)
-        );
-
-        (, creatorCoinSalt) = HooksDeployment.mineForCreatorCoinSalt(
-            deployer,
-            V4_POOL_MANAGER,
-            address(factory),
-            trustedMessageSenders,
-            address(hookUpgradeGate)
-        );
+        (, hookSalt) = HooksDeployment.mineForCoinSalt(deployer, V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate));
     }
 
     function _deployHooks() internal {
@@ -234,24 +218,14 @@ contract BaseTest is Test, ContractAddresses {
         trustedMessageSenders[0] = UNIVERSAL_ROUTER;
         trustedMessageSenders[1] = V4_POSITION_MANAGER;
 
-        (bytes32 contentCoinSalt, bytes32 creatorCoinSalt) = getSalts(trustedMessageSenders);
+        bytes32 hookSalt = getSalt(trustedMessageSenders);
 
-        contentCoinHook = ContentCoinHook(
+        hook = ZoraV4CoinHook(
             payable(
                 address(
                     HooksDeployment.deployHookWithSalt(
-                        HooksDeployment.contentCoinCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
-                        contentCoinSalt
-                    )
-                )
-            )
-        );
-        creatorCoinHook = CreatorCoinHook(
-            payable(
-                address(
-                    HooksDeployment.deployHookWithSalt(
-                        HooksDeployment.creatorCoinHookCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
-                        creatorCoinSalt
+                        HooksDeployment.makeHookCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
+                        hookSalt
                     )
                 )
             )
@@ -306,13 +280,7 @@ contract BaseTest is Test, ContractAddresses {
 
         creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
 
-        factoryImpl = new ZoraFactoryImpl(
-            address(coinV4Impl),
-            address(creatorCoinImpl),
-            address(contentCoinHook),
-            address(creatorCoinHook),
-            address(zoraHookRegistry)
-        );
+        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
         UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
         factory = IZoraFactory(address(factory));
 
@@ -332,7 +300,7 @@ contract BaseTest is Test, ContractAddresses {
         vm.label(address(V4_QUOTER), "V4_QUOTER");
         vm.label(address(V4_PERMIT2), "V4_PERMIT2");
         vm.label(address(UNIVERSAL_ROUTER), "UNIVERSAL_ROUTER");
-        vm.label(address(creatorCoinHook), "CREATOR_COIN_HOOK");
+        vm.label(address(hook), "HOOK");
     }
 
     struct TradeRewards {

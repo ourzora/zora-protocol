@@ -21,18 +21,18 @@ contract FakeHookNoInterface {
     }
 }
 
-contract HooksTest is BaseTest {
+contract DeploymentsHooksTest is BaseTest {
     address constant zora = 0x1111111111166b7FE7bd91427724B487980aFc69;
-    BuySupplyWithSwapRouterHook hook;
+    BuySupplyWithSwapRouterHook buySupplyWithSwapRouterHook;
 
     function _generateDefaultPoolConfig(address currency) internal pure returns (bytes memory) {
         return _generatePoolConfig(currency);
     }
 
     function setUp() public override {
-        super.setUpWithBlockNumber(29585474);
+        super.setUpWithBlockNumber(30267794);
 
-        hook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter), address(V4_POOL_MANAGER));
+        buySupplyWithSwapRouterHook = new BuySupplyWithSwapRouterHook(factory, address(swapRouter), address(V4_POOL_MANAGER));
     }
 
     function _deployWithHook(address _hook, bytes memory hookData, address currency) internal returns (address, bytes memory) {
@@ -46,7 +46,7 @@ contract HooksTest is BaseTest {
                 "TEST",
                 poolConfig,
                 users.platformReferrer,
-                _hook,
+                address(_hook),
                 hookData
             );
     }
@@ -77,7 +77,7 @@ contract HooksTest is BaseTest {
             users.creator,
             ISwapRouter.ExactInputParams({
                 path: abi.encodePacked(address(weth), poolFee, USDC_ADDRESS, poolFee, zora),
-                recipient: address(hook),
+                recipient: address(buySupplyWithSwapRouterHook),
                 amountIn: initialOrderSize,
                 amountOutMinimum: 0
             })
@@ -94,7 +94,7 @@ contract HooksTest is BaseTest {
             "TEST",
             poolConfig,
             users.platformReferrer,
-            address(hook),
+            address(buySupplyWithSwapRouterHook),
             hookData
         );
 
@@ -121,7 +121,7 @@ contract HooksTest is BaseTest {
                 ISwapRouter.exactOutputSingle.selector,
                 ISwapRouter.ExactOutputParams({
                     path: abi.encodePacked(address(weth), poolFee, USDC_ADDRESS, poolFee, zora),
-                    recipient: address(hook),
+                    recipient: address(buySupplyWithSwapRouterHook),
                     amountOut: 0.0001 ether,
                     amountInMaximum: 0
                 })
@@ -138,7 +138,7 @@ contract HooksTest is BaseTest {
             "TEST",
             _generateDefaultPoolConfig(zora),
             users.platformReferrer,
-            address(hook),
+            address(buySupplyWithSwapRouterHook),
             hookData
         );
     }
@@ -170,7 +170,7 @@ contract HooksTest is BaseTest {
             "TEST",
             _generateDefaultPoolConfig(zora),
             users.platformReferrer,
-            address(hook),
+            address(buySupplyWithSwapRouterHook),
             hookData
         );
     }

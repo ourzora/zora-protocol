@@ -16,6 +16,8 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {LpPosition} from "../src/types/LpPosition.sol";
 import {CoinCommon} from "../src/libs/CoinCommon.sol";
 import {IZoraV4CoinHook} from "../src/interfaces/IZoraV4CoinHook.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
+import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {IMsgSender} from "../src/interfaces/IMsgSender.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {toBalanceDelta, BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
@@ -57,13 +59,13 @@ contract CoinUniV4Test is BaseTest {
     /// and then reverting the state after the swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (FeeEstimatorHook.FeeEstimatorState memory feeState) {
         uint256 snapshot = vm.snapshot();
-        _deployFeeEstimatorHook(CoinConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
+        _deployFeeEstimatorHook(address(hook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        feeState = FeeEstimatorHook(payable(address(contentCoinHook))).getFeeState();
+        feeState = FeeEstimatorHook(payable(address(hook))).getFeeState();
 
         vm.revertToState(snapshot);
     }
@@ -74,14 +76,14 @@ contract CoinUniV4Test is BaseTest {
         bytes[] memory inputs
     ) internal returns (BalanceDelta delta, SwapParams memory swapParams, uint160 sqrtPriceX96) {
         uint256 snapshot = vm.snapshot();
-        _deployFeeEstimatorHook(CoinConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
+        _deployFeeEstimatorHook(address(hook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        delta = FeeEstimatorHook(payable(address(contentCoinHook))).getFeeState().lastDelta;
-        swapParams = FeeEstimatorHook(payable(address(contentCoinHook))).getFeeState().lastSwapParams;
+        delta = FeeEstimatorHook(payable(address(hook))).getFeeState().lastDelta;
+        swapParams = FeeEstimatorHook(payable(address(hook))).getFeeState().lastSwapParams;
 
         sqrtPriceX96 = PoolStateReader.getSqrtPriceX96(coinV4.getPoolKey(), poolManager);
 
@@ -98,15 +100,15 @@ contract CoinUniV4Test is BaseTest {
         });
     }
 
-    // function test_setupZeroAddressForHooks() public {
-    //     vm.expectRevert(ICoin.AddressZero.selector);
-    //     new ContentCoin({
-    //         protocolRewardRecipient_: address(0x1234),
-    //         protocolRewards_: address(0x1234),
-    //         poolManager_: IPoolManager(address(0x1234)),
-    //         airlock_: address(0x1234)
-    //     });
-    // }
+    function test_deployContentCoin_verifyTotalSupplyAllocation() public {
+        address currency = address(mockERC20A);
+        _deployV4Coin(currency);
+
+        // Verify total supply equals maximum allowed
+        assertEq(coinV4.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY, "total supply");
+        assertApproxEqAbs(coinV4.balanceOf(address(coinV4.poolManager())), MarketConstants.CONTENT_COIN_MARKET_SUPPLY, 1000, "pool launch supply");
+        assertEq(coinV4.balanceOf(coinV4.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD, "creator launch reward");
+    }
 
     function test_estimateLpFees() public {
         address currency = address(mockERC20A);
@@ -161,7 +163,7 @@ contract CoinUniV4Test is BaseTest {
         FeeEstimatorHook.FeeEstimatorState memory newFeeState = _estimateLpFees(commands, inputs);
 
         uint128 newFeeCoin = isCoinToken0 ? newFeeState.fees0 : newFeeState.fees1;
-        uint128 newFeeCurrency = isCoinToken0 ? newFeeState.fees1 : newFeeState.fees0;
+        // uint128 newFeeCurrency = isCoinToken0 ? newFeeState.fees1 : newFeeState.fees0;
 
         assertGt(newFeeCoin, 0, "fee coin on second swap should be greater than 0");
         // assertGt(newFeeCurrency, 0, "fee currency on second swap should be greater than 0"); // TODO confirm what this should be -- prev was assertEq(0) and test passed but error message was asserting greater than 0
@@ -589,7 +591,7 @@ contract CoinUniV4Test is BaseTest {
             currency1: isCoinToken0 ? Currency.wrap(address(notACoin)) : Currency.wrap(address(coinV4)),
             fee: 3000,
             tickSpacing: 60,
-            hooks: IHooks(address(contentCoinHook))
+            hooks: IHooks(address(hook))
         });
 
         // We need to prank the call to come from the non-coin contract
@@ -599,7 +601,7 @@ contract CoinUniV4Test is BaseTest {
         vm.expectRevert(
             abi.encodeWithSelector(
                 CustomRevert.WrappedError.selector,
-                address(contentCoinHook),
+                address(hook),
                 IHooks.afterInitialize.selector,
                 abi.encodeWithSelector(IZoraV4CoinHook.NotACoin.selector, address(notACoin)),
                 abi.encodeWithSelector(Hooks.HookCallFailed.selector)

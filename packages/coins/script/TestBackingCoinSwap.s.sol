@@ -104,7 +104,6 @@ contract TestV4Swap is CoinsDeployerBase {
         vm.startBroadcast(trader);
 
         address createReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
-        address tradeReferral = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
 
         ICoin backingCoin = _deployCoin(zora, trader, "Backing Coin", "BACK", "https://testc.com", createReferral, bytes32("creator"));
         ICoin contentCoin = _deployCoin(

@@ -37,6 +37,7 @@ import {BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {ContractVersionBase, IVersionedContract} from "../version/ContractVersionBase.sol";
+import {IHasCoinType} from "../interfaces/ICoin.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -48,7 +49,7 @@ import {ContractVersionBase, IVersionedContract} from "../version/ContractVersio
 ///      2. Swaps collected fees to the backing currency through multi-hop paths
 ///      3. Distributes converted fees as rewards
 /// @author oveddan
-abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook, ERC165, IUpgradeableDestinationV4Hook {
+contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook, ERC165, IUpgradeableDestinationV4Hook {
     using BalanceDeltaLibrary for BalanceDelta;
 
     /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
@@ -64,8 +65,6 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
     /// @notice The upgrade gate contract - used to verify allowed upgrade paths
     IHooksUpgradeGate internal immutable upgradeGate;
 
-    uint256 internal immutable totalSupplyForPositions;
-
     /// @notice The constructor for the ZoraV4CoinHook.
     /// @param poolManager_ The Uniswap V4 pool manager
     /// @param coinVersionLookup_ The coin version lookup contract - used to determine if an address is a coin and what version it is.
@@ -75,8 +74,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
         IPoolManager poolManager_,
         IDeployedCoinVersionLookup coinVersionLookup_,
         address[] memory trustedMessageSenders_,
-        IHooksUpgradeGate upgradeGate_,
-        uint256 totalSupplyForPositions_
+        IHooksUpgradeGate upgradeGate_
     ) BaseHook(poolManager_) {
         require(address(coinVersionLookup_) != address(0), CoinVersionLookupCannotBeZeroAddress());
 
@@ -84,7 +82,6 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
 
         coinVersionLookup = coinVersionLookup_;
         upgradeGate = upgradeGate_;
-        totalSupplyForPositions = totalSupplyForPositions_;
 
         for (uint256 i = 0; i < trustedMessageSenders_.length; i++) {
             trustedMessageSender[trustedMessageSenders_[i]] = true;
@@ -143,7 +140,7 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
     function _generatePositions(ICoin coin, PoolKey memory key) internal view returns (LpPosition[] memory positions) {
         bool isCoinToken0 = Currency.unwrap(key.currency0) == address(coin);
 
-        positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, coin.getPoolConfiguration(), totalSupplyForPositions);
+        positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, coin.getPoolConfiguration(), coin.totalSupplyForPositions());
     }
 
     /// @notice Internal fn called when a pool is initialized.
@@ -336,7 +333,15 @@ abstract contract BaseZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4Co
     }
 
     /// @dev Internal fn to allow for overriding market reward distribution logic
-    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal virtual;
+    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal virtual {
+        // get rewards distribution methodology from the coin
+        IHasCoinType.CoinType coinType = _getCoinType(coin);
+        CoinRewardsV4.distributeMarketRewards(currency, fees, coin, tradeReferrer, coinType);
+    }
+
+    function _getCoinType(IHasRewardsRecipients coin) internal view returns (IHasCoinType.CoinType) {
+        return CoinRewardsV4.getCoinType(coin);
+    }
 
     /// @notice Internal fn called when the PoolManager is unlocked.  Used to mint initial liquidity positions.
     function unlockCallback(bytes calldata data) external onlyPoolManager returns (bytes memory) {

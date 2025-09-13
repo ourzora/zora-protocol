@@ -6,6 +6,7 @@ import {console} from "forge-std/console.sol";
 
 import {ICreatorCoin} from "../src/interfaces/ICreatorCoin.sol";
 import {ICreatorCoinHook} from "../src/interfaces/ICreatorCoinHook.sol";
+import {IHasRewardsRecipients} from "../src/interfaces/IHasRewardsRecipients.sol";
 import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
 import {FeeEstimatorHook} from "./utils/FeeEstimatorHook.sol";
@@ -78,13 +79,13 @@ contract CreatorCoinRewardsTest is BaseTest {
     /// and then reverting the state after the swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (FeeEstimatorHook.FeeEstimatorState memory feeState) {
         uint256 snapshot = vm.snapshotState();
-        _deployFeeEstimatorHook(CoinConstants.POOL_LAUNCH_SUPPLY, address(creatorCoinHook));
+        _deployFeeEstimatorHook(address(hook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        feeState = FeeEstimatorHook(payable(address(creatorCoinHook))).getFeeState();
+        feeState = FeeEstimatorHook(payable(address(hook))).getFeeState();
 
         vm.revertToState(snapshot);
     }
@@ -358,5 +359,17 @@ contract CreatorCoinRewardsTest is BaseTest {
 
         // Verify that total actual rewards match the estimated afterSwapCurrencyAmount
         assertApproxEqRel(totalActualRewards, feeState.afterSwapCurrencyAmount, 0.25e18, "Total rewards should match estimated afterSwapCurrencyAmount");
+    }
+
+    function test_isLegacyCreatorCoinCategorization() public {
+        vm.createSelectFork("base", 31872861);
+
+        // Use the same creator coin from the upgrades test
+        address creatorCoinAddress = 0x2F03aB8fD97F5874bc3274C296Bb954Ae92EdA34;
+
+        // Test that the legacy creator coin is correctly categorized as a creator coin
+        bool isLegacy = CoinRewardsV4.isLegacyCreatorCoin(IHasRewardsRecipients(creatorCoinAddress));
+
+        assertTrue(isLegacy, "Legacy creator coin should be categorized as legacy creator coin");
     }
 }

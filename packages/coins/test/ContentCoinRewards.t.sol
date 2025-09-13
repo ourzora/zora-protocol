@@ -5,6 +5,7 @@ import "./utils/BaseTest.sol";
 import {console} from "forge-std/console.sol";
 
 import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
+import {IHasRewardsRecipients} from "../src/interfaces/IHasRewardsRecipients.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
 import {FeeEstimatorHook} from "./utils/FeeEstimatorHook.sol";
 import {RewardTestHelpers, RewardBalances} from "./utils/RewardTestHelpers.sol";
@@ -59,13 +60,13 @@ contract ContentCoinRewardsTest is BaseTest {
     /// @dev Estimates the fees from a swap
     function _estimateLpFees(bytes memory commands, bytes[] memory inputs) internal returns (FeeEstimatorHook.FeeEstimatorState memory feeState) {
         uint256 snapshot = vm.snapshot();
-        _deployFeeEstimatorHook(CoinConstants.POOL_LAUNCH_SUPPLY, address(contentCoinHook));
+        _deployFeeEstimatorHook(address(hook));
 
         // Execute the swap
         uint256 deadline = block.timestamp + 20;
         router.execute(commands, inputs, deadline);
 
-        feeState = FeeEstimatorHook(payable(address(contentCoinHook))).getFeeState();
+        feeState = FeeEstimatorHook(payable(address(hook))).getFeeState();
 
         vm.revertToState(snapshot);
     }
@@ -303,5 +304,17 @@ contract ContentCoinRewardsTest is BaseTest {
         // Step 3: Validate rewards
         RewardBalances memory expected = RewardTestHelpers.calculateExpectedRewards(rewardsAmount, false, false);
         RewardTestHelpers.assertRewardsApproxEqRelWithTolerance(rewards, expected, 0.25e18);
+    }
+
+    function test_isNotLegacyCreatorCoinCategorization() public {
+        vm.createSelectFork("base", 31835069);
+
+        // Use the same content coin from the upgrades test
+        address contentCoinAddress = 0x4E93A01c90f812284F71291a8d1415a904957156;
+
+        // Test that the content coin is NOT categorized as a legacy creator coin
+        bool isLegacy = CoinRewardsV4.isLegacyCreatorCoin(IHasRewardsRecipients(contentCoinAddress));
+
+        assertFalse(isLegacy, "Content coin should NOT be categorized as legacy creator coin");
     }
 }

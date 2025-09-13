@@ -201,7 +201,7 @@ contract ZoraHookRegistryTest is Test {
         assertEq(zoraHookRegistry.getHookVersion(hooks[0]), "");
     }
 
-    function test_is_registered_hook_false_when_never_registered() public {
+    function test_is_registered_hook_false_when_never_registered() public view {
         assertEq(zoraHookRegistry.isRegisteredHook(address(this)), false);
     }
 

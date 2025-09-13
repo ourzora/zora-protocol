@@ -189,6 +189,9 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
     /// @notice The implementation address of the factory contract
     function implementation() external view returns (address);
 
+    /// @notice The address of the latest coin hook
+    function hook() external view returns (address);
+
     /// @notice The address of the latest content coin hook
     function contentCoinHook() external view returns (address);
 

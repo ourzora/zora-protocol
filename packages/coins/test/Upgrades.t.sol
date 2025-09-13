@@ -13,7 +13,7 @@ import {IWETH} from "../src/interfaces/IWETH.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
-import {ContentCoinHook} from "../src/hooks/ContentCoinHook.sol";
+import {ZoraV4CoinHook} from "../src/hooks/ZoraV4CoinHook.sol";
 import {console} from "forge-std/console.sol";
 import {IDeployedCoinVersionLookup} from "../src/interfaces/IDeployedCoinVersionLookup.sol";
 import {IHooksUpgradeGate} from "../src/interfaces/IHooksUpgradeGate.sol";
@@ -43,13 +43,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
-            address(coinV4Impl),
-            address(creatorCoinImpl),
-            address(contentCoinHook),
-            address(creatorCoinHook),
-            address(zoraHookRegistry)
-        );
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -64,13 +58,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
-            address(coinV4Impl),
-            address(creatorCoinImpl),
-            address(contentCoinHook),
-            address(creatorCoinHook),
-            address(zoraHookRegistry)
-        );
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -89,18 +77,12 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
     //     factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-    //     ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(contentCoinHook), address(creatorCoinHook), address(zoraHookRegistry));
+    // ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
 
     //     vm.prank(factoryProxy.owner());
     //     factoryProxy.upgradeToAndCall(address(newImpl), "");
 
-    //     ZoraFactoryImpl newImpl2 = new ZoraFactoryImpl(
-    //         factoryProxy.coinV4Impl(),
-    //         factoryProxy.creatorCoinImpl(),
-    //         address(contentCoinHook),
-    //         address(creatorCoinHook),
-    //         address(zoraHookRegistry)
-    //     );
+    // ZoraFactoryImpl newImpl2 = new ZoraFactoryImpl(factoryProxy.coinV4Impl(), factoryProxy.creatorCoinImpl(), address(hook), address(zoraHookRegistry));
 
     //     vm.prank(factoryProxy.owner());
     //     factoryProxy.upgradeToAndCall(address(newImpl2), "");
@@ -193,32 +175,6 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         vm.stopPrank();
     }
 
-    function test_canCanFixBrokenContentCoinAndSwap() public {
-        vm.createSelectFork("base", 31835069);
-
-        address trader = 0xf69fEc6d858c77e969509843852178bd24CAd2B6;
-
-        address contentCoin = 0x4E93A01c90f812284F71291a8d1415a904957156;
-
-        address creatorCoin = ICoin(contentCoin).currency();
-
-        uint256 amountIn = IERC20(creatorCoin).balanceOf(trader);
-
-        require(amountIn > 0, "no balance");
-
-        // this swap should revert because the content coin is broken
-        _swapSomeCurrencyForCoinAndExpectRevert(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
-
-        bytes memory creationCode = HooksDeployment.contentCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
-
-        (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
-
-        // etch new hook into the content coin, it shouldn't revert anymore when swapping
-        vm.etch(address(ICoin(contentCoin).hooks()), address(newHook).code);
-
-        _swapSomeCurrencyForCoin(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
-    }
-
     function test_canUpgradeBrokenContentCoinAndSwap() public {
         vm.createSelectFork("base", 32613149);
 
@@ -230,7 +186,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         uint256 amountIn = 0.000111 ether;
 
-        bytes memory creationCode = HooksDeployment.contentCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
@@ -282,7 +238,7 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         address existingHook = address(creatorCoin.hooks());
 
-        bytes memory creationCode = HooksDeployment.creatorCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
@@ -332,5 +288,31 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         // now try to swap some currency for the creator coin - it should succeed
         _swapSomeCurrencyForCoin(creatorCoin, zora, uint128(IERC20(zora).balanceOf(trader) / 2), trader);
+    }
+
+    function test_canFixBrokenContentCoinAndSwap() public {
+        vm.createSelectFork("base", 31835069);
+
+        address trader = 0xf69fEc6d858c77e969509843852178bd24CAd2B6;
+
+        address contentCoin = 0x4E93A01c90f812284F71291a8d1415a904957156;
+
+        address creatorCoin = ICoin(contentCoin).currency();
+
+        uint256 amountIn = IERC20(creatorCoin).balanceOf(trader);
+
+        require(amountIn > 0, "no balance");
+
+        // this swap should revert because the content coin is broken
+        _swapSomeCurrencyForCoinAndExpectRevert(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
+
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+
+        (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
+
+        // etch new hook into the content coin, it shouldn't revert anymore when swapping
+        vm.etch(address(ICoin(contentCoin).hooks()), address(newHook).code);
+
+        _swapSomeCurrencyForCoin(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
     }
 }

@@ -77,7 +77,7 @@ contract LiquidityMigrationTest is BaseTest {
         address[] memory trustedMessageSenders = new address[](1);
         trustedMessageSenders[0] = UNIVERSAL_ROUTER;
 
-        address originalHook = address(contentCoinHook);
+        address originalHook = address(hook);
 
         address newHook = address(new LiquidityMigrationReceiver());
 
@@ -109,7 +109,7 @@ contract LiquidityMigrationTest is BaseTest {
         assertEq(coinV4.balanceOf(address(originalHook)), originalHookCoinBalanceBefore, "original coin balance");
 
         // validate that the existing hook has no liquidity for its positions
-        LpPosition[] memory positions = contentCoinHook.getPoolCoin(poolKey).positions;
+        LpPosition[] memory positions = hook.getPoolCoin(poolKey).positions;
 
         for (uint256 i = 0; i < positions.length; i++) {
             uint128 liquidity = V4Liquidity.getLiquidity(poolManager, address(originalHook), poolKey, positions[i].tickLower, positions[i].tickUpper);
@@ -185,8 +185,6 @@ contract LiquidityMigrationTest is BaseTest {
         address currency = address(mockERC20A);
         _deployV4Coin(currency);
 
-        address originalHook = address(contentCoinHook);
-
         address invalidNewHook = address(new InvalidLiquidityMigrationReceiver());
 
         PoolKey memory poolKey = coinV4.getPoolKey();
@@ -203,14 +201,11 @@ contract LiquidityMigrationTest is BaseTest {
         address currency = address(mockERC20A);
         _deployV4Coin(currency);
 
-        address originalHook = address(contentCoinHook);
+        address originalHook = address(hook);
 
         address newHook = address(new LiquidityMigrationReceiver());
 
-        PoolKey memory poolKey = coinV4.getPoolKey();
-
         // Note: NOT registering the upgrade path
-
         // expect the migration to revert with UpgradePathNotRegistered error
         vm.prank(users.creator);
         vm.expectRevert(abi.encodeWithSelector(IUpgradeableV4Hook.UpgradePathNotRegistered.selector, originalHook, newHook));
@@ -221,7 +216,7 @@ contract LiquidityMigrationTest is BaseTest {
         address currency = address(mockERC20A);
         _deployV4Coin(currency);
 
-        address originalHook = address(contentCoinHook);
+        address originalHook = address(hook);
         address newHook = address(new LiquidityMigrationReceiver());
         PoolKey memory poolKey = coinV4.getPoolKey();
 

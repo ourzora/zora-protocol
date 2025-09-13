@@ -10,6 +10,8 @@ pragma solidity ^0.8.23;
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {BaseCoin} from "./BaseCoin.sol";
 import {CoinConstants} from "./libs/CoinConstants.sol";
+import {MarketConstants} from "./libs/MarketConstants.sol";
+import {IHasCoinType} from "./interfaces/ICoin.sol";
 
 /**
  * @title ContentCoin
@@ -41,5 +43,13 @@ contract ContentCoin is BaseCoin {
 
         // Transfer the market supply to the hook for liquidity
         _transfer(address(this), address(poolKey.hooks), balanceOf(address(this)));
+    }
+
+    function totalSupplyForPositions() external pure override returns (uint256) {
+        return MarketConstants.CONTENT_COIN_MARKET_SUPPLY;
+    }
+
+    function coinType() external pure override returns (IHasCoinType.CoinType) {
+        return IHasCoinType.CoinType.Content;
     }
 }

@@ -40,14 +40,14 @@ contract HooksDeploymentTest is Test, ContractAddresses {
         vm.createSelectFork("base", 31653138);
 
         address[] memory trustedMessageSenders = new address[](0);
-        (, bytes32 salt) = HooksDeployment.mineForContentCoinSalt(
+        (, bytes32 salt) = HooksDeployment.mineForCoinSalt(
             address(this),
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
             trustedMessageSenders,
             hookUpgradeGate
         );
-        IHooks hook = HooksDeployment.deployContentCoinHook(
+        IHooks hook = HooksDeployment.deployZoraV4CoinHook(
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
             trustedMessageSenders,
@@ -68,7 +68,7 @@ contract HooksDeploymentTest is Test, ContractAddresses {
         vm.createSelectFork("base", 31653138);
 
         address[] memory trustedMessageSenders = new address[](0);
-        (, bytes32 salt) = HooksDeployment.mineForCreatorCoinSalt(
+        (, bytes32 salt) = HooksDeployment.mineForCoinSalt(
             address(this),
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
@@ -77,7 +77,7 @@ contract HooksDeploymentTest is Test, ContractAddresses {
         );
 
         IHooks hook = HooksDeployment.deployHookWithSalt(
-            HooksDeployment.creatorCoinHookCreationCode(V4_POOL_MANAGER, 0x777777751622c0d3258f214F9DF38E35BF45baF3, trustedMessageSenders, hookUpgradeGate),
+            HooksDeployment.makeHookCreationCode(V4_POOL_MANAGER, 0x777777751622c0d3258f214F9DF38E35BF45baF3, trustedMessageSenders, hookUpgradeGate),
             salt
         );
 

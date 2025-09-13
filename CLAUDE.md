@@ -249,14 +249,17 @@ Uses Graphite for branch management:
 Before working with the documentation, build the packages that are imported:
 
 1. **Install dependencies** from the root directory:
+
    ```bash
    pnpm install
    ```
 
 2. **Build packages** from the root directory:
+
    ```bash
    pnpm build:js
    ```
+
    Note: Documentation builds use `build:js` to avoid unnecessary contract compilation. If the build fails due to missing TypeScript dependencies, check individual package devDependencies.
 
 3. **Start docs development server**:
@@ -273,6 +276,7 @@ Some packages may fail during `build:js` if TypeScript is not available as a dev
 
 **Error Pattern**: `tsc: command not found` during tsup build
 **Solution**: Add TypeScript as devDependency to the failing package:
+
 ```json
 {
   "devDependencies": {
@@ -331,7 +335,7 @@ When renaming or moving documentation files, always add redirects to `docs/verce
 ```json
 {
   "source": "/coins/contracts/factory",
-  "destination": "/coins/contracts/creating-a-coin", 
+  "destination": "/coins/contracts/creating-a-coin",
   "permanent": true
 }
 ```
@@ -339,7 +343,7 @@ When renaming or moving documentation files, always add redirects to `docs/verce
 #### Common Redirect Scenarios
 
 - **Page renamed**: Redirect old URL to new URL
-- **Page moved**: Redirect old path to new path  
+- **Page moved**: Redirect old path to new path
 - **Page removed**: Redirect to most relevant existing page
 - **Section reorganized**: Redirect old structure to new structure
 

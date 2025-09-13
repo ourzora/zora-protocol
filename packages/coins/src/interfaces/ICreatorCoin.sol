@@ -18,4 +18,8 @@ interface ICreatorCoin is ICoin {
     /// @notice Allows the creator payout recipient to claim vested tokens
     /// @return claimAmount The amount of tokens claimed
     function claimVesting() external returns (uint256);
+
+    /// @notice Get the amount of vested tokens that can be claimed
+    /// @return claimAmount The amount of tokens that can be claimed
+    function getClaimableAmount() external view returns (uint256);
 }

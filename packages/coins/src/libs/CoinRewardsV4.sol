@@ -30,6 +30,9 @@ import {IHasSwapPath} from "../interfaces/ICoin.sol";
 import {V4Liquidity} from "./V4Liquidity.sol";
 import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
 import {ICreatorCoinHook} from "../interfaces/ICreatorCoinHook.sol";
+import {IHasCoinType} from "../interfaces/ICoin.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ICreatorCoin} from "../interfaces/ICreatorCoin.sol";
 
 library CoinRewardsV4 {
     using SafeERC20 for IERC20;
@@ -38,7 +41,7 @@ library CoinRewardsV4 {
     // Market rewards = 80% of total fee (0.80% of 1%)
     uint256 public constant CREATOR_REWARD_BPS = 6250;
 
-    // Platform referrer gets 25% of market rewards (0.20% of total 1% fee)  
+    // Platform referrer gets 25% of market rewards (0.20% of total 1% fee)
     uint256 public constant CREATE_REFERRAL_REWARD_BPS = 2500;
 
     // Trade referrer gets 5% of market rewards (0.04% of total 1% fee)
@@ -178,7 +181,13 @@ library CoinRewardsV4 {
     /// @param fees The total amount of fees collected to be distributed
     /// @param coin The coin contract instance that implements IHasRewardsRecipients to get recipient addresses
     /// @param tradeReferrer The address of the trade referrer who should receive trade referral rewards (can be zero address)
-    function distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer, bool isCreatorCoin) internal {
+    function distributeMarketRewards(
+        Currency currency,
+        uint128 fees,
+        IHasRewardsRecipients coin,
+        address tradeReferrer,
+        IHasCoinType.CoinType coinType
+    ) internal {
         address payoutRecipient = coin.payoutRecipient();
         address platformReferrer = coin.platformReferrer();
         address protocolRewardRecipient = coin.protocolRewardRecipient();
@@ -218,7 +227,7 @@ library CoinRewardsV4 {
             marketRewards
         );
 
-        if (isCreatorCoin) {
+        if (coinType == IHasCoinType.CoinType.Creator) {
             emit ICreatorCoinHook.CreatorCoinRewards(
                 address(coin),
                 Currency.unwrap(currency),
@@ -290,5 +299,25 @@ library CoinRewardsV4 {
 
     function calculateReward(uint256 amount, uint256 bps) internal pure returns (uint256) {
         return (amount * bps) / 10_000;
+    }
+
+    function getCoinType(IHasRewardsRecipients coin) internal view returns (IHasCoinType.CoinType) {
+        // first check if the coin supports the IHasCoinType interface - if it does, we can use that
+        if (IERC165(address(coin)).supportsInterface(type(IHasCoinType).interfaceId)) {
+            return IHasCoinType(address(coin)).coinType();
+        }
+
+        // see if its a legacy creator coin
+        return isLegacyCreatorCoin(coin) ? IHasCoinType.CoinType.Creator : IHasCoinType.CoinType.Content;
+    }
+
+    function isLegacyCreatorCoin(IHasRewardsRecipients coin) internal view returns (bool) {
+        // try to call the method `getClaimableAmount` on the legacy creator coin, if it succeeds, then it is a legacy creator coin,
+        // otherwise we can assume it is a content coin
+        try ICreatorCoin(address(coin)).getClaimableAmount() returns (uint256) {
+            return true;
+        } catch {
+            return false;
+        }
     }
 }
