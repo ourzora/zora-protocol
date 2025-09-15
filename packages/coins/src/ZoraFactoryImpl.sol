@@ -49,10 +49,13 @@ contract ZoraFactoryImpl is
 {
     using SafeERC20 for IERC20;
 
-    /// @notice The coin contract implementation address
+    /// @notice The ZORA coin contract implementation address
     address public immutable coinV4Impl;
+    /// @notice The creator coin contract implementation address
     address public immutable creatorCoinImpl;
+    /// @notice The uniswap v4 coin hook address
     address public immutable hook;
+    /// @notice The zora hook registry address
     address public immutable zoraHookRegistry;
 
     constructor(address coinV4Impl_, address creatorCoinImpl_, address hook_, address zoraHookRegistry_) {
@@ -136,6 +139,7 @@ contract ZoraFactoryImpl is
         return _deployWithHook(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, postDeployHook, postDeployHookData, salt);
     }
 
+    /// @inheritdoc IZoraFactory
     function coinAddress(
         address msgSender,
         string memory name,
@@ -148,6 +152,7 @@ contract ZoraFactoryImpl is
         return Clones.predictDeterministicAddress(getCoinImpl(CoinConfigurationVersions.getVersion(poolConfig)), salt, address(this));
     }
 
+    /// @dev Internal function to deploy a coin with a hook
     function _deployWithHook(
         address payoutRecipient,
         address[] memory owners,
@@ -173,7 +178,9 @@ contract ZoraFactoryImpl is
         }
     }
 
-    /** Deprecated deploy functions */
+    /**
+     * Deprecated deploy functions
+     */
 
     /// @dev Deprecated: use `deploy` instead that has a salt and hook specified
     function deploy(
@@ -204,11 +211,11 @@ contract ZoraFactoryImpl is
         string memory symbol,
         bytes memory poolConfig,
         address platformReferrer,
-        address hook_,
+        address deployHook,
         bytes calldata hookData
     ) public payable nonReentrant returns (address coin, bytes memory hookDataOut) {
         bytes32 salt = _randomSalt(payoutRecipient, uri, bytes32(0));
-        return _deployWithHook(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, hook_, hookData, salt);
+        return _deployWithHook(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, deployHook, hookData, salt);
     }
 
     /// @dev deprecated Use deploy() with poolConfig instead
@@ -232,6 +239,10 @@ contract ZoraFactoryImpl is
 
         return (address(coin), 0);
     }
+
+    /**
+     * End Deprecated deploy functions
+     */
 
     function getCoinImpl(uint8 version) internal view returns (address) {
         if (CoinConfigurationVersions.isV4(version)) {
@@ -322,7 +333,6 @@ contract ZoraFactoryImpl is
         return keccak256(abi.encodePacked(msgSender, name, symbol, poolConfig, platformReferrer, coinSalt));
     }
 
-    /// @dev Generates a unique salt for deterministic deployment
     function _randomSalt(address payoutRecipient, string memory uri, bytes32 coinSalt) internal view returns (bytes32) {
         return
             keccak256(
