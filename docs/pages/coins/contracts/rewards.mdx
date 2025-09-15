@@ -48,30 +48,55 @@ These positions are essentially **locked and burned** - they don't earn future f
 
 ### Market Reward Distribution
 
-The remaining 66.67% of collected fees becomes "market rewards" and is distributed differently based on coin type.
+The remaining portion of collected fees becomes "market rewards" and is distributed to stakeholders.
 
-### V4 Market Reward Distribution
+### V4 Market Reward Distribution (Current - Since 2.2.0)
 
-The market rewards (66.67% of total fees) are distributed differently based on coin type:
+<Callout type="info">
+As of version 2.2.0, the fee structure has been unified with a total fee of 1% on pools (was 3% previously) and consistent distribution across both coin types.
+All coins with hooks on version 2.2.0 or higher use the unified fee structure.
+</Callout>
+
+<Callout type="warning">
+**Existing Coins**: Coins deployed before version 2.2.0 continue to use their original fee structure unless the coin owner migrates their liquidity to a 2.2.0+ hook. Migration to newer hooks adopts the new unified fee structure automatically.
+
+For information on liquidity migration, see [Liquidity Migration](/coins/contracts/liquidity-migration).
+</Callout>
+
+#### Content Coins & Creator Coins (1% total fee on pools)
+| Recipient         | % of Market Rewards | % of Total Fees |
+| ----------------- | ------------------- | --------------- |
+| Creator           | 62.5%               | 50%             |
+| Platform Referral | 25%                 | 20%             |
+| Trade Referral    | 5%                  | 4%              |
+| Doppler           | 1.25%               | 1%              |
+| Protocol          | 6.25%               | 5%              |
+| ----------------- | ------------------- | --------------- |
+| LP Rewards        | -                   | 20%             |
+
+### Fee Structure Comparison (Pre-2.2.0 vs Current)
 
 #### Content Coins
-| Recipient       | % of Market Rewards | % of Total Fees |
-| --------------- | ------------------- | --------------- |
-| Creator         | 50%                 | 33.33%          |
-| Create Referral | 15%                 | 10%             |
-| Trade Referral  | 15%                 | 10%             |
-| Doppler         | 5%                  | 3.33%           |
-| Protocol        | 15%                 | 10%             |
-| --------------- | ------------------- | --------------- |
-| LP Rewards      | -                   | 33.33%          |
+| Recipient         | Before (Pre-2.2.0) (3% total fee) | After (2.2.0 and later) (1% total fee) |
+| ----------------- | --------------------- | -------------------- |
+|                   | % of Fee              | % of Fee             |
+| Creator           | 33.33%                | 50%                  |
+| Platform Referral | 10%                   | 20%                  |
+| Trade Referral    | 10%                   | 4%                   |
+| Doppler           | 3.33%                 | 1%                   |
+| Protocol          | 10%                   | 5%                   |
+| LP Rewards        | 33.33%                | 20%                  |
 
 #### Creator Coins
-| Recipient       | % of Market Rewards | % of Total Fees |
-| --------------- | ------------------- | --------------- |
-| Creator         | 50%                 | 33.33%          |
-| Protocol        | 50%                 | 33.33%          |
-| --------------- | ------------------- | --------------- |
-| LP Rewards      | -                   | 33.33%          |
+| Recipient         | Before (3% total fee) | After (1% total fee) |
+| ----------------- | --------------------- | -------------------- |
+|                   | % of Fee              | % of Fee             |
+| Creator           | 33.33%                | 50%                  |
+| Platform Referral | -                     | 20%                  |
+| Trade Referral    | -                     | 4%                   |
+| Doppler           | -                     | 1%                   |
+| Protocol          | 33.33%                | 5%                   |
+| LP Rewards        | 33.33%                | 20%                  |
 
 ### Multi-Hop Currency Conversion
 
@@ -110,7 +135,7 @@ Content Coin Trading → Fees Collected → Multi-hop Swap → All Recipients Re
 
 **Trade Referral**: The platform or address that referred a specific trade/swap of a coin. In V4, this is passed through hook data and can trigger referral rewards.
 
-**Create Referral**: The platform that referred the creator to deploy the coin. This is set at coin creation time and earns a percentage of all trading fees.
+**Platform Referral**: The platform that referred the creator to deploy the coin. This is set at coin creation time and earns a percentage of all trading fees. (Previously called "Create Referral" in versions prior to 2.2.0)
 
 **Creator/Payout Recipient**: The address designated to receive creator rewards from trading activity. This can be updated by coin owners.
 

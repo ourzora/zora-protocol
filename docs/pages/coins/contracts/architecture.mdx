@@ -139,12 +139,12 @@ The protocol uses an inheritance-based hook architecture:
 
 **ContentCoinHook & CreatorCoinHook**
 - Inherit from `BaseZoraV4CoinHook` but override reward distribution
-- ContentCoinHook: Distributes rewards to create referral, trade referral, creator, protocol, and Doppler
-- CreatorCoinHook: Distributes rewards to creator and protocol only
+- ContentCoinHook: Distributes rewards to platform referral, trade referral, creator, protocol, and Doppler
+- CreatorCoinHook: Uses the same unified reward structure as ContentCoinHook (as of v2.2.0)
 
 Core shared functionality:
 - Collects trading fees from liquidity positions
-- Splits fees between LP rewards (33.33%) and market rewards (66.67%)
+- Splits fees between LP rewards and market rewards
 - Converts fees to backing currency via multi-hop swaps
 - Distributes rewards based on coin-specific methodology
 

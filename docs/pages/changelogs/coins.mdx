@@ -17,42 +17,34 @@
 
 - [adf98059](https://github.com/ourzora/zora-protocol/commit/adf98059): Adds platform referral and trade referral functionality to creator coins, and unifies the fee structure between content and creator coins with a simplified 1% total fee.
 
-  **New Features:**
+  ## New Features:
 
   - Platform referral and trade referral functionality for creator coins (previously only supported on content coins)
   - Unified fee structure: Both content and creator coins use identical 1% fee distribution
 
-  **Fee Structure Changes:**
+  ### Fee Changes - Content Coins
 
-  **Before (Content Coins - 3% total fee):**
-  | Recipient | % of Market Rewards | % of Total Fees |
-  | --------------- | ------------------- | --------------- |
-  | Creator | 50% | 33.33% |
-  | Create Referral | 15% | 10% |
-  | Trade Referral | 15% | 10% |
-  | Doppler | 5% | 3.33% |
-  | Protocol | 15% | 10% |
-  | --------------- | ------------------- | --------------- |
-  | LP Rewards | - | 33.33% |
+  | Recipient         | Before (3% total fee) | After (1% total fee) |
+  | ----------------- | --------------------- | -------------------- |
+  |                   | % of Fee        | % of Fee |
+  | Creator           | 33.33%                | 50%                  |
+  | Platform Referral | 10%                   | 20%                  |
+  | Trade Referral    | 10%                   | 4%                   |
+  | Doppler           | 3.33%                 | 1%                   |
+  | Protocol          | 10%                   | 5%                   |
+  | LP Rewards        | 33.33%                | 20%                  |
 
-  **Before (Creator Coins - 3% total fee):**
-  | Recipient | % of Market Rewards | % of Total Fees |
-  | --------------- | ------------------- | --------------- |
-  | Creator | 50% | 33.33% |
-  | Protocol | 50% | 33.33% |
-  | --------------- | ------------------- | --------------- |
-  | LP Rewards | - | 33.33% |
+  ### Fee Changes - Creator Coins
 
-  **After (All Coins - 1% total fee):**
-  | Recipient | % of Market Rewards | % of Total Fee |
-  | ----------------- | ------------------- | -------------- |
-  | Creator | 62.5% | 50% |
-  | Platform Referral | 25% | 20% |
-  | Trade Referral | 5% | 4% |
-  | Doppler | 1.25% | 1% |
-  | Protocol | 6.25% | 5% |
-  | ----------------- | ------------------- | -------------- |
-  | LP Rewards | - | 20% |
+  | Recipient         | Before (3% total fee) | After (1% total fee) |
+  | ----------------- | --------------------- | -------------------- |
+  |                   | % of Fee        | % of Fee |
+  | Creator           | 33.33%                | 50%                  |
+  | Platform Referral | -                     | 20%                  |
+  | Trade Referral    | -                     | 4%                   |
+  | Doppler           | -                     | 1%                   |
+  | Protocol          | 33.33%                | 5%                   |
+  | LP Rewards        | 33.33%                | 20%                  |
 
   **Implementation Changes:**
 

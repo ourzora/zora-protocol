@@ -107,28 +107,16 @@ On every swap, the hooks automatically:
 
 ## Reward Distribution
 
-The hooks automatically implement different reward distribution logic for different coin types:
+The hooks automatically implement different reward distribution logic for different coin types.
 
-### Content Coins
+**For detailed reward percentages and distribution breakdown, see [Coin Rewards](/coins/contracts/rewards).**
 
-**Total Fee Split**: 33.33% reminted as LP rewards, 66.67% distributed as market rewards
+### Key Differences
 
-**Market Rewards Distribution**:
-- **Creator**: 50% (5000 BPS)
-- **Create Referral**: 15% (1500 BPS)
-- **Trade Referral**: 15% (1500 BPS)  
-- **Doppler**: 5% (500 BPS)
-- **Protocol**: ~15% (remaining)
+- **Content Coins**: Support platform referral, trade referral, and Doppler rewards in addition to creator and protocol rewards
+- **Creator Coins**: Unified structure with the same reward distribution as Content Coins (as of version 2.2.0)
 
-### Creator Coins
-
-**Total Fee Split**: 33.33% reminted as LP rewards, 66.67% distributed as market rewards
-
-**Market Rewards Distribution**:
-- **Creator**: 50% (5000 BPS)
-- **Protocol**: 50% (remaining)
-
-*Note: Creator Coins do not have referral or Doppler rewards*
+**Fee Split**: A portion of collected fees is reminted as LP rewards to maintain liquidity, while the remainder is distributed as market rewards to stakeholders.
 
 ## Multi-Hop Reward Swapping
 
@@ -227,10 +215,10 @@ Emitted when market rewards are distributed from collected fees, showing exact a
 - **coin**: The coin contract that generated the rewards
 - **currency**: The currency in which rewards are paid out
 - **payoutRecipient**: The creator's reward recipient address
-- **platformReferrer**: Address receiving platform referral rewards (Content Coins only)
-- **tradeReferrer**: Address receiving trade referral rewards (Content Coins only)
+- **platformReferrer**: Address receiving platform referral rewards
+- **tradeReferrer**: Address receiving trade referral rewards
 - **protocolRewardRecipient**: Protocol treasury address
-- **dopplerRecipient**: Doppler rewards recipient (Content Coins only)
+- **dopplerRecipient**: Doppler rewards recipient
 - **marketRewards**: Detailed breakdown of reward amounts for each recipient
 
 ### LpReward Event
@@ -252,5 +240,5 @@ Emitted when liquidity provider rewards are reminted back into the pool:
 - **tick**: The current pool tick when the reward was reminted
 - **liquidity**: The amount of liquidity reminted back into the pool
 
-This event tracks the 33.33% portion of collected fees that are automatically reminted as liquidity rather than distributed as market rewards.
+This event tracks the portion of collected fees that are automatically reminted as liquidity rather than distributed as market rewards.
 

@@ -268,6 +268,33 @@ Before working with the documentation, build the packages that are imported:
    pnpm dev
    ```
 
+### Changelog Management
+
+**IMPORTANT**: Never directly edit changelog files in the `docs/pages/changelogs/` directory. These files are automatically generated.
+
+**Changelog Source and Generation:**
+
+- **Source files**: Individual package `CHANGELOG.md` files (e.g., `packages/coins/CHANGELOG.md`)
+- **Generated files**: Documentation changelog files (e.g., `docs/pages/changelogs/coins.mdx`)
+- **Generation script**: `docs/scripts/copy-changelogs.ts`
+
+**The generation script automatically:**
+- Copies changelog content from package directories to docs
+- Removes the first line (package title)
+- Adds proper documentation titles (e.g., "Coins Changelog")
+- Converts commit hashes to GitHub links
+- Processes multiple package changelogs (coins, coins-sdk, protocol-deployments, etc.)
+
+**Automatic Updates:**
+- Changelogs are automatically copied to docs during the version update process
+- When `pnpm update-version` runs, it automatically calls `pnpm docs:copy-changelogs`
+- This ensures documentation changelogs stay in sync with package changelogs
+
+**Manual Updates (if needed):**
+1. Edit the source `CHANGELOG.md` file in the relevant package directory
+2. Run `pnpm docs:copy-changelogs` from root directory to manually sync
+3. The documentation changelog will be updated
+
 ### Common Build Issues
 
 #### Missing TypeScript Dependencies

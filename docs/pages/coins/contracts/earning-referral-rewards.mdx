@@ -12,7 +12,7 @@ For the easiest implementation, use the Zora SDK:
 
 There are two types of referral rewards available to developers:
 
-### Create Referral Rewards
+### Platform Referral Rewards
 - **Set once** during coin creation
 - **Earns from all future trades** for the coin's entire lifespan
 - **Sticky** - permanently associated with the coin
@@ -24,24 +24,18 @@ There are two types of referral rewards available to developers:
 
 ### Reward Percentages
 
-The reward distribution varies by coin type:
+**For detailed reward percentages and distribution breakdown, see [Coin Rewards](/coins/contracts/rewards).**
 
-#### Content Coins - Developer Earnings from Swaps
-| Recipient         | % of Market Rewards | % of Total Fees |
-| ----------------- | ------------------- | --------------- |
-| **Create Referral** | **15%**             | **10%**         |
-| **Trade Referral**  | **15%**             | **10%**         |
-| Creator           | 50%                 | 33.33%          |
-| Protocol          | 15%                 | 10%             |
-| Doppler           | 5%                  | 3.33%           |
+Both Content Coins and Creator Coins now offer the same referral reward structure (as of version 2.2.0):
 
-#### Creator Coins - No Developer Rewards Available
+- **Platform Referral**: 20% of total fees (25% of market rewards)
+- **Trade Referral**: 4% of total fees (5% of market rewards)
 
-**Creator Coins do not offer referral rewards to developers.**
+This unified structure means developers can earn referral rewards from **both coin types**.
 
 ## Technical Implementation
 
-### Create Referral Setup
+### Platform Referral Setup
 
 Set the `platformReferrer` parameter when creating coins to earn from all future trades. This address is permanently set for the coin's entire lifespan:
 
@@ -54,7 +48,7 @@ address coin = factory.deploy(
     name,                    
     symbol,                  
     poolConfig,              
-    YOUR_PLATFORM_ADDRESS,   // 🎯 This address earns create referral rewards
+    YOUR_PLATFORM_ADDRESS,   // 🎯 This address earns platform referral rewards
     postDeployHook,          
     postDeployHookData,      
     coinSalt                 
