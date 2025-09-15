@@ -1,5 +1,15 @@
 # @zoralabs/coins
 
+## 2.2.1
+
+### Patch Changes
+
+- 7ec6134b: Flatten hooks into single hook implementation
+
+  Consolidates multiple hook contracts into a single unified hook for simplified architecture and better maintainability.
+
+- ae9424ab: Ignore collecting from liquidity positions with empty fee growth
+
 ## 2.2.0
 
 ### Minor Changes
