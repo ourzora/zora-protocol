@@ -32,19 +32,19 @@ V4 coins generate rewards through a sophisticated automated system that operates
 
 When users trade coins, the Uniswap V4 hook automatically:
 
-1. **Collects LP fees** (3% standard Uniswap V4 fees) from all liquidity positions
+1. **Collects LP fees** (1% total fees for v2.2.0+) from all liquidity positions
 2. **Splits fees** into two parts:
-   - **33.33% for LP Rewards** - Used to create new liquidity positions
-   - **66.67% for Market Rewards** - Distributed to stakeholders
+   - **20% for LP Rewards** - Used to create new liquidity positions  
+   - **80% for Market Rewards** - Distributed to stakeholders
 
 ### LP Reward Mechanism: Liquidity Preservation
 
-The 33.33% allocated to LP rewards doesn't go to liquidity providers directly. Instead, it's used to **mint new single-sided liquidity positions** that are strategically placed outside the current trading range:
+The 20% allocated to LP rewards doesn't go to liquidity providers directly. Instead, it's used to **mint new single-sided liquidity positions** that are strategically placed outside the current trading range:
 
 - **Token0 fees** → New position created **above** current price (inactive until price moves up)
 - **Token1 fees** → New position created **below** current price (inactive until price moves down)
 
-These positions are essentially **locked and burned** - they don't earn future fees but serve a crucial purpose: **maintaining pool liquidity**. Instead of extracting 33.33% of fees from the pool, this mechanism keeps them as permanent liquidity, ensuring the pool becomes deeper and more liquid over time.
+These positions are essentially **locked and burned** - they don't earn future fees but serve a crucial purpose: **maintaining pool liquidity**. Instead of extracting 20% of fees from the pool, this mechanism keeps them as permanent liquidity, ensuring the pool becomes deeper and more liquid over time.
 
 ### Market Reward Distribution
 
@@ -128,7 +128,7 @@ Content Coin Trading → Fees Collected → Multi-hop Swap → All Recipients Re
 - **Automated Distribution**: Rewards are distributed on every single swap, no manual claiming required
 - **Multi-Hop Conversion**: Automatically converts rewards through intermediate tokens to reach ZORA
 - **Unified Currency**: All recipients receive rewards in the same target currency (ZORA)
-- **Liquidity Preservation**: 33.33% of fees remain in pools as permanent liquidity
+- **Liquidity Preservation**: 20% of fees remain in pools as permanent liquidity
 
 
 ## Coin Rewards Terminology
@@ -155,13 +155,13 @@ The creator's total rewards are automatically distributed with each trade:
 
 ## How It Works: Developer
 
-### Create Referral Reward
+### Platform Referral Reward
 
-The Create Referral Reward is paid out to the developer or platform that referred the creator to deploy their coin using Zora's contracts.
+The Platform Referral Reward is paid out to the developer or platform that referred the creator to deploy their coin using Zora's contracts.
 
 #### Creating a Coin with Rewards
 
-The `createReferral` address is specified upon coin creation through the factory's deploy function.
+The `platformReferrer` address is specified upon coin creation through the factory's deploy function.
 
 ```solidity
 function deploy(
@@ -171,7 +171,7 @@ function deploy(
     string memory name,
     string memory symbol,
     bytes memory poolConfig,
-    address platformReferrer, // This is the create referral
+    address platformReferrer, // This is the platform referral
     address postDeployHook,
     bytes calldata postDeployHookData,
     bytes32 coinSalt
