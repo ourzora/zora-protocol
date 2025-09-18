@@ -17,7 +17,9 @@ import {ICoin} from "../src/interfaces/ICoin.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {CoinCommon} from "../src/libs/CoinCommon.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {MultiOwnable} from "../src/utils/MultiOwnable.sol";
 import {IHooksUpgradeGate} from "../src/interfaces/IHooksUpgradeGate.sol";
+import {BaseCoin} from "../src/BaseCoin.sol";
 
 contract LiquidityMigrationReceiver is IUpgradeableDestinationV4Hook, IERC165 {
     function initializeFromMigration(
@@ -44,6 +46,8 @@ contract InvalidLiquidityMigrationReceiver is IERC165 {
 
 contract LiquidityMigrationTest is BaseTest {
     MockERC20 internal mockERC20A;
+
+    address constant coinVersionLookup = 0x777777751622c0d3258f214F9DF38E35BF45baF3;
 
     function setUp() public override {
         super.setUpWithBlockNumber(30267794);
@@ -387,5 +391,45 @@ contract LiquidityMigrationTest is BaseTest {
 
         // Should match isRegisteredUpgradePath
         assertEq(hookUpgradeGate.isAllowedHookUpgrade(baseImpl, upgradeImpl), hookUpgradeGate.isRegisteredUpgradePath(baseImpl, upgradeImpl));
+    }
+
+    function test_migrateLiquidity_failsWithEmptyPositionBug() public {
+        // Reproduce the bug discovered in hook version 1.1.2 where migration
+        // tries to modify liquidity positions that have zero liquidity
+        vm.createSelectFork("base", 35671635);
+
+        address contentCoin = 0x81f5F30217dA777a5d6441606AFa57E093833d7C;
+        address oldHook = 0x9ea932730A7787000042e34390B8E435dD839040; // v1.1.2 hook
+        address newHook = 0xff74Be9D3596eA7a33BB4983DD7906fB34135040; // current hook
+        address upgradeGate = 0xD88f6BdD765313CaFA5888C177c325E2C3AbF2D2; // deployed upgrade gate
+
+        BaseCoin coin = BaseCoin(contentCoin);
+
+        // Register upgrade path
+        address[] memory baseImpls = new address[](1);
+        baseImpls[0] = oldHook;
+
+        vm.prank(Ownable(upgradeGate).owner());
+        IHooksUpgradeGate(upgradeGate).registerUpgradePath(baseImpls, newHook);
+
+        // Get coin owner
+        address coinOwner = MultiOwnable(contentCoin).owners()[0];
+
+        // First, demonstrate the bug exists - this should fail
+        vm.prank(coinOwner);
+        vm.expectRevert();
+        coin.migrateLiquidity(newHook, "");
+
+        // Now fix the bug by etching fixed hook code onto the old hook address
+        bytes memory creationCode = HooksDeployment.contentCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+
+        (IHooks fixedHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
+
+        // Etch the fixed hook code onto the old hook address
+        vm.etch(oldHook, address(fixedHook).code);
+
+        // Now migration should work
+        vm.prank(coinOwner);
+        coin.migrateLiquidity(newHook, "");
     }
 }
