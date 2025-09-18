@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 2.2.1
+
+### Patch Changes
+
+- c96e0c5e: Fix bug where liquidity cannot be migrated if there is a position with 0 liquidity
+
 ## 2.2.0
 
 ### Minor Changes

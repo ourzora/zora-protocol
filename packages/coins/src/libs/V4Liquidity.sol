@@ -198,6 +198,17 @@ library V4Liquidity {
         for (uint256 i; i < positions.length; i++) {
             uint128 liquidity = getLiquidity(poolManager, address(this), poolKey, positions[i].tickLower, positions[i].tickUpper);
 
+            // Skip positions that have no liquidity to avoid CannotUpdateEmptyPosition error
+            if (liquidity == 0) {
+                burnedPositions[i] = BurnedPosition({
+                    tickLower: positions[i].tickLower,
+                    tickUpper: positions[i].tickUpper,
+                    amount0Received: 0,
+                    amount1Received: 0
+                });
+                continue;
+            }
+
             ModifyLiquidityParams memory params = ModifyLiquidityParams({
                 tickLower: positions[i].tickLower,
                 tickUpper: positions[i].tickUpper,
