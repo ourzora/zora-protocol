@@ -416,7 +416,7 @@ contract LiquidityMigrationTest is BaseTest {
         coin.migrateLiquidity(newHook, "");
 
         // Now fix the bug by etching fixed hook code onto the old hook address
-        bytes memory creationCode = HooksDeployment.contentCoinCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
 
         (IHooks fixedHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
