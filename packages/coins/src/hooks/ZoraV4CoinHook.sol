@@ -420,5 +420,9 @@ contract ZoraV4CoinHook is
         newPoolKey = V4Liquidity.lockAndMigrate(poolManager, poolKey, poolCoin.positions, poolCoin.coin, newHook, additionalData);
     }
 
+    /// @notice Receives ETH from the pool manager for ETH-backed coins during fee collection.
+    /// @dev Only required for coins using ETH as backing currency (currency = address(0)).
+    ///      Restricted to onlyPoolManager to prevent ETH from getting stuck in the contract.
+    ///      Unused for ERC20-backed coins.
     receive() external payable onlyPoolManager {}
 }
