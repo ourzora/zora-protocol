@@ -50,3 +50,21 @@ interface IUpgradeableDestinationV4Hook {
         bytes calldata additionalData
     ) external;
 }
+
+interface IUpgradeableDestinationV4HookWithUpdateableFee {
+    /// @notice Initialize after migration from old hook
+    /// @param poolKey The pool key being migrated
+    /// @param coin The coin address
+    /// @param sqrtPriceX96 The current sqrt price
+    /// @param migratedLiquidity The migrated liquidity
+    /// @param additionalData Additional data for initialization
+    /// @return fee The new fee for the migrated liquidity
+    /// @return tickSpacing The new tick spacing for the migrated liquidity
+    function initializeFromMigrationWithUpdateableFee(
+        PoolKey calldata poolKey,
+        address coin,
+        uint160 sqrtPriceX96,
+        BurnedPosition[] calldata migratedLiquidity,
+        bytes calldata additionalData
+    ) external returns (uint24 fee, int24 tickSpacing);
+}

@@ -28,8 +28,11 @@ import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 import {Position} from "@uniswap/v4-core/src/libraries/Position.sol";
 import {BurnedPosition, Delta, MigratedLiquidityResult, IUpgradeableV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
-import {IUpgradeableDestinationV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
+import {IUpgradeableDestinationV4Hook, IUpgradeableDestinationV4HookWithUpdateableFee} from "../interfaces/IUpgradeableV4Hook.sol";
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
+import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
+
+import {console} from "forge-std/console.sol";
 
 // command = 1; mint
 struct MintCallbackData {
@@ -71,7 +74,7 @@ library V4Liquidity {
         address coin,
         address newHook,
         bytes calldata additionalData
-    ) internal returns (PoolKey memory) {
+    ) internal returns (PoolKey memory newPoolKey) {
         bytes memory data = abi.encode(
             BURN_ALL_POSITIONS_CALLBACK_ID,
             abi.encode(BurnAllPositionsCallbackData({poolKey: poolKey, positions: positions, coin: coin, newHook: newHook}))
@@ -82,19 +85,36 @@ library V4Liquidity {
 
         MigratedLiquidityResult memory migratedLiquidityResult = abi.decode(result, (MigratedLiquidityResult));
 
-        // Check if new hook supports the upgradeable destination interface
-        require(IERC165(newHook).supportsInterface(type(IUpgradeableDestinationV4Hook).interfaceId), IUpgradeableV4Hook.InvalidNewHook(newHook));
-        // Initialize new hook with migration data
-        IUpgradeableDestinationV4Hook(address(newHook)).initializeFromMigration(
-            poolKey,
-            coin,
-            migratedLiquidityResult.sqrtPriceX96,
-            migratedLiquidityResult.burnedPositions,
-            additionalData
-        );
+        newPoolKey.currency0 = poolKey.currency0;
+        newPoolKey.currency1 = poolKey.currency1;
+        newPoolKey.hooks = IHooks(newHook);
 
-        return
-            PoolKey({currency0: poolKey.currency0, currency1: poolKey.currency1, fee: poolKey.fee, tickSpacing: poolKey.tickSpacing, hooks: IHooks(newHook)});
+        // Check if new hook supports the new interface first, then fall back to old interface
+        if (IERC165(newHook).supportsInterface(type(IUpgradeableDestinationV4HookWithUpdateableFee).interfaceId)) {
+            // Use new interface with fee updates
+            (uint24 fee, int24 tickSpacing) = IUpgradeableDestinationV4HookWithUpdateableFee(address(newHook)).initializeFromMigrationWithUpdateableFee(
+                poolKey,
+                coin,
+                migratedLiquidityResult.sqrtPriceX96,
+                migratedLiquidityResult.burnedPositions,
+                additionalData
+            );
+            newPoolKey.fee = fee;
+            newPoolKey.tickSpacing = tickSpacing;
+        } else {
+            // Fall back to old interface for backward compatibility
+            require(IERC165(newHook).supportsInterface(type(IUpgradeableDestinationV4Hook).interfaceId), IUpgradeableV4Hook.InvalidNewHook(newHook));
+            IUpgradeableDestinationV4Hook(address(newHook)).initializeFromMigration(
+                poolKey,
+                coin,
+                migratedLiquidityResult.sqrtPriceX96,
+                migratedLiquidityResult.burnedPositions,
+                additionalData
+            );
+            // Keep existing fee and tick spacing when using old interface
+            newPoolKey.fee = poolKey.fee;
+            newPoolKey.tickSpacing = poolKey.tickSpacing;
+        }
     }
 
     /// @notice Handles the callback from the pool manager.  Called by the hook upon unlock.

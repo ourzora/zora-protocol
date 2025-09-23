@@ -31,13 +31,14 @@ import {IUpgradeableV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
 import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
 import {MultiOwnable} from "../utils/MultiOwnable.sol";
 import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {IUpgradeableDestinationV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
+import {IUpgradeableDestinationV4Hook, IUpgradeableDestinationV4HookWithUpdateableFee} from "../interfaces/IUpgradeableV4Hook.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {ContractVersionBase, IVersionedContract} from "../version/ContractVersionBase.sol";
 import {IHasCoinType} from "../interfaces/ICoin.sol";
+import {MarketConstants} from "../libs/MarketConstants.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -49,7 +50,14 @@ import {IHasCoinType} from "../interfaces/ICoin.sol";
 ///      2. Swaps collected fees to the backing currency through multi-hop paths
 ///      3. Distributes converted fees as rewards
 /// @author oveddan
-contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook, ERC165, IUpgradeableDestinationV4Hook {
+contract ZoraV4CoinHook is
+    BaseHook,
+    ContractVersionBase,
+    IZoraV4CoinHook,
+    ERC165,
+    IUpgradeableDestinationV4Hook,
+    IUpgradeableDestinationV4HookWithUpdateableFee
+{
     using BalanceDeltaLibrary for BalanceDelta;
 
     /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
@@ -130,6 +138,7 @@ contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook, ERC16
         return
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId ||
+            interfaceId == type(IUpgradeableDestinationV4HookWithUpdateableFee).interfaceId ||
             interfaceId == type(IVersionedContract).interfaceId;
     }
 
@@ -168,13 +177,46 @@ contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook, ERC16
     }
 
     /// @inheritdoc IUpgradeableDestinationV4Hook
+    /// @dev left for backward compatibility for migrating from hooks that dont support
+    /// updating the fee
     function initializeFromMigration(
         PoolKey calldata poolKey,
         address coin,
         uint160 sqrtPriceX96,
         BurnedPosition[] calldata migratedLiquidity,
-        bytes calldata
+        bytes calldata additionalData
     ) external {
+        // keep the existing fee and tick spacing.
+        uint24 fee = poolKey.fee;
+        int24 tickSpacing = poolKey.tickSpacing;
+
+        _initializeFromMigration(poolKey, coin, sqrtPriceX96, migratedLiquidity, additionalData, fee, tickSpacing);
+    }
+
+    /// @inheritdoc IUpgradeableDestinationV4HookWithUpdateableFee
+    function initializeFromMigrationWithUpdateableFee(
+        PoolKey calldata poolKey,
+        address coin,
+        uint160 sqrtPriceX96,
+        BurnedPosition[] calldata migratedLiquidity,
+        bytes calldata additionalData
+    ) external returns (uint24 fee, int24 tickSpacing) {
+        // update the fee to the current one.
+        fee = MarketConstants.LP_FEE_V4;
+        tickSpacing = poolKey.tickSpacing;
+
+        _initializeFromMigration(poolKey, coin, sqrtPriceX96, migratedLiquidity, additionalData, fee, tickSpacing);
+    }
+
+    function _initializeFromMigration(
+        PoolKey calldata poolKey,
+        address coin,
+        uint160 sqrtPriceX96,
+        BurnedPosition[] calldata migratedLiquidity,
+        bytes calldata,
+        uint24 fee,
+        int24 tickSpacing
+    ) internal {
         address oldHook = msg.sender;
         address newHook = address(this);
 
@@ -189,8 +231,8 @@ contract ZoraV4CoinHook is BaseHook, ContractVersionBase, IZoraV4CoinHook, ERC16
         PoolKey memory newKey = PoolKey({
             currency0: poolKey.currency0,
             currency1: poolKey.currency1,
-            fee: poolKey.fee,
-            tickSpacing: poolKey.tickSpacing,
+            fee: fee,
+            tickSpacing: tickSpacing,
             hooks: IHooks(newHook)
         });
 
