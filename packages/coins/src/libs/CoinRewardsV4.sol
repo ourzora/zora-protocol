@@ -33,25 +33,10 @@ import {ICreatorCoinHook} from "../interfaces/ICreatorCoinHook.sol";
 import {IHasCoinType} from "../interfaces/ICoin.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ICreatorCoin} from "../interfaces/ICreatorCoin.sol";
+import {CoinConstants} from "./CoinConstants.sol";
 
 library CoinRewardsV4 {
     using SafeERC20 for IERC20;
-
-    // Creator gets 62.5% of market rewards (0.50% of total 1% fee)
-    // Market rewards = 80% of total fee (0.80% of 1%)
-    uint256 public constant CREATOR_REWARD_BPS = 6250;
-
-    // Platform referrer gets 25% of market rewards (0.20% of total 1% fee)
-    uint256 public constant CREATE_REFERRAL_REWARD_BPS = 2500;
-
-    // Trade referrer gets 5% of market rewards (0.04% of total 1% fee)
-    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 500;
-
-    // Doppler gets 1.25% of market rewards (0.01% of total 1% fee)
-    uint256 public constant DOPPLER_REWARD_BPS = 125;
-
-    // LPs get 20% of total fee (0.20% of 1%)
-    uint256 public constant LP_REWARD_BPS = 2000;
 
     function getTradeReferral(bytes calldata hookData) internal pure returns (address) {
         return hookData.length >= 20 ? abi.decode(hookData, (address)) : address(0);
@@ -83,7 +68,7 @@ library CoinRewardsV4 {
 
     /// @dev Computes the LP reward and remaining amount for market rewards from the total amount
     function computeLpReward(uint128 totalBackingAmount) internal pure returns (uint128 lpRewardAmount) {
-        lpRewardAmount = uint128(calculateReward(uint256(totalBackingAmount), LP_REWARD_BPS));
+        lpRewardAmount = uint128(calculateReward(uint256(totalBackingAmount), CoinConstants.LP_REWARD_BPS));
     }
 
     function convertDeltaToPositiveUint128(int256 delta) internal pure returns (uint128) {
@@ -291,10 +276,10 @@ library CoinRewardsV4 {
         }
 
         uint256 totalAmount = uint256(fee);
-        rewards.platformReferrerAmount = hasCreateReferral ? calculateReward(totalAmount, CREATE_REFERRAL_REWARD_BPS) : 0;
-        rewards.tradeReferrerAmount = hasTradeReferral ? calculateReward(totalAmount, TRADE_REFERRAL_REWARD_BPS) : 0;
-        rewards.creatorAmount = calculateReward(totalAmount, CREATOR_REWARD_BPS);
-        rewards.dopplerAmount = calculateReward(totalAmount, DOPPLER_REWARD_BPS);
+        rewards.platformReferrerAmount = hasCreateReferral ? calculateReward(totalAmount, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
+        rewards.tradeReferrerAmount = hasTradeReferral ? calculateReward(totalAmount, CoinConstants.TRADE_REFERRAL_REWARD_BPS) : 0;
+        rewards.creatorAmount = calculateReward(totalAmount, CoinConstants.CREATOR_REWARD_BPS);
+        rewards.dopplerAmount = calculateReward(totalAmount, CoinConstants.DOPPLER_REWARD_BPS);
         rewards.protocolAmount = totalAmount - rewards.platformReferrerAmount - rewards.tradeReferrerAmount - rewards.creatorAmount - rewards.dopplerAmount;
     }
 

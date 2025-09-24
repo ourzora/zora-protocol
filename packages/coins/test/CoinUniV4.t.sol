@@ -17,7 +17,6 @@ import {LpPosition} from "../src/types/LpPosition.sol";
 import {CoinCommon} from "../src/libs/CoinCommon.sol";
 import {IZoraV4CoinHook} from "../src/interfaces/IZoraV4CoinHook.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
-import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {IMsgSender} from "../src/interfaces/IMsgSender.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {toBalanceDelta, BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
@@ -106,7 +105,7 @@ contract CoinUniV4Test is BaseTest {
 
         // Verify total supply equals maximum allowed
         assertEq(coinV4.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY, "total supply");
-        assertApproxEqAbs(coinV4.balanceOf(address(coinV4.poolManager())), MarketConstants.CONTENT_COIN_MARKET_SUPPLY, 1000, "pool launch supply");
+        assertApproxEqAbs(coinV4.balanceOf(address(coinV4.poolManager())), CoinConstants.CONTENT_COIN_MARKET_SUPPLY, 1000, "pool launch supply");
         assertEq(coinV4.balanceOf(coinV4.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD, "creator launch reward");
     }
 

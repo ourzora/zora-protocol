@@ -8,12 +8,11 @@
 pragma solidity ^0.8.28;
 
 import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
-import {CreatorCoinConstants} from "./libs/CreatorCoinConstants.sol";
+import {CoinConstants} from "./libs/CoinConstants.sol";
 import {IHooks, PoolConfiguration, PoolKey, ICoin} from "./interfaces/ICoin.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {BaseCoin} from "./BaseCoin.sol";
 import {IHasCoinType} from "./interfaces/ICoin.sol";
-import {MarketConstants} from "./libs/MarketConstants.sol";
 
 contract CreatorCoin is ICreatorCoin, BaseCoin {
     uint256 public vestingStartTime;
@@ -28,7 +27,7 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
     ) BaseCoin(protocolRewardRecipient_, protocolRewards_, poolManager_, airlock_) initializer {}
 
     function totalSupplyForPositions() external pure override returns (uint256) {
-        return MarketConstants.CREATOR_COIN_MARKET_SUPPLY;
+        return CoinConstants.CREATOR_COIN_MARKET_SUPPLY;
     }
 
     function coinType() external pure override returns (IHasCoinType.CoinType) {
@@ -47,7 +46,7 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
         uint160 sqrtPriceX96,
         PoolConfiguration memory poolConfiguration_
     ) public override(BaseCoin, ICoin) {
-        require(currency_ == CreatorCoinConstants.CURRENCY, InvalidCurrency());
+        require(currency_ == CoinConstants.CREATOR_COIN_CURRENCY, InvalidCurrency());
 
         super.initialize({
             payoutRecipient_: payoutRecipient_,
@@ -63,15 +62,15 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
         });
 
         vestingStartTime = block.timestamp;
-        vestingEndTime = block.timestamp + CreatorCoinConstants.CREATOR_VESTING_DURATION;
+        vestingEndTime = block.timestamp + CoinConstants.CREATOR_VESTING_DURATION;
     }
 
     /// @dev The initial mint and distribution of the coin supply.
     ///      Implements creator coin specific distribution: 500M to liquidity pool, 500M vested to creator.
     function _handleInitialDistribution() internal override {
-        _mint(address(this), CreatorCoinConstants.TOTAL_SUPPLY);
+        _mint(address(this), CoinConstants.TOTAL_SUPPLY);
 
-        _transfer(address(this), address(poolKey.hooks), MarketConstants.CREATOR_COIN_MARKET_SUPPLY);
+        _transfer(address(this), address(poolKey.hooks), CoinConstants.CREATOR_COIN_MARKET_SUPPLY);
     }
 
     /// @notice Allows the creator payout recipient to claim vested tokens
@@ -113,13 +112,13 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
 
         // After vesting ends - fully vested
         if (timestamp >= vestingEndTime) {
-            return CreatorCoinConstants.CREATOR_VESTING_SUPPLY;
+            return CoinConstants.CREATOR_VESTING_SUPPLY;
         }
 
         // Linear vesting: (elapsed_time / total_duration) * total_amount
         uint256 elapsedTime = timestamp - vestingStartTime;
 
         // Multiply first to avoid precision loss
-        return (CreatorCoinConstants.CREATOR_VESTING_SUPPLY * elapsedTime) / CreatorCoinConstants.CREATOR_VESTING_DURATION;
+        return (CoinConstants.CREATOR_VESTING_SUPPLY * elapsedTime) / CoinConstants.CREATOR_VESTING_DURATION;
     }
 }

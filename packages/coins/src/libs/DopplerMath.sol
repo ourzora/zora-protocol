@@ -13,7 +13,7 @@ import {FullMath} from "../utils/uniswap/FullMath.sol";
 import {SqrtPriceMath} from "../utils/uniswap/SqrtPriceMath.sol";
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {LpPosition} from "../types/LpPosition.sol";
-import {MarketConstants} from "./MarketConstants.sol";
+import {CoinConstants} from "./CoinConstants.sol";
 
 /// @author Whetstone Research
 /// @notice Calculates liquidity provisioning with Uniswap v3
@@ -54,7 +54,7 @@ library DopplerMath {
         int24 spread = tickUpper - tickLower;
 
         uint160 farSqrtPriceX96 = TickMath.getSqrtPriceAtTick(farTick);
-        uint256 amountPerPosition = FullMath.mulDiv(discoverySupply, MarketConstants.WAD, totalPositions * MarketConstants.WAD);
+        uint256 amountPerPosition = FullMath.mulDiv(discoverySupply, CoinConstants.WAD, totalPositions * CoinConstants.WAD);
         uint256 totalAssetsSold;
 
         for (uint256 i; i < totalPositions; i++) {

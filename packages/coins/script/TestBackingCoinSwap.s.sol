@@ -6,14 +6,12 @@ import {CoinsDeployerBase} from "../src/deployment/CoinsDeployerBase.sol";
 
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
-import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
 import {ContentCoin} from "../src/ContentCoin.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {IUniversalRouter} from "@uniswap/universal-router/contracts/interfaces/IUniversalRouter.sol";
 import {IPermit2} from "permit2/src/interfaces/IPermit2.sol";
 import {MockERC20} from "../test/mocks/MockERC20.sol";
-import {MarketConstants} from "../src/libs/MarketConstants.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ICoin} from "../src/interfaces/ICoin.sol";

@@ -11,12 +11,11 @@ import {PoolConfigurationV4} from "../interfaces/ICoin.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
 import {ICoin} from "../interfaces/ICoin.sol";
 import {CoinCommon} from "./CoinCommon.sol";
-import {MarketConstants} from "./MarketConstants.sol";
+import {CoinConstants} from "./CoinConstants.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {IPoolManager, PoolKey, Currency, IHooks} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Actions} from "@uniswap/v4-periphery/src/libraries/Actions.sol";
 import {IPositionManager} from "@uniswap/v4-periphery/src/interfaces/IPositionManager.sol";
-import {MarketConstants} from "./MarketConstants.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {CoinDopplerMultiCurve, PoolConfiguration} from "./CoinDopplerMultiCurve.sol";
 
@@ -37,13 +36,7 @@ library CoinSetup {
         Currency currency0 = isCoinToken0 ? Currency.wrap(coin) : Currency.wrap(currency);
         Currency currency1 = isCoinToken0 ? Currency.wrap(currency) : Currency.wrap(coin);
 
-        poolKey = PoolKey({
-            currency0: currency0,
-            currency1: currency1,
-            fee: MarketConstants.LP_FEE_V4,
-            tickSpacing: MarketConstants.TICK_SPACING,
-            hooks: hooks
-        });
+        poolKey = PoolKey({currency0: currency0, currency1: currency1, fee: CoinConstants.LP_FEE_V4, tickSpacing: CoinConstants.TICK_SPACING, hooks: hooks});
     }
 
     function setupPoolWithVersion(

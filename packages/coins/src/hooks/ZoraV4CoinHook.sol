@@ -38,7 +38,7 @@ import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {ContractVersionBase, IVersionedContract} from "../version/ContractVersionBase.sol";
 import {IHasCoinType} from "../interfaces/ICoin.sol";
-import {MarketConstants} from "../libs/MarketConstants.sol";
+import {CoinConstants} from "../libs/CoinConstants.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -202,7 +202,7 @@ contract ZoraV4CoinHook is
         bytes calldata additionalData
     ) external returns (uint24 fee, int24 tickSpacing) {
         // update the fee to the current one.
-        fee = MarketConstants.LP_FEE_V4;
+        fee = CoinConstants.LP_FEE_V4;
         tickSpacing = poolKey.tickSpacing;
 
         _initializeFromMigration(poolKey, coin, sqrtPriceX96, migratedLiquidity, additionalData, fee, tickSpacing);

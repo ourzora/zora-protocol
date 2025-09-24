@@ -40,7 +40,6 @@ import {FullMath} from "./utils/uniswap/FullMath.sol";
 import {TickMath} from "./utils/uniswap/TickMath.sol";
 import {LiquidityAmounts} from "./utils/uniswap/LiquidityAmounts.sol";
 import {CoinConstants} from "./libs/CoinConstants.sol";
-import {MarketConstants} from "./libs/MarketConstants.sol";
 import {LpPosition} from "./types/LpPosition.sol";
 import {PoolState} from "./types/PoolState.sol";
 

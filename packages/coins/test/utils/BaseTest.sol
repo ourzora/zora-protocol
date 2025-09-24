@@ -24,7 +24,6 @@ import {IUniswapV3Factory} from "../../src/interfaces/IUniswapV3Factory.sol";
 import {IUniswapV3Pool} from "../../src/interfaces/IUniswapV3Pool.sol";
 import {IProtocolRewards} from "../../src/interfaces/IProtocolRewards.sol";
 import {ProtocolRewards} from "../utils/ProtocolRewards.sol";
-import {MarketConstants} from "../../src/libs/MarketConstants.sol";
 import {CoinConfigurationVersions} from "../../src/libs/CoinConfigurationVersions.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";

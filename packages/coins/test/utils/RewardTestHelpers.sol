@@ -29,10 +29,10 @@ library RewardTestHelpers {
         bool hasPlatformReferrer,
         bool hasTradeReferrer
     ) internal pure returns (RewardBalances memory rewards) {
-        rewards.creator = calculateReward(marketRewards, CoinRewardsV4.CREATOR_REWARD_BPS);
-        rewards.platformReferrer = hasPlatformReferrer ? calculateReward(marketRewards, CoinRewardsV4.CREATE_REFERRAL_REWARD_BPS) : 0;
-        rewards.tradeReferrer = hasTradeReferrer ? calculateReward(marketRewards, CoinRewardsV4.TRADE_REFERRAL_REWARD_BPS) : 0;
-        rewards.doppler = calculateReward(marketRewards, CoinRewardsV4.DOPPLER_REWARD_BPS);
+        rewards.creator = calculateReward(marketRewards, CoinConstants.CREATOR_REWARD_BPS);
+        rewards.platformReferrer = hasPlatformReferrer ? calculateReward(marketRewards, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
+        rewards.tradeReferrer = hasTradeReferrer ? calculateReward(marketRewards, CoinConstants.TRADE_REFERRAL_REWARD_BPS) : 0;
+        rewards.doppler = calculateReward(marketRewards, CoinConstants.DOPPLER_REWARD_BPS);
         rewards.protocol = marketRewards - rewards.creator - rewards.platformReferrer - rewards.tradeReferrer - rewards.doppler;
     }
 

@@ -10,7 +10,7 @@ pragma solidity ^0.8.23;
 import {PoolConfiguration} from "../interfaces/ICoin.sol";
 import {CoinConfigurationVersions} from "./CoinConfigurationVersions.sol";
 import {LpPosition} from "../types/LpPosition.sol";
-import {MarketConstants} from "./MarketConstants.sol";
+import {CoinConstants} from "./CoinConstants.sol";
 import {FullMath} from "../utils/uniswap/FullMath.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {IDopplerErrors} from "../interfaces/IDopplerErrors.sol";
@@ -56,8 +56,8 @@ library CoinDopplerMultiCurve {
         uint256 totalDiscoverySupplyShare;
         uint256 totalDiscoveryPositions;
 
-        int24 boundryTickLower = DopplerMath.alignTickToTickSpacing(isCoinToken0, TickMath.MAX_TICK, MarketConstants.TICK_SPACING);
-        int24 boundryTickUpper = DopplerMath.alignTickToTickSpacing(isCoinToken0, TickMath.MIN_TICK, MarketConstants.TICK_SPACING);
+        int24 boundryTickLower = DopplerMath.alignTickToTickSpacing(isCoinToken0, TickMath.MAX_TICK, CoinConstants.TICK_SPACING);
+        int24 boundryTickUpper = DopplerMath.alignTickToTickSpacing(isCoinToken0, TickMath.MIN_TICK, CoinConstants.TICK_SPACING);
 
         // For each curve:
         for (uint256 i; i < numCurves; i++) {
@@ -69,8 +69,8 @@ library CoinDopplerMultiCurve {
             totalDiscoveryPositions += numDiscoveryPositions_[i];
             totalDiscoverySupplyShare += maxDiscoverySupplyShare_[i];
 
-            int24 currentTickLower = DopplerMath.alignTickToTickSpacing(isCoinToken0, tickLower_[i], MarketConstants.TICK_SPACING);
-            int24 currentTickUpper = DopplerMath.alignTickToTickSpacing(isCoinToken0, tickUpper_[i], MarketConstants.TICK_SPACING);
+            int24 currentTickLower = DopplerMath.alignTickToTickSpacing(isCoinToken0, tickLower_[i], CoinConstants.TICK_SPACING);
+            int24 currentTickUpper = DopplerMath.alignTickToTickSpacing(isCoinToken0, tickUpper_[i], CoinConstants.TICK_SPACING);
 
             require(currentTickLower < currentTickUpper, ConfigTickLowerMustBeLessThanTickUpper());
 
@@ -84,15 +84,15 @@ library CoinDopplerMultiCurve {
 
         require(boundryTickLower < boundryTickUpper, InvalidTickRangeMisordered(boundryTickLower, boundryTickUpper));
         require(totalDiscoveryPositions > 1 && totalDiscoveryPositions <= 200, IDopplerErrors.NumDiscoveryPositionsOutOfRange());
-        require(totalDiscoverySupplyShare < MarketConstants.WAD, IDopplerErrors.MaxShareToBeSoldExceeded(totalDiscoverySupplyShare, MarketConstants.WAD));
+        require(totalDiscoverySupplyShare < CoinConstants.WAD, IDopplerErrors.MaxShareToBeSoldExceeded(totalDiscoverySupplyShare, CoinConstants.WAD));
 
         sqrtPriceX96 = TickMath.getSqrtPriceAtTick(isCoinToken0 ? boundryTickLower : boundryTickUpper);
 
         poolConfiguration = PoolConfiguration({
             version: CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION,
             numPositions: uint16(totalDiscoveryPositions + 1), // Add one for the final tail position
-            fee: MarketConstants.LP_FEE_V4,
-            tickSpacing: MarketConstants.TICK_SPACING,
+            fee: CoinConstants.LP_FEE_V4,
+            tickSpacing: CoinConstants.TICK_SPACING,
             numDiscoveryPositions: numDiscoveryPositions_,
             tickLower: tickLower_,
             tickUpper: tickUpper_,
@@ -113,12 +113,12 @@ library CoinDopplerMultiCurve {
         uint256 numCurves = poolConfiguration.tickLower.length;
 
         for (uint256 i; i < numCurves; i++) {
-            uint256 curveSupply = FullMath.mulDiv(totalSupply, poolConfiguration.maxDiscoverySupplyShare[i], MarketConstants.WAD);
+            uint256 curveSupply = FullMath.mulDiv(totalSupply, poolConfiguration.maxDiscoverySupplyShare[i], CoinConstants.WAD);
 
             (positions, curveSupply) = DopplerMath.calculateLogNormalDistribution(
                 poolConfiguration.tickLower[i],
                 poolConfiguration.tickUpper[i],
-                MarketConstants.TICK_SPACING,
+                CoinConstants.TICK_SPACING,
                 isCoinToken0,
                 curveSupply,
                 poolConfiguration.numDiscoveryPositions[i],
@@ -138,7 +138,7 @@ library CoinDopplerMultiCurve {
             poolConfiguration.tickUpper[numCurves - 1],
             isCoinToken0,
             tailSupply,
-            MarketConstants.TICK_SPACING
+            CoinConstants.TICK_SPACING
         );
     }
 }

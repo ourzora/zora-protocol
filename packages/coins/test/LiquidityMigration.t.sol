@@ -20,7 +20,7 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {MultiOwnable} from "../src/utils/MultiOwnable.sol";
 import {IHooksUpgradeGate} from "../src/interfaces/IHooksUpgradeGate.sol";
 import {BaseCoin} from "../src/BaseCoin.sol";
-import {MarketConstants} from "../src/libs/MarketConstants.sol";
+import {CoinConstants} from "../src/libs/CoinConstants.sol";
 
 contract LiquidityMigrationReceiver is IUpgradeableDestinationV4Hook, IERC165 {
     function initializeFromMigration(
@@ -485,7 +485,7 @@ contract LiquidityMigrationTest is BaseTest {
         coin.migrateLiquidity(address(newHook), "");
 
         // the new fee should be the correct current fee
-        assertEq(coin.getPoolKey().fee, MarketConstants.LP_FEE_V4);
+        assertEq(coin.getPoolKey().fee, CoinConstants.LP_FEE_V4);
 
         // now test swapping the migrated liquidity - it should work
         _swapSomeCurrencyForCoin(coin, coin.currency(), 1 ether, trader);

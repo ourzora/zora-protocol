@@ -64,7 +64,7 @@ contract DeploymentsHooksTest is BaseTest {
     }
 
     function test_buySupplyWithEthUsingV4Hook_withExactInputMultiHop(uint256 initialOrderSize) public {
-        vm.assume(initialOrderSize > CoinConstants.MIN_ORDER_SIZE);
+        vm.assume(initialOrderSize > 0.0001 ether);
         vm.assume(initialOrderSize < 1 ether);
 
         vm.deal(users.creator, initialOrderSize);

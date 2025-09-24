@@ -34,7 +34,6 @@ import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersion
 import {CoinSetup} from "./libs/CoinSetup.sol";
 import {CoinDopplerMultiCurve} from "./libs/CoinDopplerMultiCurve.sol";
 import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
-import {MarketConstants} from "./libs/MarketConstants.sol";
 import {DeployedCoinVersionLookup} from "./utils/DeployedCoinVersionLookup.sol";
 import {IZoraHookRegistry} from "./interfaces/IZoraHookRegistry.sol";
 
