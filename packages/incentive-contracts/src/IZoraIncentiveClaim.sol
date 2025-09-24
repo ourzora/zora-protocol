@@ -31,7 +31,7 @@ interface IZoraIncentiveClaim {
     /// @param allocations Array of allocation data
     /// @param startTime When this period starts
     /// @param endTime When this period expires
-    event AllocationsSet(uint256 indexed periodId, string indexed label, Allocation[] allocations, uint256 startTime, uint256 endTime);
+    event AllocationsSet(uint256 indexed periodId, string label, Allocation[] allocations, uint256 startTime, uint256 endTime);
 
     /// @notice Emitted when allocations are updated for an existing period
     /// @param periodId Period identifier
