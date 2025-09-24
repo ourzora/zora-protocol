@@ -23,6 +23,10 @@ contract ZoraHookRegistry is IZoraHookRegistry, MultiOwnable {
     /// @dev The tag for each hook
     mapping(address hook => string tag) internal hookTags;
 
+    /// @notice Constructor for deployment pathway
+    /// @dev This contract needs to be atomically initialized, otherwise it is unsafe to deploy.
+    /// @dev Initial owners need to be automatically set by the deployer contract.
+    /// @dev The initial owners is not a part of the constructor() to allow for multichain deterministic addresses.
     constructor() {}
 
     /// @notice Initializes the registry with initial owners
