@@ -115,8 +115,8 @@ export const makeAnvilTest = ({
   });
 
 export const forkUrls = {
-  base: `https://base-mainnet.g.alchemy.com/v2/${process.env.VITE_ALCHEMY_KEY}`,
-  baseSepolia: `https://base-sepolia.g.alchemy.com/v2/${process.env.VITE_ALCHEMY_KEY}`,
+  base: `https://base.gateway.tenderly.co/${process.env.VITE_TENDERLY_KEY}`,
+  baseSepolia: `https://base-sepolia.gateway.tenderly.co/${process.env.VITE_TENDERLY_KEY}`,
 };
 
 export const anvilBaseTest = makeAnvilTest({

@@ -12,7 +12,7 @@ jobs:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
       VITE_CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
-      VITE_ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+      VITE_TENDERLY_KEY: ${{ secrets.TENDERLY_KEY }}
 
     name: Build js package
     runs-on: ubuntu-latest

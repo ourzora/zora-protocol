@@ -42,7 +42,6 @@ jobs:
         run: cd $package_folder && forge coverage --report lcov ${{ inputs.coverage_args }} --lcov-version 2
         env:
           TENDERLY_KEY: ${{ secrets.TENDERLY_KEY }}
-          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
           CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
 
       - name: Setup LCOV

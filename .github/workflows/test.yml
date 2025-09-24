@@ -49,7 +49,6 @@ jobs:
           cd ${{ inputs.package_folder}} && pnpm run test
         env:
           TENDERLY_KEY: ${{ secrets.TENDERLY_KEY }}
-          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
           CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
 
       - name: Set initial test ${{ inputs.name }} status

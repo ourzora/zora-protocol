@@ -109,7 +109,7 @@ export const makeAnvilTest = ({
 export const forkUrls = {
   zoraMainnet: `https://rpc.zora.energy/${process.env.VITE_CONDUIT_KEY}`,
   zoraSepolia: `https://sepolia.rpc.zora.energy/${process.env.VITE_CONDUIT_KEY}`,
-  baseMainnet: `https://base-mainnet.g.alchemy.com/v2/${process.env.VITE_ALCHEMY_KEY}`,
+  baseMainnet: `https://base.gateway.tenderly.co/${process.env.VITE_TENDERLY_KEY}`,
 };
 
 export const anvilTest = makeAnvilTest({

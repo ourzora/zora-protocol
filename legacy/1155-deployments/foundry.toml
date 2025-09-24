@@ -30,18 +30,18 @@ optimizer_runs = 0
 via_ir = false
 
 [rpc_endpoints]
-sepolia = "https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
-mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
-base = "https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
-base_sepolia = "https://base-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
-optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+sepolia = "https://sepolia.gateway.tenderly.co/${TENDERLY_KEY}"
+mainnet = "https://mainnet.gateway.tenderly.co/${TENDERLY_KEY}"
+base = "https://base.gateway.tenderly.co/${TENDERLY_KEY}"
+base_sepolia = "https://base-sepolia.gateway.tenderly.co/${TENDERLY_KEY}"
+optimism = "https://optimism.gateway.tenderly.co/${TENDERLY_KEY}"
 pgn = "https://rpc.publicgoods.network"
 pgn_sepolia = "https://sepolia.publicgoods.network"
 zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
 zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"
-arbitrum_one = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
-arbitrum_sepolia = "https://arb-sepolia.g.alchemy.com/v2/${ALCHEMY_KEY}"
-blast = "https://blast.gateway.tenderly.co/${TENDERLY_KEY}/"
+arbitrum_one = "https://arbitrum.gateway.tenderly.co/${TENDERLY_KEY}"
+arbitrum_sepolia = "https://arbitrum-sepolia.gateway.tenderly.co/${TENDERLY_KEY}"
+blast = "https://blast.gateway.tenderly.co/${TENDERLY_KEY}"
 blast_sepolia = "https://sepolia.blast.io"
 
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config
