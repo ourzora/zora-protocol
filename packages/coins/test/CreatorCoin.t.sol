@@ -307,6 +307,30 @@ contract CreatorCoinTest is BaseTest {
         assertEq(creatorCoin.totalClaimed(), expectedTotal);
     }
 
+    function test_vesting_duration_accounts_for_leap_years() public pure {
+        // Verify the vesting duration is exactly 5 years accounting for leap years
+        // 365.25 days per year * 5 years = 1826.25 days = 157,788,000 seconds
+        uint256 expectedDuration = 5 * 365.25 days;
+        uint256 expectedSeconds = 157_788_000; // 5 * 365.25 * 24 * 60 * 60
+
+        assertEq(CreatorCoinConstants.CREATOR_VESTING_DURATION, expectedDuration);
+        assertEq(CreatorCoinConstants.CREATOR_VESTING_DURATION, expectedSeconds);
+
+        // Verify it's longer than 5 * 365 days (which would be the old incorrect duration)
+        uint256 oldIncorrectDuration = 5 * 365 days;
+        uint256 differenceInSeconds = expectedDuration - oldIncorrectDuration;
+        uint256 expectedDifferenceInDays = 1.25 days; // 1.25 days = 108,000 seconds
+
+        assertEq(differenceInSeconds, expectedDifferenceInDays);
+        assertEq(differenceInSeconds, 108_000); // 1.25 * 24 * 60 * 60
+
+        // Verify this matches exactly 5 years with leap year correction
+        // Over 5 years, there's typically 1 leap day (Feb 29), plus 0.25 day per year
+        // for the quarter-day that accumulates: 1 + (5 * 0.25) = 2.25 days total
+        // But we use 365.25 average, so: 5 * 0.25 = 1.25 additional days
+        assertTrue(CreatorCoinConstants.CREATOR_VESTING_DURATION > oldIncorrectDuration);
+    }
+
     function test_buy(uint128 amountIn) public {
         vm.assume(amountIn > 0.00001e18);
         vm.assume(amountIn < 500_000e18);
