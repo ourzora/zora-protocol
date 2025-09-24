@@ -75,7 +75,6 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
     }
 
     /// @notice Allows the creator payout recipient to claim vested tokens
-    /// @dev Optimized for frequent calls from Uniswap V4 hooks
     /// @return claimAmount The amount of tokens claimed
     function claimVesting() external returns (uint256) {
         uint256 claimAmount = getClaimableAmount();

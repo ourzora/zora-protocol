@@ -220,7 +220,7 @@ contract ZoraV4CoinHook is
         address oldHook = msg.sender;
         address newHook = address(this);
 
-        // Verify that the caller (new hook) is authorized to perform this migration
+        // Verify that the caller (old hook) is authorized to perform this migration
         // Only registered upgrade paths in the upgrade gate are allowed to migrate liquidity
         if (!upgradeGate.isRegisteredUpgradePath(oldHook, newHook)) {
             revert IUpgradeableV4Hook.UpgradePathNotRegistered(oldHook, newHook);
@@ -385,7 +385,7 @@ contract ZoraV4CoinHook is
         return CoinRewardsV4.getCoinType(coin);
     }
 
-    /// @notice Internal fn called when the PoolManager is unlocked.  Used to mint initial liquidity positions.
+    /// @notice Internal fn called when the PoolManager is unlocked. Used to mint initial liquidity positions and burn positions during migration.
     function unlockCallback(bytes calldata data) external onlyPoolManager returns (bytes memory) {
         return V4Liquidity.handleCallback(poolManager, data);
     }

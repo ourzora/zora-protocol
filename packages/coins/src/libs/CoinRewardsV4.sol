@@ -181,6 +181,7 @@ library CoinRewardsV4 {
     /// @param fees The total amount of fees collected to be distributed
     /// @param coin The coin contract instance that implements IHasRewardsRecipients to get recipient addresses
     /// @param tradeReferrer The address of the trade referrer who should receive trade referral rewards (can be zero address)
+    /// @param coinType The type of coin (Creator or Content) which affects reward distribution percentages
     function distributeMarketRewards(
         Currency currency,
         uint128 fees,

@@ -15,7 +15,7 @@ import {IHasCoinType} from "./interfaces/ICoin.sol";
 
 /**
  * @title ContentCoin
- * @notice Content coin implementation that uses creator coins as backing currency
+ * @notice Content coin implementation that typically uses creator coins as backing currency, but can be set to any currency as the backing currency
  * @dev Inherits from BaseCoin and implements content-specific distribution logic
  */
 contract ContentCoin is BaseCoin {
