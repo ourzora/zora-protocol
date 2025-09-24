@@ -1,5 +1,5 @@
 ---
-"@zoralabs/coins-contracts": patch
+"@zoralabs/coins": patch
 ---
 
 Fix stale PoolKey mapping after migration in ZoraV4CoinHook

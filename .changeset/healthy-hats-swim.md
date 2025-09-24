@@ -1,5 +1,5 @@
 ---
-"@zoralabs/coins-contracts": patch
+"@zoralabs/coins": patch
 ---
 
 Consolidate constants into single CoinConstants.sol file
