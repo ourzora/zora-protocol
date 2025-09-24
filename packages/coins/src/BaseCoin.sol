@@ -32,7 +32,6 @@ import {CoinCommon} from "./libs/CoinCommon.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ERC20PermitUpgradeable} from "@openzeppelin/contracts-upgradeable/token/ERC20/extensions/ERC20PermitUpgradeable.sol";
 import {ERC165Upgradeable} from "@openzeppelin/contracts-upgradeable/utils/introspection/ERC165Upgradeable.sol";
-import {ReentrancyGuardUpgradeable} from "@openzeppelin/contracts-upgradeable/utils/ReentrancyGuardUpgradeable.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 import {MultiOwnable} from "./utils/MultiOwnable.sol";
@@ -53,7 +52,7 @@ import {PoolState} from "./types/PoolState.sol";
     \$$$$$$  | $$$$$$  |$$$$$$\ $$ | \$$ |
      \______/  \______/ \______|\__|  \__|
 */
-abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ReentrancyGuardUpgradeable, ERC165Upgradeable {
+abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ERC165Upgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice The address of the protocol rewards contract
@@ -167,7 +166,6 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         __ERC20Permit_init("");
 
         __MultiOwnable_init(owners_);
-        __ReentrancyGuard_init();
 
         // Set mutable state
         _setPayoutRecipient(payoutRecipient_);
