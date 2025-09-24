@@ -21,6 +21,9 @@ import {MultiOwnable} from "../src/utils/MultiOwnable.sol";
 import {IHooksUpgradeGate} from "../src/interfaces/IHooksUpgradeGate.sol";
 import {BaseCoin} from "../src/BaseCoin.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
+import {SwapParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 
 contract LiquidityMigrationReceiver is IUpgradeableDestinationV4Hook, IERC165 {
     function initializeFromMigration(
@@ -130,31 +133,59 @@ contract LiquidityMigrationTest is BaseTest {
         assertEq(newPoolKey.tickSpacing, poolKey.tickSpacing, "poolkey tickSpacing");
     }
 
-    function test_migrateLiquidity_enablesSwapsOnOldPoolKey() public {
+    function test_migrateLiquidity_revertsSwapsOnOldPoolKey() public {
         address currency = address(mockERC20A);
         mockERC20A.mint(address(poolManager), 1_000_000_000 ether);
         _deployV4Coin(currency);
 
         address trader = makeAddr("trader");
-
         mockERC20A.mint(trader, 10 ether);
 
-        // do some swaps
+        // do some swaps before migration
         _swapSomeCurrencyForCoin(coinV4, currency, 1 ether, trader);
         _swapSomeCoinForCurrency(coinV4, currency, uint128(coinV4.balanceOf(trader)), trader);
 
-        address newHook = address(new LiquidityMigrationReceiver());
-
         PoolKey memory poolKey = coinV4.getPoolKey();
+        bytes32 poolKeyHash = CoinCommon.hashPoolKey(poolKey);
 
+        // Verify the mapping exists before migration
+        IZoraV4CoinHook.PoolCoin memory poolCoinBefore = hook.getPoolCoin(poolKey);
+        assertEq(poolCoinBefore.coin, address(coinV4), "pool coin should exist before migration");
+
+        IZoraV4CoinHook.PoolCoin memory poolCoinByHashBefore = hook.getPoolCoinByHash(poolKeyHash);
+        assertEq(poolCoinByHashBefore.coin, address(coinV4), "pool coin by hash should exist before migration");
+
+        address newHook = address(new LiquidityMigrationReceiver());
         registerUpgradePath(address(poolKey.hooks), address(newHook));
 
         // migrate the liquidity
         vm.prank(users.creator);
         coinV4.migrateLiquidity(address(newHook), "");
 
-        // now swap using the existing pool key, it should succeed
-        _swapSomeCurrencyForCoin(poolKey, coinV4, currency, uint128(mockERC20A.balanceOf(trader)), trader);
+        // Verify that the old pool key mapping has been deleted
+        IZoraV4CoinHook.PoolCoin memory poolCoinAfter = hook.getPoolCoin(poolKey);
+        assertEq(poolCoinAfter.coin, address(0), "old pool key should have no associated coin after migration");
+        assertEq(poolCoinAfter.positions.length, 0, "old pool coin positions should be empty after migration");
+
+        IZoraV4CoinHook.PoolCoin memory poolCoinByHashAfter = hook.getPoolCoinByHash(poolKeyHash);
+        assertEq(poolCoinByHashAfter.coin, address(0), "old pool coin by hash should have no associated coin after migration");
+        assertEq(poolCoinByHashAfter.positions.length, 0, "old pool coin by hash positions should be empty after migration");
+
+        // Verify that hook operations revert with NoCoinForHook on the old poolkey
+        vm.expectRevert(abi.encodeWithSelector(IZoraV4CoinHook.NoCoinForHook.selector, poolKey));
+
+        SwapParams memory mockSwapParams = SwapParams({zeroForOne: true, amountSpecified: 1 ether, sqrtPriceLimitX96: 0});
+
+        BalanceDelta mockDelta = BalanceDeltaLibrary.ZERO_DELTA;
+
+        // Call afterSwap directly - this should revert with NoCoinForHook
+        vm.prank(address(poolManager));
+        IHooks(address(hook)).afterSwap(trader, poolKey, mockSwapParams, mockDelta, "");
+
+        // Verify the new pool key still works
+        PoolKey memory newPoolKey = coinV4.getPoolKey();
+        assertEq(address(newPoolKey.hooks), address(newHook), "coin should have updated to new hook");
+        assertTrue(address(poolKey.hooks) != address(newPoolKey.hooks), "old and new pool keys should be different");
     }
 
     function test_migrateLiquidity_emitsLiquidityMigrated() public {

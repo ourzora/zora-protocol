@@ -418,6 +418,9 @@ contract ZoraV4CoinHook is
         }
 
         newPoolKey = V4Liquidity.lockAndMigrate(poolManager, poolKey, poolCoin.positions, poolCoin.coin, newHook, additionalData);
+
+        // Delete the old pool key mapping to prevent future operations on the migrated pool
+        delete poolCoins[poolKeyHash];
     }
 
     /// @notice Receives ETH from the pool manager for ETH-backed coins during fee collection.
