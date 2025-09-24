@@ -181,14 +181,9 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         _handleInitialDistribution();
     }
 
-    /// @dev The initial mint and distribution of the coin supply.
-    function _handleInitialDistribution() internal virtual {
-        // Mint the total supply to the coin contract
-        _mint(address(this), CoinConstants.MAX_TOTAL_SUPPLY);
-
-        // Distribute the creator launch reward to the payout recipient
-        _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
-    }
+    /// @notice The initial mint and distribution of the coin supply.
+    /// @dev This function must be overridden by the child contract.
+    function _handleInitialDistribution() internal virtual;
 
     /// @notice Returns the name of the token for EIP712 domain.
     /// @notice This can change when the user changes the "name" of the token.
