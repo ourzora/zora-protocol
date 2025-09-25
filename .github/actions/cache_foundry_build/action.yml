@@ -16,6 +16,7 @@ runs:
       uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
       env:
         base_cache_key: ${{ inputs.package_folder }}${{ inputs.foundry_profile}}
+        foundry_version_cache_key: ${{ hashFiles('.github/actions/setup_deps/action.yml') }}
         src_cache_key: ${{ hashFiles(format('{0}/src/**/*.sol', inputs.package_folder)) }}
         test_cache_key: ${{ hashFiles(format('{0}/test/**/*.sol', inputs.package_folder)) }}
         scripts_cache_key: ${{ hashFiles(format('{0}/script/**/*.sol', inputs.package_folder)) }}
@@ -26,14 +27,15 @@ runs:
         path: |
           ${{ inputs.package_folder }}/cache
           ${{ inputs.package_folder }}/out
-        # cache key is based on: base_cache_key + src_cache_key + test_cache_key + scripts_cache_key + foundry_config_cache_key + package_json_cache_key:
-        key: ${{ env.base_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-${{ env.foundry_config_cache_key }}-${{ env.package_json_cache_key }}
+        # cache key is based on: base_cache_key + foundry_version_cache_key + src_cache_key + test_cache_key + scripts_cache_key + foundry_config_cache_key + package_json_cache_key:
+        key: ${{ env.base_cache_key }}-${{ env.foundry_version_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-${{ env.foundry_config_cache_key }}-${{ env.package_json_cache_key }}
         # the following backups cache keys are searched, in case an exact match is not found
         # see https://docs.github.com/en/actions/using-workflows/caching-dependencies-to-speed-up-workflows#matching-a-cache-key
         restore-keys: |
-          ${{ env.base_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-${{ env.foundry_config_cache_key }}-${{ env.package_json_cache_key }}
-          ${{ env.base_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-${{ env.foundry_config_cache_key }}-
-          ${{ env.base_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-
-          ${{ env.base_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-
-          ${{ env.base_cache_key }}-${{ env.src_cache_key }}-
+          ${{ env.base_cache_key }}-${{ env.foundry_version_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-${{ env.foundry_config_cache_key }}-${{ env.package_json_cache_key }}
+          ${{ env.base_cache_key }}-${{ env.foundry_version_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-${{ env.foundry_config_cache_key }}-
+          ${{ env.base_cache_key }}-${{ env.foundry_version_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-${{ env.scripts_cache_key }}-
+          ${{ env.base_cache_key }}-${{ env.foundry_version_cache_key }}-${{ env.src_cache_key }}-${{ env.test_cache_key }}-
+          ${{ env.base_cache_key }}-${{ env.foundry_version_cache_key }}-${{ env.src_cache_key }}-
+          ${{ env.base_cache_key }}-${{ env.foundry_version_cache_key }}-
           ${{ env.base_cache_key }}-
