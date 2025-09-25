@@ -75,6 +75,9 @@ library CoinRewardsV4 {
         if (delta < 0) {
             revert SafeCast.SafeCastOverflow();
         }
+        if (delta > int256(uint256(type(uint128).max))) {
+            revert SafeCast.SafeCastOverflow();
+        }
         return uint128(uint256(delta));
     }
 
