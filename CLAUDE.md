@@ -121,6 +121,14 @@ The Claude Code Review GitHub Action automatically validates that changesets are
 
 **For complete details on the protocol-deployments publication workflow, see [MONOREPO_ARCHITECTURE.md](MONOREPO_ARCHITECTURE.md#how-to-publish-a-contract-in-protocol-deployments).**
 
+**Changeset and PR Description Writing Guidelines:**
+
+- **Focus on the feature/fix, not the implementation**: Describe what changed from a user perspective and why it matters
+- **Avoid mentioning test coverage**: Don't write about adding tests, test files, or test coverage in changesets or PR descriptions
+- **Explain the problem and solution**: Start with the problem being solved, then describe the solution and its impact
+- **Use business/user language**: Write for developers who will use the feature, not for those reviewing the implementation
+- **Example**: Instead of "Add test for ETH fallback mechanism", write "Fix ETH transfer failures when platform referrers cannot accept ETH"
+
 ### Testing
 
 Tests are primarily Solidity-based using Foundry. For individual packages:
