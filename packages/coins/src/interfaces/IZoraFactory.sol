@@ -97,15 +97,7 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
     /// @notice Thrwon when an invalid config version is provided
     error InvalidConfig();
 
-    /// @notice Creates a new creator coin contract
-    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
-    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
-    /// @param uri The coin metadata uri
-    /// @param name The name of the coin
-    /// @param symbol The symbol of the coin
-    /// @param poolConfig The config parameters for the coin's pool
-    /// @param platformReferrer The address of the platform referrer
-    /// @param coinSalt The salt used to deploy the coin
+    /// @dev Deprecated: use `deployCreatorCoin` instead that has a salt and post-deploy hook specified
     function deployCreatorCoin(
         address payoutRecipient,
         address[] memory owners,
@@ -116,6 +108,33 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
         address platformReferrer,
         bytes32 coinSalt
     ) external returns (address);
+
+    /// @notice Creates a new creator coin contract with an optional hook that runs after the coin is deployed.
+    /// Enables buying initial supply by supporting ETH transfers to the post-deploy hook.
+    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
+    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
+    /// @param uri The coin metadata uri
+    /// @param name The name of the coin
+    /// @param symbol The symbol of the coin
+    /// @param poolConfig The config parameters for the coin's pool
+    /// @param platformReferrer The address of the platform referrer
+    /// @param postDeployHook The address of the hook to run after the coin is deployed
+    /// @param postDeployHookData The data to pass to the hook
+    /// @param coinSalt The salt used to deploy the coin
+    /// @return coin The address of the deployed creator coin
+    /// @return postDeployHookDataOut The data returned by the hook
+    function deployCreatorCoin(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        address postDeployHook,
+        bytes calldata postDeployHookData,
+        bytes32 coinSalt
+    ) external payable returns (address coin, bytes memory postDeployHookDataOut);
 
     /// @notice Creates a new coin contract with an optional hook that runs after the coin is deployed.
     /// Requires a salt to be specified, which enabled the coin to be deployed deterministically, and at

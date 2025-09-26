@@ -66,15 +66,7 @@ contract ZoraFactoryImpl is
         zoraHookRegistry = zoraHookRegistry_;
     }
 
-    /// @notice Creates a new creator coin contract
-    /// @param payoutRecipient The recipient of creator reward payouts; this can be updated by an owner
-    /// @param owners The list of addresses that will be able to manage the coin's payout address and metadata uri
-    /// @param uri The coin metadata uri
-    /// @param name The name of the coin
-    /// @param symbol The symbol of the coin
-    /// @param poolConfig The config parameters for the coin's pool
-    /// @param platformReferrer The address of the platform referrer
-    /// @param coinSalt The salt used to deploy the coin
+    /// @inheritdoc IZoraFactory
     function deployCreatorCoin(
         address payoutRecipient,
         address[] memory owners,
@@ -86,39 +78,24 @@ contract ZoraFactoryImpl is
         bytes32 coinSalt
     ) public nonReentrant returns (address) {
         bytes32 salt = _buildSalt(msg.sender, name, symbol, poolConfig, platformReferrer, coinSalt);
+        return address(_createAndInitializeCreatorCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, salt));
+    }
 
-        uint8 version = CoinConfigurationVersions.getVersion(poolConfig);
-
-        require(version == CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION, InvalidConfig());
-
-        address creatorCoin = Clones.cloneDeterministic(creatorCoinImpl, salt);
-
-        _setVersionForDeployedCoin(address(creatorCoin), version);
-
-        (, address currency, uint160 sqrtPriceX96, bool isCoinToken0, PoolConfiguration memory poolConfiguration) = CoinSetup.generatePoolConfig(
-            address(creatorCoin),
-            poolConfig
-        );
-
-        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(creatorCoin), currency, isCoinToken0, IHooks(hook));
-
-        ICreatorCoin(creatorCoin).initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);
-
-        emit CreatorCoinCreated(
-            msg.sender,
-            payoutRecipient,
-            platformReferrer,
-            currency,
-            uri,
-            name,
-            symbol,
-            address(creatorCoin),
-            poolKey,
-            CoinCommon.hashPoolKey(poolKey),
-            IVersionedContract(address(creatorCoin)).contractVersion()
-        );
-
-        return creatorCoin;
+    /// @inheritdoc IZoraFactory
+    function deployCreatorCoin(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        address postDeployHook,
+        bytes calldata postDeployHookData,
+        bytes32 coinSalt
+    ) external payable nonReentrant returns (address coin, bytes memory postDeployHookDataOut) {
+        bytes32 salt = _buildSalt(msg.sender, name, symbol, poolConfig, platformReferrer, coinSalt);
+        return _deployCreatorCoinWithHook(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, postDeployHook, postDeployHookData, salt);
     }
 
     /// @inheritdoc IZoraFactory
@@ -151,6 +128,18 @@ contract ZoraFactoryImpl is
         return Clones.predictDeterministicAddress(getCoinImpl(CoinConfigurationVersions.getVersion(poolConfig)), salt, address(this));
     }
 
+    function _executePostDeployHook(address coin, address deployHook, bytes calldata hookData) internal returns (bytes memory hookDataOut) {
+        if (deployHook != address(0)) {
+            if (!IERC165(deployHook).supportsInterface(type(IHasAfterCoinDeploy).interfaceId)) {
+                revert InvalidHook();
+            }
+            hookDataOut = IHasAfterCoinDeploy(deployHook).afterCoinDeploy{value: msg.value}(msg.sender, ICoin(coin), hookData);
+        } else if (msg.value > 0) {
+            // cannot send eth without a hook
+            revert EthTransferInvalid();
+        }
+    }
+
     /// @dev Internal function to deploy a coin with a hook
     function _deployWithHook(
         address payoutRecipient,
@@ -165,16 +154,24 @@ contract ZoraFactoryImpl is
         bytes32 salt
     ) internal returns (address coin, bytes memory hookDataOut) {
         coin = address(_createAndInitializeCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, salt));
+        hookDataOut = _executePostDeployHook(coin, deployHook, hookData);
+    }
 
-        if (deployHook != address(0)) {
-            if (!IERC165(deployHook).supportsInterface(type(IHasAfterCoinDeploy).interfaceId)) {
-                revert InvalidHook();
-            }
-            hookDataOut = IHasAfterCoinDeploy(deployHook).afterCoinDeploy{value: msg.value}(msg.sender, ICoin(coin), hookData);
-        } else if (msg.value > 0) {
-            // cannot send eth without a hook
-            revert EthTransferInvalid();
-        }
+    /// @dev Internal function to deploy a creator coin with a hook
+    function _deployCreatorCoinWithHook(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        address deployHook,
+        bytes calldata hookData,
+        bytes32 salt
+    ) internal returns (address coin, bytes memory hookDataOut) {
+        coin = address(_createAndInitializeCreatorCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, salt));
+        hookDataOut = _executePostDeployHook(coin, deployHook, hookData);
     }
 
     /**
@@ -251,29 +248,55 @@ contract ZoraFactoryImpl is
         revert ICoin.InvalidPoolVersion();
     }
 
-    function _createCoin(uint8 version, bytes32 salt) internal returns (address payable) {
-        return payable(Clones.cloneDeterministic(getCoinImpl(version), salt));
-    }
-
-    function _setupV4Coin(
-        ICoin coin,
-        address currency,
-        bool isCoinToken0,
-        uint160 sqrtPriceX96,
-        PoolConfiguration memory poolConfiguration,
+    function _createCoinWithPoolConfig(
+        address _implementation,
+        bytes memory poolConfig,
+        bytes32 coinSalt,
         address payoutRecipient,
         address[] memory owners,
         string memory uri,
         string memory name,
         string memory symbol,
         address platformReferrer
-    ) internal {
-        PoolKey memory poolKey = CoinSetup.buildPoolKey(address(coin), currency, isCoinToken0, IHooks(hook));
+    ) internal returns (address coin, uint8 version, PoolKey memory poolKey, address currency) {
+        version = CoinConfigurationVersions.getVersion(poolConfig);
+        coin = Clones.cloneDeterministic(_implementation, coinSalt);
+        _setVersionForDeployedCoin(coin, version);
 
-        // Initialize coin with pre-configured pool
-        coin.initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);
+        uint160 sqrtPriceX96;
+        bool isCoinToken0;
+        PoolConfiguration memory poolConfiguration;
+        (, currency, sqrtPriceX96, isCoinToken0, poolConfiguration) = CoinSetup.generatePoolConfig(coin, poolConfig);
 
-        emit CoinCreatedV4(
+        poolKey = CoinSetup.buildPoolKey(coin, currency, isCoinToken0, IHooks(hook));
+        ICoin(coin).initialize(payoutRecipient, owners, uri, name, symbol, platformReferrer, currency, poolKey, sqrtPriceX96, poolConfiguration);
+    }
+
+    function _createAndInitializeCreatorCoin(
+        address payoutRecipient,
+        address[] memory owners,
+        string memory uri,
+        string memory name,
+        string memory symbol,
+        bytes memory poolConfig,
+        address platformReferrer,
+        bytes32 coinSalt
+    ) internal returns (ICreatorCoin) {
+        (address creatorCoin, uint8 version, PoolKey memory poolKey, address currency) = _createCoinWithPoolConfig(
+            creatorCoinImpl,
+            poolConfig,
+            coinSalt,
+            payoutRecipient,
+            owners,
+            uri,
+            name,
+            symbol,
+            platformReferrer
+        );
+
+        require(version == CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION, InvalidConfig());
+
+        emit CreatorCoinCreated(
             msg.sender,
             payoutRecipient,
             platformReferrer,
@@ -281,11 +304,13 @@ contract ZoraFactoryImpl is
             uri,
             name,
             symbol,
-            address(coin),
+            creatorCoin,
             poolKey,
             CoinCommon.hashPoolKey(poolKey),
-            IVersionedContract(address(coin)).contractVersion()
+            IVersionedContract(creatorCoin).contractVersion()
         );
+
+        return ICreatorCoin(creatorCoin);
     }
 
     function _createAndInitializeCoin(
@@ -298,25 +323,33 @@ contract ZoraFactoryImpl is
         address platformReferrer,
         bytes32 coinSalt
     ) internal returns (ICoin) {
-        uint8 version = CoinConfigurationVersions.getVersion(poolConfig);
-
-        address payable coin = _createCoin(version, coinSalt);
-
-        _setVersionForDeployedCoin(address(coin), version);
-
-        (, address currency, uint160 sqrtPriceX96, bool isCoinToken0, PoolConfiguration memory poolConfiguration) = CoinSetup.generatePoolConfig(
-            address(coin),
-            poolConfig
+        (address coin, uint8 version, PoolKey memory poolKey, address currency) = _createCoinWithPoolConfig(
+            coinV4Impl,
+            poolConfig,
+            coinSalt,
+            payoutRecipient,
+            owners,
+            uri,
+            name,
+            symbol,
+            platformReferrer
         );
 
-        if (CoinConfigurationVersions.isV3(version)) {
-            // V3 is no longer supported
-            revert ICoin.InvalidPoolVersion();
-        } else if (CoinConfigurationVersions.isV4(version)) {
-            _setupV4Coin(ICoin(coin), currency, isCoinToken0, sqrtPriceX96, poolConfiguration, payoutRecipient, owners, uri, name, symbol, platformReferrer);
-        } else {
-            revert ICoin.InvalidPoolVersion();
-        }
+        require(version == CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION, ICoin.InvalidPoolVersion());
+
+        emit CoinCreatedV4(
+            msg.sender,
+            payoutRecipient,
+            platformReferrer,
+            currency,
+            uri,
+            name,
+            symbol,
+            coin,
+            poolKey,
+            CoinCommon.hashPoolKey(poolKey),
+            IVersionedContract(coin).contractVersion()
+        );
 
         return ICoin(coin);
     }

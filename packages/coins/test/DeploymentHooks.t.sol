@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {BaseTest} from "./utils/BaseTest.sol";
 import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IUniswapV3Pool} from "../src/interfaces/IUniswapV3Pool.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
@@ -210,5 +211,56 @@ contract DeploymentsHooksTest is BaseTest {
         // Expect the transaction to revert with InvalidHook error
         vm.prank(users.creator);
         _deployWithHook(address(0), bytes(""), zora);
+    }
+
+    function test_creatorCoin_deployWithHook_buySupplyWithEth() public {
+        uint256 initialOrderSize = 0.0001 ether;
+        vm.deal(users.creator, initialOrderSize);
+
+        uint24 poolFee = 3000;
+
+        bytes memory hookData = _encodeExactInputSingle(
+            users.creator,
+            ISwapRouter.ExactInputSingleParams({
+                tokenIn: address(weth),
+                tokenOut: zora,
+                fee: poolFee,
+                recipient: address(buySupplyWithSwapRouterHook),
+                amountIn: initialOrderSize,
+                amountOutMinimum: 0,
+                sqrtPriceLimitX96: 0
+            })
+        );
+
+        bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(zora);
+
+        vm.prank(users.creator);
+        (address creatorCoinAddress, bytes memory hookDataOut) = factory.deployCreatorCoin{value: initialOrderSize}(
+            users.creator,
+            _getDefaultOwners(),
+            "https://test.com",
+            "Creator Coin Test",
+            "CCT",
+            poolConfig,
+            users.platformReferrer,
+            address(buySupplyWithSwapRouterHook),
+            hookData,
+            bytes32(uint256(123)) // coinSalt
+        );
+
+        (uint256 amountCurrency, uint256 coinsPurchased) = abi.decode(hookDataOut, (uint256, uint256));
+
+        // Verify the creator coin was deployed successfully
+        ICoin creatorCoin = ICoin(creatorCoinAddress);
+        assertEq(creatorCoin.currency(), zora, "currency should be ZORA");
+        assertEq(IERC20Metadata(creatorCoinAddress).name(), "Creator Coin Test", "name should match");
+        assertEq(IERC20Metadata(creatorCoinAddress).symbol(), "CCT", "symbol should match");
+
+        // Verify the hook executed and purchased coins
+        assertGt(amountCurrency, 0, "amountCurrency should be > 0");
+        assertGt(coinsPurchased, 0, "coinsPurchased should be > 0");
+
+        // Verify creator received the purchased coins (launch reward vests over time for creator coins)
+        assertEq(IERC20(creatorCoinAddress).balanceOf(users.creator), coinsPurchased, "creator should have purchased coins");
     }
 }
