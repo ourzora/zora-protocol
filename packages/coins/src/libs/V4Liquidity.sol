@@ -32,8 +32,6 @@ import {IUpgradeableDestinationV4Hook, IUpgradeableDestinationV4HookWithUpdateab
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 
-import {console} from "forge-std/console.sol";
-
 // command = 1; mint
 struct MintCallbackData {
     PoolKey poolKey;
@@ -156,6 +154,41 @@ library V4Liquidity {
         });
 
         return abi.encode(result);
+    }
+
+    function dedupePositions(LpPosition[] memory positions) internal pure returns (LpPosition[] memory dedupedPositions) {
+        // Upper bound: no more than input length
+        dedupedPositions = new LpPosition[](positions.length);
+        uint outLen = 0;
+
+        // O(n²) approach: for each position, check if it already exists in output
+        // This is acceptable since position arrays are typically small (< 100 positions)
+
+        for (uint i = 0; i < positions.length; i++) {
+            int24 t0 = positions[i].tickLower;
+            int24 t1 = positions[i].tickUpper;
+            uint128 v = positions[i].liquidity;
+
+            bool duplicate = false;
+            for (uint j = 0; j < outLen; j++) {
+                LpPosition memory dedupedPosition = dedupedPositions[j];
+                if (dedupedPosition.tickLower == t0 && dedupedPosition.tickUpper == t1) {
+                    dedupedPosition.liquidity += v;
+                    duplicate = true;
+                    break;
+                }
+            }
+
+            if (!duplicate) {
+                dedupedPositions[outLen] = LpPosition({tickLower: t0, tickUpper: t1, liquidity: v});
+                outLen++;
+            }
+        }
+
+        // Shrink to exact size by overwriting length field on the array
+        assembly {
+            mstore(dedupedPositions, outLen)
+        }
     }
 
     function generatePositionsFromMigratedLiquidity(

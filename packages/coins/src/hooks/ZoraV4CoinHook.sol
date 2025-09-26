@@ -146,10 +146,18 @@ contract ZoraV4CoinHook is
     /// @param coin The coin address.
     /// @param key The pool key for the coin.
     /// @return positions The contract-created liquidity positions the positions for the coin's pool.
-    function _generatePositions(ICoin coin, PoolKey memory key) internal view returns (LpPosition[] memory positions) {
+    function _generatePositions(ICoin coin, PoolKey memory key) internal view returns (LpPosition[] memory) {
         bool isCoinToken0 = Currency.unwrap(key.currency0) == address(coin);
 
-        positions = CoinDopplerMultiCurve.calculatePositions(isCoinToken0, coin.getPoolConfiguration(), coin.totalSupplyForPositions());
+        LpPosition[] memory calculatedPositions = CoinDopplerMultiCurve.calculatePositions(
+            isCoinToken0,
+            coin.getPoolConfiguration(),
+            coin.totalSupplyForPositions()
+        );
+
+        // sometimes the calculated positions have liquidity added in duplicated positions.   So here we dedupe them
+        // to save on gas in future swaps.
+        return V4Liquidity.dedupePositions(calculatedPositions);
     }
 
     /// @notice Internal fn called when a pool is initialized.
