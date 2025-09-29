@@ -74,3 +74,7 @@ forge script script/Deploy.s.sol $(chains {chainName} --deploy) --broadcast --ve
 where `{chainName}` is the emdash name of the chain you want to deploy on.
 
 2. Verify the factory contract. Since it is deployed with create2, foundry won't always recognize the deployed contract; verification instructions will be printed out in the logs.
+
+## Audits
+
+* Coins Aug 2025: [Cantina Audit Report](./audits/report-cantinacode-zora-0827.pdf)
