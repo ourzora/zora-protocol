@@ -247,26 +247,30 @@ library CoinRewardsV4 {
     ) internal returns (MarketRewards memory rewards) {
         rewards = _computeMarketRewards(fee, tradeReferral != address(0), platformReferrer != address(0));
 
-        if (platformReferrer != address(0)) {
-            _transferCurrency(currency, rewards.platformReferrerAmount, platformReferrer);
-        }
-        if (tradeReferral != address(0)) {
-            _transferCurrency(currency, rewards.tradeReferrerAmount, tradeReferral);
-        }
-        _transferCurrency(currency, rewards.creatorAmount, payoutRecipient);
-        _transferCurrency(currency, rewards.dopplerAmount, doppler);
-        _transferCurrency(currency, rewards.protocolAmount, protocolRewardRecipient);
+        // Notes on ETH transfer fallback behavior:
+        // - If the platform referrer is immutable; if it is set to an address that cannot receive ETH, it can brick swaps on the coin, as they would revert.
+        // - Both the creator recipient and trade referral are changeable, the former via updating the payout recipient on the coin, and the latter via updating the trade referrer argument when doing a swap;
+        // therefore we do not need to worry about permanently bricking swaps, and don't need a backup recipient.
+        _transferCurrency(currency, rewards.platformReferrerAmount, platformReferrer, protocolRewardRecipient);
+        _transferCurrency(currency, rewards.tradeReferrerAmount, tradeReferral, address(0));
+        _transferCurrency(currency, rewards.creatorAmount, payoutRecipient, address(0));
+        _transferCurrency(currency, rewards.dopplerAmount, doppler, protocolRewardRecipient);
+        _transferCurrency(currency, rewards.protocolAmount, protocolRewardRecipient, address(0));
     }
 
-    function _transferCurrency(Currency currency, uint256 amount, address to) internal {
-        if (amount == 0) {
+    function _transferCurrency(Currency currency, uint256 amount, address to, address backupRecipient) internal {
+        if (amount == 0 || to == address(0)) {
             return;
         }
 
         if (currency.isAddressZero()) {
             (bool success, ) = payable(to).call{value: amount}("");
             if (!success) {
-                revert ICoin.EthTransferFailed();
+                if (backupRecipient == address(0)) {
+                    revert ICoin.EthTransferFailed();
+                } else {
+                    _transferCurrency(currency, amount, backupRecipient, address(0));
+                }
             }
         } else {
             IERC20(Currency.unwrap(currency)).safeTransfer(to, amount);

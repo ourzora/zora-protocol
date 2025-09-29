@@ -317,4 +317,47 @@ contract ContentCoinRewardsTest is BaseTest {
 
         assertFalse(isLegacy, "Content coin should NOT be categorized as legacy creator coin");
     }
+
+    /// @notice Test reward distribution when platform referrer rejects ETH - should fallback to protocol recipient
+    function test_rewards_platform_referrer_eth_rejection_fallback() public {
+        // Deploy ETH-rejecting contract to use as platform referrer
+        EthRejectingContract ethRejecter = new EthRejectingContract();
+
+        // Deploy ETH-backed coin (like test_distributesMarketRewardsInEth)
+        address currency = address(0); // ETH backing
+        bytes32 salt = keccak256(abi.encodePacked("eth-reject-test"));
+        _deployV4Coin(currency, address(ethRejecter), salt); // ethRejecter becomes platform referrer
+
+        // Fund trader with ETH
+        uint128 ethAmount = 0.1 ether;
+        address trader = makeAddr("trader");
+        deal(trader, ethAmount);
+
+        // Record initial ETH balances
+        uint256 initialProtocolEth = coinV4.protocolRewardRecipient().balance;
+        uint256 initialRejecterEth = address(ethRejecter).balance;
+
+        // Execute ETH -> Coin trade using the working BaseTest function
+        _swapSomeCurrencyForCoin(coinV4, currency, ethAmount, trader);
+
+        // Calculate ETH balance deltas
+        uint256 protocolEthDelta = coinV4.protocolRewardRecipient().balance - initialProtocolEth;
+        uint256 rejecterEthDelta = address(ethRejecter).balance - initialRejecterEth;
+
+        // Verify ETH-rejecting contract got no ETH
+        assertEq(rejecterEthDelta, 0, "Platform referrer should receive no ETH");
+
+        // Verify protocol got ETH (backup mechanism worked)
+        assertGt(protocolEthDelta, 0, "Protocol should receive backup ETH from failed platform referrer");
+    }
+}
+
+// Contract that rejects ETH transfers (no payable functions)
+contract EthRejectingContract {
+    // This contract has no receive() or fallback() payable functions
+    // so ETH transfers will fail
+    receive() external payable {
+        console.log("EthRejectingContract received ETH");
+        revert("EthRejectingContract received ETH");
+    }
 }
