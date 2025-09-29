@@ -112,13 +112,13 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
 
         // After vesting ends - fully vested
         if (timestamp >= vestingEndTime) {
-            return CoinConstants.CREATOR_VESTING_SUPPLY;
+            return CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY;
         }
 
         // Linear vesting: (elapsed_time / total_duration) * total_amount
         uint256 elapsedTime = timestamp - vestingStartTime;
 
         // Multiply first to avoid precision loss
-        return (CoinConstants.CREATOR_VESTING_SUPPLY * elapsedTime) / CoinConstants.CREATOR_VESTING_DURATION;
+        return (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY * elapsedTime) / CoinConstants.CREATOR_VESTING_DURATION;
     }
 }

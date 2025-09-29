@@ -68,7 +68,7 @@ contract CreatorCoinTest is BaseTest {
         assertEq(creatorCoin.currency(), CoinConstants.CREATOR_COIN_CURRENCY);
         assertEq(creatorCoin.totalSupply(), CoinConstants.TOTAL_SUPPLY);
 
-        assertEq(creatorCoin.balanceOf(address(creatorCoin)), CoinConstants.CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.balanceOf(address(creatorCoin)), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
         assertEq(creatorCoin.balanceOf(address(creatorCoin.poolManager())), CoinConstants.CREATOR_COIN_MARKET_SUPPLY);
     }
 
@@ -124,7 +124,7 @@ contract CreatorCoinTest is BaseTest {
         vm.warp(creatorCoin.vestingStartTime() + oneYear);
 
         // After 1 year out of 5, should be able to claim 20% of vesting supply
-        uint256 expectedClaimable = (CoinConstants.CREATOR_VESTING_SUPPLY * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
+        uint256 expectedClaimable = (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
         assertEq(creatorCoin.getClaimableAmount(), expectedClaimable);
     }
 
@@ -133,7 +133,7 @@ contract CreatorCoinTest is BaseTest {
         vm.warp(creatorCoin.vestingStartTime() + halfVesting);
 
         // After 2.5 years, should be able to claim 50% of vesting supply
-        uint256 expectedClaimable = CoinConstants.CREATOR_VESTING_SUPPLY / 2;
+        uint256 expectedClaimable = CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY / 2;
         assertEq(creatorCoin.getClaimableAmount(), expectedClaimable);
     }
 
@@ -141,14 +141,14 @@ contract CreatorCoinTest is BaseTest {
         vm.warp(creatorCoin.vestingEndTime());
 
         // After full vesting period, should be able to claim entire vesting supply
-        assertEq(creatorCoin.getClaimableAmount(), CoinConstants.CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.getClaimableAmount(), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
     }
 
     function test_getClaimableAmount_after_vesting_period_ends() public {
         vm.warp(creatorCoin.vestingEndTime() + 365 days);
 
         // Even after vesting ends, should still be able to claim entire vesting supply
-        assertEq(creatorCoin.getClaimableAmount(), CoinConstants.CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.getClaimableAmount(), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
     }
 
     function test_getClaimableAmount_after_one_day() public {
@@ -156,12 +156,12 @@ contract CreatorCoinTest is BaseTest {
         uint256 oneDay = 1 days;
         vm.warp(creatorCoin.vestingStartTime() + oneDay);
 
-        uint256 expectedClaimable = (CoinConstants.CREATOR_VESTING_SUPPLY * oneDay) / CoinConstants.CREATOR_VESTING_DURATION;
+        uint256 expectedClaimable = (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY * oneDay) / CoinConstants.CREATOR_VESTING_DURATION;
         assertEq(creatorCoin.getClaimableAmount(), expectedClaimable);
 
         // Verify it's a small but non-zero amount
         assertGt(expectedClaimable, 0);
-        assertLt(expectedClaimable, CoinConstants.CREATOR_VESTING_SUPPLY / 1000); // Less than 0.1%
+        assertLt(expectedClaimable, CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY / 1000); // Less than 0.1%
     }
 
     function test_claimVesting_at_launch() public {
@@ -175,7 +175,7 @@ contract CreatorCoinTest is BaseTest {
         uint256 oneYear = 365 days;
         vm.warp(creatorCoin.vestingStartTime() + oneYear);
 
-        uint256 expectedClaimable = (CoinConstants.CREATOR_VESTING_SUPPLY * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
+        uint256 expectedClaimable = (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
         uint256 initialCreatorBalance = creatorCoin.balanceOf(users.creator);
         uint256 initialContractBalance = creatorCoin.balanceOf(address(creatorCoin));
 
@@ -201,7 +201,7 @@ contract CreatorCoinTest is BaseTest {
 
         // First claim after 1 year
         vm.warp(creatorCoin.vestingStartTime() + oneYear);
-        uint256 expectedClaim1 = (CoinConstants.CREATOR_VESTING_SUPPLY * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
+        uint256 expectedClaim1 = (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
         uint256 claimed1 = creatorCoin.claimVesting();
 
         assertEq(claimed1, expectedClaim1);
@@ -210,7 +210,7 @@ contract CreatorCoinTest is BaseTest {
 
         // Second claim after another year (2 years total)
         vm.warp(creatorCoin.vestingStartTime() + 2 * oneYear);
-        uint256 totalVestedAfter2Years = (CoinConstants.CREATOR_VESTING_SUPPLY * 2 * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
+        uint256 totalVestedAfter2Years = (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY * 2 * oneYear) / CoinConstants.CREATOR_VESTING_DURATION;
         uint256 expectedClaim2 = totalVestedAfter2Years - expectedClaim1;
 
         uint256 claimed2 = creatorCoin.claimVesting();
@@ -241,9 +241,9 @@ contract CreatorCoinTest is BaseTest {
 
         uint256 claimedAmount = creatorCoin.claimVesting();
 
-        assertEq(claimedAmount, CoinConstants.CREATOR_VESTING_SUPPLY);
-        assertEq(creatorCoin.totalClaimed(), CoinConstants.CREATOR_VESTING_SUPPLY);
-        assertEq(creatorCoin.balanceOf(users.creator), CoinConstants.CREATOR_VESTING_SUPPLY);
+        assertEq(claimedAmount, CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.totalClaimed(), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.balanceOf(users.creator), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
 
         // Subsequent claims should return 0
         uint256 secondClaim = creatorCoin.claimVesting();
@@ -256,16 +256,16 @@ contract CreatorCoinTest is BaseTest {
         // Claim half way through vesting
         vm.warp(creatorCoin.vestingStartTime() + halfVesting);
         uint256 partialClaim = creatorCoin.claimVesting();
-        assertEq(partialClaim, CoinConstants.CREATOR_VESTING_SUPPLY / 2);
+        assertEq(partialClaim, CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY / 2);
 
         // Claim the rest after full vesting
         vm.warp(creatorCoin.vestingEndTime());
         uint256 remainingClaim = creatorCoin.claimVesting();
-        assertEq(remainingClaim, CoinConstants.CREATOR_VESTING_SUPPLY / 2);
+        assertEq(remainingClaim, CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY / 2);
 
         // Total should equal full vesting supply
-        assertEq(creatorCoin.totalClaimed(), CoinConstants.CREATOR_VESTING_SUPPLY);
-        assertEq(creatorCoin.balanceOf(users.creator), CoinConstants.CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.totalClaimed(), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.balanceOf(users.creator), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
     }
 
     function test_vesting_calculation_edge_cases() public {
@@ -277,17 +277,17 @@ contract CreatorCoinTest is BaseTest {
         vm.warp(creatorCoin.vestingStartTime() + 1);
         uint256 claimableAfterOneSecond = creatorCoin.getClaimableAmount();
         assertGt(claimableAfterOneSecond, 0);
-        assertLt(claimableAfterOneSecond, CoinConstants.CREATOR_VESTING_SUPPLY / 1000000); // Very small amount
+        assertLt(claimableAfterOneSecond, CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY / 1000000); // Very small amount
 
         // Test one second before vesting ends
         vm.warp(creatorCoin.vestingEndTime() - 1);
         uint256 claimableBeforeEnd = creatorCoin.getClaimableAmount();
-        assertLt(claimableBeforeEnd, CoinConstants.CREATOR_VESTING_SUPPLY);
-        assertGt(claimableBeforeEnd, CoinConstants.CREATOR_VESTING_SUPPLY - (CoinConstants.CREATOR_VESTING_SUPPLY / 1000000));
+        assertLt(claimableBeforeEnd, CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
+        assertGt(claimableBeforeEnd, CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY - (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY / 1000000));
 
         // Test at exact vesting end time
         vm.warp(creatorCoin.vestingEndTime());
-        assertEq(creatorCoin.getClaimableAmount(), CoinConstants.CREATOR_VESTING_SUPPLY);
+        assertEq(creatorCoin.getClaimableAmount(), CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY);
     }
 
     function test_vesting_frequent_small_claims() public {
@@ -302,7 +302,7 @@ contract CreatorCoinTest is BaseTest {
         }
 
         // Verify total claimed matches expected amount for 7 days
-        uint256 expectedTotal = (CoinConstants.CREATOR_VESTING_SUPPLY * 7 days) / CoinConstants.CREATOR_VESTING_DURATION;
+        uint256 expectedTotal = (CoinConstants.CREATOR_COIN_CREATOR_VESTING_SUPPLY * 7 days) / CoinConstants.CREATOR_VESTING_DURATION;
         assertEq(totalClaimed, expectedTotal);
         assertEq(creatorCoin.totalClaimed(), expectedTotal);
     }

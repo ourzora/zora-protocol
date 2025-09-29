@@ -2,12 +2,10 @@
 "@zoralabs/coins": patch
 ---
 
-Consolidate constants into single CoinConstants.sol file
+Consolidate and clarify coin constants
 
-- Consolidated constants from MarketConstants.sol, CreatorCoinConstants.sol, and CoinRewardsV4.sol into CoinConstants.sol
-- Removed duplicate constant files to improve code organization
-- Updated all imports across the codebase to use the unified constants file
-- Renamed CURRENCY to CREATOR_COIN_CURRENCY for better clarity
-- Removed unused MIN_ORDER_SIZE constant
-
-This is an internal refactoring that improves code maintainability without changing any public APIs or contract behavior.
+- Renamed `CREATOR_LAUNCH_REWARD` to `CONTENT_COIN_INITIAL_CREATOR_SUPPLY` for clarity
+- Renamed `CREATOR_VESTING_SUPPLY` to `CREATOR_COIN_CREATOR_VESTING_SUPPLY` for consistency
+- Removed redundant `POOL_LAUNCH_SUPPLY` constant (use `CONTENT_COIN_MARKET_SUPPLY` instead)
+- Changed library constants from `public` to `internal` 
+- Made supply constants derived from calculations to show relationships clearly

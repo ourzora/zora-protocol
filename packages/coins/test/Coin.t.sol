@@ -37,16 +37,16 @@ contract CoinTest is BaseTest {
     }
 
     function test_supply_constants() public {
-        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, CoinConstants.POOL_LAUNCH_SUPPLY + CoinConstants.CREATOR_LAUNCH_REWARD);
+        assertEq(CoinConstants.MAX_TOTAL_SUPPLY, CoinConstants.CONTENT_COIN_MARKET_SUPPLY + CoinConstants.CONTENT_COIN_INITIAL_CREATOR_SUPPLY);
 
         assertEq(CoinConstants.MAX_TOTAL_SUPPLY, 1_000_000_000e18);
-        assertEq(CoinConstants.POOL_LAUNCH_SUPPLY, 990_000_000e18);
-        assertEq(CoinConstants.CREATOR_LAUNCH_REWARD, 10_000_000e18);
+        assertEq(CoinConstants.CONTENT_COIN_MARKET_SUPPLY, 990_000_000e18);
+        assertEq(CoinConstants.CONTENT_COIN_INITIAL_CREATOR_SUPPLY, 10_000_000e18);
 
         _deployV4Coin();
         assertEq(coinV4.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY);
-        assertEq(coinV4.balanceOf(coinV4.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD);
-        assertApproxEqAbs(coinV4.balanceOf(address(coinV4.poolManager())), CoinConstants.POOL_LAUNCH_SUPPLY, 1e18);
+        assertEq(coinV4.balanceOf(coinV4.payoutRecipient()), CoinConstants.CONTENT_COIN_INITIAL_CREATOR_SUPPLY);
+        assertApproxEqAbs(coinV4.balanceOf(address(coinV4.poolManager())), CoinConstants.CONTENT_COIN_MARKET_SUPPLY, 1e18);
     }
 
     function test_initialize_validation() public {

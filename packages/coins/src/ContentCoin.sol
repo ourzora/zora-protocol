@@ -38,7 +38,7 @@ contract ContentCoin is BaseCoin {
         _mint(address(this), CoinConstants.MAX_TOTAL_SUPPLY);
 
         // Distribute the creator launch reward to the payout recipient
-        _transfer(address(this), payoutRecipient, CoinConstants.CREATOR_LAUNCH_REWARD);
+        _transfer(address(this), payoutRecipient, CoinConstants.CONTENT_COIN_INITIAL_CREATOR_SUPPLY);
 
         // Transfer the market supply to the hook for liquidity
         _transfer(address(this), address(poolKey.hooks), balanceOf(address(this)));

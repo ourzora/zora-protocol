@@ -106,7 +106,7 @@ contract DeploymentsHooksTest is BaseTest {
         assertEq(coinV4.currency(), zora, "currency");
         assertGt(amountCurrency, 0, "amountCurrency > 0");
         assertGt(coinsPurchased, 0, "coinsPurchased > 0");
-        assertEq(coinV4.balanceOf(users.creator), CoinConstants.CREATOR_LAUNCH_REWARD + coinsPurchased, "balanceOf creator");
+        assertEq(coinV4.balanceOf(users.creator), CoinConstants.CONTENT_COIN_INITIAL_CREATOR_SUPPLY + coinsPurchased, "balanceOf creator");
         // assertGt(IERC20(zora).balanceOf(address(pool)), 0, "Pool ZORA balance");
     }
 

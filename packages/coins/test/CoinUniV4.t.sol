@@ -106,7 +106,7 @@ contract CoinUniV4Test is BaseTest {
         // Verify total supply equals maximum allowed
         assertEq(coinV4.totalSupply(), CoinConstants.MAX_TOTAL_SUPPLY, "total supply");
         assertApproxEqAbs(coinV4.balanceOf(address(coinV4.poolManager())), CoinConstants.CONTENT_COIN_MARKET_SUPPLY, 1000, "pool launch supply");
-        assertEq(coinV4.balanceOf(coinV4.payoutRecipient()), CoinConstants.CREATOR_LAUNCH_REWARD, "creator launch reward");
+        assertEq(coinV4.balanceOf(coinV4.payoutRecipient()), CoinConstants.CONTENT_COIN_INITIAL_CREATOR_SUPPLY, "creator launch reward");
     }
 
     function test_estimateLpFees() public {

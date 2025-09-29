@@ -13,31 +13,27 @@ library CoinConstants {
 
     /// @notice The maximum total supply
     /// @dev Set to 1 billion coins with 18 decimals
-    uint256 public constant MAX_TOTAL_SUPPLY = 1_000_000_000e18;
+    uint256 internal constant MAX_TOTAL_SUPPLY = 1_000_000_000e18;
 
     /// @notice The total supply for creator coins (same as MAX_TOTAL_SUPPLY)
     /// @dev 1 billion coins
     uint256 internal constant TOTAL_SUPPLY = 1_000_000_000e18;
 
-    /// @notice The number of coins allocated to the liquidity pool
-    /// @dev 990 million coins
-    uint256 public constant POOL_LAUNCH_SUPPLY = 990_000_000e18;
-
     /// @notice The number of coins allocated to the liquidity pool for content coins
-    /// @dev 990 million coins (same as POOL_LAUNCH_SUPPLY)
-    uint256 internal constant CONTENT_COIN_MARKET_SUPPLY = 990_000_000 * WAD;
+    /// @dev 990 million coins
+    uint256 internal constant CONTENT_COIN_MARKET_SUPPLY = 990_000_000e18;
 
     /// @notice The number of coins allocated to the liquidity pool for creator coins
     /// @dev 500 million coins
-    uint256 internal constant CREATOR_COIN_MARKET_SUPPLY = 500_000_000 * WAD;
+    uint256 internal constant CREATOR_COIN_MARKET_SUPPLY = 500_000_000e18;
 
-    /// @notice The number of coins rewarded to the creator
+    /// @notice The number of coins rewarded to the creator for content coins on launch
     /// @dev 10 million coins
-    uint256 public constant CREATOR_LAUNCH_REWARD = 10_000_000e18;
+    uint256 internal constant CONTENT_COIN_INITIAL_CREATOR_SUPPLY = TOTAL_SUPPLY - CONTENT_COIN_MARKET_SUPPLY;
 
-    /// @notice Creator coin vesting supply
+    /// @notice Creator coin vesting supply for creator
     /// @dev 500 million coins
-    uint256 internal constant CREATOR_VESTING_SUPPLY = 500_000_000e18;
+    uint256 internal constant CREATOR_COIN_CREATOR_VESTING_SUPPLY = TOTAL_SUPPLY - CREATOR_COIN_MARKET_SUPPLY;
 
     /// @notice Creator coin vesting duration
     /// @dev 5 years with leap years accounted for
@@ -57,19 +53,19 @@ library CoinConstants {
 
     // Creator gets 62.5% of market rewards (0.50% of total 1% fee)
     // Market rewards = 80% of total fee (0.80% of 1%)
-    uint256 public constant CREATOR_REWARD_BPS = 6250;
+    uint256 internal constant CREATOR_REWARD_BPS = 6250;
 
     // Platform referrer gets 25% of market rewards (0.20% of total 1% fee)
-    uint256 public constant CREATE_REFERRAL_REWARD_BPS = 2500;
+    uint256 internal constant CREATE_REFERRAL_REWARD_BPS = 2500;
 
     // Trade referrer gets 5% of market rewards (0.04% of total 1% fee)
-    uint256 public constant TRADE_REFERRAL_REWARD_BPS = 500;
+    uint256 internal constant TRADE_REFERRAL_REWARD_BPS = 500;
 
     // Doppler gets 1.25% of market rewards (0.01% of total 1% fee)
-    uint256 public constant DOPPLER_REWARD_BPS = 125;
+    uint256 internal constant DOPPLER_REWARD_BPS = 125;
 
     // LPs get 20% of total fee (0.20% of 1%)
-    uint256 public constant LP_REWARD_BPS = 2000;
+    uint256 internal constant LP_REWARD_BPS = 2000;
 
     int24 internal constant DEFAULT_DISCOVERY_TICK_LOWER = -777000;
     int24 internal constant DEFAULT_DISCOVERY_TICK_UPPER = 222000;
