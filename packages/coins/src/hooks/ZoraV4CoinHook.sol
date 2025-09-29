@@ -211,7 +211,7 @@ contract ZoraV4CoinHook is
     ) external returns (uint24 fee, int24 tickSpacing) {
         // update the fee to the current one.
         fee = CoinConstants.LP_FEE_V4;
-        tickSpacing = poolKey.tickSpacing;
+        tickSpacing = CoinConstants.TICK_SPACING;
 
         _initializeFromMigration(poolKey, coin, sqrtPriceX96, migratedLiquidity, additionalData, fee, tickSpacing);
     }
