@@ -1,6 +1,6 @@
 # Explore Queries
 
-The Coins SDK provides several explore functions to discover coins based on different criteria such as market performance, volume, and recency. These queries are useful for building discovery interfaces, trending sections, and leaderboards.
+The Coins SDK provides several explore functions to discover coins based on different criteria such as market performance, volume, recency, and creator activity. These queries are useful for building discovery interfaces, trending sections, and leaderboards.
 
 ### Queries:
 
@@ -9,7 +9,9 @@ The Coins SDK provides several explore functions to discover coins based on diff
 - [`getCoinsMostValuable`](#getcoinsmostvaluable)
 - [`getCoinsNew`](#getcoinsnew)
 - [`getCoinsLastTraded`](#getcoinslasttraded)
-- [`getCoinsLastTradedUnique`](#getcoinslasttradedunique) 
+- [`getCoinsLastTradedUnique`](#getcoinslasttradedunique)
+- [`getCreatorCoins`](#getcreatorcoins)
+- [`getMostValuableCreatorCoins`](#getmostvaluablecreatorcoins)
 
 ## Available Explore Queries
 
@@ -237,6 +239,40 @@ async function fetchLastTradedUniqueCoins() {
 }
 ```
 
+### getCreatorCoins
+
+Retrieves coins launched by new creators.
+
+```ts twoslash
+import { getCreatorCoins } from "@zoralabs/coins-sdk";
+
+async function fetchCreatorCoins() {
+  const response = await getCreatorCoins({
+    count: 10,
+  });
+
+  const tokens = response.data?.exploreList?.edges?.map((edge: any) => edge.node);
+  return tokens;
+}
+```
+
+### getMostValuableCreatorCoins
+
+Retrieves the most valuable creator coins.
+
+```ts twoslash
+import { getMostValuableCreatorCoins } from "@zoralabs/coins-sdk";
+
+async function fetchMostValuableCreatorCoins() {
+  const response = await getMostValuableCreatorCoins({
+    count: 10,
+  });
+
+  const tokens = response.data?.exploreList?.edges?.map((edge: any) => edge.node);
+  return tokens;
+}
+```
+  
 ## Response Structure
 
 All explore queries return a similar response structure:
@@ -267,6 +303,25 @@ type Response = {
 }
 ```
 
+## listType values for `/explore`
+
+The underlying `/explore` endpoint supports the following `listType` values via `getExplore`:
+
+```ts
+type ListType =
+  | "TOP_GAINERS"
+  | "TOP_VOLUME_24H"
+  | "MOST_VALUABLE"
+  | "NEW"
+  | "OLD"
+  | "LAST_TRADED"
+  | "LAST_TRADED_UNIQUE"
+  | "FEATURED"
+  | "FEATURED_VIDEOS"
+  | "NEW_CREATORS"
+  | "MOST_VALUABLE_CREATORS";
+```
+  
 ## Pagination
 
 Most explore queries support pagination to handle large result sets. Here's an example of how to implement pagination to fetch all coins that match a particular explore query:
