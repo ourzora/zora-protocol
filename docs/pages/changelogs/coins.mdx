@@ -1,6 +1,49 @@
 # Coins Changelog
 
 
+## 2.3.0
+
+### Minor Changes
+
+- [7df94915](https://github.com/ourzora/zora-protocol/commit/7df94915): Enable buying initial supply when deploying creator coin and refactor factory internals
+
+  - Add new `deployCreatorCoin` overload with `postDeployHook` parameter that supports ETH transfers
+  - Refactored internal factory implementation to share more code between deployment methods
+  - Enables buying initial supply during creator coin deployment via post-deploy hooks
+
+### Patch Changes
+
+- [6a7e2b7b](https://github.com/ourzora/zora-protocol/commit/6a7e2b7b): Fix LP position duplication when deploying coins. If two positions are created with the same tick ranges, they are merged and stored as one position. This reduces gas costs during swapping as there are less LP positions to iterate through when collecting fees.
+- [5093c5ef](https://github.com/ourzora/zora-protocol/commit/5093c5ef): Add bounds checking to prevent risky forced downcasting of currency deltas
+- [9c6d241a](https://github.com/ourzora/zora-protocol/commit/9c6d241a): Fix ETH transfer failures in reward distribution when platform referrers cannot accept ETH
+
+  - Prevent swaps from reverting when platform referrers cannot accept ETH - in this case, the rewards are redirected to the protocol recipient as backup.
+  - Ensures coin functionality remains intact even with ETH-incompatible platform referrers
+
+- [44a179b0](https://github.com/ourzora/zora-protocol/commit/44a179b0): Flatten hooks into single hook implementation
+
+  Consolidates multiple hook contracts into a single unified hook for simplified architecture and better maintainability.
+
+- [d3808d55](https://github.com/ourzora/zora-protocol/commit/d3808d55): Adjust creator coin vesting duration to account for leap years
+
+  - Changed CREATOR_VESTING_DURATION from 5 _ 365 days to 5 _ 365.25 days
+  - Addresses Cantina audit finding about 1.25 day shortfall in 5-year vesting period
+
+- [b571fe54](https://github.com/ourzora/zora-protocol/commit/b571fe54): Consolidate and clarify coin constants
+
+  - Renamed `CREATOR_LAUNCH_REWARD` to `CONTENT_COIN_INITIAL_CREATOR_SUPPLY` for clarity
+  - Renamed `CREATOR_VESTING_SUPPLY` to `CREATOR_COIN_CREATOR_VESTING_SUPPLY` for consistency
+  - Removed redundant `POOL_LAUNCH_SUPPLY` constant (use `CONTENT_COIN_MARKET_SUPPLY` instead)
+  - Changed library constants from `public` to `internal`
+  - Made supply constants derived from calculations to show relationships clearly
+
+- [32d683d6](https://github.com/ourzora/zora-protocol/commit/32d683d6): Fix stale PoolKey mapping after migration in ZoraV4CoinHook
+
+  Delete the old pool key from the poolCoins mapping after successful liquidity migration to prevent future operations on migrated pools.
+
+- [44a179b0](https://github.com/ourzora/zora-protocol/commit/44a179b0): Ignore collecting from liquidity positions with empty fee growth
+- [00b982bb](https://github.com/ourzora/zora-protocol/commit/00b982bb): Fix liquidity migration bug: when migrating liquidity to a hook with a different fee, the old fee was kept. This will now make sure that the new fee is used after migration. Also make sure to use the new tick spacing after migration.
+
 ## 2.2.1
 
 ### Patch Changes
@@ -22,7 +65,7 @@
 
   | Recipient         | Before (3% total fee) | After (1% total fee) |
   | ----------------- | --------------------- | -------------------- |
-  |                   | % of Fee        | % of Fee |
+  |                   | % of Fee              | % of Fee             |
   | Creator           | 33.33%                | 50%                  |
   | Platform Referral | 10%                   | 20%                  |
   | Trade Referral    | 10%                   | 4%                   |
@@ -34,7 +77,7 @@
 
   | Recipient         | Before (3% total fee) | After (1% total fee) |
   | ----------------- | --------------------- | -------------------- |
-  |                   | % of Fee        | % of Fee |
+  |                   | % of Fee              | % of Fee             |
   | Creator           | 33.33%                | 50%                  |
   | Platform Referral | -                     | 20%                  |
   | Trade Referral    | -                     | 4%                   |
