@@ -13,10 +13,7 @@ contract CreatorCoinTest is BaseTest {
     CreatorCoin internal creatorCoin;
 
     function setUp() public override {
-        super.setUpWithBlockNumber(30267794);
-
-        deal(address(zoraToken), address(poolManager), 1_000_000_000e18);
-
+        super.setUpNonForked();
         _deployCreatorCoin();
     }
 

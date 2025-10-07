@@ -45,6 +45,17 @@ import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {HookUpgradeGate} from "../../src/hooks/HookUpgradeGate.sol";
 import {ZoraHookRegistry} from "../../src/hook-registry/ZoraHookRegistry.sol";
 
+// Hookmate imports for non-forked testing
+import {V4PoolManagerDeployer} from "./hookmate/artifacts/V4PoolManager.sol";
+import {V4QuoterDeployer} from "./hookmate/artifacts/V4Quoter.sol";
+import {Permit2Deployer} from "./hookmate/artifacts/Permit2.sol";
+import {DeployHelper} from "./hookmate/artifacts/DeployHelper.sol";
+import {AddressConstants} from "./hookmate/constants/AddressConstants.sol";
+import {UniversalRouterDeployer, RouterParameters} from "./hookmate/artifacts/UniversalRouter.sol";
+import {MockERC20} from "../mocks/MockERC20.sol";
+import {MockAirlock} from "../mocks/MockAirlock.sol";
+import {SimpleERC20} from "../mocks/SimpleERC20.sol";
+
 contract BaseTest is Test, ContractAddresses {
     using stdStorage for StdStorage;
 
@@ -63,6 +74,7 @@ contract BaseTest is Test, ContractAddresses {
         address seller;
         address coinRecipient;
         address tradeReferrer;
+        address dopplerRecipient;
     }
 
     uint256 internal forkId;
@@ -203,7 +215,7 @@ contract BaseTest is Test, ContractAddresses {
     }
 
     function _deployFeeEstimatorHook(address hooks) internal {
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(V4_POOL_MANAGER, address(factory), hookUpgradeGate), hooks);
+        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory), hookUpgradeGate), hooks);
     }
 
     function getSalt(address[] memory trustedMessageSenders) public returns (bytes32 hookSalt) {
@@ -258,7 +270,8 @@ contract BaseTest is Test, ContractAddresses {
             buyer: makeAddr("buyer"),
             seller: makeAddr("seller"),
             coinRecipient: makeAddr("coinRecipient"),
-            tradeReferrer: makeAddr("tradeReferrer")
+            tradeReferrer: makeAddr("tradeReferrer"),
+            dopplerRecipient: makeAddr("dopplerRecipient")
         });
 
         ProxyShim mockUpgradeableImpl = new ProxyShim();
@@ -300,6 +313,146 @@ contract BaseTest is Test, ContractAddresses {
         vm.label(address(V4_PERMIT2), "V4_PERMIT2");
         vm.label(address(UNIVERSAL_ROUTER), "UNIVERSAL_ROUTER");
         vm.label(address(hook), "HOOK");
+    }
+
+    function setUpNonForked() public {
+        // Initialize users first
+        users = Users({
+            factoryOwner: makeAddr("factoryOwner"),
+            feeRecipient: makeAddr("feeRecipient"),
+            creator: makeAddr("creator"),
+            platformReferrer: makeAddr("platformReferrer"),
+            buyer: makeAddr("buyer"),
+            seller: makeAddr("seller"),
+            coinRecipient: makeAddr("coinRecipient"),
+            tradeReferrer: makeAddr("tradeReferrer"),
+            dopplerRecipient: makeAddr("dopplerRecipient")
+        });
+
+        // Deploy mock airlock with the dopplerRecipient as owner (for doppler rewards)
+        MockAirlock mockAirlock = new MockAirlock(users.dopplerRecipient);
+
+        // Deploy V4 infrastructure using hookmate
+        _deployV4InfrastructureNonForked();
+
+        // Deploy mock ZORA token at the correct address
+        deployCodeTo("SimpleERC20.sol:SimpleERC20", abi.encode("ZORA", "$ZORA"), ZORA_TOKEN_ADDRESS);
+        zoraToken = IERC20Metadata(ZORA_TOKEN_ADDRESS);
+
+        // Fund the pool manager with ZORA tokens
+        deal(address(zoraToken), address(poolManager), 1_000_000_000e18);
+
+        // Deploy protocol rewards
+        protocolRewards = new ProtocolRewards();
+
+        // Deploy factory proxy
+        ProxyShim mockUpgradeableImpl = new ProxyShim();
+        factory = IZoraFactory(address(new ZoraFactory(address(mockUpgradeableImpl))));
+
+        // Deploy hook upgrade gate
+        hookUpgradeGate = new HookUpgradeGate(users.factoryOwner);
+
+        // Deploy zora hook registry
+        zoraHookRegistry = new ZoraHookRegistry();
+        address[] memory initialOwners = new address[](2);
+        initialOwners[0] = users.factoryOwner;
+        initialOwners[1] = address(factory);
+        zoraHookRegistry.initialize(initialOwners);
+
+        // Deploy hooks for non-forked environment
+        _deployHooksNonForked(address(mockAirlock));
+
+        // Deploy coin implementations
+        coinV4Impl = new ContentCoin(users.feeRecipient, address(protocolRewards), poolManager, address(mockAirlock));
+        creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), poolManager, address(mockAirlock));
+
+        // Deploy and initialize factory implementation
+        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
+        UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
+        ZoraFactoryImpl(address(factory)).initialize(users.factoryOwner);
+
+        // Labels for easier debugging
+        vm.label(address(factory), "ZORA_FACTORY");
+        vm.label(address(protocolRewards), "PROTOCOL_REWARDS");
+        vm.label(address(poolManager), "V4_POOL_MANAGER");
+        vm.label(address(permit2), "V4_PERMIT2");
+        vm.label(address(router), "UNIVERSAL_ROUTER");
+        vm.label(address(hook), "HOOK");
+        vm.label(address(mockAirlock), "MOCK_AIRLOCK");
+    }
+
+    function _deployV4InfrastructureNonForked() internal {
+        // Deploy Permit2 to canonical address
+        _deployPermit2NonForked();
+
+        // Deploy PoolManager
+        _deployPoolManagerNonForked();
+
+        // Deploy Quoter
+        _deployQuoterNonForked();
+
+        // Deploy Universal Router
+        _deployUniversalRouterNonForked();
+    }
+
+    function _deployPermit2NonForked() internal {
+        address permit2Address = AddressConstants.getPermit2Address();
+
+        if (permit2Address.code.length > 0) {
+            // Permit2 is already deployed
+        } else {
+            address tempDeployAddress = address(Permit2Deployer.deploy());
+            vm.etch(permit2Address, tempDeployAddress.code);
+        }
+
+        permit2 = IPermit2(permit2Address);
+    }
+
+    function _deployPoolManagerNonForked() internal {
+        if (block.chainid == 31337) {
+            poolManager = IPoolManager(address(V4PoolManagerDeployer.deploy(address(0x4444))));
+        } else {
+            poolManager = IPoolManager(AddressConstants.getPoolManagerAddress(block.chainid));
+        }
+
+        deal(address(poolManager), 10000 ether);
+    }
+
+    function _deployQuoterNonForked() internal {
+        quoter = IV4Quoter(V4QuoterDeployer.deploy(address(poolManager)));
+    }
+
+    function _deployUniversalRouterNonForked() internal {
+        RouterParameters memory params = RouterParameters({
+            permit2: address(permit2),
+            weth9: address(0),
+            v2Factory: address(0),
+            v3Factory: address(0),
+            pairInitCodeHash: bytes32(0),
+            poolInitCodeHash: bytes32(0),
+            v4PoolManager: address(poolManager),
+            v3NFTPositionManager: address(0),
+            v4PositionManager: address(0)
+        });
+        router = IUniversalRouter(UniversalRouterDeployer.deploy(params));
+    }
+
+    function _deployHooksNonForked(address airlockAddress) internal {
+        address[] memory trustedMessageSenders = new address[](1);
+        trustedMessageSenders[0] = address(router);
+
+        // Use proper salt mining for hook deployment
+        address deployer = address(this);
+        (, bytes32 salt) = HooksDeployment.mineForCoinSalt(deployer, address(poolManager), address(factory), trustedMessageSenders, address(hookUpgradeGate));
+
+        bytes memory hookCreationCode = HooksDeployment.makeHookCreationCode(
+            address(poolManager),
+            address(factory),
+            trustedMessageSenders,
+            address(hookUpgradeGate)
+        );
+
+        hook = ZoraV4CoinHook(payable(DeployHelper.deploy(hookCreationCode, salt)));
     }
 
     struct TradeRewards {

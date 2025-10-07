@@ -7,20 +7,28 @@ import {IZoraHookRegistry} from "../src/interfaces/IZoraHookRegistry.sol";
 import {ZoraHookRegistry} from "../src/hook-registry/ZoraHookRegistry.sol";
 
 contract MockHook {
-    function contractVersion() public pure returns (string memory) {
-        return "0.0.0";
+    string private _version;
+
+    constructor(string memory version_) {
+        _version = version_;
+    }
+
+    function contractVersion() public view returns (string memory) {
+        return _version;
     }
 }
 
+contract MockHookNoVersion {
+    // No contractVersion function
+}
+
 contract ZoraHookRegistryTest is Test {
-    uint256 internal forkId;
     address internal owner;
 
     ZoraHookRegistry internal zoraHookRegistry;
     MockHook internal mockHook;
 
     function setUp() public {
-        forkId = vm.createSelectFork("base", 34509280);
         owner = makeAddr("owner");
 
         address[] memory initialOwners = new address[](1);
@@ -29,7 +37,7 @@ contract ZoraHookRegistryTest is Test {
         zoraHookRegistry = new ZoraHookRegistry();
         zoraHookRegistry.initialize(initialOwners);
 
-        mockHook = new MockHook();
+        mockHook = new MockHook("0.0.0");
     }
 
     function test_register_hooks() public {
@@ -179,7 +187,8 @@ contract ZoraHookRegistryTest is Test {
         address[] memory hooks = new address[](1);
         string[] memory tags = new string[](1);
 
-        hooks[0] = 0x81542dC43Aff247eff4a0eceFC286A2973aE1040;
+        MockHook hookWithVersion = new MockHook("1.1.1");
+        hooks[0] = address(hookWithVersion);
         tags[0] = "CONTENT";
 
         vm.prank(owner);
@@ -192,7 +201,8 @@ contract ZoraHookRegistryTest is Test {
         address[] memory hooks = new address[](1);
         string[] memory tags = new string[](1);
 
-        hooks[0] = 0xA1eBdD5cA6470Bbd67114331387f2dDa7bfad040;
+        MockHookNoVersion hookNoVersion = new MockHookNoVersion();
+        hooks[0] = address(hookNoVersion);
         tags[0] = "CONTENT";
 
         vm.prank(owner);
@@ -207,8 +217,8 @@ contract ZoraHookRegistryTest is Test {
 
     function test_get_hook_addresses_multiple_and_remove_middle() public {
         address a = address(mockHook);
-        address b = address(new MockHook());
-        address c = address(new MockHook());
+        address b = address(new MockHook("0.0.0"));
+        address c = address(new MockHook("0.0.0"));
 
         address[] memory hooks = new address[](3);
         string[] memory tags = new string[](3);

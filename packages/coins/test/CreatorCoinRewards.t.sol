@@ -22,9 +22,7 @@ contract CreatorCoinRewardsTest is BaseTest {
     address internal tradeReferrer;
 
     function setUp() public override {
-        super.setUpWithBlockNumber(30267794);
-
-        deal(address(zoraToken), address(poolManager), 1_000_000_000e18);
+        super.setUpNonForked();
 
         // Set up referrer addresses for all tests
         platformReferrer = makeAddr("platformReferrer");

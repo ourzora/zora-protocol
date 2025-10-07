@@ -38,9 +38,8 @@ contract CoinUniV4Test is BaseTest {
     MockERC20 internal mockERC20B;
 
     function setUp() public override {
-        super.setUpWithBlockNumber(30267794);
+        super.setUpNonForked();
 
-        quoter = IV4Quoter(V4_QUOTER);
         mockERC20A = new MockERC20("MockERC20A", "MCKA");
         mockERC20B = new MockERC20("MockERC20B", "MCKB");
 

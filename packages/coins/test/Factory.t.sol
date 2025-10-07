@@ -8,7 +8,7 @@ import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
 
 contract FactoryTest is BaseTest {
     function setUp() public override {
-        super.setUp();
+        super.setUpNonForked();
     }
 
     function test_factory_constructor_and_proxy_setup() public {
@@ -115,8 +115,8 @@ contract FactoryTest is BaseTest {
 
         address platformReferrer = users.platformReferrer;
 
-        bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(address(weth));
-        bytes memory poolConfigForGettingAddress = poolConfigChanged ? CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(address(0)) : poolConfig;
+        bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(address(0));
+        bytes memory poolConfigForGettingAddress = poolConfigChanged ? CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(ZORA_TOKEN_ADDRESS) : poolConfig;
 
         address expectedCoinAddress = factory.coinAddress(msgSender, name, symbol, poolConfigForGettingAddress, platformReferrer, salt);
 

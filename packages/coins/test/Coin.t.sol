@@ -16,7 +16,7 @@ contract CoinTest is BaseTest {
     using stdJson for string;
 
     function setUp() public override {
-        super.setUp();
+        super.setUpNonForked();
     }
 
     function test_contract_ierc165_support() public {
@@ -107,23 +107,35 @@ contract CoinTest is BaseTest {
     }
 
     function test_burn() public {
-        _deployV4Coin();
-        vm.deal(users.buyer, 1 ether);
-        vm.prank(users.buyer);
-        _swapSomeCurrencyForCoin(coinV4, address(weth), 1 ether, users.coinRecipient);
+        // Deploy a mock ERC20 currency
+        MockERC20 mockCurrency = new MockERC20("Mock Currency", "MOCK");
+        mockCurrency.mint(users.buyer, 1000 ether);
+        // Pool manager needs currency for liquidity operations
+        mockCurrency.mint(address(poolManager), 1000000 ether);
 
-        uint256 beforeBalance = coinV4.balanceOf(users.coinRecipient);
+        // Deploy coin with mock currency
+        coinV4 = ContentCoin(payable(address(_deployV4Coin(address(mockCurrency), address(0), bytes32(0)))));
+
+        // Approve with permit2 and swap
+        uint128 swapAmount = 1 ether;
+        vm.startPrank(users.buyer);
+        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(mockCurrency), swapAmount, uint48(block.timestamp + 1 days));
+        vm.stopPrank();
+
+        _swapSomeCurrencyForCoin(coinV4, address(mockCurrency), swapAmount, users.buyer);
+
+        uint256 beforeBalance = coinV4.balanceOf(users.buyer);
         uint256 beforeTotalSupply = coinV4.totalSupply();
 
         uint256 burnAmount = beforeBalance / 2;
 
-        vm.prank(users.coinRecipient);
+        vm.prank(users.buyer);
         coinV4.burn(burnAmount);
 
-        uint256 afterBalance = coinV4.balanceOf(users.coinRecipient);
+        uint256 afterBalance = coinV4.balanceOf(users.buyer);
         uint256 afterTotalSupply = coinV4.totalSupply();
 
-        assertEq(beforeBalance - afterBalance, burnAmount, "coinRecipient coin balance");
+        assertEq(beforeBalance - afterBalance, burnAmount, "buyer coin balance");
         assertEq(beforeTotalSupply - afterTotalSupply, burnAmount, "coin total supply");
     }
 
