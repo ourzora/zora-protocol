@@ -256,3 +256,81 @@ event CreatorCoinCreated(
 );
 ```
 
+### Legacy (V3) Coins
+```solidity
+event CoinCreated(
+    address indexed caller,
+    address indexed payoutRecipient,
+    address indexed platformReferrer,
+    address currency,
+    string uri,
+    string name,
+    string symbol,
+    address coin,
+    address pool,
+    string version
+);
+```
+
+## Indexing Guidance
+
+- **Why multiple events?**
+  - **`CoinCreated` (legacy)**: Emitted by early releases that used Uniswap V3 and returned a pool address.
+  - **`CoinCreatedV4`**: Emitted for Content Coins on Uniswap V4 and includes a full `PoolKey` plus `poolKeyHash`.
+  - **`CreatorCoinCreated`**: Emitted for Creator Coins on Uniswap V4 and includes the same data shape as `CoinCreatedV4`.
+
+- **Index all coins**: Indexers should listen to all three events to build a complete list of coins across protocol versions.
+
+- **Suggested filter set**
+  - Contract: `ZoraFactoryImpl`
+  - Events: `CoinCreated`, `CoinCreatedV4`, `CreatorCoinCreated`
+
+- **Field differences**
+  - Legacy `CoinCreated` returns a `pool` address (Uniswap V3). V4 events return a `PoolKey` and `poolKeyHash` instead of a pool address (pool address is derived by Uniswap V4).
+
+- **Normalizing into a single record**
+  - Use common fields across events: `caller`, `payoutRecipient`, `platformReferrer`, `currency`, `uri`, `name`, `symbol`, `coin`, `version`.
+  - For V3: store `poolAddress` from `CoinCreated`.
+  - For V4: store `poolKey` (currencies, fee, tickSpacing, hooks), and `poolKeyHash`. If you need the V4 pool address, derive it using the Uniswap V4 formula from `PoolKey`.
+
+- **Creator coin identification**
+  - Creator coins are explicitly emitted via `CreatorCoinCreated`.
+  - Content coins are emitted via `CoinCreatedV4`.
+
+- **Example (pseudocode)**
+```ts
+onEvent(evt) {
+  switch (evt.name) {
+    case 'CoinCreated':
+      upsertCoin({
+        type: 'legacy',
+        coin: evt.args.coin,
+        poolAddress: evt.args.pool,
+        version: evt.args.version,
+        meta: baseFields(evt.args)
+      });
+      break;
+    case 'CoinCreatedV4':
+      upsertCoin({
+        type: 'content',
+        coin: evt.args.coin,
+        poolKey: evt.args.poolKey,
+        poolKeyHash: evt.args.poolKeyHash,
+        version: evt.args.version,
+        meta: baseFields(evt.args)
+      });
+      break;
+    case 'CreatorCoinCreated':
+      upsertCoin({
+        type: 'creator',
+        coin: evt.args.coin,
+        poolKey: evt.args.poolKey,
+        poolKeyHash: evt.args.poolKeyHash,
+        version: evt.args.version,
+        meta: baseFields(evt.args)
+      });
+      break;
+  }
+}
+```
+

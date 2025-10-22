@@ -1,23 +1,20 @@
 # Hook System
 
-The Zora protocol uses specialized Uniswap V4 hooks to automatically manage pool interactions and reward distribution for different coin types.
+The Zora protocol uses a unified Uniswap V4 hook to automatically manage pool interactions and reward distribution for all coin types.
 
 ## Overview
 
-The hook system consists of two specialized hook contracts that inherit from `BaseZoraV4CoinHook`:
+The hook system now uses a single implementation, `ZoraV4CoinHook`, which encapsulates the full logic for pool initialization, fee collection, multi-hop payout conversion, and reward distribution across both Content Coins and Creator Coins.
 
-- **ContentCoinHook** - Automatically manages pools for Content Coins with full referral reward distribution
-- **CreatorCoinHook** - Automatically manages pools for Creator Coins with simplified reward distribution
-
-Both hooks automatically implement fee collection, currency conversion, and reward distribution on every swap transaction.
+Previously, two specialized hook contracts were used (`ContentCoinHook` and `CreatorCoinHook`). As of coins v2.3.0, these have been consolidated into the single `ZoraV4CoinHook` for simplicity and maintainability while preserving identical external behavior.
 
 ## Inheritance Structure
 
-The hook system uses inheritance to share common functionality while allowing specialized reward distribution:
+The unified hook centralizes shared functionality and derives reward behavior from coin configuration:
 
-### BaseZoraV4CoinHook (Abstract Base)
+### ZoraV4CoinHook
 
-Contains all core hook functionality shared between coin types:
+Contains all core functionality used by both coin types:
 
 **Automated Operations:**
 - Pool initialization and automatic liquidity position creation
@@ -32,37 +29,21 @@ Contains all core hook functionality shared between coin types:
 - Trusted message sender validation
 - Pool-to-coin mapping and position tracking
 
-### ContentCoinHook (Inherits from Base)
+Reward distribution is unified and determined at runtime from the coin type via `CoinRewardsV4`.
 
-Implements specialized reward distribution for Content Coins by overriding the `_distributeMarketRewards()` function:
-
-- **Full referral rewards**: Both create referral (15%) and trade referral (15%)
-- **Creator rewards**: 50% of market rewards
-- **Doppler rewards**: 5% of market rewards
-- **Protocol rewards**: Remaining percentage
-
-### CreatorCoinHook (Inherits from Base) 
-
-Implements simplified reward distribution for Creator Coins by overriding the `_distributeMarketRewards()` function:
-
-- **Creator rewards**: 50% of market rewards
-- **Protocol rewards**: 50% of market rewards
-- **No referral or Doppler rewards**
-
-**Key Insight**: The only difference between the two hooks is their reward distribution methodology - all other functionality (pool management, fee collection, currency conversion, [migration](/coins/contracts/liquidity-migration)) is identical and handled by the base contract.
+**Key Insight**: Logic that was previously split across two hooks is now implemented in one place; reward behavior is selected based on the coin type and configuration.
 
 ## Deployment Addresses
 
 import { ContractAddress } from '@components/ContractAddress'
 
-| Chain | Chain ID | Hook Contract | Address |
-|-------|----------|---------------|---------|
-| Base  | 8453     | ContentCoinHook | <ContractAddress address="0x9ea932730A7787000042e34390B8E435dD839040" chain="base" /> |
-| Base  | 8453     | CreatorCoinHook | <ContractAddress address="0xd61A675F8a0c67A73DC3B54FB7318B4D91409040" chain="base" /> |
+| Chain | Chain ID | Hook Contract   | Address |
+|-------|----------|-----------------|---------|
+| Base  | 8453     | ZoraV4CoinHook  | See `@zoralabs/protocol-deployments` |
 
 ## Hook Permissions
 
-Both hooks have the following Uniswap V4 permissions:
+The unified hook has the following Uniswap V4 permissions:
 
 ```solidity
 function getHookPermissions() external pure override returns (Hooks.Permissions memory) {
@@ -89,7 +70,7 @@ function getHookPermissions() external pure override returns (Hooks.Permissions 
 
 ### After Initialize Hook
 
-When a new pool is initialized, the hooks automatically:
+When a new pool is initialized, the hook automatically:
 
 1. **Validate Pool Setup**: Ensure the pool is properly configured for the coin type
 2. **Create Initial Positions**: Set up liquidity positions based on the coin's configuration
@@ -98,7 +79,7 @@ When a new pool is initialized, the hooks automatically:
 
 ### After Swap Hook
 
-On every swap, the hooks automatically:
+On every swap, the hook automatically:
 
 1. **Collect LP Fees**: Gather accrued fees from all liquidity positions
 2. **Convert to Payout Currency**: Swap collected fees through optimal paths
@@ -107,20 +88,19 @@ On every swap, the hooks automatically:
 
 ## Reward Distribution
 
-The hooks automatically implement different reward distribution logic for different coin types.
+The unified hook implements the same reward distribution mechanism across coin types, with the specific split determined by the coin type via `CoinRewardsV4`.
 
 **For detailed reward percentages and distribution breakdown, see [Coin Rewards](/coins/contracts/rewards).**
 
-### Key Differences
+### Key Details
 
-- **Content Coins**: Support platform referral, trade referral, and Doppler rewards in addition to creator and protocol rewards
-- **Creator Coins**: Unified structure with the same reward distribution as Content Coins (as of version 2.2.0)
+- Both Content Coins and Creator Coins share the unified fee structure and support platform referral, trade referral, creator, protocol, and Doppler distributions (as of v2.2.0+).
 
 **Fee Split**: A portion of collected fees is reminted as LP rewards to maintain liquidity, while the remainder is distributed as market rewards to stakeholders.
 
 ## Multi-Hop Reward Swapping
 
-The hooks automatically support complex swap paths for coins that aren't directly paired with the final payout currency:
+The hook automatically supports complex swap paths for coins that aren't directly paired with the final payout currency:
 
 ### Example: Content Coin → Creator Coin → ZORA
 
@@ -133,11 +113,11 @@ This automatically enables complex token economies where Content Coins can be ba
 
 ## Liquidity Management
 
-The hooks automatically manage liquidity positions throughout the pool lifecycle:
+The hook automatically manages liquidity positions throughout the pool lifecycle:
 
 ### Automatic Position Creation
 
-During pool initialization, the hooks automatically create:
+During pool initialization, the hook automatically creates:
 
 - **Discovery Positions**: Initial price discovery ranges
 - **Market Positions**: Main trading ranges  
@@ -157,7 +137,7 @@ struct LiquidityPosition {
 
 ## Migration Support
 
-The hooks automatically support controlled liquidity migration to enable upgrades to new hook versions while preserving all existing liquidity. 
+The hook supports controlled liquidity migration to enable upgrades to new hook versions while preserving all existing liquidity. 
 
 **Migration Resources:**
 - [Complete Migration Guide](/coins/contracts/liquidity-migration) - Step-by-step migration process and security considerations
@@ -222,6 +202,10 @@ Emitted when market rewards are distributed from collected fees, showing exact a
 - **marketRewards**: Detailed breakdown of reward amounts for each recipient
 
 ### LpReward Event
+
+## Historical Note
+
+Prior to v2.3.0, the system used two hooks (`ContentCoinHook` and `CreatorCoinHook`). With the introduction of the unified `ZoraV4CoinHook`, all behavior is consolidated. Existing pools can migrate liquidity using the [liquidity migration](/coins/contracts/liquidity-migration) flow.
 
 ```solidity
 event LpReward(

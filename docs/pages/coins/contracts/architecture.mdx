@@ -44,20 +44,11 @@ classDiagram
     }
     
     %% Hooks Package
-    class BaseZoraV4CoinHook {
-        <<abstract>>
+    class ZoraV4CoinHook {
         +afterInitialize()
         +afterSwap()
         -collectFees()
         -mintLpReward()
-        +_distributeMarketRewards()
-    }
-    
-    class ContentCoinHook {
-        +_distributeMarketRewards()
-    }
-    
-    class CreatorCoinHook {
         +_distributeMarketRewards()
     }
     
@@ -68,22 +59,20 @@ classDiagram
     %% Inheritance relationships
     BaseCoinV4 <|-- CreatorCoin
     BaseCoinV4 <|-- ContentCoin
-    BaseZoraV4CoinHook <|-- ContentCoinHook
-    BaseZoraV4CoinHook <|-- CreatorCoinHook
+    %% Unified hook - no subclassing per coin type
     
     %% Factory relationships
     ZoraFactoryImpl ..> CreatorCoin : creates
     ZoraFactoryImpl ..> ContentCoin : creates
     
     %% Hook relationships
-    BaseZoraV4CoinHook --> IPoolManager : uses
-    ContentCoinHook --> BaseCoinV4 : manages rewards
-    CreatorCoinHook --> BaseCoinV4 : manages rewards
+    ZoraV4CoinHook --> IPoolManager : uses
+    ZoraV4CoinHook --> BaseCoinV4 : manages rewards
     
     %% Pool Manager relationships
     BaseCoinV4 --> IPoolManager : integrates with
-    CreatorCoin --> CreatorCoinHook : uses hook
-    ContentCoin --> ContentCoinHook : uses hook
+    CreatorCoin --> ZoraV4CoinHook : uses hook
+    ContentCoin --> ZoraV4CoinHook : uses hook
     
     %% Currency relationships
     ContentCoin --> CreatorCoin : backed by
@@ -129,7 +118,7 @@ Key functions:
 
 ### Hook System
 
-The protocol uses an inheritance-based hook architecture:
+The protocol uses a unified hook architecture:
 
 **BaseZoraV4CoinHook (Abstract)**
 - Contains all shared hook functionality for both coin types
@@ -137,14 +126,11 @@ The protocol uses an inheritance-based hook architecture:
 - Handles pool initialization, fee collection, and currency conversion
 - Supports migration to new hook versions while preserving liquidity
 
-**ContentCoinHook & CreatorCoinHook**
-- Inherit from `BaseZoraV4CoinHook` but override reward distribution
-- ContentCoinHook: Distributes rewards to platform referral, trade referral, creator, protocol, and Doppler
-- CreatorCoinHook: Uses the same unified reward structure as ContentCoinHook (as of v2.2.0)
-
-Core shared functionality:
+Core functionality:
 - Collects trading fees from liquidity positions
 - Splits fees between LP rewards and market rewards
 - Converts fees to backing currency via multi-hop swaps
-- Distributes rewards based on coin-specific methodology
+- Distributes rewards based on coin type via unified logic
+
+> History: Prior to v2.3.0 the protocol used two hooks (`ContentCoinHook` and `CreatorCoinHook`). This was consolidated into `ZoraV4CoinHook` for a single, unified implementation.
 
