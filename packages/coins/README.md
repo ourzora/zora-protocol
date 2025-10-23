@@ -78,3 +78,4 @@ where `{chainName}` is the emdash name of the chain you want to deploy on.
 ## Audits
 
 * Coins Aug 2025: [Cantina Audit Report](./audits/report-cantinacode-zora-0827.pdf)
+* Coins Oct 2025: [Cantina Audit Report](./audits/report-cantinacode-zora-1021.pdf)
