@@ -1,6 +1,12 @@
 # Coins Changelog
 
 
+## 2.3.1
+
+### Patch Changes
+
+- [3c274d9d](https://github.com/ourzora/zora-protocol/commit/3c274d9d): Created a buy supply with v4 hook, for buying initial supply of a creator coin, supporting doing a v3 and v4 swap to buy the creator coin. updated the encoding function for buying initial supply to work with the v3 to v4 swap
+
 ## 2.3.0
 
 ### Minor Changes
@@ -26,7 +32,7 @@
 
 - [d3808d55](https://github.com/ourzora/zora-protocol/commit/d3808d55): Adjust creator coin vesting duration to account for leap years
 
-  - Changed CREATOR_VESTING_DURATION from 5 _ 365 days to 5 _ 365.25 days
+  - Changed CREATOR*VESTING_DURATION from 5 * 365 days to 5 \_ 365.25 days
   - Addresses Cantina audit finding about 1.25 day shortfall in 5-year vesting period
 
 - [b571fe54](https://github.com/ourzora/zora-protocol/commit/b571fe54): Consolidate and clarify coin constants
