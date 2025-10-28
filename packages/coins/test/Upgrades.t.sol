@@ -14,6 +14,7 @@ import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {BuySupplyWithSwapRouterHook} from "../src/hooks/deployment/BuySupplyWithSwapRouterHook.sol";
 import {ZoraV4CoinHook} from "../src/hooks/ZoraV4CoinHook.sol";
+import {BuySupplyWithV4SwapHook} from "../src/hooks/deployment/BuySupplyWithV4SwapHook.sol";
 import {console} from "forge-std/console.sol";
 import {IDeployedCoinVersionLookup} from "../src/interfaces/IDeployedCoinVersionLookup.sol";
 import {IHooksUpgradeGate} from "../src/interfaces/IHooksUpgradeGate.sol";
@@ -106,25 +107,33 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         uint128 amountIn = 1 ether;
 
-        address buySupplyWithSwapRouterHook = deployment.buySupplyWithSwapRouterHook;
-
-        // build weth to usdc swap
-        bytes memory call = abi.encodeWithSelector(
-            ISwapRouter.exactInputSingle.selector,
-            ISwapRouter.ExactInputSingleParams({
-                tokenIn: WETH_ADDRESS,
-                tokenOut: ZORA,
-                fee: 3000,
-                recipient: buySupplyWithSwapRouterHook,
-                amountIn: amountIn,
-                amountOutMinimum: 0,
-                sqrtPriceLimitX96: 0
-            })
-        );
+        address buySupplyWithV4SwapHook = deployment.buySupplyWithSwapRouterHook;
 
         address buyRecipient = makeAddr("buyRecipient");
 
         address trader = 0xC077e4cC02fa01A5b7fAca1acE9BBe9f5ac5Af9F;
+
+        // Create V3 path: ETH -> ZORA (using exact path from test)
+        bytes memory v3Route = abi.encodePacked(
+            WETH_ADDRESS, // WETH
+            uint24(3000), // fee
+            ZORA // ZORA
+        );
+
+        // No V4 route needed since coin is backed by ZORA
+        PoolKey[] memory v4Route = new PoolKey[](0);
+
+        // Encode proper BuySupplyWithV4SwapHook data
+        BuySupplyWithV4SwapHook.InitialSupplyParams memory params = BuySupplyWithV4SwapHook.InitialSupplyParams({
+            buyRecipient: buyRecipient,
+            v3Route: v3Route,
+            v4Route: v4Route,
+            inputCurrency: address(0), // ETH
+            inputAmount: amountIn,
+            minAmountOut: 0
+        });
+
+        bytes memory hookData = abi.encode(params);
 
         vm.startPrank(trader);
         vm.deal(trader, amountIn);
@@ -137,8 +146,8 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
             "TEST",
             poolConfig,
             users.platformReferrer,
-            buySupplyWithSwapRouterHook,
-            abi.encode(buyRecipient, call),
+            buySupplyWithV4SwapHook,
+            hookData,
             keccak256("test")
         );
 

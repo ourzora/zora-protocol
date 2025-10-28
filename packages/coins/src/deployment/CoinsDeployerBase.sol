@@ -18,6 +18,7 @@ import {ProxyShim} from "../../test/utils/ProxyShim.sol";
 import {CreatorCoin} from "../CreatorCoin.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {HookUpgradeGate} from "../hooks/HookUpgradeGate.sol";
+import {BuySupplyWithV4SwapHook} from "../hooks/deployment/BuySupplyWithV4SwapHook.sol";
 
 contract CoinsDeployerBase is ProxyDeployerScript {
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
@@ -123,14 +124,14 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return new ZoraFactoryImpl({coinV4Impl_: coinV4Impl_, creatorCoinImpl_: creatorCoinImpl_, hook_: hook_, zoraHookRegistry_: zoraHookRegistry_});
     }
 
-    // function deployBuySupplyWithSwapRouterHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithSwapRouterHook) {
-    //     return
-    //         new BuySupplyWithSwapRouterHook({
-    //             _factory: IZoraFactory(deployment.zoraFactory),
-    //             _swapRouter: getUniswapSwapRouter(),
-    //             _poolManager: getUniswapV4PoolManager()
-    //         });
-    // }
+    function deployBuySupplyWithV4SwapHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithV4SwapHook) {
+        return
+            new BuySupplyWithV4SwapHook({
+                _factory: IZoraFactory(deployment.zoraFactory),
+                _swapRouter: getUniswapSwapRouter(),
+                _poolManager: getUniswapV4PoolManager()
+            });
+    }
 
     function deployUpgradeGate(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         deployment.hookUpgradeGate = address(new HookUpgradeGate(getProxyAdmin()));

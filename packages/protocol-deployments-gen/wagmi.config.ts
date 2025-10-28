@@ -37,7 +37,7 @@ import {
 import {
   zoraFactoryImplABI,
   baseCoinABI,
-  buySupplyWithSwapRouterHookABI,
+  buySupplyWithV4SwapHookABI,
   iPoolConfigEncodingABI,
   iUniversalRouterABI,
   iPermit2ABI,
@@ -569,7 +569,11 @@ const getCoinsContracts = (): ContractConfig[] => {
   });
 
   addAddress({
-    abi: zoraFactoryImplABI,
+    abi: [
+      ...zoraFactoryImplABI,
+      ...extractErrors(buySupplyWithV4SwapHookABI),
+      ...extractErrors(baseCoinABI),
+    ],
     addresses,
     configKey: "ZORA_FACTORY",
     contractName: "CoinFactory",
@@ -577,23 +581,7 @@ const getCoinsContracts = (): ContractConfig[] => {
   });
 
   addAddress({
-    abi: zoraFactoryImplABI,
-    addresses,
-    configKey: "ZORA_FACTORY",
-    contractName: "DevCoinFactory",
-    storedConfigs: devConfigs,
-  });
-
-  addAddress({
-    abi: buySupplyWithSwapRouterHookABI,
-    addresses,
-    configKey: "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK",
-    contractName: "DevBuySupplyWithSwapRouterHook",
-    storedConfigs: devConfigs,
-  });
-
-  addAddress({
-    abi: buySupplyWithSwapRouterHookABI,
+    abi: buySupplyWithV4SwapHookABI,
     addresses,
     configKey: "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK",
     contractName: "BuySupplyWithSwapRouterHook",

@@ -9,7 +9,7 @@ pragma solidity ^0.8.28;
 
 import {ISwapRouter} from "@zoralabs/shared-contracts/interfaces/uniswap/ISwapRouter.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Path} from "./uniswap/Path.sol";
+import {Path} from "@zoralabs/shared-contracts/libs/UniswapV3/Path.sol";
 
 /// @title AutoSwapper
 /// @notice A contract that allows for swapping of tokens via a uniswap v3 swap router. Only works with Uniswap V3 swaps.

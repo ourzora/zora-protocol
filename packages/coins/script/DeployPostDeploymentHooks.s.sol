@@ -10,9 +10,7 @@ contract DeployHooks is CoinsDeployerBase {
 
         vm.startBroadcast();
 
-        // address buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));
-
-        // deployment.buySupplyWithSwapRouterHook = buySupplyWithSwapRouterHook;
+        deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithV4SwapHook(deployment));
 
         vm.stopBroadcast();
 
