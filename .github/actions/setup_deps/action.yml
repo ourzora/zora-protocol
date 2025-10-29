@@ -7,19 +7,14 @@ runs:
       run: corepack enable
       shell: bash
 
-    - uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda # v4
-      name: Install pnpm
-      with:
-        run_install: false
-
     - name: Install Node.js
       uses: actions/setup-node@1d0ff469b7ec7b3cb9d8673fde0c81c44821de2a # v4
       with:
         node-version: 22.14.0
         cache: "pnpm"
 
-    - name: Install dependencies
-      run: pnpm install
+    - name: Install pnpm
+      run: pnpm install --frozen-lockfile
       shell: bash
 
     - name: Install Foundry
