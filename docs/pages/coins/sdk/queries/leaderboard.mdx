@@ -1,0 +1,50 @@
+# Leaderboard Queries
+
+The Coins SDK exposes queries for weekly Featured Creators and the Trader Leaderboard.
+
+- These queries support optional `year` and `week` parameters.
+- Weeks use ISO week numbering (starting at 1).
+- If `year` and `week` are not provided, the current ISO week and year are used.
+- Passing a specific `year` and `week` retrieves data for that week of that year.
+
+## getFeaturedCreators
+
+Retrieves a weekly featured creators list. Supports optional `year`, `week`, and pagination via `first` and `after`.
+
+```ts twoslash
+import { getFeaturedCreators } from "@zoralabs/coins-sdk";
+
+async function fetchFeaturedCreators() {
+  // If year/week not passed, uses the current week/year by default
+  const response = await getFeaturedCreators({
+    year: undefined, // optional
+    week: undefined, // optional
+    first: 10,       // optional: page size
+  });
+
+  return response.data?.traderLeaderboardFeaturedCreators?.edges?.map((e: any) => e.node);
+}
+```
+
+## getTraderLeaderboard
+
+Retrieves the weekly trader leaderboard. Supports optional `year`, `week`, `first`, and `after`.
+
+Passing in a `year` and `week` will return the leaderboard for that specific week of the year. If no year or week is passed in, it will return the current week's leaderboard.
+
+```ts twoslash
+import { getTraderLeaderboard } from "@zoralabs/coins-sdk";
+
+async function fetchTraderLeaderboard() {
+  // Defaults to the current week/year when omitted
+  const response = await getTraderLeaderboard({
+    year: undefined, // optional
+    week: undefined, // optional
+    first: 10,       // optional: page size
+  });
+
+  return response.data?.exploreTraderLeaderboard?.edges?.map((e: any) => e.node);
+}
+```
+
+

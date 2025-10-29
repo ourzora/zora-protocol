@@ -15,6 +15,10 @@ import {
   GetProfileCoinsResponse,
   GetProfileData,
   GetProfileResponse,
+  GetFeaturedCreatorsData,
+  GetFeaturedCreatorsResponse,
+  GetTraderLeaderboardData,
+  GetTraderLeaderboardResponse,
 } from "../client/types.gen";
 import {
   getCoin as getCoinSDK,
@@ -25,6 +29,8 @@ import {
   getProfile as getProfileSDK,
   getProfileBalances as getProfileBalancesSDK,
   getProfileCoins as getProfileCoinsSDK,
+  getFeaturedCreators as getFeaturedCreatorsSDK,
+  getTraderLeaderboard as getTraderLeaderboardSDK,
 } from "../client/sdk.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
@@ -150,6 +156,36 @@ export const getProfileBalances = async (
   options?: RequestOptionsType<GetProfileBalancesData>,
 ): Promise<RequestResult<GetProfileBalancesResponse>> => {
   return await getProfileBalancesSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetFeaturedCreatorsQuery = GetFeaturedCreatorsData["query"];
+export type { GetFeaturedCreatorsQuery, GetFeaturedCreatorsData };
+export type { GetFeaturedCreatorsResponse } from "../client/types.gen";
+
+export const getFeaturedCreators = async (
+  query: GetFeaturedCreatorsQuery = {},
+  options?: RequestOptionsType<GetFeaturedCreatorsData>,
+): Promise<RequestResult<GetFeaturedCreatorsResponse>> => {
+  return await getFeaturedCreatorsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetTraderLeaderboardQuery = GetTraderLeaderboardData["query"];
+export type { GetTraderLeaderboardQuery, GetTraderLeaderboardData };
+export type { GetTraderLeaderboardResponse } from "../client/types.gen";
+
+export const getTraderLeaderboard = async (
+  query: GetTraderLeaderboardQuery = {},
+  options?: RequestOptionsType<GetTraderLeaderboardData>,
+): Promise<RequestResult<GetTraderLeaderboardResponse>> => {
+  return await getTraderLeaderboardSDK({
     query,
     ...getApiKeyMeta(),
     ...options,

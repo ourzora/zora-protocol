@@ -147,6 +147,10 @@ export default defineConfig({
                     text: "Explore Coins",
                     link: "/coins/sdk/queries/explore",
                   },
+                  {
+                    text: "Leaderboard",
+                    link: "/coins/sdk/queries/leaderboard",
+                  },
                 ],
               },
             ],

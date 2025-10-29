@@ -22,12 +22,18 @@ import type {
   SetCreateUploadJwtResponse,
   GetExploreData,
   GetExploreResponse,
+  GetFeaturedCreatorsData,
+  GetFeaturedCreatorsResponse,
   GetProfileData,
   GetProfileResponse,
   GetProfileBalancesData,
   GetProfileBalancesResponse,
   GetProfileCoinsData,
   GetProfileCoinsResponse,
+  GetTokenInfoData,
+  GetTokenInfoResponse,
+  GetTraderLeaderboardData,
+  GetTraderLeaderboardResponse,
   PostQuoteData,
   PostQuoteResponse,
   PostQuoteError,
@@ -238,6 +244,28 @@ export const getExplore = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * zoraSDK_featuredCreators query
+ */
+export const getFeaturedCreators = <ThrowOnError extends boolean = false>(
+  options?: Options<GetFeaturedCreatorsData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetFeaturedCreatorsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/featuredCreators",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_profile query
  */
 export const getProfile = <ThrowOnError extends boolean = false>(
@@ -299,6 +327,50 @@ export const getProfileCoins = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/profileCoins",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_tokenInfo query
+ */
+export const getTokenInfo = <ThrowOnError extends boolean = false>(
+  options: Options<GetTokenInfoData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetTokenInfoResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/tokenInfo",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_traderLeaderboard query
+ */
+export const getTraderLeaderboard = <ThrowOnError extends boolean = false>(
+  options?: Options<GetTraderLeaderboardData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetTraderLeaderboardResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/traderLeaderboard",
     ...options,
   });
 };

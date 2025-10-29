@@ -12,6 +12,8 @@ The Coins SDK provides several explore functions to discover coins based on diff
 - [`getCoinsLastTradedUnique`](#getcoinslasttradedunique)
 - [`getCreatorCoins`](#getcreatorcoins)
 - [`getMostValuableCreatorCoins`](#getmostvaluablecreatorcoins)
+ - [`getMostValuableCreatorCoins`](#getmostvaluablecreatorcoins)
+ 
 
 ## Available Explore Queries
 
@@ -272,6 +274,8 @@ async function fetchMostValuableCreatorCoins() {
   return tokens;
 }
 ```
+
+ 
   
 ## Response Structure
 
@@ -319,7 +323,8 @@ type ListType =
   | "FEATURED"
   | "FEATURED_VIDEOS"
   | "NEW_CREATORS"
-  | "MOST_VALUABLE_CREATORS";
+  | "MOST_VALUABLE_CREATORS"
+  | "FEATURED_CREATORS";
 ```
   
 ## Pagination
