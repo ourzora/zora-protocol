@@ -35,6 +35,11 @@
       "permanent": true
     },
     {
+      "source": "/coins/sdk/coins-queries",
+      "destination": "/coins/sdk/queries",
+      "permanent": true
+    },
+    {
       "source": "/protocol-sdk/collect/get-of-contract",
       "destination": "/protocol-sdk/collect/getTokensOfContract",
       "permanent": false

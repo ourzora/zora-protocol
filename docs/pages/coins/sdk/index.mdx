@@ -32,29 +32,27 @@ bun add @zoralabs/coins-sdk
 
 :::
 
-
 Additionally, the SDK requires `viem` to be installed as a peer dependency:
 
 :::code-group
 
 ```bash [npm]
-npm install viem 
+npm install viem
 ```
 
 ```bash [pnpm]
-pnpm install viem 
+pnpm install viem
 ```
 
 ```bash [yarn]
-yarn add viem 
+yarn add viem
 ```
 
 ```bash [bun]
-bun add viem 
+bun add viem
 ```
 
 :::
-
 
 On-chain write operations will not work without `viem` installed.
 
@@ -68,12 +66,6 @@ It can be used on both client and server environments.
 
 The Coins SDK should be used with an API key to prevent rate limiting and unlock all features.
 
-To set up your API key:
-1. Log in or create an account on [Zora](https://zora.co)
-2. Navigate to [Developer Settings on Zora](https://zora.co/settings/developer)
-3. Create an API key
-4. Use the API key in the SDK
-
 The API key can be set using the `setApiKey` function:
 
 ```ts twoslash
@@ -82,3 +74,11 @@ import { setApiKey } from "@zoralabs/coins-sdk";
 // Set up your API key before making any SDK requests
 setApiKey("your-api-key-here");
 ```
+
+To obtain an API key:
+
+1. Log in or create an account on [Zora](https://zora.co)
+2. Navigate to [Developer Settings](https://zora.co/settings/developer)
+3. Create an API key
+
+For REST API usage from other programming languages, see the [Public REST API documentation](/coins/sdk/public-rest-api).

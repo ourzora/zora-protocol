@@ -1,6 +1,6 @@
 # Coin Queries
 
-The Coins SDK provides a comprehensive set of query functions to fetch information about coins, profiles, and related data. This page details the available query functions, their parameters, and usage examples.
+The Coins SDK provides a comprehensive set of query functions to fetch information about coins, profiles, and related data.
 
 ## Overview
 
@@ -10,9 +10,20 @@ The query functions are divided into several categories:
 2. **[Profile Queries](/coins/sdk/queries/profile)**: Retrieve information associated with users/wallets like holdings and activity
 3. **[Explore Queries](/coins/sdk/queries/explore)**: Retrieve information about all coins (new, trending, top gainers, etc.)
 
+## Using the REST API
+
+The Coins SDK can be used from any programming language via the **[Public REST API](/coins/sdk/public-rest-api)**. This includes:
+
+- Interactive API documentation with live testing
+- Authentication with API keys
+- Code examples in multiple languages (Python, Go, Ruby, etc.)
+- OpenAPI specification
+
+For JavaScript/TypeScript usage, continue reading below. For other languages, see the [Public REST API documentation](/coins/sdk/public-rest-api).
+
 ## API Key Setup
 
-Before using the API queries in a high-usage production environment, you'll need to set up an API key:
+Before using the API queries in a high-usage production environment, set up an API key:
 
 ```ts twoslash
 import { setApiKey } from "@zoralabs/coins-sdk";
@@ -21,20 +32,11 @@ import { setApiKey } from "@zoralabs/coins-sdk";
 setApiKey("your-api-key-here");
 ```
 
-To set up an API key:
-1. Create an account on [Zora](https://zora.co)
-2. Navigate to [Zora Developer Settings](https://zora.co/settings/developer)
+To obtain an API key:
+
+1. Log in or create an account on [Zora](https://zora.co)
+2. Navigate to [Developer Settings](https://zora.co/settings/developer)
 3. Create an API key
 4. Use the API key in the SDK
 
-
-## Non-Javascript Usage
-
-The Coins SDK API can be used in any language that supports HTTP requests.
-
-Full API documentation can be found [on the SDK site](https://api-sdk.zora.engineering/docs) with a dynamic editor and an openapi definition file.
-
-It's strongly recommended to use the authentication header for `api-key` with all requests to this API.
-
-The paths and function names map directly to the SDK functions which can be used to document the usage of these API paths.
-
+For detailed authentication instructions and REST API usage, see the [Public REST API documentation](/coins/sdk/public-rest-api).

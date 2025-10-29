@@ -125,6 +125,10 @@ export default defineConfig({
                 link: "/coins/sdk/update-coin",
               },
               {
+                text: "Public REST API",
+                link: "/coins/sdk/public-rest-api",
+              },
+              {
                 text: "Coin Queries",
                 items: [
                   {
@@ -216,8 +220,8 @@ export default defineConfig({
     },
     resolve: {
       alias: {
-        '@components': path.resolve(process.cwd(), 'components')
-      }
+        "@components": path.resolve(process.cwd(), "components"),
+      },
     },
     plugins: [
       ...(process.env.NODE_ENV === "production"
