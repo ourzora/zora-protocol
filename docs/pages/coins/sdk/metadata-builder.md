@@ -2,9 +2,9 @@
 
 The ZORA SDK supports handling metadata when using an SDK API key.
 
-This utilizes ZORA's internal IPFS pinning and delivery infastructure.
+This utilizes ZORA's internal IPFS pinning and delivery infrastructure.
 
-You are welcome to implement your own uploader or connect another IPFS provider to the uploader infastructure. You'll get performant uploads and more reliable metadata indexing using this service. You also can utilize a `multiUploader` interface to upload to both your own service and ZORA's service.
+You are welcome to implement your own uploader or connect another IPFS provider to the uploader infrastructure. You'll get performant uploads and more reliable metadata indexing using this service. You also can utilize a `multiUploader` interface to upload to both your own service and ZORA's service.
 
 ## Example Usage
 
