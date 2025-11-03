@@ -289,11 +289,15 @@ contract CreatorCoinRewardsTest is BaseTest {
     function test_buy_then_sell_both_referrers() public {
         uint128 buyAmount = 100 ether; // Fixed amount
 
+        console.log("deploying creator coin with platform referrer");
         // Deploy CreatorCoin with platform referrer
         _deployCreatorCoin(true);
 
+        console.log("buying creator coin with both referrers");
         // Step 1: Buy creator coin (ZORA -> Creator Coin)
         _buyCreatorCoin(buyAmount, true);
+
+        console.log("buyer's creator coin balance", creatorCoin.balanceOf(users.buyer));
 
         // Get buyer's creator coin balance after purchase
         uint256 creatorCoinBalance = creatorCoin.balanceOf(users.buyer);

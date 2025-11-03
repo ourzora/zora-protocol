@@ -19,6 +19,8 @@ import {CreatorCoin} from "../CreatorCoin.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {HookUpgradeGate} from "../hooks/HookUpgradeGate.sol";
 import {BuySupplyWithV4SwapHook} from "../hooks/deployment/BuySupplyWithV4SwapHook.sol";
+import {TrustedMsgSenderProviderLookup} from "../utils/TrustedMsgSenderProviderLookup.sol";
+import {ITrustedMsgSenderProviderLookup} from "../interfaces/ITrustedMsgSenderProviderLookup.sol";
 
 contract CoinsDeployerBase is ProxyDeployerScript {
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
@@ -39,6 +41,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address buySupplyWithSwapRouterHook;
         address zoraV4CoinHook;
         address hookUpgradeGate;
+        // trusted sender lookup
+        address trustedMsgSenderLookup;
         // Hook deployment salt (for deterministic deployment)
         bytes32 zoraV4CoinHookSalt;
         bool isDev;
@@ -70,6 +74,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "CREATOR_COIN_IMPL", deployment.creatorCoinImpl);
         vm.serializeAddress(objectKey, "HOOK_UPGRADE_GATE", deployment.hookUpgradeGate);
         vm.serializeAddress(objectKey, "ZORA_HOOK_REGISTRY", deployment.zoraHookRegistry);
+        vm.serializeAddress(objectKey, "TRUSTED_MSG_SENDER_LOOKUP", deployment.trustedMsgSenderLookup);
         string memory result = vm.serializeAddress(objectKey, "COIN_V4_IMPL", deployment.coinV4Impl);
 
         vm.writeJson(result, addressesFile(deployment.isDev));
@@ -98,6 +103,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.creatorCoinImpl = readAddressOrDefaultToZero(json, "CREATOR_COIN_IMPL");
         deployment.hookUpgradeGate = readAddressOrDefaultToZero(json, "HOOK_UPGRADE_GATE");
         deployment.zoraHookRegistry = readAddressOrDefaultToZero(json, "ZORA_HOOK_REGISTRY");
+        deployment.trustedMsgSenderLookup = readAddressOrDefaultToZero(json, "TRUSTED_MSG_SENDER_LOOKUP");
     }
 
     function deployCoinV4Impl() internal returns (ContentCoin) {
@@ -139,14 +145,23 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return deployment;
     }
 
+    function deployTrustedMsgSenderLookup(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
+        // Deploy the contract directly using constructor
+        deployment.trustedMsgSenderLookup = address(new TrustedMsgSenderProviderLookup(getDefaultTrustedMessageSenders(), getProxyAdmin()));
+
+        return deployment;
+    }
+
     function deployZoraV4CoinHook(CoinsDeployment memory deployment) internal returns (IHooks hook, bytes32 salt) {
+        require(deployment.trustedMsgSenderLookup != address(0), "Trusted message sender lookup not deployed");
+
         return
             HooksDeployment.deployHookWithExistingOrNewSalt(
                 HooksDeployment.FOUNDRY_SCRIPT_ADDRESS,
                 HooksDeployment.makeHookCreationCode(
                     getUniswapV4PoolManager(),
                     deployment.zoraFactory,
-                    getDefaultTrustedMessageSenders(),
+                    ITrustedMsgSenderProviderLookup(deployment.trustedMsgSenderLookup),
                     deployment.hookUpgradeGate
                 ),
                 deployment.zoraV4CoinHookSalt
@@ -175,6 +190,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
 
+        // Deploy trusted message sender lookup first
+        deployment = deployTrustedMsgSenderLookup(deployment);
+
         // Deploy hook first, then use its address for coin v4 impl
         console.log("deploying content coin hook");
         (IHooks zoraV4CoinHook, bytes32 usedSalt) = deployZoraV4CoinHook(deployment);
@@ -191,6 +209,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function deployHooks(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
+        // Deploy trusted message sender lookup first
+        deployment = deployTrustedMsgSenderLookup(deployment);
+
         // Deploy hook first, then use its address for coin v4 impl
         (IHooks zoraV4CoinHook, bytes32 usedSalt) = deployZoraV4CoinHook(deployment);
         deployment.zoraV4CoinHook = address(zoraV4CoinHook);

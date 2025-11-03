@@ -16,6 +16,7 @@ import {UniV4SwapToCurrency} from "../../src/libs/UniV4SwapToCurrency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoinRewardsV4} from "../../src/libs/CoinRewardsV4.sol";
 import {IHooksUpgradeGate} from "../../src/interfaces/IHooksUpgradeGate.sol";
+import {ITrustedMsgSenderProviderLookup} from "../../src/interfaces/ITrustedMsgSenderProviderLookup.sol";
 
 /// @dev Test util - meant to be able to etched where a normal zora hook is, to gather the fees from swaps but not distribute them
 contract FeeEstimatorHook is ZoraV4CoinHook {
@@ -33,8 +34,9 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
     constructor(
         IPoolManager _poolManager,
         IDeployedCoinVersionLookup _coinVersionLookup,
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
         IHooksUpgradeGate upgradeGate
-    ) ZoraV4CoinHook(_poolManager, _coinVersionLookup, new address[](0), upgradeGate) {}
+    ) ZoraV4CoinHook(_poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate) {}
 
     FeeEstimatorState public feeState;
 

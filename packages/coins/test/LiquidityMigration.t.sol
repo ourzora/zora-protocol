@@ -4,6 +4,8 @@ pragma solidity ^0.8.23;
 import {MockERC20} from "./mocks/MockERC20.sol";
 import {BaseTest} from "./utils/BaseTest.sol";
 import {HooksDeployment} from "../src/libs/HooksDeployment.sol";
+import {TrustedSenderTestHelper} from "./utils/TrustedSenderTestHelper.sol";
+import {ITrustedMsgSenderProviderLookup} from "../src/interfaces/ITrustedMsgSenderProviderLookup.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {IUpgradeableV4Hook, IUpgradeableDestinationV4Hook, BurnedPosition} from "../src/interfaces/IUpgradeableV4Hook.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
@@ -450,7 +452,8 @@ contract LiquidityMigrationTest is BaseTest {
         coin.migrateLiquidity(newHook, "");
 
         // Now fix the bug by etching fixed hook code onto the old hook address
-        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(makeAddr("owner"), new address[](0));
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
 
         (IHooks fixedHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
@@ -477,7 +480,8 @@ contract LiquidityMigrationTest is BaseTest {
         assertEq(oldFee, 30000);
 
         // Now fix the bug by etching fixed hook code onto the old hook address
-        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(makeAddr("owner"), new address[](0));
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 

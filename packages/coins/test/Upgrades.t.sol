@@ -28,6 +28,8 @@ import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 import {IZoraV4CoinHook} from "../src/interfaces/IZoraV4CoinHook.sol";
 import {PoolStateReader} from "../src/libs/PoolStateReader.sol";
 import {LpPosition} from "../src/types/LpPosition.sol";
+import {ITrustedMsgSenderProviderLookup} from "../src/interfaces/ITrustedMsgSenderProviderLookup.sol";
+import {TrustedSenderTestHelper} from "./utils/TrustedSenderTestHelper.sol";
 
 contract BadImpl {
     function contractName() public pure returns (string memory) {
@@ -195,7 +197,9 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         uint256 amountIn = 0.000111 ether;
 
-        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup2 = TrustedSenderTestHelper.deployTrustedMessageSender(makeAddr("owner"), new address[](0));
+
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, trustedMsgSenderLookup2, upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
@@ -247,7 +251,9 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
 
         address existingHook = address(creatorCoin.hooks());
 
-        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup3 = TrustedSenderTestHelper.deployTrustedMessageSender(makeAddr("owner"), new address[](0));
+
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, trustedMsgSenderLookup3, upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 
@@ -315,7 +321,8 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         // this swap should revert because the content coin is broken
         _swapSomeCurrencyForCoinAndExpectRevert(ICoin(contentCoin), creatorCoin, uint128(amountIn), trader);
 
-        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, new address[](0), upgradeGate);
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup2 = TrustedSenderTestHelper.deployTrustedMessageSender(makeAddr("owner"), new address[](0));
+        bytes memory creationCode = HooksDeployment.makeHookCreationCode(address(poolManager), coinVersionLookup, trustedMsgSenderLookup2, upgradeGate);
 
         (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), creationCode, bytes32(0));
 

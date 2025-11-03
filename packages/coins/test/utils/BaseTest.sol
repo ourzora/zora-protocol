@@ -44,6 +44,9 @@ import {ContractAddresses} from "./ContractAddresses.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {HookUpgradeGate} from "../../src/hooks/HookUpgradeGate.sol";
 import {ZoraHookRegistry} from "../../src/hook-registry/ZoraHookRegistry.sol";
+import {TrustedMsgSenderProviderLookup} from "../../src/utils/TrustedMsgSenderProviderLookup.sol";
+import {ITrustedMsgSenderProviderLookup} from "../../src/interfaces/ITrustedMsgSenderProviderLookup.sol";
+import {TrustedSenderTestHelper} from "./TrustedSenderTestHelper.sol";
 
 // Hookmate imports for non-forked testing
 import {V4PoolManagerDeployer} from "./hookmate/artifacts/V4PoolManager.sol";
@@ -215,13 +218,23 @@ contract BaseTest is Test, ContractAddresses {
     }
 
     function _deployFeeEstimatorHook(address hooks) internal {
-        deployCodeTo("FeeEstimatorHook.sol", abi.encode(address(poolManager), address(factory), hookUpgradeGate), hooks);
+        // Deploy a new lookup with the same trusted senders
+        address[] memory trustedMessageSenders = new address[](2);
+        trustedMessageSenders[0] = UNIVERSAL_ROUTER;
+        trustedMessageSenders[1] = V4_POSITION_MANAGER;
+        ITrustedMsgSenderProviderLookup newLookup = TrustedSenderTestHelper.deployTrustedMessageSender(users.factoryOwner, trustedMessageSenders);
+
+        deployCodeTo(
+            "FeeEstimatorHook.sol",
+            HooksDeployment.hookConstructorArgs(address(poolManager), address(factory), newLookup, address(hookUpgradeGate)),
+            hooks
+        );
     }
 
-    function getSalt(address[] memory trustedMessageSenders) public returns (bytes32 hookSalt) {
+    function getSalt(ITrustedMsgSenderProviderLookup trustedMsgSenderLookup) public returns (bytes32 hookSalt) {
         address deployer = address(this);
 
-        (, hookSalt) = HooksDeployment.mineForCoinSalt(deployer, V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate));
+        (, hookSalt) = HooksDeployment.mineForCoinSalt(deployer, V4_POOL_MANAGER, address(factory), trustedMsgSenderLookup, address(hookUpgradeGate));
     }
 
     function _deployHooks() internal {
@@ -229,13 +242,20 @@ contract BaseTest is Test, ContractAddresses {
         trustedMessageSenders[0] = UNIVERSAL_ROUTER;
         trustedMessageSenders[1] = V4_POSITION_MANAGER;
 
-        bytes32 hookSalt = getSalt(trustedMessageSenders);
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(users.factoryOwner, trustedMessageSenders);
+
+        bytes32 hookSalt = getSalt(trustedMsgSenderLookup);
 
         hook = ZoraV4CoinHook(
             payable(
                 address(
                     HooksDeployment.deployHookWithSalt(
-                        HooksDeployment.makeHookCreationCode(V4_POOL_MANAGER, address(factory), trustedMessageSenders, address(hookUpgradeGate)),
+                        HooksDeployment.makeHookCreationCode(
+                            V4_POOL_MANAGER,
+                            address(factory),
+                            ITrustedMsgSenderProviderLookup(address(trustedMsgSenderLookup)),
+                            address(hookUpgradeGate)
+                        ),
                         hookSalt
                     )
                 )
@@ -360,7 +380,7 @@ contract BaseTest is Test, ContractAddresses {
         zoraHookRegistry.initialize(initialOwners);
 
         // Deploy hooks for non-forked environment
-        _deployHooksNonForked(address(mockAirlock));
+        _deployHooksNonForked();
 
         // Deploy coin implementations
         coinV4Impl = new ContentCoin(users.feeRecipient, address(protocolRewards), poolManager, address(mockAirlock));
@@ -406,6 +426,7 @@ contract BaseTest is Test, ContractAddresses {
         }
 
         permit2 = IPermit2(permit2Address);
+        vm.label(address(permit2), "V4_PERMIT2");
     }
 
     function _deployPoolManagerNonForked() internal {
@@ -416,10 +437,12 @@ contract BaseTest is Test, ContractAddresses {
         }
 
         deal(address(poolManager), 10000 ether);
+        vm.label(address(poolManager), "V4_POOL_MANAGER");
     }
 
     function _deployQuoterNonForked() internal {
         quoter = IV4Quoter(V4QuoterDeployer.deploy(address(poolManager)));
+        vm.label(address(quoter), "V4_QUOTER");
     }
 
     function _deployUniversalRouterNonForked() internal {
@@ -435,20 +458,23 @@ contract BaseTest is Test, ContractAddresses {
             v4PositionManager: address(0)
         });
         router = IUniversalRouter(UniversalRouterDeployer.deploy(params));
+        vm.label(address(router), "UNIVERSAL_ROUTER");
     }
 
-    function _deployHooksNonForked(address airlockAddress) internal {
+    function _deployHooksNonForked() internal {
         address[] memory trustedMessageSenders = new address[](1);
         trustedMessageSenders[0] = address(router);
 
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(users.factoryOwner, trustedMessageSenders);
+
         // Use proper salt mining for hook deployment
         address deployer = address(this);
-        (, bytes32 salt) = HooksDeployment.mineForCoinSalt(deployer, address(poolManager), address(factory), trustedMessageSenders, address(hookUpgradeGate));
+        (, bytes32 salt) = HooksDeployment.mineForCoinSalt(deployer, address(poolManager), address(factory), trustedMsgSenderLookup, address(hookUpgradeGate));
 
         bytes memory hookCreationCode = HooksDeployment.makeHookCreationCode(
             address(poolManager),
             address(factory),
-            trustedMessageSenders,
+            trustedMsgSenderLookup,
             address(hookUpgradeGate)
         );
 

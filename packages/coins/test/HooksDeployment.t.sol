@@ -8,27 +8,62 @@ import {ContractAddresses} from "./utils/ContractAddresses.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {HookUpgradeGate} from "../src/hooks/HookUpgradeGate.sol";
+import {ITrustedMsgSenderProviderLookup} from "../src/interfaces/ITrustedMsgSenderProviderLookup.sol";
+import {TrustedSenderTestHelper} from "./utils/TrustedSenderTestHelper.sol";
 
 contract HooksDeploymentTest is Test, ContractAddresses {
     address internal hookUpgradeGate;
+    ITrustedMsgSenderProviderLookup internal trustedMsgSenderLookup;
+    address internal owner;
+    address internal nonOwner;
+    address internal trustedSender1;
+    address internal trustedSender2;
+    address internal nonTrustedSender;
 
     function setUp() public {
         vm.createSelectFork("base", 31653138);
 
+        owner = makeAddr("owner");
+        nonOwner = makeAddr("nonOwner");
+        trustedSender1 = makeAddr("trustedSender1");
+        trustedSender2 = makeAddr("trustedSender2");
+        nonTrustedSender = makeAddr("nonTrustedSender");
+
         hookUpgradeGate = address(new HookUpgradeGate(makeAddr("factoryOwner")));
+
+        // Initialize with one trusted sender
+        address[] memory initialTrustedSenders = new address[](1);
+        initialTrustedSenders[0] = trustedSender1;
+
+        trustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(owner, initialTrustedSenders);
     }
 
     function test_canMineAndCacheSalt() public {
         address[] memory trustedMessageSenders = new address[](0);
 
+        ITrustedMsgSenderProviderLookup localTrustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(
+            makeAddr("owner"),
+            trustedMessageSenders
+        );
+
         (bytes32 salt, ) = HooksDeployment.mineAndCacheSalt(
             address(this),
-            abi.encode(V4_POOL_MANAGER, 0x777777751622c0d3258f214F9DF38E35BF45baF3, trustedMessageSenders, address(hookUpgradeGate))
+            abi.encode(
+                V4_POOL_MANAGER,
+                0x777777751622c0d3258f214F9DF38E35BF45baF3,
+                ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
+                address(hookUpgradeGate)
+            )
         );
 
         (bytes32 salt2, bool wasCached2) = HooksDeployment.mineAndCacheSalt(
             address(this),
-            abi.encode(V4_POOL_MANAGER, 0x777777751622c0d3258f214F9DF38E35BF45baF3, trustedMessageSenders, address(hookUpgradeGate))
+            abi.encode(
+                V4_POOL_MANAGER,
+                0x777777751622c0d3258f214F9DF38E35BF45baF3,
+                ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
+                address(hookUpgradeGate)
+            )
         );
 
         assertEq(salt, salt2);
@@ -40,17 +75,23 @@ contract HooksDeploymentTest is Test, ContractAddresses {
         vm.createSelectFork("base", 31653138);
 
         address[] memory trustedMessageSenders = new address[](0);
+
+        ITrustedMsgSenderProviderLookup localTrustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(
+            makeAddr("owner"),
+            trustedMessageSenders
+        );
+
         (, bytes32 salt) = HooksDeployment.mineForCoinSalt(
             address(this),
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
-            trustedMessageSenders,
+            ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
             hookUpgradeGate
         );
         IHooks hook = HooksDeployment.deployZoraV4CoinHook(
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
-            trustedMessageSenders,
+            ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
             hookUpgradeGate,
             salt
         );
@@ -68,16 +109,22 @@ contract HooksDeploymentTest is Test, ContractAddresses {
         vm.createSelectFork("base", 31653138);
 
         address[] memory trustedMessageSenders = new address[](0);
+
+        ITrustedMsgSenderProviderLookup localTrustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(
+            makeAddr("owner"),
+            trustedMessageSenders
+        );
+
         (, bytes32 salt) = HooksDeployment.mineForCoinSalt(
             address(this),
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
-            trustedMessageSenders,
+            ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
             hookUpgradeGate
         );
 
         IHooks hook = HooksDeployment.deployHookWithSalt(
-            HooksDeployment.makeHookCreationCode(V4_POOL_MANAGER, 0x777777751622c0d3258f214F9DF38E35BF45baF3, trustedMessageSenders, hookUpgradeGate),
+            HooksDeployment.makeHookCreationCode(V4_POOL_MANAGER, 0x777777751622c0d3258f214F9DF38E35BF45baF3, ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)), hookUpgradeGate),
             salt
         );
 

@@ -16,6 +16,7 @@ import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IMsgSender} from "../interfaces/IMsgSender.sol";
+import {ITrustedMsgSenderProviderLookup} from "../interfaces/ITrustedMsgSenderProviderLookup.sol";
 import {IHasSwapPath} from "../interfaces/ICoin.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {V4Liquidity} from "../libs/V4Liquidity.sol";
@@ -60,9 +61,10 @@ contract ZoraV4CoinHook is
 {
     using BalanceDeltaLibrary for BalanceDelta;
 
-    /// @notice Mapping of trusted message senders - these are addresses that are trusted to provide a
-    /// an original msg.sender
-    mapping(address => bool) internal trustedMessageSender;
+    /// @dev DEPRECATED: This mapping is kept for storage compatibility. It doesn't matter that storage slots moved around
+    /// between versions since the contracts are immutable, but in some tests we do etching to test if a new hook fixes some bugs, so we want to maintain the storage slot order.
+    /// This slot previously held the mappings of trusted message senders.
+    mapping(address => bool) internal legacySlot0;
 
     /// @notice Mapping of pool keys to coins.
     mapping(bytes32 => IZoraV4CoinHook.PoolCoin) internal poolCoins;
@@ -73,27 +75,34 @@ contract ZoraV4CoinHook is
     /// @notice The upgrade gate contract - used to verify allowed upgrade paths
     IHooksUpgradeGate internal immutable upgradeGate;
 
+    /// @notice The trusted message sender lookup contract - used to determine if an address is trusted
+    ITrustedMsgSenderProviderLookup internal immutable trustedMsgSenderLookup;
+
     /// @notice The constructor for the ZoraV4CoinHook.
     /// @param poolManager_ The Uniswap V4 pool manager
     /// @param coinVersionLookup_ The coin version lookup contract - used to determine if an address is a coin and what version it is.
-    /// @param trustedMessageSenders_ The addresses of the trusted message senders - these are addresses that are trusted to provide a
+    /// @param trustedMsgSenderLookup_ The trusted message sender lookup contract - used to determine if an address is trusted
     /// @param upgradeGate_ The upgrade gate contract for managing hook upgrades
     constructor(
         IPoolManager poolManager_,
         IDeployedCoinVersionLookup coinVersionLookup_,
-        address[] memory trustedMessageSenders_,
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup_,
         IHooksUpgradeGate upgradeGate_
     ) BaseHook(poolManager_) {
         require(address(coinVersionLookup_) != address(0), CoinVersionLookupCannotBeZeroAddress());
 
         require(address(upgradeGate_) != address(0), UpgradeGateCannotBeZeroAddress());
 
+        require(address(trustedMsgSenderLookup_) != address(0), TrustedMsgSenderLookupCannotBeZeroAddress());
+
         coinVersionLookup = coinVersionLookup_;
         upgradeGate = upgradeGate_;
+        trustedMsgSenderLookup = trustedMsgSenderLookup_;
+    }
 
-        for (uint256 i = 0; i < trustedMessageSenders_.length; i++) {
-            trustedMessageSender[trustedMessageSenders_[i]] = true;
-        }
+    /// @notice Returns the trusted message sender lookup contract
+    function getTrustedMsgSenderLookup() external view returns (ITrustedMsgSenderProviderLookup) {
+        return trustedMsgSenderLookup;
     }
 
     /// @notice Returns the uniswap v4 hook settings / permissions.
@@ -120,7 +129,7 @@ contract ZoraV4CoinHook is
 
     /// @inheritdoc IZoraV4CoinHook
     function isTrustedMessageSender(address sender) external view returns (bool) {
-        return trustedMessageSender[sender];
+        return trustedMsgSenderLookup.isTrustedMsgSenderProvider(sender);
     }
 
     /// @inheritdoc IZoraV4CoinHook
@@ -403,7 +412,12 @@ contract ZoraV4CoinHook is
     /// @return swapper The original message sender.
     /// @return senderIsTrusted Whether the sender is a trusted message sender.
     function _getOriginalMsgSender(address sender) internal view returns (address swapper, bool senderIsTrusted) {
-        senderIsTrusted = trustedMessageSender[sender];
+        // Always trust the zero address (0x caller)
+        if (sender == address(0)) {
+            senderIsTrusted = true;
+        } else {
+            senderIsTrusted = trustedMsgSenderLookup.isTrustedMsgSenderProvider(sender);
+        }
 
         // If getter function reverts, we return a 0 address by default and continue execution.
         try IMsgSender(sender).msgSender() returns (address _swapper) {

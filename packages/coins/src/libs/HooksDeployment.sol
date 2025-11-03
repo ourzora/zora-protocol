@@ -14,6 +14,7 @@ import {HookMiner} from "@uniswap/v4-periphery/src/utils/HookMiner.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {ITrustedMsgSenderProviderLookup} from "../interfaces/ITrustedMsgSenderProviderLookup.sol";
 
 Vm constant vm = Vm(address(bytes20(uint160(uint256(keccak256("hevm cheat code"))))));
 
@@ -86,10 +87,10 @@ library HooksDeployment {
         address deployer,
         address poolManager,
         address coinVersionLookup,
-        address[] memory trustedMessageSenders,
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
         address upgradeGate
     ) internal returns (address hookAddress, bytes32 salt) {
-        bytes memory hookCreationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+        bytes memory hookCreationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
         (salt, ) = mineAndCacheSalt(deployer, hookCreationCode);
         hookAddress = HookMinerWithCreationCodeArgs.deterministicHookAddress(deployer, salt, hookCreationCode);
     }
@@ -131,19 +132,19 @@ library HooksDeployment {
     function hookConstructorArgs(
         address poolManager,
         address coinVersionLookup,
-        address[] memory trustedMessageSenders,
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
         address upgradeGate
     ) internal pure returns (bytes memory) {
-        return abi.encode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+        return abi.encode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
     }
 
     function makeHookCreationCode(
         address poolManager,
         address coinVersionLookup,
-        address[] memory trustedMessageSenders,
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
         address upgradeGate
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(type(ZoraV4CoinHook).creationCode, hookConstructorArgs(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate));
+        return abi.encodePacked(type(ZoraV4CoinHook).creationCode, hookConstructorArgs(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate));
     }
 
     /// @notice Deploys or returns existing ContentCoinHook using deterministic deployment.  Ensures that if a hooks is already
@@ -151,11 +152,11 @@ library HooksDeployment {
     function deployZoraV4CoinHook(
         address poolManager,
         address coinVersionLookup,
-        address[] memory trustedMessageSenders,
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
         address upgradeGate,
         bytes32 salt
     ) internal returns (IHooks hook) {
-        bytes memory creationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMessageSenders, upgradeGate);
+        bytes memory creationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
         return deployHookWithSalt(creationCode, salt);
     }
 

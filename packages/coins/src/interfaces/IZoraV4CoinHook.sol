@@ -44,6 +44,9 @@ interface IZoraV4CoinHook is IUpgradeableV4Hook {
     /// @notice Upgrade gate cannot be the zero address.
     error UpgradeGateCannotBeZeroAddress();
 
+    /// @notice Trusted message sender lookup cannot be the zero address.
+    error TrustedMsgSenderLookupCannotBeZeroAddress();
+
     /// @notice Thrown when a pool is not initialized for the hook.
     /// @param key The pool key struct to identify the pool.
     error NoCoinForHook(PoolKey key);
