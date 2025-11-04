@@ -140,7 +140,7 @@ export default defineConfig({
                     link: "/coins/sdk/queries/coin",
                   },
                   {
-                    text: "Profile Queries",
+                    text: "Profile",
                     link: "/coins/sdk/queries/profile",
                   },
                   {

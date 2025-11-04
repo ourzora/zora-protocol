@@ -47,7 +47,7 @@ async function fetchUserProfile() {
       console.log("- Profile Image:", profile.avatar.medium);
     }
     
-    // Access social links if available
+    // Access linked wallets if available
     if (profile?.linkedWallets && profile?.linkedWallets?.edges?.length || 0 > 0) {
       console.log("Linked Wallets:");
       profile?.linkedWallets?.edges?.forEach((link: any) => {
@@ -93,20 +93,20 @@ type ProfileData = {
     };
     socialAccounts?: {        // Connected social accounts
       instagram?: {
-        username?: string;
-        displayName?: string;
+        username?: string;      // Instagram username
+        displayName?: string;   // Instagram display name
       };
       tiktok?: {
-        username?: string;
-        displayName?: string;
+        username?: string;      // TikTok username
+        displayName?: string;   // TikTok display name
       };
       twitter?: {
-        username?: string;
-        displayName?: string;
+        username?: string;      // Twitter/X username
+        displayName?: string;   // Twitter/X display name
       };
-      "farcaster": {
-        "username": "string";
-        "displayName": "string";
+      farcaster?: {
+        username?: string;      // Farcaster username
+        displayName?: string;   // Farcaster display name
       };
     };
     linkedWallets?: {         // Connected wallets
