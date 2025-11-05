@@ -1,6 +1,6 @@
 ### Creating Coins
 
-The Coins SDK provides functions to create new coins on the Zora protocol. 
+The Coins SDK provides functions to create new coins on the Zora protocol.
 
 ### Overview
 
@@ -10,7 +10,11 @@ Creating a coin involves generating calldata through the SDK and sending a trans
 
 ```ts
 import { Address } from "viem";
-import { CreateConstants, ContentCoinCurrency, StartingMarketCap } from "@zoralabs/coins-sdk";
+import {
+  CreateConstants,
+  ContentCoinCurrency,
+  StartingMarketCap,
+} from "@zoralabs/coins-sdk";
 
 type MetadataType = {
   type: "RAW_URI";
@@ -18,17 +22,17 @@ type MetadataType = {
 };
 
 type CreateCoinArgs = {
-  creator: Address;                // Creator address
-  name: string;                    // Coin name (e.g., "My Awesome Coin")
-  symbol: string;                  // Ticker (e.g., "MAC")
-  metadata: MetadataType;          // Metadata descriptor
-  currency: ContentCoinCurrency;          // CREATOR_COIN | CREATOR_COIN_OR_ZORA | ZORA | ETH
-  chainId?: number;                 // Chain ID to deploy on (defaults to Base mainnet `8453`)
+  creator: Address; // Creator address
+  name: string; // Coin name (e.g., "My Awesome Coin")
+  symbol: string; // Ticker (e.g., "MAC")
+  metadata: MetadataType; // Metadata descriptor
+  currency: ContentCoinCurrency; // CREATOR_COIN | CREATOR_COIN_OR_ZORA | ZORA | ETH
+  chainId?: number; // Chain ID to deploy on (defaults to Base mainnet `8453`)
   startingMarketCap?: StartingMarketCap; // LOW | HIGH (defaults to LOW)
-  platformReferrer?: Address;    // Optional referral address
+  platformReferrer?: Address; // Optional referral address
   additionalOwners?: Address[];
   payoutRecipientOverride?: Address;
-  skipMetadataValidation?: boolean;     // Skip URI validation (not recommended)
+  skipMetadataValidation?: boolean; // Skip URI validation (not recommended)
 };
 ```
 
@@ -39,7 +43,10 @@ type CreateCoinArgs = {
 
 ```ts twoslash
 import { Address } from "viem";
-import { createMetadataBuilder, createZoraUploaderForCreator } from "@zoralabs/coins-sdk";
+import {
+  createMetadataBuilder,
+  createZoraUploaderForCreator,
+} from "@zoralabs/coins-sdk";
 
 const creatorAddress = "0xYourAddress" as Address;
 
@@ -80,8 +87,18 @@ Provide the exact `chainId` you intend to deploy on (e.g., Base mainnet `8453`).
 #### High‑level: send transaction and wait for receipt
 
 ```ts twoslash
-import { createCoin, CreateConstants, ContentCoinCurrency } from "@zoralabs/coins-sdk";
-import { Hex, Address, createWalletClient, createPublicClient, http } from "viem";
+import {
+  createCoin,
+  CreateConstants,
+  ContentCoinCurrency,
+} from "@zoralabs/coins-sdk";
+import {
+  Hex,
+  Address,
+  createWalletClient,
+  createPublicClient,
+  http,
+} from "viem";
 import { base } from "viem/chains";
 
 const publicClient = createPublicClient({
@@ -119,11 +136,53 @@ const result = await createCoin({
 console.log("Transaction hash:", result.hash);
 console.log("Coin address:", result.address);
 console.log("Deployment details:", result.deployment);
+console.log("Chain info:", result.chain);
 ```
+
+#### Response Structure
+
+The `createCoin` function returns an object with the following properties:
+
+```ts
+type CreateCoinResult = {
+  hash: string; // Transaction hash
+  receipt: TransactionReceipt; // Full transaction receipt from the blockchain
+  address?: string; // Deployed coin contract address (extracted from logs)
+  deployment?: {
+    // Detailed deployment information from CoinCreatedV4 event
+    coin: string; // Coin contract address
+    creator: string; // Creator address
+    poolAddress: string; // Uniswap pool address
+    // ... additional deployment details
+  };
+  chain: Chain; // Chain object (e.g., base, baseSepolia)
+};
+```
+
+**Key Fields:**
+
+- `address`: The newly deployed coin's contract address - use this to interact with the coin
+- `hash`: Transaction hash for tracking the deployment transaction
+- `receipt`: Full transaction receipt containing all logs and events
+- `deployment`: Complete deployment details parsed from the `CoinCreatedV4` event, including pool information
+- `chain`: Chain configuration object for the network where the coin was deployed
 
 #### Low‑level: integrate with WAGMI using a raw transaction
 
-`createCoinCall` returns `{ to, data, value }`, which can be passed to your tx‑sending flow (e.g., WAGMI `useSendTransaction`).
+`createCoinCall` returns an object with transaction parameters and the predicted coin address:
+
+```ts
+type CreateCoinCallResponse = {
+  calls: Array<{
+    to: Address; // Target contract address (coin factory)
+    data: Hex; // Encoded function call data
+    value: bigint; // ETH value to send (typically 0n for coin creation)
+  }>;
+  predictedCoinAddress: Address; // Deterministic address where coin will be deployed
+};
+```
+
+The `calls` array contains the transaction parameters that can be passed to your tx‑sending flow (e.g., WAGMI `useSendTransaction`). The `predictedCoinAddress` provides the coin's address before the transaction is sent, allowing immediate UI updates or address storage.
 
 ```tsx
 import * as React from "react";
@@ -132,28 +191,42 @@ import { Address } from "viem";
 import { useSendTransaction } from "wagmi";
 import { base } from "viem/chains";
 
-const args = {
-  creator: "0xYourAddress" as Address,
-  name: "My Awesome Coin",
-  symbol: "MAC",
-  metadata: { type: "RAW_URI" as const, uri: "ipfs://bafy..." },
-  currency: CreateConstants.ContentCoinCurrencies.ZORA,
-  chainId: base.id,
-  startingMarketCap: CreateConstants.StartingMarketCaps.LOW,
-};
-
-const txCalls = await createCoinCall(args);
-
 function CreateCoinButton() {
   const { sendTransaction, status } = useSendTransaction();
+  const [coinAddress, setCoinAddress] = React.useState<Address | null>(null);
+
+  const handleCreate = async () => {
+    const args = {
+      creator: "0xYourAddress" as Address,
+      name: "My Awesome Coin",
+      symbol: "MAC",
+      metadata: { type: "RAW_URI" as const, uri: "ipfs://bafy..." },
+      currency: CreateConstants.ContentCoinCurrencies.ZORA,
+      chainId: base.id,
+      startingMarketCap: CreateConstants.StartingMarketCaps.LOW,
+    };
+
+    const { calls, predictedCoinAddress } = await createCoinCall(args);
+
+    // Store predicted address immediately for UI updates
+    setCoinAddress(predictedCoinAddress);
+    console.log("Coin will be deployed at:", predictedCoinAddress);
+
+    // Send transaction with the first call parameters
+    sendTransaction({
+      to: calls[0].to,
+      data: calls[0].data,
+      value: calls[0].value,
+    });
+  };
 
   return (
-    <button
-      disabled={status === "pending"}
-      onClick={() => sendTransaction({ to: txCalls[0].to, data: txCalls[0].data, value: txCalls[0].value })}
-    >
-      {status === "pending" ? "Creating..." : "Create Coin"}
-    </button>
+    <div>
+      <button disabled={status === "pending"} onClick={handleCreate}>
+        {status === "pending" ? "Creating..." : "Create Coin"}
+      </button>
+      {coinAddress && <p>Coin address: {coinAddress}</p>}
+    </div>
   );
 }
 ```

@@ -12,8 +12,8 @@ The `getCoin` function retrieves detailed information about a specific coin, inc
 
 ```ts twoslash
 type GetCoinParams = {
-  address: string;   // The coin contract address
-  chain?: number;    // Optional: The chain ID (defaults to Base: 8453)
+  address: string; // The coin contract address
+  chain?: number; // Optional: The chain ID (defaults to Base: 8453)
 };
 ```
 
@@ -32,16 +32,24 @@ import { GetCoinResponse } from "@zoralabs/coins-sdk";
 
 // The Zora20Token type is imported from the SDK's generated types.
 // It includes detailed information about a specific coin, such as its metadata, market data, and creator information.
-type Zora20Token = GetCoinResponse['zora20Token'];
+type Zora20Token = GetCoinResponse["zora20Token"];
 //    ^?
 
-
-
-
-
 //
-
 ```
+
+**Key Response Fields:**
+
+- `platformBlocked`: Boolean indicating whether the coin is blocked on the platform (most applications should exclude blocked coins from visibility)
+- `creatorProfile.platformBlocked`: Boolean indicating whether the creator's profile is blocked on the platform (most applications should exclude blocked profiles from visibility)
+- `address`: The coin's contract address
+- `name`, `symbol`: Coin identification
+- `marketCap`, `totalSupply`, `volume24h`: Market metrics
+- `tokenPrice`: Pricing information in USDC and pool token
+- `creatorProfile`: Profile information for the coin creator, including social accounts and avatar
+- `mediaContent`: Associated media like images or videos
+- `uniqueHolders`: Number of unique token holders
+- `uniswapV4PoolKey`: Uniswap V4 pool configuration details
 
 ### getCoins
 
@@ -54,7 +62,7 @@ type GetCoinsParams = {
   coins: {
     collectionAddress: string;
     chainId: number;
-  }[]
+  }[];
 };
 ```
 
@@ -76,10 +84,10 @@ The `getCoinHolders` function retrieves information about who holds a specific c
 
 ```ts twoslash
 type GetCoinHoldersParams = {
-  chainId: number;    // The chain ID
-  address: string;    // The coin contract address
-  after?: string;     // Optional: Pagination cursor for fetching next page
-  count?: number;     // Optional: Number of holders to return per page
+  chainId: number; // The chain ID
+  address: string; // The coin contract address
+  after?: string; // Optional: Pagination cursor for fetching next page
+  count?: number; // Optional: Number of holders to return per page
 };
 ```
 
@@ -97,11 +105,11 @@ const response = await getCoinHolders({
 if (response.data?.zora20Token?.tokenBalances) {
   const holders = response.data.zora20Token.tokenBalances.edges;
   console.log(`Found ${holders.length} holders`);
-  
+
   holders.forEach(({ node }) => {
     console.log(`Address: ${node.ownerAddress}`);
     console.log(`Balance: ${node.balance}`);
-    console.log(`Profile: ${node.ownerProfile?.handle || 'No profile'}`);
+    console.log(`Profile: ${node.ownerProfile?.handle || "No profile"}`);
   });
 }
 ```
@@ -118,10 +126,10 @@ The `getCoinSwaps` function retrieves swap activities for a specific coin, showi
 
 ```ts twoslash
 type GetCoinSwapsParams = {
-  address: string;    // The coin contract address
-  chain?: number;     // Optional: The chain ID (defaults to Base: 8453)
-  after?: string;     // Optional: Pagination cursor for fetching next page
-  first?: number;     // Optional: Number of swaps to return per page
+  address: string; // The coin contract address
+  chain?: number; // Optional: The chain ID (defaults to Base: 8453)
+  after?: string; // Optional: Pagination cursor for fetching next page
+  first?: number; // Optional: Number of swaps to return per page
 };
 ```
 
@@ -139,7 +147,7 @@ const response = await getCoinSwaps({
 if (response.data?.zora20Token?.swapActivities) {
   const swaps = response.data.zora20Token.swapActivities.edges;
   console.log(`Found ${swaps.length} swaps`);
-  
+
   swaps.forEach(({ node }) => {
     console.log(`Activity: ${node.activityType}`); // "BUY" or "SELL"
     console.log(`Amount: ${node.coinAmount}`);
@@ -161,10 +169,10 @@ The `getCoinComments` function retrieves comments associated with a specific coi
 
 ```ts twoslash
 type GetCoinCommentsParams = {
-  address: string;    // The coin contract address
-  chain?: number;     // Optional: The chain ID (defaults to Base: 8453)
-  after?: string;     // Optional: Pagination cursor for fetching next page
-  count?: number;     // Optional: Number of comments to return per page
+  address: string; // The coin contract address
+  chain?: number; // Optional: The chain ID (defaults to Base: 8453)
+  after?: string; // Optional: Pagination cursor for fetching next page
+  count?: number; // Optional: Number of comments to return per page
 };
 ```
 
@@ -185,7 +193,6 @@ To fetch all comments for a coin, you can use pagination:
 #### Response Structure
 
 The response includes a `comments` array and pagination information:
-
 
 ## Error Handling
 

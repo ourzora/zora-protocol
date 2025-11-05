@@ -70,6 +70,11 @@ type TransactionParameters = {
   value: bigint;
 };
 
+type CreateCoinCallResponse = {
+  calls: TransactionParameters[];
+  predictedCoinAddress: Address;
+};
+
 export async function createCoinCall({
   creator,
   name,
@@ -81,7 +86,7 @@ export async function createCoinCall({
   additionalOwners,
   platformReferrer,
   skipMetadataValidation = false,
-}: CreateCoinArgs): Promise<TransactionParameters[]> {
+}: CreateCoinArgs): Promise<CreateCoinCallResponse> {
   // Validate metadata URI
   if (!skipMetadataValidation) {
     await validateMetadataURIContent(metadata.uri as ValidMetadataURI);
@@ -103,11 +108,15 @@ export async function createCoinCall({
     throw new Error("Failed to create content calldata");
   }
 
-  return createContentRequest.data.calls.map((data) => ({
-    to: data.to as Address,
-    data: data.data as Hex,
-    value: BigInt(data.value),
-  }));
+  return {
+    calls: createContentRequest.data.calls.map((data) => ({
+      to: data.to as Address,
+      data: data.data as Hex,
+      value: BigInt(data.value),
+    })),
+    predictedCoinAddress: createContentRequest.data
+      .predictedCoinAddress as Address,
+  };
 }
 
 /**
@@ -151,11 +160,11 @@ export async function createCoin({
     chainId,
   });
 
-  if (callRequest.length !== 1) {
+  if (callRequest.calls.length !== 1) {
     throw new Error("Only one call is supported for this SDK version");
   }
 
-  const createContentCall = callRequest[0];
+  const createContentCall = callRequest.calls[0];
 
   if (!createContentCall) {
     throw new Error("Failed to load create content calldata from API");

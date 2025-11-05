@@ -124,7 +124,12 @@ contract HooksDeploymentTest is Test, ContractAddresses {
         );
 
         IHooks hook = HooksDeployment.deployHookWithSalt(
-            HooksDeployment.makeHookCreationCode(V4_POOL_MANAGER, 0x777777751622c0d3258f214F9DF38E35BF45baF3, ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)), hookUpgradeGate),
+            HooksDeployment.makeHookCreationCode(
+                V4_POOL_MANAGER,
+                0x777777751622c0d3258f214F9DF38E35BF45baF3,
+                ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
+                hookUpgradeGate
+            ),
             salt
         );
 
