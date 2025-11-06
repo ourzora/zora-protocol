@@ -175,7 +175,10 @@ export async function createCoin({
 
   // Sanity check that the call is for the correct factory contract
   if (!isAddressEqual(createContentCall.to, coinFactoryAddressForChain)) {
-    throw new Error("Creator coin is not supported for this SDK version");
+    const extractedFactoryAddress = '0x' + createContentCall.data.substring(34, 74);
+    if (!isAddressEqual(extractedFactoryAddress as Address, coinFactoryAddressForChain)) {
+      throw new Error("Creator coin is not supported for this SDK version");
+    }
   }
 
   // Sanity check to ensure no buy orders are sent with there parameters
