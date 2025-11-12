@@ -7,6 +7,7 @@
     "dev": "vocs dev",
     "build": "tsc --noEmit",
     "build:site": "playwright install --with-deps chromium && vocs build",
+    "build:vercel": "playwright install --with-deps chromium && vocs build",
     "preview": "vocs preview",
     "copy-changelog": "tsx scripts/copy-changelogs.ts",
     "generate-uml": "tsx scripts/generateUml.ts"
