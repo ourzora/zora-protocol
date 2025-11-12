@@ -10,7 +10,7 @@ const ZORA_DECIMALS = 18;
  * =========================
  */
 
-export const ZORA_ADDRESS = "0x1111111111166b7fe7bd91427724b487980afc69";
+export const NICHE_ADDRESS = "0x5ab1a8dbb78c272540d3652dac9c46d9cbfcecbf";
 
 const COIN_ETH_PAIR_LOWER_TICK = -250000;
 const COIN_ETH_PAIR_UPPER_TICK = -195_000;
@@ -42,9 +42,9 @@ const COIN_ZORA_PAIR_MAX_DISCOVERY_SUPPLY_SHARE = parseUnits(
   ZORA_DECIMALS,
 );
 
-export const COIN_ZORA_PAIR_POOL_CONFIG = {
+export const COIN_NICHE_PAIR_POOL_CONFIG = {
   [base.id]: encodeMultiCurvePoolConfig({
-    currency: ZORA_ADDRESS,
+    currency: NICHE_ADDRESS,
     tickLower: [COIN_ZORA_PAIR_LOWER_TICK],
     tickUpper: [COIN_ZORA_PAIR_UPPER_TICK],
     numDiscoveryPositions: [COIN_ZORA_PAIR_NUM_DISCOVERY_POSITIONS],

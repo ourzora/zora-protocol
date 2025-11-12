@@ -1,4 +1,4 @@
-import { ContractAddress } from '@components/ContractAddress'
+import { ContractAddress } from "@components/ContractAddress";
 
 # Creating a Coin
 
@@ -8,10 +8,10 @@ This guide covers how to create coins directly using the ZoraFactory contract.
 
 The ZoraFactory is deployed at the same address across all supported chains:
 
-| Chain       | Chain ID | Factory Address |
-|-------------|----------|----------------|
-| Base        | 8453     | <ContractAddress address="0x777777751622c0d3258f214F9DF38E35BF45baF3" chain="base" /> |
-| Base Sepolia| 84532    | <ContractAddress address="0x777777751622c0d3258f214F9DF38E35BF45baF3" chain="base-sepolia" /> |
+| Chain        | Chain ID | Factory Address                                                                               |
+| ------------ | -------- | --------------------------------------------------------------------------------------------- |
+| Base         | 8453     | <ContractAddress address="0x777777751622c0d3258f214F9DF38E35BF45baF3" chain="base" />         |
+| Base Sepolia | 84532    | <ContractAddress address="0x777777751622c0d3258f214F9DF38E35BF45baF3" chain="base-sepolia" /> |
 
 ## Key Components
 
@@ -21,22 +21,22 @@ classDiagram
         +deploy()
         +deployCreatorCoin()
     }
-    
+
     class Coin {
         +mint()
         +burn()
     }
-    
+
     class UniswapV4Pool {
         +swap()
         +initialize()
     }
-    
+
     class ZoraHook {
         +afterSwap()
         +distributeRewards()
     }
-    
+
     ZoraFactory ..> Coin : creates
     ZoraFactory ..> UniswapV4Pool : initializes
     UniswapV4Pool --> ZoraHook : uses
@@ -65,16 +65,16 @@ Use the `deploy` function for new deployments when integrating directly with con
 
 ```solidity
 function deploy(
-    address payoutRecipient,
-    address[] memory owners,
-    string memory uri,
-    string memory name,
-    string memory symbol,
-    bytes memory poolConfig,
-    address platformReferrer,
-    address postDeployHook,
-    bytes calldata postDeployHookData,
-    bytes32 coinSalt
+  address payoutRecipient,
+  address[] memory owners,
+  string memory uri,
+  string memory name,
+  string memory symbol,
+  bytes memory poolConfig,
+  address platformReferrer,
+  address postDeployHook,
+  bytes calldata postDeployHookData,
+  bytes32 coinSalt
 ) external payable returns (address coin, bytes memory postDeployHookDataOut);
 ```
 
@@ -86,14 +86,14 @@ For Creator Coins specifically, use the `deployCreatorCoin` function:
 
 ```solidity
 function deployCreatorCoin(
-    address payoutRecipient,
-    address[] memory owners,
-    string memory uri,
-    string memory name,
-    string memory symbol,
-    bytes memory poolConfig,
-    address platformReferrer,
-    bytes32 coinSalt
+  address payoutRecipient,
+  address[] memory owners,
+  string memory uri,
+  string memory name,
+  string memory symbol,
+  bytes memory poolConfig,
+  address platformReferrer,
+  bytes32 coinSalt
 ) external returns (address);
 ```
 
@@ -129,7 +129,7 @@ The `poolConfig` parameter determines the coin type, pool settings, and market c
 For most use cases, we recommend using our upcoming API endpoints to generate pool configurations. These will provide:
 
 - **Validated configurations** - Pre-tested parameter combinations
-- **Optimal curve settings** - Market-tested liquidity distribution strategies  
+- **Optimal curve settings** - Market-tested liquidity distribution strategies
 - **Security safeguards** - Protection against parameter manipulation
 - **Dynamic updates** - Configurations that evolve with market conditions
 
@@ -147,20 +147,20 @@ You can predict the coin address before deployment using the `coinAddress` funct
 
 ```solidity
 function coinAddress(
-    address msgSender,
-    string memory name,
-    string memory symbol,
-    bytes memory poolConfig,
-    address platformReferrer,
-    bytes32 coinSalt
+  address msgSender,
+  string memory name,
+  string memory symbol,
+  bytes memory poolConfig,
+  address platformReferrer,
+  bytes32 coinSalt
 ) external view returns (address);
 ```
 
 This is useful for:
+
 - Preparing integrations before deployment
 - Verifying deployment parameters
 - Creating deterministic deployment scripts
-
 
 ## Example Deployment
 
@@ -175,21 +175,21 @@ import {CoinConfigurationVersions} from "@zoralabs/coins/src/libs/CoinConfigurat
 
 contract CoinDeployer {
     address constant FACTORY_ADDRESS = 0x777777751622c0d3258f214F9DF38E35BF45baF3;
-    address constant ZORA_TOKEN_ADDRESS = 0x1111111111166b7FE7bd91427724B487980aFc69;
-    
+    address constant NICHE_TOKEN_ADDRESS = 0x5ab1a8dbb78c272540d3652dac9c46d9cbfcecbf;
+
     function deployMyCoin() external returns (address coin) {
         IZoraFactory factory = IZoraFactory(FACTORY_ADDRESS);
-        
+
         // Set up coin owners
         address[] memory owners = new address[](1);
         owners[0] = msg.sender;
-        
+
         // Pool configuration bytes (get from Zora configuration API)
         bytes memory poolConfig = hex"..."; // Replace with actual configuration bytes
-        
+
         // Generate unique salt for deterministic deployment
         bytes32 salt = keccak256(abi.encodePacked("MyCoin", msg.sender, block.timestamp));
-        
+
         // Deploy the coin
         (coin, ) = factory.deploy(
             msg.sender,              // payoutRecipient - receives creator rewards
@@ -203,14 +203,16 @@ contract CoinDeployer {
             "",                      // postDeployHookData - empty
             salt                     // coinSalt - for deterministic address
         );
-        
+
         return coin;
     }
 }
 ```
+
 ## Post-Deployment
 
 After successful deployment, the coin will:
+
 - Be deployed at the predicted address
 - Have a Uniswap V4 pool created with the singleton hook
 - Be ready for trading immediately
@@ -223,58 +225,62 @@ Learn more about [managing coins](/coins/sdk/update-coin) after deployment.
 The factory emits different events based on the coin type:
 
 ### Content Coins
+
 ```solidity
 event CoinCreatedV4(
-    address indexed caller,
-    address indexed payoutRecipient,
-    address indexed platformReferrer,
-    address currency,
-    string uri,
-    string name,
-    string symbol,
-    address coin,
-    PoolKey poolKey,
-    bytes32 poolKeyHash,
-    string version
+  address indexed caller,
+  address indexed payoutRecipient,
+  address indexed platformReferrer,
+  address currency,
+  string uri,
+  string name,
+  string symbol,
+  address coin,
+  PoolKey poolKey,
+  bytes32 poolKeyHash,
+  string version
 );
 ```
 
 ### Creator Coins
+
 ```solidity
 event CreatorCoinCreated(
-    address indexed caller,
-    address indexed payoutRecipient,
-    address indexed platformReferrer,
-    address currency,
-    string uri,
-    string name,
-    string symbol,
-    address coin,
-    PoolKey poolKey,
-    bytes32 poolKeyHash,
-    string version
+  address indexed caller,
+  address indexed payoutRecipient,
+  address indexed platformReferrer,
+  address currency,
+  string uri,
+  string name,
+  string symbol,
+  address coin,
+  PoolKey poolKey,
+  bytes32 poolKeyHash,
+  string version
 );
 ```
 
 ### Legacy (V3) Coins
+
 ```solidity
 event CoinCreated(
-    address indexed caller,
-    address indexed payoutRecipient,
-    address indexed platformReferrer,
-    address currency,
-    string uri,
-    string name,
-    string symbol,
-    address coin,
-    address pool,
-    string version
+  address indexed caller,
+  address indexed payoutRecipient,
+  address indexed platformReferrer,
+  address currency,
+  string uri,
+  string name,
+  string symbol,
+  address coin,
+  address pool,
+  string version
 );
 ```
 
 ## Indexing Guidance
 
 - **Why multiple events?**
+
   - **`CoinCreated` (legacy)**: Emitted by early releases that used Uniswap V3 and returned a pool address.
   - **`CoinCreatedV4`**: Emitted for Content Coins on Uniswap V4 and includes a full `PoolKey` plus `poolKeyHash`.
   - **`CreatorCoinCreated`**: Emitted for Creator Coins on Uniswap V4 and includes the same data shape as `CoinCreatedV4`.
@@ -282,22 +288,27 @@ event CoinCreated(
 - **Index all coins**: Indexers should listen to all three events to build a complete list of coins across protocol versions.
 
 - **Suggested filter set**
+
   - Contract: `ZoraFactoryImpl`
   - Events: `CoinCreated`, `CoinCreatedV4`, `CreatorCoinCreated`
 
 - **Field differences**
+
   - Legacy `CoinCreated` returns a `pool` address (Uniswap V3). V4 events return a `PoolKey` and `poolKeyHash` instead of a pool address (pool address is derived by Uniswap V4).
 
 - **Normalizing into a single record**
+
   - Use common fields across events: `caller`, `payoutRecipient`, `platformReferrer`, `currency`, `uri`, `name`, `symbol`, `coin`, `version`.
   - For V3: store `poolAddress` from `CoinCreated`.
   - For V4: store `poolKey` (currencies, fee, tickSpacing, hooks), and `poolKeyHash`. If you need the V4 pool address, derive it using the Uniswap V4 formula from `PoolKey`.
 
 - **Creator coin identification**
+
   - Creator coins are explicitly emitted via `CreatorCoinCreated`.
   - Content coins are emitted via `CoinCreatedV4`.
 
 - **Example (pseudocode)**
+
 ```ts
 onEvent(evt) {
   switch (evt.name) {
@@ -333,4 +344,3 @@ onEvent(evt) {
   }
 }
 ```
-

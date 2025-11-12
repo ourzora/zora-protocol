@@ -4,8 +4,8 @@ import remarkMermaid from "remark-mermaidjs";
 import path from "path";
 
 export default defineConfig({
-  title: "ZORA Docs",
-  titleTemplate: "%s | ZORA Docs",
+  title: "Niche Docs",
+  titleTemplate: "%s | Niche Docs",
   iconUrl: "/brand/zorb-logo.png",
   logoUrl: "/brand/zorb-logo.png",
   ogImageUrl: "https://docs.zora.co/brand/og.jpg",
