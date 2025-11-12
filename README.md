@@ -1,3 +1,4 @@
+> Note: Zora's ERC-721 Media contracts rely on the ModuleManager interface and should be deployed via the Zora Creator Factory.
 # Zora Protocol
 
 [![Contracts](https://github.com/ourzora/zora-protocol/actions/workflows/contracts.yml/badge.svg)](https://github.com/ourzora/zora-protocol/actions/workflows/contracts.yml)
