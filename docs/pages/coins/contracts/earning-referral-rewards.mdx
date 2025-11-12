@@ -1,10 +1,11 @@
 # Earning Rewards as a Developer
 
-Earn automatic rewards by facilitating coin creation and trading on the [Zora Coins Protocol](/coins). Developers can earn from both creating coins and facilitating trades, with rewards distributed automatically in the backing currency.
+Earn automatic rewards by facilitating coin creation and trading on the [Niche Coins Protocol](/coins). Developers can earn from both creating coins and facilitating trades, with rewards distributed automatically in the backing currency.
 
 ## SDK Integration
 
-For the easiest implementation, use the Zora SDK:
+For the easiest implementation, use the Niche SDK:
+
 - [Creating Coins](/coins/sdk/create-coin) - SDK guide for coin creation with referrals
 - [Trading Coins](/coins/sdk/trade-coin) - SDK guide for trading with referrals
 
@@ -13,11 +14,13 @@ For the easiest implementation, use the Zora SDK:
 There are two types of referral rewards available to developers:
 
 ### Platform Referral Rewards
+
 - **Set once** during coin creation
 - **Earns from all future trades** for the coin's entire lifespan
 - **Sticky** - permanently associated with the coin
 
-### Trade Referral Rewards  
+### Trade Referral Rewards
+
 - **Set per individual swap**
 - **Earns only from that specific trade**
 - Can be different for each transaction
@@ -42,16 +45,16 @@ Set the `platformReferrer` parameter when creating coins to earn from all future
 ```solidity
 // Deploy a Content Coin with create referral
 address coin = factory.deploy(
-    payoutRecipient,         
-    owners,                  
-    uri,                     
-    name,                    
-    symbol,                  
-    poolConfig,              
+    payoutRecipient,
+    owners,
+    uri,
+    name,
+    symbol,
+    poolConfig,
     YOUR_PLATFORM_ADDRESS,   // 🎯 This address earns platform referral rewards
-    postDeployHook,          
-    postDeployHookData,      
-    coinSalt                 
+    postDeployHook,
+    postDeployHookData,
+    coinSalt
 );
 ```
 
@@ -73,7 +76,7 @@ This `hookData` should be included in your swap parameters when calling the Unis
 ## How Rewards Work
 
 - **Automatic Distribution**: Rewards are distributed automatically on every swap - no manual claiming required
-- **Multi-Hop Conversion**: All rewards are automatically converted to the backing currency (typically ZORA) before distribution
+- **Multi-Hop Conversion**: All rewards are automatically converted to the backing currency (typically NICHE) before distribution
 - **Immediate Payout**: Rewards are sent directly to recipient addresses with each trade
 
 For complete information about reward distribution, fee structures, and economics, see [Coin Rewards](/coins/contracts/rewards).

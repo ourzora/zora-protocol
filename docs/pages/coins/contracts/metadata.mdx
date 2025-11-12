@@ -6,13 +6,13 @@ This is based off of the `EIP721` and `EIP1155` metadata standards.
 
 The metadata URI is specified during [coin deployment](/coins/contracts/creating-a-coin#required-parameters) and can be [updated by coin owners](/coins/sdk/update-coin) after deployment.
 
-We have a guide below for recommended format along with ZORA extensions and validator tools:
+We have a guide below for recommended format along with Niche extensions and validator tools:
 
 ## Metadata JSON Format
 
 Your metadata JSON file should follow this format:
 
-```json
+````json
 {
   "name": "horse",
   "description": "boundless energy",
@@ -41,7 +41,7 @@ The `content` property extension is an object that contains the mime type and ur
     "category": "social"
   }
 }
-```
+````
 
 ## Metadata JSON Validator
 
@@ -60,12 +60,11 @@ This function validates the metadata JSON file.
 import { validateMetadataJSON } from "@zoralabs/coins-sdk";
 
 validateMetadataJSON({
-    name: "horse",
-    description: "boundless energy",
-    image: 123,
-    foo: "bar"
-})
-
+  name: "horse",
+  description: "boundless energy",
+  image: 123,
+  foo: "bar",
+});
 ```
 
 This function will throw an error if the metadata is invalid and return `true` if it is valid.
@@ -75,23 +74,22 @@ This function will throw an error if the metadata is invalid and return `true` i
 This function validates the metadata URI.
 
 ```ts twoslash
-
-function assertTrue(condition: boolean) { }
+function assertTrue(condition: boolean) {}
 
 // ---cut---
 import { validateMetadataURIContent } from "@zoralabs/coins-sdk";
 
-assertTrue(await validateMetadataURIContent("https://theme.wtf/metadata/metadata.json"));
+assertTrue(
+  await validateMetadataURIContent("https://theme.wtf/metadata/metadata.json"),
+);
 
 // This will throw an error
 await validateMetadataURIContent("data:foo");
 
 // This will succeed :)
-await validateMetadataURIContent("ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy");
-
+await validateMetadataURIContent(
+  "ipfs://bafybeigoxzqzbnxsn35vq7lls3ljxdcwjafxvbvkivprsodzrptpiguysy",
+);
 ```
 
 This function will throw an error if the metadata URI is invalid and return `true` if it is valid.
-
-
-

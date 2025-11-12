@@ -1,6 +1,6 @@
 # Hook System
 
-The Zora protocol uses a unified Uniswap V4 hook to automatically manage pool interactions and reward distribution for all coin types.
+The Niche protocol uses a unified Uniswap V4 hook to automatically manage pool interactions and reward distribution for all coin types.
 
 ## Overview
 
@@ -17,6 +17,7 @@ The unified hook centralizes shared functionality and derives reward behavior fr
 Contains all core functionality used by both coin types:
 
 **Automated Operations:**
+
 - Pool initialization and automatic liquidity position creation
 - Automatic fee collection from all LP positions on every swap
 - Multi-hop currency conversion through optimal swap paths
@@ -24,6 +25,7 @@ Contains all core functionality used by both coin types:
 - Comprehensive event emission and transaction logging
 
 **Technical Features:**
+
 - Uniswap V4 `afterInitialize` and `afterSwap` hook permissions
 - Doppler multi-curve liquidity positioning
 - Trusted message sender validation
@@ -35,33 +37,39 @@ Reward distribution is unified and determined at runtime from the coin type via 
 
 ## Deployment Addresses
 
-import { ContractAddress } from '@components/ContractAddress'
+import { ContractAddress } from "@components/ContractAddress";
 
-| Chain | Chain ID | Hook Contract   | Address |
-|-------|----------|-----------------|---------|
-| Base  | 8453     | ZoraV4CoinHook  | See `@zoralabs/protocol-deployments` |
+| Chain | Chain ID | Hook Contract  | Address                              |
+| ----- | -------- | -------------- | ------------------------------------ |
+| Base  | 8453     | ZoraV4CoinHook | See `@zoralabs/protocol-deployments` |
 
 ## Hook Permissions
 
 The unified hook has the following Uniswap V4 permissions:
 
 ```solidity
-function getHookPermissions() external pure override returns (Hooks.Permissions memory) {
-    return Hooks.Permissions({
-        beforeInitialize: false,
-        afterInitialize: true,      // ✅ Enabled
-        beforeAddLiquidity: false,
-        afterAddLiquidity: false,
-        beforeRemoveLiquidity: false,
-        afterRemoveLiquidity: false,
-        beforeSwap: false,
-        afterSwap: true,           // ✅ Enabled
-        beforeDonate: false,
-        afterDonate: false,
-        beforeSwapReturnDelta: false,
-        afterSwapReturnDelta: false,
-        afterAddLiquidityReturnDelta: false,
-        afterRemoveLiquidityReturnDelta: false
+function getHookPermissions()
+  external
+  pure
+  override
+  returns (Hooks.Permissions memory)
+{
+  return
+    Hooks.Permissions({
+      beforeInitialize: false,
+      afterInitialize: true, // ✅ Enabled
+      beforeAddLiquidity: false,
+      afterAddLiquidity: false,
+      beforeRemoveLiquidity: false,
+      afterRemoveLiquidity: false,
+      beforeSwap: false,
+      afterSwap: true, // ✅ Enabled
+      beforeDonate: false,
+      afterDonate: false,
+      beforeSwapReturnDelta: false,
+      afterSwapReturnDelta: false,
+      afterAddLiquidityReturnDelta: false,
+      afterRemoveLiquidityReturnDelta: false
     });
 }
 ```
@@ -102,14 +110,14 @@ The unified hook implements the same reward distribution mechanism across coin t
 
 The hook automatically supports complex swap paths for coins that aren't directly paired with the final payout currency:
 
-### Example: Content Coin → Creator Coin → ZORA
+### Example: Content Coin → Creator Coin → NICHE
 
 1. **Content Coin fees** automatically collected in Content Coin tokens
 2. **First hop**: Content Coin → Creator Coin (backing currency)
-3. **Second hop**: Creator Coin → ZORA token (final payout currency)
-4. **Distribution**: ZORA tokens automatically distributed to reward recipients
+3. **Second hop**: Creator Coin → NICHE token (final payout currency)
+4. **Distribution**: NICHE tokens automatically distributed to reward recipients
 
-This automatically enables complex token economies where Content Coins can be backed by Creator Coins, which are in turn backed by ZORA tokens.
+This automatically enables complex token economies where Content Coins can be backed by Creator Coins, which are in turn backed by NICHE tokens.
 
 ## Liquidity Management
 
@@ -120,26 +128,27 @@ The hook automatically manages liquidity positions throughout the pool lifecycle
 During pool initialization, the hook automatically creates:
 
 - **Discovery Positions**: Initial price discovery ranges
-- **Market Positions**: Main trading ranges  
+- **Market Positions**: Main trading ranges
 - **Multi-Position Support**: Complex liquidity curves with multiple ranges
 
 ### Position Structure
 
 ```solidity
 struct LiquidityPosition {
-    int24 tickLower;           // Lower price bound
-    int24 tickUpper;           // Upper price bound
-    uint128 liquidity;         // Liquidity amount
-    uint256 feeGrowthInside0X128; // Fee tracking
-    uint256 feeGrowthInside1X128; // Fee tracking
+  int24 tickLower; // Lower price bound
+  int24 tickUpper; // Upper price bound
+  uint128 liquidity; // Liquidity amount
+  uint256 feeGrowthInside0X128; // Fee tracking
+  uint256 feeGrowthInside1X128; // Fee tracking
 }
 ```
 
 ## Migration Support
 
-The hook supports controlled liquidity migration to enable upgrades to new hook versions while preserving all existing liquidity. 
+The hook supports controlled liquidity migration to enable upgrades to new hook versions while preserving all existing liquidity.
 
 **Migration Resources:**
+
 - [Complete Migration Guide](/coins/contracts/liquidity-migration) - Step-by-step migration process and security considerations
 - [Migration Flow Diagram](/coins/contracts/liquidity-migration#how-it-works) - Visual sequence diagram of the migration process
 - [Migration Events](/coins/contracts/liquidity-migration#events) - Event emission details for tracking migrations
@@ -150,21 +159,22 @@ The hook supports controlled liquidity migration to enable upgrades to new hook 
 
 ```solidity
 event Swapped(
-    address indexed sender,
-    address indexed swapSender,
-    bool isTrustedSwapSenderAddress,
-    PoolKey key,
-    bytes32 indexed poolKeyHash,
-    SwapParams params,
-    int128 amount0,
-    int128 amount1,
-    bool isCoinBuy,
-    bytes hookData,
-    uint160 sqrtPriceX96
+  address indexed sender,
+  address indexed swapSender,
+  bool isTrustedSwapSenderAddress,
+  PoolKey key,
+  bytes32 indexed poolKeyHash,
+  SwapParams params,
+  int128 amount0,
+  int128 amount1,
+  bool isCoinBuy,
+  bytes hookData,
+  uint160 sqrtPriceX96
 );
 ```
 
 Emitted on every swap with detailed transaction information including:
+
 - **sender**: The address that initiated the swap transaction
 - **swapSender**: The original message sender (may differ from sender if using trusted message senders)
 - **isTrustedSwapSenderAddress**: Whether the sender is registered as a trusted message sender
@@ -180,18 +190,19 @@ Emitted on every swap with detailed transaction information including:
 
 ```solidity
 event CoinMarketRewardsV4(
-    address coin,
-    address currency,
-    address payoutRecipient,
-    address platformReferrer,
-    address tradeReferrer,
-    address protocolRewardRecipient,
-    address dopplerRecipient,
-    MarketRewardsV4 marketRewards
+  address coin,
+  address currency,
+  address payoutRecipient,
+  address platformReferrer,
+  address tradeReferrer,
+  address protocolRewardRecipient,
+  address dopplerRecipient,
+  MarketRewardsV4 marketRewards
 );
 ```
 
 Emitted when market rewards are distributed from collected fees, showing exact amounts to each recipient:
+
 - **coin**: The coin contract that generated the rewards
 - **currency**: The currency in which rewards are paid out
 - **payoutRecipient**: The creator's reward recipient address
@@ -209,15 +220,16 @@ Prior to v2.3.0, the system used two hooks (`ContentCoinHook` and `CreatorCoinHo
 
 ```solidity
 event LpReward(
-    address indexed coin,
-    address indexed currency,
-    uint256 amountCurrency,
-    int24 tick,
-    uint128 liquidity
+  address indexed coin,
+  address indexed currency,
+  uint256 amountCurrency,
+  int24 tick,
+  uint128 liquidity
 );
 ```
 
 Emitted when liquidity provider rewards are reminted back into the pool:
+
 - **coin**: The coin contract generating the LP rewards
 - **currency**: The currency of the reminted LP position
 - **amountCurrency**: The amount of currency reminted as new liquidity
@@ -225,4 +237,3 @@ Emitted when liquidity provider rewards are reminted back into the pool:
 - **liquidity**: The amount of liquidity reminted back into the pool
 
 This event tracks the portion of collected fees that are automatically reminted as liquidity rather than distributed as market rewards.
-
