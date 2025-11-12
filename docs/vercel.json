@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --ignore-scripts && playwright install --with-deps chromium && vocs build",
-  "installCommand": "cd .. && pnpm install --ignore-scripts",
+  "buildCommand": "cd .. && pnpm install --ignore-scripts && pnpm --filter docs build:site",
+  "installCommand": "echo 'Install handled by buildCommand'",
   "framework": null,
   "outputDirectory": ".vercel/output",
   "git": {
