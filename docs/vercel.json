@@ -1,10 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "pnpm install --ignore-scripts && pnpm run build:vercel",
-  "installCommand": "cd .. && pnpm install --ignore-scripts --filter docs --no-optional",
+  "buildCommand": "pnpm run build:vercel",
+  "installCommand": "pnpm install --ignore-scripts",
   "framework": null,
-  "outputDirectory": ".vercel/output",
-  "git": {
-    "deploymentEnabled": true
-  }
+  "outputDirectory": ".vercel/output"
 }
