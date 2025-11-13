@@ -83,3 +83,32 @@ export const getMostValuableCreatorCoins = (
   options?: RequestOptionsType<GetExploreData>,
 ): Promise<ExploreResponse> =>
   createExploreQuery(query, "MOST_VALUABLE_CREATORS", options);
+
+export const getExploreTopVolumeCreators24h = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TOP_VOLUME_CREATORS_24H", options);
+
+export const getExploreTopVolumeAll24h = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TOP_VOLUME_ALL_24H", options);
+
+export const getExploreNewAll = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> => createExploreQuery(query, "NEW_ALL", options);
+
+export const getExploreFeaturedCreators = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "FEATURED_CREATORS", options);
+
+export const getExploreFeaturedVideos = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "FEATURED_VIDEOS", options);

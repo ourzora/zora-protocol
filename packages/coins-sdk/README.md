@@ -35,3 +35,24 @@ Contact us at [x.com/zoradevs](https://x.com/zoradevs) [warpcast/~/channel/zora-
     - [Coin queries](https://docs.zora.co/coins/sdk/queries/coin)
     - [Profile queries](https://docs.zora.co/coins/sdk/queries/profile)
     - [Explore queries](https://docs.zora.co/coins/sdk/queries/profile)
+
+#### `getProfileSocial`
+
+The `getProfileSocial` helper in `src/api/queries.ts` wraps the `/profileSocial` API query and returns the enriched social metadata for a profile (social handles + follower counts, creator coin details, linked wallets, and the social account linking history).
+
+```ts
+import { getProfileSocial } from "@zoralabs/coins-sdk";
+
+const profileSocial = await getProfileSocial({
+  query: {
+    // Same identifier that other profile endpoints expect
+    identifier: "zoradev",
+  },
+});
+
+const farcasterHandle = profileSocial.data.profile?.socialAccounts?.farcaster?.username;
+```
+
+- `identifier` is required and accepts any identifier supported by the other profile queries (Zora username/handle, wallet address, or profile ID).
+- A successful response includes the profile's `socialAccounts` (Instagram, TikTok, Twitter, Farcaster), `linkedWallets`, `followers` / `following` counts, optional `creatorCoin` metrics, and a `socialAccountLinkedEvents` edge list that records when social accounts were linked or unlinked.
+- The request requires the standard Coins API key metadata—if you are already using `getApiKeyMeta` (as shown in other queries) no additional configuration is necessary.

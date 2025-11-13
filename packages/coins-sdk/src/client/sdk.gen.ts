@@ -18,8 +18,12 @@ import type {
   GetCoinSwapsResponse,
   GetCoinsData,
   GetCoinsResponse,
+  GetContentCoinPoolConfigData,
+  GetContentCoinPoolConfigResponse,
   SetCreateUploadJwtData,
   SetCreateUploadJwtResponse,
+  GetCreatorCoinPoolConfigData,
+  GetCreatorCoinPoolConfigResponse,
   GetExploreData,
   GetExploreResponse,
   GetFeaturedCreatorsData,
@@ -30,6 +34,8 @@ import type {
   GetProfileBalancesResponse,
   GetProfileCoinsData,
   GetProfileCoinsResponse,
+  GetProfileSocialData,
+  GetProfileSocialResponse,
   GetTokenInfoData,
   GetTokenInfoResponse,
   GetTraderLeaderboardData,
@@ -37,9 +43,6 @@ import type {
   PostQuoteData,
   PostQuoteResponse,
   PostQuoteError,
-  GetCreateContentPoolConfigData,
-  GetCreateContentPoolConfigResponse,
-  GetCreateContentPoolConfigError,
   PostCreateContentData,
   PostCreateContentResponse,
   PostCreateContentError,
@@ -196,6 +199,28 @@ export const getCoins = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * zoraSDK_contentCoinPoolConfig query
+ */
+export const getContentCoinPoolConfig = <ThrowOnError extends boolean = false>(
+  options: Options<GetContentCoinPoolConfigData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetContentCoinPoolConfigResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/contentCoinPoolConfig",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_createUploadJWT mutation
  */
 export const setCreateUploadJwt = <ThrowOnError extends boolean = false>(
@@ -218,6 +243,28 @@ export const setCreateUploadJwt = <ThrowOnError extends boolean = false>(
       "Content-Type": "application/json",
       ...options?.headers,
     },
+  });
+};
+
+/**
+ * zoraSDK_creatorCoinPoolConfig query
+ */
+export const getCreatorCoinPoolConfig = <ThrowOnError extends boolean = false>(
+  options?: Options<GetCreatorCoinPoolConfigData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetCreatorCoinPoolConfigResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/creatorCoinPoolConfig",
+    ...options,
   });
 };
 
@@ -332,6 +379,28 @@ export const getProfileCoins = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * zoraSDK_profileSocial query
+ */
+export const getProfileSocial = <ThrowOnError extends boolean = false>(
+  options: Options<GetProfileSocialData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetProfileSocialResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/profileSocial",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_tokenInfo query
  */
 export const getTokenInfo = <ThrowOnError extends boolean = false>(
@@ -395,27 +464,6 @@ export const postQuote = <ThrowOnError extends boolean = false>(
       "Content-Type": "application/json",
       ...options?.headers,
     },
-  });
-};
-
-export const getCreateContentPoolConfig = <
-  ThrowOnError extends boolean = false,
->(
-  options?: Options<GetCreateContentPoolConfigData, ThrowOnError>,
-) => {
-  return (options?.client ?? _heyApiClient).get<
-    GetCreateContentPoolConfigResponse,
-    GetCreateContentPoolConfigError,
-    ThrowOnError
-  >({
-    security: [
-      {
-        name: "api-key",
-        type: "apiKey",
-      },
-    ],
-    url: "/create/content/pool-config",
-    ...options,
   });
 };
 

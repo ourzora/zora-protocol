@@ -6,10 +6,6 @@ export type * from "./explore";
 export * from "./queries";
 export type * from "./queries";
 
-// Export all of the pool config queries
-export * from "./pool-config";
-export type * from "./pool-config";
-
 // Export all of the create queries
 export * from "./create";
 export type * from "./create";
