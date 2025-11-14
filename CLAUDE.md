@@ -134,10 +134,15 @@ The Claude Code Review GitHub Action automatically validates that changesets are
 Tests are primarily Solidity-based using Foundry. For individual packages:
 
 - Navigate to package directory (e.g., `cd packages/coins`)
-- `forge test -vvv` - Run Solidity tests with verbose output
-- `forge test --watch -vvv` - Run tests in watch mode
-- `forge test -vvv --match-test {test_name}` - Run specific test
+- `FOUNDRY_PROFILE=dev forge test -vvv` - Run Solidity tests with verbose output (recommended)
+- `FOUNDRY_PROFILE=dev forge test --watch -vvv` - Run tests in watch mode
+- `FOUNDRY_PROFILE=dev forge test -vvv --match-test {test_name}` - Run specific test
 - `pnpm test` - Run JavaScript/TypeScript tests
+
+**Test Command Notes:**
+
+- Use `FOUNDRY_PROFILE=dev` for faster test execution
+- Alternative: `forge test -vvv` (uses default profile, may be slower)
 
 ### Coverage Analysis
 
@@ -176,7 +181,7 @@ To check test coverage for contracts:
 For Solidity bugs:
 
 1. Write a test to simulate the bug
-2. Run the test with `forge test -vvv` to verify it fails
+2. Run the test with `FOUNDRY_PROFILE=dev forge test -vvv` to verify it fails
 3. Fix the code to make the test pass
 4. Verify the fix with the test suite
 5. **Format the code**: Run `pnpm format` to ensure consistent formatting
@@ -186,11 +191,19 @@ For Solidity bugs:
 For new features:
 
 1. Add minimal code to get feature compiling
-2. Compile with `forge build`
+2. Compile with `FOUNDRY_PROFILE=dev forge build` (fails within seconds if there are compilation issues)
 3. Write tests to verify feature works
 4. **Format the code**: Run `pnpm format` to ensure consistent formatting
 5. Commit code
 6. Submit PR with `gt submit`
+
+**Build Command Notes:**
+
+- Use `FOUNDRY_PROFILE=dev forge build` for faster compilation feedback
+- This profile provides immediate feedback on compilation errors (fails within seconds if there are issues)
+- Compilation errors appear instantly - if the build runs for a few seconds without failing, compilation is successful
+- The full compilation may take 30+ seconds, but can be interrupted once success is confirmed
+- Alternative: `forge build` (uses default profile, may be slower)
 
 ## Development Workflow
 
@@ -287,6 +300,7 @@ Before working with the documentation, build the packages that are imported:
 - **Generation script**: `docs/scripts/copy-changelogs.ts`
 
 **The generation script automatically:**
+
 - Copies changelog content from package directories to docs
 - Removes the first line (package title)
 - Adds proper documentation titles (e.g., "Coins Changelog")
@@ -294,11 +308,13 @@ Before working with the documentation, build the packages that are imported:
 - Processes multiple package changelogs (coins, coins-sdk, protocol-deployments, etc.)
 
 **Automatic Updates:**
+
 - Changelogs are automatically copied to docs during the version update process
 - When `pnpm update-version` runs, it automatically calls `pnpm docs:copy-changelogs`
 - This ensures documentation changelogs stay in sync with package changelogs
 
 **Manual Updates (if needed):**
+
 1. Edit the source `CHANGELOG.md` file in the relevant package directory
 2. Run `pnpm docs:copy-changelogs` from root directory to manually sync
 3. The documentation changelog will be updated
