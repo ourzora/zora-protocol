@@ -412,12 +412,7 @@ contract ZoraV4CoinHook is
     /// @return swapper The original message sender.
     /// @return senderIsTrusted Whether the sender is a trusted message sender.
     function _getOriginalMsgSender(address sender) internal view returns (address swapper, bool senderIsTrusted) {
-        // Always trust the zero address (0x caller)
-        if (sender == address(0)) {
-            senderIsTrusted = true;
-        } else {
-            senderIsTrusted = trustedMsgSenderLookup.isTrustedMsgSenderProvider(sender);
-        }
+        senderIsTrusted = trustedMsgSenderLookup.isTrustedMsgSenderProvider(sender);
 
         // If getter function reverts, we return a 0 address by default and continue execution.
         try IMsgSender(sender).msgSender() returns (address _swapper) {
