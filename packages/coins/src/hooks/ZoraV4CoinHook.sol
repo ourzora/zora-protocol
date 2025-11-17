@@ -265,51 +265,6 @@ contract ZoraV4CoinHook is
 
         // Store the positions and mint the initial liquidity into the new pool
         _initializeForPositions(newKey, coin, positions);
-
-        // Handle any remaining token balances by adding them to the last position
-        // This ensures no tokens are left unminted during the migration process
-        _mintExtraLiquidityAtLastPosition(sqrtPriceX96, newKey);
-    }
-
-    /// @notice Internal fn to add any remaining token balances to the last liquidity position.
-    /// @param sqrtPriceX96 The sqrt price x96.
-    /// @param poolKey The pool key.
-    function _mintExtraLiquidityAtLastPosition(uint160 sqrtPriceX96, PoolKey memory poolKey) internal {
-        // Check if there are any leftover token balances in the hook after migration
-        // These could result from rounding or partial liquidity transfers
-        uint256 currency0Balance = poolKey.currency0.balanceOfSelf();
-        uint256 currency1Balance = poolKey.currency1.balanceOfSelf();
-
-        // Get the stored positions for this pool to access the last position
-        LpPosition[] storage positions = poolCoins[CoinCommon.hashPoolKey(poolKey)].positions;
-
-        // Only proceed if there are actually leftover tokens to mint
-        if (currency0Balance > 0 || currency1Balance > 0) {
-            // Get reference to the last position where we'll add the extra liquidity
-            LpPosition storage lastPosition = positions[positions.length - 1];
-
-            // Calculate how much liquidity we can create with the remaining token balances
-            // This uses the current pool price and the last position's tick range
-            uint128 newLiquidity = LiquidityAmounts.getLiquidityForAmounts(
-                sqrtPriceX96,
-                TickMath.getSqrtPriceAtTick(lastPosition.tickLower),
-                TickMath.getSqrtPriceAtTick(lastPosition.tickUpper),
-                currency0Balance,
-                currency1Balance
-            );
-
-            // Create a temporary array with just the last position to mint the extra liquidity
-            LpPosition[] memory newPositions = new LpPosition[](1);
-            newPositions[0] = lastPosition;
-            newPositions[0].liquidity = newLiquidity; // Set the calculated liquidity amount
-
-            // Mint the extra liquidity into the pool using the V4 liquidity manager
-            V4Liquidity.lockAndMint(poolManager, poolKey, newPositions);
-
-            // Update our internal tracking of the last position's liquidity
-            // This keeps our records in sync with the actual pool state
-            positions[positions.length - 1].liquidity += newPositions[0].liquidity;
-        }
     }
 
     /// @notice Saves the positions for the coin and mints them into the pool

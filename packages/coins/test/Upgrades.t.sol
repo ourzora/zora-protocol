@@ -287,19 +287,17 @@ contract UpgradesTest is BaseTest, CoinsDeployerBase {
         uint128[] memory afterLiquidity = getLiquidityForPositions(afterKey, afterPositions);
 
         for (uint256 i = 0; i < beforeLiquidity.length; i++) {
-            // we added any extra liquidity to the last position, so we don't expect it to be the same
-            if (i != beforeLiquidity.length - 1) {
-                assertApproxEqAbs(beforeLiquidity[i], afterLiquidity[i], 200);
-            }
+            assertApproxEqAbs(beforeLiquidity[i], afterLiquidity[i], 200);
         }
 
         uint160 afterPrice = PoolStateReader.getSqrtPriceX96(creatorCoin.getPoolKey(), poolManager);
 
         assertEq(beforePrice, afterPrice);
 
-        // make sure that the new hook has no balance of 0 or 1
-        assertApproxEqAbs(creatorCoin.getPoolKey().currency0.balanceOf(address(newHook)), 0, 10);
-        assertApproxEqAbs(creatorCoin.getPoolKey().currency1.balanceOf(address(newHook)), 0, 10);
+        // Small amounts of dust from rounding may remain in the hook as burned tokens
+        // This is expected and saves on code size by not minting them back into the pool
+        assertApproxEqAbs(creatorCoin.getPoolKey().currency0.balanceOf(address(newHook)), 0, 0.1 ether);
+        assertApproxEqAbs(creatorCoin.getPoolKey().currency1.balanceOf(address(newHook)), 0, 0.1 ether);
 
         // now try to swap some currency for the creator coin - it should succeed
         _swapSomeCurrencyForCoin(creatorCoin, zora, uint128(IERC20(zora).balanceOf(trader) / 2), trader);
