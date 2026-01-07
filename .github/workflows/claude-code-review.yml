@@ -51,16 +51,17 @@ jobs:
 
       - name: Run Claude Code Review
         id: claude-review
-        uses: anthropics/claude-code-action@beta
+        uses: anthropics/claude-code-action@v1
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
           # Prompt is read from .github/claude-code-review-prompt.md
           # This allows editing the prompt without triggering workflow validation issues
-          direct_prompt: ${{ steps.prompt.outputs.content }}
+          prompt: ${{ steps.prompt.outputs.content }}
 
           # Use sticky comments to update existing comment instead of creating new ones
           use_sticky_comment: true
 
           # Allow Claude to inspect changesets, protocol knowledge, and run validation commands
-          allowed_tools: "Bash(ls .changeset/),Bash(pnpm changeset status),Bash(cat PROTOCOL_KNOWLEDGE.md),Bash(find packages -name '*.sol' -path '*/src/*'),Bash(git diff --name-only main...HEAD)"
+          # CLI options are passed via claude_args in v1
+          claude_args: "--allowedTools 'Bash(ls .changeset/),Bash(pnpm changeset status),Bash(cat PROTOCOL_KNOWLEDGE.md),Bash(find packages -name *.sol -path */src/*),Bash(git diff --name-only main...HEAD)'"
