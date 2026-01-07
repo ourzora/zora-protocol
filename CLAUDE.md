@@ -185,6 +185,26 @@ For Solidity bugs:
 3. Fix the code to make the test pass
 4. Verify the fix with the test suite
 5. **Format the code**: Run `pnpm format` to ensure consistent formatting
+6. **If the fix involves a non-obvious protocol behavior**: Add an entry to `PROTOCOL_KNOWLEDGE.md`
+
+### Protocol Knowledge Base
+
+A `PROTOCOL_KNOWLEDGE.md` file exists at the repository root containing institutional knowledge about protocol integrations, non-obvious behaviors, and lessons learned.
+
+**When to reference:** Before writing or reviewing protocol code that interacts with external protocols (Uniswap V4, etc.) or involves complex Solidity patterns.
+
+**When to contribute:** Add a new entry when discovering a non-obvious behavior while:
+
+- Fixing a bug related to protocol integration
+- Writing new protocol code and finding documentation gaps
+- Reviewing code and noticing a subtle correctness issue
+
+**How to contribute:** Add a new entry following the template in the file. Include:
+
+- Brief title describing the nuance
+- One-sentence description of the non-obvious behavior
+- Code example showing wrong vs correct approach
+- Reference link if applicable
 
 ### New Feature Workflow
 
