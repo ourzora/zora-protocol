@@ -42,53 +42,25 @@ jobs:
         with:
           fetch-depth: 1
 
+      - name: Read review prompt
+        id: prompt
+        run: |
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat .github/claude-code-review-prompt.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@beta
         with:
           anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
 
-          # Optional: Specify model (defaults to Claude Sonnet 4, uncomment for Claude Opus 4)
-          # model: "claude-opus-4-20250514"
-
-          # Direct prompt for automated review (no @claude mention needed)
-          direct_prompt: |
-            Please review this pull request and provide feedback on:
-            - Code quality and best practices
-            - Potential bugs or issues
-            - Performance considerations
-            - Security concerns
-            - Test coverage
-
-            **Important: Changeset Validation**
-            If this PR modifies contract code (*.sol files in packages/*/src/), please check:
-            1. Is there a changeset file in .changeset/ directory?
-            2. If contract code changed but no changeset exists, remind the author to add one using `pnpm changeset add --empty` and manually edit it
-            3. According to CLAUDE.md: "When updating contract code, make a changeset for the corresponding contract package"
-
-            Be constructive and helpful in your feedback.
+          # Prompt is read from .github/claude-code-review-prompt.md
+          # This allows editing the prompt without triggering workflow validation issues
+          direct_prompt: ${{ steps.prompt.outputs.content }}
 
           # Use sticky comments to update existing comment instead of creating new ones
           use_sticky_comment: true
 
-          # Optional: Customize review based on file types
-          # direct_prompt: |
-          #   Review this PR focusing on:
-          #   - For TypeScript files: Type safety and proper interface usage
-          #   - For API endpoints: Security, input validation, and error handling
-          #   - For React components: Performance, accessibility, and best practices
-          #   - For tests: Coverage, edge cases, and test quality
-
-          # Optional: Different prompts for different authors
-          # direct_prompt: |
-          #   ${{ github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR' &&
-          #   'Welcome! Please review this PR from a first-time contributor. Be encouraging and provide detailed explanations for any suggestions.' ||
-          #   'Please provide a thorough code review focusing on our coding standards and best practices.' }}
-
-          # Allow Claude to inspect changesets and run validation commands
-          allowed_tools: "Bash(ls .changeset/),Bash(pnpm changeset status),Bash(find packages -name '*.sol' -path '*/src/*'),Bash(git diff --name-only main...HEAD)"
-
-          # Optional: Skip review for certain conditions
-          # if: |
-          #   !contains(github.event.pull_request.title, '[skip-review]') &&
-          #   !contains(github.event.pull_request.title, '[WIP]')
+          # Allow Claude to inspect changesets, protocol knowledge, and run validation commands
+          allowed_tools: "Bash(ls .changeset/),Bash(pnpm changeset status),Bash(cat PROTOCOL_KNOWLEDGE.md),Bash(find packages -name '*.sol' -path '*/src/*'),Bash(git diff --name-only main...HEAD)"
