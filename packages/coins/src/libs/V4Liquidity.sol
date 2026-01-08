@@ -269,13 +269,14 @@ library V4Liquidity {
                 salt: 0
             });
 
-            (BalanceDelta liquidityDelta, BalanceDelta feesAccrued) = poolManager.modifyLiquidity(poolKey, params, "");
+            // callerDelta already includes fees, feesAccrued is informational only
+            (BalanceDelta callerDelta, ) = poolManager.modifyLiquidity(poolKey, params, "");
 
             burnedPositions[i] = BurnedPosition({
                 tickLower: positions[i].tickLower,
                 tickUpper: positions[i].tickUpper,
-                amount0Received: uint128(liquidityDelta.amount0() + feesAccrued.amount0()),
-                amount1Received: uint128(liquidityDelta.amount1() + feesAccrued.amount1())
+                amount0Received: uint128(callerDelta.amount0()),
+                amount1Received: uint128(callerDelta.amount1())
             });
         }
     }
@@ -315,19 +316,62 @@ library V4Liquidity {
         feeGrowthInside1DeltaX128 = feeGrowthInside1X128 - feeGrowthInside1LastX128;
     }
 
+    /// @notice Mints liquidity positions into the pool
+    /// @dev Uses a defensive balance check to prevent ERC20InsufficientBalance errors during migration.
+    /// When burning positions from an old hook, the amounts received may not exactly match what's needed
+    /// to mint the same liquidity in the new hook due to:
+    ///   1. Rounding in getLiquidityForAmounts() when converting between liquidity and token amounts
+    ///   2. Price movements between burn and mint operations
+    ///   3. Any accumulated dust from previous operations
+    /// By capping each position's liquidity at what's actually mintable with remaining balances,
+    /// we ensure the migration never reverts due to insufficient tokens.
     function mintPositions(IPoolManager poolManager, PoolKey memory poolKey, LpPosition[] memory positions) internal returns (int128 amount0, int128 amount1) {
-        ModifyLiquidityParams memory params;
         uint256 numPositions = positions.length;
 
+        // Track remaining token balances throughout minting.
+        // These balances decrease as each position consumes tokens.
+        uint256 balance0 = poolKey.currency0.balanceOf(address(this));
+        uint256 balance1 = poolKey.currency1.balanceOf(address(this));
+
+        // Cache sqrt price once for all liquidity calculations
+        (uint160 sqrtPriceX96, , , ) = StateLibrary.getSlot0(poolManager, poolKey.toId());
+
         for (uint256 i; i < numPositions; i++) {
-            params = ModifyLiquidityParams({
+            if (positions[i].liquidity == 0) {
+                continue;
+            }
+
+            // Calculate the maximum liquidity we can mint given our remaining token balances.
+            // This is the key defensive check: even if the requested liquidity would require
+            // more tokens than we have (due to rounding), we cap it at what's actually possible.
+            uint128 maxLiquidity = LiquidityAmounts.getLiquidityForAmounts(
+                sqrtPriceX96,
+                TickMath.getSqrtPriceAtTick(positions[i].tickLower),
+                TickMath.getSqrtPriceAtTick(positions[i].tickUpper),
+                balance0,
+                balance1
+            );
+
+            // Use the lesser of requested liquidity and what we can actually afford
+            uint128 liquidityToMint = positions[i].liquidity < maxLiquidity ? positions[i].liquidity : maxLiquidity;
+
+            if (liquidityToMint == 0) {
+                continue;
+            }
+
+            ModifyLiquidityParams memory params = ModifyLiquidityParams({
                 tickLower: positions[i].tickLower,
                 tickUpper: positions[i].tickUpper,
-                liquidityDelta: SafeCast.toInt256(positions[i].liquidity),
+                liquidityDelta: SafeCast.toInt256(liquidityToMint),
                 salt: 0
             });
 
             (BalanceDelta delta, ) = poolManager.modifyLiquidity(poolKey, params, "");
+
+            // Update remaining balances for next iteration.
+            // delta.amount0/1 are negative when minting (tokens flow out), so adding them decreases our balance.
+            balance0 = uint256(int256(balance0) + int256(delta.amount0()));
+            balance1 = uint256(int256(balance1) + int256(delta.amount1()));
 
             amount0 += delta.amount0();
             amount1 += delta.amount1();

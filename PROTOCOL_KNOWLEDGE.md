@@ -12,7 +12,42 @@ This file contains institutional knowledge about protocol integrations, non-obvi
 
 ## Uniswap V4
 
-_(Add entries as discovered)_
+### ModifyLiquidity Return Values
+
+**The Issue:** `modifyLiquidity()` returns `callerDelta` that already includes accrued fees; `feesAccrued` is informational only.
+
+**The Interface:**
+
+```solidity
+/// @notice Modify the liquidity for the given pool
+/// @dev Poke by calling with a zero liquidityDelta
+/// @param key The pool to modify liquidity in
+/// @param params The parameters for modifying the liquidity
+/// @param hookData The data to pass through to the add/removeLiquidity hooks
+/// @return callerDelta The balance delta of the caller of modifyLiquidity. This is the total of both principal delta and feesAccrued
+/// @return feesAccrued The balance delta of the fees generated in the liquidity range. Returned for informational purposes
+function modifyLiquidity(
+  PoolKey memory key,
+  IPoolManager.ModifyLiquidityParams memory params,
+  bytes calldata hookData
+) external returns (BalanceDelta callerDelta, BalanceDelta feesAccrued);
+```
+
+**Wrong:**
+
+```solidity
+(BalanceDelta liquidityDelta, BalanceDelta feesAccrued) = poolManager.modifyLiquidity(...);
+uint128 totalReceived = uint128(liquidityDelta.amount0() + feesAccrued.amount0()); // Double-counting!
+```
+
+**Correct:**
+
+```solidity
+(BalanceDelta callerDelta, ) = poolManager.modifyLiquidity(...);
+uint128 totalReceived = uint128(callerDelta.amount0()); // callerDelta already includes fees
+```
+
+**Reference:** [Uniswap V4 IPoolManager Interface](https://github.com/Uniswap/v4-core/blob/main/src/interfaces/IPoolManager.sol)
 
 ---
 
