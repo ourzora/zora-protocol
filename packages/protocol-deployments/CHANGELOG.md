@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.6.5
+
+### Patch Changes
+
+- 9391359c: Reduced hook code size by removing extra liquidity minting step during migration. Small leftover token amounts from rounding are now left as burned rather than being minted into the last position.
+
 ## 0.6.4
 
 ### Patch Changes

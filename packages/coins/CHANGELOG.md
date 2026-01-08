@@ -1,5 +1,29 @@
 # @zoralabs/coins
 
+## 2.4.0
+
+### Minor Changes
+
+- 09fb2528: Make trusted senders in coin hooks modifiable
+
+  Trusted message senders can now be added or removed after hook deployment instead of being hardcoded at deployment time.
+
+### Patch Changes
+
+- b41a2773: Fix double-counting of fees in burnPositions during liquidity migration
+
+  Previously, the `burnPositions()` function was incorrectly adding `feesAccrued` to `callerDelta` when recording burned position amounts. Since `callerDelta` already includes accrued fees, this caused fees to be double-counted. This resulted in inflated token amounts being recorded in `BurnedPosition` structs, which could lead to `ERC20InsufficientBalance` errors when attempting to mint positions on a new hook during migration.
+
+  The fix:
+
+  - Use only `callerDelta` values directly without adding `feesAccrued`
+  - Add defensive balance checking in `mintPositions()` to cap liquidity at available token amounts
+  - Prevents migration failures from any remaining rounding discrepancies between burn and mint operations
+
+- 8dc766eb: Fix incorrect senderIsTrusted logic for address(0) in ZoraV4CoinHook
+
+  Removes the special case handling for address(0) in the \_getOriginalMsgSender function that was incorrectly setting senderIsTrusted to true. This behavior was unintentionally changed in commit 09fb2528 which added special handling for address(0). This fix restores the original behavior where address(0) returns false for senderIsTrusted,
+
 ## 2.3.1
 
 ### Patch Changes

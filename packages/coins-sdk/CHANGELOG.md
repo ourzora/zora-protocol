@@ -1,5 +1,17 @@
 # @zoralabs/coins-sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- 40af75bc: Added new profileSocial endpoint, moved poolConfig endpoints to standard queries, and updated docs on smart wallet create key
+
+### Patch Changes
+
+- 9f74986f: Add new leaderboard and featured creators queries
+- Updated dependencies [9391359c]
+  - @zoralabs/protocol-deployments@0.6.5
+
 ## 0.3.3
 
 ### Patch Changes
