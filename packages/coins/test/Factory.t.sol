@@ -25,9 +25,16 @@ contract FactoryTest is BaseTest {
 
         // proxy initialization test
         address initialOwner = makeAddr("initialOwner");
-        ZoraFactory factory = new ZoraFactory(address(impl));
-        ZoraFactoryImpl(address(factory)).initialize(address(initialOwner));
-        assertEq(ZoraFactoryImpl(address(factory)).owner(), initialOwner);
+        ZoraFactory newFactory = new ZoraFactory(address(impl));
+
+        // Add the new factory as an owner of the hook registry so it can register hooks during initialization
+        address[] memory newOwners = new address[](1);
+        newOwners[0] = address(newFactory);
+        vm.prank(users.factoryOwner);
+        zoraHookRegistry.addOwners(newOwners);
+
+        ZoraFactoryImpl(address(newFactory)).initialize(address(initialOwner));
+        assertEq(ZoraFactoryImpl(address(newFactory)).owner(), initialOwner);
     }
 
     function test_ownable2Step() public {
