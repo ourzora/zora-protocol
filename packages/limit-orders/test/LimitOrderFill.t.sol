@@ -913,4 +913,115 @@ contract LimitOrderFillTest is BaseTest {
         FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
         assertEq(fills.length, 1, "should fill the one order from non-empty batch");
     }
+
+    /// @notice Verifies that once the pool tick crosses past the order boundary, the order
+    ///         gets filled and coinOut is the counter asset (not same as coinIn).
+    function test_fillSucceedsOnceCrossed_rangeWalk() public {
+        PoolKey memory key = creatorCoin.getPoolKey();
+        bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
+        address orderCoin = _orderCoin(key, isCurrency0);
+
+        // Create a single order out-of-the-money
+        (uint256[] memory orderSizes, int24[] memory orderTicks) = _buildDeterministicOrders(key, isCurrency0, 1, 50e18);
+        uint256 totalSize = orderSizes[0];
+        _fundAndApprove(users.seller, orderCoin, totalSize);
+
+        vm.recordLogs();
+        vm.prank(users.seller);
+        limitOrderBook.create{value: orderCoin == address(0) ? totalSize : 0}(key, isCurrency0, orderSizes, orderTicks, users.seller);
+        CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
+
+        bytes32 orderId = created[0].orderId;
+
+        // Move price past the order to make it crossed (using real swap, auto-fill disabled)
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+
+        // Now fill manually - should work since order is crossed
+        (int24 startTick, int24 endTick) = _tickWindow(created, key);
+        vm.recordLogs();
+        limitOrderBook.fill(key, isCurrency0, startTick, endTick, 10, address(0));
+        FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
+
+        // Should fill
+        assertEq(fills.length, 1, "should fill after crossing");
+
+        // Verify coinIn != coinOut (counter asset received)
+        assertTrue(fills[0].coinIn != fills[0].coinOut, "coinIn should differ from coinOut");
+        assertEq(fills[0].coinIn, orderCoin, "coinIn should be the order coin");
+        assertGt(fills[0].amountOut, 0, "should have non-zero amountOut");
+
+        // Verify order is now FILLED
+        LimitOrderTypes.LimitOrder memory orderAfter = limitOrderBook.exposedOrder(orderId);
+        assertEq(uint256(orderAfter.status), uint256(LimitOrderTypes.OrderStatus.FILLED), "order should be FILLED");
+    }
+
+    /// @notice Same as above but using the batch fill path.
+    function test_fillSucceedsOnceCrossed_batchFill() public {
+        PoolKey memory key = creatorCoin.getPoolKey();
+        bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
+        address orderCoin = _orderCoin(key, isCurrency0);
+
+        // Create a single order out-of-the-money
+        (uint256[] memory orderSizes, int24[] memory orderTicks) = _buildDeterministicOrders(key, isCurrency0, 1, 50e18);
+        uint256 totalSize = orderSizes[0];
+        _fundAndApprove(users.seller, orderCoin, totalSize);
+
+        vm.recordLogs();
+        vm.prank(users.seller);
+        bytes32[] memory orderIds = limitOrderBook.create{value: orderCoin == address(0) ? totalSize : 0}(
+            key,
+            isCurrency0,
+            orderSizes,
+            orderTicks,
+            users.seller
+        );
+        CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
+
+        // Move price past the order to make it crossed
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+
+        // Fill via batch - should work since order is crossed
+        IZoraLimitOrderBook.OrderBatch[] memory batches = new IZoraLimitOrderBook.OrderBatch[](1);
+        batches[0] = IZoraLimitOrderBook.OrderBatch({key: key, isCurrency0: isCurrency0, orderIds: orderIds});
+
+        vm.recordLogs();
+        limitOrderBook.fill(batches, address(0));
+        FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
+
+        // Should fill
+        assertEq(fills.length, 1, "should fill after crossing via batch");
+        assertTrue(fills[0].coinIn != fills[0].coinOut, "coinIn should differ from coinOut");
+    }
+
+    /// @notice Tests that after crossing, fill correctly pays out the counter asset.
+    ///         This is a simpler version that just verifies correct payout after real price movement.
+    function test_fillAfterCrossing_correctPayout() public {
+        PoolKey memory key = creatorCoin.getPoolKey();
+        bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
+        address orderCoin = _orderCoin(key, isCurrency0);
+        address counterCoin = isCurrency0 ? Currency.unwrap(key.currency1) : Currency.unwrap(key.currency0);
+
+        (uint256[] memory orderSizes, int24[] memory orderTicks) = _buildDeterministicOrders(key, isCurrency0, 1, 50e18);
+        uint256 totalSize = orderSizes[0];
+        _fundAndApprove(users.seller, orderCoin, totalSize);
+
+        vm.recordLogs();
+        vm.prank(users.seller);
+        limitOrderBook.create{value: orderCoin == address(0) ? totalSize : 0}(key, isCurrency0, orderSizes, orderTicks, users.seller);
+        CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
+
+        // Move price past the order
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+
+        // Fill
+        (int24 startTick, int24 endTick) = _tickWindow(created, key);
+        vm.recordLogs();
+        limitOrderBook.fill(key, isCurrency0, startTick, endTick, 10, address(0));
+        FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
+
+        assertEq(fills.length, 1, "should fill");
+        assertEq(fills[0].coinIn, orderCoin, "coinIn should be order coin");
+        assertEq(fills[0].coinOut, counterCoin, "coinOut should be counter coin");
+        assertGt(fills[0].amountOut, 0, "should receive counter asset");
+    }
 }

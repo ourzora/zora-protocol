@@ -62,15 +62,17 @@ library LimitOrderFill {
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(data.poolKey);
         uint256 currentEpoch = ++state.poolEpochs[poolKeyHash];
 
-        if (data.orderIds.length == 0) {
-            _fillAcrossRange(state, ctx, data);
-            return;
-        }
-
         PoolKey memory key = state.poolKeys[poolKeyHash];
         if (key.tickSpacing == 0) {
             key = data.poolKey;
             if (key.tickSpacing == 0) revert IZoraLimitOrderBook.InvalidPoolKey();
+        }
+
+        int24 currentTick = _currentPoolTick(ctx.poolManager, key);
+
+        if (data.orderIds.length == 0) {
+            _fillAcrossRange(state, ctx, data, currentTick);
+            return;
         }
 
         bool isCurrency0 = data.isCurrency0;
@@ -87,7 +89,8 @@ library LimitOrderFill {
                 order.status == LimitOrderTypes.OrderStatus.OPEN &&
                 order.poolKeyHash == poolKeyHash &&
                 order.isCurrency0 == isCurrency0 &&
-                order.createdEpoch < currentEpoch
+                order.createdEpoch < currentEpoch &&
+                _hasCrossed(order, currentTick)
             ) {
                 int24 orderTick = LimitOrderCommon.getOrderTick(order);
                 LimitOrderTypes.Queue storage tickQueue = tickQueues[orderTick];
@@ -101,7 +104,12 @@ library LimitOrderFill {
         }
     }
 
-    function _fillAcrossRange(LimitOrderStorage.Layout storage state, Context memory ctx, IZoraLimitOrderBook.FillCallbackData memory data) private {
+    function _fillAcrossRange(
+        LimitOrderStorage.Layout storage state,
+        Context memory ctx,
+        IZoraLimitOrderBook.FillCallbackData memory data,
+        int24 currentTick
+    ) private {
         if (data.maxFillCount == 0) {
             return;
         }
@@ -170,6 +178,10 @@ library LimitOrderFill {
                     continue;
                 }
                 if (order.createdEpoch == currentEpoch) break;
+                if (!_hasCrossed(order, currentTick)) {
+                    orderId = nextOrderId;
+                    continue;
+                }
 
                 _fillOrder(ctx, state, data.poolKey, tickQueue, order, orderId, data.fillReferral);
 
@@ -341,5 +353,10 @@ library LimitOrderFill {
 
     function _currentPoolTick(IPoolManager poolManager, PoolKey memory key) private view returns (int24 tick) {
         (, tick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
+    }
+
+    /// @dev Returns true if the pool tick has fully crossed the order's range.
+    function _hasCrossed(LimitOrderTypes.LimitOrder storage order, int24 currentTick) private view returns (bool) {
+        return order.isCurrency0 ? currentTick >= order.tickUpper : currentTick <= order.tickLower;
     }
 }
