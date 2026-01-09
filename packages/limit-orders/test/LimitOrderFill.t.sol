@@ -57,7 +57,8 @@ contract LimitOrderFillTest is BaseTest {
         assertGt(created.length, 0, "expected orders to be created");
         _assertOpenOrderState(users.buyer, created[0].coin, created[0].poolKeyHash, created, key.tickSpacing);
 
-        // Orders are already in-the-money (placed on crossed side of current tick), ready to fill
+        // Move price past orders so they are fully crossed
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
 
         (int24 startTick, int24 endTick) = _tickWindow(created, key);
         bool isCurrency0 = created[0].isCurrency0;
@@ -274,7 +275,9 @@ contract LimitOrderFillTest is BaseTest {
         assertGt(created.length, 1, "expected multiple orders");
         _assertOpenOrderState(users.buyer, created[0].coin, created[0].poolKeyHash, created, key.tickSpacing);
 
-        // Orders are already in-the-money (placed on crossed side), ready to fill
+        // Move price past orders so they are fully crossed
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+
         (int24 startTick, int24 endTick) = _tickWindow(created, key);
         bool isCurrency0 = created[0].isCurrency0;
         bytes32 poolKeyHash = created[0].poolKeyHash;
@@ -384,6 +387,9 @@ contract LimitOrderFillTest is BaseTest {
         CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
         assertGt(created.length, 0, "expected orders to be created");
         _assertOpenOrderState(users.buyer, created[0].coin, created[0].poolKeyHash, created, key.tickSpacing);
+
+        // Move price past orders so they are fully crossed
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
 
         bool isCurrency0 = created[0].isCurrency0;
         address orderCoin = created[0].coin;
@@ -648,23 +654,6 @@ contract LimitOrderFillTest is BaseTest {
         assertEq(_makerBalance(users.seller, orderCoin), 0, "maker balance should be zero");
     }
 
-    function _movePriceBeyondTicks(CreatedOrderLog[] memory created) private {
-        if (created.length == 0) return;
-
-        address mover = makeAddr("price-mover");
-        uint128 swapAmount = uint128(DEFAULT_LIMIT_ORDER_AMOUNT * 10);
-
-        // Buy coin - this moves price toward orders
-        deal(address(zoraToken), mover, uint256(swapAmount));
-        _swapSomeCurrencyForCoin(ICoin(address(creatorCoin)), address(zoraToken), swapAmount, mover);
-    }
-
-    function _movePriceBeyondTicksWithAutoFillDisabled(CreatedOrderLog[] memory created) internal {
-        uint256 previousMax = _disableAutoFill();
-        _movePriceBeyondTicks(created);
-        _restoreAutoFill(previousMax);
-    }
-
     function _balanceOf(address token, address account) private view returns (uint256) {
         if (token == address(0)) {
             return account.balance;
@@ -680,17 +669,6 @@ contract LimitOrderFillTest is BaseTest {
             vm.prank(maker);
             IERC20(asset).approve(address(limitOrderBook), amount);
         }
-    }
-
-    function _disableAutoFill() internal returns (uint256 previousMaxFillCount) {
-        previousMaxFillCount = limitOrderBook.getMaxFillCount();
-        vm.prank(users.factoryOwner);
-        limitOrderBook.setMaxFillCount(0);
-    }
-
-    function _restoreAutoFill(uint256 previousMaxFillCount) internal {
-        vm.prank(users.factoryOwner);
-        limitOrderBook.setMaxFillCount(previousMaxFillCount);
     }
 
     function test_fillWithNoResidual() public {

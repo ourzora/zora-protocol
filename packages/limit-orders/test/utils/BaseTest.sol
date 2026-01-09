@@ -25,6 +25,7 @@ import {TickBitmap} from "@uniswap/v4-core/src/libraries/TickBitmap.sol";
 import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {AddressConstants} from "@zoralabs/coins/test/utils/hookmate/constants/AddressConstants.sol";
+import {ICoin} from "@zoralabs/coins/src/interfaces/ICoin.sol";
 
 /**
  * @title BaseTest
@@ -735,5 +736,58 @@ contract BaseTest is V4TestSetup, IMsgSender {
         } else {
             return tick - (spacing + remainder);
         }
+    }
+
+    function _movePriceBeyondTicks(CreatedOrderLog[] memory created) internal virtual {
+        if (created.length == 0) return;
+
+        address mover = makeAddr("price-mover");
+        // Pool has significant liquidity, need large swap to move tick past all orders
+        uint256 swapAmount = 50_000_000e18;
+
+        // Check if coin is currency0 or currency1 in the pool
+        PoolKey memory key = creatorCoin.getPoolKey();
+        bool coinIsCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
+        bool isCurrency0Order = created[0].isCurrency0;
+
+        // For currency0 orders: need tick UP (currentTick >= tickUpper)
+        // For currency1 orders: need tick DOWN (currentTick <= tickLower)
+        //
+        // When coin is currency1 (token1):
+        //   - Sell coin → tick increases (add token1, price of token0 rises)
+        //   - Buy coin → tick decreases
+        // When coin is currency0 (token0):
+        //   - Sell coin → tick decreases (add token0, price of token0 drops)
+        //   - Buy coin → tick increases
+
+        bool needTickUp = isCurrency0Order;
+        bool sellCoinIncreaseTick = !coinIsCurrency0; // selling token1 increases tick
+
+        if (needTickUp == sellCoinIncreaseTick) {
+            // Sell coin to move tick in required direction
+            deal(address(creatorCoin), mover, swapAmount);
+            _swapSomeCoinForCurrency(ICoin(address(creatorCoin)), address(zoraToken), uint128(swapAmount), mover);
+        } else {
+            // Buy coin to move tick in required direction
+            deal(address(zoraToken), mover, swapAmount);
+            _swapSomeCurrencyForCoin(ICoin(address(creatorCoin)), address(zoraToken), uint128(swapAmount), mover);
+        }
+    }
+
+    function _movePriceBeyondTicksWithAutoFillDisabled(CreatedOrderLog[] memory created) internal virtual {
+        uint256 previousMax = _disableAutoFill();
+        _movePriceBeyondTicks(created);
+        _restoreAutoFill(previousMax);
+    }
+
+    function _disableAutoFill() internal returns (uint256 previousMaxFillCount) {
+        previousMaxFillCount = limitOrderBook.getMaxFillCount();
+        vm.prank(users.factoryOwner);
+        limitOrderBook.setMaxFillCount(0);
+    }
+
+    function _restoreAutoFill(uint256 previousMaxFillCount) internal {
+        vm.prank(users.factoryOwner);
+        limitOrderBook.setMaxFillCount(previousMaxFillCount);
     }
 }

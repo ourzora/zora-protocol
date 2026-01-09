@@ -851,7 +851,7 @@ contract LimitOrderFillGasTest is BaseTest {
 
     /// @notice Helper to move price beyond order ticks without triggering automatic fills
     /// @dev Disables hook's auto-fill, executes swap, re-enables auto-fill
-    function _movePriceBeyondTicksWithAutoFillDisabled(CreatedOrderLog[] memory created) internal {
+    function _movePriceBeyondTicksWithAutoFillDisabled(CreatedOrderLog[] memory created) internal override {
         uint256 previousMaxFillCount = limitOrderBook.getMaxFillCount();
         vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(0);
@@ -863,7 +863,7 @@ contract LimitOrderFillGasTest is BaseTest {
     }
 
     /// @notice Helper to actually move the price by executing a large swap
-    function _movePriceBeyondTicks(CreatedOrderLog[] memory created) internal {
+    function _movePriceBeyondTicks(CreatedOrderLog[] memory created) internal override {
         if (created.length == 0) return;
 
         PoolKey memory key = creatorCoin.getPoolKey();

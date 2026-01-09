@@ -202,6 +202,9 @@ contract LimitOrderAccessControlTest is BaseTest {
         CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
         assertGt(created.length, 0, "expected orders to be created");
 
+        // Move price past orders so they are fully crossed
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+
         (int24 startTick, int24 endTick) = _tickWindow(created, key);
         UnlockedFillCaller caller = new UnlockedFillCaller(address(limitOrderBook), address(poolManager));
         _registerTestHook(address(caller));
@@ -230,7 +233,11 @@ contract LimitOrderAccessControlTest is BaseTest {
         CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
         assertGt(created.length, 2, "expected multiple orders");
 
+        // Move price past orders so they are fully crossed
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+
         uint256 previousMax = limitOrderBook.getMaxFillCount();
+        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(2);
         (int24 startTick, int24 endTick) = _tickWindow(created, key);
 
@@ -239,6 +246,7 @@ contract LimitOrderAccessControlTest is BaseTest {
         FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
         assertEq(fills.length, 2, "should use stored maxFillCount when input is zero");
 
+        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(previousMax);
     }
 
@@ -249,6 +257,9 @@ contract LimitOrderAccessControlTest is BaseTest {
         _executeSingleHopSwapWithLimitOrders(users.seller, key, DEFAULT_LIMIT_ORDER_AMOUNT, _defaultMultiples(), _defaultPercentages());
         CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
         assertGt(created.length, 2, "expected >=2 orders");
+
+        // Move price past orders so they are fully crossed
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
 
         uint256 makerBalanceBefore = _makerBalance(users.seller, created[0].coin);
 
