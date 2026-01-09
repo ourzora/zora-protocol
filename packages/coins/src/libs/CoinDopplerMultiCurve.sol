@@ -105,7 +105,7 @@ library CoinDopplerMultiCurve {
         bool isCoinToken0,
         PoolConfiguration memory poolConfiguration,
         uint256 totalSupply
-    ) internal pure returns (LpPosition[] memory positions) {
+    ) external pure returns (LpPosition[] memory positions) {
         positions = new LpPosition[](poolConfiguration.numPositions);
 
         uint256 discoverySupply;
