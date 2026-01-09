@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./utils/BaseTest.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 import {ISwapRouter} from "../src/interfaces/ISwapRouter.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
@@ -11,6 +11,12 @@ import {PoolConfiguration} from "../src/interfaces/ICoin.sol";
 import {IERC165, IERC7572, ICoin, ICoinComments, IERC20} from "../src/BaseCoin.sol";
 import {IERC20Permit} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Permit.sol";
 import {BaseCoin} from "../src/BaseCoin.sol";
+import {stdJson} from "forge-std/StdJson.sol";
+import {ContentCoin} from "../src/ContentCoin.sol";
+import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
+import {MockERC20} from "./mocks/MockERC20.sol";
+import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
+import {MultiOwnable} from "../src/utils/MultiOwnable.sol";
 
 contract CoinTest is BaseTest {
     using stdJson for string;

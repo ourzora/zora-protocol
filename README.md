@@ -44,6 +44,7 @@ For JavaScript/TypeScript development and wagmi consumption:
     pnpm build:js
 
 This command:
+
 - Builds only the JavaScript/TypeScript artifacts needed for client applications
 - Generates wagmi-compatible type definitions and ABIs
 - Skips full Solidity compilation for faster builds
@@ -56,6 +57,7 @@ For complete contract development and testing:
     pnpm build
 
 This command:
+
 - Performs full Solidity compilation with all optimizations
 - Generates all contract artifacts (out/, abis/, dist/)
 - Required for contract development, testing, and deployment
@@ -86,6 +88,7 @@ Format and lint code:
 ### When to Use Which Build
 
 - **Use `pnpm build:js`** when:
+
   - Developing frontend applications with wagmi
   - Working with the SDK packages
   - You only need TypeScript definitions and ABIs

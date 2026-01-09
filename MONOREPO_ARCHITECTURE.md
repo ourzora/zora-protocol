@@ -61,6 +61,7 @@ The monorepo uses Turbo for orchestration with distinct build task patterns:
 Contract packages are identified by the presence of `foundry.toml` and `wagmi.config.ts` files. These packages follow a hybrid compilation pattern supporting both Solidity contract development and TypeScript consumption. Examples include packages focused on core protocol contracts, commenting systems, shared contract utilities, and wallet implementations.
 
 **Identification Pattern**: Look for packages containing both:
+
 - `foundry.toml` - Foundry configuration for Solidity compilation
 - `wagmi.config.ts` - Wagmi configuration for TypeScript ABI generation
 
@@ -71,7 +72,7 @@ Contract packages are identified by the presence of `foundry.toml` and `wagmi.co
   "build": "forge build", // Full compilation
   "build:contracts:minimal": "forge build --skip test --skip script --no-metadata",
   "wagmi:generate": "pnpm run build:contracts:minimal && wagmi generate && pnpm exec rename-generated-abi-casing",
-  "build:js": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup"
+  "build:js": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
 }
 ```
 
@@ -80,6 +81,7 @@ Contract packages are identified by the presence of `foundry.toml` and `wagmi.co
 These packages focus on consumption APIs, tooling, and build utilities. They contain only TypeScript/JavaScript code without Solidity contracts. Examples include SDK packages for contract interaction, deployment configuration packages, internal code generation utilities, and shared build tooling.
 
 **Identification Pattern**: Look for packages with:
+
 - `tsconfig.json` or `tsup.config.ts` but no `foundry.toml`
 - Primary focus on JavaScript/TypeScript build outputs
 - Often serve as consumption layers or development tooling
@@ -102,6 +104,7 @@ These packages focus on consumption APIs, tooling, and build utilities. They con
 Legacy packages in the `legacy/` directory represent previous iterations of protocol components. They maintain the same architectural patterns as active packages (contract + TypeScript hybrids or TypeScript-only) but are no longer the primary development focus. These packages often represent superseded implementations or earlier protocol versions that remain for compatibility.
 
 **Identification Pattern**:
+
 - Located in `legacy/` directory
 - May follow older build patterns but have been updated for performance
 - Often have newer equivalents in the main `packages/` directory
@@ -113,6 +116,7 @@ Legacy packages in the `legacy/` directory represent previous iterations of prot
 Documentation packages are typically found in the root directory and focus on static site generation. They depend on TypeScript packages for type information and use frameworks like Vocs for MDX processing.
 
 **Identification Pattern**:
+
 - Located in root directory or dedicated docs folders
 - Contain `vocs.config.ts` or similar static site configuration
 - Depend on `^build:js` from SDK packages for type generation
@@ -177,6 +181,7 @@ The entire architecture is designed around a core constraint: `protocol-deployme
 **Separation of Concerns**:
 
 - **`protocol-deployments-gen`** (Internal Build Tool):
+
   - Has dependencies on internal/non-published monorepo packages
   - Aggregates ABIs and deployment addresses from ALL contract packages
   - Pulls data from both `packages/` and `legacy/` directories
@@ -202,7 +207,7 @@ The entire architecture is designed around a core constraint: `protocol-deployme
 
 - **External Consumption**: Wagmi users get a clean package without monorepo complexity
 - **Dependency Isolation**: No risk of version conflicts from internal tooling
-- **Maintainability**: Internal refactoring doesn't break external consumers  
+- **Maintainability**: Internal refactoring doesn't break external consumers
 - **Performance**: Smaller dependency graph for external applications
 - **Monorepo Flexibility**: Internal packages can change without affecting public API
 
@@ -225,7 +230,7 @@ import { specificABI } from "@zoralabs/another-package";
 
 **Turbo Handles Most Ordering**, but be aware:
 
-- Internal generation packages (*-gen) MUST build before their corresponding published packages
+- Internal generation packages (\*-gen) MUST build before their corresponding published packages
 - Documentation packages need SDK packages built first
 - Wagmi generation requires contract compilation to complete
 - Shared utilities must build before packages that depend on them
@@ -346,7 +351,7 @@ SDK Packages, Documentation Sites
 ### Critical Path Dependencies
 
 1. **Shared Build Utilities**: Common tooling used across all contract packages
-2. **Internal Generation Package**: Aggregation point for all contract ABIs (typically named *-gen)
+2. **Internal Generation Package**: Aggregation point for all contract ABIs (typically named \*-gen)
 3. **Published Deployment Package**: Public API for external contract interactions
 
 **Failure Points**:
@@ -412,7 +417,7 @@ This section provides step-by-step instructions for adding new contracts to the 
 The protocol-deployments system uses a three-stage pipeline to convert individual contract packages into a clean, dependency-free published package:
 
 ```
-1. Individual Package (e.g., coins/) 
+1. Individual Package (e.g., coins/)
    └── wagmi.config.ts defines which contracts to export
    └── addresses/*.json files contain deployment addresses
 
@@ -440,9 +445,9 @@ export default defineConfig({
         build: false,
       },
       include: [
-        "BaseCoin",           // Existing contract
-        "CreatorCoin",        // Existing contract
-        "YourNewContract",    // ← Add your new contract here
+        "BaseCoin", // Existing contract
+        "CreatorCoin", // Existing contract
+        "YourNewContract", // ← Add your new contract here
         // ... other contracts
       ].map((contractName) => `${contractName}.json`),
     }),
@@ -451,6 +456,7 @@ export default defineConfig({
 ```
 
 **Key Points**:
+
 - Only include contracts that should be publicly available
 - Contract names must match the Solidity contract names exactly
 - The `.json` extension is added automatically by the `.map()` function
@@ -469,7 +475,7 @@ import {
   zoraFactoryImplABI,
   baseCoinABI,
   creatorCoinABI,
-  yourNewContractABI,  // ← Add this import
+  yourNewContractABI, // ← Add this import
   // ... other imports
 } from "@zoralabs/coins"; // or your package name
 ```
@@ -483,14 +489,14 @@ Find or create the appropriate getter function for your package. For example, co
 ```typescript
 const getCoinsContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
-  
+
   // ... existing address loading logic ...
 
   // Add your contract with addresses
   addAddress({
     abi: yourNewContractABI,
     addresses,
-    configKey: "YOUR_NEW_CONTRACT",  // Must match key in addresses/*.json
+    configKey: "YOUR_NEW_CONTRACT", // Must match key in addresses/*.json
     contractName: "YourNewContract", // Name in final wagmi types
     storedConfigs,
   });
@@ -527,7 +533,7 @@ Some contracts combine errors from multiple ABIs. Follow this pattern if your co
 addAddress({
   abi: [
     ...yourNewContractABI,
-    ...extractErrors(someOtherContractABI),  // Include related errors
+    ...extractErrors(someOtherContractABI), // Include related errors
   ],
   addresses,
   configKey: "YOUR_NEW_CONTRACT",
@@ -551,11 +557,13 @@ If your contract has deployment addresses, create address files in your package'
 ```
 
 **Examples**:
+
 - `packages/coins/addresses/8453.json` (Base mainnet)
 - `packages/coins/addresses/1.json` (Ethereum mainnet)
 - `packages/coins/addresses/dev/31337.json` (Local development)
 
 **Key Requirements**:
+
 - Use uppercase with underscores for JSON keys
 - Keys must match the `configKey` used in `addAddress()` calls
 - Addresses must be valid hex strings with `0x` prefix
@@ -576,6 +584,7 @@ pnpm --filter @zoralabs/protocol-deployments build:js
 ```
 
 **Alternative**: Build all related packages at once:
+
 ```bash
 pnpm turbo run build:js --filter="@zoralabs/protocol-deployments*" --filter="@zoralabs/your-package"
 ```
@@ -585,12 +594,14 @@ pnpm turbo run build:js --filter="@zoralabs/protocol-deployments*" --filter="@zo
 After completing the generation process, verify your contract is properly published:
 
 1. **Check Generated File**:
+
    ```bash
    # Look for your contract in the generated wagmi types
    cat packages/protocol-deployments-gen/generated/wagmi.ts | grep -A 10 "YourNewContract"
    ```
 
 2. **Verify in Published Package**:
+
    ```bash
    # Ensure the generated file was copied
    cat packages/protocol-deployments/src/generated/wagmi.ts | grep "YourNewContract"
@@ -605,21 +616,25 @@ After completing the generation process, verify your contract is properly publis
 ### Troubleshooting Common Issues
 
 **"Cannot find module" Errors**:
+
 - Ensure the contract package has been built with `build:js`
 - Check that the import path matches the package name exactly
 - Verify the ABI is exported from the package's main index file
 
 **Missing Addresses**:
+
 - Confirm address files exist in the expected location
 - Check that JSON keys match the `configKey` exactly (case-sensitive)
 - Ensure addresses are valid hex strings with `0x` prefix
 
 **Build Order Issues**:
+
 - Always build the source package before the generation package
 - Use turbo to handle dependency ordering automatically
 - Check that `^build:js` dependencies are correct in turbo.json
 
 **Outdated ABIs**:
+
 - Clear turbo cache with `turbo run build:js --force` if needed
 - Ensure contract compilation produced fresh ABIs
 - Verify the contract name matches between Solidity and wagmi.config.ts

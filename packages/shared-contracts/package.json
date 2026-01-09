@@ -22,10 +22,10 @@
     "wagmi:generate": "wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts"
   },
   "dependencies": {
-    "@openzeppelin/contracts-upgradeable": "^5.1.0"
+    "@openzeppelin/contracts-upgradeable": "^5.4.0"
   },
   "devDependencies": {
-    "@openzeppelin/contracts": "^5.0.2",
+    "@openzeppelin/contracts": "^5.4.0",
     "@types/node": "^20.1.2",
     "@zoralabs/shared-scripts": "workspace:^",
     "@zoralabs/tsconfig": "workspace:^",

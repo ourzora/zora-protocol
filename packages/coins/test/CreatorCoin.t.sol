@@ -1,13 +1,15 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./utils/BaseTest.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 
 import {ICreatorCoin} from "../src/interfaces/ICreatorCoin.sol";
 import {ICreatorCoinHook} from "../src/interfaces/ICreatorCoinHook.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";
+import {CreatorCoin} from "../src/CreatorCoin.sol";
+import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 
 contract CreatorCoinTest is BaseTest {
     CreatorCoin internal creatorCoin;

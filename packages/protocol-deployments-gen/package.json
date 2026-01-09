@@ -20,7 +20,9 @@
     "@zoralabs/smart-wallet-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^",
     "@zoralabs/cointags-contracts": "workspace:^",
-    "@zoralabs/coins": "workspace:^"
+    "@zoralabs/coins": "workspace:^",
+    "@zoralabs/coins-deployments": "workspace:^",
+    "@zoralabs/limit-orders": "workspace:^"
   },
   "devDependencies": {
     "@zoralabs/tsconfig": "workspace:^",

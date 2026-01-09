@@ -57,6 +57,12 @@ interface IZoraV4CoinHook is IUpgradeableV4Hook {
     /// @notice Thrown when a non-coin is used to access the functionality of a coin.
     error OnlyCoin(address caller, address expectedCoin);
 
+    /// @notice Thrown when the Zora limit order book is the zero address.
+    error ZoraLimitOrderBookCannotBeZeroAddress();
+
+    /// @notice Thrown when the Zora hook registry is the zero address.
+    error ZoraHookRegistryCannotBeZeroAddress();
+
     /// @notice The pool coin struct. Lists all the contract-created positions for the coin.
     struct PoolCoin {
         /// @notice The address of the coin.

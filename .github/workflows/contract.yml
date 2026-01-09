@@ -17,6 +17,15 @@ on:
       skip_storage_layout:
         type: boolean
         default: false
+      skip_coverage:
+        type: boolean
+        default: false
+      skip_contract_sizes:
+        type: boolean
+        default: false
+      skip_tests:
+        type: boolean
+        default: false
 
 jobs:
   build:
@@ -27,6 +36,7 @@ jobs:
   test:
     needs: build
     uses: ./.github/workflows/test.yml
+    if: ${{ inputs.skip_tests == false }}
     secrets: inherit
     with:
       package_folder: ${{ inputs.package_folder }}
@@ -43,6 +53,7 @@ jobs:
   contract_sizes:
     needs: build
     uses: ./.github/workflows/contract_sizes.yml
+    if: ${{ inputs.skip_contract_sizes == false }}
     with:
       package_folder: ${{ inputs.package_folder }}
       name: ${{ inputs.name }}
@@ -55,6 +66,7 @@ jobs:
 
   coverage:
     uses: ./.github/workflows/coverage.yml
+    if: ${{ inputs.skip_coverage == false }}
     secrets: inherit
     with:
       package_folder: ${{ inputs.package_folder }}

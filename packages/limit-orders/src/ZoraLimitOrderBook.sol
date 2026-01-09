@@ -1,0 +1,220 @@
+// SPDX-License-Identifier: ZORA-DELAYED-OSL-v1
+// This software is licensed under the Zora Delayed Open Source License.
+// Under this license, you may use, copy, modify, and distribute this software for
+// non-commercial purposes only. Commercial use and competitive products are prohibited
+// until the "Open Date" (3 years from first public distribution or earlier at Zora's discretion),
+// at which point this software automatically becomes available under the MIT License.
+// Full license terms available at: https://docs.zora.co/coins/license
+pragma solidity ^0.8.28;
+
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
+import {SimpleAccessManaged} from "./access/SimpleAccessManaged.sol";
+
+import {IDeployedCoinVersionLookup} from "@zoralabs/coins/src/interfaces/IDeployedCoinVersionLookup.sol";
+import {IZoraHookRegistry} from "@zoralabs/coins/src/interfaces/IZoraHookRegistry.sol";
+import {IZoraLimitOrderBook} from "./IZoraLimitOrderBook.sol";
+import {LimitOrderStorage} from "./libs/LimitOrderStorage.sol";
+import {LimitOrderCreate} from "./libs/LimitOrderCreate.sol";
+import {LimitOrderFill} from "./libs/LimitOrderFill.sol";
+import {LimitOrderWithdraw} from "./libs/LimitOrderWithdraw.sol";
+import {LimitOrderTypes} from "./libs/LimitOrderTypes.sol";
+
+contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
+    IPoolManager public immutable poolManager;
+    IDeployedCoinVersionLookup public immutable zoraCoinVersionLookup;
+    IZoraHookRegistry public immutable zoraHookRegistry;
+
+    constructor(address poolManager_, address zoraCoinVersionLookup_, address zoraHookRegistry_, address authority_) SimpleAccessManaged(authority_) {
+        poolManager = IPoolManager(poolManager_);
+        zoraCoinVersionLookup = IDeployedCoinVersionLookup(zoraCoinVersionLookup_);
+        zoraHookRegistry = IZoraHookRegistry(zoraHookRegistry_);
+    }
+
+    function tickQueueBalance(bytes32 poolKeyHash, address coin, int24 tick) internal view returns (uint256) {
+        return LimitOrderStorage.layout().tickQueues[poolKeyHash][coin][tick].balance;
+    }
+
+    /// @inheritdoc IZoraLimitOrderBook
+    function balanceOf(address maker, address coin) external view override returns (uint256) {
+        return LimitOrderStorage.layout().makerBalances[maker][coin];
+    }
+
+    function getOrder(bytes32 id) internal view returns (LimitOrderTypes.LimitOrder memory) {
+        return LimitOrderStorage.layout().limitOrders[id];
+    }
+
+    function getTickQueue(bytes32 poolKeyHash, address coin, int24 tick) internal view returns (LimitOrderTypes.Queue memory) {
+        return LimitOrderStorage.layout().tickQueues[poolKeyHash][coin][tick];
+    }
+
+    function getPoolKey(bytes32 poolKeyHash) internal view returns (PoolKey memory) {
+        return LimitOrderStorage.layout().poolKeys[poolKeyHash];
+    }
+
+    function getPoolEpoch(bytes32 poolKeyHash) internal view returns (uint256) {
+        return LimitOrderStorage.layout().poolEpochs[poolKeyHash];
+    }
+
+    function getMakerNonce(address maker) internal view returns (uint256) {
+        return LimitOrderStorage.layout().makerNonces[maker];
+    }
+
+    function getOrderId(bytes32 poolKeyHash, address coin, int24 tick, address maker, uint256 nonce) internal pure returns (bytes32) {
+        return keccak256(abi.encodePacked(poolKeyHash, coin, tick, maker, nonce));
+    }
+
+    /// @inheritdoc IZoraLimitOrderBook
+    function create(
+        PoolKey memory key,
+        bool isCurrency0,
+        uint256[] memory orderSizes,
+        int24[] memory orderTicks,
+        address maker
+    ) external payable override returns (bytes32[] memory) {
+        _checkCanCall(this.create.selector);
+        return LimitOrderCreate.create(LimitOrderStorage.layout(), poolManager, key, isCurrency0, orderSizes, orderTicks, maker);
+    }
+
+    /// @inheritdoc IZoraLimitOrderBook
+    function fill(PoolKey calldata key, bool isCurrency0, int24 startTick, int24 endTick, uint256 maxFillCount, address fillReferral) external override {
+        if (maxFillCount == 0) {
+            maxFillCount = getMaxFillCount();
+        }
+
+        bool isUnlocked = TransientStateLibrary.isUnlocked(poolManager);
+
+        // Only known Zora hooks can fill while unlocked
+        if (isUnlocked) {
+            require(zoraHookRegistry.isRegisteredHook(msg.sender), UnlockedFillNotAllowed());
+        }
+
+        LimitOrderStorage.Layout storage state = LimitOrderStorage.layout();
+        LimitOrderFill.Context memory ctx = _fillContext();
+
+        (PoolKey memory canonicalKey, int24 resolvedStart, int24 resolvedEnd) = LimitOrderFill.validateTickRange(
+            state,
+            ctx,
+            key,
+            isCurrency0,
+            startTick,
+            endTick
+        );
+
+        IZoraLimitOrderBook.FillCallbackData memory fillData = _fillData(
+            canonicalKey,
+            isCurrency0,
+            resolvedStart,
+            resolvedEnd,
+            maxFillCount,
+            fillReferral,
+            new bytes32[](0)
+        );
+
+        if (isUnlocked) {
+            // fill while already unlocked
+            LimitOrderFill.executeFill(state, ctx, fillData);
+            return;
+        }
+
+        // unlock and fill
+        _unlock(IZoraLimitOrderBook.CallbackId.FILL, abi.encode(fillData));
+    }
+
+    function fill(OrderBatch[] calldata batches, address fillReferral) external override {
+        uint256 length = batches.length;
+        for (uint256 i = 0; i < length; ++i) {
+            OrderBatch calldata batch = batches[i];
+
+            if (batch.orderIds.length != 0) {
+                bytes32[] memory orderIds = batch.orderIds;
+                _unlock(
+                    IZoraLimitOrderBook.CallbackId.FILL,
+                    abi.encode(_fillData(batch.key, batch.isCurrency0, 0, 0, orderIds.length, fillReferral, orderIds))
+                );
+            }
+        }
+    }
+
+    /// @inheritdoc IZoraLimitOrderBook
+    function withdraw(bytes32[] calldata orderIds, address coin, uint256 minAmountOut, address recipient) external override {
+        bytes32[] memory orderIdsCopy = orderIds;
+        _unlock(CallbackId.WITHDRAW_ORDERS, _encodeWithdrawOrders(msg.sender, orderIdsCopy, coin, minAmountOut, recipient));
+    }
+
+    /// @notice Processes pool-manager unlock callbacks and routes them to the correct handler.
+    /// @param data ABI encoded callback identifier and callback data.
+    /// @return result Optional return data for create flows.
+    function unlockCallback(bytes calldata data) external returns (bytes memory) {
+        require(msg.sender == address(poolManager), NotPoolManager());
+
+        (CallbackId callbackId, bytes memory callbackData) = abi.decode(data, (CallbackId, bytes));
+        LimitOrderStorage.Layout storage state = LimitOrderStorage.layout();
+
+        if (callbackId == CallbackId.CREATE) {
+            return LimitOrderCreate.handleCreateCallback(state, poolManager, callbackData);
+        }
+
+        if (callbackId == CallbackId.FILL) {
+            LimitOrderFill.handleFillCallback(state, _fillContext(), callbackData);
+        } else if (callbackId == CallbackId.WITHDRAW_ORDERS) {
+            LimitOrderWithdraw.handleWithdrawOrdersCallback(state, poolManager, callbackData);
+        } else {
+            revert UnknownCallback();
+        }
+
+        return bytes("");
+    }
+
+    function getMaxFillCount() public view returns (uint256) {
+        return LimitOrderStorage.layout().maxFillCount;
+    }
+
+    function setMaxFillCount(uint256 maxFillCount) external {
+        _checkCanCall(this.setMaxFillCount.selector);
+
+        LimitOrderStorage.layout().maxFillCount = maxFillCount;
+    }
+
+    receive() external payable {
+        require(msg.sender == address(poolManager), NotPoolManager());
+    }
+
+    function _fillContext() private view returns (LimitOrderFill.Context memory ctx) {
+        ctx.poolManager = poolManager;
+        ctx.versionLookup = zoraCoinVersionLookup;
+    }
+
+    function _fillData(
+        PoolKey memory key,
+        bool isCurrency0,
+        int24 startTick,
+        int24 endTick,
+        uint256 maxFillCount,
+        address fillReferral,
+        bytes32[] memory orderIds
+    ) private pure returns (IZoraLimitOrderBook.FillCallbackData memory data) {
+        data.poolKey = key;
+        data.isCurrency0 = isCurrency0;
+        data.startTick = startTick;
+        data.endTick = endTick;
+        data.maxFillCount = maxFillCount;
+        data.fillReferral = fillReferral;
+        data.orderIds = orderIds;
+    }
+
+    function _encodeWithdrawOrders(
+        address maker,
+        bytes32[] memory orderIds,
+        address coin,
+        uint256 minAmountOut,
+        address recipient
+    ) private pure returns (bytes memory) {
+        return abi.encode(WithdrawOrdersCallbackData({maker: maker, orderIds: orderIds, coin: coin, minAmountOut: minAmountOut, recipient: recipient}));
+    }
+
+    function _unlock(CallbackId callbackId, bytes memory payload) private {
+        poolManager.unlock(abi.encode(callbackId, payload));
+    }
+}

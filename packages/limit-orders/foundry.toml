@@ -1,0 +1,29 @@
+[profile.default]
+src = "src"
+test = "test"
+libs = ["node_modules"]
+via_ir = true
+optimizer = true
+solc_version = '0.8.28'
+optimizer_runs = 100
+dynamic_test_linking = true
+gas_reports = ["LimitOrderFillGas"]
+fs_permissions = [
+  { access = "readwrite", path = "./addresses" },
+  { access = "readwrite", path = "./addresses/dev" },
+  { access = "read", path = "./package.json" },
+  { access = "readwrite", path = "./deterministicConfig" },
+  { access = "read", path = "../shared-contracts/chainConfigs" },
+  { access = "read", path = "../shared-contracts/deterministicConfig" }
+]
+
+[profile.dev]
+via_ir = true 
+optimizer = false
+
+[profile.ci.fuzz]
+runs = 100
+
+[rpc_endpoints]
+base = "https://base.gateway.tenderly.co/${TENDERLY_KEY}"
+mainnet = "https://mainnet.gateway.tenderly.co/${TENDERLY_KEY}"

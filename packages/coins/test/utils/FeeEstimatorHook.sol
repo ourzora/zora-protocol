@@ -4,6 +4,8 @@ pragma solidity ^0.8.13;
 import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
 import {IPoolManager, PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {IDeployedCoinVersionLookup} from "../../src/interfaces/IDeployedCoinVersionLookup.sol";
+import {IZoraLimitOrderBookCoinsInterface} from "../../src/interfaces/IZoraLimitOrderBookCoinsInterface.sol";
+import {IZoraHookRegistry} from "../../src/interfaces/IZoraHookRegistry.sol";
 import {IHasRewardsRecipients} from "../../src/interfaces/IHasRewardsRecipients.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
@@ -35,8 +37,10 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         IPoolManager _poolManager,
         IDeployedCoinVersionLookup _coinVersionLookup,
         ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
-        IHooksUpgradeGate upgradeGate
-    ) ZoraV4CoinHook(_poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate) {}
+        IHooksUpgradeGate upgradeGate,
+        IZoraLimitOrderBookCoinsInterface zoraLimitOrderBook,
+        IZoraHookRegistry zoraHookRegistry
+    ) ZoraV4CoinHook(_poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate, zoraLimitOrderBook, zoraHookRegistry) {}
 
     FeeEstimatorState public feeState;
 

@@ -1,0 +1,672 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import {Test} from "forge-std/Test.sol";
+import {SwapLimitOrders, LimitOrderConfig, Orders} from "../../src/libs/SwapLimitOrders.sol";
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
+import {TickMath} from "@zoralabs/coins/src/utils/uniswap/TickMath.sol";
+
+/// @notice Helper contract to wrap library calls for proper revert testing
+contract SwapLimitOrdersWrapper {
+    function validate(LimitOrderConfig memory params) external pure returns (uint256) {
+        return SwapLimitOrders.validate(params);
+    }
+
+    function computeOrders(
+        PoolKey memory key,
+        bool isCurrency0,
+        uint128 totalSize,
+        int24 baseTick,
+        uint160 sqrtPriceX96,
+        LimitOrderConfig memory params
+    ) external pure returns (Orders memory o, uint128 allocated, uint128 unallocated) {
+        return SwapLimitOrders.computeOrders(key, isCurrency0, totalSize, baseTick, sqrtPriceX96, params);
+    }
+
+    /// @notice Test helper for isLimitOrder logic (not used in production)
+    function isLimitOrder(bool isCoinBuy, address swapper, int128 coinDelta, LimitOrderConfig memory params) external pure returns (bool) {
+        // Short-circuit early: must be a coin buy with a valid swapper and config
+        if (!isCoinBuy || swapper == address(0) || params.multiples.length == 0) {
+            return false;
+        }
+
+        // Must be positive and above minimum threshold
+        return coinDelta > 0 && uint128(coinDelta) >= SwapLimitOrders.MIN_LIMIT_ORDER_SIZE;
+    }
+}
+
+/// @notice Direct unit tests for SwapLimitOrders library functions
+contract SwapLimitOrdersUnitTest is Test {
+    using SwapLimitOrders for LimitOrderConfig;
+
+    int24 constant TICK_SPACING = 200;
+    uint256 constant MULTIPLE_SCALE = 1e18;
+    uint256 constant PERCENT_SCALE = 10_000;
+    uint256 constant MIN_LIMIT_ORDER_SIZE = 1e18;
+
+    PoolKey internal testKey;
+    SwapLimitOrdersWrapper internal wrapper;
+
+    function setUp() public {
+        // Create a minimal valid pool key for testing
+        testKey = PoolKey({
+            currency0: Currency.wrap(address(0x1000)),
+            currency1: Currency.wrap(address(0x2000)),
+            fee: 3000,
+            tickSpacing: TICK_SPACING,
+            hooks: IHooks(address(0))
+        });
+
+        wrapper = new SwapLimitOrdersWrapper();
+    }
+
+    /// @notice Tests validate with mismatched array lengths
+    function test_validate_lengthMismatch_differentLengths() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](3);
+        params.percentages = new uint256[](2); // mismatch
+
+        vm.expectRevert();
+        wrapper.validate(params);
+    }
+
+    /// @notice Tests validate with empty arrays (length == 0)
+    function test_validate_lengthMismatch_emptyArrays() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](0);
+        params.percentages = new uint256[](0);
+
+        vm.expectRevert();
+        wrapper.validate(params);
+    }
+
+    /// @notice Tests validate with zero percentage
+    function test_validate_invalidPercent_zeroPercent() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 5000; // 50%
+        params.percentages[1] = 0; // Zero percent - should revert
+
+        vm.expectRevert();
+        wrapper.validate(params);
+    }
+
+    /// @notice Tests validate with percentages exceeding 100%
+    function test_validate_percentOverflow_exceedsMax() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 6000; // 60%
+        params.percentages[1] = 5000; // 50% (total 110% > 100%)
+
+        vm.expectRevert();
+        wrapper.validate(params);
+    }
+
+    /// @notice Tests validate with multiple at 1x (not strictly above)
+    function test_validate_invalidMultiple_equalToOne() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+
+        params.multiples[0] = MULTIPLE_SCALE; // 1.0x - should revert
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 5000;
+        params.percentages[1] = 5000;
+
+        vm.expectRevert();
+        wrapper.validate(params);
+    }
+
+    /// @notice Tests validate with multiple below 1x
+    function test_validate_invalidMultiple_belowOne() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = MULTIPLE_SCALE / 2; // 0.5x - should revert
+        params.percentages[0] = 5000;
+        params.percentages[1] = 5000;
+
+        vm.expectRevert();
+        wrapper.validate(params);
+    }
+
+    /// @notice Tests validate with all valid inputs (success case)
+    function test_validate_success_validParams() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](3);
+        params.percentages = new uint256[](3);
+
+        params.multiples[0] = 2 * MULTIPLE_SCALE; // 2x
+        params.multiples[1] = 4 * MULTIPLE_SCALE; // 4x
+        params.multiples[2] = 8 * MULTIPLE_SCALE; // 8x
+        params.percentages[0] = 3000; // 30%
+        params.percentages[1] = 3000; // 30%
+        params.percentages[2] = 3000; // 30% (total 90% <= 100%)
+
+        uint256 totalPercent = wrapper.validate(params);
+        assertEq(totalPercent, 9000, "total percent should be 9000");
+    }
+
+    /// @notice Tests validate with percentages exactly at 100%
+    function test_validate_success_exactlyOneHundredPercent() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 5000; // 50%
+        params.percentages[1] = 5000; // 50% (total exactly 100%)
+
+        uint256 totalPercent = wrapper.validate(params);
+        assertEq(totalPercent, 10000, "total percent should be 10000");
+    }
+
+    /// @notice Tests validate loop iterations (line 65 for loop with multiple iterations)
+    function test_validate_multipleIterations_checksAllElements() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](5); // 5 elements to iterate
+        params.percentages = new uint256[](5);
+
+        for (uint256 i = 0; i < 5; i++) {
+            params.multiples[i] = (2 + i) * MULTIPLE_SCALE; // 2x, 3x, 4x, 5x, 6x
+            params.percentages[i] = 1000; // 10% each
+        }
+
+        uint256 totalPercent = wrapper.validate(params);
+        assertEq(totalPercent, 5000, "total percent should be 5000");
+    }
+
+    /// @notice Tests validate with single element (loop executes once)
+    function test_validate_singleElement_loopExecutesOnce() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.percentages[0] = 10000;
+
+        uint256 totalPercent = wrapper.validate(params);
+        assertEq(totalPercent, 10000, "total percent should be 10000");
+    }
+
+    /// @notice Tests computeOrders with totalSize below MIN_LIMIT_ORDER_SIZE (dust)
+    function test_computeOrders_belowMinSize_returnsEmpty() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 5000;
+        params.percentages[1] = 5000;
+
+        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE - 1); // Below minimum
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        // Should return empty arrays
+        assertEq(orders.sizes.length, 0, "sizes should be empty");
+        assertEq(orders.ticks.length, 0, "ticks should be empty");
+        assertEq(allocated, 0, "allocated should be 0");
+        assertEq(unallocated, totalSize, "unallocated should equal totalSize");
+    }
+
+    /// @notice Tests computeOrders with totalSize exactly at MIN_LIMIT_ORDER_SIZE
+    function test_computeOrders_exactlyMinSize_createsOrders() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 5000;
+        params.percentages[1] = 5000;
+
+        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE); // Exactly at minimum
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        // Should create orders
+        assertEq(orders.sizes.length, 2, "should create 2 orders");
+        assertEq(orders.ticks.length, 2, "should create 2 ticks");
+        assertGt(allocated, 0, "should allocate some amount");
+    }
+
+    /// @notice Tests computeOrders with multiple orders (verifying skip logic exists even if hard to trigger)
+    /// @dev Note: Zero-rounding skip is virtually impossible with MIN_LIMIT_ORDER_SIZE=1e18 and PERCENT_SCALE=10000
+    ///      since even 1 basis point of 1e18 = 1e14. The skip logic exists for safety in edge cases.
+    function test_computeOrders_multipleOrders_createsAll() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 5000;
+        params.percentages[1] = 5000;
+
+        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE * 10);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        // Both orders should be created
+        assertEq(orders.sizes.length, 2, "should create 2 orders");
+        assertEq(orders.ticks.length, 2, "should have 2 ticks");
+    }
+
+    /// @notice Tests computeOrders loop with many iterations (line 105 for loop)
+    function test_computeOrders_manyOrders_loopIteratesMultipleTimes() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](6); // Many orders
+        params.percentages = new uint256[](6);
+
+        for (uint256 i = 0; i < 6; i++) {
+            params.multiples[i] = (2 + i) * MULTIPLE_SCALE; // 2x, 3x, 4x, 5x, 6x, 7x
+            params.percentages[i] = 1000; // 10% each (60% total)
+        }
+
+        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE * 100);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        // All 6 orders should be created
+        assertEq(orders.sizes.length, 6, "should create 6 orders");
+        assertEq(orders.ticks.length, 6, "should have 6 ticks");
+    }
+
+    /// @notice Tests computeOrders with single order (loop executes once)
+    function test_computeOrders_singleOrder_loopExecutesOnce() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE * 10);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        assertEq(orders.sizes.length, 1, "should create 1 order");
+        assertEq(orders.ticks.length, 1, "should have 1 tick");
+    }
+
+    /// @notice Tests computeOrders with large totalSize and valid percentages
+    function test_computeOrders_largeSize_allocatesCorrectly() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 6000; // 60%
+        params.percentages[1] = 3000; // 30% (total 90%)
+
+        uint128 totalSize = uint128(1000 * MIN_LIMIT_ORDER_SIZE);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        assertEq(orders.sizes.length, 2, "should create 2 orders");
+
+        // Verify order sizes apply percentages sequentially (second rung sized off remaining 40%)
+        uint256 expectedFirst = (totalSize * 6000) / PERCENT_SCALE; // 60% of total
+        uint256 expectedSecond = ((totalSize - expectedFirst) * 3000) / PERCENT_SCALE; // 30% of remaining
+        assertEq(orders.sizes[0], expectedFirst, "first order size should be 60% of total");
+        assertEq(orders.sizes[1], expectedSecond, "second order size should be 30% of remaining");
+
+        // Verify allocated + unallocated = totalSize
+        assertEq(uint256(allocated) + uint256(unallocated), totalSize, "allocated + unallocated should equal totalSize");
+    }
+
+    /// @notice Tests computeOrders sizes each rung off the remaining balance (geometric sizing)
+    function test_computeOrders_percentages_applyToRemaining() public view {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](3);
+        params.percentages = new uint256[](3);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 3 * MULTIPLE_SCALE;
+        params.multiples[2] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 2000; // 20%
+        params.percentages[1] = 2000; // 20% of remaining
+        params.percentages[2] = 2000; // 20% of remaining
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE); // 100 units for easy math
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        assertEq(orders.sizes.length, 3, "should create 3 orders");
+
+        uint256 expectedFirst = (totalSize * 2000) / PERCENT_SCALE; // 20 of 100
+        uint256 remainingAfterFirst = totalSize - expectedFirst; // 80
+        uint256 expectedSecond = (remainingAfterFirst * 2000) / PERCENT_SCALE; // 16
+        uint256 remainingAfterSecond = remainingAfterFirst - expectedSecond; // 64
+        uint256 expectedThird = (remainingAfterSecond * 2000) / PERCENT_SCALE; // 12
+
+        assertEq(orders.sizes[0], expectedFirst, "first order size mismatch");
+        assertEq(orders.sizes[1], expectedSecond, "second order size mismatch");
+        assertEq(orders.sizes[2], expectedThird, "third order size mismatch");
+
+        // Conservation: allocated + unallocated == totalSize
+        assertEq(uint256(allocated) + uint256(unallocated), totalSize, "conservation must hold");
+        assertEq(unallocated, uint128(totalSize - expectedFirst - expectedSecond - expectedThird), "unallocated should be remainder");
+    }
+
+    /// @notice Tests computeOrders with extreme multiples (tick clamping)
+    function test_computeOrders_extremeMultiples_clampsToMaxTick() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 1000 * MULTIPLE_SCALE; // 1000x - extremely high
+        params.percentages[0] = 10000; // 100%
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
+
+        int24 maxTick = TickMath.maxUsableTick(TICK_SPACING);
+
+        // Tick should be clamped to max usable tick
+        assertLe(orders.ticks[0], maxTick, "tick should be clamped to max");
+        assertGt(orders.ticks[0], baseTick, "tick should be above base tick");
+    }
+
+    /// @notice Tests computeOrders for currency1 (isCurrency0 = false) - tests line 147 branch
+    function test_computeOrders_currency1_ticksBelowBase() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](2);
+        params.percentages = new uint256[](2);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.multiples[1] = 4 * MULTIPLE_SCALE;
+        params.percentages[0] = 5000;
+        params.percentages[1] = 5000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        int24 baseTick = 10000;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, false, totalSize, baseTick, sqrtPriceX96, params);
+
+        // For currency1 (isCurrency0 = false), ticks should be below baseTick
+        assertLt(orders.ticks[0], baseTick, "tick 0 should be below base tick");
+        assertLt(orders.ticks[1], baseTick, "tick 1 should be below base tick");
+        assertLt(orders.ticks[1], orders.ticks[0], "higher multiple should have lower tick");
+    }
+
+    /// @notice Tests computeOrders with sqrt price overflow (line 155 branch: scaled > type(uint160).max)
+    function test_computeOrders_sqrtPriceOverflow_clampsToMax() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        // Use extremely large multiple to trigger overflow
+        params.multiples[0] = 1000000 * MULTIPLE_SCALE; // 1,000,000x
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        // Use moderate base tick (TickMath has max/min around ±887272)
+        int24 baseTick = 100000; // Moderate positive tick
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
+
+        // Should successfully create order with clamped tick
+        assertEq(orders.sizes.length, 1, "should create 1 order");
+        assertLe(orders.ticks[0], TickMath.maxUsableTick(TICK_SPACING), "tick should be <= max");
+    }
+
+    /// @notice Tests computeOrders near minimum tick boundary (line 169 branch: aligned < minTick)
+    function test_computeOrders_nearMinTick_clampsToMin() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        // Use moderate negative base tick for currency1
+        int24 baseTick = -100000; // Moderate negative tick
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, false, totalSize, baseTick, sqrtPriceX96, params);
+
+        // Should successfully create order with clamped tick
+        assertEq(orders.sizes.length, 1, "should create 1 order");
+        assertGe(orders.ticks[0], TickMath.minUsableTick(TICK_SPACING), "tick should be >= min");
+    }
+
+    /// @notice Tests computeOrders with tick too close to base (line 170: isCurrency0 && aligned < minAway)
+    function test_computeOrders_currency0_tooCloseToBase_clampsToMinAway() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        // Use small multiple that would produce tick very close to base
+        params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 100); // 1.01x
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
+
+        // For currency0, tick should be at least tickSpacing away from base
+        assertGe(orders.ticks[0], baseTick + TICK_SPACING, "tick should be >= baseTick + spacing");
+    }
+
+    /// @notice Tests computeOrders with tick too close to base (line 171: !isCurrency0 && aligned > minAway)
+    function test_computeOrders_currency1_tooCloseToBase_clampsToMinAway() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        // Use small multiple that would produce tick very close to base
+        params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 100); // 1.01x
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, false, totalSize, baseTick, sqrtPriceX96, params);
+
+        // For currency1, tick should be at least tickSpacing away from base (below it)
+        assertLe(orders.ticks[0], baseTick - TICK_SPACING, "tick should be <= baseTick - spacing");
+    }
+
+    /// @notice Tests _sqrtMultiple with zero (line 184 branch: result == 0)
+    /// @dev This tests the error case by using a multiple that would cause sqrt to fail
+    function test_computeOrders_zeroMultiple_reverts() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 0; // Zero multiple - should revert in _sqrtMultiple
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        int24 baseTick = 0;
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        vm.expectRevert();
+        wrapper.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
+    }
+
+    /// @notice Tests isLimitOrder when not a coin buy (first condition in line 48)
+    function test_isLimitOrder_notCoinBuy_returnsFalse() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.percentages[0] = 10000;
+
+        bool isCoinBuy = false; // NOT isCoinBuy - tests first branch
+        address swapper = address(0x1234);
+        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+
+        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when not coin buy");
+    }
+
+    /// @notice Tests isLimitOrder when isCoinBuy is true (ensures we go past first condition)
+    function test_isLimitOrder_isCoinBuyTrue_checksOtherConditions() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](0); // Empty - no orders
+        params.percentages = new uint256[](0);
+
+        bool isCoinBuy = true; // Pass first condition
+        address swapper = address(0x1234);
+        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+
+        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when no orders");
+    }
+
+    /// @notice Tests isLimitOrder when no orders in params
+    function test_isLimitOrder_noOrders_returnsFalse() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](0);
+        params.percentages = new uint256[](0);
+
+        bool isCoinBuy = true;
+        address swapper = address(0x1234);
+        // casting to 'int256' is safe because MIN_LIMIT_ORDER_SIZE will not overflow int128
+        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+
+        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when no orders");
+    }
+
+    /// @notice Tests isLimitOrder when swapper is zero address
+    function test_isLimitOrder_zeroSwapper_returnsFalse() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+
+        bool isCoinBuy = true;
+        address swapper = address(0); // Zero address
+        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+
+        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when swapper is zero");
+    }
+
+    /// @notice Tests isLimitOrder when coinDelta is negative
+    function test_isLimitOrder_negativeCoinDelta_returnsFalse() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+
+        bool isCoinBuy = true;
+        address swapper = address(0x1234);
+        int128 coinDelta = -100; // Negative delta
+
+        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false for negative delta");
+    }
+
+    /// @notice Tests isLimitOrder when coinDelta is zero
+    function test_isLimitOrder_zeroCoinDelta_returnsFalse() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+
+        bool isCoinBuy = true;
+        address swapper = address(0x1234);
+        int128 coinDelta = 0; // Zero delta
+
+        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false for zero delta");
+    }
+
+    /// @notice Tests isLimitOrder when coinDelta below MIN_LIMIT_ORDER_SIZE (dust)
+    function test_isLimitOrder_belowMinSize_returnsFalse() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+
+        bool isCoinBuy = true;
+        address swapper = address(0x1234);
+        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE - 1)); // Below minimum
+
+        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when below min size");
+    }
+
+    /// @notice Tests isLimitOrder when all conditions are met (success case)
+    function test_isLimitOrder_allConditionsMet_returnsTrue() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.percentages[0] = 10000;
+
+        bool isCoinBuy = true;
+        address swapper = address(0x1234);
+        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+
+        assertTrue(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return true when all conditions met");
+    }
+}

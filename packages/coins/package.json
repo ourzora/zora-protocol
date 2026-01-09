@@ -15,21 +15,21 @@
   },
   "scripts": {
     "build": "forge build",
-    "build:contracts:minimal": "forge build --skip test --skip script --no-metadata",
+    "build:contracts:minimal": "forge build src/ --no-metadata",
     "build:js": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
     "build:sizes": "forge build src/ --sizes",
     "copy-abis": "pnpm exec bundle-abis",
-    "coverage": "forge coverage --report lcov --ir-minimum --no-match-coverage '(test/|src/utils/uniswap/|script/)'",
-    "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
-    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
+    "coverage": "forge coverage --report lcov --ir-minimum --no-match-coverage '(test/|src/utils/uniswap/|src/deployment/)'",
+    "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol'",
+    "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol'",
     "test": "forge test -vv",
     "test-gas": "forge test --gas-report",
     "update-contract-version": "pnpm exec update-contract-version",
     "wagmi:generate": "pnpm run build:contracts:minimal && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts"
   },
   "dependencies": {
-    "@openzeppelin/contracts": "^5.0.2",
-    "@openzeppelin/contracts-upgradeable": "^5.0.2"
+    "@openzeppelin/contracts": "5.4.0",
+    "@openzeppelin/contracts-upgradeable": "5.4.0"
   },
   "devDependencies": {
     "@types/node": "^20.1.2",

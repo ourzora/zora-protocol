@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./utils/BaseTest.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 import {console} from "forge-std/console.sol";
 
 import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
@@ -12,6 +12,10 @@ import {RewardTestHelpers, RewardBalances} from "./utils/RewardTestHelpers.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ContentCoin} from "../src/ContentCoin.sol";
+import {CreatorCoin} from "../src/CreatorCoin.sol";
+import {ICoin} from "../src/interfaces/ICoin.sol";
+import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 
 contract ContentCoinRewardsTest is BaseTest {
     ContentCoin internal contentCoin;

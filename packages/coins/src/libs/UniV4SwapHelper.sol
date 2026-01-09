@@ -22,6 +22,41 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 
 library UniV4SwapHelper {
+    function buildExactInputMultiSwapCommand(
+        address currencyIn,
+        uint128 amountIn,
+        PoolKey[] memory keys,
+        uint128 minAmountOut,
+        bytes[] memory hopHookData
+    ) internal pure returns (bytes memory commands, bytes[] memory inputs) {
+        require(keys.length > 0 && hopHookData.length == keys.length, "invalid lengths");
+
+        PathKey[] memory path = new PathKey[](keys.length);
+
+        Currency currency = Currency.wrap(currencyIn);
+        Currency finalCurrencyOut;
+
+        for (uint256 i; i < keys.length; ++i) {
+            Currency out = currency == keys[i].currency0 ? keys[i].currency1 : keys[i].currency0;
+            path[i] = PathKey({intermediateCurrency: out, fee: keys[i].fee, tickSpacing: keys[i].tickSpacing, hooks: keys[i].hooks, hookData: hopHookData[i]});
+            currency = out;
+            finalCurrencyOut = out;
+        }
+
+        bytes memory actions = abi.encodePacked(uint8(Actions.SWAP_EXACT_IN), uint8(Actions.SETTLE), uint8(Actions.TAKE_ALL));
+        bytes[] memory params = new bytes[](3);
+        params[0] = abi.encode( // 1) SWAP_EXACT_IN({ currencyIn, path, amountIn, amountOutMinimum })
+                IV4Router.ExactInputParams({currencyIn: Currency.wrap(currencyIn), path: path, amountIn: amountIn, amountOutMinimum: minAmountOut})
+            );
+        params[1] = abi.encode(currencyIn, amountIn, true); // 2) SETTLE(tokenIn, amountIn, payerIsUser=true) — pulls from user via Permit2
+        params[2] = abi.encode(Currency.unwrap(finalCurrencyOut), minAmountOut); // 3) TAKE_ALL(finalCurrencyOut, minOut)
+
+        commands = abi.encodePacked(uint8(Commands.V4_SWAP));
+
+        inputs = new bytes[](1);
+        inputs[0] = abi.encode(actions, params);
+    }
+
     function buildExactInputSingleSwapCommand(
         address currencyIn,
         uint128 amountIn,

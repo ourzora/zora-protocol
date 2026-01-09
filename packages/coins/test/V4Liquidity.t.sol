@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./utils/BaseTest.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {CoinDopplerMultiCurve} from "../src/libs/CoinDopplerMultiCurve.sol";
 import {V4Liquidity} from "../src/libs/V4Liquidity.sol";

@@ -39,11 +39,15 @@ import {
   baseCoinABI,
   buySupplyWithV4SwapHookABI,
   iPoolConfigEncodingABI,
-  iUniversalRouterABI,
   iPermit2ABI,
   creatorCoinABI,
   autoSwapperABI,
+  zoraV4CoinHookABI,
 } from "@zoralabs/coins";
+import {
+  swapWithLimitOrdersABI,
+  zoraLimitOrderBookABI,
+} from "@zoralabs/limit-orders";
 
 type Address = `0x${string}`;
 
@@ -266,14 +270,6 @@ const getSharedAddresses = () => {
     addresses,
     configKey: "UNISWAP_QUOTER_V2",
     contractName: "UniswapQuoterV2",
-    storedConfigs,
-  });
-
-  addAddress({
-    abi: iUniversalRouterABI,
-    addresses,
-    configKey: "UNISWAP_UNIVERSAL_ROUTER",
-    contractName: "UniswapUniversalRouter",
     storedConfigs,
   });
 
@@ -536,17 +532,19 @@ const getCointagsContracts = (): ContractConfig[] => {
 const getCoinsContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../coins/addresses", {
+  const addressesFiles = readdirSync("../coins-deployments/addresses", {
     withFileTypes: true,
   })
     .filter((dirent) => dirent.isFile())
     .map((dirent) => dirent.name);
 
-  const storedConfigs = addressesFiles.map((file) => {
+  const nonDevFiles = addressesFiles.filter((file) => !file.includes("dev"));
+
+  const storedConfigs = nonDevFiles.map((file) => {
     return {
       chainId: parseInt(file.split(".")[0]),
       config: JSON.parse(
-        readFileSync(`../coins/addresses/${file}`, "utf-8"),
+        readFileSync(`../coins-deployments/addresses/${file}`, "utf-8"),
       ) as {
         ZORA_FACTORY: Address;
         BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
@@ -554,25 +552,18 @@ const getCoinsContracts = (): ContractConfig[] => {
     };
   });
 
-  const devAddressesFiles = readdirSync("../coins/addresses/dev");
-
-  const devConfigs = devAddressesFiles.map((file) => {
-    return {
-      chainId: parseInt(file.split(".")[0]),
-      config: JSON.parse(
-        readFileSync(`../coins/addresses/dev/${file}`, "utf-8"),
-      ) as {
-        ZORA_FACTORY: Address;
-        BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
-      },
-    };
-  });
+  const coinErrors = [
+    ...extractErrors(baseCoinABI),
+    ...extractErrors(zoraV4CoinHookABI),
+    // since the hook is calling fill on lob, we may get an lob error
+    ...extractErrors(zoraLimitOrderBookABI),
+  ];
 
   addAddress({
     abi: [
       ...zoraFactoryImplABI,
       ...extractErrors(buySupplyWithV4SwapHookABI),
-      ...extractErrors(baseCoinABI),
+      ...coinErrors,
     ],
     addresses,
     configKey: "ZORA_FACTORY",
@@ -609,6 +600,51 @@ const getCoinsContracts = (): ContractConfig[] => {
   ];
 };
 
+const getLimitOrdersContracts = (): ContractConfig[] => {
+  const addresses: Addresses = {};
+
+  const addressesFiles = readdirSync("../coins-deployments/addresses");
+
+  const storedConfigs = addressesFiles.map((file) => {
+    return {
+      chainId: parseInt(file.split(".")[0]),
+      config: JSON.parse(
+        readFileSync(`../coins-deployments/addresses/${file}`, "utf-8"),
+      ) as {
+        ZORA_LIMIT_ORDER_BOOK: Address;
+        ZORA_ROUTER: Address;
+      },
+    };
+  });
+
+  const coinErrors = [
+    ...extractErrors(baseCoinABI),
+    ...extractErrors(zoraV4CoinHookABI),
+  ];
+
+  addAddress({
+    abi: [...zoraLimitOrderBookABI, ...coinErrors],
+    addresses,
+    configKey: "ZORA_LIMIT_ORDER_BOOK",
+    contractName: "ZoraLimitOrderBook",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: [
+      ...swapWithLimitOrdersABI,
+      ...coinErrors,
+      ...extractErrors(zoraLimitOrderBookABI),
+    ],
+    addresses,
+    configKey: "ZORA_ROUTER",
+    contractName: "ZoraRouter",
+    storedConfigs,
+  });
+
+  return toConfig(addresses);
+};
+
 export default defineConfig({
   out: "./generated/wagmi.ts",
   contracts: [
@@ -620,6 +656,7 @@ export default defineConfig({
     ...getSmartWalletContracts(),
     ...getCointagsContracts(),
     ...getCoinsContracts(),
+    ...getLimitOrdersContracts(),
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",

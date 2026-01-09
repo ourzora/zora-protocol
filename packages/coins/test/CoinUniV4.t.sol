@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./utils/BaseTest.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {IV4Router} from "@uniswap/v4-periphery/src/interfaces/IV4Router.sol";
 import {IV4Quoter} from "@uniswap/v4-periphery/src/interfaces/IV4Quoter.sol";
@@ -18,6 +18,7 @@ import {CoinCommon} from "../src/libs/CoinCommon.sol";
 import {IZoraV4CoinHook} from "../src/interfaces/IZoraV4CoinHook.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {IMsgSender} from "../src/interfaces/IMsgSender.sol";
+import {ContentCoin} from "../src/ContentCoin.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {toBalanceDelta, BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {UniV4SwapHelper} from "../src/libs/UniV4SwapHelper.sol";

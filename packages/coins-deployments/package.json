@@ -1,0 +1,15 @@
+{
+  "name": "@zoralabs/coins-deployments",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Deployment scripts and addresses for Zora coins and limit orders",
+  "dependencies": {
+    "@zoralabs/coins": "workspace:*",
+    "@zoralabs/limit-orders": "workspace:*",
+    "@zoralabs/shared-contracts": "workspace:*",
+    "solady": "0.0.132"
+  },
+  "devDependencies": {
+    "forge-std": "^1.7.0"
+  }
+}

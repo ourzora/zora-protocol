@@ -1,0 +1,30 @@
+No files changed, compilation skipped
+
+Ran 23 tests for test/gas/LimitOrderFillGas.t.sol:LimitOrderFillGasTest
+[PASS] test_gas_0hop_single_order_direct_payout() (gas: 3256179)
+[PASS] test_gas_1hop_single_order_fill() (gas: 3256779)
+[PASS] test_gas_1hop_user_swap_autofill_40_orders() (gas: 16707751)
+[PASS] test_gas_1hop_user_swap_autofill_50_orders() (gas: 20375584)
+[PASS] test_gas_2hop_five_orders_fill() (gas: 7792758)
+[PASS] test_gas_2hop_single_order_fill() (gas: 6143613)
+[PASS] test_gas_2hop_ten_orders_fill() (gas: 9872756)
+[PASS] test_gas_2hop_user_swap_triggers_autofill() (gas: 6776579)
+[PASS] test_gas_backend_manual_fill_100_orders() (gas: 47656019)
+[PASS] test_gas_backend_manual_fill_150_orders() (gas: 68957450)
+[PASS] test_gas_backend_manual_fill_50_orders() (gas: 26598104)
+[PASS] test_gas_baseline_swap_no_limit_orders() (gas: 1778873)
+[PASS] test_gas_empty_fill() (gas: 143268)
+[PASS] test_gas_large_swap_with_fee_conversion() (gas: 2008446)
+[PASS] test_gas_max_fillcount_stress_test() (gas: 16128877)
+[PASS] test_gas_mixed_order_sizes() (gas: 7793945)
+[PASS] test_gas_same_tick_orders() (gas: 7444207)
+[PASS] test_gas_user_swap_autofill_100_orders() (gas: 42545248)
+[PASS] test_gas_user_swap_autofill_10_orders() (gas: 8700941)
+[PASS] test_gas_user_swap_autofill_25_orders() (gas: 14201062)
+[PASS] test_gas_user_swap_autofill_40_orders() (gas: 19625345)
+[PASS] test_gas_user_swap_autofill_50_orders() (gas: 23168604)
+[PASS] test_gas_user_swap_autofill_75_orders() (gas: 32899292)
+Suite result: ok. 23 passed; 0 failed; 0 skipped; finished in 926.81ms (462.22ms CPU time)
+
+
+Ran 1 test suite in 956.61ms (926.81ms CPU time): 23 tests passed, 0 failed, 0 skipped (23 total tests)

@@ -1,0 +1,11 @@
+ds-test/=node_modules/ds-test/src/
+forge-std/=node_modules/forge-std/src/
+@openzeppelin/=node_modules/@openzeppelin/
+@zoralabs/shared-contracts/=node_modules/@zoralabs/shared-contracts/src/
+solady/=node_modules/solady/src/ 
+@uniswap/v4-core/=node_modules/@uniswap/v4-core/
+@uniswap/v4-periphery/=node_modules/@uniswap/v4-periphery/
+permit2/src/=node_modules/@uniswap/permit2/src/
+@uniswap/universal-router/contracts/=node_modules/@uniswap/universal-router/contracts/
+solmate/=node_modules/solmate/src/
+@zoralabs/coins/=node_modules/@zoralabs/coins/

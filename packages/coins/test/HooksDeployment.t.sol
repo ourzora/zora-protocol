@@ -10,10 +10,12 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {HookUpgradeGate} from "../src/hooks/HookUpgradeGate.sol";
 import {ITrustedMsgSenderProviderLookup} from "../src/interfaces/ITrustedMsgSenderProviderLookup.sol";
 import {TrustedSenderTestHelper} from "./utils/TrustedSenderTestHelper.sol";
+import {ZoraHookRegistry} from "../src/hook-registry/ZoraHookRegistry.sol";
 
 contract HooksDeploymentTest is Test, ContractAddresses {
     address internal hookUpgradeGate;
     ITrustedMsgSenderProviderLookup internal trustedMsgSenderLookup;
+    address internal mockHookRegistry;
     address internal owner;
     address internal nonOwner;
     address internal trustedSender1;
@@ -30,6 +32,7 @@ contract HooksDeploymentTest is Test, ContractAddresses {
         nonTrustedSender = makeAddr("nonTrustedSender");
 
         hookUpgradeGate = address(new HookUpgradeGate(makeAddr("factoryOwner")));
+        mockHookRegistry = makeAddr("mockHookRegistry");
 
         // Initialize with one trusted sender
         address[] memory initialTrustedSenders = new address[](1);
@@ -74,6 +77,7 @@ contract HooksDeploymentTest is Test, ContractAddresses {
     function test_canDeployContentCoinHookFromScript() public {
         vm.createSelectFork("base", 31653138);
 
+        address mockOrderFiller = makeAddr("mockOrderFiller");
         address[] memory trustedMessageSenders = new address[](0);
 
         ITrustedMsgSenderProviderLookup localTrustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(
@@ -86,13 +90,17 @@ contract HooksDeploymentTest is Test, ContractAddresses {
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
             ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
-            hookUpgradeGate
+            hookUpgradeGate,
+            mockOrderFiller,
+            mockHookRegistry
         );
         IHooks hook = HooksDeployment.deployZoraV4CoinHook(
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
             ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
             hookUpgradeGate,
+            mockOrderFiller,
+            mockHookRegistry,
             salt
         );
 
@@ -108,6 +116,7 @@ contract HooksDeploymentTest is Test, ContractAddresses {
     function test_canDeployCreatorCoinHookFromScript() public {
         vm.createSelectFork("base", 31653138);
 
+        address mockOrderFiller = makeAddr("mockOrderFiller");
         address[] memory trustedMessageSenders = new address[](0);
 
         ITrustedMsgSenderProviderLookup localTrustedMsgSenderLookup = TrustedSenderTestHelper.deployTrustedMessageSender(
@@ -120,7 +129,9 @@ contract HooksDeploymentTest is Test, ContractAddresses {
             V4_POOL_MANAGER,
             0x777777751622c0d3258f214F9DF38E35BF45baF3,
             ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
-            hookUpgradeGate
+            hookUpgradeGate,
+            mockOrderFiller,
+            mockHookRegistry
         );
 
         IHooks hook = HooksDeployment.deployHookWithSalt(
@@ -128,7 +139,9 @@ contract HooksDeploymentTest is Test, ContractAddresses {
                 V4_POOL_MANAGER,
                 0x777777751622c0d3258f214F9DF38E35BF45baF3,
                 ITrustedMsgSenderProviderLookup(address(localTrustedMsgSenderLookup)),
-                hookUpgradeGate
+                hookUpgradeGate,
+                mockOrderFiller,
+                mockHookRegistry
             ),
             salt
         );

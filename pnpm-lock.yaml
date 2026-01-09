@@ -467,7 +467,7 @@ importers:
     dependencies:
       '@openzeppelin/contracts-upgradeable':
         specifier: ^5.0.1
-        version: 5.2.0(@openzeppelin/contracts@5.2.0)
+        version: 5.2.0(@openzeppelin/contracts@5.4.0)
       '@zoralabs/1155-deployments':
         specifier: workspace:^
         version: link:../1155-deployments
@@ -715,11 +715,11 @@ importers:
   packages/coins:
     dependencies:
       '@openzeppelin/contracts':
-        specifier: ^5.0.2
-        version: 5.0.2
+        specifier: 5.4.0
+        version: 5.4.0
       '@openzeppelin/contracts-upgradeable':
-        specifier: ^5.0.2
-        version: 5.2.0(@openzeppelin/contracts@5.0.2)
+        specifier: 5.4.0
+        version: 5.4.0(@openzeppelin/contracts@5.4.0)
     devDependencies:
       '@solidity-parser/parser':
         specifier: 0.19.0
@@ -781,6 +781,25 @@ importers:
       viem:
         specifier: ^2.21.21
         version: 2.22.12(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.1)
+
+  packages/coins-deployments:
+    dependencies:
+      '@zoralabs/coins':
+        specifier: workspace:*
+        version: link:../coins
+      '@zoralabs/limit-orders':
+        specifier: workspace:*
+        version: link:../limit-orders
+      '@zoralabs/shared-contracts':
+        specifier: workspace:*
+        version: link:../shared-contracts
+      solady:
+        specifier: 0.0.132
+        version: 0.0.132
+    devDependencies:
+      forge-std:
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
 
   packages/coins-sdk:
     dependencies:
@@ -941,6 +960,79 @@ importers:
         specifier: ^1.4.1
         version: 1.4.2(prettier@3.4.2)
 
+  packages/limit-orders:
+    dependencies:
+      '@openzeppelin/contracts':
+        specifier: 5.4.0
+        version: 5.4.0
+      '@openzeppelin/contracts-upgradeable':
+        specifier: 5.4.0
+        version: 5.4.0(@openzeppelin/contracts@5.4.0)
+    devDependencies:
+      '@solidity-parser/parser':
+        specifier: 0.19.0
+        version: 0.19.0
+      '@types/node':
+        specifier: ^20.1.2
+        version: 20.17.16
+      '@uniswap/permit2':
+        specifier: https://github.com/Uniswap/permit2#cc56ad0f3439c502c246fc5cfcc3db92bb8b7219
+        version: https://codeload.github.com/Uniswap/permit2/tar.gz/cc56ad0f3439c502c246fc5cfcc3db92bb8b7219
+      '@uniswap/universal-router':
+        specifier: https://github.com/Uniswap/universal-router#3663f6db6e2fe121753cd2d899699c2dc75dca86
+        version: https://codeload.github.com/Uniswap/universal-router/tar.gz/3663f6db6e2fe121753cd2d899699c2dc75dca86
+      '@uniswap/v4-core':
+        specifier: https://github.com/Uniswap/v4-core#a7cf038cd568801a79a9b4cf92cd5b52c95c8585
+        version: https://codeload.github.com/Uniswap/v4-core/tar.gz/a7cf038cd568801a79a9b4cf92cd5b52c95c8585
+      '@uniswap/v4-periphery':
+        specifier: https://github.com/Uniswap/v4-periphery#eeb3eff28dd5f5f17aa94180fa3610ff59b0e1c8
+        version: https://codeload.github.com/Uniswap/v4-periphery/tar.gz/eeb3eff28dd5f5f17aa94180fa3610ff59b0e1c8
+      '@wagmi/cli':
+        specifier: ^2.1.0
+        version: 2.2.0(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)
+      '@zoralabs/coins':
+        specifier: workspace:^
+        version: link:../coins
+      '@zoralabs/shared-contracts':
+        specifier: workspace:^
+        version: link:../shared-contracts
+      '@zoralabs/shared-scripts':
+        specifier: workspace:^
+        version: link:../shared-scripts
+      '@zoralabs/tsconfig':
+        specifier: workspace:^
+        version: link:../tsconfig
+      ds-test:
+        specifier: https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b
+        version: https://codeload.github.com/dapphub/ds-test/tar.gz/cd98eff28324bfac652e63a239a60632a761790b
+      forge-std:
+        specifier: https://github.com/foundry-rs/forge-std#v1.9.4
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
+      prettier:
+        specifier: ^3.0.3
+        version: 3.4.2
+      prettier-plugin-solidity:
+        specifier: ^1.4.1
+        version: 1.4.2(prettier@3.4.2)
+      solady:
+        specifier: 0.0.132
+        version: 0.0.132
+      solmate:
+        specifier: 6.8.0
+        version: 6.8.0
+      tsup:
+        specifier: ^8.4.0
+        version: 8.4.0(jiti@2.6.1)(postcss@8.5.6)(tsx@4.19.4)(typescript@5.8.3)(yaml@2.8.1)
+      tsx:
+        specifier: ^4.19.4
+        version: 4.19.4
+      typescript:
+        specifier: ^5.8.3
+        version: 5.8.3
+      viem:
+        specifier: ^2.21.21
+        version: 2.22.12(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.1)
+
   packages/protocol-deployments:
     devDependencies:
       '@lavamoat/preinstall-always-fail':
@@ -985,6 +1077,9 @@ importers:
       '@zoralabs/coins':
         specifier: workspace:^
         version: link:../coins
+      '@zoralabs/coins-deployments':
+        specifier: workspace:^
+        version: link:../coins-deployments
       '@zoralabs/cointags-contracts':
         specifier: workspace:^
         version: link:../../legacy/cointags
@@ -994,6 +1089,9 @@ importers:
       '@zoralabs/erc20z':
         specifier: workspace:^
         version: link:../../legacy/erc20z
+      '@zoralabs/limit-orders':
+        specifier: workspace:^
+        version: link:../limit-orders
       '@zoralabs/shared-contracts':
         specifier: workspace:^
         version: link:../shared-contracts
@@ -1044,12 +1142,12 @@ importers:
   packages/shared-contracts:
     dependencies:
       '@openzeppelin/contracts-upgradeable':
-        specifier: ^5.1.0
-        version: 5.2.0(@openzeppelin/contracts@5.0.2)
+        specifier: ^5.4.0
+        version: 5.4.0(@openzeppelin/contracts@5.4.0)
     devDependencies:
       '@openzeppelin/contracts':
-        specifier: ^5.0.2
-        version: 5.0.2
+        specifier: ^5.4.0
+        version: 5.4.0
       '@types/node':
         specifier: ^20.1.2
         version: 20.17.16
@@ -2610,14 +2708,19 @@ packages:
     peerDependencies:
       '@openzeppelin/contracts': 5.2.0
 
+  '@openzeppelin/contracts-upgradeable@5.4.0':
+    resolution: {integrity: sha512-STJKyDzUcYuB35Zub1JpWW58JxvrFFVgQ+Ykdr8A9PGXgtq/obF5uoh07k2XmFyPxfnZdPdBdhkJ/n2YxJ87HQ==}
+    peerDependencies:
+      '@openzeppelin/contracts': 5.4.0
+
   '@openzeppelin/contracts@4.9.2':
     resolution: {integrity: sha512-mO+y6JaqXjWeMh9glYVzVu8HYPGknAAnWyxTRhGeckOruyXQMNnlcW6w/Dx9ftLeIQk6N+ZJFuVmTwF7lEIFrg==}
 
   '@openzeppelin/contracts@5.0.2':
     resolution: {integrity: sha512-ytPc6eLGcHHnapAZ9S+5qsdomhjo6QBHTDRRBFfTxXIpsicMhVPouPgmUPebZZZGX7vt9USA+Z+0M0dSVtSUEA==}
 
-  '@openzeppelin/contracts@5.2.0':
-    resolution: {integrity: sha512-bxjNie5z89W1Ea0NZLZluFh8PrFNn9DH8DQlujEok2yjsOlraUPKID5p1Wk3qdNbf6XkQ1Os2RvfiHrrXLHWKA==}
+  '@openzeppelin/contracts@5.4.0':
+    resolution: {integrity: sha512-eCYgWnLg6WO+X52I16TZt8uEjbtdkgLC0SUX/xnAksjjrQI4Xfn4iBRoI5j55dmlOhDv1Y7BoR3cU7e3WWhC6A==}
 
   '@paulmillr/qr@0.2.1':
     resolution: {integrity: sha512-IHnV6A+zxU7XwmKFinmYjUcwlyK9+xkG3/s9KcQhI9BjQKycrJ1JRO+FbNYPwZiPKW3je/DR0k7w8/gLa5eaxQ==}
@@ -11824,19 +11927,19 @@ snapshots:
     dependencies:
       '@openzeppelin/contracts': 5.0.2
 
-  '@openzeppelin/contracts-upgradeable@5.2.0(@openzeppelin/contracts@5.0.2)':
+  '@openzeppelin/contracts-upgradeable@5.2.0(@openzeppelin/contracts@5.4.0)':
     dependencies:
-      '@openzeppelin/contracts': 5.0.2
+      '@openzeppelin/contracts': 5.4.0
 
-  '@openzeppelin/contracts-upgradeable@5.2.0(@openzeppelin/contracts@5.2.0)':
+  '@openzeppelin/contracts-upgradeable@5.4.0(@openzeppelin/contracts@5.4.0)':
     dependencies:
-      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts': 5.4.0
 
   '@openzeppelin/contracts@4.9.2': {}
 
   '@openzeppelin/contracts@5.0.2': {}
 
-  '@openzeppelin/contracts@5.2.0': {}
+  '@openzeppelin/contracts@5.4.0': {}
 
   '@paulmillr/qr@0.2.1': {}
 

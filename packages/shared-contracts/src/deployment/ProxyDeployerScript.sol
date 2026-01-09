@@ -167,7 +167,14 @@ contract ProxyDeployerScript is CommonBase {
         );
     }
 
-    function chainConfigPath() internal view returns (string memory) {
+    function isDevEnvironment() internal view returns (bool) {
+        return vm.envOr("DEV", false);
+    }
+
+    function chainConfigPath() internal view virtual returns (string memory) {
+        if (isDevEnvironment()) {
+            return string.concat("./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), "_dev.json");
+        }
         return string.concat("./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json");
     }
 

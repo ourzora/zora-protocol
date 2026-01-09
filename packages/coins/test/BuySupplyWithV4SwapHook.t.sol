@@ -3,6 +3,7 @@ pragma solidity ^0.8.13;
 
 import {BaseTest} from "./utils/BaseTest.sol";
 import {BuySupplyWithV4SwapHook} from "../src/hooks/deployment/BuySupplyWithV4SwapHook.sol";
+import {V3ToV4SwapLib} from "../src/libs/V3ToV4SwapLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 import {ICoin} from "../src/interfaces/ICoin.sol";
@@ -363,7 +364,7 @@ contract BuySupplyWithV4SwapHookTest is BaseTest {
         // Should revert with InsufficientInputCurrency
         vm.deal(users.creator, insufficientAmount);
         bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(ZORA);
-        vm.expectRevert(abi.encodeWithSelector(BuySupplyWithV4SwapHook.InsufficientInputCurrency.selector, inputAmount, insufficientAmount));
+        vm.expectRevert(abi.encodeWithSelector(V3ToV4SwapLib.InsufficientInputCurrency.selector, inputAmount, insufficientAmount));
 
         vm.prank(users.creator);
         factory.deployWithHook{value: insufficientAmount}(
@@ -414,7 +415,7 @@ contract BuySupplyWithV4SwapHookTest is BaseTest {
 
         bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(creatorCoinAddress);
         // Should revert with InsufficientInputCurrency
-        vm.expectRevert(abi.encodeWithSelector(BuySupplyWithV4SwapHook.InsufficientInputCurrency.selector, inputAmount, amountToApprove));
+        vm.expectRevert(abi.encodeWithSelector(V3ToV4SwapLib.InsufficientInputCurrency.selector, inputAmount, amountToApprove));
 
         vm.prank(users.creator);
         factory.deployWithHook(
@@ -454,7 +455,7 @@ contract BuySupplyWithV4SwapHookTest is BaseTest {
         bytes memory poolConfig = CoinConfigurationVersions.defaultDopplerMultiCurveUniV4(creatorCoinAddress);
 
         vm.prank(users.creator);
-        vm.expectRevert(abi.encodeWithSelector(BuySupplyWithV4SwapHook.V3RouteDoesNotConnectToV4RouteStart.selector));
+        vm.expectRevert(abi.encodeWithSelector(V3ToV4SwapLib.V3RouteDoesNotConnectToV4RouteStart.selector));
         factory.deployWithHook{value: 1 ether}(
             users.creator, // payoutRecipient
             _getDefaultOwners(), // owners

@@ -8,6 +8,12 @@
 pragma solidity ^0.8.23;
 
 library CoinConstants {
+    /// @dev Slot for transiently storing the tick before a swap.
+    bytes32 internal constant _BEFORE_SWAP_TICK_SLOT = keccak256("ZoraV4CoinHook.beforeSwap.tick");
+
+    /// @dev Constant used to indicate the max fill count for limit orders
+    uint256 internal constant SENTINEL_DEFAULT_LIMIT_ORDER_FILL_COUNT = 0;
+
     /// @dev Constant used to increase precision during calculations
     uint256 internal constant WAD = 1e18;
 

@@ -390,6 +390,14 @@ contract ZoraFactoryImpl is
         __UUPSUpgradeable_init();
         __ReentrancyGuard_init();
         __Ownable_init(initialOwner);
+
+        address[] memory hooks = new address[](1);
+        string[] memory tags = new string[](1);
+
+        hooks[0] = hook;
+        tags[0] = "CoinHook";
+
+        IZoraHookRegistry(zoraHookRegistry).registerHooks(hooks, tags);
     }
 
     /// @notice The implementation address of the factory contract

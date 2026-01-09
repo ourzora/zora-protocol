@@ -1,10 +1,16 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.13;
 
-import "./utils/BaseTest.sol";
+import {BaseTest} from "./utils/BaseTest.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {IHasContractName} from "@zoralabs/shared-contracts/interfaces/IContractMetadata.sol";
 import {IZoraFactory} from "../src/interfaces/IZoraFactory.sol";
+import {ZoraFactoryImpl} from "../src/ZoraFactoryImpl.sol";
+import {ZoraFactory} from "../src/proxy/ZoraFactory.sol";
+import {ContentCoin} from "../src/ContentCoin.sol";
+import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
+import {OwnableUpgradeable} from "@openzeppelin/contracts-upgradeable/access/OwnableUpgradeable.sol";
+import {MockZoraLimitOrderBook} from "./mocks/MockZoraLimitOrderBook.sol";
 
 contract FactoryTest is BaseTest {
     function setUp() public override {
@@ -166,9 +172,9 @@ contract FactoryTest is BaseTest {
         address[] memory registeredHooks;
 
         registeredHooks = zoraHookRegistry.getHookAddresses();
-        assertEq(registeredHooks.length, 0);
+        assertEq(registeredHooks.length, 1);
 
-        _deployHooks(); // Deploys new content and creator coin hook addresses
+        _deployHooks(address(new MockZoraLimitOrderBook())); // Deploys new content and creator coin hook addresses
 
         // Deploy new factory impl with new content and creator coin hook addresses
         ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
@@ -177,7 +183,7 @@ contract FactoryTest is BaseTest {
         ZoraFactoryImpl(address(factory)).upgradeToAndCall(address(newImpl), "");
 
         registeredHooks = zoraHookRegistry.getHookAddresses();
-        assertEq(registeredHooks.length, 1);
+        assertEq(registeredHooks.length, 2);
         assertTrue(zoraHookRegistry.isRegisteredHook(address(hook)));
     }
 }

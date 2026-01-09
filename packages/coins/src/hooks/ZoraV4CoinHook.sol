@@ -5,41 +5,42 @@
 // until the "Open Date" (3 years from first public distribution or earlier at Zora's discretion),
 // at which point this software automatically becomes available under the MIT License.
 // Full license terms available at: https://docs.zora.co/coins/license
-pragma solidity ^0.8.23;
+pragma solidity ^0.8.28;
 
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
 import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
 import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
-import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {BalanceDelta, BalanceDeltaLibrary} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
+import {BeforeSwapDelta} from "@uniswap/v4-core/src/types/BeforeSwapDelta.sol";
+import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
+import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
+import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
+
 import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IMsgSender} from "../interfaces/IMsgSender.sol";
 import {ITrustedMsgSenderProviderLookup} from "../interfaces/ITrustedMsgSenderProviderLookup.sol";
-import {IHasSwapPath} from "../interfaces/ICoin.sol";
+import {ICoin, IHasSwapPath, IHasRewardsRecipients, IHasCoinType} from "../interfaces/ICoin.sol";
+import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
+import {IUpgradeableV4Hook, IUpgradeableDestinationV4Hook, IUpgradeableDestinationV4HookWithUpdateableFee, BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
+import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
+import {IZoraHookRegistry} from "../interfaces/IZoraHookRegistry.sol";
+import {IZoraLimitOrderBookCoinsInterface} from "../interfaces/IZoraLimitOrderBookCoinsInterface.sol";
 import {LpPosition} from "../types/LpPosition.sol";
 import {V4Liquidity} from "../libs/V4Liquidity.sol";
 import {CoinRewardsV4} from "../libs/CoinRewardsV4.sol";
-import {ICoin} from "../interfaces/ICoin.sol";
-import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
 import {CoinCommon} from "../libs/CoinCommon.sol";
 import {CoinDopplerMultiCurve} from "../libs/CoinDopplerMultiCurve.sol";
 import {PoolStateReader} from "../libs/PoolStateReader.sol";
-import {IHasRewardsRecipients} from "../interfaces/ICoin.sol";
 import {CoinConfigurationVersions} from "../libs/CoinConfigurationVersions.sol";
-import {IUpgradeableV4Hook} from "../interfaces/IUpgradeableV4Hook.sol";
-import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
-import {MultiOwnable} from "../utils/MultiOwnable.sol";
-import {ERC165} from "@openzeppelin/contracts/utils/introspection/ERC165.sol";
-import {IUpgradeableDestinationV4Hook, IUpgradeableDestinationV4HookWithUpdateableFee} from "../interfaces/IUpgradeableV4Hook.sol";
-import {IHooks} from "@uniswap/v4-core/src/interfaces/IHooks.sol";
-import {BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
+import {CoinConstants} from "../libs/CoinConstants.sol";
 import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {ContractVersionBase, IVersionedContract} from "../version/ContractVersionBase.sol";
-import {IHasCoinType} from "../interfaces/ICoin.sol";
-import {CoinConstants} from "../libs/CoinConstants.sol";
+import {ISupportsLimitOrderFill} from "../interfaces/ISupportsLimitOrderFill.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -78,26 +79,38 @@ contract ZoraV4CoinHook is
     /// @notice The trusted message sender lookup contract - used to determine if an address is trusted
     ITrustedMsgSenderProviderLookup internal immutable trustedMsgSenderLookup;
 
+    /// @notice The Zora limit order book contract - used to fill limit orders during swaps
+    IZoraLimitOrderBookCoinsInterface internal immutable zoraLimitOrderBook;
+
+    /// @notice The Zora hook registry
+    IZoraHookRegistry internal immutable zoraHookRegistry;
+
     /// @notice The constructor for the ZoraV4CoinHook.
     /// @param poolManager_ The Uniswap V4 pool manager
     /// @param coinVersionLookup_ The coin version lookup contract - used to determine if an address is a coin and what version it is.
     /// @param trustedMsgSenderLookup_ The trusted message sender lookup contract - used to determine if an address is trusted
     /// @param upgradeGate_ The upgrade gate contract for managing hook upgrades
+    /// @param zoraLimitOrderBook_ The Zora limit order book contract for filling orders during swaps
+    /// @param zoraHookRegistry_ The Zora hook registry contract for identifying registered hooks
     constructor(
         IPoolManager poolManager_,
         IDeployedCoinVersionLookup coinVersionLookup_,
         ITrustedMsgSenderProviderLookup trustedMsgSenderLookup_,
-        IHooksUpgradeGate upgradeGate_
+        IHooksUpgradeGate upgradeGate_,
+        IZoraLimitOrderBookCoinsInterface zoraLimitOrderBook_,
+        IZoraHookRegistry zoraHookRegistry_
     ) BaseHook(poolManager_) {
         require(address(coinVersionLookup_) != address(0), CoinVersionLookupCannotBeZeroAddress());
-
         require(address(upgradeGate_) != address(0), UpgradeGateCannotBeZeroAddress());
-
+        require(address(zoraLimitOrderBook_) != address(0), ZoraLimitOrderBookCannotBeZeroAddress());
+        require(address(zoraHookRegistry_) != address(0), ZoraHookRegistryCannotBeZeroAddress());
         require(address(trustedMsgSenderLookup_) != address(0), TrustedMsgSenderLookupCannotBeZeroAddress());
 
         coinVersionLookup = coinVersionLookup_;
         upgradeGate = upgradeGate_;
         trustedMsgSenderLookup = trustedMsgSenderLookup_;
+        zoraLimitOrderBook = zoraLimitOrderBook_;
+        zoraHookRegistry = zoraHookRegistry_;
     }
 
     /// @notice Returns the trusted message sender lookup contract
@@ -116,7 +129,7 @@ contract ZoraV4CoinHook is
                 afterAddLiquidity: false,
                 beforeRemoveLiquidity: false,
                 afterRemoveLiquidity: false,
-                beforeSwap: false,
+                beforeSwap: true,
                 afterSwap: true,
                 beforeDonate: false,
                 afterDonate: false,
@@ -148,7 +161,8 @@ contract ZoraV4CoinHook is
             super.supportsInterface(interfaceId) ||
             interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId ||
             interfaceId == type(IUpgradeableDestinationV4HookWithUpdateableFee).interfaceId ||
-            interfaceId == type(IVersionedContract).interfaceId;
+            interfaceId == type(IVersionedContract).interfaceId ||
+            interfaceId == type(ISupportsLimitOrderFill).interfaceId;
     }
 
     /// @notice Internal fn generating the positions for a given pool key.
@@ -281,6 +295,27 @@ contract ZoraV4CoinHook is
         V4Liquidity.lockAndMint(poolManager, key, positions);
     }
 
+    /// @notice Transiently stores the tick before a swap.
+    /// @dev This is used in `_afterSwap` to determine the ticks crossed during the swap.
+    function _beforeSwap(
+        address sender,
+        PoolKey calldata key,
+        SwapParams calldata,
+        bytes calldata
+    ) internal virtual override returns (bytes4, BeforeSwapDelta, uint24) {
+        if (_isInternalSwap(sender)) {
+            return (BaseHook.beforeSwap.selector, BeforeSwapDelta.wrap(0), 0);
+        }
+
+        // Store tick for user-initiated swaps only
+        (, int24 currentTick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
+
+        TransientSlot.Int256Slot slot = TransientSlot.asInt256(CoinConstants._BEFORE_SWAP_TICK_SLOT);
+        TransientSlot.tstore(slot, int256(currentTick));
+
+        return (BaseHook.beforeSwap.selector, BeforeSwapDelta.wrap(0), 0);
+    }
+
     /// @notice Internal fn called when a swap is executed.
     /// @dev This hook is called from BaseHook library from uniswap v4.
     /// This hook:
@@ -301,6 +336,10 @@ contract ZoraV4CoinHook is
         BalanceDelta delta,
         bytes calldata hookData
     ) internal virtual override returns (bytes4, int128) {
+        if (_isInternalSwap(sender)) {
+            return (BaseHook.afterSwap.selector, 0);
+        }
+
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(key);
 
         // get the coin address and positions for the pool key; they must have been set in the afterInitialize callback
@@ -343,7 +382,17 @@ contract ZoraV4CoinHook is
             );
         }
 
+        (int24 tickBeforeSwap, int24 tickAfterSwap) = _getSwapTickRange(key);
+        zoraLimitOrderBook.fill(key, !params.zeroForOne, tickBeforeSwap, tickAfterSwap, CoinConstants.SENTINEL_DEFAULT_LIMIT_ORDER_FILL_COUNT, address(0));
+
         return (BaseHook.afterSwap.selector, 0);
+    }
+
+    /// @dev Get the tick range of a swap
+    function _getSwapTickRange(PoolKey calldata key) internal view returns (int24 tickBeforeSwap, int24 tickAfterSwap) {
+        TransientSlot.Int256Slot slot = TransientSlot.asInt256(CoinConstants._BEFORE_SWAP_TICK_SLOT);
+        tickBeforeSwap = int24(int256(TransientSlot.tload(slot)));
+        (, tickAfterSwap, , ) = StateLibrary.getSlot0(poolManager, key.toId());
     }
 
     /// @dev Internal fn to allow for overriding market reward distribution logic
@@ -393,6 +442,13 @@ contract ZoraV4CoinHook is
 
         // Delete the old pool key mapping to prevent future operations on the migrated pool
         delete poolCoins[poolKeyHash];
+    }
+
+    /// @dev Checks if the swap is internal and should skip hook operations
+    function _isInternalSwap(address sender) internal view returns (bool) {
+        return sender == address(this) ||
+               sender == address(zoraLimitOrderBook) ||
+               zoraHookRegistry.isRegisteredHook(sender);
     }
 
     /// @notice Receives ETH from the pool manager for ETH-backed coins during fee collection.

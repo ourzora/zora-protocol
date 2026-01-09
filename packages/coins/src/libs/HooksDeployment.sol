@@ -63,7 +63,7 @@ library HooksDeployment {
     bytes32 constant VALID_CREATOR_COIN_SALT = 0x00000000000000000000000000000000000000000000000000000000000031af;
 
     function mineForSalt(address deployer, bytes memory hookCreationCode) internal view returns (address hookAddress, bytes32 salt) {
-        uint160 flags = uint160(Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_INITIALIZE_FLAG) ^ (0x4444 << 144);
+        uint160 flags = uint160(Hooks.BEFORE_SWAP_FLAG | Hooks.AFTER_SWAP_FLAG | Hooks.AFTER_INITIALIZE_FLAG) ^ (0x4444 << 144);
         return HookMinerWithCreationCodeArgs.find(deployer, flags, hookCreationCode);
     }
 
@@ -88,9 +88,11 @@ library HooksDeployment {
         address poolManager,
         address coinVersionLookup,
         ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
-        address upgradeGate
+        address upgradeGate,
+        address orderFiller,
+        address hookRegistry
     ) internal returns (address hookAddress, bytes32 salt) {
-        bytes memory hookCreationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
+        bytes memory hookCreationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate, orderFiller, hookRegistry);
         (salt, ) = mineAndCacheSalt(deployer, hookCreationCode);
         hookAddress = HookMinerWithCreationCodeArgs.deterministicHookAddress(deployer, salt, hookCreationCode);
     }
@@ -133,18 +135,26 @@ library HooksDeployment {
         address poolManager,
         address coinVersionLookup,
         ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
-        address upgradeGate
+        address upgradeGate,
+        address orderFiller,
+        address hookRegistry
     ) internal pure returns (bytes memory) {
-        return abi.encode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
+        return abi.encode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate, orderFiller, hookRegistry);
     }
 
     function makeHookCreationCode(
         address poolManager,
         address coinVersionLookup,
         ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
-        address upgradeGate
+        address upgradeGate,
+        address orderFiller,
+        address hookRegistry
     ) internal pure returns (bytes memory) {
-        return abi.encodePacked(type(ZoraV4CoinHook).creationCode, hookConstructorArgs(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate));
+        return
+            abi.encodePacked(
+                type(ZoraV4CoinHook).creationCode,
+                hookConstructorArgs(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate, orderFiller, hookRegistry)
+            );
     }
 
     /// @notice Deploys or returns existing ContentCoinHook using deterministic deployment.  Ensures that if a hooks is already
@@ -154,9 +164,11 @@ library HooksDeployment {
         address coinVersionLookup,
         ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
         address upgradeGate,
+        address orderFiller,
+        address hookRegistry,
         bytes32 salt
     ) internal returns (IHooks hook) {
-        bytes memory creationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate);
+        bytes memory creationCode = makeHookCreationCode(poolManager, coinVersionLookup, trustedMsgSenderLookup, upgradeGate, orderFiller, hookRegistry);
         return deployHookWithSalt(creationCode, salt);
     }
 

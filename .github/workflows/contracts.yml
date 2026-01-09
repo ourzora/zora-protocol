@@ -24,6 +24,29 @@ jobs:
       ignore_coverage_files: '"*test*" "*src/utils/uniswap/*" "*src/libs/CoinLegacy.sol" "*src/deployment/CoinsDeployerBase.sol"'
       coverage_args: "--ir-minimum"
 
+  contracts-coins-deployments:
+    name: Coins Deployments
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/coins-deployments
+      name: Coins Deployments
+      skip_storage_layout: true
+      skip_coverage: true
+      skip_contract_sizes: true
+      skip_tests: true
+
+  contracts-limit-orders:
+    name: Limit Orders
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/limit-orders
+      name: Limit Orders
+      skip_storage_layout: true
+      ignore_coverage_files: '"*test*" "*src/utils/uniswap/*"'
+      coverage_args: "--ir-minimum"
+
   contracts-incentive:
     name: Incentive
     uses: ./.github/workflows/contract.yml
