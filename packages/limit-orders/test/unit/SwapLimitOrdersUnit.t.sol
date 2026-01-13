@@ -669,4 +669,141 @@ contract SwapLimitOrdersUnitTest is Test {
 
         assertTrue(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return true when all conditions met");
     }
+
+    /// @notice Tests computeOrders with misaligned baseTick produces aligned output ticks
+    /// @dev This test verifies the fix for MKT-24: tick misalignment in minAway calculation
+    function test_computeOrders_misalignedBaseTick_producesValidTicks() public {
+        // Use a pool with tickSpacing = 10 for easier verification
+        PoolKey memory smallSpacingKey = PoolKey({
+            currency0: Currency.wrap(address(0x1000)),
+            currency1: Currency.wrap(address(0x2000)),
+            fee: 3000,
+            tickSpacing: 10, // Small tick spacing to make misalignment easier to reproduce
+            hooks: IHooks(address(0))
+        });
+
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        // Use small multiple that would normally produce tick close to base
+        params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 100); // 1.01x
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+
+        // Use a baseTick that is NOT aligned to tickSpacing=10
+        int24 baseTick = 205; // Not divisible by 10 - misaligned
+        uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
+
+        // Test for currency0 (buy orders, tick should be >= baseTick + tickSpacing)
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(
+            smallSpacingKey,
+            true, // isCurrency0
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        // Verify the returned tick is aligned to tickSpacing
+        assertEq(orders.ticks[0] % 10, 0, "tick must be aligned to tick spacing of 10");
+
+        // Verify tick is at least one tickSpacing away from the aligned baseTick
+        // For currency0, baseTick=205 should align down to 200, so minAway=210
+        assertGe(orders.ticks[0], 210, "tick should be >= aligned baseTick (200) + spacing (10)");
+
+        // Test for currency1 (sell orders, tick should be <= baseTick - tickSpacing)
+        (Orders memory orders1, , ) = SwapLimitOrders.computeOrders(
+            smallSpacingKey,
+            false, // !isCurrency0
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        // Verify the returned tick is aligned to tickSpacing
+        assertEq(orders1.ticks[0] % 10, 0, "tick must be aligned to tick spacing of 10");
+
+        // Verify tick is at least one tickSpacing away from the aligned baseTick
+        // For currency1, baseTick=205 should align up to 210, so minAway=200
+        assertLe(orders1.ticks[0], 200, "tick should be <= aligned baseTick (210) - spacing (10)");
+    }
+
+    /// @notice Tests computeOrders with various misaligned baseTicks and tick spacings
+    function test_computeOrders_variousMisalignments_allProduceValidTicks() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 50); // 1.02x
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+
+        // Test case 1: baseTick=205, tickSpacing=10
+        PoolKey memory key10 = testKey;
+        key10.tickSpacing = 10;
+        int24 baseTick1 = 205;
+        uint160 sqrtPrice1 = TickMath.getSqrtPriceAtTick(baseTick1);
+        (Orders memory orders1, , ) = SwapLimitOrders.computeOrders(key10, true, totalSize, baseTick1, sqrtPrice1, params);
+        assertEq(orders1.ticks[0] % 10, 0, "case 1: tick must be aligned to spacing 10");
+
+        // Test case 2: baseTick=1505, tickSpacing=200
+        PoolKey memory key200 = testKey;
+        key200.tickSpacing = 200;
+        int24 baseTick2 = 1505;
+        uint160 sqrtPrice2 = TickMath.getSqrtPriceAtTick(baseTick2);
+        (Orders memory orders2, , ) = SwapLimitOrders.computeOrders(key200, true, totalSize, baseTick2, sqrtPrice2, params);
+        assertEq(orders2.ticks[0] % 200, 0, "case 2: tick must be aligned to spacing 200");
+
+        // Test case 3: negative misaligned baseTick=-95, tickSpacing=10
+        int24 baseTick3 = -95;
+        uint160 sqrtPrice3 = TickMath.getSqrtPriceAtTick(baseTick3);
+        (Orders memory orders3, , ) = SwapLimitOrders.computeOrders(key10, true, totalSize, baseTick3, sqrtPrice3, params);
+        assertEq(orders3.ticks[0] % 10, 0, "case 3: tick must be aligned to spacing 10");
+    }
+
+    /// @notice Tests computeOrders with already-aligned baseTicks remain aligned
+    /// @dev Verifies that the fix doesn't break the common case where baseTick is already aligned
+    function test_computeOrders_alignedBaseTick_remainsAligned() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 50); // 1.02x
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+
+        // Test case 1: baseTick=200 (aligned), tickSpacing=10
+        PoolKey memory key10 = testKey;
+        key10.tickSpacing = 10;
+        int24 baseTick1 = 200; // Already divisible by 10
+        uint160 sqrtPrice1 = TickMath.getSqrtPriceAtTick(baseTick1);
+        (Orders memory orders1, , ) = SwapLimitOrders.computeOrders(key10, true, totalSize, baseTick1, sqrtPrice1, params);
+        assertEq(orders1.ticks[0] % 10, 0, "aligned case 1: tick must be aligned to spacing 10");
+        assertGe(orders1.ticks[0], baseTick1 + 10, "aligned case 1: tick should be >= baseTick + spacing");
+
+        // Test case 2: baseTick=1400 (aligned), tickSpacing=200
+        PoolKey memory key200 = testKey;
+        key200.tickSpacing = 200;
+        int24 baseTick2 = 1400; // Already divisible by 200
+        uint160 sqrtPrice2 = TickMath.getSqrtPriceAtTick(baseTick2);
+        (Orders memory orders2, , ) = SwapLimitOrders.computeOrders(key200, true, totalSize, baseTick2, sqrtPrice2, params);
+        assertEq(orders2.ticks[0] % 200, 0, "aligned case 2: tick must be aligned to spacing 200");
+        assertGe(orders2.ticks[0], baseTick2 + 200, "aligned case 2: tick should be >= baseTick + spacing");
+
+        // Test case 3: baseTick=0 (aligned), tickSpacing=10
+        int24 baseTick3 = 0; // Already divisible by any spacing
+        uint160 sqrtPrice3 = TickMath.getSqrtPriceAtTick(baseTick3);
+        (Orders memory orders3, , ) = SwapLimitOrders.computeOrders(key10, true, totalSize, baseTick3, sqrtPrice3, params);
+        assertEq(orders3.ticks[0] % 10, 0, "aligned case 3: tick must be aligned to spacing 10");
+        assertGe(orders3.ticks[0], baseTick3 + 10, "aligned case 3: tick should be >= baseTick + spacing");
+
+        // Test case 4: negative aligned baseTick=-100, tickSpacing=10
+        int24 baseTick4 = -100; // Already divisible by 10
+        uint160 sqrtPrice4 = TickMath.getSqrtPriceAtTick(baseTick4);
+        (Orders memory orders4, , ) = SwapLimitOrders.computeOrders(key10, true, totalSize, baseTick4, sqrtPrice4, params);
+        assertEq(orders4.ticks[0] % 10, 0, "aligned case 4: tick must be aligned to spacing 10");
+        assertGe(orders4.ticks[0], baseTick4 + 10, "aligned case 4: tick should be >= baseTick + spacing");
+    }
 }

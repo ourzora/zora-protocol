@@ -185,7 +185,8 @@ library SwapLimitOrders {
             aligned = minTick;
         }
 
-        int24 minAway = baseTick + (isCurrency0 ? key.tickSpacing : -key.tickSpacing);
+        int24 alignedBaseTick = DopplerMath.alignTickToTickSpacing(isCurrency0, baseTick, key.tickSpacing);
+        int24 minAway = alignedBaseTick + (isCurrency0 ? key.tickSpacing : -key.tickSpacing);
         if (isCurrency0) {
             if (aligned < minAway) aligned = minAway;
         } else {
