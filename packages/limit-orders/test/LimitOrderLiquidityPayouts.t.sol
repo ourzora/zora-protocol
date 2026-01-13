@@ -29,8 +29,12 @@ contract MockPoolManager {
 
     uint256 public swapCalls;
     uint256 public takeCalls;
+    uint256 public syncCalls;
+    uint256 public settleCalls;
     Currency public lastTakeCurrency;
     uint256 public lastTakeAmount;
+    Currency public lastSyncCurrency;
+    uint256 public lastSettleValue;
 
     function setModifyLiquidityResponse(int128 amount0, int128 amount1, int128 fee0, int128 fee1) external {
         liquidityDelta = toBalanceDelta(amount0, amount1);
@@ -63,9 +67,14 @@ contract MockPoolManager {
         }
     }
 
-    function sync(Currency) external {}
+    function sync(Currency currency) external {
+        ++syncCalls;
+        lastSyncCurrency = currency;
+    }
 
     function settle() external payable returns (uint256) {
+        ++settleCalls;
+        lastSettleValue = msg.value;
         return msg.value;
     }
 
@@ -247,6 +256,29 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         assertEq(amountOut, 55, "should pay full amount1 delta");
         assertEq(currency1Token.balanceOf(recipient), 55, "recipient receives currency1");
         assertEq(Currency.unwrap(poolManager.lastTakeCurrency()), address(currency1Token));
+    }
+
+    function test_burnAndRefundSettlesNativeNegativeDeltaWithValue() public {
+        PoolKey memory nativeKey = PoolKey({
+            currency0: CurrencyLibrary.ADDRESS_ZERO,
+            currency1: Currency.wrap(address(currency1Token)),
+            fee: 3000,
+            tickSpacing: 60,
+            hooks: IHooks(address(0))
+        });
+
+        uint256 settleAmount = 1 ether;
+        poolManager.setModifyLiquidityResponse(-int128(int256(settleAmount)), 0, 0, 0);
+        vm.deal(address(harness), settleAmount);
+
+        uint256 poolBalanceBefore = address(poolManager).balance;
+        harness.burnAndRefund(poolManager, nativeKey, ORDER_ID, makeAddr("recipient"));
+
+        assertEq(poolManager.settleCalls(), 1, "settle should be called");
+        assertEq(poolManager.lastSettleValue(), settleAmount, "settle should receive native value");
+        assertEq(poolManager.syncCalls(), 1, "sync should be called");
+        assertEq(Currency.unwrap(poolManager.lastSyncCurrency()), address(0), "sync should be for native currency");
+        assertEq(address(poolManager).balance, poolBalanceBefore + settleAmount, "pool manager should receive ETH");
     }
 
     function test_burnAndPayoutWithoutReferralRoutesAllProceeds() public {

@@ -116,18 +116,28 @@ library LimitOrderLiquidity {
             poolManager.take(key.currency0, payout0, uint256(d0));
         }
         if (d0 < 0) {
+            uint256 amount = uint256(uint256(-d0));
             poolManager.sync(key.currency0);
-            key.currency0.transfer(address(poolManager), uint256(uint256(-d0)));
-            poolManager.settle();
+            if (key.currency0.isAddressZero()) {
+                poolManager.settle{value: amount}();
+            } else {
+                key.currency0.transfer(address(poolManager), amount);
+                poolManager.settle();
+            }
         }
 
         if (d1 > 0 && payout1 != address(0)) {
             poolManager.take(key.currency1, payout1, uint256(d1));
         }
         if (d1 < 0) {
+            uint256 amount = uint256(uint256(-d1));
             poolManager.sync(key.currency1);
-            key.currency1.transfer(address(poolManager), uint256(uint256(-d1)));
-            poolManager.settle();
+            if (key.currency1.isAddressZero()) {
+                poolManager.settle{value: amount}();
+            } else {
+                key.currency1.transfer(address(poolManager), amount);
+                poolManager.settle();
+            }
         }
     }
 
