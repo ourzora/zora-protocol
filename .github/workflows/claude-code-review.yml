@@ -50,6 +50,13 @@ jobs:
           cat .github/claude-code-review-prompt.md >> $GITHUB_OUTPUT
           echo "EOF" >> $GITHUB_OUTPUT
 
+      - name: Read allowed tools
+        id: allowed-tools
+        run: |
+          # Read allowed tools file and join lines with commas
+          tools=$(cat .github/claude-code-review-allowed-tools.txt | tr '\n' ',' | sed 's/,$//')
+          echo "list=$tools" >> $GITHUB_OUTPUT
+
       - name: Run Claude Code Review
         id: claude-review
         uses: anthropics/claude-code-action@v1
@@ -63,6 +70,6 @@ jobs:
           # Use sticky comments to update existing comment instead of creating new ones
           use_sticky_comment: true
 
-          # Allow Claude to inspect changesets, protocol knowledge, and run validation commands
-          # CLI options are passed via claude_args in v1
-          claude_args: "--allowedTools 'Bash(ls .changeset/),Bash(pnpm changeset status),Bash(cat PROTOCOL_KNOWLEDGE.md),Bash(find packages -name *.sol -path */src/*),Bash(git diff --name-only main...HEAD)'"
+          # Allowed tools list is read from .github/claude-code-review-allowed-tools.txt
+          # This allows editing the allowed tools without triggering workflow validation issues
+          claude_args: "--allowedTools '${{ steps.allowed-tools.outputs.list }}'"
