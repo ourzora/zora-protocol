@@ -1,5 +1,11 @@
 # @zoralabs/coins
 
+## 2.4.1
+
+### Patch Changes
+
+- cf172fdb: Make call to calculatePositions external to save on contract size
+
 ## 2.4.0
 
 ### Minor Changes

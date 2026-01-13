@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/coins-deployments",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "private": true,
   "description": "Deployment scripts and addresses for Zora coins and limit orders",
   "dependencies": {
