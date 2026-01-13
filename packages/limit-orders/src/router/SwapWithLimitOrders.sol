@@ -224,7 +224,7 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
         bool hookSupportsFill = IERC165(address(targetPool.hooks)).supportsInterface(type(ISupportsLimitOrderFill).interfaceId);
 
         // Router-based filling for legacy hooks
-        if (!hookSupportsFill && orders.length > 0 && tickBeforeSwap != tickAfterSwap) {
+        if (!hookSupportsFill && tickBeforeSwap != tickAfterSwap) {
             _fillOrders(targetPool, isCoinCurrency0, tickBeforeSwap, tickAfterSwap);
         }
 
