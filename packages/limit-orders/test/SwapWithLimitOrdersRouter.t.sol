@@ -307,9 +307,72 @@ contract SwapWithLimitOrdersTestNonForked is SwapWithLimitOrdersTestBase {
     }
 
     function test_orderFilling_invertedDirection() public {
-        // Verify fill direction is inverted (!isCoinCurrency0)
-        // Check correct orders are targeted for filling
-        // TODO: Requires verifying fill direction logic
+        // This test verifies the fix for audit issue #16
+        // https://github.com/kadenzipfel/zora-autosell-audit/issues/16
+        // The router should pass isCoinCurrency0 (not !isCoinCurrency0) to _fillOrders
+
+        PoolKey memory key = creatorCoin.getPoolKey();
+
+        // 1. Create first buyer's orders using swapWithLimitOrders
+        LimitOrderConfig memory limitOrderConfig = _prepareLimitOrderParams(users.buyer, _defaultMultiples(), _defaultPercentages());
+        deal(address(zoraToken), users.buyer, DEFAULT_LIMIT_ORDER_AMOUNT);
+
+        SwapWithLimitOrders.SwapWithLimitOrdersParams memory params = _buildDirectV4SwapParams(
+            users.buyer,
+            address(zoraToken),
+            DEFAULT_LIMIT_ORDER_AMOUNT,
+            key,
+            limitOrderConfig
+        );
+
+        vm.recordLogs();
+        _executeSwapWithLimitOrders(users.buyer, params);
+        CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
+        assertGt(created.length, 0, "expected orders to be created");
+
+        // Store initial order state
+        address orderCoin = created[0].coin;
+        uint256 initialMakerBalance = _makerBalance(users.buyer, orderCoin);
+        assertGt(initialMakerBalance, 0, "buyer should have orders");
+
+        // 2. Mock the hook to not support ISupportsLimitOrderFill so router handles fills
+        bytes memory callData = abi.encodeWithSelector(IERC165.supportsInterface.selector, type(ISupportsLimitOrderFill).interfaceId);
+        vm.mockCall(address(key.hooks), callData, abi.encode(false));
+
+        // 3. Execute second swap that moves price beyond first orders AND creates new orders
+        // This ensures orders.length > 0 (from new orders) and tick moves past first orders
+        // Using a much larger swap to ensure we cross the first order ticks
+        LimitOrderConfig memory limitOrderConfig2 = _prepareLimitOrderParams(users.seller, _defaultMultiples(), _defaultPercentages());
+        uint256 largerSwapAmount = DEFAULT_LIMIT_ORDER_AMOUNT * 100; // 100x larger to move price significantly
+        deal(address(zoraToken), users.seller, largerSwapAmount);
+
+        SwapWithLimitOrders.SwapWithLimitOrdersParams memory params2 = _buildDirectV4SwapParams(
+            users.seller,
+            address(zoraToken),
+            largerSwapAmount,
+            key,
+            limitOrderConfig2
+        );
+
+        vm.recordLogs();
+        _executeSwapWithLimitOrders(users.seller, params2);
+
+        // 5. Verify fills occurred by checking FilledOrderLog events
+        FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
+
+        // The bug: with !isCoinCurrency0, fills won't happen because wrong direction
+        // After fix: fills SHOULD happen
+        assertGt(fills.length, 0, "orders should have been filled by router");
+
+        // 6. Verify orders were filled for correct maker
+        for (uint256 i = 0; i < fills.length; i++) {
+            assertEq(fills[i].maker, users.buyer, "incorrect maker");
+            assertEq(fills[i].coinIn, orderCoin, "incorrect coin");
+        }
+
+        // 7. Verify maker balance decreased (orders filled and paid out)
+        uint256 finalMakerBalance = _makerBalance(users.buyer, orderCoin);
+        assertLt(finalMakerBalance, initialMakerBalance, "maker balance should decrease after fills");
     }
 
     function test_reverts_emptyV4Route() public {

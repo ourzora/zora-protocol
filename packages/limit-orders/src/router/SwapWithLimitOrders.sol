@@ -225,7 +225,7 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
 
         // Router-based filling for legacy hooks
         if (!hookSupportsFill && orders.length > 0 && tickBeforeSwap != tickAfterSwap) {
-            _fillOrders(targetPool, !isCoinCurrency0, tickBeforeSwap, tickAfterSwap);
+            _fillOrders(targetPool, isCoinCurrency0, tickBeforeSwap, tickAfterSwap);
         }
 
         emit SwapWithLimitOrdersExecuted(msg.sender, params.recipient, targetPool, BalanceDelta.wrap(0), tickBeforeSwap, tickAfterSwap, orders);
