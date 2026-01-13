@@ -21,6 +21,7 @@ import {IDeployedCoinVersionLookup} from "@zoralabs/coins/src/interfaces/IDeploy
 import {LimitOrderTypes} from "./LimitOrderTypes.sol";
 import {IHasSwapPath} from "@zoralabs/coins/src/interfaces/ICoin.sol";
 import {UniV4SwapToCurrency} from "@zoralabs/coins/src/libs/UniV4SwapToCurrency.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
 
 library LimitOrderLiquidity {
     using CurrencyLibrary for Currency;
@@ -77,12 +78,13 @@ library LimitOrderLiquidity {
         int128 referralShareLiquidity0 = feeRecipient == address(0) ? int128(0) : int128(fee0Initial);
         int128 referralShareLiquidity1 = feeRecipient == address(0) ? int128(0) : int128(fee1Initial);
 
-        (bool usePath, IHasSwapPath.PayoutSwapPath memory payoutPath) = _resolvePayoutPath(coinIn, coinLookup);
+        Currency payoutCurrency = order.isCurrency0 ? key.currency1 : key.currency0;
+        IHasSwapPath.PayoutSwapPath memory payoutPath = _resolvePayoutPath(coinIn, coinLookup, key, payoutCurrency);
 
-        (makerCoinOut, makerAmountOut) = _payoutRecipient(poolManager, key, order.maker, makerShareLiquidity0, makerShareLiquidity1, usePath, payoutPath);
+        (makerCoinOut, makerAmountOut) = _payoutRecipient(poolManager, order.maker, makerShareLiquidity0, makerShareLiquidity1, payoutPath);
 
         if (referralShareLiquidity0 > 0 || referralShareLiquidity1 > 0) {
-            (, referralAmountOut) = _payoutRecipient(poolManager, key, feeRecipient, referralShareLiquidity0, referralShareLiquidity1, usePath, payoutPath);
+            (, referralAmountOut) = _payoutRecipient(poolManager, feeRecipient, referralShareLiquidity0, referralShareLiquidity1, payoutPath);
         }
 
         _settleNegativeDeltas(poolManager, key, liquidity0 + fee0Initial, liquidity1 + fee1Initial);
@@ -100,12 +102,19 @@ library LimitOrderLiquidity {
     ) internal returns (uint128 amountOut) {
         (int128 amount0, int128 amount1) = _burnLiquidity(poolManager, key, tickLower, tickUpper, liquidity, salt);
 
-        if (isCurrency0 && amount0 > 0) {
-            amountOut = uint128(amount0);
-            poolManager.take(key.currency0, recipient, amountOut);
-        } else if (!isCurrency0 && amount1 > 0) {
-            amountOut = uint128(amount1);
-            poolManager.take(key.currency1, recipient, amountOut);
+        if (amount0 > 0) {
+            uint128 amount0Out = uint128(amount0);
+            poolManager.take(key.currency0, recipient, amount0Out);
+            if (isCurrency0) {
+                amountOut = amount0Out;
+            }
+        }
+        if (amount1 > 0) {
+            uint128 amount1Out = uint128(amount1);
+            poolManager.take(key.currency1, recipient, amount1Out);
+            if (!isCurrency0) {
+                amountOut = amount1Out;
+            }
         }
 
         _settleNegativeDeltas(poolManager, key, amount0, amount1);
@@ -160,22 +169,27 @@ library LimitOrderLiquidity {
 
     function _resolvePayoutPath(
         address coinIn,
-        IDeployedCoinVersionLookup coinLookup
-    ) private view returns (bool hasPath, IHasSwapPath.PayoutSwapPath memory payoutPath) {
-        if (coinIn == address(0)) {
-            return (false, payoutPath);
+        IDeployedCoinVersionLookup coinLookup,
+        PoolKey memory key,
+        Currency payoutCurrency
+    ) private view returns (IHasSwapPath.PayoutSwapPath memory payoutPath) {
+        // Try to get multi-hop path from coin
+        if (coinIn != address(0)) {
+            try coinLookup.getVersionForDeployedCoin(coinIn) returns (uint8 version) {
+                if (version >= 4 && _supportsSwapPath(coinIn)) {
+                    payoutPath = IHasSwapPath(coinIn).getPayoutSwapPath(coinLookup);
+                    if (payoutPath.path.length > 0) {
+                        return payoutPath;
+                    }
+                }
+            } catch {}
         }
 
-        try coinLookup.getVersionForDeployedCoin(coinIn) returns (uint8 version) {
-            if (version >= 4 && _supportsSwapPath(coinIn)) {
-                payoutPath = IHasSwapPath(coinIn).getPayoutSwapPath(coinLookup);
-                if (payoutPath.path.length > 0) {
-                    return (true, payoutPath);
-                }
-            }
-        } catch {}
-
-        return (false, payoutPath);
+        // Fallback: construct simple single-hop path
+        Currency coinCurrency = payoutCurrency == key.currency0 ? key.currency1 : key.currency0;
+        payoutPath.currencyIn = coinCurrency;
+        payoutPath.path = new PathKey[](1);
+        payoutPath.path[0] = PathKey({intermediateCurrency: payoutCurrency, fee: key.fee, tickSpacing: key.tickSpacing, hooks: key.hooks, hookData: bytes("")});
     }
 
     function _supportsSwapPath(address coin) private view returns (bool) {
@@ -197,35 +211,22 @@ library LimitOrderLiquidity {
 
     function _payoutRecipient(
         IPoolManager poolManager,
-        PoolKey memory key,
         address recipient,
         int128 amount0,
         int128 amount1,
-        bool usePath,
         IHasSwapPath.PayoutSwapPath memory payoutPath
     ) private returns (Currency coinOut, uint128 amountOut) {
-        if (usePath) {
-            (coinOut, amountOut) = UniV4SwapToCurrency.swapToPath(poolManager, uint128(amount0), uint128(amount1), payoutPath.currencyIn, payoutPath.path);
-            poolManager.take(coinOut, recipient, amountOut);
-        } else {
-            (coinOut, amountOut) = _payCounterAsset(poolManager, key, amount0, amount1, recipient);
-        }
-    }
+        // Convert to uint128, treating negative/zero as zero
+        uint128 amt0 = amount0 > 0 ? uint128(amount0) : 0;
+        uint128 amt1 = amount1 > 0 ? uint128(amount1) : 0;
 
-    function _payCounterAsset(
-        IPoolManager poolManager,
-        PoolKey memory key,
-        int128 amount0,
-        int128 amount1,
-        address recipient
-    ) private returns (Currency coinOut, uint128 amountOut) {
-        if (amount0 > 0) {
-            coinOut = key.currency0;
-            amountOut = uint128(amount0);
-            poolManager.take(coinOut, recipient, amountOut);
-        } else if (amount1 > 0) {
-            coinOut = key.currency1;
-            amountOut = uint128(amount1);
+        // Use swapToPath which handles all cases:
+        // - Single positive delta: returns that currency
+        // - Dual positive deltas: swaps one to the other and returns combined amount
+        // - Multi-hop paths: handles coin -> backingCoin -> backingCoin's currency
+        (coinOut, amountOut) = UniV4SwapToCurrency.swapToPath(poolManager, amt0, amt1, payoutPath.currencyIn, payoutPath.path);
+
+        if (amountOut > 0) {
             poolManager.take(coinOut, recipient, amountOut);
         }
     }

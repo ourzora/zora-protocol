@@ -258,6 +258,20 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         assertEq(Currency.unwrap(poolManager.lastTakeCurrency()), address(currency1Token));
     }
 
+    function test_burnAndRefundPaysBothCurrenciesWhenPositive() public {
+        poolManager.setModifyLiquidityResponse(int128(10), int128(20), 0, 0);
+        deal(address(currency0Token), address(poolManager), 100e18);
+        deal(address(currency1Token), address(poolManager), 100e18);
+        address recipient = makeAddr("dual-recipient");
+
+        uint128 amountOut = harness.burnAndRefund(poolManager, poolKey, ORDER_ID, recipient);
+
+        assertEq(amountOut, 10, "amountOut should match order currency payout");
+        assertEq(currency0Token.balanceOf(recipient), 10, "recipient receives currency0");
+        assertEq(currency1Token.balanceOf(recipient), 20, "recipient receives currency1");
+        assertEq(poolManager.takeCalls(), 2, "both currencies should be taken");
+    }
+
     function test_burnAndRefundSettlesNativeNegativeDeltaWithValue() public {
         PoolKey memory nativeKey = PoolKey({
             currency0: CurrencyLibrary.ADDRESS_ZERO,
@@ -299,6 +313,31 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         assertEq(referralAmount, 0, "referral should be zero when address(0)");
         assertEq(currency1Token.balanceOf(maker), balanceBefore + 120, "maker receives counter-asset");
         assertEq(poolManager.takeCalls(), 1, "single take call expected");
+    }
+
+    function test_burnAndPayoutPaysBothCurrenciesWhenPositive() public {
+        // This test now verifies that when both deltas are positive,
+        // only ONE currency is paid out (the payout currency) after swapping
+        poolManager.setModifyLiquidityResponse(int128(15), int128(25), 0, 0);
+
+        // Simulate swap: 15 of currency0 swaps to get some currency1
+        // (mock doesn't track amounts, just that swap occurred)
+        poolManager.setSwapResponse(0, int128(0));
+
+        deal(address(currency0Token), address(poolManager), 100e18);
+        deal(address(currency1Token), address(poolManager), 100e18);
+
+        uint256 makerCurrency0Before = currency0Token.balanceOf(maker);
+        uint256 makerCurrency1Before = currency1Token.balanceOf(maker);
+
+        (, uint128 makerAmount, ) = harness.burnAndPayout(poolManager, poolKey, ORDER_ID, address(0), address(currency0Token), versionLookup);
+
+        // With the fix: only currency1 is paid out (NOT currency0)
+        assertEq(currency0Token.balanceOf(maker), makerCurrency0Before, "maker should NOT receive currency0");
+        assertGt(currency1Token.balanceOf(maker), makerCurrency1Before, "maker should receive currency1");
+
+        // Verify a swap occurred to convert currency0 to currency1
+        assertEq(poolManager.swapCalls(), 1, "swap should occur to consolidate to single currency");
     }
 
     function test_burnAndPayoutSplitsReferralShares() public {
@@ -361,5 +400,120 @@ contract LimitOrderLiquidityPayoutsTest is Test {
 
         assertEq(poolManager.swapCalls(), 1, "swap path should execute");
         assertEq(currency1Token.balanceOf(maker), makerBefore + 40, "maker receives swapped currency");
+    }
+
+    /// @notice Test that with dual positive deltas, only currency1 (payout currency) is paid out
+    /// @dev This simulates the audit bug scenario where positions have fees in both tokens
+    function test_dualPositiveDeltas_payoutsCurrency1Only() public {
+        // Order is selling currency0, so payout currency is currency1
+        harness.setOrderSide(true); // isCurrency0 = true
+
+        // Simulate dual positive deltas: both amount0 and amount1 are positive
+        // This happens when a position is crossed in both directions
+        poolManager.setModifyLiquidityResponse(int128(50), int128(100), 0, 0);
+
+        // Simulate swap: swap 50 of currency0 to get 45 of currency1
+        poolManager.setSwapResponse(0, int128(45));
+
+        // Fund pool manager with both currencies
+        deal(address(currency0Token), address(poolManager), 500e18);
+        deal(address(currency1Token), address(poolManager), 500e18);
+
+        uint256 maker0Before = currency0Token.balanceOf(maker);
+        uint256 maker1Before = currency1Token.balanceOf(maker);
+
+        (Currency coinOut, uint128 makerAmount, ) = harness.burnAndPayout(poolManager, poolKey, ORDER_ID, address(0), address(0), versionLookup);
+
+        // Verify only currency1 is paid out (NOT currency0)
+        assertEq(Currency.unwrap(coinOut), address(currency1Token), "payout currency should be currency1");
+        assertEq(currency0Token.balanceOf(maker), maker0Before, "maker should NOT receive currency0");
+
+        // Verify total payout in currency1 includes both the original amount1 + swapped amount0
+        // Expected: 100 (original currency1) + 45 (swapped from currency0) = 145
+        assertEq(currency1Token.balanceOf(maker), maker1Before + 145, "maker should receive combined amount in currency1");
+        assertEq(makerAmount, 145, "makerAmount should be combined total");
+
+        // Verify a swap occurred to convert currency0 to currency1
+        assertEq(poolManager.swapCalls(), 1, "swap should occur to convert currency0 to currency1");
+    }
+
+    /// @notice Test that with dual positive deltas, only currency0 (payout currency) is paid out
+    /// @dev This tests the opposite direction - selling currency1, expecting currency0 payout
+    function test_dualPositiveDeltas_payoutsCurrency0Only() public {
+        // Order is selling currency1, so payout currency is currency0
+        harness.setOrderSide(false); // isCurrency0 = false
+
+        // Simulate dual positive deltas
+        poolManager.setModifyLiquidityResponse(int128(80), int128(60), 0, 0);
+
+        // Simulate swap: swap 60 of currency1 to get 55 of currency0
+        poolManager.setSwapResponse(int128(55), 0);
+
+        // Fund pool manager
+        deal(address(currency0Token), address(poolManager), 500e18);
+        deal(address(currency1Token), address(poolManager), 500e18);
+
+        uint256 maker0Before = currency0Token.balanceOf(maker);
+        uint256 maker1Before = currency1Token.balanceOf(maker);
+
+        (Currency coinOut, uint128 makerAmount, ) = harness.burnAndPayout(poolManager, poolKey, ORDER_ID, address(0), address(0), versionLookup);
+
+        // Verify only currency0 is paid out (NOT currency1)
+        assertEq(Currency.unwrap(coinOut), address(currency0Token), "payout currency should be currency0");
+        assertEq(currency1Token.balanceOf(maker), maker1Before, "maker should NOT receive currency1");
+
+        // Verify total payout in currency0 includes both the original amount0 + swapped amount1
+        // Expected: 80 (original currency0) + 55 (swapped from currency1) = 135
+        assertEq(currency0Token.balanceOf(maker), maker0Before + 135, "maker should receive combined amount in currency0");
+        assertEq(makerAmount, 135, "makerAmount should be combined total");
+
+        // Verify a swap occurred
+        assertEq(poolManager.swapCalls(), 1, "swap should occur to convert currency1 to currency0");
+    }
+
+    /// @notice Test that with dual positive deltas and referral fees, both maker and referral receive single currency
+    function test_dualPositiveDeltas_makerAndReferral_singleCurrencyPayout() public {
+        address referral = makeAddr("referral");
+        harness.setOrderSide(true); // isCurrency0 = true, payout in currency1
+
+        // Simulate dual positive deltas with fees for referral
+        // liquidity: (60 amount0, 120 amount1), fees: (20 amount0, 30 amount1)
+        poolManager.setModifyLiquidityResponse(int128(60), int128(120), int128(20), int128(30));
+
+        // Simulate swaps for both maker and referral portions
+        // First swap (maker): swap 40 of currency0 to get 35 of currency1
+        // Second swap (referral): swap 20 of currency0 to get 18 of currency1
+        poolManager.setSwapResponse(0, int128(35));
+
+        deal(address(currency0Token), address(poolManager), 500e18);
+        deal(address(currency1Token), address(poolManager), 500e18);
+
+        uint256 maker0Before = currency0Token.balanceOf(maker);
+        uint256 maker1Before = currency1Token.balanceOf(maker);
+        uint256 ref0Before = currency0Token.balanceOf(referral);
+        uint256 ref1Before = currency1Token.balanceOf(referral);
+
+        (Currency makerCoinOut, uint128 makerAmount, uint128 referralAmount) = harness.burnAndPayout(
+            poolManager,
+            poolKey,
+            ORDER_ID,
+            referral,
+            address(0),
+            versionLookup
+        );
+
+        // Verify maker receives only currency1
+        assertEq(Currency.unwrap(makerCoinOut), address(currency1Token), "maker payout should be currency1");
+        assertEq(currency0Token.balanceOf(maker), maker0Before, "maker should NOT receive currency0");
+
+        // Verify referral receives only currency1
+        assertEq(currency0Token.balanceOf(referral), ref0Before, "referral should NOT receive currency0");
+
+        // Both should have increased currency1 balances
+        assertGt(currency1Token.balanceOf(maker), maker1Before, "maker should receive currency1");
+        assertGt(currency1Token.balanceOf(referral), ref1Before, "referral should receive currency1");
+
+        // Verify swaps occurred (one for maker, one for referral)
+        assertEq(poolManager.swapCalls(), 2, "two swaps should occur (maker + referral)");
     }
 }
