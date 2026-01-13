@@ -178,7 +178,8 @@ library LimitOrderLiquidity {
             try coinLookup.getVersionForDeployedCoin(coinIn) returns (uint8 version) {
                 if (version >= 4 && _supportsSwapPath(coinIn)) {
                     payoutPath = IHasSwapPath(coinIn).getPayoutSwapPath(coinLookup);
-                    if (payoutPath.path.length > 0) {
+                    // Validate first hop matches expected payout currency
+                    if (payoutPath.path.length > 0 && payoutPath.path[0].intermediateCurrency == payoutCurrency) {
                         return payoutPath;
                     }
                 }

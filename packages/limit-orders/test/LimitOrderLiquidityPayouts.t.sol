@@ -516,4 +516,22 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         // Verify swaps occurred (one for maker, one for referral)
         assertEq(poolManager.swapCalls(), 2, "two swaps should occur (maker + referral)");
     }
+
+    function test_burnAndPayoutBypassesSwapPathWhenPayoutCurrencyMismatches() public {
+        TestSwapPathCoin swapCoin = new TestSwapPathCoin(Currency.wrap(address(currency0Token)));
+        versionLookup.setVersion(address(swapCoin), 4);
+
+        poolManager.setModifyLiquidityResponse(int128(22), 0, 0, 0);
+        poolManager.setSwapResponse(0, int128(22));
+
+        deal(address(currency0Token), address(poolManager), 200e18);
+        deal(address(currency1Token), address(poolManager), 200e18);
+
+        uint256 makerBefore = currency1Token.balanceOf(maker);
+
+        harness.burnAndPayout(poolManager, poolKey, ORDER_ID, address(0), address(swapCoin), versionLookup);
+
+        assertEq(poolManager.swapCalls(), 1, "swap should occur using fallback single-hop path");
+        assertEq(currency1Token.balanceOf(maker), makerBefore + 22, "maker receives currency1 from swap");
+    }
 }
