@@ -68,10 +68,8 @@ library LimitOrderFill {
             if (key.tickSpacing == 0) revert IZoraLimitOrderBook.InvalidPoolKey();
         }
 
-        int24 currentTick = _currentPoolTick(ctx.poolManager, key);
-
         if (data.orderIds.length == 0) {
-            _fillAcrossRange(state, ctx, data, currentTick);
+            _fillAcrossRange(state, ctx, data);
             return;
         }
 
@@ -89,9 +87,12 @@ library LimitOrderFill {
                 order.status == LimitOrderTypes.OrderStatus.OPEN &&
                 order.poolKeyHash == poolKeyHash &&
                 order.isCurrency0 == isCurrency0 &&
-                order.createdEpoch < currentEpoch &&
-                _hasCrossed(order, currentTick)
+                order.createdEpoch < currentEpoch
             ) {
+                if (!_hasCrossed(order, _currentPoolTick(ctx.poolManager, key))) {
+                    continue;
+                }
+
                 int24 orderTick = LimitOrderCommon.getOrderTick(order);
                 LimitOrderTypes.Queue storage tickQueue = tickQueues[orderTick];
 
@@ -104,12 +105,7 @@ library LimitOrderFill {
         }
     }
 
-    function _fillAcrossRange(
-        LimitOrderStorage.Layout storage state,
-        Context memory ctx,
-        IZoraLimitOrderBook.FillCallbackData memory data,
-        int24 currentTick
-    ) private {
+    function _fillAcrossRange(LimitOrderStorage.Layout storage state, Context memory ctx, IZoraLimitOrderBook.FillCallbackData memory data) private {
         if (data.maxFillCount == 0) {
             return;
         }
@@ -122,6 +118,7 @@ library LimitOrderFill {
         mapping(int24 => LimitOrderTypes.Queue) storage tickQueues = state.tickQueues[poolKeyHash][coin];
         mapping(bytes32 => LimitOrderTypes.LimitOrder) storage orders = state.limitOrders;
         uint256 currentEpoch = state.poolEpochs[poolKeyHash];
+
         bytes32 ordersSlot;
         assembly ("memory-safe") {
             ordersSlot := orders.slot
@@ -133,13 +130,16 @@ library LimitOrderFill {
         int24 cursor = data.startTick;
         int24 target = data.endTick;
         int24 tickSpacing = data.poolKey.tickSpacing;
-
         while (processed < fillCap) {
-            if (zeroDirection ? cursor <= target : cursor >= target) break;
+            if (zeroDirection ? cursor <= target : cursor >= target) {
+                break;
+            }
 
             (int24 nextTick, bool initialized) = TickBitmap.nextInitializedTickWithinOneWord(bitmap, cursor, tickSpacing, zeroDirection);
             bool crossesTarget = zeroDirection ? nextTick <= target : nextTick > target;
-            if (crossesTarget) break;
+            if (crossesTarget) {
+                break;
+            }
 
             if (!initialized) {
                 cursor = zeroDirection ? nextTick - 1 : nextTick;
@@ -177,10 +177,11 @@ library LimitOrderFill {
                     orderId = nextOrderId;
                     continue;
                 }
-                if (order.createdEpoch == currentEpoch) break;
-                if (!_hasCrossed(order, currentTick)) {
-                    orderId = nextOrderId;
-                    continue;
+                if (order.createdEpoch == currentEpoch) {
+                    break;
+                }
+                if (!_hasCrossed(order, _currentPoolTick(ctx.poolManager, data.poolKey))) {
+                    return;
                 }
 
                 _fillOrder(ctx, state, data.poolKey, tickQueue, order, orderId, data.fillReferral);
