@@ -86,8 +86,6 @@ library LimitOrderLiquidity {
         if (referralShareLiquidity0 > 0 || referralShareLiquidity1 > 0) {
             (, referralAmountOut) = _payoutRecipient(poolManager, feeRecipient, referralShareLiquidity0, referralShareLiquidity1, payoutPath);
         }
-
-        _settleNegativeDeltas(poolManager, key, liquidity0 + fee0Initial, liquidity1 + fee1Initial);
     }
 
     function burnAndRefund(
@@ -116,8 +114,6 @@ library LimitOrderLiquidity {
                 amountOut = amount1Out;
             }
         }
-
-        _settleNegativeDeltas(poolManager, key, amount0, amount1);
     }
 
     function settleDeltas(IPoolManager poolManager, PoolKey memory key, int256 d0, int256 d1, address payout0, address payout1) internal {
@@ -198,15 +194,6 @@ library LimitOrderLiquidity {
             return supported;
         } catch {
             return false;
-        }
-    }
-
-    function _settleNegativeDeltas(IPoolManager poolManager, PoolKey memory key, int128 amount0, int128 amount1) private {
-        int256 repay0 = amount0 < 0 ? int256(amount0) : int256(0);
-        int256 repay1 = amount1 < 0 ? int256(amount1) : int256(0);
-
-        if (repay0 != 0 || repay1 != 0) {
-            settleDeltas(poolManager, key, repay0, repay1, address(0), address(0));
         }
     }
 
