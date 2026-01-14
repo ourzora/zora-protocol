@@ -14,6 +14,7 @@ contract SwapLimitOrdersValidationTest is Test {
 
     PoolKey internal testKey;
     int24 constant TICK_SPACING = 10;
+    uint256 constant TEST_ORDER_SIZE = 1e18; // Convenient test size (1 token for 18-decimal)
     SwapLimitOrdersWrapper internal wrapper;
 
     function setUp() public {
@@ -36,7 +37,7 @@ contract SwapLimitOrdersValidationTest is Test {
         bool result = wrapper.isLimitOrder(
             false, // not a coin buy
             makeAddr("testSwapper"),
-            int128(uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE)),
+            int128(uint128(TEST_ORDER_SIZE)),
             params
         );
 
@@ -46,7 +47,7 @@ contract SwapLimitOrdersValidationTest is Test {
     function test_isLimitOrder_NoOrders() public {
         LimitOrderConfig memory params = _createEmptyParams(makeAddr("maker"));
 
-        bool result = wrapper.isLimitOrder(true, makeAddr("testSwapper"), int128(uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE)), params);
+        bool result = wrapper.isLimitOrder(true, makeAddr("testSwapper"), int128(uint128(TEST_ORDER_SIZE)), params);
 
         assertFalse(result, "should return false when no orders configured");
     }
@@ -57,7 +58,7 @@ contract SwapLimitOrdersValidationTest is Test {
         bool result = wrapper.isLimitOrder(
             true,
             address(0), // zero swapper
-            int128(uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE)),
+            int128(uint128(TEST_ORDER_SIZE)),
             params
         );
 
@@ -90,23 +91,23 @@ contract SwapLimitOrdersValidationTest is Test {
         assertFalse(result, "should return false for zero coinDelta");
     }
 
-    function test_isLimitOrder_BelowMinimumSize() public {
+    function test_isLimitOrder_SmallSize() public {
         LimitOrderConfig memory params = _createValidParams(makeAddr("maker"), 1);
 
         bool result = wrapper.isLimitOrder(
             true,
             makeAddr("testSwapper"),
-            int128(uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE - 1)), // dust amount
+            int128(1), // small amount
             params
         );
 
-        assertFalse(result, "should return false for dust amounts below minimum");
+        assertTrue(result, "should return true for any positive amount");
     }
 
     function test_isLimitOrder_ValidCase() public {
         LimitOrderConfig memory params = _createValidParams(makeAddr("maker"), 1);
 
-        bool result = wrapper.isLimitOrder(true, makeAddr("testSwapper"), int128(uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE)), params);
+        bool result = wrapper.isLimitOrder(true, makeAddr("testSwapper"), int128(uint128(TEST_ORDER_SIZE)), params);
 
         assertTrue(result, "should return true when all conditions met");
     }
@@ -180,14 +181,13 @@ contract SwapLimitOrdersValidationTest is Test {
         assertEq(totalPercent, 8000, "should allow undershoot");
     }
 
-    function test_computeOrders_BelowMinimum() public {
+    function test_computeOrders_ZeroSize() public {
         LimitOrderConfig memory params = _createValidParams(makeAddr("maker"), 2);
-        uint128 dustSize = uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE - 1);
 
         (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
             testKey,
             true, // isCurrency0
-            uint128(dustSize),
+            0, // zero size
             0, // baseTick
             TickMath.getSqrtPriceAtTick(0),
             params
@@ -196,7 +196,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertEq(orders.sizes.length, 0, "should return empty orders");
         assertEq(orders.ticks.length, 0, "should return empty ticks");
         assertEq(allocated, 0, "should have zero allocated");
-        assertEq(unallocated, uint128(dustSize), "all should be unallocated");
+        assertEq(unallocated, 0, "unallocated should be zero");
     }
 
     function test_computeOrders_SkipsZeroSizeOrders() public {
@@ -218,7 +218,7 @@ contract SwapLimitOrdersValidationTest is Test {
         params.percentages[3] = 1; // 0.01% - may round to zero with small size
 
         // Use exactly MIN size which is 1e18
-        uint128 totalSize = uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(TEST_ORDER_SIZE);
 
         (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
             testKey,
@@ -229,7 +229,7 @@ contract SwapLimitOrdersValidationTest is Test {
             params
         );
 
-        // With MIN_LIMIT_ORDER_SIZE (1e18) and 1bp = 1e14, orders should not be skipped
+        // With TEST_ORDER_SIZE (1e18) and 1bp = 1e14, orders should not be skipped
         // Let's just verify we get at least one order
         assertGt(orders.sizes.length, 0, "should create at least one order");
         assertEq(orders.sizes.length, orders.ticks.length, "sizes and ticks should match");
@@ -246,14 +246,7 @@ contract SwapLimitOrdersValidationTest is Test {
 
         int24 maxTick = TickMath.maxUsableTick(TICK_SPACING);
 
-        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(
-            testKey,
-            true,
-            uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE),
-            0,
-            TickMath.getSqrtPriceAtTick(0),
-            params
-        );
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, uint128(TEST_ORDER_SIZE), 0, TickMath.getSqrtPriceAtTick(0), params);
 
         assertEq(orders.ticks.length, 1, "should create one order");
         // Should clamp to max usable tick - the function applies clamping logic
@@ -279,7 +272,7 @@ contract SwapLimitOrdersValidationTest is Test {
         (Orders memory orders, , ) = SwapLimitOrders.computeOrders(
             testKey,
             false, // isCurrency0 = false means selling, inverts multiple
-            uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE),
+            uint128(TEST_ORDER_SIZE),
             startTick,
             TickMath.getSqrtPriceAtTick(startTick),
             params
@@ -303,7 +296,7 @@ contract SwapLimitOrdersValidationTest is Test {
         (Orders memory orders, , ) = SwapLimitOrders.computeOrders(
             testKey,
             true, // isCurrency0
-            uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE),
+            uint128(TEST_ORDER_SIZE),
             baseTick,
             TickMath.getSqrtPriceAtTick(baseTick),
             params
@@ -328,7 +321,7 @@ contract SwapLimitOrdersValidationTest is Test {
         (Orders memory orders, , ) = SwapLimitOrders.computeOrders(
             testKey,
             false, // not isCurrency0
-            uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE),
+            uint128(TEST_ORDER_SIZE),
             baseTick,
             TickMath.getSqrtPriceAtTick(baseTick),
             params
@@ -354,7 +347,7 @@ contract SwapLimitOrdersValidationTest is Test {
         (Orders memory orders, , ) = SwapLimitOrders.computeOrders(
             testKey,
             false, // not isCurrency0 - triggers inversion
-            uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE),
+            uint128(TEST_ORDER_SIZE),
             baseTick,
             TickMath.getSqrtPriceAtTick(baseTick),
             params
@@ -374,14 +367,7 @@ contract SwapLimitOrdersValidationTest is Test {
         params.multiples[0] = 1000000e18;
         params.percentages[0] = 10000;
 
-        (Orders memory orders1, , ) = SwapLimitOrders.computeOrders(
-            testKey,
-            true,
-            uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE),
-            0,
-            TickMath.getSqrtPriceAtTick(0),
-            params
-        );
+        (Orders memory orders1, , ) = SwapLimitOrders.computeOrders(testKey, true, uint128(TEST_ORDER_SIZE), 0, TickMath.getSqrtPriceAtTick(0), params);
         assertLe(orders1.ticks[0], TickMath.maxUsableTick(TICK_SPACING), "should clamp to maxTick");
 
         // Test 2: aligned < minTick (line 168)
@@ -390,7 +376,7 @@ contract SwapLimitOrdersValidationTest is Test {
         (Orders memory orders2, , ) = SwapLimitOrders.computeOrders(
             testKey,
             false, // inverted, goes negative
-            uint128(SwapLimitOrders.MIN_LIMIT_ORDER_SIZE),
+            uint128(TEST_ORDER_SIZE),
             veryHighTick,
             TickMath.getSqrtPriceAtTick(veryHighTick),
             params

@@ -44,9 +44,6 @@ library SwapLimitOrders {
     /// @dev sqrt(1e18) - scales sqrt calculations without precision loss
     uint256 internal constant SQRT_MULTIPLE_SCALE = 1e9;
 
-    /// @dev Minimum coins to create orders - prevents dust
-    uint256 internal constant MIN_LIMIT_ORDER_SIZE = 1e18;
-
     /// @notice Multiples and percentages arrays have different lengths
     error LengthMismatch();
 
@@ -95,7 +92,6 @@ library SwapLimitOrders {
     /// @return unallocated Amount of totalSize not allocated (dust or partial fill)
     /// @dev Orders are sized sequentially: each order takes its percentage of remaining balance.
     ///      Orders with zero size after rounding are skipped - arrays shrink to match.
-    ///      Returns empty arrays if totalSize < MIN_LIMIT_ORDER_SIZE.
     function computeOrders(
         PoolKey memory key,
         bool isCurrency0,
@@ -104,8 +100,7 @@ library SwapLimitOrders {
         uint160 sqrtPriceX96,
         LimitOrderConfig memory config
     ) internal pure returns (Orders memory o, uint128 allocated, uint128 unallocated) {
-        if (totalSize < MIN_LIMIT_ORDER_SIZE) {
-            unallocated = uint128(totalSize);
+        if (totalSize == 0) {
             return (o, allocated, unallocated);
         }
 

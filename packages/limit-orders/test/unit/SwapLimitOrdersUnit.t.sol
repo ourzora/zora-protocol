@@ -32,8 +32,8 @@ contract SwapLimitOrdersWrapper {
             return false;
         }
 
-        // Must be positive and above minimum threshold
-        return coinDelta > 0 && uint128(coinDelta) >= SwapLimitOrders.MIN_LIMIT_ORDER_SIZE;
+        // Must be positive
+        return coinDelta > 0;
     }
 }
 
@@ -44,7 +44,7 @@ contract SwapLimitOrdersUnitTest is Test {
     int24 constant TICK_SPACING = 200;
     uint256 constant MULTIPLE_SCALE = 1e18;
     uint256 constant PERCENT_SCALE = 10_000;
-    uint256 constant MIN_LIMIT_ORDER_SIZE = 1e18;
+    uint256 constant TEST_ORDER_SIZE = 1e18; // Convenient test size (1 token for 18-decimal)
 
     PoolKey internal testKey;
     SwapLimitOrdersWrapper internal wrapper;
@@ -202,8 +202,8 @@ contract SwapLimitOrdersUnitTest is Test {
         assertEq(totalPercent, 10000, "total percent should be 10000");
     }
 
-    /// @notice Tests computeOrders with totalSize below MIN_LIMIT_ORDER_SIZE (dust)
-    function test_computeOrders_belowMinSize_returnsEmpty() public {
+    /// @notice Tests computeOrders with totalSize of zero returns empty
+    function test_computeOrders_zeroSize_returnsEmpty() public {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -212,7 +212,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.percentages[0] = 5000;
         params.percentages[1] = 5000;
 
-        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE - 1); // Below minimum
+        uint128 totalSize = 0;
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -229,11 +229,11 @@ contract SwapLimitOrdersUnitTest is Test {
         assertEq(orders.sizes.length, 0, "sizes should be empty");
         assertEq(orders.ticks.length, 0, "ticks should be empty");
         assertEq(allocated, 0, "allocated should be 0");
-        assertEq(unallocated, totalSize, "unallocated should equal totalSize");
+        assertEq(unallocated, 0, "unallocated should be 0");
     }
 
-    /// @notice Tests computeOrders with totalSize exactly at MIN_LIMIT_ORDER_SIZE
-    function test_computeOrders_exactlyMinSize_createsOrders() public {
+    /// @notice Tests computeOrders with small totalSize creates orders
+    function test_computeOrders_smallSize_createsOrders() public {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -242,7 +242,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.percentages[0] = 5000;
         params.percentages[1] = 5000;
 
-        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE); // Exactly at minimum
+        uint128 totalSize = uint128(TEST_ORDER_SIZE); // Exactly at minimum
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -262,7 +262,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with multiple orders (verifying skip logic exists even if hard to trigger)
-    /// @dev Note: Zero-rounding skip is virtually impossible with MIN_LIMIT_ORDER_SIZE=1e18 and PERCENT_SCALE=10000
+    /// @dev Note: Zero-rounding skip is virtually impossible with reasonable sizes and PERCENT_SCALE=10000
     ///      since even 1 basis point of 1e18 = 1e14. The skip logic exists for safety in edge cases.
     function test_computeOrders_multipleOrders_createsAll() public {
         LimitOrderConfig memory params;
@@ -273,7 +273,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.percentages[0] = 5000;
         params.percentages[1] = 5000;
 
-        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE * 10);
+        uint128 totalSize = uint128(TEST_ORDER_SIZE * 10);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -302,7 +302,7 @@ contract SwapLimitOrdersUnitTest is Test {
             params.percentages[i] = 1000; // 10% each (60% total)
         }
 
-        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE * 100);
+        uint128 totalSize = uint128(TEST_ORDER_SIZE * 100);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -328,7 +328,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = 2 * MULTIPLE_SCALE;
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(MIN_LIMIT_ORDER_SIZE * 10);
+        uint128 totalSize = uint128(TEST_ORDER_SIZE * 10);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -355,7 +355,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.percentages[0] = 6000; // 60%
         params.percentages[1] = 3000; // 30% (total 90%)
 
-        uint128 totalSize = uint128(1000 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(1000 * TEST_ORDER_SIZE);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -392,7 +392,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.percentages[1] = 2000; // 20% of remaining
         params.percentages[2] = 2000; // 20% of remaining
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE); // 100 units for easy math
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE); // 100 units for easy math
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -430,7 +430,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = 1000 * MULTIPLE_SCALE; // 1000x - extremely high
         params.percentages[0] = 10000; // 100%
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -453,7 +453,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.percentages[0] = 5000;
         params.percentages[1] = 5000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         int24 baseTick = 10000;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -474,7 +474,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = 1000000 * MULTIPLE_SCALE; // 1,000,000x
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         // Use moderate base tick (TickMath has max/min around ±887272)
         int24 baseTick = 100000; // Moderate positive tick
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
@@ -494,7 +494,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = 2 * MULTIPLE_SCALE;
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         // Use moderate negative base tick for currency1
         int24 baseTick = -100000; // Moderate negative tick
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
@@ -515,7 +515,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 100); // 1.01x
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -534,7 +534,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 100); // 1.01x
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -553,7 +553,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = 0; // Zero multiple - should revert in _sqrtMultiple
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
@@ -571,7 +571,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
         bool isCoinBuy = false; // NOT isCoinBuy - tests first branch
         address swapper = address(0x1234);
-        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+        int128 coinDelta = int128(int256(TEST_ORDER_SIZE * 2));
 
         assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when not coin buy");
     }
@@ -584,7 +584,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
         bool isCoinBuy = true; // Pass first condition
         address swapper = address(0x1234);
-        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+        int128 coinDelta = int128(int256(TEST_ORDER_SIZE * 2));
 
         assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when no orders");
     }
@@ -597,8 +597,8 @@ contract SwapLimitOrdersUnitTest is Test {
 
         bool isCoinBuy = true;
         address swapper = address(0x1234);
-        // casting to 'int256' is safe because MIN_LIMIT_ORDER_SIZE will not overflow int128
-        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+        // casting to 'int256' is safe because TEST_ORDER_SIZE will not overflow int128
+        int128 coinDelta = int128(int256(TEST_ORDER_SIZE * 2));
 
         assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when no orders");
     }
@@ -611,7 +611,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
         bool isCoinBuy = true;
         address swapper = address(0); // Zero address
-        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+        int128 coinDelta = int128(int256(TEST_ORDER_SIZE * 2));
 
         assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when swapper is zero");
     }
@@ -642,17 +642,17 @@ contract SwapLimitOrdersUnitTest is Test {
         assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false for zero delta");
     }
 
-    /// @notice Tests isLimitOrder when coinDelta below MIN_LIMIT_ORDER_SIZE (dust)
-    function test_isLimitOrder_belowMinSize_returnsFalse() public {
+    /// @notice Tests isLimitOrder accepts any positive coinDelta
+    function test_isLimitOrder_smallSize_returnsTrue() public {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
 
         bool isCoinBuy = true;
         address swapper = address(0x1234);
-        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE - 1)); // Below minimum
+        int128 coinDelta = 1; // Small positive amount
 
-        assertFalse(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return false when below min size");
+        assertTrue(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return true for any positive amount");
     }
 
     /// @notice Tests isLimitOrder when all conditions are met (success case)
@@ -665,7 +665,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
         bool isCoinBuy = true;
         address swapper = address(0x1234);
-        int128 coinDelta = int128(int256(MIN_LIMIT_ORDER_SIZE * 2));
+        int128 coinDelta = int128(int256(TEST_ORDER_SIZE * 2));
 
         assertTrue(wrapper.isLimitOrder(isCoinBuy, swapper, coinDelta, params), "should return true when all conditions met");
     }
@@ -689,7 +689,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 100); // 1.01x
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
 
         // Use a baseTick that is NOT aligned to tickSpacing=10
         int24 baseTick = 205; // Not divisible by 10 - misaligned
@@ -738,7 +738,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 50); // 1.02x
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
 
         // Test case 1: baseTick=205, tickSpacing=10
         PoolKey memory key10 = testKey;
@@ -772,7 +772,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = MULTIPLE_SCALE + (MULTIPLE_SCALE / 50); // 1.02x
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
 
         // Test case 1: baseTick=200 (aligned), tickSpacing=10
         PoolKey memory key10 = testKey;
@@ -816,7 +816,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = 2 * MULTIPLE_SCALE;
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         int24 maxTick = TickMath.maxUsableTick(TICK_SPACING);
         int24 baseTick = maxTick;
         // Use MAX_SQRT_PRICE directly since we can't compute sqrt price at maxTick
@@ -846,7 +846,7 @@ contract SwapLimitOrdersUnitTest is Test {
         params.multiples[0] = 2 * MULTIPLE_SCALE;
         params.percentages[0] = 10000;
 
-        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        uint128 totalSize = uint128(100 * TEST_ORDER_SIZE);
         int24 maxTick = TickMath.maxUsableTick(TICK_SPACING);
         int24 minTick = -maxTick;
         int24 baseTick = minTick;

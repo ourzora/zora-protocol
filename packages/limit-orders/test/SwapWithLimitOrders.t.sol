@@ -9,7 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Vm} from "forge-std/Vm.sol";
 
 contract SwapWithLimitOrdersTest is BaseTest {
-    function test_autosellSkipsDustPurchases() public {
+    function test_autosellCreatesOrdersForSmallPurchases() public {
         PoolKey memory key = creatorCoin.getPoolKey();
         bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
         address orderCoin = _orderCoin(key, isCurrency0);
@@ -18,8 +18,8 @@ contract SwapWithLimitOrdersTest is BaseTest {
         _executeSingleHopSwapWithLimitOrders(users.buyer, key, 1e13, _defaultMultiples(), _defaultPercentages());
         CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
 
-        assertEq(created.length, 0, "dust swap should not create orders");
-        assertEq(_makerBalance(users.buyer, orderCoin), 0, "book balance should remain zero");
+        // Small purchases create orders (no minimum threshold)
+        assertGt(created.length, 0, "small swap should create orders");
     }
 
     function test_multiHopAutosellCreatesOrdersOnlyOnLastPool() public {

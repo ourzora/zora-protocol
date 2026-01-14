@@ -237,10 +237,10 @@ contract SwapWithLimitOrdersTestNonForked is SwapWithLimitOrdersTestBase {
         // TODO: Test unallocated coin handling
     }
 
-    function test_limitOrderPlacement_respectsMinSize() public {
-        // Test that small purchases below MIN_LIMIT_ORDER_SIZE don't create orders
+    function test_limitOrderPlacement_zeroSize() public {
+        // Test that zero-size purchases don't create orders
         // Should still execute swap but skip limit order ladder creation
-        // TODO: Test MIN_LIMIT_ORDER_SIZE threshold
+        // TODO: Test zero size handling
     }
 
     function test_limitOrderPlacement_supportsMultipleOrders() public {
