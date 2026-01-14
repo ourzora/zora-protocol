@@ -71,7 +71,6 @@ library LimitOrderCreate {
 
     function handleCreateCallback(LimitOrderStorage.Layout storage state, IPoolManager poolManager, bytes memory payload) internal returns (bytes memory) {
         IZoraLimitOrderBook.CreateCallbackData memory data = abi.decode(payload, (IZoraLimitOrderBook.CreateCallbackData));
-        _validateOrderInputs(data.orderSizes, data.orderTicks, data.maker);
 
         bytes32[] memory orderIds = _create(state, poolManager, data);
 
