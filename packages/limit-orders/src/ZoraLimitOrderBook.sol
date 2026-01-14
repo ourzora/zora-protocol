@@ -79,8 +79,9 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
 
     /// @inheritdoc IZoraLimitOrderBook
     function fill(PoolKey calldata key, bool isCurrency0, int24 startTick, int24 endTick, uint256 maxFillCount, address fillReferral) external override {
-        if (maxFillCount == 0) {
-            maxFillCount = getMaxFillCount();
+        uint256 defaultMaxFillCount = getMaxFillCount();
+        if (maxFillCount == 0 || maxFillCount > defaultMaxFillCount) {
+            maxFillCount = defaultMaxFillCount;
         }
 
         bool isUnlocked = TransientStateLibrary.isUnlocked(poolManager);

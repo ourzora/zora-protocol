@@ -814,6 +814,49 @@ contract LimitOrderFillTest is BaseTest {
         assertEq(fills.length, 2, "should fill default max count of 2 orders");
     }
 
+    /// @notice Tests fill() caps maxFillCount to configured default
+    function test_fill_maxFillCountExceedsDefault_isCapped() public {
+        PoolKey memory key = creatorCoin.getPoolKey();
+        bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
+        address orderCoin = _orderCoin(key, isCurrency0);
+
+        // Set max fill count to 2
+        vm.prank(users.factoryOwner);
+        limitOrderBook.setMaxFillCount(2);
+
+        // Create 5 fillable orders
+        (uint256[] memory orderSizes, int24[] memory orderTicks) = _buildDeterministicOrders(key, isCurrency0, 5, 20e18);
+        uint256 totalSize;
+        for (uint256 i; i < orderSizes.length; ++i) {
+            totalSize += orderSizes[i];
+        }
+
+        if (orderCoin == address(0)) {
+            vm.deal(users.seller, totalSize);
+        } else {
+            deal(orderCoin, users.seller, totalSize);
+            vm.startPrank(users.seller);
+            IERC20(orderCoin).approve(address(limitOrderBook), totalSize);
+            vm.stopPrank();
+        }
+
+        vm.recordLogs();
+        vm.prank(users.seller);
+        limitOrderBook.create{value: orderCoin == address(0) ? totalSize : 0}(key, isCurrency0, orderSizes, orderTicks, users.seller);
+        CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
+
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+        (int24 startTick, int24 endTick) = _tickWindow(created, key);
+
+        // Call fill with maxFillCount = 100 (way above default of 2)
+        vm.recordLogs();
+        limitOrderBook.fill(key, isCurrency0, startTick, endTick, 100, address(0));
+        FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
+
+        // Should cap to 2 orders (the configured max)
+        assertEq(fills.length, 2, "should cap to configured max of 2 orders");
+    }
+
     /// @notice Tests batch fill with empty orderIds array (line 134)
     /// @dev This tests the branch: if (batch.orderIds.length != 0)
     function test_batchFill_emptyOrderIds_skips() public {
