@@ -96,7 +96,9 @@ contract BaseTest is V4TestSetup, IMsgSender {
         keccak256("LimitOrderFilled(address,address,address,uint128,uint128,address,uint128,bytes32,int24,bytes32)");
     bytes32 internal constant LIMIT_ORDER_UPDATED_TOPIC = keccak256("LimitOrderUpdated(address,address,bytes32,bool,int24,uint128,bytes32,bool)");
     bytes32 internal constant SWAP_WITH_LIMIT_ORDERS_EXECUTED_TOPIC =
-        keccak256("SwapWithLimitOrdersExecuted(address,address,(address,address,uint24,int24,address),int256,int24,int24,(bytes32,uint256,uint256)[])");
+        keccak256(
+            "SwapWithLimitOrdersExecuted(address,address,(address,address,uint24,int24,address),int24,int24,int128,int128,uint160,(bytes32,uint256,uint256)[])"
+        );
 
     struct QueueSnapshot {
         bytes32 head;
@@ -150,9 +152,11 @@ contract BaseTest is V4TestSetup, IMsgSender {
         address sender;
         address recipient;
         PoolKey poolKey;
-        int256 delta;
         int24 tickBefore;
         int24 tickAfter;
+        int128 amount0;
+        int128 amount1;
+        uint160 sqrtPriceX96;
         CreatedOrder[] orders;
     }
 
@@ -667,18 +671,25 @@ contract BaseTest is V4TestSetup, IMsgSender {
             Vm.Log memory log = logs[i];
             if (log.topics.length == 0 || log.topics[0] != SWAP_WITH_LIMIT_ORDERS_EXECUTED_TOPIC) continue;
 
-            (PoolKey memory poolKey, int256 delta, int24 tickBefore, int24 tickAfter, CreatedOrder[] memory orders) = abi.decode(
-                log.data,
-                (PoolKey, int256, int24, int24, CreatedOrder[])
-            );
+            (
+                PoolKey memory poolKey,
+                int24 tickBefore,
+                int24 tickAfter,
+                int128 amount0,
+                int128 amount1,
+                uint160 sqrtPriceX96,
+                CreatedOrder[] memory orders
+            ) = abi.decode(log.data, (PoolKey, int24, int24, int128, int128, uint160, CreatedOrder[]));
 
             swaps[idx] = SwapExecutedLog({
                 sender: address(uint160(uint256(log.topics[1]))),
                 recipient: address(uint160(uint256(log.topics[2]))),
                 poolKey: poolKey,
-                delta: delta,
                 tickBefore: tickBefore,
                 tickAfter: tickAfter,
+                amount0: amount0,
+                amount1: amount1,
+                sqrtPriceX96: sqrtPriceX96,
                 orders: orders
             });
             ++idx;

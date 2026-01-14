@@ -56,6 +56,7 @@ library V3ToV4SwapLib {
     struct V4SwapResult {
         uint128 outputAmount; // Final output amount
         Currency outputCurrency; // Final output currency
+        BalanceDelta targetPoolDelta; // Delta from final (target) pool swap
     }
 
     // ============ VALIDATION ============
@@ -167,6 +168,7 @@ library V3ToV4SwapLib {
     function executeV4MultiHopSwap(IPoolManager poolManager, V4SwapParams memory params) internal returns (V4SwapResult memory result) {
         Currency currentCurrency = params.startingCurrency;
         uint128 currentAmount = uint128(params.amountIn);
+        BalanceDelta lastDelta;
 
         // Execute swaps through the route
         for (uint256 i = 0; i < params.v4Route.length; i++) {
@@ -175,14 +177,14 @@ library V3ToV4SwapLib {
             // Determine swap direction based on current currency
             bool zeroForOne = currentCurrency == poolKey.currency0;
 
-            BalanceDelta delta = poolManager.swap(
+            lastDelta = poolManager.swap(
                 poolKey,
                 SwapParams(zeroForOne, -(int128(currentAmount)), zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1),
                 ""
             );
 
             // Extract output amount from delta
-            uint128 outputAmount = zeroForOne ? uint128(delta.amount1()) : uint128(delta.amount0());
+            uint128 outputAmount = zeroForOne ? uint128(lastDelta.amount1()) : uint128(lastDelta.amount0());
 
             // Update for next iteration
             currentAmount = outputAmount;
@@ -191,6 +193,7 @@ library V3ToV4SwapLib {
 
         result.outputAmount = currentAmount;
         result.outputCurrency = currentCurrency;
+        result.targetPoolDelta = lastDelta;
     }
 
     // ============ DELTA SETTLEMENT ============

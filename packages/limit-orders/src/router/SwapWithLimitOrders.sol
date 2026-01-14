@@ -97,13 +97,18 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
     /// @notice Emitted when a swap with limit order placement is executed
     /// @param orders Array of created orders with their configuration. Only includes orders
     ///               that were actually created (skipped rungs due to rounding are omitted).
+    /// @param amount0 The amount of currency0 swapped (negative = paid, positive = received)
+    /// @param amount1 The amount of currency1 swapped (negative = paid, positive = received)
+    /// @param sqrtPriceX96 The sqrt price after the swap, used for USD price computation
     event SwapWithLimitOrdersExecuted(
         address indexed sender,
         address indexed recipient,
         PoolKey poolKey,
-        BalanceDelta delta,
         int24 tickBeforeSwap,
         int24 tickAfterSwap,
+        int128 amount0,
+        int128 amount1,
+        uint160 sqrtPriceX96,
         CreatedOrder[] orders
     );
 
@@ -218,7 +223,10 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
         // Execute V4 swaps + create orders via unlock callback
         bytes memory result = poolManager.unlock(abi.encode(callbackData));
 
-        (CreatedOrder[] memory orders, bool isCoinCurrency0, int24 tickAfterSwap) = abi.decode(result, (CreatedOrder[], bool, int24));
+        (CreatedOrder[] memory orders, bool isCoinCurrency0, int24 tickAfterSwap, uint160 sqrtPriceX96, BalanceDelta targetPoolDelta) = abi.decode(
+            result,
+            (CreatedOrder[], bool, int24, uint160, BalanceDelta)
+        );
 
         // Check if hook supports limit order filling using ERC165
         bool hookSupportsFill = IERC165(address(targetPool.hooks)).supportsInterface(type(ISupportsLimitOrderFill).interfaceId);
@@ -228,7 +236,17 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
             _fillOrders(targetPool, isCoinCurrency0, tickBeforeSwap, tickAfterSwap);
         }
 
-        emit SwapWithLimitOrdersExecuted(msg.sender, params.recipient, targetPool, BalanceDelta.wrap(0), tickBeforeSwap, tickAfterSwap, orders);
+        emit SwapWithLimitOrdersExecuted(
+            msg.sender,
+            params.recipient,
+            targetPool,
+            tickBeforeSwap,
+            tickAfterSwap,
+            targetPoolDelta.amount0(),
+            targetPoolDelta.amount1(),
+            sqrtPriceX96,
+            orders
+        );
 
         // Clear maker from transient storage
         TransientSlot.tstore(slot, address(0));
@@ -271,7 +289,7 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
         // Settle currencies with pool manager
         _settleCurrencies(callbackData.currencyReceived, callbackData.currencyAmount, coinAddress, unallocated, callbackData.recipient);
 
-        return abi.encode(createdOrders, isCoinCurrency0, currentTick);
+        return abi.encode(createdOrders, isCoinCurrency0, currentTick, sqrtPriceX96, swapResult.targetPoolDelta);
     }
 
     /// @notice Executes V4 multi-hop swaps and validates output

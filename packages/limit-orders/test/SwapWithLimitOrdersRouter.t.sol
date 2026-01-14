@@ -649,13 +649,14 @@ contract SwapWithLimitOrdersTestNonForked is SwapWithLimitOrdersTestBase {
                 address recipient = address(uint160(uint256(log.topics[2])));
                 assertEq(sender, users.buyer, "sender indexed mismatch");
                 assertEq(recipient, users.buyer, "recipient indexed mismatch");
-                (PoolKey memory loggedPoolKey, int256 delta, , , CreatedOrder[] memory orders) = abi.decode(
+                (PoolKey memory loggedPoolKey, , , int128 amount0, int128 amount1, uint160 sqrtPriceX96, CreatedOrder[] memory orders) = abi.decode(
                     log.data,
-                    (PoolKey, int256, int24, int24, CreatedOrder[])
+                    (PoolKey, int24, int24, int128, int128, uint160, CreatedOrder[])
                 );
                 assertEq(Currency.unwrap(loggedPoolKey.currency0), Currency.unwrap(poolKey.currency0), "pool currency0 mismatch");
                 assertEq(Currency.unwrap(loggedPoolKey.currency1), Currency.unwrap(poolKey.currency1), "pool currency1 mismatch");
-                assertEq(delta, 0, "returned delta should be zero");
+                assertTrue(amount0 != 0 || amount1 != 0, "swap amounts should be non-zero");
+                assertGt(sqrtPriceX96, 0, "sqrtPriceX96 should be non-zero");
                 assertGt(orders.length, 0, "should have created orders");
                 sawExecuted = true;
             }
@@ -708,8 +709,41 @@ contract SwapWithLimitOrdersTestNonForked is SwapWithLimitOrdersTestBase {
     }
 
     function test_event_SwapWithLimitOrdersExecuted() public {
-        // Verify SwapWithLimitOrdersExecuted event emitted with correct params
-        // Check sender, recipient, poolKey, deltas, ticks, orderIds, ordersFilled
+        // Verify SwapWithLimitOrdersExecuted event emits price data fields
+        PoolKey memory poolKey = creatorCoin.getPoolKey();
+        LimitOrderConfig memory limitOrderConfig = _prepareLimitOrderParams(users.buyer, _defaultMultiples(), _defaultPercentages());
+
+        uint256 inputAmount = DEFAULT_LIMIT_ORDER_AMOUNT;
+        deal(address(zoraToken), users.buyer, inputAmount);
+
+        SwapWithLimitOrders.SwapWithLimitOrdersParams memory params = _buildDirectV4SwapParams(
+            users.buyer,
+            address(zoraToken),
+            inputAmount,
+            poolKey,
+            limitOrderConfig
+        );
+
+        vm.recordLogs();
+        _executeSwapWithLimitOrders(users.buyer, params);
+
+        SwapExecutedLog[] memory swaps = _decodeSwapExecutedLogs(vm.getRecordedLogs());
+        assertEq(swaps.length, 1, "expected single swap event");
+
+        // Verify price data fields are populated
+        SwapExecutedLog memory swap = swaps[0];
+        assertEq(swap.sender, users.buyer, "sender mismatch");
+        assertEq(swap.recipient, users.buyer, "recipient mismatch");
+
+        // amount0 and amount1 should be non-zero (one negative, one positive for a swap)
+        assertTrue(swap.amount0 != 0 || swap.amount1 != 0, "swap amounts should be non-zero");
+        assertTrue((swap.amount0 < 0 && swap.amount1 > 0) || (swap.amount0 > 0 && swap.amount1 < 0), "amounts should have opposite signs for a swap");
+
+        // sqrtPriceX96 should be a valid price (non-zero, reasonable range)
+        assertGt(swap.sqrtPriceX96, 0, "sqrtPriceX96 should be non-zero");
+
+        // Tick movement should be reflected
+        assertTrue(swap.tickBefore != swap.tickAfter || swap.amount0 == 0, "tick should move on swap");
     }
 
     function test_event_LimitOrdersCreated() public {
