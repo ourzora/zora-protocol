@@ -62,7 +62,7 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
     }
 
     function getOrderId(bytes32 poolKeyHash, address coin, int24 tick, address maker, uint256 nonce) internal pure returns (bytes32) {
-        return keccak256(abi.encodePacked(poolKeyHash, coin, tick, maker, nonce));
+        return keccak256(abi.encode(poolKeyHash, coin, tick, maker, nonce));
     }
 
     /// @inheritdoc IZoraLimitOrderBook

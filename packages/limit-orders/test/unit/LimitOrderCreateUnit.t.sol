@@ -73,6 +73,24 @@ contract LimitOrderCreateWrapper {
             refunded = requestedSize - realizedSize;
         }
     }
+
+    /// @notice Generates orderId using abi.encode (matches getOrderId)
+    function getOrderId(bytes32 poolKeyHash, address coin, int24 tick, address maker, uint256 nonce) external pure returns (bytes32) {
+        return keccak256(abi.encode(poolKeyHash, coin, tick, maker, nonce));
+    }
+
+    /// @notice Generates orderId using assembly (matches _generateOrderId in LimitOrderCreate.sol)
+    function generateOrderIdAssembly(bytes32 poolKeyHash, address coin, int24 orderTick, address maker, uint256 nonce) external pure returns (bytes32 orderId) {
+        assembly ("memory-safe") {
+            let ptr := mload(0x40)
+            mstore(ptr, poolKeyHash)
+            mstore(add(ptr, 0x20), coin)
+            mstore(add(ptr, 0x40), orderTick)
+            mstore(add(ptr, 0x60), maker)
+            mstore(add(ptr, 0x80), nonce)
+            orderId := keccak256(ptr, 0xa0)
+        }
+    }
 }
 
 /// @notice Direct unit tests for LimitOrderCreate library functions
@@ -354,5 +372,19 @@ contract LimitOrderCreateUnitTest is Test {
 
         uint128 realizedSize = wrapper.calculateRealizedSize(isCurrency0, amount0, amount1);
         assertEq(realizedSize, 1000000000, "should handle large negative value");
+    }
+
+    /// @notice Verifies getOrderId and _generateOrderId produce identical hashes
+    function test_orderId_abiEncodeMatches() public view {
+        bytes32 poolKeyHash = keccak256("test-pool");
+        address coin = address(0x1234567890123456789012345678901234567890);
+        int24 tick = -12345;
+        address maker = address(0xabCDeF0123456789AbcdEf0123456789aBCDEF01);
+        uint256 nonce = 42;
+
+        bytes32 fromAbiEncode = wrapper.getOrderId(poolKeyHash, coin, tick, maker, nonce);
+        bytes32 fromAssembly = wrapper.generateOrderIdAssembly(poolKeyHash, coin, tick, maker, nonce);
+
+        assertEq(fromAbiEncode, fromAssembly, "orderId derivation must match");
     }
 }

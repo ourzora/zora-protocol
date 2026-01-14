@@ -53,7 +53,27 @@ uint128 totalReceived = uint128(callerDelta.amount0()); // callerDelta already i
 
 ## Solidity Patterns
 
-_(Add entries as discovered)_
+### Hash Function Security with Dynamic Data
+
+**The Issue:** `abi.encodePacked` can create hash collisions when concatenating dynamic-length data or multiple parameters without padding.
+
+**Wrong:**
+
+```solidity
+bytes32 id = keccak256(abi.encodePacked(poolKey, coin, tick, maker, nonce));
+```
+
+**Correct:**
+
+```solidity  
+bytes32 id = keccak256(abi.encode(poolKey, coin, tick, maker, nonce));
+```
+
+**Why:** `abi.encodePacked` concatenates values without padding, which can lead to ambiguous encodings. For example, `abi.encodePacked("aa", "b")` produces the same result as `abi.encodePacked("a", "ab")`. `abi.encode` provides proper 32-byte padding between parameters, eliminating this collision risk.
+
+**Performance Impact:** `abi.encode` has slightly higher gas cost (~50-100 gas), but the security benefit far outweighs the minimal cost difference.
+
+**Reference:** [Solidity Documentation on ABI Encoding](https://docs.soliditylang.org/en/latest/abi-spec.html)
 
 ---
 
