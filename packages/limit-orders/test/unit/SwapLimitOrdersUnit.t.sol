@@ -806,4 +806,65 @@ contract SwapLimitOrdersUnitTest is Test {
         assertEq(orders4.ticks[0] % 10, 0, "aligned case 4: tick must be aligned to spacing 10");
         assertGe(orders4.ticks[0], baseTick4 + 10, "aligned case 4: tick should be >= baseTick + spacing");
     }
+
+    /// @notice Tests fix for MKT-35: skip orders when baseTick at maxTick
+    /// @dev Uses baseTick at maxTick to simulate swap exhausting liquidity
+    function test_computeOrders_baseTickAtMaxTick_skipsOrders() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        int24 maxTick = TickMath.maxUsableTick(TICK_SPACING);
+        int24 baseTick = maxTick;
+        // Use MAX_SQRT_PRICE directly since we can't compute sqrt price at maxTick
+        uint160 sqrtPriceX96 = TickMath.MAX_SQRT_PRICE - 1;
+
+        // For currency0 (buy orders), should skip and return all as unallocated
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            true,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        assertEq(orders.sizes.length, 0, "should create no orders");
+        assertEq(allocated, 0, "should not allocate any funds");
+        assertEq(unallocated, totalSize, "all funds should be unallocated");
+    }
+
+    /// @notice Tests fix for MKT-35: skip orders when baseTick at minTick
+    /// @dev Uses baseTick at minTick to simulate swap exhausting liquidity
+    function test_computeOrders_baseTickAtMinTick_skipsOrders() public {
+        LimitOrderConfig memory params;
+        params.multiples = new uint256[](1);
+        params.percentages = new uint256[](1);
+        params.multiples[0] = 2 * MULTIPLE_SCALE;
+        params.percentages[0] = 10000;
+
+        uint128 totalSize = uint128(100 * MIN_LIMIT_ORDER_SIZE);
+        int24 maxTick = TickMath.maxUsableTick(TICK_SPACING);
+        int24 minTick = -maxTick;
+        int24 baseTick = minTick;
+        // Use MIN_SQRT_PRICE directly since we can't compute sqrt price at minTick
+        uint160 sqrtPriceX96 = TickMath.MIN_SQRT_PRICE + 1;
+
+        // For currency1 (sell orders), should skip and return all as unallocated
+        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
+            testKey,
+            false,
+            totalSize,
+            baseTick,
+            sqrtPriceX96,
+            params
+        );
+
+        assertEq(orders.sizes.length, 0, "should create no orders");
+        assertEq(allocated, 0, "should not allocate any funds");
+        assertEq(unallocated, totalSize, "all funds should be unallocated");
+    }
 }
