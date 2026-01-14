@@ -15,6 +15,7 @@ import {LimitOrderStorage} from "./LimitOrderStorage.sol";
 import {LimitOrderTypes} from "./LimitOrderTypes.sol";
 import {LimitOrderQueues} from "./LimitOrderQueues.sol";
 import {LimitOrderBitmap} from "./LimitOrderBitmap.sol";
+import {LimitOrderCreate} from "./LimitOrderCreate.sol";
 
 library LimitOrderCommon {
     /// @dev Currency0 orders are executed when the price rises to the lower tick.
@@ -29,42 +30,59 @@ library LimitOrderCommon {
 
     function recordCreation(
         LimitOrderStorage.Layout storage state,
-        PoolKey memory key,
-        bytes32 poolKeyHash,
-        bytes32 orderId,
-        address maker,
-        address coin,
-        bool isCurrency0,
+        LimitOrderCreate.CreateContext memory ctx,
+        LimitOrderCreate.MintParams memory mintParams,
         int24 orderTick,
-        int24 currentTick,
-        uint256 epoch,
-        uint128 liquidity,
-        uint128 realizedSize,
-        int24 tickLower,
-        int24 tickUpper
+        uint128 realizedSize
     ) internal {
-        LimitOrderTypes.LimitOrder storage order = state.limitOrders[orderId];
-        order.orderSize = realizedSize;
-        order.liquidity = liquidity;
-        order.tickLower = tickLower;
-        order.tickUpper = tickUpper;
-        order.createdEpoch = uint32(epoch);
-        order.status = LimitOrderTypes.OrderStatus.OPEN;
-        order.isCurrency0 = isCurrency0;
-        order.maker = maker;
-        order.poolKeyHash = poolKeyHash;
+        _initializeOrder(state.limitOrders[mintParams.orderId], ctx, mintParams, realizedSize);
+        _addToQueue(state, ctx, mintParams, orderTick, realizedSize);
+        _updateMakerBalanceAndEmit(state, ctx, mintParams.orderId, orderTick, realizedSize);
+    }
 
-        LimitOrderTypes.Queue storage tickQueue = state.tickQueues[poolKeyHash][coin][orderTick];
+    function _initializeOrder(
+        LimitOrderTypes.LimitOrder storage order,
+        LimitOrderCreate.CreateContext memory ctx,
+        LimitOrderCreate.MintParams memory mintParams,
+        uint128 realizedSize
+    ) private {
+        order.orderSize = realizedSize;
+        order.liquidity = mintParams.liquidity;
+        order.tickLower = mintParams.tickLower;
+        order.tickUpper = mintParams.tickUpper;
+        order.createdEpoch = uint32(ctx.epoch);
+        order.status = LimitOrderTypes.OrderStatus.OPEN;
+        order.isCurrency0 = ctx.isCurrency0;
+        order.maker = ctx.maker;
+        order.poolKeyHash = ctx.poolKeyHash;
+    }
+
+    function _addToQueue(
+        LimitOrderStorage.Layout storage state,
+        LimitOrderCreate.CreateContext memory ctx,
+        LimitOrderCreate.MintParams memory mintParams,
+        int24 orderTick,
+        uint128 realizedSize
+    ) private {
+        LimitOrderTypes.Queue storage tickQueue = state.tickQueues[ctx.poolKeyHash][ctx.coin][orderTick];
         tickQueue.balance += realizedSize;
 
-        LimitOrderBitmap.setIfFirst(state.tickBitmaps[poolKeyHash][coin], orderTick, key.tickSpacing, tickQueue.length);
-        LimitOrderQueues.enqueue(tickQueue, state.limitOrders, orderId);
+        LimitOrderBitmap.setIfFirst(state.tickBitmaps[ctx.poolKeyHash][ctx.coin], orderTick, mintParams.key.tickSpacing, tickQueue.length);
+        LimitOrderQueues.enqueue(tickQueue, state.limitOrders, mintParams.orderId);
+    }
 
-        uint256 newMakerBalance = state.makerBalances[maker][coin] + realizedSize;
-        state.makerBalances[maker][coin] = newMakerBalance;
+    function _updateMakerBalanceAndEmit(
+        LimitOrderStorage.Layout storage state,
+        LimitOrderCreate.CreateContext memory ctx,
+        bytes32 orderId,
+        int24 orderTick,
+        uint128 realizedSize
+    ) private {
+        uint256 newMakerBalance = state.makerBalances[ctx.maker][ctx.coin] + realizedSize;
+        state.makerBalances[ctx.maker][ctx.coin] = newMakerBalance;
 
-        emit IZoraLimitOrderBook.LimitOrderCreated(maker, coin, poolKeyHash, isCurrency0, orderTick, currentTick, realizedSize, orderId);
-        emit IZoraLimitOrderBook.MakerBalanceUpdated(maker, coin, newMakerBalance);
+        emit IZoraLimitOrderBook.LimitOrderCreated(ctx.maker, ctx.coin, ctx.poolKeyHash, ctx.isCurrency0, orderTick, ctx.currentTick, realizedSize, orderId);
+        emit IZoraLimitOrderBook.MakerBalanceUpdated(ctx.maker, ctx.coin, newMakerBalance);
     }
 
     function removeOrder(

@@ -211,22 +211,7 @@ library LimitOrderCreate {
             LimitOrderLiquidity.refundResidual(mintParams.key, ctx.isCurrency0, ctx.maker, refunded);
         }
 
-        LimitOrderCommon.recordCreation(
-            state,
-            mintParams.key,
-            ctx.poolKeyHash,
-            mintParams.orderId,
-            ctx.maker,
-            ctx.coin,
-            ctx.isCurrency0,
-            orderTick,
-            ctx.currentTick,
-            ctx.epoch,
-            mintParams.liquidity,
-            realized,
-            mintParams.tickLower,
-            mintParams.tickUpper
-        );
+        LimitOrderCommon.recordCreation(state, ctx, mintParams, orderTick, realized);
     }
 
     function _mintLiquidity(IPoolManager poolManager, bool isCurrency0, MintParams memory params) private returns (uint128 realizedSize, uint128 refunded) {
