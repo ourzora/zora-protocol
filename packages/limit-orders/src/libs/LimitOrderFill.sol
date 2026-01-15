@@ -209,24 +209,29 @@ library LimitOrderFill {
     ) private {
         order.status = LimitOrderTypes.OrderStatus.FILLED;
 
-        address coin = LimitOrderCommon.getOrderCoin(key, order.isCurrency0);
+        // Get both input and output currencies
+        address coinIn = LimitOrderCommon.getOrderCoin(key, order.isCurrency0);
+        address coinOut = LimitOrderCommon.getOrderCoin(key, !order.isCurrency0);
 
-        int24 orderTick = LimitOrderCommon.removeOrder(state, key, coin, tickQueue, order);
-
+        // Pass output currency to burnAndPayout (not input currency)
+        // This ensures payout uses the OUTPUT coin's configured payout path
         (Currency coinOutCurrency, uint128 makerAmount, uint128 referralAmount) = LimitOrderLiquidity.burnAndPayout(
             ctx.poolManager,
             key,
             order,
             orderId,
             fillReferral,
-            coin,
+            coinOut,
             ctx.versionLookup,
             ctx.weth
         );
 
+        // Use input currency for removing from order book
+        int24 orderTick = LimitOrderCommon.removeOrder(state, key, coinIn, tickQueue, order);
+
         emit IZoraLimitOrderBook.LimitOrderFilled(
             order.maker,
-            coin,
+            coinIn,
             Currency.unwrap(coinOutCurrency),
             order.orderSize,
             makerAmount,

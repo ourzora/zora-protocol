@@ -544,4 +544,67 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         assertEq(poolManager.swapCalls(), 1, "swap should occur using fallback single-hop path");
         assertEq(currency1Token.balanceOf(maker), makerBefore + 22, "maker receives currency1 from swap");
     }
+
+    /// @notice MKT-27: Documents that wrong coin is passed but validation provides safety net
+    /// @dev Demonstrates the root cause bug in _fillOrder():
+    ///      - _fillOrder() passes INPUT coin (CoinA) to burnAndPayout
+    ///      - Should pass OUTPUT coin (WETH) instead
+    ///      - Validation in _resolvePayoutPath() catches the mismatch and falls back
+    ///      - Result: User correctly receives WETH (due to validation, not correct logic)
+    ///
+    ///      Scenario: Pool CoinA/WETH, CoinA has path to USDC, Order: Sell CoinA for WETH
+    ///      Root bug: Looks at CoinA's path (wrong coin!)
+    ///      Safety net: Validation sees path leads to USDC not WETH, falls back
+    ///
+    ///      This test verifies the validation works, but we should still fix the root cause.
+    function test_burnAndPayoutUsesWrongCoinPayoutPath_MKT27() public {
+        // Create CoinA with payout path to USDC (currency0Token)
+        // This simulates a coin whose payout path leads to unexpected currency
+        TestSwapPathCoin coinA = new TestSwapPathCoin(Currency.wrap(address(currency0Token))); // path to USDC
+        versionLookup.setVersion(address(coinA), 4);
+
+        // Create pool: CoinA / WETH (currency1Token)
+        PoolKey memory testPoolKey = PoolKey({
+            currency0: Currency.wrap(address(coinA)), // CoinA
+            currency1: Currency.wrap(address(currency1Token)), // WETH
+            fee: 3000,
+            tickSpacing: 60,
+            hooks: poolKey.hooks
+        });
+
+        // Order: Sell CoinA (currency0) for WETH (currency1)
+        harness.setOrderSide(true); // isCurrency0 = true → payout should be currency1 (WETH)
+
+        // Simulate liquidity return: 100 units returned
+        poolManager.setModifyLiquidityResponse(int128(100), 0, 0, 0);
+
+        // Simulate fallback swap (validation rejects CoinA's path, uses single-hop)
+        poolManager.setSwapResponse(0, int128(100));
+
+        // Fund pool manager
+        deal(address(currency0Token), address(poolManager), 500e18); // USDC
+        deal(address(currency1Token), address(poolManager), 500e18); // WETH
+
+        uint256 makerWethBefore = currency1Token.balanceOf(maker);
+
+        // ROOT CAUSE BUG: Pass CoinA (input coin) - this is what _fillOrder() does
+        // SHOULD PASS: WETH (output coin) - this is what it should do
+        (Currency coinOut, , ) = harness.burnAndPayout(
+            poolManager,
+            testPoolKey,
+            ORDER_ID,
+            address(0),
+            address(coinA), // ← ROOT BUG: passing wrong coin
+            versionLookup
+        );
+
+        // VALIDATION SAFETY NET WORKS: User receives correct currency (WETH)
+        // Even though we passed wrong coin, validation caught it and fell back
+        assertEq(Currency.unwrap(coinOut), address(currency1Token), "validation correctly falls back to WETH");
+        assertEq(currency1Token.balanceOf(maker), makerWethBefore + 100, "maker receives WETH (correct)");
+
+        // NOTE: While validation prevents harm, _fillOrder() should still be fixed to pass
+        // the OUTPUT coin, not INPUT coin. This makes the code semantically correct and
+        // doesn't rely on validation as a crutch.
+    }
 }
