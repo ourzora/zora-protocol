@@ -26,6 +26,8 @@ import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 import {AddressConstants} from "@zoralabs/coins/test/utils/hookmate/constants/AddressConstants.sol";
 import {ICoin} from "@zoralabs/coins/src/interfaces/ICoin.sol";
+import {IWETH} from "@zoralabs/coins/src/interfaces/IWETH.sol";
+import {MockWETH} from "./MockWETH.sol";
 
 /**
  * @title BaseTest
@@ -60,9 +62,13 @@ contract BaseTest is V4TestSetup, IMsgSender {
         // Deploy AccessManager with this contract as admin
         accessManager = new AccessManager(address(this));
 
+        if (address(weth) == address(0)) {
+            weth = IWETH(address(new MockWETH()));
+        }
+
         deployCodeTo(
             "TestableZoraLimitOrderBook.sol:TestableZoraLimitOrderBook",
-            abi.encode(address(poolManager), address(factory), address(zoraHookRegistry), address(accessManager)),
+            abi.encode(address(poolManager), address(factory), address(zoraHookRegistry), address(accessManager), address(weth)),
             address(limitOrderBook)
         );
         require(limitOrderBook.authority() == address(accessManager), "ZoraLimitOrderBook authority is not the access manager");

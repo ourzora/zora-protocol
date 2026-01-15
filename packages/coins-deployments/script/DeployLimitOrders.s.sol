@@ -48,7 +48,13 @@ contract DeployLimitOrders is CoinsDeployerBase {
 
         // 2. Deploy ZoraLimitOrderBook deterministically
         console.log("\n=== Deploying ZoraLimitOrderBook ===");
-        address deployedLimitOrderBook = deployLimitOrderBookDeterministic(poolManager, deployment.zoraFactory, deployment.zoraHookRegistry, deployedAuthority);
+        address deployedLimitOrderBook = deployLimitOrderBookDeterministic(
+            poolManager,
+            deployment.zoraFactory,
+            deployment.zoraHookRegistry,
+            deployedAuthority,
+            getWeth()
+        );
         require(deployedLimitOrderBook == expectedLimitOrderBook, "Limit order book address mismatch");
         console.log("Deployed ZORA_LIMIT_ORDER_BOOK:", deployedLimitOrderBook);
         console.log("Address verified: MATCH");

@@ -22,9 +22,12 @@ import {LimitOrderTypes} from "./LimitOrderTypes.sol";
 import {IHasSwapPath} from "@zoralabs/coins/src/interfaces/ICoin.sol";
 import {UniV4SwapToCurrency} from "@zoralabs/coins/src/libs/UniV4SwapToCurrency.sol";
 import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+import {IWETH} from "@zoralabs/coins/src/interfaces/IWETH.sol";
 
 library LimitOrderLiquidity {
     using CurrencyLibrary for Currency;
+
+    error WethTransferFailed();
 
     function liquidityForOrder(bool isCurrency0, uint256 size, int24 tickLower, int24 tickUpper) internal pure returns (uint128) {
         uint160 sqrtPriceLower = TickMath.getSqrtPriceAtTick(tickLower);
@@ -60,7 +63,8 @@ library LimitOrderLiquidity {
         bytes32 orderId,
         address feeRecipient,
         address coinIn,
-        IDeployedCoinVersionLookup coinLookup
+        IDeployedCoinVersionLookup coinLookup,
+        address weth
     ) internal returns (Currency makerCoinOut, uint128 makerAmountOut, uint128 referralAmountOut) {
         (BalanceDelta liqDelta, BalanceDelta feesDelta) = poolManager.modifyLiquidity(
             key,
@@ -81,10 +85,10 @@ library LimitOrderLiquidity {
         Currency payoutCurrency = order.isCurrency0 ? key.currency1 : key.currency0;
         IHasSwapPath.PayoutSwapPath memory payoutPath = _resolvePayoutPath(coinIn, coinLookup, key, payoutCurrency);
 
-        (makerCoinOut, makerAmountOut) = _payoutRecipient(poolManager, order.maker, makerShareLiquidity0, makerShareLiquidity1, payoutPath);
+        (makerCoinOut, makerAmountOut) = _payoutRecipient(poolManager, order.maker, makerShareLiquidity0, makerShareLiquidity1, payoutPath, weth);
 
         if (referralShareLiquidity0 > 0 || referralShareLiquidity1 > 0) {
-            (, referralAmountOut) = _payoutRecipient(poolManager, feeRecipient, referralShareLiquidity0, referralShareLiquidity1, payoutPath);
+            (, referralAmountOut) = _payoutRecipient(poolManager, feeRecipient, referralShareLiquidity0, referralShareLiquidity1, payoutPath, weth);
         }
     }
 
@@ -96,20 +100,21 @@ library LimitOrderLiquidity {
         uint128 liquidity,
         bytes32 salt,
         address recipient,
-        bool isCurrency0
+        bool isCurrency0,
+        address weth
     ) internal returns (uint128 amountOut) {
         (int128 amount0, int128 amount1) = _burnLiquidity(poolManager, key, tickLower, tickUpper, liquidity, salt);
 
         if (amount0 > 0) {
             uint128 amount0Out = uint128(amount0);
-            poolManager.take(key.currency0, recipient, amount0Out);
+            _takeCurrency(poolManager, key.currency0, recipient, amount0Out, weth);
             if (isCurrency0) {
                 amountOut = amount0Out;
             }
         }
         if (amount1 > 0) {
             uint128 amount1Out = uint128(amount1);
-            poolManager.take(key.currency1, recipient, amount1Out);
+            _takeCurrency(poolManager, key.currency1, recipient, amount1Out, weth);
             if (!isCurrency0) {
                 amountOut = amount1Out;
             }
@@ -197,12 +202,35 @@ library LimitOrderLiquidity {
         }
     }
 
+    function _settleNegativeDeltas(IPoolManager poolManager, PoolKey memory key, int128 amount0, int128 amount1) private {
+        int256 repay0 = amount0 < 0 ? int256(amount0) : int256(0);
+        int256 repay1 = amount1 < 0 ? int256(amount1) : int256(0);
+
+        if (repay0 != 0 || repay1 != 0) {
+            settleDeltas(poolManager, key, repay0, repay1, address(0), address(0));
+        }
+    }
+
+    function _takeCurrency(IPoolManager poolManager, Currency currency, address recipient, uint128 amount, address weth) private {
+        if (!currency.isAddressZero()) {
+            poolManager.take(currency, recipient, amount);
+            return;
+        }
+
+        poolManager.take(currency, address(this), amount);
+        IWETH(weth).deposit{value: amount}();
+        if (!IWETH(weth).transfer(recipient, amount)) {
+            revert WethTransferFailed();
+        }
+    }
+
     function _payoutRecipient(
         IPoolManager poolManager,
         address recipient,
         int128 amount0,
         int128 amount1,
-        IHasSwapPath.PayoutSwapPath memory payoutPath
+        IHasSwapPath.PayoutSwapPath memory payoutPath,
+        address weth
     ) private returns (Currency coinOut, uint128 amountOut) {
         // Convert to uint128, treating negative/zero as zero
         uint128 amt0 = amount0 > 0 ? uint128(amount0) : 0;
@@ -215,7 +243,11 @@ library LimitOrderLiquidity {
         (coinOut, amountOut) = UniV4SwapToCurrency.swapToPath(poolManager, amt0, amt1, payoutPath.currencyIn, payoutPath.path);
 
         if (amountOut > 0) {
-            poolManager.take(coinOut, recipient, amountOut);
+            Currency payoutCurrency = coinOut;
+            _takeCurrency(poolManager, payoutCurrency, recipient, amountOut, weth);
+            if (payoutCurrency.isAddressZero()) {
+                coinOut = Currency.wrap(weth);
+            }
         }
     }
 }

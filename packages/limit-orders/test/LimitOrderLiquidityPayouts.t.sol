@@ -19,6 +19,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 
 import {SimpleERC20} from "@zoralabs/coins/test/mocks/SimpleERC20.sol";
+import {MockWETH} from "./utils/MockWETH.sol";
 
 contract MockPoolManager {
     using CurrencyLibrary for Currency;
@@ -83,6 +84,11 @@ contract MockPoolManager {
 
 contract LimitOrderLiquidityHarness {
     LimitOrderTypes.LimitOrder internal order;
+    address internal weth;
+
+    function setWeth(address weth_) external {
+        weth = weth_;
+    }
 
     function configureOrder(address maker, bool isCurrency0, int24 tickLower, int24 tickUpper, uint128 liquidity) external {
         order.maker = maker;
@@ -108,7 +114,7 @@ contract LimitOrderLiquidityHarness {
         address coinIn,
         IDeployedCoinVersionLookup versionLookup
     ) external returns (Currency coinOut, uint128 makerAmount, uint128 referralAmount) {
-        return LimitOrderLiquidity.burnAndPayout(IPoolManager(address(poolManager)), key, order, orderId, feeRecipient, coinIn, versionLookup);
+        return LimitOrderLiquidity.burnAndPayout(IPoolManager(address(poolManager)), key, order, orderId, feeRecipient, coinIn, versionLookup, weth);
     }
 
     function burnAndRefund(MockPoolManager poolManager, PoolKey memory key, bytes32 orderId, address recipient) external returns (uint128 amountOut) {
@@ -121,13 +127,16 @@ contract LimitOrderLiquidityHarness {
                 order.liquidity,
                 orderId,
                 recipient,
-                order.isCurrency0
+                order.isCurrency0,
+                weth
             );
     }
 
     function refundResidual(PoolKey memory key, bool isCurrency0, address maker, uint128 amount) external {
         LimitOrderLiquidity.refundResidual(key, isCurrency0, maker, amount);
     }
+
+    receive() external payable {}
 }
 
 contract MockCoinVersionLookup is IDeployedCoinVersionLookup {
@@ -176,6 +185,7 @@ contract LimitOrderLiquidityPayoutsTest is Test {
     MockCoinVersionLookup internal versionLookup;
     SimpleERC20 internal currency0Token;
     SimpleERC20 internal currency1Token;
+    MockWETH internal weth;
     PoolKey internal poolKey;
     address internal maker;
 
@@ -188,6 +198,8 @@ contract LimitOrderLiquidityPayoutsTest is Test {
 
         currency0Token = new SimpleERC20("Token0", "TK0");
         currency1Token = new SimpleERC20("Token1", "TK1");
+        weth = new MockWETH();
+        harness.setWeth(address(weth));
 
         poolKey = PoolKey({
             currency0: Currency.wrap(address(currency0Token)),
@@ -290,6 +302,27 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         assertEq(referralAmount, 0, "referral should be zero when address(0)");
         assertEq(currency1Token.balanceOf(maker), balanceBefore + 120, "maker receives counter-asset");
         assertEq(poolManager.takeCalls(), 1, "single take call expected");
+    }
+
+    function test_burnAndPayoutPaysWethForNativePayouts() public {
+        PoolKey memory nativeKey = PoolKey({
+            currency0: CurrencyLibrary.ADDRESS_ZERO,
+            currency1: Currency.wrap(address(currency1Token)),
+            fee: 3000,
+            tickSpacing: 60,
+            hooks: IHooks(address(0))
+        });
+
+        harness.setOrderSide(false);
+        poolManager.setModifyLiquidityResponse(int128(50), 0, 0, 0);
+        vm.deal(address(poolManager), 1 ether);
+
+        uint256 wethBefore = weth.balanceOf(maker);
+        (, uint128 makerAmount, ) = harness.burnAndPayout(poolManager, nativeKey, ORDER_ID, address(0), address(currency1Token), versionLookup);
+
+        assertEq(makerAmount, 50, "maker payout should match native delta");
+        assertEq(weth.balanceOf(maker), wethBefore + 50, "maker should receive WETH");
+        assertEq(maker.balance, 0, "maker should not receive native ETH");
     }
 
     function test_burnAndPayoutPaysBothCurrenciesWhenPositive() public {

@@ -49,7 +49,8 @@ contract DeployAllDevContracts is CoinsDeployerBase {
             getUniswapV4PoolManager(),
             deployment.zoraFactory,
             deployment.zoraHookRegistry,
-            deployment.orderBookAuthority
+            deployment.orderBookAuthority,
+            getWeth()
         );
         console.log("ZORA_LIMIT_ORDER_BOOK:", deployment.zoraLimitOrderBook);
 

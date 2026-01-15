@@ -55,7 +55,13 @@ contract ComputeDeterministicAddresses is CoinsDeployerBase {
         console.log("Computed ORDER_BOOK_AUTHORITY:", computedAuthority);
 
         // 2. Compute limit order book address
-        address computedLimitOrderBook = computeLimitOrderBookAddress(poolManager, deployment.zoraFactory, deployment.zoraHookRegistry, computedAuthority);
+        address computedLimitOrderBook = computeLimitOrderBookAddress(
+            poolManager,
+            deployment.zoraFactory,
+            deployment.zoraHookRegistry,
+            computedAuthority,
+            getWeth()
+        );
         console.log("Computed ZORA_LIMIT_ORDER_BOOK:", computedLimitOrderBook);
 
         // 3. Compute swap router address

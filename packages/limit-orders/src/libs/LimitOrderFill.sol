@@ -31,6 +31,7 @@ library LimitOrderFill {
     struct Context {
         IPoolManager poolManager;
         IDeployedCoinVersionLookup versionLookup;
+        address weth;
     }
 
     function validateTickRange(
@@ -217,7 +218,8 @@ library LimitOrderFill {
             orderId,
             fillReferral,
             coin,
-            ctx.versionLookup
+            ctx.versionLookup,
+            ctx.weth
         );
 
         int24 orderTick = LimitOrderCommon.removeOrder(state, key, coin, tickQueue, order);

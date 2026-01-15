@@ -360,11 +360,12 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address poolManager,
         address zoraFactory,
         address zoraHookRegistry,
-        address orderBookAuthority
+        address orderBookAuthority,
+        address weth
     ) internal pure returns (address) {
         bytes memory creationCode = abi.encodePacked(
             type(ZoraLimitOrderBook).creationCode,
-            abi.encode(poolManager, zoraFactory, zoraHookRegistry, orderBookAuthority)
+            abi.encode(poolManager, zoraFactory, zoraHookRegistry, orderBookAuthority, weth)
         );
 
         return Create2.computeAddress(LIMIT_ORDER_BOOK_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
@@ -374,16 +375,18 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address poolManager,
         address zoraFactory,
         address zoraHookRegistry,
-        address orderBookAuthority
+        address orderBookAuthority,
+        address weth
     ) internal returns (address) {
         require(poolManager != address(0), "Pool manager cannot be zero address");
         require(zoraFactory != address(0), "Zora factory cannot be zero address");
         require(zoraHookRegistry != address(0), "Zora hook registry cannot be zero address");
         require(orderBookAuthority != address(0), "Order book authority cannot be zero address");
+        require(weth != address(0), "WETH cannot be zero address");
 
         bytes memory creationCode = abi.encodePacked(
             type(ZoraLimitOrderBook).creationCode,
-            abi.encode(poolManager, zoraFactory, zoraHookRegistry, orderBookAuthority)
+            abi.encode(poolManager, zoraFactory, zoraHookRegistry, orderBookAuthority, weth)
         );
 
         address deployed = ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(LIMIT_ORDER_BOOK_SALT, creationCode);

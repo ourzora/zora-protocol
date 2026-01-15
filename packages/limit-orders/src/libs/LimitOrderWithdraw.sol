@@ -17,15 +17,16 @@ import {LimitOrderCommon} from "./LimitOrderCommon.sol";
 import {LimitOrderLiquidity} from "./LimitOrderLiquidity.sol";
 
 library LimitOrderWithdraw {
-    function handleWithdrawOrdersCallback(LimitOrderStorage.Layout storage state, IPoolManager poolManager, bytes memory payload) internal {
+    function handleWithdrawOrdersCallback(LimitOrderStorage.Layout storage state, IPoolManager poolManager, address weth, bytes memory payload) internal {
         IZoraLimitOrderBook.WithdrawOrdersCallbackData memory data = abi.decode(payload, (IZoraLimitOrderBook.WithdrawOrdersCallbackData));
 
-        withdrawOrders(state, poolManager, data.maker, data.orderIds, data.coin, data.minAmountOut, data.recipient);
+        withdrawOrders(state, poolManager, weth, data.maker, data.orderIds, data.coin, data.minAmountOut, data.recipient);
     }
 
     function withdrawOrders(
         LimitOrderStorage.Layout storage state,
         IPoolManager poolManager,
+        address weth,
         address maker,
         bytes32[] memory orderIds,
         address coin,
@@ -47,7 +48,7 @@ library LimitOrderWithdraw {
             require(order.status == LimitOrderTypes.OrderStatus.OPEN, IZoraLimitOrderBook.OrderClosed());
 
             uint128 orderSize = order.orderSize; // Cache before cancellation
-            address currentCoin = _cancelOrder(state, poolManager, maker, orderId, order, recipient);
+            address currentCoin = _cancelOrder(state, poolManager, weth, maker, orderId, order, recipient);
 
             // Validate order coin matches expected coin
             if (currentCoin != coin) {
@@ -69,6 +70,7 @@ library LimitOrderWithdraw {
     function _cancelOrder(
         LimitOrderStorage.Layout storage state,
         IPoolManager poolManager,
+        address weth,
         address maker,
         bytes32 orderId,
         LimitOrderTypes.LimitOrder storage order,
@@ -93,7 +95,7 @@ library LimitOrderWithdraw {
         LimitOrderCommon.removeOrder(state, key, coin, tickQueue, order);
 
         // External call after state is updated
-        LimitOrderLiquidity.burnAndRefund(poolManager, key, tickLower, tickUpper, liquidity, orderId, recipient, isCurrency0);
+        LimitOrderLiquidity.burnAndRefund(poolManager, key, tickLower, tickUpper, liquidity, orderId, recipient, isCurrency0, weth);
 
         emit IZoraLimitOrderBook.LimitOrderUpdated(maker, coin, order.poolKeyHash, isCurrency0, orderTick, 0, orderId, true);
     }

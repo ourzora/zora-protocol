@@ -25,11 +25,22 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
     IPoolManager public immutable poolManager;
     IDeployedCoinVersionLookup public immutable zoraCoinVersionLookup;
     IZoraHookRegistry public immutable zoraHookRegistry;
+    address public immutable weth;
 
-    constructor(address poolManager_, address zoraCoinVersionLookup_, address zoraHookRegistry_, address authority_) SimpleAccessManaged(authority_) {
+    constructor(
+        address poolManager_,
+        address zoraCoinVersionLookup_,
+        address zoraHookRegistry_,
+        address authority_,
+        address weth_
+    ) SimpleAccessManaged(authority_) {
         poolManager = IPoolManager(poolManager_);
         zoraCoinVersionLookup = IDeployedCoinVersionLookup(zoraCoinVersionLookup_);
         zoraHookRegistry = IZoraHookRegistry(zoraHookRegistry_);
+        if (weth_ == address(0)) {
+            revert AddressZero();
+        }
+        weth = weth_;
     }
 
     function tickQueueBalance(bytes32 poolKeyHash, address coin, int24 tick) internal view returns (uint256) {
@@ -160,7 +171,7 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
         if (callbackId == CallbackId.FILL) {
             LimitOrderFill.handleFillCallback(state, _fillContext(), callbackData);
         } else if (callbackId == CallbackId.WITHDRAW_ORDERS) {
-            LimitOrderWithdraw.handleWithdrawOrdersCallback(state, poolManager, callbackData);
+            LimitOrderWithdraw.handleWithdrawOrdersCallback(state, poolManager, weth, callbackData);
         } else {
             revert UnknownCallback();
         }
@@ -185,6 +196,7 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
     function _fillContext() private view returns (LimitOrderFill.Context memory ctx) {
         ctx.poolManager = poolManager;
         ctx.versionLookup = zoraCoinVersionLookup;
+        ctx.weth = weth;
     }
 
     function _fillData(
