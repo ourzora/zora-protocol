@@ -202,7 +202,6 @@ contract LimitOrderFillTest is BaseTest {
         bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
         address orderCoin = _orderCoin(key, isCurrency0);
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(2);
 
         (uint256[] memory orderSizes, int24[] memory orderTicks) = _buildDeterministicOrders(key, isCurrency0, 3, 20e18);
@@ -336,7 +335,6 @@ contract LimitOrderFillTest is BaseTest {
 
         // 3. Now DISABLE hook auto-fills
         uint256 originalMaxFillCount = limitOrderBook.getMaxFillCount();
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(0);
 
         // 4. Move price past the order WITHOUT triggering hook fills
@@ -345,7 +343,6 @@ contract LimitOrderFillTest is BaseTest {
         _swapSomeCurrencyForCoin(ICoin(address(creatorCoin)), address(zoraToken), swapAmount, swapper);
 
         // 5. Restore original maxFillCount
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(originalMaxFillCount);
 
         // 6. Verify order exists and check epoch
@@ -775,7 +772,6 @@ contract LimitOrderFillTest is BaseTest {
         address orderCoin = _orderCoin(key, isCurrency0);
 
         // Set max fill count to 2 so we can verify default is used
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(2);
 
         // Create 5 orders that can be filled
@@ -821,7 +817,6 @@ contract LimitOrderFillTest is BaseTest {
         address orderCoin = _orderCoin(key, isCurrency0);
 
         // Set max fill count to 2
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(2);
 
         // Create 5 fillable orders

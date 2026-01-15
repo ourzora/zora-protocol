@@ -12,9 +12,9 @@ contract TestableZoraLimitOrderBook is ZoraLimitOrderBook {
         address poolManager_,
         address zoraCoinVersionLookup_,
         address zoraHookRegistry_,
-        address authority_,
+        address owner_,
         address weth_
-    ) ZoraLimitOrderBook(poolManager_, zoraCoinVersionLookup_, zoraHookRegistry_, authority_, weth_) {}
+    ) ZoraLimitOrderBook(poolManager_, zoraCoinVersionLookup_, zoraHookRegistry_, owner_, weth_) {}
 
     function exposedTickQueue(bytes32 poolKeyHash, address coin, int24 tick) external view returns (LimitOrderTypes.Queue memory) {
         return getTickQueue(poolKeyHash, coin, tick);

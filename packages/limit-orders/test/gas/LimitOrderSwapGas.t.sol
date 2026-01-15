@@ -107,7 +107,6 @@ contract LimitOrderSwapGasTest is BaseTest {
         CreatedOrderLog[] memory preloaded = existingOrders > 0 ? _preloadOrders(creatorKey, isCurrency0, existingOrders) : new CreatedOrderLog[](0);
         emit log_named_uint("PRELOADED_ORDERS", preloaded.length);
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(existingOrders + 10);
 
         PoolKey[] memory v4Route = new PoolKey[](1);
@@ -152,7 +151,6 @@ contract LimitOrderSwapGasTest is BaseTest {
         emit log_named_uint("PRELOADED_ORDERS", preloaded.length);
 
         // allow enough fills (existing + some headroom for newly in-range orders)
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(existingOrders + 10);
 
         // build router params (hop2: ZORA -> creator -> content)
@@ -198,7 +196,6 @@ contract LimitOrderSwapGasTest is BaseTest {
         CreatedOrderLog[] memory preloaded = existingOrders > 0 ? _preloadOrders(contentKey, isCurrency0, existingOrders) : new CreatedOrderLog[](0);
         emit log_named_uint("PRELOADED_ORDERS", preloaded.length);
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(existingOrders + 10);
 
         PoolKey[] memory v4Route = new PoolKey[](2);
@@ -243,7 +240,6 @@ contract LimitOrderSwapGasTest is BaseTest {
         CreatedOrderLog[] memory preloaded = existingOrders > 0 ? _preloadOrders(contentKey, isCurrency0, existingOrders) : new CreatedOrderLog[](0);
         emit log_named_uint("PRELOADED_ORDERS", preloaded.length);
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(existingOrders + 10);
 
         PoolKey[] memory v4Route = new PoolKey[](2);
@@ -285,7 +281,6 @@ contract LimitOrderSwapGasTest is BaseTest {
         PoolKey memory creatorKey = creatorCoin.getPoolKey();
         bool isCurrency0 = Currency.unwrap(creatorKey.currency0) == address(creatorCoin);
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(10);
 
         PoolKey[] memory v4Route = new PoolKey[](1);
@@ -326,7 +321,6 @@ contract LimitOrderSwapGasTest is BaseTest {
         PoolKey memory creatorKey = creatorCoin.getPoolKey();
         bool isCurrency0 = Currency.unwrap(creatorKey.currency0) == address(creatorCoin);
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(10);
 
         PoolKey[] memory v4Route = new PoolKey[](1);

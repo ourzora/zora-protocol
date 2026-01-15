@@ -2,25 +2,28 @@
 pragma solidity ^0.8.28;
 
 import {BaseTest} from "./utils/BaseTest.sol";
-import {AccessManager} from "@openzeppelin/contracts/access/manager/AccessManager.sol";
-import {SimpleAccessManaged} from "../src/access/SimpleAccessManaged.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IZoraLimitOrderBook} from "../src/IZoraLimitOrderBook.sol";
+import {PermittedCallers} from "../src/access/PermittedCallers.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {SwapWithLimitOrders} from "../src/router/SwapWithLimitOrders.sol";
+import {LimitOrderConfig} from "../src/libs/SwapLimitOrders.sol";
 
 contract LimitOrderAccessControlTest is BaseTest {
-    uint64 public constant CREATOR_ROLE = 1;
     address public unauthorizedUser;
-    address public authorizedRouter;
+    address public authorizedCaller;
+    address public newOwner;
 
     function setUp() public override {
         super.setUpNonForked();
 
         // Set up test users
         unauthorizedUser = makeAddr("unauthorizedUser");
-        authorizedRouter = makeAddr("authorizedRouter");
+        authorizedCaller = makeAddr("authorizedCaller");
+        newOwner = makeAddr("newOwner");
     }
 
     function _prepareOrder(
@@ -69,120 +72,146 @@ contract LimitOrderAccessControlTest is BaseTest {
         zoraHookRegistry.registerHooks(hooks, tags);
     }
 
-    function test_create_worksWithPublicRole() public {
+    function _setPublicAccess(bool isPublic) internal {
+        address[] memory callers = new address[](1);
+        callers[0] = address(0); // PUBLIC_ACCESS sentinel
+        bool[] memory permitted = new bool[](1);
+        permitted[0] = isPublic;
+        limitOrderBook.setPermittedCallers(callers, permitted);
+    }
+
+    // Test: create() works in public mode (default)
+    function test_create_publicMode() public {
         PoolKey memory key = creatorCoin.getPoolKey();
 
+        // Verify any address is permitted by default (public mode)
+        assertTrue(limitOrderBook.isPermittedCaller(unauthorizedUser), "any address should be permitted in public mode");
+
+        // Anyone can create orders in public mode
         (bool isCurrency0, address orderCoin, uint256[] memory orderSizes, int24[] memory orderTicks) = _prepareOrder(unauthorizedUser, key);
         _createOrder(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser, orderCoin);
     }
 
-    function test_transitionToPermissioned() public {
+    // Test: setPermittedCallers can toggle public access control via address(0)
+    function test_setPermittedCallers_togglesPublicAccessControl() public {
         PoolKey memory key = creatorCoin.getPoolKey();
 
-        // Initially anyone can create orders (PUBLIC_ROLE is set in BaseTest)
+        // Initially public - anyone can create
+        assertTrue(limitOrderBook.isPermittedCaller(unauthorizedUser));
         (bool isCurrency0, address orderCoin, uint256[] memory orderSizes, int24[] memory orderTicks) = _prepareOrder(unauthorizedUser, key);
         _createOrder(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser, orderCoin);
 
-        // Create a specific role for authorized creators
-        accessManager.labelRole(CREATOR_ROLE, "CREATOR");
-
-        // Grant role to authorized router
-        accessManager.grantRole(CREATOR_ROLE, authorizedRouter, 0);
-
-        // Switch function to require CREATOR_ROLE
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.create.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, CREATOR_ROLE);
+        // Owner sets to permissioned mode by disabling address(0)
+        _setPublicAccess(false);
+        assertFalse(limitOrderBook.isPermittedCaller(unauthorizedUser));
 
         // Now unauthorized user should fail
         (isCurrency0, orderCoin, orderSizes, orderTicks) = _prepareOrder(unauthorizedUser, key);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectRevert(PermittedCallers.CallerNotPermitted.selector);
         limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
         vm.stopPrank();
 
-        // But authorized router should succeed
-        (isCurrency0, orderCoin, orderSizes, orderTicks) = _prepareOrder(authorizedRouter, key);
-        _createOrder(key, isCurrency0, orderSizes, orderTicks, authorizedRouter, orderCoin);
-
-        // If we got here without reverting, the test passed
-    }
-
-    function test_unauthorizedUserCannotCreate() public {
-        PoolKey memory key = creatorCoin.getPoolKey();
-
-        // Set up permissioned mode
-        accessManager.labelRole(CREATOR_ROLE, "CREATOR");
-        accessManager.grantRole(CREATOR_ROLE, authorizedRouter, 0);
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.create.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, CREATOR_ROLE);
-
-        // Unauthorized user tries to create
-        (bool isCurrency0, address orderCoin, uint256[] memory orderSizes, int24[] memory orderTicks) = _prepareOrder(unauthorizedUser, key);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
-        limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
-        vm.stopPrank();
-    }
-
-    function test_grantAndRevokeRole() public {
-        PoolKey memory key = creatorCoin.getPoolKey();
-
-        // Set up permissioned mode
-        accessManager.labelRole(CREATOR_ROLE, "CREATOR");
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.create.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, CREATOR_ROLE);
-
-        // Initially unauthorized user cannot create
-        (bool isCurrency0, address orderCoin, uint256[] memory orderSizes, int24[] memory orderTicks) = _prepareOrder(unauthorizedUser, key);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
-        limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
-        vm.stopPrank();
-
-        // Grant role to user
-        accessManager.grantRole(CREATOR_ROLE, unauthorizedUser, 0);
-
-        // Now user can create
-        (isCurrency0, orderCoin, orderSizes, orderTicks) = _prepareOrder(unauthorizedUser, key);
-        _createOrder(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser, orderCoin);
-
-        // Revoke role
-        accessManager.revokeRole(CREATOR_ROLE, unauthorizedUser);
-
-        // Now user cannot create again
-        (isCurrency0, orderCoin, orderSizes, orderTicks) = _prepareOrder(unauthorizedUser, key);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
-        limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
-        vm.stopPrank();
-    }
-
-    function test_adminCanReconfigure() public {
-        PoolKey memory key = creatorCoin.getPoolKey();
-
-        // Admin sets up initial permissioned mode
-        accessManager.labelRole(CREATOR_ROLE, "CREATOR");
-        accessManager.grantRole(CREATOR_ROLE, authorizedRouter, 0);
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.create.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, CREATOR_ROLE);
-
-        // Unauthorized user cannot create
-        (bool isCurrency0, address orderCoin, uint256[] memory orderSizes, int24[] memory orderTicks) = _prepareOrder(unauthorizedUser, key);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
-        limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
-        vm.stopPrank();
-
-        // Admin decides to open it back up to public
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, accessManager.PUBLIC_ROLE());
+        // Owner sets back to public mode
+        _setPublicAccess(true);
+        assertTrue(limitOrderBook.isPermittedCaller(unauthorizedUser));
 
         // Now anyone can create again
         (isCurrency0, orderCoin, orderSizes, orderTicks) = _prepareOrder(unauthorizedUser, key);
         _createOrder(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser, orderCoin);
     }
 
+    // Test: unauthorized user cannot create in permissioned mode
+    function test_create_permissionedMode_unauthorizedFails() public {
+        PoolKey memory key = creatorCoin.getPoolKey();
+
+        // Set to permissioned mode
+        _setPublicAccess(false);
+
+        // Unauthorized user tries to create
+        (bool isCurrency0, address orderCoin, uint256[] memory orderSizes, int24[] memory orderTicks) = _prepareOrder(unauthorizedUser, key);
+        vm.expectRevert(PermittedCallers.CallerNotPermitted.selector);
+        limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
+        vm.stopPrank();
+    }
+
+    // Test: setPermittedCallers grants and revokes access
+    function test_setPermittedCallers_grantsAndRevokesAccess() public {
+        PoolKey memory key = creatorCoin.getPoolKey();
+
+        // Set to permissioned mode
+        _setPublicAccess(false);
+
+        // Initially unauthorized user cannot create
+        (bool isCurrency0, address orderCoin, uint256[] memory orderSizes, int24[] memory orderTicks) = _prepareOrder(unauthorizedUser, key);
+        vm.expectRevert(PermittedCallers.CallerNotPermitted.selector);
+        limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
+        vm.stopPrank();
+
+        // Grant access to user
+        address[] memory callers = new address[](1);
+        callers[0] = unauthorizedUser;
+        bool[] memory permitted = new bool[](1);
+        permitted[0] = true;
+        limitOrderBook.setPermittedCallers(callers, permitted);
+
+        assertTrue(limitOrderBook.isPermittedCaller(unauthorizedUser), "user should be permitted");
+
+        // Now user can create
+        (isCurrency0, orderCoin, orderSizes, orderTicks) = _prepareOrder(unauthorizedUser, key);
+        _createOrder(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser, orderCoin);
+
+        // Revoke access
+        permitted[0] = false;
+        limitOrderBook.setPermittedCallers(callers, permitted);
+
+        assertFalse(limitOrderBook.isPermittedCaller(unauthorizedUser), "user should not be permitted");
+
+        // Now user cannot create again
+        (isCurrency0, orderCoin, orderSizes, orderTicks) = _prepareOrder(unauthorizedUser, key);
+        vm.expectRevert(PermittedCallers.CallerNotPermitted.selector);
+        limitOrderBook.create{value: orderCoin == address(0) ? 1 ether : 0}(key, isCurrency0, orderSizes, orderTicks, unauthorizedUser);
+        vm.stopPrank();
+    }
+
+    // Test: setPermittedCallers works with multiple addresses
+    function test_setPermittedCallers_batchUpdate() public {
+        address caller1 = makeAddr("caller1");
+        address caller2 = makeAddr("caller2");
+        address caller3 = makeAddr("caller3");
+
+        _setPublicAccess(false);
+
+        // Grant access to multiple callers
+        address[] memory callers = new address[](3);
+        callers[0] = caller1;
+        callers[1] = caller2;
+        callers[2] = caller3;
+        // set public to false
+        bool[] memory permitted = new bool[](3);
+        permitted[0] = true;
+        permitted[1] = true;
+        permitted[2] = true;
+
+        limitOrderBook.setPermittedCallers(callers, permitted);
+
+        assertTrue(limitOrderBook.isPermittedCaller(caller1));
+        assertTrue(limitOrderBook.isPermittedCaller(caller2));
+        assertTrue(limitOrderBook.isPermittedCaller(caller3));
+
+        // Revoke access from caller2
+        address[] memory revokeList = new address[](1);
+        revokeList[0] = caller2;
+        bool[] memory revokePermitted = new bool[](1);
+        revokePermitted[0] = false;
+
+        limitOrderBook.setPermittedCallers(revokeList, revokePermitted);
+
+        assertTrue(limitOrderBook.isPermittedCaller(caller1));
+        assertFalse(limitOrderBook.isPermittedCaller(caller2));
+        assertTrue(limitOrderBook.isPermittedCaller(caller3));
+    }
+
+    // Test: non-hook cannot fill while unlocked
     function test_nonHookCannotFillWhileUnlocked() public {
         PoolKey memory key = creatorCoin.getPoolKey();
 
@@ -194,6 +223,7 @@ contract LimitOrderAccessControlTest is BaseTest {
         caller.attemptUnlockedFill(key, false, -type(int24).max, type(int24).max, 1, address(0));
     }
 
+    // Test: registered hook can fill while unlocked
     function test_fillRegisteredHookCanFillWhileUnlocked() public {
         PoolKey memory key = creatorCoin.getPoolKey();
 
@@ -217,6 +247,7 @@ contract LimitOrderAccessControlTest is BaseTest {
         assertEq(_makerBalance(users.seller, created[0].coin), 0, "maker balance should be zero");
     }
 
+    // Test: unregistered hook cannot fill while unlocked
     function test_fillUnregisteredHookCannotFillWhileUnlocked() public {
         PoolKey memory key = creatorCoin.getPoolKey();
         UnlockedFillCaller caller = new UnlockedFillCaller(address(limitOrderBook), address(poolManager));
@@ -225,6 +256,7 @@ contract LimitOrderAccessControlTest is BaseTest {
         caller.attemptUnlockedFill(key, true, -type(int24).max, type(int24).max, 5, address(0));
     }
 
+    // Test: fill maxFillCount defaults to storage
     function test_fill_MaxFillCountDefaultsToStorage() public {
         PoolKey memory key = creatorCoin.getPoolKey();
 
@@ -237,7 +269,6 @@ contract LimitOrderAccessControlTest is BaseTest {
         _movePriceBeyondTicksWithAutoFillDisabled(created);
 
         uint256 previousMax = limitOrderBook.getMaxFillCount();
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(2);
         (int24 startTick, int24 endTick) = _tickWindow(created, key);
 
@@ -246,10 +277,10 @@ contract LimitOrderAccessControlTest is BaseTest {
         FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
         assertEq(fills.length, 2, "should use stored maxFillCount when input is zero");
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(previousMax);
     }
 
+    // Test: fillBatch ignores empty order arrays
     function test_fillBatchIgnoresEmptyOrderArrays() public {
         PoolKey memory key = creatorCoin.getPoolKey();
 
@@ -288,138 +319,128 @@ contract LimitOrderAccessControlTest is BaseTest {
         assertApproxEqAbs(makerBalanceBefore - makerBalanceAfter, expectedDelta, 3, "unexpected maker balance delta");
     }
 
+    // Test: unlockCallback reverts for non-poolManager
     function test_unlockCallbackRevertsForNonPoolManager() public {
         vm.expectRevert(IZoraLimitOrderBook.NotPoolManager.selector);
         limitOrderBook.unlockCallback(bytes(""));
     }
 
+    // Test: receive reverts for non-poolManager
     function test_receiveRevertsForNonPoolManager() public {
         vm.deal(address(this), 1 ether);
         vm.expectRevert(IZoraLimitOrderBook.NotPoolManager.selector);
         payable(address(limitOrderBook)).transfer(1 wei);
     }
 
-    function test_setMaxFillCount_worksWithPublicRole() public {
+    // Test: setMaxFillCount - owner can set
+    function test_setMaxFillCount_ownerCanSet() public {
         // Initially max fill count should be 50 (set in BaseTest)
         assertEq(limitOrderBook.getMaxFillCount(), 50);
 
-        // setMaxFillCount is already configured with PUBLIC_ROLE in BaseTest
-        // Any user should be able to set it
-        vm.prank(unauthorizedUser);
+        // Owner (this contract) should be able to set it
         limitOrderBook.setMaxFillCount(20);
 
         assertEq(limitOrderBook.getMaxFillCount(), 20);
     }
 
+    // Test: setMaxFillCount - unauthorized user cannot set
     function test_setMaxFillCount_unauthorizedUserCannotSet() public {
-        uint64 MAX_FILL_COUNT_ROLE = 2;
-
-        // Set up permissioned mode for setMaxFillCount
-        accessManager.labelRole(MAX_FILL_COUNT_ROLE, "MAX_FILL_COUNT_SETTER");
-        accessManager.grantRole(MAX_FILL_COUNT_ROLE, authorizedRouter, 0);
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.setMaxFillCount.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, MAX_FILL_COUNT_ROLE);
-
         // Unauthorized user tries to set max fill count
         vm.prank(unauthorizedUser);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedUser));
         limitOrderBook.setMaxFillCount(20);
 
         // Verify value hasn't changed (still 50 from BaseTest)
         assertEq(limitOrderBook.getMaxFillCount(), 50);
     }
 
-    function test_setMaxFillCount_authorizedUserCanSet() public {
-        uint64 MAX_FILL_COUNT_ROLE = 2;
+    // Test: setPermittedCallers - owner can set
+    function test_setPermittedCallers_ownerCanSet() public {
+        address[] memory callers = new address[](1);
+        callers[0] = authorizedCaller;
+        bool[] memory permitted = new bool[](1);
+        permitted[0] = true;
 
-        // Set up permissioned mode
-        accessManager.labelRole(MAX_FILL_COUNT_ROLE, "MAX_FILL_COUNT_SETTER");
-        accessManager.grantRole(MAX_FILL_COUNT_ROLE, authorizedRouter, 0);
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.setMaxFillCount.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, MAX_FILL_COUNT_ROLE);
-
-        // Authorized user sets max fill count
-        vm.prank(authorizedRouter);
-        limitOrderBook.setMaxFillCount(25);
-
-        assertEq(limitOrderBook.getMaxFillCount(), 25);
+        limitOrderBook.setPermittedCallers(callers, permitted);
+        assertTrue(limitOrderBook.isPermittedCaller(authorizedCaller));
     }
 
-    function test_setMaxFillCount_adminCanSet() public {
-        uint64 MAX_FILL_COUNT_ROLE = 2;
+    // Test: setPermittedCallers - unauthorized user cannot set
+    function test_setPermittedCallers_unauthorizedUserCannotSet() public {
+        address[] memory callers = new address[](0);
+        bool[] memory permitted = new bool[](0);
 
-        // Set up permissioned mode
-        accessManager.labelRole(MAX_FILL_COUNT_ROLE, "MAX_FILL_COUNT_SETTER");
-
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.setMaxFillCount.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, MAX_FILL_COUNT_ROLE);
-
-        // Grant the role to admin explicitly
-        accessManager.grantRole(MAX_FILL_COUNT_ROLE, address(this), 0);
-
-        // Admin (this contract) should be able to set it with the granted role
-        limitOrderBook.setMaxFillCount(30);
-
-        assertEq(limitOrderBook.getMaxFillCount(), 30);
+        vm.prank(unauthorizedUser);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedUser));
+        limitOrderBook.setPermittedCallers(callers, permitted);
     }
 
-    function test_setMaxFillCount_grantAndRevokeRole() public {
-        uint64 MAX_FILL_COUNT_ROLE = 2;
+    // Test: setLimitOrderConfig - owner can set
+    function test_setLimitOrderConfig_ownerCanSet() public {
+        // Owner (this contract) should be able to set limit order config
+        uint256[] memory multiples = new uint256[](2);
+        multiples[0] = 2e18; // 2x
+        multiples[1] = 3e18; // 3x
 
-        // Set up permissioned mode
-        accessManager.labelRole(MAX_FILL_COUNT_ROLE, "MAX_FILL_COUNT_SETTER");
+        uint256[] memory percentages = new uint256[](2);
+        percentages[0] = 5000; // 50%
+        percentages[1] = 5000; // 50%
 
-        bytes4[] memory selectors = new bytes4[](1);
-        selectors[0] = IZoraLimitOrderBook.setMaxFillCount.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, MAX_FILL_COUNT_ROLE);
+        LimitOrderConfig memory config = LimitOrderConfig({multiples: multiples, percentages: percentages});
 
-        // Initially unauthorized user cannot set
-        vm.prank(unauthorizedUser);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
-        limitOrderBook.setMaxFillCount(15);
-
-        // Grant role to user
-        accessManager.grantRole(MAX_FILL_COUNT_ROLE, unauthorizedUser, 0);
-
-        // Now user can set
-        vm.prank(unauthorizedUser);
-        limitOrderBook.setMaxFillCount(15);
-        assertEq(limitOrderBook.getMaxFillCount(), 15);
-
-        // Revoke role
-        accessManager.revokeRole(MAX_FILL_COUNT_ROLE, unauthorizedUser);
-
-        // Now user cannot set again
-        vm.prank(unauthorizedUser);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
-        limitOrderBook.setMaxFillCount(20);
-
-        // Verify value hasn't changed from last successful set
-        assertEq(limitOrderBook.getMaxFillCount(), 15);
+        swapWithLimitOrders.setLimitOrderConfig(config);
     }
 
-    function test_setAuthority_revertsForUnauthorizedCaller() public {
-        address newAuthority = address(new AccessManager(address(this)));
+    // Test: setLimitOrderConfig - unauthorized user cannot set
+    function test_setLimitOrderConfig_unauthorizedUserCannotSet() public {
+        uint256[] memory multiples = new uint256[](2);
+        multiples[0] = 2e18;
+        multiples[1] = 3e18;
 
+        uint256[] memory percentages = new uint256[](2);
+        percentages[0] = 5000;
+        percentages[1] = 5000;
+
+        LimitOrderConfig memory config = LimitOrderConfig({multiples: multiples, percentages: percentages});
+
+        // Unauthorized user tries to set config
         vm.prank(unauthorizedUser);
-        vm.expectRevert(SimpleAccessManaged.AccessManagedUnauthorized.selector);
-        limitOrderBook.setAuthority(newAuthority);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedUser));
+        swapWithLimitOrders.setLimitOrderConfig(config);
     }
 
-    function test_setAuthority_revertsForNonContractAddress() public {
-        // Deploy a simple test contract with test contract as authority
-        AuthorityTester tester = new AuthorityTester(address(this));
+    // Test: ownership transfer (two-step process)
+    function test_ownershipTransfer() public {
+        // Initial owner is this contract
+        assertEq(limitOrderBook.owner(), address(this));
 
-        address eoaAddress = makeAddr("eoa");
+        // Step 1: Current owner proposes transfer
+        limitOrderBook.transferOwnership(newOwner);
 
-        // Try to set EOA as authority - should revert with AccessManagedInvalidAuthority
-        vm.expectRevert(abi.encodeWithSelector(SimpleAccessManaged.AccessManagedInvalidAuthority.selector, eoaAddress));
-        tester.setAuthority(eoaAddress);
+        // Ownership hasn't changed yet
+        assertEq(limitOrderBook.owner(), address(this));
+        assertEq(limitOrderBook.pendingOwner(), newOwner);
+
+        // New owner cannot perform owner actions yet
+        vm.prank(newOwner);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, newOwner));
+        limitOrderBook.setMaxFillCount(100);
+
+        // Step 2: New owner accepts transfer
+        vm.prank(newOwner);
+        limitOrderBook.acceptOwnership();
+
+        // Now ownership has transferred
+        assertEq(limitOrderBook.owner(), newOwner);
+
+        // New owner can perform owner actions
+        vm.prank(newOwner);
+        limitOrderBook.setMaxFillCount(100);
+        assertEq(limitOrderBook.getMaxFillCount(), 100);
+
+        // Old owner cannot perform owner actions
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
+        limitOrderBook.setMaxFillCount(50);
     }
 }
 
@@ -454,8 +475,4 @@ contract UnlockedFillCaller {
         limitOrderBook.fill(pendingKey, pendingIsCurrency0, pendingStartTick, pendingEndTick, pendingMaxFillCount, pendingFillReferral);
         return bytes("");
     }
-}
-
-contract AuthorityTester is SimpleAccessManaged {
-    constructor(address initialAuthority) SimpleAccessManaged(initialAuthority) {}
 }

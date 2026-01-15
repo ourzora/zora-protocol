@@ -82,7 +82,6 @@ contract LimitOrderBitmapUnitTest is Test {
         assertTrue(_isTickSet(tick), "bit should remain set when sizeAfter > 0");
     }
 
-
     /// @notice Tests word boundaries (ticks at 256 * spacing intervals)
     function test_setIfFirst_wordBoundary() public {
         // Ticks at word boundaries

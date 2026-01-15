@@ -548,7 +548,6 @@ contract SwapWithLimitOrdersTestNonForked is SwapWithLimitOrdersTestBase {
         LimitOrderConfig memory limitOrderConfig = _prepareLimitOrderParams(users.buyer, _defaultMultiples(), _defaultPercentages());
 
         uint256 previousMax = limitOrderBook.getMaxFillCount();
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(0);
 
         bytes memory callData = abi.encodeWithSelector(IERC165.supportsInterface.selector, type(ISupportsLimitOrderFill).interfaceId);
@@ -571,7 +570,6 @@ contract SwapWithLimitOrdersTestNonForked is SwapWithLimitOrdersTestBase {
         assertEq(ordersFilled, 0, "max fill count zero should short-circuit fills");
 
         vm.clearMockedCalls();
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(previousMax);
     }
 

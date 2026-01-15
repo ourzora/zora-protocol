@@ -604,7 +604,6 @@ contract LimitOrderFillGasTest is BaseTest {
     /// @dev Tests well beyond recommended maxFillCount to validate safety margins
     function test_gas_user_swap_autofill_75_orders() public {
         // Increase maxFillCount for this test
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(100);
 
         PoolKey memory contentKey = contentCoin.getPoolKey();
@@ -647,7 +646,6 @@ contract LimitOrderFillGasTest is BaseTest {
     /// @dev Tests maximum scaling to identify absolute upper limits
     function test_gas_user_swap_autofill_100_orders() public {
         // Increase maxFillCount for this test
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(100);
 
         PoolKey memory contentKey = contentCoin.getPoolKey();
@@ -690,7 +688,6 @@ contract LimitOrderFillGasTest is BaseTest {
     /// @dev Tests backend/bot operations - isolated fill() call without user swap overhead
     function test_gas_backend_manual_fill_50_orders() public {
         // Increase maxFillCount for this test
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(100);
 
         PoolKey memory contentKey = contentCoin.getPoolKey();
@@ -738,7 +735,6 @@ contract LimitOrderFillGasTest is BaseTest {
     /// @dev Tests large backend batch operations
     function test_gas_backend_manual_fill_100_orders() public {
         // Increase maxFillCount for this test
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(100);
 
         PoolKey memory contentKey = contentCoin.getPoolKey();
@@ -786,7 +782,6 @@ contract LimitOrderFillGasTest is BaseTest {
     /// @dev Tests extreme backend batch - likely exceeds reasonable block gas limits
     function test_gas_backend_manual_fill_150_orders() public {
         // Increase maxFillCount for this test
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(200);
 
         PoolKey memory contentKey = contentCoin.getPoolKey();
@@ -853,12 +848,10 @@ contract LimitOrderFillGasTest is BaseTest {
     /// @dev Disables hook's auto-fill, executes swap, re-enables auto-fill
     function _movePriceBeyondTicksWithAutoFillDisabled(CreatedOrderLog[] memory created) internal override {
         uint256 previousMaxFillCount = limitOrderBook.getMaxFillCount();
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(0);
 
         _movePriceBeyondTicks(created);
 
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(previousMaxFillCount);
     }
 

@@ -50,26 +50,21 @@ contract ComputeDeterministicAddresses is CoinsDeployerBase {
 
         console.log("\n=== Computing Limit Order Addresses ===");
 
-        // 1. Compute authority address (no circular dependency - single-contract authority)
-        address computedAuthority = computeAuthorityAddress(proxyAdmin);
-        console.log("Computed ORDER_BOOK_AUTHORITY:", computedAuthority);
-
-        // 2. Compute limit order book address
+        // 1. Compute limit order book address (owner is proxyAdmin)
         address computedLimitOrderBook = computeLimitOrderBookAddress(
             poolManager,
             deployment.zoraFactory,
             deployment.zoraHookRegistry,
-            computedAuthority,
+            proxyAdmin,
             getWeth()
         );
         console.log("Computed ZORA_LIMIT_ORDER_BOOK:", computedLimitOrderBook);
 
-        // 3. Compute swap router address
-        address computedSwapRouter = computeSwapRouterAddress(poolManager, computedLimitOrderBook, swapRouter, PERMIT2);
+        // 2. Compute swap router address (owner is proxyAdmin)
+        address computedSwapRouter = computeSwapRouterAddress(poolManager, computedLimitOrderBook, swapRouter, PERMIT2, proxyAdmin);
         console.log("Computed ZORA_ROUTER:", computedSwapRouter);
 
         // Save computed addresses to deployment
-        deployment.orderBookAuthority = computedAuthority;
         deployment.zoraLimitOrderBook = computedLimitOrderBook;
         deployment.zoraRouter = computedSwapRouter;
 
@@ -78,7 +73,6 @@ contract ComputeDeterministicAddresses is CoinsDeployerBase {
         console.log("\n=== Computed Deterministic Addresses Saved ===");
         console.log("ZORA_FACTORY:", deployment.zoraFactory);
         console.log("ZORA_HOOK_REGISTRY:", deployment.zoraHookRegistry);
-        console.log("ORDER_BOOK_AUTHORITY:", deployment.orderBookAuthority);
         console.log("ZORA_LIMIT_ORDER_BOOK:", deployment.zoraLimitOrderBook);
         console.log("ZORA_ROUTER:", deployment.zoraRouter);
         console.log("\nNext steps:");

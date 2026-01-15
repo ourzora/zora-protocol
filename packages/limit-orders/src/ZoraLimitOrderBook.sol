@@ -10,7 +10,6 @@ pragma solidity ^0.8.28;
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
-import {SimpleAccessManaged} from "./access/SimpleAccessManaged.sol";
 
 import {IDeployedCoinVersionLookup} from "@zoralabs/coins/src/interfaces/IDeployedCoinVersionLookup.sol";
 import {IZoraHookRegistry} from "@zoralabs/coins/src/interfaces/IZoraHookRegistry.sol";
@@ -21,31 +20,24 @@ import {LimitOrderFill} from "./libs/LimitOrderFill.sol";
 import {LimitOrderWithdraw} from "./libs/LimitOrderWithdraw.sol";
 import {LimitOrderViews} from "./libs/LimitOrderViews.sol";
 import {LimitOrderTypes} from "./libs/LimitOrderTypes.sol";
+import {PermittedCallers} from "./access/PermittedCallers.sol";
 
-contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
+contract ZoraLimitOrderBook is IZoraLimitOrderBook, PermittedCallers {
     IPoolManager public immutable poolManager;
     IDeployedCoinVersionLookup public immutable zoraCoinVersionLookup;
     IZoraHookRegistry public immutable zoraHookRegistry;
     address public immutable weth;
 
-    constructor(
-        address poolManager_,
-        address zoraCoinVersionLookup_,
-        address zoraHookRegistry_,
-        address authority_,
-        address weth_
-    ) SimpleAccessManaged(authority_) {
+    constructor(address poolManager_, address zoraCoinVersionLookup_, address zoraHookRegistry_, address owner_, address weth_) PermittedCallers(owner_) {
+        require(poolManager_ != address(0), AddressZero());
+        require(zoraCoinVersionLookup_ != address(0), AddressZero());
+        require(zoraHookRegistry_ != address(0), AddressZero());
+        require(weth_ != address(0), AddressZero());
+
         poolManager = IPoolManager(poolManager_);
         zoraCoinVersionLookup = IDeployedCoinVersionLookup(zoraCoinVersionLookup_);
         zoraHookRegistry = IZoraHookRegistry(zoraHookRegistry_);
-        if (weth_ == address(0)) {
-            revert AddressZero();
-        }
         weth = weth_;
-    }
-
-    function tickQueueBalance(bytes32 poolKeyHash, address coin, int24 tick) internal view returns (uint256) {
-        return LimitOrderStorage.layout().tickQueues[poolKeyHash][coin][tick].balance;
     }
 
     /// @inheritdoc IZoraLimitOrderBook
@@ -53,16 +45,8 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
         return LimitOrderStorage.layout().makerBalances[maker][coin];
     }
 
-    function getOrder(bytes32 id) internal view returns (LimitOrderTypes.LimitOrder memory) {
-        return LimitOrderStorage.layout().limitOrders[id];
-    }
-
     function getTickQueue(bytes32 poolKeyHash, address coin, int24 tick) internal view returns (LimitOrderTypes.Queue memory) {
         return LimitOrderStorage.layout().tickQueues[poolKeyHash][coin][tick];
-    }
-
-    function getPoolKey(bytes32 poolKeyHash) internal view returns (PoolKey memory) {
-        return LimitOrderStorage.layout().poolKeys[poolKeyHash];
     }
 
     function getPoolEpoch(bytes32 poolKeyHash) internal view returns (uint256) {
@@ -73,10 +57,6 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
         return LimitOrderStorage.layout().makerNonces[maker];
     }
 
-    function getOrderId(bytes32 poolKeyHash, address coin, int24 tick, address maker, uint256 nonce) internal pure returns (bytes32) {
-        return keccak256(abi.encode(poolKeyHash, coin, tick, maker, nonce));
-    }
-
     /// @inheritdoc IZoraLimitOrderBook
     function create(
         PoolKey memory key,
@@ -84,8 +64,7 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
         uint256[] memory orderSizes,
         int24[] memory orderTicks,
         address maker
-    ) external payable override returns (bytes32[] memory) {
-        _checkCanCall(this.create.selector);
+    ) external payable override onlyPermitted returns (bytes32[] memory) {
         return LimitOrderCreate.create(LimitOrderStorage.layout(), poolManager, key, isCurrency0, orderSizes, orderTicks, maker);
     }
 
@@ -152,8 +131,10 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
 
     /// @inheritdoc IZoraLimitOrderBook
     function withdraw(bytes32[] calldata orderIds, address coin, uint256 minAmountOut, address recipient) external override {
-        bytes32[] memory orderIdsCopy = orderIds;
-        _unlock(CallbackId.WITHDRAW_ORDERS, _encodeWithdrawOrders(msg.sender, orderIdsCopy, coin, minAmountOut, recipient));
+        _unlock(
+            CallbackId.WITHDRAW_ORDERS,
+            abi.encode(WithdrawOrdersCallbackData({maker: msg.sender, orderIds: orderIds, coin: coin, minAmountOut: minAmountOut, recipient: recipient}))
+        );
     }
 
     /// @notice Processes pool-manager unlock callbacks and routes them to the correct handler.
@@ -184,9 +165,7 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
         return LimitOrderStorage.layout().maxFillCount;
     }
 
-    function setMaxFillCount(uint256 maxFillCount) external {
-        _checkCanCall(this.setMaxFillCount.selector);
-
+    function setMaxFillCount(uint256 maxFillCount) external onlyOwner {
         LimitOrderStorage.layout().maxFillCount = maxFillCount;
     }
 
@@ -216,16 +195,6 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
         data.maxFillCount = maxFillCount;
         data.fillReferral = fillReferral;
         data.orderIds = orderIds;
-    }
-
-    function _encodeWithdrawOrders(
-        address maker,
-        bytes32[] memory orderIds,
-        address coin,
-        uint256 minAmountOut,
-        address recipient
-    ) private pure returns (bytes memory) {
-        return abi.encode(WithdrawOrdersCallbackData({maker: maker, orderIds: orderIds, coin: coin, minAmountOut: minAmountOut, recipient: recipient}));
     }
 
     function _unlock(CallbackId callbackId, bytes memory payload) private {

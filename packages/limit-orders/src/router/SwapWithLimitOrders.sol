@@ -18,6 +18,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IZoraLimitOrderBook} from "../IZoraLimitOrderBook.sol";
 import {SwapLimitOrders, LimitOrderConfig, Orders} from "../libs/SwapLimitOrders.sol";
+import {ISetLimitOrderConfig} from "./ISetLimitOrderConfig.sol";
 import {ISwapRouter} from "@zoralabs/shared-contracts/interfaces/uniswap/ISwapRouter.sol";
 import {ISupportsLimitOrderFill} from "@zoralabs/coins/src/interfaces/ISupportsLimitOrderFill.sol";
 import {IMsgSender} from "@zoralabs/coins/src/interfaces/IMsgSender.sol";
@@ -25,7 +26,8 @@ import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import {Path} from "@zoralabs/shared-contracts/libs/UniswapV3/Path.sol";
 import {V3ToV4SwapLib} from "@zoralabs/coins/src/libs/V3ToV4SwapLib.sol";
-import {SimpleAccessManaged} from "../access/SimpleAccessManaged.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 /// @title SwapWithLimitOrders
@@ -35,7 +37,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 ///      Users call swapWithLimitOrders() directly, which triggers the unlock callback flow.
 ///      Uses Permit2 for token approvals, matching the universal-router pattern.
 /// @author oveddan
-contract SwapWithLimitOrders is IMsgSender {
+contract SwapWithLimitOrders is ISetLimitOrderConfig, Ownable2Step, IMsgSender {
     using SafeERC20 for IERC20;
     using BalanceDeltaLibrary for BalanceDelta;
     using CurrencyLibrary for Currency;
@@ -121,9 +123,6 @@ contract SwapWithLimitOrders is IMsgSender {
     /// @notice Error thrown when caller is not the pool manager
     error OnlyPoolManager();
 
-    /// @notice Error thrown when caller is not the authority
-    error OnlyAuthority();
-
     /// @notice Error thrown when config does not match canonical config
     error InvalidLimitOrderConfig();
 
@@ -141,7 +140,8 @@ contract SwapWithLimitOrders is IMsgSender {
     /// @param zoraLimitOrderBook_ The limit order book contract
     /// @param swapRouter_ The Uniswap V3 swap router
     /// @param permit2_ The Permit2 contract address (0x000000000022D473030F116dDEE9F6B43aC78BA3)
-    constructor(IPoolManager poolManager_, IZoraLimitOrderBook zoraLimitOrderBook_, ISwapRouter swapRouter_, address permit2_) {
+    /// @param owner_ The owner address
+    constructor(IPoolManager poolManager_, IZoraLimitOrderBook zoraLimitOrderBook_, ISwapRouter swapRouter_, address permit2_, address owner_) Ownable(owner_) {
         require(address(poolManager_) != address(0), "PoolManager cannot be zero");
         require(address(zoraLimitOrderBook_) != address(0), "ZoraLimitOrderBook cannot be zero");
         require(address(swapRouter_) != address(0), "SwapRouter cannot be zero");
@@ -159,10 +159,9 @@ contract SwapWithLimitOrders is IMsgSender {
     }
 
     /// @notice Sets the canonical limit order configuration
-    /// @dev Only callable by zoraLimitOrderBook.authority()
+    /// @dev Only callable by the owner
     /// @param config The new limit order configuration
-    function setLimitOrderConfig(LimitOrderConfig memory config) external {
-        require(msg.sender == SimpleAccessManaged(address(zoraLimitOrderBook)).authority(), OnlyAuthority());
+    function setLimitOrderConfig(LimitOrderConfig memory config) external onlyOwner {
         SwapLimitOrders.validate(config);
         _limitOrderConfig = config;
         emit LimitOrderConfigUpdated(config.multiples, config.percentages);

@@ -140,9 +140,8 @@ interface IZoraLimitOrderBook is IZoraLimitOrderBookCoinsInterface {
     error CoinMismatch(bytes32 orderId, address expectedCoin, address actualCoin);
 
     /// @notice Creates limit orders, pulling funds from msg.sender when pool manager is locked, or using funds already in manager when unlocked.
-    /// @dev This function is access-controlled via OpenZeppelin's AccessManager. The caller must have the appropriate role
-    ///      as configured in the AccessManager contract. Initially, this can be set to PUBLIC_ROLE to allow anyone to create orders,
-    ///      or it can be restricted to specific addresses/roles for permissioned operation.
+    /// @dev Access is controlled by the PermittedCallers base contract. If PUBLIC_ACCESS (address(0)) is permitted, anyone can create orders.
+    ///      Otherwise, only addresses in the permittedCallers mapping can create orders.
     /// @param key Pool key specifying currency pair and tick spacing.
     /// @param isCurrency0 Whether the orders are denominated in currency0.
     /// @param orderSizes Order liquidity sizes.
@@ -190,8 +189,7 @@ interface IZoraLimitOrderBook is IZoraLimitOrderBookCoinsInterface {
     function getMaxFillCount() external view returns (uint256);
 
     /// @notice Sets the maximum number of orders that can be filled in a single fill operation.
-    /// @dev This function is access-controlled via OpenZeppelin's AccessManager. The caller must have the appropriate role
-    ///      as configured in the AccessManager contract.
+    /// @dev Only callable by the owner.
     /// @param maxFillCount The new maximum fill count value.
     function setMaxFillCount(uint256 maxFillCount) external;
 }

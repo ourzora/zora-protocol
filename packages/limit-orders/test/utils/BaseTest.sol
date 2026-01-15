@@ -2,7 +2,6 @@
 pragma solidity ^0.8.13;
 
 import {Vm} from "forge-std/Vm.sol";
-import {AccessManager} from "@openzeppelin/contracts/access/manager/AccessManager.sol";
 import {V4TestSetup} from "@zoralabs/coins/test/utils/V4TestSetup.sol";
 import {IZoraLimitOrderBook} from "../../src/IZoraLimitOrderBook.sol";
 import {TestableZoraLimitOrderBook} from "./TestableZoraLimitOrderBook.sol";
@@ -36,8 +35,8 @@ import {MockWETH} from "./MockWETH.sol";
  */
 contract BaseTest is V4TestSetup, IMsgSender {
     using PoolIdLibrary for PoolKey;
+
     TestableZoraLimitOrderBook internal limitOrderBook = TestableZoraLimitOrderBook(payable(makeAddr("limitOrderBook")));
-    AccessManager internal accessManager;
     SwapWithLimitOrders internal swapWithLimitOrders;
 
     function setUp() public virtual {
@@ -59,32 +58,26 @@ contract BaseTest is V4TestSetup, IMsgSender {
     }
 
     function _setupLimitOrderBook() internal {
-        // Deploy AccessManager with this contract as admin
-        accessManager = new AccessManager(address(this));
-
+        // Deploy WETH mock if not already set
         if (address(weth) == address(0)) {
             weth = IWETH(address(new MockWETH()));
         }
 
+        // Deploy ZoraLimitOrderBook with this contract as owner
         deployCodeTo(
             "TestableZoraLimitOrderBook.sol:TestableZoraLimitOrderBook",
-            abi.encode(address(poolManager), address(factory), address(zoraHookRegistry), address(accessManager), address(weth)),
+            abi.encode(address(poolManager), address(factory), address(zoraHookRegistry), address(this), address(weth)),
             address(limitOrderBook)
         );
-        require(limitOrderBook.authority() == address(accessManager), "ZoraLimitOrderBook authority is not the access manager");
-
-        // Set create() and setMaxFillCount() functions to PUBLIC_ROLE to allow anyone to call them initially
-        bytes4[] memory selectors = new bytes4[](2);
-        selectors[0] = IZoraLimitOrderBook.create.selector;
-        selectors[1] = IZoraLimitOrderBook.setMaxFillCount.selector;
-        accessManager.setTargetFunctionRole(address(limitOrderBook), selectors, accessManager.PUBLIC_ROLE());
+        require(limitOrderBook.owner() == address(this), "ZoraLimitOrderBook owner is not this contract");
 
         limitOrderBook.setMaxFillCount(50);
 
         vm.label(address(limitOrderBook), "LIMIT_ORDER_BOOK");
 
-        swapWithLimitOrders = new SwapWithLimitOrders(poolManager, limitOrderBook, swapRouter, AddressConstants.getPermit2Address());
+        swapWithLimitOrders = new SwapWithLimitOrders(poolManager, limitOrderBook, swapRouter, AddressConstants.getPermit2Address(), address(this));
         vm.label(address(swapWithLimitOrders), "SWAP_WITH_LIMIT_ORDERS");
+
         // Now create the real ZoraLimitOrderBook for tests that need it
         _deployTestCoins();
     }
@@ -803,12 +796,10 @@ contract BaseTest is V4TestSetup, IMsgSender {
 
     function _disableAutoFill() internal returns (uint256 previousMaxFillCount) {
         previousMaxFillCount = limitOrderBook.getMaxFillCount();
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(0);
     }
 
     function _restoreAutoFill(uint256 previousMaxFillCount) internal {
-        vm.prank(users.factoryOwner);
         limitOrderBook.setMaxFillCount(previousMaxFillCount);
     }
 }
