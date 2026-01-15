@@ -12,6 +12,38 @@ This file contains institutional knowledge about protocol integrations, non-obvi
 
 ## Uniswap V4
 
+### Pool Manager Sync Before Settle
+
+**The Issue:** Pool manager must be synced before settling currencies to ensure accurate balance tracking and prevent DoS attacks.
+
+**Wrong:**
+
+```solidity
+// For native ETH - missing sync
+poolManager.settle{value: amount}();
+
+// For ERC20 - missing sync  
+currency.transfer(address(poolManager), amount);
+poolManager.settle();
+```
+
+**Correct:**
+
+```solidity
+// For native ETH - sync first
+poolManager.sync(currency);
+poolManager.settle{value: amount}();
+
+// For ERC20 - sync first
+poolManager.sync(currency);
+currency.transfer(address(poolManager), amount);
+poolManager.settle();
+```
+
+**Why:** Without syncing, the pool manager's internal accounting may not reflect the actual balance, leading to settlement failures or DoS conditions. This is especially critical for native ETH where the value is transferred as part of the settle call. The `sync()` call updates the pool manager's cached balance to match the actual contract balance before settlement occurs.
+
+**Reference:** [Zora Audit Issue #9 - Unsynced ETH settlement can result in DoS](https://github.com/kadenzipfel/zora-autosell-audit/issues/9)
+
 ### ModifyLiquidity Return Values
 
 **The Issue:** `modifyLiquidity()` returns `callerDelta` that already includes accrued fees; `feesAccrued` is informational only.

@@ -416,6 +416,8 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
 
             poolManager.settle();
         } else {
+            // sync before settle for native ETH
+            poolManager.sync(currency);
             poolManager.settle{value: amount}();
         }
     }
