@@ -19,6 +19,7 @@ import {LimitOrderStorage} from "./libs/LimitOrderStorage.sol";
 import {LimitOrderCreate} from "./libs/LimitOrderCreate.sol";
 import {LimitOrderFill} from "./libs/LimitOrderFill.sol";
 import {LimitOrderWithdraw} from "./libs/LimitOrderWithdraw.sol";
+import {LimitOrderViews} from "./libs/LimitOrderViews.sol";
 import {LimitOrderTypes} from "./libs/LimitOrderTypes.sol";
 
 contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
@@ -105,9 +106,9 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, SimpleAccessManaged {
         LimitOrderStorage.Layout storage state = LimitOrderStorage.layout();
         LimitOrderFill.Context memory ctx = _fillContext();
 
-        (PoolKey memory canonicalKey, int24 resolvedStart, int24 resolvedEnd) = LimitOrderFill.validateTickRange(
+        (PoolKey memory canonicalKey, int24 resolvedStart, int24 resolvedEnd) = LimitOrderViews.validateTickRange(
             state,
-            ctx,
+            ctx.poolManager,
             key,
             isCurrency0,
             startTick,

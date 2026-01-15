@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {ZoraLimitOrderBook} from "../../src/ZoraLimitOrderBook.sol";
 import {LimitOrderTypes} from "../../src/libs/LimitOrderTypes.sol";
 import {LimitOrderStorage} from "../../src/libs/LimitOrderStorage.sol";
-import {LimitOrderFill} from "../../src/libs/LimitOrderFill.sol";
+import {LimitOrderViews} from "../../src/libs/LimitOrderViews.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 
 contract TestableZoraLimitOrderBook is ZoraLimitOrderBook {
@@ -39,11 +39,7 @@ contract TestableZoraLimitOrderBook is ZoraLimitOrderBook {
         int24 endTick
     ) external view returns (int24 resolvedStart, int24 resolvedEnd) {
         LimitOrderStorage.Layout storage state = LimitOrderStorage.layout();
-        LimitOrderFill.Context memory ctx;
-        ctx.poolManager = poolManager;
-        ctx.versionLookup = zoraCoinVersionLookup;
-        ctx.weth = weth;
-        (, resolvedStart, resolvedEnd) = LimitOrderFill.validateTickRange(state, ctx, key, isCurrency0, startTick, endTick);
+        (, resolvedStart, resolvedEnd) = LimitOrderViews.validateTickRange(state, poolManager, key, isCurrency0, startTick, endTick);
     }
 
     function exposedOrder(bytes32 orderId) external view returns (LimitOrderTypes.LimitOrder memory) {

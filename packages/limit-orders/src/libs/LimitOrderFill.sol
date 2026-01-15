@@ -11,7 +11,6 @@ import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {TickBitmap} from "@uniswap/v4-core/src/libraries/TickBitmap.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
-import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 
@@ -20,37 +19,17 @@ import {IZoraLimitOrderBook} from "../IZoraLimitOrderBook.sol";
 import {LimitOrderTypes} from "./LimitOrderTypes.sol";
 import {LimitOrderLiquidity} from "./LimitOrderLiquidity.sol";
 import {LimitOrderCommon} from "./LimitOrderCommon.sol";
+import {LimitOrderViews} from "./LimitOrderViews.sol";
 import {CoinCommon} from "@zoralabs/coins/src/libs/CoinCommon.sol";
 import {IDeployedCoinVersionLookup} from "@zoralabs/coins/src/interfaces/IDeployedCoinVersionLookup.sol";
 
 library LimitOrderFill {
     using PoolIdLibrary for PoolKey;
 
-    int24 internal constant TICK_SENTINEL = type(int24).max;
-
     struct Context {
         IPoolManager poolManager;
         IDeployedCoinVersionLookup versionLookup;
         address weth;
-    }
-
-    function validateTickRange(
-        LimitOrderStorage.Layout storage state,
-        Context memory ctx,
-        PoolKey calldata providedKey,
-        bool isCurrency0,
-        int24 startTick,
-        int24 endTick
-    ) internal view returns (PoolKey memory canonicalKey, int24 resolvedStart, int24 resolvedEnd) {
-        bytes32 poolKeyHash = CoinCommon.hashPoolKey(providedKey);
-        canonicalKey = state.poolKeys[poolKeyHash];
-        if (canonicalKey.tickSpacing == 0) {
-            canonicalKey = providedKey;
-            if (canonicalKey.tickSpacing == 0) revert IZoraLimitOrderBook.InvalidPoolKey();
-        }
-
-        (resolvedStart, resolvedEnd) = _resolveTickRange(ctx.poolManager, canonicalKey, isCurrency0, startTick, endTick);
-        _validateTickRange(isCurrency0, resolvedStart, resolvedEnd);
     }
 
     function handleFillCallback(LimitOrderStorage.Layout storage state, Context memory ctx, bytes memory callbackData) internal {
@@ -241,122 +220,6 @@ library LimitOrderFill {
             orderTick,
             orderId
         );
-    }
-
-    /**
-     * @notice Derives concrete tick bounds from user input and current pool state.
-     * @dev Callers may pass sentinel values (`-TICK_SENTINEL` / `TICK_SENTINEL`) to mean
-     *      “start at the current tick” or “extend one spacing away”. This helper translates
-     *      those sentinels into real ticks by snapping to the pool’s aligned tick grid and
-     *      offsetting one spacing in the appropriate direction so fills never include
-     *      orders created in the same transaction.
-     *
-     * @param poolManager Pool manager used to read the live tick.
-     * @param key Pool whose tick spacing/current tick drive alignment.
-     * @param isCurrency0 True when targeting currency0 orders (prices above anchor).
-     * @param startTick User-provided start tick or sentinel.
-     * @param endTick User-provided end tick or sentinel.
-     * @return resolvedStart Concrete start tick after resolving sentinels.
-     * @return resolvedEnd Concrete end tick after resolving sentinels.
-     */
-    function _resolveTickRange(
-        IPoolManager poolManager,
-        PoolKey memory key,
-        bool isCurrency0,
-        int24 startTick,
-        int24 endTick
-    ) private view returns (int24 resolvedStart, int24 resolvedEnd) {
-        int24 spacing = key.tickSpacing;
-
-        bool startSentinel = startTick == -TICK_SENTINEL;
-        bool endSentinel = endTick == TICK_SENTINEL;
-
-        (int24 anchorTick, int24 nextAligned, int24 prevAligned) = _alignedTicks(poolManager, key, spacing);
-
-        if (startSentinel) {
-            // Treat sentinel start as anchoring the window at the aligned tick.
-            resolvedStart = anchorTick;
-            resolvedEnd = endSentinel ? (isCurrency0 ? nextAligned : prevAligned) : endTick;
-            return (resolvedStart, resolvedEnd);
-        }
-
-        if (endSentinel) {
-            resolvedStart = startTick;
-            resolvedEnd = isCurrency0 ? nextAligned : anchorTick;
-            return (resolvedStart, resolvedEnd);
-        }
-
-        resolvedStart = startTick;
-        resolvedEnd = endTick;
-        return (resolvedStart, resolvedEnd);
-    }
-
-    /**
-     * @notice Snaps the current pool tick to the nearest aligned tick and returns its neighbors.
-     * @dev Uniswap v4 ticks must lie on multiples of `tickSpacing`. We round the live
-     *      tick down to the nearest aligned value (handling negatives), clamp it inside
-     *      the pool’s usable range, then compute the next/previous aligned ticks for
-     *      callers that need to build deterministic tick windows.
-     *
-     * @param poolManager Pool manager used to read slot0.
-     * @param key Pool key describing the pair and spacing.
-     * @param spacing Tick spacing for this pool.
-     * @return anchorTick Current tick rounded down to the aligned grid.
-     * @return nextAligned Next aligned tick above the anchor (clamped to max usable).
-     * @return prevAligned Previous aligned tick below the anchor (clamped to min usable).
-     */
-    function _alignedTicks(
-        IPoolManager poolManager,
-        PoolKey memory key,
-        int24 spacing
-    ) private view returns (int24 anchorTick, int24 nextAligned, int24 prevAligned) {
-        int24 currentTick = _currentPoolTick(poolManager, key);
-        int256 remainder;
-        assembly ("memory-safe") {
-            remainder := smod(currentTick, spacing)
-        }
-
-        if (remainder == 0) {
-            anchorTick = currentTick;
-        } else if (currentTick >= 0) {
-            anchorTick = int24(int256(currentTick) - remainder);
-        } else {
-            anchorTick = int24(int256(currentTick) - remainder - spacing);
-        }
-
-        int24 minUsable = TickMath.minUsableTick(spacing);
-        int24 maxUsable = TickMath.maxUsableTick(spacing);
-
-        if (anchorTick < minUsable) {
-            anchorTick = minUsable;
-        } else if (anchorTick > maxUsable) {
-            anchorTick = maxUsable;
-        }
-
-        nextAligned = anchorTick + spacing;
-        if (nextAligned > maxUsable) {
-            nextAligned = maxUsable;
-        }
-
-        prevAligned = anchorTick - spacing;
-        if (prevAligned < minUsable) {
-            prevAligned = minUsable;
-        }
-    }
-
-    function _validateTickRange(bool isCurrency0, int24 startTick, int24 endTick) private pure {
-        if (startTick < TickMath.MIN_TICK || startTick > TickMath.MAX_TICK) {
-            revert IZoraLimitOrderBook.InvalidFillWindow(startTick, endTick, isCurrency0);
-        }
-        if (endTick < TickMath.MIN_TICK || endTick > TickMath.MAX_TICK) {
-            revert IZoraLimitOrderBook.InvalidFillWindow(startTick, endTick, isCurrency0);
-        }
-
-        if (isCurrency0) {
-            if (startTick > endTick) revert IZoraLimitOrderBook.InvalidFillWindow(startTick, endTick, isCurrency0);
-        } else {
-            if (startTick < endTick) revert IZoraLimitOrderBook.InvalidFillWindow(startTick, endTick, isCurrency0);
-        }
     }
 
     function _currentPoolTick(IPoolManager poolManager, PoolKey memory key) private view returns (int24 tick) {

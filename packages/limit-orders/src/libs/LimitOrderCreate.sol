@@ -17,6 +17,7 @@ import {LimitOrderStorage} from "./LimitOrderStorage.sol";
 import {IZoraLimitOrderBook} from "../IZoraLimitOrderBook.sol";
 import {LimitOrderLiquidity} from "./LimitOrderLiquidity.sol";
 import {LimitOrderCommon} from "./LimitOrderCommon.sol";
+import {LimitOrderViews} from "./LimitOrderViews.sol";
 import {CoinCommon} from "@zoralabs/coins/src/libs/CoinCommon.sol";
 import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
 import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
@@ -161,7 +162,7 @@ library LimitOrderCreate {
         // Record the tick where the order becomes fillable
         orderTick = ctx.isCurrency0 ? tickUpper : tickLower;
 
-        uint128 liquidity = LimitOrderLiquidity.liquidityForOrder(ctx.isCurrency0, orderSize, tickLower, tickUpper);
+        uint128 liquidity = LimitOrderViews.liquidityForOrder(ctx.isCurrency0, orderSize, tickLower, tickUpper);
         require(liquidity != 0, IZoraLimitOrderBook.ZeroRealizedOrder());
 
         orderId = _generateOrderId(ctx.poolKeyHash, ctx.coin, orderTick, ctx.maker, ++state.makerNonces[ctx.maker]);

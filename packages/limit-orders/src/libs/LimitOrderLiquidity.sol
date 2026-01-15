@@ -13,9 +13,7 @@ import {Currency, CurrencyLibrary} from "@uniswap/v4-core/src/types/Currency.sol
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {ModifyLiquidityParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
-import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
 import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
-import {LiquidityAmounts} from "@zoralabs/coins/src/utils/uniswap/LiquidityAmounts.sol";
 
 import {IDeployedCoinVersionLookup} from "@zoralabs/coins/src/interfaces/IDeployedCoinVersionLookup.sol";
 import {LimitOrderTypes} from "./LimitOrderTypes.sol";
@@ -28,15 +26,6 @@ library LimitOrderLiquidity {
     using CurrencyLibrary for Currency;
 
     error WethTransferFailed();
-
-    function liquidityForOrder(bool isCurrency0, uint256 size, int24 tickLower, int24 tickUpper) internal pure returns (uint128) {
-        uint160 sqrtPriceLower = TickMath.getSqrtPriceAtTick(tickLower);
-        uint160 sqrtPriceUpper = TickMath.getSqrtPriceAtTick(tickUpper);
-        return
-            isCurrency0
-                ? LiquidityAmounts.getLiquidityForAmount0(sqrtPriceLower, sqrtPriceUpper, size)
-                : LiquidityAmounts.getLiquidityForAmount1(sqrtPriceLower, sqrtPriceUpper, size);
-    }
 
     function refundResidual(PoolKey memory key, bool isCurrency0, address maker, uint128 amount) internal {
         if (amount == 0) {
