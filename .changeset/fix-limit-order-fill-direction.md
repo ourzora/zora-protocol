@@ -1,5 +1,5 @@
 ---
-"@zoralabs/coins": patch
+"@zoralabs/limit-orders": patch
 ---
 
 Fix limit order fill direction to derive from actual tick movement
