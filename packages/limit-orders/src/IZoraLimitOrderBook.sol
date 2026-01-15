@@ -124,6 +124,8 @@ interface IZoraLimitOrderBook is IZoraLimitOrderBookCoinsInterface {
     error OrderNotMaker();
     /// @notice Order is no longer open.
     error OrderClosed();
+    /// @notice Order is fillable and must be filled, not withdrawn.
+    error OrderFillable();
     /// @notice Callback realized zero fills when one was expected.
     error ZeroRealizedOrder();
     /// @notice Unlock callback id was not recognized.

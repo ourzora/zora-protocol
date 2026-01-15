@@ -54,6 +54,33 @@ contract LimitOrderWithdrawTest is BaseTest {
         }
     }
 
+    /// @notice Fillable orders must be filled, not withdrawn
+    function test_withdrawRevertsForFillableOrder() public {
+        PoolKey memory key = creatorCoin.getPoolKey();
+        bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
+        address orderCoin = _orderCoin(key, isCurrency0);
+
+        // Create orders directly
+        (uint256[] memory orderSizes, int24[] memory orderTicks) = _buildDeterministicOrders(key, isCurrency0, 1, 25e18);
+        uint256 totalSize = orderSizes[0];
+        _fundAndApprove(users.seller, orderCoin, totalSize);
+
+        vm.recordLogs();
+        vm.prank(users.seller);
+        limitOrderBook.create{value: orderCoin == address(0) ? totalSize : 0}(key, isCurrency0, orderSizes, orderTicks, users.seller);
+        CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
+        assertEq(created.length, 1, "expected 1 order");
+
+        // Move price past order (makes it fillable)
+        _movePriceBeyondTicksWithAutoFillDisabled(created);
+
+        bytes32[] memory orderIds = _orderIds(created);
+
+        vm.expectRevert(IZoraLimitOrderBook.OrderFillable.selector);
+        vm.prank(users.seller);
+        limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
+    }
+
     function test_withdrawOrdersRevertsForMixedCoins() public {
         PoolKey memory creatorKey = creatorCoin.getPoolKey();
         PoolKey memory contentKey = contentCoin.getPoolKey();
