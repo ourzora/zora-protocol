@@ -14,24 +14,14 @@ contract SwapWithLimitOrdersLogicWrapper {
         return true; // Would proceed to fill
     }
 
-    /// @notice Tests tick ordering logic for currency0 (lines 403-406)
-    function orderTicks_currency0(int24 tickBeforeSwap, int24 tickAfterSwap) external pure returns (int24 startTick, int24 endTick) {
-        bool isCurrency0 = true;
-        if (isCurrency0) {
-            // Currency0 orders need ascending tick range
-            startTick = tickBeforeSwap < tickAfterSwap ? tickBeforeSwap : tickAfterSwap;
-            endTick = tickBeforeSwap < tickAfterSwap ? tickAfterSwap : tickBeforeSwap;
+    /// @notice Tests _fillOrders direction derivation from tick movement
+    /// @return shouldFill Whether fill should proceed
+    /// @return isCurrency0 The derived fill direction
+    function deriveFillDirection(int24 tickBeforeSwap, int24 tickAfterSwap) external pure returns (bool shouldFill, bool isCurrency0) {
+        if (tickAfterSwap == tickBeforeSwap) {
+            return (false, false);
         }
-    }
-
-    /// @notice Tests tick ordering logic for currency1 (lines 407-411)
-    function orderTicks_currency1(int24 tickBeforeSwap, int24 tickAfterSwap) external pure returns (int24 startTick, int24 endTick) {
-        bool isCurrency0 = false;
-        if (!isCurrency0) {
-            // Currency1 orders need descending tick range
-            startTick = tickBeforeSwap > tickAfterSwap ? tickBeforeSwap : tickAfterSwap;
-            endTick = tickBeforeSwap > tickAfterSwap ? tickAfterSwap : tickBeforeSwap;
-        }
+        return (true, tickAfterSwap > tickBeforeSwap);
     }
 
     /// @notice Tests settlement unallocated branch (line 356)
@@ -109,70 +99,24 @@ contract SwapWithLimitOrdersUnitTest is Test {
         assertTrue(shouldFill, "should fill when maxFillCount is 1");
     }
 
-    /// @notice Tests currency0 tick ordering when tickBefore < tickAfter (ascending)
-    function test_orderTicks_currency0_ascending() public view {
-        int24 tickBefore = 1000;
-        int24 tickAfter = 2000;
-
-        (int24 startTick, int24 endTick) = wrapper.orderTicks_currency0(tickBefore, tickAfter);
-
-        assertEq(startTick, 1000, "startTick should be tickBefore");
-        assertEq(endTick, 2000, "endTick should be tickAfter");
+    /// @notice Tests fill direction derivation: tick increase → currency0
+    function test_deriveFillDirection_tickIncreases_isCurrency0() public view {
+        (bool shouldFill, bool isCurrency0) = wrapper.deriveFillDirection(1000, 2000);
+        assertTrue(shouldFill, "should fill when tick moved");
+        assertTrue(isCurrency0, "tick increase = currency0 orders fillable");
     }
 
-    /// @notice Tests currency0 tick ordering when tickBefore > tickAfter (needs swap)
-    function test_orderTicks_currency0_descending_swaps() public view {
-        int24 tickBefore = 2000;
-        int24 tickAfter = 1000;
-
-        (int24 startTick, int24 endTick) = wrapper.orderTicks_currency0(tickBefore, tickAfter);
-
-        assertEq(startTick, 1000, "startTick should be minimum");
-        assertEq(endTick, 2000, "endTick should be maximum");
+    /// @notice Tests fill direction derivation: tick decrease → currency1
+    function test_deriveFillDirection_tickDecreases_isCurrency1() public view {
+        (bool shouldFill, bool isCurrency0) = wrapper.deriveFillDirection(2000, 1000);
+        assertTrue(shouldFill, "should fill when tick moved");
+        assertFalse(isCurrency0, "tick decrease = currency1 orders fillable");
     }
 
-    /// @notice Tests currency0 tick ordering when ticks are equal
-    function test_orderTicks_currency0_equal() public view {
-        int24 tickBefore = 1500;
-        int24 tickAfter = 1500;
-
-        (int24 startTick, int24 endTick) = wrapper.orderTicks_currency0(tickBefore, tickAfter);
-
-        assertEq(startTick, 1500, "startTick should equal tickBefore");
-        assertEq(endTick, 1500, "endTick should equal tickBefore");
-    }
-
-    /// @notice Tests currency1 tick ordering when tickBefore > tickAfter (descending)
-    function test_orderTicks_currency1_descending() public view {
-        int24 tickBefore = 2000;
-        int24 tickAfter = 1000;
-
-        (int24 startTick, int24 endTick) = wrapper.orderTicks_currency1(tickBefore, tickAfter);
-
-        assertEq(startTick, 2000, "startTick should be tickBefore");
-        assertEq(endTick, 1000, "endTick should be tickAfter");
-    }
-
-    /// @notice Tests currency1 tick ordering when tickBefore < tickAfter (needs swap)
-    function test_orderTicks_currency1_ascending_swaps() public view {
-        int24 tickBefore = 1000;
-        int24 tickAfter = 2000;
-
-        (int24 startTick, int24 endTick) = wrapper.orderTicks_currency1(tickBefore, tickAfter);
-
-        assertEq(startTick, 2000, "startTick should be maximum");
-        assertEq(endTick, 1000, "endTick should be minimum");
-    }
-
-    /// @notice Tests currency1 tick ordering with negative ticks
-    function test_orderTicks_currency1_negativeTicks() public view {
-        int24 tickBefore = -1000;
-        int24 tickAfter = -2000;
-
-        (int24 startTick, int24 endTick) = wrapper.orderTicks_currency1(tickBefore, tickAfter);
-
-        assertEq(startTick, -1000, "startTick should be -1000");
-        assertEq(endTick, -2000, "endTick should be -2000");
+    /// @notice Tests fill direction derivation: no movement → no fill
+    function test_deriveFillDirection_noMovement_noFill() public view {
+        (bool shouldFill, ) = wrapper.deriveFillDirection(1500, 1500);
+        assertFalse(shouldFill, "should not fill when tick unchanged");
     }
 
     /// @notice Tests that unallocated > 0 triggers take
@@ -300,17 +244,6 @@ contract SwapWithLimitOrdersUnitTest is Test {
     function test_validateConstructorParams_allValid() public view {
         string memory result = wrapper.validateConstructorParams(address(0x1), address(0x2), address(0x3));
         assertEq(result, "Valid");
-    }
-
-    /// @notice Tests tick ordering with max int24 values
-    function test_orderTicks_maxValues() public view {
-        int24 maxTick = type(int24).max;
-        int24 minTick = type(int24).min;
-
-        (int24 startTick, int24 endTick) = wrapper.orderTicks_currency0(maxTick, minTick);
-
-        assertEq(startTick, minTick, "should handle max/min correctly");
-        assertEq(endTick, maxTick, "should handle max/min correctly");
     }
 
     /// @notice Tests unallocated with max uint128 value

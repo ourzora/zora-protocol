@@ -424,27 +424,17 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
 
     /// @notice Fills limit orders within the tick range crossed by the swap
     /// @param poolKey The pool key
-    /// @param isCurrency0 Whether to fill currency0 orders
     /// @param tickBeforeSwap The tick before the swap
     /// @param tickAfterSwap The tick after the swap
-    function _fillOrders(PoolKey memory poolKey, bool isCurrency0, int24 tickBeforeSwap, int24 tickAfterSwap) internal {
-        // Ensure ticks are in the correct order for fill validation
-        // For currency0 orders: startTick <= endTick (ascending)
-        // For currency1 orders: startTick >= endTick (descending)
-        int24 startTick;
-        int24 endTick;
-        if (isCurrency0) {
-            // Currency0 orders need ascending tick range
-            startTick = tickBeforeSwap < tickAfterSwap ? tickBeforeSwap : tickAfterSwap;
-            endTick = tickBeforeSwap < tickAfterSwap ? tickAfterSwap : tickBeforeSwap;
-        } else {
-            // Currency1 orders need descending tick range
-            startTick = tickBeforeSwap > tickAfterSwap ? tickBeforeSwap : tickAfterSwap;
-            endTick = tickBeforeSwap > tickAfterSwap ? tickAfterSwap : tickBeforeSwap;
+    function _fillOrders(PoolKey memory poolKey, bool, int24 tickBeforeSwap, int24 tickAfterSwap) internal {
+        if (tickAfterSwap == tickBeforeSwap) {
+            return;
         }
 
-        // Call fill in locked mode - will trigger unlock/callback flow in ZoraLimitOrderBook
-        zoraLimitOrderBook.fill(poolKey, isCurrency0, startTick, endTick, 0, address(0));
+        // Derive fill direction from tick movement
+        bool isCurrency0 = tickAfterSwap > tickBeforeSwap;
+
+        zoraLimitOrderBook.fill(poolKey, isCurrency0, tickBeforeSwap, tickAfterSwap, 0, address(0));
     }
 
     /// @notice Validates that the provided config matches the canonical config
