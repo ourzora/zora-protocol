@@ -27,57 +27,6 @@ library LimitOrderBitmap {
         }
     }
 
-    function getExecutableTicks(
-        mapping(int16 => uint256) storage bm,
-        mapping(int24 => LimitOrderTypes.Queue) storage poolQueue,
-        int24 tickSpacing,
-        bool zeroForOne,
-        int24 tickBeforeSwap,
-        int24 tickAfterSwap
-    ) internal view returns (int24[] memory) {
-        uint256 numTicksCrossed = uint256(int256(_abs(tickBeforeSwap - tickAfterSwap)));
-        uint256 numTicksToCheck = numTicksCrossed / uint256(int256(tickSpacing)) + 1;
-
-        int24[] memory ticksToCheck = new int24[](numTicksToCheck);
-        uint256 numExecutableTicks;
-
-        int24 targetTick = tickAfterSwap;
-        int24 currentTick = tickBeforeSwap;
-
-        while (true) {
-            if (zeroForOne ? currentTick <= targetTick : currentTick >= targetTick) {
-                break;
-            }
-
-            (int24 nextInitializedTick, bool initialized) = TickBitmap.nextInitializedTickWithinOneWord(bm, currentTick, tickSpacing, zeroForOne);
-
-            bool crossesTarget = zeroForOne ? nextInitializedTick <= targetTick : nextInitializedTick > targetTick;
-
-            if (crossesTarget) {
-                nextInitializedTick = targetTick;
-                initialized = false;
-            }
-
-            if (initialized) {
-                if (poolQueue[nextInitializedTick].length > 0) {
-                    ticksToCheck[numExecutableTicks++] = nextInitializedTick;
-                }
-            }
-
-            if (nextInitializedTick == targetTick) {
-                break;
-            }
-
-            currentTick = zeroForOne ? nextInitializedTick - 1 : nextInitializedTick;
-        }
-
-        assembly {
-            mstore(ticksToCheck, numExecutableTicks)
-        }
-
-        return ticksToCheck;
-    }
-
     function _abs(int24 x) private pure returns (int24) {
         return x < 0 ? -x : x;
     }
