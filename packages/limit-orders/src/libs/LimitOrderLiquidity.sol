@@ -66,14 +66,15 @@ library LimitOrderLiquidity {
         IDeployedCoinVersionLookup coinLookup,
         address weth
     ) internal returns (Currency makerCoinOut, uint128 makerAmountOut, uint128 referralAmountOut) {
-        (BalanceDelta liqDelta, BalanceDelta feesDelta) = poolManager.modifyLiquidity(
+        // Note: callerDelta is a sum of both fee and liquidity deltas
+        (BalanceDelta callerDelta, BalanceDelta feesDelta) = poolManager.modifyLiquidity(
             key,
             ModifyLiquidityParams({tickLower: order.tickLower, tickUpper: order.tickUpper, liquidityDelta: -int256(uint256(order.liquidity)), salt: orderId}),
             ""
         );
 
-        int128 liquidity0 = liqDelta.amount0();
-        int128 liquidity1 = liqDelta.amount1();
+        int128 liquidity0 = callerDelta.amount0();
+        int128 liquidity1 = callerDelta.amount1();
         int128 fee0Initial = feesDelta.amount0();
         int128 fee1Initial = feesDelta.amount1();
 
