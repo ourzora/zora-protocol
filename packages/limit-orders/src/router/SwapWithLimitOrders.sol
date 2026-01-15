@@ -26,7 +26,7 @@ import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import {Path} from "@zoralabs/shared-contracts/libs/UniswapV3/Path.sol";
 import {V3ToV4SwapLib} from "@zoralabs/coins/src/libs/V3ToV4SwapLib.sol";
 import {SimpleAccessManaged} from "../access/SimpleAccessManaged.sol";
-import {Permit2Payments} from "../libs/Permit2Payments.sol";
+import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
 
 /// @title SwapWithLimitOrders
 /// @notice Standalone router contract that executes swaps with automatic limit order placement and filling.
@@ -35,7 +35,7 @@ import {Permit2Payments} from "../libs/Permit2Payments.sol";
 ///      Users call swapWithLimitOrders() directly, which triggers the unlock callback flow.
 ///      Uses Permit2 for token approvals, matching the universal-router pattern.
 /// @author oveddan
-contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
+contract SwapWithLimitOrders is IMsgSender {
     using SafeERC20 for IERC20;
     using BalanceDeltaLibrary for BalanceDelta;
     using CurrencyLibrary for Currency;
@@ -50,6 +50,9 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
 
     /// @notice The Uniswap V3 swap router
     ISwapRouter public immutable swapRouter;
+
+    /// @notice The Permit2 contract (immutable, same address on all chains)
+    IAllowanceTransfer internal immutable PERMIT2;
 
     /// @notice Canonical limit order configuration
     LimitOrderConfig private _limitOrderConfig;
@@ -138,7 +141,7 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
     /// @param zoraLimitOrderBook_ The limit order book contract
     /// @param swapRouter_ The Uniswap V3 swap router
     /// @param permit2_ The Permit2 contract address (0x000000000022D473030F116dDEE9F6B43aC78BA3)
-    constructor(IPoolManager poolManager_, IZoraLimitOrderBook zoraLimitOrderBook_, ISwapRouter swapRouter_, address permit2_) Permit2Payments(permit2_) {
+    constructor(IPoolManager poolManager_, IZoraLimitOrderBook zoraLimitOrderBook_, ISwapRouter swapRouter_, address permit2_) {
         require(address(poolManager_) != address(0), "PoolManager cannot be zero");
         require(address(zoraLimitOrderBook_) != address(0), "ZoraLimitOrderBook cannot be zero");
         require(address(swapRouter_) != address(0), "SwapRouter cannot be zero");
@@ -146,6 +149,7 @@ contract SwapWithLimitOrders is IMsgSender, Permit2Payments {
         poolManager = poolManager_;
         zoraLimitOrderBook = zoraLimitOrderBook_;
         swapRouter = swapRouter_;
+        PERMIT2 = IAllowanceTransfer(permit2_);
     }
 
     /// @inheritdoc IMsgSender
