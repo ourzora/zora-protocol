@@ -322,7 +322,7 @@ contract LimitOrderWithdrawTest is BaseTest {
 
         CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
         bytes32 poolKeyHash = created[0].poolKeyHash;
-        int24 tick = ticks[0];
+        int24 tick = _fillableTick(isCurrency0, ticks[0], key.tickSpacing);
 
         // Verify bitmap set
         assertTrue(_isTickInitialized(poolKeyHash, orderCoin, tick, key.tickSpacing), "tick should be initialized");

@@ -67,7 +67,8 @@ contract LimitOrderLibrariesTest is BaseTest {
         assertEq(created.length, 3, "should create three orders");
 
         // Verify tick queue linked list structure
-        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, tick);
+        int24 fillableTick = _fillableTick(isCurrency0, tick, key.tickSpacing);
+        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, fillableTick);
         assertEq(tickQueue.length, 3, "queue length should be 3");
         assertEq(tickQueue.head, created[0].orderId, "head should be first order");
         assertEq(tickQueue.tail, created[2].orderId, "tail should be last order");
@@ -108,7 +109,8 @@ contract LimitOrderLibrariesTest is BaseTest {
         vm.prank(users.seller);
         limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
 
-        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, tick);
+        int24 fillableTick = _fillableTick(isCurrency0, tick, key.tickSpacing);
+        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, fillableTick);
         assertEq(tickQueue.length, 2, "queue length should be 2");
         assertEq(tickQueue.head, created[1].orderId, "head should be second order");
         assertEq(tickQueue.tail, created[2].orderId, "tail unchanged");
@@ -149,7 +151,8 @@ contract LimitOrderLibrariesTest is BaseTest {
         vm.prank(users.seller);
         limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
 
-        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, tick);
+        int24 fillableTick = _fillableTick(isCurrency0, tick, key.tickSpacing);
+        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, fillableTick);
         assertEq(tickQueue.length, 2, "queue length should be 2");
         assertEq(tickQueue.head, created[0].orderId, "head unchanged");
         assertEq(tickQueue.tail, created[1].orderId, "tail should be second order");
@@ -190,7 +193,8 @@ contract LimitOrderLibrariesTest is BaseTest {
         vm.prank(users.seller);
         limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
 
-        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, tick);
+        int24 fillableTick = _fillableTick(isCurrency0, tick, key.tickSpacing);
+        QueueSnapshot memory tickQueue = _tickQueueSnapshot(created[0].poolKeyHash, orderCoin, fillableTick);
         assertEq(tickQueue.length, 2, "queue length should be 2");
         assertEq(tickQueue.head, created[0].orderId, "head unchanged");
         assertEq(tickQueue.tail, created[2].orderId, "tail unchanged");
@@ -237,7 +241,8 @@ contract LimitOrderLibrariesTest is BaseTest {
 
         // Verify bitmap is set
         bytes32 poolKeyHash = keccak256(abi.encode(key));
-        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, orderTicks[0], key.tickSpacing), "tick should be initialized");
+        int24 fillableTick = _fillableTick(isCurrency0, orderTicks[0], key.tickSpacing);
+        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should be initialized");
     }
 
     function test_bitmapSetIfFirstWhenNonEmpty() public {
@@ -262,9 +267,10 @@ contract LimitOrderLibrariesTest is BaseTest {
 
         // Verify bitmap is still set (second enqueue didn't break it)
         bytes32 poolKeyHash = keccak256(abi.encode(key));
-        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, tick, key.tickSpacing), "tick should be initialized");
+        int24 fillableTick = _fillableTick(isCurrency0, tick, key.tickSpacing);
+        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should be initialized");
 
-        QueueSnapshot memory tickQueue = _tickQueueSnapshot(poolKeyHash, orderCoin, tick);
+        QueueSnapshot memory tickQueue = _tickQueueSnapshot(poolKeyHash, orderCoin, fillableTick);
         assertEq(tickQueue.length, 2, "should have 2 orders at same tick");
     }
 
@@ -290,7 +296,8 @@ contract LimitOrderLibrariesTest is BaseTest {
         vm.prank(users.seller);
         limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
 
-        assertFalse(_isTickInitialized(poolKeyHash, orderCoin, orderTicks[0], key.tickSpacing), "tick should be cleared");
+        int24 fillableTick = _fillableTick(isCurrency0, orderTicks[0], key.tickSpacing);
+        assertFalse(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should be cleared");
     }
 
     function test_bitmapClearIfEmptyWhenStillHasOrders() public {
@@ -323,9 +330,10 @@ contract LimitOrderLibrariesTest is BaseTest {
         vm.prank(users.seller);
         limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
 
-        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, tick, key.tickSpacing), "tick should still be initialized");
+        int24 fillableTick = _fillableTick(isCurrency0, tick, key.tickSpacing);
+        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should still be initialized");
 
-        QueueSnapshot memory tickQueue = _tickQueueSnapshot(poolKeyHash, orderCoin, tick);
+        QueueSnapshot memory tickQueue = _tickQueueSnapshot(poolKeyHash, orderCoin, fillableTick);
         assertEq(tickQueue.length, 1, "should have 1 order remaining");
     }
 

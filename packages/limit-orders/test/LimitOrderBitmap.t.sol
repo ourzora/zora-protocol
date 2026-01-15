@@ -30,7 +30,8 @@ contract LimitOrderBitmapTest is BaseTest {
 
         // Verify all ticks are initialized in bitmap
         for (uint256 i; i < orderTicks.length; ++i) {
-            assertTrue(_isTickInitialized(poolKeyHash, orderCoin, orderTicks[i], key.tickSpacing), "tick should be initialized");
+            int24 fillableTick = _fillableTick(isCurrency0, orderTicks[i], key.tickSpacing);
+            assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should be initialized");
         }
     }
 
@@ -52,7 +53,8 @@ contract LimitOrderBitmapTest is BaseTest {
         bytes32 poolKeyHash = created[0].poolKeyHash;
 
         // Verify tick is initialized
-        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, orderTicks[0], key.tickSpacing), "tick should be initialized after create");
+        int24 fillableTick = _fillableTick(isCurrency0, orderTicks[0], key.tickSpacing);
+        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should be initialized after create");
 
         // Withdraw order
         bytes32[] memory orderIds = new bytes32[](1);
@@ -61,7 +63,7 @@ contract LimitOrderBitmapTest is BaseTest {
         limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
 
         // Verify tick is cleared in bitmap
-        assertFalse(_isTickInitialized(poolKeyHash, orderCoin, orderTicks[0], key.tickSpacing), "tick should be cleared after withdraw");
+        assertFalse(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should be cleared after withdraw");
     }
 
     function test_bitmap_RemainsSetWithPartialOrders() public {
@@ -95,7 +97,8 @@ contract LimitOrderBitmapTest is BaseTest {
         limitOrderBook.withdraw(orderIds, orderCoin, 0, users.seller);
 
         // Bitmap should still be set because second order remains
-        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, tick, key.tickSpacing), "tick should remain initialized with remaining order");
+        int24 fillableTick = _fillableTick(isCurrency0, tick, key.tickSpacing);
+        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, key.tickSpacing), "tick should remain initialized with remaining order");
     }
 
     function test_bitmap_wordBoundaries() public {
@@ -129,7 +132,8 @@ contract LimitOrderBitmapTest is BaseTest {
 
         // Verify all boundary ticks are initialized
         for (uint256 i = 0; i < boundaryTicks.length; i++) {
-            assertTrue(_isTickInitialized(poolKeyHash, orderCoin, boundaryTicks[i], spacing), "boundary tick should be initialized");
+            int24 fillableTick = _fillableTick(isCurrency0, boundaryTicks[i], spacing);
+            assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick, spacing), "boundary tick should be initialized");
         }
     }
 
@@ -171,8 +175,10 @@ contract LimitOrderBitmapTest is BaseTest {
         bytes32 poolKeyHash = created[0].poolKeyHash;
 
         // Verify extreme ticks are initialized
-        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, extremeTicks[0], spacing), "far tick 1 should be initialized");
-        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, extremeTicks[1], spacing), "far tick 2 should be initialized");
+        int24 fillableTick0 = _fillableTick(isCurrency0, extremeTicks[0], spacing);
+        int24 fillableTick1 = _fillableTick(isCurrency0, extremeTicks[1], spacing);
+        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick0, spacing), "far tick 1 should be initialized");
+        assertTrue(_isTickInitialized(poolKeyHash, orderCoin, fillableTick1, spacing), "far tick 2 should be initialized");
     }
 
     function _fundAndApprove(address user, address token, uint256 amount) internal {

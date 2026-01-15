@@ -158,6 +158,8 @@ library LimitOrderCreate {
         }
 
         (int24 tickLower, int24 tickUpper) = _calculateTickRange(ctx.isCurrency0, orderTick, key.tickSpacing);
+        // Record the tick where the order becomes fillable
+        orderTick = ctx.isCurrency0 ? tickUpper : tickLower;
 
         uint128 liquidity = LimitOrderLiquidity.liquidityForOrder(ctx.isCurrency0, orderSize, tickLower, tickUpper);
         require(liquidity != 0, IZoraLimitOrderBook.ZeroRealizedOrder());

@@ -18,10 +18,10 @@ import {LimitOrderBitmap} from "./LimitOrderBitmap.sol";
 import {LimitOrderCreate} from "./LimitOrderCreate.sol";
 
 library LimitOrderCommon {
-    /// @dev Currency0 orders are executed when the price rises to the lower tick.
-    ///      Currency1 orders are executed when the price falls to the upper tick.
+    /// @dev Currency0 orders are executed when the price rises to the upper tick.
+    ///      Currency1 orders are executed when the price falls to the lower tick.
     function getOrderTick(LimitOrderTypes.LimitOrder storage order) internal view returns (int24) {
-        return order.isCurrency0 ? order.tickLower : order.tickUpper;
+        return order.isCurrency0 ? order.tickUpper : order.tickLower;
     }
 
     function getOrderCoin(PoolKey memory key, bool isCurrency0) internal pure returns (address) {

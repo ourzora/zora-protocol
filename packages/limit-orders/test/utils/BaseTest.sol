@@ -474,6 +474,10 @@ contract BaseTest is V4TestSetup, IMsgSender {
         return isCurrency0 ? baseTick + offset : baseTick - offset;
     }
 
+    function _fillableTick(bool isCurrency0, int24 orderTick, int24 spacing) internal pure returns (int24) {
+        return isCurrency0 ? orderTick + spacing : orderTick - spacing;
+    }
+
     function _buildDeterministicOrders(
         PoolKey memory key,
         bool isCurrency0,
