@@ -383,7 +383,12 @@ contract ZoraV4CoinHook is
         }
 
         (int24 tickBeforeSwap, int24 tickAfterSwap) = _getSwapTickRange(key);
-        zoraLimitOrderBook.fill(key, !params.zeroForOne, tickBeforeSwap, tickAfterSwap, CoinConstants.SENTINEL_DEFAULT_LIMIT_ORDER_FILL_COUNT, address(0));
+
+        // Derive fill direction from actual tick movement
+        if (tickAfterSwap != tickBeforeSwap) {
+            bool isCurrency0 = tickAfterSwap > tickBeforeSwap;
+            zoraLimitOrderBook.fill(key, isCurrency0, tickBeforeSwap, tickAfterSwap, CoinConstants.SENTINEL_DEFAULT_LIMIT_ORDER_FILL_COUNT, address(0));
+        }
 
         return (BaseHook.afterSwap.selector, 0);
     }
