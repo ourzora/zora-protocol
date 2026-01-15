@@ -211,6 +211,8 @@ library LimitOrderFill {
 
         address coin = LimitOrderCommon.getOrderCoin(key, order.isCurrency0);
 
+        int24 orderTick = LimitOrderCommon.removeOrder(state, key, coin, tickQueue, order);
+
         (Currency coinOutCurrency, uint128 makerAmount, uint128 referralAmount) = LimitOrderLiquidity.burnAndPayout(
             ctx.poolManager,
             key,
@@ -221,8 +223,6 @@ library LimitOrderFill {
             ctx.versionLookup,
             ctx.weth
         );
-
-        int24 orderTick = LimitOrderCommon.removeOrder(state, key, coin, tickQueue, order);
 
         emit IZoraLimitOrderBook.LimitOrderFilled(
             order.maker,
