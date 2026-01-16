@@ -3,7 +3,6 @@ pragma solidity ^0.8.13;
 
 import {Vm} from "forge-std/Vm.sol";
 import {V4TestSetup} from "@zoralabs/coins/test/utils/V4TestSetup.sol";
-import {IZoraLimitOrderBook} from "../../src/IZoraLimitOrderBook.sol";
 import {TestableZoraLimitOrderBook} from "./TestableZoraLimitOrderBook.sol";
 import {SwapWithLimitOrders} from "../../src/router/SwapWithLimitOrders.sol";
 import {IMsgSender} from "@zoralabs/coins/src/interfaces/IMsgSender.sol";
@@ -548,6 +547,7 @@ contract BaseTest is V4TestSetup, IMsgSender {
         int24 compressed = tick / tickSpacing;
         (int16 wordPos, uint8 bitPos) = TickBitmap.position(compressed);
         uint256 word = _bitmapWord(poolKeyHash, coin, wordPos);
+        // forge-lint-ignore incorrect-shift
         return (word & (1 << bitPos)) != 0;
     }
 

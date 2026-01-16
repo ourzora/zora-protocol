@@ -19,8 +19,12 @@ abstract contract PermittedCallers is Ownable2Step {
     }
 
     modifier onlyPermitted() {
-        require(_isPermitted(msg.sender), CallerNotPermitted());
+        _onlyPermitted();
         _;
+    }
+
+    function _onlyPermitted() internal view {
+        require(_isPermitted(msg.sender), CallerNotPermitted());
     }
 
     function isPermittedCaller(address caller) public view returns (bool) {

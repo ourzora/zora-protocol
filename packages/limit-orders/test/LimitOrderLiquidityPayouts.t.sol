@@ -46,7 +46,7 @@ contract MockPoolManager {
         swapDelta = toBalanceDelta(amount0, amount1);
     }
 
-    function modifyLiquidity(PoolKey memory, ModifyLiquidityParams memory, bytes calldata) external returns (BalanceDelta, BalanceDelta) {
+    function modifyLiquidity(PoolKey memory, ModifyLiquidityParams memory, bytes calldata) external view returns (BalanceDelta, BalanceDelta) {
         return (liquidityDelta, feeDelta);
     }
 
@@ -340,7 +340,7 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         uint256 makerCurrency0Before = currency0Token.balanceOf(maker);
         uint256 makerCurrency1Before = currency1Token.balanceOf(maker);
 
-        (, uint128 makerAmount, ) = harness.burnAndPayout(poolManager, poolKey, ORDER_ID, address(0), address(currency0Token), versionLookup);
+        harness.burnAndPayout(poolManager, poolKey, ORDER_ID, address(0), address(currency0Token), versionLookup);
 
         // With the fix: only currency1 is paid out (NOT currency0)
         assertEq(currency0Token.balanceOf(maker), makerCurrency0Before, "maker should NOT receive currency0");
@@ -503,14 +503,7 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         uint256 ref0Before = currency0Token.balanceOf(referral);
         uint256 ref1Before = currency1Token.balanceOf(referral);
 
-        (Currency makerCoinOut, uint128 makerAmount, uint128 referralAmount) = harness.burnAndPayout(
-            poolManager,
-            poolKey,
-            ORDER_ID,
-            referral,
-            address(0),
-            versionLookup
-        );
+        (Currency makerCoinOut, , ) = harness.burnAndPayout(poolManager, poolKey, ORDER_ID, referral, address(0), versionLookup);
 
         // Verify maker receives only currency1
         assertEq(Currency.unwrap(makerCoinOut), address(currency1Token), "maker payout should be currency1");

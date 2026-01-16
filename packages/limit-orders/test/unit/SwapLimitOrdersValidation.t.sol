@@ -220,14 +220,7 @@ contract SwapLimitOrdersValidationTest is Test {
         // Use exactly MIN size which is 1e18
         uint128 totalSize = uint128(TEST_ORDER_SIZE);
 
-        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
-            testKey,
-            true,
-            uint128(totalSize),
-            0,
-            TickMath.getSqrtPriceAtTick(0),
-            params
-        );
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, uint128(totalSize), 0, TickMath.getSqrtPriceAtTick(0), params);
 
         // With TEST_ORDER_SIZE (1e18) and 1bp = 1e14, orders should not be skipped
         // Let's just verify we get at least one order
@@ -266,7 +259,6 @@ contract SwapLimitOrdersValidationTest is Test {
         params.multiples[0] = 1000000e18;
         params.percentages[0] = 10000;
 
-        int24 minTick = -TickMath.maxUsableTick(TICK_SPACING);
         int24 startTick = TickMath.MAX_TICK - 1000;
 
         (Orders memory orders, , ) = SwapLimitOrders.computeOrders(
@@ -386,7 +378,7 @@ contract SwapLimitOrdersValidationTest is Test {
         // Test 3 & 4: minAway enforcement tested in previous minimum separation tests
     }
 
-    function _createValidParams(address maker, uint256 numOrders) internal pure returns (LimitOrderConfig memory) {
+    function _createValidParams(address /* maker */, uint256 numOrders) internal pure returns (LimitOrderConfig memory) {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](numOrders);
         params.percentages = new uint256[](numOrders);
@@ -400,7 +392,7 @@ contract SwapLimitOrdersValidationTest is Test {
         return params;
     }
 
-    function _createEmptyParams(address maker) internal pure returns (LimitOrderConfig memory) {
+    function _createEmptyParams(address /* maker */) internal pure returns (LimitOrderConfig memory) {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](0);
         params.percentages = new uint256[](0);

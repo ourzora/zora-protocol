@@ -45,6 +45,7 @@ contract SwapWithLimitOrders is ISetLimitOrderConfig, Ownable2Step, IMsgSender {
     using Path for bytes;
 
     /// @notice The Uniswap V4 pool manager
+    // forge-lint-ignore screaming-snake-case-immutable
     IPoolManager public immutable poolManager;
 
     /// @notice The limit order book contract

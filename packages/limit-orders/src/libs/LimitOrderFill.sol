@@ -19,7 +19,6 @@ import {IZoraLimitOrderBook} from "../IZoraLimitOrderBook.sol";
 import {LimitOrderTypes} from "./LimitOrderTypes.sol";
 import {LimitOrderLiquidity} from "./LimitOrderLiquidity.sol";
 import {LimitOrderCommon} from "./LimitOrderCommon.sol";
-import {LimitOrderViews} from "./LimitOrderViews.sol";
 import {CoinCommon} from "@zoralabs/coins/src/libs/CoinCommon.sol";
 import {IDeployedCoinVersionLookup} from "@zoralabs/coins/src/interfaces/IDeployedCoinVersionLookup.sol";
 

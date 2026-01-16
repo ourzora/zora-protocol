@@ -143,7 +143,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests validate with all valid inputs (success case)
-    function test_validate_success_validParams() public {
+    function test_validate_success_validParams() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](3);
         params.percentages = new uint256[](3);
@@ -160,7 +160,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests validate with percentages exactly at 100%
-    function test_validate_success_exactlyOneHundredPercent() public {
+    function test_validate_success_exactlyOneHundredPercent() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -175,7 +175,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests validate loop iterations (line 65 for loop with multiple iterations)
-    function test_validate_multipleIterations_checksAllElements() public {
+    function test_validate_multipleIterations_checksAllElements() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](5); // 5 elements to iterate
         params.percentages = new uint256[](5);
@@ -190,7 +190,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests validate with single element (loop executes once)
-    function test_validate_singleElement_loopExecutesOnce() public {
+    function test_validate_singleElement_loopExecutesOnce() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -203,7 +203,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with totalSize of zero returns empty
-    function test_computeOrders_zeroSize_returnsEmpty() public {
+    function test_computeOrders_zeroSize_returnsEmpty() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -233,7 +233,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with small totalSize creates orders
-    function test_computeOrders_smallSize_createsOrders() public {
+    function test_computeOrders_smallSize_createsOrders() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -246,14 +246,7 @@ contract SwapLimitOrdersUnitTest is Test {
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
-        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
-            testKey,
-            true,
-            totalSize,
-            baseTick,
-            sqrtPriceX96,
-            params
-        );
+        (Orders memory orders, uint128 allocated, ) = SwapLimitOrders.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
 
         // Should create orders
         assertEq(orders.sizes.length, 2, "should create 2 orders");
@@ -264,7 +257,7 @@ contract SwapLimitOrdersUnitTest is Test {
     /// @notice Tests computeOrders with multiple orders (verifying skip logic exists even if hard to trigger)
     /// @dev Note: Zero-rounding skip is virtually impossible with reasonable sizes and PERCENT_SCALE=10000
     ///      since even 1 basis point of 1e18 = 1e14. The skip logic exists for safety in edge cases.
-    function test_computeOrders_multipleOrders_createsAll() public {
+    function test_computeOrders_multipleOrders_createsAll() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -277,14 +270,7 @@ contract SwapLimitOrdersUnitTest is Test {
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
-        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
-            testKey,
-            true,
-            totalSize,
-            baseTick,
-            sqrtPriceX96,
-            params
-        );
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
 
         // Both orders should be created
         assertEq(orders.sizes.length, 2, "should create 2 orders");
@@ -292,7 +278,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders loop with many iterations (line 105 for loop)
-    function test_computeOrders_manyOrders_loopIteratesMultipleTimes() public {
+    function test_computeOrders_manyOrders_loopIteratesMultipleTimes() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](6); // Many orders
         params.percentages = new uint256[](6);
@@ -306,14 +292,7 @@ contract SwapLimitOrdersUnitTest is Test {
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
-        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
-            testKey,
-            true,
-            totalSize,
-            baseTick,
-            sqrtPriceX96,
-            params
-        );
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
 
         // All 6 orders should be created
         assertEq(orders.sizes.length, 6, "should create 6 orders");
@@ -321,7 +300,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with single order (loop executes once)
-    function test_computeOrders_singleOrder_loopExecutesOnce() public {
+    function test_computeOrders_singleOrder_loopExecutesOnce() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -332,21 +311,14 @@ contract SwapLimitOrdersUnitTest is Test {
         int24 baseTick = 0;
         uint160 sqrtPriceX96 = TickMath.getSqrtPriceAtTick(baseTick);
 
-        (Orders memory orders, uint128 allocated, uint128 unallocated) = SwapLimitOrders.computeOrders(
-            testKey,
-            true,
-            totalSize,
-            baseTick,
-            sqrtPriceX96,
-            params
-        );
+        (Orders memory orders, , ) = SwapLimitOrders.computeOrders(testKey, true, totalSize, baseTick, sqrtPriceX96, params);
 
         assertEq(orders.sizes.length, 1, "should create 1 order");
         assertEq(orders.ticks.length, 1, "should have 1 tick");
     }
 
     /// @notice Tests computeOrders with large totalSize and valid percentages
-    function test_computeOrders_largeSize_allocatesCorrectly() public {
+    function test_computeOrders_largeSize_allocatesCorrectly() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -423,7 +395,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with extreme multiples (tick clamping)
-    function test_computeOrders_extremeMultiples_clampsToMaxTick() public {
+    function test_computeOrders_extremeMultiples_clampsToMaxTick() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -444,7 +416,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders for currency1 (isCurrency0 = false) - tests line 147 branch
-    function test_computeOrders_currency1_ticksBelowBase() public {
+    function test_computeOrders_currency1_ticksBelowBase() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -466,7 +438,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with sqrt price overflow (line 155 branch: scaled > type(uint160).max)
-    function test_computeOrders_sqrtPriceOverflow_clampsToMax() public {
+    function test_computeOrders_sqrtPriceOverflow_clampsToMax() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -487,7 +459,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders near minimum tick boundary (line 169 branch: aligned < minTick)
-    function test_computeOrders_nearMinTick_clampsToMin() public {
+    function test_computeOrders_nearMinTick_clampsToMin() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -507,7 +479,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with tick too close to base (line 170: isCurrency0 && aligned < minAway)
-    function test_computeOrders_currency0_tooCloseToBase_clampsToMinAway() public {
+    function test_computeOrders_currency0_tooCloseToBase_clampsToMinAway() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -526,7 +498,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with tick too close to base (line 171: !isCurrency0 && aligned > minAway)
-    function test_computeOrders_currency1_tooCloseToBase_clampsToMinAway() public {
+    function test_computeOrders_currency1_tooCloseToBase_clampsToMinAway() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -562,7 +534,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder when not a coin buy (first condition in line 48)
-    function test_isLimitOrder_notCoinBuy_returnsFalse() public {
+    function test_isLimitOrder_notCoinBuy_returnsFalse() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -577,7 +549,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder when isCoinBuy is true (ensures we go past first condition)
-    function test_isLimitOrder_isCoinBuyTrue_checksOtherConditions() public {
+    function test_isLimitOrder_isCoinBuyTrue_checksOtherConditions() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](0); // Empty - no orders
         params.percentages = new uint256[](0);
@@ -590,7 +562,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder when no orders in params
-    function test_isLimitOrder_noOrders_returnsFalse() public {
+    function test_isLimitOrder_noOrders_returnsFalse() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](0);
         params.percentages = new uint256[](0);
@@ -604,7 +576,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder when swapper is zero address
-    function test_isLimitOrder_zeroSwapper_returnsFalse() public {
+    function test_isLimitOrder_zeroSwapper_returnsFalse() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -617,7 +589,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder when coinDelta is negative
-    function test_isLimitOrder_negativeCoinDelta_returnsFalse() public {
+    function test_isLimitOrder_negativeCoinDelta_returnsFalse() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -630,7 +602,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder when coinDelta is zero
-    function test_isLimitOrder_zeroCoinDelta_returnsFalse() public {
+    function test_isLimitOrder_zeroCoinDelta_returnsFalse() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -643,7 +615,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder accepts any positive coinDelta
-    function test_isLimitOrder_smallSize_returnsTrue() public {
+    function test_isLimitOrder_smallSize_returnsTrue() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -656,7 +628,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests isLimitOrder when all conditions are met (success case)
-    function test_isLimitOrder_allConditionsMet_returnsTrue() public {
+    function test_isLimitOrder_allConditionsMet_returnsTrue() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -672,7 +644,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
     /// @notice Tests computeOrders with misaligned baseTick produces aligned output ticks
     /// @dev This test verifies the fix for MKT-24: tick misalignment in minAway calculation
-    function test_computeOrders_misalignedBaseTick_producesValidTicks() public {
+    function test_computeOrders_misalignedBaseTick_producesValidTicks() public pure {
         // Use a pool with tickSpacing = 10 for easier verification
         PoolKey memory smallSpacingKey = PoolKey({
             currency0: Currency.wrap(address(0x1000)),

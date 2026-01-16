@@ -135,7 +135,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests validation with valid single order
-    function test_validateOrderInputs_singleOrder_success() public {
+    function test_validateOrderInputs_singleOrder_success() public view {
         uint256[] memory sizes = new uint256[](1);
         int24[] memory ticks = new int24[](1);
         sizes[0] = 1000;
@@ -146,7 +146,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests validation with multiple orders (loop iterations)
-    function test_validateOrderInputs_multipleOrders_sumsTotal() public {
+    function test_validateOrderInputs_multipleOrders_sumsTotal() public view {
         uint256[] memory sizes = new uint256[](5);
         int24[] memory ticks = new int24[](5);
 
@@ -160,7 +160,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests validation loop with many iterations
-    function test_validateOrderInputs_manyOrders_loopIterates() public {
+    function test_validateOrderInputs_manyOrders_loopIterates() public view {
         uint256[] memory sizes = new uint256[](10);
         int24[] memory ticks = new int24[](10);
 
@@ -222,7 +222,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests tick calculation for currency0
-    function test_calculateTicks_currency0_setsCorrectRange() public {
+    function test_calculateTicks_currency0_setsCorrectRange() public view {
         bool isCurrency0 = true;
         int24 orderTick = 1000;
         int24 spacing = 200;
@@ -234,7 +234,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests tick calculation for currency1
-    function test_calculateTicks_currency1_setsCorrectRange() public {
+    function test_calculateTicks_currency1_setsCorrectRange() public view {
         bool isCurrency0 = false;
         int24 orderTick = 1000;
         int24 spacing = 200;
@@ -246,7 +246,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests tick calculation with negative ticks
-    function test_calculateTicks_negativeTicks_handlesCorrectly() public {
+    function test_calculateTicks_negativeTicks_handlesCorrectly() public view {
         bool isCurrency0 = true;
         int24 orderTick = -1000;
         int24 spacing = 200;
@@ -258,7 +258,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests realized size for currency0 with negative amount0
-    function test_calculateRealizedSize_currency0_negativeAmount_returnsSize() public {
+    function test_calculateRealizedSize_currency0_negativeAmount_returnsSize() public view {
         bool isCurrency0 = true;
         int128 amount0 = -1000;
         int128 amount1 = 500;
@@ -268,7 +268,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests realized size for currency0 with positive amount0
-    function test_calculateRealizedSize_currency0_positiveAmount_returnsZero() public {
+    function test_calculateRealizedSize_currency0_positiveAmount_returnsZero() public view {
         bool isCurrency0 = true;
         int128 amount0 = 1000; // Positive
         int128 amount1 = -500;
@@ -278,7 +278,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests realized size for currency1 with negative amount1
-    function test_calculateRealizedSize_currency1_negativeAmount_returnsSize() public {
+    function test_calculateRealizedSize_currency1_negativeAmount_returnsSize() public view {
         bool isCurrency0 = false;
         int128 amount0 = 500;
         int128 amount1 = -1000;
@@ -288,7 +288,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests realized size for currency1 with positive amount1
-    function test_calculateRealizedSize_currency1_positiveAmount_returnsZero() public {
+    function test_calculateRealizedSize_currency1_positiveAmount_returnsZero() public view {
         bool isCurrency0 = false;
         int128 amount0 = -500;
         int128 amount1 = 1000; // Positive
@@ -298,7 +298,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests realized size with zero amounts
-    function test_calculateRealizedSize_zeroAmounts_returnsZero() public {
+    function test_calculateRealizedSize_zeroAmounts_returnsZero() public view {
         bool isCurrency0 = true;
         int128 amount0 = 0;
         int128 amount1 = 0;
@@ -308,7 +308,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests refund when realized < requested
-    function test_calculateRefund_partialRealization_returnsRefund() public {
+    function test_calculateRefund_partialRealization_returnsRefund() public view {
         uint128 realizedSize = 800;
         uint128 requestedSize = 1000;
 
@@ -317,7 +317,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests refund when realized == requested (no refund)
-    function test_calculateRefund_fullRealization_noRefund() public {
+    function test_calculateRefund_fullRealization_noRefund() public view {
         uint128 realizedSize = 1000;
         uint128 requestedSize = 1000;
 
@@ -326,7 +326,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests refund when realized > requested (edge case)
-    function test_calculateRefund_overRealization_noRefund() public {
+    function test_calculateRefund_overRealization_noRefund() public view {
         uint128 realizedSize = 1200;
         uint128 requestedSize = 1000;
 
@@ -344,7 +344,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests validation with empty arrays
-    function test_validateOrderInputs_emptyArrays_success() public {
+    function test_validateOrderInputs_emptyArrays_success() public view {
         uint256[] memory sizes = new uint256[](0);
         int24[] memory ticks = new int24[](0);
 
@@ -353,7 +353,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests tick calculation with zero spacing (edge case)
-    function test_calculateTicks_zeroSpacing_noChange() public {
+    function test_calculateTicks_zeroSpacing_noChange() public view {
         bool isCurrency0 = true;
         int24 orderTick = 1000;
         int24 spacing = 0;
@@ -365,7 +365,7 @@ contract LimitOrderCreateUnitTest is Test {
     }
 
     /// @notice Tests realized size calculation with large negative values
-    function test_calculateRealizedSize_largeNegativeValue_handlesCorrectly() public {
+    function test_calculateRealizedSize_largeNegativeValue_handlesCorrectly() public view {
         bool isCurrency0 = true;
         int128 amount0 = -1000000000; // Large negative value
         int128 amount1 = 0;

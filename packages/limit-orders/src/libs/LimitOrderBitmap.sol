@@ -8,7 +8,6 @@
 pragma solidity ^0.8.23;
 
 import {TickBitmap} from "@uniswap/v4-core/src/libraries/TickBitmap.sol";
-import {LimitOrderTypes} from "./LimitOrderTypes.sol";
 
 library LimitOrderBitmap {
     function setIfFirst(mapping(int16 => uint256) storage bm, int24 tick, int24 spacing, uint256 sizeBefore) internal {
