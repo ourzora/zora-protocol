@@ -396,6 +396,16 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return deployed;
     }
 
+    // Non-deterministic Deployment Functions (for dev environments)
+
+    function deployLimitOrderBook(address poolManager, address zoraFactory, address zoraHookRegistry, address owner, address weth) internal returns (address) {
+        return address(new ZoraLimitOrderBook(poolManager, zoraFactory, zoraHookRegistry, owner, weth));
+    }
+
+    function deploySwapRouter(address poolManager, address zoraLimitOrderBook, address swapRouter, address permit2, address owner) internal returns (address) {
+        return address(new SwapWithLimitOrders(IPoolManager(poolManager), IZoraLimitOrderBook(zoraLimitOrderBook), ISwapRouter(swapRouter), permit2, owner));
+    }
+
     // Factory Deterministic Deployment Functions
 
     function computeProxyShimAddress() internal pure returns (address) {

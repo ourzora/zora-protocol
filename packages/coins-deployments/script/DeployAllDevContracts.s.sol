@@ -39,7 +39,7 @@ contract DeployAllDevContracts is CoinsDeployerBase {
 
         // Step 3: Deploy limit order book (owner is proxyAdmin)
         console.log("\n=== Step 3: Deploying Limit Order Book ===");
-        deployment.zoraLimitOrderBook = deployLimitOrderBookDeterministic(
+        deployment.zoraLimitOrderBook = deployLimitOrderBook(
             getUniswapV4PoolManager(),
             deployment.zoraFactory,
             deployment.zoraHookRegistry,
@@ -50,13 +50,7 @@ contract DeployAllDevContracts is CoinsDeployerBase {
 
         // Step 4: Deploy swap router (owner is proxyAdmin)
         console.log("\n=== Step 4: Deploying Swap Router ===");
-        deployment.zoraRouter = deploySwapRouterDeterministic(
-            getUniswapV4PoolManager(),
-            deployment.zoraLimitOrderBook,
-            getUniswapSwapRouter(),
-            PERMIT2,
-            getProxyAdmin()
-        );
+        deployment.zoraRouter = deploySwapRouter(getUniswapV4PoolManager(), deployment.zoraLimitOrderBook, getUniswapSwapRouter(), PERMIT2, getProxyAdmin());
         console.log("ZORA_ROUTER:", deployment.zoraRouter);
 
         // Step 5: Deploy trusted message sender lookup

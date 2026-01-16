@@ -12,6 +12,7 @@ import "../src/deployment/CoinsDeployerBase.sol";
 ///      3. Verifies deployed addresses match expected
 ///      Both contracts use Ownable2Step with the multisig as owner.
 ///      Note: Swap router should already be registered in TrustedMsgSenderProviderLookup during its deployment
+///      In dev mode (DEV=true), contracts are deployed non-deterministically without address verification.
 contract DeployLimitOrders is CoinsDeployerBase {
     function run() public {
         // Read existing deployment with expected addresses
@@ -19,43 +20,52 @@ contract DeployLimitOrders is CoinsDeployerBase {
 
         require(deployment.zoraFactory != address(0), "ZORA_FACTORY not deployed");
         require(deployment.zoraHookRegistry != address(0), "ZORA_HOOK_REGISTRY not deployed");
-        require(deployment.zoraLimitOrderBook != address(0), "ZORA_LIMIT_ORDER_BOOK not computed - run ComputeDeterministicAddresses first");
-        require(deployment.zoraRouter != address(0), "ZORA_ROUTER not computed - run ComputeDeterministicAddresses first");
 
-        address expectedLimitOrderBook = deployment.zoraLimitOrderBook;
-        address expectedSwapRouter = deployment.zoraRouter;
+        bool isDev = isDevEnvironment();
 
-        console.log("\n=== Expected Addresses ===");
-        console.log("ZORA_LIMIT_ORDER_BOOK:", expectedLimitOrderBook);
-        console.log("ZORA_ROUTER:", expectedSwapRouter);
+        // In production, require pre-computed addresses
+        if (!isDev) {
+            require(deployment.zoraLimitOrderBook != address(0), "ZORA_LIMIT_ORDER_BOOK not computed - run ComputeDeterministicAddresses first");
+            require(deployment.zoraRouter != address(0), "ZORA_ROUTER not computed - run ComputeDeterministicAddresses first");
+
+            console.log("\n=== Expected Addresses ===");
+            console.log("ZORA_LIMIT_ORDER_BOOK:", deployment.zoraLimitOrderBook);
+            console.log("ZORA_ROUTER:", deployment.zoraRouter);
+        } else {
+            console.log("\n=== Dev Mode: Non-deterministic deployment ===");
+        }
 
         vm.startBroadcast();
 
         address owner = getProxyAdmin();
         address poolManager = getUniswapV4PoolManager();
+        address deployedLimitOrderBook;
+        address deployedSwapRouter;
 
-        // 1. Deploy ZoraLimitOrderBook deterministically
+        // 1. Deploy ZoraLimitOrderBook
         console.log("\n=== Deploying ZoraLimitOrderBook ===");
-        address deployedLimitOrderBook = deployLimitOrderBookDeterministic(
-            poolManager,
-            deployment.zoraFactory,
-            deployment.zoraHookRegistry,
-            owner,
-            getWeth()
-        );
-        require(deployedLimitOrderBook == expectedLimitOrderBook, "Limit order book address mismatch");
+        if (isDev) {
+            deployedLimitOrderBook = deployLimitOrderBook(poolManager, deployment.zoraFactory, deployment.zoraHookRegistry, owner, getWeth());
+        } else {
+            deployedLimitOrderBook = deployLimitOrderBookDeterministic(poolManager, deployment.zoraFactory, deployment.zoraHookRegistry, owner, getWeth());
+            require(deployedLimitOrderBook == deployment.zoraLimitOrderBook, "Limit order book address mismatch");
+            console.log("Address verified: MATCH");
+        }
         console.log("Deployed ZORA_LIMIT_ORDER_BOOK:", deployedLimitOrderBook);
         console.log("Owner:", owner);
-        console.log("Address verified: MATCH");
 
-        // 2. Deploy SwapWithLimitOrders router deterministically
+        // 2. Deploy SwapWithLimitOrders router
         console.log("\n=== Deploying SwapWithLimitOrders Router ===");
         address swapRouter = getUniswapSwapRouter();
-        address deployedSwapRouter = deploySwapRouterDeterministic(poolManager, deployedLimitOrderBook, swapRouter, PERMIT2, owner);
-        require(deployedSwapRouter == expectedSwapRouter, "Swap router address mismatch");
+        if (isDev) {
+            deployedSwapRouter = deploySwapRouter(poolManager, deployedLimitOrderBook, swapRouter, PERMIT2, owner);
+        } else {
+            deployedSwapRouter = deploySwapRouterDeterministic(poolManager, deployedLimitOrderBook, swapRouter, PERMIT2, owner);
+            require(deployedSwapRouter == deployment.zoraRouter, "Swap router address mismatch");
+            console.log("Address verified: MATCH");
+        }
         console.log("Deployed ZORA_ROUTER:", deployedSwapRouter);
         console.log("Owner:", owner);
-        console.log("Address verified: MATCH");
 
         vm.stopBroadcast();
 
