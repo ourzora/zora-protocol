@@ -167,7 +167,7 @@ contract SwapLimitOrdersValidationTest is Test {
         wrapper.validate(params);
     }
 
-    function test_validate_UnderOneHundredPercent() public {
+    function test_validate_UnderOneHundredPercent() public pure {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](2);
         params.percentages = new uint256[](2);
@@ -199,7 +199,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertEq(unallocated, 0, "unallocated should be zero");
     }
 
-    function test_computeOrders_SkipsZeroSizeOrders() public {
+    function test_computeOrders_SkipsZeroSizeOrders() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](4);
         params.percentages = new uint256[](4);
@@ -235,7 +235,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertEq(orders.sizes.length, orders.ticks.length, "sizes and ticks should match");
     }
 
-    function test_computeOrders_ClampsToMaxTick() public {
+    function test_computeOrders_ClampsToMaxTick() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -257,7 +257,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertGt(orders.ticks[0], 0, "should be positive tick for buy orders");
     }
 
-    function test_computeOrders_ClampsToMinTick() public {
+    function test_computeOrders_ClampsToMinTick() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -282,7 +282,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertLe(orders.ticks[0], TickMath.maxUsableTick(TICK_SPACING), "should be within valid range");
     }
 
-    function test_computeOrders_MinimumSeparationCurrency0() public {
+    function test_computeOrders_MinimumSeparationCurrency0() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -307,7 +307,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertGe(orders.ticks[0], baseTick + TICK_SPACING, "should maintain minimum separation");
     }
 
-    function test_computeOrders_MinimumSeparationCurrency1() public {
+    function test_computeOrders_MinimumSeparationCurrency1() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -332,7 +332,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertLe(orders.ticks[0], baseTick - TICK_SPACING, "should maintain minimum separation");
     }
 
-    function test_computeOrders_MultiplierInversionForCurrency1() public {
+    function test_computeOrders_MultiplierInversionForCurrency1() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -358,7 +358,7 @@ contract SwapLimitOrdersValidationTest is Test {
         assertLt(orders.ticks[0], baseTick, "inverted multiplier should place tick below base");
     }
 
-    function test_computeOrders_AllBoundaryClampingBranches() public {
+    function test_computeOrders_AllBoundaryClampingBranches() public view {
         LimitOrderConfig memory params;
 
         // Test 1: aligned > maxTick (line 167)

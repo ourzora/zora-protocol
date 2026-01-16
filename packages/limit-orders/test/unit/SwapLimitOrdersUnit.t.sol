@@ -731,7 +731,7 @@ contract SwapLimitOrdersUnitTest is Test {
     }
 
     /// @notice Tests computeOrders with various misaligned baseTicks and tick spacings
-    function test_computeOrders_variousMisalignments_allProduceValidTicks() public {
+    function test_computeOrders_variousMisalignments_allProduceValidTicks() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -765,7 +765,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
     /// @notice Tests computeOrders with already-aligned baseTicks remain aligned
     /// @dev Verifies that the fix doesn't break the common case where baseTick is already aligned
-    function test_computeOrders_alignedBaseTick_remainsAligned() public {
+    function test_computeOrders_alignedBaseTick_remainsAligned() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -809,7 +809,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
     /// @notice Tests fix for MKT-35: skip orders when baseTick at maxTick
     /// @dev Uses baseTick at maxTick to simulate swap exhausting liquidity
-    function test_computeOrders_baseTickAtMaxTick_skipsOrders() public {
+    function test_computeOrders_baseTickAtMaxTick_skipsOrders() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);
@@ -839,7 +839,7 @@ contract SwapLimitOrdersUnitTest is Test {
 
     /// @notice Tests fix for MKT-35: skip orders when baseTick at minTick
     /// @dev Uses baseTick at minTick to simulate swap exhausting liquidity
-    function test_computeOrders_baseTickAtMinTick_skipsOrders() public {
+    function test_computeOrders_baseTickAtMinTick_skipsOrders() public view {
         LimitOrderConfig memory params;
         params.multiples = new uint256[](1);
         params.percentages = new uint256[](1);

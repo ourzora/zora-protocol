@@ -11,8 +11,6 @@ import {Vm} from "forge-std/Vm.sol";
 contract SwapWithLimitOrdersTest is BaseTest {
     function test_autosellCreatesOrdersForSmallPurchases() public {
         PoolKey memory key = creatorCoin.getPoolKey();
-        bool isCurrency0 = Currency.unwrap(key.currency0) == address(creatorCoin);
-        address orderCoin = _orderCoin(key, isCurrency0);
 
         vm.recordLogs();
         _executeSingleHopSwapWithLimitOrders(users.buyer, key, 1e13, _defaultMultiples(), _defaultPercentages());
