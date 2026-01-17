@@ -111,6 +111,43 @@ bytes32 id = keccak256(abi.encode(poolKey, coin, tick, maker, nonce));
 
 ## Zora-Specific Patterns
 
+### Safe Typecasting from Uniswap V4 BalanceDelta
+
+**The Issue:** Uniswap V4's BalanceDelta returns int128 values that need to be cast to unsigned types, but the casting must respect the sign semantics to avoid overflow vulnerabilities.
+
+**Wrong:**
+
+```solidity
+(BalanceDelta delta, ) = poolManager.modifyLiquidity(...);
+int128 amount0 = delta.amount0();
+uint128 payout = uint128(amount0); // Dangerous! Could overflow if amount0 is negative
+```
+
+**Correct:**
+
+```solidity
+(BalanceDelta delta, ) = poolManager.modifyLiquidity(...);
+int128 amount0 = delta.amount0();
+uint128 payout;
+
+if (amount0 > 0) {
+    // Safe cast when value is known to be positive
+    payout = uint128(amount0);
+} else if (amount0 < 0) {
+    // Safe cast when converting negative to positive amount owed
+    payout = uint128(uint256(int256(-amount0)));
+}
+```
+
+**Why:** BalanceDelta amounts can be negative (owed to pool) or positive (owed from pool). Direct casting from int128 to uint128 when the value is negative will cause an overflow. The double cast through int256 and uint256 when negating ensures the value fits within uint128 bounds.
+
+**Common Patterns:**
+- Positive amounts from burning liquidity: `uint128(positiveAmount)`
+- Negative amounts when minting liquidity: `uint128(uint256(int256(-negativeAmount)))`
+- Settlement deltas: `uint256(-negativeAmount)` for amounts owed to pool
+
+**Reference:** packages/limit-orders/src/libs/ - LimitOrderCreate.sol:238-244, LimitOrderLiquidity.sol:99-110, SwapLimitOrders.sol:134-137
+
 _(Add entries as discovered)_
 
 ---

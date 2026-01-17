@@ -223,6 +223,8 @@ library LimitOrderCreate {
             ModifyLiquidityParams({
                 tickLower: params.tickLower,
                 tickUpper: params.tickUpper,
+                // This is safe because liquidity is always positive
+                //forge-lint: disable-next-line(unsafe-typecast)
                 liquidityDelta: int256(uint256(params.liquidity)),
                 salt: params.orderId
             }),
@@ -233,8 +235,12 @@ library LimitOrderCreate {
         int128 amount1 = delta.amount1();
 
         if (isCurrency0) {
+            // This is safe because amount0 is always negative
+            //forge-lint: disable-next-line(unsafe-typecast)
             realizedSize = amount0 < 0 ? uint128(uint256(int256(-amount0))) : 0;
         } else {
+            // This is safe because amount1 is always negative
+            //forge-lint: disable-next-line(unsafe-typecast)
             realizedSize = amount1 < 0 ? uint128(uint256(int256(-amount1))) : 0;
         }
 

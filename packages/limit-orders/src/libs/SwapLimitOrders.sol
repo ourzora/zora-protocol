@@ -129,7 +129,11 @@ library SwapLimitOrders {
             uint256 orderSize = FullMath.mulDiv(uint256(remaining), config.percentages[i], PERCENT_SCALE);
             if (orderSize == 0) continue;
 
+            // This is safe because orderSize is bounded by remaining which is uint128
+            //forge-lint: disable-next-line(unsafe-typecast)
             allocated += uint128(orderSize);
+            // This is safe because orderSize is bounded by remaining which is uint128
+            //forge-lint: disable-next-line(unsafe-typecast)
             remaining -= uint128(orderSize);
 
             int24 targetTick = _tickForMultiple(key, isCurrency0, baseTick, sqrtPriceX96, config.multiples[i]);
@@ -139,6 +143,7 @@ library SwapLimitOrders {
             o.multiples[count] = config.multiples[i];
             o.percentages[count] = config.percentages[i];
 
+            // This is safe because orderCount is validated to be an array length which cannot overflow by definition
             unchecked {
                 ++count;
             }
@@ -179,6 +184,8 @@ library SwapLimitOrders {
         uint256 scaled = FullMath.mulDiv(uint256(sqrtPriceX96), sqrtMultiplier, SQRT_MULTIPLE_SCALE);
         if (scaled > type(uint160).max) scaled = type(uint160).max;
 
+        // This is safe because scaled is always less than type(uint160).max
+        //forge-lint: disable-next-line(unsafe-typecast)
         int24 rawTick = TickMath.getTickAtSqrtPrice(uint160(scaled));
         aligned = DopplerMath.alignTickToTickSpacing(isCurrency0, rawTick, key.tickSpacing);
 

@@ -96,6 +96,8 @@ library LimitOrderLiquidity {
         (int128 amount0, int128 amount1) = _burnLiquidity(poolManager, key, tickLower, tickUpper, liquidity, salt);
 
         if (amount0 > 0) {
+            // This cast is safe because amount0 is always positive
+            //forge-lint: disable-next-line(unsafe-typecast)
             uint128 amount0Out = uint128(amount0);
             _takeCurrency(poolManager, key.currency0, recipient, amount0Out, weth);
             if (isCurrency0) {
@@ -103,6 +105,8 @@ library LimitOrderLiquidity {
             }
         }
         if (amount1 > 0) {
+            // This cast is safe because amount1 is always positive
+            //forge-lint: disable-next-line(unsafe-typecast)
             uint128 amount1Out = uint128(amount1);
             _takeCurrency(poolManager, key.currency1, recipient, amount1Out, weth);
             if (!isCurrency0) {
@@ -116,7 +120,9 @@ library LimitOrderLiquidity {
             poolManager.take(key.currency0, payout0, uint256(d0));
         }
         if (d0 < 0) {
-            uint256 amount = uint256(uint256(-d0));
+            // This is safe because d0 is always negative
+            //forge-lint: disable-next-line(unsafe-typecast)
+            uint256 amount = uint256(-d0);
             poolManager.sync(key.currency0);
             if (key.currency0.isAddressZero()) {
                 poolManager.settle{value: amount}();
@@ -127,10 +133,14 @@ library LimitOrderLiquidity {
         }
 
         if (d1 > 0 && payout1 != address(0)) {
+            // This is safe because d1 is always positive
+            //forge-lint: disable-next-line(unsafe-typecast)
             poolManager.take(key.currency1, payout1, uint256(d1));
         }
         if (d1 < 0) {
-            uint256 amount = uint256(uint256(-d1));
+            // This is safe because d1 is always negative
+            //forge-lint: disable-next-line(unsafe-typecast)
+            uint256 amount = uint256(-d1);
             poolManager.sync(key.currency1);
             if (key.currency1.isAddressZero()) {
                 poolManager.settle{value: amount}();
@@ -222,15 +232,20 @@ library LimitOrderLiquidity {
         IHasSwapPath.PayoutSwapPath memory payoutPath,
         address weth
     ) private returns (Currency coinOut, uint128 amountOut) {
-        // Convert to uint128, treating negative/zero as zero
-        uint128 amt0 = amount0 > 0 ? uint128(amount0) : 0;
-        uint128 amt1 = amount1 > 0 ? uint128(amount1) : 0;
-
         // Use swapToPath which handles all cases:
         // - Single positive delta: returns that currency
         // - Dual positive deltas: swaps one to the other and returns combined amount
         // - Multi-hop paths: handles coin -> backingCoin -> backingCoin's currency
-        (coinOut, amountOut) = UniV4SwapToCurrency.swapToPath(poolManager, amt0, amt1, payoutPath.currencyIn, payoutPath.path);
+        (coinOut, amountOut) = UniV4SwapToCurrency.swapToPath(
+            poolManager,
+            // This is safe because amount0 and amount1 are only needed if positive in this function.
+            //forge-lint: disable-next-line(unsafe-typecast)
+            amount0 > 0 ? uint128(amount0) : 0,
+            //forge-lint: disable-next-line(unsafe-typecast)
+            amount1 > 0 ? uint128(amount1) : 0,
+            payoutPath.currencyIn,
+            payoutPath.path
+        );
 
         if (amountOut > 0) {
             Currency payoutCurrency = coinOut;
