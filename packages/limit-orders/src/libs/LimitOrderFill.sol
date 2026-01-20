@@ -227,6 +227,6 @@ library LimitOrderFill {
 
     /// @dev Returns true if the pool tick has fully crossed the order's range.
     function _hasCrossed(LimitOrderTypes.LimitOrder storage order, int24 currentTick) private view returns (bool) {
-        return order.isCurrency0 ? currentTick >= order.tickUpper : currentTick <= order.tickLower;
+        return order.isCurrency0 ? currentTick >= order.tickUpper : currentTick < order.tickLower;
     }
 }
