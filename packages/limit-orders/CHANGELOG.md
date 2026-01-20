@@ -1,5 +1,21 @@
 # @zoralabs/limit-orders
 
+## 0.2.3
+
+### Patch Changes
+
+- 98e02520: Fix dual positive deltas consolidation in burnAndRefund
+
+  - Consolidate payouts to single currency when burning limit orders with dual positive deltas
+  - Extract path-building logic into reusable `_buildSingleHopPath` helper function
+  - Ensure users receive proceeds in their original deposit currency by swapping counter-assets
+  - Align burnAndRefund behavior with burnAndPayout for consistent payout consolidation
+
+- 91a82b2f: Fix withdraw crossed order check to use consistent logic with fills. The `hasCrossed` check for currency1 orders now uses strict `<` comparison instead of `<=`, preventing false positives at the tick boundary. Consolidated `hasCrossed` and `currentPoolTick` helpers into `LimitOrderCommon` for shared use across fill and withdraw paths.
+- e9ffd038: Fix premature limit order fills due to Uniswap v4 tick boundary handling
+
+  Previously, limit orders for non-currency0 tokens could be filled prematurely when the current tick was exactly equal to the order's lower tick boundary. This fix ensures orders are only filled when the pool tick has fully crossed the order's range, preventing users from receiving fewer output tokens than intended.
+
 ## 0.2.2
 
 ### Patch Changes
