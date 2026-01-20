@@ -138,6 +138,9 @@ library LimitOrderLiquidity {
             //forge-lint: disable-next-line(unsafe-typecast)
             uint256 amount = uint256(-d0);
             poolManager.sync(key.currency0);
+
+            // For native ETH, settle with value
+            // Ensured to be currency0 by token ordering
             if (key.currency0.isAddressZero()) {
                 poolManager.settle{value: amount}();
             } else {
@@ -156,12 +159,8 @@ library LimitOrderLiquidity {
             //forge-lint: disable-next-line(unsafe-typecast)
             uint256 amount = uint256(-d1);
             poolManager.sync(key.currency1);
-            if (key.currency1.isAddressZero()) {
-                poolManager.settle{value: amount}();
-            } else {
-                key.currency1.transfer(address(poolManager), amount);
-                poolManager.settle();
-            }
+            key.currency1.transfer(address(poolManager), amount);
+            poolManager.settle();
         }
     }
 
