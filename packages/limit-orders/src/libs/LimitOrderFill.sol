@@ -10,8 +10,6 @@ pragma solidity ^0.8.28;
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {TickBitmap} from "@uniswap/v4-core/src/libraries/TickBitmap.sol";
-import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
-import {PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 
 import {LimitOrderStorage} from "./LimitOrderStorage.sol";
@@ -23,8 +21,6 @@ import {CoinCommon} from "@zoralabs/coins/src/libs/CoinCommon.sol";
 import {IDeployedCoinVersionLookup} from "@zoralabs/coins/src/interfaces/IDeployedCoinVersionLookup.sol";
 
 library LimitOrderFill {
-    using PoolIdLibrary for PoolKey;
-
     struct Context {
         IPoolManager poolManager;
         IDeployedCoinVersionLookup versionLookup;
@@ -68,7 +64,7 @@ library LimitOrderFill {
                 order.isCurrency0 == isCurrency0 &&
                 order.createdEpoch < currentEpoch
             ) {
-                if (!_hasCrossed(order, _currentPoolTick(ctx.poolManager, key))) {
+                if (!LimitOrderCommon.hasCrossed(order, LimitOrderCommon.currentPoolTick(ctx.poolManager, key))) {
                     continue;
                 }
 
@@ -159,7 +155,7 @@ library LimitOrderFill {
                 if (order.createdEpoch == currentEpoch) {
                     break;
                 }
-                if (!_hasCrossed(order, _currentPoolTick(ctx.poolManager, data.poolKey))) {
+                if (!LimitOrderCommon.hasCrossed(order, LimitOrderCommon.currentPoolTick(ctx.poolManager, data.poolKey))) {
                     return;
                 }
 
@@ -219,14 +215,5 @@ library LimitOrderFill {
             orderTick,
             orderId
         );
-    }
-
-    function _currentPoolTick(IPoolManager poolManager, PoolKey memory key) private view returns (int24 tick) {
-        (, tick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
-    }
-
-    /// @dev Returns true if the pool tick has fully crossed the order's range.
-    function _hasCrossed(LimitOrderTypes.LimitOrder storage order, int24 currentTick) private view returns (bool) {
-        return order.isCurrency0 ? currentTick >= order.tickUpper : currentTick < order.tickLower;
     }
 }

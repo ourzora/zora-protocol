@@ -81,6 +81,45 @@ uint128 totalReceived = uint128(callerDelta.amount0()); // callerDelta already i
 
 **Reference:** [Uniswap V4 IPoolManager Interface](https://github.com/Uniswap/v4-core/blob/main/src/interfaces/IPoolManager.sol)
 
+### Tick Boundary Semantics for Limit Order Crossing
+
+**The Issue:** Order crossing checks must account for Uniswap V4's asymmetric tick boundary handling where `currentTick == tickLower` does not guarantee complete order execution.
+
+**Context:** In Uniswap V4, liquidity at tick `T` is available for prices in the range `[T, T+1)` (right-exclusive). This means:
+- **Upper tick boundaries**: `currentTick >= tickUpper` reliably indicates crossing
+- **Lower tick boundaries**: `currentTick == tickLower` is AT the boundary but may not be fully crossed
+
+**Wrong:**
+
+```solidity
+// Inconsistent boundary handling - can cause premature fills
+bool crossed = order.isCurrency0 
+    ? currentTick >= order.tickUpper    // Correct for upper bounds
+    : currentTick <= order.tickLower;   // WRONG: <= for lower bounds
+```
+
+**Correct:**
+
+```solidity
+// Consistent strict comparison respects tick boundary semantics
+bool crossed = order.isCurrency0 
+    ? currentTick >= order.tickUpper    // Upper bound: inclusive
+    : currentTick < order.tickLower;    // Lower bound: strictly less
+```
+
+**Why This Matters:**
+- At `currentTick == tickLower`, the order sits exactly at the tick boundary but may not be fully executed due to Uniswap V4's internal tick handling
+- Using `<=` allows premature fills, causing users to receive less output tokens than intended and potentially some unexpected input tokens
+- This issue is amplified in pools with large `tickSpacing` where partial fills can leave significant amounts unfilled
+- The asymmetry exists because Uniswap V4's liquidity ranges are right-exclusive: `[tickLower, tickUpper)`
+
+**Impact on Limit Orders:**
+- **False positive crossing**: Orders incorrectly identified as fillable when they haven't fully crossed
+- **Blocked withdrawals**: Users cannot withdraw orders that are legitimately at the boundary but unfilled
+- **Economic loss**: Premature fills result in worse execution prices for users
+
+**Reference:** [Uniswap V4 Pool.sol tick handling](https://github.com/Uniswap/v4-core/blob/d153b048868a60c2403a3ef5b2301bb247884d46/src/libraries/Pool.sol#L218-L224), [Zora Audit Issue #12](https://github.com/kadenzipfel/zora-autosell-audit/issues/12)
+
 ---
 
 ## Solidity Patterns

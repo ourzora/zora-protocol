@@ -9,6 +9,9 @@ pragma solidity ^0.8.28;
 
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 
 import {IZoraLimitOrderBook} from "../IZoraLimitOrderBook.sol";
 import {LimitOrderStorage} from "./LimitOrderStorage.sol";
@@ -18,6 +21,8 @@ import {LimitOrderBitmap} from "./LimitOrderBitmap.sol";
 import {LimitOrderCreate} from "./LimitOrderCreate.sol";
 
 library LimitOrderCommon {
+    using PoolIdLibrary for PoolKey;
+
     /// @dev Currency0 orders are executed when the price rises to the upper tick.
     ///      Currency1 orders are executed when the price falls to the lower tick.
     function getOrderTick(LimitOrderTypes.LimitOrder storage order) internal view returns (int24) {
@@ -26,6 +31,15 @@ library LimitOrderCommon {
 
     function getOrderCoin(PoolKey memory key, bool isCurrency0) internal pure returns (address) {
         return Currency.unwrap(isCurrency0 ? key.currency0 : key.currency1);
+    }
+
+    /// @dev Returns true if the pool tick has fully crossed the order's range.
+    function hasCrossed(LimitOrderTypes.LimitOrder storage order, int24 currentTick) internal view returns (bool) {
+        return order.isCurrency0 ? currentTick >= order.tickUpper : currentTick < order.tickLower;
+    }
+
+    function currentPoolTick(IPoolManager poolManager, PoolKey memory key) internal view returns (int24 tick) {
+        (, tick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
     }
 
     function recordCreation(

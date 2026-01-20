@@ -9,8 +9,6 @@ pragma solidity ^0.8.28;
 
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
-import {PoolIdLibrary} from "@uniswap/v4-core/src/types/PoolId.sol";
-import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
 
 import {LimitOrderStorage} from "./LimitOrderStorage.sol";
 import {IZoraLimitOrderBook} from "../IZoraLimitOrderBook.sol";
@@ -81,10 +79,8 @@ library LimitOrderWithdraw {
         PoolKey memory key = state.poolKeys[order.poolKeyHash];
         require(key.tickSpacing != 0, IZoraLimitOrderBook.InvalidOrder());
 
-        // Prevent withdrawal of fillable orders - they must be filled instead
-        (, int24 currentTick, , ) = StateLibrary.getSlot0(poolManager, PoolIdLibrary.toId(key));
-        bool fillable = order.isCurrency0 ? currentTick >= order.tickUpper : currentTick <= order.tickLower;
-        require(!fillable, IZoraLimitOrderBook.OrderFillable());
+        // Prevent withdrawal of crossed orders - they must be filled instead
+        require(!LimitOrderCommon.hasCrossed(order, LimitOrderCommon.currentPoolTick(poolManager, key)), IZoraLimitOrderBook.OrderFillable());
 
         int24 orderTick = LimitOrderCommon.getOrderTick(order);
         coin = LimitOrderCommon.getOrderCoin(key, order.isCurrency0);
