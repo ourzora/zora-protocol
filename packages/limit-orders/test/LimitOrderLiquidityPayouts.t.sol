@@ -270,18 +270,25 @@ contract LimitOrderLiquidityPayoutsTest is Test {
         assertEq(Currency.unwrap(poolManager.lastTakeCurrency()), address(currency1Token));
     }
 
+    /// @notice Test that dual positive deltas are consolidated into single payout currency
     function test_burnAndRefundPaysBothCurrenciesWhenPositive() public {
+        // isCurrency0 = true (default), so refund should be in currency0
         poolManager.setModifyLiquidityResponse(int128(10), int128(20), 0, 0);
+
+        // Simulate swap: 20 of currency1 → 18 of currency0
+        poolManager.setSwapResponse(int128(18), 0);
+
         deal(address(currency0Token), address(poolManager), 100e18);
         deal(address(currency1Token), address(poolManager), 100e18);
         address recipient = makeAddr("dual-recipient");
 
         uint128 amountOut = harness.burnAndRefund(poolManager, poolKey, ORDER_ID, recipient);
 
-        assertEq(amountOut, 10, "amountOut should match order currency payout");
-        assertEq(currency0Token.balanceOf(recipient), 10, "recipient receives currency0");
-        assertEq(currency1Token.balanceOf(recipient), 20, "recipient receives currency1");
-        assertEq(poolManager.takeCalls(), 2, "both currencies should be taken");
+        // Verify consolidated payout: 10 (original) + 18 (swapped) = 28
+        assertEq(amountOut, 28, "amountOut should be combined total");
+        assertEq(currency0Token.balanceOf(recipient), 28, "recipient receives combined in currency0");
+        assertEq(currency1Token.balanceOf(recipient), 0, "recipient should NOT receive currency1");
+        assertEq(poolManager.swapCalls(), 1, "swap should consolidate currencies");
     }
 
     function test_burnAndPayoutWithoutReferralRoutesAllProceeds() public {

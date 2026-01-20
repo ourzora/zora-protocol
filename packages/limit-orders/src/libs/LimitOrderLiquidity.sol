@@ -45,6 +45,21 @@ library LimitOrderLiquidity {
         settleDeltas(poolManager, key, delta0, delta1, payout0, payout1);
     }
 
+    /// @notice Burns a filled limit order and pays out proceeds to maker and fee recipient
+    /// @dev Consolidates payouts into the target currency (opposite of the deposit currency).
+    /// Handles fee distribution and ensures payouts are in a single currency by swapping
+    /// when necessary. Makers receive proceeds in the target currency they were expecting.
+    /// @param poolManager The Uniswap V4 pool manager
+    /// @param key The pool key for the limit order
+    /// @param order The limit order storage struct containing order details
+    /// @param orderId The unique identifier for the limit order
+    /// @param feeRecipient The address to receive referral fees (address(0) if no fees)
+    /// @param coinIn The coin contract address for multi-hop swap paths (if applicable)
+    /// @param coinLookup The deployed coin version lookup contract
+    /// @param weth The WETH contract address for ETH handling
+    /// @return makerCoinOut The currency paid to the maker
+    /// @return makerAmountOut The amount paid to the maker
+    /// @return referralAmountOut The amount paid to the fee recipient
     function burnAndPayout(
         IPoolManager poolManager,
         PoolKey memory key,
@@ -82,6 +97,20 @@ library LimitOrderLiquidity {
         }
     }
 
+    /// @notice Burns limit order liquidity and refunds the proceeds to a recipient
+    /// @dev Consolidates payouts into the original deposit currency. If both currencies
+    /// have positive amounts after burning, the counter-asset is swapped into the original
+    /// deposit currency, ensuring the recipient receives a single consolidated payout.
+    /// @param poolManager The Uniswap V4 pool manager
+    /// @param key The pool key for the limit order
+    /// @param tickLower The lower tick of the limit order position
+    /// @param tickUpper The upper tick of the limit order position
+    /// @param liquidity The amount of liquidity to burn
+    /// @param salt The salt used for position identification
+    /// @param recipient The address to receive the refund
+    /// @param isCurrency0 True if the original deposit was in currency0, false if currency1
+    /// @param weth The WETH contract address for ETH handling
+    /// @return amountOut The total amount refunded in the original deposit currency
     function burnAndRefund(
         IPoolManager poolManager,
         PoolKey memory key,
@@ -95,24 +124,9 @@ library LimitOrderLiquidity {
     ) internal returns (uint128 amountOut) {
         (int128 amount0, int128 amount1) = _burnLiquidity(poolManager, key, tickLower, tickUpper, liquidity, salt);
 
-        if (amount0 > 0) {
-            // This cast is safe because amount0 is always positive
-            //forge-lint: disable-next-line(unsafe-typecast)
-            uint128 amount0Out = uint128(amount0);
-            _takeCurrency(poolManager, key.currency0, recipient, amount0Out, weth);
-            if (isCurrency0) {
-                amountOut = amount0Out;
-            }
-        }
-        if (amount1 > 0) {
-            // This cast is safe because amount1 is always positive
-            //forge-lint: disable-next-line(unsafe-typecast)
-            uint128 amount1Out = uint128(amount1);
-            _takeCurrency(poolManager, key.currency1, recipient, amount1Out, weth);
-            if (!isCurrency0) {
-                amountOut = amount1Out;
-            }
-        }
+        // Refund to original deposit currency (swaps any accumulated counter-asset)
+        Currency payoutCurrency = isCurrency0 ? key.currency0 : key.currency1;
+        (, amountOut) = _payoutRecipient(poolManager, recipient, amount0, amount1, _buildSingleHopPath(key, payoutCurrency), weth);
     }
 
     function settleDeltas(IPoolManager poolManager, PoolKey memory key, int256 d0, int256 d1, address payout0, address payout1) internal {
@@ -188,8 +202,12 @@ library LimitOrderLiquidity {
         }
 
         // Fallback: construct simple single-hop path
-        Currency coinCurrency = payoutCurrency == key.currency0 ? key.currency1 : key.currency0;
-        payoutPath.currencyIn = coinCurrency;
+        return _buildSingleHopPath(key, payoutCurrency);
+    }
+
+    function _buildSingleHopPath(PoolKey memory key, Currency payoutCurrency) private pure returns (IHasSwapPath.PayoutSwapPath memory payoutPath) {
+        Currency inputCurrency = payoutCurrency == key.currency0 ? key.currency1 : key.currency0;
+        payoutPath.currencyIn = inputCurrency;
         payoutPath.path = new PathKey[](1);
         payoutPath.path[0] = PathKey({intermediateCurrency: payoutCurrency, fee: key.fee, tickSpacing: key.tickSpacing, hooks: key.hooks, hookData: bytes("")});
     }
