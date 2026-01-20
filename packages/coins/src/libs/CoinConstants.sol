@@ -40,8 +40,8 @@ library CoinConstants {
     uint256 internal constant CREATOR_VESTING_DURATION = (5 * 365.25 days);
 
     /// @notice The backing currency for creator coins
-    /// @dev ETH backing currency address
-    address internal constant CREATOR_COIN_CURRENCY = 0x1111111111166b7FE7bd91427724B487980aFc69;
+    /// @dev Niche token backing currency address
+    address internal constant CREATOR_COIN_CURRENCY = 0x5ab1a8dbb78c272540d3652dac9c46d9cbfcecbf;
 
     /// @notice The LP fee
     /// @dev 10000 basis points = 1%

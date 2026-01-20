@@ -2,14 +2,15 @@
 id: rewards
 title: Coin Rewards
 ---
-import { Callout } from 'vocs/components'
+
+import { Callout } from "vocs/components";
 
 # Coin Rewards
 
 ## Introduction
 
-At Zora, we are passionate about providing the best experience to create and earn onchain.
-**Coin Rewards** is a split of the Zora fee allowing:
+At Niche, we are passionate about providing the best experience to create and earn onchain.
+**Coin Rewards** is a split of the Niche fee allowing:
 
 - Creators to monetize their work
 - Developers to earn from facilitating coin creation and trading
@@ -19,7 +20,8 @@ At Zora, we are passionate about providing the best experience to create and ear
 Coin trading rewards are distributed to the creator, create referral, trade referral, protocol, and doppler.
 
 <Callout type="success">
-All coins created on the Zora app including web and mobile after June 6th 2025 use the V4 configuration.
+  All coins created on the Niche app including web and mobile after June 6th
+  2025 use the V4 configuration.
 </Callout>
 
 The latest V4 coins use a UniswapV4 hook to collect fees, swap to a backing currency, and distribute rewards to recipients on every swap.
@@ -34,7 +36,7 @@ When users trade coins, the Uniswap V4 hook automatically:
 
 1. **Collects LP fees** (1% total fees for v2.2.0+) from all liquidity positions
 2. **Splits fees** into two parts:
-   - **20% for LP Rewards** - Used to create new liquidity positions  
+   - **20% for LP Rewards** - Used to create new liquidity positions
    - **80% for Market Rewards** - Distributed to stakeholders
 
 ### LP Reward Mechanism: Liquidity Preservation
@@ -53,17 +55,21 @@ The remaining portion of collected fees becomes "market rewards" and is distribu
 ### V4 Market Reward Distribution (Current - Since 2.2.0)
 
 <Callout type="info">
-As of version 2.2.0, the fee structure has been unified with a total fee of 1% on pools (was 3% previously) and consistent distribution across both coin types.
-All coins with hooks on version 2.2.0 or higher use the unified fee structure.
+  As of version 2.2.0, the fee structure has been unified with a total fee of 1%
+  on pools (was 3% previously) and consistent distribution across both coin
+  types. All coins with hooks on version 2.2.0 or higher use the unified fee
+  structure.
 </Callout>
 
 <Callout type="warning">
 **Existing Coins**: Coins deployed before version 2.2.0 continue to use their original fee structure unless the coin owner migrates their liquidity to a 2.2.0+ hook. Migration to newer hooks adopts the new unified fee structure automatically.
 
 For information on liquidity migration, see [Liquidity Migration](/coins/contracts/liquidity-migration).
+
 </Callout>
 
 #### Content Coins & Creator Coins (1% total fee on pools)
+
 | Recipient         | % of Market Rewards | % of Total Fees |
 | ----------------- | ------------------- | --------------- |
 | Creator           | 62.5%               | 50%             |
@@ -77,17 +83,19 @@ For information on liquidity migration, see [Liquidity Migration](/coins/contrac
 ### Fee Structure Comparison (Pre-2.2.0 vs Current)
 
 #### Content Coins
+
 | Recipient         | Before (Pre-2.2.0) (3% total fee) | After (2.2.0 and later) (1% total fee) |
-| ----------------- | --------------------- | -------------------- |
-|                   | % of Fee              | % of Fee             |
-| Creator           | 33.33%                | 50%                  |
-| Platform Referral | 10%                   | 20%                  |
-| Trade Referral    | 10%                   | 4%                   |
-| Doppler           | 3.33%                 | 1%                   |
-| Protocol          | 10%                   | 5%                   |
-| LP Rewards        | 33.33%                | 20%                  |
+| ----------------- | --------------------------------- | -------------------------------------- |
+|                   | % of Fee                          | % of Fee                               |
+| Creator           | 33.33%                            | 50%                                    |
+| Platform Referral | 10%                               | 20%                                    |
+| Trade Referral    | 10%                               | 4%                                     |
+| Doppler           | 3.33%                             | 1%                                     |
+| Protocol          | 10%                               | 5%                                     |
+| LP Rewards        | 33.33%                            | 20%                                    |
 
 #### Creator Coins
+
 | Recipient         | Before (3% total fee) | After (1% total fee) |
 | ----------------- | --------------------- | -------------------- |
 |                   | % of Fee              | % of Fee             |
@@ -103,33 +111,33 @@ For information on liquidity migration, see [Liquidity Migration](/coins/contrac
 All market rewards are automatically converted to the final backing currency before distribution:
 
 #### Currency Hierarchy
+
 - **Content Coins** are paired with **Creator Coins** (configured during [deployment](/coins/contracts/creating-a-coin#content-coin-configurable-currency))
-- **Creator Coins** are paired with **ZORA** (configured during [deployment](/coins/contracts/creating-a-coin#creator-coin-zora-paired))
+- **Creator Coins** are paired with **NICHE** (configured during [deployment](/coins/contracts/creating-a-coin#creator-coin-niche-paired))
 
 #### Conversion Process
 
 When fees are collected, the hook automatically performs multi-hop swaps to reach the final payout currency:
 
 1. **Content Coin fees** → **Creator Coin** (first hop)
-2. **Creator Coin** → **ZORA** (second hop)
+2. **Creator Coin** → **NICHE** (second hop)
 
-This ensures that all stakeholders receive rewards in **ZORA**, regardless of which coin type generated the fees.
+This ensures that all stakeholders receive rewards in **NICHE**, regardless of which coin type generated the fees.
 
 #### Example Flow
 
 ```
-Content Coin Trading → Fees Collected → Multi-hop Swap → All Recipients Receive ZORA
+Content Coin Trading → Fees Collected → Multi-hop Swap → All Recipients Receive NICHE
                    ↓
-            Content Coin → Creator Coin → ZORA
+            Content Coin → Creator Coin → NICHE
 ```
 
 ### Key V4 Features
 
 - **Automated Distribution**: Rewards are distributed on every single swap, no manual claiming required
-- **Multi-Hop Conversion**: Automatically converts rewards through intermediate tokens to reach ZORA
-- **Unified Currency**: All recipients receive rewards in the same target currency (ZORA)
+- **Multi-Hop Conversion**: Automatically converts rewards through intermediate tokens to reach NICHE
+- **Unified Currency**: All recipients receive rewards in the same target currency (NICHE)
 - **Liquidity Preservation**: 20% of fees remain in pools as permanent liquidity
-
 
 ## Coin Rewards Terminology
 
@@ -139,7 +147,7 @@ Content Coin Trading → Fees Collected → Multi-hop Swap → All Recipients Re
 
 **Creator/Payout Recipient**: The address designated to receive creator rewards from trading activity. This can be updated by coin owners.
 
-**Protocol**: The Zora protocol treasury that receives a portion of trading fees.
+**Protocol**: The Niche protocol treasury that receives a portion of trading fees.
 
 **Doppler**: The Doppler protocol treasury that receives a portion of trading fees.
 
@@ -150,6 +158,7 @@ Content Coin Trading → Fees Collected → Multi-hop Swap → All Recipients Re
 3. Creator launches their coin -- **that's it!**
 
 The creator's total rewards are automatically distributed with each trade:
+
 - **V4**: Converted to target currency and sent directly to payout recipient
 - **V3**: Accumulated in escrow and can be withdrawn at any time
 
@@ -157,7 +166,7 @@ The creator's total rewards are automatically distributed with each trade:
 
 ### Platform Referral Reward
 
-The Platform Referral Reward is paid out to the developer or platform that referred the creator to deploy their coin using Zora's contracts.
+The Platform Referral Reward is paid out to the developer or platform that referred the creator to deploy their coin using Niche's contracts.
 
 #### Creating a Coin with Rewards
 
@@ -165,16 +174,16 @@ The `platformReferrer` address is specified upon coin creation through the facto
 
 ```solidity
 function deploy(
-    address payoutRecipient,
-    address[] memory owners,
-    string memory uri,
-    string memory name,
-    string memory symbol,
-    bytes memory poolConfig,
-    address platformReferrer, // This is the platform referral
-    address postDeployHook,
-    bytes calldata postDeployHookData,
-    bytes32 coinSalt
+  address payoutRecipient,
+  address[] memory owners,
+  string memory uri,
+  string memory name,
+  string memory symbol,
+  bytes memory poolConfig,
+  address platformReferrer, // This is the platform referral
+  address postDeployHook,
+  bytes calldata postDeployHookData,
+  bytes32 coinSalt
 ) external payable returns (address coin, bytes memory postDeployHookDataOut);
 ```
 
@@ -185,4 +194,3 @@ The Trade Referral Reward is paid out to the platform that referred a specific t
 #### Trading with Referrals
 
 Trade referrals are passed through the hook data when executing swaps via the Universal Router or other compatible interfaces.
-

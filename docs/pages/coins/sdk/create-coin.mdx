@@ -1,6 +1,6 @@
 ### Creating Coins
 
-The Coins SDK provides functions to create new coins on the Zora protocol.
+The Coins SDK provides functions to create new coins on the Niche protocol.
 
 ### Overview
 
@@ -26,7 +26,7 @@ type CreateCoinArgs = {
   name: string; // Coin name (e.g., "My Awesome Coin")
   symbol: string; // Ticker (e.g., "MAC")
   metadata: MetadataType; // Metadata descriptor
-  currency: ContentCoinCurrency; // CREATOR_COIN | CREATOR_COIN_OR_ZORA | ZORA | ETH
+  currency: ContentCoinCurrency; // CREATOR_COIN | CREATOR_COIN_OR_NICHE | NICHE | ETH
   chainId?: number; // Chain ID to deploy on (defaults to Base mainnet `8453`)
   startingMarketCap?: StartingMarketCap; // LOW | HIGH (defaults to LOW)
   platformReferrer?: Address; // Optional referral address
@@ -51,8 +51,8 @@ import {
 const creatorAddress = "0xYourAddress" as Address;
 
 const { createMetadataParameters } = await createMetadataBuilder()
-  .withName("Test ZORA Coin")
-  .withSymbol("TZC")
+  .withName("Test Niche Coin")
+  .withSymbol("TNC")
   .withDescription("Test Description")
   .withImage(new File(["FILE"], "test.png", { type: "image/png" }))
   .upload(createZoraUploaderForCreator(creatorAddress));
@@ -65,17 +65,17 @@ const { createMetadataParameters } = await createMetadataBuilder()
 ```ts
 enum ContentCoinCurrencies {
   CREATOR_COIN = "CREATOR_COIN",
-  CREATOR_COIN_OR_ZORA = "CREATOR_COIN_OR_ZORA", // If no creator coin is deployed, use ZORA
-  ZORA = "ZORA",
+  CREATOR_COIN_OR_NICHE = "CREATOR_COIN_OR_NICHE", // If no creator coin is deployed, use NICHE
+  NICHE = "NICHE",
   ETH = "ETH",
 }
 ```
 
-Choose the denomination for the coin’s market. Note that `ZORA`, `CREATOR_COIN`, and `CREATOR_COIN_OR_ZORA` are not available on Base Sepolia.
+Choose the denomination for the coin's market. Note that `NICHE`, `CREATOR_COIN`, and `CREATOR_COIN_OR_NICHE` are not available on Base Sepolia.
 
 #### Starting Market Cap
 
-Starting market cap is the initial liquidity/market configuration for the coin. By default and for most coins on Zora, the starting market cap is `LOW`.
+Starting market cap is the initial liquidity/market configuration for the coin. By default and for most coins on Niche, the starting market cap is `LOW`.
 If the coin is from a known creator or brand it is recommended to use `HIGH` to prevent sniping in the initial market by setting a higher initial purchase price.
 
 #### Chain ID
@@ -117,7 +117,7 @@ const args = {
   name: "My Awesome Coin",
   symbol: "MAC",
   metadata: { type: "RAW_URI" as const, uri: "ipfs://bafy..." },
-  currency: CreateConstants.ContentCoinCurrencies.ZORA,
+  currency: CreateConstants.ContentCoinCurrencies.NICHE,
   chainId: base.id,
   startingMarketCap: CreateConstants.StartingMarketCaps.LOW,
   platformReferrerAddress: "0xOptionalReferrer" as Address,
@@ -201,7 +201,7 @@ function CreateCoinButton() {
       name: "My Awesome Coin",
       symbol: "MAC",
       metadata: { type: "RAW_URI" as const, uri: "ipfs://bafy..." },
-      currency: CreateConstants.ContentCoinCurrencies.ZORA,
+      currency: CreateConstants.ContentCoinCurrencies.NICHE,
       chainId: base.id,
       startingMarketCap: CreateConstants.StartingMarketCaps.LOW,
     };

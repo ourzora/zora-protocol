@@ -13,7 +13,7 @@ classDiagram
         +swap()
         +take()
     }
-    
+
     %% Factory Package
     class ZoraFactoryImpl {
         +deploy(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, postDeployHook, postDeployHookData, coinSalt)
@@ -21,7 +21,7 @@ classDiagram
         +coinAddress(msgSender, name, symbol, poolConfig, platformReferrer, coinSalt)
         +coinImpl()
     }
-    
+
     %% Coins Package
     class BaseCoinV4 {
         <<abstract>>
@@ -30,19 +30,19 @@ classDiagram
         +migrateLiquidity()
         +getPayoutSwapPath()
     }
-    
+
     class CreatorCoin {
-        -currency: ZORA
+        -currency: NICHE
         -vestingSchedule: VestingSchedule
         +claimVesting()
         +getClaimableAmount()
     }
-    
+
     class ContentCoin {
         -backingCurrency: CreatorCoin
         +rewardsDistributionMethodology()
     }
-    
+
     %% Hooks Package
     class ZoraV4CoinHook {
         +afterInitialize()
@@ -51,53 +51,56 @@ classDiagram
         -mintLpReward()
         +_distributeMarketRewards()
     }
-    
-    class ZORAToken {
-        ZORA Token
+
+    class NicheToken {
+        NICHE Token
     }
-    
+
     %% Inheritance relationships
     BaseCoinV4 <|-- CreatorCoin
     BaseCoinV4 <|-- ContentCoin
     %% Unified hook - no subclassing per coin type
-    
+
     %% Factory relationships
     ZoraFactoryImpl ..> CreatorCoin : creates
     ZoraFactoryImpl ..> ContentCoin : creates
-    
+
     %% Hook relationships
     ZoraV4CoinHook --> IPoolManager : uses
     ZoraV4CoinHook --> BaseCoinV4 : manages rewards
-    
+
     %% Pool Manager relationships
     BaseCoinV4 --> IPoolManager : integrates with
     CreatorCoin --> ZoraV4CoinHook : uses hook
     ContentCoin --> ZoraV4CoinHook : uses hook
-    
+
     %% Currency relationships
     ContentCoin --> CreatorCoin : backed by
-    CreatorCoin --> ZORAToken : backed by
+    CreatorCoin --> NicheToken : backed by
 ```
 
-*Visual overview of how contracts work together in the Zora Coins system*
+_Visual overview of how contracts work together in the Niche Coins system_
 
 ## Core Components
 
 ### Coins Contracts
 
 **BaseCoinV4 (Abstract)**
+
 - Base implementation for both coin types
 - Integrates with Uniswap V4 PoolManager
 - Handles liquidity migration between hook versions
 - Manages pool key and basic coin functionality
 
 **CreatorCoin**
-- One per creator, backed by ZORA tokens
+
+- One per creator, backed by NICHE tokens
 - 1 billion total supply with 5-year vesting schedule
 - 500M tokens vest to creator, 500M available for trading
 - Simpler reward distribution (creator + protocol)
 
 **ContentCoin**
+
 - Multiple per creator, backed by creator's coin
 - 1 billion total supply with instant creator allocation
 - 10M tokens to creator immediately, 990M available for trading
@@ -106,12 +109,14 @@ classDiagram
 ### Factory Contract
 
 **ZoraFactoryImpl**
+
 - Deploys new coins with deterministic addresses
 - Supports custom pool configurations and post-deployment hooks
 - Creates Uniswap V4 pools automatically with appropriate hook contracts
 - Provides address prediction before deployment
 
 Key functions:
+
 - `deploy()` - General coin deployment with full customization
 - `deployCreatorCoin()` - Simplified Creator Coin deployment
 - `coinAddress()` - Predict deployment address before deploying
@@ -121,16 +126,17 @@ Key functions:
 The protocol uses a unified hook architecture:
 
 **BaseZoraV4CoinHook (Abstract)**
+
 - Contains all shared hook functionality for both coin types
 - Implements Uniswap V4 hook interface (`afterSwap`, `afterInitialize`)
 - Handles pool initialization, fee collection, and currency conversion
 - Supports migration to new hook versions while preserving liquidity
 
 Core functionality:
+
 - Collects trading fees from liquidity positions
 - Splits fees between LP rewards and market rewards
 - Converts fees to backing currency via multi-hop swaps
 - Distributes rewards based on coin type via unified logic
 
 > History: Prior to v2.3.0 the protocol used two hooks (`ContentCoinHook` and `CreatorCoinHook`). This was consolidated into `ZoraV4CoinHook` for a single, unified implementation.
-

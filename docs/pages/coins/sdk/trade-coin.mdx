@@ -5,6 +5,7 @@ The Coins SDK provides powerful trading functionality through the `tradeCoin` fu
 ## Overview
 
 The `tradeCoin` function supports:
+
 - **ETH ↔ ERC20 token swaps** with semi-automatic routing
 - **Creator Coin ↔ Creator Coin swaps** with semi-automatic routing
 - **Content Coin ↔ Creator Coin swaps** with semi-automatic routing
@@ -55,9 +56,9 @@ const receipt = await tradeCoin({
 
 ```typescript
 const tradeParameters: TradeParameters = {
-  sell: { 
-    type: "erc20", 
-    address: "0x4e93a01c90f812284f71291a8d1415a904957156" // Creator Coin address
+  sell: {
+    type: "erc20",
+    address: "0x4e93a01c90f812284f71291a8d1415a904957156", // Creator Coin address
   },
   buy: { type: "eth" },
   amountIn: parseEther("100"), // 100 tokens (adjust decimals as needed)
@@ -86,7 +87,7 @@ const tradeParameters: TradeParameters = {
     address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913", // USDC address
   },
   buy: {
-    type: "erc20", 
+    type: "erc20",
     address: "0x9b13358e3a023507e7046c18f508a958cda75f54", // @jacob Creator Coin
   },
   amountIn: BigInt(4 * 10 ** 6), // 4 USDC (6 decimals)
@@ -104,8 +105,8 @@ const receipt = await tradeCoin({
 
 ### Trading Between ERC20 Tokens
 
-Only Creator Coins, USDC, and ZORA are supported for trading between ERC20 tokens.
-Content Coins _can_ currently be traded when the creator is the same but the current flow requires selling for ZORA, USDC, or ETH, then buying the new coin separately.
+Only Creator Coins, USDC, and NICHE are supported for trading between ERC20 tokens.
+Content Coins _can_ currently be traded when the creator is the same but the current flow requires selling for NICHE, USDC, or ETH, then buying the new coin separately.
 
 ```typescript
 import { TradeParameters, tradeCoin } from "@zoralabs/coins-sdk";
@@ -161,7 +162,7 @@ async function tradeCoin({
   account: Account;
   publicClient: GenericPublicClient;
   validateTransaction?: boolean;
-})
+});
 ```
 
 ## Trade Parameters
@@ -182,9 +183,7 @@ type TradeParameters = {
 };
 
 // Trade currency can be ETH or an ERC20 token
-type TradeCurrency = 
-  | { type: "eth" }
-  | { type: "erc20"; address: Address };
+type TradeCurrency = { type: "eth" } | { type: "erc20"; address: Address };
 ```
 
 ## How Permits Work
@@ -209,7 +208,9 @@ import { createTradeCall } from "@zoralabs/coins-sdk";
 // Get trade call data without executing
 const quote = await createTradeCall(tradeParameters);
 
-const walletClient = createWalletClient({/* ... */});
+const walletClient = createWalletClient({
+  /* ... */
+});
 
 // Execute the call directly
 const tx = await walletClient.sendTransaction({
@@ -247,6 +248,7 @@ const zeroAmount: TradeParameters = {
 ## Smart Wallet Support
 
 Smart wallet support is coming soon. Currently, the SDK works with:
+
 - ✅ **EOA wallets** (MetaMask, WalletConnect, etc.)
 - 🔄 **Smart wallets** (coming soon)
 
@@ -262,4 +264,3 @@ Smart wallet support is coming soon. Currently, the SDK works with:
 ## Network Support
 
 Currently only supports **Base mainnet**.
-

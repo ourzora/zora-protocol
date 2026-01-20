@@ -9,7 +9,7 @@ import {
   createZoraUploaderForCreator,
   CreateConstants,
 } from "../src";
-import { ZORA_ADDRESS } from "../src/utils/poolConfigUtils";
+import { NICHE_ADDRESS } from "../src/utils/poolConfigUtils";
 import { testPng } from "./util/test-png";
 
 // Create a base sepolia anvil test instance

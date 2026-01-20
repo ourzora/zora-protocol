@@ -3,7 +3,7 @@ import { base } from "viem/chains";
 import { Address, parseEther } from "viem";
 import { makeAnvilTest, forkUrls } from "./util/anvil";
 import { createCoin, CreateConstants } from "../src";
-import { ZORA_ADDRESS } from "../src/utils/poolConfigUtils";
+import { NICHE_ADDRESS } from "../src/utils/poolConfigUtils";
 
 // Create a base sepolia anvil test instance
 const baseAnvilTest = makeAnvilTest({
@@ -116,7 +116,7 @@ describe("Create ETH Coin on Base", () => {
       expect(result.address).toBeDefined();
 
       expect(result.deployment?.currency.toLowerCase()).toBe(
-        ZORA_ADDRESS.toLowerCase(),
+        NICHE_ADDRESS.toLowerCase(),
       );
 
       // Additional verification if needed

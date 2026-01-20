@@ -11,7 +11,7 @@ contract AutoSwapperTest is Test {
     address internal constant SWAP_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;
     address internal constant WETH_ADDRESS = 0x4200000000000000000000000000000000000006;
     address internal constant USDC_ADDRESS = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-    address internal constant ZORA_ADDRESS = 0x1111111111166b7FE7bd91427724B487980aFc69;
+    address internal constant NICHE_ADDRESS = 0x5ab1a8dbb78c272540d3652dac9c46d9cbfcecbf;
 
     address internal constant ZORA_RECIPIENT = 0x7bf90111Ad7C22bec9E9dFf8A01A44713CC1b1B6;
 
@@ -34,14 +34,14 @@ contract AutoSwapperTest is Test {
     }
 
     function test_swapExactInputSingleWorks() public {
-        uint256 amountToSwap = IERC20(ZORA_ADDRESS).balanceOf(swapRecipient) / 2;
+        uint256 amountToSwap = IERC20(NICHE_ADDRESS).balanceOf(swapRecipient) / 2;
 
         uint256 amountOutMin = 0;
 
-        bool zeroForOne = ZORA_ADDRESS < USDC_ADDRESS;
+        bool zeroForOne = NICHE_ADDRESS < USDC_ADDRESS;
 
         AutoSwapper.ExactInputSingleParams memory params = AutoSwapper.ExactInputSingleParams({
-            tokenIn: ZORA_ADDRESS,
+            tokenIn: NICHE_ADDRESS,
             tokenOut: USDC_ADDRESS,
             // 0.3% fee
             fee: 3000,
@@ -51,25 +51,25 @@ contract AutoSwapperTest is Test {
         });
 
         vm.prank(swapRecipient);
-        IERC20(ZORA_ADDRESS).approve(address(autoSwapper), amountToSwap);
+        IERC20(NICHE_ADDRESS).approve(address(autoSwapper), amountToSwap);
 
         uint256 usdcBalanceBefore = IERC20(USDC_ADDRESS).balanceOf(swapRecipient);
 
-        uint256 zoraBalanceBefore = IERC20(ZORA_ADDRESS).balanceOf(swapRecipient);
+        uint256 nicheBalanceBefore = IERC20(NICHE_ADDRESS).balanceOf(swapRecipient);
 
         vm.prank(swapper);
         uint256 amountOut = autoSwapper.swapExactInputSingle(params);
 
         assertEq(amountOut, IERC20(USDC_ADDRESS).balanceOf(swapRecipient) - usdcBalanceBefore);
 
-        assertEq(IERC20(ZORA_ADDRESS).balanceOf(swapRecipient), zoraBalanceBefore - amountToSwap);
+        assertEq(IERC20(NICHE_ADDRESS).balanceOf(swapRecipient), nicheBalanceBefore - amountToSwap);
     }
 
     function test_swap_revertsIfNotSwapper() public {
         vm.expectRevert(AutoSwapper.NotSwapper.selector);
         autoSwapper.swapExactInputSingle(
             AutoSwapper.ExactInputSingleParams({
-                tokenIn: ZORA_ADDRESS,
+                tokenIn: NICHE_ADDRESS,
                 tokenOut: USDC_ADDRESS,
                 fee: 3000,
                 amountIn: 1000,
@@ -80,27 +80,27 @@ contract AutoSwapperTest is Test {
     }
 
     function test_swapExactInputWorks() public {
-        // test zora to weth to usdc
+        // test niche to weth to usdc
         uint24 poolFee = 3000;
-        bytes memory path = abi.encodePacked(ZORA_ADDRESS, poolFee, WETH_ADDRESS, poolFee, USDC_ADDRESS);
+        bytes memory path = abi.encodePacked(NICHE_ADDRESS, poolFee, WETH_ADDRESS, poolFee, USDC_ADDRESS);
 
-        uint256 amountToSwap = IERC20(ZORA_ADDRESS).balanceOf(swapRecipient) / 2;
+        uint256 amountToSwap = IERC20(NICHE_ADDRESS).balanceOf(swapRecipient) / 2;
 
         AutoSwapper.ExactInputParams memory params = AutoSwapper.ExactInputParams({path: path, amountIn: amountToSwap, amountOutMinimum: 0});
 
         vm.prank(swapRecipient);
-        IERC20(ZORA_ADDRESS).approve(address(autoSwapper), amountToSwap);
+        IERC20(NICHE_ADDRESS).approve(address(autoSwapper), amountToSwap);
 
         uint256 usdcBalanceBefore = IERC20(USDC_ADDRESS).balanceOf(swapRecipient);
 
-        uint256 zoraBalanceBefore = IERC20(ZORA_ADDRESS).balanceOf(swapRecipient);
+        uint256 nicheBalanceBefore = IERC20(NICHE_ADDRESS).balanceOf(swapRecipient);
 
         vm.prank(swapper);
         uint256 amountOut = autoSwapper.swapExactInput(params);
 
         assertEq(amountOut, IERC20(USDC_ADDRESS).balanceOf(swapRecipient) - usdcBalanceBefore);
 
-        assertEq(IERC20(ZORA_ADDRESS).balanceOf(swapRecipient), zoraBalanceBefore - amountToSwap);
+        assertEq(IERC20(NICHE_ADDRESS).balanceOf(swapRecipient), nicheBalanceBefore - amountToSwap);
     }
 
     function test_swapExactInput_revertsIfNotSwapper() public {
