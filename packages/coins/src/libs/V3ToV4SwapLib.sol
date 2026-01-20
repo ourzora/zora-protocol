@@ -215,7 +215,8 @@ library V3ToV4SwapLib {
     ) internal {
         // Pay the input amount
         if (inputCurrency.isAddressZero()) {
-            // For ETH, settle with msg.value
+            // For ETH, sync and settle with msg.value
+            poolManager.sync(inputCurrency);
             poolManager.settle{value: inputAmount}();
         } else {
             // For ERC20, sync and transfer
