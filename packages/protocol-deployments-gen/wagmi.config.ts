@@ -529,45 +529,58 @@ const getCointagsContracts = (): ContractConfig[] => {
   ];
 };
 
-const getCoinsContracts = (): ContractConfig[] => {
-  const addresses: Addresses = {};
-
+// Helper to get coins deployment stored configs
+const getCoinsDeploymentConfigs = <T>({ dev }: { dev: boolean }) => {
   const addressesFiles = readdirSync("../coins-deployments/addresses", {
     withFileTypes: true,
   })
     .filter((dirent) => dirent.isFile())
     .map((dirent) => dirent.name);
 
-  const nonDevFiles = addressesFiles.filter((file) => !file.includes("dev"));
+  const filteredFiles = dev
+    ? addressesFiles.filter((file) => file.includes("_dev"))
+    : addressesFiles.filter((file) => !file.includes("dev"));
 
-  const storedConfigs = nonDevFiles.map((file) => {
-    return {
-      chainId: parseInt(file.split(".")[0]),
-      config: JSON.parse(
-        readFileSync(`../coins-deployments/addresses/${file}`, "utf-8"),
-      ) as {
-        ZORA_FACTORY: Address;
-        BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
-      },
-    };
-  });
+  return filteredFiles.map((file) => ({
+    // Dev files: "8453_dev.json" -> split("_")[0]
+    // Prod files: "8453.json" -> split(".")[0]
+    chainId: parseInt(dev ? file.split("_")[0] : file.split(".")[0]),
+    config: JSON.parse(
+      readFileSync(`../coins-deployments/addresses/${file}`, "utf-8"),
+    ) as T,
+  }));
+};
 
-  const coinErrors = [
-    ...extractErrors(baseCoinABI),
-    ...extractErrors(zoraV4CoinHookABI),
-    // since the hook is calling fill on lob, we may get an lob error
-    ...extractErrors(zoraLimitOrderBookABI),
-  ];
+// Shared coin errors used by both coins and limit orders
+const coinErrors = [
+  ...extractErrors(baseCoinABI),
+  ...extractErrors(zoraV4CoinHookABI),
+];
+
+const coinErrorsWithLob = [
+  ...coinErrors,
+  // since the hook is calling fill on lob, we may get an lob error
+  ...extractErrors(zoraLimitOrderBookABI),
+];
+
+const makeCoinsContracts = ({ dev }: { dev: boolean }): ContractConfig[] => {
+  const addresses: Addresses = {};
+  const prefix = dev ? "Dev" : "";
+
+  const storedConfigs = getCoinsDeploymentConfigs<{
+    ZORA_FACTORY: Address;
+    BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
+  }>({ dev });
 
   addAddress({
     abi: [
       ...zoraFactoryImplABI,
       ...extractErrors(buySupplyWithV4SwapHookABI),
-      ...coinErrors,
+      ...coinErrorsWithLob,
     ],
     addresses,
     configKey: "ZORA_FACTORY",
-    contractName: "CoinFactory",
+    contractName: `${prefix}CoinFactory`,
     storedConfigs,
   });
 
@@ -575,58 +588,42 @@ const getCoinsContracts = (): ContractConfig[] => {
     abi: buySupplyWithV4SwapHookABI,
     addresses,
     configKey: "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK",
-    contractName: "BuySupplyWithSwapRouterHook",
+    contractName: `${prefix}BuySupplyWithSwapRouterHook`,
     storedConfigs,
   });
 
-  return [
-    ...toConfig(addresses),
-    {
-      abi: baseCoinABI,
-      name: "Coin",
-    },
-    {
-      abi: autoSwapperABI,
-      name: "AutoSwapper",
-    },
-    {
-      abi: creatorCoinABI,
-      name: "CoinV4",
-    },
-    {
-      abi: iPoolConfigEncodingABI,
-      name: "PoolConfigEncoding",
-    },
-  ];
+  // Only include ABI-only contracts for production (not dev)
+  if (!dev) {
+    return [
+      ...toConfig(addresses),
+      { abi: baseCoinABI, name: "Coin" },
+      { abi: autoSwapperABI, name: "AutoSwapper" },
+      { abi: creatorCoinABI, name: "CoinV4" },
+      { abi: iPoolConfigEncodingABI, name: "PoolConfigEncoding" },
+    ];
+  }
+
+  return toConfig(addresses);
 };
 
-const getLimitOrdersContracts = (): ContractConfig[] => {
+const makeLimitOrdersContracts = ({
+  dev,
+}: {
+  dev: boolean;
+}): ContractConfig[] => {
   const addresses: Addresses = {};
+  const prefix = dev ? "Dev" : "";
 
-  const addressesFiles = readdirSync("../coins-deployments/addresses");
-
-  const storedConfigs = addressesFiles.map((file) => {
-    return {
-      chainId: parseInt(file.split(".")[0]),
-      config: JSON.parse(
-        readFileSync(`../coins-deployments/addresses/${file}`, "utf-8"),
-      ) as {
-        ZORA_LIMIT_ORDER_BOOK: Address;
-        ZORA_ROUTER: Address;
-      },
-    };
-  });
-
-  const coinErrors = [
-    ...extractErrors(baseCoinABI),
-    ...extractErrors(zoraV4CoinHookABI),
-  ];
+  const storedConfigs = getCoinsDeploymentConfigs<{
+    ZORA_LIMIT_ORDER_BOOK: Address;
+    ZORA_ROUTER: Address;
+  }>({ dev });
 
   addAddress({
     abi: [...zoraLimitOrderBookABI, ...coinErrors],
     addresses,
     configKey: "ZORA_LIMIT_ORDER_BOOK",
-    contractName: "ZoraLimitOrderBook",
+    contractName: `${prefix}ZoraLimitOrderBook`,
     storedConfigs,
   });
 
@@ -638,12 +635,18 @@ const getLimitOrdersContracts = (): ContractConfig[] => {
     ],
     addresses,
     configKey: "ZORA_ROUTER",
-    contractName: "ZoraRouter",
+    contractName: `${prefix}ZoraRouter`,
     storedConfigs,
   });
 
   return toConfig(addresses);
 };
+
+const getCoinsContracts = () => makeCoinsContracts({ dev: false });
+const getLimitOrdersContracts = () => makeLimitOrdersContracts({ dev: false });
+const getDevCoinsContracts = () => makeCoinsContracts({ dev: true });
+const getDevLimitOrdersContracts = () =>
+  makeLimitOrdersContracts({ dev: true });
 
 export default defineConfig({
   out: "./generated/wagmi.ts",
@@ -657,6 +660,8 @@ export default defineConfig({
     ...getCointagsContracts(),
     ...getCoinsContracts(),
     ...getLimitOrdersContracts(),
+    ...getDevCoinsContracts(),
+    ...getDevLimitOrdersContracts(),
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",
