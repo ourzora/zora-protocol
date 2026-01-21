@@ -66,6 +66,28 @@ Claude Code must automatically run formatting after making any code changes:
 - **Direct**: `npx prettier --write .` - Format all files in current directory
 - **Verification**: `npx prettier --check .` - Check if files need formatting (without writing)
 
+### Solidity Style Guidelines
+
+**Error Handling:**
+
+- **Always use custom errors** instead of `require` statements with string messages
+- Custom errors are more gas efficient and provide better developer experience
+- Define errors in the interface file, use `revert ErrorName()` or `require(condition, ErrorName())` in implementation
+
+```solidity
+// In interface - define the error
+error NotAuthorized();
+
+// In implementation - use require with custom error (preferred)
+require(authorized, NotAuthorized());
+
+// Or use revert
+if (!authorized) revert NotAuthorized();
+
+// NOT this (avoid string errors):
+require(authorized, "Not authorized");
+```
+
 ### Building & Release
 
 - `pnpm build:docs:coins` - Build coins documentation site
