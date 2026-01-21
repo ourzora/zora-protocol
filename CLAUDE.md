@@ -247,6 +247,29 @@ For new features:
 - The full compilation may take 30+ seconds, but can be interrupted once success is confirmed
 - Alternative: `forge build` (uses default profile, may be slower)
 
+### Contract Verification
+
+After deploying contracts, verify them on block explorers using the verification script in `packages/coins-deployments`:
+
+```bash
+cd packages/coins-deployments
+npx tsx scripts/verify-contracts.ts <script_name> <chain>
+```
+
+**Arguments:**
+
+- `script_name`: The Forge script filename (e.g., `UpgradeCoinImpl.sol`, `DeployAllContracts.s.sol`)
+- `chain`: The chain name (`base`, `mainnet`, `sepolia`, `base-sepolia`, `zora`, `zora-sepolia`)
+
+**Example:**
+
+```bash
+# Verify contracts from UpgradeCoinImpl deployment on Base
+npx tsx scripts/verify-contracts.ts UpgradeCoinImpl.sol base
+```
+
+The script reads the Forge broadcast file, finds all deployed contracts (CREATE transactions), and runs `forge verify-contract --guess-constructor-args` for each one. If rate limited by the block explorer API, run the script again - already verified contracts will be skipped.
+
 ## Development Workflow
 
 Uses Graphite for branch management:

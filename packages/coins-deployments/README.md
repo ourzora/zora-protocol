@@ -24,7 +24,8 @@ coins-deployments/
 │   ├── DeployHookRegistry.s.sol            # Deploy hook registry only
 │   └── DeployTrustedMsgSenderLookup.s.sol  # Deploy msg sender lookup only
 ├── scripts/
-│   └── deploy-to-tenderly.sh               # Tenderly deployment automation
+│   ├── deploy-to-tenderly.sh               # Tenderly deployment automation
+│   └── verify-contracts.ts                 # Batch contract verification script
 ├── addresses/
 │   ├── {chainId}.json                      # Production deployment addresses
 │   └── {chainId}_dev.json                  # Development deployment addresses
@@ -135,6 +136,49 @@ Runs a forge script with optional broadcasting and verification.
 
 - `script_name`: Path to the script file
 - `broadcast`: `true` to deploy with verification, `false` for dry-run
+
+## Contract Verification
+
+The `scripts/verify-contracts.ts` script automates contract verification on block explorers (Etherscan, Basescan, etc.) after deployment.
+
+### Usage
+
+```bash
+cd packages/coins-deployments
+npx tsx scripts/verify-contracts.ts <script_name> <chain>
+```
+
+**Arguments:**
+
+- `script_name`: The Forge script filename (e.g., `UpgradeCoinImpl.sol`, `DeployAllContracts.s.sol`)
+- `chain`: The chain name (`base`, `mainnet`, `sepolia`, `base-sepolia`, `zora`, `zora-sepolia`)
+
+### Examples
+
+```bash
+# Verify contracts from UpgradeCoinImpl deployment on Base
+npx tsx scripts/verify-contracts.ts UpgradeCoinImpl.sol base
+
+# Verify contracts from full deployment on mainnet
+npx tsx scripts/verify-contracts.ts DeployAllContracts.s.sol mainnet
+```
+
+### How It Works
+
+1. Reads the Forge broadcast file at `broadcast/<script>/<chainId>/run-latest.json`
+2. Filters for `CREATE` transactions (deployed contracts)
+3. Runs `forge verify-contract` with `--guess-constructor-args` for each contract
+4. Reports success/failure for each verification
+
+### Prerequisites
+
+- The `chains` CLI tool must be installed and configured with API keys
+- Contracts must have been deployed (broadcast file must exist)
+- May need to retry if rate limited by the block explorer API
+
+### Rate Limiting
+
+Block explorer APIs may rate limit verification requests. If verification fails with a rate limit error, wait a moment and run the script again. Already-verified contracts will be skipped automatically.
 
 ## Development Deployments
 
