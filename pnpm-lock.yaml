@@ -797,9 +797,15 @@ importers:
         specifier: 0.0.132
         version: 0.0.132
     devDependencies:
+      '@types/node':
+        specifier: ^20.0.0
+        version: 20.17.16
       forge-std:
         specifier: https://github.com/foundry-rs/forge-std#v1.9.4
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/1eea5bae12ae557d589f9f0f0edae2faa47cb262
+      viem:
+        specifier: ^2.21.21
+        version: 2.22.12(bufferutil@4.0.9)(typescript@5.8.3)(utf-8-validate@5.0.10)(zod@3.24.1)
 
   packages/coins-sdk:
     dependencies:

@@ -10,6 +10,8 @@
     "solady": "0.0.132"
   },
   "devDependencies": {
-    "forge-std": "^1.7.0"
+    "@types/node": "^20.0.0",
+    "forge-std": "^1.7.0",
+    "viem": "^2.21.0"
   }
 }

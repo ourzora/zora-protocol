@@ -259,7 +259,7 @@ npx tsx scripts/verify-contracts.ts <script_name> <chain>
 **Arguments:**
 
 - `script_name`: The Forge script filename (e.g., `UpgradeCoinImpl.sol`, `DeployAllContracts.s.sol`)
-- `chain`: The chain name (`base`, `mainnet`, `sepolia`, `base-sepolia`, `zora`, `zora-sepolia`)
+- `chain`: The chain name from viem/chains (e.g., `base`, `mainnet`, `sepolia`, `baseSepolia`, `zora`, `zoraSepolia`)
 
 **Example:**
 
