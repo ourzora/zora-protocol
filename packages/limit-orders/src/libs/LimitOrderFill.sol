@@ -62,12 +62,9 @@ library LimitOrderFill {
                 order.status == LimitOrderTypes.OrderStatus.OPEN &&
                 order.poolKeyHash == poolKeyHash &&
                 order.isCurrency0 == isCurrency0 &&
-                order.createdEpoch < currentEpoch
+                order.createdEpoch < currentEpoch &&
+                LimitOrderCommon.hasCrossed(order, LimitOrderCommon.currentPoolTick(ctx.poolManager, key))
             ) {
-                if (!LimitOrderCommon.hasCrossed(order, LimitOrderCommon.currentPoolTick(ctx.poolManager, key))) {
-                    continue;
-                }
-
                 int24 orderTick = LimitOrderCommon.getOrderTick(order);
                 LimitOrderTypes.Queue storage tickQueue = tickQueues[orderTick];
 
