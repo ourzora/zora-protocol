@@ -104,13 +104,12 @@ library SwapLimitOrders {
             return (o, allocated, unallocated);
         }
 
-        // Skip order creation when at tick boundaries
-        // For currency0 (buy orders): cannot place if baseTick is at maxTick
-        // For currency1 (sell orders): cannot place if baseTick is at minTick
-        int24 maxTick = TickMath.maxUsableTick(key.tickSpacing);
-        int24 alignedBaseTick = DopplerMath.alignTickToTickSpacing(isCurrency0, baseTick, key.tickSpacing);
-
-        if (isCurrency0 ? alignedBaseTick >= maxTick : alignedBaseTick <= -maxTick) {
+        // Skip order creation when at hard price boundaries
+        // For currency0 (buy orders): cannot place if price is at max
+        // For currency1 (sell orders): cannot place if price is at min
+        uint160 maxPrice = TickMath.MAX_SQRT_PRICE - 1;
+        uint160 minPrice = TickMath.MIN_SQRT_PRICE + 1;
+        if (isCurrency0 ? sqrtPriceX96 >= maxPrice : sqrtPriceX96 <= minPrice) {
             unallocated = totalSize;
             return (o, allocated, unallocated);
         }
