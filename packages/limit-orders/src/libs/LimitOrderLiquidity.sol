@@ -219,15 +219,6 @@ library LimitOrderLiquidity {
         }
     }
 
-    function _settleNegativeDeltas(IPoolManager poolManager, PoolKey memory key, int128 amount0, int128 amount1) private {
-        int256 repay0 = amount0 < 0 ? int256(amount0) : int256(0);
-        int256 repay1 = amount1 < 0 ? int256(amount1) : int256(0);
-
-        if (repay0 != 0 || repay1 != 0) {
-            settleDeltas(poolManager, key, repay0, repay1, address(0), address(0));
-        }
-    }
-
     function _takeCurrency(IPoolManager poolManager, Currency currency, address recipient, uint128 amount, address weth) private {
         if (!currency.isAddressZero()) {
             poolManager.take(currency, recipient, amount);
