@@ -39,6 +39,34 @@ If this PR modifies contract code (_.sol files in packages/_/src/), validate cha
    - If new/unrelated changes: remind author to create new changeset using `pnpm changeset add --empty`
    - According to CLAUDE.md: "When updating contract code, make a changeset for the corresponding contract package"
 
+**Important: ABI Stability**
+If this PR modifies interface files (I*.sol files in packages/*/src/):
+
+1. **Events**: NEVER modify existing event signatures
+   - Adding/removing/reordering parameters breaks the ABI
+   - For new functionality, create a NEW event (e.g., `CoinCreatedV2` instead of modifying `CoinCreated`)
+   - Event removal requires `@custom:deprecated` annotation in a prior release
+
+2. **Functions**: Follow these rules
+   - ✅ Adding new functions is allowed
+   - ✅ Renaming parameters is allowed (doesn't affect selector)
+   - ❌ Renaming functions is NOT allowed (creates confusion)
+   - ❌ Changing parameter types is NOT allowed (changes selector)
+   - ❌ Removing functions requires `@custom:deprecated` annotation in a prior release
+
+3. **Deprecation workflow** (required before removal):
+   ```solidity
+   /// @custom:deprecated Use newFunction() instead. Will be removed in vX.Y.
+   function oldFunction(...) external;
+   ```
+   - First PR: Add `@custom:deprecated` annotation, run `pnpm run abi-check:generate`, release
+   - Second PR (later): Remove the function, run `pnpm run abi-check:generate`
+
+4. **If ABI changes detected**: Remind author to run `pnpm run abi-check:generate` to update the baseline
+   after confirming the change is intentional and follows the deprecation workflow.
+
+External indexers, SDKs, and frontends depend on stable ABIs. Breaking changes cause silent failures.
+
 **Important: Protocol Knowledge Base**
 If this PR fixes a bug related to protocol integration nuances (e.g., Uniswap V4 behavior,
 external protocol gotchas, non-obvious Solidity patterns):

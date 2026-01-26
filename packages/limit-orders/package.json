@@ -23,6 +23,8 @@
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol'",
     "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol'",
     "test": "forge test -vv",
+    "abi-check:check": "../../scripts/abi-check.sh check",
+    "abi-check:generate": "../../scripts/abi-check.sh generate",
     "test-gas": "forge test --gas-report",
     "update-contract-version": "pnpm exec update-contract-version",
     "wagmi:generate": "pnpm run build:contracts:minimal && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts"

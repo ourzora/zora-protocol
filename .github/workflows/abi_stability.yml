@@ -1,0 +1,45 @@
+on:
+  workflow_call:
+    inputs:
+      package_folder:
+        required: true
+        type: string
+      name:
+        required: true
+        type: string
+
+jobs:
+  check:
+    strategy:
+      fail-fast: true
+
+    name: ABI stability check
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set commit status as pending
+        uses: myrotvorets/set-commit-status-action@968047d472cada5abe7920db2b2e539e54e4610e # v2.0.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: pending
+          context: ABI Stability ${{ inputs.name }}
+
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Install node deps and foundry
+        uses: ./.github/actions/setup_deps
+
+      - name: Cache build
+        uses: ./.github/actions/cache_foundry_build
+        with:
+          package_folder: ${{ inputs.package_folder }}
+
+      - name: "Check ABI Stability"
+        run: cd ${{ inputs.package_folder}} && pnpm run abi-check:check
+
+      - name: Set final commit status
+        uses: myrotvorets/set-commit-status-action@968047d472cada5abe7920db2b2e539e54e4610e # v2.0.0
+        if: always()
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          status: ${{ job.status }}
+          context: ABI Stability ${{ inputs.name }}

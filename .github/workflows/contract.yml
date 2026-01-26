@@ -17,6 +17,9 @@ on:
       skip_storage_layout:
         type: boolean
         default: false
+      skip_abi_stability:
+        type: boolean
+        default: false
       skip_coverage:
         type: boolean
         default: false
@@ -46,6 +49,14 @@ jobs:
     needs: build
     uses: ./.github/workflows/storage_layout.yml
     if: ${{ inputs.skip_storage_layout == false }}
+    with:
+      package_folder: ${{ inputs.package_folder }}
+      name: ${{ inputs.name }}
+
+  abi_stability:
+    needs: build
+    uses: ./.github/workflows/abi_stability.yml
+    if: ${{ inputs.skip_abi_stability == false }}
     with:
       package_folder: ${{ inputs.package_folder }}
       name: ${{ inputs.name }}

@@ -32,6 +32,7 @@ jobs:
       package_folder: packages/coins-deployments
       name: Coins Deployments
       skip_storage_layout: true
+      skip_abi_stability: true
       skip_coverage: true
       skip_contract_sizes: true
       skip_tests: true
@@ -56,3 +57,4 @@ jobs:
       name: Incentive
       ignore_coverage_files: '"*test*" "*script*"'
       skip_storage_layout: true
+      skip_abi_stability: true

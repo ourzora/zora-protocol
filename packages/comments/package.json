@@ -19,6 +19,8 @@
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "test": "forge test -vv",
+    "abi-check:check": "../../scripts/abi-check.sh check",
+    "abi-check:generate": "../../scripts/abi-check.sh generate",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test-gas": "forge test --gas-report",
     "storage-inspect:check": "./script/storage-check.sh check ZoraTimedSaleStrategyImpl",
