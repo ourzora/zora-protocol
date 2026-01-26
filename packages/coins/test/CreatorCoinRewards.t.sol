@@ -17,6 +17,7 @@ import {CreatorCoin} from "../src/CreatorCoin.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 
+/// forge-config: default.isolate = true
 contract CreatorCoinRewardsTest is BaseTest {
     CreatorCoin internal creatorCoin;
 

@@ -11,6 +11,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {ICoin, IHasTotalSupplyForPositions, IHasCoinType} from "./interfaces/ICoin.sol";
 import {IHasRewardsRecipients} from "./interfaces/IHasRewardsRecipients.sol";
+import {IHasCreationInfo} from "./interfaces/IHasCreationInfo.sol";
 import {ICoinComments} from "./interfaces/ICoinComments.sol";
 import {IERC7572} from "./interfaces/IERC7572.sol";
 import {IUniswapV3Factory} from "./interfaces/IUniswapV3Factory.sol";
@@ -52,7 +53,7 @@ import {PoolState} from "./types/PoolState.sol";
     \$$$$$$  | $$$$$$  |$$$$$$\ $$ | \$$ |
      \______/  \______/ \______|\__|  \__|
 */
-abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ERC165Upgradeable {
+abstract contract BaseCoin is ICoin, IHasCreationInfo, ContractVersionBase, ERC20PermitUpgradeable, MultiOwnable, ERC165Upgradeable {
     using SafeERC20 for IERC20;
 
     /// @notice The address of the protocol rewards contract
@@ -84,6 +85,11 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
     string private _name;
     /// @notice The symbol of the token
     string private _symbol;
+    /// @notice The timestamp when the coin was created
+    uint256 private _creationTimestamp;
+
+    /// @dev Transient storage slot for tracking deployment state
+    bytes32 private constant _IS_DEPLOYING_SLOT = keccak256("BaseCoin.isDeploying");
 
     /**
      * @notice The constructor for the static Coin contract deployment shared across all Coins.
@@ -125,6 +131,12 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
         uint160 sqrtPriceX96,
         PoolConfiguration memory poolConfiguration_
     ) public virtual initializer {
+        // Set transient deploying flag for launch fee bypass
+        _setIsDeploying(true);
+
+        // Record creation timestamp for launch fee calculation
+        _creationTimestamp = block.timestamp;
+
         currency = currency_;
         // we need to set this before initialization, because
         // distributing currency relies on the poolkey being set since the hooks
@@ -253,7 +265,25 @@ abstract contract BaseCoin is ICoin, ContractVersionBase, ERC20PermitUpgradeable
             interfaceId == type(IHasPoolKey).interfaceId ||
             interfaceId == type(IHasCoinType).interfaceId ||
             interfaceId == type(IHasTotalSupplyForPositions).interfaceId ||
-            interfaceId == type(IHasSwapPath).interfaceId;
+            interfaceId == type(IHasSwapPath).interfaceId ||
+            interfaceId == type(IHasCreationInfo).interfaceId;
+    }
+
+    /// @inheritdoc IHasCreationInfo
+    function creationInfo() external view returns (uint256 creationTimestamp, bool isDeploying) {
+        creationTimestamp = _creationTimestamp;
+        bytes32 slot = _IS_DEPLOYING_SLOT;
+        assembly {
+            isDeploying := tload(slot)
+        }
+    }
+
+    /// @dev Sets the transient deploying flag
+    function _setIsDeploying(bool value) internal {
+        bytes32 slot = _IS_DEPLOYING_SLOT;
+        assembly {
+            tstore(slot, value)
+        }
     }
 
     /// @dev Overrides ERC20's _update function to emit a superset `CoinTransfer` event

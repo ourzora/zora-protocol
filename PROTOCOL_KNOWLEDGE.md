@@ -22,7 +22,7 @@ This file contains institutional knowledge about protocol integrations, non-obvi
 // For native ETH - missing sync
 poolManager.settle{value: amount}();
 
-// For ERC20 - missing sync  
+// For ERC20 - missing sync
 currency.transfer(address(poolManager), amount);
 poolManager.settle();
 ```
@@ -86,6 +86,7 @@ uint128 totalReceived = uint128(callerDelta.amount0()); // callerDelta already i
 **The Issue:** Order crossing checks must account for Uniswap V4's asymmetric tick boundary handling where `currentTick == tickLower` does not guarantee complete order execution.
 
 **Context:** In Uniswap V4, liquidity at tick `T` is available for prices in the range `[T, T+1)` (right-exclusive). This means:
+
 - **Upper tick boundaries**: `currentTick >= tickUpper` reliably indicates crossing
 - **Lower tick boundaries**: `currentTick == tickLower` is AT the boundary but may not be fully crossed
 
@@ -93,7 +94,7 @@ uint128 totalReceived = uint128(callerDelta.amount0()); // callerDelta already i
 
 ```solidity
 // Inconsistent boundary handling - can cause premature fills
-bool crossed = order.isCurrency0 
+bool crossed = order.isCurrency0
     ? currentTick >= order.tickUpper    // Correct for upper bounds
     : currentTick <= order.tickLower;   // WRONG: <= for lower bounds
 ```
@@ -102,18 +103,20 @@ bool crossed = order.isCurrency0
 
 ```solidity
 // Consistent strict comparison respects tick boundary semantics
-bool crossed = order.isCurrency0 
+bool crossed = order.isCurrency0
     ? currentTick >= order.tickUpper    // Upper bound: inclusive
     : currentTick < order.tickLower;    // Lower bound: strictly less
 ```
 
 **Why This Matters:**
+
 - At `currentTick == tickLower`, the order sits exactly at the tick boundary but may not be fully executed due to Uniswap V4's internal tick handling
 - Using `<=` allows premature fills, causing users to receive less output tokens than intended and potentially some unexpected input tokens
 - This issue is amplified in pools with large `tickSpacing` where partial fills can leave significant amounts unfilled
 - The asymmetry exists because Uniswap V4's liquidity ranges are right-exclusive: `[tickLower, tickUpper)`
 
 **Impact on Limit Orders:**
+
 - **False positive crossing**: Orders incorrectly identified as fillable when they haven't fully crossed
 - **Blocked withdrawals**: Users cannot withdraw orders that are legitimately at the boundary but unfilled
 - **Economic loss**: Premature fills result in worse execution prices for users
@@ -136,7 +139,7 @@ bytes32 id = keccak256(abi.encodePacked(poolKey, coin, tick, maker, nonce));
 
 **Correct:**
 
-```solidity  
+```solidity
 bytes32 id = keccak256(abi.encode(poolKey, coin, tick, maker, nonce));
 ```
 
@@ -181,11 +184,58 @@ if (amount0 > 0) {
 **Why:** BalanceDelta amounts can be negative (owed to pool) or positive (owed from pool). Direct casting from int128 to uint128 when the value is negative will cause an overflow. The double cast through int256 and uint256 when negating ensures the value fits within uint128 bounds.
 
 **Common Patterns:**
+
 - Positive amounts from burning liquidity: `uint128(positiveAmount)`
 - Negative amounts when minting liquidity: `uint128(uint256(int256(-negativeAmount)))`
 - Settlement deltas: `uint256(-negativeAmount)` for amounts owed to pool
 
 **Reference:** packages/limit-orders/src/libs/ - LimitOrderCreate.sol:238-244, LimitOrderLiquidity.sol:99-110, SwapLimitOrders.sol:134-137
+
+### Launch Fee Affects Test Fee Calculations
+
+**The Issue:** Tests that swap immediately after coin deployment will have 99% fees (launch fee) instead of the expected 1% LP fee, causing reward calculations and fee assertions to fail.
+
+**Wrong:**
+
+```solidity
+function test_rewardDistribution() public {
+  _deployV4Coin(currency);
+  // Swap immediately - launch fee is 99%!
+  router.execute(commands, inputs, deadline);
+  // Assertions about 1% fee distribution will fail
+}
+```
+
+**Correct:**
+
+```solidity
+function test_rewardDistribution() public {
+  _deployV4Coin(currency);
+  // Skip past launch fee period (default 10 seconds)
+  vm.warp(block.timestamp + 1 days);
+  // Now swap with normal 1% LP fee
+  router.execute(commands, inputs, deadline);
+}
+```
+
+**Test Isolation:** When tests run in parallel or sequence, timestamp state can leak between tests. Add isolation annotation to affected test contracts or functions:
+
+```solidity
+/// forge-config: default.isolate = true
+contract MyTest is BaseTest {
+  // Tests run in isolated EVM state
+}
+
+// Or on individual functions:
+/// forge-config: default.isolate = true
+function test_specificTest() public {
+  // This test runs in isolated state
+}
+```
+
+**Why:** The launch fee applies a 99% fee for the first 10 seconds after coin creation to deter sniping. Tests expecting normal LP fee behavior must either warp past this period or use test isolation to ensure consistent timestamp state.
+
+**Reference:** packages/coins/src/hooks/ZoraV4CoinHook.sol, packages/coins/src/libs/CoinConstants.sol (LAUNCH_FEE_DURATION = 10 seconds)
 
 _(Add entries as discovered)_
 

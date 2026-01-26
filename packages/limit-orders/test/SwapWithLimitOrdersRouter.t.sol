@@ -306,10 +306,14 @@ contract SwapWithLimitOrdersTestNonForked is SwapWithLimitOrdersTestBase {
         // TODO: Requires controlling tick movement during swap
     }
 
+    /// forge-config: default.isolate = true
     function test_orderFilling_invertedDirection() public {
         // This test verifies the fix for audit issue #16
         // https://github.com/kadenzipfel/zora-autosell-audit/issues/16
         // The router should pass isCoinCurrency0 (not !isCoinCurrency0) to _fillOrders
+
+        // Skip past launch fee period to test normal swap behavior
+        vm.warp(block.timestamp + 1 days);
 
         PoolKey memory key = creatorCoin.getPoolKey();
 

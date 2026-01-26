@@ -24,6 +24,8 @@ import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
 import {IMsgSender} from "../interfaces/IMsgSender.sol";
 import {ITrustedMsgSenderProviderLookup} from "../interfaces/ITrustedMsgSenderProviderLookup.sol";
 import {ICoin, IHasSwapPath, IHasRewardsRecipients, IHasCoinType} from "../interfaces/ICoin.sol";
+import {IHasCreationInfo} from "../interfaces/IHasCreationInfo.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
 import {IUpgradeableV4Hook, IUpgradeableDestinationV4Hook, IUpgradeableDestinationV4HookWithUpdateableFee, BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
 import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
@@ -295,8 +297,9 @@ contract ZoraV4CoinHook is
         V4Liquidity.lockAndMint(poolManager, key, positions);
     }
 
-    /// @notice Transiently stores the tick before a swap.
+    /// @notice Transiently stores the tick before a swap and calculates the launch fee.
     /// @dev This is used in `_afterSwap` to determine the ticks crossed during the swap.
+    ///      Also returns a dynamic fee that decays from 99% to 1% over 10 seconds after coin creation.
     function _beforeSwap(
         address sender,
         PoolKey calldata key,
@@ -313,7 +316,56 @@ contract ZoraV4CoinHook is
         TransientSlot.Int256Slot slot = TransientSlot.asInt256(CoinConstants._BEFORE_SWAP_TICK_SLOT);
         TransientSlot.tstore(slot, int256(currentTick));
 
-        return (BaseHook.beforeSwap.selector, BeforeSwapDelta.wrap(0), 0);
+        // Calculate launch fee
+        bytes32 poolKeyHash = CoinCommon.hashPoolKey(key);
+        address coin = poolCoins[poolKeyHash].coin;
+        uint24 fee = _calculateLaunchFee(coin);
+
+        return (BaseHook.beforeSwap.selector, BeforeSwapDelta.wrap(0), fee);
+    }
+
+    /// @notice Calculates the launch fee based on coin creation time
+    /// @dev Returns fee with OVERRIDE_FEE_FLAG to signal V4 to use this fee.
+    ///      Fee decays linearly from LAUNCH_FEE_START (99%) to LP_FEE_V4 (1%) over LAUNCH_FEE_DURATION.
+    ///      Returns LP_FEE_V4 for legacy coins that don't support IHasCreationInfo.
+    ///      Bypasses launch fee (returns LP_FEE_V4) during initial coin deployment.
+    /// @param coin The coin address
+    /// @return fee The calculated fee with OVERRIDE_FEE_FLAG
+    function _calculateLaunchFee(address coin) internal view returns (uint24 fee) {
+        // Check if coin supports creation info interface (legacy coins won't)
+        try IERC165(coin).supportsInterface(type(IHasCreationInfo).interfaceId) returns (bool supported) {
+            if (!supported) {
+                // Legacy coin - use normal LP fee
+                return CoinConstants.OVERRIDE_FEE_FLAG | CoinConstants.LP_FEE_V4;
+            }
+        } catch {
+            // supportsInterface call failed - use normal LP fee
+            return CoinConstants.OVERRIDE_FEE_FLAG | CoinConstants.LP_FEE_V4;
+        }
+
+        // Get creation info from coin
+        (uint256 creationTimestamp, bool isDeploying) = IHasCreationInfo(coin).creationInfo();
+
+        // Bypass launch fee during initial deployment
+        if (isDeploying) {
+            return CoinConstants.OVERRIDE_FEE_FLAG | CoinConstants.LP_FEE_V4;
+        }
+
+        // Calculate elapsed time since creation
+        uint256 elapsed = block.timestamp - creationTimestamp;
+
+        // If launch fee duration has passed, use normal LP fee
+        if (elapsed >= CoinConstants.LAUNCH_FEE_DURATION) {
+            return CoinConstants.OVERRIDE_FEE_FLAG | CoinConstants.LP_FEE_V4;
+        }
+
+        // Linear decay: fee = startFee - (elapsed / duration) * (startFee - endFee)
+        uint256 startFee = CoinConstants.LAUNCH_FEE_START;
+        uint256 endFee = CoinConstants.LP_FEE_V4;
+        uint256 feeReduction = (elapsed * (startFee - endFee)) / CoinConstants.LAUNCH_FEE_DURATION;
+        fee = uint24(startFee - feeReduction);
+
+        return CoinConstants.OVERRIDE_FEE_FLAG | fee;
     }
 
     /// @notice Internal fn called when a swap is executed.
@@ -451,9 +503,7 @@ contract ZoraV4CoinHook is
 
     /// @dev Checks if the swap is internal and should skip hook operations
     function _isInternalSwap(address sender) internal view returns (bool) {
-        return sender == address(this) ||
-               sender == address(zoraLimitOrderBook) ||
-               zoraHookRegistry.isRegisteredHook(sender);
+        return sender == address(this) || sender == address(zoraLimitOrderBook) || zoraHookRegistry.isRegisteredHook(sender);
     }
 
     /// @notice Receives ETH from the pool manager for ETH-backed coins during fee collection.

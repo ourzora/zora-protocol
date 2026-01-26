@@ -34,6 +34,7 @@ import {Hooks} from "@uniswap/v4-core/src/libraries/Hooks.sol";
 import {ICoin, IHasSwapPath, PathKey} from "../src/interfaces/ICoin.sol";
 import {IDeployedCoinVersionLookup} from "../src/interfaces/IDeployedCoinVersionLookup.sol";
 
+/// forge-config: default.isolate = true
 contract CoinUniV4Test is BaseTest {
     MockERC20 internal mockERC20A;
     MockERC20 internal mockERC20B;
@@ -112,6 +113,9 @@ contract CoinUniV4Test is BaseTest {
     function test_estimateLpFees() public {
         address currency = address(mockERC20A);
         _deployV4Coin(currency);
+
+        // Skip past launch fee period to test normal LP fees
+        vm.warp(block.timestamp + 1 days);
 
         uint128 amountIn = uint128(0.00001 ether);
         uint128 minAmountOut = uint128(0);

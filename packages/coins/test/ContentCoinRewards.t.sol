@@ -17,6 +17,7 @@ import {CreatorCoin} from "../src/CreatorCoin.sol";
 import {ICoin} from "../src/interfaces/ICoin.sol";
 import {CoinConfigurationVersions} from "../src/libs/CoinConfigurationVersions.sol";
 
+/// forge-config: default.isolate = true
 contract ContentCoinRewardsTest is BaseTest {
     ContentCoin internal contentCoin;
     CreatorCoin internal backingCreatorCoin;

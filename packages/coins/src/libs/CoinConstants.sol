@@ -53,6 +53,22 @@ library CoinConstants {
     /// @dev 10000 basis points = 1%
     uint24 internal constant LP_FEE_V4 = 10_000;
 
+    /// @notice Flag to enable dynamic fees for the pool
+    /// @dev When set in pool key fee, enables hook to override fee per-swap
+    uint24 internal constant DYNAMIC_FEE_FLAG = 0x800000;
+
+    /// @notice Flag to override the fee in beforeSwap return value
+    /// @dev Combined with fee value to signal V4 to use the returned fee
+    uint24 internal constant OVERRIDE_FEE_FLAG = 0x400000;
+
+    /// @notice Starting fee for launch fee (99%)
+    /// @dev 990,000 pips = 99% (1,000,000 pips = 100%)
+    uint24 internal constant LAUNCH_FEE_START = 990_000;
+
+    /// @notice Duration over which launch fee decays from start to end fee
+    /// @dev 10 seconds
+    uint256 internal constant LAUNCH_FEE_DURATION = 10 seconds;
+
     /// @notice The spacing for 1% pools
     /// @dev 200 ticks
     int24 internal constant TICK_SPACING = 200;
