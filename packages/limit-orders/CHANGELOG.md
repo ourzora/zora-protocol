@@ -1,5 +1,11 @@
 # @zoralabs/limit-orders
 
+## 0.2.5
+
+### Patch Changes
+
+- 9a46fe15: Remove unused ISetLimitOrderConfig interface from SwapWithLimitOrders router
+
 ## 0.2.4
 
 ### Patch Changes
