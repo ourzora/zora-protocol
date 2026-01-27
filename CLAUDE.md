@@ -249,6 +249,25 @@ To check test coverage for contracts:
 - Coverage artifacts uploaded for failed runs
 - LCOV reports available for download from CI runs
 
+### ABI Stability Check
+
+**Defensive mechanism for contract interface changes:**
+
+Some contract packages include an ABI stability check system to track changes to public interfaces. This is a defensive tool that should only be used when explicitly requested.
+
+**Commands:**
+
+- `pnpm run abi-check:check` - Verify current ABIs match the stored snapshot
+- `pnpm run abi-check:generate` - Generate/update the ABI snapshot file (`.abi-stability`)
+
+**When to use:**
+
+- Only run `abi-check:generate` when explicitly instructed
+- This creates/updates the `.abi-stability` file that stores interface snapshots
+- Used to ensure contract interface changes are intentional and tracked
+
+**Note:** This is not part of the normal development workflow. It serves as a defensive check when interface stability needs to be verified or updated.
+
 ### Bug Fix Workflow
 
 For Solidity bugs:
