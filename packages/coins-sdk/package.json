@@ -37,7 +37,7 @@
   },
   "peerDependencies": {
     "abitype": "^1.0.8",
-    "viem": "^2.21.55"
+    "viem": "2.22.12"
   },
   "devDependencies": {
     "@hey-api/openapi-ts": "^0.64.10",

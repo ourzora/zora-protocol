@@ -47,7 +47,7 @@
   },
   "pnpm": {
     "overrides": {
-      "viem": "^2.21.21",
+      "viem": "2.22.12",
       "@wagmi/cli": "^2.1.0",
       "@solidity-parser/parser": "0.19.0",
       "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",

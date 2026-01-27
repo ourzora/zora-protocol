@@ -29,7 +29,7 @@
     "@zoralabs/protocol-deployments": "workspace:^"
   },
   "peerDependencies": {
-    "viem": "^2.21.21",
+    "viem": "2.22.12",
     "abitype": "^1.0.2"
   },
   "devDependencies": {

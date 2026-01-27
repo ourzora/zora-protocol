@@ -9,5 +9,5 @@ export default defineConfig({
   format: ["cjs", "esm"],
   tsconfig: "tsconfig.build.json",
   onSuccess:
-    "tsc --project tsconfig.build.json --emitDeclarationOnly --declaration --declarationMap",
+    "tsc --project tsconfig.build.json --emitDeclarationOnly --declaration --declarationMap --skipLibCheck",
 });
