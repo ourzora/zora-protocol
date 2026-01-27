@@ -6,7 +6,6 @@ Related docs:
 
 - [`README.md`](./README.md) — architecture & diagrams
 - [`SPEC.md`](./SPEC.md) — normative behavior + invariants
-- [`AUDIT_RFP.md`](./AUDIT_RFP.md) — audit scope
 
 ---
 

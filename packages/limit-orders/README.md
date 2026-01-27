@@ -5,9 +5,6 @@
 - **Architecture + diagrams (this doc)**: [`README.md`](./README.md)
 - **Normative behavior + invariants**: [`SPEC.md`](./SPEC.md)
 - **Threat model + audit checklist**: [`AUDIT_NOTES.md`](./AUDIT_NOTES.md)
-- **Audit scope / process**: [`AUDIT_RFP.md`](./AUDIT_RFP.md)
-
-If you’re auditing: read **README → SPEC → AUDIT_NOTES → code**.
 
 ### Table of Contents
 
@@ -155,8 +152,7 @@ Components
 
 4. Access Control
 
-- [`SimpleAccessManaged.sol`](./src/access/SimpleAccessManaged.sol) - Base contract for access-controlled functions
-- [`SimpleAccessManager.sol`](./src/access/SimpleAccessManager.sol) - Role-based access manager implementation
+- [`PermittedCallers.sol`](./src/access/PermittedCallers.sol) - Ownable2Step-based access control with permitted callers mapping
 
 #### Tick Queue System
 
@@ -456,13 +452,14 @@ This enables.
 - Potential future upgradeability
 - Gas-efficient storage access
 
-Access Control via SimpleAccessManaged
+Access Control via PermittedCallers
 
-Uses OpenZeppelin's access control pattern with a separate `AccessManager` contract.
+Uses OpenZeppelin's `Ownable2Step` pattern with a simple permitted callers mapping.
 
-- Flexible role-based permissions
+- By default, `PUBLIC_ACCESS` (address(0)) is permitted, meaning anyone can call
+- Owner can restrict access by setting `PUBLIC_ACCESS` to false and whitelisting specific addresses
 - Can restrict `create()` to specific routers/hooks if needed
-- Authority can be transferred or upgraded
+- Two-step ownership transfer for safe admin transitions
 
 ### 4. Fill Execution Paths
 

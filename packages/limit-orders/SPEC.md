@@ -4,9 +4,8 @@ This document is the **behavioral specification** for the Limit Orders system in
 
 Related docs:
 
-- [`README.md`](./README.md) — architecture & diagrams (canonical “where to start”)
+- [`README.md`](./README.md) — architecture & diagrams (canonical "where to start")
 - [`AUDIT_NOTES.md`](./AUDIT_NOTES.md) — threat model & audit checklist
-- [`AUDIT_RFP.md`](./AUDIT_RFP.md) — audit scope & deliverables
 
 ---
 
@@ -65,7 +64,7 @@ This section defines **intended behavior** for the public entrypoints. For exact
 
 **Authorization**
 
-- `create()` is access-controlled via `SimpleAccessManaged` authority checks.
+- `create()` is access-controlled via `PermittedCallers` which uses an `onlyPermitted` modifier.
 
 **Effects**
 
@@ -163,9 +162,10 @@ This section defines **intended behavior** for the public entrypoints. For exact
 - Updates the stored default max fills per call.
 - Must not allow admin to withdraw user funds or block withdrawals.
 
-**Authority management**
+**Permitted callers management**
 
-- Authority contract can be updated as per `SimpleAccessManaged` design.
+- Owner can update permitted callers via `setPermittedCallers()`.
+- Ownership can be transferred via two-step process (`Ownable2Step`).
 
 ---
 
