@@ -21,8 +21,9 @@ import {LimitOrderWithdraw} from "./libs/LimitOrderWithdraw.sol";
 import {LimitOrderViews} from "./libs/LimitOrderViews.sol";
 import {LimitOrderTypes} from "./libs/LimitOrderTypes.sol";
 import {PermittedCallers} from "./access/PermittedCallers.sol";
+import {ContractVersionBase} from "./version/ContractVersionBase.sol";
 
-contract ZoraLimitOrderBook is IZoraLimitOrderBook, PermittedCallers {
+contract ZoraLimitOrderBook is IZoraLimitOrderBook, ContractVersionBase, PermittedCallers {
     IPoolManager public immutable poolManager;
     IDeployedCoinVersionLookup public immutable zoraCoinVersionLookup;
     IZoraHookRegistry public immutable zoraHookRegistry;

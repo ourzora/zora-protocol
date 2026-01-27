@@ -28,6 +28,7 @@ import {V3ToV4SwapLib} from "@zoralabs/coins/src/libs/V3ToV4SwapLib.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol";
+import {ContractVersionBase} from "../version/ContractVersionBase.sol";
 
 /// @title SwapWithLimitOrders
 /// @notice Standalone router contract that executes swaps with automatic limit order placement and filling.
@@ -36,7 +37,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 ///      Users call swapWithLimitOrders() directly, which triggers the unlock callback flow.
 ///      Uses Permit2 for token approvals, matching the universal-router pattern.
 /// @author oveddan
-contract SwapWithLimitOrders is Ownable2Step, IMsgSender {
+contract SwapWithLimitOrders is ContractVersionBase, Ownable2Step, IMsgSender {
     using SafeERC20 for IERC20;
     using BalanceDeltaLibrary for BalanceDelta;
     using CurrencyLibrary for Currency;

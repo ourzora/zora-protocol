@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/coins-deployments",
-  "version": "1.0.6",
+  "version": "1.0.7",
   "private": true,
   "description": "Deployment scripts and addresses for Zora coins and limit orders",
   "dependencies": {
@@ -12,7 +12,7 @@
   "devDependencies": {
     "@types/node": "^20.0.0",
     "forge-std": "^1.7.0",
-    "viem": "^2.21.0",    
+    "viem": "^2.21.0",
     "@turnkey/api-key-stamper": "^0.3.1",
     "@turnkey/http": "^2.5.1",
     "@turnkey/viem": "^0.6.8"

@@ -1,5 +1,13 @@
 # @zoralabs/coins-deployments
 
+## 1.0.7
+
+### Patch Changes
+
+- Updated dependencies [df0b0a1d]
+- Updated dependencies [b374124a]
+  - @zoralabs/limit-orders@0.2.6
+
 ## 1.0.6
 
 ### Patch Changes

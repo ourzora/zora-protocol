@@ -1,5 +1,18 @@
 # @zoralabs/limit-orders
 
+## 0.2.6
+
+### Patch Changes
+
+- df0b0a1d: Add ContractVersionBase inheritance to ZoraLimitOrderBook and SwapWithLimitOrders
+
+  - Both contracts now inherit from ContractVersionBase for consistent version tracking
+  - Implements IVersionedContract interface with contractVersion() returning "0.2.5"
+
+- b374124a: Initialize max fill count to 50 in ZoraLimitOrderBook constructor
+
+  Sets a default maximum fill count of 50 orders per transaction in the constructor, providing consistent behavior from deployment without requiring separate configuration.
+
 ## 0.2.5
 
 ### Patch Changes
