@@ -3,7 +3,7 @@ import { readFileSync } from "fs";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import * as chains from "viem/chains";
-import { Address } from "viem";
+import { Address, encodeAbiParameters } from "viem";
 import { verifyContract } from "./lib/verify";
 
 const __filename = fileURLToPath(import.meta.url);
@@ -21,6 +21,7 @@ interface Transaction {
   transactionType: string;
   contractName: string;
   contractAddress: string;
+  arguments?: string[];
 }
 
 interface BroadcastFile {
@@ -67,10 +68,23 @@ async function main() {
 
   for (const tx of creates) {
     try {
+      let constructorArgs: string | undefined;
+
+      // Encode constructor arguments if present
+      if (tx.arguments && tx.arguments.length > 0) {
+        const encodedArgs = encodeAbiParameters(
+          tx.arguments.map(() => ({ type: "address" })),
+          tx.arguments as Address[],
+        );
+        // Remove 0x prefix for forge verify-contract
+        constructorArgs = encodedArgs.slice(2);
+      }
+
       await verifyContract(
         tx.contractAddress as Address,
         tx.contractName,
         chain,
+        constructorArgs,
       );
     } catch {
       console.error(`Failed to verify ${tx.contractName}\n`);
