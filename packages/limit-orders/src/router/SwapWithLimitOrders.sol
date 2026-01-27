@@ -18,7 +18,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IZoraLimitOrderBook} from "../IZoraLimitOrderBook.sol";
 import {SwapLimitOrders, LimitOrderConfig, Orders} from "../libs/SwapLimitOrders.sol";
-import {ISetLimitOrderConfig} from "./ISetLimitOrderConfig.sol";
 import {ISwapRouter} from "@zoralabs/shared-contracts/interfaces/uniswap/ISwapRouter.sol";
 import {ISupportsLimitOrderFill} from "@zoralabs/coins/src/interfaces/ISupportsLimitOrderFill.sol";
 import {IMsgSender} from "@zoralabs/coins/src/interfaces/IMsgSender.sol";
@@ -37,7 +36,7 @@ import {IAllowanceTransfer} from "permit2/src/interfaces/IAllowanceTransfer.sol"
 ///      Users call swapWithLimitOrders() directly, which triggers the unlock callback flow.
 ///      Uses Permit2 for token approvals, matching the universal-router pattern.
 /// @author oveddan
-contract SwapWithLimitOrders is ISetLimitOrderConfig, Ownable2Step, IMsgSender {
+contract SwapWithLimitOrders is Ownable2Step, IMsgSender {
     using SafeERC20 for IERC20;
     using BalanceDeltaLibrary for BalanceDelta;
     using CurrencyLibrary for Currency;

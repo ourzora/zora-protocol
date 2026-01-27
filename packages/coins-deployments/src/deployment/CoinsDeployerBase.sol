@@ -26,7 +26,6 @@ import {ZoraHookRegistry} from "@zoralabs/coins/src/hook-registry/ZoraHookRegist
 import {ZoraLimitOrderBook} from "@zoralabs/limit-orders/ZoraLimitOrderBook.sol";
 import {IZoraLimitOrderBook} from "@zoralabs/limit-orders/IZoraLimitOrderBook.sol";
 import {SwapWithLimitOrders} from "@zoralabs/limit-orders/router/SwapWithLimitOrders.sol";
-import {ISetLimitOrderConfig} from "@zoralabs/limit-orders/router/ISetLimitOrderConfig.sol";
 import {ISwapRouter} from "@zoralabs/coins/src/interfaces/ISwapRouter.sol";
 import {ImmutableCreate2FactoryUtils} from "@zoralabs/shared-contracts/utils/ImmutableCreate2FactoryUtils.sol";
 
