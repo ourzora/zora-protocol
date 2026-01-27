@@ -1,5 +1,12 @@
 # @zoralabs/limit-orders
 
+## 0.2.4
+
+### Patch Changes
+
+- 3a8a5a05: Fixed infinite loop bug in batch fill when order hasn't crossed tick range
+- 53957bf7: Skip order creation when swaps hit hard price boundaries using sqrt price sentinel checks.
+
 ## 0.2.3
 
 ### Patch Changes

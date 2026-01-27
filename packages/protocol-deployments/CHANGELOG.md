@@ -1,5 +1,17 @@
 # @zoralabs/protocol-deployments
 
+## 0.7.0
+
+### Minor Changes
+
+- 5d656794: Add dev contract exports for Base mainnet development deployments
+
+  - Add `devCoinFactoryAddress` and `devCoinFactoryABI` exports for dev Coin factory
+  - Add `devZoraLimitOrderBookAddress` and `devZoraLimitOrderBookABI` exports for dev limit order book
+  - Add `devZoraRouterAddress` and `devZoraRouterABI` exports for dev router
+  - Add `devBuySupplyWithSwapRouterHookABI` export (address empty due to zero address in deployment)
+  - Fix bug in getLimitOrdersContracts that was not filtering out dev files
+
 ## 0.6.5
 
 ### Patch Changes
