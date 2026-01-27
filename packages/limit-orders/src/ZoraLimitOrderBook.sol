@@ -38,6 +38,8 @@ contract ZoraLimitOrderBook is IZoraLimitOrderBook, PermittedCallers {
         zoraCoinVersionLookup = IDeployedCoinVersionLookup(zoraCoinVersionLookup_);
         zoraHookRegistry = IZoraHookRegistry(zoraHookRegistry_);
         weth = weth_;
+
+        LimitOrderStorage.layout().maxFillCount = 50;
     }
 
     /// @inheritdoc IZoraLimitOrderBook

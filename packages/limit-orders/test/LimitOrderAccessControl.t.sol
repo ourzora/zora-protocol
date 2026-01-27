@@ -332,9 +332,15 @@ contract LimitOrderAccessControlTest is BaseTest {
         payable(address(limitOrderBook)).transfer(1 wei);
     }
 
+    // Test: maxFillCount defaults to 50 after construction
+    function test_maxFillCount_defaultsTo50() public {
+        // Max fill count should be initialized to 50 in constructor
+        assertEq(limitOrderBook.getMaxFillCount(), 50);
+    }
+
     // Test: setMaxFillCount - owner can set
     function test_setMaxFillCount_ownerCanSet() public {
-        // Initially max fill count should be 50 (set in BaseTest)
+        // Initially max fill count should be 50 (set in constructor)
         assertEq(limitOrderBook.getMaxFillCount(), 50);
 
         // Owner (this contract) should be able to set it
@@ -350,7 +356,7 @@ contract LimitOrderAccessControlTest is BaseTest {
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, unauthorizedUser));
         limitOrderBook.setMaxFillCount(20);
 
-        // Verify value hasn't changed (still 50 from BaseTest)
+        // Verify value hasn't changed (still 50 from constructor)
         assertEq(limitOrderBook.getMaxFillCount(), 50);
     }
 
