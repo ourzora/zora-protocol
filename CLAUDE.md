@@ -36,6 +36,57 @@ When documenting contracts, focus on **how to use** and **how it works** rather 
 - Configured with specific file path triggers and allowed tools for comprehensive validation
 - Can be customized with different prompts based on PR author or file types
 
+**Foundry Cache Management:**
+
+The CI workflows use a sophisticated caching system to speed up contract compilation. The cache system is managed by two shell scripts:
+
+- `.github/scripts/compute-foundry-cache-key.sh` - Computes the cache key by hashing:
+
+  - Package folder name
+  - Foundry version (from setup_deps action.yml)
+  - All `.sol` files in `src/`, `test/`, and `script/` directories
+  - `foundry.toml` configuration
+  - `package.json` dependencies
+
+- `.github/scripts/compute-foundry-cache-restore-keys.sh` - Generates fallback keys for partial cache matches
+
+**Cache Workflow Behavior:**
+
+- **Build workflow** (`.github/workflows/build.yml`):
+
+  - Restores cache from previous builds
+  - Compiles contracts with `forge build`
+  - **Always saves cache** after build completes
+  - Can skip cache restore via commit message (see below)
+
+- **Test workflow** (`.github/workflows/test.yml`):
+  - **Always restores cache** (never skips)
+  - Relies on build job to have run first and created/updated cache
+  - Does not save cache (only build job saves)
+
+**Force Cache Refresh (Cache Busting):**
+
+When Foundry's internal cache becomes stale and causes test failures, you can force a fresh rebuild:
+
+1. Include `skip-cache-{package_folder}` in your commit message
+
+   - Example: `"Fix bug skip-cache-packages/coins"`
+   - This tells the build workflow to skip restoring the cache
+
+2. The build workflow will:
+
+   - Skip the "Restore foundry cache" step
+   - Build contracts from scratch
+   - Save a fresh cache for future builds
+
+3. Subsequent commits will use the fresh cache automatically
+
+**Common use cases:**
+
+- Foundry cache corruption causing test failures
+- After upgrading Foundry version
+- When test helpers/mocks aren't rebuilding properly
+
 ### Package Management
 
 - `pnpm install` - Install dependencies

@@ -25,11 +25,36 @@ jobs:
         if: ${{ inputs.precache != null }}
         run: cd ${{ inputs.package_folder}} && ${{ inputs.precache }}
 
-      - name: Load foundry cache
-        uses: ./.github/actions/cache_foundry_build
+      - name: Compute cache key
+        id: cache-key
+        run: |
+          CACHE_KEY=$(.github/scripts/compute-foundry-cache-key.sh "${{ inputs.package_folder }}")
+          echo "key=$CACHE_KEY" >> $GITHUB_OUTPUT
+
+          RESTORE_KEYS=$(.github/scripts/compute-foundry-cache-restore-keys.sh "${{ inputs.package_folder }}")
+          echo "restore-keys<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESTORE_KEYS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Restore foundry cache
+        if: ${{ !contains(github.event.head_commit.message, format('skip-cache-{0}', inputs.package_folder)) }}
+        uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
-          package_folder: ${{ inputs.package_folder }}
+          path: |
+            ${{ inputs.package_folder }}/cache
+            ${{ inputs.package_folder }}/out
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: ${{ steps.cache-key.outputs.restore-keys }}
 
       - name: Build contracts
         run: |
           cd ${{ inputs.package_folder}} && forge build
+
+      - name: Save foundry cache
+        uses: actions/cache/save@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+        if: always()
+        with:
+          path: |
+            ${{ inputs.package_folder }}/cache
+            ${{ inputs.package_folder }}/out
+          key: ${{ steps.cache-key.outputs.key }}
