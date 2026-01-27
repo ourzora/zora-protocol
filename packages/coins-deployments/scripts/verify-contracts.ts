@@ -1,9 +1,10 @@
 #!/usr/bin/env npx tsx
 import { readFileSync } from "fs";
-import { execSync } from "child_process";
 import { join, dirname } from "path";
 import { fileURLToPath } from "url";
 import * as chains from "viem/chains";
+import { Address } from "viem";
+import { verifyContract } from "./lib/verify";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -26,51 +27,58 @@ interface BroadcastFile {
   transactions: Transaction[];
 }
 
-const [script, chain] = process.argv.slice(2);
+async function main() {
+  const [script, chain] = process.argv.slice(2);
 
-if (!script || !chain) {
-  console.error("Usage: npx tsx verify-contracts.ts <script> <chain>");
-  console.error(
-    "Example: npx tsx verify-contracts.ts UpgradeCoinImpl.sol base",
+  if (!script || !chain) {
+    console.error("Usage: npx tsx verify-contracts.ts <script> <chain>");
+    console.error(
+      "Example: npx tsx verify-contracts.ts UpgradeCoinImpl.sol base",
+    );
+    process.exit(1);
+  }
+
+  const chainId = chainIds[chain];
+  if (!chainId) {
+    console.error(
+      `Unknown chain: ${chain}. Some common chains: base, mainnet, sepolia, baseSepolia, zora, zoraSepolia`,
+    );
+    process.exit(1);
+  }
+
+  const broadcastPath = join(
+    __dirname,
+    "..",
+    "broadcast",
+    script,
+    String(chainId),
+    "run-latest.json",
   );
-  process.exit(1);
-}
+  console.log(`Reading broadcast file: ${broadcastPath}\n`);
 
-const chainId = chainIds[chain];
-if (!chainId) {
-  console.error(
-    `Unknown chain: ${chain}. Some common chains: base, mainnet, sepolia, baseSepolia, zora, zoraSepolia`,
+  const broadcast: BroadcastFile = JSON.parse(
+    readFileSync(broadcastPath, "utf-8"),
   );
-  process.exit(1);
-}
+  const creates = broadcast.transactions.filter(
+    (tx) => tx.transactionType === "CREATE",
+  );
 
-const broadcastPath = join(
-  __dirname,
-  "..",
-  "broadcast",
-  script,
-  String(chainId),
-  "run-latest.json",
-);
-console.log(`Reading broadcast file: ${broadcastPath}\n`);
+  console.log(`Found ${creates.length} contracts to verify\n`);
 
-const broadcast: BroadcastFile = JSON.parse(
-  readFileSync(broadcastPath, "utf-8"),
-);
-const creates = broadcast.transactions.filter(
-  (tx) => tx.transactionType === "CREATE",
-);
-
-console.log(`Found ${creates.length} contracts to verify\n`);
-
-for (const tx of creates) {
-  console.log(`Verifying ${tx.contractName} at ${tx.contractAddress}...`);
-  try {
-    const cmd = `forge verify-contract ${tx.contractAddress} ${tx.contractName} --guess-constructor-args $(chains ${chain} --deploy)`;
-    console.log(`  Running: ${cmd}`);
-    execSync(cmd, { stdio: "inherit", shell: "/bin/bash" });
-    console.log(`  ✓ ${tx.contractName} verified\n`);
-  } catch {
-    console.error(`  ✗ Failed to verify ${tx.contractName}\n`);
+  for (const tx of creates) {
+    try {
+      await verifyContract(
+        tx.contractAddress as Address,
+        tx.contractName,
+        chain,
+      );
+    } catch {
+      console.error(`Failed to verify ${tx.contractName}\n`);
+    }
   }
 }
+
+main().catch((error) => {
+  console.error("Error:", error);
+  process.exit(1);
+});

@@ -37,8 +37,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     // Hardcoded salts for deterministic deployment
     // First 20 bytes are 0 to allow any address to deploy
     bytes32 constant PROXY_SHIM_SALT = 0x0000000000000000000000000000000000000000000000000000000000000000;
-    bytes32 constant LIMIT_ORDER_BOOK_SALT = 0x0000000000000000000000000000000000000000000000000000000000000002;
-    bytes32 constant SWAP_ROUTER_SALT = 0x0000000000000000000000000000000000000000000000000000000000000003;
+    bytes32 constant LIMIT_ORDER_BOOK_SALT = 0x5607f5b9f9fba8d2093bcebcd02601df33a4b46765d3b10f47ef98c1aa287486;
+    bytes32 constant SWAP_ROUTER_SALT = 0x621f6abdb3475824503a55278d5ef4b000654947552961186bf4f2887f1a86d8;
     bytes32 constant FACTORY_SALT = 0x0000000000000000000000000000000000000000000000000000000000000004;
     bytes32 constant HOOK_REGISTRY_SALT = 0x0000000000000000000000000000000000000000000000000000000000000005;
 
@@ -83,7 +83,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function saveDeployment(CoinsDeployment memory deployment) internal {
-        string memory objectKey = "config";
+        string memory objectKey = "deployment";
 
         vm.serializeAddress(objectKey, "ZORA_FACTORY", deployment.zoraFactory);
         vm.serializeAddress(objectKey, "ZORA_FACTORY_IMPL", deployment.zoraFactoryImpl);
@@ -97,8 +97,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "ZORA_HOOK_REGISTRY", deployment.zoraHookRegistry);
         vm.serializeAddress(objectKey, "TRUSTED_MSG_SENDER_LOOKUP", deployment.trustedMsgSenderLookup);
         vm.serializeAddress(objectKey, "ZORA_LIMIT_ORDER_BOOK", deployment.zoraLimitOrderBook);
-        string memory result = vm.serializeAddress(objectKey, "ZORA_ROUTER", deployment.zoraRouter);
-        vm.serializeAddress(objectKey, "COIN_V4_IMPL", deployment.coinV4Impl);
+        vm.serializeAddress(objectKey, "ZORA_ROUTER", deployment.zoraRouter);
+        string memory result = vm.serializeAddress(objectKey, "COIN_V4_IMPL", deployment.coinV4Impl);
 
         vm.writeJson(result, addressesFile());
     }
@@ -319,42 +319,51 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
     // Limit Order Book Deterministic Deployment Functions
 
+    function getLimitOrderBookSalt() internal returns (bytes32) {
+        // In dev mode, use hardcoded salt
+        if (isDevEnvironment()) {
+            return LIMIT_ORDER_BOOK_SALT;
+        }
+
+        // In production, read from deterministicConfig file
+        string memory configPath = "deterministicConfig/zoraLimitOrderBook.json";
+        if (!vm.exists(configPath)) {
+            revert("Deterministic config not found. Run GenerateLimitOrderParams.s.sol first");
+        }
+
+        string memory json = vm.readFile(configPath);
+        return vm.parseJsonBytes32(json, ".salt");
+    }
+
+    function getSwapRouterSalt() internal returns (bytes32) {
+        // In dev mode, use hardcoded salt
+        if (isDevEnvironment()) {
+            return SWAP_ROUTER_SALT;
+        }
+
+        // In production, read from deterministicConfig file
+        string memory configPath = "deterministicConfig/zoraRouter.json";
+        if (!vm.exists(configPath)) {
+            revert("Deterministic config not found. Run GenerateLimitOrderParams.s.sol first");
+        }
+
+        string memory json = vm.readFile(configPath);
+        return vm.parseJsonBytes32(json, ".salt");
+    }
+
     function computeLimitOrderBookAddress(
         address poolManager,
         address zoraFactory,
         address zoraHookRegistry,
         address owner,
         address weth
-    ) internal pure returns (address) {
-        bytes memory creationCode = abi.encodePacked(
-            type(ZoraLimitOrderBook).creationCode,
-            abi.encode(poolManager, zoraFactory, zoraHookRegistry, owner, weth)
-        );
-
-        return Create2.computeAddress(LIMIT_ORDER_BOOK_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
-    }
-
-    function deployLimitOrderBookDeterministic(
-        address poolManager,
-        address zoraFactory,
-        address zoraHookRegistry,
-        address owner,
-        address weth
     ) internal returns (address) {
-        require(poolManager != address(0), "Pool manager cannot be zero address");
-        require(zoraFactory != address(0), "Zora factory cannot be zero address");
-        require(zoraHookRegistry != address(0), "Zora hook registry cannot be zero address");
-        require(owner != address(0), "Owner cannot be zero address");
-        require(weth != address(0), "WETH cannot be zero address");
-
         bytes memory creationCode = abi.encodePacked(
             type(ZoraLimitOrderBook).creationCode,
             abi.encode(poolManager, zoraFactory, zoraHookRegistry, owner, weth)
         );
 
-        address deployed = ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(LIMIT_ORDER_BOOK_SALT, creationCode);
-
-        return deployed;
+        return Create2.computeAddress(getLimitOrderBookSalt(), keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
     }
 
     function computeSwapRouterAddress(
@@ -363,45 +372,24 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address swapRouter,
         address permit2,
         address owner
-    ) internal pure returns (address) {
-        bytes memory creationCode = abi.encodePacked(
-            type(SwapWithLimitOrders).creationCode,
-            abi.encode(poolManager, zoraLimitOrderBook, swapRouter, permit2, owner)
-        );
-
-        return Create2.computeAddress(SWAP_ROUTER_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
-    }
-
-    function deploySwapRouterDeterministic(
-        address poolManager,
-        address zoraLimitOrderBook,
-        address swapRouter,
-        address permit2,
-        address owner
     ) internal returns (address) {
-        require(poolManager != address(0), "Pool manager cannot be zero address");
-        require(zoraLimitOrderBook != address(0), "Zora limit order book cannot be zero address");
-        require(swapRouter != address(0), "Swap router cannot be zero address");
-        require(permit2 != address(0), "Permit2 cannot be zero address");
-        require(owner != address(0), "Owner cannot be zero address");
-
         bytes memory creationCode = abi.encodePacked(
             type(SwapWithLimitOrders).creationCode,
             abi.encode(poolManager, zoraLimitOrderBook, swapRouter, permit2, owner)
         );
 
-        address deployed = ImmutableCreate2FactoryUtils.safeCreate2OrGetExisting(SWAP_ROUTER_SALT, creationCode);
-
-        return deployed;
+        return Create2.computeAddress(getSwapRouterSalt(), keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
     }
 
     // Non-deterministic Deployment Functions (for dev environments)
 
     function deployLimitOrderBook(address poolManager, address zoraFactory, address zoraHookRegistry, address owner, address weth) internal returns (address) {
+        require(isDevEnvironment(), "Non-deterministic limit order book deployment only allowed in dev mode");
         return address(new ZoraLimitOrderBook(poolManager, zoraFactory, zoraHookRegistry, owner, weth));
     }
 
     function deploySwapRouter(address poolManager, address zoraLimitOrderBook, address swapRouter, address permit2, address owner) internal returns (address) {
+        require(isDevEnvironment(), "Non-deterministic swap router deployment only allowed in dev mode");
         return address(new SwapWithLimitOrders(IPoolManager(poolManager), IZoraLimitOrderBook(zoraLimitOrderBook), ISwapRouter(swapRouter), permit2, owner));
     }
 

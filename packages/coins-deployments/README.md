@@ -222,14 +222,10 @@ Base contract providing deployment utilities and state management.
 - `saveDeployment()`: Save deployment state to JSON
 - `computeProxyShimAddress()`: Compute CREATE2 address for ProxyShim
 - `computeFactoryAddress()`: Compute CREATE2 address for ZoraFactory
-- `computeAuthorityAddress()`: Compute CREATE2 address for OrderBookAuthority
 - `computeLimitOrderBookAddress()`: Compute CREATE2 address for ZoraLimitOrderBook
 - `computeSwapRouterAddress()`: Compute CREATE2 address for Zora Router
 - `deployProxyShimDeterministic()`: Deploy proxy shim with CREATE2
 - `deployFactoryDeterministic()`: Deploy factory with CREATE2
-- `deployOrderBookAuthorityDeterministic()`: Deploy authority with CREATE2
-- `deployLimitOrderBookDeterministic()`: Deploy limit order book with CREATE2
-- `deploySwapRouterDeterministic()`: Deploy router with CREATE2
 
 **Hardcoded Salts**:
 

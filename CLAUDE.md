@@ -194,6 +194,49 @@ The Claude Code Review GitHub Action automatically validates that changesets are
 
 **For complete details on the protocol-deployments publication workflow, see [MONOREPO_ARCHITECTURE.md](MONOREPO_ARCHITECTURE.md#how-to-publish-a-contract-in-protocol-deployments).**
 
+**Protocol-Deployments Changesets for Contract Deployments:**
+
+When deploying contracts to any network, create a changeset for `@zoralabs/protocol-deployments`:
+
+```bash
+pnpm changeset add --empty
+```
+
+**Format for protocol-deployments changesets:**
+
+```markdown
+---
+"@zoralabs/protocol-deployments": patch
+---
+
+Deploy [contract name] version [X.Y.Z] to [chain name]
+
+- Deploy [ContractName] version [X.Y.Z] to [0xAddress] (production)
+- Deploy [ContractName] version [X.Y.Z] to [0xAddress] (dev)
+```
+
+**Protocol-deployments changesets should ONLY include:**
+
+- Contract name
+- Version number (from the contract package, e.g., `@zoralabs/limit-orders@0.2.5`)
+- Deployed address
+- Environment (production or dev)
+
+**Do NOT include:**
+
+- Deployment script changes
+- Infrastructure updates
+- Implementation details
+- Test coverage information
+
+**Pre-deployment requirement:** Before deploying contracts, ensure there are no outstanding changesets for the contract packages (e.g., `@zoralabs/limit-orders`, `@zoralabs/coins`). If there are, run `pnpm update-version` first to apply them. This ensures deployed contracts have the correct version numbers.
+
+**Deployment Instructions:**
+
+For detailed deployment instructions for specific contract types:
+
+- **Limit Orders**: See [packages/coins-deployments/LIMIT_ORDER_DEPLOYMENT.md](packages/coins-deployments/LIMIT_ORDER_DEPLOYMENT.md) for production deployments using Turnkey and dev deployments
+
 **Changeset and PR Description Writing Guidelines:**
 
 - **Focus on the feature/fix, not the implementation**: Describe what changed from a user perspective and why it matters
