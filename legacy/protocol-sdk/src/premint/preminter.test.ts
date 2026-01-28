@@ -173,7 +173,7 @@ const zoraSepoliaAnvilTest = makeAnvilTest({
 });
 
 describe("ZoraCreator1155Preminter", () => {
-  zoraSepoliaAnvilTest(
+  (zoraSepoliaAnvilTest(
     "can sign and mint multiple tokens",
     async ({ viemClients }) => {
       const {
@@ -705,5 +705,5 @@ describe("ZoraCreator1155Preminter", () => {
       },
       // 10 second timeout
       40 * 1000,
-    );
+    ));
 });

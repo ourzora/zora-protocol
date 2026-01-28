@@ -289,7 +289,7 @@ describe("mint-client", () => {
     12 * 1000,
   );
 
-  makeAnvilTest({
+  (makeAnvilTest({
     forkUrl: forkUrls.zoraSepolia,
     forkBlockNumber: 10970943,
     anvilChainId: zoraSepolia.id,
@@ -369,7 +369,7 @@ describe("mint-client", () => {
         expect(contract).toBeDefined();
       },
       12 * 1000,
-    );
+    ));
 
   makeAnvilTest({
     forkUrl: forkUrls.zoraMainnet,
