@@ -113,3 +113,26 @@ forge script "script/$SCRIPT_NAME" \
     --private-key="$PRIVATE_KEY" \
     $DEPLOY_MODE \
     $FFI_FLAG
+
+# Auto-verify all contracts after deployment
+if [ -n "$DEPLOY_MODE" ]; then
+    echo ""
+    echo "=========================================="
+    echo "Re-verifying all deployed contracts..."
+    echo "=========================================="
+    echo ""
+
+    # Build dev flag if needed
+    DEV_FLAG=""
+    if [ -n "$DEV_MODE" ]; then
+        DEV_FLAG="--dev"
+    fi
+
+    # Run verification script
+    npx tsx scripts/verify-contracts.ts "$SCRIPT_NAME" "$CHAIN" $DEV_FLAG || {
+        echo ""
+        echo "Warning: Some contracts failed verification. You can manually verify them later with:"
+        echo "  npx tsx scripts/verify-contracts.ts $SCRIPT_NAME $CHAIN $DEV_FLAG"
+        echo ""
+    }
+fi

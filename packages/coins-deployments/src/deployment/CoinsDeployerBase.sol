@@ -3,7 +3,11 @@ pragma solidity ^0.8.28;
 
 import "forge-std/Script.sol";
 
-import {ProxyDeployerScript, DeterministicContractConfig, DeterministicDeployerAndCaller} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
+import {
+    ProxyDeployerScript,
+    DeterministicContractConfig,
+    DeterministicDeployerAndCaller
+} from "@zoralabs/shared-contracts/deployment/ProxyDeployerScript.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
 import {ZoraFactoryImpl} from "@zoralabs/coins/src/ZoraFactoryImpl.sol";
 import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersionedContract.sol";
@@ -77,9 +81,14 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
     function chainConfigPath() internal view override returns (string memory) {
         if (isDevEnvironment()) {
-            return string.concat("./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), "_dev.json");
+            return string.concat(
+                "./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), "_dev.json"
+            );
         }
-        return string.concat("./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json");
+        return
+            string.concat(
+                "./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json"
+            );
     }
 
     function saveDeployment(CoinsDeployment memory deployment) internal {
@@ -127,36 +136,46 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function deployCoinV4Impl() internal returns (ContentCoin) {
-        return
-            new ContentCoin({
-                protocolRewardRecipient_: getZoraRecipient(),
-                protocolRewards_: PROTOCOL_REWARDS,
-                poolManager_: IPoolManager(getUniswapV4PoolManager()),
-                airlock_: getDopplerAirlock()
-            });
+        return new ContentCoin({
+            protocolRewardRecipient_: getZoraRecipient(),
+            protocolRewards_: PROTOCOL_REWARDS,
+            poolManager_: IPoolManager(getUniswapV4PoolManager()),
+            airlock_: getDopplerAirlock()
+        });
     }
 
     function deployCreatorCoinImpl() internal returns (CreatorCoin) {
-        return
-            new CreatorCoin({
-                protocolRewardRecipient_: getZoraRecipient(),
-                protocolRewards_: PROTOCOL_REWARDS,
-                poolManager_: IPoolManager(getUniswapV4PoolManager()),
-                airlock_: getDopplerAirlock()
-            });
+        return new CreatorCoin({
+            protocolRewardRecipient_: getZoraRecipient(),
+            protocolRewards_: PROTOCOL_REWARDS,
+            poolManager_: IPoolManager(getUniswapV4PoolManager()),
+            airlock_: getDopplerAirlock()
+        });
     }
 
-    function deployZoraFactoryImpl(address coinV4Impl_, address creatorCoinImpl_, address hook_, address zoraHookRegistry_) internal returns (ZoraFactoryImpl) {
-        return new ZoraFactoryImpl({coinV4Impl_: coinV4Impl_, creatorCoinImpl_: creatorCoinImpl_, hook_: hook_, zoraHookRegistry_: zoraHookRegistry_});
+    function deployZoraFactoryImpl(
+        address coinV4Impl_,
+        address creatorCoinImpl_,
+        address hook_,
+        address zoraHookRegistry_
+    ) internal returns (ZoraFactoryImpl) {
+        return new ZoraFactoryImpl({
+            coinV4Impl_: coinV4Impl_,
+            creatorCoinImpl_: creatorCoinImpl_,
+            hook_: hook_,
+            zoraHookRegistry_: zoraHookRegistry_
+        });
     }
 
-    function deployBuySupplyWithV4SwapHook(CoinsDeployment memory deployment) internal returns (BuySupplyWithV4SwapHook) {
-        return
-            new BuySupplyWithV4SwapHook({
-                _factory: IZoraFactory(deployment.zoraFactory),
-                _swapRouter: getUniswapSwapRouter(),
-                _poolManager: getUniswapV4PoolManager()
-            });
+    function deployBuySupplyWithV4SwapHook(CoinsDeployment memory deployment)
+        internal
+        returns (BuySupplyWithV4SwapHook)
+    {
+        return new BuySupplyWithV4SwapHook({
+            _factory: IZoraFactory(deployment.zoraFactory),
+            _swapRouter: getUniswapSwapRouter(),
+            _poolManager: getUniswapV4PoolManager()
+        });
     }
 
     function deployUpgradeGate(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
@@ -178,19 +197,18 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function deployZoraV4CoinHook(CoinsDeployment memory deployment) internal returns (IHooks hook, bytes32 salt) {
         require(deployment.trustedMsgSenderLookup != address(0), "Trusted message sender lookup not deployed");
 
-        return
-            HooksDeployment.deployHookWithExistingOrNewSalt(
-                HooksDeployment.FOUNDRY_SCRIPT_ADDRESS,
-                HooksDeployment.makeHookCreationCode(
-                    getUniswapV4PoolManager(),
-                    deployment.zoraFactory,
-                    ITrustedMsgSenderProviderLookup(deployment.trustedMsgSenderLookup),
-                    deployment.hookUpgradeGate,
-                    deployment.zoraLimitOrderBook,
-                    deployment.zoraHookRegistry
-                ),
-                deployment.zoraV4CoinHookSalt
-            );
+        return HooksDeployment.deployHookWithExistingOrNewSalt(
+            HooksDeployment.FOUNDRY_SCRIPT_ADDRESS,
+            HooksDeployment.makeHookCreationCode(
+                getUniswapV4PoolManager(),
+                deployment.zoraFactory,
+                ITrustedMsgSenderProviderLookup(deployment.trustedMsgSenderLookup),
+                deployment.hookUpgradeGate,
+                deployment.zoraLimitOrderBook,
+                deployment.zoraHookRegistry
+            ),
+            deployment.zoraV4CoinHookSalt
+        );
     }
 
     function getDefaultTrustedMessageSenders(address zoraRouter) internal view returns (address[] memory) {
@@ -205,22 +223,42 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     }
 
     function deployFactoryImpl(CoinsDeployment memory deployment) internal returns (address) {
-        return
-            address(
-                deployZoraFactoryImpl({
-                    coinV4Impl_: deployment.coinV4Impl,
-                    creatorCoinImpl_: deployment.creatorCoinImpl,
-                    hook_: deployment.zoraV4CoinHook,
-                    zoraHookRegistry_: deployment.zoraHookRegistry
-                })
-            );
+        return address(
+            deployZoraFactoryImpl({
+                coinV4Impl_: deployment.coinV4Impl,
+                creatorCoinImpl_: deployment.creatorCoinImpl,
+                hook_: deployment.zoraV4CoinHook,
+                zoraHookRegistry_: deployment.zoraHookRegistry
+            })
+        );
+    }
+
+    /// @notice Validates that all external dependencies are deployed with code
+    /// @dev Checks that addresses are non-zero and have code deployed
+    /// @param deployment The current deployment state
+    function validateExternalDependencies(CoinsDeployment memory deployment) internal view {
+        require(deployment.trustedMsgSenderLookup != address(0), "TrustedMsgSenderProviderLookup address is zero");
+        require(
+            deployment.trustedMsgSenderLookup.code.length > 0, "TrustedMsgSenderProviderLookup has no code deployed"
+        );
+
+        require(deployment.zoraFactory != address(0), "ZoraFactory address is zero");
+        require(deployment.zoraFactory.code.length > 0, "ZoraFactory has no code deployed");
+
+        require(deployment.zoraHookRegistry != address(0), "ZoraHookRegistry address is zero");
+        require(deployment.zoraHookRegistry.code.length > 0, "ZoraHookRegistry has no code deployed");
+
+        require(deployment.hookUpgradeGate != address(0), "HookUpgradeGate address is zero");
+        require(deployment.hookUpgradeGate.code.length > 0, "HookUpgradeGate has no code deployed");
+
+        console.log("All external dependencies validated");
     }
 
     function deployImpls(CoinsDeployment memory deployment) internal returns (CoinsDeployment memory) {
         // Deploy implementation contracts
 
-        // Deploy trusted message sender lookup first
-        deployment = deployTrustedMsgSenderLookup(deployment);
+        // Validate all external dependencies are deployed first
+        validateExternalDependencies(deployment);
 
         // Deploy hook first, then use its address for coin v4 impl
         console.log("deploying content coin hook");
@@ -251,7 +289,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         return deployment;
     }
 
-    function deployZoraDeterministic(CoinsDeployment memory deployment, DeterministicDeployerAndCaller deployer) internal {
+    function deployZoraDeterministic(CoinsDeployment memory deployment, DeterministicDeployerAndCaller deployer)
+        internal
+    {
         // read previously saved deterministic config
         DeterministicContractConfig memory zoraConfig = readDeterministicContractConfig("zoraFactory");
 
@@ -274,15 +314,14 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         printVerificationCommand(zoraConfig);
 
         deployment.zoraFactory = deployer.permitSafeCreate2AndCall(
-            signature,
-            zoraConfig.salt,
-            zoraConfig.creationCode,
-            upgradeToAndCall,
-            zoraConfig.deployedAddress
+            signature, zoraConfig.salt, zoraConfig.creationCode, upgradeToAndCall, zoraConfig.deployedAddress
         );
 
         // validate that the zora factory owner is the proxy admin
-        require(ZoraFactoryImpl(deployment.zoraFactory).owner() == getProxyAdmin(), "Zora factory owner is not the proxy admin");
+        require(
+            ZoraFactoryImpl(deployment.zoraFactory).owner() == getProxyAdmin(),
+            "Zora factory owner is not the proxy admin"
+        );
     }
 
     function deployFactoryNonDeterministic(CoinsDeployment memory deployment) internal returns (ZoraFactory) {
@@ -298,7 +337,8 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
     function printUpgradeFactoryCommand(CoinsDeployment memory deployment) internal view {
         // build upgrade to and call for factory, with init call
-        bytes memory call = abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, deployment.zoraFactoryImpl, "");
+        bytes memory call =
+            abi.encodeWithSelector(UUPSUpgradeable.upgradeToAndCall.selector, deployment.zoraFactoryImpl, "");
 
         address proxyAdmin = getProxyAdmin();
 
@@ -359,11 +399,14 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address weth
     ) internal returns (address) {
         bytes memory creationCode = abi.encodePacked(
-            type(ZoraLimitOrderBook).creationCode,
-            abi.encode(poolManager, zoraFactory, zoraHookRegistry, owner, weth)
+            type(ZoraLimitOrderBook).creationCode, abi.encode(poolManager, zoraFactory, zoraHookRegistry, owner, weth)
         );
 
-        return Create2.computeAddress(getLimitOrderBookSalt(), keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
+        return Create2.computeAddress(
+            getLimitOrderBookSalt(),
+            keccak256(creationCode),
+            address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY)
+        );
     }
 
     function computeSwapRouterAddress(
@@ -378,19 +421,43 @@ contract CoinsDeployerBase is ProxyDeployerScript {
             abi.encode(poolManager, zoraLimitOrderBook, swapRouter, permit2, owner)
         );
 
-        return Create2.computeAddress(getSwapRouterSalt(), keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
+        return Create2.computeAddress(
+            getSwapRouterSalt(),
+            keccak256(creationCode),
+            address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY)
+        );
     }
 
     // Non-deterministic Deployment Functions (for dev environments)
 
-    function deployLimitOrderBook(address poolManager, address zoraFactory, address zoraHookRegistry, address owner, address weth) internal returns (address) {
+    function deployLimitOrderBook(
+        address poolManager,
+        address zoraFactory,
+        address zoraHookRegistry,
+        address owner,
+        address weth
+    ) internal returns (address) {
         require(isDevEnvironment(), "Non-deterministic limit order book deployment only allowed in dev mode");
         return address(new ZoraLimitOrderBook(poolManager, zoraFactory, zoraHookRegistry, owner, weth));
     }
 
-    function deploySwapRouter(address poolManager, address zoraLimitOrderBook, address swapRouter, address permit2, address owner) internal returns (address) {
+    function deploySwapRouter(
+        address poolManager,
+        address zoraLimitOrderBook,
+        address swapRouter,
+        address permit2,
+        address owner
+    ) internal returns (address) {
         require(isDevEnvironment(), "Non-deterministic swap router deployment only allowed in dev mode");
-        return address(new SwapWithLimitOrders(IPoolManager(poolManager), IZoraLimitOrderBook(zoraLimitOrderBook), ISwapRouter(swapRouter), permit2, owner));
+        return address(
+            new SwapWithLimitOrders(
+                IPoolManager(poolManager),
+                IZoraLimitOrderBook(zoraLimitOrderBook),
+                ISwapRouter(swapRouter),
+                permit2,
+                owner
+            )
+        );
     }
 
     // Factory Deterministic Deployment Functions
@@ -398,7 +465,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function computeProxyShimAddress() internal pure returns (address) {
         bytes memory creationCode = type(ProxyShim).creationCode;
 
-        return Create2.computeAddress(PROXY_SHIM_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
+        return Create2.computeAddress(
+            PROXY_SHIM_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY)
+        );
     }
 
     function deployProxyShimDeterministic() internal returns (address) {
@@ -412,7 +481,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function computeFactoryAddress(address proxyShimAddress) internal pure returns (address) {
         bytes memory creationCode = abi.encodePacked(type(ZoraFactory).creationCode, abi.encode(proxyShimAddress));
 
-        return Create2.computeAddress(FACTORY_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
+        return Create2.computeAddress(
+            FACTORY_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY)
+        );
     }
 
     function deployFactoryDeterministic(CoinsDeployment memory deployment, address owner) internal returns (address) {
@@ -445,7 +516,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     function computeHookRegistryAddress() internal pure returns (address) {
         bytes memory creationCode = type(ZoraHookRegistry).creationCode;
 
-        return Create2.computeAddress(HOOK_REGISTRY_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY));
+        return Create2.computeAddress(
+            HOOK_REGISTRY_SALT, keccak256(creationCode), address(ImmutableCreate2FactoryUtils.IMMUTABLE_CREATE2_FACTORY)
+        );
     }
 
     function deployHookRegistryDeterministic(address[] memory initialOwners) internal returns (address) {
@@ -459,8 +532,9 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         ZoraHookRegistry registry = ZoraHookRegistry(deployed);
         // Check if already initialized by trying to call a function that requires initialization
         try registry.isRegisteredHook(address(0)) {
-            // Already initialized, skip
-        } catch {
+        // Already initialized, skip
+        }
+        catch {
             // Not initialized yet, initialize now
             registry.initialize(initialOwners);
         }
