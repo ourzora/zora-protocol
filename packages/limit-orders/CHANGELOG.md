@@ -1,11 +1,19 @@
 # @zoralabs/limit-orders
 
+## 0.2.7
+
+### Patch Changes
+
+- ee8921b7: Fix multi-hop payout path for content coin limit orders
+  - Pass `coinIn` instead of `coinOut` to `burnAndPayout` in `LimitOrderFill._fillOrder`
+  - This ensures content coin orders pay out in the ultimate backing currency (ZORA) via the multi-hop path
+  - Previously, content coin orders would fall back to single-hop and pay out in creator coin instead of ZORA
+
 ## 0.2.6
 
 ### Patch Changes
 
 - df0b0a1d: Add ContractVersionBase inheritance to ZoraLimitOrderBook and SwapWithLimitOrders
-
   - Both contracts now inherit from ContractVersionBase for consistent version tracking
   - Implements IVersionedContract interface with contractVersion() returning "0.2.5"
 
@@ -31,7 +39,6 @@
 ### Patch Changes
 
 - 98e02520: Fix dual positive deltas consolidation in burnAndRefund
-
   - Consolidate payouts to single currency when burning limit orders with dual positive deltas
   - Extract path-building logic into reusable `_buildSingleHopPath` helper function
   - Ensure users receive proceeds in their original deposit currency by swapping counter-assets
@@ -47,7 +54,6 @@
 ### Patch Changes
 
 - bb2c2b76: Replace AccessManager with PermittedCallers + Ownable2Step for access control in ZoraLimitOrderBook and SwapWithLimitOrders contracts.
-
   - Remove AccessManager and SimpleAccessManaged pattern
   - Use OpenZeppelin Ownable2Step for two-step ownership transfer
   - Add `permittedCallers` mapping to gate `create()` access (public by default, owner can restrict)
@@ -92,7 +98,6 @@
 - 2cb9cb30: Remove fixed MIN_LIMIT_ORDER_SIZE threshold that made many tokens unusable. Limit orders now accept any positive amount instead of requiring at least 1e18 tokens, fixing compatibility issues with tokens using different decimal configurations.
 - eec53af3: Remove unnecessary Permit2Payments inheritance and use direct PERMIT2 immutable reference instead. This simplifies the contract structure by eliminating unused inherited functions while maintaining identical functionality.
 - 83726a0e: Remove unused settle negative deltas logic
-
   - Remove redundant `_settleNegativeDeltas` function that was never executed
   - Simplify limit order closure logic by removing unnecessary delta settlement
 
@@ -122,19 +127,16 @@
 - c59a6fac: Initial release of limit orders protocol
 
   Introduces a limit order system built on top of Uniswap V4 concentrated liquidity positions:
-
   - **Orders as V4 Positions**: Each limit order is a single-tick-wide Uniswap V4 liquidity position, enabling makers to place orders at specific price points
   - **FIFO Queue System**: Orders are organized in queues by `(poolKeyHash, coin, tick)` with bitmap-based tick tracking for efficient iteration
   - **Epoch-Based Fill Protection**: Orders cannot be filled in the same epoch they were created, preventing same-transaction manipulation
 
   **Fill Integration Modes:**
-
   - **Auto-fill via Hook**: The Zora hook now calls `fill()` on the limit order book during `afterSwap`, automatically filling orders as swaps cross through their tick ranges
   - **Router Fallback**: For legacy hooks, the router can call `fill()` post-swap
   - **Third-party Fill**: Anyone can call `fill()` when the PoolManager is locked, incentivized by LP fee collection
 
   **Fee Model:**
-
   - Fill referrals receive accrued LP fees from filled positions
   - Makers receive full proceeds on withdrawal
   - Makers can cancel their limit orders to withdraw the backing currency

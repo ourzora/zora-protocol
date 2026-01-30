@@ -1,5 +1,17 @@
 # @zoralabs/coins-deployments
 
+## 1.0.8
+
+### Patch Changes
+
+- 267e03c9: Fix deployment architecture to prevent TrustedMsgSenderProviderLookup redeployment
+  - Remove TrustedMsgSenderProviderLookup deployment from deployImpls() function
+  - Add validateExternalDependencies() function to validate all external dependencies before deployment
+  - Ensure lookup contract is only deployed once using DeployTrustedMsgSenderLookup.s.sol script
+
+- Updated dependencies [ee8921b7]
+  - @zoralabs/limit-orders@0.2.7
+
 ## 1.0.7
 
 ### Patch Changes
