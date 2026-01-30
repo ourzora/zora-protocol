@@ -180,19 +180,18 @@ library LimitOrderFill {
     ) private {
         order.status = LimitOrderTypes.OrderStatus.FILLED;
 
-        // Get both input and output currencies
+        // Get the input currency (the coin being sold in the order)
         address coinIn = LimitOrderCommon.getOrderCoin(key, order.isCurrency0);
-        address coinOut = LimitOrderCommon.getOrderCoin(key, !order.isCurrency0);
 
-        // Pass output currency to burnAndPayout (not input currency)
-        // This ensures payout uses the OUTPUT coin's configured payout path
+        // Pass input currency to burnAndPayout (not output currency)
+        // This ensures payout uses the INPUT coin's configured payout path for multi-hop resolution
         (Currency coinOutCurrency, uint128 makerAmount, uint128 referralAmount) = LimitOrderLiquidity.burnAndPayout(
             ctx.poolManager,
             key,
             order,
             orderId,
             fillReferral,
-            coinOut,
+            coinIn,
             ctx.versionLookup,
             ctx.weth
         );

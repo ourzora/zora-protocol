@@ -764,6 +764,124 @@ contract LimitOrderFillTest is BaseTest {
         }
     }
 
+    /// @notice Tests that content coin orders pay out in the ultimate backing currency (ZORA)
+    /// @dev This test demonstrates the bug where the wrong coin is passed to burnAndPayout.
+    ///      For a content coin (backed by creator coin, which is backed by ZORA):
+    ///      - The multi-hop payout path should be: contentCoin → creatorCoin → ZORA
+    ///      - Previously failed because coinOut (creator coin) was passed instead of coinIn (content coin)
+    ///      - The validation check rejected creator coin's path (leads to ZORA) when payoutCurrency is creator coin
+    function test_contentCoinOrderPaysOutInZora() public {
+        // Setup: content coin is backed by creator coin, which is backed by zoraToken
+        PoolKey memory contentPoolKey = contentCoin.getPoolKey();
+
+        // Verify pool structure: content coin paired with creator coin
+        bool contentIsCurrency0 = Currency.unwrap(contentPoolKey.currency0) == address(contentCoin);
+        address poolCurrency = contentIsCurrency0 ? Currency.unwrap(contentPoolKey.currency1) : Currency.unwrap(contentPoolKey.currency0);
+        assertEq(poolCurrency, address(creatorCoin), "content coin should be paired with creator coin");
+
+        // Step 1: Acquire content coin through proper swap path (ZORA -> creator coin -> content coin)
+        uint128 initialZoraAmount = 1000 ether;
+        deal(address(zoraToken), users.seller, initialZoraAmount);
+
+        // Swap ZORA -> creator coin
+        _swapSomeCurrencyForCoin(ICoin(address(creatorCoin)), address(zoraToken), initialZoraAmount, users.seller);
+        uint128 creatorCoinBalance = uint128(creatorCoin.balanceOf(users.seller));
+        assertGt(creatorCoinBalance, 0, "should have creator coin after swap");
+
+        // Swap creator coin -> content coin
+        _swapSomeCurrencyForCoin(ICoin(address(contentCoin)), address(creatorCoin), creatorCoinBalance, users.seller);
+        uint256 contentCoinBalance = contentCoin.balanceOf(users.seller);
+        assertGt(contentCoinBalance, 0, "should have content coin after swap");
+
+        // Step 2: Create a limit order to sell content coin
+        bool isCurrency0 = contentIsCurrency0;
+        uint256 orderSize = contentCoinBalance / 2; // Use half for the order
+
+        (uint256[] memory orderSizes, int24[] memory orderTicks) = _buildDeterministicOrdersForPool(contentPoolKey, isCurrency0, 1, orderSize);
+
+        vm.prank(users.seller);
+        IERC20(address(contentCoin)).approve(address(limitOrderBook), orderSize);
+
+        vm.recordLogs();
+        vm.prank(users.seller);
+        limitOrderBook.create(contentPoolKey, isCurrency0, orderSizes, orderTicks, users.seller);
+        CreatedOrderLog[] memory created = _decodeCreatedLogs(vm.getRecordedLogs());
+        assertEq(created.length, 1, "should create 1 order");
+
+        // Step 3: Move price to cross the order (with auto-fill disabled so we can fill manually)
+        _movePriceBeyondTicksForContentCoin(created);
+
+        // Step 4: Record balances before fill
+        uint256 sellerZoraBefore = zoraToken.balanceOf(users.seller);
+        uint256 sellerCreatorCoinBefore = creatorCoin.balanceOf(users.seller);
+
+        // Step 5: Fill the order
+        (int24 startTick, int24 endTick) = _tickWindow(created, contentPoolKey);
+        vm.recordLogs();
+        limitOrderBook.fill(contentPoolKey, isCurrency0, startTick, endTick, 1, address(0));
+        FilledOrderLog[] memory fills = _decodeFilledLogs(vm.getRecordedLogs());
+
+        assertEq(fills.length, 1, "should fill 1 order");
+        assertEq(fills[0].coinIn, address(contentCoin), "coinIn should be content coin");
+
+        // Step 6: Verify payout - with the fix, seller receives ZORA (multi-hop path: content → creator → ZORA)
+        uint256 sellerZoraAfter = zoraToken.balanceOf(users.seller);
+        uint256 sellerCreatorCoinAfter = creatorCoin.balanceOf(users.seller);
+
+        // Seller should receive ZORA via multi-hop path
+        assertGt(sellerZoraAfter, sellerZoraBefore, "seller should receive ZORA via multi-hop path");
+        assertEq(sellerCreatorCoinAfter, sellerCreatorCoinBefore, "seller should NOT receive creator coin directly");
+    }
+
+    function _buildDeterministicOrdersForPool(
+        PoolKey memory key,
+        bool isCurrency0,
+        uint256 rungCount,
+        uint256 orderSize
+    ) internal view returns (uint256[] memory sizes, int24[] memory ticks) {
+        sizes = new uint256[](rungCount);
+        ticks = new int24[](rungCount);
+
+        int24 baseTick = _alignedTick(_currentTick(key), key.tickSpacing);
+        for (uint256 i; i < rungCount; ++i) {
+            sizes[i] = orderSize;
+            ticks[i] = _alignedTickForOrder(isCurrency0, baseTick, key.tickSpacing, i);
+        }
+    }
+
+    function _movePriceBeyondTicksForContentCoin(CreatedOrderLog[] memory created) internal {
+        if (created.length == 0) return;
+
+        uint256 previousMax = _disableAutoFill();
+
+        address mover = makeAddr("content-price-mover");
+
+        // For currency0 orders: need tick UP (currentTick >= tickUpper)
+        // For currency1 orders: need tick DOWN (currentTick <= tickLower)
+        bool needTickUp = created[0].isCurrency0;
+
+        // To move price, we need to do swaps through the proper path
+        // First get creator coin by swapping ZORA
+        uint128 swapAmount = 5000 ether;
+        deal(address(zoraToken), mover, swapAmount * 2);
+        _swapSomeCurrencyForCoin(ICoin(address(creatorCoin)), address(zoraToken), swapAmount, mover);
+        uint128 creatorBalance = uint128(creatorCoin.balanceOf(mover));
+
+        if (needTickUp) {
+            // Need tick to go up - buy content coin with creator coin
+            _swapSomeCurrencyForCoin(ICoin(address(contentCoin)), address(creatorCoin), creatorBalance, mover);
+        } else {
+            // Need tick to go down - first get content coin, then sell it
+            _swapSomeCurrencyForCoin(ICoin(address(contentCoin)), address(creatorCoin), creatorBalance / 2, mover);
+            uint128 contentBalance = uint128(contentCoin.balanceOf(mover));
+            if (contentBalance > 0) {
+                _swapSomeCoinForCurrency(ICoin(address(contentCoin)), address(creatorCoin), contentBalance, mover);
+            }
+        }
+
+        _restoreAutoFill(previousMax);
+    }
+
     /// @notice Tests fill() with maxFillCount=0 (line 86-88)
     /// @dev This tests the branch: if (maxFillCount == 0) maxFillCount = getMaxFillCount();
     function test_fill_maxFillCountZero_usesDefault() public {
