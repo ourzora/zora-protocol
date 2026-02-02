@@ -1,5 +1,13 @@
 # @zoralabs/protocol-sdk
 
+## 0.13.19
+
+### Patch Changes
+
+- Updated dependencies [67d27f1d]
+- Updated dependencies [27f588b2]
+  - @zoralabs/protocol-deployments@0.7.3
+
 ## 0.13.18
 
 ### Patch Changes
@@ -222,7 +230,6 @@
 ### Patch Changes
 
 - 85d09fa5: - Adds new fields to `SecondaryInfo` type to expose more information about the secondary market configuration:
-
   - `name`: The ERC20Z token name
   - `symbol`: The ERC20Z token symbol
   - `saleStart`: Earliest time tokens can be minted
@@ -259,7 +266,6 @@
 
 - 66f33bbb: fix: update secondary swap helper contract address
 - 8d7fdc02: For the functions `getToken` and `getTokensOfContract`, the returned `MintableReturn` type has been updated to provide more information about the primary mint status:
-
   - Added `primaryMintActive` boolean to indicate if the primary mint is currently active.
   - Added `primaryMintEnd` optional `bigint` to show the end time of the primary mint, if applicable.
   - Added `secondaryMarketActive` boolean to indicate if the secondary market is currently active.
@@ -284,7 +290,6 @@
 ### Minor Changes
 
 - 21247473: Added new functions `buy1155OnSecondary` and `sell1155OnSecondary` to the collector client in the protocol SDK. These functions enable users to buy and sell ERC1155 tokens on the secondary market. Key features include:
-
   - Slippage protection for both buying and selling operations
   - Detailed price breakdowns in wei, sparks, and USDC
   - Support for specifying recipient addresses
@@ -563,7 +568,6 @@
 ### Minor Changes
 
 - a52d245: Fix premint v2 support in premint client and add support for sepolia to SDK:
-
   - Fix chain constants config for Zora Goerli.
   - Support Zora-Sepolia for premint client.
   - Fix passing of `config_version` to and from the backend API.
@@ -618,7 +622,6 @@
 - 7eb5e3f: ### Changes to `preminter`
 
   lower level `preminter.ts` now supports premint v2 by defining v2 typed data defintions.
-
   - `isValidSignature` now takes either v1 or v2 of a premint config, along with the premint config version. and both recovers the signer address and validates if the signer can create a premint on the given contract.
   - new function `premintTypedDataDefinition` which takes a premint config version and returns the signable typed data definition for that version
   - new function `recoverCreatorFromCreatorAttribution` which recovers the creator address from a `CreatorAttribution` event
@@ -628,7 +631,6 @@
   ### Changes to PremintClient
 
   `PremintClient` creation, updating, and deletion now take both premint config v1 and v2, but currently rejects them until the backend api supports creating v2 premints.
-
   - `isValidSignature` now just takes the data directly as a param, instead of `{data}`
 
 - 27a2e23: Fix reading the FIXED_PRICE_MINTER from the subgraph
@@ -652,7 +654,6 @@
   `MintClient` now takes the optional `PublicClient` in the constructor instead of in each function, and stores it or creates a default one if none is provided in the constructor. It also takes an optional `httpClient` param in the constructor, allowing the `fetch`, `post`, and `retries` methods to be overridden when using the api. It now internally creates the MintAPIClient.
 
   `MintClient.makePrepareMintTokenParams` has the following changes:
-
   - returns a `SimulateContractParams`, instead of an object containing it indexed by key
   - no longer takes a `PublicClient` as an argument (it should be specified in the constructor instead)
 
@@ -691,7 +692,6 @@
 ### Patch Changes
 
 - b62e471: created new package `protocol-deployments` that includes the deployed contract addresses.
-
   - 1155-contracts js no longer exports deployed addresses, just the abis
   - premint-sdk imports deployed addresses from `protocol-deployments
 

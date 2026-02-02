@@ -1,5 +1,13 @@
 # @zoralabs/coins-sdk
 
+## 0.4.4
+
+### Patch Changes
+
+- Updated dependencies [67d27f1d]
+- Updated dependencies [27f588b2]
+  - @zoralabs/protocol-deployments@0.7.3
+
 ## 0.4.3
 
 ### Patch Changes
@@ -61,14 +69,12 @@
 - 4819056e: Creator coins can only be created via the Zora app. This SDK allows you to create content coins paired with existing creator coins.
 
   Create content flow uses server-generated calldata via the SDK API.
-
   - **Server-generated calldata**: `createCoinCall` now requests calldata from the SDK API and returns an array of transaction parameters `{ to, data, value }[]` instead of a Viem `SimulateContractParameters` object.
   - **Direct transaction sending**: `createCoin` constructs and sends the transaction using `walletClient.sendTransaction` with manual gas estimation and an option to skip validation.
   - **Sanity checks**: Ensures the call targets the expected factory for the specified `chainId` and that no ETH value is sent with this SDK version.
   - **Smart accounts support**: Compatible with smart accounts thanks to server-generated calldata.
 
   API changes (breaking changes):
-
   - **Args shape updated**
     - Removed: `initialPurchase`, and `currency: DeployCurrency`.
     - Renamed: `owners` to `additionalOwners` - adds additional owners to the coin, `payoutRecipient` to `payoutRecipientOverride` overrides the creator as the payout recipient.
