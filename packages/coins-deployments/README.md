@@ -325,6 +325,75 @@ DEV=true forge script script/DeployAllContracts.s.sol \
    ```
 3. Addresses will be saved to `addresses/{chainId}.json`
 
+## Upgrading Coin Implementations and Hooks
+
+The `UpgradeCoinImpl.sol` script deploys new versions of the coin implementations (ContentCoin, CreatorCoin), the ZoraV4CoinHook, and ZoraFactoryImpl.
+
+### When to Use
+
+Use this script when:
+- Deploying bug fixes or new features to the coin contracts
+- Upgrading the hook to support new functionality (e.g., limit order book integration)
+- The underlying `@zoralabs/coins` package has been updated
+
+### Usage
+
+```bash
+cd packages/coins-deployments
+
+# Production deployment
+./scripts/run-forge-script.sh UpgradeCoinImpl.sol base --deploy
+
+# Development deployment
+./scripts/run-forge-script.sh UpgradeCoinImpl.sol base --deploy --dev
+```
+
+### What Gets Deployed
+
+The script deploys:
+1. **ZoraV4CoinHook** - The Uniswap V4 hook that handles coin creation and trading
+2. **ContentCoin** - The ERC-20 implementation for content coins
+3. **CreatorCoin** - The ERC-20 implementation for creator coins
+4. **ZoraFactoryImpl** - The factory implementation that creates new coins
+
+### Important: Forcing a New Hook Deployment
+
+The hook uses CREATE2 with a salt for deterministic deployment. If a hook already exists at the computed address, the script will **reuse the existing hook** instead of deploying a new one.
+
+To force a new hook deployment (e.g., when the hook code has changed):
+
+1. Clear the `ZORA_V4_COIN_HOOK_SALT` in the addresses file:
+   ```json
+   "ZORA_V4_COIN_HOOK_SALT": "0x0000000000000000000000000000000000000000000000000000000000000000"
+   ```
+
+2. Run the upgrade script again - it will mine a new salt and deploy a fresh hook
+
+### Post-Deployment: Multisig Upgrade
+
+After deploying, the factory proxy must be upgraded via multisig to use the new implementations. The script outputs the required transaction details:
+
+```
+Multisig: 0x004d6611884B4A661749B64b2ADc78505c3e1AB3
+Target (the factory proxy): 0x777777751622c0d3258f214F9DF38E35BF45baF3
+Upgrade call: 0x4f1ef286...
+Function to call: upgradeToAndCall
+Args: <new_factory_impl_address>
+```
+
+To get the upgrade command at any time:
+```bash
+# Production
+./scripts/run-forge-script.sh PrintUpgradeCommand.s.sol base
+
+# Development
+./scripts/run-forge-script.sh PrintUpgradeCommand.s.sol base --dev
+```
+
+### PR Template
+
+When creating a PR for coin upgrades, use the template at `.github/PR_TEMPLATE_UPGRADE.md`. See `.github/PR_TEMPLATE_UPGRADE_INSTRUCTIONS.md` for detailed instructions on populating the template.
+
 ## Security Considerations
 
 - **Private Keys**: Never commit `.env` files or expose private keys
