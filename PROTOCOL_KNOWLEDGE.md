@@ -123,6 +123,64 @@ bool crossed = order.isCurrency0
 
 **Reference:** [Uniswap V4 Pool.sol tick handling](https://github.com/Uniswap/v4-core/blob/d153b048868a60c2403a3ef5b2301bb247884d46/src/libraries/Pool.sol#L218-L224), [Zora Audit Issue #12](https://github.com/kadenzipfel/zora-autosell-audit/issues/12)
 
+### Swaps May Only Partially Execute Due to Price Limits
+
+**The Issue:** When swapping large amounts, swaps can hit the `sqrtPriceLimit` and only partially execute, leaving unsettled currency deltas. All positive deltas must be taken to avoid `CurrencyNotSettled()` errors.
+
+**Context:** In Uniswap V4, swaps are bounded by price limits (`sqrtPriceLimit`). When a swap would move the price beyond this limit, only a portion of the input is consumed. The remaining input amount stays as an unsettled positive delta that must be explicitly taken from the pool manager.
+
+**Wrong:**
+
+```solidity
+// Only taking the final output currency - partial swap remainders left unsettled
+(Currency receivedCurrency, uint128 receivedAmount) = executeSwapPath(poolManager, fees0, fees1, path);
+if (receivedAmount > 0) {
+    poolManager.take(receivedCurrency, address(this), receivedAmount);
+    distributeRewards(receivedCurrency, receivedAmount);
+}
+// If swap was partial, some input currency remains as positive delta - causes CurrencyNotSettled()
+```
+
+**Correct:**
+
+```solidity
+// Execute swap path, then check ALL currencies for positive deltas
+executeSwapPath(poolManager, fees0, fees1, path);
+
+// Check input currency for partial swap remainder
+int256 deltaIn = TransientStateLibrary.currencyDelta(poolManager, address(this), currencyIn);
+if (deltaIn > 0) {
+    poolManager.take(currencyIn, address(this), uint128(uint256(deltaIn)));
+    distributeRewards(currencyIn, uint128(uint256(deltaIn)));
+}
+
+// Check all intermediate currencies for positive deltas
+for (uint256 i = 0; i < path.length; i++) {
+    Currency intermediateCurrency = path[i].intermediateCurrency;
+    int256 delta = TransientStateLibrary.currencyDelta(poolManager, address(this), intermediateCurrency);
+    if (delta > 0) {
+        poolManager.take(intermediateCurrency, address(this), uint128(uint256(delta)));
+        distributeRewards(intermediateCurrency, uint128(uint256(delta)));
+    }
+}
+```
+
+**Why This Matters:**
+
+- Large swaps frequently hit price limits, especially in pools with concentrated liquidity
+- Partial execution leaves positive deltas that must be settled before the unlock ends
+- Example: Attempting to swap 466 quadrillion may only consume 5.3 trillion (1.1%), leaving 461 quadrillion unsettled
+- Unsettled deltas cause `CurrencyNotSettled()` reverts when the pool manager's unlock callback completes
+- This is particularly common in multi-hop swaps where intermediate pools have limited liquidity
+
+**Impact:**
+
+- **Transaction reverts**: Swaps fail with `CurrencyNotSettled()` when large fee amounts can't be fully swapped
+- **Lost rewards**: Partial swap remainders not distributed to reward recipients
+- **Hook reliability**: Hooks that convert currencies must handle partial execution to avoid bricking pools
+
+**Reference:** [Linear MKT-107](https://linear.app/ourzora/issue/MKT-107)
+
 ---
 
 ## Solidity Patterns

@@ -10,6 +10,7 @@ import {IHasRewardsRecipients} from "../../src/interfaces/IHasRewardsRecipients.
 import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
 import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
 import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
 import {CoinCommon} from "../../src/libs/CoinCommon.sol";
 import {V4Liquidity} from "../../src/libs/V4Liquidity.sol";
 import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
@@ -40,7 +41,11 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         IHooksUpgradeGate upgradeGate,
         IZoraLimitOrderBookCoinsInterface zoraLimitOrderBook,
         IZoraHookRegistry zoraHookRegistry
-    ) ZoraV4CoinHook(_poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate, zoraLimitOrderBook, zoraHookRegistry) {}
+    )
+        ZoraV4CoinHook(
+            _poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate, zoraLimitOrderBook, zoraHookRegistry
+        )
+    {}
 
     FeeEstimatorState public feeState;
 
@@ -48,13 +53,11 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         return feeState;
     }
 
-    function _afterSwap(
-        address,
-        PoolKey calldata key,
-        SwapParams calldata params,
-        BalanceDelta _delta,
-        bytes calldata
-    ) internal override returns (bytes4, int128) {
+    function _afterSwap(address, PoolKey calldata key, SwapParams calldata params, BalanceDelta _delta, bytes calldata)
+        internal
+        override
+        returns (bytes4, int128)
+    {
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(key);
 
         // get the coin address and positions for the pool key; they must have been set in the afterInitialize callback
@@ -65,8 +68,6 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
             uint256 coinBalanceBefore = IERC20(coin).balanceOf(address(this));
             uint256 currencyBalanceBefore = IERC20(ICoin(coin).currency()).balanceOf(address(this));
 
-            IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
-
             int128 fee0;
             int128 fee1;
 
@@ -74,12 +75,40 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
 
             (uint128 remainingFee0, uint128 remainingFee1) = CoinRewardsV4.mintLpReward(poolManager, key, fee0, fee1);
 
-            (feeState.afterSwapCurrency, feeState.afterSwapCurrencyAmount) = CoinRewardsV4.convertToPayoutCurrency(
-                poolManager,
-                remainingFee0,
-                remainingFee1,
-                payoutSwapPath
+            // Execute the swap path to estimate the payout amount, but don't distribute
+            // This mirrors the logic in ZoraV4CoinHook._afterSwap
+            IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
+
+            // Execute swap and track all deltas that result
+            UniV4SwapToCurrency.swapToPath(
+                poolManager, remainingFee0, remainingFee1, payoutSwapPath.currencyIn, payoutSwapPath.path
             );
+
+            // Take all positive deltas and sum them to get total payout amount
+            uint128 totalPayout = 0;
+
+            // Check currencyIn for positive delta
+            int256 deltaIn = TransientStateLibrary.currencyDelta(poolManager, address(this), payoutSwapPath.currencyIn);
+            if (deltaIn > 0) {
+                uint128 amount = uint128(uint256(deltaIn));
+                poolManager.take(payoutSwapPath.currencyIn, address(this), amount);
+                totalPayout += amount;
+            }
+
+            // Check all intermediate currencies for positive deltas
+            for (uint256 i = 0; i < payoutSwapPath.path.length; i++) {
+                Currency intermediateCurrency = payoutSwapPath.path[i].intermediateCurrency;
+                int256 delta = TransientStateLibrary.currencyDelta(poolManager, address(this), intermediateCurrency);
+                if (delta > 0) {
+                    uint128 amount = uint128(uint256(delta));
+                    poolManager.take(intermediateCurrency, address(this), amount);
+                    totalPayout += amount;
+                    // Track the last positive currency as the payout currency
+                    feeState.afterSwapCurrency = intermediateCurrency;
+                }
+            }
+
+            feeState.afterSwapCurrencyAmount = totalPayout;
 
             feeState.fees0 += uint128(fee0);
             feeState.fees1 += uint128(fee1);
@@ -97,5 +126,10 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         return (BaseHook.afterSwap.selector, 0);
     }
 
-    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {}
+    function _distributeMarketRewards(
+        Currency currency,
+        uint128 fees,
+        IHasRewardsRecipients coin,
+        address tradeReferrer
+    ) internal override {}
 }

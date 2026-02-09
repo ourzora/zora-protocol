@@ -27,7 +27,12 @@ import {ICoin, IHasSwapPath, IHasRewardsRecipients, IHasCoinType} from "../inter
 import {IHasCreationInfo} from "../interfaces/IHasCreationInfo.sol";
 import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
 import {IDeployedCoinVersionLookup} from "../interfaces/IDeployedCoinVersionLookup.sol";
-import {IUpgradeableV4Hook, IUpgradeableDestinationV4Hook, IUpgradeableDestinationV4HookWithUpdateableFee, BurnedPosition} from "../interfaces/IUpgradeableV4Hook.sol";
+import {
+    IUpgradeableV4Hook,
+    IUpgradeableDestinationV4Hook,
+    IUpgradeableDestinationV4HookWithUpdateableFee,
+    BurnedPosition
+} from "../interfaces/IUpgradeableV4Hook.sol";
 import {IHooksUpgradeGate} from "../interfaces/IHooksUpgradeGate.sol";
 import {IZoraHookRegistry} from "../interfaces/IZoraHookRegistry.sol";
 import {IZoraLimitOrderBookCoinsInterface} from "../interfaces/IZoraLimitOrderBookCoinsInterface.sol";
@@ -43,6 +48,7 @@ import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
 import {TickMath} from "../utils/uniswap/TickMath.sol";
 import {ContractVersionBase, IVersionedContract} from "../version/ContractVersionBase.sol";
 import {ISupportsLimitOrderFill} from "../interfaces/ISupportsLimitOrderFill.sol";
+import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
 
 /// @title ZoraV4CoinHook
 /// @notice Uniswap V4 hook that automatically handles fee collection and reward distributions on every swap,
@@ -123,23 +129,22 @@ contract ZoraV4CoinHook is
     /// @notice Returns the uniswap v4 hook settings / permissions.
     /// @dev The permissions currently requested are: afterInitialize and afterSwap.
     function getHookPermissions() public pure override returns (Hooks.Permissions memory) {
-        return
-            Hooks.Permissions({
-                beforeInitialize: false,
-                afterInitialize: true,
-                beforeAddLiquidity: false,
-                afterAddLiquidity: false,
-                beforeRemoveLiquidity: false,
-                afterRemoveLiquidity: false,
-                beforeSwap: true,
-                afterSwap: true,
-                beforeDonate: false,
-                afterDonate: false,
-                beforeSwapReturnDelta: false,
-                afterSwapReturnDelta: false,
-                afterAddLiquidityReturnDelta: false,
-                afterRemoveLiquidityReturnDelta: false
-            });
+        return Hooks.Permissions({
+            beforeInitialize: false,
+            afterInitialize: true,
+            beforeAddLiquidity: false,
+            afterAddLiquidity: false,
+            beforeRemoveLiquidity: false,
+            afterRemoveLiquidity: false,
+            beforeSwap: true,
+            afterSwap: true,
+            beforeDonate: false,
+            afterDonate: false,
+            beforeSwapReturnDelta: false,
+            afterSwapReturnDelta: false,
+            afterAddLiquidityReturnDelta: false,
+            afterRemoveLiquidityReturnDelta: false
+        });
     }
 
     /// @inheritdoc IZoraV4CoinHook
@@ -159,12 +164,10 @@ contract ZoraV4CoinHook is
 
     /// @inheritdoc ERC165
     function supportsInterface(bytes4 interfaceId) public view virtual override returns (bool) {
-        return
-            super.supportsInterface(interfaceId) ||
-            interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId ||
-            interfaceId == type(IUpgradeableDestinationV4HookWithUpdateableFee).interfaceId ||
-            interfaceId == type(IVersionedContract).interfaceId ||
-            interfaceId == type(ISupportsLimitOrderFill).interfaceId;
+        return super.supportsInterface(interfaceId) || interfaceId == type(IUpgradeableDestinationV4Hook).interfaceId
+            || interfaceId == type(IUpgradeableDestinationV4HookWithUpdateableFee).interfaceId
+            || interfaceId == type(IVersionedContract).interfaceId
+            || interfaceId == type(ISupportsLimitOrderFill).interfaceId;
     }
 
     /// @notice Internal fn generating the positions for a given pool key.
@@ -175,9 +178,7 @@ contract ZoraV4CoinHook is
         bool isCoinToken0 = Currency.unwrap(key.currency0) == address(coin);
 
         LpPosition[] memory calculatedPositions = CoinDopplerMultiCurve.calculatePositions(
-            isCoinToken0,
-            coin.getPoolConfiguration(),
-            coin.totalSupplyForPositions()
+            isCoinToken0, coin.getPoolConfiguration(), coin.totalSupplyForPositions()
         );
 
         // sometimes the calculated positions have liquidity added in duplicated positions.   So here we dedupe them
@@ -277,7 +278,8 @@ contract ZoraV4CoinHook is
 
         // Convert the burned/migrated liquidity positions into new LP positions
         // This recreates the liquidity structure from the old hook in the new hook
-        LpPosition[] memory positions = V4Liquidity.generatePositionsFromMigratedLiquidity(sqrtPriceX96, migratedLiquidity);
+        LpPosition[] memory positions =
+            V4Liquidity.generatePositionsFromMigratedLiquidity(sqrtPriceX96, migratedLiquidity);
 
         // Store the positions and mint the initial liquidity into the new pool
         _initializeForPositions(newKey, coin, positions);
@@ -300,18 +302,18 @@ contract ZoraV4CoinHook is
     /// @notice Transiently stores the tick before a swap and calculates the launch fee.
     /// @dev This is used in `_afterSwap` to determine the ticks crossed during the swap.
     ///      Also returns a dynamic fee that decays from 99% to 1% over 10 seconds after coin creation.
-    function _beforeSwap(
-        address sender,
-        PoolKey calldata key,
-        SwapParams calldata,
-        bytes calldata
-    ) internal virtual override returns (bytes4, BeforeSwapDelta, uint24) {
+    function _beforeSwap(address sender, PoolKey calldata key, SwapParams calldata, bytes calldata)
+        internal
+        virtual
+        override
+        returns (bytes4, BeforeSwapDelta, uint24)
+    {
         if (_isInternalSwap(sender)) {
             return (BaseHook.beforeSwap.selector, BeforeSwapDelta.wrap(0), 0);
         }
 
         // Store tick for user-initiated swaps only
-        (, int24 currentTick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
+        (, int24 currentTick,,) = StateLibrary.getSlot0(poolManager, key.toId());
 
         TransientSlot.Int256Slot slot = TransientSlot.asInt256(CoinConstants._BEFORE_SWAP_TICK_SLOT);
         TransientSlot.tstore(slot, int256(currentTick));
@@ -404,21 +406,26 @@ contract ZoraV4CoinHook is
         // collect lp fees
         (int128 fees0, int128 fees1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
 
-        (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) = CoinRewardsV4.mintLpReward(poolManager, key, fees0, fees1);
+        (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) =
+            CoinRewardsV4.mintLpReward(poolManager, key, fees0, fees1);
 
-        // convert remaining fees to payout currency for market rewards
-        (Currency payoutCurrency, uint128 payoutAmount) = CoinRewardsV4.convertToPayoutCurrency(
+        // convert remaining fees to payout currency for market rewards, and distribute any partial swap remainders
+        address tradeReferrer = CoinRewardsV4.getTradeReferral(hookData);
+        CoinRewardsV4.swapFeesToPayoutAndDistribute(
             poolManager,
             marketRewardsAmount0,
             marketRewardsAmount1,
-            payoutSwapPath
+            payoutSwapPath,
+            ICoin(coin),
+            tradeReferrer,
+            ICoin(coin).coinType()
         );
-
-        _distributeMarketRewards(payoutCurrency, payoutAmount, ICoin(coin), CoinRewardsV4.getTradeReferral(hookData));
 
         {
             (address swapper, bool isTrustedSwapSenderAddress) = _getOriginalMsgSender(sender);
-            bool isCoinBuy = params.zeroForOne ? Currency.unwrap(key.currency1) == address(coin) : Currency.unwrap(key.currency0) == address(coin);
+            bool isCoinBuy = params.zeroForOne
+                ? Currency.unwrap(key.currency1) == address(coin)
+                : Currency.unwrap(key.currency0) == address(coin);
             emit Swapped(
                 sender,
                 swapper,
@@ -439,7 +446,14 @@ contract ZoraV4CoinHook is
         // Derive fill direction from actual tick movement
         if (tickAfterSwap != tickBeforeSwap) {
             bool isCurrency0 = tickAfterSwap > tickBeforeSwap;
-            zoraLimitOrderBook.fill(key, isCurrency0, tickBeforeSwap, tickAfterSwap, CoinConstants.SENTINEL_DEFAULT_LIMIT_ORDER_FILL_COUNT, address(0));
+            zoraLimitOrderBook.fill(
+                key,
+                isCurrency0,
+                tickBeforeSwap,
+                tickAfterSwap,
+                CoinConstants.SENTINEL_DEFAULT_LIMIT_ORDER_FILL_COUNT,
+                address(0)
+            );
         }
 
         return (BaseHook.afterSwap.selector, 0);
@@ -449,11 +463,16 @@ contract ZoraV4CoinHook is
     function _getSwapTickRange(PoolKey calldata key) internal view returns (int24 tickBeforeSwap, int24 tickAfterSwap) {
         TransientSlot.Int256Slot slot = TransientSlot.asInt256(CoinConstants._BEFORE_SWAP_TICK_SLOT);
         tickBeforeSwap = int24(int256(TransientSlot.tload(slot)));
-        (, tickAfterSwap, , ) = StateLibrary.getSlot0(poolManager, key.toId());
+        (, tickAfterSwap,,) = StateLibrary.getSlot0(poolManager, key.toId());
     }
 
     /// @dev Internal fn to allow for overriding market reward distribution logic
-    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal virtual {
+    function _distributeMarketRewards(
+        Currency currency,
+        uint128 fees,
+        IHasRewardsRecipients coin,
+        address tradeReferrer
+    ) internal virtual {
         // get rewards distribution methodology from the coin
         IHasCoinType.CoinType coinType = _getCoinType(coin);
         CoinRewardsV4.distributeMarketRewards(currency, fees, coin, tradeReferrer, coinType);
@@ -484,7 +503,10 @@ contract ZoraV4CoinHook is
     }
 
     /// @inheritdoc IUpgradeableV4Hook
-    function migrateLiquidity(address newHook, PoolKey memory poolKey, bytes calldata additionalData) external returns (PoolKey memory newPoolKey) {
+    function migrateLiquidity(address newHook, PoolKey memory poolKey, bytes calldata additionalData)
+        external
+        returns (PoolKey memory newPoolKey)
+    {
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(poolKey);
         PoolCoin storage poolCoin = poolCoins[poolKeyHash];
         // check that the coin associated with the poolkey is the caller
@@ -495,7 +517,9 @@ contract ZoraV4CoinHook is
             revert IUpgradeableV4Hook.UpgradePathNotRegistered(address(this), newHook);
         }
 
-        newPoolKey = V4Liquidity.lockAndMigrate(poolManager, poolKey, poolCoin.positions, poolCoin.coin, newHook, additionalData);
+        newPoolKey = V4Liquidity.lockAndMigrate(
+            poolManager, poolKey, poolCoin.positions, poolCoin.coin, newHook, additionalData
+        );
 
         // Delete the old pool key mapping to prevent future operations on the migrated pool
         delete poolCoins[poolKeyHash];
@@ -503,7 +527,9 @@ contract ZoraV4CoinHook is
 
     /// @dev Checks if the swap is internal and should skip hook operations
     function _isInternalSwap(address sender) internal view returns (bool) {
-        return sender == address(this) || sender == address(zoraLimitOrderBook) || zoraHookRegistry.isRegisteredHook(sender);
+        return
+            sender == address(this) || sender == address(zoraLimitOrderBook)
+                || zoraHookRegistry.isRegisteredHook(sender);
     }
 
     /// @notice Receives ETH from the pool manager for ETH-backed coins during fee collection.

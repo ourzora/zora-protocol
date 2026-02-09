@@ -41,27 +41,61 @@ library CoinRewardsV4 {
         return hookData.length >= 20 ? abi.decode(hookData, (address)) : address(0);
     }
 
-    /// @dev Converts collected fees from LP positions into target payout currency, and transfers to hook contract, so
-    ///      that they can later be distributed as rewards.
+    /// @dev Swaps collected fees through the payout path and distributes all deltas as rewards.
+    ///      This handles partial swap execution where swaps may hit price limits and leave unsettled deltas.
+    ///      After executing the swap path, all positive deltas (both intermediate and final) are taken and distributed.
     /// @param poolManager The pool manager instance
     /// @param fees0 The amount of fees collected in currency0
     /// @param fees1 The amount of fees collected in currency1
-    /// @param payoutSwapPath The swap path to convert fees to target currency
-    /// @return receivedCurrency The final currency after swapping
-    /// @return receivedAmount The final amount after swapping
-    function convertToPayoutCurrency(
+    /// @param payoutSwapPath The swap path for converting fees to the payout currency
+    /// @param coin The coin interface for getting reward recipients
+    /// @param tradeReferrer The trade referrer address
+    /// @param coinType The coin type for proper event emission
+    function swapFeesToPayoutAndDistribute(
         IPoolManager poolManager,
         uint128 fees0,
         uint128 fees1,
-        IHasSwapPath.PayoutSwapPath memory payoutSwapPath
-    ) internal returns (Currency receivedCurrency, uint128 receivedAmount) {
-        // This handles multi-hop swaps if needed (e.g. coin -> backingCoin -> backingCoin's currency)
-        (receivedCurrency, receivedAmount) = UniV4SwapToCurrency.swapToPath(poolManager, fees0, fees1, payoutSwapPath.currencyIn, payoutSwapPath.path);
+        IHasSwapPath.PayoutSwapPath memory payoutSwapPath,
+        IHasRewardsRecipients coin,
+        address tradeReferrer,
+        IHasCoinType.CoinType coinType
+    ) internal {
+        // Execute the swap path - may only partially execute if hitting price limits
+        UniV4SwapToCurrency.swapToPath(poolManager, fees0, fees1, payoutSwapPath.currencyIn, payoutSwapPath.path);
 
-        // Transfer the final converted currency amount to this contract for distribution
-        // This makes the tokens available for the subsequent reward distribution
-        if (receivedAmount > 0) {
-            poolManager.take(receivedCurrency, address(this), receivedAmount);
+        // After swap path execution, iterate through all currencies and take/distribute any positive deltas
+        // This handles cases where swaps only partially execute, leaving unsettled amounts
+
+        // Check currencyIn — partial swap remainder lives here
+        _takeAndDistributeIfPositiveDelta(poolManager, payoutSwapPath.currencyIn, coin, tradeReferrer, coinType);
+
+        // Check all intermediate currencies in the path (includes the other pool currency as path[0])
+        for (uint256 i = 0; i < payoutSwapPath.path.length; i++) {
+            Currency intermediateCurrency = payoutSwapPath.path[i].intermediateCurrency;
+            _takeAndDistributeIfPositiveDelta(poolManager, intermediateCurrency, coin, tradeReferrer, coinType);
+        }
+    }
+
+    /// @dev Checks if a currency has a positive delta, and if so, takes it and distributes as rewards
+    /// @param poolManager The pool manager instance
+    /// @param currency The currency to check
+    /// @param coin The coin interface for getting reward recipients
+    /// @param tradeReferrer The trade referrer address
+    /// @param coinType The coin type for proper event emission
+    function _takeAndDistributeIfPositiveDelta(
+        IPoolManager poolManager,
+        Currency currency,
+        IHasRewardsRecipients coin,
+        address tradeReferrer,
+        IHasCoinType.CoinType coinType
+    ) private {
+        int256 delta = TransientStateLibrary.currencyDelta(poolManager, address(this), currency);
+        // Only take if there's a positive delta
+        // Note: delta might be 0 if we already took from this currency in a previous call
+        if (delta > 0) {
+            uint128 amount = uint128(uint256(delta));
+            poolManager.take(currency, address(this), amount);
+            distributeMarketRewards(currency, amount, coin, tradeReferrer, coinType);
         }
     }
 
@@ -81,11 +115,17 @@ library CoinRewardsV4 {
     }
 
     function getCurrencyZeroBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
-        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0));
+        return
+            convertDeltaToPositiveUint128(
+                TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0)
+            );
     }
 
     function getCurrencyOneBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
-        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1));
+        return
+            convertDeltaToPositiveUint128(
+                TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1)
+            );
     }
 
     /// @notice Mints LP rewards by creating new liquidity positions from collected fees
@@ -97,12 +137,10 @@ library CoinRewardsV4 {
     /// @param fees1 The amount of fees collected in currency1
     /// @return marketRewardsAmount0 The amount of currency0 remaining for market rewards
     /// @return marketRewardsAmount1 The amount of currency1 remaining for market rewards
-    function mintLpReward(
-        IPoolManager poolManager,
-        PoolKey calldata key,
-        int128 fees0,
-        int128 fees1
-    ) internal returns (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) {
+    function mintLpReward(IPoolManager poolManager, PoolKey calldata key, int128 fees0, int128 fees1)
+        internal
+        returns (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1)
+    {
         if (fees0 > 0) {
             uint128 lpRewardAmount0 = computeLpReward(uint128(fees0));
             if (lpRewardAmount0 > 0) {
@@ -123,9 +161,11 @@ library CoinRewardsV4 {
 
     /// @notice Mints a single-sided LP position
     /// @dev The position is created for a single tick spacing range, either entirely above or below the current tick, to ensure only one currency is required
-    function _modifyLiquidity(IPoolManager poolManager, PoolKey calldata key, uint128 lpRewardAmount, bool isFeesToken0) private {
+    function _modifyLiquidity(IPoolManager poolManager, PoolKey calldata key, uint128 lpRewardAmount, bool isFeesToken0)
+        private
+    {
         // Get the current tick to determine where to place the new position.
-        (, int24 currentTick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
+        (, int24 currentTick,,) = StateLibrary.getSlot0(poolManager, key.toId());
 
         int24 tickLower;
         int24 tickUpper;
@@ -153,10 +193,7 @@ library CoinRewardsV4 {
 
         if (liquidity > 0) {
             ModifyLiquidityParams memory params = ModifyLiquidityParams({
-                tickLower: tickLower,
-                tickUpper: tickUpper,
-                liquidityDelta: SafeCast.toInt256(liquidity),
-                salt: 0
+                tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: SafeCast.toInt256(liquidity), salt: 0
             });
             poolManager.modifyLiquidity(key, params, "");
         }
@@ -182,13 +219,7 @@ library CoinRewardsV4 {
         address doppler = coin.dopplerFeeRecipient();
 
         MarketRewards memory rewards = _distributeCurrencyRewards(
-            currency,
-            fees,
-            payoutRecipient,
-            platformReferrer,
-            protocolRewardRecipient,
-            doppler,
-            tradeReferrer
+            currency, fees, payoutRecipient, platformReferrer, protocolRewardRecipient, doppler, tradeReferrer
         );
 
         IZoraV4CoinHook.MarketRewardsV4 memory marketRewards = IZoraV4CoinHook.MarketRewardsV4({
@@ -263,7 +294,7 @@ library CoinRewardsV4 {
         }
 
         if (currency.isAddressZero()) {
-            (bool success, ) = payable(to).call{value: amount}("");
+            (bool success,) = payable(to).call{value: amount}("");
             if (!success) {
                 if (backupRecipient == address(0)) {
                     revert ICoin.EthTransferFailed();
@@ -276,17 +307,24 @@ library CoinRewardsV4 {
         }
     }
 
-    function _computeMarketRewards(uint128 fee, bool hasTradeReferral, bool hasCreateReferral) internal pure returns (MarketRewards memory rewards) {
+    function _computeMarketRewards(uint128 fee, bool hasTradeReferral, bool hasCreateReferral)
+        internal
+        pure
+        returns (MarketRewards memory rewards)
+    {
         if (fee == 0) {
             return rewards;
         }
 
         uint256 totalAmount = uint256(fee);
-        rewards.platformReferrerAmount = hasCreateReferral ? calculateReward(totalAmount, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
-        rewards.tradeReferrerAmount = hasTradeReferral ? calculateReward(totalAmount, CoinConstants.TRADE_REFERRAL_REWARD_BPS) : 0;
+        rewards.platformReferrerAmount =
+            hasCreateReferral ? calculateReward(totalAmount, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
+        rewards.tradeReferrerAmount =
+            hasTradeReferral ? calculateReward(totalAmount, CoinConstants.TRADE_REFERRAL_REWARD_BPS) : 0;
         rewards.creatorAmount = calculateReward(totalAmount, CoinConstants.CREATOR_REWARD_BPS);
         rewards.dopplerAmount = calculateReward(totalAmount, CoinConstants.DOPPLER_REWARD_BPS);
-        rewards.protocolAmount = totalAmount - rewards.platformReferrerAmount - rewards.tradeReferrerAmount - rewards.creatorAmount - rewards.dopplerAmount;
+        rewards.protocolAmount = totalAmount - rewards.platformReferrerAmount - rewards.tradeReferrerAmount
+            - rewards.creatorAmount - rewards.dopplerAmount;
     }
 
     function calculateReward(uint256 amount, uint256 bps) internal pure returns (uint256) {
