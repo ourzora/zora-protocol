@@ -1,5 +1,11 @@
 # @zoralabs/protocol-deployments
 
+## 0.7.4
+
+### Patch Changes
+
+- 78dffbdc: Including uniswap v4 errors in lob and swap router abis, and including some uniswap v4 contracts and abis.
+
 ## 0.7.3
 
 ### Patch Changes

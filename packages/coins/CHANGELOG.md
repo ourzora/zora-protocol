@@ -1,11 +1,19 @@
 # @zoralabs/coins
 
+## 2.5.1
+
+### Patch Changes
+
+- 78dffbdc: Including uniswap v4 errors in lob and swap router abis, and including some uniswap v4 contracts and abis.
+- 1ccca8ef: Fix swap fee distribution when price limits cause partial execution
+
+  When swapping large fee amounts, swaps can hit sqrtPriceLimit and only partially execute, leaving unsettled currency deltas. The hook now checks all currencies in the payout swap path (both the input currency and all intermediates) and takes/distributes any positive deltas as rewards. This ensures all collected fees are properly distributed even when swaps don't fully execute due to price constraints.
+
 ## 2.5.0
 
 ### Minor Changes
 
 - 816ceb35: Add launch fee: time-based dynamic fee that decays from 99% to 1% over 10 seconds after coin creation
-
   - New coins record creation timestamp and expose it via `IHasCreationInfo` interface
   - Hook calculates dynamic fee based on elapsed time since creation
   - Initial supply purchase bypasses the fee via transient storage flag
@@ -40,7 +48,6 @@
   Previously, the `burnPositions()` function was incorrectly adding `feesAccrued` to `callerDelta` when recording burned position amounts. Since `callerDelta` already includes accrued fees, this caused fees to be double-counted. This resulted in inflated token amounts being recorded in `BurnedPosition` structs, which could lead to `ERC20InsufficientBalance` errors when attempting to mint positions on a new hook during migration.
 
   The fix:
-
   - Use only `callerDelta` values directly without adding `feesAccrued`
   - Add defensive balance checking in `mintPositions()` to cap liquidity at available token amounts
   - Prevents migration failures from any remaining rounding discrepancies between burn and mint operations
@@ -60,7 +67,6 @@
 ### Minor Changes
 
 - 7df94915: Enable buying initial supply when deploying creator coin and refactor factory internals
-
   - Add new `deployCreatorCoin` overload with `postDeployHook` parameter that supports ETH transfers
   - Refactored internal factory implementation to share more code between deployment methods
   - Enables buying initial supply during creator coin deployment via post-deploy hooks
@@ -70,7 +76,6 @@
 - 6a7e2b7b: Fix LP position duplication when deploying coins. If two positions are created with the same tick ranges, they are merged and stored as one position. This reduces gas costs during swapping as there are less LP positions to iterate through when collecting fees.
 - 5093c5ef: Add bounds checking to prevent risky forced downcasting of currency deltas
 - 9c6d241a: Fix ETH transfer failures in reward distribution when platform referrers cannot accept ETH
-
   - Prevent swaps from reverting when platform referrers cannot accept ETH - in this case, the rewards are redirected to the protocol recipient as backup.
   - Ensures coin functionality remains intact even with ETH-incompatible platform referrers
 
@@ -79,12 +84,10 @@
   Consolidates multiple hook contracts into a single unified hook for simplified architecture and better maintainability.
 
 - d3808d55: Adjust creator coin vesting duration to account for leap years
-
   - Changed CREATOR*VESTING_DURATION from 5 * 365 days to 5 \_ 365.25 days
   - Addresses Cantina audit finding about 1.25 day shortfall in 5-year vesting period
 
 - b571fe54: Consolidate and clarify coin constants
-
   - Renamed `CREATOR_LAUNCH_REWARD` to `CONTENT_COIN_INITIAL_CREATOR_SUPPLY` for clarity
   - Renamed `CREATOR_VESTING_SUPPLY` to `CREATOR_COIN_CREATOR_VESTING_SUPPLY` for consistency
   - Removed redundant `POOL_LAUNCH_SUPPLY` constant (use `CONTENT_COIN_MARKET_SUPPLY` instead)
@@ -111,7 +114,6 @@
 - adf98059: Adds platform referral and trade referral functionality to creator coins, and unifies the fee structure between content and creator coins with a simplified 1% total fee.
 
   ## New Features:
-
   - Platform referral and trade referral functionality for creator coins (previously only supported on content coins)
   - Unified fee structure: Both content and creator coins use identical 1% fee distribution
 
@@ -140,11 +142,9 @@
   | LP Rewards        | 33.33%                | 20%                  |
 
   **Implementation Changes:**
-
   - Consolidated reward logic into `CoinRewardsV4.distributeMarketRewards()`
 
   **Backwards Compatibility:**
-
   - Existing `CreatorCoinRewards` event is still emitted for backwards compatibility when rewards are distributed for a CreatorCoin
   - Additionally, when market rewards are distributed for a CreatorCoin, the same `CoinMarketRewardsV4` event that is already emitted for ContentCoins is now also emitted
 
@@ -167,7 +167,6 @@
 - dac72691: Remove Uniswap V3 support and refactor coin architecture
 
   **Removal of V3 Support:**
-
   - Removed support for creating coins based on Uniswap V3 - only V4 coins are supported
   - Default coin deployment now creates Uniswap V4 coins when no config is provided (previously created V3)
   - Removed V3-specific test files and utilities
@@ -176,7 +175,6 @@
   - Added revert logic for V3 deployment attempts in factory deploy functions
 
   **Architecture Refactoring:**
-
   - Merged BaseCoinV4 functionality into BaseCoin.sol to consolidate Uniswap V4 integration
   - Combined ICoinV4 interface with ICoin interface to simplify the interface hierarchy
   - Updated ContentCoin and CreatorCoin to inherit directly from BaseCoin
@@ -197,7 +195,6 @@
   This change updates the factory contract to use Ownable2StepUpgradeable instead of OwnableUpgradeable. The change maintains storage slot compatibility while adding the two-step ownership transfer pattern for enhanced security.
 
   Key changes:
-
   - ZoraFactoryImpl now inherits from Ownable2StepUpgradeable
   - Adds pendingOwner() function
   - Requires acceptOwnership() call to complete ownership transfers
@@ -250,7 +247,6 @@
 - 73e95f69: Upgraded coins to use Uniswap V4:
 
   **New CoinV4 Implementation:**
-
   - Migrated from Uniswap V3 to Uniswap V4, with logic moved into a hook.
   - Automatic LP fee collection and multi-hop reward distribution on every swap
   - New `ZoraV4CoinHook` handles afterSwap operations
@@ -258,25 +254,21 @@
   - Multi-hop fee swapping through intermediate currencies (e.g., ContentCoin → BackingCoin → Zora)
 
   **Factory Updates:**
-
   - Updated `deploy()` function signature with new `poolConfig`, `message`, and `salt` parameters
   - Automatic V3/V4 version selection based on pool configuration
   - Deterministic coin deployment with salt support
   - New `CoinCreatedV4` event for V4 coin deployments
 
   **Reward System Changes:**
-
   - Increased trade referral rewards from 10% to 15% (1500 basis points)
   - Automatic reward distribution in single backing currency
 
   **New Interfaces and Events:**
-
   - Added `IHasPoolKey` and `IHasSwapPath` interfaces for V4 functionality
   - New `Swapped` event with detailed swap and price information
   - New `CoinMarketRewardsV4` event for reward distribution tracking
 
   **Breaking Changes:**
-
   - New deterministic factory deploy function with salt
 
 ### Patch Changes

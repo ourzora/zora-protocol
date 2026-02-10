@@ -1,6 +1,6 @@
 {
   "name": "nft-docs",
-  "version": "0.0.38",
+  "version": "0.0.39",
   "type": "module",
   "private": true,
   "scripts": {
