@@ -40,6 +40,8 @@ import {
   buySupplyWithV4SwapHookABI,
   iPoolConfigEncodingABI,
   iPermit2ABI,
+  iPoolManagerABI,
+  iUniversalRouterABI,
   creatorCoinABI,
   autoSwapperABI,
   zoraV4CoinHookABI,
@@ -278,6 +280,22 @@ const getSharedAddresses = () => {
     addresses,
     configKey: "UNISWAP_PERMIT2",
     contractName: "Permit2",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iPoolManagerABI,
+    addresses,
+    configKey: "UNISWAP_V4_POOL_MANAGER",
+    contractName: "UniswapV4PoolManager",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iUniversalRouterABI,
+    addresses,
+    configKey: "UNISWAP_UNIVERSAL_ROUTER",
+    contractName: "UniversalRouter",
     storedConfigs,
   });
 
@@ -619,8 +637,10 @@ const makeLimitOrdersContracts = ({
     ZORA_ROUTER: Address;
   }>({ dev });
 
+  const limitOrderBookAbiWithErrors = [...zoraLimitOrderBookABI, ...coinErrors, ...extractErrors(iPoolManagerABI)];
+
   addAddress({
-    abi: [...zoraLimitOrderBookABI, ...coinErrors],
+    abi: limitOrderBookAbiWithErrors,
     addresses,
     configKey: "ZORA_LIMIT_ORDER_BOOK",
     contractName: `${prefix}ZoraLimitOrderBook`,
@@ -630,8 +650,8 @@ const makeLimitOrdersContracts = ({
   addAddress({
     abi: [
       ...swapWithLimitOrdersABI,
-      ...coinErrors,
-      ...extractErrors(zoraLimitOrderBookABI),
+      ...extractErrors(limitOrderBookAbiWithErrors),
+      ...extractErrors(iUniversalRouterABI),
     ],
     addresses,
     configKey: "ZORA_ROUTER",

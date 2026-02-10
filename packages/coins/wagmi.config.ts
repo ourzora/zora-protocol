@@ -16,9 +16,11 @@ export default defineConfig({
         "IUniswapV3Pool",
         "IPoolConfigEncoding",
         "IPermit2",
+        "IPoolManager",
         "AutoSwapper",
         "BuySupplyWithV4SwapHook",
         "ZoraV4CoinHook",
+        "IUniversalRouter"
       ].map((contractName) => `${contractName}.json`),
     }),
   ],
