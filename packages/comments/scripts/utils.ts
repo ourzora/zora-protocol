@@ -92,29 +92,7 @@ export function getChainNamePositionalArg() {
   return chainName;
 }
 
-const CONFIG_BASE =
-  "https://api.goldsky.com/api/public/project_clhk16b61ay9t49vm6ntn4mkz/subgraphs";
-
-export function getSubgraph(name: string, version: string = "stable"): string {
-  return `${CONFIG_BASE}/${name}/${version}/gn`;
-}
-
-const subgraphChainName = (chainName: string) => {
-  if (chainName === "zora") {
-    return "zora-mainnet";
-  }
-  if (chainName === "base") {
-    return "base-mainnet";
-  }
-
-  return chainName;
-};
-
 export async function getChainConfig(chainName: string) {
-  const subgraph = getSubgraph(
-    `zora-create-${subgraphChainName(chainName)}`,
-    "stable",
-  );
   const { publicClient, walletClient, chainId } =
     await makeClientsForChain(chainName);
 
@@ -122,6 +100,5 @@ export async function getChainConfig(chainName: string) {
     publicClient: publicClient as PublicClient<Transport, Chain>,
     walletClient: walletClient as WalletClient<Transport, Chain>,
     chainId,
-    subgraph,
   };
 }

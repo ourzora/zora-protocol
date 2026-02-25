@@ -34,13 +34,6 @@ import { readFile, writeFile, readdir } from "fs/promises";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-const CONFIG_BASE =
-  "https://api.goldsky.com/api/public/project_clhk16b61ay9t49vm6ntn4mkz/subgraphs";
-
-function getSubgraph(name: string, version: string): string {
-  return `${CONFIG_BASE}/${name}/${version}/gn`;
-}
-
 const deterministicUpgradeGateAddress =
   "0xbC50029836A59A4E5e1Bb8988272F46ebA0F9900";
 
@@ -55,7 +48,7 @@ const chains: {
   {
     chain: zoraSepolia,
     upgradeGates: [deterministicUpgradeGateAddress],
-    subgraph: getSubgraph("zora-create-zora-sepolia", "stable"),
+    subgraph: "",
   },
   {
     chain: mainnet,
@@ -63,7 +56,7 @@ const chains: {
       deterministicUpgradeGateAddress,
       "0xA6C5f2DE915240270DaC655152C3f6A91748cb85",
     ],
-    subgraph: getSubgraph("zora-create-mainnet", "stable"),
+    subgraph: "",
     additionalVersions: {
       "1.3.0": "0x4c2b5f3b7eadadd58d5ec457abf57f4718b171ae",
       "1.4.0": "0xF62b0d56BA617F803DF1C464C519FF7D29451B2f",
@@ -75,7 +68,7 @@ const chains: {
       deterministicUpgradeGateAddress,
       "0x78b524931e9d847c40BcBf225c25e154a7B05fDA",
     ],
-    subgraph: getSubgraph("zora-create-optimism", "stable"),
+    subgraph: "",
     additionalVersions: {
       "1.4.0": [
         "0x8Ca5e648C5dFEfcdDa06d627F4b490B719ccFD98",
@@ -89,7 +82,7 @@ const chains: {
       deterministicUpgradeGateAddress,
       "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7",
     ],
-    subgraph: getSubgraph("zora-create-base-mainnet", "stable"),
+    subgraph: "",
     additionalVersions: {
       "1.4.0": "0x805E0a08dE70f85C01F7848370d5e3fc08aAd0ea",
     },
@@ -100,7 +93,7 @@ const chains: {
       deterministicUpgradeGateAddress,
       "0x35ca784918bf11692708c1D530691704AAcEA95E",
     ],
-    subgraph: getSubgraph("zora-create-zora-mainnet", "stable"),
+    subgraph: "",
     additionalVersions: {
       "1.4.0": "0x8Ca5e648C5dFEfcdDa06d627F4b490B719ccFD98",
     },
@@ -108,28 +101,28 @@ const chains: {
   {
     chain: arbitrum,
     upgradeGates: [deterministicUpgradeGateAddress],
-    subgraph: getSubgraph("zora-create-arbitrum-one", "stable"),
+    subgraph: "",
   },
   {
     chain: arbitrumSepolia,
     upgradeGates: [deterministicUpgradeGateAddress],
-    subgraph: getSubgraph("zora-create-arbitrum-sepolia", "stable"),
+    subgraph: "",
   },
   {
     chain: sepolia,
     upgradeGates: [deterministicUpgradeGateAddress],
-    subgraph: getSubgraph("zora-create-sepolia", "stable"),
+    subgraph: "",
   },
 
   {
     chain: baseSepolia,
     upgradeGates: [deterministicUpgradeGateAddress],
-    subgraph: getSubgraph("zora-create-base-sepolia", "stable"),
+    subgraph: "",
   },
   {
     chain: blast,
     upgradeGates: [deterministicUpgradeGateAddress],
-    subgraph: getSubgraph("zora-create-blast", "stable"),
+    subgraph: "",
   },
 ];
 

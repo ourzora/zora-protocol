@@ -14,7 +14,6 @@ The graph docs: https://thegraph.academy/developers/subgraph-development-guide/
 
 After `git clone` run `yarn` to install dependencies.
 
-
 Steps to build:
 
 ```sh
@@ -26,29 +25,7 @@ NETWORK needs to be a name of a valid network configuration file in `config/`.
 
 **Note:** This package has been moved to legacy and uses `build:subgraph` instead of `build` to avoid conflicts with the root build system. Use `build:subgraph` for subgraph-specific builds.
 
-
-After building, you can use the graph cli or goldsky cli to deploy the built subgraph for the network specified above.
-
-
-## Deployment shortcuts
-
-Only supports goldsky deploys for now:
-
-Grafts subgraph from FROM_VERSION:
-
-./scripts/multideploy.sh NEW_VERSION NETWORKS FROM_VERSION
-
-./scripts/multideploy.sh 1.10.0 zora-testnet,optimism-goerli,base-goerli 1.8.0
-
-Deploys without grafting:
-
-./scripts/multideploy.sh NEW_VERSION NETWORKS
-
-./scripts/multideploy.sh 1.10.0 zora-testnet,optimism-goerli,base-goerli
-
-Deploys a new version for _all_ networks without grafting: (not typical, indexing takes a long time in many cases.)
-
-./scripts/multideploy.sh NEW_VERSION
+After building, you can use the graph cli to deploy the built subgraph for the network specified above.
 
 # ABIs
 

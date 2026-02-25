@@ -11,8 +11,6 @@ import {
 } from "viem/chains";
 import type { components } from "./generated/premint-api-types";
 import { parseEther } from "viem";
-import { getSubgraph } from "../constants";
-
 type BackendChainName = components["schemas"]["ChainName"];
 
 export type NetworkConfig = {
@@ -31,63 +29,63 @@ export const networkConfigByChain: Record<number, NetworkConfig> = {
     isTestnet: false,
     zoraCollectPathChainName: "eth",
     zoraBackendChainName: "ETHEREUM-MAINNET",
-    subgraphUrl: getSubgraph("zora-create-mainnet", "stable"),
+    subgraphUrl: "",
   },
   [sepolia.id]: {
     chainId: sepolia.id,
     isTestnet: true,
     zoraCollectPathChainName: "sep",
     zoraBackendChainName: "ETHEREUM-SEPOLIA",
-    subgraphUrl: getSubgraph("zora-create-sepolia", "stable"),
+    subgraphUrl: "",
   },
   [zora.id]: {
     chainId: zora.id,
     isTestnet: false,
     zoraCollectPathChainName: "zora",
     zoraBackendChainName: "ZORA-MAINNET",
-    subgraphUrl: getSubgraph("zora-create-zora-mainnet", "stable"),
+    subgraphUrl: "",
   },
   [zoraSepolia.id]: {
     chainId: zoraSepolia.id,
     isTestnet: true,
     zoraCollectPathChainName: "zsep",
     zoraBackendChainName: "ZORA-SEPOLIA",
-    subgraphUrl: getSubgraph("zora-create-zora-sepolia", "stable"),
+    subgraphUrl: "",
   },
   [optimism.id]: {
     chainId: optimism.id,
     isTestnet: false,
     zoraCollectPathChainName: "oeth",
     zoraBackendChainName: "OPTIMISM-MAINNET",
-    subgraphUrl: getSubgraph("zora-create-optimism", "stable"),
+    subgraphUrl: "",
   },
   [arbitrum.id]: {
     chainId: arbitrum.id,
     isTestnet: true,
     zoraCollectPathChainName: "arb",
     zoraBackendChainName: "ARBITRUM-MAINNET",
-    subgraphUrl: getSubgraph("zora-create-arbitrum-one", "stable"),
+    subgraphUrl: "",
   },
   [base.id]: {
     chainId: base.id,
     isTestnet: false,
     zoraCollectPathChainName: "base",
     zoraBackendChainName: "BASE-MAINNET",
-    subgraphUrl: getSubgraph("zora-create-base-mainnet", "stable"),
+    subgraphUrl: "",
   },
   [baseSepolia.id]: {
     chainId: baseSepolia.id,
     isTestnet: true,
     zoraCollectPathChainName: "bsep",
     zoraBackendChainName: "BASE-SEPOLIA",
-    subgraphUrl: getSubgraph("zora-create-base-sepolia", "stable"),
+    subgraphUrl: "",
   },
   [foundry.id]: {
     chainId: foundry.id,
     isTestnet: true,
     zoraCollectPathChainName: "zgor",
     zoraBackendChainName: "ZORA-GOERLI",
-    subgraphUrl: getSubgraph("zora-create-zora-testnet", "stable"),
+    subgraphUrl: "",
   },
 };
 

@@ -1,4 +1,4 @@
-# requirements: jq, curl, goldsky cli
+# requirements: jq, curl
 
 # enable errors
 set -e
@@ -33,7 +33,7 @@ fi
 
 function getSubgraphQueryPath() {
   network=$1
-  echo "https://api.goldsky.com/api/public/project_clhk16b61ay9t49vm6ntn4mkz/subgraphs/zora-create-$network/$fromversion/gn"
+  echo ""
 }
 
 function getDeploymentBlock() {
@@ -74,6 +74,5 @@ do
   # echo "$newjson" > ./config/$network.json
   cat ./config/$network.yaml
   NETWORK=$network pnpm run build
-  echo goldsky subgraph deploy zora-create-$network/$version $graft_flags
-  goldsky subgraph deploy zora-create-$network/$version $graft_flags
+  echo "Skipping deploy: subgraph deploy integration removed"
 done

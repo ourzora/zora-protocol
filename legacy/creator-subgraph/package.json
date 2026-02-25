@@ -32,7 +32,6 @@
     "@zoralabs/cointags-contracts": "workspace:^"
   },
   "devDependencies": {
-    "@goldskycom/cli": "^7.1.0",
     "@graphprotocol/graph-cli": "0.50.0",
     "mustache": "4.2.0",
     "tsx": "^4.19.4",
