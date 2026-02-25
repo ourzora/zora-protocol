@@ -31,11 +31,6 @@ else
 fi
 
 
-function getSubgraphQueryPath() {
-  network=$1
-  echo ""
-}
-
 function getDeploymentBlock() {
   response=$(curl -sS $1 -X POST -H 'Accept: application/json' -H 'content-type: application/json' --data-raw '{"query":"{\n  _meta{\n    block {\n      number\n    }\n    deployment\n  }\n}"}')
   echo $response | jq '.data._meta.block.number' -r
@@ -56,7 +51,6 @@ for element in ${networkfiles[@]}
 do
   filename=$(basename $element)
   network="${filename%.*}"
-  base=$(getSubgraphQueryPath $network)
   # newjson=""
   graft_flags=""
   if [[ -n $fromcontract ]]; then
@@ -74,5 +68,4 @@ do
   # echo "$newjson" > ./config/$network.json
   cat ./config/$network.yaml
   NETWORK=$network pnpm run build
-  echo "Skipping deploy: subgraph deploy integration removed"
 done
