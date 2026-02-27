@@ -103,3 +103,9 @@ Format and lint code:
 ## Bug Bounty
 
 Report security vulnerabilities and learn about our Bug Bounty Program [here](https://docs.zora.co/bug-bounty/bug-bounty-program).
+
+## Deprecation Notice: Goldsky
+
+The Goldsky subgraph integration previously used in this repository has been deprecated. The service contract with Goldsky has been terminated and all associated subgraph endpoints are no longer active.
+
+Code referencing Goldsky subgraph URLs (primarily in the `legacy/` directory) remains in the repository for historical reference but is non-functional. For indexed on-chain data, refer to the current indexing infrastructure in the [Zora developer documentation](https://docs.zora.co).
