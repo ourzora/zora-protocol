@@ -46,6 +46,9 @@ contract CreatorCoin is ICreatorCoin, BaseCoin {
         uint160 sqrtPriceX96,
         PoolConfiguration memory poolConfiguration_
     ) public override(BaseCoin, ICoin) {
+        if (payoutRecipient_ == address(0)) {
+            revert AddressZero();
+        }
         require(currency_ == CoinConstants.CREATOR_COIN_CURRENCY, InvalidCurrency());
 
         super.initialize({

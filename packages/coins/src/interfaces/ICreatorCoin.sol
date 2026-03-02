@@ -12,9 +12,6 @@ interface ICreatorCoin is ICoin {
     /// @param vestingEndTime The timestamp when vesting ends
     event CreatorVestingClaimed(address indexed recipient, uint256 claimAmount, uint256 totalClaimed, uint256 vestingStartTime, uint256 vestingEndTime);
 
-    /// @notice Thrown when an invalid currency is used for creator coin operations
-    error InvalidCurrency();
-
     /// @notice Allows the creator payout recipient to claim vested tokens
     /// @return claimAmount The amount of tokens claimed
     function claimVesting() external returns (uint256);

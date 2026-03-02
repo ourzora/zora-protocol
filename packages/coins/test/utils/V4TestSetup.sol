@@ -29,6 +29,7 @@ import {ZoraFactoryImpl} from "../../src/ZoraFactoryImpl.sol";
 import {ZoraFactory} from "../../src/proxy/ZoraFactory.sol";
 import {ContentCoin} from "../../src/ContentCoin.sol";
 import {CreatorCoin} from "../../src/CreatorCoin.sol";
+import {TrendCoin} from "../../src/TrendCoin.sol";
 import {CoinConfigurationVersions} from "../../src/libs/CoinConfigurationVersions.sol";
 import {CoinConstants} from "../../src/libs/CoinConstants.sol";
 import {UUPSUpgradeable} from "@openzeppelin/contracts-upgradeable/proxy/utils/UUPSUpgradeable.sol";
@@ -75,6 +76,7 @@ contract V4TestSetup is Test, ContractAddresses {
         address coinRecipient;
         address tradeReferrer;
         address dopplerRecipient;
+        address metadataManager;
     }
 
     // Fork management
@@ -101,6 +103,7 @@ contract V4TestSetup is Test, ContractAddresses {
     // Zora protocol contracts
     ContentCoin internal coinV4Impl;
     CreatorCoin internal creatorCoinImpl;
+    TrendCoin internal trendCoinImpl;
     ZoraFactoryImpl internal factoryImpl;
     IZoraFactory internal factory;
     ZoraV4CoinHook internal hook;
@@ -147,7 +150,8 @@ contract V4TestSetup is Test, ContractAddresses {
             seller: makeAddr("seller"),
             coinRecipient: makeAddr("coinRecipient"),
             tradeReferrer: makeAddr("tradeReferrer"),
-            dopplerRecipient: makeAddr("dopplerRecipient")
+            dopplerRecipient: makeAddr("dopplerRecipient"),
+            metadataManager: makeAddr("metadataManager")
         });
 
         ProxyShim mockUpgradeableImpl = new ProxyShim();
@@ -168,11 +172,16 @@ contract V4TestSetup is Test, ContractAddresses {
 
         creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK);
 
-        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
+        trendCoinImpl = new TrendCoin(users.feeRecipient, address(protocolRewards), IPoolManager(V4_POOL_MANAGER), DOPPLER_AIRLOCK, users.metadataManager);
+
+        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(trendCoinImpl), address(hook), address(zoraHookRegistry));
         UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
         factory = IZoraFactory(address(factory));
 
         ZoraFactoryImpl(address(factory)).initialize(users.factoryOwner);
+
+        // Set trend coin pool config
+        _setTrendCoinPoolConfig();
 
         vm.label(address(factory), "ZORA_FACTORY");
         vm.label(address(protocolRewards), "PROTOCOL_REWARDS");
@@ -208,7 +217,8 @@ contract V4TestSetup is Test, ContractAddresses {
             seller: makeAddr("seller"),
             coinRecipient: makeAddr("coinRecipient"),
             tradeReferrer: makeAddr("tradeReferrer"),
-            dopplerRecipient: makeAddr("dopplerRecipient")
+            dopplerRecipient: makeAddr("dopplerRecipient"),
+            metadataManager: makeAddr("metadataManager")
         });
 
         // Deploy mock airlock with the dopplerRecipient as owner (for doppler rewards)
@@ -250,11 +260,15 @@ contract V4TestSetup is Test, ContractAddresses {
         // Deploy coin implementations
         coinV4Impl = new ContentCoin(users.feeRecipient, address(protocolRewards), poolManager, address(mockAirlock));
         creatorCoinImpl = new CreatorCoin(users.feeRecipient, address(protocolRewards), poolManager, address(mockAirlock));
+        trendCoinImpl = new TrendCoin(users.feeRecipient, address(protocolRewards), poolManager, address(mockAirlock), users.metadataManager);
 
         // Deploy and initialize factory implementation
-        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(hook), address(zoraHookRegistry));
+        factoryImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(trendCoinImpl), address(hook), address(zoraHookRegistry));
         UUPSUpgradeable(address(factory)).upgradeToAndCall(address(factoryImpl), "");
         ZoraFactoryImpl(address(factory)).initialize(users.factoryOwner);
+
+        // Set trend coin pool config
+        _setTrendCoinPoolConfig();
 
         // Deploy mock V3 swap router for non-forked tests
         swapRouter = ISwapRouter(address(new MockSwapRouter()));
@@ -269,6 +283,24 @@ contract V4TestSetup is Test, ContractAddresses {
         vm.label(address(mockAirlock), "MOCK_AIRLOCK");
         vm.label(address(mockZoraLimitOrderBook), "LIMIT_ORDER_BOOK");
         vm.label(address(swapRouter), "MOCK_SWAP_ROUTER");
+    }
+
+    // ============================================
+    // Trend Coin Pool Config Helper
+    // ============================================
+
+    function _setTrendCoinPoolConfig() internal {
+        (
+            ,
+            address currency,
+            int24[] memory tickLower,
+            int24[] memory tickUpper,
+            uint16[] memory numDiscoveryPositions,
+            uint256[] memory maxDiscoverySupplyShare
+        ) = CoinConfigurationVersions.decodeDopplerMultiCurveUniV4(CoinConstants.TREND_COIN_DEFAULT_POOL_CONFIG);
+
+        vm.prank(users.factoryOwner);
+        factory.setTrendCoinPoolConfig(currency, tickLower, tickUpper, numDiscoveryPositions, maxDiscoverySupplyShare);
     }
 
     // ============================================

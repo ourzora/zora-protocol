@@ -16,6 +16,8 @@ import {ERC1967Utils} from "@openzeppelin/contracts/proxy/ERC1967/ERC1967Utils.s
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CoinConfigurationVersions} from "./libs/CoinConfigurationVersions.sol";
+import {CoinConstants} from "./libs/CoinConstants.sol";
+import {TickerUtils} from "./libs/TickerUtils.sol";
 import {ISwapRouter} from "./interfaces/ISwapRouter.sol";
 import {IWETH} from "./interfaces/IWETH.sol";
 import {IZoraFactory} from "./interfaces/IZoraFactory.sol";
@@ -34,6 +36,7 @@ import {IVersionedContract} from "@zoralabs/shared-contracts/interfaces/IVersion
 import {CoinSetup} from "./libs/CoinSetup.sol";
 import {CoinDopplerMultiCurve} from "./libs/CoinDopplerMultiCurve.sol";
 import {ICreatorCoin} from "./interfaces/ICreatorCoin.sol";
+import {ITrendCoin} from "./interfaces/ITrendCoin.sol";
 import {DeployedCoinVersionLookup} from "./utils/DeployedCoinVersionLookup.sol";
 import {IZoraHookRegistry} from "./interfaces/IZoraHookRegistry.sol";
 
@@ -52,16 +55,55 @@ contract ZoraFactoryImpl is
     address public immutable coinV4Impl;
     /// @notice The creator coin contract implementation address
     address public immutable creatorCoinImpl;
+    /// @notice The trend coin contract implementation address
+    address public immutable trendCoinImpl;
     /// @notice The uniswap v4 coin hook address
     address public immutable hook;
     /// @notice The zora hook registry address
     address public immutable zoraHookRegistry;
 
-    constructor(address coinV4Impl_, address creatorCoinImpl_, address hook_, address zoraHookRegistry_) {
+    /// @custom:storage-location erc7201:zora.coins.trendcointickers.storage
+    struct TrendCoinTickerStorage {
+        mapping(bytes32 => bool) usedTickerHashes;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("zora.coins.trendcointickers.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant TREND_COIN_TICKER_STORAGE_LOCATION = 0x57bdedf0ddfee9320a51cef29a2847cd7d7c32252cadecb7958561cc2d69ff00;
+
+    /// @custom:storage-location erc7201:zora.coins.trendcoinconfig.storage
+    struct TrendCoinConfigStorage {
+        bytes poolConfig;
+    }
+
+    // keccak256(abi.encode(uint256(keccak256("zora.coins.trendcoinconfig.storage")) - 1)) & ~bytes32(uint256(0xff))
+    bytes32 private constant TREND_COIN_CONFIG_STORAGE_LOCATION = 0xd1aa47a8d1a3f9b64aa4095f5f6c436e9b3a1eb90a61ab15f3a94d28bf1c0200;
+
+    /**
+     * @dev Returns the storage slot struct for trend coin ticker tracking
+     * @return $ Storage struct containing the usedTickerHashes mapping
+     */
+    function _getTrendCoinTickerStorage() private pure returns (TrendCoinTickerStorage storage $) {
+        assembly {
+            $.slot := TREND_COIN_TICKER_STORAGE_LOCATION
+        }
+    }
+
+    /**
+     * @dev Returns the storage slot struct for trend coin pool configuration
+     * @return $ Storage struct containing the poolConfig bytes
+     */
+    function _getTrendCoinConfigStorage() private pure returns (TrendCoinConfigStorage storage $) {
+        assembly {
+            $.slot := TREND_COIN_CONFIG_STORAGE_LOCATION
+        }
+    }
+
+    constructor(address coinV4Impl_, address creatorCoinImpl_, address trendCoinImpl_, address hook_, address zoraHookRegistry_) {
         _disableInitializers();
 
         coinV4Impl = coinV4Impl_;
         creatorCoinImpl = creatorCoinImpl_;
+        trendCoinImpl = trendCoinImpl_;
         hook = hook_;
         zoraHookRegistry = zoraHookRegistry_;
     }
@@ -126,6 +168,73 @@ contract ZoraFactoryImpl is
     ) external view returns (address) {
         bytes32 salt = _buildSalt(msgSender, name, symbol, poolConfig, platformReferrer, coinSalt);
         return Clones.predictDeterministicAddress(getCoinImpl(CoinConfigurationVersions.getVersion(poolConfig)), salt, address(this));
+    }
+
+    /// @inheritdoc IZoraFactory
+    function deployTrendCoin(
+        string calldata symbol,
+        address postDeployHook,
+        bytes calldata postDeployHookData
+    ) external payable nonReentrant returns (address coin, bytes memory postDeployHookDataOut) {
+        bytes32 tickerHashValue = TickerUtils.tickerHash(symbol);
+
+        // Check ticker uniqueness
+        TrendCoinTickerStorage storage $ = _getTrendCoinTickerStorage();
+        if ($.usedTickerHashes[tickerHashValue]) {
+            revert TickerAlreadyUsed(symbol);
+        }
+        $.usedTickerHashes[tickerHashValue] = true;
+
+        // Use ticker hash as salt for deterministic address
+        bytes32 salt = tickerHashValue;
+
+        coin = _createAndInitializeTrendCoin(symbol, salt);
+        postDeployHookDataOut = _executePostDeployHook(coin, postDeployHook, postDeployHookData);
+    }
+
+    /// @inheritdoc IZoraFactory
+    function trendCoinAddress(string calldata symbol) external view returns (address) {
+        bytes32 tickerHashValue = TickerUtils.tickerHash(symbol);
+        return Clones.predictDeterministicAddress(trendCoinImpl, tickerHashValue, address(this));
+    }
+
+    /// @dev Internal function to create and initialize a trend coin
+    /// @param symbol The ticker symbol (validation happens in TrendCoin.initializeTrendCoin)
+    /// @param coinSalt The salt for deterministic address generation
+    function _createAndInitializeTrendCoin(string memory symbol, bytes32 coinSalt) internal returns (address) {
+        // Clone the TrendCoin implementation
+        address coin = Clones.cloneDeterministic(trendCoinImpl, coinSalt);
+
+        // Get pool configuration from storage
+        bytes memory poolConfig = _getTrendCoinConfigStorage().poolConfig;
+        if (poolConfig.length == 0) {
+            revert TrendCoinPoolConfigNotSet();
+        }
+
+        uint8 version = CoinConfigurationVersions.getVersion(poolConfig);
+        _setVersionForDeployedCoin(coin, version);
+
+        require(version == CoinConfigurationVersions.DOPPLER_MULTICURVE_UNI_V4_POOL_VERSION, InvalidConfig());
+
+        // Setup owners - factory owner is the owner of trend coins
+        address[] memory owners = new address[](1);
+        owners[0] = owner();
+
+        // Generate pool key and configuration
+        uint160 sqrtPriceX96;
+        bool isCoinToken0;
+        PoolConfiguration memory poolConfiguration;
+        address currency;
+        (, currency, sqrtPriceX96, isCoinToken0, poolConfiguration) = CoinSetup.generatePoolConfig(coin, poolConfig);
+        PoolKey memory poolKey = CoinSetup.buildPoolKey(coin, currency, isCoinToken0, IHooks(hook));
+
+        // Initialize using TrendCoin's simplified initialize
+        // Validation and URI generation happen inside TrendCoin
+        ITrendCoin(coin).initializeTrendCoin(owners, symbol, poolKey, sqrtPriceX96, poolConfiguration);
+
+        emit TrendCoinCreated(msg.sender, symbol, coin, poolKey, CoinCommon.hashPoolKey(poolKey), poolConfig, IVersionedContract(coin).contractVersion());
+
+        return coin;
     }
 
     function _executePostDeployHook(address coin, address deployHook, bytes calldata hookData) internal returns (bytes memory hookDataOut) {
@@ -441,5 +550,37 @@ contract ZoraFactoryImpl is
     /// @dev Deprecated: use `hook` instead
     function contentCoinHook() external view returns (address) {
         return hook;
+    }
+
+    /// @inheritdoc IZoraFactory
+    function setTrendCoinPoolConfig(
+        address currency,
+        int24[] memory tickLower,
+        int24[] memory tickUpper,
+        uint16[] memory numDiscoveryPositions,
+        uint256[] memory maxDiscoverySupplyShare
+    ) external onlyOwner {
+        // Validate arrays have matching lengths
+        require(
+            tickLower.length == tickUpper.length && tickLower.length == numDiscoveryPositions.length && tickLower.length == maxDiscoverySupplyShare.length,
+            InvalidConfig()
+        );
+        require(tickLower.length > 0, InvalidConfig());
+        require(currency == CoinConstants.CREATOR_COIN_CURRENCY, InvalidConfig());
+
+        bytes memory poolConfig = CoinConfigurationVersions.encodeDopplerMultiCurveUniV4(
+            currency,
+            tickLower,
+            tickUpper,
+            numDiscoveryPositions,
+            maxDiscoverySupplyShare
+        );
+        _getTrendCoinConfigStorage().poolConfig = poolConfig;
+        emit TrendCoinPoolConfigUpdated(poolConfig);
+    }
+
+    /// @inheritdoc IZoraFactory
+    function trendCoinPoolConfig() external view returns (bytes memory) {
+        return _getTrendCoinConfigStorage().poolConfig;
     }
 }

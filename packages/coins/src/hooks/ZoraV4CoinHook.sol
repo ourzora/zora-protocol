@@ -356,8 +356,13 @@ contract ZoraV4CoinHook is
         // Calculate elapsed time since creation
         uint256 elapsed = block.timestamp - creationTimestamp;
 
-        // If launch fee duration has passed, use normal LP fee
+        // If launch fee duration has passed, use normal LP fee (0% for trend coins)
         if (elapsed >= CoinConstants.LAUNCH_FEE_DURATION) {
+            try IHasCoinType(coin).coinType() returns (IHasCoinType.CoinType ct) {
+                if (ct == IHasCoinType.CoinType.Trend) {
+                    return CoinConstants.OVERRIDE_FEE_FLAG;
+                }
+            } catch {}
             return CoinConstants.OVERRIDE_FEE_FLAG | CoinConstants.LP_FEE_V4;
         }
 

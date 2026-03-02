@@ -20,6 +20,7 @@ import {ZoraFactory} from "@zoralabs/coins/src/proxy/ZoraFactory.sol";
 import {HooksDeployment} from "@zoralabs/coins/src/libs/HooksDeployment.sol";
 import {ProxyShim} from "@zoralabs/coins/src/utils/ProxyShim.sol";
 import {CreatorCoin} from "@zoralabs/coins/src/CreatorCoin.sol";
+import {TrendCoin} from "@zoralabs/coins/src/TrendCoin.sol";
 import {Create2} from "@openzeppelin/contracts/utils/Create2.sol";
 import {HookUpgradeGate} from "@zoralabs/coins/src/hooks/HookUpgradeGate.sol";
 import {BuySupplyWithV4SwapHook} from "@zoralabs/coins/src/hooks/deployment/BuySupplyWithV4SwapHook.sol";
@@ -37,6 +38,12 @@ contract CoinsDeployerBase is ProxyDeployerScript {
     address internal constant PROTOCOL_REWARDS = 0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B;
     address internal constant ZORA = 0x1111111111166b7FE7bd91427724B487980aFc69;
     address internal constant PERMIT2 = 0x000000000022D473030F116dDEE9F6B43aC78BA3;
+
+    function getMetadataManager() internal view returns (address metadataManager) {
+        metadataManager = getChainConfigJson().readAddress(".METADATA_MANAGER");
+
+        require(metadataManager != address(0), "METADATA_MANAGER not configured");
+    }
 
     // Hardcoded salts for deterministic deployment
     // First 20 bytes are 0 to allow any address to deploy
@@ -56,6 +63,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         address coinV3Impl;
         address coinV4Impl;
         address creatorCoinImpl;
+        address trendCoinImpl;
         string coinVersion;
         // hooks
         address buySupplyWithSwapRouterHook;
@@ -102,6 +110,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         vm.serializeAddress(objectKey, "ZORA_V4_COIN_HOOK", deployment.zoraV4CoinHook);
         vm.serializeBytes32(objectKey, "ZORA_V4_COIN_HOOK_SALT", deployment.zoraV4CoinHookSalt);
         vm.serializeAddress(objectKey, "CREATOR_COIN_IMPL", deployment.creatorCoinImpl);
+        vm.serializeAddress(objectKey, "TREND_COIN_IMPL", deployment.trendCoinImpl);
         vm.serializeAddress(objectKey, "HOOK_UPGRADE_GATE", deployment.hookUpgradeGate);
         vm.serializeAddress(objectKey, "ZORA_HOOK_REGISTRY", deployment.zoraHookRegistry);
         vm.serializeAddress(objectKey, "TRUSTED_MSG_SENDER_LOOKUP", deployment.trustedMsgSenderLookup);
@@ -128,6 +137,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         deployment.zoraV4CoinHook = readAddressOrDefaultToZero(json, "ZORA_V4_COIN_HOOK");
         deployment.zoraV4CoinHookSalt = readBytes32OrDefaultToZero(json, "ZORA_V4_COIN_HOOK_SALT");
         deployment.creatorCoinImpl = readAddressOrDefaultToZero(json, "CREATOR_COIN_IMPL");
+        deployment.trendCoinImpl = readAddressOrDefaultToZero(json, "TREND_COIN_IMPL");
         deployment.hookUpgradeGate = readAddressOrDefaultToZero(json, "HOOK_UPGRADE_GATE");
         deployment.zoraHookRegistry = readAddressOrDefaultToZero(json, "ZORA_HOOK_REGISTRY");
         deployment.trustedMsgSenderLookup = readAddressOrDefaultToZero(json, "TRUSTED_MSG_SENDER_LOOKUP");
@@ -153,15 +163,27 @@ contract CoinsDeployerBase is ProxyDeployerScript {
         });
     }
 
+    function deployTrendCoinImpl() internal returns (TrendCoin) {
+        return new TrendCoin({
+            protocolRewardRecipient_: getZoraRecipient(),
+            protocolRewards_: PROTOCOL_REWARDS,
+            poolManager_: IPoolManager(getUniswapV4PoolManager()),
+            airlock_: getDopplerAirlock(),
+            metadataManager_: getMetadataManager()
+        });
+    }
+
     function deployZoraFactoryImpl(
         address coinV4Impl_,
         address creatorCoinImpl_,
+        address trendCoinImpl_,
         address hook_,
         address zoraHookRegistry_
     ) internal returns (ZoraFactoryImpl) {
         return new ZoraFactoryImpl({
             coinV4Impl_: coinV4Impl_,
             creatorCoinImpl_: creatorCoinImpl_,
+            trendCoinImpl_: trendCoinImpl_,
             hook_: hook_,
             zoraHookRegistry_: zoraHookRegistry_
         });
@@ -227,6 +249,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
             deployZoraFactoryImpl({
                 coinV4Impl_: deployment.coinV4Impl,
                 creatorCoinImpl_: deployment.creatorCoinImpl,
+                trendCoinImpl_: deployment.trendCoinImpl,
                 hook_: deployment.zoraV4CoinHook,
                 zoraHookRegistry_: deployment.zoraHookRegistry
             })
@@ -268,6 +291,7 @@ contract CoinsDeployerBase is ProxyDeployerScript {
 
         deployment.coinV4Impl = address(deployCoinV4Impl());
         deployment.creatorCoinImpl = address(deployCreatorCoinImpl());
+        deployment.trendCoinImpl = address(deployTrendCoinImpl());
         deployment.zoraFactoryImpl = deployFactoryImpl(deployment);
         deployment.coinVersion = IVersionedContract(deployment.coinV4Impl).contractVersion();
         // deployment.buySupplyWithSwapRouterHook = address(deployBuySupplyWithSwapRouterHook(deployment));

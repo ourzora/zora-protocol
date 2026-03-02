@@ -219,7 +219,7 @@ library CoinRewardsV4 {
         address doppler = coin.dopplerFeeRecipient();
 
         MarketRewards memory rewards = _distributeCurrencyRewards(
-            currency, fees, payoutRecipient, platformReferrer, protocolRewardRecipient, doppler, tradeReferrer
+            currency, fees, payoutRecipient, platformReferrer, protocolRewardRecipient, doppler, tradeReferrer, coinType
         );
 
         IZoraV4CoinHook.MarketRewardsV4 memory marketRewards = IZoraV4CoinHook.MarketRewardsV4({
@@ -273,9 +273,10 @@ library CoinRewardsV4 {
         address platformReferrer,
         address protocolRewardRecipient,
         address doppler,
-        address tradeReferral
+        address tradeReferral,
+        IHasCoinType.CoinType coinType
     ) internal returns (MarketRewards memory rewards) {
-        rewards = _computeMarketRewards(fee, tradeReferral != address(0), platformReferrer != address(0));
+        rewards = _computeMarketRewards(fee, tradeReferral != address(0), platformReferrer != address(0), coinType);
 
         // Notes on ETH transfer fallback behavior:
         // - If the platform referrer is immutable; if it is set to an address that cannot receive ETH, it can brick swaps on the coin, as they would revert.
@@ -307,7 +308,7 @@ library CoinRewardsV4 {
         }
     }
 
-    function _computeMarketRewards(uint128 fee, bool hasTradeReferral, bool hasCreateReferral)
+    function _computeMarketRewards(uint128 fee, bool hasTradeReferral, bool hasCreateReferral, IHasCoinType.CoinType coinType)
         internal
         pure
         returns (MarketRewards memory rewards)
@@ -317,6 +318,13 @@ library CoinRewardsV4 {
         }
 
         uint256 totalAmount = uint256(fee);
+
+        // TrendCoins: 100% of market rewards go to protocol (80% of total fees, with 20% already going to LPs)
+        if (coinType == IHasCoinType.CoinType.Trend) {
+            rewards.protocolAmount = totalAmount;
+            return rewards;
+        }
+
         rewards.platformReferrerAmount =
             hasCreateReferral ? calculateReward(totalAmount, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
         rewards.tradeReferrerAmount =

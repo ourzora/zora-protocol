@@ -76,8 +76,8 @@ abstract contract BaseCoin is ICoin, IHasCreationInfo, ContractVersionBase, ERC2
     string public tokenURI;
     /// @notice The address of the coin creator
     address public payoutRecipient;
-    /// @notice The address of the platform referrer
-    address public platformReferrer;
+    /// @notice The address of the platform referrer (internal storage, use platformReferrer() getter)
+    address internal _platformReferrer;
     /// @notice The address of the currency
     address public currency;
 
@@ -164,11 +164,6 @@ abstract contract BaseCoin is ICoin, IHasCreationInfo, ContractVersionBase, ERC2
         string memory symbol_,
         address platformReferrer_
     ) internal {
-        // Validate the creation parameters
-        if (payoutRecipient_ == address(0)) {
-            revert AddressZero();
-        }
-
         _setNameAndSymbol(name_, symbol_);
 
         // Set base contract state, leave name and symbol empty to save space.
@@ -179,12 +174,12 @@ abstract contract BaseCoin is ICoin, IHasCreationInfo, ContractVersionBase, ERC2
 
         __MultiOwnable_init(owners_);
 
-        // Set mutable state
-        _setPayoutRecipient(payoutRecipient_);
+        // Set mutable state (no validation here - subclasses validate if needed)
+        payoutRecipient = payoutRecipient_;
         _setContractURI(tokenURI_);
 
         // Store the referrer or use the protocol reward recipient if not set
-        platformReferrer = platformReferrer_ == address(0) ? protocolRewardRecipient : platformReferrer_;
+        _platformReferrer = platformReferrer_ == address(0) ? protocolRewardRecipient : platformReferrer_;
 
         // Distribute the initial supply
         _handleInitialDistribution();
@@ -216,7 +211,7 @@ abstract contract BaseCoin is ICoin, IHasCreationInfo, ContractVersionBase, ERC2
 
     /// @notice Set the contract URI
     /// @param newURI The new URI
-    function setContractURI(string memory newURI) external onlyOwner {
+    function setContractURI(string memory newURI) external virtual onlyOwner {
         _setContractURI(newURI);
     }
 
@@ -232,7 +227,7 @@ abstract contract BaseCoin is ICoin, IHasCreationInfo, ContractVersionBase, ERC2
         return _name;
     }
 
-    function setNameAndSymbol(string memory newName, string memory newSymbol) external onlyOwner {
+    function setNameAndSymbol(string memory newName, string memory newSymbol) external virtual onlyOwner {
         _setNameAndSymbol(newName, newSymbol);
     }
 
@@ -332,6 +327,11 @@ abstract contract BaseCoin is ICoin, IHasCreationInfo, ContractVersionBase, ERC2
     /// @inheritdoc ICoin
     function hooks() external view returns (IHooks) {
         return poolKey.hooks;
+    }
+
+    /// @inheritdoc IHasRewardsRecipients
+    function platformReferrer() external view virtual returns (address) {
+        return _platformReferrer;
     }
 
     /// @notice Migrate liquidity from current hook to a new hook implementation

@@ -435,8 +435,6 @@ contract LiquidityMigrationTest is BaseTest {
 
         BaseCoin coin = BaseCoin(contentCoin);
 
-        uint24 oldFee = coin.getPoolKey().fee;
-
         // Register upgrade path
         address[] memory baseImpls = new address[](1);
         baseImpls[0] = oldHook;

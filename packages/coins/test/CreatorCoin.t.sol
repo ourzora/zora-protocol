@@ -4,6 +4,7 @@ pragma solidity ^0.8.13;
 import {BaseTest} from "./utils/BaseTest.sol";
 
 import {ICreatorCoin} from "../src/interfaces/ICreatorCoin.sol";
+import {ICoin} from "../src/interfaces/ICoin.sol";
 import {ICreatorCoinHook} from "../src/interfaces/ICreatorCoinHook.sol";
 import {CoinConstants} from "../src/libs/CoinConstants.sol";
 import {CoinRewardsV4} from "../src/libs/CoinRewardsV4.sol";
@@ -92,7 +93,7 @@ contract CreatorCoinTest is BaseTest {
         );
 
         vm.prank(users.creator);
-        vm.expectRevert(ICreatorCoin.InvalidCurrency.selector);
+        vm.expectRevert(ICoin.InvalidCurrency.selector);
         factory.deployCreatorCoin(users.creator, _getDefaultOwners(), "https://test.com", "Testcoin", "TEST", poolConfig, address(0), bytes32(0));
     }
 

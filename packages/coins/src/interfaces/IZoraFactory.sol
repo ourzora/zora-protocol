@@ -4,8 +4,9 @@ pragma solidity ^0.8.23;
 import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
 import {PoolKeyStruct} from "./ICoin.sol";
 import {IDeployedCoinVersionLookup} from "./IDeployedCoinVersionLookup.sol";
+import {ITrendCoinErrors} from "./ITrendCoinErrors.sol";
 
-interface IZoraFactory is IDeployedCoinVersionLookup {
+interface IZoraFactory is IDeployedCoinVersionLookup, ITrendCoinErrors {
     /// @notice Emitted when a coin is created
     /// @param caller The msg.sender address
     /// @param payoutRecipient The address of the creator payout recipient
@@ -80,6 +81,16 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
         string version
     );
 
+    /// @notice Emitted when a trend coin is created
+    /// @param caller The msg.sender address
+    /// @param symbol The symbol/ticker of the coin
+    /// @param coin The address of the coin
+    /// @param poolKey The uniswap v4 pool key
+    /// @param poolKeyHash The hash of the pool key
+    /// @param poolConfig The encoded pool configuration (curve config)
+    /// @param version The coin contract version
+    event TrendCoinCreated(address indexed caller, string symbol, address coin, PoolKey poolKey, bytes32 poolKeyHash, bytes poolConfig, string version);
+
     /// @notice Thrown when ETH is sent with a transaction but the currency is not WETH
     error EthTransferInvalid();
 
@@ -96,6 +107,13 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
 
     /// @notice Thrwon when an invalid config version is provided
     error InvalidConfig();
+
+    /// @notice Thrown when trying to deploy a trend coin before the pool config has been set
+    error TrendCoinPoolConfigNotSet();
+
+    /// @notice Emitted when the trend coin pool config is updated
+    /// @param poolConfig The new pool configuration
+    event TrendCoinPoolConfigUpdated(bytes poolConfig);
 
     /// @dev Deprecated: use `deployCreatorCoin` instead that has a salt and post-deploy hook specified
     function deployCreatorCoin(
@@ -219,4 +237,45 @@ interface IZoraFactory is IDeployedCoinVersionLookup {
 
     /// @notice The address of the Zora hook registry
     function zoraHookRegistry() external view returns (address);
+
+    /// @notice Creates a new trend coin with an optional hook that runs after the coin is deployed.
+    /// Enables buying initial supply by supporting ETH transfers to the post-deploy hook.
+    /// @dev TrendCoins have no payout recipient or platform referrer, and 100% of supply goes to the liquidity pool
+    /// @param symbol The ticker symbol for the trend coin (must be unique, case-insensitive)
+    /// @param postDeployHook The address of the hook to run after the coin is deployed
+    /// @param postDeployHookData The data to pass to the hook
+    /// @return coin The address of the deployed trend coin
+    /// @return postDeployHookDataOut The data returned by the hook
+    function deployTrendCoin(
+        string calldata symbol,
+        address postDeployHook,
+        bytes calldata postDeployHookData
+    ) external payable returns (address coin, bytes memory postDeployHookDataOut);
+
+    /// @notice Predicts the address of a trend coin that will be deployed with the given ticker
+    /// @param symbol The ticker symbol for the trend coin
+    /// @return The address of the trend coin contract
+    function trendCoinAddress(string calldata symbol) external view returns (address);
+
+    /// @notice The trend coin contract implementation address
+    function trendCoinImpl() external view returns (address);
+
+    /// @notice Sets the pool configuration for trend coins
+    /// @param currency The currency address for the pool (e.g., ZORA token)
+    /// @param tickLower Array of lower tick bounds for each curve
+    /// @param tickUpper Array of upper tick bounds for each curve
+    /// @param numDiscoveryPositions Array of number of discovery positions for each curve
+    /// @param maxDiscoverySupplyShare Array of max supply share (in WAD) for each curve
+    /// @dev Can only be called by the contract owner. Arrays must all be the same length.
+    function setTrendCoinPoolConfig(
+        address currency,
+        int24[] memory tickLower,
+        int24[] memory tickUpper,
+        uint16[] memory numDiscoveryPositions,
+        uint256[] memory maxDiscoverySupplyShare
+    ) external;
+
+    /// @notice Returns the current pool configuration for trend coins
+    /// @return The encoded pool configuration
+    function trendCoinPoolConfig() external view returns (bytes memory);
 }

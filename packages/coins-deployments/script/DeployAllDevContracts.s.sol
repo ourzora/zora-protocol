@@ -69,8 +69,10 @@ contract DeployAllDevContracts is CoinsDeployerBase {
         console.log("\n=== Step 7: Deploying Coin Implementations ===");
         deployment.coinV4Impl = address(deployCoinV4Impl());
         deployment.creatorCoinImpl = address(deployCreatorCoinImpl());
+        deployment.trendCoinImpl = address(deployTrendCoinImpl());
         console.log("COIN_V4_IMPL:", deployment.coinV4Impl);
         console.log("CREATOR_COIN_IMPL:", deployment.creatorCoinImpl);
+        console.log("TREND_COIN_IMPL:", deployment.trendCoinImpl);
 
         // Step 8: Deploy hook (needs all dependencies including LOB)
         console.log("\n=== Step 8: Deploying Content Coin Hook ===");

@@ -204,8 +204,6 @@ contract LaunchFeeTest is BaseTest {
         // The initial supply purchase during deployment should bypass launch fee
         // This is verified by checking the creator receives coins during deployment
 
-        uint256 creatorBalanceBefore = 0; // Creator has no coins before deployment
-
         _deployCoin();
 
         uint256 creatorBalanceAfter = coin.balanceOf(users.creator);

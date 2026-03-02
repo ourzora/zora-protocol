@@ -60,7 +60,8 @@ interface IHasCoinType {
     /// @notice The type of coin
     enum CoinType {
         Creator,
-        Content
+        Content,
+        Trend
     }
 
     /// @notice Returns the type of coin
@@ -77,6 +78,9 @@ interface ICoin is IERC165, IERC7572, IDopplerErrors, IHasRewardsRecipients, IHa
 
     /// @notice Thrown when an invalid market type is specified
     error InvalidMarketType();
+
+    /// @notice Thrown when an invalid currency is used for coin operations
+    error InvalidCurrency();
 
     /// @notice Thrown when there are insufficient funds for an operation
     error InsufficientFunds();

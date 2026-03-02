@@ -10,7 +10,7 @@ pragma solidity ^0.8.23;
 import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
 import {BaseCoin} from "./BaseCoin.sol";
 import {CoinConstants} from "./libs/CoinConstants.sol";
-import {IHasCoinType} from "./interfaces/ICoin.sol";
+import {IHasCoinType, ICoin, PoolKey, PoolConfiguration} from "./interfaces/ICoin.sol";
 
 /**
  * @title ContentCoin
@@ -30,6 +30,25 @@ contract ContentCoin is BaseCoin {
         IPoolManager poolManager_,
         address airlock_
     ) BaseCoin(protocolRewardRecipient_, protocolRewards_, poolManager_, airlock_) {}
+
+    /// @inheritdoc ICoin
+    function initialize(
+        address payoutRecipient_,
+        address[] memory owners_,
+        string memory tokenURI_,
+        string memory name_,
+        string memory symbol_,
+        address platformReferrer_,
+        address currency_,
+        PoolKey memory poolKey_,
+        uint160 sqrtPriceX96,
+        PoolConfiguration memory poolConfiguration_
+    ) public override {
+        if (payoutRecipient_ == address(0)) {
+            revert AddressZero();
+        }
+        super.initialize(payoutRecipient_, owners_, tokenURI_, name_, symbol_, platformReferrer_, currency_, poolKey_, sqrtPriceX96, poolConfiguration_);
+    }
 
     /// @dev The initial mint and distribution of the coin supply.
     ///      Implements content coin specific distribution: 990M to liquidity pool, 10M to creator.
