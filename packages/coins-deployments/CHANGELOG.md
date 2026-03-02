@@ -1,5 +1,20 @@
 # @zoralabs/coins-deployments
 
+## 1.0.10
+
+### Patch Changes
+
+- 50134ebc: Add TrendCoin support
+  - New `TrendCoin` contract: 100% supply in liquidity pool, 0% swap fees
+  - `deployTrendCoin` factory method with ticker uniqueness enforcement and post-deploy hook support
+  - Owner-configurable pool parameters via `setTrendCoinPoolConfig()`
+  - Metadata manager role for updatable contract URIs
+  - Ticker validation and URI encoding for trend coin symbols
+
+- Updated dependencies [50134ebc]
+  - @zoralabs/coins@2.6.0
+  - @zoralabs/limit-orders@0.2.7
+
 ## 1.0.9
 
 ### Patch Changes
