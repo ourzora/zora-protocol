@@ -63,10 +63,10 @@ contract TrendCoin is BaseCoin, ITrendCoin {
         PoolConfiguration memory poolConfiguration_
     ) external {
         // Validate ticker characters
-        require(TickerUtils.validateTickerCharacters(symbol_), InvalidTickerCharacters());
+        TickerUtils.requireValidateTickerCharacters(symbol_);
 
         // Generate URI from base URI + encoded symbol
-        string memory uri = string.concat(TREND_COIN_BASE_URI, TickerUtils.tickerToUri(symbol_));
+        string memory uri = string.concat(TREND_COIN_BASE_URI, symbol_);
 
         // Call parent initialize with derived values
         // name = symbol for trend coins
@@ -98,7 +98,7 @@ contract TrendCoin is BaseCoin, ITrendCoin {
         PoolKey memory /* poolKey_ */,
         uint160 /* sqrtPriceX96 */,
         PoolConfiguration memory /* poolConfiguration_ */
-    ) public override {
+    ) public pure override {
         revert UseSpecificTrendCoinInitialize();
     }
 

@@ -6,8 +6,14 @@ pragma solidity ^0.8.23;
 /// @dev Used by both TrendCoin and ZoraFactoryImpl for consistent error handling
 interface ITrendCoinErrors {
     /// @notice Thrown when ticker symbol contains invalid characters
-    /// @dev Allowed characters: space (0x20), dash (0x2D), 0-9, A-Z, a-z
-    error InvalidTickerCharacters();
+
+    /// @dev Allowed characters: 0-9, A-Z, a-z
+    error TickerInvalidCharacters();
+
+    /// @dev Ticker min length is 2
+    error TickerTooShort();
+    /// @dev Ticker max length is 32
+    error TickerTooLong();
 
     /// @notice Thrown when attempting to deploy a trend coin with a ticker that already exists
     /// @param symbol The ticker symbol that was already used

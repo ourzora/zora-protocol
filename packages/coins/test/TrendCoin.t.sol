@@ -164,33 +164,27 @@ contract TrendCoinTest is BaseTest {
         assertTrue(coin2 != address(0), "Coin with different numbers should deploy");
     }
 
-    function test_deployTrendCoin_validSymbols_dashOnly() public {
-        (address coin1, ) = factory.deployTrendCoin("-", address(0), "");
-        assertTrue(coin1 != address(0), "Coin with single dash should deploy");
+    function test_deployTrendCoin_invalidSymbols_dashOnly() public {
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("--", address(0), "");
 
-        (address coin2, ) = factory.deployTrendCoin("--", address(0), "");
-        assertTrue(coin2 != address(0), "Coin with double dash should deploy");
-
-        (address coin3, ) = factory.deployTrendCoin("---", address(0), "");
-        assertTrue(coin3 != address(0), "Coin with triple dash should deploy");
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("---", address(0), "");
     }
 
-    function test_deployTrendCoin_validSymbols_spaceOnly() public {
-        (address coin1, ) = factory.deployTrendCoin(" ", address(0), "");
-        assertTrue(coin1 != address(0), "Coin with single space should deploy");
+    function test_deployTrendCoin_invalidSymbols_spaceOnly() public {
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("  ", address(0), "");
 
-        (address coin2, ) = factory.deployTrendCoin("  ", address(0), "");
-        assertTrue(coin2 != address(0), "Coin with double space should deploy");
-
-        (address coin3, ) = factory.deployTrendCoin("   ", address(0), "");
-        assertTrue(coin3 != address(0), "Coin with triple space should deploy");
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("   ", address(0), "");
     }
 
     function test_deployTrendCoin_validSymbols_allAllowedCharacters() public {
-        (address coin1, ) = factory.deployTrendCoin("ABC-123 xyz", address(0), "");
+        (address coin1, ) = factory.deployTrendCoin("ABC123xyz", address(0), "");
         assertTrue(coin1 != address(0), "Coin with all character types should deploy");
 
-        (address coin2, ) = factory.deployTrendCoin("Test-123 Coin", address(0), "");
+        (address coin2, ) = factory.deployTrendCoin("Test123Coin", address(0), "");
         assertTrue(coin2 != address(0), "Coin with mixed valid characters should deploy");
     }
 
@@ -199,7 +193,7 @@ contract TrendCoinTest is BaseTest {
     }
 
     function fixtureInvalidSymbols() public pure returns (InvalidSymbolTestCase[] memory) {
-        InvalidSymbolTestCase[] memory cases = new InvalidSymbolTestCase[](34);
+        InvalidSymbolTestCase[] memory cases = new InvalidSymbolTestCase[](35);
         cases[0] = InvalidSymbolTestCase("TEST!");
         cases[1] = InvalidSymbolTestCase("TEST@");
         cases[2] = InvalidSymbolTestCase("TEST#");
@@ -233,24 +227,25 @@ contract TrendCoinTest is BaseTest {
         cases[30] = InvalidSymbolTestCase("TEST_COIN");
         cases[31] = InvalidSymbolTestCase("TEST.COIN");
         cases[32] = InvalidSymbolTestCase("TEST!@#");
-        cases[33] = InvalidSymbolTestCase("");
+        cases[33] = InvalidSymbolTestCase("TEST COIN"); // space not allowed
+        cases[34] = InvalidSymbolTestCase("TEST-COIN"); // dash not allowed
         return cases;
     }
 
     function tableInvalidSymbolsTest(InvalidSymbolTestCase memory invalidSymbols) public {
-        vm.expectRevert(ITrendCoinErrors.InvalidTickerCharacters.selector);
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
         factory.deployTrendCoin(invalidSymbols.symbol, address(0), "");
     }
 
-    function test_deployTrendCoin_validSymbols_withSpaces() public {
-        (address coin1, ) = factory.deployTrendCoin("TEST COIN", address(0), "");
-        assertTrue(coin1 != address(0), "Coin with space in middle should deploy");
+    function test_deployTrendCoin_invalidSymbols_withSpaces() public {
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("TEST COIN", address(0), "");
 
-        (address coin2, ) = factory.deployTrendCoin(" TEST ", address(0), "");
-        assertTrue(coin2 != address(0), "Coin with leading and trailing spaces should deploy");
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin(" TEST ", address(0), "");
 
-        (address coin3, ) = factory.deployTrendCoin("TEST COIN 123", address(0), "");
-        assertTrue(coin3 != address(0), "Coin with multiple spaces should deploy");
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("TEST COIN 123", address(0), "");
     }
 
     function test_deployTrendCoin_validSymbols_lettersAndNumbers() public {
@@ -264,26 +259,49 @@ contract TrendCoinTest is BaseTest {
         assertTrue(coin3 != address(0), "Coin with alternating letters and numbers should deploy");
     }
 
-    function test_deployTrendCoin_validSymbols_lettersAndDash() public {
-        (address coin1, ) = factory.deployTrendCoin("TEST-COIN", address(0), "");
-        assertTrue(coin1 != address(0), "Coin with dash in middle should deploy");
+    function test_deployTrendCoin_invalidSymbols_lettersAndDash() public {
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("TEST-COIN", address(0), "");
 
-        (address coin2, ) = factory.deployTrendCoin("-TEST-", address(0), "");
-        assertTrue(coin2 != address(0), "Coin with leading and trailing dashes should deploy");
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("-TEST-", address(0), "");
 
-        (address coin3, ) = factory.deployTrendCoin("TEST--COIN", address(0), "");
-        assertTrue(coin3 != address(0), "Coin with multiple dashes should deploy");
+        vm.expectRevert(ITrendCoinErrors.TickerInvalidCharacters.selector);
+        factory.deployTrendCoin("TEST--COIN", address(0), "");
     }
 
-    function test_deployTrendCoin_validSymbols_allTypes() public {
-        (address coin1, ) = factory.deployTrendCoin("TEST-123 Coin", address(0), "");
-        assertTrue(coin1 != address(0), "Coin with all character types should deploy");
+    function test_deployTrendCoin_validSymbols_alphanumericMixed() public {
+        (address coin1, ) = factory.deployTrendCoin("TEST123Coin", address(0), "");
+        assertTrue(coin1 != address(0), "Coin with all alphanumeric types should deploy");
 
-        (address coin2, ) = factory.deployTrendCoin("ABC 123-XYZ", address(0), "");
+        (address coin2, ) = factory.deployTrendCoin("ABC123XYZ", address(0), "");
         assertTrue(coin2 != address(0), "Coin with mixed valid characters should deploy");
 
-        (address coin3, ) = factory.deployTrendCoin("Test-456 Coin 789", address(0), "");
+        (address coin3, ) = factory.deployTrendCoin("Test456Coin789", address(0), "");
         assertTrue(coin3 != address(0), "Coin with complex valid pattern should deploy");
+    }
+
+    function test_deployTrendCoin_validSymbols_lengthBoundaries() public {
+        // Minimum valid length (2 characters)
+        (address coin1, ) = factory.deployTrendCoin("AB", address(0), "");
+        assertTrue(coin1 != address(0), "Coin with 2 characters should deploy");
+
+        // Maximum valid length (32 characters)
+        (address coin2, ) = factory.deployTrendCoin("ABCDEFGHIJKLMNOPQRSTUVWXYZ123456", address(0), "");
+        assertTrue(coin2 != address(0), "Coin with 32 characters should deploy");
+    }
+
+    function test_deployTrendCoin_invalidSymbols_tooShort() public {
+        vm.expectRevert(ITrendCoinErrors.TickerTooShort.selector);
+        factory.deployTrendCoin("A", address(0), "");
+
+        vm.expectRevert(ITrendCoinErrors.TickerTooShort.selector);
+        factory.deployTrendCoin("", address(0), "");
+    }
+
+    function test_deployTrendCoin_invalidSymbols_tooLong() public {
+        vm.expectRevert(ITrendCoinErrors.TickerTooLong.selector);
+        factory.deployTrendCoin("ABCDEFGHIJKLMNOPQRSTUVWXYZ1234567", address(0), "");
     }
 
     // ============ Fee Distribution Tests ============
@@ -633,82 +651,37 @@ contract TrendCoinTest is BaseTest {
         factory.deployTrendCoin("TeSt", address(0), "");
     }
 
-    // ============ URI Encoding Tests ============
+    // ============ URI Tests ============
 
-    function test_deployTrendCoin_uriEncoding_singleSpace() public {
-        string memory symbol = "TEST COIN";
-        (address coinAddress, ) = factory.deployTrendCoin(symbol, address(0), "");
-
-        trendCoin = TrendCoin(coinAddress);
-        string memory uri = trendCoin.tokenURI();
-
-        // URI should have space converted to +
-        assertTrue(keccak256(bytes(uri)) == keccak256(bytes("https://trends.theme.wtf/trend/TEST+COIN")), "URI should have space converted to +");
-    }
-
-    function test_deployTrendCoin_uriEncoding_multipleSpaces() public {
-        string memory symbol = "TEST COIN 123";
-        (address coinAddress, ) = factory.deployTrendCoin(symbol, address(0), "");
-
-        trendCoin = TrendCoin(coinAddress);
-        string memory uri = trendCoin.tokenURI();
-
-        // URI should have all spaces converted to +
-        assertTrue(keccak256(bytes(uri)) == keccak256(bytes("https://trends.theme.wtf/trend/TEST+COIN+123")), "URI should have all spaces converted to +");
-    }
-
-    function test_deployTrendCoin_uriEncoding_consecutiveSpaces() public {
-        string memory symbol = "TEST  COIN";
-        (address coinAddress, ) = factory.deployTrendCoin(symbol, address(0), "");
-
-        trendCoin = TrendCoin(coinAddress);
-        string memory uri = trendCoin.tokenURI();
-
-        // URI should have consecutive spaces converted to consecutive +
-        assertTrue(
-            keccak256(bytes(uri)) == keccak256(bytes("https://trends.theme.wtf/trend/TEST++COIN")),
-            "URI should have consecutive spaces converted to consecutive +"
-        );
-    }
-
-    function test_deployTrendCoin_uriEncoding_leadingTrailingSpaces() public {
-        string memory symbol = " TEST ";
-        (address coinAddress, ) = factory.deployTrendCoin(symbol, address(0), "");
-
-        trendCoin = TrendCoin(coinAddress);
-        string memory uri = trendCoin.tokenURI();
-
-        // URI should have leading and trailing spaces converted to +
-        assertTrue(
-            keccak256(bytes(uri)) == keccak256(bytes("https://trends.theme.wtf/trend/+TEST+")),
-            "URI should have leading and trailing spaces converted to +"
-        );
-    }
-
-    function test_deployTrendCoin_uriEncoding_noSpaces_unchanged() public {
+    function test_deployTrendCoin_uri_usesSymbolDirectly() public {
         string memory symbol = "TESTCOIN";
         (address coinAddress, ) = factory.deployTrendCoin(symbol, address(0), "");
 
         trendCoin = TrendCoin(coinAddress);
         string memory uri = trendCoin.tokenURI();
 
-        // URI should be unchanged when no spaces
-        assertTrue(keccak256(bytes(uri)) == keccak256(bytes("https://trends.theme.wtf/trend/TESTCOIN")), "URI should be unchanged when symbol has no spaces");
+        assertEq(uri, "https://trends.theme.wtf/trend/TESTCOIN", "URI should use symbol directly");
     }
 
-    function test_deployTrendCoin_uriEncoding_preservesSymbol() public {
-        string memory symbol = "TEST COIN";
+    function test_deployTrendCoin_uri_preservesCase() public {
+        string memory symbol = "TestCoin";
+        (address coinAddress, ) = factory.deployTrendCoin(symbol, address(0), "");
+
+        trendCoin = TrendCoin(coinAddress);
+        string memory uri = trendCoin.tokenURI();
+
+        assertEq(uri, "https://trends.theme.wtf/trend/TestCoin", "URI should preserve original case");
+    }
+
+    function test_deployTrendCoin_uri_symbolAndNameMatch() public {
+        string memory symbol = "TESTCOIN";
         (address coinAddress, ) = factory.deployTrendCoin(symbol, address(0), "");
 
         trendCoin = TrendCoin(coinAddress);
 
-        // Symbol should remain unchanged (only URI is encoded)
-        assertEq(trendCoin.symbol(), symbol, "Symbol should remain unchanged");
-        assertEq(trendCoin.name(), symbol, "Name should remain unchanged");
-
-        // URI should have space converted to +
-        string memory uri = trendCoin.tokenURI();
-        assertTrue(keccak256(bytes(uri)) == keccak256(bytes("https://trends.theme.wtf/trend/TEST+COIN")), "URI should have space converted to +");
+        assertEq(trendCoin.symbol(), symbol, "Symbol should match");
+        assertEq(trendCoin.name(), symbol, "Name should equal symbol for trend coins");
+        assertEq(trendCoin.tokenURI(), string.concat("https://trends.theme.wtf/trend/", symbol), "URI should be base URI + symbol");
     }
 
     // ============ Metadata Manager Tests ============
