@@ -76,7 +76,13 @@ contract UpgradesTest is BaseTest, ForkedCoinsAddresses {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(trendCoinImpl), address(hook), address(zoraHookRegistry));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(trendCoinImpl),
+            address(hook),
+            address(zoraHookRegistry)
+        );
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");
@@ -91,7 +97,13 @@ contract UpgradesTest is BaseTest, ForkedCoinsAddresses {
 
         factoryProxy = ZoraFactoryImpl(0x777777751622c0d3258f214F9DF38E35BF45baF3);
 
-        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(address(coinV4Impl), address(creatorCoinImpl), address(trendCoinImpl), address(hook), address(zoraHookRegistry));
+        ZoraFactoryImpl newImpl = new ZoraFactoryImpl(
+            address(coinV4Impl),
+            address(creatorCoinImpl),
+            address(trendCoinImpl),
+            address(hook),
+            address(zoraHookRegistry)
+        );
 
         vm.prank(factoryProxy.owner());
         factoryProxy.upgradeToAndCall(address(newImpl), "");

@@ -343,13 +343,15 @@ contract TrendCoinTest is BaseTest {
         vm.stopPrank();
     }
 
-    /// @notice Test that TrendCoin fee distribution gives 80% to protocol (Zora) and 20% to LP
-    /// For TrendCoins, 100% of market rewards (80% of total fees) should go to protocol
-    function test_trendCoin_feeDistribution_80PercentToProtocol() public {
+    /// @notice Test that TrendCoin fee distribution sends 100% to protocol with no LP remint
+    /// For TrendCoins, all market rewards go to protocolRewardRecipient and LP remint is skipped.
+    /// Note: In Foundry tests, transient storage persists for the whole test (single tx), so
+    /// isDeploying stays true and _calculateLaunchFee always returns LP_FEE_V4 (1%).
+    /// In production (separate txs), trend coins use TREND_LP_FEE_V4 (0.01%) after launch.
+    function test_trendCoin_feeDistribution_100PercentToProtocol() public {
         _deployTrendCoin();
 
         // Roll forward past the launch fee period (10 seconds) to avoid high launch fees
-        // Launch fee starts at 99% and decays to 1% over 10 seconds
         vm.warp(block.timestamp + 11 seconds);
 
         uint128 tradeAmount = 1000 ether; // 1000 ZORA tokens
@@ -365,26 +367,22 @@ contract TrendCoinTest is BaseTest {
         uint256 finalProtocolBalance = zoraToken.balanceOf(protocolRecipient);
         uint256 protocolReward = finalProtocolBalance - initialProtocolBalance;
 
-        // Fee breakdown for TrendCoins after launch period:
-        // - Total fee: 1% (LP_FEE_V4 = 10,000 pips = 1%)
-        // - LP reward: 20% of fees (LP_REWARD_BPS = 2000)
-        // - Market rewards: 80% of fees
-        // - For TrendCoins: protocol gets 100% of market rewards
+        // Fee breakdown for TrendCoins in test (isDeploying=true due to transient storage):
+        // - Total fee: 1% (LP_FEE_V4, because isDeploying bypass is active)
+        // - No LP remint (skipped for trend coins)
+        // - Protocol gets 100% of fees
         //
         // Expected calculation:
         // - Total fees = tradeAmount * 1% = 10 ZORA
-        // - LP gets = 10 ZORA * 20% = 2 ZORA (minted as new LP positions)
-        // - Market rewards = 10 ZORA * 80% = 8 ZORA
-        // - Protocol receives = 8 ZORA (100% of market rewards for TrendCoins)
+        // - Protocol receives = 10 ZORA (100% of fees, no LP remint for TrendCoins)
         uint256 expectedTotalFees = (uint256(tradeAmount) * CoinConstants.LP_FEE_V4) / 1_000_000;
-        uint256 expectedMarketRewards = (expectedTotalFees * (10_000 - CoinConstants.LP_REWARD_BPS)) / 10_000;
 
-        // Protocol should receive approximately all market rewards (allowing small rounding tolerance)
-        assertApproxEqRel(protocolReward, expectedMarketRewards, 0.01e18, "Protocol should receive ~80% of total fees");
+        // Protocol should receive approximately all fees (allowing small rounding tolerance)
+        assertApproxEqRel(protocolReward, expectedTotalFees, 0.01e18, "Protocol should receive ~100% of total fees");
 
-        // Verify actual value is reasonable (should be ~8 ZORA for 1000 ZORA trade)
-        assertGt(protocolReward, 7.9 ether, "Protocol reward should be > 7.9 ZORA");
-        assertLt(protocolReward, 8.1 ether, "Protocol reward should be < 8.1 ZORA");
+        // Verify actual value is reasonable (should be ~10 ZORA for 1000 ZORA trade at 1% fee)
+        assertGt(protocolReward, 9.9 ether, "Protocol reward should be > 9.9 ZORA");
+        assertLt(protocolReward, 10.1 ether, "Protocol reward should be < 10.1 ZORA");
 
         // Verify TrendCoin recipients are correctly configured (no creator/referrer rewards)
         assertEq(trendCoin.payoutRecipient(), address(0), "Payout recipient should be zero");
@@ -416,9 +414,9 @@ contract TrendCoinTest is BaseTest {
 
     // ============ Zero Fee After Launch Tests ============
 
-    /// @notice TrendCoins should have 0 swap fee after the launch fee duration
+    /// @notice TrendCoins should have 0.01% swap fee after the launch fee duration
     /// forge-config: default.isolate = true
-    function test_trendCoin_zeroFeeAfterLaunchDuration() public {
+    function test_trendCoin_minimalFeeAfterLaunchDuration() public {
         _deployTrendCoin();
 
         uint128 amountIn = 100 ether;
@@ -427,13 +425,18 @@ contract TrendCoinTest is BaseTest {
         // Snapshot at same pool state for both swaps
         uint256 snapshot = vm.snapshotState();
 
-        // Swap right at the end of launch period (still 1% LP fee for non-trend coins, but 0 for trend)
+        // Swap right at the end of launch period (0.01% fee for trend coins)
         vm.warp(block.timestamp + CoinConstants.LAUNCH_FEE_DURATION);
         deal(address(zoraToken), trader, amountIn);
         vm.startPrank(trader);
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(zoraToken), amountIn, uint48(block.timestamp + 1 days));
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            address(zoraToken), amountIn, address(trendCoin), 0, trendCoin.getPoolKey(), bytes("")
+            address(zoraToken),
+            amountIn,
+            address(trendCoin),
+            0,
+            trendCoin.getPoolKey(),
+            bytes("")
         );
         router.execute(commands, inputs, block.timestamp + 1 days);
         vm.stopPrank();
@@ -441,20 +444,25 @@ contract TrendCoinTest is BaseTest {
 
         vm.revertToState(snapshot);
 
-        // Swap well after launch period — should yield same amount (both 0 fee)
+        // Swap well after launch period — should yield same amount (both 0.01% fee)
         vm.warp(block.timestamp + CoinConstants.LAUNCH_FEE_DURATION + 1 days);
         deal(address(zoraToken), trader, amountIn);
         vm.startPrank(trader);
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(zoraToken), amountIn, uint48(block.timestamp + 1 days));
         (commands, inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            address(zoraToken), amountIn, address(trendCoin), 0, trendCoin.getPoolKey(), bytes("")
+            address(zoraToken),
+            amountIn,
+            address(trendCoin),
+            0,
+            trendCoin.getPoolKey(),
+            bytes("")
         );
         router.execute(commands, inputs, block.timestamp + 1 days);
         vm.stopPrank();
         uint256 coinsAfterDuration = trendCoin.balanceOf(trader);
 
-        // Both should be approximately equal (0% fee in both cases, same pool state)
-        assertApproxEqRel(coinsAtDuration, coinsAfterDuration, 0.01e18, "both swaps should yield same coins at 0 fee");
+        // Both should be approximately equal (0.01% fee in both cases, same pool state)
+        assertApproxEqRel(coinsAtDuration, coinsAfterDuration, 0.01e18, "both swaps should yield same coins at 0.01% fee");
     }
 
     /// @notice TrendCoins should still have the launch fee during the launch period
@@ -472,7 +480,12 @@ contract TrendCoinTest is BaseTest {
         vm.startPrank(trader);
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(zoraToken), amountIn, uint48(block.timestamp + 1 days));
         (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            address(zoraToken), amountIn, address(trendCoin), 0, trendCoin.getPoolKey(), bytes("")
+            address(zoraToken),
+            amountIn,
+            address(trendCoin),
+            0,
+            trendCoin.getPoolKey(),
+            bytes("")
         );
         router.execute(commands, inputs, block.timestamp + 1 days);
         vm.stopPrank();
@@ -480,19 +493,24 @@ contract TrendCoinTest is BaseTest {
 
         vm.revertToState(snapshot);
 
-        // Swap after launch period (0% fee for trend coins)
+        // Swap after launch period (0.01% fee for trend coins)
         vm.warp(block.timestamp + CoinConstants.LAUNCH_FEE_DURATION + 1);
         deal(address(zoraToken), trader, amountIn);
         vm.startPrank(trader);
         UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(zoraToken), amountIn, uint48(block.timestamp + 1 days));
         (commands, inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
-            address(zoraToken), amountIn, address(trendCoin), 0, trendCoin.getPoolKey(), bytes("")
+            address(zoraToken),
+            amountIn,
+            address(trendCoin),
+            0,
+            trendCoin.getPoolKey(),
+            bytes("")
         );
         router.execute(commands, inputs, block.timestamp + 1 days);
         vm.stopPrank();
         uint256 coinsPostLaunch = trendCoin.balanceOf(trader);
 
-        // Post-launch (0% fee) should yield significantly more coins than during launch (~99% fee)
+        // Post-launch (0.01% fee) should yield significantly more coins than during launch (~99% fee)
         assertGt(coinsPostLaunch, coinsAtLaunch, "should receive more coins after launch fee ends");
     }
 
@@ -1053,5 +1071,85 @@ contract TrendCoinTest is BaseTest {
             uint160(1 << 96),
             poolConfig_
         );
+    }
+}
+
+/// @notice Tests that exercise the real post-launch 0.01% fee path for trend coins.
+/// By deploying the coin in setUp(), the deployment transaction completes and transient
+/// storage (isDeploying) is cleared before any test function runs. This lets
+/// _calculateLaunchFee reach the TREND_LP_FEE_V4 branch instead of the isDeploying bypass.
+contract TrendCoinFeeTest is BaseTest {
+    TrendCoin internal trendCoin;
+
+    function setUp() public override {
+        super.setUpNonForked();
+
+        // Deploy in setUp so transient storage is cleared before tests run
+        (address coinAddress, ) = factory.deployTrendCoin("FEETEST", address(0), "");
+        trendCoin = TrendCoin(coinAddress);
+        vm.label(address(trendCoin), "TEST_TREND_COIN");
+    }
+
+    /// @notice Verify that trend coins charge 0.01% after the launch fee window
+    function test_trendCoin_postLaunchFeeIs1Bps() public {
+        // Warp past the launch fee period
+        vm.warp(block.timestamp + CoinConstants.LAUNCH_FEE_DURATION + 1);
+
+        uint128 tradeAmount = 1_000_000 ether;
+
+        address protocolRecipient = trendCoin.protocolRewardRecipient();
+        uint256 protocolBefore = zoraToken.balanceOf(protocolRecipient);
+
+        deal(address(zoraToken), users.buyer, tradeAmount);
+        vm.startPrank(users.buyer);
+        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(zoraToken), tradeAmount, uint48(block.timestamp + 1 days));
+        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
+            address(zoraToken),
+            tradeAmount,
+            address(trendCoin),
+            0,
+            trendCoin.getPoolKey(),
+            bytes("")
+        );
+        router.execute(commands, inputs, block.timestamp + 1 days);
+        vm.stopPrank();
+
+        uint256 protocolAfter = zoraToken.balanceOf(protocolRecipient);
+        uint256 protocolReward = protocolAfter - protocolBefore;
+
+        // 0.01% of 1M = 100 ZORA. Allow 10% tolerance for swap path conversion.
+        uint256 expectedFee = (uint256(tradeAmount) * CoinConstants.TREND_LP_FEE_V4) / 1_000_000;
+        assertApproxEqRel(protocolReward, expectedFee, 0.10e18, "Protocol reward should be ~0.01% of trade");
+
+        // Sanity: must be far below what 1% would yield (10,000 ZORA)
+        uint256 onePercentFee = (uint256(tradeAmount) * CoinConstants.LP_FEE_V4) / 1_000_000;
+        assertLt(protocolReward, onePercentFee / 5, "Fee must be well below the 1% deployment-bypass level");
+    }
+
+    /// @notice Smoke test that a post-launch trend coin swap still succeeds on the 1 bp fee path
+    function test_trendCoin_postLaunchSwapSucceeds() public {
+        vm.warp(block.timestamp + CoinConstants.LAUNCH_FEE_DURATION + 1);
+
+        uint128 amountIn = 100 ether;
+        address trader = makeAddr("trader");
+
+        // Execute a trend coin swap
+        deal(address(zoraToken), trader, amountIn);
+        vm.startPrank(trader);
+        UniV4SwapHelper.approveTokenWithPermit2(permit2, address(router), address(zoraToken), amountIn, uint48(block.timestamp + 1 days));
+        (bytes memory commands, bytes[] memory inputs) = UniV4SwapHelper.buildExactInputSingleSwapCommand(
+            address(zoraToken),
+            amountIn,
+            address(trendCoin),
+            0,
+            trendCoin.getPoolKey(),
+            bytes("")
+        );
+        router.execute(commands, inputs, block.timestamp + 1 days);
+        vm.stopPrank();
+
+        uint256 trendCoinsReceived = trendCoin.balanceOf(trader);
+
+        assertGt(trendCoinsReceived, 0, "Post-launch trend swap should return coins");
     }
 }

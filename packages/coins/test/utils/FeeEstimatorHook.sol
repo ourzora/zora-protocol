@@ -14,7 +14,7 @@ import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientSta
 import {CoinCommon} from "../../src/libs/CoinCommon.sol";
 import {V4Liquidity} from "../../src/libs/V4Liquidity.sol";
 import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
-import {ICoin, IHasSwapPath} from "../../src/interfaces/ICoin.sol";
+import {ICoin, IHasSwapPath, IHasCoinType} from "../../src/interfaces/ICoin.sol";
 import {UniV4SwapToCurrency} from "../../src/libs/UniV4SwapToCurrency.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {CoinRewardsV4} from "../../src/libs/CoinRewardsV4.sol";
@@ -41,11 +41,7 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         IHooksUpgradeGate upgradeGate,
         IZoraLimitOrderBookCoinsInterface zoraLimitOrderBook,
         IZoraHookRegistry zoraHookRegistry
-    )
-        ZoraV4CoinHook(
-            _poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate, zoraLimitOrderBook, zoraHookRegistry
-        )
-    {}
+    ) ZoraV4CoinHook(_poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate, zoraLimitOrderBook, zoraHookRegistry) {}
 
     FeeEstimatorState public feeState;
 
@@ -53,11 +49,13 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         return feeState;
     }
 
-    function _afterSwap(address, PoolKey calldata key, SwapParams calldata params, BalanceDelta _delta, bytes calldata)
-        internal
-        override
-        returns (bytes4, int128)
-    {
+    function _afterSwap(
+        address,
+        PoolKey calldata key,
+        SwapParams calldata params,
+        BalanceDelta _delta,
+        bytes calldata
+    ) internal override returns (bytes4, int128) {
         bytes32 poolKeyHash = CoinCommon.hashPoolKey(key);
 
         // get the coin address and positions for the pool key; they must have been set in the afterInitialize callback
@@ -73,16 +71,15 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
 
             (fee0, fee1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
 
-            (uint128 remainingFee0, uint128 remainingFee1) = CoinRewardsV4.mintLpReward(poolManager, key, fee0, fee1);
+            IHasCoinType.CoinType coinType = CoinRewardsV4.getCoinType(IHasRewardsRecipients(coin));
+            (uint128 remainingFee0, uint128 remainingFee1) = CoinRewardsV4.mintLpReward(poolManager, key, fee0, fee1, coinType);
 
             // Execute the swap path to estimate the payout amount, but don't distribute
             // This mirrors the logic in ZoraV4CoinHook._afterSwap
             IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
 
             // Execute swap and track all deltas that result
-            UniV4SwapToCurrency.swapToPath(
-                poolManager, remainingFee0, remainingFee1, payoutSwapPath.currencyIn, payoutSwapPath.path
-            );
+            UniV4SwapToCurrency.swapToPath(poolManager, remainingFee0, remainingFee1, payoutSwapPath.currencyIn, payoutSwapPath.path);
 
             // Take all positive deltas and sum them to get total payout amount
             uint128 totalPayout = 0;
@@ -126,10 +123,5 @@ contract FeeEstimatorHook is ZoraV4CoinHook {
         return (BaseHook.afterSwap.selector, 0);
     }
 
-    function _distributeMarketRewards(
-        Currency currency,
-        uint128 fees,
-        IHasRewardsRecipients coin,
-        address tradeReferrer
-    ) internal override {}
+    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {}
 }

@@ -115,17 +115,11 @@ library CoinRewardsV4 {
     }
 
     function getCurrencyZeroBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
-        return
-            convertDeltaToPositiveUint128(
-                TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0)
-            );
+        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0));
     }
 
     function getCurrencyOneBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
-        return
-            convertDeltaToPositiveUint128(
-                TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1)
-            );
+        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1));
     }
 
     /// @notice Mints LP rewards by creating new liquidity positions from collected fees
@@ -137,10 +131,19 @@ library CoinRewardsV4 {
     /// @param fees1 The amount of fees collected in currency1
     /// @return marketRewardsAmount0 The amount of currency0 remaining for market rewards
     /// @return marketRewardsAmount1 The amount of currency1 remaining for market rewards
-    function mintLpReward(IPoolManager poolManager, PoolKey calldata key, int128 fees0, int128 fees1)
-        internal
-        returns (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1)
-    {
+    function mintLpReward(
+        IPoolManager poolManager,
+        PoolKey calldata key,
+        int128 fees0,
+        int128 fees1,
+        IHasCoinType.CoinType coinType
+    ) internal returns (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) {
+        if (coinType == IHasCoinType.CoinType.Trend) {
+            marketRewardsAmount0 = fees0 > 0 ? uint128(fees0) : 0;
+            marketRewardsAmount1 = fees1 > 0 ? uint128(fees1) : 0;
+            return (marketRewardsAmount0, marketRewardsAmount1);
+        }
+
         if (fees0 > 0) {
             uint128 lpRewardAmount0 = computeLpReward(uint128(fees0));
             if (lpRewardAmount0 > 0) {
@@ -161,11 +164,9 @@ library CoinRewardsV4 {
 
     /// @notice Mints a single-sided LP position
     /// @dev The position is created for a single tick spacing range, either entirely above or below the current tick, to ensure only one currency is required
-    function _modifyLiquidity(IPoolManager poolManager, PoolKey calldata key, uint128 lpRewardAmount, bool isFeesToken0)
-        private
-    {
+    function _modifyLiquidity(IPoolManager poolManager, PoolKey calldata key, uint128 lpRewardAmount, bool isFeesToken0) private {
         // Get the current tick to determine where to place the new position.
-        (, int24 currentTick,,) = StateLibrary.getSlot0(poolManager, key.toId());
+        (, int24 currentTick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
 
         int24 tickLower;
         int24 tickUpper;
@@ -193,7 +194,10 @@ library CoinRewardsV4 {
 
         if (liquidity > 0) {
             ModifyLiquidityParams memory params = ModifyLiquidityParams({
-                tickLower: tickLower, tickUpper: tickUpper, liquidityDelta: SafeCast.toInt256(liquidity), salt: 0
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: SafeCast.toInt256(liquidity),
+                salt: 0
             });
             poolManager.modifyLiquidity(key, params, "");
         }
@@ -219,7 +223,14 @@ library CoinRewardsV4 {
         address doppler = coin.dopplerFeeRecipient();
 
         MarketRewards memory rewards = _distributeCurrencyRewards(
-            currency, fees, payoutRecipient, platformReferrer, protocolRewardRecipient, doppler, tradeReferrer, coinType
+            currency,
+            fees,
+            payoutRecipient,
+            platformReferrer,
+            protocolRewardRecipient,
+            doppler,
+            tradeReferrer,
+            coinType
         );
 
         IZoraV4CoinHook.MarketRewardsV4 memory marketRewards = IZoraV4CoinHook.MarketRewardsV4({
@@ -276,6 +287,12 @@ library CoinRewardsV4 {
         address tradeReferral,
         IHasCoinType.CoinType coinType
     ) internal returns (MarketRewards memory rewards) {
+        if (coinType == IHasCoinType.CoinType.Trend) {
+            rewards.protocolAmount = fee;
+            _transferCurrency(currency, fee, protocolRewardRecipient, address(0));
+            return rewards;
+        }
+
         rewards = _computeMarketRewards(fee, tradeReferral != address(0), platformReferrer != address(0), coinType);
 
         // Notes on ETH transfer fallback behavior:
@@ -295,7 +312,7 @@ library CoinRewardsV4 {
         }
 
         if (currency.isAddressZero()) {
-            (bool success,) = payable(to).call{value: amount}("");
+            (bool success, ) = payable(to).call{value: amount}("");
             if (!success) {
                 if (backupRecipient == address(0)) {
                     revert ICoin.EthTransferFailed();
@@ -308,11 +325,12 @@ library CoinRewardsV4 {
         }
     }
 
-    function _computeMarketRewards(uint128 fee, bool hasTradeReferral, bool hasCreateReferral, IHasCoinType.CoinType coinType)
-        internal
-        pure
-        returns (MarketRewards memory rewards)
-    {
+    function _computeMarketRewards(
+        uint128 fee,
+        bool hasTradeReferral,
+        bool hasCreateReferral,
+        IHasCoinType.CoinType coinType
+    ) internal pure returns (MarketRewards memory rewards) {
         if (fee == 0) {
             return rewards;
         }
@@ -325,14 +343,11 @@ library CoinRewardsV4 {
             return rewards;
         }
 
-        rewards.platformReferrerAmount =
-            hasCreateReferral ? calculateReward(totalAmount, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
-        rewards.tradeReferrerAmount =
-            hasTradeReferral ? calculateReward(totalAmount, CoinConstants.TRADE_REFERRAL_REWARD_BPS) : 0;
+        rewards.platformReferrerAmount = hasCreateReferral ? calculateReward(totalAmount, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
+        rewards.tradeReferrerAmount = hasTradeReferral ? calculateReward(totalAmount, CoinConstants.TRADE_REFERRAL_REWARD_BPS) : 0;
         rewards.creatorAmount = calculateReward(totalAmount, CoinConstants.CREATOR_REWARD_BPS);
         rewards.dopplerAmount = calculateReward(totalAmount, CoinConstants.DOPPLER_REWARD_BPS);
-        rewards.protocolAmount = totalAmount - rewards.platformReferrerAmount - rewards.tradeReferrerAmount
-            - rewards.creatorAmount - rewards.dopplerAmount;
+        rewards.protocolAmount = totalAmount - rewards.platformReferrerAmount - rewards.tradeReferrerAmount - rewards.creatorAmount - rewards.dopplerAmount;
     }
 
     function calculateReward(uint256 amount, uint256 bps) internal pure returns (uint256) {

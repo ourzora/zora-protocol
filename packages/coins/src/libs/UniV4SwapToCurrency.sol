@@ -34,8 +34,7 @@ library UniV4SwapToCurrency {
         require(path.length > 0, IZoraV4CoinHook.PathMustHaveAtLeastOneStep());
 
         // do first swap - the first swap updates output the balance with the initial balance that existed before the swap
-        (lastCurrency, lastCurrencyBalance) =
-            doFirstSwapFromCoinToCurrency(poolManager, path[0], currencyIn, amount0, amount1);
+        (lastCurrency, lastCurrencyBalance) = doFirstSwapFromCoinToCurrency(poolManager, path[0], currencyIn, amount0, amount1);
 
         // for each path, swap the currency to the next currency
         for (uint256 i = 1; i < path.length; i++) {
@@ -80,9 +79,7 @@ library UniV4SwapToCurrency {
         unchecked {
             BalanceDelta delta = poolManager.swap(
                 poolKey,
-                SwapParams(
-                    zeroForOne, amountSpecified, zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1
-                ),
+                SwapParams(zeroForOne, amountSpecified, zeroForOne ? TickMath.MIN_SQRT_PRICE + 1 : TickMath.MAX_SQRT_PRICE - 1),
                 hookData
             );
 
@@ -95,24 +92,15 @@ library UniV4SwapToCurrency {
     /// @param currencyIn the input currency
     /// @return poolKey the pool key of the swap
     /// @return zeroForOne the direction of the swap, true if currency0 is being swapped for currency1
-    function _getPoolAndSwapDirection(PathKey memory params, Currency currencyIn)
-        internal
-        pure
-        returns (PoolKey memory poolKey, bool zeroForOne)
-    {
+    function _getPoolAndSwapDirection(PathKey memory params, Currency currencyIn) internal pure returns (PoolKey memory poolKey, bool zeroForOne) {
         Currency currencyOut = params.intermediateCurrency;
-        (Currency currency0, Currency currency1) =
-            currencyIn < currencyOut ? (currencyIn, currencyOut) : (currencyOut, currencyIn);
+        (Currency currency0, Currency currency1) = currencyIn < currencyOut ? (currencyIn, currencyOut) : (currencyOut, currencyIn);
 
         zeroForOne = currencyIn == currency0;
         poolKey = PoolKey(currency0, currency1, params.fee, params.tickSpacing, params.hooks);
     }
 
-    function getSubSwapPath(address currency, IDeployedCoinVersionLookup coinVersionLookup)
-        internal
-        view
-        returns (PathKey[] memory)
-    {
+    function getSubSwapPath(address currency, IDeployedCoinVersionLookup coinVersionLookup) internal view returns (PathKey[] memory) {
         if (!_hasSwapPath(currency, coinVersionLookup)) {
             return new PathKey[](0);
         }

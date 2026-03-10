@@ -69,12 +69,11 @@ library TickerUtils {
         }
         for (uint256 i = 0; i < tickerBytes.length; i++) {
             bytes1 char = tickerBytes[i];
-            bool isValid =
-                char == 0x20 ||                    // space
-                char == 0x2D ||                    // dash (-)
+            bool isValid = char == 0x20 || // space
+                char == 0x2D || // dash (-)
                 (char >= 0x30 && char <= 0x39) || // 0-9
                 (char >= 0x41 && char <= 0x5A) || // A-Z
-                (char >= 0x61 && char <= 0x7A);    // a-z
+                (char >= 0x61 && char <= 0x7A); // a-z
 
             if (!isValid) {
                 return false;

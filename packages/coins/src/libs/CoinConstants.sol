@@ -53,6 +53,10 @@ library CoinConstants {
     /// @dev 10000 basis points = 1%
     uint24 internal constant LP_FEE_V4 = 10_000;
 
+    /// @notice The LP fee for trend coins (after launch fee period)
+    /// @dev 100 pips = 1 basis point = 0.01%
+    uint24 internal constant TREND_LP_FEE_V4 = 100;
+
     /// @notice Flag to enable dynamic fees for the pool
     /// @dev When set in pool key fee, enables hook to override fee per-swap
     uint24 internal constant DYNAMIC_FEE_FLAG = 0x800000;
