@@ -18,6 +18,8 @@ import type {
   GetCoinSwapsResponse,
   GetCoinsData,
   GetCoinsResponse,
+  GetCoinsListData,
+  GetCoinsListResponse,
   GetContentCoinPoolConfigData,
   GetContentCoinPoolConfigResponse,
   SetCreateUploadJwtData,
@@ -28,6 +30,8 @@ import type {
   GetExploreResponse,
   GetFeaturedCreatorsData,
   GetFeaturedCreatorsResponse,
+  GetLatestLiveStreamsData,
+  GetLatestLiveStreamsResponse,
   GetProfileData,
   GetProfileResponse,
   GetProfileBalancesData,
@@ -38,6 +42,8 @@ import type {
   GetProfileSocialResponse,
   GetTokenInfoData,
   GetTokenInfoResponse,
+  GetTopLiveStreamsData,
+  GetTopLiveStreamsResponse,
   GetTraderLeaderboardData,
   GetTraderLeaderboardResponse,
   PostQuoteData,
@@ -199,6 +205,28 @@ export const getCoins = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * zoraSDK_coinsList query
+ */
+export const getCoinsList = <ThrowOnError extends boolean = false>(
+  options?: Options<GetCoinsListData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetCoinsListResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/coinsList",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_contentCoinPoolConfig query
  */
 export const getContentCoinPoolConfig = <ThrowOnError extends boolean = false>(
@@ -313,6 +341,28 @@ export const getFeaturedCreators = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * zoraSDK_latestLiveStreams query
+ */
+export const getLatestLiveStreams = <ThrowOnError extends boolean = false>(
+  options?: Options<GetLatestLiveStreamsData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetLatestLiveStreamsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/latestLiveStreams",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_profile query
  */
 export const getProfile = <ThrowOnError extends boolean = false>(
@@ -418,6 +468,28 @@ export const getTokenInfo = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/tokenInfo",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_topLiveStreams query
+ */
+export const getTopLiveStreams = <ThrowOnError extends boolean = false>(
+  options?: Options<GetTopLiveStreamsData, ThrowOnError>,
+) => {
+  return (options?.client ?? _heyApiClient).get<
+    GetTopLiveStreamsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/topLiveStreams",
     ...options,
   });
 };

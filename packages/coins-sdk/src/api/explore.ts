@@ -112,3 +112,58 @@ export const getExploreFeaturedVideos = (
   options?: RequestOptionsType<GetExploreData>,
 ): Promise<ExploreResponse> =>
   createExploreQuery(query, "FEATURED_VIDEOS", options);
+
+/** Get trending coins across all types */
+export const getTrendingAll = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TRENDING_ALL", options);
+
+/** Get trending creator coins */
+export const getTrendingCreators = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TRENDING_CREATORS", options);
+
+/** Get trending posts */
+export const getTrendingPosts = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TRENDING_POSTS", options);
+
+/** Get most valuable trend coins */
+export const getMostValuableTrends = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "MOST_VALUABLE_TRENDS", options);
+
+/** Get new trend coins */
+export const getNewTrends = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> => createExploreQuery(query, "NEW_TRENDS", options);
+
+/** Get top volume trend coins (24h) */
+export const getTopVolumeTrends24h = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TOP_VOLUME_TRENDS_24H", options);
+
+/** Get trending trend coins */
+export const getTrendingTrends = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "TRENDING_TRENDS", options);
+
+/** Generic explore query for any list type */
+export const getExploreList = (
+  listType: ListType,
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> => createExploreQuery(query, listType, options);
