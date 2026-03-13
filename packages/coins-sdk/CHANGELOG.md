@@ -1,5 +1,12 @@
 # @zoralabs/coins-sdk
 
+## 0.4.7
+
+### Patch Changes
+
+- 0c0d8e85: Add explore wrappers for trending and trend list types
+  Add `getMostValuableAll` wrapper for querying most valuable coins across all coin types
+
 ## 0.4.6
 
 ### Patch Changes
