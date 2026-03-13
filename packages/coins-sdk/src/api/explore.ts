@@ -161,6 +161,13 @@ export const getTrendingTrends = (
 ): Promise<ExploreResponse> =>
   createExploreQuery(query, "TRENDING_TRENDS", options);
 
+/** Get most valuable coins across all types */
+export const getMostValuableAll = (
+  query: QueryRequestType = {},
+  options?: RequestOptionsType<GetExploreData>,
+): Promise<ExploreResponse> =>
+  createExploreQuery(query, "MOST_VALUABLE_ALL", options);
+
 /** Generic explore query for any list type */
 export const getExploreList = (
   listType: ListType,

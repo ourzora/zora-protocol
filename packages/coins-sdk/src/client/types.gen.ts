@@ -1382,7 +1382,8 @@ export type GetExploreData = {
       | "TRENDING_TRENDS"
       | "TRENDING_CREATORS"
       | "TRENDING_ALL"
-      | "TOP_VOLUME_TRENDS_24H";
+      | "TOP_VOLUME_TRENDS_24H"
+      | "MOST_VALUABLE_ALL";
     count?: number;
     after?: string;
   };

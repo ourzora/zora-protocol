@@ -10,6 +10,7 @@ import {
   getTopVolumeTrends24h,
   getTrendingTrends,
   getExploreList,
+  getMostValuableAll,
 } from "../src";
 
 const expectExploreResponse = (result: { data?: unknown }) => {
@@ -65,6 +66,13 @@ describe("Explore trend wrappers", () => {
 
   it("getTopVolumeTrends24h returns data", async () => {
     const result = await getTopVolumeTrends24h();
+    expectExploreResponse(result);
+  });
+});
+
+describe("Explore most valuable wrappers", () => {
+  it("getMostValuableAll returns data", async () => {
+    const result = await getMostValuableAll();
     expectExploreResponse(result);
   });
 });
