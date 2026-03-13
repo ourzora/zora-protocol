@@ -15,19 +15,21 @@ At Zora, we are passionate about providing the best experience to create and ear
 - Creators to monetize their work
 - Developers to earn from facilitating coin creation and trading
 
-## Early Launch Fee
+## Sniper Tax (Early Launch Fee)
 
-New coins have a **time-based dynamic fee** that protects against sniping bots immediately after creation. The fee decays linearly from **99% to 1%** over **10 seconds**.
+All new coins have a **time-based dynamic fee** (Sniper Tax) that protects against sniping bots immediately after creation. The fee decays linearly from **99%** to the coin's base fee over **10 seconds**.
 
 ### How It Works
 
-| Time After Creation | Fee    |
-| ------------------- | ------ |
-| 0 seconds           | 99%    |
-| 2.5 seconds         | ~74.5% |
-| 5 seconds           | ~50%   |
-| 7.5 seconds         | ~25.5% |
-| 10+ seconds         | 1%     |
+The sniper tax starts at 99% and decays linearly to the coin type's base fee:
+
+| Time After Creation | Creator/Content Coins | Trend Coins |
+| ------------------- | --------------------- | ----------- |
+| 0 seconds           | 99%                   | 99%         |
+| 2.5 seconds         | ~74.5%                | ~74.5%      |
+| 5 seconds           | ~50%                  | ~50%        |
+| 7.5 seconds         | ~25.5%                | ~25.5%      |
+| 10+ seconds         | 1%                    | 0.01%       |
 
 The fee calculation uses a linear decay formula:
 
@@ -35,22 +37,35 @@ The fee calculation uses a linear decay formula:
 fee = 99% - (elapsed_seconds / 10) × (99% - 1%)
 ```
 
+After 10 seconds, the fee settles to the coin type's base rate:
+- **Creator/Content Coins**: 1% (10,000 pips)
+- **Trend Coins**: 0.01% / 1 bps (100 pips)
+
 ### Key Details
 
-- **Initial supply bypass**: When a coin is deployed with an initial supply purchase, that purchase uses the normal 1% fee (not the launch fee)
+- **Initial supply bypass**: When a coin is deployed with an initial supply purchase, that purchase uses the normal 1% fee (not the sniper tax)
 - **Legacy coins**: Coins created before version 2.5.0 that don't support the `IHasCreationInfo` interface receive the normal 1% fee
-- **Purpose**: The launch fee discourages bots from front-running coin launches by making immediate purchases prohibitively expensive
-- **After 10 seconds**: The fee settles to the standard 1% LP fee for all subsequent trades
+- **Purpose**: The sniper tax discourages bots from front-running coin launches by making immediate purchases prohibitively expensive
 
 <Callout type="info">
-  The launch fee currently only applies to buys and sells in the first 10
-  seconds after coin creation. After this period, the normal 1% fee structure
+  The sniper tax applies to all buys and sells in the first 10
+  seconds after coin creation. After this period, the normal fee structure
   applies as described below.
 </Callout>
 
+## Fee Structure by Coin Type
+
+| Coin Type    | Base Trading Fee | Sniper Tax     | LP Remint | Fee Recipients                                        |
+| ------------ | ---------------- | -------------- | --------- | ----------------------------------------------------- |
+| Creator Coin | 1%               | 99% → 1% / 10s  | 20%       | Creator, Platform Referral, Trade Referral, Doppler, Protocol |
+| Content Coin | 1%               | 99% → 1% / 10s  | 20%       | Creator, Platform Referral, Trade Referral, Doppler, Protocol |
+| Trend Coin   | 0.01% (1 bps)   | 99% → 0.01% / 10s | None      | Protocol (100%)                                       |
+
+For detailed Trend Coin documentation, see [Trend Coins](/coins/contracts/trend-coins).
+
 ## Coin Trading Rewards (V4)
 
-Coin trading rewards are distributed to the creator, create referral, trade referral, protocol, and doppler.
+Coin trading rewards for Creator and Content Coins are distributed to the creator, create referral, trade referral, protocol, and doppler.
 
 <Callout type="success">
   All coins created on the Zora app including web and mobile after June 6th 2025
@@ -138,6 +153,16 @@ For information on liquidity migration, see [Liquidity Migration](/coins/contrac
 | Doppler           | -                     | 1%                   |
 | Protocol          | 33.33%                | 5%                   |
 | LP Rewards        | 33.33%                | 20%                  |
+
+### Trend Coin Rewards (0.01% fee)
+
+Trend Coins use a fundamentally different reward model. With a 0.01% (1 bps) trading fee — 100x lower than Creator/Content Coins — and no creator or referral recipients, **100% of collected fees go directly to the protocol**.
+
+There is no LP remint for Trend Coins; fees are not recycled back into the pool as liquidity.
+
+| Recipient | % of Fees |
+| --------- | --------- |
+| Protocol  | 100%      |
 
 ### Multi-Hop Currency Conversion
 

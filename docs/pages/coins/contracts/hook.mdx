@@ -4,7 +4,7 @@ The Zora protocol uses a unified Uniswap V4 hook to automatically manage pool in
 
 ## Overview
 
-The hook system now uses a single implementation, `ZoraV4CoinHook`, which encapsulates the full logic for pool initialization, fee collection, multi-hop payout conversion, and reward distribution across both Content Coins and Creator Coins.
+The hook system uses a single implementation, `ZoraV4CoinHook`, which encapsulates the full logic for pool initialization, fee collection, dynamic fee calculation, multi-hop payout conversion, and reward distribution across all coin types (Content Coins, Creator Coins, and Trend Coins).
 
 Previously, two specialized hook contracts were used (`ContentCoinHook` and `CreatorCoinHook`). As of coins v2.3.0, these have been consolidated into the single `ZoraV4CoinHook` for simplicity and maintainability while preserving identical external behavior.
 
@@ -14,24 +14,30 @@ The unified hook centralizes shared functionality and derives reward behavior fr
 
 ### ZoraV4CoinHook
 
-Contains all core functionality used by both coin types:
+Contains all core functionality used by all coin types:
 
 **Automated Operations:**
 - Pool initialization and automatic liquidity position creation
 - Automatic fee collection from all LP positions on every swap
+- Dynamic fee calculation via `beforeSwap` (Sniper Tax + coin-type-based base fees)
 - Multi-hop currency conversion through optimal swap paths
 - Hook upgrade and [migration support](/coins/contracts/liquidity-migration)
 - Comprehensive event emission and transaction logging
 
 **Technical Features:**
-- Uniswap V4 `afterInitialize` and `afterSwap` hook permissions
+- Uniswap V4 `beforeSwap`, `afterInitialize`, and `afterSwap` hook permissions
 - Doppler multi-curve liquidity positioning
 - Trusted message sender validation
 - Pool-to-coin mapping and position tracking
 
+**Dynamic Fee Logic:**
+The hook uses `beforeSwap` to calculate per-swap fees based on coin type and age:
+- **First 10 seconds** (all coin types): Sniper Tax — 99% decaying linearly to the base fee
+- **After 10 seconds**: Base fee by coin type — 1% for Creator/Content Coins, 0.01% for [Trend Coins](/coins/contracts/trend-coins)
+
 Reward distribution is unified and determined at runtime from the coin type via `CoinRewardsV4`.
 
-**Key Insight**: Logic that was previously split across two hooks is now implemented in one place; reward behavior is selected based on the coin type and configuration.
+**Key Insight**: Logic that was previously split across two hooks is now implemented in one place; fee calculation and reward behavior are selected based on the coin type and configuration.
 
 ## Deployment Addresses
 
@@ -49,13 +55,13 @@ The unified hook has the following Uniswap V4 permissions:
 function getHookPermissions() external pure override returns (Hooks.Permissions memory) {
     return Hooks.Permissions({
         beforeInitialize: false,
-        afterInitialize: true,      // ✅ Enabled
+        afterInitialize: true,      // ✅ Enabled - pool setup and liquidity positioning
         beforeAddLiquidity: false,
         afterAddLiquidity: false,
         beforeRemoveLiquidity: false,
         afterRemoveLiquidity: false,
-        beforeSwap: false,
-        afterSwap: true,           // ✅ Enabled
+        beforeSwap: true,           // ✅ Enabled - dynamic fee calculation (Sniper Tax)
+        afterSwap: true,            // ✅ Enabled - fee collection and reward distribution
         beforeDonate: false,
         afterDonate: false,
         beforeSwapReturnDelta: false,
@@ -94,9 +100,8 @@ The unified hook implements the same reward distribution mechanism across coin t
 
 ### Key Details
 
-- Both Content Coins and Creator Coins share the unified fee structure and support platform referral, trade referral, creator, protocol, and Doppler distributions (as of v2.2.0+).
-
-**Fee Split**: A portion of collected fees is reminted as LP rewards to maintain liquidity, while the remainder is distributed as market rewards to stakeholders.
+- Content Coins and Creator Coins share a unified 1% fee structure and support platform referral, trade referral, creator, protocol, and Doppler distributions (as of v2.2.0+). A 20% LP remint preserves pool liquidity.
+- [Trend Coins](/coins/contracts/trend-coins) use a 0.01% (1 bps) fee with 100% of fees going to the protocol. No LP remint is performed.
 
 ## Multi-Hop Reward Swapping
 

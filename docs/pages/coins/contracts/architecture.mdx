@@ -18,8 +18,11 @@ classDiagram
     class ZoraFactoryImpl {
         +deploy(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, postDeployHook, postDeployHookData, coinSalt)
         +deployCreatorCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, coinSalt)
+        +deployTrendCoin(symbol, postDeployHook, postDeployHookData)
         +coinAddress(msgSender, name, symbol, poolConfig, platformReferrer, coinSalt)
+        +trendCoinAddress(symbol)
         +coinImpl()
+        +trendCoinImpl()
     }
     
     %% Coins Package
@@ -43,12 +46,21 @@ classDiagram
         +rewardsDistributionMethodology()
     }
     
+    class TrendCoin {
+        -currency: ZORA
+        -fee: 0.01% (1 bps)
+        +initializeTrendCoin()
+        +coinType() Trend
+    }
+    
     %% Hooks Package
     class ZoraV4CoinHook {
         +afterInitialize()
+        +beforeSwap()
         +afterSwap()
         -collectFees()
         -mintLpReward()
+        -_calculateLaunchFee()
         +_distributeMarketRewards()
     }
     
@@ -59,11 +71,12 @@ classDiagram
     %% Inheritance relationships
     BaseCoinV4 <|-- CreatorCoin
     BaseCoinV4 <|-- ContentCoin
-    %% Unified hook - no subclassing per coin type
+    BaseCoinV4 <|-- TrendCoin
     
     %% Factory relationships
     ZoraFactoryImpl ..> CreatorCoin : creates
     ZoraFactoryImpl ..> ContentCoin : creates
+    ZoraFactoryImpl ..> TrendCoin : creates
     
     %% Hook relationships
     ZoraV4CoinHook --> IPoolManager : uses
@@ -73,10 +86,12 @@ classDiagram
     BaseCoinV4 --> IPoolManager : integrates with
     CreatorCoin --> ZoraV4CoinHook : uses hook
     ContentCoin --> ZoraV4CoinHook : uses hook
+    TrendCoin --> ZoraV4CoinHook : uses hook
     
     %% Currency relationships
     ContentCoin --> CreatorCoin : backed by
     CreatorCoin --> ZORAToken : backed by
+    TrendCoin --> ZORAToken : backed by
 ```
 
 *Visual overview of how contracts work together in the Zora Coins system*
@@ -86,7 +101,7 @@ classDiagram
 ### Coins Contracts
 
 **BaseCoinV4 (Abstract)**
-- Base implementation for both coin types
+- Base implementation for all coin types
 - Integrates with Uniswap V4 PoolManager
 - Handles liquidity migration between hook versions
 - Manages pool key and basic coin functionality
@@ -95,13 +110,22 @@ classDiagram
 - One per creator, backed by ZORA tokens
 - 1 billion total supply with 5-year vesting schedule
 - 500M tokens vest to creator, 500M available for trading
-- Simpler reward distribution (creator + protocol)
+- 1% trading fee split across creator, referrers, protocol, and LP
 
 **ContentCoin**
 - Multiple per creator, backed by creator's coin
 - 1 billion total supply with instant creator allocation
 - 10M tokens to creator immediately, 990M available for trading
-- Complex reward distribution including referrals
+- 1% trading fee with the same reward split as Creator Coins
+
+**[TrendCoin](/coins/contracts/trend-coins)**
+- Lightweight coins for trending topics and cultural moments
+- 1 billion total supply, 100% allocated to liquidity pool
+- No creator allocation, no payout recipient, no platform referrer
+- 0.01% (1 bps) trading fee — 100x lower than Creator/Content Coins
+- Sniper Tax: 99% fee at launch decaying to 0.01% over 10 seconds
+- All fees go to protocol; no LP remint
+- Unique, case-insensitive tickers enforced on-chain
 
 ### Factory Contract
 
@@ -114,7 +138,9 @@ classDiagram
 Key functions:
 - `deploy()` - General coin deployment with full customization
 - `deployCreatorCoin()` - Simplified Creator Coin deployment
-- `coinAddress()` - Predict deployment address before deploying
+- `deployTrendCoin()` - Trend Coin deployment with unique ticker enforcement
+- `coinAddress()` - Predict deployment address for Content/Creator Coins
+- `trendCoinAddress()` - Predict deployment address for Trend Coins
 
 ### Hook System
 

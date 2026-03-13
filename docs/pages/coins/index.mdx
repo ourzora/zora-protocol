@@ -14,23 +14,26 @@ This is the first time creators earn across posts, creators, and the platform. *
 
 Every coin has a **backing currency** and trades through a dedicated Uniswap V4 pool with a custom hook that:
 
-- **Protects against sniping** with an [early launch fee](/coins/contracts/rewards#early-launch-fee) that decays from 99% to 1% over 10 seconds
+- **Protects against sniping** with a [Sniper Tax](/coins/contracts/rewards#early-launch-fee) that decays from 99% over 10 seconds
 - **Distributes rewards** to creators, referrers, and the protocol on every trade
-- **Preserves liquidity** by locking 20% of trading fees as permanent pool depth
+- **Preserves liquidity** by locking 20% of trading fees as permanent pool depth (Creator/Content Coins)
 - **Converts fees** through multi-hop swaps to ensure all rewards are paid in ZORA
 - **Deposits initial liquidity** using [Doppler protocol](https://www.doppler.lol/) for optimized multi-curve positioning
 
 ## How Coins Work
 
-**Creator Coins are profile-level tokens on Zora** - each account has its own coin where the username becomes the ticker ($username).
+The protocol supports three coin types, each designed for a different use case.
 
 ### Creator Coins
+
+**Profile-level tokens on Zora** — each account has its own coin where the username becomes the ticker ($username).
 
 - **One coin per profile** - Each creator gets a single coin representing their brand
 - **Fixed supply** - 1 billion total per coin
 - **50% to creator** - Automatically distributed over 5 years
 - **50% tradeable** - Instantly available on the open market
 - **Earn from every trade** - Creators earn $ZORA from trade activity
+- **1% trading fee** - Split across creator, referrers, protocol, and LP
 
 ### Content Coins
 
@@ -38,6 +41,19 @@ Every coin has a **backing currency** and trades through a dedicated Uniswap V4 
 - **Creator-backed** - Uses the creator's coin as backing currency
 - **Instant creator allocation** - 10M tokens go directly to creators at launch
 - **990M tradeable** - Available on the market immediately
+- **1% trading fee** - Same split as Creator Coins
+
+### Trend Coins
+
+**Lightweight tokens for trending topics, memes, and cultural moments** — optimized for high-frequency, low-friction trading.
+
+- **Ultra-low fees** - 0.01% (1 bps) trading fee, 100x lower than standard coins
+- **Sniper Tax** - 99% fee at launch decaying linearly to 0.01% over 10 seconds
+- **100% liquidity** - Entire 1B supply goes into the pool, no creator allocation
+- **Unique tickers** - Case-insensitive ticker uniqueness enforced on-chain
+- **Protocol fees only** - All collected fees go to the protocol
+
+Learn more in the [Trend Coins](/coins/contracts/trend-coins) documentation.
 
 ![Zora Coins Protocol Overview](/coins-overview.png)
 
@@ -60,6 +76,13 @@ All coins have a **1 billion token supply** with different allocation strategies
 | **Liquidity Pool** | 990M tokens | Available for trading immediately |
 | **Creator Reward** | 10M tokens  | Instant allocation to creator     |
 | **Total Supply**   | 1B tokens   | Fixed maximum supply              |
+
+### TrendCoin Distribution
+
+| Allocation         | Amount      | Details                            |
+| ------------------ | ----------- | ---------------------------------- |
+| **Liquidity Pool** | 1B tokens   | Full supply available for trading  |
+| **Total Supply**   | 1B tokens   | Fixed maximum supply               |
 
 > **Vesting Details**: Creator coins vest linearly over 5 years, meaning creators can claim their tokens gradually using the `claimVesting()` function.
 

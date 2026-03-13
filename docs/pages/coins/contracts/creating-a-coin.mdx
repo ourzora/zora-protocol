@@ -20,6 +20,7 @@ classDiagram
     class ZoraFactory {
         +deploy()
         +deployCreatorCoin()
+        +deployTrendCoin()
     }
     
     class Coin {
@@ -97,9 +98,29 @@ function deployCreatorCoin(
 ) external returns (address);
 ```
 
+### Trend Coin Deployment
+
+For Trend Coins, use the `deployTrendCoin` function. Trend Coins have a simplified creation flow with unique, case-insensitive tickers and no creator/referrer parameters:
+
+```solidity
+function deployTrendCoin(
+    string calldata symbol,
+    address postDeployHook,
+    bytes calldata postDeployHookData
+) external payable returns (address coin, bytes memory postDeployHookDataOut);
+```
+
+Trend Coin addresses are deterministic based on the ticker — use `trendCoinAddress()` to predict:
+
+```solidity
+function trendCoinAddress(string calldata symbol) external view returns (address);
+```
+
+For full details on Trend Coins (0.01% fee, sniper tax, supply distribution, pool config), see [Trend Coins](/coins/contracts/trend-coins).
+
 ## Parameters
 
-### Required Parameters
+### Required Parameters (Content/Creator Coins)
 
 - **`payoutRecipient`**: Address that receives creator rewards from trading activity
 - **`owners`**: Array of addresses with permission to manage the coin (update metadata, change payout recipient)
@@ -137,6 +158,7 @@ For most use cases, we recommend using our upcoming API endpoints to generate po
 
 - **Creator Coins** - ZORA-backed coins with vesting schedules, optimized for creator economies
 - **Content Coins** - Flexible backing currency (ETH, ZORA, or Creator Coins), designed for content monetization
+- **Trend Coins** - ZORA-backed with pre-configured multi-curve pools, 0.01% fee, managed by the factory owner
 - **Custom Configurations** - Specialized setups for advanced use cases
 
 Contact the Zora team for early access to configuration APIs or custom pool parameter consultation.
@@ -256,6 +278,19 @@ event CreatorCoinCreated(
 );
 ```
 
+### Trend Coins
+```solidity
+event TrendCoinCreated(
+    address indexed caller,
+    string symbol,
+    address coin,
+    PoolKey poolKey,
+    bytes32 poolKeyHash,
+    bytes poolConfig,
+    string version
+);
+```
+
 ### Legacy (V3) Coins
 ```solidity
 event CoinCreated(
@@ -278,12 +313,13 @@ event CoinCreated(
   - **`CoinCreated` (legacy)**: Emitted by early releases that used Uniswap V3 and returned a pool address.
   - **`CoinCreatedV4`**: Emitted for Content Coins on Uniswap V4 and includes a full `PoolKey` plus `poolKeyHash`.
   - **`CreatorCoinCreated`**: Emitted for Creator Coins on Uniswap V4 and includes the same data shape as `CoinCreatedV4`.
+  - **`TrendCoinCreated`**: Emitted for Trend Coins on Uniswap V4. Has a different shape — keyed by `symbol` instead of `name`/`payoutRecipient`/`platformReferrer`.
 
-- **Index all coins**: Indexers should listen to all three events to build a complete list of coins across protocol versions.
+- **Index all coins**: Indexers should listen to all four events to build a complete list of coins across protocol versions.
 
 - **Suggested filter set**
   - Contract: `ZoraFactoryImpl`
-  - Events: `CoinCreated`, `CoinCreatedV4`, `CreatorCoinCreated`
+  - Events: `CoinCreated`, `CoinCreatedV4`, `CreatorCoinCreated`, `TrendCoinCreated`
 
 - **Field differences**
   - Legacy `CoinCreated` returns a `pool` address (Uniswap V3). V4 events return a `PoolKey` and `poolKeyHash` instead of a pool address (pool address is derived by Uniswap V4).
@@ -293,9 +329,10 @@ event CoinCreated(
   - For V3: store `poolAddress` from `CoinCreated`.
   - For V4: store `poolKey` (currencies, fee, tickSpacing, hooks), and `poolKeyHash`. If you need the V4 pool address, derive it using the Uniswap V4 formula from `PoolKey`.
 
-- **Creator coin identification**
-  - Creator coins are explicitly emitted via `CreatorCoinCreated`.
+- **Coin type identification**
+  - Creator coins are emitted via `CreatorCoinCreated`.
   - Content coins are emitted via `CoinCreatedV4`.
+  - Trend coins are emitted via `TrendCoinCreated`.
 
 - **Example (pseudocode)**
 ```ts
@@ -328,6 +365,17 @@ onEvent(evt) {
         poolKeyHash: evt.args.poolKeyHash,
         version: evt.args.version,
         meta: baseFields(evt.args)
+      });
+      break;
+    case 'TrendCoinCreated':
+      upsertCoin({
+        type: 'trend',
+        coin: evt.args.coin,
+        symbol: evt.args.symbol,
+        poolKey: evt.args.poolKey,
+        poolKeyHash: evt.args.poolKeyHash,
+        version: evt.args.version,
+        poolConfig: evt.args.poolConfig
       });
       break;
   }

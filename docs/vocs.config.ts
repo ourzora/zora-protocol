@@ -63,6 +63,10 @@ export default defineConfig({
             link: "/coins/contracts/creating-a-coin",
           },
           {
+            text: "Trend Coins",
+            link: "/coins/contracts/trend-coins",
+          },
+          {
             text: "Architecture",
             link: "/coins/contracts/architecture",
           },
@@ -161,6 +165,10 @@ export default defineConfig({
               {
                 text: "Creating a Coin",
                 link: "/coins/contracts/creating-a-coin",
+              },
+              {
+                text: "Trend Coins",
+                link: "/coins/contracts/trend-coins",
               },
               {
                 text: "Architecture",
