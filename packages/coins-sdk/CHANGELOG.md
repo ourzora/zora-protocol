@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.4.8
+
+### Patch Changes
+
+- 7dda692d: Add a top-level `getTokenInfo` query export to the coins SDK
+
 ## 0.4.7
 
 ### Patch Changes
