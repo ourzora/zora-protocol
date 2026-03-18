@@ -35,6 +35,9 @@ export type * from "./api/explore";
 // API Key Setter
 export { setApiKey } from "./api/api-key";
 
+// Raw API helpers
+export { apiGet, apiPost } from "./api/api-raw";
+
 // Metadata Validation Utils
 export * from "./metadata";
 
