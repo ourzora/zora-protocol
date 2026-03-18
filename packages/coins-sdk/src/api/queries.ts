@@ -21,6 +21,8 @@ import {
   GetTraderLeaderboardResponse,
   GetProfileSocialResponse,
   GetProfileSocialData,
+  GetTokenInfoData,
+  GetTokenInfoResponse,
   GetContentCoinPoolConfigData,
   GetContentCoinPoolConfigResponse,
   GetCreatorCoinPoolConfigData,
@@ -36,6 +38,7 @@ import {
   getProfileBalances as getProfileBalancesSDK,
   getProfileCoins as getProfileCoinsSDK,
   getProfileSocial as getProfileSocialSDK,
+  getTokenInfo as getTokenInfoSDK,
   getFeaturedCreators as getFeaturedCreatorsSDK,
   getTraderLeaderboard as getTraderLeaderboardSDK,
   getContentCoinPoolConfig as getContentCoinPoolConfigSDK,
@@ -180,6 +183,21 @@ export const getProfileSocial = async (
   options?: RequestOptionsType<GetProfileSocialData>,
 ): Promise<RequestResult<GetProfileSocialResponse>> => {
   return await getProfileSocialSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetTokenInfoQuery = GetTokenInfoData["query"];
+export type { GetTokenInfoQuery, GetTokenInfoData };
+export type { GetTokenInfoResponse } from "../client/types.gen";
+
+export const getTokenInfo = async (
+  query: GetTokenInfoQuery,
+  options?: RequestOptionsType<GetTokenInfoData>,
+): Promise<RequestResult<GetTokenInfoResponse>> => {
+  return await getTokenInfoSDK({
     query,
     ...getApiKeyMeta(),
     ...options,
