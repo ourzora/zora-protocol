@@ -46,6 +46,10 @@ import type {
   GetTopLiveStreamsResponse,
   GetTraderLeaderboardData,
   GetTraderLeaderboardResponse,
+  GetTrendCoinData,
+  GetTrendCoinResponse,
+  GetTrendsByNameData,
+  GetTrendsByNameResponse,
   PostQuoteData,
   PostQuoteResponse,
   PostQuoteError,
@@ -512,6 +516,50 @@ export const getTraderLeaderboard = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/traderLeaderboard",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_trendCoin query
+ */
+export const getTrendCoin = <ThrowOnError extends boolean = false>(
+  options: Options<GetTrendCoinData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetTrendCoinResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/trendCoin",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_trendsByName query
+ */
+export const getTrendsByName = <ThrowOnError extends boolean = false>(
+  options: Options<GetTrendsByNameData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetTrendsByNameResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/trendsByName",
     ...options,
   });
 };
