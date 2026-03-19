@@ -713,7 +713,7 @@ importers:
     dependencies:
       '@inkjs/ui':
         specifier: ^2.0.0
-        version: 2.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10))
+        version: 2.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10))
       '@inquirer/confirm':
         specifier: ^6.0.8
         version: 6.0.10(@types/node@22.19.15)
@@ -737,10 +737,10 @@ importers:
         version: 4.1.0
       ink:
         specifier: ^6.8.0
-        version: 6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10)
+        version: 6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10)
       ink-spinner:
         specifier: ^5.0.0
-        version: 5.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10))(react@19.2.4)
+        version: 5.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10))(react@19.2.4)
       react:
         specifier: ^19.2.4
         version: 19.2.4
@@ -757,6 +757,9 @@ importers:
       ink-testing-library:
         specifier: ^4.0.0
         version: 4.0.0(@types/react@19.2.14)
+      react-devtools-core:
+        specifier: ^7.0.1
+        version: 7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
       tsup:
         specifier: ^8.4.0
         version: 8.5.1(jiti@2.6.1)(postcss@8.5.6)(tsx@4.21.0)(typescript@5.9.3)(yaml@2.8.2)
@@ -8972,6 +8975,9 @@ packages:
   rc9@2.1.2:
     resolution: {integrity: sha512-btXCnMmRIBINM2LDZoEmOogIZU7Qe7zn4BpomSKZ/ykbLObuBdvG+mFq11DL6fjH1DRwHhrlgtYWG96bJiC7Cg==}
 
+  react-devtools-core@7.0.1:
+    resolution: {integrity: sha512-C3yNvRHaizlpiASzy7b9vbnBGLrhvdhl1CbdU6EnZgxPNbai60szdLtl+VL76UNOt5bOoVTOz5rNWZxgGt+Gsw==}
+
   react-dom@18.3.1:
     resolution: {integrity: sha512-5m4nQKp+rZRb09LNH59GM4BxTh9251/ylbKIbpe7TpGxfJ+9kv6BLkLBXIjjspbgbnIBNqlI23tRnTWT0snUIw==}
     peerDependencies:
@@ -9416,6 +9422,10 @@ packages:
   shebang-regex@3.0.0:
     resolution: {integrity: sha512-7++dFhtcx3353uBaq8DDR4NuxBetBzC7ZQOhmTQInHEd6bSrXdiEyzCvG07Z44UYdLShWUyXt5M/yhz8ekcb1A==}
     engines: {node: '>=8'}
+
+  shell-quote@1.8.3:
+    resolution: {integrity: sha512-ObmnIF4hXNg1BqhnHmgbDETF8dLPCggZWBjkQfhZpbszZnYur5DUljTcCHii5LC3J5E0yeO/1LIMyH+UvHQgyw==}
+    engines: {node: '>= 0.4'}
 
   shelljs.exec@1.1.8:
     resolution: {integrity: sha512-vFILCw+lzUtiwBAHV8/Ex8JsFjelFMdhONIsgKNLgTzeRckp2AOYRQtHJE/9LhNvdMmE27AGtzWx0+DHpwIwSw==}
@@ -12165,13 +12175,13 @@ snapshots:
   '@img/sharp-win32-x64@0.34.5':
     optional: true
 
-  '@inkjs/ui@2.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10))':
+  '@inkjs/ui@2.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10))':
     dependencies:
       chalk: 5.6.2
       cli-spinners: 3.4.0
       deepmerge: 4.3.1
       figures: 6.1.0
-      ink: 6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10)
+      ink: 6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10)
 
   '@inquirer/ansi@2.0.4': {}
 
@@ -19260,17 +19270,17 @@ snapshots:
 
   inherits@2.0.4: {}
 
-  ink-spinner@5.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10))(react@19.2.4):
+  ink-spinner@5.0.0(ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10))(react@19.2.4):
     dependencies:
       cli-spinners: 2.9.2
-      ink: 6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10)
+      ink: 6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10)
       react: 19.2.4
 
   ink-testing-library@4.0.0(@types/react@19.2.14):
     optionalDependencies:
       '@types/react': 19.2.14
 
-  ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react@19.2.4)(utf-8-validate@5.0.10):
+  ink@6.8.0(@types/react@19.2.14)(bufferutil@4.1.0)(react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10))(react@19.2.4)(utf-8-validate@5.0.10):
     dependencies:
       '@alcalzone/ansi-tokenize': 0.2.5
       ansi-escapes: 7.3.0
@@ -19300,6 +19310,7 @@ snapshots:
       yoga-layout: 3.2.1
     optionalDependencies:
       '@types/react': 19.2.14
+      react-devtools-core: 7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10)
     transitivePeerDependencies:
       - bufferutil
       - utf-8-validate
@@ -21485,6 +21496,14 @@ snapshots:
       defu: 6.1.4
       destr: 2.0.5
 
+  react-devtools-core@7.0.1(bufferutil@4.1.0)(utf-8-validate@5.0.10):
+    dependencies:
+      shell-quote: 1.8.3
+      ws: 7.5.10(bufferutil@4.1.0)(utf-8-validate@5.0.10)
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
   react-dom@18.3.1(react@18.3.1):
     dependencies:
       loose-envify: 1.4.0
@@ -21943,7 +21962,7 @@ snapshots:
       '@types/uuid': 8.3.4
       '@types/ws': 8.18.1
       buffer: 6.0.3
-      eventemitter3: 5.0.1
+      eventemitter3: 5.0.4
       uuid: 8.3.2
       ws: 8.19.0(bufferutil@4.1.0)(utf-8-validate@5.0.10)
     optionalDependencies:
@@ -22123,6 +22142,8 @@ snapshots:
   shebang-regex@1.0.0: {}
 
   shebang-regex@3.0.0: {}
+
+  shell-quote@1.8.3: {}
 
   shelljs.exec@1.1.8: {}
 

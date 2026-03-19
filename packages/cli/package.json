@@ -12,7 +12,14 @@
   "scripts": {
     "build": "tsup",
     "zora": "tsx src/index.tsx",
-    "test": "vitest run"
+    "test": "vitest run",
+    "build:binary": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora",
+    "build:binary:all": "pnpm run build:binary:mac-arm64 && pnpm run build:binary:mac-x64 && pnpm run build:binary:linux-x64 && pnpm run build:binary:linux-arm64 && pnpm run build:binary:windows-x64",
+    "build:binary:mac-arm64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-darwin-arm64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-darwin-arm64",
+    "build:binary:mac-x64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-darwin-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-darwin-x64",
+    "build:binary:linux-x64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-linux-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-linux-x64",
+    "build:binary:linux-arm64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-linux-arm64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-linux-arm64",
+    "build:binary:windows-x64": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --target=bun-windows-x64 --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora-windows-x64.exe"
   },
   "dependencies": {
     "@inkjs/ui": "^2.0.0",
@@ -32,6 +39,7 @@
     "@types/node": "^22.13.0",
     "@types/react": "^19.2.14",
     "ink-testing-library": "^4.0.0",
+    "react-devtools-core": "^7.0.1",
     "tsup": "^8.4.0",
     "tsx": "^4.21.0",
     "typescript": "^5.7.0",

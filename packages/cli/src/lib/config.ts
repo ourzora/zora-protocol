@@ -6,9 +6,19 @@ import {
   chmodSync,
 } from "node:fs";
 import { join } from "node:path";
-import { homedir } from "node:os";
+import { homedir, platform } from "node:os";
 
-const CONFIG_DIR = join(homedir(), ".config", "zora");
+function getConfigDir(): string {
+  if (platform() === "win32") {
+    return join(
+      process.env.APPDATA ?? join(homedir(), "AppData", "Roaming"),
+      "zora",
+    );
+  }
+  return join(homedir(), ".config", "zora");
+}
+
+const CONFIG_DIR = getConfigDir();
 const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 const WALLET_FILE = join(CONFIG_DIR, "wallet.json");
@@ -67,16 +77,21 @@ function readConfig(): Config {
   return parsed as Config;
 }
 
+const IS_WINDOWS = platform() === "win32";
+
+function writeSecure(filePath: string, data: string): void {
+  writeFileSync(filePath, data, IS_WINDOWS ? {} : { mode: 0o600 });
+  if (!IS_WINDOWS) {
+    chmodSync(filePath, 0o600);
+  }
+}
+
 function writeConfig(config: Config): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(
+  writeSecure(
     CONFIG_FILE,
     JSON.stringify({ ...config, version: CONFIG_VERSION }, null, 2) + "\n",
-    {
-      mode: 0o600,
-    },
   );
-  chmodSync(CONFIG_FILE, 0o600);
 }
 
 function readWallet(): Wallet | undefined {
@@ -97,14 +112,10 @@ function readWallet(): Wallet | undefined {
 
 function writeWallet(wallet: Omit<Wallet, "version">): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(
+  writeSecure(
     WALLET_FILE,
     JSON.stringify({ ...wallet, version: WALLET_VERSION }, null, 2) + "\n",
-    {
-      mode: 0o600,
-    },
   );
-  chmodSync(WALLET_FILE, 0o600);
 }
 
 /** Returns the env-var key if set (errors on empty), or undefined if unset. */

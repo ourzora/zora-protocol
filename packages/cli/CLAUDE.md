@@ -72,6 +72,30 @@ packages/cli/
 └── .npmrc                    # reporter=silent (suppresses pnpm script banners)
 ```
 
+## Building a standalone binary
+
+Build a self-contained executable (no Node.js required) using `bun build --compile`:
+
+```bash
+cd packages/cli
+pnpm run build:binary         # build for current platform → ./bin/zora
+./bin/zora --help              # run it
+./bin/zora explore --limit 5   # works like the dev version
+```
+
+Cross-compile for other platforms:
+
+```bash
+pnpm run build:binary:all       # builds all three targets below
+pnpm run build:binary:mac-arm64 # → ./bin/zora-darwin-arm64
+pnpm run build:binary:mac-x64   # → ./bin/zora-darwin-x64
+pnpm run build:binary:linux-x64 # → ./bin/zora-linux-x64
+```
+
+The binary is ~61MB (includes the Bun runtime), fully self-contained, and can be shared directly — recipients just download and run it. The `bin/` directory is gitignored.
+
+Requires `bun` to be installed (`npm install -g bun`).
+
 ## Key decisions
 
 - **commander** over oclif/yargs — lightweight, auto-generates help, widely used
