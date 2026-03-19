@@ -124,9 +124,11 @@ describe("buy command", () => {
     const optionNames = buyCommand.options.map((option) => option.long);
 
     expect(optionNames).toContain("--eth");
+    expect(optionNames).toContain("--usd");
+    expect(optionNames).toContain("--token");
+    expect(optionNames).toContain("--debug");
     expect(optionNames).toContain("--percent");
     expect(optionNames).toContain("--all");
-    expect(optionNames).not.toContain("--usd");
     expect(optionNames).not.toContain("--amount");
   });
 
@@ -135,7 +137,7 @@ describe("buy command", () => {
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining(
-        "Specify one amount flag: --eth, --percent, or --all",
+        "Specify one amount flag: --eth, --usd, --percent, or --all",
       ),
     );
   });
@@ -155,10 +157,12 @@ describe("buy command", () => {
       .spyOn(process.stderr, "write")
       .mockImplementation(() => true);
 
-    await expect(runBuy([COIN_ADDRESS, "--usd", "10"])).rejects.toThrow();
+    await expect(
+      runBuy([COIN_ADDRESS, "--from", "something"]),
+    ).rejects.toThrow();
 
     expect(stderrSpy).toHaveBeenCalledWith(
-      expect.stringContaining("unknown option '--usd'"),
+      expect.stringContaining("unknown option '--from'"),
     );
 
     stderrSpy.mockRestore();

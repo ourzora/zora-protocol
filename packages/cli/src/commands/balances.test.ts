@@ -39,10 +39,10 @@ import { privateKeyToAccount } from "viem/accounts";
 import { renderOnce } from "../lib/render.js";
 import { createPublicClient } from "viem";
 
-type TokenInfoQuery = { query: { address: string; chainId?: number } };
+type TokenInfoQuery = { address: string; chainId?: number };
 
-const tokenInfoImpl = ({ query }: TokenInfoQuery) => {
-  if (query.address === "0x4200000000000000000000000000000000000006") {
+const tokenInfoImpl = ({ address }: TokenInfoQuery) => {
+  if (address === "0x4200000000000000000000000000000000000006") {
     return Promise.resolve({
       data: {
         erc20Token: {
@@ -56,7 +56,7 @@ const tokenInfoImpl = ({ query }: TokenInfoQuery) => {
       },
     });
   }
-  if (query.address === "0x1111111111166b7FE7bd91427724B487980aFc69") {
+  if (address === "0x1111111111166b7FE7bd91427724B487980aFc69") {
     return Promise.resolve({
       data: {
         erc20Token: {

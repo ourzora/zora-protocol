@@ -72,12 +72,12 @@ const TRACKED_TOKENS: TokenConfig[] = [
   },
 ];
 
-const fetchTokenPriceUsd = async (
+export const fetchTokenPriceUsd = async (
   address: string,
   chainId = BASE_CHAIN_ID,
 ): Promise<number | null> => {
   try {
-    const res = await getTokenInfo({ query: { address, chainId } });
+    const res = await getTokenInfo({ address, chainId });
     return res.data?.erc20Token?.currency?.priceUsd
       ? Number(res.data.erc20Token.currency.priceUsd)
       : null;
