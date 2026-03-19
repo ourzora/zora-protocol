@@ -49,14 +49,6 @@ export const getCommand = new Command("get")
 
     const type = opts.type as CoinType | undefined;
 
-    if (type === "trend" && !identifier.startsWith("0x")) {
-      outputErrorAndExit(
-        json,
-        "Trend name lookup is not yet supported.",
-        "Use the coin address: zora get 0x...",
-      );
-    }
-
     if (type === "post" && !identifier.startsWith("0x")) {
       outputErrorAndExit(
         json,

@@ -5,6 +5,7 @@ vi.mock("@zoralabs/coins-sdk", () => ({
   setApiKey: vi.fn(),
   getCoin: vi.fn(),
   getProfile: vi.fn(),
+  getTrend: vi.fn(),
 }));
 
 vi.mock("../lib/config.js", () => ({
@@ -15,7 +16,7 @@ vi.mock("../lib/render.js", () => ({
   renderOnce: vi.fn(),
 }));
 
-import { setApiKey, getCoin, getProfile } from "@zoralabs/coins-sdk";
+import { setApiKey, getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { getCommand } from "./get.jsx";
 
@@ -53,12 +54,45 @@ describe("getCommand", () => {
     );
   });
 
-  it("exits with error for --type trend", async () => {
-    await expect(parseJson("geese", "--type", "trend")).rejects.toThrow(
+  it("resolves trend by ticker with --type trend", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: {
+        trendCoin: {
+          name: "Geese",
+          address: "0xgeese",
+          coinType: "TREND",
+          marketCap: "500000",
+          marketCapDelta24h: "50000",
+          volume24h: "120000",
+          uniqueHolders: 3200,
+          createdAt: "2026-03-10T10:00:00Z",
+        },
+      },
+    } as any);
+
+    await parseJson("geese", "--type", "trend");
+
+    expect(getTrend).toHaveBeenCalledWith({ ticker: "geese" });
+    expect(parsedOutput()).toMatchObject({
+      name: "Geese",
+      address: "0xgeese",
+      coinType: "trend",
+      marketCap: "500000",
+    });
+  });
+
+  it("exits with error when trend ticker is not found", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: { trendCoin: null },
+    } as any);
+
+    await expect(parseJson("unknown", "--type", "trend")).rejects.toThrow(
       "exit 1",
     );
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Trend name lookup is not yet supported"),
+      expect.stringContaining("No trend coin found"),
     );
   });
 

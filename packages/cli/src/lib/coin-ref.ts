@@ -1,4 +1,4 @@
-import { getCoin, getProfile } from "@zoralabs/coins-sdk";
+import { getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
 import type { CoinType } from "./types.js";
 
 export type CoinRef =
@@ -58,6 +58,10 @@ export function parseCoinRef(identifier: string, type?: string): CoinRef {
     return { kind: "prefixed", type: "creator-coin", name: identifier };
   }
 
+  if (type === "trend") {
+    return { kind: "prefixed", type: "trend", name: identifier };
+  }
+
   return { kind: "ambiguous", name: identifier };
 }
 
@@ -72,6 +76,21 @@ async function resolveByAddress(address: string): Promise<ResolveCoinResult> {
   }
 
   return { kind: "found", coin: coinFromToken(response.data.zora20Token) };
+}
+
+async function resolveByTrendTicker(
+  ticker: string,
+): Promise<ResolveCoinResult> {
+  const response = await getTrend({ ticker });
+
+  if (response.error || !response.data?.trendCoin) {
+    return {
+      kind: "not-found",
+      message: `No trend coin found with ticker "${ticker}"`,
+    };
+  }
+
+  return { kind: "found", coin: coinFromToken(response.data.trendCoin) };
 }
 
 async function resolveByCreatorName(name: string): Promise<ResolveCoinResult> {
@@ -100,6 +119,9 @@ export async function resolveCoin(ref: CoinRef): Promise<ResolveCoinResult> {
     case "address":
       return resolveByAddress(ref.address);
     case "prefixed":
+      if (ref.type === "trend") {
+        return resolveByTrendTicker(ref.name);
+      }
       return resolveByCreatorName(ref.name);
     case "ambiguous":
       return resolveByCreatorName(ref.name);
