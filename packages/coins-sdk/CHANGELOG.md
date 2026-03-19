@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.4.9
+
+### Patch Changes
+
+- ef523acf: Add new endpoints for trend coins
+
 ## 0.4.8
 
 ### Patch Changes
