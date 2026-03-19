@@ -2,7 +2,7 @@ import { Command } from "commander";
 import { ExitPromptError } from "@inquirer/core";
 import { readFileSync } from "node:fs";
 import { authCommand } from "./commands/auth.js";
-import { balancesCommand } from "./commands/balances.js";
+import { balanceCommand } from "./commands/balance.js";
 import { buyCommand } from "./commands/buy.js";
 import { exploreCommand } from "./commands/explore.jsx";
 import { getCommand } from "./commands/get.jsx";
@@ -30,7 +30,7 @@ const buildProgram = (): Command => {
     .option("--json", "Output as JSON (for scripts and automation)", false);
 
   program.addCommand(authCommand);
-  program.addCommand(balancesCommand);
+  program.addCommand(balanceCommand);
   program.addCommand(buyCommand);
   program.addCommand(exploreCommand);
   program.addCommand(getCommand);

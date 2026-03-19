@@ -200,51 +200,150 @@ const formatBalanceJson = (
   };
 };
 
-export const balancesCommand = new Command("balances")
-  .description("Show coin balances in your wallet")
-  .option("--sort <sort>", `Sort by: ${SORT_OPTIONS}`, "usd-value")
-  .option("--limit <n>", "Number of results (max 20)", "10")
-  .action(async function (this: Command, opts) {
+// --- Shared helpers ---
+
+function resolveContext(json: boolean) {
+  const account = resolveAccount(json);
+
+  const apiKey = getApiKey();
+  if (!apiKey) {
+    outputErrorAndExit(
+      json,
+      "Not authenticated. Run 'zora auth configure' to set your API key.",
+    );
+  }
+  setApiKey(apiKey);
+
+  return account;
+}
+
+function renderWallet(
+  json: boolean,
+  walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>,
+) {
+  outputData(json, {
+    json: { wallet: walletResult.walletBalancesJson },
+    table: () => {
+      renderOnce(
+        TableComponent<WalletBalance>({
+          columns: walletColumns,
+          data: walletResult.walletBalances,
+          title: "Wallet",
+        }),
+      );
+    },
+  });
+}
+
+function renderCoins(
+  json: boolean,
+  balances: BalanceNode[],
+  total: number,
+  sort: SortFlag,
+) {
+  const rankedBalances = balances.map((balance, index) => ({
+    ...balance,
+    rank: index + 1,
+  }));
+
+  outputData(json, {
+    json: {
+      coins: rankedBalances.map((balance) =>
+        formatBalanceJson(balance, balance.rank),
+      ),
+    },
+    table: () => {
+      if (balances.length === 0) {
+        console.log("\n No coin balances found.\n");
+        console.log(" Buy coins to see them here:");
+        console.log("   zora buy <address> --eth 0.001\n");
+      } else {
+        renderOnce(
+          TableComponent<BalanceNode & { rank: number }>({
+            columns: balanceColumns,
+            data: rankedBalances,
+            title: `Coins · sorted by ${SORT_LABELS[sort]}`,
+            subtitle: `${balances.length} of ${total}`,
+          }),
+        );
+      }
+    },
+  });
+}
+
+async function fetchCoins(
+  json: boolean,
+  address: string,
+  sort: SortFlag,
+  limit: number,
+) {
+  let response: Awaited<ReturnType<typeof getProfileBalances>>;
+  try {
+    response = await getProfileBalances({
+      identifier: address,
+      count: limit,
+      sortOption: SORT_MAP[sort],
+    });
+  } catch (err) {
+    outputErrorAndExit(
+      json,
+      `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+  }
+
+  if (response.error) {
+    outputErrorAndExit(
+      json,
+      `API error: ${extractErrorMessage(response.error)}`,
+    );
+  }
+
+  const edges = response.data?.profile?.coinBalances?.edges ?? [];
+  const balances: BalanceNode[] = edges.map(
+    (e: { node: BalanceNode }) => e.node,
+  );
+  const total = response.data?.profile?.coinBalances?.count ?? balances.length;
+
+  return { balances, total };
+}
+
+function validateCoinOpts(json: boolean, sort: string, limitStr: string) {
+  if (!SORT_MAP[sort as SortFlag]) {
+    outputErrorAndExit(
+      json,
+      `Invalid --sort value: ${sort}.`,
+      `Supported: ${SORT_OPTIONS}`,
+    );
+  }
+
+  const limit = parseInt(limitStr, 10);
+  if (isNaN(limit) || limit <= 0 || limit > 20) {
+    outputErrorAndExit(
+      json,
+      `Invalid --limit value: ${limitStr}. Must be an integer between 1 and 20.`,
+    );
+  }
+
+  return { sort: sort as SortFlag, limit };
+}
+
+// --- Commands ---
+
+export const balanceCommand = new Command("balance")
+  .description("Show balances in your wallet")
+  .action(async function (this: Command) {
     const json = getJson(this);
-    const sort = opts.sort as SortFlag;
-    const limit = parseInt(opts.limit, 10);
+    const account = resolveContext(json);
 
-    if (!SORT_MAP[sort]) {
-      outputErrorAndExit(
-        json,
-        `Invalid --sort value: ${sort}.`,
-        `Supported: ${SORT_OPTIONS}`,
-      );
-    }
-
-    if (isNaN(limit) || limit <= 0 || limit > 20) {
-      outputErrorAndExit(
-        json,
-        `Invalid --limit value: ${opts.limit}. Must be an integer between 1 and 20.`,
-      );
-    }
-
-    const account = resolveAccount(json);
-
-    const apiKey = getApiKey();
-    if (!apiKey) {
-      outputErrorAndExit(
-        json,
-        "Not authenticated. Run 'zora auth configure' to set your API key.",
-      );
-    }
-    setApiKey(apiKey);
+    const sort: SortFlag = "usd-value";
+    const limit = 10;
 
     let walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>;
-    let response: Awaited<ReturnType<typeof getProfileBalances>>;
+    let coinsResult: { balances: BalanceNode[]; total: number };
     try {
-      [walletResult, response] = await Promise.all([
+      [walletResult, coinsResult] = await Promise.all([
         fetchWalletBalances(account.address),
-        getProfileBalances({
-          identifier: account.address,
-          count: limit,
-          sortOption: SORT_MAP[sort],
-        }),
+        fetchCoins(json, account.address, sort, limit),
       ]);
     } catch (err) {
       outputErrorAndExit(
@@ -253,20 +352,7 @@ export const balancesCommand = new Command("balances")
       );
     }
 
-    if (response.error) {
-      outputErrorAndExit(
-        json,
-        `API error: ${extractErrorMessage(response.error)}`,
-      );
-    }
-
-    const edges = response.data?.profile?.coinBalances?.edges ?? [];
-    const balances: BalanceNode[] = edges.map(
-      (e: { node: BalanceNode }) => e.node,
-    );
-    const total =
-      response.data?.profile?.coinBalances?.count ?? balances.length;
-    const rankedBalances = balances.map((balance, index) => ({
+    const rankedBalances = coinsResult.balances.map((balance, index) => ({
       ...balance,
       rank: index + 1,
     }));
@@ -287,7 +373,7 @@ export const balancesCommand = new Command("balances")
           }),
         );
 
-        if (balances.length === 0) {
+        if (coinsResult.balances.length === 0) {
           console.log("\n No coin balances found.\n");
           console.log(" Buy coins to see them here:");
           console.log("   zora buy <address> --eth 0.001\n");
@@ -297,10 +383,50 @@ export const balancesCommand = new Command("balances")
               columns: balanceColumns,
               data: rankedBalances,
               title: `Coins · sorted by ${SORT_LABELS[sort]}`,
-              subtitle: `${balances.length} of ${total}`,
+              subtitle: `${coinsResult.balances.length} of ${coinsResult.total}`,
             }),
           );
         }
       },
     });
+  });
+
+balanceCommand
+  .command("spendable")
+  .description("Show wallet token balances (ETH, USDC, ZORA)")
+  .action(async function (this: Command) {
+    const json = getJson(this);
+    const account = resolveContext(json);
+
+    let walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>;
+    try {
+      walletResult = await fetchWalletBalances(account.address);
+    } catch (err) {
+      outputErrorAndExit(
+        json,
+        `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
+    }
+
+    renderWallet(json, walletResult);
+  });
+
+balanceCommand
+  .command("coins")
+  .description("Show coin positions")
+  .option("--sort <sort>", `Sort by: ${SORT_OPTIONS}`, "usd-value")
+  .option("--limit <n>", "Number of results (max 20)", "10")
+  .action(async function (this: Command, opts) {
+    const json = getJson(this);
+    const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
+    const account = resolveContext(json);
+
+    const { balances, total } = await fetchCoins(
+      json,
+      account.address,
+      sort,
+      limit,
+    );
+
+    renderCoins(json, balances, total, sort);
   });

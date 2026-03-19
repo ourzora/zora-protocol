@@ -77,6 +77,43 @@ function setupTokenInfoMock() {
   vi.mocked(getTokenInfo).mockImplementation(tokenInfoImpl as never);
 }
 
+const coinBalancesPayload = {
+  data: {
+    profile: {
+      coinBalances: {
+        count: 1,
+        edges: [
+          {
+            node: {
+              balance: "12340000000000000000",
+              coin: {
+                address: "0x123",
+                name: "Test Coin",
+                symbol: "TEST",
+                coinType: "CONTENT",
+                chainId: 8453,
+                marketCap: "1000000",
+                marketCapDelta24h: "10000",
+                volume24h: "1200",
+                totalVolume: "5000",
+                tokenPrice: { priceInUsdc: "1.5" },
+                creatorProfile: { handle: "alice" },
+                mediaContent: {
+                  previewImage: { medium: "https://example.com/image.jpg" },
+                },
+              },
+            },
+          },
+        ],
+      },
+    },
+  },
+};
+
+const emptyCoinsPayload = {
+  data: { profile: { coinBalances: { count: 0, edges: [] } } },
+};
+
 describe("balances formatting", () => {
   it("converts raw balance to human-readable", () => {
     expect(toHumanBalance("1000000000000000000")).toBe(1);
@@ -157,7 +194,7 @@ describe("balances formatting", () => {
   });
 });
 
-describe("balances command", () => {
+describe("balance command", () => {
   let logSpy: ReturnType<typeof vi.spyOn>;
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let exitSpy: ReturnType<typeof vi.spyOn>;
@@ -183,10 +220,10 @@ describe("balances command", () => {
     delete process.env.ZORA_PRIVATE_KEY;
   });
 
-  async function runBalances(args: string[] = []) {
-    const { balancesCommand } = await import("./balances.js");
-    const program = createProgram(balancesCommand);
-    await program.parseAsync(["balances", ...args], { from: "user" });
+  async function runBalance(args: string[] = []) {
+    const { balanceCommand } = await import("./balance.js");
+    const program = createProgram(balanceCommand);
+    await program.parseAsync(["balance", ...args], { from: "user" });
   }
 
   it("is wired into the root CLI program", async () => {
@@ -194,72 +231,34 @@ describe("balances command", () => {
     const program = buildProgram();
 
     expect(program.commands.map((command) => command.name())).toContain(
-      "balances",
-    );
-  });
-
-  it("exits with error for invalid sort", async () => {
-    await expect(runBalances(["--sort", "invalid"])).rejects.toThrow(
-      "process.exit(1)",
-    );
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid --sort value"),
-    );
-  });
-
-  it("exits with error for invalid limit", async () => {
-    await expect(runBalances(["--limit", "25"])).rejects.toThrow(
-      "process.exit(1)",
-    );
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid --limit value"),
+      "balance",
     );
   });
 
   it("exits with error when no API key is configured", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined);
 
-    await expect(runBalances()).rejects.toThrow("process.exit(1)");
+    await expect(runBalance()).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Not authenticated"),
     );
   });
 
-  it("outputs JSON with wallet and coins sections", async () => {
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: {
-        profile: {
-          coinBalances: {
-            count: 1,
-            edges: [
-              {
-                node: {
-                  balance: "12340000000000000000",
-                  coin: {
-                    address: "0x123",
-                    name: "Test Coin",
-                    symbol: "TEST",
-                    coinType: "CONTENT",
-                    chainId: 8453,
-                    marketCap: "1000000",
-                    marketCapDelta24h: "10000",
-                    volume24h: "1200",
-                    totalVolume: "5000",
-                    tokenPrice: { priceInUsdc: "1.5" },
-                    creatorProfile: { handle: "alice" },
-                    mediaContent: {
-                      previewImage: { medium: "https://example.com/image.jpg" },
-                    },
-                  },
-                },
-              },
-            ],
-          },
-        },
-      },
-    } as never);
+  it("exits with error when no wallet is configured", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(undefined);
 
-    await runBalances(["--json"]);
+    await expect(runBalance()).rejects.toThrow("process.exit(1)");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No wallet configured"),
+    );
+  });
+
+  it("outputs JSON with wallet and coins sections", async () => {
+    vi.mocked(getProfileBalances).mockResolvedValue(
+      coinBalancesPayload as never,
+    );
+
+    await runBalance(["--json"]);
 
     expect(logSpy).toHaveBeenCalledTimes(1);
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
@@ -317,7 +316,7 @@ describe("balances command", () => {
       },
     } as never);
 
-    await runBalances();
+    await runBalance();
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
     // Two renderOnce calls: one for Wallet section, one for Coins section
@@ -350,7 +349,7 @@ describe("balances command", () => {
       },
     } as never);
 
-    await runBalances(["--json"]);
+    await runBalance(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(output.coins[0].balance).toBe("3944403.815517124397199482");
@@ -376,7 +375,7 @@ describe("balances command", () => {
       },
     } as never);
 
-    await runBalances(["--json"]);
+    await runBalance(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(output.coins[0].name).toBeNull();
@@ -387,40 +386,13 @@ describe("balances command", () => {
     expect(output.coins[0].marketCapChange24h).toBeNull();
   });
 
-  it("exits with error for zero or negative limit", async () => {
-    await expect(runBalances(["--limit", "0"])).rejects.toThrow(
-      "process.exit(1)",
-    );
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid --limit value"),
-    );
-  });
-
-  it("exits with error for non-numeric limit", async () => {
-    await expect(runBalances(["--limit", "abc"])).rejects.toThrow(
-      "process.exit(1)",
-    );
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid --limit value"),
-    );
-  });
-
-  it("exits with error when no wallet is configured", async () => {
-    vi.mocked(getPrivateKey).mockReturnValue(undefined);
-
-    await expect(runBalances()).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("No wallet configured"),
-    );
-  });
-
   it("exits with error when API returns an error response", async () => {
     vi.mocked(getProfileBalances).mockResolvedValue({
       error: { error: "Unauthorized" },
       data: null,
     } as never);
 
-    await expect(runBalances()).rejects.toThrow("process.exit(1)");
+    await expect(runBalance()).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("API error"));
   });
 
@@ -429,7 +401,7 @@ describe("balances command", () => {
       new Error("Network failure"),
     );
 
-    await expect(runBalances()).rejects.toThrow("process.exit(1)");
+    await expect(runBalance()).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Request failed: Network failure"),
     );
@@ -442,28 +414,17 @@ describe("balances command", () => {
       address: "0x1234567890abcdef1234567890abcdef12345678",
     } as never);
 
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: { profile: { coinBalances: { count: 0, edges: [] } } },
-    } as never);
+    vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalances();
+    await runBalance();
 
     expect(privateKeyToAccount).toHaveBeenCalledWith("0x" + "b".repeat(64));
   });
 
   it("shows the empty-state hint when there are no coin balances", async () => {
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: {
-        profile: {
-          coinBalances: {
-            count: 0,
-            edges: [],
-          },
-        },
-      },
-    } as never);
+    vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalances();
+    await runBalance();
 
     const output = logSpy.mock.calls.map((call) => call[0]).join("\n");
     expect(output).toContain("No coin balances found");
@@ -471,11 +432,9 @@ describe("balances command", () => {
   });
 
   it("wallet JSON includes ETH price from tokenInfo", async () => {
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: { profile: { coinBalances: { count: 0, edges: [] } } },
-    } as never);
+    vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalances(["--json"]);
+    await runBalance(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     const eth = output.wallet.find(
@@ -487,11 +446,9 @@ describe("balances command", () => {
   });
 
   it("wallet JSON includes USDC with price of 1", async () => {
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: { profile: { coinBalances: { count: 0, edges: [] } } },
-    } as never);
+    vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalances(["--json"]);
+    await runBalance(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     const usdc = output.wallet.find(
@@ -510,11 +467,9 @@ describe("balances command", () => {
       ]),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: { profile: { coinBalances: { count: 0, edges: [] } } },
-    } as never);
+    vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalances(["--json"]);
+    await runBalance(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     expect(output.wallet).toHaveLength(1);
@@ -525,11 +480,9 @@ describe("balances command", () => {
     vi.mocked(getTokenInfo).mockRejectedValue(new Error("API down"));
     const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
 
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: { profile: { coinBalances: { count: 0, edges: [] } } },
-    } as never);
+    vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalances(["--json"]);
+    await runBalance(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
     const eth = output.wallet.find(
@@ -553,11 +506,9 @@ describe("balances command", () => {
       ]),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: { profile: { coinBalances: { count: 0, edges: [] } } },
-    } as never);
+    vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalances(["--json"]);
+    await runBalance(["--json"]);
 
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("failed to fetch balance for USDC"),
@@ -571,15 +522,110 @@ describe("balances command", () => {
     warnSpy.mockRestore();
   });
 
-  it("passes sortOption to getProfileBalances for --sort balance", async () => {
-    vi.mocked(getProfileBalances).mockResolvedValue({
-      data: { profile: { coinBalances: { count: 0, edges: [] } } },
-    } as never);
+  describe("spendable subcommand", () => {
+    it("returns only wallet data in JSON", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        emptyCoinsPayload as never,
+      );
 
-    await runBalances(["--sort", "balance", "--json"]);
+      await runBalance(["spendable", "--json"]);
 
-    expect(getProfileBalances).toHaveBeenCalledWith(
-      expect.objectContaining({ sortOption: "BALANCE" }),
-    );
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+      expect(output.wallet).toBeDefined();
+      expect(output.coins).toBeUndefined();
+    });
+
+    it("does not call getProfileBalances", async () => {
+      await runBalance(["spendable", "--json"]);
+
+      expect(getProfileBalances).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("coins subcommand", () => {
+    it("returns only coins data in JSON", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        coinBalancesPayload as never,
+      );
+
+      await runBalance(["coins", "--json"]);
+
+      expect(logSpy).toHaveBeenCalledTimes(1);
+      const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+      expect(output.coins).toBeDefined();
+      expect(output.wallet).toBeUndefined();
+    });
+
+    it("passes sortOption to getProfileBalances for --sort balance", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        emptyCoinsPayload as never,
+      );
+
+      await runBalance(["coins", "--sort", "balance", "--json"]);
+
+      expect(getProfileBalances).toHaveBeenCalledWith(
+        expect.objectContaining({ sortOption: "BALANCE" }),
+      );
+    });
+
+    it("exits with error for invalid sort", async () => {
+      await expect(runBalance(["coins", "--sort", "invalid"])).rejects.toThrow(
+        "process.exit(1)",
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --sort value"),
+      );
+    });
+
+    it("exits with error for invalid limit", async () => {
+      await expect(runBalance(["coins", "--limit", "25"])).rejects.toThrow(
+        "process.exit(1)",
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --limit value"),
+      );
+    });
+
+    it("exits with error for zero or negative limit", async () => {
+      await expect(runBalance(["coins", "--limit", "0"])).rejects.toThrow(
+        "process.exit(1)",
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --limit value"),
+      );
+    });
+
+    it("exits with error for non-numeric limit", async () => {
+      await expect(runBalance(["coins", "--limit", "abc"])).rejects.toThrow(
+        "process.exit(1)",
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --limit value"),
+      );
+    });
+
+    it("exits with error when API returns an error response", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue({
+        error: { error: "Unauthorized" },
+        data: null,
+      } as never);
+
+      await expect(runBalance(["coins"])).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("API error"),
+      );
+    });
+
+    it("exits with error when request throws", async () => {
+      vi.mocked(getProfileBalances).mockRejectedValue(
+        new Error("Network failure"),
+      );
+
+      await expect(runBalance(["coins"])).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Request failed: Network failure"),
+      );
+    });
   });
 });
