@@ -1,5 +1,14 @@
 # @zoralabs/coins-sdk
 
+## 0.5.0
+
+### Minor Changes
+
+- e174b53f: Add `getTrend` and `getTrends` for looking up trend coins
+  - `getTrend({ ticker })` — look up a single trend coin by ticker (case-insensitive, server-side)
+  - `getTrends({ name })` — search trend coins by name with pagination
+  - Also exports `TrendCoinResponse` and `TrendsByNameResponse` types for consumers
+
 ## 0.4.9
 
 ### Patch Changes

@@ -1,5 +1,12 @@
 # @zoralabs/cli
 
+## 0.2.1
+
+### Patch Changes
+
+- Updated dependencies [e174b53f]
+  - @zoralabs/coins-sdk@0.5.0
+
 ## 0.2.0
 
 ### Patch Changes
