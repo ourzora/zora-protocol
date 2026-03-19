@@ -662,9 +662,6 @@ importers:
       '@vanilla-extract/css':
         specifier: ^1.15.3
         version: 1.18.0
-      '@zoralabs/coins-sdk':
-        specifier: workspace:*
-        version: link:../packages/coins-sdk
       '@zoralabs/protocol-deployments':
         specifier: workspace:*
         version: link:../packages/protocol-deployments
