@@ -1,0 +1,43 @@
+{
+  "name": "@zoralabs/cli",
+  "version": "0.2.0-cli-dev.0",
+  "description": "Zora CLI tool",
+  "type": "module",
+  "bin": {
+    "zora": "./dist/index.js"
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "zora": "tsx src/index.tsx",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@inkjs/ui": "^2.0.0",
+    "@inquirer/confirm": "^6.0.8",
+    "@inquirer/core": "^11.1.5",
+    "@inquirer/password": "^5.0.8",
+    "@inquirer/select": "^5.1.0",
+    "@zoralabs/coins-sdk": "^0.4.7",
+    "commander": "^13.1.0",
+    "date-fns": "^4.1.0",
+    "ink": "^6.8.0",
+    "ink-spinner": "^5.0.0",
+    "react": "^19.2.4",
+    "viem": "2.22.12"
+  },
+  "devDependencies": {
+    "@types/node": "^22.13.0",
+    "@types/react": "^19.2.14",
+    "ink-testing-library": "^4.0.0",
+    "tsup": "^8.4.0",
+    "tsx": "^4.21.0",
+    "typescript": "^5.7.0",
+    "vitest": "^4.0.18"
+  },
+  "engines": {
+    "node": ">=24"
+  }
+}
