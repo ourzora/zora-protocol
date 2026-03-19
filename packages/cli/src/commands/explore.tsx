@@ -25,6 +25,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputData } from "../lib/output.js";
+import { styledText } from "../lib/format.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
@@ -121,8 +122,13 @@ const changeColor = (row: CoinNode): string | undefined => {
 
 const SORT_OPTIONS = Object.keys(SORT_LABELS).join(", ");
 
+const rankColumn: Column<CoinNode & { rank: number }> = {
+  header: "#",
+  width: 5,
+  accessor: (r) => String(r.rank),
+};
+
 const exploreColumns: Column<CoinNode & { rank: number }>[] = [
-  { header: "#", width: 5, accessor: (r) => String(r.rank) },
   { header: "Name", width: 27, accessor: (r) => r.name ?? "Unknown" },
   { header: "Address", width: 44, accessor: (r) => r.address ?? "" },
   {
@@ -157,11 +163,13 @@ export const exploreCommand = new Command("explore")
     "post",
   )
   .option("--limit <n>", "Number of results (max 20)", "10")
+  .option("--after <cursor>", "Pagination cursor from a previous result")
   .action(async function (this: Command, opts) {
     const json = getJson(this);
     const sort = opts.sort as SortOption;
     const type = opts.type as TypeOption;
     const limit = parseInt(opts.limit, 10);
+    const after: string | undefined = opts.after;
 
     if (isNaN(limit) || limit <= 0 || limit > 20) {
       outputErrorAndExit(
@@ -196,7 +204,7 @@ export const exploreCommand = new Command("explore")
     const queryFn = QUERY_MAP[sort][type]!;
     let response: Awaited<ReturnType<SdkQueryFn>>;
     try {
-      response = await queryFn({ count: limit });
+      response = await queryFn({ count: limit, after });
     } catch (err) {
       outputErrorAndExit(
         json,
@@ -214,10 +222,13 @@ export const exploreCommand = new Command("explore")
 
     const edges = response.data?.exploreList?.edges ?? [];
     const coins: CoinNode[] = edges.map((e: any) => e.node);
+    const pageInfo = response.data?.exploreList?.pageInfo as
+      | { endCursor?: string; hasNextPage: boolean }
+      | undefined;
 
     if (coins.length === 0) {
       outputData(json, {
-        json: [],
+        json: { coins: [], pageInfo: pageInfo ?? null },
         table: () => {
           renderOnce(
             <Box flexDirection="column" paddingLeft={1} marginTop={1}>
@@ -237,6 +248,7 @@ export const exploreCommand = new Command("explore")
     }
 
     const rankedCoins = coins.map((c, i) => ({ ...c, rank: i + 1 }));
+    const columns = after ? exploreColumns : [rankColumn, ...exploreColumns];
     const title =
       type !== "all"
         ? `${SORT_LABELS[sort]} \u00b7 ${TYPE_LABELS[type]}`
@@ -244,16 +256,23 @@ export const exploreCommand = new Command("explore")
     const subtitle = `${coins.length} result${coins.length !== 1 ? "s" : ""}`;
 
     outputData(json, {
-      json: coins,
+      json: { coins, pageInfo: pageInfo ?? null },
       table: () => {
         renderOnce(
           <TableComponent
-            columns={exploreColumns}
+            columns={columns}
             data={rankedCoins}
             title={title}
             subtitle={subtitle}
           />,
         );
+        // Use console.log instead of Ink here — Ink wraps text to terminal width,
+        // which breaks long cursor strings across lines and prevents copy-paste.
+        if (pageInfo?.hasNextPage && pageInfo.endCursor) {
+          console.log(
+            `\n ${styledText(`Next page: zora explore --sort ${sort} --type ${type} --limit ${limit} --after ${pageInfo.endCursor}`, "dim")}`,
+          );
+        }
       },
     });
   });

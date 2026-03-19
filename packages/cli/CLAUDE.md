@@ -25,7 +25,6 @@ pnpm zora auth configure  # set API key
 pnpm zora auth status  # check auth
 pnpm zora --help       # show help
 pnpm zora --version    # show version
-pnpm dev              # watch mode (rebuilds on change)
 pnpm test             # run unit tests
 pnpm build            # production build to dist/
 ```
@@ -37,17 +36,20 @@ Note: `pnpm zora` uses tsx — pass args directly (no `--` needed).
 ```
 packages/cli/
 ├── src/
-│   ├── index.ts              # entry point, registers commands
+│   ├── index.tsx             # entry point, registers commands
 │   ├── commands/
 │   │   ├── auth.ts           # auth configure/status commands
+│   │   ├── balances.ts       # balances command (view wallet token balances)
 │   │   ├── buy.ts            # buy command (trade ETH for coins)
 │   │   ├── explore.tsx       # explore command (browse coins, uses JSX for table rendering)
 │   │   ├── get.tsx           # get command (look up single coin)
+│   │   ├── sell.ts           # sell command (trade coins for ETH)
 │   │   ├── setup.ts          # wallet setup (generate or import private key)
 │   │   └── wallet.ts         # wallet info command
 │   ├── components/
 │   │   ├── CoinDetail.tsx    # Ink component: single coin detail view (get command)
-│   │   ├── ExploreView.tsx   # Ink component: loading → table → exit lifecycle
+│   │   ├── ExploreView.tsx   # Ink component: loading → table → onComplete lifecycle
+│   │   ├── Zorb.tsx          # Ink component: renders zorb pixel art
 │   │   └── table.tsx         # reusable generic typed Ink table component
 │   ├── lib/
 │   │   ├── coin-ref.ts       # coin resolution: parseCoinRef, resolveCoin
@@ -56,8 +58,10 @@ packages/cli/
 │   │   ├── mask-key.ts       # redact API keys for display
 │   │   ├── output.ts         # unified output helpers (outputJson, outputErrorAndExit, outputData)
 │   │   ├── prompt.ts         # prompt wrappers respecting --yes for non-interactive usage
-│   │   ├── render.tsx        # thin Ink renderOnce wrapper
-│   │   └── types.ts          # shared types (CoinType, SortOption, TypeOption, CoinNode)
+│   │   ├── render.tsx        # thin Ink renderToString wrapper
+│   │   ├── strings.ts        # string utilities
+│   │   ├── types.ts          # shared types (CoinType, SortOption, TypeOption, CoinNode)
+│   │   └── zorb-pixels.ts    # zorb pixel art generation
 │   └── test/
 │       ├── create-program.ts # test helper for optsWithGlobals()
 │       └── setup.ts          # vitest global setup (temp homedir, module reset)
@@ -97,7 +101,7 @@ packages/cli/
 
 ## Explore command
 
-- `zora explore` — browse coins with `--sort` (mcap, volume, new, gainers, last-traded, last-traded-unique, trending, featured), `--type` (all, trend, creator-coin, post), `--limit`, `--json`
+- `zora explore` — browse coins with `--sort` (mcap, volume, new, gainers, last-traded, last-traded-unique, trending, featured), `--type` (all, trend, creator-coin, post), `--limit`, `--after`, `--json`
 - Defaults: `--sort mcap --type post` (most valuable posts)
 - `--sort volume` is 24-hour volume, not all-time
 - Not all sort/type combos are available — the CLI will error with supported types if you pick an invalid combo
@@ -107,8 +111,17 @@ packages/cli/
 - `--limit` is validated client-side (1–20) because the server caps at 20
 - `--json` is a boolean flag — present means JSON output, absent means table (default)
 - **Table output uses Ink** — `explore.tsx` uses JSX with `renderOnce` to render a `TableComponent` inline for table output
-- `ExploreView` shows a spinner while fetching, then renders a `TableComponent`, then calls `unmount()` to exit
+- `ExploreView` shows a spinner while fetching, then renders a `TableComponent`, then calls `onComplete` callback to exit
 - Pure formatting functions (`formatCompactCurrency`, `formatChange`) live in `explore.tsx`; `formatMcapChange` in `lib/format.ts` returns `{ text, color }` for declarative Ink rendering
+
+### Pagination
+
+- `--after <cursor>` accepts a cursor string from a previous response to fetch the next page
+- The API uses cursor-based pagination: each response includes `pageInfo.endCursor` and `pageInfo.hasNextPage`
+- **JSON mode:** output is `{ coins, pageInfo }` where `pageInfo` contains `endCursor` and `hasNextPage` (or `null` if not present)
+- **Table mode:** when `hasNextPage` is true, a dimmed "Next page" hint is printed after the table with the full command to copy-paste
+- The "Next page" hint uses `console.log` (not Ink) to avoid line wrapping — long cursor strings would wrap inside Ink's `<Text>` and break copy-paste
+- SDK functions already support `after` via `QueryRequestType` — the CLI just passes it through
 
 ### Supported sort/type combinations
 

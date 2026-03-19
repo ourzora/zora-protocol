@@ -192,7 +192,10 @@ describe("exploreCommand action", () => {
     await program.parseAsync(["explore"], { from: "user" });
 
     expect(setApiKey).not.toHaveBeenCalled();
-    expect(getCoinsMostValuable).toHaveBeenCalledWith({ count: 10 });
+    expect(getCoinsMostValuable).toHaveBeenCalledWith({
+      count: 10,
+      after: undefined,
+    });
     expect(exitSpy).not.toHaveBeenCalled();
   });
 
@@ -221,11 +224,17 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await program.parseAsync(["explore", "--json"], { from: "user" });
 
-    expect(getCoinsMostValuable).toHaveBeenCalledWith({ count: 10 });
+    expect(getCoinsMostValuable).toHaveBeenCalledWith({
+      count: 10,
+      after: undefined,
+    });
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
-    expect(output).toContain("TestCoin");
-    expect(output).toContain("0x1234");
+    const parsed = JSON.parse(output);
+    expect(parsed.coins).toHaveLength(1);
+    expect(parsed.coins[0].name).toBe("TestCoin");
+    expect(parsed.coins[0].address).toBe("0x1234");
+    expect(parsed.pageInfo).toBeNull();
     expect(exitSpy).not.toHaveBeenCalled();
     expect(errorSpy).not.toHaveBeenCalled();
   });
@@ -262,7 +271,45 @@ describe("exploreCommand action", () => {
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
     expect(renderOnce).toHaveBeenCalled();
+    const element = vi.mocked(renderOnce).mock.calls[0][0] as any;
+    const columnHeaders = element.props.columns.map((c: any) => c.header);
+    expect(columnHeaders).toContain("#");
     expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("hides rank column when --after is used (paginated)", async () => {
+    const { getApiKey } = await import("../lib/config.js");
+    const { getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+    const { renderOnce } = await import("../lib/render.js");
+
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "Coin1",
+                address: "0x1",
+                marketCap: "100",
+              },
+            },
+          ],
+          pageInfo: { endCursor: "next_cursor", hasNextPage: true },
+        },
+      },
+    });
+
+    const { exploreCommand } = await import("./explore.jsx");
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--after", "some_cursor"], {
+      from: "user",
+    });
+
+    expect(renderOnce).toHaveBeenCalled();
+    const element = vi.mocked(renderOnce).mock.calls[0][0] as any;
+    const columnHeaders = element.props.columns.map((c: any) => c.header);
+    expect(columnHeaders).not.toContain("#");
   });
 
   it("fetches trending posts", async () => {
@@ -297,7 +344,10 @@ describe("exploreCommand action", () => {
     );
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
-    expect(getTrendingPosts).toHaveBeenCalledWith({ count: 10 });
+    expect(getTrendingPosts).toHaveBeenCalledWith({
+      count: 10,
+      after: undefined,
+    });
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
     expect(output).toContain("TrendCoin");
@@ -336,10 +386,185 @@ describe("exploreCommand action", () => {
     });
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
-    expect(getCoinsTopGainers).toHaveBeenCalledWith({ count: 10 });
+    expect(getCoinsTopGainers).toHaveBeenCalledWith({
+      count: 10,
+      after: undefined,
+    });
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
     expect(output).toContain("GainerCoin");
     expect(exitSpy).not.toHaveBeenCalled();
+  });
+
+  it("shows next page hint in table mode when hasNextPage is true", async () => {
+    const { getApiKey } = await import("../lib/config.js");
+    const { getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "Coin1",
+                address: "0x1",
+                marketCap: "100",
+              },
+            },
+          ],
+          pageInfo: { endCursor: "cursor_abc", hasNextPage: true },
+        },
+      },
+    });
+
+    const { exploreCommand } = await import("./explore.jsx");
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore"], { from: "user" });
+
+    const logOutput = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    expect(logOutput).toContain("Next page:");
+    expect(logOutput).toContain("--limit 10");
+    expect(logOutput).toContain("--after cursor_abc");
+  });
+
+  it("does not show next page hint when hasNextPage is false", async () => {
+    const { getApiKey } = await import("../lib/config.js");
+    const { getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "Coin1",
+                address: "0x1",
+                marketCap: "100",
+              },
+            },
+          ],
+          pageInfo: { endCursor: "cursor_abc", hasNextPage: false },
+        },
+      },
+    });
+
+    const { exploreCommand } = await import("./explore.jsx");
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore"], { from: "user" });
+
+    const logOutput = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    expect(logOutput).not.toContain("Next page:");
+  });
+
+  it("passes --after cursor to SDK function", async () => {
+    const { getApiKey } = await import("../lib/config.js");
+    const { getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: { exploreList: { edges: [], pageInfo: { hasNextPage: false } } },
+    });
+
+    const { exploreCommand } = await import("./explore.jsx");
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--after", "abc123"], {
+      from: "user",
+    });
+
+    expect(getCoinsMostValuable).toHaveBeenCalledWith({
+      count: 10,
+      after: "abc123",
+    });
+  });
+
+  it("includes pageInfo in JSON output", async () => {
+    const { getApiKey } = await import("../lib/config.js");
+    const { getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "Coin1",
+                address: "0x1",
+                marketCap: "100",
+              },
+            },
+          ],
+          pageInfo: { endCursor: "cursor_xyz", hasNextPage: true },
+        },
+      },
+    });
+
+    const { exploreCommand } = await import("./explore.jsx");
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    expect(parsed.pageInfo).toEqual({
+      endCursor: "cursor_xyz",
+      hasNextPage: true,
+    });
+    expect(parsed.coins).toHaveLength(1);
+  });
+
+  it("includes pageInfo null in JSON when not present", async () => {
+    const { getApiKey } = await import("../lib/config.js");
+    const { getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "Coin1",
+                address: "0x1",
+                marketCap: "100",
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const { exploreCommand } = await import("./explore.jsx");
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    expect(parsed.pageInfo).toBeNull();
+  });
+
+  it("outputs consistent JSON shape for empty results", async () => {
+    const { getApiKey } = await import("../lib/config.js");
+    const { getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [],
+          pageInfo: { hasNextPage: false },
+        },
+      },
+    });
+
+    const { exploreCommand } = await import("./explore.jsx");
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    expect(parsed.coins).toEqual([]);
+    expect(parsed.pageInfo).toEqual({ hasNextPage: false });
   });
 });

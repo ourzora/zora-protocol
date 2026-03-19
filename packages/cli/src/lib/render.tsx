@@ -1,10 +1,9 @@
 import type { ReactElement } from "react";
-import { render } from "ink";
+import { renderToString } from "ink";
 
 const renderOnce = (element: ReactElement): void => {
-  const { unmount } = render(element);
-  // Ink renders synchronously for static content, unmount immediately
-  unmount();
+  const output = renderToString(element);
+  console.log(output);
 };
 
 export { renderOnce };

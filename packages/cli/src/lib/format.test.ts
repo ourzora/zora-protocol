@@ -8,6 +8,7 @@ import {
   formatRelativeTime,
   formatAbsoluteTime,
   formatCreatedAt,
+  styledText,
   formatEthDisplay,
   formatCoinsDisplay,
 } from "./format.js";
@@ -214,6 +215,30 @@ describe("formatAbsoluteTime", () => {
     expect(formatAbsoluteTime(new Date(2026, 5, 15, 12, 0))).toBe(
       "2026-06-15 12:00 PM",
     );
+  });
+});
+
+describe("styledText", () => {
+  // In test environment, stdout is not a TTY, so styledText returns plain text
+  it("returns plain text when not a TTY", () => {
+    expect(styledText("hello", "dim")).toBe("hello");
+  });
+
+  it("returns plain text when NO_COLOR is set", () => {
+    process.env.NO_COLOR = "1";
+    expect(styledText("hello", "bold")).toBe("hello");
+    delete process.env.NO_COLOR;
+  });
+
+  it("wraps text with ANSI codes when TTY and no NO_COLOR", () => {
+    const origIsTTY = process.stdout.isTTY;
+    process.stdout.isTTY = true;
+    delete process.env.NO_COLOR;
+
+    expect(styledText("hello", "dim")).toBe("\x1b[2mhello\x1b[22m");
+    expect(styledText("hello", "bold")).toBe("\x1b[1mhello\x1b[22m");
+
+    process.stdout.isTTY = origIsTTY;
   });
 });
 

@@ -1,6 +1,21 @@
 import { format, formatDistanceStrict } from "date-fns";
 import { formatEther } from "viem";
 
+const ANSI_CODES = {
+  dim: ["\x1b[2m", "\x1b[22m"],
+  bold: ["\x1b[1m", "\x1b[22m"],
+} as const satisfies Record<string, [string, string]>;
+
+export function styledText(
+  text: string,
+  style: keyof typeof ANSI_CODES,
+): string {
+  const useColor = process.stdout.isTTY && !process.env.NO_COLOR;
+  if (!useColor) return text;
+  const [open, close] = ANSI_CODES[style];
+  return `${open}${text}${close}`;
+}
+
 export function formatCurrency(value: string | undefined): string {
   if (!value || Number(value) === 0) return "$0";
   return new Intl.NumberFormat("en-US", {
