@@ -727,8 +727,8 @@ importers:
         specifier: ^5.1.0
         version: 5.1.2(@types/node@22.19.15)
       '@zoralabs/coins-sdk':
-        specifier: ^0.4.8
-        version: 0.4.8(abitype@1.2.3(typescript@5.9.3)(zod@3.25.76))(viem@2.22.12(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))
+        specifier: workspace:*
+        version: link:../coins-sdk
       commander:
         specifier: ^13.1.0
         version: 13.1.0
@@ -5044,22 +5044,12 @@ packages:
     resolution: {integrity: sha512-Wl/4jsWGKBXIbVQrgTYo+l3Eykt7hyT3nsILUiiJLq8q/hpN/9/VfVVMIIB5smo6O4he4ruSsCoS0WcHyei31Q==}
     hasBin: true
 
-  '@zoralabs/coins-sdk@0.4.8':
-    resolution: {integrity: sha512-je66IDz/3bsvrnyv8rEzfXbYJeNQD7HzQbrlsqu/cFlIyeI3G2kLja+Js6LRkLVRxvsWqvlI0JUfXL0N8iR6RA==}
-    engines: {node: '>=22'}
-    peerDependencies:
-      abitype: ^1.0.8
-      viem: 2.22.12
-
   '@zoralabs/nft-drop-contracts@1.12.0':
     resolution: {integrity: sha512-zENOF4k+xdz1gvBaxHIs0rFz98+6AO1gYSn2XzIhxk8clmo0B80YZF4gUYzkIn5aHywiWYbw0v99fq6slfQkaw==}
 
   '@zoralabs/openzeppelin-contracts-upgradeable@4.8.4':
     resolution: {integrity: sha512-5vhL88tz00Gv2+NUhLdYBRqb9RRekfyQAodXTQxJU2LYxxy6jr1mPycTZempQ1kmw5wIwFbSIoYzpaxOx6UK6Q==}
     hasBin: true
-
-  '@zoralabs/protocol-deployments@0.7.5':
-    resolution: {integrity: sha512-LtvwBipo0Rpz5OefWfaoxpSnfxFIlTSMYcExmHYSxU+XS9REUS3cjvAH2YxQjhlvmHVMUlJ3bcDAbchnlY+ucQ==}
 
   JSONStream@1.3.2:
     resolution: {integrity: sha512-mn0KSip7N4e0UDPZHnqDsHECo5uGQrixQKnAskOM1BIB8hd7QKbd6il8IPRPudPHOeHiECoCFqhyMaRO9+nWyA==}
@@ -16686,13 +16676,6 @@ snapshots:
       - utf-8-validate
       - zod
 
-  '@zoralabs/coins-sdk@0.4.8(abitype@1.2.3(typescript@5.9.3)(zod@3.25.76))(viem@2.22.12(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76))':
-    dependencies:
-      '@hey-api/client-fetch': 0.8.4
-      '@zoralabs/protocol-deployments': 0.7.5
-      abitype: 1.2.3(typescript@5.9.3)(zod@3.25.76)
-      viem: 2.22.12(bufferutil@4.1.0)(typescript@5.9.3)(utf-8-validate@5.0.10)(zod@3.25.76)
-
   '@zoralabs/nft-drop-contracts@1.12.0(@ethersproject/abi@5.8.0)(@ethersproject/bytes@5.8.0)(@ethersproject/providers@5.8.0(bufferutil@4.1.0)(utf-8-validate@5.0.10))(bufferutil@4.1.0)(utf-8-validate@5.0.10)':
     dependencies:
       '@dotenv/cli': 2.2.2
@@ -16710,8 +16693,6 @@ snapshots:
       - utf-8-validate
 
   '@zoralabs/openzeppelin-contracts-upgradeable@4.8.4': {}
-
-  '@zoralabs/protocol-deployments@0.7.5': {}
 
   JSONStream@1.3.2:
     dependencies:
