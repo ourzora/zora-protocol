@@ -8,8 +8,7 @@ import { Command } from "commander";
 const createProgram = (subcommand: Command): Command => {
   const program = new Command()
     .name("zora")
-    .option("--json", "Output as JSON (for scripts and automation)", false)
-    .option("--yes", "Skip interactive prompts", false);
+    .option("--json", "Output as JSON (for scripts and automation)", false);
 
   program.addCommand(subcommand);
   return program;

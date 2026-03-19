@@ -33,6 +33,7 @@ export const setupCommand = new Command("setup")
   .description("Set up your Zora wallet")
   .option("--create", "Create a new wallet without prompting")
   .option("--force", "Overwrite existing wallet without prompting")
+  .option("--yes", "Skip interactive prompt and execute directly")
   .action(async function (
     this: Command,
     options: { create?: boolean; force?: boolean },

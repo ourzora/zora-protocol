@@ -27,7 +27,7 @@ export const buyCommand = new Command("buy")
   .option("--percent <value>", "Buy with percentage of ETH balance")
   .option("--all", "Swap all ETH for coin")
   .option("--quote", "Print quote and exit without trading")
-  .option("--yes", "Skip confirmation prompt")
+  .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
   .option("-o, --output <format>", "Output format: table, json", "table")
   .action(async (coinAddress: string, opts) => {

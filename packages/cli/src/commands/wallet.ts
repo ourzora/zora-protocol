@@ -71,6 +71,7 @@ walletCommand
   .command("export")
   .description("Print the raw private key to stdout")
   .option("--force", "Skip the confirmation prompt")
+  .option("--yes", "Skip interactive prompt and execute directly")
   .action(async function (this: Command, options: { force?: boolean }) {
     const json = getJson(this);
     const nonInteractive = getYes(this);

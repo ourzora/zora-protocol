@@ -27,8 +27,7 @@ const buildProgram = (): Command => {
     .name("zora")
     .description("Zora CLI")
     .version(version)
-    .option("--json", "Output as JSON (for scripts and automation)", false)
-    .option("--yes", "Skip interactive prompts", false);
+    .option("--json", "Output as JSON (for scripts and automation)", false);
 
   program.addCommand(authCommand);
   program.addCommand(balancesCommand);

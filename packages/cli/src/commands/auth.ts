@@ -21,6 +21,7 @@ export const authCommand = new Command("auth").description(
 authCommand
   .command("configure")
   .description("Set your Zora API key")
+  .option("--yes", "Skip interactive prompt and execute directly")
   .action(async function (this: Command) {
     const json = getJson(this);
     const nonInteractive = getYes(this);

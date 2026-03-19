@@ -246,7 +246,7 @@ export const sellCommand = new Command("sell")
   .option("--all", "Sell entire coin balance")
   .option("--to <asset>", "Receive asset: eth, usdc, zora", "eth")
   .option("--quote", "Print quote and exit without trading")
-  .option("--yes", "Skip confirmation prompt")
+  .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
   .option("-o, --output <format>", "Output format: table, json", "table")
   .action(async (coinAddress: string, opts) => {
