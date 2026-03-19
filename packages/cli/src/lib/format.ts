@@ -54,7 +54,10 @@ export function formatAbsoluteTime(date: Date): string {
   return format(date, "yyyy-MM-dd h:mm a");
 }
 
-export function formatCreatedAt(isoDate: string | undefined, now?: Date): string {
+export function formatCreatedAt(
+  isoDate: string | undefined,
+  now?: Date,
+): string {
   if (!isoDate) return "-";
   const date = new Date(isoDate);
   if (isNaN(date.getTime())) return "-";

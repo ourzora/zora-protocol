@@ -1,12 +1,19 @@
 import { Command } from "commander";
 import { privateKeyToAccount } from "viem/accounts";
 import { getPrivateKey, getWalletPath } from "../lib/config.js";
-import { getJson, getYes, outputErrorAndExit, outputData } from "../lib/output.js";
+import {
+  getJson,
+  getYes,
+  outputErrorAndExit,
+  outputData,
+} from "../lib/output.js";
 import { confirmOrDefault } from "../lib/prompt.js";
 import { NO_WALLET_CONFIGURED, NO_WALLET_SUGGESTION } from "../lib/strings.js";
 import { normalizeKey } from "../lib/wallet.js";
 
-const resolvePrivateKey = (): { key: string; source: "env" | "file" } | undefined => {
+const resolvePrivateKey = ():
+  | { key: string; source: "env" | "file" }
+  | undefined => {
   const envKey = process.env.ZORA_PRIVATE_KEY;
   if (envKey) {
     return { key: envKey, source: "env" };
@@ -18,7 +25,9 @@ const resolvePrivateKey = (): { key: string; source: "env" | "file" } | undefine
   return undefined;
 };
 
-export const walletCommand = new Command("wallet").description("Manage your Zora wallet");
+export const walletCommand = new Command("wallet").description(
+  "Manage your Zora wallet",
+);
 
 walletCommand
   .command("info")
@@ -35,18 +44,19 @@ walletCommand
     try {
       account = privateKeyToAccount(normalizeKey(resolved.key));
     } catch {
-      const msg = resolved.source === "env"
-        ? "ZORA_PRIVATE_KEY is not a valid private key."
-        : "Stored private key is invalid.";
-      const suggestion = resolved.source === "env"
-        ? undefined
-        : "Run 'zora setup --force' to replace it.";
+      const msg =
+        resolved.source === "env"
+          ? "ZORA_PRIVATE_KEY is not a valid private key."
+          : "Stored private key is invalid.";
+      const suggestion =
+        resolved.source === "env"
+          ? undefined
+          : "Run 'zora setup --force' to replace it.";
       outputErrorAndExit(json, `\u2717 ${msg}`, suggestion);
     }
 
-    const source = resolved.source === "env"
-      ? "env (ZORA_PRIVATE_KEY)"
-      : getWalletPath();
+    const source =
+      resolved.source === "env" ? "env (ZORA_PRIVATE_KEY)" : getWalletPath();
 
     outputData(json, {
       json: { address: account.address, source },
@@ -71,8 +81,12 @@ walletCommand
     }
 
     if (!options.force) {
-      console.log("  \u26a0  Your private key grants full access to your wallet.");
-      console.log("  Anyone who sees it can steal your funds. Never share it.\n");
+      console.log(
+        "  \u26a0  Your private key grants full access to your wallet.",
+      );
+      console.log(
+        "  Anyone who sees it can steal your funds. Never share it.\n",
+      );
 
       const ok = await confirmOrDefault(
         { message: "Export private key?", default: false },

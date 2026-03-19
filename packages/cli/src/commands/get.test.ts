@@ -26,9 +26,9 @@ describe("getCommand", () => {
   beforeEach(() => {
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     vi.spyOn(console, "error").mockImplementation(() => {});
-    exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation((code) => { throw new Error(`exit ${code}`); });
+    exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`exit ${code}`);
+    });
   });
 
   afterEach(() => {
@@ -45,18 +45,30 @@ describe("getCommand", () => {
   }
 
   it("exits with error for invalid --type", async () => {
-    await expect(parseJson("something", "--type", "banana")).rejects.toThrow("exit 1");
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --type"));
+    await expect(parseJson("something", "--type", "banana")).rejects.toThrow(
+      "exit 1",
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --type"),
+    );
   });
 
   it("exits with error for --type trend", async () => {
-    await expect(parseJson("geese", "--type", "trend")).rejects.toThrow("exit 1");
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Trend name lookup is not yet supported"));
+    await expect(parseJson("geese", "--type", "trend")).rejects.toThrow(
+      "exit 1",
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Trend name lookup is not yet supported"),
+    );
   });
 
   it("exits with error for --type post", async () => {
-    await expect(parseJson("something", "--type", "post")).rejects.toThrow("exit 1");
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Posts can only be looked up by address"));
+    await expect(parseJson("something", "--type", "post")).rejects.toThrow(
+      "exit 1",
+    );
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Posts can only be looked up by address"),
+    );
   });
 
   it("outputs coin JSON for address lookup", async () => {
@@ -99,7 +111,9 @@ describe("getCommand", () => {
     } as any);
 
     await expect(parseJson("0xdead")).rejects.toThrow("exit 1");
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("No coin found"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No coin found"),
+    );
   });
 
   it("exits with error when SDK call throws", async () => {
@@ -107,7 +121,9 @@ describe("getCommand", () => {
     vi.mocked(getCoin).mockRejectedValue(new Error("Network error"));
 
     await expect(parseJson("0x1234")).rejects.toThrow("exit 1");
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Network error"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Network error"),
+    );
   });
 
   it("does not call setApiKey when no key configured", async () => {
@@ -151,18 +167,28 @@ describe("getCommand", () => {
 
     expect(getProfile).toHaveBeenCalledWith({ identifier: "jacob" });
     expect(getCoin).toHaveBeenCalledWith({ address: "0xcoin" });
-    expect(parsedOutput()).toMatchObject({ name: "jacob", coinType: "creator-coin" });
+    expect(parsedOutput()).toMatchObject({
+      name: "jacob",
+      coinType: "creator-coin",
+    });
   });
 
   it("exits with error when --type mismatches coin type", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getCoin).mockResolvedValue({
       data: {
-        zora20Token: { name: "CreatorCoin", address: "0x1234", coinType: "CREATOR", marketCap: "100" },
+        zora20Token: {
+          name: "CreatorCoin",
+          address: "0x1234",
+          coinType: "CREATOR",
+          marketCap: "100",
+        },
       },
     } as any);
 
-    await expect(parseJson("0x1234", "--type", "post")).rejects.toThrow("exit 1");
+    await expect(parseJson("0x1234", "--type", "post")).rejects.toThrow(
+      "exit 1",
+    );
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
     expect(output).toContain("is a creator-coin, not a post");
     expect(output).toContain("zora get 0x1234 --type creator-coin");
@@ -172,21 +198,34 @@ describe("getCommand", () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getCoin).mockResolvedValue({
       data: {
-        zora20Token: { name: "SomeTrend", address: "0xtrend", coinType: "TREND", marketCap: "200" },
+        zora20Token: {
+          name: "SomeTrend",
+          address: "0xtrend",
+          coinType: "TREND",
+          marketCap: "200",
+        },
       },
     } as any);
 
     await parseJson("0xtrend", "--type", "trend");
 
     expect(getCoin).toHaveBeenCalledWith({ address: "0xtrend" });
-    expect(parsedOutput()).toMatchObject({ name: "SomeTrend", coinType: "trend" });
+    expect(parsedOutput()).toMatchObject({
+      name: "SomeTrend",
+      coinType: "trend",
+    });
   });
 
   it("allows --type post with address", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getCoin).mockResolvedValue({
       data: {
-        zora20Token: { name: "SomePost", address: "0xpost", coinType: "CONTENT", marketCap: "100" },
+        zora20Token: {
+          name: "SomePost",
+          address: "0xpost",
+          coinType: "CONTENT",
+          marketCap: "100",
+        },
       },
     } as any);
 

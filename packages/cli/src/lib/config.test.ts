@@ -28,13 +28,17 @@ describe("getEnvApiKey", () => {
   });
 
   it("exits with error when env var is empty string", async () => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+    const exitSpy = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getEnvApiKey } = await loadConfig();
     process.env.ZORA_API_KEY = "";
     getEnvApiKey();
     expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("ZORA_API_KEY is set but empty"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("ZORA_API_KEY is set but empty"),
+    );
     exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
@@ -66,13 +70,17 @@ describe("getApiKey", () => {
   });
 
   it("empty env var exits with error", async () => {
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+    const exitSpy = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getApiKey } = await loadConfig();
     process.env.ZORA_API_KEY = "";
     getApiKey();
     expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("ZORA_API_KEY is set but empty"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("ZORA_API_KEY is set but empty"),
+    );
     exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
@@ -84,20 +92,29 @@ describe("getApiKey", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getApiKey } = await loadConfig();
     expect(getApiKey()).toBeUndefined();
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("could not parse"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("could not parse"),
+    );
     errorSpy.mockRestore();
   });
 
   it("exits with error on config version mismatch (does not silently reset to defaults)", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, "config.json"), JSON.stringify({ version: 99, apiKey: "my-key" }));
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+    writeFileSync(
+      join(configDir, "config.json"),
+      JSON.stringify({ version: 99, apiKey: "my-key" }),
+    );
+    const exitSpy = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getApiKey } = await loadConfig();
     getApiKey();
     expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("unsupported version"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("unsupported version"),
+    );
     exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
@@ -105,13 +122,20 @@ describe("getApiKey", () => {
   it("exits with error on config missing version field", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, "config.json"), JSON.stringify({ apiKey: "my-key" }));
-    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => undefined as never);
+    writeFileSync(
+      join(configDir, "config.json"),
+      JSON.stringify({ apiKey: "my-key" }),
+    );
+    const exitSpy = vi
+      .spyOn(process, "exit")
+      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getApiKey } = await loadConfig();
     getApiKey();
     expect(exitSpy).toHaveBeenCalledWith(1);
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("missing required field"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("missing required field"),
+    );
     exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
@@ -144,7 +168,9 @@ describe("saveApiKey", () => {
 describe("getConfigPath", () => {
   it("returns path under ~/.config/zora/", async () => {
     const { getConfigPath } = await loadConfig();
-    expect(getConfigPath()).toBe(join(getTestHomeDir(), ".config", "zora", "config.json"));
+    expect(getConfigPath()).toBe(
+      join(getTestHomeDir(), ".config", "zora", "config.json"),
+    );
   });
 });
 
@@ -201,7 +227,10 @@ describe("savePrivateKey / getPrivateKey", () => {
   it("throws when wallet file is missing version field", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, "wallet.json"), JSON.stringify({ privateKey: "0x" + "a".repeat(64) }));
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({ privateKey: "0x" + "a".repeat(64) }),
+    );
     const { getPrivateKey } = await loadConfig();
     expect(() => getPrivateKey()).toThrow(/missing required field "version"/);
   });
@@ -209,7 +238,10 @@ describe("savePrivateKey / getPrivateKey", () => {
   it("throws when wallet file has wrong version", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, "wallet.json"), JSON.stringify({ version: 99, privateKey: "0x" + "a".repeat(64) }));
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({ version: 99, privateKey: "0x" + "a".repeat(64) }),
+    );
     const { getPrivateKey } = await loadConfig();
     expect(() => getPrivateKey()).toThrow(/unsupported version/);
   });
@@ -217,7 +249,10 @@ describe("savePrivateKey / getPrivateKey", () => {
   it("throws when wallet file has missing privateKey field", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, "wallet.json"), JSON.stringify({ version: 1 }));
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({ version: 1 }),
+    );
     const { getPrivateKey } = await loadConfig();
     expect(() => getPrivateKey()).toThrow(/missing or invalid "privateKey"/);
   });
@@ -225,7 +260,10 @@ describe("savePrivateKey / getPrivateKey", () => {
   it("throws when wallet file has null privateKey", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
-    writeFileSync(join(configDir, "wallet.json"), JSON.stringify({ version: 1, privateKey: null }));
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({ version: 1, privateKey: null }),
+    );
     const { getPrivateKey } = await loadConfig();
     expect(() => getPrivateKey()).toThrow(/missing or invalid "privateKey"/);
   });
@@ -234,6 +272,8 @@ describe("savePrivateKey / getPrivateKey", () => {
 describe("getWalletPath", () => {
   it("returns path under ~/.config/zora/", async () => {
     const { getWalletPath } = await loadConfig();
-    expect(getWalletPath()).toBe(join(getTestHomeDir(), ".config", "zora", "wallet.json"));
+    expect(getWalletPath()).toBe(
+      join(getTestHomeDir(), ".config", "zora", "wallet.json"),
+    );
   });
 });

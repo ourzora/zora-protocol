@@ -3,8 +3,7 @@ import type { Command } from "commander";
 const getJson = (cmd: Command): boolean =>
   cmd.optsWithGlobals().json as boolean;
 
-const getYes = (cmd: Command): boolean =>
-  cmd.optsWithGlobals().yes as boolean;
+const getYes = (cmd: Command): boolean => cmd.optsWithGlobals().yes as boolean;
 
 const outputJson = (data: unknown): void => {
   console.log(JSON.stringify(data, null, 2));

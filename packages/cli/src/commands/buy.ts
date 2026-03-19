@@ -38,12 +38,16 @@ const amountModeChecks = {
 
 type AmountMode = keyof typeof amountModeChecks;
 
-function getAmountMode(
-  opts: { eth?: string; percent?: string; all?: boolean },
-): AmountMode {
-  const provided = (Object.entries(amountModeChecks) as Array<
-    [AmountMode, (typeof amountModeChecks)[AmountMode]]
-  >)
+function getAmountMode(opts: {
+  eth?: string;
+  percent?: string;
+  all?: boolean;
+}): AmountMode {
+  const provided = (
+    Object.entries(amountModeChecks) as Array<
+      [AmountMode, (typeof amountModeChecks)[AmountMode]]
+    >
+  )
     .filter(([, isProvided]) => isProvided(opts))
     .map(([mode]) => mode);
 
@@ -302,9 +306,7 @@ export const buyCommand = new Command("buy")
       } else {
         const pct = parsePercentageLikeValue(opts.percent);
         if (pct === undefined || pct <= 0 || pct > 100) {
-          console.error(
-            "Invalid --percent value. Must be between 0 and 100.",
-          );
+          console.error("Invalid --percent value. Must be between 0 and 100.");
           process.exit(1);
         }
 

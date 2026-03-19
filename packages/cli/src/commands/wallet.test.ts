@@ -29,7 +29,9 @@ async function runWallet(args: string[]) {
 
 beforeEach(() => {
   delete process.env.ZORA_PRIVATE_KEY;
-  vi.mocked(privateKeyToAccount).mockReturnValue({ address: MOCK_ADDRESS } as never);
+  vi.mocked(privateKeyToAccount).mockReturnValue({
+    address: MOCK_ADDRESS,
+  } as never);
   vi.mocked(getPrivateKey).mockReturnValue(undefined);
 });
 
@@ -75,7 +77,9 @@ describe("wallet info", () => {
     await runWallet(["info"]);
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining(MOCK_ADDRESS));
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("/home/user/.config/zora/wallet.json"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("/home/user/.config/zora/wallet.json"),
+    );
     logSpy.mockRestore();
   });
 
@@ -86,7 +90,9 @@ describe("wallet info", () => {
     await runWallet(["info"]);
 
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining(MOCK_ADDRESS));
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("ZORA_PRIVATE_KEY"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("ZORA_PRIVATE_KEY"),
+    );
     logSpy.mockRestore();
   });
 
@@ -96,7 +102,9 @@ describe("wallet info", () => {
 
     await runWallet(["info"]);
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("env (ZORA_PRIVATE_KEY)"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("env (ZORA_PRIVATE_KEY)"),
+    );
     logSpy.mockRestore();
   });
 
@@ -131,7 +139,9 @@ describe("wallet export", () => {
       throw new Error(`process.exit(${code})`);
     });
 
-    await expect(runWallet(["export", "--force"])).rejects.toThrow("process.exit(1)");
+    await expect(runWallet(["export", "--force"])).rejects.toThrow(
+      "process.exit(1)",
+    );
     const allOutput = [
       ...logSpy.mock.calls.map((c) => c[0]),
       ...errorSpy.mock.calls.map((c) => c[0]),
@@ -172,7 +182,9 @@ describe("wallet export", () => {
 
     await runWallet(["export"]);
 
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("private key grants full access"));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("private key grants full access"),
+    );
     logSpy.mockRestore();
   });
 

@@ -37,7 +37,8 @@ describe("Zorb", () => {
   it("returns null when truecolor is not supported", async () => {
     vi.resetModules();
     vi.doMock("../lib/zorb-pixels.js", async (importOriginal) => {
-      const actual = await importOriginal<typeof import("../lib/zorb-pixels.js")>();
+      const actual =
+        await importOriginal<typeof import("../lib/zorb-pixels.js")>();
       return {
         ...actual,
         supportsTruecolor: () => false,

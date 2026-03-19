@@ -1,5 +1,13 @@
 import { describe, it, expect } from "vitest";
-import { formatCurrency, formatMcapChange, truncate, formatHolders, formatRelativeTime, formatAbsoluteTime, formatCreatedAt } from "./format.js";
+import {
+  formatCurrency,
+  formatMcapChange,
+  truncate,
+  formatHolders,
+  formatRelativeTime,
+  formatAbsoluteTime,
+  formatCreatedAt,
+} from "./format.js";
 
 describe("formatCurrency", () => {
   it("returns $0 for undefined", () => {
@@ -33,19 +41,31 @@ describe("formatCurrency", () => {
 
 describe("formatMcapChange", () => {
   it("returns dash for undefined delta", () => {
-    expect(formatMcapChange("1000", undefined)).toEqual({ text: "-", color: undefined });
+    expect(formatMcapChange("1000", undefined)).toEqual({
+      text: "-",
+      color: undefined,
+    });
   });
 
   it("returns dash for undefined marketCap", () => {
-    expect(formatMcapChange(undefined, "100")).toEqual({ text: "-", color: undefined });
+    expect(formatMcapChange(undefined, "100")).toEqual({
+      text: "-",
+      color: undefined,
+    });
   });
 
   it("returns dash for zero marketCap", () => {
-    expect(formatMcapChange("0", "100")).toEqual({ text: "-", color: undefined });
+    expect(formatMcapChange("0", "100")).toEqual({
+      text: "-",
+      color: undefined,
+    });
   });
 
   it("returns dash when previous cap is zero (delta equals cap)", () => {
-    expect(formatMcapChange("500", "500")).toEqual({ text: "-", color: undefined });
+    expect(formatMcapChange("500", "500")).toEqual({
+      text: "-",
+      color: undefined,
+    });
   });
 
   it("returns positive change with green", () => {
@@ -59,7 +79,10 @@ describe("formatMcapChange", () => {
   });
 
   it("returns zero change without color", () => {
-    expect(formatMcapChange("1000", "0")).toEqual({ text: "+0.0%", color: undefined });
+    expect(formatMcapChange("1000", "0")).toEqual({
+      text: "+0.0%",
+      color: undefined,
+    });
   });
 });
 
@@ -95,49 +118,71 @@ describe("formatRelativeTime", () => {
   const now = new Date("2026-03-16T12:00:00Z");
 
   it("returns 'just now' for under a minute", () => {
-    expect(formatRelativeTime(new Date("2026-03-16T11:59:30Z"), now)).toBe("just now");
+    expect(formatRelativeTime(new Date("2026-03-16T11:59:30Z"), now)).toBe(
+      "just now",
+    );
   });
 
   it("returns minutes ago", () => {
-    expect(formatRelativeTime(new Date("2026-03-16T11:45:00Z"), now)).toBe("15 minutes ago");
+    expect(formatRelativeTime(new Date("2026-03-16T11:45:00Z"), now)).toBe(
+      "15 minutes ago",
+    );
   });
 
   it("returns singular minute", () => {
-    expect(formatRelativeTime(new Date("2026-03-16T11:59:00Z"), now)).toBe("1 minute ago");
+    expect(formatRelativeTime(new Date("2026-03-16T11:59:00Z"), now)).toBe(
+      "1 minute ago",
+    );
   });
 
   it("returns hours ago", () => {
-    expect(formatRelativeTime(new Date("2026-03-16T10:00:00Z"), now)).toBe("2 hours ago");
+    expect(formatRelativeTime(new Date("2026-03-16T10:00:00Z"), now)).toBe(
+      "2 hours ago",
+    );
   });
 
   it("returns singular hour", () => {
-    expect(formatRelativeTime(new Date("2026-03-16T11:00:00Z"), now)).toBe("1 hour ago");
+    expect(formatRelativeTime(new Date("2026-03-16T11:00:00Z"), now)).toBe(
+      "1 hour ago",
+    );
   });
 
   it("returns days ago", () => {
-    expect(formatRelativeTime(new Date("2026-03-13T12:00:00Z"), now)).toBe("3 days ago");
+    expect(formatRelativeTime(new Date("2026-03-13T12:00:00Z"), now)).toBe(
+      "3 days ago",
+    );
   });
 
   it("returns singular day", () => {
-    expect(formatRelativeTime(new Date("2026-03-15T12:00:00Z"), now)).toBe("1 day ago");
+    expect(formatRelativeTime(new Date("2026-03-15T12:00:00Z"), now)).toBe(
+      "1 day ago",
+    );
   });
 });
 
 describe("formatAbsoluteTime", () => {
   it("formats afternoon time", () => {
-    expect(formatAbsoluteTime(new Date(2026, 2, 1, 14, 30))).toBe("2026-03-01 2:30 PM");
+    expect(formatAbsoluteTime(new Date(2026, 2, 1, 14, 30))).toBe(
+      "2026-03-01 2:30 PM",
+    );
   });
 
   it("formats morning time", () => {
-    expect(formatAbsoluteTime(new Date(2026, 0, 20, 11, 15))).toBe("2026-01-20 11:15 AM");
+    expect(formatAbsoluteTime(new Date(2026, 0, 20, 11, 15))).toBe(
+      "2026-01-20 11:15 AM",
+    );
   });
 
   it("formats midnight as 12 AM", () => {
-    expect(formatAbsoluteTime(new Date(2026, 5, 15, 0, 5))).toBe("2026-06-15 12:05 AM");
+    expect(formatAbsoluteTime(new Date(2026, 5, 15, 0, 5))).toBe(
+      "2026-06-15 12:05 AM",
+    );
   });
 
   it("formats noon as 12 PM", () => {
-    expect(formatAbsoluteTime(new Date(2026, 5, 15, 12, 0))).toBe("2026-06-15 12:00 PM");
+    expect(formatAbsoluteTime(new Date(2026, 5, 15, 12, 0))).toBe(
+      "2026-06-15 12:00 PM",
+    );
   });
 });
 

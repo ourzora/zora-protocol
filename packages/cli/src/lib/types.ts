@@ -1,4 +1,12 @@
-export type SortOption = "mcap" | "volume" | "new" | "gainers" | "last-traded" | "last-traded-unique" | "trending" | "featured";
+export type SortOption =
+  | "mcap"
+  | "volume"
+  | "new"
+  | "gainers"
+  | "last-traded"
+  | "last-traded-unique"
+  | "trending"
+  | "featured";
 export type CoinType = "trend" | "creator-coin" | "post";
 export type TypeOption = "all" | CoinType;
 

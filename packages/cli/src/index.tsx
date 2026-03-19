@@ -18,7 +18,9 @@ declare const PKG_VERSION: string | undefined;
 const version =
   typeof PKG_VERSION !== "undefined"
     ? PKG_VERSION
-    : JSON.parse(readFileSync(new URL("../package.json", import.meta.url), "utf-8")).version;
+    : JSON.parse(
+        readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
+      ).version;
 
 const buildProgram = (): Command => {
   const program = new Command()

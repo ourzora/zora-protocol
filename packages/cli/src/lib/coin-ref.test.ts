@@ -131,7 +131,11 @@ describe("resolveCoin", () => {
       },
     } as any);
 
-    const result = await resolveCoin({ kind: "prefixed", type: "creator-coin", name: "jacob" });
+    const result = await resolveCoin({
+      kind: "prefixed",
+      type: "creator-coin",
+      name: "jacob",
+    });
 
     expect(getProfile).toHaveBeenCalledWith({ identifier: "jacob" });
     expect(getCoin).toHaveBeenCalledWith({ address: "0xcoin123" });
@@ -152,7 +156,11 @@ describe("resolveCoin", () => {
       },
     } as any);
 
-    const result = await resolveCoin({ kind: "prefixed", type: "creator-coin", name: "nocoin" });
+    const result = await resolveCoin({
+      kind: "prefixed",
+      type: "creator-coin",
+      name: "nocoin",
+    });
     expect(result.kind).toBe("not-found");
     if (result.kind === "not-found") {
       expect(result.message).toContain("does not have a creator coin");
@@ -165,7 +173,11 @@ describe("resolveCoin", () => {
       data: undefined,
     } as any);
 
-    const result = await resolveCoin({ kind: "prefixed", type: "creator-coin", name: "nobody" });
+    const result = await resolveCoin({
+      kind: "prefixed",
+      type: "creator-coin",
+      name: "nobody",
+    });
     expect(result.kind).toBe("not-found");
     if (result.kind === "not-found") {
       expect(result.message).toContain("No creator found");

@@ -25,7 +25,14 @@ import {
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputData } from "../lib/output.js";
-import { SORT_LABELS, TYPE_LABELS, COIN_TYPE_DISPLAY, type SortOption, type TypeOption, type CoinNode } from "../lib/types.js";
+import {
+  SORT_LABELS,
+  TYPE_LABELS,
+  COIN_TYPE_DISPLAY,
+  type SortOption,
+  type TypeOption,
+  type CoinNode,
+} from "../lib/types.js";
 import { Box, Text } from "ink";
 import { renderOnce } from "../lib/render.js";
 import { TableComponent } from "../components/table.js";
@@ -33,7 +40,10 @@ import type { Column } from "../components/table.js";
 
 type SdkQueryFn = (opts: { count: number; after?: string }) => Promise<any>;
 
-export const QUERY_MAP: Record<SortOption, Partial<Record<TypeOption, SdkQueryFn>>> = {
+export const QUERY_MAP: Record<
+  SortOption,
+  Partial<Record<TypeOption, SdkQueryFn>>
+> = {
   mcap: {
     all: getMostValuableAll,
     trend: getMostValuableTrends,
@@ -83,7 +93,10 @@ export const formatCompactCurrency = (value: string | undefined): string => {
   }).format(Number(value));
 };
 
-export const formatChange = (marketCap: string | undefined, delta: string | undefined): string => {
+export const formatChange = (
+  marketCap: string | undefined,
+  delta: string | undefined,
+): string => {
   if (!delta || !marketCap) return "-";
   const cap = Number(marketCap);
   const d = Number(delta);
@@ -112,16 +125,37 @@ const exploreColumns: Column<CoinNode & { rank: number }>[] = [
   { header: "#", width: 5, accessor: (r) => String(r.rank) },
   { header: "Name", width: 27, accessor: (r) => r.name ?? "Unknown" },
   { header: "Address", width: 44, accessor: (r) => r.address ?? "" },
-  { header: "Type", width: 16, accessor: (r) => COIN_TYPE_DISPLAY[r.coinType ?? ""] ?? r.coinType ?? "" },
-  { header: "Market Cap", width: 14, accessor: (r) => formatCompactCurrency(r.marketCap) },
-  { header: "24h Vol", width: 14, accessor: (r) => formatCompactCurrency(r.volume24h) },
-  { header: "24h Change", width: 12, accessor: (r) => formatChange(r.marketCap, r.marketCapDelta24h), color: changeColor },
+  {
+    header: "Type",
+    width: 16,
+    accessor: (r) => COIN_TYPE_DISPLAY[r.coinType ?? ""] ?? r.coinType ?? "",
+  },
+  {
+    header: "Market Cap",
+    width: 14,
+    accessor: (r) => formatCompactCurrency(r.marketCap),
+  },
+  {
+    header: "24h Vol",
+    width: 14,
+    accessor: (r) => formatCompactCurrency(r.volume24h),
+  },
+  {
+    header: "24h Change",
+    width: 12,
+    accessor: (r) => formatChange(r.marketCap, r.marketCapDelta24h),
+    color: changeColor,
+  },
 ];
 
 export const exploreCommand = new Command("explore")
   .description("Browse top, new, and highest volume coins")
   .option("--sort <sort>", `Sort by: ${SORT_OPTIONS}`, "mcap")
-  .option("--type <type>", "Filter by type: all, trend, creator-coin, post (availability varies by sort)", "post")
+  .option(
+    "--type <type>",
+    "Filter by type: all, trend, creator-coin, post (availability varies by sort)",
+    "post",
+  )
   .option("--limit <n>", "Number of results (max 20)", "10")
   .action(async function (this: Command, opts) {
     const json = getJson(this);
@@ -130,16 +164,28 @@ export const exploreCommand = new Command("explore")
     const limit = parseInt(opts.limit, 10);
 
     if (isNaN(limit) || limit <= 0 || limit > 20) {
-      outputErrorAndExit(json, `Invalid --limit value: ${opts.limit}. Must be an integer between 1 and 20.`, "Usage: zora explore --limit 10");
+      outputErrorAndExit(
+        json,
+        `Invalid --limit value: ${opts.limit}. Must be an integer between 1 and 20.`,
+        "Usage: zora explore --limit 10",
+      );
     }
 
     if (!QUERY_MAP[sort]) {
-      outputErrorAndExit(json, `Invalid --sort value: ${sort}.`, `Supported: ${SORT_OPTIONS}`);
+      outputErrorAndExit(
+        json,
+        `Invalid --sort value: ${sort}.`,
+        `Supported: ${SORT_OPTIONS}`,
+      );
     }
 
     if (!QUERY_MAP[sort][type]) {
       const supported = Object.keys(QUERY_MAP[sort]);
-      outputErrorAndExit(json, `Invalid --type for --sort ${sort}.`, `Supported: ${supported.join(", ")}`);
+      outputErrorAndExit(
+        json,
+        `Invalid --type for --sort ${sort}.`,
+        `Supported: ${supported.join(", ")}`,
+      );
     }
 
     const apiKey = getApiKey();
@@ -152,13 +198,17 @@ export const exploreCommand = new Command("explore")
     try {
       response = await queryFn({ count: limit });
     } catch (err) {
-      outputErrorAndExit(json, `Request failed: ${err instanceof Error ? err.message : String(err)}`);
+      outputErrorAndExit(
+        json,
+        `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     if (response.error) {
-      const msg = typeof response.error === "object" && response.error.error
-        ? response.error.error
-        : JSON.stringify(response.error);
+      const msg =
+        typeof response.error === "object" && response.error.error
+          ? response.error.error
+          : JSON.stringify(response.error);
       outputErrorAndExit(json, `API error: ${msg}`);
     }
 
@@ -173,11 +223,13 @@ export const exploreCommand = new Command("explore")
             <Box flexDirection="column" paddingLeft={1} marginTop={1}>
               <Text>No coins found.</Text>
               <Box marginTop={1} flexDirection="column">
-                <Text dimColor>Try a different sort or type (defaults to posts):</Text>
-                <Text dimColor>  zora explore --sort volume --type all</Text>
-                <Text dimColor>  zora explore --sort new --type all</Text>
+                <Text dimColor>
+                  Try a different sort or type (defaults to posts):
+                </Text>
+                <Text dimColor> zora explore --sort volume --type all</Text>
+                <Text dimColor> zora explore --sort new --type all</Text>
               </Box>
-            </Box>
+            </Box>,
           );
         },
       });
@@ -185,9 +237,10 @@ export const exploreCommand = new Command("explore")
     }
 
     const rankedCoins = coins.map((c, i) => ({ ...c, rank: i + 1 }));
-    const title = type !== "all"
-      ? `${SORT_LABELS[sort]} \u00b7 ${TYPE_LABELS[type]}`
-      : SORT_LABELS[sort];
+    const title =
+      type !== "all"
+        ? `${SORT_LABELS[sort]} \u00b7 ${TYPE_LABELS[type]}`
+        : SORT_LABELS[sort];
     const subtitle = `${coins.length} result${coins.length !== 1 ? "s" : ""}`;
 
     outputData(json, {
@@ -199,7 +252,7 @@ export const exploreCommand = new Command("explore")
             data={rankedCoins}
             title={title}
             subtitle={subtitle}
-          />
+          />,
         );
       },
     });

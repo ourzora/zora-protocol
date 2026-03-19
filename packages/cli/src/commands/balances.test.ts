@@ -1,6 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createProgram } from "../test/create-program.js";
-import { formatBalance, formatUsdValue, normalizeTokenAmount, toHumanBalance } from "./balances.js";
+import {
+  formatBalance,
+  formatUsdValue,
+  normalizeTokenAmount,
+  toHumanBalance,
+} from "./balances.js";
 
 vi.mock("@zoralabs/coins-sdk", () => ({
   setApiKey: vi.fn(),
@@ -77,7 +82,9 @@ describe("balances formatting", () => {
   });
 
   it("normalizes raw token amounts without precision loss", () => {
-    expect(normalizeTokenAmount("3944403815517124397199482")).toBe("3944403.815517124397199482");
+    expect(normalizeTokenAmount("3944403815517124397199482")).toBe(
+      "3944403.815517124397199482",
+    );
     expect(normalizeTokenAmount("1000000000000000000")).toBe("1");
   });
 
@@ -163,17 +170,27 @@ describe("balances command", () => {
     const { buildProgram } = await import("../index.js");
     const program = buildProgram();
 
-    expect(program.commands.map((command) => command.name())).toContain("balances");
+    expect(program.commands.map((command) => command.name())).toContain(
+      "balances",
+    );
   });
 
   it("exits with error for invalid sort", async () => {
-    await expect(runBalances(["--sort", "invalid"])).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --sort value"));
+    await expect(runBalances(["--sort", "invalid"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --sort value"),
+    );
   });
 
   it("exits with error for invalid limit", async () => {
-    await expect(runBalances(["--limit", "25"])).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --limit value"));
+    await expect(runBalances(["--limit", "25"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --limit value"),
+    );
   });
 
   it("exits with error when no API key is configured", async () => {
@@ -181,7 +198,9 @@ describe("balances command", () => {
     vi.mocked(getApiKey).mockReturnValue(undefined);
 
     await expect(runBalances()).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Not authenticated"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Not authenticated"),
+    );
   });
 
   it("outputs JSON with --json", async () => {
@@ -208,7 +227,9 @@ describe("balances command", () => {
                     totalVolume: "5000",
                     tokenPrice: { priceInUsdc: "1.5" },
                     creatorProfile: { handle: "alice" },
-                    mediaContent: { previewImage: { medium: "https://example.com/image.jpg" } },
+                    mediaContent: {
+                      previewImage: { medium: "https://example.com/image.jpg" },
+                    },
                   },
                 },
               },
@@ -244,7 +265,8 @@ describe("balances command", () => {
   });
 
   it("renders an Ink table for default output", async () => {
-    const { getProfileBalances, setApiKey } = await import("@zoralabs/coins-sdk");
+    const { getProfileBalances, setApiKey } =
+      await import("@zoralabs/coins-sdk");
     const { renderOnce } = await import("../lib/render.js");
 
     vi.mocked(getProfileBalances).mockResolvedValue({
@@ -345,13 +367,21 @@ describe("balances command", () => {
   });
 
   it("exits with error for zero or negative limit", async () => {
-    await expect(runBalances(["--limit", "0"])).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --limit value"));
+    await expect(runBalances(["--limit", "0"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --limit value"),
+    );
   });
 
   it("exits with error for non-numeric limit", async () => {
-    await expect(runBalances(["--limit", "abc"])).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --limit value"));
+    await expect(runBalances(["--limit", "abc"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --limit value"),
+    );
   });
 
   it("exits with error when no wallet is configured", async () => {
@@ -359,7 +389,9 @@ describe("balances command", () => {
     vi.mocked(getPrivateKey).mockReturnValue(undefined);
 
     await expect(runBalances()).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("No wallet configured"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No wallet configured"),
+    );
   });
 
   it("exits with error when API returns an error response", async () => {
@@ -377,10 +409,14 @@ describe("balances command", () => {
   it("exits with error when request throws", async () => {
     const { getProfileBalances } = await import("@zoralabs/coins-sdk");
 
-    vi.mocked(getProfileBalances).mockRejectedValue(new Error("Network failure"));
+    vi.mocked(getProfileBalances).mockRejectedValue(
+      new Error("Network failure"),
+    );
 
     await expect(runBalances()).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Request failed: Network failure"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Request failed: Network failure"),
+    );
   });
 
   it("uses ZORA_PRIVATE_KEY env var when set", async () => {

@@ -10,6 +10,8 @@ export const DEPOSIT_INSTRUCTIONS =
 export const NO_WALLET_CONFIGURED = "No wallet configured.";
 export const NO_WALLET_SUGGESTION = "Run 'zora setup' to create or import one.";
 
-export const SAVE_ERROR_HINT = "Check that the directory exists and is writable.";
+export const SAVE_ERROR_HINT =
+  "Check that the directory exists and is writable.";
 
-export const BACKUP_WARNING = "Back up this file \u2014 it's the only copy of your key.";
+export const BACKUP_WARNING =
+  "Back up this file \u2014 it's the only copy of your key.";

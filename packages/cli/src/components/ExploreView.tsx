@@ -2,20 +2,39 @@ import { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { TableComponent, type Column } from "./table.js";
+import { formatCurrency, formatMcapChange, truncate } from "../lib/format.js";
 import {
-  formatCurrency,
-  formatMcapChange,
-  truncate,
-} from "../lib/format.js";
-import { SORT_LABELS, TYPE_LABELS, COIN_TYPE_DISPLAY, type SortOption, type TypeOption, type CoinNode } from "../lib/types.js";
+  SORT_LABELS,
+  TYPE_LABELS,
+  COIN_TYPE_DISPLAY,
+  type SortOption,
+  type TypeOption,
+  type CoinNode,
+} from "../lib/types.js";
 
 const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   { header: "#", width: 4, accessor: (c) => String(c.rank) },
-  { header: "Name", width: 20, accessor: (c) => truncate(c.name ?? "Unknown", 18) },
+  {
+    header: "Name",
+    width: 20,
+    accessor: (c) => truncate(c.name ?? "Unknown", 18),
+  },
   { header: "Address", width: 44, accessor: (c) => c.address ?? "" },
-  { header: "Type", width: 14, accessor: (c) => COIN_TYPE_DISPLAY[c.coinType ?? ""] ?? c.coinType ?? "" },
-  { header: "Market Cap", width: 12, accessor: (c) => formatCurrency(c.marketCap) },
-  { header: "24h Vol", width: 12, accessor: (c) => formatCurrency(c.volume24h) },
+  {
+    header: "Type",
+    width: 14,
+    accessor: (c) => COIN_TYPE_DISPLAY[c.coinType ?? ""] ?? c.coinType ?? "",
+  },
+  {
+    header: "Market Cap",
+    width: 12,
+    accessor: (c) => formatCurrency(c.marketCap),
+  },
+  {
+    header: "24h Vol",
+    width: 12,
+    accessor: (c) => formatCurrency(c.volume24h),
+  },
   {
     header: "24h Change",
     width: 11,
@@ -74,9 +93,11 @@ export function ExploreView({
       <Box flexDirection="column" paddingLeft={1} marginTop={1}>
         <Text>No coins found.</Text>
         <Box marginTop={1} flexDirection="column">
-          <Text dimColor>Try a different sort or type (defaults to posts):</Text>
-          <Text dimColor>  zora explore --sort volume --type all</Text>
-          <Text dimColor>  zora explore --sort new --type all</Text>
+          <Text dimColor>
+            Try a different sort or type (defaults to posts):
+          </Text>
+          <Text dimColor> zora explore --sort volume --type all</Text>
+          <Text dimColor> zora explore --sort new --type all</Text>
         </Box>
       </Box>
     );

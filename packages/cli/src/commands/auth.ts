@@ -1,11 +1,21 @@
 import { Command } from "commander";
-import { getApiKey, getEnvApiKey, saveApiKey, getConfigPath } from "../lib/config.js";
+import {
+  getApiKey,
+  getEnvApiKey,
+  saveApiKey,
+  getConfigPath,
+} from "../lib/config.js";
 import { maskKey } from "../lib/mask-key.js";
-import { getJson, getYes, outputErrorAndExit, outputData } from "../lib/output.js";
+import {
+  getJson,
+  getYes,
+  outputErrorAndExit,
+  outputData,
+} from "../lib/output.js";
 import { passwordOrFail } from "../lib/prompt.js";
 
 export const authCommand = new Command("auth").description(
-  "Manage API key authentication.\nAPI key is optional — without one, requests are rate-limited.\nGet a key at https://zora.co/settings/developer"
+  "Manage API key authentication.\nAPI key is optional — without one, requests are rate-limited.\nGet a key at https://zora.co/settings/developer",
 );
 
 authCommand
@@ -17,8 +27,14 @@ authCommand
 
     if (getEnvApiKey()) {
       outputData(json, {
-        json: { status: "env_override", message: "API key is set via ZORA_API_KEY environment variable." },
-        table: () => console.log("API key is set via ZORA_API_KEY environment variable. Unset it to configure manually."),
+        json: {
+          status: "env_override",
+          message: "API key is set via ZORA_API_KEY environment variable.",
+        },
+        table: () =>
+          console.log(
+            "API key is set via ZORA_API_KEY environment variable. Unset it to configure manually.",
+          ),
       });
       return;
     }
@@ -28,15 +44,21 @@ authCommand
       console.log(`Current key: ${maskKey(existing)}`);
     }
 
-    console.log(
-      "Get your API key from: https://zora.co/settings/developer\n"
-    );
+    console.log("Get your API key from: https://zora.co/settings/developer\n");
 
-    const apiKey = await passwordOrFail(json, { message: "Paste your API key:" }, nonInteractive);
+    const apiKey = await passwordOrFail(
+      json,
+      { message: "Paste your API key:" },
+      nonInteractive,
+    );
 
     const trimmed = apiKey.trim();
     if (!trimmed) {
-      outputErrorAndExit(json, "No API key provided.", "Usage: zora auth configure");
+      outputErrorAndExit(
+        json,
+        "No API key provided.",
+        "Usage: zora auth configure",
+      );
     }
 
     try {
@@ -46,7 +68,10 @@ authCommand
         table: () => console.log(`API key saved to ${getConfigPath()}`),
       });
     } catch (err) {
-      outputErrorAndExit(json, `Failed to save API key: ${(err as Error).message}`);
+      outputErrorAndExit(
+        json,
+        `Failed to save API key: ${(err as Error).message}`,
+      );
     }
   });
 
@@ -61,8 +86,12 @@ authCommand
       outputData(json, {
         json: { authenticated: false },
         table: () => {
-          console.log("No API key configured. The CLI works without one, but requests are rate-limited.");
-          console.log("Run 'zora auth configure' to set an API key for higher rate limits.");
+          console.log(
+            "No API key configured. The CLI works without one, but requests are rate-limited.",
+          );
+          console.log(
+            "Run 'zora auth configure' to set an API key for higher rate limits.",
+          );
         },
       });
       return;

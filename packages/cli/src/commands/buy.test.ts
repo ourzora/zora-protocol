@@ -35,8 +35,7 @@ import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
-const ACCOUNT_ADDRESS =
-  "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
+const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
 const RECEIPT_TRANSFER_AMOUNT = 1500000000000000000n;
 
 function makeTransferLog({
@@ -181,7 +180,9 @@ describe("buy command", () => {
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining('"action": "buy"'),
     );
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"amount": "1.5"'));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining('"amount": "1.5"'),
+    );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining(`"raw": "${RECEIPT_TRANSFER_AMOUNT.toString()}"`),
     );
@@ -221,9 +222,9 @@ describe("buy command", () => {
   });
 
   it("exits when address is invalid", async () => {
-    await expect(runBuy(["not-an-address", "--eth", "0.1", "--yes"])).rejects.toThrow(
-      "process.exit(1)",
-    );
+    await expect(
+      runBuy(["not-an-address", "--eth", "0.1", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith("Invalid address: not-an-address");
   });
 
@@ -239,9 +240,9 @@ describe("buy command", () => {
   it("exits when no API key is configured", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as unknown as string);
 
-    await expect(runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"])).rejects.toThrow(
-      "process.exit(1)",
-    );
+    await expect(
+      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Not authenticated"),
     );
@@ -250,9 +251,9 @@ describe("buy command", () => {
   it("exits when getCoin throws", async () => {
     vi.mocked(getCoin).mockRejectedValue(new Error("network error"));
 
-    await expect(runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"])).rejects.toThrow(
-      "process.exit(1)",
-    );
+    await expect(
+      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Failed to fetch coin"),
     );
@@ -263,9 +264,9 @@ describe("buy command", () => {
       data: { zora20Token: null },
     } as Awaited<ReturnType<typeof getCoin>>);
 
-    await expect(runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"])).rejects.toThrow(
-      "process.exit(1)",
-    );
+    await expect(
+      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(`Coin not found: ${COIN_ADDRESS}`);
   });
 
@@ -279,9 +280,9 @@ describe("buy command", () => {
   });
 
   it("exits when --eth value is zero", async () => {
-    await expect(
-      runBuy([COIN_ADDRESS, "--eth", "0", "--yes"]),
-    ).rejects.toThrow("process.exit(1)");
+    await expect(runBuy([COIN_ADDRESS, "--eth", "0", "--yes"])).rejects.toThrow(
+      "process.exit(1)",
+    );
     expect(errorSpy).toHaveBeenCalledWith(
       "Invalid --eth value. Must be a positive number.",
     );
@@ -397,9 +398,7 @@ describe("buy command", () => {
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Transaction succeeded but could not determine"),
     );
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Tx: 0x"),
-    );
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Tx: 0x"));
   });
 
   it("aborts when user declines confirmation", async () => {
@@ -441,7 +440,14 @@ describe("buy command", () => {
     });
 
     it("prints quote as JSON and exits without trading", async () => {
-      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--quote", "--output", "json"]);
+      await runBuy([
+        COIN_ADDRESS,
+        "--eth",
+        "0.1",
+        "--quote",
+        "--output",
+        "json",
+      ]);
 
       expect(tradeCoin).not.toHaveBeenCalled();
       const output = logSpy.mock.calls.map((c) => c[0]).join("");
@@ -457,15 +463,9 @@ describe("buy command", () => {
       expect(logSpy).toHaveBeenCalledWith(
         expect.stringContaining("Buy Test Coin (TEST)"),
       );
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Amount"),
-      );
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining("You get"),
-      );
-      expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Slippage"),
-      );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Amount"));
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("You get"));
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Slippage"));
     });
 
     it("does not prompt for confirmation with --quote", async () => {

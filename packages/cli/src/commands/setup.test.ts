@@ -43,7 +43,9 @@ describe("setup command", () => {
     });
     vi.mocked(getPrivateKey).mockReturnValue(undefined);
     vi.mocked(generatePrivateKey).mockReturnValue(MOCK_KEY);
-    vi.mocked(privateKeyToAccount).mockReturnValue({ address: MOCK_ADDRESS } as ReturnType<typeof privateKeyToAccount>);
+    vi.mocked(privateKeyToAccount).mockReturnValue({
+      address: MOCK_ADDRESS,
+    } as ReturnType<typeof privateKeyToAccount>);
     delete process.env.ZORA_PRIVATE_KEY;
   });
 
@@ -61,9 +63,15 @@ describe("setup command", () => {
 
       expect(generatePrivateKey).toHaveBeenCalled();
       expect(savePrivateKey).toHaveBeenCalledWith(MOCK_KEY);
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("\u2713 Wallet created"));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining(MOCK_ADDRESS));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("/tmp/.zora/wallet.json"));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("\u2713 Wallet created"),
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining(MOCK_ADDRESS),
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("/tmp/.zora/wallet.json"),
+      );
     });
 
     it("does not show the interactive prompt", async () => {
@@ -79,7 +87,9 @@ describe("setup command", () => {
       await runSetup([]);
 
       expect(selectOrDefault).toHaveBeenCalledWith(
-        expect.objectContaining({ message: "How do you want to set up your wallet?" }),
+        expect.objectContaining({
+          message: "How do you want to set up your wallet?",
+        }),
         false,
       );
       expect(savePrivateKey).toHaveBeenCalledWith(MOCK_KEY);
@@ -94,8 +104,12 @@ describe("setup command", () => {
       await runSetup([]);
 
       expect(savePrivateKey).toHaveBeenCalledWith("a".repeat(64));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("\u2713 Wallet imported"));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining(MOCK_ADDRESS));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("\u2713 Wallet imported"),
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining(MOCK_ADDRESS),
+      );
     });
 
     it("accepts key with 0x prefix", async () => {
@@ -116,7 +130,9 @@ describe("setup command", () => {
       await runSetup([]);
 
       expect(passwordOrFail).toHaveBeenCalledTimes(2);
-      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Not a valid private key"));
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Not a valid private key"),
+      );
       expect(savePrivateKey).toHaveBeenCalledWith("a".repeat(64));
     });
 
@@ -149,7 +165,9 @@ describe("setup command", () => {
 
       await expect(runSetup(["--create"])).rejects.toThrow("process.exit(1)");
 
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Wallet already configured:"));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Wallet already configured:"),
+      );
     });
 
     it("overwrites existing wallet when --force is set", async () => {
@@ -171,8 +189,12 @@ describe("setup command", () => {
       await runSetup([]);
 
       expect(savePrivateKey).not.toHaveBeenCalled();
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("ZORA_PRIVATE_KEY"));
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining(MOCK_ADDRESS));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("ZORA_PRIVATE_KEY"),
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining(MOCK_ADDRESS),
+      );
     });
 
     it("uses env var with 0x prefix", async () => {
@@ -181,7 +203,9 @@ describe("setup command", () => {
       await runSetup([]);
 
       expect(savePrivateKey).not.toHaveBeenCalled();
-      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("ZORA_PRIVATE_KEY"));
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("ZORA_PRIVATE_KEY"),
+      );
     });
 
     it("exits with error for invalid env var value", async () => {
@@ -216,7 +240,9 @@ describe("setup command", () => {
   describe("corrupted wallet file", () => {
     it("exits with friendly error when getPrivateKey throws", async () => {
       vi.mocked(getPrivateKey).mockImplementation(() => {
-        throw new Error("/home/user/.config/zora/wallet.json: Unexpected token");
+        throw new Error(
+          "/home/user/.config/zora/wallet.json: Unexpected token",
+        );
       });
 
       await expect(runSetup(["--create"])).rejects.toThrow("process.exit(1)");
@@ -231,7 +257,9 @@ describe("setup command", () => {
 
     it("--force skips reading the corrupted wallet and proceeds", async () => {
       vi.mocked(getPrivateKey).mockImplementation(() => {
-        throw new Error("/home/user/.config/zora/wallet.json: Unexpected token");
+        throw new Error(
+          "/home/user/.config/zora/wallet.json: Unexpected token",
+        );
       });
       const newKey = ("0x" + "c".repeat(64)) as `0x${string}`;
       vi.mocked(generatePrivateKey).mockReturnValue(newKey);

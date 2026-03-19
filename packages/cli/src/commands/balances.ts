@@ -53,7 +53,10 @@ type FormattedBalanceJson = {
   totalVolume: number | null;
 };
 
-const SORT_MAP: Record<SortFlag, "USD_VALUE" | "BALANCE" | "MARKET_CAP" | "PRICE_CHANGE"> = {
+const SORT_MAP: Record<
+  SortFlag,
+  "USD_VALUE" | "BALANCE" | "MARKET_CAP" | "PRICE_CHANGE"
+> = {
   "usd-value": "USD_VALUE",
   balance: "BALANCE",
   "market-cap": "MARKET_CAP",
@@ -72,12 +75,18 @@ const SORT_OPTIONS = Object.keys(SORT_MAP).join(", ");
 const normalizeKey = (key: string): `0x${string}` =>
   (key.startsWith("0x") ? key : `0x${key}`) as `0x${string}`;
 
-const resolveAccount = (json: boolean): ReturnType<typeof privateKeyToAccount> => {
+const resolveAccount = (
+  json: boolean,
+): ReturnType<typeof privateKeyToAccount> => {
   const envKey = process.env.ZORA_PRIVATE_KEY;
   const key = envKey || getPrivateKey();
 
   if (!key) {
-    outputErrorAndExit(json, "No wallet configured.", "Run 'zora setup' to create or import one.");
+    outputErrorAndExit(
+      json,
+      "No wallet configured.",
+      "Run 'zora setup' to create or import one.",
+    );
   }
 
   try {
@@ -97,7 +106,10 @@ export function toHumanBalance(rawBalance: string): number {
   return Number(normalizeTokenAmount(rawBalance));
 }
 
-export function normalizeTokenAmount(rawBalance: string, decimals = COIN_DECIMALS): string {
+export function normalizeTokenAmount(
+  rawBalance: string,
+  decimals = COIN_DECIMALS,
+): string {
   try {
     const value = BigInt(rawBalance);
     const divisor = 10n ** BigInt(decimals);
@@ -106,7 +118,10 @@ export function normalizeTokenAmount(rawBalance: string, decimals = COIN_DECIMAL
 
     if (fraction === 0n) return whole.toString();
 
-    const fractionText = fraction.toString().padStart(decimals, "0").replace(/0+$/, "");
+    const fractionText = fraction
+      .toString()
+      .padStart(decimals, "0")
+      .replace(/0+$/, "");
     return `${whole}.${fractionText}`;
   } catch {
     return rawBalance;
@@ -151,12 +166,22 @@ const changeColor = (row: BalanceNode): string | undefined => {
 const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
   { header: "#", width: 5, accessor: (row) => String(row.rank) },
   { header: "Name", width: 24, accessor: (row) => row.coin?.name ?? "Unknown" },
-  { header: "Symbol", width: 12, noTruncate: true, accessor: (row) => row.coin?.symbol ?? "" },
-  { header: "Balance", width: 14, accessor: (row) => formatBalance(row.balance) },
+  {
+    header: "Symbol",
+    width: 12,
+    noTruncate: true,
+    accessor: (row) => row.coin?.symbol ?? "",
+  },
+  {
+    header: "Balance",
+    width: 14,
+    accessor: (row) => formatBalance(row.balance),
+  },
   {
     header: "USD Value",
     width: 14,
-    accessor: (row) => formatUsdValue(row.balance, row.coin?.tokenPrice?.priceInUsdc),
+    accessor: (row) =>
+      formatUsdValue(row.balance, row.coin?.tokenPrice?.priceInUsdc),
   },
   {
     header: "Market Cap",
@@ -166,22 +191,43 @@ const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
   {
     header: "24h Change",
     width: 12,
-    accessor: (row) => formatChange(row.coin?.marketCap, row.coin?.marketCapDelta24h),
+    accessor: (row) =>
+      formatChange(row.coin?.marketCap, row.coin?.marketCapDelta24h),
     color: changeColor,
   },
 ];
 
-const formatBalanceJson = (balance: BalanceNode, rank: number): FormattedBalanceJson => {
+const formatBalanceJson = (
+  balance: BalanceNode,
+  rank: number,
+): FormattedBalanceJson => {
   const priceUsd = balance.coin?.tokenPrice?.priceInUsdc;
-  const marketCap = balance.coin?.marketCap ? Number(balance.coin.marketCap) : null;
-  const marketCapDelta24h = balance.coin?.marketCapDelta24h ? Number(balance.coin.marketCapDelta24h) : null;
-  const volume24h = balance.coin?.volume24h ? Number(balance.coin.volume24h) : null;
-  const totalVolume = balance.coin?.totalVolume ? Number(balance.coin.totalVolume) : null;
+  const marketCap = balance.coin?.marketCap
+    ? Number(balance.coin.marketCap)
+    : null;
+  const marketCapDelta24h = balance.coin?.marketCapDelta24h
+    ? Number(balance.coin.marketCapDelta24h)
+    : null;
+  const volume24h = balance.coin?.volume24h
+    ? Number(balance.coin.volume24h)
+    : null;
+  const totalVolume = balance.coin?.totalVolume
+    ? Number(balance.coin.totalVolume)
+    : null;
   const priceUsdValue = priceUsd ? Number(priceUsd) : null;
-  const usdValue = priceUsdValue !== null ? Number((toHumanBalance(balance.balance) * priceUsdValue).toFixed(6)) : null;
+  const usdValue =
+    priceUsdValue !== null
+      ? Number((toHumanBalance(balance.balance) * priceUsdValue).toFixed(6))
+      : null;
   const marketCapChange24h =
-    marketCap !== null && marketCapDelta24h !== null && marketCap - marketCapDelta24h !== 0
-      ? Number((((marketCapDelta24h / (marketCap - marketCapDelta24h)) * 100)).toFixed(4))
+    marketCap !== null &&
+    marketCapDelta24h !== null &&
+    marketCap - marketCapDelta24h !== 0
+      ? Number(
+          ((marketCapDelta24h / (marketCap - marketCapDelta24h)) * 100).toFixed(
+            4,
+          ),
+        )
       : null;
 
   return {
@@ -214,18 +260,28 @@ export const balancesCommand = new Command("balances")
     const limit = parseInt(opts.limit, 10);
 
     if (!SORT_MAP[sort]) {
-      outputErrorAndExit(json, `Invalid --sort value: ${sort}.`, `Supported: ${SORT_OPTIONS}`);
+      outputErrorAndExit(
+        json,
+        `Invalid --sort value: ${sort}.`,
+        `Supported: ${SORT_OPTIONS}`,
+      );
     }
 
     if (isNaN(limit) || limit <= 0 || limit > 20) {
-      outputErrorAndExit(json, `Invalid --limit value: ${opts.limit}. Must be an integer between 1 and 20.`);
+      outputErrorAndExit(
+        json,
+        `Invalid --limit value: ${opts.limit}. Must be an integer between 1 and 20.`,
+      );
     }
 
     const account = resolveAccount(json);
 
     const apiKey = getApiKey();
     if (!apiKey) {
-      outputErrorAndExit(json, "Not authenticated. Run 'zora auth configure' to set your API key.");
+      outputErrorAndExit(
+        json,
+        "Not authenticated. Run 'zora auth configure' to set your API key.",
+      );
     }
     setApiKey(apiKey);
 
@@ -237,7 +293,10 @@ export const balancesCommand = new Command("balances")
         sortOption: SORT_MAP[sort],
       });
     } catch (err) {
-      outputErrorAndExit(json, `Request failed: ${err instanceof Error ? err.message : String(err)}`);
+      outputErrorAndExit(
+        json,
+        `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+      );
     }
 
     if (response.error) {
@@ -263,11 +322,17 @@ export const balancesCommand = new Command("balances")
       return;
     }
 
-    const total = response.data?.profile?.coinBalances?.count ?? balances.length;
-    const rankedBalances = balances.map((balance, index) => ({ ...balance, rank: index + 1 }));
+    const total =
+      response.data?.profile?.coinBalances?.count ?? balances.length;
+    const rankedBalances = balances.map((balance, index) => ({
+      ...balance,
+      rank: index + 1,
+    }));
 
     outputData(json, {
-      json: rankedBalances.map((balance) => formatBalanceJson(balance, balance.rank)),
+      json: rankedBalances.map((balance) =>
+        formatBalanceJson(balance, balance.rank),
+      ),
       table: () => {
         renderOnce(
           TableComponent<BalanceNode & { rank: number }>({

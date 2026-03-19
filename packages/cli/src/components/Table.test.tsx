@@ -79,7 +79,12 @@ describe("Table", () => {
 
   it("does not truncate when noTruncate is set", () => {
     const columns: Column<Item>[] = [
-      { header: "Name", width: 8, noTruncate: true, accessor: (item) => item.name },
+      {
+        header: "Name",
+        width: 8,
+        noTruncate: true,
+        accessor: (item) => item.name,
+      },
     ];
     const data: Item[] = [{ rank: 1, name: "VeryLongTokenName", value: "" }];
     const { lastFrame } = render(

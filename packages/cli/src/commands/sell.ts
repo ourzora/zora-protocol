@@ -63,14 +63,14 @@ function getAmountMode(opts: Record<string, unknown>): AmountMode {
     .map(([mode]) => mode);
 
   if (provided.length === 0) {
-    console.error(
-      "Specify one amount flag: --amount, --percent, or --all",
-    );
+    console.error("Specify one amount flag: --amount, --percent, or --all");
     process.exit(1);
   }
 
   if (provided.length > 1) {
-    console.error("Only one amount flag allowed: --amount, --percent, or --all");
+    console.error(
+      "Only one amount flag allowed: --amount, --percent, or --all",
+    );
     process.exit(1);
   }
 
@@ -87,7 +87,9 @@ function formatAmountDisplay(amount: bigint, decimals: number): string {
   const formatted = formatUnits(amount, decimals);
   // Truncate to 2 decimal places before converting to Number to avoid precision loss
   const parts = formatted.split(".");
-  const truncated = parts[1] ? `${parts[0]}.${parts[1].slice(0, 2)}` : formatted;
+  const truncated = parts[1]
+    ? `${parts[0]}.${parts[1].slice(0, 2)}`
+    : formatted;
   return new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,
   }).format(Number(truncated));
@@ -173,7 +175,9 @@ function printSellQuote(
 
   console.log(`\n Sell ${info.coinName} (${info.coinSymbol})\n`);
   console.log(`   Amount       ${info.soldFormatted} ${info.coinSymbol}`);
-  console.log(`   You get      ~${info.receivedFormatted} ${info.outputSymbol}`);
+  console.log(
+    `   You get      ~${info.receivedFormatted} ${info.outputSymbol}`,
+  );
   console.log(`   Slippage     ${info.slippagePct}%\n`);
 }
 
@@ -193,8 +197,14 @@ function printSellResult(
     txHash: string;
   },
 ): void {
-  const receivedAmount = formatUnits(info.receivedAmountOut, info.outputDecimals);
-  const receivedFormatted = formatAmountDisplay(info.receivedAmountOut, info.outputDecimals);
+  const receivedAmount = formatUnits(
+    info.receivedAmountOut,
+    info.outputDecimals,
+  );
+  const receivedFormatted = formatAmountDisplay(
+    info.receivedAmountOut,
+    info.outputDecimals,
+  );
 
   if (output === "json") {
     printJson({
@@ -332,9 +342,7 @@ export const sellCommand = new Command("sell")
       } else {
         const pct = parsePercentageLikeValue(opts.percent);
         if (pct === undefined || pct <= 0 || pct > 100) {
-          console.error(
-            "Invalid --percent value. Must be between 0 and 100.",
-          );
+          console.error("Invalid --percent value. Must be between 0 and 100.");
           process.exit(1);
         }
 

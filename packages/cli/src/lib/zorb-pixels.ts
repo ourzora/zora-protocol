@@ -30,11 +30,7 @@ function clamp(v: number, min: number, max: number): number {
 
 /** Alpha-over: composite `fg` with alpha `a` onto `bg`. */
 function alphaOver(bg: RGB, fg: RGB, a: number): RGB {
-  return [
-    lerp(bg[0], fg[0], a),
-    lerp(bg[1], fg[1], a),
-    lerp(bg[2], fg[2], a),
-  ];
+  return [lerp(bg[0], fg[0], a), lerp(bg[1], fg[1], a), lerp(bg[2], fg[2], a)];
 }
 
 // -- gaussian blur approximation --
@@ -136,17 +132,13 @@ function computeLayerAlpha(
   const dist = Math.sqrt(dx * dx + dy * dy);
 
   // Base radial extent with gaussian blur falloff at edge
-  const radialFalloff = gaussian(
-    Math.max(0, dist - layer.radius),
-    layer.blur,
-  );
+  const radialFalloff = gaussian(Math.max(0, dist - layer.radius), layer.blur);
 
   if (layer.ring) {
     // Dark ring: peak opacity at ~70% of radius, fading to 0 at center and edge
     const normalizedDist = dist / layer.radius;
     // Ring peaks around 0.7 of the radius
-    const ringProfile =
-      gaussian(normalizedDist - 0.7, 0.15) * radialFalloff;
+    const ringProfile = gaussian(normalizedDist - 0.7, 0.15) * radialFalloff;
     return { alpha: ringProfile * layer.opacity, color: layer.color };
   }
 

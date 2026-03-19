@@ -12,14 +12,20 @@ describe("confirmOrDefault", () => {
   afterEach(() => vi.restoreAllMocks());
 
   it("returns true when nonInteractive is true (--yes means yes)", async () => {
-    const result = await confirmOrDefault({ message: "Continue?", default: false }, true);
+    const result = await confirmOrDefault(
+      { message: "Continue?", default: false },
+      true,
+    );
     expect(result).toBe(true);
     expect(confirm).not.toHaveBeenCalled();
   });
 
   it("calls inquirer confirm when nonInteractive is false", async () => {
     vi.mocked(confirm).mockResolvedValue(false);
-    const result = await confirmOrDefault({ message: "Continue?", default: true }, false);
+    const result = await confirmOrDefault(
+      { message: "Continue?", default: true },
+      false,
+    );
     expect(result).toBe(false);
     expect(confirm).toHaveBeenCalled();
   });
@@ -53,7 +59,9 @@ describe("passwordOrFail", () => {
 
   it("exits with error when nonInteractive is true", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(process, "exit").mockImplementation((code) => { throw new Error(`exit ${code}`); });
+    vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`exit ${code}`);
+    });
 
     await expect(
       passwordOrFail(false, { message: "Key:" }, true),

@@ -1,9 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import {
-  formatCompactCurrency,
-  formatChange,
-  QUERY_MAP,
-} from "./explore.jsx";
+import { formatCompactCurrency, formatChange, QUERY_MAP } from "./explore.jsx";
 import { createProgram } from "../test/create-program.js";
 
 vi.mock("@zoralabs/coins-sdk", () => ({
@@ -145,9 +141,9 @@ describe("exploreCommand action", () => {
   beforeEach(() => {
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation((code) => { throw new Error(`exit ${code}`); });
+    exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`exit ${code}`);
+    });
   });
 
   afterEach(() => {
@@ -161,17 +157,23 @@ describe("exploreCommand action", () => {
       program.parseAsync(["explore", "--sort", "invalid"], { from: "user" }),
     ).rejects.toThrow("exit 1");
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --sort"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --sort"),
+    );
   });
 
   it("exits with error for unsupported --type for given --sort", async () => {
     const { exploreCommand } = await import("./explore.jsx");
     const program = createProgram(exploreCommand);
     await expect(
-      program.parseAsync(["explore", "--sort", "gainers", "--type", "all"], { from: "user" }),
+      program.parseAsync(["explore", "--sort", "gainers", "--type", "all"], {
+        from: "user",
+      }),
     ).rejects.toThrow("exit 1");
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --type"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --type"),
+    );
   });
 
   it("exits with error for invalid --limit", async () => {
@@ -181,7 +183,9 @@ describe("exploreCommand action", () => {
       program.parseAsync(["explore", "--limit", "abc"], { from: "user" }),
     ).rejects.toThrow("exit 1");
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --limit"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --limit"),
+    );
   });
 
   it("exits with error for --limit above 20", async () => {
@@ -191,12 +195,15 @@ describe("exploreCommand action", () => {
       program.parseAsync(["explore", "--limit", "25"], { from: "user" }),
     ).rejects.toThrow("exit 1");
 
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Invalid --limit"));
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid --limit"),
+    );
   });
 
   it("works without an API key", async () => {
     const { getApiKey } = await import("../lib/config.js");
-    const { setApiKey, getCoinsMostValuable } = await import("@zoralabs/coins-sdk");
+    const { setApiKey, getCoinsMostValuable } =
+      await import("@zoralabs/coins-sdk");
 
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getCoinsMostValuable).mockResolvedValue({
@@ -248,7 +255,8 @@ describe("exploreCommand action", () => {
 
   it("renders table for default output (table mode)", async () => {
     const { getApiKey } = await import("../lib/config.js");
-    const { getCoinsMostValuable, setApiKey } = await import("@zoralabs/coins-sdk");
+    const { getCoinsMostValuable, setApiKey } =
+      await import("@zoralabs/coins-sdk");
     const { renderOnce } = await import("../lib/render.js");
 
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
@@ -306,7 +314,10 @@ describe("exploreCommand action", () => {
 
     const { exploreCommand } = await import("./explore.jsx");
     const program = createProgram(exploreCommand);
-    await program.parseAsync(["explore", "--sort", "trending", "--type", "post", "--json"], { from: "user" });
+    await program.parseAsync(
+      ["explore", "--sort", "trending", "--type", "post", "--json"],
+      { from: "user" },
+    );
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
     expect(getTrendingPosts).toHaveBeenCalledWith({ count: 10 });
@@ -318,7 +329,8 @@ describe("exploreCommand action", () => {
 
   it("fetches top gainers", async () => {
     const { getApiKey } = await import("../lib/config.js");
-    const { getCoinsTopGainers, setApiKey } = await import("@zoralabs/coins-sdk");
+    const { getCoinsTopGainers, setApiKey } =
+      await import("@zoralabs/coins-sdk");
 
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
     vi.mocked(getCoinsTopGainers).mockResolvedValue({
@@ -342,7 +354,9 @@ describe("exploreCommand action", () => {
 
     const { exploreCommand } = await import("./explore.jsx");
     const program = createProgram(exploreCommand);
-    await program.parseAsync(["explore", "--sort", "gainers", "--json"], { from: "user" });
+    await program.parseAsync(["explore", "--sort", "gainers", "--json"], {
+      from: "user",
+    });
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
     expect(getCoinsTopGainers).toHaveBeenCalledWith({ count: 10 });

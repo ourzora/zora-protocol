@@ -12,14 +12,18 @@ export function resolveAccount(): ReturnType<typeof privateKeyToAccount> {
   const key = envKey || getPrivateKey();
 
   if (!key) {
-    console.error("No wallet configured. Run 'zora setup' to create or import one.");
+    console.error(
+      "No wallet configured. Run 'zora setup' to create or import one.",
+    );
     return process.exit(1);
   }
 
   try {
     return privateKeyToAccount(normalizeKey(key));
   } catch (err) {
-    console.error(`✗ Invalid private key: ${err instanceof Error ? err.message : String(err)}`);
+    console.error(
+      `✗ Invalid private key: ${err instanceof Error ? err.message : String(err)}`,
+    );
     console.error("  Run 'zora setup --force' to replace it.");
     return process.exit(1);
   }

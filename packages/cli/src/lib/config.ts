@@ -1,4 +1,10 @@
-import { existsSync, mkdirSync, readFileSync, writeFileSync, chmodSync } from "node:fs";
+import {
+  existsSync,
+  mkdirSync,
+  readFileSync,
+  writeFileSync,
+  chmodSync,
+} from "node:fs";
 import { join } from "node:path";
 import { homedir } from "node:os";
 
@@ -20,7 +26,11 @@ interface Wallet {
   privateKey: string;
 }
 
-function assertVersion(parsed: unknown, expectedVersion: number, filePath: string): void {
+function assertVersion(
+  parsed: unknown,
+  expectedVersion: number,
+  filePath: string,
+): void {
   if (typeof parsed !== "object" || parsed === null) {
     throw new Error(`${filePath}: expected an object`);
   }
@@ -29,7 +39,9 @@ function assertVersion(parsed: unknown, expectedVersion: number, filePath: strin
     throw new Error(`${filePath}: missing required field "version"`);
   }
   if (obj.version !== expectedVersion) {
-    throw new Error(`${filePath}: unsupported version ${obj.version} (expected ${expectedVersion})`);
+    throw new Error(
+      `${filePath}: unsupported version ${obj.version} (expected ${expectedVersion})`,
+    );
   }
 }
 
@@ -39,13 +51,17 @@ function readConfig(): Config {
   try {
     parsed = JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
   } catch (err) {
-    console.error(`Warning: could not parse ${CONFIG_FILE}: ${(err as Error).message}. Run 'zora auth configure' to fix.`);
+    console.error(
+      `Warning: could not parse ${CONFIG_FILE}: ${(err as Error).message}. Run 'zora auth configure' to fix.`,
+    );
     return { version: CONFIG_VERSION };
   }
   try {
     assertVersion(parsed, CONFIG_VERSION, CONFIG_FILE);
   } catch (err) {
-    console.error(`Error: ${(err as Error).message}. Delete ${CONFIG_FILE} or run 'zora auth configure' to reset.`);
+    console.error(
+      `Error: ${(err as Error).message}. Delete ${CONFIG_FILE} or run 'zora auth configure' to reset.`,
+    );
     process.exit(1);
   }
   return parsed as Config;
@@ -53,9 +69,13 @@ function readConfig(): Config {
 
 function writeConfig(config: Config): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(CONFIG_FILE, JSON.stringify({ ...config, version: CONFIG_VERSION }, null, 2) + "\n", {
-    mode: 0o600,
-  });
+  writeFileSync(
+    CONFIG_FILE,
+    JSON.stringify({ ...config, version: CONFIG_VERSION }, null, 2) + "\n",
+    {
+      mode: 0o600,
+    },
+  );
   chmodSync(CONFIG_FILE, 0o600);
 }
 
@@ -77,9 +97,13 @@ function readWallet(): Wallet | undefined {
 
 function writeWallet(wallet: Omit<Wallet, "version">): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
-  writeFileSync(WALLET_FILE, JSON.stringify({ ...wallet, version: WALLET_VERSION }, null, 2) + "\n", {
-    mode: 0o600,
-  });
+  writeFileSync(
+    WALLET_FILE,
+    JSON.stringify({ ...wallet, version: WALLET_VERSION }, null, 2) + "\n",
+    {
+      mode: 0o600,
+    },
+  );
   chmodSync(WALLET_FILE, 0o600);
 }
 
@@ -88,7 +112,9 @@ export function getEnvApiKey(): string | undefined {
   const envKey = process.env.ZORA_API_KEY;
   if (envKey === undefined) return undefined;
   if (!envKey) {
-    console.error("ZORA_API_KEY is set but empty. Provide a valid key or unset the variable.");
+    console.error(
+      "ZORA_API_KEY is set but empty. Provide a valid key or unset the variable.",
+    );
     process.exit(1);
   }
   return envKey;

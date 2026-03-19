@@ -65,7 +65,10 @@ async function resolveByAddress(address: string): Promise<ResolveCoinResult> {
   const response = await getCoin({ address });
 
   if (response.error || !response.data?.zora20Token) {
-    return { kind: "not-found", message: `No coin found at address ${address}` };
+    return {
+      kind: "not-found",
+      message: `No coin found at address ${address}`,
+    };
   }
 
   return { kind: "found", coin: coinFromToken(response.data.zora20Token) };
@@ -75,12 +78,18 @@ async function resolveByCreatorName(name: string): Promise<ResolveCoinResult> {
   const response = await getProfile({ identifier: name });
 
   if (response.error || !response.data?.profile) {
-    return { kind: "not-found", message: `No creator found with name "${name}"` };
+    return {
+      kind: "not-found",
+      message: `No creator found with name "${name}"`,
+    };
   }
 
   const profile = response.data.profile;
   if (!profile.creatorCoin) {
-    return { kind: "not-found", message: `"${name}" does not have a creator coin` };
+    return {
+      kind: "not-found",
+      message: `"${name}" does not have a creator coin`,
+    };
   }
 
   return resolveByAddress(profile.creatorCoin.address);

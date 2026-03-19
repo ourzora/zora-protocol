@@ -34,14 +34,18 @@ describe("CoinDetail", () => {
   });
 
   it("does not show Creator for non-post coins", () => {
-    const { lastFrame } = render(<CoinDetail coin={makeCoin({ coinType: "creator-coin" })} />);
+    const { lastFrame } = render(
+      <CoinDetail coin={makeCoin({ coinType: "creator-coin" })} />,
+    );
 
     expect(lastFrame()).toContain("creator-coin");
     expect(lastFrame()).not.toContain("Creator");
   });
 
   it("shows creator address when no handle", () => {
-    const { lastFrame } = render(<CoinDetail coin={makeCoin({ creatorHandle: undefined })} />);
+    const { lastFrame } = render(
+      <CoinDetail coin={makeCoin({ creatorHandle: undefined })} />,
+    );
 
     expect(lastFrame()).toContain("Creator");
     expect(lastFrame()).toContain("0xcreatoraddr");
@@ -49,7 +53,9 @@ describe("CoinDetail", () => {
 
   it("hides Creator row when neither handle nor address", () => {
     const { lastFrame } = render(
-      <CoinDetail coin={makeCoin({ creatorHandle: undefined, creatorAddress: undefined })} />,
+      <CoinDetail
+        coin={makeCoin({ creatorHandle: undefined, creatorAddress: undefined })}
+      />,
     );
 
     expect(lastFrame()).not.toContain("Creator");

@@ -43,7 +43,7 @@ export function Zorb({ size = 20 }: { size?: number }) {
       const bottomIsBlack = isBlack(bottom);
 
       if (topIsBlack && bottomIsBlack) {
-        cells.push(<Text key={x}>{" "}</Text>);
+        cells.push(<Text key={x}> </Text>);
       } else if (topIsBlack) {
         cells.push(
           <Text key={x} color={rgbString(bottom)}>
@@ -70,18 +70,14 @@ export function Zorb({ size = 20 }: { size?: number }) {
     }
 
     // Wrap cells in <Text> so they render inline (not as flex items)
-    rows.push(
-      <Text key={y}>
-        {cells}
-      </Text>,
-    );
+    rows.push(<Text key={y}>{cells}</Text>);
   }
 
   return (
     <Box flexDirection="column">
-      <Text>{" "}</Text>
+      <Text> </Text>
       {rows}
-      <Text>{" "}</Text>
+      <Text> </Text>
     </Box>
   );
 }

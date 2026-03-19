@@ -20,19 +20,26 @@ const truncate = (str: string, max: number): string => {
   return str.slice(0, max - 1) + "\u2026";
 };
 
-const TableComponent = <T,>({ columns, data, title, subtitle }: TableProps<T>) => (
+const TableComponent = <T,>({
+  columns,
+  data,
+  title,
+  subtitle,
+}: TableProps<T>) => (
   <Box flexDirection="column" paddingTop={1} paddingBottom={1}>
     {title && (
       <Box paddingLeft={1} marginBottom={1}>
         <Text bold>{title}</Text>
-        {subtitle && <Text dimColor>  {subtitle}</Text>}
+        {subtitle && <Text dimColor> {subtitle}</Text>}
       </Box>
     )}
 
     <Box paddingLeft={1}>
       {columns.map((col) => (
         <Box key={col.header} width={col.width}>
-          <Text bold dimColor>{col.header}</Text>
+          <Text bold dimColor>
+            {col.header}
+          </Text>
         </Box>
       ))}
     </Box>
@@ -40,7 +47,9 @@ const TableComponent = <T,>({ columns, data, title, subtitle }: TableProps<T>) =
     {data.map((row, i) => (
       <Box key={i} paddingLeft={1}>
         {columns.map((col) => {
-          const value = col.noTruncate ? col.accessor(row) : truncate(col.accessor(row), col.width - 2);
+          const value = col.noTruncate
+            ? col.accessor(row)
+            : truncate(col.accessor(row), col.width - 2);
           const colorName = col.color?.(row);
           return (
             <Box key={col.header} width={col.width}>

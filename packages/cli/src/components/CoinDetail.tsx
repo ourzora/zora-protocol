@@ -1,10 +1,21 @@
 import { Box, Text } from "ink";
-import { formatCurrency, formatMcapChange, formatHolders, formatCreatedAt } from "../lib/format.js";
+import {
+  formatCurrency,
+  formatMcapChange,
+  formatHolders,
+  formatCreatedAt,
+} from "../lib/format.js";
 import type { ResolvedCoin } from "../lib/coin-ref.js";
 
 const LABEL_WIDTH = 18;
 
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
+function Row({
+  label,
+  children,
+}: {
+  label: string;
+  children: React.ReactNode;
+}) {
   return (
     <Box>
       <Box width={LABEL_WIDTH} flexShrink={0}>
@@ -34,11 +45,12 @@ export function CoinDetail({ coin }: { coin: ResolvedCoin }) {
           <Text color={change.color}>{change.text}</Text>
         </Row>
         <Row label="Holders">{formatHolders(coin.uniqueHolders)}</Row>
-        {coin.coinType === "post" && (coin.creatorHandle ?? coin.creatorAddress) && (
-          <Row label="Creator">
-            {coin.creatorHandle ?? coin.creatorAddress}
-          </Row>
-        )}
+        {coin.coinType === "post" &&
+          (coin.creatorHandle ?? coin.creatorAddress) && (
+            <Row label="Creator">
+              {coin.creatorHandle ?? coin.creatorAddress}
+            </Row>
+          )}
         <Row label="Created">{formatCreatedAt(coin.createdAt)}</Row>
       </Box>
 

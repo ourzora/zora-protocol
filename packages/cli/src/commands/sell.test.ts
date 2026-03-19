@@ -35,8 +35,7 @@ import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
-const ACCOUNT_ADDRESS =
-  "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
+const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
 const USDC_ADDRESS = "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address;
 const RECEIPT_USDC_AMOUNT = 25_000_000n;
 
@@ -200,9 +199,9 @@ describe("sell command", () => {
   it("exits with error when no API key is configured", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined);
 
-    await expect(
-      runSell([COIN_ADDRESS, "--amount", "1"]),
-    ).rejects.toThrow("process.exit(1)");
+    await expect(runSell([COIN_ADDRESS, "--amount", "1"])).rejects.toThrow(
+      "process.exit(1)",
+    );
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Not authenticated"),
     );
@@ -264,9 +263,9 @@ describe("sell command", () => {
   it("exits with error when token balance is zero for --all", async () => {
     publicClient.readContract.mockResolvedValue(0n);
 
-    await expect(
-      runSell([COIN_ADDRESS, "--all", "--yes"]),
-    ).rejects.toThrow("process.exit(1)");
+    await expect(runSell([COIN_ADDRESS, "--all", "--yes"])).rejects.toThrow(
+      "process.exit(1)",
+    );
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("No TEST balance"),
     );
@@ -310,9 +309,9 @@ describe("sell command", () => {
   it("aborts when user declines confirmation", async () => {
     vi.mocked(confirm).mockResolvedValue(false);
 
-    await expect(
-      runSell([COIN_ADDRESS, "--amount", "1"]),
-    ).rejects.toThrow("process.exit(0)");
+    await expect(runSell([COIN_ADDRESS, "--amount", "1"])).rejects.toThrow(
+      "process.exit(0)",
+    );
     expect(errorSpy).toHaveBeenCalledWith("Aborted.");
   });
 
