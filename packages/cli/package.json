@@ -20,7 +20,7 @@
     "@inquirer/core": "^11.1.5",
     "@inquirer/password": "^5.0.8",
     "@inquirer/select": "^5.1.0",
-    "@zoralabs/coins-sdk": "^0.4.7",
+    "@zoralabs/coins-sdk": "^0.4.8",
     "commander": "^13.1.0",
     "date-fns": "^4.1.0",
     "ink": "^6.8.0",

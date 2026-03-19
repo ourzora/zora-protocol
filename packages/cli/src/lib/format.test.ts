@@ -1,4 +1,5 @@
 import { describe, it, expect } from "vitest";
+import { parseEther } from "viem";
 import {
   formatCurrency,
   formatMcapChange,
@@ -7,6 +8,8 @@ import {
   formatRelativeTime,
   formatAbsoluteTime,
   formatCreatedAt,
+  formatEthDisplay,
+  formatCoinsDisplay,
 } from "./format.js";
 
 describe("formatCurrency", () => {
@@ -83,6 +86,34 @@ describe("formatMcapChange", () => {
       text: "+0.0%",
       color: undefined,
     });
+  });
+});
+
+describe("formatEthDisplay", () => {
+  it("formats whole ETH amounts", () => {
+    expect(formatEthDisplay(parseEther("1"))).toBe("1");
+  });
+
+  it("trims trailing zeros", () => {
+    expect(formatEthDisplay(parseEther("0.1"))).toBe("0.1");
+  });
+
+  it("preserves significant decimals", () => {
+    expect(formatEthDisplay(parseEther("0.001"))).toBe("0.001");
+  });
+});
+
+describe("formatCoinsDisplay", () => {
+  it("formats with commas", () => {
+    expect(formatCoinsDisplay("1234567")).toBe("1,234,567");
+  });
+
+  it("limits to 2 decimal places", () => {
+    expect(formatCoinsDisplay("1234.5678")).toBe("1,234.57");
+  });
+
+  it("handles small values", () => {
+    expect(formatCoinsDisplay("0.5")).toBe("0.5");
   });
 });
 

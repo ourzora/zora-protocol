@@ -1,11 +1,22 @@
 import { Command } from "commander";
 import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
-import { privateKeyToAccount } from "viem/accounts";
-import { getApiKey, getPrivateKey } from "../lib/config.js";
+import { getApiKey } from "../lib/config.js";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { renderOnce } from "../lib/render.js";
 import { TableComponent, type Column } from "../components/table.js";
 import { formatCompactCurrency, formatChange } from "./explore.jsx";
+import { resolveAccount } from "../lib/wallet.js";
+import {
+  toHumanBalance,
+  normalizeTokenAmount,
+  formatUsdValue,
+  formatBalance,
+} from "../lib/balance-format.js";
+import {
+  fetchWalletBalances,
+  type WalletBalance,
+  type WalletBalanceJson,
+} from "../lib/wallet-balances.js";
 
 type SortFlag = "usd-value" | "balance" | "market-cap" | "price-change";
 type BalanceNode = {
@@ -72,85 +83,12 @@ const SORT_LABELS: Record<SortFlag, string> = {
 
 const SORT_OPTIONS = Object.keys(SORT_MAP).join(", ");
 
-const normalizeKey = (key: string): `0x${string}` =>
-  (key.startsWith("0x") ? key : `0x${key}`) as `0x${string}`;
-
-const resolveAccount = (
-  json: boolean,
-): ReturnType<typeof privateKeyToAccount> => {
-  const envKey = process.env.ZORA_PRIVATE_KEY;
-  const key = envKey || getPrivateKey();
-
-  if (!key) {
-    outputErrorAndExit(
-      json,
-      "No wallet configured.",
-      "Run 'zora setup' to create or import one.",
-    );
+const extractErrorMessage = (error: unknown): string => {
+  if (typeof error === "object" && error !== null && "error" in error) {
+    return String((error as Record<string, unknown>).error);
   }
-
-  try {
-    return privateKeyToAccount(normalizeKey(key));
-  } catch {
-    outputErrorAndExit(
-      json,
-      "Private key is invalid.",
-      "Please correctly set up your private key. See `zora wallet` for more info.",
-    );
-  }
+  return JSON.stringify(error);
 };
-
-const COIN_DECIMALS = 18;
-
-export function toHumanBalance(rawBalance: string): number {
-  return Number(normalizeTokenAmount(rawBalance));
-}
-
-export function normalizeTokenAmount(
-  rawBalance: string,
-  decimals = COIN_DECIMALS,
-): string {
-  try {
-    const value = BigInt(rawBalance);
-    const divisor = 10n ** BigInt(decimals);
-    const whole = value / divisor;
-    const fraction = value % divisor;
-
-    if (fraction === 0n) return whole.toString();
-
-    const fractionText = fraction
-      .toString()
-      .padStart(decimals, "0")
-      .replace(/0+$/, "");
-    return `${whole}.${fractionText}`;
-  } catch {
-    return rawBalance;
-  }
-}
-
-export function formatUsdValue(balance: string, priceInUsdc?: string): string {
-  if (!priceInUsdc) return "-";
-  const value = toHumanBalance(balance) * Number(priceInUsdc);
-  if (value < 0.01) return "<$0.01";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-    maximumFractionDigits: 2,
-  }).format(value);
-}
-
-export function formatBalance(balance: string): string {
-  const n = toHumanBalance(balance);
-  if (n === 0) return "0";
-  if (n < 0.001) return "<0.001";
-  if (n < 1) return n.toFixed(4);
-  return new Intl.NumberFormat("en-US", {
-    notation: "compact",
-    compactDisplay: "long",
-    maximumFractionDigits: 1,
-  }).format(n);
-}
 
 const changeColor = (row: BalanceNode): string | undefined => {
   if (!row.coin?.marketCap || !row.coin.marketCapDelta24h) return undefined;
@@ -162,6 +100,18 @@ const changeColor = (row: BalanceNode): string | undefined => {
   if (pct < 0) return "red";
   return undefined;
 };
+
+const walletColumns: Column<WalletBalance>[] = [
+  { header: "Name", width: 14, accessor: (row) => row.name },
+  {
+    header: "Symbol",
+    width: 10,
+    noTruncate: true,
+    accessor: (row) => row.symbol,
+  },
+  { header: "Balance", width: 20, accessor: (row) => row.balance },
+  { header: "USD Value", width: 16, accessor: (row) => row.usdValue },
+];
 
 const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
   { header: "#", width: 5, accessor: (row) => String(row.rank) },
@@ -285,13 +235,17 @@ export const balancesCommand = new Command("balances")
     }
     setApiKey(apiKey);
 
+    let walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>;
     let response: Awaited<ReturnType<typeof getProfileBalances>>;
     try {
-      response = await getProfileBalances({
-        identifier: account.address,
-        count: limit,
-        sortOption: SORT_MAP[sort],
-      });
+      [walletResult, response] = await Promise.all([
+        fetchWalletBalances(account.address),
+        getProfileBalances({
+          identifier: account.address,
+          count: limit,
+          sortOption: SORT_MAP[sort],
+        }),
+      ]);
     } catch (err) {
       outputErrorAndExit(
         json,
@@ -300,28 +254,16 @@ export const balancesCommand = new Command("balances")
     }
 
     if (response.error) {
-      const msg =
-        typeof response.error === "object" && (response.error as any).error
-          ? (response.error as any).error
-          : JSON.stringify(response.error);
-      outputErrorAndExit(json, `API error: ${msg}`);
+      outputErrorAndExit(
+        json,
+        `API error: ${extractErrorMessage(response.error)}`,
+      );
     }
 
     const edges = response.data?.profile?.coinBalances?.edges ?? [];
-    const balances: BalanceNode[] = edges.map((e: any) => e.node);
-
-    if (balances.length === 0) {
-      outputData(json, {
-        json: [],
-        table: () => {
-          console.log("\n No coin balances found.\n");
-          console.log(" Buy coins to see them here:");
-          console.log("   zora buy <address> --eth 0.001\n");
-        },
-      });
-      return;
-    }
-
+    const balances: BalanceNode[] = edges.map(
+      (e: { node: BalanceNode }) => e.node,
+    );
     const total =
       response.data?.profile?.coinBalances?.count ?? balances.length;
     const rankedBalances = balances.map((balance, index) => ({
@@ -330,18 +272,35 @@ export const balancesCommand = new Command("balances")
     }));
 
     outputData(json, {
-      json: rankedBalances.map((balance) =>
-        formatBalanceJson(balance, balance.rank),
-      ),
+      json: {
+        wallet: walletResult.walletBalancesJson,
+        coins: rankedBalances.map((balance) =>
+          formatBalanceJson(balance, balance.rank),
+        ),
+      },
       table: () => {
         renderOnce(
-          TableComponent<BalanceNode & { rank: number }>({
-            columns: balanceColumns,
-            data: rankedBalances,
-            title: `Wallet Balances · sorted by ${SORT_LABELS[sort]}`,
-            subtitle: `${balances.length} of ${total}`,
+          TableComponent<WalletBalance>({
+            columns: walletColumns,
+            data: walletResult.walletBalances,
+            title: "Wallet",
           }),
         );
+
+        if (balances.length === 0) {
+          console.log("\n No coin balances found.\n");
+          console.log(" Buy coins to see them here:");
+          console.log("   zora buy <address> --eth 0.001\n");
+        } else {
+          renderOnce(
+            TableComponent<BalanceNode & { rank: number }>({
+              columns: balanceColumns,
+              data: rankedBalances,
+              title: `Coins · sorted by ${SORT_LABELS[sort]}`,
+              subtitle: `${balances.length} of ${total}`,
+            }),
+          );
+        }
       },
     });
   });

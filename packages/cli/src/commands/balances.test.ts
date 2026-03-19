@@ -5,46 +5,77 @@ import {
   formatUsdValue,
   normalizeTokenAmount,
   toHumanBalance,
-} from "./balances.js";
+} from "../lib/balance-format.js";
 
-vi.mock("@zoralabs/coins-sdk", () => ({
-  setApiKey: vi.fn(),
-  getProfileBalances: vi.fn(),
-  getCoinsTopVolume24h: vi.fn(),
-  getCoinsMostValuable: vi.fn(),
-  getCoinsNew: vi.fn(),
-  getCoinsTopGainers: vi.fn(),
-  getCoinsLastTraded: vi.fn(),
-  getCoinsLastTradedUnique: vi.fn(),
-  getExploreTopVolumeAll24h: vi.fn(),
-  getExploreTopVolumeCreators24h: vi.fn(),
-  getExploreNewAll: vi.fn(),
-  getExploreFeaturedCreators: vi.fn(),
-  getExploreFeaturedVideos: vi.fn(),
-  getCreatorCoins: vi.fn(),
-  getMostValuableCreatorCoins: vi.fn(),
-  getMostValuableAll: vi.fn(),
-  getMostValuableTrends: vi.fn(),
-  getNewTrends: vi.fn(),
-  getTopVolumeTrends24h: vi.fn(),
-  getTrendingAll: vi.fn(),
-  getTrendingCreators: vi.fn(),
-  getTrendingPosts: vi.fn(),
-  getTrendingTrends: vi.fn(),
-}));
-
+vi.mock("@zoralabs/coins-sdk");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
   getPrivateKey: vi.fn(),
 }));
+vi.mock("viem/accounts");
+vi.mock("../lib/render.js");
 
-vi.mock("viem/accounts", () => ({
-  privateKeyToAccount: vi.fn(),
-}));
+vi.mock("viem", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("viem")>();
+  return {
+    ...actual,
+    createPublicClient: vi.fn(() => ({
+      getBalance: vi.fn().mockResolvedValue(1000000000000000000n), // 1 ETH
+      multicall: vi.fn().mockResolvedValue([
+        { status: "success", result: 5000000n }, // 5 USDC
+        { status: "success", result: 5000000000000000000n }, // 5 ZORA
+      ]),
+    })),
+  };
+});
 
-vi.mock("../lib/render.js", () => ({
-  renderOnce: vi.fn(),
-}));
+import {
+  getProfileBalances,
+  getTokenInfo,
+  setApiKey,
+} from "@zoralabs/coins-sdk";
+import { getApiKey, getPrivateKey } from "../lib/config.js";
+import { privateKeyToAccount } from "viem/accounts";
+import { renderOnce } from "../lib/render.js";
+import { createPublicClient } from "viem";
+
+type TokenInfoQuery = { query: { address: string; chainId?: number } };
+
+const tokenInfoImpl = ({ query }: TokenInfoQuery) => {
+  if (query.address === "0x4200000000000000000000000000000000000006") {
+    return Promise.resolve({
+      data: {
+        erc20Token: {
+          currency: {
+            priceUsd: "2500.00",
+            decimals: 18,
+            name: "Wrapped Ether",
+            symbol: "WETH",
+          },
+        },
+      },
+    });
+  }
+  if (query.address === "0x1111111111166b7FE7bd91427724B487980aFc69") {
+    return Promise.resolve({
+      data: {
+        erc20Token: {
+          currency: {
+            priceUsd: "0.005",
+            decimals: 18,
+            name: "ZORA",
+            symbol: "ZORA",
+          },
+        },
+      },
+    });
+  }
+  return Promise.resolve({ data: null });
+};
+
+function setupTokenInfoMock() {
+  vi.mocked(getTokenInfo).mockImplementation(tokenInfoImpl as never);
+}
 
 describe("balances formatting", () => {
   it("converts raw balance to human-readable", () => {
@@ -54,12 +85,10 @@ describe("balances formatting", () => {
   });
 
   it("formats tiny USD balances as less than one cent", () => {
-    // 0.001 tokens * $0.5 = $0.0005
     expect(formatUsdValue("1000000000000000", "0.5")).toBe("<$0.01");
   });
 
   it("formats USD value with 2 decimal places", () => {
-    // 4 tokens * $0.05 = $0.20
     expect(formatUsdValue("4000000000000000000", "0.05")).toBe("$0.20");
   });
 
@@ -72,12 +101,10 @@ describe("balances formatting", () => {
   });
 
   it("formats small balances with fixed decimals", () => {
-    // 0.125 tokens in wei
     expect(formatBalance("125000000000000000")).toBe("0.1250");
   });
 
   it("formats large balances with compact long display", () => {
-    // 20 million tokens in wei
     expect(formatBalance("20000000000000000000000000")).toMatch(/20 million/i);
   });
 
@@ -89,38 +116,36 @@ describe("balances formatting", () => {
   });
 
   it("toHumanBalance handles balances beyond Number.MAX_SAFE_INTEGER", () => {
-    // 3,944,403 tokens — raw value exceeds 2^53
     const raw = "3944403815517124397199482";
     const result = toHumanBalance(raw);
-    // Must start with 3944403.8155... — Number() loses precision past ~16 digits
-    // but the integer and early decimal portion must be correct
     expect(result).toBeCloseTo(3944403.8155, 3);
   });
 
   it("toHumanBalance preserves precision for values just above MAX_SAFE_INTEGER", () => {
-    // 10,000 tokens = 10000 * 1e18, which is > Number.MAX_SAFE_INTEGER
     const raw = "10000000000000000000000";
     expect(toHumanBalance(raw)).toBe(10000);
   });
 
   it("formatBalance handles sub-0.001 balances", () => {
-    // 0.0001 tokens
     expect(formatBalance("100000000000000")).toBe("<0.001");
   });
 
   it("formatBalance handles balances between 1 and 1000", () => {
-    // 50 tokens
     expect(formatBalance("50000000000000000000")).toMatch(/50/);
   });
 
   it("formatUsdValue computes correctly for large balances", () => {
-    // 10,000 tokens at $2 each = $20,000
     const raw = "10000000000000000000000";
     expect(formatUsdValue(raw, "2")).toBe("$20,000.00");
   });
 
-  it("normalizeTokenAmount returns raw string for non-bigint input", () => {
+  it("normalizeTokenAmount warns and returns raw string for non-bigint input", () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     expect(normalizeTokenAmount("not-a-number")).toBe("not-a-number");
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("could not parse token amount"),
+    );
+    warnSpy.mockRestore();
   });
 
   it("normalizeTokenAmount handles zero", () => {
@@ -128,7 +153,6 @@ describe("balances formatting", () => {
   });
 
   it("normalizeTokenAmount respects custom decimals", () => {
-    // 1.5 with 6 decimals = 1500000
     expect(normalizeTokenAmount("1500000", 6)).toBe("1.5");
   });
 });
@@ -138,21 +162,20 @@ describe("balances command", () => {
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let exitSpy: ReturnType<typeof vi.spyOn>;
 
-  beforeEach(async () => {
+  beforeEach(() => {
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
       throw new Error(`process.exit(${code})`);
     });
 
-    const { getApiKey, getPrivateKey } = await import("../lib/config.js");
-    const { privateKeyToAccount } = await import("viem/accounts");
-
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
     vi.mocked(getPrivateKey).mockReturnValue("0x" + "a".repeat(64));
     vi.mocked(privateKeyToAccount).mockReturnValue({
       address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
     } as never);
+
+    setupTokenInfoMock();
   });
 
   afterEach(() => {
@@ -194,7 +217,6 @@ describe("balances command", () => {
   });
 
   it("exits with error when no API key is configured", async () => {
-    const { getApiKey } = await import("../lib/config.js");
     vi.mocked(getApiKey).mockReturnValue(undefined);
 
     await expect(runBalances()).rejects.toThrow("process.exit(1)");
@@ -203,9 +225,7 @@ describe("balances command", () => {
     );
   });
 
-  it("outputs JSON with --json", async () => {
-    const { getProfileBalances } = await import("@zoralabs/coins-sdk");
-
+  it("outputs JSON with wallet and coins sections", async () => {
     vi.mocked(getProfileBalances).mockResolvedValue({
       data: {
         profile: {
@@ -242,33 +262,37 @@ describe("balances command", () => {
     await runBalances(["--json"]);
 
     expect(logSpy).toHaveBeenCalledTimes(1);
-    expect(JSON.parse(String(logSpy.mock.calls[0]?.[0]))).toEqual([
-      {
-        rank: 1,
-        name: "Test Coin",
-        symbol: "TEST",
-        coinType: "CONTENT",
-        chainId: 8453,
-        address: "0x123",
-        creatorHandle: "alice",
-        previewImage: "https://example.com/image.jpg",
-        balance: "12.34",
-        usdValue: 18.51,
-        priceUsd: 1.5,
-        marketCap: 1000000,
-        marketCapDelta24h: 10000,
-        marketCapChange24h: 1.0101,
-        volume24h: 1200,
-        totalVolume: 5000,
-      },
-    ]);
+    const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+
+    // Wallet section includes ETH, USDC, and ZORA (since mock returns >0)
+    expect(output.wallet).toBeDefined();
+    expect(output.wallet.length).toBeGreaterThanOrEqual(2);
+    expect(output.wallet[0].symbol).toBe("ETH");
+    expect(output.wallet[1].symbol).toBe("USDC");
+
+    // Coins section
+    expect(output.coins).toBeDefined();
+    expect(output.coins[0]).toEqual({
+      rank: 1,
+      name: "Test Coin",
+      symbol: "TEST",
+      coinType: "CONTENT",
+      chainId: 8453,
+      address: "0x123",
+      creatorHandle: "alice",
+      previewImage: "https://example.com/image.jpg",
+      balance: "12.34",
+      usdValue: 18.51,
+      priceUsd: 1.5,
+      marketCap: 1000000,
+      marketCapDelta24h: 10000,
+      marketCapChange24h: 1.0101,
+      volume24h: 1200,
+      totalVolume: 5000,
+    });
   });
 
-  it("renders an Ink table for default output", async () => {
-    const { getProfileBalances, setApiKey } =
-      await import("@zoralabs/coins-sdk");
-    const { renderOnce } = await import("../lib/render.js");
-
+  it("renders two Ink table sections for default output", async () => {
     vi.mocked(getProfileBalances).mockResolvedValue({
       data: {
         profile: {
@@ -296,12 +320,11 @@ describe("balances command", () => {
     await runBalances();
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
-    expect(renderOnce).toHaveBeenCalled();
+    // Two renderOnce calls: one for Wallet section, one for Coins section
+    expect(renderOnce).toHaveBeenCalledTimes(2);
   });
 
   it("outputs correct JSON for large balances beyond MAX_SAFE_INTEGER", async () => {
-    const { getProfileBalances } = await import("@zoralabs/coins-sdk");
-
     vi.mocked(getProfileBalances).mockResolvedValue({
       data: {
         profile: {
@@ -330,13 +353,11 @@ describe("balances command", () => {
     await runBalances(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(output[0].balance).toBe("3944403.815517124397199482");
-    expect(output[0].usdValue).toBeCloseTo(3944.4, 0);
+    expect(output.coins[0].balance).toBe("3944403.815517124397199482");
+    expect(output.coins[0].usdValue).toBeCloseTo(3944.4, 0);
   });
 
   it("outputs JSON with null fields when coin data is missing", async () => {
-    const { getProfileBalances } = await import("@zoralabs/coins-sdk");
-
     vi.mocked(getProfileBalances).mockResolvedValue({
       data: {
         profile: {
@@ -358,12 +379,12 @@ describe("balances command", () => {
     await runBalances(["--json"]);
 
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
-    expect(output[0].name).toBeNull();
-    expect(output[0].symbol).toBeNull();
-    expect(output[0].priceUsd).toBeNull();
-    expect(output[0].usdValue).toBeNull();
-    expect(output[0].marketCap).toBeNull();
-    expect(output[0].marketCapChange24h).toBeNull();
+    expect(output.coins[0].name).toBeNull();
+    expect(output.coins[0].symbol).toBeNull();
+    expect(output.coins[0].priceUsd).toBeNull();
+    expect(output.coins[0].usdValue).toBeNull();
+    expect(output.coins[0].marketCap).toBeNull();
+    expect(output.coins[0].marketCapChange24h).toBeNull();
   });
 
   it("exits with error for zero or negative limit", async () => {
@@ -385,7 +406,6 @@ describe("balances command", () => {
   });
 
   it("exits with error when no wallet is configured", async () => {
-    const { getPrivateKey } = await import("../lib/config.js");
     vi.mocked(getPrivateKey).mockReturnValue(undefined);
 
     await expect(runBalances()).rejects.toThrow("process.exit(1)");
@@ -395,8 +415,6 @@ describe("balances command", () => {
   });
 
   it("exits with error when API returns an error response", async () => {
-    const { getProfileBalances } = await import("@zoralabs/coins-sdk");
-
     vi.mocked(getProfileBalances).mockResolvedValue({
       error: { error: "Unauthorized" },
       data: null,
@@ -407,8 +425,6 @@ describe("balances command", () => {
   });
 
   it("exits with error when request throws", async () => {
-    const { getProfileBalances } = await import("@zoralabs/coins-sdk");
-
     vi.mocked(getProfileBalances).mockRejectedValue(
       new Error("Network failure"),
     );
@@ -420,10 +436,6 @@ describe("balances command", () => {
   });
 
   it("uses ZORA_PRIVATE_KEY env var when set", async () => {
-    const { getProfileBalances } = await import("@zoralabs/coins-sdk");
-    const { getPrivateKey } = await import("../lib/config.js");
-    const { privateKeyToAccount } = await import("viem/accounts");
-
     vi.mocked(getPrivateKey).mockReturnValue(undefined);
     process.env.ZORA_PRIVATE_KEY = "0x" + "b".repeat(64);
     vi.mocked(privateKeyToAccount).mockReturnValue({
@@ -439,9 +451,7 @@ describe("balances command", () => {
     expect(privateKeyToAccount).toHaveBeenCalledWith("0x" + "b".repeat(64));
   });
 
-  it("shows the empty-state hint when there are no balances", async () => {
-    const { getProfileBalances } = await import("@zoralabs/coins-sdk");
-
+  it("shows the empty-state hint when there are no coin balances", async () => {
     vi.mocked(getProfileBalances).mockResolvedValue({
       data: {
         profile: {
@@ -458,5 +468,118 @@ describe("balances command", () => {
     const output = logSpy.mock.calls.map((call) => call[0]).join("\n");
     expect(output).toContain("No coin balances found");
     expect(output).toContain("zora buy <address> --eth 0.001");
+  });
+
+  it("wallet JSON includes ETH price from tokenInfo", async () => {
+    vi.mocked(getProfileBalances).mockResolvedValue({
+      data: { profile: { coinBalances: { count: 0, edges: [] } } },
+    } as never);
+
+    await runBalances(["--json"]);
+
+    const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const eth = output.wallet.find(
+      (w: Record<string, unknown>) => w.symbol === "ETH",
+    );
+    expect(eth).toBeDefined();
+    expect(eth.priceUsd).toBe(2500);
+    expect(eth.usdValue).toBe(2500);
+  });
+
+  it("wallet JSON includes USDC with price of 1", async () => {
+    vi.mocked(getProfileBalances).mockResolvedValue({
+      data: { profile: { coinBalances: { count: 0, edges: [] } } },
+    } as never);
+
+    await runBalances(["--json"]);
+
+    const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const usdc = output.wallet.find(
+      (w: Record<string, unknown>) => w.symbol === "USDC",
+    );
+    expect(usdc).toBeDefined();
+    expect(usdc.priceUsd).toBe(1);
+  });
+
+  it("omits USDC and ZORA from wallet when balances are zero", async () => {
+    vi.mocked(createPublicClient).mockReturnValue({
+      getBalance: vi.fn().mockResolvedValue(1000000000000000000n),
+      multicall: vi.fn().mockResolvedValue([
+        { status: "success", result: 0n }, // USDC = 0
+        { status: "success", result: 0n }, // ZORA = 0
+      ]),
+    } as unknown as ReturnType<typeof createPublicClient>);
+
+    vi.mocked(getProfileBalances).mockResolvedValue({
+      data: { profile: { coinBalances: { count: 0, edges: [] } } },
+    } as never);
+
+    await runBalances(["--json"]);
+
+    const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    expect(output.wallet).toHaveLength(1);
+    expect(output.wallet[0].symbol).toBe("ETH");
+  });
+
+  it("shows dash for USD value when price lookup fails", async () => {
+    vi.mocked(getTokenInfo).mockRejectedValue(new Error("API down"));
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+
+    vi.mocked(getProfileBalances).mockResolvedValue({
+      data: { profile: { coinBalances: { count: 0, edges: [] } } },
+    } as never);
+
+    await runBalances(["--json"]);
+
+    const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    const eth = output.wallet.find(
+      (w: Record<string, unknown>) => w.symbol === "ETH",
+    );
+    expect(eth.priceUsd).toBeNull();
+    expect(eth.usdValue).toBeNull();
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("failed to fetch price"),
+    );
+    warnSpy.mockRestore();
+  });
+
+  it("defaults to 0 balance when multicall fails for a token", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    vi.mocked(createPublicClient).mockReturnValue({
+      getBalance: vi.fn().mockResolvedValue(1000000000000000000n),
+      multicall: vi.fn().mockResolvedValue([
+        { status: "failure", error: new Error("reverted") },
+        { status: "success", result: 5000000000000000000n },
+      ]),
+    } as unknown as ReturnType<typeof createPublicClient>);
+
+    vi.mocked(getProfileBalances).mockResolvedValue({
+      data: { profile: { coinBalances: { count: 0, edges: [] } } },
+    } as never);
+
+    await runBalances(["--json"]);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("failed to fetch balance for USDC"),
+    );
+    const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+    // USDC should be omitted since its balance is 0 (failed) and only ETH is always shown
+    const symbols = output.wallet.map((w: Record<string, unknown>) => w.symbol);
+    expect(symbols).toContain("ETH");
+    expect(symbols).toContain("ZORA");
+    expect(symbols).not.toContain("USDC");
+    warnSpy.mockRestore();
+  });
+
+  it("passes sortOption to getProfileBalances for --sort balance", async () => {
+    vi.mocked(getProfileBalances).mockResolvedValue({
+      data: { profile: { coinBalances: { count: 0, edges: [] } } },
+    } as never);
+
+    await runBalances(["--sort", "balance", "--json"]);
+
+    expect(getProfileBalances).toHaveBeenCalledWith(
+      expect.objectContaining({ sortOption: "BALANCE" }),
+    );
   });
 });

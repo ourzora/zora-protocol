@@ -17,12 +17,7 @@ vi.mock("../lib/wallet.js", () => ({
   createClients: vi.fn(),
 }));
 
-vi.mock("@zoralabs/coins-sdk", () => ({
-  setApiKey: vi.fn(),
-  getCoin: vi.fn(),
-  createTradeCall: vi.fn(),
-  tradeCoin: vi.fn(),
-}));
+vi.mock("@zoralabs/coins-sdk");
 
 import confirm from "@inquirer/confirm";
 import {
@@ -139,7 +134,9 @@ describe("buy command", () => {
     await expect(runBuy([COIN_ADDRESS])).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
-      "Specify one amount flag: --eth, --percent, or --all",
+      expect.stringContaining(
+        "Specify one amount flag: --eth, --percent, or --all",
+      ),
     );
   });
 
@@ -148,7 +145,9 @@ describe("buy command", () => {
       runBuy([COIN_ADDRESS, "--eth", "0.1", "--percent", "25"]),
     ).rejects.toThrow("process.exit(1)");
 
-    expect(errorSpy).toHaveBeenCalledWith("Only one amount flag allowed.");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Only one amount flag allowed."),
+    );
   });
 
   it("rejects removed unsupported flags as unknown options", async () => {
@@ -225,7 +224,9 @@ describe("buy command", () => {
     await expect(
       runBuy(["not-an-address", "--eth", "0.1", "--yes"]),
     ).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith("Invalid address: not-an-address");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Invalid address: not-an-address"),
+    );
   });
 
   it("exits when --output is invalid", async () => {
@@ -267,7 +268,9 @@ describe("buy command", () => {
     await expect(
       runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
     ).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(`Coin not found: ${COIN_ADDRESS}`);
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(`Coin not found: ${COIN_ADDRESS}`),
+    );
   });
 
   it("exits when --eth value is invalid", async () => {
@@ -275,7 +278,9 @@ describe("buy command", () => {
       runBuy([COIN_ADDRESS, "--eth", "abc", "--yes"]),
     ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
-      "Invalid --eth value. Must be a positive number.",
+      expect.stringContaining(
+        "Invalid --eth value. Must be a positive number.",
+      ),
     );
   });
 
@@ -284,7 +289,9 @@ describe("buy command", () => {
       "process.exit(1)",
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      "Invalid --eth value. Must be a positive number.",
+      expect.stringContaining(
+        "Invalid --eth value. Must be a positive number.",
+      ),
     );
   });
 
@@ -385,29 +392,29 @@ describe("buy command", () => {
     );
   });
 
-  it("exits 0 when receipt parsing fails (tx already succeeded)", async () => {
+  it("warns but succeeds when receipt parsing fails (tx already on-chain)", async () => {
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
     vi.mocked(tradeCoin).mockResolvedValue({
       transactionHash:
         "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
       logs: [], // no Transfer events
     } as Awaited<ReturnType<typeof tradeCoin>>);
 
-    await expect(
-      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
-    ).rejects.toThrow("process.exit(0)");
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Transaction succeeded but could not determine"),
+    await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("transaction succeeded but could not determine"),
     );
-    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("Tx: 0x"));
+    expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining("Tx: 0x"));
+    warnSpy.mockRestore();
   });
 
-  it("aborts when user declines confirmation", async () => {
+  it("aborts with exit code 0 when user declines confirmation", async () => {
     vi.mocked(confirm).mockResolvedValue(false);
 
     await expect(runBuy([COIN_ADDRESS, "--eth", "0.1"])).rejects.toThrow(
       "process.exit(0)",
     );
-    expect(errorSpy).toHaveBeenCalledWith("Aborted.");
   });
 
   it("prints table output by default", async () => {
@@ -431,6 +438,25 @@ describe("buy command", () => {
         amountIn: 5000000000000000000n, // 50% of 10 ETH
       }),
     );
+  });
+
+  it("exits when --percent produces zero amount due to low balance", async () => {
+    // 0.0011 ETH — just above gas reserve, tiny percentage rounds to 0 in integer math
+    publicClient.getBalance.mockResolvedValue(1100000000000000n);
+
+    await expect(
+      runBuy([COIN_ADDRESS, "--percent", "0.001", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Calculated amount is zero"),
+    );
+  });
+
+  it("produces structured JSON errors when --output json is set", async () => {
+    await expect(
+      runBuy(["not-an-address", "--eth", "0.1", "--yes", "--output", "json"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"error"'));
   });
 
   describe("--quote flag", () => {

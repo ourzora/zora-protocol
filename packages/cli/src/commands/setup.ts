@@ -13,12 +13,10 @@ import {
   SAVE_ERROR_HINT,
   BACKUP_WARNING,
 } from "../lib/strings.js";
+import { normalizeKey } from "../lib/wallet.js";
 
 const isValidPrivateKey = (key: string): boolean =>
   /^(0x)?[0-9a-fA-F]{64}$/.test(key);
-
-const normalizeKey = (key: string): `0x${string}` =>
-  (key.startsWith("0x") ? key : `0x${key}`) as `0x${string}`;
 
 const toAccount = (json: boolean, key: string, errorPrefix: string) => {
   try {

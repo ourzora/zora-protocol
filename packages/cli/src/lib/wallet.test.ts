@@ -18,6 +18,17 @@ vi.mock("viem/chains", () => ({
   base: { id: 8453, name: "Base" },
 }));
 
+vi.mock("./output.js", () => ({
+  outputErrorAndExit: vi.fn((json: boolean, message: string) => {
+    if (json) {
+      console.log(JSON.stringify({ error: message }));
+    } else {
+      console.error(`Error: ${message}`);
+    }
+    process.exit(1);
+  }),
+}));
+
 import { getPrivateKey } from "./config.js";
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, createWalletClient } from "viem";

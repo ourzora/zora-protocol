@@ -1,4 +1,5 @@
 import { format, formatDistanceStrict } from "date-fns";
+import { formatEther } from "viem";
 
 export function formatCurrency(value: string | undefined): string {
   if (!value || Number(value) === 0) return "$0";
@@ -35,6 +36,15 @@ export function formatMcapChange(
   return { text, color };
 }
 
+export function formatUsd(value: number): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  }).format(value);
+}
+
 export function truncate(str: string, max: number): string {
   if (str.length <= max) return str;
   return str.slice(0, max - 1) + "\u2026";
@@ -63,3 +73,16 @@ export function formatCreatedAt(
   if (isNaN(date.getTime())) return "-";
   return `${formatRelativeTime(date, now)} (${formatAbsoluteTime(date)})`;
 }
+
+export const formatEthDisplay = (wei: bigint): string => {
+  const eth = formatEther(wei);
+  const parts = eth.split(".");
+  if (!parts[1]) return eth;
+  const trimmed = parts[1].replace(/0+$/, "") || "0";
+  return `${parts[0]}.${trimmed}`;
+};
+
+export const formatCoinsDisplay = (coinsOut: string): string =>
+  new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(Number(coinsOut));

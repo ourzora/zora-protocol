@@ -2,30 +2,7 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { formatCompactCurrency, formatChange, QUERY_MAP } from "./explore.jsx";
 import { createProgram } from "../test/create-program.js";
 
-vi.mock("@zoralabs/coins-sdk", () => ({
-  setApiKey: vi.fn(),
-  getCoinsMostValuable: vi.fn(),
-  getMostValuableCreatorCoins: vi.fn(),
-  getMostValuableAll: vi.fn(),
-  getMostValuableTrends: vi.fn(),
-  getExploreTopVolumeAll24h: vi.fn(),
-  getExploreTopVolumeCreators24h: vi.fn(),
-  getCoinsTopVolume24h: vi.fn(),
-  getTopVolumeTrends24h: vi.fn(),
-  getExploreNewAll: vi.fn(),
-  getNewTrends: vi.fn(),
-  getCreatorCoins: vi.fn(),
-  getCoinsNew: vi.fn(),
-  getCoinsTopGainers: vi.fn(),
-  getCoinsLastTraded: vi.fn(),
-  getCoinsLastTradedUnique: vi.fn(),
-  getTrendingAll: vi.fn(),
-  getTrendingCreators: vi.fn(),
-  getTrendingPosts: vi.fn(),
-  getTrendingTrends: vi.fn(),
-  getExploreFeaturedCreators: vi.fn(),
-  getExploreFeaturedVideos: vi.fn(),
-}));
+vi.mock("@zoralabs/coins-sdk");
 
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
