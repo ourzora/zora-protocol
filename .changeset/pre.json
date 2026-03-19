@@ -1,5 +1,5 @@
 {
-  "mode": "pre",
+  "mode": "exit",
   "tag": "cli-dev",
   "initialVersions": {
     "docs": "0.0.14",
