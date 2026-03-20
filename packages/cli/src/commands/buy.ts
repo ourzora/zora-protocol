@@ -24,6 +24,7 @@ import {
 } from "../lib/trade-helpers.js";
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import { track, shutdownAnalytics } from "../lib/analytics.js";
 
 export const buyCommand = new Command("buy")
   .description("Buy a coin")
@@ -291,7 +292,6 @@ export const buyCommand = new Command("buy")
     const spendFormatted = new Intl.NumberFormat("en-US", {
       maximumFractionDigits: 6,
     }).format(Number(spendAmount));
-    const spendAmount = spendFormatted;
     const coinsOut = formatUnits(BigInt(amountOut), 18);
     const coinsFormatted = formatCoinsDisplay(coinsOut);
 
@@ -307,6 +307,15 @@ export const buyCommand = new Command("buy")
         coinsFormatted,
         amountOut,
         slippagePct,
+      });
+      track("cli_buy", {
+        action: "quote",
+        coin_address: coinAddress,
+        coin_name: coinName,
+        coin_symbol: coinSymbol,
+        amount_mode: amountMode,
+        slippage: slippagePct,
+        output_format: opts.output,
       });
       return;
     }
@@ -345,6 +354,18 @@ export const buyCommand = new Command("buy")
         account,
       });
     } catch (err) {
+      track("cli_buy", {
+        action: "trade",
+        coin_address: coinAddress,
+        coin_name: coinName,
+        coin_symbol: coinSymbol,
+        amount_mode: amountMode,
+        slippage: slippagePct,
+        output_format: opts.output,
+        success: false,
+        error_type: err instanceof Error ? err.constructor.name : "unknown",
+      });
+      await shutdownAnalytics();
       outputErrorAndExit(
         json,
         `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -375,5 +396,18 @@ export const buyCommand = new Command("buy")
       inputTokenDecimals: inputToken.decimals,
       receivedAmountOut,
       txHash,
+    });
+
+    track("cli_buy", {
+      action: "trade",
+      coin_address: coinAddress,
+      coin_name: coinName,
+      coin_symbol: coinSymbol,
+      amount_mode: amountMode,
+      eth_amount: ethAmount,
+      slippage: slippagePct,
+      output_format: opts.output,
+      success: true,
+      tx_hash: txHash,
     });
   });

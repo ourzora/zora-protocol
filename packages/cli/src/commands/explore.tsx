@@ -26,6 +26,7 @@ import {
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputData } from "../lib/output.js";
 import { styledText } from "../lib/format.js";
+import { track } from "../lib/analytics.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
@@ -274,5 +275,15 @@ export const exploreCommand = new Command("explore")
           );
         }
       },
+    });
+
+    track("cli_explore", {
+      sort,
+      type,
+      limit,
+      paginated: after !== undefined,
+      result_count: coins.length,
+      has_next_page: pageInfo?.hasNextPage ?? false,
+      output_format: json ? "json" : "text",
     });
   });

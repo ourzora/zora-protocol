@@ -14,6 +14,7 @@ import {
   BACKUP_WARNING,
 } from "../lib/strings.js";
 import { normalizeKey } from "../lib/wallet.js";
+import { track } from "../lib/analytics.js";
 
 const isValidPrivateKey = (key: string): boolean =>
   /^(0x)?[0-9a-fA-F]{64}$/.test(key);
@@ -58,6 +59,11 @@ export const setupCommand = new Command("setup")
           console.log(`  Address: ${account.address}\n`);
           console.log(`  ${DEPOSIT_INSTRUCTIONS}`);
         },
+      });
+      track("cli_setup", {
+        action: "env_detected",
+        source: "env",
+        output_format: json ? "json" : "text",
       });
       return;
     }
@@ -151,6 +157,11 @@ export const setupCommand = new Command("setup")
           console.log(`  ${DEPOSIT_INSTRUCTIONS}`);
         },
       });
+      track("cli_setup", {
+        action: "imported",
+        source: "file",
+        output_format: json ? "json" : "text",
+      });
       return;
     }
 
@@ -181,6 +192,11 @@ export const setupCommand = new Command("setup")
           console.log(`  ${BACKUP_WARNING}\n`);
           console.log(`  ${DEPOSIT_INSTRUCTIONS}`);
         },
+      });
+      track("cli_setup", {
+        action: "created",
+        source: "file",
+        output_format: json ? "json" : "text",
       });
     }
   });

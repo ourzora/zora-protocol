@@ -13,6 +13,7 @@ import { walletCommand } from "./commands/wallet.js";
 import { renderOnce } from "./lib/render.js";
 import { Zorb } from "./components/Zorb.js";
 import { supportsTruecolor } from "./lib/zorb-pixels.js";
+import { identify, shutdownAnalytics } from "./lib/analytics.js";
 
 declare const PKG_VERSION: string | undefined;
 
@@ -58,6 +59,8 @@ if (!process.env.VITEST) {
     renderOnce(<Zorb size={20} />);
   }
 
+  identify();
+
   try {
     await program.parseAsync();
   } catch (err) {
@@ -66,6 +69,8 @@ if (!process.env.VITEST) {
       process.exit(0);
     }
     throw err;
+  } finally {
+    await shutdownAnalytics();
   }
 }
 

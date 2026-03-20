@@ -27,6 +27,7 @@ import {
   printDebugRequest,
   printDebugResponse,
 } from "../lib/trade-helpers.js";
+import { track, shutdownAnalytics } from "../lib/analytics.js";
 
 type OutputAsset = TradeTokenKey;
 
@@ -379,6 +380,16 @@ export const sellCommand = new Command("sell")
         outputDecimals: outputToken.decimals,
         slippagePct,
       });
+      track("cli_sell", {
+        action: "quote",
+        coin_address: coinAddress,
+        coin_name: coinName,
+        coin_symbol: coinSymbol,
+        amount_mode: amountMode,
+        output_asset: outputAsset,
+        slippage: slippagePct,
+        output_format: output,
+      });
       return;
     }
 
@@ -419,6 +430,19 @@ export const sellCommand = new Command("sell")
         account,
       });
     } catch (err) {
+      track("cli_sell", {
+        action: "trade",
+        coin_address: coinAddress,
+        coin_name: coinName,
+        coin_symbol: coinSymbol,
+        amount_mode: amountMode,
+        output_asset: outputAsset,
+        slippage: slippagePct,
+        output_format: output,
+        success: false,
+        error_type: err instanceof Error ? err.constructor.name : "unknown",
+      });
+      await shutdownAnalytics();
       outputErrorAndExit(
         json,
         `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -452,5 +476,18 @@ export const sellCommand = new Command("sell")
       outputDecimals: outputToken.decimals,
       receivedSource,
       txHash,
+    });
+
+    track("cli_sell", {
+      action: "trade",
+      coin_address: coinAddress,
+      coin_name: coinName,
+      coin_symbol: coinSymbol,
+      amount_mode: amountMode,
+      output_asset: outputAsset,
+      slippage: slippagePct,
+      output_format: output,
+      success: true,
+      tx_hash: txHash,
     });
   });

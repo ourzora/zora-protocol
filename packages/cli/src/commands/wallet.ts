@@ -10,6 +10,7 @@ import {
 import { confirmOrDefault } from "../lib/prompt.js";
 import { NO_WALLET_CONFIGURED, NO_WALLET_SUGGESTION } from "../lib/strings.js";
 import { normalizeKey } from "../lib/wallet.js";
+import { track } from "../lib/analytics.js";
 
 const resolvePrivateKey = ():
   | { key: string; source: "env" | "file" }
@@ -65,6 +66,11 @@ walletCommand
         console.log(`  Source:  ${source}`);
       },
     });
+
+    track("cli_wallet_info", {
+      source: resolved.source,
+      output_format: json ? "json" : "text",
+    });
   });
 
 walletCommand
@@ -101,4 +107,8 @@ walletCommand
     }
 
     console.log(resolved.key);
+
+    track("cli_wallet_export", {
+      output_format: json ? "json" : "text",
+    });
   });

@@ -29,6 +29,7 @@ const WALLET_VERSION = 1;
 interface Config {
   version: number;
   apiKey?: string;
+  analyticsId?: string;
 }
 
 interface Wallet {
@@ -55,6 +56,8 @@ function assertVersion(
   }
 }
 
+let configReadOnly = false;
+
 function readConfig(): Config {
   if (!existsSync(CONFIG_FILE)) return { version: CONFIG_VERSION };
   let parsed: unknown;
@@ -64,15 +67,17 @@ function readConfig(): Config {
     console.error(
       `Warning: could not parse ${CONFIG_FILE}: ${(err as Error).message}. Run 'zora auth configure' to fix.`,
     );
+    configReadOnly = true;
     return { version: CONFIG_VERSION };
   }
   try {
     assertVersion(parsed, CONFIG_VERSION, CONFIG_FILE);
   } catch (err) {
     console.error(
-      `Error: ${(err as Error).message}. Delete ${CONFIG_FILE} or run 'zora auth configure' to reset.`,
+      `Warning: ${(err as Error).message}. Delete ${CONFIG_FILE} or run 'zora auth configure' to reset.`,
     );
-    process.exit(1);
+    configReadOnly = true;
+    return { version: CONFIG_VERSION };
   }
   return parsed as Config;
 }
@@ -151,6 +156,17 @@ export function savePrivateKey(privateKey: string): void {
 
 export function getWalletPath(): string {
   return WALLET_FILE;
+}
+
+export function getAnalyticsId(): string | undefined {
+  return readConfig().analyticsId;
+}
+
+export function saveAnalyticsId(id: string): void {
+  if (configReadOnly) return;
+  const config = readConfig();
+  config.analyticsId = id;
+  writeConfig(config);
 }
 
 export function getConfigPath(): string {

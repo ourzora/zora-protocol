@@ -17,6 +17,7 @@ import {
   type WalletBalance,
   type WalletBalanceJson,
 } from "../lib/wallet-balances.js";
+import { track } from "../lib/analytics.js";
 
 type SortFlag = "usd-value" | "balance" | "market-cap" | "price-change";
 type BalanceNode = {
@@ -388,6 +389,14 @@ export const balanceCommand = new Command("balance")
           );
         }
       },
+    });
+
+    track("cli_balances", {
+      sort,
+      limit,
+      result_count: balances.length,
+      total_count: total,
+      output_format: json ? "json" : "text",
     });
   });
 

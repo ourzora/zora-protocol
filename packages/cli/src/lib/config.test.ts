@@ -98,45 +98,35 @@ describe("getApiKey", () => {
     errorSpy.mockRestore();
   });
 
-  it("exits with error on config version mismatch (does not silently reset to defaults)", async () => {
+  it("warns and returns undefined on config version mismatch", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
     writeFileSync(
       join(configDir, "config.json"),
       JSON.stringify({ version: 99, apiKey: "my-key" }),
     );
-    const exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getApiKey } = await loadConfig();
-    getApiKey();
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(getApiKey()).toBeUndefined();
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("unsupported version"),
     );
-    exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
 
-  it("exits with error on config missing version field", async () => {
+  it("warns and returns undefined on config missing version field", async () => {
     const configDir = join(getTestHomeDir(), ".config", "zora");
     mkdirSync(configDir, { recursive: true });
     writeFileSync(
       join(configDir, "config.json"),
       JSON.stringify({ apiKey: "my-key" }),
     );
-    const exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getApiKey } = await loadConfig();
-    getApiKey();
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(getApiKey()).toBeUndefined();
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("missing required field"),
     );
-    exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
 });

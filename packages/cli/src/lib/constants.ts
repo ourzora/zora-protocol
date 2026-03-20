@@ -46,3 +46,7 @@ export const BASE_TRADE_TOKENS = {
 } as const;
 
 export type TradeTokenKey = keyof typeof BASE_TRADE_TOKENS;
+
+/** PostHog analytics */
+export const POSTHOG_TOKEN = "phc_F3nLidy5mjn4xWQ6PYujO96MVig7UoszINhUUY0usOx";
+export const POSTHOG_HOST = "https://us.i.posthog.com";

@@ -10,6 +10,7 @@ import {
 import { renderOnce } from "../lib/render.js";
 import { CoinDetail } from "../components/CoinDetail.js";
 import type { CoinType } from "../lib/types.js";
+import { track } from "../lib/analytics.js";
 
 function formatCoinJson(coin: ResolvedCoin): Record<string, unknown> {
   return {
@@ -94,5 +95,13 @@ export const getCommand = new Command("get")
       table: () => {
         renderOnce(<CoinDetail coin={result.coin} />);
       },
+    });
+
+    track("cli_get", {
+      lookup_type: identifier.startsWith("0x") ? "address" : "name",
+      coin_type_filter: type ?? null,
+      found: result.kind === "found",
+      coin_type: result.kind === "found" ? result.coin.coinType : null,
+      output_format: json ? "json" : "text",
     });
   });

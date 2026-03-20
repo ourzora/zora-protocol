@@ -13,6 +13,7 @@ import {
   outputData,
 } from "../lib/output.js";
 import { passwordOrFail } from "../lib/prompt.js";
+import { track } from "../lib/analytics.js";
 
 export const authCommand = new Command("auth").description(
   "Manage API key authentication.\nAPI key is optional — without one, requests are rate-limited.\nGet a key at https://zora.co/settings/developer",
@@ -68,6 +69,9 @@ authCommand
         json: { saved: true, path: getConfigPath() },
         table: () => console.log(`API key saved to ${getConfigPath()}`),
       });
+      track("cli_auth_configure", {
+        output_format: json ? "json" : "text",
+      });
     } catch (err) {
       outputErrorAndExit(
         json,
@@ -95,6 +99,11 @@ authCommand
           );
         },
       });
+      track("cli_auth_status", {
+        authenticated: false,
+        source: null,
+        output_format: json ? "json" : "text",
+      });
       return;
     }
 
@@ -105,5 +114,11 @@ authCommand
         console.log(`Authenticated: ${maskKey(apiKey)}`);
         console.log(`Source: ${source}`);
       },
+    });
+
+    track("cli_auth_status", {
+      authenticated: true,
+      source: getEnvApiKey() ? "env" : "file",
+      output_format: json ? "json" : "text",
     });
   });
