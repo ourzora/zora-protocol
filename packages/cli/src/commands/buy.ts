@@ -81,13 +81,9 @@ export const buyCommand = new Command("buy")
     const slippage = slippagePct / 100;
 
     const apiKey = getApiKey();
-    if (!apiKey) {
-      outputErrorAndExit(
-        json,
-        "Not authenticated. Run 'zora auth configure' to set your API key.",
-      );
+    if (apiKey) {
+      setApiKey(apiKey);
     }
-    setApiKey(apiKey);
 
     const account = resolveAccount(json);
     const { publicClient, walletClient } = createClients(account);
@@ -404,7 +400,8 @@ export const buyCommand = new Command("buy")
       coin_name: coinName,
       coin_symbol: coinSymbol,
       amount_mode: amountMode,
-      eth_amount: ethAmount,
+      input_amount: amountIn.toString(),
+      input_token_symbol: inputToken.symbol,
       slippage: slippagePct,
       output_format: opts.output,
       success: true,

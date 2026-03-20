@@ -4,6 +4,13 @@ import { createProgram } from "../test/create-program.js";
 vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
   getWalletPath: vi.fn(() => "/home/user/.config/zora/wallet.json"),
+  getAnalyticsId: vi.fn(),
+  getApiKey: vi.fn(),
+  saveAnalyticsId: vi.fn(),
+}));
+
+vi.mock("../lib/analytics.js", () => ({
+  track: vi.fn(),
 }));
 
 vi.mock("viem/accounts", () => ({
@@ -14,7 +21,7 @@ vi.mock("../lib/prompt.js", () => ({
   confirmOrDefault: vi.fn(),
 }));
 
-import { getPrivateKey } from "../lib/config.js";
+import { getPrivateKey, getWalletPath } from "../lib/config.js";
 import { privateKeyToAccount } from "viem/accounts";
 import { confirmOrDefault } from "../lib/prompt.js";
 
@@ -33,6 +40,9 @@ beforeEach(() => {
     address: MOCK_ADDRESS,
   } as never);
   vi.mocked(getPrivateKey).mockReturnValue(undefined);
+  vi.mocked(getWalletPath).mockReturnValue(
+    "/home/user/.config/zora/wallet.json",
+  );
 });
 
 afterEach(() => {

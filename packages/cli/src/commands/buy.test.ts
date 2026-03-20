@@ -23,6 +23,11 @@ vi.mock("../lib/wallet-balances.js", () => ({
   fetchTokenPriceUsd: vi.fn(),
 }));
 
+vi.mock("../lib/analytics.js", () => ({
+  track: vi.fn(),
+  shutdownAnalytics: vi.fn().mockResolvedValue(undefined),
+}));
+
 import confirm from "@inquirer/confirm";
 import {
   createTradeCall,
@@ -30,6 +35,7 @@ import {
   setApiKey,
   tradeCoin,
 } from "@zoralabs/coins-sdk";
+import { track } from "../lib/analytics.js";
 import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
@@ -196,6 +202,24 @@ describe("buy command", () => {
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining(`"raw": "${RECEIPT_TRANSFER_AMOUNT.toString()}"`),
     );
+    expect(track).toHaveBeenCalledWith(
+      "cli_buy",
+      expect.objectContaining({
+        action: "trade",
+        success: true,
+        input_amount: "100000000000000000",
+        input_token_symbol: "ETH",
+      }),
+    );
+  });
+
+  it("executes a buy without an API key configured", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined);
+
+    await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+    expect(setApiKey).not.toHaveBeenCalled();
+    expect(tradeCoin).toHaveBeenCalled();
   });
 
   it("uses the gas buffer for --all", async () => {
@@ -246,17 +270,6 @@ describe("buy command", () => {
     ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid --output value"),
-    );
-  });
-
-  it("exits when no API key is configured", async () => {
-    vi.mocked(getApiKey).mockReturnValue(undefined as unknown as string);
-
-    await expect(
-      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
-    ).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Not authenticated"),
     );
   });
 

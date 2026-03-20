@@ -206,17 +206,6 @@ describe("sell command", () => {
     );
   });
 
-  it("exits with error when no API key is configured", async () => {
-    vi.mocked(getApiKey).mockReturnValue(undefined);
-
-    await expect(runSell([COIN_ADDRESS, "--amount", "1"])).rejects.toThrow(
-      "process.exit(1)",
-    );
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Not authenticated"),
-    );
-  });
-
   it("exits with error when getCoin throws", async () => {
     vi.mocked(getCoin).mockRejectedValue(new Error("Network error"));
 
@@ -357,6 +346,15 @@ describe("sell command", () => {
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining('"source": "receipt"'),
     );
+  });
+
+  it("executes a sell without an API key configured", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined);
+
+    await runSell([COIN_ADDRESS, "--amount", "1", "--yes"]);
+
+    expect(setApiKey).not.toHaveBeenCalled();
+    expect(tradeCoin).toHaveBeenCalled();
   });
 
   it("uses full token balance for --all", async () => {

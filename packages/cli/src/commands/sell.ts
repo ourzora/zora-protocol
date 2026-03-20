@@ -191,13 +191,9 @@ export const sellCommand = new Command("sell")
     const slippage = slippagePct / 100;
 
     const apiKey = getApiKey();
-    if (!apiKey) {
-      outputErrorAndExit(
-        json,
-        "Not authenticated. Run 'zora auth configure' to set your API key.",
-      );
+    if (apiKey) {
+      setApiKey(apiKey);
     }
-    setApiKey(apiKey);
 
     const account = resolveAccount(json);
     const { publicClient, walletClient } = createClients(account);

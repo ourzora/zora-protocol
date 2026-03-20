@@ -394,8 +394,8 @@ export const balanceCommand = new Command("balance")
     track("cli_balances", {
       sort,
       limit,
-      result_count: balances.length,
-      total_count: total,
+      result_count: coinsResult.balances.length,
+      total_count: coinsResult.total,
       output_format: json ? "json" : "text",
     });
   });
