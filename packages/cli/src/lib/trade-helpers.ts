@@ -67,11 +67,25 @@ export const formatAmountDisplay = (
 ): string => {
   const formatted = formatUnits(amount, decimals);
   const parts = formatted.split(".");
-  const truncated = parts[1]
-    ? `${parts[0]}.${parts[1].slice(0, 2)}`
-    : formatted;
+
+  if (!parts[1]) {
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 2,
+    }).format(Number(formatted));
+  }
+
+  const twoDecimal = `${parts[0]}.${parts[1].slice(0, 2)}`;
+
+  let maxDecimals = 2;
+  if (Number(twoDecimal) === 0 && amount > 0n) {
+    const sigIndex = parts[1].search(/[1-9]/);
+    maxDecimals = sigIndex === -1 ? 6 : Math.min(sigIndex + 4, parts[1].length);
+  }
+
+  const truncated = `${parts[0]}.${parts[1].slice(0, maxDecimals)}`;
+
   return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 2,
+    maximumFractionDigits: maxDecimals,
   }).format(Number(truncated));
 };
 
