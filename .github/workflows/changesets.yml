@@ -11,6 +11,7 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    environment: npm-publish
     outputs:
       published: ${{ steps.changesets.outputs.published }}
       publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
