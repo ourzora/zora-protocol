@@ -9,8 +9,12 @@
   "files": [
     "dist"
   ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "build": "tsup",
+    "build:js": "tsup",
     "zora": "tsx src/index.tsx",
     "test": "vitest run",
     "build:binary": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora",
