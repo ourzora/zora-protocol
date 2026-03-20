@@ -1,5 +1,11 @@
 # @zoralabs/coins-sdk
 
+## 0.5.1
+
+### Patch Changes
+
+- 78df4fc6: Updated to allow for a different base URL for testing
+
 ## 0.5.0
 
 ### Minor Changes

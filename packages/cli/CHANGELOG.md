@@ -1,5 +1,13 @@
 # @zoralabs/cli
 
+## 0.2.2
+
+### Patch Changes
+
+- 78df4fc6: Minor debugging trade release
+- Updated dependencies [78df4fc6]
+  - @zoralabs/coins-sdk@0.5.1
+
 ## 0.2.1
 
 ### Patch Changes
