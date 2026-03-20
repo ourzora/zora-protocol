@@ -4,11 +4,8 @@ import {
   erc20Abi,
   formatUnits,
   isAddress,
-  isAddressEqual,
-  parseEventLogs,
   parseUnits,
   type Address,
-  type TransactionReceipt,
 } from "viem";
 import {
   createTradeCall,
@@ -18,124 +15,20 @@ import {
 } from "@zoralabs/coins-sdk";
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
+import { outputErrorAndExit, outputJson } from "../lib/output.js";
+import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
+import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import {
+  SELL_AMOUNT_CHECKS,
+  getAmountMode,
+  parsePercentageLikeValue,
+  formatAmountDisplay,
+  getReceivedAmountFromReceipt,
+  printDebugRequest,
+  printDebugResponse,
+} from "../lib/trade-helpers.js";
 
-const BASE_OUTPUT_TOKENS = {
-  eth: {
-    symbol: "ETH",
-    decimals: 18,
-    trade: { type: "eth" as const },
-  },
-  usdc: {
-    symbol: "USDC",
-    decimals: 6,
-    trade: {
-      type: "erc20" as const,
-      address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913" as Address,
-    },
-  },
-  zora: {
-    symbol: "ZORA",
-    decimals: 18,
-    trade: {
-      type: "erc20" as const,
-      address: "0x1111111111166b7FE7bd91427724B487980aFc69" as Address,
-    },
-  },
-} as const;
-
-type OutputAsset = keyof typeof BASE_OUTPUT_TOKENS;
-
-const amountModeChecks = {
-  amount: (opts: { amount?: string }) => opts.amount !== undefined,
-  percent: (opts: { percent?: string }) => opts.percent !== undefined,
-  all: (opts: { all?: boolean }) => opts.all === true,
-} as const;
-
-type AmountMode = keyof typeof amountModeChecks;
-
-function getAmountMode(opts: Record<string, unknown>): AmountMode {
-  const provided = (
-    Object.entries(amountModeChecks) as Array<
-      [AmountMode, (typeof amountModeChecks)[AmountMode]]
-    >
-  )
-    .filter(([, isProvided]) => isProvided(opts as never))
-    .map(([mode]) => mode);
-
-  if (provided.length === 0) {
-    console.error("Specify one amount flag: --amount, --percent, or --all");
-    process.exit(1);
-  }
-
-  if (provided.length > 1) {
-    console.error(
-      "Only one amount flag allowed: --amount, --percent, or --all",
-    );
-    process.exit(1);
-  }
-
-  return provided[0];
-}
-
-function parsePercentageLikeValue(value: string): number | undefined {
-  if (!/^\d+(\.\d+)?$/.test(value)) return undefined;
-  const parsed = Number(value);
-  return Number.isFinite(parsed) ? parsed : undefined;
-}
-
-function formatAmountDisplay(amount: bigint, decimals: number): string {
-  const formatted = formatUnits(amount, decimals);
-  // Truncate to 2 decimal places before converting to Number to avoid precision loss
-  const parts = formatted.split(".");
-  const truncated = parts[1]
-    ? `${parts[0]}.${parts[1].slice(0, 2)}`
-    : formatted;
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 2,
-  }).format(Number(truncated));
-}
-
-function getReceivedErc20AmountFromReceipt({
-  receipt,
-  tokenAddress,
-  recipient,
-}: {
-  receipt: TransactionReceipt;
-  tokenAddress: Address;
-  recipient: Address;
-}): bigint {
-  const transfers = parseEventLogs({
-    abi: erc20Abi,
-    eventName: "Transfer",
-    logs: receipt.logs,
-    strict: false,
-  });
-
-  const matchingTransfers = transfers.filter((transfer) => {
-    const to = transfer.args?.to;
-    if (!to) return false;
-    return (
-      isAddressEqual(transfer.address, tokenAddress) &&
-      isAddressEqual(to, recipient)
-    );
-  });
-
-  if (matchingTransfers.length === 0) {
-    throw new Error("No matching Transfer event found in receipt.");
-  }
-
-  return matchingTransfers.reduce((total, transfer) => {
-    const value = transfer.args?.value;
-    if (value === undefined) {
-      throw new Error("Transfer event missing amount.");
-    }
-    return total + value;
-  }, 0n);
-}
-
-function printJson(data: Record<string, unknown>): void {
-  console.log(JSON.stringify(data, null, 2));
-}
+type OutputAsset = TradeTokenKey;
 
 function printSellQuote(
   output: "table" | "json",
@@ -154,7 +47,7 @@ function printSellQuote(
   },
 ): void {
   if (output === "json") {
-    printJson({
+    outputJson({
       action: "quote",
       coin: info.coinSymbol,
       address: info.address,
@@ -207,7 +100,7 @@ function printSellResult(
   );
 
   if (output === "json") {
-    printJson({
+    outputJson({
       action: "sell",
       coin: info.coinSymbol,
       address: info.address,
@@ -242,51 +135,70 @@ export const sellCommand = new Command("sell")
   .description("Sell a coin")
   .argument("<address>", "Coin contract address (0x…)")
   .option("--amount <value>", "Sell specific number of coins")
+  .option("--usd <value>", "Sell USD equivalent worth of coins")
   .option("--percent <value>", "Sell percentage of coin balance")
   .option("--all", "Sell entire coin balance")
   .option("--to <asset>", "Receive asset: eth, usdc, zora", "eth")
+  .option("--token <asset>", "Receive asset: eth, usdc, zora (alias for --to)")
   .option("--quote", "Print quote and exit without trading")
   .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
+  .option("--debug", "Print full quote request/response JSON")
   .option("-o, --output <format>", "Output format: table, json", "table")
   .action(async (coinAddress: string, opts) => {
+    const json = opts.output === "json";
+    const debug = opts.debug === true;
+
     if (!isAddress(coinAddress)) {
-      console.error(`Invalid address: ${coinAddress}`);
-      process.exit(1);
+      outputErrorAndExit(json, `Invalid address: ${coinAddress}`);
     }
 
     const output = opts.output as "table" | "json";
     if (output !== "table" && output !== "json") {
-      console.error(`Invalid --output value: ${output}. Use: table, json`);
-      process.exit(1);
+      outputErrorAndExit(
+        false,
+        `Invalid --output value: ${output}. Use: table, json`,
+      );
     }
 
-    const outputAsset = opts.to as string;
-    if (!(outputAsset in BASE_OUTPUT_TOKENS)) {
-      console.error(`Invalid --to value: ${outputAsset}. Use: eth, usdc, zora`);
-      process.exit(1);
+    // --token takes precedence over --to
+    const outputAsset = (
+      opts.token ? opts.token.toLowerCase() : opts.to
+    ) as string;
+    if (!(outputAsset in BASE_TRADE_TOKENS)) {
+      outputErrorAndExit(
+        json,
+        `Invalid --${opts.token ? "token" : "to"} value: ${outputAsset}. Use: eth, usdc, zora`,
+      );
     }
-    const outputToken = BASE_OUTPUT_TOKENS[outputAsset as OutputAsset];
+    const outputToken = BASE_TRADE_TOKENS[outputAsset as OutputAsset];
 
-    const amountMode = getAmountMode(opts);
+    const amountMode = getAmountMode(
+      json,
+      opts,
+      SELL_AMOUNT_CHECKS,
+      "--amount, --usd, --percent, or --all",
+    );
 
     const slippagePct = parsePercentageLikeValue(opts.slippage);
     if (slippagePct === undefined || slippagePct < 0 || slippagePct > 99) {
-      console.error("Invalid --slippage value. Must be between 0 and 99.");
-      process.exit(1);
+      outputErrorAndExit(
+        json,
+        "Invalid --slippage value. Must be between 0 and 99.",
+      );
     }
     const slippage = slippagePct / 100;
 
     const apiKey = getApiKey();
     if (!apiKey) {
-      console.error(
+      outputErrorAndExit(
+        json,
         "Not authenticated. Run 'zora auth configure' to set your API key.",
       );
-      process.exit(1);
     }
     setApiKey(apiKey);
 
-    const account = resolveAccount();
+    const account = resolveAccount(json);
     const { publicClient, walletClient } = createClients(account);
 
     let token;
@@ -294,14 +206,13 @@ export const sellCommand = new Command("sell")
       const response = await getCoin({ address: coinAddress });
       token = response.data?.zora20Token;
     } catch (err) {
-      console.error(
+      outputErrorAndExit(
+        json,
         `Failed to fetch coin: ${err instanceof Error ? err.message : String(err)}`,
       );
-      return process.exit(1);
     }
     if (!token) {
-      console.error(`Coin not found: ${coinAddress}`);
-      process.exit(1);
+      outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
     }
 
     const coinName = token.name;
@@ -310,17 +221,49 @@ export const sellCommand = new Command("sell")
 
     let amountIn: bigint;
 
-    if (amountMode === "amount") {
+    if (amountMode === "usd") {
+      const usdVal = parsePercentageLikeValue(opts.usd);
+      if (usdVal === undefined || usdVal <= 0) {
+        outputErrorAndExit(
+          json,
+          "Invalid --usd value. Must be a positive number.",
+        );
+        return;
+      }
+
+      const coinPriceUsd = await fetchTokenPriceUsd(coinAddress);
+      if (coinPriceUsd === null || coinPriceUsd <= 0) {
+        outputErrorAndExit(
+          json,
+          `Failed to fetch ${coinSymbol} price for USD conversion.`,
+        );
+        return;
+      }
+
+      const coinAmount = usdVal / coinPriceUsd;
+      amountIn = parseUnits(coinAmount.toFixed(coinDecimals), coinDecimals);
+
+      if (amountIn === 0n) {
+        outputErrorAndExit(json, "Calculated amount is zero. USD too small.");
+      }
+
+      if (debug) {
+        console.error(
+          `[debug] $${usdVal} USD = ${formatUnits(amountIn, coinDecimals)} ${coinSymbol} (coin price: $${coinPriceUsd})`,
+        );
+      }
+    } else if (amountMode === "amount") {
       const val = parsePercentageLikeValue(opts.amount);
       if (val === undefined || val <= 0) {
-        console.error("Invalid --amount value. Must be a positive number.");
-        process.exit(1);
+        outputErrorAndExit(
+          json,
+          "Invalid --amount value. Must be a positive number.",
+        );
       }
       try {
         amountIn = parseUnits(opts.amount, coinDecimals);
       } catch {
-        console.error("Invalid --amount value for token decimals.");
-        process.exit(1);
+        outputErrorAndExit(json, "Invalid --amount value for token decimals.");
       }
     } else {
       const balance = await publicClient.readContract({
@@ -331,10 +274,10 @@ export const sellCommand = new Command("sell")
       });
 
       if (balance === 0n) {
-        console.error(
+        outputErrorAndExit(
+          json,
           `No ${coinSymbol} balance. Buy some first or pick a different wallet.`,
         );
-        process.exit(1);
       }
 
       if (amountMode === "all") {
@@ -342,8 +285,10 @@ export const sellCommand = new Command("sell")
       } else {
         const pct = parsePercentageLikeValue(opts.percent);
         if (pct === undefined || pct <= 0 || pct > 100) {
-          console.error("Invalid --percent value. Must be between 0 and 100.");
-          process.exit(1);
+          outputErrorAndExit(
+            json,
+            "Invalid --percent value. Must be between 0 and 100.",
+          );
         }
 
         amountIn =
@@ -352,8 +297,10 @@ export const sellCommand = new Command("sell")
             : (balance * BigInt(Math.round(pct * 100))) / 10000n;
 
         if (amountIn === 0n) {
-          console.error("Calculated amount is zero. Balance too low.");
-          process.exit(1);
+          outputErrorAndExit(
+            json,
+            "Calculated amount is zero. Balance too low.",
+          );
         }
       }
     }
@@ -366,19 +313,49 @@ export const sellCommand = new Command("sell")
       sender: account.address,
     };
 
+    if (debug) {
+      printDebugRequest("sell", tradeParameters);
+    }
+
     let quoteAmountOut: string;
     try {
       const quote = await createTradeCall(tradeParameters);
+
+      if (debug) {
+        printDebugResponse("sell", quote as unknown as Record<string, unknown>);
+      }
+
       if (!quote.quote?.amountOut || quote.quote.amountOut === "0") {
-        console.error("Quote returned zero output. Amount may be too small.");
-        process.exit(1);
+        outputErrorAndExit(
+          json,
+          "Quote returned zero output. Amount may be too small.",
+        );
       }
       quoteAmountOut = quote.quote.amountOut;
     } catch (err) {
-      console.error(
-        `Quote failed: ${err instanceof Error ? err.message : String(err)}`,
+      if (debug) {
+        console.error(
+          `\n[debug] sell — Quote Error:\n${err instanceof Error ? err.stack || err.message : String(err)}\n`,
+        );
+      }
+      const msg = err instanceof Error ? err.message : String(err);
+      const errorType = (err as any)?.errorType;
+      const errorBody = (err as any)?.errorBody;
+      if (errorType === "LIQUIDITY" || msg.includes("Not enough liquidity")) {
+        if (json) {
+          outputJson({ error: errorBody ?? msg });
+          process.exit(1);
+        }
+        outputErrorAndExit(
+          json,
+          "Not enough available liquidity for your swap. Please try swapping fewer tokens.",
+        );
+      }
+      outputErrorAndExit(
+        json,
+        `Quote failed: ${msg}`,
+        "Check the coin address and amount, then try again. Use --debug for full error details.",
       );
-      process.exit(1);
     }
 
     const soldFormatted = formatAmountDisplay(amountIn, coinDecimals);
@@ -430,7 +407,7 @@ export const sellCommand = new Command("sell")
       }
     }
 
-    let receipt: TransactionReceipt;
+    let receipt: Awaited<ReturnType<typeof tradeCoin>>;
     let txHash: string;
     let receivedAmountOut = BigInt(quoteAmountOut);
     let receivedSource: "receipt" | "quote" = "quote";
@@ -442,17 +419,17 @@ export const sellCommand = new Command("sell")
         account,
       });
     } catch (err) {
-      console.error(
+      outputErrorAndExit(
+        json,
         `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
       );
-      process.exit(1);
     }
     txHash = receipt.transactionHash;
 
     // For ERC-20 outputs, try to get actual received amount from receipt
     if (outputToken.trade.type === "erc20") {
       try {
-        receivedAmountOut = getReceivedErc20AmountFromReceipt({
+        receivedAmountOut = getReceivedAmountFromReceipt({
           receipt,
           tokenAddress: outputToken.trade.address,
           recipient: account.address,

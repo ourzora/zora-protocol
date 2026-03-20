@@ -247,7 +247,14 @@ export async function createTradeCall(
 
   if (!quote.data) {
     console.error(quote);
-    throw new Error("Quote failed");
+    const errorBody = quote.error as
+      | { error?: string; errorType?: string }
+      | undefined;
+    const errorMessage = errorBody?.error || "Quote failed";
+    const err = new Error(errorMessage);
+    (err as any).errorType = errorBody?.errorType;
+    (err as any).errorBody = errorBody;
+    throw err;
   }
 
   return quote.data;

@@ -1,6 +1,7 @@
 import { Command } from "commander";
 import { ExitPromptError } from "@inquirer/core";
 import { readFileSync } from "node:fs";
+import { setApiBaseUrl } from "@zoralabs/coins-sdk";
 import { authCommand } from "./commands/auth.js";
 import { balanceCommand } from "./commands/balance.js";
 import { buyCommand } from "./commands/buy.js";
@@ -14,6 +15,11 @@ import { Zorb } from "./components/Zorb.js";
 import { supportsTruecolor } from "./lib/zorb-pixels.js";
 
 declare const PKG_VERSION: string | undefined;
+
+// Override SDK base URL via ZORA_API_TARGET (e.g. http://localhost:3000, staging URL)
+if (process.env.ZORA_API_TARGET) {
+  setApiBaseUrl(process.env.ZORA_API_TARGET);
+}
 
 const version =
   typeof PKG_VERSION !== "undefined"

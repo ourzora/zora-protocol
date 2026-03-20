@@ -13,3 +13,36 @@ export const ZORA_ADDRESS: Address =
 
 /** USDC uses 6 decimals */
 export const USDC_DECIMALS = 6;
+
+/** Token configuration for buy/sell commands */
+export const BASE_TRADE_TOKENS = {
+  eth: {
+    symbol: "ETH",
+    decimals: 18,
+    trade: { type: "eth" as const },
+    priceAddress: WETH_ADDRESS,
+    fixedPriceUsd: undefined as number | undefined,
+  },
+  usdc: {
+    symbol: "USDC",
+    decimals: USDC_DECIMALS,
+    trade: {
+      type: "erc20" as const,
+      address: USDC_ADDRESS,
+    },
+    priceAddress: USDC_ADDRESS,
+    fixedPriceUsd: 1,
+  },
+  zora: {
+    symbol: "ZORA",
+    decimals: 18,
+    trade: {
+      type: "erc20" as const,
+      address: ZORA_ADDRESS,
+    },
+    priceAddress: ZORA_ADDRESS,
+    fixedPriceUsd: undefined as number | undefined,
+  },
+} as const;
+
+export type TradeTokenKey = keyof typeof BASE_TRADE_TOKENS;

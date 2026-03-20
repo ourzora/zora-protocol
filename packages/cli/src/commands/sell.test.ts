@@ -24,6 +24,10 @@ vi.mock("@zoralabs/coins-sdk", () => ({
   tradeCoin: vi.fn(),
 }));
 
+vi.mock("../lib/wallet-balances.js", () => ({
+  fetchTokenPriceUsd: vi.fn(),
+}));
+
 import confirm from "@inquirer/confirm";
 import {
   createTradeCall,
@@ -33,6 +37,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
+import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
@@ -119,6 +124,7 @@ describe("sell command", () => {
       ],
     } as Awaited<ReturnType<typeof tradeCoin>>);
     vi.mocked(confirm).mockResolvedValue(true);
+    vi.mocked(fetchTokenPriceUsd).mockResolvedValue(2.0);
     publicClient.readContract.mockResolvedValue(0n);
   });
 
@@ -141,7 +147,9 @@ describe("sell command", () => {
     await expect(runSell([COIN_ADDRESS])).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
-      "Specify one amount flag: --amount, --percent, or --all",
+      expect.stringContaining(
+        "Specify one amount flag: --amount, --usd, --percent, or --all",
+      ),
     );
   });
 
@@ -151,7 +159,9 @@ describe("sell command", () => {
     ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
-      "Only one amount flag allowed: --amount, --percent, or --all",
+      expect.stringContaining(
+        "Only one amount flag allowed: --amount, --usd, --percent, or --all",
+      ),
     );
   });
 
@@ -413,6 +423,89 @@ describe("sell command", () => {
     });
   });
 
+  it("produces structured JSON errors when --output json is set", async () => {
+    await expect(
+      runSell(["not-an-address", "--amount", "1", "--yes", "--output", "json"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"error"'));
+  });
+
+  describe("--usd flag", () => {
+    it("converts USD to coin amount using fetched price", async () => {
+      vi.mocked(fetchTokenPriceUsd).mockResolvedValue(2.0);
+
+      await runSell([COIN_ADDRESS, "--usd", "10", "--yes"]);
+
+      // $10 / $2.0 per coin = 5 coins = 5000000000000000000 (18 decimals)
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 5000000000000000000n,
+        }),
+      );
+      expect(tradeCoin).toHaveBeenCalled();
+    });
+
+    it("exits when --usd value is invalid", async () => {
+      await expect(
+        runSell([COIN_ADDRESS, "--usd", "abc", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --usd value"),
+      );
+    });
+
+    it("exits when --usd value is zero", async () => {
+      await expect(
+        runSell([COIN_ADDRESS, "--usd", "0", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --usd value"),
+      );
+    });
+
+    it("exits when coin price fetch fails", async () => {
+      vi.mocked(fetchTokenPriceUsd).mockResolvedValue(null);
+
+      await expect(
+        runSell([COIN_ADDRESS, "--usd", "10", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to fetch TEST price"),
+      );
+    });
+  });
+
+  describe("--token flag (alias for --to)", () => {
+    it("uses --token value when provided", async () => {
+      await runSell([
+        COIN_ADDRESS,
+        "--amount",
+        "1",
+        "--token",
+        "usdc",
+        "--yes",
+      ]);
+
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          buy: {
+            type: "erc20",
+            address: USDC_ADDRESS,
+          },
+        }),
+      );
+    });
+
+    it("exits with error for invalid --token value", async () => {
+      await expect(
+        runSell([COIN_ADDRESS, "--amount", "1", "--token", "btc"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --token value"),
+      );
+    });
+  });
+
   it("prints quote and exits with --quote flag", async () => {
     vi.mocked(tradeCoin).mockClear();
 
@@ -438,5 +531,61 @@ describe("sell command", () => {
     const output = logSpy.mock.calls.map((call) => call[0]).join("\n");
     expect(output).toContain("Sell Test Coin");
     expect(tradeCoin).not.toHaveBeenCalled();
+  });
+
+  describe("--debug flag", () => {
+    it("prints request before SDK call and response after on success", async () => {
+      await runSell([COIN_ADDRESS, "--amount", "1", "--yes", "--debug"]);
+
+      const calls = errorSpy.mock.calls.map((c) => c[0]);
+      const requestIdx = calls.findIndex(
+        (c) => typeof c === "string" && c.includes("Quote Request"),
+      );
+      const responseIdx = calls.findIndex(
+        (c) => typeof c === "string" && c.includes("Quote Response"),
+      );
+      expect(requestIdx).toBeGreaterThanOrEqual(0);
+      expect(responseIdx).toBeGreaterThan(requestIdx);
+    });
+
+    it("prints error details when quote throws", async () => {
+      vi.mocked(createTradeCall).mockRejectedValue(
+        new Error("server exploded"),
+      );
+
+      await expect(
+        runSell([COIN_ADDRESS, "--amount", "1", "--yes", "--debug"]),
+      ).rejects.toThrow("process.exit(1)");
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[debug] sell — Quote Error"),
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("server exploded"),
+      );
+    });
+
+    it("prints ZORA_API_TARGET when set", async () => {
+      process.env.ZORA_API_TARGET = "http://localhost:9999";
+
+      await runSell([COIN_ADDRESS, "--amount", "1", "--yes", "--debug"]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("API target: http://localhost:9999"),
+      );
+      delete process.env.ZORA_API_TARGET;
+    });
+  });
+
+  it("shows suggestion when quote fails", async () => {
+    vi.mocked(createTradeCall).mockRejectedValue(new Error("bad request"));
+
+    await expect(
+      runSell([COIN_ADDRESS, "--amount", "1", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Use --debug for full error details"),
+    );
   });
 });

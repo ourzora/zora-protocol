@@ -19,6 +19,10 @@ vi.mock("../lib/wallet.js", () => ({
 
 vi.mock("@zoralabs/coins-sdk");
 
+vi.mock("../lib/wallet-balances.js", () => ({
+  fetchTokenPriceUsd: vi.fn(),
+}));
+
 import confirm from "@inquirer/confirm";
 import {
   createTradeCall,
@@ -28,6 +32,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
+import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
@@ -67,6 +72,7 @@ describe("buy command", () => {
 
   const publicClient = {
     getBalance: vi.fn(),
+    readContract: vi.fn(),
   };
 
   const walletClient = {};
@@ -112,6 +118,7 @@ describe("buy command", () => {
       ],
     } as Awaited<ReturnType<typeof tradeCoin>>);
     vi.mocked(confirm).mockResolvedValue(true);
+    vi.mocked(fetchTokenPriceUsd).mockResolvedValue(2500);
     publicClient.getBalance.mockResolvedValue(0n);
   });
 
@@ -148,7 +155,7 @@ describe("buy command", () => {
     ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Only one amount flag allowed."),
+      expect.stringContaining("Only one amount flag allowed"),
     );
   });
 
@@ -463,6 +470,101 @@ describe("buy command", () => {
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"error"'));
   });
 
+  describe("--usd flag", () => {
+    it("converts USD to ETH amount using fetched price", async () => {
+      vi.mocked(fetchTokenPriceUsd).mockResolvedValue(2500);
+
+      await runBuy([COIN_ADDRESS, "--usd", "25", "--yes"]);
+
+      // $25 / $2500 per ETH = 0.01 ETH = 10000000000000000 wei
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 10000000000000000n,
+          sell: { type: "eth" },
+        }),
+      );
+      expect(tradeCoin).toHaveBeenCalled();
+    });
+
+    it("converts USD to USDC amount with --token usdc", async () => {
+      await runBuy([COIN_ADDRESS, "--usd", "10", "--token", "usdc", "--yes"]);
+
+      // $10 / $1 per USDC = 10 USDC = 10000000 (6 decimals)
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 10000000n,
+          sell: {
+            type: "erc20",
+            address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          },
+        }),
+      );
+    });
+
+    it("exits when --usd value is invalid", async () => {
+      await expect(
+        runBuy([COIN_ADDRESS, "--usd", "abc", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --usd value"),
+      );
+    });
+
+    it("exits when --usd value is zero", async () => {
+      await expect(
+        runBuy([COIN_ADDRESS, "--usd", "0", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --usd value"),
+      );
+    });
+
+    it("exits when price fetch fails", async () => {
+      vi.mocked(fetchTokenPriceUsd).mockResolvedValue(null);
+
+      await expect(
+        runBuy([COIN_ADDRESS, "--usd", "10", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Failed to fetch ETH price"),
+      );
+    });
+  });
+
+  describe("--token flag", () => {
+    it("defaults to eth", async () => {
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sell: { type: "eth" },
+        }),
+      );
+    });
+
+    it("uses USDC trade parameters with --token usdc", async () => {
+      await runBuy([COIN_ADDRESS, "--usd", "5", "--token", "usdc", "--yes"]);
+
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sell: {
+            type: "erc20",
+            address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          },
+        }),
+      );
+    });
+
+    it("exits with error for invalid --token value", async () => {
+      await expect(
+        runBuy([COIN_ADDRESS, "--usd", "10", "--token", "btc", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Invalid --token value"),
+      );
+    });
+  });
+
   describe("--quote flag", () => {
     beforeEach(() => {
       vi.mocked(tradeCoin).mockClear();
@@ -502,6 +604,192 @@ describe("buy command", () => {
       await runBuy([COIN_ADDRESS, "--eth", "0.1", "--quote"]);
 
       expect(confirm).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("--debug flag", () => {
+    it("prints request before SDK call and response after on success", async () => {
+      publicClient.getBalance.mockResolvedValue(10n ** 18n);
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--debug"]);
+
+      const calls = errorSpy.mock.calls.map((c) => c[0]);
+      const requestIdx = calls.findIndex(
+        (c) => typeof c === "string" && c.includes("Quote Request"),
+      );
+      const responseIdx = calls.findIndex(
+        (c) => typeof c === "string" && c.includes("Quote Response"),
+      );
+      expect(requestIdx).toBeGreaterThanOrEqual(0);
+      expect(responseIdx).toBeGreaterThan(requestIdx);
+    });
+
+    it("prints error details when quote throws", async () => {
+      publicClient.getBalance.mockResolvedValue(10n ** 18n);
+      vi.mocked(createTradeCall).mockRejectedValue(
+        new Error("server exploded"),
+      );
+
+      await expect(
+        runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--debug"]),
+      ).rejects.toThrow("process.exit(1)");
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("[debug] buy — Quote Error"),
+      );
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("server exploded"),
+      );
+    });
+
+    it("prints ZORA_API_TARGET when set", async () => {
+      process.env.ZORA_API_TARGET = "http://localhost:9999";
+      publicClient.getBalance.mockResolvedValue(10n ** 18n);
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--debug"]);
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining("API target: http://localhost:9999"),
+      );
+      delete process.env.ZORA_API_TARGET;
+    });
+  });
+
+  it("shows suggestion when quote fails", async () => {
+    publicClient.getBalance.mockResolvedValue(10n ** 18n);
+    vi.mocked(createTradeCall).mockRejectedValue(new Error("bad request"));
+
+    await expect(
+      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Use --debug for full error details"),
+    );
+  });
+
+  describe("--eth with non-ETH tokens", () => {
+    it("parses --eth amount using USDC decimals (6) with --token usdc", async () => {
+      await runBuy([COIN_ADDRESS, "--eth", "0.01", "--token", "usdc", "--yes"]);
+
+      // 0.01 USDC = 10000 (6 decimals), NOT 10000000000000000 (18 decimals)
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 10000n,
+          sell: {
+            type: "erc20",
+            address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          },
+        }),
+      );
+    });
+
+    it("parses --eth amount using ZORA decimals (18) with --token zora", async () => {
+      await runBuy([COIN_ADDRESS, "--eth", "0.01", "--token", "zora", "--yes"]);
+
+      // 0.01 ZORA = 10000000000000000 (18 decimals)
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 10000000000000000n,
+          sell: {
+            type: "erc20",
+            address: "0x1111111111166b7FE7bd91427724B487980aFc69",
+          },
+        }),
+      );
+    });
+  });
+
+  describe("--all/--percent with non-ETH tokens", () => {
+    it("reads USDC balance for --all --token usdc", async () => {
+      // 100 USDC (6 decimals)
+      publicClient.readContract.mockResolvedValue(100000000n);
+
+      await runBuy([COIN_ADDRESS, "--all", "--token", "usdc", "--yes"]);
+
+      // Should use USDC balance (100000000), not ETH balance
+      expect(publicClient.readContract).toHaveBeenCalledWith(
+        expect.objectContaining({
+          address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+          functionName: "balanceOf",
+          args: [ACCOUNT_ADDRESS],
+        }),
+      );
+      expect(publicClient.getBalance).not.toHaveBeenCalled();
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 100000000n, // full USDC balance, no gas reserve
+        }),
+      );
+    });
+
+    it("reads USDC balance for --percent 50 --token usdc", async () => {
+      // 100 USDC (6 decimals)
+      publicClient.readContract.mockResolvedValue(100000000n);
+
+      await runBuy([
+        COIN_ADDRESS,
+        "--percent",
+        "50",
+        "--token",
+        "usdc",
+        "--yes",
+      ]);
+
+      expect(publicClient.readContract).toHaveBeenCalled();
+      expect(publicClient.getBalance).not.toHaveBeenCalled();
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 50000000n, // 50% of 100 USDC
+        }),
+      );
+    });
+
+    it("does not apply gas reserve for ERC-20 tokens with --all", async () => {
+      // 1 ZORA (18 decimals)
+      publicClient.readContract.mockResolvedValue(1000000000000000000n);
+
+      await runBuy([COIN_ADDRESS, "--all", "--token", "zora", "--yes"]);
+
+      // Full balance, no gas reserve subtracted
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          amountIn: 1000000000000000000n,
+        }),
+      );
+    });
+  });
+
+  describe("display and JSON output with non-ETH tokens", () => {
+    it("shows correct token symbol in table output", async () => {
+      await runBuy([COIN_ADDRESS, "--eth", "10", "--token", "usdc", "--yes"]);
+
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("USDC"));
+      // Should NOT show "ETH" in the Spent line
+      const spentCall = logSpy.mock.calls.find(
+        (c) => typeof c[0] === "string" && c[0].includes("Spent"),
+      );
+      expect(spentCall?.[0]).not.toContain("ETH");
+    });
+
+    it("formats JSON spend amount using correct decimals for USDC", async () => {
+      await runBuy([
+        COIN_ADDRESS,
+        "--eth",
+        "10",
+        "--token",
+        "usdc",
+        "--yes",
+        "--output",
+        "json",
+      ]);
+
+      const output = logSpy.mock.calls.map((c) => c[0]).join("");
+      const parsed = JSON.parse(output);
+      // 10 USDC = 10000000 raw (6 decimals)
+      // formatUnits(10000000, 6) = "10"
+      expect(parsed.spent.amount).toBe("10");
+      expect(parsed.spent.symbol).toBe("USDC");
     });
   });
 });

@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import confirm from "@inquirer/confirm";
-import { parseEther, formatUnits, isAddress, type Address } from "viem";
+import { parseUnits, formatUnits, isAddress, type Address } from "viem";
 import {
   setApiKey,
   getCoin,
@@ -9,29 +9,38 @@ import {
 } from "@zoralabs/coins-sdk";
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
-import { outputErrorAndExit } from "../lib/output.js";
+import { outputErrorAndExit, outputJson } from "../lib/output.js";
 import { formatEthDisplay, formatCoinsDisplay } from "../lib/format.js";
 import {
   GAS_RESERVE,
+  BUY_AMOUNT_CHECKS,
   getAmountMode,
   parsePercentageLikeValue,
   getReceivedAmountFromReceipt,
   printQuote,
   printTradeResult,
-} from "../lib/buy-helpers.js";
+  printDebugRequest,
+  printDebugResponse,
+} from "../lib/trade-helpers.js";
+import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
+import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 
 export const buyCommand = new Command("buy")
   .description("Buy a coin")
   .argument("<address>", "Coin contract address (0x…)")
   .option("--eth <value>", "Buy with ETH amount")
+  .option("--usd <value>", "Buy with USD equivalent (use with --token)")
+  .option("--token <asset>", "Token to spend: eth, usdc, zora", "eth")
   .option("--percent <value>", "Buy with percentage of ETH balance")
   .option("--all", "Swap all ETH for coin")
   .option("--quote", "Print quote and exit without trading")
   .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
+  .option("--debug", "Print full quote request/response JSON")
   .option("-o, --output <format>", "Output format: table, json", "table")
   .action(async (coinAddress: string, opts) => {
     const json = opts.output === "json";
+    const debug = opts.debug === true;
 
     if (!isAddress(coinAddress)) {
       outputErrorAndExit(json, `Invalid address: ${coinAddress}`);
@@ -45,7 +54,21 @@ export const buyCommand = new Command("buy")
       );
     }
 
-    const amountMode = getAmountMode(json, opts);
+    const tokenKey = opts.token.toLowerCase() as string;
+    if (!(tokenKey in BASE_TRADE_TOKENS)) {
+      outputErrorAndExit(
+        json,
+        `Invalid --token value: ${opts.token}. Use: eth, usdc, zora`,
+      );
+    }
+    const inputToken = BASE_TRADE_TOKENS[tokenKey as TradeTokenKey];
+
+    const amountMode = getAmountMode(
+      json,
+      opts,
+      BUY_AMOUNT_CHECKS,
+      "--eth, --usd, --percent, or --all",
+    );
 
     const slippagePct = parsePercentageLikeValue(opts.slippage);
     if (slippagePct === undefined || slippagePct < 0 || slippagePct > 99) {
@@ -86,7 +109,47 @@ export const buyCommand = new Command("buy")
 
     let amountIn: bigint;
 
-    if (amountMode === "eth") {
+    if (amountMode === "usd") {
+      const usdVal = parsePercentageLikeValue(opts.usd);
+      if (usdVal === undefined || usdVal <= 0) {
+        outputErrorAndExit(
+          json,
+          "Invalid --usd value. Must be a positive number.",
+        );
+        return;
+      }
+
+      let priceUsd: number;
+      if (inputToken.fixedPriceUsd != null) {
+        priceUsd = inputToken.fixedPriceUsd;
+      } else {
+        const fetched = await fetchTokenPriceUsd(inputToken.priceAddress);
+        if (fetched === null) {
+          outputErrorAndExit(
+            json,
+            `Failed to fetch ${inputToken.symbol} price.`,
+          );
+          return;
+        }
+        priceUsd = fetched;
+      }
+
+      const tokenAmount = usdVal / priceUsd;
+      amountIn = parseUnits(
+        tokenAmount.toFixed(inputToken.decimals),
+        inputToken.decimals,
+      );
+
+      if (amountIn === 0n) {
+        outputErrorAndExit(json, "Calculated amount is zero. USD too small.");
+      }
+
+      if (debug) {
+        console.error(
+          `[debug] $${usdVal} USD = ${formatUnits(amountIn, inputToken.decimals)} ${inputToken.symbol} (price: $${priceUsd})`,
+        );
+      }
+    } else if (amountMode === "eth") {
       const val = parsePercentageLikeValue(opts.eth);
       if (val === undefined || val <= 0) {
         outputErrorAndExit(
@@ -95,7 +158,7 @@ export const buyCommand = new Command("buy")
         );
       }
       try {
-        amountIn = parseEther(opts.eth);
+        amountIn = parseUnits(opts.eth, inputToken.decimals);
       } catch {
         outputErrorAndExit(
           json,
@@ -103,24 +166,48 @@ export const buyCommand = new Command("buy")
         );
       }
     } else {
-      const balance = await publicClient.getBalance({
-        address: account.address,
-      });
+      const isEth = tokenKey === "eth";
+      let balance: bigint;
+
+      if (isEth) {
+        balance = await publicClient.getBalance({
+          address: account.address,
+        });
+      } else {
+        const tokenAddress = (inputToken.trade as { address: Address }).address;
+        balance = await publicClient.readContract({
+          address: tokenAddress,
+          abi: [
+            {
+              name: "balanceOf",
+              type: "function",
+              stateMutability: "view",
+              inputs: [{ name: "account", type: "address" }],
+              outputs: [{ name: "", type: "uint256" }],
+            },
+          ],
+          functionName: "balanceOf",
+          args: [account.address],
+        });
+      }
+
       if (balance === 0n) {
         outputErrorAndExit(
           json,
-          `No ETH balance. Deposit ETH to ${account.address} on Base.`,
+          `No ${inputToken.symbol} balance. Deposit ${inputToken.symbol} to ${account.address} on Base.`,
         );
       }
 
-      if (balance <= GAS_RESERVE) {
+      const gasReserve = isEth ? GAS_RESERVE : 0n;
+
+      if (isEth && balance <= gasReserve) {
         outputErrorAndExit(
           json,
           `Balance too low (${formatEthDisplay(balance)} ETH). Need >0.001 ETH for gas.`,
         );
       }
 
-      const spendableBalance = balance - GAS_RESERVE;
+      const spendableBalance = balance - gasReserve;
 
       if (amountMode === "all") {
         amountIn = spendableBalance;
@@ -148,16 +235,25 @@ export const buyCommand = new Command("buy")
     }
 
     const tradeParameters = {
-      sell: { type: "eth" as const },
+      sell: inputToken.trade,
       buy: { type: "erc20" as const, address: coinAddress as Address },
       amountIn,
       slippage,
       sender: account.address,
     };
 
+    if (debug) {
+      printDebugRequest("buy", tradeParameters);
+    }
+
     let amountOut: string;
     try {
       const quote = await createTradeCall(tradeParameters);
+
+      if (debug) {
+        printDebugResponse("buy", quote as unknown as Record<string, unknown>);
+      }
+
       if (!quote.quote?.amountOut || quote.quote.amountOut === "0") {
         outputErrorAndExit(
           json,
@@ -166,13 +262,36 @@ export const buyCommand = new Command("buy")
       }
       amountOut = quote.quote.amountOut;
     } catch (err) {
+      if (debug) {
+        console.error(
+          `\n[debug] buy — Quote Error:\n${err instanceof Error ? err.stack || err.message : String(err)}\n`,
+        );
+      }
+      const msg = err instanceof Error ? err.message : String(err);
+      const errorType = (err as any)?.errorType;
+      const errorBody = (err as any)?.errorBody;
+      if (errorType === "LIQUIDITY" || msg.includes("Not enough liquidity")) {
+        if (json) {
+          outputJson({ error: errorBody ?? msg });
+          process.exit(1);
+        }
+        outputErrorAndExit(
+          json,
+          "Not enough available liquidity for your swap. Please try swapping fewer tokens.",
+        );
+      }
       outputErrorAndExit(
         json,
-        `Quote failed: ${err instanceof Error ? err.message : String(err)}`,
+        `Quote failed: ${msg}`,
+        "Check the coin address is valid and try again. Use --debug for full error details.",
       );
     }
 
-    const ethAmount = formatEthDisplay(amountIn);
+    const spendAmount = formatUnits(amountIn, inputToken.decimals);
+    const spendFormatted = new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 6,
+    }).format(Number(spendAmount));
+    const spendAmount = spendFormatted;
     const coinsOut = formatUnits(BigInt(amountOut), 18);
     const coinsFormatted = formatCoinsDisplay(coinsOut);
 
@@ -181,8 +300,10 @@ export const buyCommand = new Command("buy")
         coinName,
         coinSymbol,
         address: coinAddress,
-        ethAmount,
+        spendAmount: `${spendFormatted} ${inputToken.symbol}`,
         amountIn,
+        inputTokenSymbol: inputToken.symbol,
+        inputTokenDecimals: inputToken.decimals,
         coinsFormatted,
         amountOut,
         slippagePct,
@@ -195,8 +316,10 @@ export const buyCommand = new Command("buy")
         coinName,
         coinSymbol,
         address: coinAddress,
-        ethAmount,
+        spendAmount: `${spendFormatted} ${inputToken.symbol}`,
         amountIn,
+        inputTokenSymbol: inputToken.symbol,
+        inputTokenDecimals: inputToken.decimals,
         coinsFormatted,
         amountOut,
         slippagePct,
@@ -246,8 +369,10 @@ export const buyCommand = new Command("buy")
       coinName,
       coinSymbol,
       address: coinAddress,
-      ethAmount,
+      spendAmount,
       amountIn,
+      inputTokenSymbol: inputToken.symbol,
+      inputTokenDecimals: inputToken.decimals,
       receivedAmountOut,
       txHash,
     });
