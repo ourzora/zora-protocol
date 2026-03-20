@@ -1,5 +1,11 @@
 # @zoralabs/cli
 
+## 0.2.3
+
+### Patch Changes
+
+- 32daf194: Fix npm publish to include dist/ build output
+
 ## 0.2.2
 
 ### Patch Changes
