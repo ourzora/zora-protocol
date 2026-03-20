@@ -4,6 +4,10 @@ vi.mock("./config.js", () => ({
   getPrivateKey: vi.fn(),
 }));
 
+vi.mock("@zoralabs/coins-sdk", () => ({
+  apiPost: vi.fn(),
+}));
+
 vi.mock("viem/accounts", () => ({
   privateKeyToAccount: vi.fn(),
 }));
@@ -11,7 +15,7 @@ vi.mock("viem/accounts", () => ({
 vi.mock("viem", () => ({
   createPublicClient: vi.fn(),
   createWalletClient: vi.fn(),
-  http: vi.fn(),
+  custom: vi.fn((transport) => transport),
 }));
 
 vi.mock("viem/chains", () => ({
@@ -30,8 +34,9 @@ vi.mock("./output.js", () => ({
 }));
 
 import { getPrivateKey } from "./config.js";
+import { apiPost } from "@zoralabs/coins-sdk";
 import { privateKeyToAccount } from "viem/accounts";
-import { createPublicClient, createWalletClient } from "viem";
+import { createPublicClient, createWalletClient, custom } from "viem";
 
 const MOCK_KEY = "a".repeat(64);
 const MOCK_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -132,9 +137,136 @@ describe("createClients", () => {
 
     expect(result.publicClient).toBe(mockPublicClient);
     expect(result.walletClient).toBe(mockWalletClient);
-    expect(createPublicClient).toHaveBeenCalled();
-    expect(createWalletClient).toHaveBeenCalledWith(
-      expect.objectContaining({ account }),
+    expect(custom).toHaveBeenCalledWith(
+      expect.objectContaining({
+        request: expect.any(Function),
+      }),
     );
+    expect(createPublicClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        transport: expect.any(Object),
+      }),
+    );
+    expect(createWalletClient).toHaveBeenCalledWith(
+      expect.objectContaining({
+        account,
+        transport: expect.any(Object),
+      }),
+    );
+
+    expect(vi.mocked(createWalletClient).mock.calls[0]?.[0].transport).toBe(
+      vi.mocked(createPublicClient).mock.calls[0]?.[0].transport,
+    );
+  });
+});
+
+describe("createCliRpcTransport", () => {
+  it("routes rpc requests through /cli-rpc and unwraps result payloads", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: { result: "0x123" },
+      error: undefined,
+    } as never);
+
+    const { createCliRpcTransport } = await import("./wallet.js");
+    const transport = createCliRpcTransport();
+
+    const result = await transport.request({
+      method: "eth_blockNumber",
+      params: [],
+    });
+
+    expect(apiPost).toHaveBeenCalledWith("/cli-rpc", {
+      chainId: 8453,
+      method: "eth_blockNumber",
+      params: [],
+    });
+    expect(result).toBe("0x123");
+  });
+
+  it("passes custom chainId to apiPost", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: { result: "0x1" },
+      error: undefined,
+    } as never);
+
+    const { createCliRpcTransport } = await import("./wallet.js");
+    const transport = createCliRpcTransport(1);
+
+    await transport.request({
+      method: "eth_chainId",
+      params: [],
+    });
+
+    expect(apiPost).toHaveBeenCalledWith("/cli-rpc", {
+      chainId: 1,
+      method: "eth_chainId",
+      params: [],
+    });
+  });
+
+  it("defaults chainId to base (8453) when not specified", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: { result: "0x1" },
+      error: undefined,
+    } as never);
+
+    const { createCliRpcTransport } = await import("./wallet.js");
+    const transport = createCliRpcTransport();
+
+    await transport.request({
+      method: "eth_blockNumber",
+      params: [],
+    });
+
+    expect(apiPost).toHaveBeenCalledWith("/cli-rpc", {
+      chainId: 8453,
+      method: "eth_blockNumber",
+      params: [],
+    });
+  });
+
+  it("wraps network errors with consistent formatting", async () => {
+    vi.mocked(apiPost).mockRejectedValue(new Error("fetch failed"));
+
+    const { createCliRpcTransport } = await import("./wallet.js");
+    const transport = createCliRpcTransport();
+
+    await expect(
+      transport.request({
+        method: "eth_blockNumber",
+        params: [],
+      }),
+    ).rejects.toThrow("CLI RPC request failed: fetch failed");
+  });
+
+  it("wraps non-Error network exceptions with consistent formatting", async () => {
+    vi.mocked(apiPost).mockRejectedValue("timeout");
+
+    const { createCliRpcTransport } = await import("./wallet.js");
+    const transport = createCliRpcTransport();
+
+    await expect(
+      transport.request({
+        method: "eth_blockNumber",
+        params: [],
+      }),
+    ).rejects.toThrow("CLI RPC request failed: timeout");
+  });
+
+  it("throws when the sdk returns an error", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: undefined,
+      error: { message: "rate limited" },
+    } as never);
+
+    const { createCliRpcTransport } = await import("./wallet.js");
+    const transport = createCliRpcTransport();
+
+    await expect(
+      transport.request({
+        method: "eth_chainId",
+        params: [],
+      }),
+    ).rejects.toThrow("CLI RPC request failed: rate limited");
   });
 });
