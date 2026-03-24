@@ -2,7 +2,7 @@ import { formatUsd } from "./format.js";
 
 const COIN_DECIMALS = 18;
 
-export const toHumanBalance = (rawBalance: string): number =>
+export const parseRawBalance = (rawBalance: string): number =>
   Number(normalizeTokenAmount(rawBalance));
 
 export const normalizeTokenAmount = (
@@ -28,24 +28,24 @@ export const normalizeTokenAmount = (
   }
 };
 
-export const formatUsdValue = (
+export const formatBalanceAsUsd = (
   balance: string,
   priceInUsdc?: string,
 ): string => {
   if (!priceInUsdc) return "-";
-  const value = toHumanBalance(balance) * Number(priceInUsdc);
+  const value = parseRawBalance(balance) * Number(priceInUsdc);
   if (value < 0.01) return "<$0.01";
   return formatUsd(value);
 };
 
 export const formatBalance = (balance: string): string => {
-  const n = toHumanBalance(balance);
+  const n = parseRawBalance(balance);
   if (n === 0) return "0";
   if (n < 0.001) return "<0.001";
   if (n < 1) return n.toFixed(4);
   return new Intl.NumberFormat("en-US", {
     notation: "compact",
-    compactDisplay: "long",
+    compactDisplay: "short",
     maximumFractionDigits: 1,
   }).format(n);
 };

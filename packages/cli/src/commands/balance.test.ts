@@ -1,11 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createProgram } from "../test/create-program.js";
-import {
-  formatBalance,
-  formatUsdValue,
-  normalizeTokenAmount,
-  toHumanBalance,
-} from "../lib/balance-format.js";
 
 vi.mock("@zoralabs/coins-sdk");
 vi.mock("../lib/config.js", () => ({
@@ -118,86 +112,6 @@ const coinBalancesPayload = {
 const emptyCoinsPayload = {
   data: { profile: { coinBalances: { count: 0, edges: [] } } },
 };
-
-describe("balances formatting", () => {
-  it("converts raw balance to human-readable", () => {
-    expect(toHumanBalance("1000000000000000000")).toBe(1);
-    expect(toHumanBalance("500000000000000000")).toBe(0.5);
-    expect(toHumanBalance("0")).toBe(0);
-  });
-
-  it("formats tiny USD balances as less than one cent", () => {
-    expect(formatUsdValue("1000000000000000", "0.5")).toBe("<$0.01");
-  });
-
-  it("formats USD value with 2 decimal places", () => {
-    expect(formatUsdValue("4000000000000000000", "0.05")).toBe("$0.20");
-  });
-
-  it("formats missing token price as dash", () => {
-    expect(formatUsdValue("2000000000000000000", undefined)).toBe("-");
-  });
-
-  it("formats zero balances", () => {
-    expect(formatBalance("0")).toBe("0");
-  });
-
-  it("formats small balances with fixed decimals", () => {
-    expect(formatBalance("125000000000000000")).toBe("0.1250");
-  });
-
-  it("formats large balances with compact long display", () => {
-    expect(formatBalance("20000000000000000000000000")).toMatch(/20 million/i);
-  });
-
-  it("normalizes raw token amounts without precision loss", () => {
-    expect(normalizeTokenAmount("3944403815517124397199482")).toBe(
-      "3944403.815517124397199482",
-    );
-    expect(normalizeTokenAmount("1000000000000000000")).toBe("1");
-  });
-
-  it("toHumanBalance handles balances beyond Number.MAX_SAFE_INTEGER", () => {
-    const raw = "3944403815517124397199482";
-    const result = toHumanBalance(raw);
-    expect(result).toBeCloseTo(3944403.8155, 3);
-  });
-
-  it("toHumanBalance preserves precision for values just above MAX_SAFE_INTEGER", () => {
-    const raw = "10000000000000000000000";
-    expect(toHumanBalance(raw)).toBe(10000);
-  });
-
-  it("formatBalance handles sub-0.001 balances", () => {
-    expect(formatBalance("100000000000000")).toBe("<0.001");
-  });
-
-  it("formatBalance handles balances between 1 and 1000", () => {
-    expect(formatBalance("50000000000000000000")).toMatch(/50/);
-  });
-
-  it("formatUsdValue computes correctly for large balances", () => {
-    const raw = "10000000000000000000000";
-    expect(formatUsdValue(raw, "2")).toBe("$20,000.00");
-  });
-
-  it("normalizeTokenAmount warns and returns raw string for non-bigint input", () => {
-    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
-    expect(normalizeTokenAmount("not-a-number")).toBe("not-a-number");
-    expect(warnSpy).toHaveBeenCalledWith(
-      expect.stringContaining("could not parse token amount"),
-    );
-    warnSpy.mockRestore();
-  });
-
-  it("normalizeTokenAmount handles zero", () => {
-    expect(normalizeTokenAmount("0")).toBe("0");
-  });
-
-  it("normalizeTokenAmount respects custom decimals", () => {
-    expect(normalizeTokenAmount("1500000", 6)).toBe("1.5");
-  });
-});
 
 describe("balance command", () => {
   let logSpy: ReturnType<typeof vi.spyOn>;

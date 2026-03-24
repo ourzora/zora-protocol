@@ -8,9 +8,9 @@ import { Table, type Column } from "../components/table.js";
 import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
 import { resolveAccount } from "../lib/wallet.js";
 import {
-  toHumanBalance,
+  parseRawBalance,
   normalizeTokenAmount,
-  formatUsdValue,
+  formatBalanceAsUsd,
   formatBalance,
 } from "../lib/balance-format.js";
 import {
@@ -122,7 +122,7 @@ const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
     header: "USD Value",
     width: 14,
     accessor: (row) =>
-      formatUsdValue(row.balance, row.coin?.tokenPrice?.priceInUsdc),
+      formatBalanceAsUsd(row.balance, row.coin?.tokenPrice?.priceInUsdc),
   },
   {
     header: "Market Cap",
@@ -159,7 +159,7 @@ const formatBalanceJson = (
   const priceUsdValue = priceUsd ? Number(priceUsd) : null;
   const usdValue =
     priceUsdValue !== null
-      ? Number((toHumanBalance(balance.balance) * priceUsdValue).toFixed(6))
+      ? Number((parseRawBalance(balance.balance) * priceUsdValue).toFixed(6))
       : null;
   const marketCapChange24h =
     marketCap !== null &&
