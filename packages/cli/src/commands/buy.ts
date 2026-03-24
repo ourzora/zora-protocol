@@ -231,6 +231,22 @@ export const buyCommand = new Command("buy")
       }
     }
 
+    let swapAmountUsd: number | undefined;
+    if (amountMode === "usd") {
+      swapAmountUsd = parsePercentageLikeValue(opts.usd);
+    } else {
+      const priceUsd =
+        inputToken.fixedPriceUsd ??
+        (await fetchTokenPriceUsd(inputToken.priceAddress));
+      if (priceUsd != null) {
+        swapAmountUsd = Number(
+          (
+            Number(formatUnits(amountIn, inputToken.decimals)) * priceUsd
+          ).toFixed(2),
+        );
+      }
+    }
+
     const tradeParameters = {
       sell: inputToken.trade,
       buy: { type: "erc20" as const, address: coinAddress as Address },
@@ -310,6 +326,7 @@ export const buyCommand = new Command("buy")
         coin_name: coinName,
         coin_symbol: coinSymbol,
         amount_mode: amountMode,
+        swap_amount_usd: swapAmountUsd,
         slippage: slippagePct,
         output_format: opts.output,
       });
@@ -356,6 +373,7 @@ export const buyCommand = new Command("buy")
         coin_name: coinName,
         coin_symbol: coinSymbol,
         amount_mode: amountMode,
+        swap_amount_usd: swapAmountUsd,
         slippage: slippagePct,
         output_format: opts.output,
         success: false,
@@ -402,6 +420,7 @@ export const buyCommand = new Command("buy")
       amount_mode: amountMode,
       input_amount: amountIn.toString(),
       input_token_symbol: inputToken.symbol,
+      swap_amount_usd: swapAmountUsd,
       slippage: slippagePct,
       output_format: opts.output,
       success: true,
