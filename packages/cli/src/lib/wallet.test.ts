@@ -37,6 +37,12 @@ import { getPrivateKey } from "./config.js";
 import { apiPost } from "@zoralabs/coins-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, createWalletClient, custom } from "viem";
+import {
+  normalizeKey,
+  resolveAccount,
+  createClients,
+  createCliRpcTransport,
+} from "./wallet.js";
 
 const MOCK_KEY = "a".repeat(64);
 const MOCK_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -56,12 +62,10 @@ afterEach(() => {
 
 describe("normalizeKey", () => {
   it("returns key as-is when it starts with 0x", async () => {
-    const { normalizeKey } = await import("./wallet.js");
     expect(normalizeKey("0xabc")).toBe("0xabc");
   });
 
   it("prepends 0x when missing", async () => {
-    const { normalizeKey } = await import("./wallet.js");
     expect(normalizeKey("abc")).toBe("0xabc");
   });
 });
@@ -73,7 +77,6 @@ describe("resolveAccount", () => {
       throw new Error(`process.exit(${code})`);
     });
 
-    const { resolveAccount } = await import("./wallet.js");
     expect(() => resolveAccount()).toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("No wallet configured"),
@@ -86,7 +89,6 @@ describe("resolveAccount", () => {
   it("uses ZORA_PRIVATE_KEY env var when set", async () => {
     process.env.ZORA_PRIVATE_KEY = MOCK_KEY;
 
-    const { resolveAccount } = await import("./wallet.js");
     const account = resolveAccount();
 
     expect(privateKeyToAccount).toHaveBeenCalledWith(`0x${MOCK_KEY}`);
@@ -96,7 +98,6 @@ describe("resolveAccount", () => {
   it("falls back to file key when env is not set", async () => {
     vi.mocked(getPrivateKey).mockReturnValue(`0x${MOCK_KEY}`);
 
-    const { resolveAccount } = await import("./wallet.js");
     const account = resolveAccount();
 
     expect(privateKeyToAccount).toHaveBeenCalledWith(`0x${MOCK_KEY}`);
@@ -113,7 +114,6 @@ describe("resolveAccount", () => {
       throw new Error(`process.exit(${code})`);
     });
 
-    const { resolveAccount } = await import("./wallet.js");
     expect(() => resolveAccount()).toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid private key"),
@@ -131,7 +131,6 @@ describe("createClients", () => {
     vi.mocked(createPublicClient).mockReturnValue(mockPublicClient as never);
     vi.mocked(createWalletClient).mockReturnValue(mockWalletClient as never);
 
-    const { createClients } = await import("./wallet.js");
     const account = { address: MOCK_ADDRESS } as never;
     const result = createClients(account);
 
@@ -167,7 +166,6 @@ describe("createCliRpcTransport", () => {
       error: undefined,
     } as never);
 
-    const { createCliRpcTransport } = await import("./wallet.js");
     const transport = createCliRpcTransport();
 
     const result = await transport.request({
@@ -189,7 +187,6 @@ describe("createCliRpcTransport", () => {
       error: undefined,
     } as never);
 
-    const { createCliRpcTransport } = await import("./wallet.js");
     const transport = createCliRpcTransport(1);
 
     await transport.request({
@@ -210,7 +207,6 @@ describe("createCliRpcTransport", () => {
       error: undefined,
     } as never);
 
-    const { createCliRpcTransport } = await import("./wallet.js");
     const transport = createCliRpcTransport();
 
     await transport.request({
@@ -228,7 +224,6 @@ describe("createCliRpcTransport", () => {
   it("wraps network errors with consistent formatting", async () => {
     vi.mocked(apiPost).mockRejectedValue(new Error("fetch failed"));
 
-    const { createCliRpcTransport } = await import("./wallet.js");
     const transport = createCliRpcTransport();
 
     await expect(
@@ -242,7 +237,6 @@ describe("createCliRpcTransport", () => {
   it("wraps non-Error network exceptions with consistent formatting", async () => {
     vi.mocked(apiPost).mockRejectedValue("timeout");
 
-    const { createCliRpcTransport } = await import("./wallet.js");
     const transport = createCliRpcTransport();
 
     await expect(
@@ -259,7 +253,6 @@ describe("createCliRpcTransport", () => {
       error: { message: "rate limited" },
     } as never);
 
-    const { createCliRpcTransport } = await import("./wallet.js");
     const transport = createCliRpcTransport();
 
     await expect(

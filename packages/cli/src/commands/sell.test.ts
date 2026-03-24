@@ -38,6 +38,7 @@ import {
 import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import { sellCommand } from "./sell.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
@@ -66,8 +67,7 @@ function makeTransferLog({
   };
 }
 
-async function runSell(args: string[]) {
-  const { sellCommand } = await import("./sell.js");
+function runSell(args: string[]) {
   return sellCommand.parseAsync(args, { from: "user" });
 }
 
@@ -133,7 +133,6 @@ describe("sell command", () => {
   });
 
   it("only exposes supported sell amount flags", async () => {
-    const { sellCommand } = await import("./sell.js");
     const optionNames = sellCommand.options.map((option) => option.long);
 
     expect(optionNames).toContain("--amount");

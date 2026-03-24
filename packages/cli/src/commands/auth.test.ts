@@ -1,5 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createProgram } from "../test/create-program.js";
+import { getApiKey, getEnvApiKey } from "../lib/config.js";
+import { authCommand } from "./auth.js";
 
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
@@ -28,10 +30,8 @@ describe("auth status", () => {
   });
 
   it("shows rate-limit message when no API key is configured", async () => {
-    const { getApiKey } = await import("../lib/config.js");
     vi.mocked(getApiKey).mockReturnValue(undefined);
 
-    const { authCommand } = await import("./auth.js");
     const program = createProgram(authCommand);
     await program.parseAsync(["auth", "status"], { from: "user" });
 
@@ -42,11 +42,9 @@ describe("auth status", () => {
   });
 
   it("shows masked key and config file source when key is configured", async () => {
-    const { getApiKey, getEnvApiKey } = await import("../lib/config.js");
     vi.mocked(getApiKey).mockReturnValue("sk-test-abcdef1234");
     vi.mocked(getEnvApiKey).mockReturnValue(undefined);
 
-    const { authCommand } = await import("./auth.js");
     const program = createProgram(authCommand);
     await program.parseAsync(["auth", "status"], { from: "user" });
 
@@ -57,11 +55,9 @@ describe("auth status", () => {
   });
 
   it("shows env source when key comes from ZORA_API_KEY", async () => {
-    const { getApiKey, getEnvApiKey } = await import("../lib/config.js");
     vi.mocked(getApiKey).mockReturnValue("sk-env-key-5678");
     vi.mocked(getEnvApiKey).mockReturnValue("sk-env-key-5678");
 
-    const { authCommand } = await import("./auth.js");
     const program = createProgram(authCommand);
     await program.parseAsync(["auth", "status"], { from: "user" });
 
@@ -71,11 +67,9 @@ describe("auth status", () => {
   });
 
   it("outputs JSON for auth status with --json", async () => {
-    const { getApiKey, getEnvApiKey } = await import("../lib/config.js");
     vi.mocked(getApiKey).mockReturnValue("sk-test-abcdef1234");
     vi.mocked(getEnvApiKey).mockReturnValue(undefined);
 
-    const { authCommand } = await import("./auth.js");
     const program = createProgram(authCommand);
     await program.parseAsync(["auth", "status", "--json"], { from: "user" });
 

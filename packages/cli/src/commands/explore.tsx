@@ -24,21 +24,19 @@ import {
   getTrendingTrends,
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
-import { getJson, outputErrorAndExit, outputData } from "../lib/output.js";
-import { styledText, formatCompactUsd, formatMcapChange } from "../lib/format.js";
+import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 import {
   SORT_LABELS,
-  TYPE_LABELS,
-  COIN_TYPE_DISPLAY,
   type SortOption,
   type TypeOption,
   type CoinNode,
 } from "../lib/types.js";
-import { Box, Text } from "ink";
-import { renderOnce } from "../lib/render.js";
-import { TableComponent } from "../components/table.js";
-import type { Column } from "../components/table.js";
+import { renderLive } from "../lib/render.js";
+import {
+  ExploreView,
+  type ExplorePageResult,
+} from "../components/ExploreView.js";
 
 type SdkQueryFn = (opts: { count: number; after?: string }) => Promise<any>;
 
@@ -86,38 +84,6 @@ export const QUERY_MAP: Record<
 };
 
 const SORT_OPTIONS = Object.keys(SORT_LABELS).join(", ");
-
-const rankColumn: Column<CoinNode & { rank: number }> = {
-  header: "#",
-  width: 5,
-  accessor: (r) => String(r.rank),
-};
-
-const exploreColumns: Column<CoinNode & { rank: number }>[] = [
-  { header: "Name", width: 27, accessor: (r) => r.name ?? "Unknown" },
-  { header: "Address", width: 44, accessor: (r) => r.address ?? "" },
-  {
-    header: "Type",
-    width: 16,
-    accessor: (r) => COIN_TYPE_DISPLAY[r.coinType ?? ""] ?? r.coinType ?? "",
-  },
-  {
-    header: "Market Cap",
-    width: 14,
-    accessor: (r) => formatCompactUsd(r.marketCap),
-  },
-  {
-    header: "24h Vol",
-    width: 14,
-    accessor: (r) => formatCompactUsd(r.volume24h),
-  },
-  {
-    header: "24h Change",
-    width: 12,
-    accessor: (r) => formatMcapChange(r.marketCap, r.marketCapDelta24h).text,
-    color: (r) => formatMcapChange(r.marketCap, r.marketCapDelta24h).color,
-  },
-];
 
 export const exploreCommand = new Command("explore")
   .description("Browse top, new, and highest volume coins")
@@ -167,87 +133,75 @@ export const exploreCommand = new Command("explore")
     }
 
     const queryFn = QUERY_MAP[sort][type]!;
-    let response: Awaited<ReturnType<SdkQueryFn>>;
-    try {
-      response = await queryFn({ count: limit, after });
-    } catch (err) {
-      outputErrorAndExit(
-        json,
-        `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
-    }
 
-    if (response.error) {
-      const msg =
-        typeof response.error === "object" && response.error.error
-          ? response.error.error
-          : JSON.stringify(response.error);
-      outputErrorAndExit(json, `API error: ${msg}`);
-    }
-
-    const edges = response.data?.exploreList?.edges ?? [];
-    const coins: CoinNode[] = edges.map((e: any) => e.node);
-    const pageInfo = response.data?.exploreList?.pageInfo as
-      | { endCursor?: string; hasNextPage: boolean }
-      | undefined;
-
-    if (coins.length === 0) {
-      outputData(json, {
-        json: { coins: [], pageInfo: pageInfo ?? null },
-        table: () => {
-          renderOnce(
-            <Box flexDirection="column" paddingLeft={1} marginTop={1}>
-              <Text>No coins found.</Text>
-              <Box marginTop={1} flexDirection="column">
-                <Text dimColor>
-                  Try a different sort or type (defaults to posts):
-                </Text>
-                <Text dimColor> zora explore --sort volume --type all</Text>
-                <Text dimColor> zora explore --sort new --type all</Text>
-              </Box>
-            </Box>,
-          );
-        },
-      });
-      return;
-    }
-
-    const rankedCoins = coins.map((c, i) => ({ ...c, rank: i + 1 }));
-    const columns = after ? exploreColumns : [rankColumn, ...exploreColumns];
-    const title =
-      type !== "all"
-        ? `${SORT_LABELS[sort]} \u00b7 ${TYPE_LABELS[type]}`
-        : SORT_LABELS[sort];
-    const subtitle = `${coins.length} result${coins.length !== 1 ? "s" : ""}`;
-
-    outputData(json, {
-      json: { coins, pageInfo: pageInfo ?? null },
-      table: () => {
-        renderOnce(
-          <TableComponent
-            columns={columns}
-            data={rankedCoins}
-            title={title}
-            subtitle={subtitle}
-          />,
+    if (json) {
+      let response: Awaited<ReturnType<SdkQueryFn>>;
+      try {
+        response = await queryFn({ count: limit, after });
+      } catch (err) {
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
         );
-        // Use console.log instead of Ink here — Ink wraps text to terminal width,
-        // which breaks long cursor strings across lines and prevents copy-paste.
-        if (pageInfo?.hasNextPage && pageInfo.endCursor) {
-          console.log(
-            `\n ${styledText(`Next page: zora explore --sort ${sort} --type ${type} --limit ${limit} --after ${pageInfo.endCursor}`, "dim")}`,
-          );
-        }
-      },
-    });
+      }
 
-    track("cli_explore", {
-      sort,
-      type,
-      limit,
-      paginated: after !== undefined,
-      result_count: coins.length,
-      has_next_page: pageInfo?.hasNextPage ?? false,
-      output_format: json ? "json" : "text",
-    });
+      if (response.error) {
+        const msg =
+          typeof response.error === "object" && response.error.error
+            ? response.error.error
+            : JSON.stringify(response.error);
+        outputErrorAndExit(json, `API error: ${msg}`);
+      }
+
+      const edges = response.data?.exploreList?.edges ?? [];
+      const coins: CoinNode[] = edges.map((e: any) => e.node);
+      const pageInfo = response.data?.exploreList?.pageInfo as
+        | { endCursor?: string; hasNextPage: boolean }
+        | undefined;
+
+      outputJson({ coins, pageInfo: pageInfo ?? null });
+
+      track("cli_explore", {
+        sort,
+        type,
+        limit,
+        paginated: after !== undefined,
+        result_count: coins.length,
+        has_next_page: pageInfo?.hasNextPage ?? false,
+        output_format: "json",
+      });
+    } else {
+      const fetchPage = async (cursor?: string): Promise<ExplorePageResult> => {
+        const response = await queryFn({ count: limit, after: cursor });
+        if (response.error) {
+          const msg =
+            typeof response.error === "object" && response.error.error
+              ? response.error.error
+              : JSON.stringify(response.error);
+          throw new Error(msg);
+        }
+        const edges = response.data?.exploreList?.edges ?? [];
+        const coins: CoinNode[] = edges.map((e: any) => e.node);
+        const pageInfo = response.data?.exploreList?.pageInfo;
+        return { coins, pageInfo };
+      };
+
+      await renderLive(
+        <ExploreView
+          fetchPage={fetchPage}
+          sort={sort}
+          type={type}
+          limit={limit}
+          initialCursor={after}
+        />,
+      );
+
+      track("cli_explore", {
+        sort,
+        type,
+        limit,
+        paginated: after !== undefined,
+        output_format: "text",
+      });
+    }
   });

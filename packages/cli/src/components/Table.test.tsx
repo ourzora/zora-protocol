@@ -1,6 +1,6 @@
-import { describe, it, expect } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render } from "ink-testing-library";
-import { TableComponent, truncate, type Column } from "./table.js";
+import { Table, truncate, computeColumnWidths, type Column } from "./table.js";
 
 interface Item {
   rank: number;
@@ -22,7 +22,7 @@ const DATA: Item[] = [
 describe("Table", () => {
   it("renders column headers", () => {
     const { lastFrame } = render(
-      <TableComponent data={DATA.slice(0, 1)} columns={COLUMNS} />,
+      <Table data={DATA.slice(0, 1)} columns={COLUMNS} fullWidth={false} />,
     );
     const frame = lastFrame();
     expect(frame).toContain("#");
@@ -32,7 +32,7 @@ describe("Table", () => {
 
   it("renders row data with correct values", () => {
     const { lastFrame } = render(
-      <TableComponent data={DATA} columns={COLUMNS} />,
+      <Table data={DATA} columns={COLUMNS} fullWidth={false} />,
     );
     const frame = lastFrame();
     expect(frame).toContain("Alpha");
@@ -42,11 +42,12 @@ describe("Table", () => {
 
   it("renders title when provided", () => {
     const { lastFrame } = render(
-      <TableComponent
+      <Table
         data={DATA.slice(0, 1)}
         columns={COLUMNS}
         title="Top Coins"
         subtitle="3 results"
+        fullWidth={false}
       />,
     );
     const frame = lastFrame();
@@ -56,7 +57,7 @@ describe("Table", () => {
 
   it("renders without title", () => {
     const { lastFrame } = render(
-      <TableComponent data={DATA.slice(0, 1)} columns={COLUMNS} />,
+      <Table data={DATA.slice(0, 1)} columns={COLUMNS} fullWidth={false} />,
     );
     const frame = lastFrame();
     expect(frame).toContain("Alpha");
@@ -69,7 +70,7 @@ describe("Table", () => {
     ];
     const data: Item[] = [{ rank: 1, name: "VeryLongTokenName", value: "" }];
     const { lastFrame } = render(
-      <TableComponent data={data} columns={columns} />,
+      <Table data={data} columns={columns} fullWidth={false} />,
     );
     const frame = lastFrame()!;
     // width 8, truncate at width-2=6: "VeryL…"
@@ -88,7 +89,7 @@ describe("Table", () => {
     ];
     const data: Item[] = [{ rank: 1, name: "VeryLongTokenName", value: "" }];
     const { lastFrame } = render(
-      <TableComponent data={data} columns={columns} />,
+      <Table data={data} columns={columns} fullWidth={false} />,
     );
     const frame = lastFrame()!;
     // With noTruncate, the ellipsis character should not appear (Ink wraps instead)
@@ -106,6 +107,75 @@ describe("Table", () => {
 
     it("handles exact boundary length", () => {
       expect(truncate("abcde", 5)).toBe("abcde");
+    });
+  });
+
+  describe("computeColumnWidths", () => {
+    let originalColumns: number | undefined;
+
+    beforeEach(() => {
+      originalColumns = process.stdout.columns;
+    });
+
+    afterEach(() => {
+      Object.defineProperty(process.stdout, "columns", {
+        value: originalColumns,
+        writable: true,
+        configurable: true,
+      });
+    });
+
+    it("returns minimum widths when fullWidth is false", () => {
+      const widths = computeColumnWidths(COLUMNS, false);
+      expect(widths).toEqual([5, 20, 10]);
+    });
+
+    it("expands columns proportionally for wide terminals", () => {
+      Object.defineProperty(process.stdout, "columns", {
+        value: 71,
+        writable: true,
+        configurable: true,
+      });
+      // available = 71 - 1 (padding) = 70, totalMin = 35, so columns double
+      const widths = computeColumnWidths(COLUMNS, true);
+      expect(widths.reduce((a, b) => a + b, 0)).toBe(70);
+      // proportional: each column roughly doubles
+      expect(widths[0]).toBeGreaterThanOrEqual(5);
+      expect(widths[1]).toBeGreaterThanOrEqual(20);
+      expect(widths[2]).toBeGreaterThanOrEqual(10);
+    });
+
+    it("shrinks columns proportionally when terminal is narrower than total", () => {
+      Object.defineProperty(process.stdout, "columns", {
+        value: 36,
+        writable: true,
+        configurable: true,
+      });
+      // available = 36 - 1 = 35, totalBase = 35, so columns stay the same
+      const widths = computeColumnWidths(COLUMNS, true);
+      expect(widths).toEqual([5, 20, 10]);
+    });
+
+    it("returns base widths when terminal is narrower than total", () => {
+      Object.defineProperty(process.stdout, "columns", {
+        value: 19,
+        writable: true,
+        configurable: true,
+      });
+      // available = 18 < totalBase = 35, so columns stay at base widths
+      const widths = computeColumnWidths(COLUMNS, true);
+      expect(widths).toEqual([5, 20, 10]);
+    });
+
+    it("distributes remainder across columns", () => {
+      Object.defineProperty(process.stdout, "columns", {
+        value: 41,
+        writable: true,
+        configurable: true,
+      });
+      // available = 40, totalMin = 35, extra = 5
+      const widths = computeColumnWidths(COLUMNS, true);
+      expect(widths.reduce((a, b) => a + b, 0)).toBe(40);
     });
   });
 });

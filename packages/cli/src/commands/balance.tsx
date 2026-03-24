@@ -1,9 +1,10 @@
 import { Command } from "commander";
+import { Box, Text } from "ink";
 import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { renderOnce } from "../lib/render.js";
-import { TableComponent, type Column } from "../components/table.js";
+import { Table, type Column } from "../components/table.js";
 import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
 import { resolveAccount } from "../lib/wallet.js";
 import {
@@ -216,11 +217,11 @@ function renderWallet(
     json: { wallet: walletResult.walletBalancesJson },
     table: () => {
       renderOnce(
-        TableComponent<WalletBalance>({
-          columns: walletColumns,
-          data: walletResult.walletBalances,
-          title: "Wallet",
-        }),
+        <Table
+          columns={walletColumns}
+          data={walletResult.walletBalances}
+          title="Wallet"
+        />,
       );
     },
   });
@@ -250,12 +251,12 @@ function renderCoins(
         console.log("   zora buy <address> --eth 0.001\n");
       } else {
         renderOnce(
-          TableComponent<BalanceNode & { rank: number }>({
-            columns: balanceColumns,
-            data: rankedBalances,
-            title: `Coins · sorted by ${SORT_LABELS[sort]}`,
-            subtitle: `${balances.length} of ${total}`,
-          }),
+          <Table
+            columns={balanceColumns}
+            data={rankedBalances}
+            title={`Coins · sorted by ${SORT_LABELS[sort]}`}
+            subtitle={`${balances.length} of ${total}`}
+          />,
         );
       }
     },
@@ -357,27 +358,35 @@ export const balanceCommand = new Command("balance")
       },
       table: () => {
         renderOnce(
-          TableComponent<WalletBalance>({
-            columns: walletColumns,
-            data: walletResult.walletBalances,
-            title: "Wallet",
-          }),
+          <Box flexDirection="column">
+            <Table
+              columns={walletColumns}
+              data={walletResult.walletBalances}
+              title="Wallet"
+            />
+            {coinsResult.balances.length === 0 ? (
+              <Box
+                flexDirection="column"
+                paddingLeft={1}
+                paddingTop={1}
+                paddingBottom={1}
+              >
+                <Text>No coin balances found.</Text>
+                <Box marginTop={1} flexDirection="column">
+                  <Text dimColor>Buy coins to see them here:</Text>
+                  <Text dimColor> zora buy {"<address>"} --eth 0.001</Text>
+                </Box>
+              </Box>
+            ) : (
+              <Table
+                columns={balanceColumns}
+                data={rankedBalances}
+                title={`Coins · sorted by ${SORT_LABELS[sort]}`}
+                subtitle={`${coinsResult.balances.length} of ${coinsResult.total}`}
+              />
+            )}
+          </Box>,
         );
-
-        if (coinsResult.balances.length === 0) {
-          console.log("\n No coin balances found.\n");
-          console.log(" Buy coins to see them here:");
-          console.log("   zora buy <address> --eth 0.001\n");
-        } else {
-          renderOnce(
-            TableComponent<BalanceNode & { rank: number }>({
-              columns: balanceColumns,
-              data: rankedBalances,
-              title: `Coins · sorted by ${SORT_LABELS[sort]}`,
-              subtitle: `${coinsResult.balances.length} of ${coinsResult.total}`,
-            }),
-          );
-        }
       },
     });
 

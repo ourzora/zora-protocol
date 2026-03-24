@@ -1,9 +1,15 @@
 import type { ReactElement } from "react";
-import { renderToString } from "ink";
+import { render, renderToString } from "ink";
 
 const renderOnce = (element: ReactElement): void => {
-  const output = renderToString(element);
+  const columns = process.stdout.columns || 80;
+  const output = renderToString(element, { columns });
   console.log(output);
 };
 
-export { renderOnce };
+const renderLive = async (element: ReactElement): Promise<void> => {
+  const instance = render(element);
+  await instance.waitUntilExit();
+};
+
+export { renderOnce, renderLive };

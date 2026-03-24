@@ -24,12 +24,12 @@ vi.mock("../lib/prompt.js", () => ({
 import { getPrivateKey, getWalletPath } from "../lib/config.js";
 import { privateKeyToAccount } from "viem/accounts";
 import { confirmOrDefault } from "../lib/prompt.js";
+import { walletCommand } from "./wallet.js";
 
 const MOCK_KEY = "0x" + "a".repeat(64);
 const MOCK_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 
-async function runWallet(args: string[]) {
-  const { walletCommand } = await import("./wallet.js");
+function runWallet(args: string[]) {
   const program = createProgram(walletCommand);
   return program.parseAsync(["wallet", ...args], { from: "user" });
 }

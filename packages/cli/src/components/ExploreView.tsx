@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
-import { Box, Text } from "ink";
+import { useState, useEffect, useCallback, useRef } from "react";
+import { Box, Text, useInput, useApp } from "ink";
 import Spinner from "ink-spinner";
-import { TableComponent, type Column } from "./table.js";
-import { formatCompactUsd, formatMcapChange, truncate } from "../lib/format.js";
+import { Table, type Column } from "./table.js";
+import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
@@ -14,11 +14,7 @@ import {
 
 const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   { header: "#", width: 4, accessor: (c) => String(c.rank) },
-  {
-    header: "Name",
-    width: 20,
-    accessor: (c) => truncate(c.name ?? "Unknown", 18),
-  },
+  { header: "Name", width: 20, accessor: (c) => c.name ?? "Unknown" },
   { header: "Address", width: 44, accessor: (c) => c.address ?? "" },
   {
     header: "Type",
@@ -43,46 +39,137 @@ const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   },
 ];
 
-interface ExploreViewProps {
-  fetchCoins: () => Promise<CoinNode[]>;
+type PageInfo = { endCursor?: string; hasNextPage: boolean };
+
+type ExplorePageResult = {
+  coins: CoinNode[];
+  pageInfo?: PageInfo;
+};
+
+type CachedPage = {
+  result: ExplorePageResult;
+  fetchedAt: number;
+};
+
+const CACHE_TTL_MS = 60_000;
+const CACHE_KEY_FIRST = "__first__";
+
+type ExploreViewProps = {
+  fetchPage: (cursor?: string) => Promise<ExplorePageResult>;
   sort: SortOption;
   type: TypeOption;
-  onComplete: () => void;
-  onError: (msg: string) => void;
-}
+  limit: number;
+  initialCursor?: string;
+  cacheTtlMs?: number;
+};
 
-export function ExploreView({
-  fetchCoins,
+const ExploreView = ({
+  fetchPage,
   sort,
   type,
-  onComplete,
-  onError,
-}: ExploreViewProps) {
-  const [coins, setCoins] = useState<CoinNode[] | null>(null);
+  limit,
+  initialCursor,
+  cacheTtlMs = CACHE_TTL_MS,
+}: ExploreViewProps) => {
+  const { exit } = useApp();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+  const [coins, setCoins] = useState<CoinNode[]>([]);
+  const [pageInfo, setPageInfo] = useState<PageInfo | null>(null);
+  const [page, setPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<(string | undefined)[]>(
+    [],
+  );
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(
+    initialCursor,
+  );
+  const cache = useRef<Map<string, CachedPage>>(new Map());
+  const [refreshCount, setRefreshCount] = useState(0);
+
+  const loadPage = useCallback(
+    async (cursor?: string) => {
+      const cacheKey = cursor ?? CACHE_KEY_FIRST;
+      const cached = cache.current.get(cacheKey);
+      const isFresh = cached && Date.now() - cached.fetchedAt < cacheTtlMs;
+
+      if (isFresh) {
+        setCoins(cached.result.coins);
+        setPageInfo(cached.result.pageInfo ?? null);
+        setError(null);
+        setLoading(false);
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      try {
+        const result = await fetchPage(cursor);
+        cache.current.set(cacheKey, { result, fetchedAt: Date.now() });
+        setCoins(result.coins);
+        setPageInfo(result.pageInfo ?? null);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+      setLoading(false);
+    },
+    [fetchPage, cacheTtlMs],
+  );
 
   useEffect(() => {
-    fetchCoins()
-      .then((data) => {
-        setCoins(data);
-      })
-      .catch((err: unknown) => {
-        onError(err instanceof Error ? err.message : String(err));
-      });
-  }, []);
+    loadPage(currentCursor);
+  }, [currentCursor, loadPage, refreshCount]);
 
-  useEffect(() => {
-    if (coins !== null) {
-      // Let Ink render one frame then exit
-      const timer = setTimeout(onComplete, 0);
-      return () => clearTimeout(timer);
+  useInput((input, key) => {
+    if (input === "q" || key.escape) {
+      exit();
+      return;
     }
-  }, [coins]);
+    if (loading) return;
 
-  if (coins === null) {
+    const canGoNext = pageInfo?.hasNextPage && pageInfo.endCursor;
+    const canGoPrev = cursorHistory.length > 0;
+
+    if ((input === "n" || key.rightArrow) && canGoNext) {
+      setCursorHistory((prev) => [...prev, currentCursor]);
+      setCurrentCursor(pageInfo!.endCursor);
+      setPage((p) => p + 1);
+    }
+
+    if ((input === "p" || key.leftArrow) && canGoPrev) {
+      const prev = cursorHistory[cursorHistory.length - 1];
+      setCursorHistory((h) => h.slice(0, -1));
+      setCurrentCursor(prev);
+      setPage((p) => p - 1);
+    }
+
+    if (input === "r") {
+      const cacheKey = currentCursor ?? CACHE_KEY_FIRST;
+      cache.current.delete(cacheKey);
+      setRefreshCount((c) => c + 1);
+    }
+  });
+
+  if (error) {
     return (
-      <Box paddingLeft={1}>
+      <Box
+        flexDirection="column"
+        paddingLeft={1}
+        paddingTop={1}
+        paddingBottom={1}
+      >
+        <Text color="red">Error: {error}</Text>
+        <Box marginTop={1}>
+          <Text dimColor>Press q to exit</Text>
+        </Box>
+      </Box>
+    );
+  }
+
+  if (loading) {
+    return (
+      <Box paddingLeft={1} paddingTop={1}>
         <Text>
-          <Spinner type="dots" /> Loading coins...
+          <Spinner type="dots" /> Loading…
         </Text>
       </Box>
     );
@@ -90,32 +177,51 @@ export function ExploreView({
 
   if (coins.length === 0) {
     return (
-      <Box flexDirection="column" paddingLeft={1} marginTop={1}>
+      <Box
+        flexDirection="column"
+        paddingLeft={1}
+        paddingTop={1}
+        paddingBottom={1}
+      >
         <Text>No coins found.</Text>
         <Box marginTop={1} flexDirection="column">
-          <Text dimColor>
-            Try a different sort or type (defaults to posts):
-          </Text>
+          <Text dimColor>Try a different sort or type:</Text>
           <Text dimColor> zora explore --sort volume --type all</Text>
           <Text dimColor> zora explore --sort new --type all</Text>
+        </Box>
+        <Box marginTop={1}>
+          <Text dimColor>Press q to exit</Text>
         </Box>
       </Box>
     );
   }
 
-  const header =
+  const title =
     type !== "all"
       ? `${SORT_LABELS[sort]} \u00b7 ${TYPE_LABELS[type]}`
       : SORT_LABELS[sort];
-  const count = `${coins.length} result${coins.length !== 1 ? "s" : ""}`;
-  const rankedCoins = coins.map((c, i) => ({ ...c, rank: i + 1 }));
+  const subtitle = `Page ${page} \u00b7 ${coins.length} result${coins.length !== 1 ? "s" : ""}`;
+  const rankedCoins = coins.map((c, i) => ({
+    ...c,
+    rank: (page - 1) * limit + i + 1,
+  }));
+
+  const hints: string[] = [];
+  if (cursorHistory.length > 0) hints.push("\u2190 prev");
+  if (pageInfo?.hasNextPage) hints.push("\u2192 next");
+  hints.push("r refresh");
+  hints.push("q quit");
+  const footer = hints.join("  \u00b7  ");
 
   return (
-    <TableComponent
+    <Table
       data={rankedCoins}
       columns={COLUMNS}
-      title={header}
-      subtitle={count}
+      title={title}
+      subtitle={subtitle}
+      footer={footer}
     />
   );
-}
+};
+
+export { ExploreView, type ExploreViewProps, type ExplorePageResult };

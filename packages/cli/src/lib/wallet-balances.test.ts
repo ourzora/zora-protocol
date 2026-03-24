@@ -21,6 +21,7 @@ vi.mock("viem", async (importOriginal) => {
 
 import { getTokenInfo } from "@zoralabs/coins-sdk";
 import { createPublicClient } from "viem";
+import { fetchTokenPriceUsd, fetchWalletBalances } from "./wallet-balances.js";
 
 const WALLET_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
 const WETH_ADDRESS = "0x4200000000000000000000000000000000000006";
@@ -62,7 +63,6 @@ describe("fetchTokenPriceUsd", () => {
       },
     } as never);
 
-    const { fetchTokenPriceUsd } = await import("./wallet-balances.js");
     const price = await fetchTokenPriceUsd(WETH_ADDRESS);
 
     expect(price).toBe(2500.5);
@@ -73,7 +73,6 @@ describe("fetchTokenPriceUsd", () => {
       data: { erc20Token: { currency: { priceUsd: "100" } } },
     } as never);
 
-    const { fetchTokenPriceUsd } = await import("./wallet-balances.js");
     await fetchTokenPriceUsd("0xabc", 1);
 
     expect(getTokenInfo).toHaveBeenCalledWith({
@@ -87,7 +86,6 @@ describe("fetchTokenPriceUsd", () => {
       data: { erc20Token: { currency: { priceUsd: "100" } } },
     } as never);
 
-    const { fetchTokenPriceUsd } = await import("./wallet-balances.js");
     await fetchTokenPriceUsd("0xabc");
 
     expect(getTokenInfo).toHaveBeenCalledWith({
@@ -101,7 +99,6 @@ describe("fetchTokenPriceUsd", () => {
       data: { erc20Token: { currency: {} } },
     } as never);
 
-    const { fetchTokenPriceUsd } = await import("./wallet-balances.js");
     const price = await fetchTokenPriceUsd(WETH_ADDRESS);
 
     expect(price).toBeNull();
@@ -110,7 +107,6 @@ describe("fetchTokenPriceUsd", () => {
   it("returns null when API returns null data", async () => {
     vi.mocked(getTokenInfo).mockResolvedValue({ data: null } as never);
 
-    const { fetchTokenPriceUsd } = await import("./wallet-balances.js");
     const price = await fetchTokenPriceUsd(WETH_ADDRESS);
 
     expect(price).toBeNull();
@@ -119,7 +115,6 @@ describe("fetchTokenPriceUsd", () => {
   it("returns null and warns when API throws", async () => {
     vi.mocked(getTokenInfo).mockRejectedValue(new Error("Network error"));
 
-    const { fetchTokenPriceUsd } = await import("./wallet-balances.js");
     const price = await fetchTokenPriceUsd(WETH_ADDRESS);
 
     expect(price).toBeNull();
@@ -145,7 +140,6 @@ describe("fetchWalletBalances", () => {
   });
 
   it("returns ETH, USDC, and ZORA balances with USD values", async () => {
-    const { fetchWalletBalances } = await import("./wallet-balances.js");
     const { walletBalances, walletBalancesJson } =
       await fetchWalletBalances(WALLET_ADDRESS);
 
@@ -176,7 +170,6 @@ describe("fetchWalletBalances", () => {
       ]),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    const { fetchWalletBalances } = await import("./wallet-balances.js");
     const { walletBalances } = await fetchWalletBalances(WALLET_ADDRESS);
 
     expect(walletBalances.length).toBeGreaterThanOrEqual(1);
@@ -192,7 +185,6 @@ describe("fetchWalletBalances", () => {
       ]),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    const { fetchWalletBalances } = await import("./wallet-balances.js");
     const { walletBalances } = await fetchWalletBalances(WALLET_ADDRESS);
 
     expect(walletBalances).toHaveLength(1);
@@ -200,7 +192,6 @@ describe("fetchWalletBalances", () => {
   });
 
   it("uses fixed price for USDC instead of API lookup", async () => {
-    const { fetchWalletBalances } = await import("./wallet-balances.js");
     await fetchWalletBalances(WALLET_ADDRESS);
 
     // getTokenInfo should be called for ETH (WETH) and ZORA, but not USDC
@@ -218,7 +209,6 @@ describe("fetchWalletBalances", () => {
   it("shows dash for USD value when price lookup fails", async () => {
     vi.mocked(getTokenInfo).mockRejectedValue(new Error("API down"));
 
-    const { fetchWalletBalances } = await import("./wallet-balances.js");
     const { walletBalances, walletBalancesJson } =
       await fetchWalletBalances(WALLET_ADDRESS);
 
@@ -231,7 +221,6 @@ describe("fetchWalletBalances", () => {
   });
 
   it("sets address to null for native ETH in JSON output", async () => {
-    const { fetchWalletBalances } = await import("./wallet-balances.js");
     const { walletBalancesJson } = await fetchWalletBalances(WALLET_ADDRESS);
 
     const eth = walletBalancesJson.find((w) => w.symbol === "ETH")!;
@@ -250,7 +239,6 @@ describe("fetchWalletBalances", () => {
       ]),
     } as unknown as ReturnType<typeof createPublicClient>);
 
-    const { fetchWalletBalances } = await import("./wallet-balances.js");
     await fetchWalletBalances(WALLET_ADDRESS);
 
     expect(warnSpy).toHaveBeenCalledWith(

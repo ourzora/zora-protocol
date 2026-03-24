@@ -13,53 +13,104 @@ type TableProps<T> = {
   data: T[];
   title?: string;
   subtitle?: string;
+  fullWidth?: boolean;
+  footer?: string;
 };
+
+const PADDING_LEFT = 1;
 
 const truncate = (str: string, max: number): string => {
   if (str.length <= max) return str;
   return str.slice(0, max - 1) + "\u2026";
 };
 
-const TableComponent = <T,>({
+const computeColumnWidths = <T,>(
+  columns: Column<T>[],
+  fullWidth: boolean,
+): number[] => {
+  const baseWidths = columns.map((col) => col.width);
+  const totalBase = baseWidths.reduce((sum, w) => sum + w, 0);
+
+  if (!fullWidth) return baseWidths;
+
+  const width = process.stdout.columns ?? 80;
+  const available = width - PADDING_LEFT;
+
+  if (available <= totalBase) return baseWidths;
+
+  const computed = baseWidths.map((w) =>
+    Math.max(1, Math.floor((w / totalBase) * available)),
+  );
+  let remainder = available - computed.reduce((sum, w) => sum + w, 0);
+
+  for (let i = 0; i < computed.length && remainder > 0; i++) {
+    computed[i]++;
+    remainder--;
+  }
+
+  return computed;
+};
+
+const Table = <T,>({
   columns,
   data,
   title,
   subtitle,
-}: TableProps<T>) => (
-  <Box flexDirection="column" paddingTop={1} paddingBottom={1}>
-    {title && (
-      <Box paddingLeft={1} marginBottom={1}>
-        <Text bold>{title}</Text>
-        {subtitle && <Text dimColor> {subtitle}</Text>}
-      </Box>
-    )}
+  fullWidth = true,
+  footer,
+}: TableProps<T>) => {
+  const widths = computeColumnWidths(columns, fullWidth);
 
-    <Box paddingLeft={1}>
-      {columns.map((col) => (
-        <Box key={col.header} width={col.width}>
-          <Text bold dimColor>
-            {col.header}
-          </Text>
+  return (
+    <Box flexDirection="column" paddingTop={1} paddingBottom={1}>
+      {title && (
+        <Box paddingLeft={PADDING_LEFT} marginBottom={1}>
+          <Text bold>{title}</Text>
+          {subtitle && <Text dimColor> {subtitle}</Text>}
+        </Box>
+      )}
+
+      <Box paddingLeft={PADDING_LEFT}>
+        {columns.map((col, i) => (
+          <Box key={col.header} width={widths[i]}>
+            <Text bold dimColor wrap="truncate">
+              {col.header}
+            </Text>
+          </Box>
+        ))}
+      </Box>
+
+      {data.map((row, i) => (
+        <Box key={i} paddingLeft={PADDING_LEFT}>
+          {columns.map((col, colIdx) => {
+            const colWidth = widths[colIdx];
+            const value = col.noTruncate
+              ? col.accessor(row)
+              : truncate(col.accessor(row), colWidth - 2);
+            const colorName = col.color?.(row);
+            return (
+              <Box key={col.header} width={colWidth}>
+                <Text
+                  color={colorName}
+                  wrap={col.noTruncate ? "wrap" : "truncate"}
+                >
+                  {value}
+                </Text>
+              </Box>
+            );
+          })}
         </Box>
       ))}
+
+      {footer && (
+        <Box paddingLeft={PADDING_LEFT} marginTop={1}>
+          <Text dimColor wrap="wrap">
+            {footer}
+          </Text>
+        </Box>
+      )}
     </Box>
+  );
+};
 
-    {data.map((row, i) => (
-      <Box key={i} paddingLeft={1}>
-        {columns.map((col) => {
-          const value = col.noTruncate
-            ? col.accessor(row)
-            : truncate(col.accessor(row), col.width - 2);
-          const colorName = col.color?.(row);
-          return (
-            <Box key={col.header} width={col.width}>
-              <Text color={colorName}>{value}</Text>
-            </Box>
-          );
-        })}
-      </Box>
-    ))}
-  </Box>
-);
-
-export { Column, TableProps, TableComponent, truncate };
+export { Column, TableProps, Table, truncate, computeColumnWidths };

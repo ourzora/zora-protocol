@@ -20,12 +20,12 @@ vi.mock("../lib/prompt.js", () => ({
 import { getPrivateKey, savePrivateKey } from "../lib/config.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import { selectOrDefault, passwordOrFail } from "../lib/prompt.js";
+import { setupCommand } from "./setup.js";
 
 const MOCK_KEY = ("0x" + "a".repeat(64)) as `0x${string}`;
 const MOCK_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
 
 async function runSetup(args: string[] = []) {
-  const { setupCommand } = await import("./setup.js");
   const program = createProgram(setupCommand);
   await program.parseAsync(["setup", ...args], { from: "user" });
 }

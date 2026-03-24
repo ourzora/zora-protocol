@@ -13,7 +13,9 @@ vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
 }));
 vi.mock("viem/accounts");
-vi.mock("../lib/render.js");
+vi.mock("../lib/render.js", () => ({
+  renderOnce: vi.fn(),
+}));
 
 vi.mock("viem", async (importOriginal) => {
   const actual = await importOriginal<typeof import("viem")>();
@@ -38,6 +40,9 @@ import { getApiKey, getPrivateKey } from "../lib/config.js";
 import { privateKeyToAccount } from "viem/accounts";
 import { renderOnce } from "../lib/render.js";
 import { createPublicClient } from "viem";
+import { balanceCommand } from "./balance.js";
+import { buildProgram } from "../index.js";
+import { renderToString } from "ink";
 
 type TokenInfoQuery = { address: string; chainId?: number };
 
@@ -220,14 +225,12 @@ describe("balance command", () => {
     delete process.env.ZORA_PRIVATE_KEY;
   });
 
-  async function runBalance(args: string[] = []) {
-    const { balanceCommand } = await import("./balance.js");
+  function runBalance(args: string[] = []) {
     const program = createProgram(balanceCommand);
-    await program.parseAsync(["balance", ...args], { from: "user" });
+    return program.parseAsync(["balance", ...args], { from: "user" });
   }
 
   it("is wired into the root CLI program", async () => {
-    const { buildProgram } = await import("../index.js");
     const program = buildProgram();
 
     expect(program.commands.map((command) => command.name())).toContain(
@@ -319,8 +322,7 @@ describe("balance command", () => {
     await runBalance();
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
-    // Two renderOnce calls: one for Wallet section, one for Coins section
-    expect(renderOnce).toHaveBeenCalledTimes(2);
+    expect(renderOnce).toHaveBeenCalledTimes(1);
   });
 
   it("outputs correct JSON for large balances beyond MAX_SAFE_INTEGER", async () => {
@@ -426,7 +428,9 @@ describe("balance command", () => {
 
     await runBalance();
 
-    const output = logSpy.mock.calls.map((call) => call[0]).join("\n");
+    expect(renderOnce).toHaveBeenCalled();
+    const element = vi.mocked(renderOnce).mock.calls[0][0];
+    const output = renderToString(element);
     expect(output).toContain("No coin balances found");
     expect(output).toContain("zora buy <address> --eth 0.001");
   });

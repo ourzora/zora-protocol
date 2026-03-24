@@ -39,6 +39,7 @@ import { track } from "../lib/analytics.js";
 import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import { buyCommand } from "./buy.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
@@ -66,8 +67,7 @@ function makeTransferLog({
   };
 }
 
-async function runBuy(args: string[]) {
-  const { buyCommand } = await import("./buy.js");
+function runBuy(args: string[]) {
   return buyCommand.parseAsync(args, { from: "user" });
 }
 
@@ -133,7 +133,6 @@ describe("buy command", () => {
   });
 
   it("only exposes supported amount flags", async () => {
-    const { buyCommand } = await import("./buy.js");
     const optionNames = buyCommand.options.map((option) => option.long);
 
     expect(optionNames).toContain("--eth");
