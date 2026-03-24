@@ -220,7 +220,7 @@ export const buyCommand = new Command("buy")
         amountIn =
           pct === 100
             ? spendableBalance
-            : (balance * BigInt(Math.round(pct * 100))) / 10000n;
+            : (spendableBalance * BigInt(Math.round(pct * 100))) / 10000n;
 
         if (amountIn === 0n) {
           outputErrorAndExit(

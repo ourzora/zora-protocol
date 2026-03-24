@@ -459,7 +459,7 @@ describe("buy command", () => {
 
     expect(createTradeCall).toHaveBeenCalledWith(
       expect.objectContaining({
-        amountIn: 5000000000000000000n, // 50% of 10 ETH
+        amountIn: 4999500000000000000n, // 50% of spendable balance (10 ETH - 0.001 ETH gas reserve)
       }),
     );
   });
