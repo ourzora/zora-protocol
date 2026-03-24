@@ -16,7 +16,7 @@ export function styledText(
   return `${open}${text}${close}`;
 }
 
-export function formatCurrency(value: string | undefined): string {
+export function formatCompactUsd(value: string | undefined): string {
   if (!value || Number(value) === 0) return "$0";
   return new Intl.NumberFormat("en-US", {
     style: "currency",

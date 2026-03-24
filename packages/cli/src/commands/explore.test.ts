@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { formatCompactCurrency, formatChange, QUERY_MAP } from "./explore.jsx";
+import { QUERY_MAP } from "./explore.jsx";
 import { createProgram } from "../test/create-program.js";
 
 vi.mock("@zoralabs/coins-sdk");
@@ -11,50 +11,6 @@ vi.mock("../lib/config.js", () => ({
 vi.mock("../lib/render.js", () => ({
   renderOnce: vi.fn(),
 }));
-
-describe("formatCompactCurrency", () => {
-  it("returns $0 for undefined", () => {
-    expect(formatCompactCurrency(undefined)).toBe("$0");
-  });
-
-  it("formats large numbers with compact notation", () => {
-    expect(formatCompactCurrency("5000000")).toBe("$5M");
-  });
-
-  it("formats small numbers", () => {
-    expect(formatCompactCurrency("100")).toMatch(/^\$100/);
-  });
-});
-
-describe("formatChange", () => {
-  it("returns dash for undefined delta", () => {
-    expect(formatChange("1000", undefined)).toBe("-");
-  });
-
-  it("returns dash for undefined marketCap", () => {
-    expect(formatChange(undefined, "100")).toBe("-");
-  });
-
-  it("returns dash for zero marketCap", () => {
-    expect(formatChange("0", "100")).toBe("-");
-  });
-
-  it("returns dash when previous cap is zero (delta equals cap)", () => {
-    expect(formatChange("500", "500")).toBe("-");
-  });
-
-  it("formats positive change", () => {
-    expect(formatChange("1100", "100")).toBe("+10.0%");
-  });
-
-  it("formats negative change", () => {
-    expect(formatChange("900", "-100")).toBe("-10.0%");
-  });
-
-  it("formats zero change", () => {
-    expect(formatChange("1000", "0")).toBe("+0.0%");
-  });
-});
 
 describe("QUERY_MAP", () => {
   it("mcap supports all, trend, creator-coin, post", () => {

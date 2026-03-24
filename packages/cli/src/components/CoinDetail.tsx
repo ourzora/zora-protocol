@@ -1,6 +1,6 @@
 import { Box, Text } from "ink";
 import {
-  formatCurrency,
+  formatCompactUsd,
   formatMcapChange,
   formatHolders,
   formatCreatedAt,
@@ -39,8 +39,8 @@ export function CoinDetail({ coin }: { coin: ResolvedCoin }) {
       </Box>
 
       <Box marginTop={1} flexDirection="column">
-        <Row label="Market Cap">{formatCurrency(coin.marketCap)}</Row>
-        <Row label="24h Volume">{formatCurrency(coin.volume24h)}</Row>
+        <Row label="Market Cap">{formatCompactUsd(coin.marketCap)}</Row>
+        <Row label="24h Volume">{formatCompactUsd(coin.volume24h)}</Row>
         <Row label="24h Change">
           <Text color={change.color}>{change.text}</Text>
         </Row>

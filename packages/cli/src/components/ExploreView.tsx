@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Box, Text } from "ink";
 import Spinner from "ink-spinner";
 import { TableComponent, type Column } from "./table.js";
-import { formatCurrency, formatMcapChange, truncate } from "../lib/format.js";
+import { formatCompactUsd, formatMcapChange, truncate } from "../lib/format.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
@@ -28,12 +28,12 @@ const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   {
     header: "Market Cap",
     width: 12,
-    accessor: (c) => formatCurrency(c.marketCap),
+    accessor: (c) => formatCompactUsd(c.marketCap),
   },
   {
     header: "24h Vol",
     width: 12,
-    accessor: (c) => formatCurrency(c.volume24h),
+    accessor: (c) => formatCompactUsd(c.volume24h),
   },
   {
     header: "24h Change",

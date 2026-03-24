@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { parseEther } from "viem";
 import {
-  formatCurrency,
+  formatCompactUsd,
   formatMcapChange,
   truncate,
   formatHolders,
@@ -13,33 +13,33 @@ import {
   formatCoinsDisplay,
 } from "./format.js";
 
-describe("formatCurrency", () => {
+describe("formatCompactUsd", () => {
   it("returns $0 for undefined", () => {
-    expect(formatCurrency(undefined)).toBe("$0");
+    expect(formatCompactUsd(undefined)).toBe("$0");
   });
 
   it("returns $0 for empty string", () => {
-    expect(formatCurrency("")).toBe("$0");
+    expect(formatCompactUsd("")).toBe("$0");
   });
 
   it("returns $0 for zero string", () => {
-    expect(formatCurrency("0")).toBe("$0");
+    expect(formatCompactUsd("0")).toBe("$0");
   });
 
   it("formats small values", () => {
-    expect(formatCurrency("1234")).toBe("$1.2K");
+    expect(formatCompactUsd("1234")).toBe("$1.2K");
   });
 
   it("formats large values", () => {
-    expect(formatCurrency("5000000")).toBe("$5.0M");
+    expect(formatCompactUsd("5000000")).toBe("$5.0M");
   });
 
   it("formats very large values", () => {
-    expect(formatCurrency("2300000000")).toBe("$2.3B");
+    expect(formatCompactUsd("2300000000")).toBe("$2.3B");
   });
 
   it("formats values under 1000", () => {
-    expect(formatCurrency("42")).toBe("$42.0");
+    expect(formatCompactUsd("42")).toBe("$42.0");
   });
 });
 

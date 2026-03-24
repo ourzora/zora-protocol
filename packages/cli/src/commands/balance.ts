@@ -4,7 +4,7 @@ import { getApiKey } from "../lib/config.js";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { renderOnce } from "../lib/render.js";
 import { TableComponent, type Column } from "../components/table.js";
-import { formatCompactCurrency, formatChange } from "./explore.jsx";
+import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
 import { resolveAccount } from "../lib/wallet.js";
 import {
   toHumanBalance,
@@ -91,17 +91,6 @@ const extractErrorMessage = (error: unknown): string => {
   return JSON.stringify(error);
 };
 
-const changeColor = (row: BalanceNode): string | undefined => {
-  if (!row.coin?.marketCap || !row.coin.marketCapDelta24h) return undefined;
-  const cap = Number(row.coin.marketCap);
-  const d = Number(row.coin.marketCapDelta24h);
-  if (cap === 0 || cap - d === 0) return undefined;
-  const pct = (d / (cap - d)) * 100;
-  if (pct > 0) return "green";
-  if (pct < 0) return "red";
-  return undefined;
-};
-
 const walletColumns: Column<WalletBalance>[] = [
   { header: "Name", width: 14, accessor: (row) => row.name },
   {
@@ -137,14 +126,15 @@ const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
   {
     header: "Market Cap",
     width: 14,
-    accessor: (row) => formatCompactCurrency(row.coin?.marketCap),
+    accessor: (row) => formatCompactUsd(row.coin?.marketCap),
   },
   {
     header: "24h Change",
     width: 12,
     accessor: (row) =>
-      formatChange(row.coin?.marketCap, row.coin?.marketCapDelta24h),
-    color: changeColor,
+      formatMcapChange(row.coin?.marketCap, row.coin?.marketCapDelta24h).text,
+    color: (row) =>
+      formatMcapChange(row.coin?.marketCap, row.coin?.marketCapDelta24h).color,
   },
 ];
 

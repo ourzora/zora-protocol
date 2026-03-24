@@ -25,7 +25,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputData } from "../lib/output.js";
-import { styledText } from "../lib/format.js";
+import { styledText, formatCompactUsd, formatMcapChange } from "../lib/format.js";
 import { track } from "../lib/analytics.js";
 import {
   SORT_LABELS,
@@ -85,42 +85,6 @@ export const QUERY_MAP: Record<
   },
 };
 
-export const formatCompactCurrency = (value: string | undefined): string => {
-  if (!value) return "$0";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    notation: "compact",
-    maximumFractionDigits: 1,
-  }).format(Number(value));
-};
-
-export const formatChange = (
-  marketCap: string | undefined,
-  delta: string | undefined,
-): string => {
-  if (!delta || !marketCap) return "-";
-  const cap = Number(marketCap);
-  const d = Number(delta);
-  if (cap === 0) return "-";
-  const prevCap = cap - d;
-  if (prevCap === 0) return "-";
-  const pct = (d / prevCap) * 100;
-  const sign = pct >= 0 ? "+" : "";
-  return `${sign}${pct.toFixed(1)}%`;
-};
-
-const changeColor = (row: CoinNode): string | undefined => {
-  if (!row.marketCapDelta24h || !row.marketCap) return undefined;
-  const cap = Number(row.marketCap);
-  const d = Number(row.marketCapDelta24h);
-  if (cap === 0 || cap - d === 0) return undefined;
-  const pct = (d / (cap - d)) * 100;
-  if (pct > 0) return "green";
-  if (pct < 0) return "red";
-  return undefined;
-};
-
 const SORT_OPTIONS = Object.keys(SORT_LABELS).join(", ");
 
 const rankColumn: Column<CoinNode & { rank: number }> = {
@@ -140,18 +104,18 @@ const exploreColumns: Column<CoinNode & { rank: number }>[] = [
   {
     header: "Market Cap",
     width: 14,
-    accessor: (r) => formatCompactCurrency(r.marketCap),
+    accessor: (r) => formatCompactUsd(r.marketCap),
   },
   {
     header: "24h Vol",
     width: 14,
-    accessor: (r) => formatCompactCurrency(r.volume24h),
+    accessor: (r) => formatCompactUsd(r.volume24h),
   },
   {
     header: "24h Change",
     width: 12,
-    accessor: (r) => formatChange(r.marketCap, r.marketCapDelta24h),
-    color: changeColor,
+    accessor: (r) => formatMcapChange(r.marketCap, r.marketCapDelta24h).text,
+    color: (r) => formatMcapChange(r.marketCap, r.marketCapDelta24h).color,
   },
 ];
 
