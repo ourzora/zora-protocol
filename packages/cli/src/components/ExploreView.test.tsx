@@ -336,4 +336,48 @@ describe("ExploreView", () => {
     });
     expect(lastFrame()).toContain("r refresh");
   });
+
+  it("shows auto-refresh countdown when autoRefresh is enabled", async () => {
+    const { lastFrame } = render(
+      <ExploreView
+        fetchPage={() =>
+          Promise.resolve({
+            coins: [makeCoin()],
+            pageInfo: { hasNextPage: false },
+          })
+        }
+        sort="mcap"
+        type="post"
+        limit={10}
+        autoRefresh={true}
+        intervalSeconds={30}
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("TestCoin");
+    });
+    expect(lastFrame()).toContain("auto:");
+  });
+
+  it("does not show auto hint when autoRefresh is not set", async () => {
+    const { lastFrame } = render(
+      <ExploreView
+        fetchPage={() =>
+          Promise.resolve({
+            coins: [makeCoin()],
+            pageInfo: { hasNextPage: false },
+          })
+        }
+        sort="mcap"
+        type="post"
+        limit={10}
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("TestCoin");
+    });
+    expect(lastFrame()).not.toContain("auto:");
+  });
 });

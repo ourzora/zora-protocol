@@ -2,16 +2,19 @@ import { Command } from "commander";
 import { Box, Text } from "ink";
 import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
-import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
-import { renderOnce } from "../lib/render.js";
-import { Table, type Column } from "../components/table.js";
-import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
+import {
+  getOutputMode,
+  getLiveConfig,
+  outputData,
+  outputErrorAndExit,
+} from "../lib/output.js";
+import { renderOnce, renderLive } from "../lib/render.js";
+import { BalanceView, type BalanceData } from "../components/BalanceView.js";
+import { Table } from "../components/table.js";
 import { resolveAccount } from "../lib/wallet.js";
 import {
   parseRawBalance,
   normalizeTokenAmount,
-  formatBalanceAsUsd,
-  formatBalance,
 } from "../lib/balance-format.js";
 import {
   fetchWalletBalances,
@@ -19,32 +22,20 @@ import {
   type WalletBalanceJson,
 } from "../lib/wallet-balances.js";
 import { track } from "../lib/analytics.js";
+import {
+  walletColumns,
+  balanceColumns,
+  SORT_LABELS,
+  type SortFlag,
+  type BalanceNode,
+} from "../lib/balance-columns.js";
 
-type SortFlag = "usd-value" | "balance" | "market-cap" | "price-change";
-type BalanceNode = {
-  balance: string;
-  coin?: {
-    address?: string;
-    name?: string;
-    symbol?: string;
-    coinType?: string;
-    chainId?: number;
-    volume24h?: string;
-    totalVolume?: string;
-    marketCap?: string;
-    marketCapDelta24h?: string;
-    tokenPrice?: {
-      priceInUsdc?: string;
-    };
-    creatorProfile?: {
-      handle?: string;
-    };
-    mediaContent?: {
-      previewImage?: {
-        medium?: string;
-      };
-    };
-  };
+export {
+  walletColumns,
+  balanceColumns,
+  SORT_LABELS,
+  type SortFlag,
+  type BalanceNode,
 };
 
 type FormattedBalanceJson = {
@@ -76,14 +67,7 @@ const SORT_MAP: Record<
   "price-change": "PRICE_CHANGE",
 };
 
-const SORT_LABELS: Record<SortFlag, string> = {
-  "usd-value": "USD Value",
-  balance: "Balance",
-  "market-cap": "Market Cap",
-  "price-change": "Price Change",
-};
-
-const SORT_OPTIONS = Object.keys(SORT_MAP).join(", ");
+const SORT_OPTIONS = Object.keys(SORT_LABELS).join(", ");
 
 const extractErrorMessage = (error: unknown): string => {
   if (typeof error === "object" && error !== null && "error" in error) {
@@ -91,53 +75,6 @@ const extractErrorMessage = (error: unknown): string => {
   }
   return JSON.stringify(error);
 };
-
-const walletColumns: Column<WalletBalance>[] = [
-  { header: "Name", width: 14, accessor: (row) => row.name },
-  {
-    header: "Symbol",
-    width: 10,
-    noTruncate: true,
-    accessor: (row) => row.symbol,
-  },
-  { header: "Balance", width: 20, accessor: (row) => row.balance },
-  { header: "USD Value", width: 16, accessor: (row) => row.usdValue },
-];
-
-const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
-  { header: "#", width: 5, accessor: (row) => String(row.rank) },
-  { header: "Name", width: 24, accessor: (row) => row.coin?.name ?? "Unknown" },
-  {
-    header: "Symbol",
-    width: 12,
-    noTruncate: true,
-    accessor: (row) => row.coin?.symbol ?? "",
-  },
-  {
-    header: "Balance",
-    width: 14,
-    accessor: (row) => formatBalance(row.balance),
-  },
-  {
-    header: "USD Value",
-    width: 14,
-    accessor: (row) =>
-      formatBalanceAsUsd(row.balance, row.coin?.tokenPrice?.priceInUsdc),
-  },
-  {
-    header: "Market Cap",
-    width: 14,
-    accessor: (row) => formatCompactUsd(row.coin?.marketCap),
-  },
-  {
-    header: "24h Change",
-    width: 12,
-    accessor: (row) =>
-      formatMcapChange(row.coin?.marketCap, row.coin?.marketCapDelta24h).text,
-    color: (row) =>
-      formatMcapChange(row.coin?.marketCap, row.coin?.marketCapDelta24h).color,
-  },
-];
 
 const formatBalanceJson = (
   balance: BalanceNode,
@@ -324,99 +261,190 @@ function validateCoinOpts(json: boolean, sort: string, limitStr: string) {
 export const balanceCommand = new Command("balance")
   .description("Show balances in your wallet")
   .action(async function (this: Command) {
-    const json = getJson(this);
+    const output = getOutputMode(this, "live");
+    const json = output === "json";
     const account = resolveContext(json);
+    const { live, intervalSeconds } = getLiveConfig(this, "live");
 
     const sort: SortFlag = "usd-value";
     const limit = 10;
 
-    let walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>;
-    let coinsResult: { balances: BalanceNode[]; total: number };
-    try {
-      [walletResult, coinsResult] = await Promise.all([
+    const fetchBalanceData = async (): Promise<BalanceData> => {
+      const [walletResult, coinsResult] = await Promise.allSettled([
         fetchWalletBalances(account.address),
         fetchCoins(json, account.address, sort, limit),
       ]);
-    } catch (err) {
-      outputErrorAndExit(
-        json,
-        `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+
+      if (
+        walletResult.status === "rejected" ||
+        coinsResult.status === "rejected"
+      ) {
+        const err =
+          walletResult.status === "rejected"
+            ? walletResult.reason
+            : (coinsResult as PromiseRejectedResult).reason;
+        throw new Error(err instanceof Error ? err.message : String(err));
+      }
+
+      const rankedBalances = coinsResult.value.balances.map(
+        (balance, index) => ({
+          ...balance,
+          rank: index + 1,
+        }),
       );
-    }
 
-    const rankedBalances = coinsResult.balances.map((balance, index) => ({
-      ...balance,
-      rank: index + 1,
-    }));
+      return {
+        walletBalances: walletResult.value.walletBalances,
+        walletBalancesJson: walletResult.value.walletBalancesJson,
+        rankedBalances,
+        total: coinsResult.value.total,
+      };
+    };
 
-    outputData(json, {
-      json: {
-        wallet: walletResult.walletBalancesJson,
-        coins: rankedBalances.map((balance) =>
-          formatBalanceJson(balance, balance.rank),
+    if (json) {
+      const data = await fetchBalanceData().catch((err) =>
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
         ),
-      },
-      table: () => {
-        renderOnce(
-          <Box flexDirection="column">
-            <Table
-              columns={walletColumns}
-              data={walletResult.walletBalances}
-              title="Wallet"
-            />
-            {coinsResult.balances.length === 0 ? (
-              <Box
-                flexDirection="column"
-                paddingLeft={1}
-                paddingTop={1}
-                paddingBottom={1}
-              >
-                <Text>No coin balances found.</Text>
-                <Box marginTop={1} flexDirection="column">
-                  <Text dimColor>Buy coins to see them here:</Text>
-                  <Text dimColor> zora buy {"<address>"} --eth 0.001</Text>
-                </Box>
-              </Box>
-            ) : (
-              <Table
-                columns={balanceColumns}
-                data={rankedBalances}
-                title={`Coins · sorted by ${SORT_LABELS[sort]}`}
-                subtitle={`${coinsResult.balances.length} of ${coinsResult.total}`}
-              />
-            )}
-          </Box>,
-        );
-      },
-    });
+      );
 
-    track("cli_balances", {
-      sort,
-      limit,
-      result_count: coinsResult.balances.length,
-      total_count: coinsResult.total,
-      output_format: json ? "json" : "text",
-    });
+      outputData(json, {
+        json: {
+          wallet: data.walletBalancesJson,
+          coins: data.rankedBalances.map((balance) =>
+            formatBalanceJson(balance, balance.rank),
+          ),
+        },
+        table: () => {},
+      });
+
+      track("cli_balances", {
+        sort,
+        limit,
+        live: false,
+        result_count: data.rankedBalances.length,
+        total_count: data.total,
+        output_format: "json",
+      });
+    } else if (live) {
+      await renderLive(
+        <BalanceView
+          fetchData={fetchBalanceData}
+          sort={sort}
+          mode="full"
+          autoRefresh={live}
+          intervalSeconds={intervalSeconds}
+        />,
+      );
+
+      track("cli_balances", {
+        sort,
+        limit,
+        live,
+        interval: intervalSeconds,
+        output_format: "live",
+      });
+    } else {
+      const data = await fetchBalanceData().catch((err) =>
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+        ),
+      );
+
+      renderOnce(
+        <Box flexDirection="column">
+          <Table
+            columns={walletColumns}
+            data={data.walletBalances}
+            title="Wallet"
+          />
+          {data.rankedBalances.length === 0 ? (
+            <Box
+              flexDirection="column"
+              paddingLeft={1}
+              paddingTop={1}
+              paddingBottom={1}
+            >
+              <Text>No coin balances found.</Text>
+              <Box marginTop={1} flexDirection="column">
+                <Text dimColor>Buy coins to see them here:</Text>
+                <Text dimColor> zora buy {"<address>"} --eth 0.001</Text>
+              </Box>
+            </Box>
+          ) : (
+            <Table
+              columns={balanceColumns}
+              data={data.rankedBalances}
+              title={`Coins · sorted by ${SORT_LABELS[sort]}`}
+              subtitle={`${data.rankedBalances.length} of ${data.total}`}
+            />
+          )}
+        </Box>,
+      );
+
+      track("cli_balances", {
+        sort,
+        limit,
+        live: false,
+        result_count: data.rankedBalances.length,
+        total_count: data.total,
+        output_format: "text",
+      });
+    }
   });
 
 balanceCommand
   .command("spendable")
   .description("Show wallet token balances (ETH, USDC, ZORA)")
   .action(async function (this: Command) {
-    const json = getJson(this);
+    const output = getOutputMode(this, "live");
+    const json = output === "json";
     const account = resolveContext(json);
+    const { live, intervalSeconds } = getLiveConfig(this, "live");
 
-    let walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>;
-    try {
-      walletResult = await fetchWalletBalances(account.address);
-    } catch (err) {
-      outputErrorAndExit(
-        json,
-        `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+    const fetchSpendableData = async (): Promise<BalanceData> => {
+      const walletResult = await fetchWalletBalances(account.address);
+      return {
+        walletBalances: walletResult.walletBalances,
+        walletBalancesJson: walletResult.walletBalancesJson,
+        rankedBalances: [],
+        total: 0,
+      };
+    };
+
+    if (json) {
+      const data = await fetchSpendableData().catch((err) =>
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+        ),
       );
+      outputData(json, {
+        json: { wallet: data.walletBalancesJson },
+        table: () => {},
+      });
+    } else if (live) {
+      await renderLive(
+        <BalanceView
+          fetchData={fetchSpendableData}
+          sort="usd-value"
+          mode="wallet"
+          autoRefresh={live}
+          intervalSeconds={intervalSeconds}
+        />,
+      );
+    } else {
+      const walletResult = await fetchWalletBalances(account.address).catch(
+        (err) =>
+          outputErrorAndExit(
+            json,
+            `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+      );
+      renderWallet(json, walletResult);
     }
-
-    renderWallet(json, walletResult);
   });
 
 balanceCommand
@@ -425,16 +453,51 @@ balanceCommand
   .option("--sort <sort>", `Sort by: ${SORT_OPTIONS}`, "usd-value")
   .option("--limit <n>", "Number of results (max 20)", "10")
   .action(async function (this: Command, opts) {
-    const json = getJson(this);
+    const output = getOutputMode(this, "live");
+    const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
     const account = resolveContext(json);
+    const { live, intervalSeconds } = getLiveConfig(this, "live");
 
-    const { balances, total } = await fetchCoins(
-      json,
-      account.address,
-      sort,
-      limit,
-    );
+    const fetchCoinsData = async (): Promise<BalanceData> => {
+      const { balances, total } = await fetchCoins(
+        json,
+        account.address,
+        sort,
+        limit,
+      );
+      const rankedBalances = balances.map((balance, index) => ({
+        ...balance,
+        rank: index + 1,
+      }));
+      return {
+        walletBalances: [],
+        walletBalancesJson: [],
+        rankedBalances,
+        total,
+      };
+    };
 
-    renderCoins(json, balances, total, sort);
+    if (json) {
+      const data = await fetchCoinsData();
+      renderCoins(json, data.rankedBalances, data.total, sort);
+    } else if (live) {
+      await renderLive(
+        <BalanceView
+          fetchData={fetchCoinsData}
+          sort={sort}
+          mode="coins"
+          autoRefresh={live}
+          intervalSeconds={intervalSeconds}
+        />,
+      );
+    } else {
+      const { balances, total } = await fetchCoins(
+        json,
+        account.address,
+        sort,
+        limit,
+      );
+      renderCoins(json, balances, total, sort);
+    }
   });

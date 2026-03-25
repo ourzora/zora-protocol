@@ -24,7 +24,12 @@ import {
   getTrendingTrends,
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
-import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import {
+  getOutputMode,
+  getLiveConfig,
+  outputErrorAndExit,
+  outputJson,
+} from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 import {
   SORT_LABELS,
@@ -96,7 +101,8 @@ export const exploreCommand = new Command("explore")
   .option("--limit <n>", "Number of results (max 20)", "10")
   .option("--after <cursor>", "Pagination cursor from a previous result")
   .action(async function (this: Command, opts) {
-    const json = getJson(this);
+    const output = getOutputMode(this, "live");
+    const json = output === "json";
     const sort = opts.sort as SortOption;
     const type = opts.type as TypeOption;
     const limit = parseInt(opts.limit, 10);
@@ -171,6 +177,8 @@ export const exploreCommand = new Command("explore")
         output_format: "json",
       });
     } else {
+      const { live, intervalSeconds } = getLiveConfig(this, "live");
+
       const fetchPage = async (cursor?: string): Promise<ExplorePageResult> => {
         const response = await queryFn({ count: limit, after: cursor });
         if (response.error) {
@@ -193,6 +201,8 @@ export const exploreCommand = new Command("explore")
           type={type}
           limit={limit}
           initialCursor={after}
+          autoRefresh={live}
+          intervalSeconds={intervalSeconds}
         />,
       );
 
@@ -200,6 +210,8 @@ export const exploreCommand = new Command("explore")
         sort,
         type,
         limit,
+        live,
+        interval: intervalSeconds,
         paginated: after !== undefined,
         output_format: "text",
       });

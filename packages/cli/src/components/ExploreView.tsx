@@ -11,6 +11,7 @@ import {
   type TypeOption,
   type CoinNode,
 } from "../lib/types.js";
+import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
 
 const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   { header: "#", width: 4, accessor: (c) => String(c.rank) },
@@ -61,6 +62,8 @@ type ExploreViewProps = {
   limit: number;
   initialCursor?: string;
   cacheTtlMs?: number;
+  autoRefresh?: boolean;
+  intervalSeconds?: number;
 };
 
 const ExploreView = ({
@@ -70,6 +73,8 @@ const ExploreView = ({
   limit,
   initialCursor,
   cacheTtlMs = CACHE_TTL_MS,
+  autoRefresh = false,
+  intervalSeconds = 30,
 }: ExploreViewProps) => {
   const { exit } = useApp();
   const [loading, setLoading] = useState(true);
@@ -84,7 +89,9 @@ const ExploreView = ({
     initialCursor,
   );
   const cache = useRef<Map<string, CachedPage>>(new Map());
-  const [refreshCount, setRefreshCount] = useState(0);
+  const { refreshCount, secondsUntilRefresh, triggerManualRefresh } =
+    useAutoRefresh(intervalSeconds, autoRefresh);
+  const [manualRefreshCount, setManualRefreshCount] = useState(0);
 
   const loadPage = useCallback(
     async (cursor?: string) => {
@@ -115,9 +122,16 @@ const ExploreView = ({
     [fetchPage, cacheTtlMs],
   );
 
+  // Clear cache and re-fetch on auto-refresh tick
+  useEffect(() => {
+    if (refreshCount === 0) return;
+    const cacheKey = currentCursor ?? CACHE_KEY_FIRST;
+    cache.current.delete(cacheKey);
+  }, [refreshCount, currentCursor]);
+
   useEffect(() => {
     loadPage(currentCursor);
-  }, [currentCursor, loadPage, refreshCount]);
+  }, [currentCursor, loadPage, refreshCount, manualRefreshCount]);
 
   useInput((input, key) => {
     if (input === "q" || key.escape) {
@@ -145,7 +159,8 @@ const ExploreView = ({
     if (input === "r") {
       const cacheKey = currentCursor ?? CACHE_KEY_FIRST;
       cache.current.delete(cacheKey);
-      setRefreshCount((c) => c + 1);
+      triggerManualRefresh();
+      setManualRefreshCount((c) => c + 1);
     }
   });
 
@@ -210,6 +225,7 @@ const ExploreView = ({
   if (cursorHistory.length > 0) hints.push("\u2190 prev");
   if (pageInfo?.hasNextPage) hints.push("\u2192 next");
   hints.push("r refresh");
+  if (autoRefresh) hints.push(`auto: ${secondsUntilRefresh}s`);
   hints.push("q quit");
   const footer = hints.join("  \u00b7  ");
 

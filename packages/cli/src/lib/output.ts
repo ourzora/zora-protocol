@@ -1,7 +1,22 @@
 import type { Command } from "commander";
 
+type OutputMode = "table" | "json" | "live";
+
+const VALID_OUTPUT_MODES: OutputMode[] = ["table", "json", "live"];
+
+const getOutputMode = (cmd: Command, defaultMode: OutputMode): OutputMode => {
+  const raw = cmd.optsWithGlobals().output as string | undefined;
+  if (!raw) return defaultMode;
+  if (VALID_OUTPUT_MODES.includes(raw as OutputMode)) return raw as OutputMode;
+  return outputErrorAndExit(
+    false,
+    `Invalid --output value: ${raw}.`,
+    `Supported: ${VALID_OUTPUT_MODES.join(", ")}`,
+  );
+};
+
 const getJson = (cmd: Command): boolean =>
-  cmd.optsWithGlobals().json as boolean;
+  getOutputMode(cmd, "table") === "json";
 
 const getYes = (cmd: Command): boolean =>
   (cmd.optsWithGlobals().yes ?? false) as boolean;
@@ -39,4 +54,26 @@ const outputData = (
   }
 };
 
-export { getJson, getYes, outputJson, outputErrorAndExit, outputData };
+type LiveConfig = { live: boolean; intervalSeconds: number };
+
+const getLiveConfig = (cmd: Command, defaultMode: OutputMode): LiveConfig => {
+  const mode = getOutputMode(cmd, defaultMode);
+  const live = mode === "live";
+  const intervalRaw = parseInt(cmd.optsWithGlobals().interval as string, 10);
+  const intervalSeconds =
+    isNaN(intervalRaw) || intervalRaw < 5 ? 30 : intervalRaw;
+
+  return { live, intervalSeconds };
+};
+
+export {
+  getJson,
+  getYes,
+  getOutputMode,
+  getLiveConfig,
+  outputJson,
+  outputErrorAndExit,
+  outputData,
+  type OutputMode,
+  type LiveConfig,
+};
