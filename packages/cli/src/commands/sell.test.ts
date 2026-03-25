@@ -6,27 +6,14 @@ import {
   type Address,
 } from "viem";
 
-vi.mock("@inquirer/confirm", () => ({ default: vi.fn() }));
-
+vi.mock("@inquirer/confirm");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
 }));
+vi.mock("../lib/wallet.js");
 
-vi.mock("../lib/wallet.js", () => ({
-  resolveAccount: vi.fn(),
-  createClients: vi.fn(),
-}));
-
-vi.mock("@zoralabs/coins-sdk", () => ({
-  setApiKey: vi.fn(),
-  getCoin: vi.fn(),
-  createTradeCall: vi.fn(),
-  tradeCoin: vi.fn(),
-}));
-
-vi.mock("../lib/wallet-balances.js", () => ({
-  fetchTokenPriceUsd: vi.fn(),
-}));
+vi.mock("@zoralabs/coins-sdk");
+vi.mock("../lib/wallet-balances.js");
 
 import confirm from "@inquirer/confirm";
 import {

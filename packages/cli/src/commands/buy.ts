@@ -191,7 +191,7 @@ export const buyCommand = new Command("buy")
       if (isEth && balance <= gasReserve) {
         outputErrorAndExit(
           json,
-          `Balance too low (${formatEthDisplay(balance)} ETH). Need >0.001 ETH for gas.`,
+          `Balance too low (${formatEthDisplay(balance)} ETH). Need >${formatEthDisplay(GAS_RESERVE)} ETH for gas.`,
         );
       }
 

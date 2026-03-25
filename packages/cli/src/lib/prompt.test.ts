@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 
-vi.mock("@inquirer/confirm", () => ({ default: vi.fn() }));
-vi.mock("@inquirer/select", () => ({ default: vi.fn() }));
-vi.mock("@inquirer/password", () => ({ default: vi.fn() }));
+vi.mock("@inquirer/confirm");
+vi.mock("@inquirer/select");
+vi.mock("@inquirer/password");
 
 import confirm from "@inquirer/confirm";
 import select from "@inquirer/select";

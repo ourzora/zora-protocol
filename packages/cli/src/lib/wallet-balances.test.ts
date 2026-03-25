@@ -1,9 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Address } from "viem";
 
-vi.mock("@zoralabs/coins-sdk", () => ({
-  getTokenInfo: vi.fn(),
-}));
+vi.mock("@zoralabs/coins-sdk");
 
 vi.mock("viem", async (importOriginal) => {
   const actual = await importOriginal<typeof import("viem")>();

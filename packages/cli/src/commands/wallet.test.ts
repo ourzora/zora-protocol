@@ -9,9 +9,7 @@ vi.mock("../lib/config.js", () => ({
   saveAnalyticsId: vi.fn(),
 }));
 
-vi.mock("../lib/analytics.js", () => ({
-  track: vi.fn(),
-}));
+vi.mock("../lib/analytics.js");
 
 vi.mock("viem/accounts", () => ({
   privateKeyToAccount: vi.fn(),

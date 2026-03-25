@@ -10,7 +10,7 @@ import {
 import { outputErrorAndExit, outputJson } from "./output.js";
 import { formatCoinsDisplay } from "./format.js";
 
-export const GAS_RESERVE = parseEther("0.001");
+export const GAS_RESERVE = parseEther("0.00001");
 
 export const BUY_AMOUNT_CHECKS = {
   eth: (opts: Record<string, unknown>) => opts.eth !== undefined,

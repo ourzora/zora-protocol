@@ -4,9 +4,7 @@ vi.mock("./config.js", () => ({
   getPrivateKey: vi.fn(),
 }));
 
-vi.mock("@zoralabs/coins-sdk", () => ({
-  apiPost: vi.fn(),
-}));
+vi.mock("@zoralabs/coins-sdk");
 
 vi.mock("viem/accounts", () => ({
   privateKeyToAccount: vi.fn(),

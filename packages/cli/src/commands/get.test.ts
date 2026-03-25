@@ -1,20 +1,11 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createProgram } from "../test/create-program.js";
 
-vi.mock("@zoralabs/coins-sdk", () => ({
-  setApiKey: vi.fn(),
-  getCoin: vi.fn(),
-  getProfile: vi.fn(),
-  getTrend: vi.fn(),
-}));
-
+vi.mock("@zoralabs/coins-sdk");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
 }));
-
-vi.mock("../lib/render.js", () => ({
-  renderOnce: vi.fn(),
-}));
+vi.mock("../lib/render.js");
 
 import { setApiKey, getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";

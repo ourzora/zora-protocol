@@ -6,27 +6,16 @@ import {
   type Address,
 } from "viem";
 
-vi.mock("@inquirer/confirm", () => ({ default: vi.fn() }));
-
+vi.mock("@inquirer/confirm");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
 }));
-
-vi.mock("../lib/wallet.js", () => ({
-  resolveAccount: vi.fn(),
-  createClients: vi.fn(),
-}));
+vi.mock("../lib/wallet.js");
 
 vi.mock("@zoralabs/coins-sdk");
 
-vi.mock("../lib/wallet-balances.js", () => ({
-  fetchTokenPriceUsd: vi.fn(),
-}));
-
-vi.mock("../lib/analytics.js", () => ({
-  track: vi.fn(),
-  shutdownAnalytics: vi.fn().mockResolvedValue(undefined),
-}));
+vi.mock("../lib/wallet-balances.js");
+vi.mock("../lib/analytics.js");
 
 import confirm from "@inquirer/confirm";
 import {
@@ -230,7 +219,7 @@ describe("buy command", () => {
 
     expect(createTradeCall).toHaveBeenCalledWith(
       expect.objectContaining({
-        amountIn: 999000000000000000n,
+        amountIn: 999990000000000000n,
       }),
     );
   });
@@ -242,7 +231,7 @@ describe("buy command", () => {
 
     expect(createTradeCall).toHaveBeenCalledWith(
       expect.objectContaining({
-        amountIn: 999000000000000000n,
+        amountIn: 999990000000000000n,
       }),
     );
   });
@@ -341,7 +330,7 @@ describe("buy command", () => {
   });
 
   it("exits when balance is too low for gas reserve", async () => {
-    publicClient.getBalance.mockResolvedValue(500000000000000n); // 0.0005 ETH
+    publicClient.getBalance.mockResolvedValue(5000000000000n); // 0.000005 ETH
 
     await expect(runBuy([COIN_ADDRESS, "--all", "--yes"])).rejects.toThrow(
       "process.exit(1)",
@@ -451,14 +440,14 @@ describe("buy command", () => {
 
     expect(createTradeCall).toHaveBeenCalledWith(
       expect.objectContaining({
-        amountIn: 4999500000000000000n, // 50% of spendable balance (10 ETH - 0.001 ETH gas reserve)
+        amountIn: 4999995000000000000n, // 50% of spendable balance (10 ETH - 0.00001 ETH gas reserve)
       }),
     );
   });
 
   it("exits when --percent produces zero amount due to low balance", async () => {
-    // 0.0011 ETH — just above gas reserve, tiny percentage rounds to 0 in integer math
-    publicClient.getBalance.mockResolvedValue(1100000000000000n);
+    // 0.000011 ETH — just above gas reserve, tiny percentage rounds to 0 in integer math
+    publicClient.getBalance.mockResolvedValue(11000000000000n);
 
     await expect(
       runBuy([COIN_ADDRESS, "--percent", "0.001", "--yes"]),

@@ -1,9 +1,6 @@
 import { describe, it, expect, vi } from "vitest";
 
-vi.mock("@zoralabs/coins-sdk", () => ({
-  getCoin: vi.fn(),
-  getProfile: vi.fn(),
-}));
+vi.mock("@zoralabs/coins-sdk");
 
 import { getCoin, getProfile } from "@zoralabs/coins-sdk";
 import { parseCoinRef, resolveCoin } from "./coin-ref.js";

@@ -9,6 +9,7 @@ import { exploreCommand } from "./commands/explore.jsx";
 import { getCommand } from "./commands/get.jsx";
 import { priceHistoryCommand } from "./commands/price-history.jsx";
 import { sellCommand } from "./commands/sell.js";
+import { sendCommand } from "./commands/send.js";
 import { setupCommand } from "./commands/setup.js";
 import { walletCommand } from "./commands/wallet.js";
 import { renderOnce } from "./lib/render.js";
@@ -54,6 +55,7 @@ const buildProgram = (): Command => {
   program.addCommand(setupCommand);
   program.addCommand(walletCommand);
   program.addCommand(sellCommand);
+  program.addCommand(sendCommand);
 
   return program;
 };
