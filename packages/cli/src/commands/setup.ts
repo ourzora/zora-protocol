@@ -16,6 +16,7 @@ import {
 } from "../lib/strings.js";
 import { normalizeKey } from "../lib/wallet.js";
 import { track } from "../lib/analytics.js";
+import { formatError } from "../lib/errors.js";
 
 const isValidPrivateKey = (key: string): boolean =>
   /^(0x)?[0-9a-fA-F]{64}$/.test(key);
@@ -76,7 +77,7 @@ export const setupCommand = new Command("setup")
       } catch (err) {
         outputErrorAndExit(
           json,
-          `\u2717 Could not read wallet: ${(err as Error).message}`,
+          `\u2717 Could not read wallet: ${formatError(err)}`,
           "Run 'zora setup --force' to overwrite it.",
         );
       }

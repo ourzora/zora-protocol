@@ -11,6 +11,7 @@ import { renderOnce } from "../lib/render.js";
 import { CoinDetail } from "../components/CoinDetail.js";
 import type { CoinType } from "../lib/types.js";
 import { track } from "../lib/analytics.js";
+import { apiErrorMessage } from "../lib/errors.js";
 
 function formatCoinJson(coin: ResolvedCoin): Record<string, unknown> {
   return {
@@ -69,10 +70,7 @@ export const getCommand = new Command("get")
     try {
       result = await resolveCoin(ref);
     } catch (err) {
-      outputErrorAndExit(
-        json,
-        `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
       return;
     }
 

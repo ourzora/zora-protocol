@@ -3,6 +3,7 @@ import { createPublicClient, createWalletClient, custom } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { getPrivateKey } from "./config.js";
+import { formatError } from "./errors.js";
 
 export const normalizeKey = (key: string): `0x${string}` =>
   (key.startsWith("0x") ? key : `0x${key}`) as `0x${string}`;
@@ -23,9 +24,7 @@ export const resolveAccount = (
   try {
     return privateKeyToAccount(normalizeKey(key));
   } catch (err) {
-    console.error(
-      `✗ Invalid private key: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    console.error(`✗ Invalid private key: ${formatError(err)}`);
     console.error("  Run 'zora setup --force' to replace it.");
     return process.exit(1);
   }

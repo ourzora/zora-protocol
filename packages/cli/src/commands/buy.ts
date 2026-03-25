@@ -25,6 +25,7 @@ import {
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
+import { tradeErrorMessage, apiErrorMessage } from "../lib/errors.js";
 
 export const buyCommand = new Command("buy")
   .description("Buy a coin")
@@ -84,10 +85,7 @@ export const buyCommand = new Command("buy")
       const response = await getCoin({ address: coinAddress });
       token = response.data?.zora20Token;
     } catch (err) {
-      outputErrorAndExit(
-        json,
-        `Failed to fetch coin: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      outputErrorAndExit(json, `Failed to fetch coin: ${apiErrorMessage(err)}`);
     }
     if (!token) {
       outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
@@ -286,7 +284,7 @@ export const buyCommand = new Command("buy")
       }
       outputErrorAndExit(
         json,
-        `Quote failed: ${msg}`,
+        `Quote failed: ${apiErrorMessage(err)}`,
         "Check the coin address is valid and try again. Use --debug for full error details.",
       );
     }
@@ -377,10 +375,7 @@ export const buyCommand = new Command("buy")
         error_type: err instanceof Error ? err.constructor.name : "unknown",
       });
       await shutdownAnalytics();
-      outputErrorAndExit(
-        json,
-        `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      outputErrorAndExit(json, tradeErrorMessage(err));
     }
     txHash = receipt.transactionHash;
 

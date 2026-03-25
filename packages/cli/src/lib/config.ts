@@ -6,6 +6,7 @@ import {
   chmodSync,
 } from "node:fs";
 import { join } from "node:path";
+import { formatError } from "./errors.js";
 import { homedir, platform } from "node:os";
 
 function getConfigDir(): string {
@@ -65,7 +66,7 @@ function readConfig(): Config {
     parsed = JSON.parse(readFileSync(CONFIG_FILE, "utf-8"));
   } catch (err) {
     console.error(
-      `Warning: could not parse ${CONFIG_FILE}: ${(err as Error).message}. Run 'zora auth configure' to fix.`,
+      `Warning: could not parse ${CONFIG_FILE}: ${formatError(err)}. Run 'zora auth configure' to fix.`,
     );
     configReadOnly = true;
     return { version: CONFIG_VERSION };
@@ -74,7 +75,7 @@ function readConfig(): Config {
     assertVersion(parsed, CONFIG_VERSION, CONFIG_FILE);
   } catch (err) {
     console.error(
-      `Warning: ${(err as Error).message}. Delete ${CONFIG_FILE} or run 'zora auth configure' to reset.`,
+      `Warning: ${formatError(err)}. Delete ${CONFIG_FILE} or run 'zora auth configure' to reset.`,
     );
     configReadOnly = true;
     return { version: CONFIG_VERSION };

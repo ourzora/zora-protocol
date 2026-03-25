@@ -31,6 +31,7 @@ import {
   outputJson,
 } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
+import { apiErrorMessage } from "../lib/errors.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
@@ -176,10 +177,7 @@ export const exploreCommand = new Command("explore")
       try {
         response = await queryFn({ count: limit, after });
       } catch (err) {
-        outputErrorAndExit(
-          json,
-          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-        );
+        outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
       }
 
       if (response.error) {

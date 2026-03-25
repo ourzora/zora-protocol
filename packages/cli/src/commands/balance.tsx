@@ -22,6 +22,7 @@ import {
   type WalletBalanceJson,
 } from "../lib/wallet-balances.js";
 import { track } from "../lib/analytics.js";
+import { apiErrorMessage } from "../lib/errors.js";
 import {
   walletColumns,
   balanceColumns,
@@ -214,10 +215,7 @@ async function fetchCoins(
       sortOption: SORT_MAP[sort],
     });
   } catch (err) {
-    outputErrorAndExit(
-      json,
-      `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
   }
 
   if (response.error) {
@@ -283,7 +281,7 @@ export const balanceCommand = new Command("balance")
           walletResult.status === "rejected"
             ? walletResult.reason
             : (coinsResult as PromiseRejectedResult).reason;
-        throw new Error(err instanceof Error ? err.message : String(err));
+        throw err instanceof Error ? err : new Error(String(err));
       }
 
       const rankedBalances = coinsResult.value.balances.map(
@@ -303,10 +301,7 @@ export const balanceCommand = new Command("balance")
 
     if (json) {
       const data = await fetchBalanceData().catch((err) =>
-        outputErrorAndExit(
-          json,
-          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-        ),
+        outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
 
       outputData(json, {
@@ -347,10 +342,7 @@ export const balanceCommand = new Command("balance")
       });
     } else {
       const data = await fetchBalanceData().catch((err) =>
-        outputErrorAndExit(
-          json,
-          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-        ),
+        outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
 
       renderOnce(
@@ -416,10 +408,7 @@ balanceCommand
 
     if (json) {
       const data = await fetchSpendableData().catch((err) =>
-        outputErrorAndExit(
-          json,
-          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-        ),
+        outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
       outputData(json, {
         json: { wallet: data.walletBalancesJson },
@@ -438,10 +427,7 @@ balanceCommand
     } else {
       const walletResult = await fetchWalletBalances(account.address).catch(
         (err) =>
-          outputErrorAndExit(
-            json,
-            `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-          ),
+          outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
       renderWallet(json, walletResult);
     }

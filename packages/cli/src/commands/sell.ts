@@ -28,6 +28,7 @@ import {
   printDebugResponse,
 } from "../lib/trade-helpers.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
+import { tradeErrorMessage, apiErrorMessage } from "../lib/errors.js";
 
 type OutputAsset = TradeTokenKey;
 
@@ -196,10 +197,7 @@ export const sellCommand = new Command("sell")
       const response = await getCoin({ address: coinAddress });
       token = response.data?.zora20Token;
     } catch (err) {
-      outputErrorAndExit(
-        json,
-        `Failed to fetch coin: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      outputErrorAndExit(json, `Failed to fetch coin: ${apiErrorMessage(err)}`);
     }
     if (!token) {
       outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
@@ -357,7 +355,7 @@ export const sellCommand = new Command("sell")
       }
       outputErrorAndExit(
         json,
-        `Quote failed: ${msg}`,
+        `Quote failed: ${apiErrorMessage(err)}`,
         "Check the coin address and amount, then try again. Use --debug for full error details.",
       );
     }
@@ -454,10 +452,7 @@ export const sellCommand = new Command("sell")
         error_type: err instanceof Error ? err.constructor.name : "unknown",
       });
       await shutdownAnalytics();
-      outputErrorAndExit(
-        json,
-        `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
-      );
+      outputErrorAndExit(json, tradeErrorMessage(err));
     }
     txHash = receipt.transactionHash;
 

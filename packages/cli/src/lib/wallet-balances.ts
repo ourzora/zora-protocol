@@ -9,6 +9,7 @@ import {
 import { base } from "viem/chains";
 import { formatUsd } from "./format.js";
 import { trimTrailingZeros } from "./balance-format.js";
+import { formatError } from "./errors.js";
 import {
   WETH_ADDRESS,
   USDC_ADDRESS,
@@ -83,7 +84,7 @@ export const fetchTokenPriceUsd = async (
       : null;
   } catch (err) {
     console.warn(
-      `Warning: failed to fetch price for ${address}: ${err instanceof Error ? err.message : String(err)}`,
+      `Warning: failed to fetch price for ${address}: ${formatError(err)}`,
     );
     return null;
   }
