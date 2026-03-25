@@ -97,6 +97,9 @@ export const formatEthDisplay = (wei: bigint): string => {
   return `${parts[0]}.${trimmed}`;
 };
 
+export const truncateAddress = (address: string): string =>
+  `${address.slice(0, 6)}\u2026${address.slice(-4)}`;
+
 export const formatCoinsDisplay = (coinsOut: string): string =>
   new Intl.NumberFormat("en-US", {
     maximumFractionDigits: 2,

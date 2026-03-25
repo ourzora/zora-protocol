@@ -33,11 +33,15 @@ import {
 import { track } from "../lib/analytics.js";
 import {
   SORT_LABELS,
+  TYPE_LABELS,
+  COIN_TYPE_DISPLAY,
   type SortOption,
   type TypeOption,
   type CoinNode,
 } from "../lib/types.js";
-import { renderLive } from "../lib/render.js";
+import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
+import { renderLive, renderOnce } from "../lib/render.js";
+import { Table, type Column } from "../components/table.js";
 import {
   ExploreView,
   type ExplorePageResult,
@@ -87,6 +91,33 @@ export const QUERY_MAP: Record<
     post: getExploreFeaturedVideos,
   },
 };
+
+const STATIC_COLUMNS: Column<CoinNode & { rank: number }>[] = [
+  { header: "#", width: 4, accessor: (c) => String(c.rank) },
+  { header: "Name", width: 20, accessor: (c) => c.name ?? "Unknown" },
+  { header: "Address", width: 48, accessor: (c) => c.address ?? "" },
+  {
+    header: "Type",
+    width: 14,
+    accessor: (c) => COIN_TYPE_DISPLAY[c.coinType ?? ""] ?? c.coinType ?? "",
+  },
+  {
+    header: "Market Cap",
+    width: 12,
+    accessor: (c) => formatCompactUsd(c.marketCap),
+  },
+  {
+    header: "24h Vol",
+    width: 12,
+    accessor: (c) => formatCompactUsd(c.volume24h),
+  },
+  {
+    header: "24h Change",
+    width: 11,
+    accessor: (c) => formatMcapChange(c.marketCap, c.marketCapDelta24h).text,
+    color: (c) => formatMcapChange(c.marketCap, c.marketCapDelta24h).color,
+  },
+];
 
 const SORT_OPTIONS = Object.keys(SORT_LABELS).join(", ");
 
@@ -194,26 +225,58 @@ export const exploreCommand = new Command("explore")
         return { coins, pageInfo };
       };
 
-      await renderLive(
-        <ExploreView
-          fetchPage={fetchPage}
-          sort={sort}
-          type={type}
-          limit={limit}
-          initialCursor={after}
-          autoRefresh={live}
-          intervalSeconds={intervalSeconds}
-        />,
-      );
+      if (live) {
+        await renderLive(
+          <ExploreView
+            fetchPage={fetchPage}
+            sort={sort}
+            type={type}
+            limit={limit}
+            initialCursor={after}
+            autoRefresh={live}
+            intervalSeconds={intervalSeconds}
+          />,
+        );
 
-      track("cli_explore", {
-        sort,
-        type,
-        limit,
-        live,
-        interval: intervalSeconds,
-        paginated: after !== undefined,
-        output_format: "text",
-      });
+        track("cli_explore", {
+          sort,
+          type,
+          limit,
+          live,
+          interval: intervalSeconds,
+          paginated: after !== undefined,
+          output_format: "live",
+        });
+      } else {
+        const { coins } = await fetchPage(after).catch((err) =>
+          outputErrorAndExit(
+            false,
+            `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+        );
+
+        const title =
+          type !== "all"
+            ? `${SORT_LABELS[sort]} \u00b7 ${TYPE_LABELS[type]}`
+            : SORT_LABELS[sort];
+        const rankedCoins = coins.map((c, i) => ({
+          ...c,
+          rank: i + 1,
+        }));
+
+        renderOnce(
+          <Table columns={STATIC_COLUMNS} data={rankedCoins} title={title} />,
+        );
+
+        track("cli_explore", {
+          sort,
+          type,
+          limit,
+          live: false,
+          paginated: after !== undefined,
+          result_count: coins.length,
+          output_format: "table",
+        });
+      }
     }
   });

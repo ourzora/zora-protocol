@@ -4,6 +4,7 @@ import {
   formatCompactUsd,
   formatMcapChange,
   truncate,
+  truncateAddress,
   formatHolders,
   formatRelativeTime,
   formatAbsoluteTime,
@@ -257,5 +258,19 @@ describe("formatCreatedAt", () => {
     const result = formatCreatedAt("2026-03-13T12:00:00Z", now);
     expect(result).toContain("3 days ago");
     expect(result).toMatch(/\(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2} [AP]M\)/);
+  });
+});
+
+describe("truncateAddress", () => {
+  it("truncates a full address to 0xABCD…1234 format", () => {
+    expect(truncateAddress("0x1234567890abcdef1234567890abcdef12345678")).toBe(
+      "0x1234\u20265678",
+    );
+  });
+
+  it("preserves the 0x prefix and last 4 chars", () => {
+    expect(truncateAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")).toBe(
+      "0xabcd\u2026abcd",
+    );
   });
 });

@@ -7,6 +7,7 @@ import {
   outputErrorAndExit,
   outputData,
 } from "../lib/output.js";
+import { truncateAddress } from "../lib/format.js";
 import { selectOrDefault, passwordOrFail } from "../lib/prompt.js";
 import {
   DEPOSIT_INSTRUCTIONS,
@@ -82,7 +83,7 @@ export const setupCommand = new Command("setup")
     }
     if (existing) {
       const account = toAccount(json, existing, "Stored private key");
-      const truncated = `${account.address.slice(0, 6)}\u2026${account.address.slice(-4)}`;
+      const truncated = truncateAddress(account.address);
       console.log(`  Wallet already configured: ${truncated}\n`);
       if (!options.force) {
         outputErrorAndExit(

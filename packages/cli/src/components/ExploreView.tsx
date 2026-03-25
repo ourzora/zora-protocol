@@ -2,7 +2,11 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import Spinner from "ink-spinner";
 import { Table, type Column } from "./table.js";
-import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
+import {
+  formatCompactUsd,
+  formatMcapChange,
+  truncateAddress,
+} from "../lib/format.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
@@ -12,11 +16,16 @@ import {
   type CoinNode,
 } from "../lib/types.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
+import { copyToClipboard } from "../lib/clipboard.js";
 
 const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   { header: "#", width: 4, accessor: (c) => String(c.rank) },
   { header: "Name", width: 20, accessor: (c) => c.name ?? "Unknown" },
-  { header: "Address", width: 44, accessor: (c) => c.address ?? "" },
+  {
+    header: "Address",
+    width: 14,
+    accessor: (c) => (c.address ? truncateAddress(c.address) : ""),
+  },
   {
     header: "Type",
     width: 14,
@@ -92,6 +101,12 @@ const ExploreView = ({
   const { refreshCount, secondsUntilRefresh, triggerManualRefresh } =
     useAutoRefresh(intervalSeconds, autoRefresh);
   const [manualRefreshCount, setManualRefreshCount] = useState(0);
+  const [selectedRow, setSelectedRow] = useState(0);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
+
+  useEffect(() => {
+    setSelectedRow((r) => Math.min(r, Math.max(0, coins.length - 1)));
+  }, [coins.length]);
 
   const loadPage = useCallback(
     async (cursor?: string) => {
@@ -140,6 +155,26 @@ const ExploreView = ({
     }
     if (loading) return;
 
+    if (key.upArrow || input === "k") {
+      setSelectedRow((r) => Math.max(0, r - 1));
+      return;
+    }
+
+    if (key.downArrow || input === "j") {
+      setSelectedRow((r) => Math.min(coins.length - 1, r + 1));
+      return;
+    }
+
+    if (input === "c") {
+      const coin = coins[selectedRow];
+      if (coin?.address) {
+        const ok = copyToClipboard(coin.address);
+        setCopyFeedback(ok ? "Copied!" : "Copy failed");
+        setTimeout(() => setCopyFeedback(null), 1500);
+      }
+      return;
+    }
+
     const canGoNext = pageInfo?.hasNextPage && pageInfo.endCursor;
     const canGoPrev = cursorHistory.length > 0;
 
@@ -147,6 +182,7 @@ const ExploreView = ({
       setCursorHistory((prev) => [...prev, currentCursor]);
       setCurrentCursor(pageInfo!.endCursor);
       setPage((p) => p + 1);
+      setSelectedRow(0);
     }
 
     if ((input === "p" || key.leftArrow) && canGoPrev) {
@@ -154,6 +190,7 @@ const ExploreView = ({
       setCursorHistory((h) => h.slice(0, -1));
       setCurrentCursor(prev);
       setPage((p) => p - 1);
+      setSelectedRow(0);
     }
 
     if (input === "r") {
@@ -161,6 +198,7 @@ const ExploreView = ({
       cache.current.delete(cacheKey);
       triggerManualRefresh();
       setManualRefreshCount((c) => c + 1);
+      setSelectedRow(0);
     }
   });
 
@@ -222,12 +260,15 @@ const ExploreView = ({
   }));
 
   const hints: string[] = [];
+  hints.push("\u2191\u2193 select");
+  hints.push("c copy address");
   if (cursorHistory.length > 0) hints.push("\u2190 prev");
   if (pageInfo?.hasNextPage) hints.push("\u2192 next");
   hints.push("r refresh");
   if (autoRefresh) hints.push(`auto: ${secondsUntilRefresh}s`);
   hints.push("q quit");
-  const footer = hints.join("  \u00b7  ");
+  const footer =
+    hints.join("  \u00b7  ") + (copyFeedback ? `  ${copyFeedback}` : "");
 
   return (
     <Table
@@ -236,6 +277,7 @@ const ExploreView = ({
       title={title}
       subtitle={subtitle}
       footer={footer}
+      selectedRow={selectedRow}
     />
   );
 };

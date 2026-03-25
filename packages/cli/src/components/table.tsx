@@ -15,6 +15,7 @@ type TableProps<T> = {
   subtitle?: string;
   fullWidth?: boolean;
   footer?: string;
+  selectedRow?: number;
 };
 
 const PADDING_LEFT = 1;
@@ -58,6 +59,7 @@ const Table = <T,>({
   subtitle,
   fullWidth = true,
   footer,
+  selectedRow,
 }: TableProps<T>) => {
   const widths = computeColumnWidths(columns, fullWidth);
 
@@ -80,27 +82,32 @@ const Table = <T,>({
         ))}
       </Box>
 
-      {data.map((row, i) => (
-        <Box key={i} paddingLeft={PADDING_LEFT}>
-          {columns.map((col, colIdx) => {
-            const colWidth = widths[colIdx];
-            const value = col.noTruncate
-              ? col.accessor(row)
-              : truncate(col.accessor(row), colWidth - 2);
-            const colorName = col.color?.(row);
-            return (
-              <Box key={col.header} width={colWidth}>
-                <Text
-                  color={colorName}
-                  wrap={col.noTruncate ? "wrap" : "truncate"}
-                >
-                  {value}
-                </Text>
-              </Box>
-            );
-          })}
-        </Box>
-      ))}
+      {data.map((row, i) => {
+        const isSelected = selectedRow === i;
+        return (
+          <Box key={i} paddingLeft={PADDING_LEFT}>
+            {columns.map((col, colIdx) => {
+              const colWidth = widths[colIdx];
+              const value = col.noTruncate
+                ? col.accessor(row)
+                : truncate(col.accessor(row), colWidth - 2);
+              const colorName = col.color?.(row);
+              return (
+                <Box key={col.header} width={colWidth}>
+                  <Text
+                    color={colorName}
+                    bold={isSelected}
+                    inverse={isSelected}
+                    wrap={col.noTruncate ? "wrap" : "truncate"}
+                  >
+                    {value}
+                  </Text>
+                </Box>
+              );
+            })}
+          </Box>
+        );
+      })}
 
       {footer && (
         <Box paddingLeft={PADDING_LEFT} marginTop={1}>
