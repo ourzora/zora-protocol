@@ -31,7 +31,7 @@ const VALID_TYPES: readonly CoinType[] = ["creator-coin", "post", "trend"];
 
 export const getCommand = new Command("get")
   .description("Look up a coin by address or name")
-  .argument("<identifier>", "Coin address (0x...) or creator name")
+  .argument("[identifier]", "Coin address (0x...) or creator name")
   .option("--type <type>", "Coin type: creator-coin, post, trend")
   .action(async function (
     this: Command,

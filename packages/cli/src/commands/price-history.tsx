@@ -82,7 +82,7 @@ const fetchPriceHistory = async (
 
 export const priceHistoryCommand = new Command("price-history")
   .description("Display price history for a coin")
-  .argument("<identifier>", "Coin address (0x...) or name")
+  .argument("[identifier]", "Coin address (0x...) or name")
   .option("--type <type>", "Coin type: creator-coin, post, trend")
   .option(
     "--interval <interval>",

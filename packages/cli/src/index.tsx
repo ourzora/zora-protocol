@@ -59,6 +59,17 @@ const buildProgram = (): Command => {
   program.addCommand(sellCommand);
   program.addCommand(sendCommand);
 
+  // Show help instead of proceeding when a command is called without its arguments.
+  // Args are declared as [optional] so Commander doesn't error before this hook runs —
+  // don't filter by arg.required here, since they're all intentionally optional.
+  program.hook("preAction", (_thisCommand, actionCommand) => {
+    const expected = actionCommand.registeredArguments.length;
+    if (expected > 0 && actionCommand.args.length < expected) {
+      actionCommand.outputHelp();
+      process.exit(1);
+    }
+  });
+
   return program;
 };
 

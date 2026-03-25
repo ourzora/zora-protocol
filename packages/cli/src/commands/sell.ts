@@ -134,7 +134,7 @@ function printSellResult(
 
 export const sellCommand = new Command("sell")
   .description("Sell a coin")
-  .argument("<address>", "Coin contract address (0x…)")
+  .argument("[address]", "Coin contract address (0x…)")
   .option("--amount <value>", "Sell specific number of coins")
   .option("--usd <value>", "Sell USD equivalent worth of coins")
   .option("--percent <value>", "Sell percentage of coin balance")

@@ -97,8 +97,8 @@ function printSendResult(
 
 export const sendCommand = new Command("send")
   .description("Send coins or ETH to an address")
-  .argument("<identifier>", "Coin address, name, or token (eth, usdc, zora)")
-  .requiredOption("--to <address>", "Recipient address (0x...)")
+  .argument("[identifier]", "Coin address, name, or token (eth, usdc, zora)")
+  .option("--to <address>", "Recipient address (0x...)")
   .option("--type <type>", "Coin type: creator-coin, post, trend")
   .option("--amount <value>", "Send specific amount")
   .option("--percent <value>", "Send percentage of balance (1-100)")
@@ -108,7 +108,7 @@ export const sendCommand = new Command("send")
     this: Command,
     identifier: string,
     opts: {
-      to: string;
+      to?: string;
       type?: string;
       amount?: string;
       percent?: string;
@@ -117,6 +117,14 @@ export const sendCommand = new Command("send")
     },
   ) {
     const json = getJson(this);
+
+    if (!opts.to) {
+      outputErrorAndExit(
+        json,
+        "Missing --to flag.",
+        "Usage: zora send <identifier> --to <address>",
+      );
+    }
 
     if (!isAddress(opts.to)) {
       outputErrorAndExit(

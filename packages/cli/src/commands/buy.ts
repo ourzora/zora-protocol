@@ -28,7 +28,7 @@ import { track, shutdownAnalytics } from "../lib/analytics.js";
 
 export const buyCommand = new Command("buy")
   .description("Buy a coin")
-  .argument("<address>", "Coin contract address (0x…)")
+  .argument("[address]", "Coin contract address (0x…)")
   .option("--eth <value>", "Buy with ETH amount")
   .option("--usd <value>", "Buy with USD equivalent (use with --token)")
   .option("--token <asset>", "Token to spend: eth, usdc, zora", "eth")
