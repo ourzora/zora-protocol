@@ -40,6 +40,7 @@ import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { buyCommand } from "./buy.js";
+import { createProgram } from "../test/create-program.js";
 
 const COIN_ADDRESS = "0x1234567890abcdef1234567890abcdef12345678" as Address;
 const ACCOUNT_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045" as Address;
@@ -68,7 +69,8 @@ function makeTransferLog({
 }
 
 function runBuy(args: string[]) {
-  return buyCommand.parseAsync(args, { from: "user" });
+  const program = createProgram(buyCommand);
+  return program.parseAsync(["buy", ...args], { from: "user" });
 }
 
 describe("buy command", () => {
@@ -181,7 +183,7 @@ describe("buy command", () => {
   });
 
   it("executes an ETH buy and prints JSON output", async () => {
-    await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--output", "json"]);
+    await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--json"]);
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
     expect(createTradeCall).toHaveBeenCalledWith(
@@ -260,15 +262,6 @@ describe("buy command", () => {
     ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid address: not-an-address"),
-    );
-  });
-
-  it("exits when --output is invalid", async () => {
-    await expect(
-      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes", "--output", "csv"]),
-    ).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid --output value"),
     );
   });
 
@@ -475,9 +468,9 @@ describe("buy command", () => {
     );
   });
 
-  it("produces structured JSON errors when --output json is set", async () => {
+  it("produces structured JSON errors when --json is set", async () => {
     await expect(
-      runBuy(["not-an-address", "--eth", "0.1", "--yes", "--output", "json"]),
+      runBuy(["not-an-address", "--eth", "0.1", "--yes", "--json"]),
     ).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"error"'));
   });
@@ -584,14 +577,7 @@ describe("buy command", () => {
     });
 
     it("prints quote as JSON and exits without trading", async () => {
-      await runBuy([
-        COIN_ADDRESS,
-        "--eth",
-        "0.1",
-        "--quote",
-        "--output",
-        "json",
-      ]);
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--quote", "--json"]);
 
       expect(tradeCoin).not.toHaveBeenCalled();
       const output = logSpy.mock.calls.map((c) => c[0]).join("");
@@ -792,8 +778,7 @@ describe("buy command", () => {
         "--token",
         "usdc",
         "--yes",
-        "--output",
-        "json",
+        "--json",
       ]);
 
       const output = logSpy.mock.calls.map((c) => c[0]).join("");

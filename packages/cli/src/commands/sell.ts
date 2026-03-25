@@ -15,7 +15,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
-import { outputErrorAndExit, outputJson } from "../lib/output.js";
+import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import {
@@ -145,22 +145,15 @@ export const sellCommand = new Command("sell")
   .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
   .option("--debug", "Print full quote request/response JSON")
-  .option("-o, --output <format>", "Output format: table, json", "table")
-  .action(async (coinAddress: string, opts) => {
-    const json = opts.output === "json";
+  .action(async function (this: Command, coinAddress: string, opts) {
+    const json = getJson(this);
     const debug = opts.debug === true;
 
     if (!isAddress(coinAddress)) {
       outputErrorAndExit(json, `Invalid address: ${coinAddress}`);
     }
 
-    const output = opts.output as "table" | "json";
-    if (output !== "table" && output !== "json") {
-      outputErrorAndExit(
-        false,
-        `Invalid --output value: ${output}. Use: table, json`,
-      );
-    }
+    const output: "table" | "json" = json ? "json" : "table";
 
     // --token takes precedence over --to
     const outputAsset = (

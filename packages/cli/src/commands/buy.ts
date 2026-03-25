@@ -9,7 +9,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
-import { outputErrorAndExit, outputJson } from "../lib/output.js";
+import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { formatEthDisplay, formatCoinsDisplay } from "../lib/format.js";
 import {
   GAS_RESERVE,
@@ -38,21 +38,12 @@ export const buyCommand = new Command("buy")
   .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
   .option("--debug", "Print full quote request/response JSON")
-  .option("-o, --output <format>", "Output format: table, json", "table")
-  .action(async (coinAddress: string, opts) => {
-    const json = opts.output === "json";
+  .action(async function (this: Command, coinAddress: string, opts) {
+    const json = getJson(this);
     const debug = opts.debug === true;
 
     if (!isAddress(coinAddress)) {
       outputErrorAndExit(json, `Invalid address: ${coinAddress}`);
-    }
-
-    const output = opts.output as "table" | "json";
-    if (output !== "table" && output !== "json") {
-      outputErrorAndExit(
-        false,
-        `Invalid --output value: ${output}. Use: table, json`,
-      );
     }
 
     const tokenKey = opts.token.toLowerCase() as string;
@@ -328,7 +319,7 @@ export const buyCommand = new Command("buy")
         amount_mode: amountMode,
         swap_amount_usd: swapAmountUsd,
         slippage: slippagePct,
-        output_format: opts.output,
+        output_format: json ? "json" : "table",
       });
       return;
     }
@@ -375,7 +366,7 @@ export const buyCommand = new Command("buy")
         amount_mode: amountMode,
         swap_amount_usd: swapAmountUsd,
         slippage: slippagePct,
-        output_format: opts.output,
+        output_format: json ? "json" : "table",
         success: false,
         error_type: err instanceof Error ? err.constructor.name : "unknown",
       });
@@ -422,7 +413,7 @@ export const buyCommand = new Command("buy")
       input_token_symbol: inputToken.symbol,
       swap_amount_usd: swapAmountUsd,
       slippage: slippagePct,
-      output_format: opts.output,
+      output_format: json ? "json" : "table",
       success: true,
       tx_hash: txHash,
     });
