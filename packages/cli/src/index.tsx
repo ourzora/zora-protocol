@@ -75,6 +75,10 @@ if (!process.env.VITEST) {
     renderOnce(<Zorb size={20} />);
   }
 
+  console.warn(
+    "\x1b[33m⚠ Beta:\x1b[0m This CLI is in beta and should be used with caution.",
+  );
+
   identify();
 
   try {
