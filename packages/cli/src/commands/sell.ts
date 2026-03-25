@@ -390,6 +390,8 @@ export const sellCommand = new Command("sell")
         coin_symbol: coinSymbol,
         amount_mode: amountMode,
         swap_amount_usd: swapAmountUsd,
+        valueUsd: swapAmountUsd,
+        swapCoinType: token.coinType ?? null,
         output_asset: outputAsset,
         slippage: slippagePct,
         output_format: output,
@@ -426,6 +428,8 @@ export const sellCommand = new Command("sell")
     let txHash: string;
     let receivedAmountOut = BigInt(quoteAmountOut);
     let receivedSource: "receipt" | "quote" = "quote";
+    let swapLogIndex: number | null = null;
+    const swapCoinType = token.coinType ?? null;
     try {
       receipt = await tradeCoin({
         tradeParameters,
@@ -441,6 +445,8 @@ export const sellCommand = new Command("sell")
         coin_symbol: coinSymbol,
         amount_mode: amountMode,
         swap_amount_usd: swapAmountUsd,
+        valueUsd: swapAmountUsd,
+        swapCoinType,
         output_asset: outputAsset,
         slippage: slippagePct,
         output_format: output,
@@ -458,11 +464,13 @@ export const sellCommand = new Command("sell")
     // For ERC-20 outputs, try to get actual received amount from receipt
     if (outputToken.trade.type === "erc20") {
       try {
-        receivedAmountOut = getReceivedAmountFromReceipt({
+        const result = getReceivedAmountFromReceipt({
           receipt,
           tokenAddress: outputToken.trade.address,
           recipient: account.address,
         });
+        receivedAmountOut = result.amount;
+        swapLogIndex = result.logIndex;
         receivedSource = "receipt";
       } catch {
         // Fall back to quote amount
@@ -490,6 +498,10 @@ export const sellCommand = new Command("sell")
       coin_symbol: coinSymbol,
       amount_mode: amountMode,
       swap_amount_usd: swapAmountUsd,
+      valueUsd: swapAmountUsd,
+      swapCoinType,
+      transactionHash: txHash,
+      logIndex: swapLogIndex,
       output_asset: outputAsset,
       slippage: slippagePct,
       output_format: output,

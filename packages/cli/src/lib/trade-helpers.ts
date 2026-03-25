@@ -97,7 +97,7 @@ export const getReceivedAmountFromReceipt = ({
   receipt: TransactionReceipt;
   tokenAddress: Address;
   recipient: Address;
-}): bigint => {
+}): { amount: bigint; logIndex: number | null } => {
   const transfers = parseEventLogs({
     abi: erc20Abi,
     eventName: "Transfer",
@@ -119,13 +119,18 @@ export const getReceivedAmountFromReceipt = ({
     throw new Error("No matching Transfer event found in receipt.");
   }
 
-  return matchingTransfers.reduce((total, transfer) => {
+  const amount = matchingTransfers.reduce((total, transfer) => {
     const value = transfer.args?.value;
     if (value === undefined) {
       throw new Error("Transfer event missing amount.");
     }
     return total + value;
   }, 0n);
+
+  const lastTransfer = matchingTransfers[matchingTransfers.length - 1];
+  const logIndex = lastTransfer?.logIndex ?? null;
+
+  return { amount, logIndex };
 };
 
 export const printDebugRequest = (

@@ -318,6 +318,8 @@ export const buyCommand = new Command("buy")
         coin_symbol: coinSymbol,
         amount_mode: amountMode,
         swap_amount_usd: swapAmountUsd,
+        valueUsd: swapAmountUsd,
+        swapCoinType: token.coinType ?? null,
         slippage: slippagePct,
         output_format: json ? "json" : "table",
       });
@@ -350,6 +352,8 @@ export const buyCommand = new Command("buy")
     let receipt: Awaited<ReturnType<typeof tradeCoin>>;
     let txHash: string;
     let receivedAmountOut = BigInt(amountOut);
+    let swapLogIndex: number | null = null;
+    const swapCoinType = token.coinType ?? null;
     try {
       receipt = await tradeCoin({
         tradeParameters,
@@ -365,6 +369,8 @@ export const buyCommand = new Command("buy")
         coin_symbol: coinSymbol,
         amount_mode: amountMode,
         swap_amount_usd: swapAmountUsd,
+        valueUsd: swapAmountUsd,
+        swapCoinType,
         slippage: slippagePct,
         output_format: json ? "json" : "table",
         success: false,
@@ -379,11 +385,13 @@ export const buyCommand = new Command("buy")
     txHash = receipt.transactionHash;
 
     try {
-      receivedAmountOut = getReceivedAmountFromReceipt({
+      const result = getReceivedAmountFromReceipt({
         receipt,
         tokenAddress: coinAddress as Address,
         recipient: account.address,
       });
+      receivedAmountOut = result.amount;
+      swapLogIndex = result.logIndex;
     } catch (err) {
       console.warn(
         `Warning: transaction succeeded but could not determine received amount: ${err instanceof Error ? err.message : String(err)}`,
@@ -412,6 +420,10 @@ export const buyCommand = new Command("buy")
       input_amount: amountIn.toString(),
       input_token_symbol: inputToken.symbol,
       swap_amount_usd: swapAmountUsd,
+      valueUsd: swapAmountUsd,
+      swapCoinType,
+      transactionHash: txHash,
+      logIndex: swapLogIndex,
       slippage: slippagePct,
       output_format: json ? "json" : "table",
       success: true,
