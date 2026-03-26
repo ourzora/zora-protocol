@@ -59,8 +59,49 @@ jobs:
       - name: Install Bun
         uses: oven-sh/setup-bun@v2
 
+      - name: Debug Bun environment
+        run: |
+          echo "=== Bun version ==="
+          bun --version
+          echo "=== Node version ==="
+          node --version
+          echo "=== Disk space ==="
+          df -h .
+          echo "=== Memory ==="
+          free -h
+          echo "=== DNS check ==="
+          nslookup registry.npmjs.org || true
+          echo "=== Network connectivity ==="
+          curl -sI https://registry.npmjs.org/ | head -5 || true
+          echo "=== pnpm workspace packages ==="
+          pnpm ls --depth 0 --filter @zoralabs/cli... 2>&1 | head -30 || true
+
       - name: Install dependencies with Bun
-        run: bun install
+        working-directory: packages/cli
+        run: |
+          echo "=== Installing CLI deps with Bun ==="
+          echo "=== package.json deps ==="
+          node -p "JSON.stringify(Object.keys(require('./package.json').dependencies), null, 2)"
+          echo "=== Starting bun install ==="
+          bun install --verbose --ignore-scripts 2>&1 &
+          BUN_PID=$!
+          # Monitor progress - if it hangs for 2 minutes, dump debug info
+          SECONDS=0
+          while kill -0 $BUN_PID 2>/dev/null; do
+            if [ $SECONDS -ge 120 ]; then
+              echo "=== bun install still running after ${SECONDS}s, dumping debug info ==="
+              echo "=== Process tree ==="
+              ps aux | grep -i bun || true
+              echo "=== Open network connections ==="
+              ss -tnp 2>/dev/null || netstat -tnp 2>/dev/null || true
+              echo "=== /proc/$BUN_PID/status ==="
+              cat /proc/$BUN_PID/status 2>/dev/null || true
+              SECONDS=0
+            fi
+            sleep 5
+          done
+          wait $BUN_PID
+        timeout-minutes: 5
 
       - name: Build binaries for all platforms
         working-directory: packages/cli
