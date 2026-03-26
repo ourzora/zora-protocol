@@ -53,7 +53,7 @@ packages/cli/
 
 ## Commands
 
-All commands support `--json` for machine-readable output.
+All commands support `--json` (global flag) for machine-readable output. Commands with live data (explore, balance, profile) also support `--live` (interactive, default) and `--static` (snapshot). These three flags are mutually exclusive.
 
 | Command         | Description                                               | Wallet required |
 | --------------- | --------------------------------------------------------- | --------------- |
@@ -90,6 +90,8 @@ The private key is saved to `~/.config/zora/wallet.json` (0600 perms). **Never d
 ## SDK patterns
 
 - `--json` is a global flag — when present, commands output structured JSON instead of styled terminal output. Use `getJson(this)` from `src/lib/output.ts` to check it, and `outputData` to handle both paths.
+- `--live` and `--static` are per-command flags on explore, balance, and profile. They control presentation mode (interactive vs snapshot). Use `getOutputMode(this, "live")` then pass the result to `getLiveConfig(this, output)` from `src/lib/output.ts`. `--refresh <seconds>` is also per-command and sets the auto-refresh interval for `--live` mode (min 5s, default 30s).
+- `--json`, `--live`, and `--static` are mutually exclusive — `getOutputMode()` validates this.
 - SDK query functions return `{ error, data }` — always check `error` first
 - Coin resolution (`src/lib/coin-ref.ts`): `parseCoinRef` parses identifiers, `resolveCoin` does the async SDK lookup
 - Not all explore sort/type combos are valid — the CLI errors with supported options if an invalid combo is used

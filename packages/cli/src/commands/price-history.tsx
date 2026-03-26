@@ -194,7 +194,7 @@ export const priceHistoryCommand = new Command("price-history")
           price: p.price,
         })),
       },
-      table: () => {
+      render: () => {
         renderOnce(
           <PriceHistory
             coin={coin.name}

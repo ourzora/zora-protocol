@@ -270,7 +270,7 @@ export const sendCommand = new Command("send")
       } catch (err) {
         track("cli_send", {
           asset: "eth",
-          output_format: json ? "json" : "table",
+          output_format: json ? "json" : "static",
           success: false,
           error_type: err instanceof Error ? err.constructor.name : "unknown",
         });
@@ -302,7 +302,7 @@ export const sendCommand = new Command("send")
         amount_mode: amountMode,
         amount_usd: amountUsd,
         transactionHash: txHash,
-        output_format: json ? "json" : "table",
+        output_format: json ? "json" : "static",
         success: true,
         tx_hash: txHash,
       });
@@ -496,7 +496,7 @@ export const sendCommand = new Command("send")
           coin_address: tokenAddress,
           coin_name: tokenName,
           coin_symbol: symbol,
-          output_format: json ? "json" : "table",
+          output_format: json ? "json" : "static",
           success: false,
           error_type: err instanceof Error ? err.constructor.name : "unknown",
         });
@@ -529,7 +529,7 @@ export const sendCommand = new Command("send")
         amount_mode: amountMode,
         amount_usd: amountUsd,
         transactionHash: txHash,
-        output_format: json ? "json" : "table",
+        output_format: json ? "json" : "static",
         success: true,
         tx_hash: txHash,
       });

@@ -319,7 +319,7 @@ export const buyCommand = new Command("buy")
         valueUsd: swapAmountUsd,
         swapCoinType: token.coinType ?? null,
         slippage: slippagePct,
-        output_format: json ? "json" : "table",
+        output_format: json ? "json" : "static",
       });
       return;
     }
@@ -370,7 +370,7 @@ export const buyCommand = new Command("buy")
         valueUsd: swapAmountUsd,
         swapCoinType,
         slippage: slippagePct,
-        output_format: json ? "json" : "table",
+        output_format: json ? "json" : "static",
         success: false,
         error_type: err instanceof Error ? err.constructor.name : "unknown",
       });
@@ -420,7 +420,7 @@ export const buyCommand = new Command("buy")
       transactionHash: txHash,
       logIndex: swapLogIndex,
       slippage: slippagePct,
-      output_format: json ? "json" : "table",
+      output_format: json ? "json" : "static",
       success: true,
       tx_hash: txHash,
     });

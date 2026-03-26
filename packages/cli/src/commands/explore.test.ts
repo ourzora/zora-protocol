@@ -382,4 +382,54 @@ describe("exploreCommand action", () => {
     expect(parsed.coins).toEqual([]);
     expect(parsed.pageInfo).toEqual({ hasNextPage: false });
   });
+
+  it("exits with error when --json and --live are used together", async () => {
+    const program = createProgram(exploreCommand);
+    await expect(
+      program.parseAsync(["explore", "--json", "--live"], { from: "user" }),
+    ).rejects.toThrow("exit 1");
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("cannot be used together"),
+    );
+  });
+
+  it("exits with error when --live and --static are used together", async () => {
+    const program = createProgram(exploreCommand);
+    await expect(
+      program.parseAsync(["explore", "--live", "--static"], { from: "user" }),
+    ).rejects.toThrow("exit 1");
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("cannot be used together"),
+    );
+  });
+
+  it("exits with error when --json and --static are used together", async () => {
+    const program = createProgram(exploreCommand);
+    await expect(
+      program.parseAsync(["explore", "--json", "--static"], { from: "user" }),
+    ).rejects.toThrow("exit 1");
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("cannot be used together"),
+    );
+  });
+
+  it("warns when --refresh is used without --live", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+      data: { exploreList: { edges: [] } },
+    });
+
+    const warnSpy = vi.spyOn(console, "warn").mockImplementation(() => {});
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--static", "--refresh", "10"], {
+      from: "user",
+    });
+
+    expect(warnSpy).toHaveBeenCalledWith(
+      expect.stringContaining("--refresh has no effect without --live"),
+    );
+  });
 });

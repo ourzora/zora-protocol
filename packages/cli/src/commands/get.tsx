@@ -90,7 +90,7 @@ export const getCommand = new Command("get")
 
     outputData(json, {
       json: formatCoinJson(result.coin),
-      table: () => {
+      render: () => {
         renderOnce(<CoinDetail coin={result.coin} />);
       },
     });

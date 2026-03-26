@@ -153,7 +153,7 @@ function renderWallet(
 ) {
   outputData(json, {
     json: { wallet: walletResult.walletBalancesJson },
-    table: () => {
+    render: () => {
       renderOnce(
         <Table
           columns={walletColumns}
@@ -182,7 +182,7 @@ function renderCoins(
         formatBalanceJson(balance, balance.rank),
       ),
     },
-    table: () => {
+    render: () => {
       if (balances.length === 0) {
         console.log("\n No coin balances found.\n");
         console.log(" Buy coins to see them here:");
@@ -258,11 +258,18 @@ function validateCoinOpts(json: boolean, sort: string, limitStr: string) {
 
 export const balanceCommand = new Command("balance")
   .description("Show balances in your wallet")
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
     const account = resolveContext(json);
-    const { live, intervalSeconds } = getLiveConfig(this, "live");
+    const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const sort: SortFlag = "usd-value";
     const limit = 10;
@@ -311,7 +318,7 @@ export const balanceCommand = new Command("balance")
             formatBalanceJson(balance, balance.rank),
           ),
         },
-        table: () => {},
+        render: () => {},
       });
 
       track("cli_balances", {
@@ -382,7 +389,7 @@ export const balanceCommand = new Command("balance")
         live: false,
         result_count: data.rankedBalances.length,
         total_count: data.total,
-        output_format: "text",
+        output_format: "static",
       });
     }
   });
@@ -390,11 +397,18 @@ export const balanceCommand = new Command("balance")
 balanceCommand
   .command("spendable")
   .description("Show wallet token balances (ETH, USDC, ZORA)")
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
     const account = resolveContext(json);
-    const { live, intervalSeconds } = getLiveConfig(this, "live");
+    const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const fetchSpendableData = async (): Promise<BalanceData> => {
       const walletResult = await fetchWalletBalances(account.address);
@@ -412,7 +426,7 @@ balanceCommand
       );
       outputData(json, {
         json: { wallet: data.walletBalancesJson },
-        table: () => {},
+        render: () => {},
       });
     } else if (live) {
       await renderLive(
@@ -438,12 +452,19 @@ balanceCommand
   .description("Show coin positions")
   .option("--sort <sort>", `Sort by: ${SORT_OPTIONS}`, "usd-value")
   .option("--limit <n>", "Number of results (max 20)", "10")
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
   .action(async function (this: Command, opts) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
     const account = resolveContext(json);
-    const { live, intervalSeconds } = getLiveConfig(this, "live");
+    const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const fetchCoinsData = async (): Promise<BalanceData> => {
       const { balances, total } = await fetchCoins(

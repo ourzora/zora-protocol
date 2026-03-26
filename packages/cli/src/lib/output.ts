@@ -1,22 +1,34 @@
 import type { Command } from "commander";
 
-type OutputMode = "table" | "json" | "live";
-
-const VALID_OUTPUT_MODES: OutputMode[] = ["table", "json", "live"];
+type OutputMode = "static" | "json" | "live";
 
 const getOutputMode = (cmd: Command, defaultMode: OutputMode): OutputMode => {
-  const raw = cmd.optsWithGlobals().output as string | undefined;
-  if (!raw) return defaultMode;
-  if (VALID_OUTPUT_MODES.includes(raw as OutputMode)) return raw as OutputMode;
-  return outputErrorAndExit(
-    false,
-    `Invalid --output value: ${raw}.`,
-    `Supported: ${VALID_OUTPUT_MODES.join(", ")}`,
-  );
+  const json = (cmd.optsWithGlobals().json ?? false) as boolean;
+  const live = (cmd.opts().live ?? false) as boolean;
+  const static_ = (cmd.opts().static ?? false) as boolean;
+
+  const set = [
+    json && "--json",
+    live && "--live",
+    static_ && "--static",
+  ].filter(Boolean) as string[];
+
+  if (set.length > 1) {
+    return outputErrorAndExit(
+      false,
+      `${set.join(", ")} cannot be used together.`,
+      "Choose one: --json, --live, or --static",
+    );
+  }
+
+  if (json) return "json";
+  if (live) return "live";
+  if (static_) return "static";
+  return defaultMode;
 };
 
 const getJson = (cmd: Command): boolean =>
-  getOutputMode(cmd, "table") === "json";
+  (cmd.optsWithGlobals().json ?? false) as boolean;
 
 const getYes = (cmd: Command): boolean =>
   (cmd.optsWithGlobals().yes ?? false) as boolean;
@@ -45,23 +57,28 @@ const outputErrorAndExit = (
 
 const outputData = (
   json: boolean,
-  opts: { json: unknown; table: () => void },
+  opts: { json: unknown; render: () => void },
 ): void => {
   if (json) {
     outputJson(opts.json);
   } else {
-    opts.table();
+    opts.render();
   }
 };
 
 type LiveConfig = { live: boolean; intervalSeconds: number };
 
-const getLiveConfig = (cmd: Command, defaultMode: OutputMode): LiveConfig => {
-  const mode = getOutputMode(cmd, defaultMode);
+const getLiveConfig = (cmd: Command, mode: OutputMode): LiveConfig => {
   const live = mode === "live";
-  const intervalRaw = parseInt(cmd.optsWithGlobals().interval as string, 10);
+  const intervalRaw = parseInt(cmd.opts().refresh as string, 10);
   const intervalSeconds =
     isNaN(intervalRaw) || intervalRaw < 5 ? 30 : intervalRaw;
+
+  if (!live && cmd.getOptionValueSource("refresh") === "cli") {
+    console.warn(
+      "\x1b[33mWarning:\x1b[0m --refresh has no effect without --live",
+    );
+  }
 
   return { live, intervalSeconds };
 };

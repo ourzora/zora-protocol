@@ -34,7 +34,7 @@ authCommand
           status: "env_override",
           message: "API key is set via ZORA_API_KEY environment variable.",
         },
-        table: () =>
+        render: () =>
           console.log(
             "API key is set via ZORA_API_KEY environment variable. Unset it to configure manually.",
           ),
@@ -68,7 +68,7 @@ authCommand
       saveApiKey(trimmed);
       outputData(json, {
         json: { saved: true, path: getConfigPath() },
-        table: () => console.log(`API key saved to ${getConfigPath()}`),
+        render: () => console.log(`API key saved to ${getConfigPath()}`),
       });
       track("cli_auth_configure", {
         output_format: json ? "json" : "text",
@@ -91,7 +91,7 @@ authCommand
     if (!apiKey) {
       outputData(json, {
         json: { authenticated: false },
-        table: () => {
+        render: () => {
           console.log(
             "No API key configured. The CLI works without one, but requests are rate-limited.",
           );
@@ -111,7 +111,7 @@ authCommand
     const source = getEnvApiKey() ? "env (ZORA_API_KEY)" : getConfigPath();
     outputData(json, {
       json: { authenticated: true, key: maskKey(apiKey), source },
-      table: () => {
+      render: () => {
         console.log(`Authenticated: ${maskKey(apiKey)}`);
         console.log(`Source: ${source}`);
       },

@@ -132,6 +132,13 @@ export const exploreCommand = new Command("explore")
   )
   .option("--limit <n>", "Number of results (max 20)", "10")
   .option("--after <cursor>", "Pagination cursor from a previous result")
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
   .action(async function (this: Command, opts) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
@@ -206,7 +213,7 @@ export const exploreCommand = new Command("explore")
         output_format: "json",
       });
     } else {
-      const { live, intervalSeconds } = getLiveConfig(this, "live");
+      const { live, intervalSeconds } = getLiveConfig(this, output);
 
       const fetchPage = async (cursor?: string): Promise<ExplorePageResult> => {
         const response = await queryFn({ count: limit, after: cursor });
@@ -273,7 +280,7 @@ export const exploreCommand = new Command("explore")
           live: false,
           paginated: after !== undefined,
           result_count: coins.length,
-          output_format: "table",
+          output_format: "static",
         });
       }
     }

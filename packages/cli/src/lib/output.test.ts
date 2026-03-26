@@ -16,7 +16,7 @@ describe("outputJson", () => {
 describe("outputErrorAndExit", () => {
   afterEach(() => vi.restoreAllMocks());
 
-  it("prints styled error to stderr in table mode", () => {
+  it("prints styled error to stderr in non-json mode", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     vi.spyOn(process, "exit").mockImplementation((code) => {
       throw new Error(`exit ${code}`);
@@ -63,16 +63,16 @@ describe("outputData", () => {
 
   it("prints JSON in json mode", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const tableFn = vi.fn();
-    outputData(true, { json: { count: 5 }, table: tableFn });
+    const renderFn = vi.fn();
+    outputData(true, { json: { count: 5 }, render: renderFn });
     expect(logSpy).toHaveBeenCalled();
-    expect(tableFn).not.toHaveBeenCalled();
+    expect(renderFn).not.toHaveBeenCalled();
   });
 
-  it("calls table function in table mode", () => {
+  it("calls render function in non-json mode", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    const tableFn = vi.fn();
-    outputData(false, { json: { count: 5 }, table: tableFn });
-    expect(tableFn).toHaveBeenCalled();
+    const renderFn = vi.fn();
+    outputData(false, { json: { count: 5 }, render: renderFn });
+    expect(renderFn).toHaveBeenCalled();
   });
 });

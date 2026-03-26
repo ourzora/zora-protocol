@@ -9,6 +9,7 @@ vi.mock("../lib/config.js", () => ({
 vi.mock("viem/accounts");
 vi.mock("../lib/render.js", () => ({
   renderOnce: vi.fn(),
+  renderLive: vi.fn(),
 }));
 
 vi.mock("viem", async (importOriginal) => {
@@ -208,7 +209,7 @@ describe("balance command", () => {
     });
   });
 
-  it("renders two Ink table sections for default output", async () => {
+  it("renders two Ink table sections for static output", async () => {
     vi.mocked(getProfileBalances).mockResolvedValue({
       data: {
         profile: {
@@ -233,7 +234,7 @@ describe("balance command", () => {
       },
     } as never);
 
-    await runBalance();
+    await runBalance(["--static"]);
 
     expect(setApiKey).toHaveBeenCalledWith("test-api-key");
     expect(renderOnce).toHaveBeenCalledTimes(1);
@@ -308,7 +309,7 @@ describe("balance command", () => {
       data: null,
     } as never);
 
-    await expect(runBalance()).rejects.toThrow("process.exit(1)");
+    await expect(runBalance(["--static"])).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("API error"));
   });
 
@@ -317,7 +318,7 @@ describe("balance command", () => {
       new Error("Network failure"),
     );
 
-    await expect(runBalance()).rejects.toThrow("process.exit(1)");
+    await expect(runBalance(["--static"])).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Request failed: Network failure"),
     );
@@ -332,7 +333,7 @@ describe("balance command", () => {
 
     vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalance();
+    await runBalance(["--static"]);
 
     expect(privateKeyToAccount).toHaveBeenCalledWith("0x" + "b".repeat(64));
   });
@@ -340,7 +341,7 @@ describe("balance command", () => {
   it("shows the empty-state hint when there are no coin balances", async () => {
     vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);
 
-    await runBalance();
+    await runBalance(["--static"]);
 
     expect(renderOnce).toHaveBeenCalled();
     const element = vi.mocked(renderOnce).mock.calls[0][0];
@@ -529,10 +530,10 @@ describe("balance command", () => {
         data: null,
       } as never);
 
-      await expect(runBalance(["coins"])).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("API error"),
+      await expect(runBalance(["coins", "--json"])).rejects.toThrow(
+        "process.exit(1)",
       );
+      expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("API error"));
     });
 
     it("exits with error when request throws", async () => {
@@ -540,9 +541,11 @@ describe("balance command", () => {
         new Error("Network failure"),
       );
 
-      await expect(runBalance(["coins"])).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Request failed: Network failure"),
+      await expect(runBalance(["coins", "--json"])).rejects.toThrow(
+        "process.exit(1)",
+      );
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Network failure"),
       );
     });
   });

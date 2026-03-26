@@ -33,7 +33,7 @@ import { tradeErrorMessage, apiErrorMessage } from "../lib/errors.js";
 type OutputAsset = TradeTokenKey;
 
 function printSellQuote(
-  output: "table" | "json",
+  output: "static" | "json",
   info: {
     coinName: string;
     coinSymbol: string;
@@ -77,7 +77,7 @@ function printSellQuote(
 }
 
 function printSellResult(
-  output: "table" | "json",
+  output: "static" | "json",
   info: {
     coinName: string;
     coinSymbol: string;
@@ -154,7 +154,7 @@ export const sellCommand = new Command("sell")
       outputErrorAndExit(json, `Invalid address: ${coinAddress}`);
     }
 
-    const output: "table" | "json" = json ? "json" : "table";
+    const output: "static" | "json" = json ? "json" : "static";
 
     // --token takes precedence over --to
     const outputAsset = (
@@ -398,7 +398,7 @@ export const sellCommand = new Command("sell")
     }
 
     if (!opts.yes) {
-      printSellQuote("table", {
+      printSellQuote("static", {
         coinName,
         coinSymbol,
         address: coinAddress,

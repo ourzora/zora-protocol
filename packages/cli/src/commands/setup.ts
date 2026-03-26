@@ -56,7 +56,7 @@ export const setupCommand = new Command("setup")
       const account = toAccount(json, envKey, "ZORA_PRIVATE_KEY");
       outputData(json, {
         json: { source: "env", address: account.address },
-        table: () => {
+        render: () => {
           console.log("  Using wallet from ZORA_PRIVATE_KEY.\n");
           console.log(`  Address: ${account.address}\n`);
           console.log(`  ${DEPOSIT_INSTRUCTIONS}`);
@@ -151,7 +151,7 @@ export const setupCommand = new Command("setup")
           address: account.address,
           path: getWalletPath(),
         },
-        table: () => {
+        render: () => {
           console.log("\n\u2713 Wallet imported\n");
           console.log(`  Address:     ${account.address}`);
           console.log(`  Private key: saved to ${getWalletPath()}\n`);
@@ -187,7 +187,7 @@ export const setupCommand = new Command("setup")
           address: account.address,
           path: getWalletPath(),
         },
-        table: () => {
+        render: () => {
           console.log("\n\u2713 Wallet created\n");
           console.log(`  Address:     ${account.address}`);
           console.log(`  Private key: saved to ${getWalletPath()}\n`);

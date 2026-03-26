@@ -37,15 +37,7 @@ const buildProgram = (): Command => {
     .name("zora")
     .description("Zora CLI")
     .version(version)
-    .option(
-      "--output <format>",
-      "Output format: table, json, live (default varies by command)",
-    )
-    .option(
-      "--interval <seconds>",
-      "Auto-refresh interval in seconds (min 5)",
-      "30",
-    );
+    .option("--json", "Output as JSON (for scripts and automation)", false);
 
   program.addCommand(authCommand);
   program.addCommand(balanceCommand);
@@ -80,11 +72,7 @@ if (!process.env.VITEST) {
     process.argv.length <= 2 ||
     process.argv.includes("--help") ||
     process.argv.includes("-h");
-  if (
-    showingHelp &&
-    !process.argv.includes("--output") &&
-    supportsTruecolor()
-  ) {
+  if (showingHelp && !process.argv.includes("--json") && supportsTruecolor()) {
     renderOnce(<Zorb size={20} />);
   }
 

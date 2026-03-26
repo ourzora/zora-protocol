@@ -61,7 +61,7 @@ walletCommand
 
     outputData(json, {
       json: { address: account.address, source },
-      table: () => {
+      render: () => {
         console.log(`  Address: ${account.address}`);
         console.log(`  Source:  ${source}`);
       },

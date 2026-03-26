@@ -167,11 +167,18 @@ export const profileCommand = new Command("profile")
     "[identifier]",
     "Wallet address or profile handle (defaults to your wallet)",
   )
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
   .action(async function (this: Command, identifierArg?: string) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
     resolveApiKey(json);
-    const { live, intervalSeconds } = getLiveConfig(this, "live");
+    const { live, intervalSeconds } = getLiveConfig(this, output);
 
     let identifier = identifierArg;
     if (!identifier) {
@@ -207,7 +214,7 @@ export const profileCommand = new Command("profile")
           posts: data.posts.map((p, i) => formatPostJson(p, i + 1)),
           holdings: data.holdings.map(formatHoldingJson),
         },
-        table: () => {},
+        render: () => {},
       });
 
       track("cli_profile", {
@@ -289,7 +296,7 @@ export const profileCommand = new Command("profile")
 
       track("cli_profile", {
         identifier,
-        output_format: "table",
+        output_format: "static",
         posts_count: data.postsCount,
         holdings_count: data.holdingsCount,
       });
