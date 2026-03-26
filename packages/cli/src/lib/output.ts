@@ -3,9 +3,10 @@ import type { Command } from "commander";
 type OutputMode = "static" | "json" | "live";
 
 const getOutputMode = (cmd: Command, defaultMode: OutputMode): OutputMode => {
-  const json = (cmd.optsWithGlobals().json ?? false) as boolean;
-  const live = (cmd.opts().live ?? false) as boolean;
-  const static_ = (cmd.opts().static ?? false) as boolean;
+  const globals = cmd.optsWithGlobals();
+  const json = (globals.json ?? false) as boolean;
+  const live = (globals.live ?? false) as boolean;
+  const static_ = (globals.static ?? false) as boolean;
 
   const set = [
     json && "--json",

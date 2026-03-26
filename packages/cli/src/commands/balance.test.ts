@@ -33,7 +33,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { getApiKey, getPrivateKey } from "../lib/config.js";
 import { privateKeyToAccount } from "viem/accounts";
-import { renderOnce } from "../lib/render.js";
+import { renderOnce, renderLive } from "../lib/render.js";
 import { createPublicClient } from "viem";
 import { balanceCommand } from "./balance.js";
 import { buildProgram } from "../index.js";
@@ -110,8 +110,27 @@ const coinBalancesPayload = {
   },
 };
 
+const coinBalancesWithPageInfoPayload = {
+  data: {
+    profile: {
+      coinBalances: {
+        ...coinBalancesPayload.data.profile.coinBalances,
+        pageInfo: { endCursor: "cursor_abc", hasNextPage: true },
+      },
+    },
+  },
+};
+
 const emptyCoinsPayload = {
-  data: { profile: { coinBalances: { count: 0, edges: [] } } },
+  data: {
+    profile: {
+      coinBalances: {
+        count: 0,
+        edges: [],
+        pageInfo: { hasNextPage: false },
+      },
+    },
+  },
 };
 
 describe("balance command", () => {
@@ -546,6 +565,113 @@ describe("balance command", () => {
       );
       expect(logSpy).toHaveBeenCalledWith(
         expect.stringContaining("Network failure"),
+      );
+    });
+
+    it("passes --after cursor to getProfileBalances", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        emptyCoinsPayload as never,
+      );
+
+      await runBalance(["coins", "--json", "--after", "abc123"]);
+
+      expect(getProfileBalances).toHaveBeenCalledWith(
+        expect.objectContaining({ after: "abc123" }),
+      );
+    });
+
+    it("includes pageInfo in JSON output", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        coinBalancesWithPageInfoPayload as never,
+      );
+
+      await runBalance(["coins", "--json"]);
+
+      const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+      expect(output.pageInfo).toEqual({
+        endCursor: "cursor_abc",
+        hasNextPage: true,
+      });
+      expect(output.coins).toHaveLength(1);
+    });
+
+    it("includes pageInfo null when not present in response", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        coinBalancesPayload as never,
+      );
+
+      await runBalance(["coins", "--json"]);
+
+      const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
+      expect(output.pageInfo).toBeNull();
+    });
+
+    it("shows next page hint in table output when hasNextPage is true", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        coinBalancesWithPageInfoPayload as never,
+      );
+
+      await runBalance(["coins", "--static"]);
+
+      expect(renderOnce).toHaveBeenCalled();
+      const element = vi.mocked(renderOnce).mock.calls[0][0];
+      const output = renderToString(element);
+      expect(output).toContain("Next page");
+      expect(output).toContain("--limit 10");
+      expect(output).toContain("cursor_abc");
+    });
+
+    it("does not show next page hint when hasNextPage is false", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue({
+        data: {
+          profile: {
+            coinBalances: {
+              ...coinBalancesPayload.data.profile.coinBalances,
+              pageInfo: { hasNextPage: false },
+            },
+          },
+        },
+      } as never);
+
+      await runBalance(["coins", "--static"]);
+
+      expect(renderOnce).toHaveBeenCalled();
+      const element = vi.mocked(renderOnce).mock.calls[0][0];
+      const output = renderToString(element);
+      expect(output).not.toContain("Next page");
+    });
+
+    it("passes initialCursor to BalanceView in live mode", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        emptyCoinsPayload as never,
+      );
+
+      await runBalance(["coins", "--after", "some_cursor"]);
+
+      expect(renderLive).toHaveBeenCalled();
+      const element = vi.mocked(renderLive).mock.calls[0][0] as any;
+      expect(element.props.initialCursor).toBe("some_cursor");
+    });
+
+    it("works with --sort and --after together", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        emptyCoinsPayload as never,
+      );
+
+      await runBalance([
+        "coins",
+        "--sort",
+        "market-cap",
+        "--after",
+        "cursor_xyz",
+        "--json",
+      ]);
+
+      expect(getProfileBalances).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sortOption: "MARKET_CAP",
+          after: "cursor_xyz",
+        }),
       );
     });
   });

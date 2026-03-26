@@ -14,6 +14,7 @@ import type {
   WalletBalanceJson,
 } from "../lib/wallet-balances.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
+import type { PageInfo } from "../lib/types.js";
 
 type BalanceMode = "full" | "wallet" | "coins";
 
@@ -22,12 +23,14 @@ type BalanceData = {
   walletBalancesJson: WalletBalanceJson[];
   rankedBalances: (BalanceNode & { rank: number })[];
   total: number;
+  pageInfo?: PageInfo;
 };
 
 type BalanceViewProps = {
-  fetchData: () => Promise<BalanceData>;
+  fetchData: (cursor?: string) => Promise<BalanceData>;
   sort: SortFlag;
   mode?: BalanceMode;
+  initialCursor?: string;
   autoRefresh?: boolean;
   intervalSeconds?: number;
 };
@@ -36,6 +39,7 @@ const BalanceView = ({
   fetchData,
   sort,
   mode = "full",
+  initialCursor,
   autoRefresh = false,
   intervalSeconds = 30,
 }: BalanceViewProps) => {
@@ -45,41 +49,74 @@ const BalanceView = ({
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<BalanceData | null>(null);
 
+  const paginated = mode === "coins";
+  const [page, setPage] = useState(1);
+  const [cursorHistory, setCursorHistory] = useState<(string | undefined)[]>(
+    [],
+  );
+  const [currentCursor, setCurrentCursor] = useState<string | undefined>(
+    initialCursor,
+  );
+
   const { refreshCount, secondsUntilRefresh, triggerManualRefresh } =
     useAutoRefresh(intervalSeconds, autoRefresh);
   const [manualRefreshCount, setManualRefreshCount] = useState(0);
   const hasLoadedOnce = useRef(false);
 
-  const load = useCallback(async () => {
-    if (hasLoadedOnce.current) {
-      setIsRefreshing(true);
-    } else {
-      setLoading(true);
-    }
-    setError(null);
-    try {
-      const result = await fetchData();
-      setData(result);
-      hasLoadedOnce.current = true;
-    } catch (err) {
-      setError(err instanceof Error ? err.message : String(err));
-    }
-    setLoading(false);
-    setIsRefreshing(false);
-  }, [fetchData]);
+  const load = useCallback(
+    async (cursor?: string) => {
+      if (hasLoadedOnce.current) {
+        setIsRefreshing(true);
+      } else {
+        setLoading(true);
+      }
+      setError(null);
+      try {
+        const result = await fetchData(cursor);
+        setData(result);
+        hasLoadedOnce.current = true;
+      } catch (err) {
+        setError(err instanceof Error ? err.message : String(err));
+      }
+      setLoading(false);
+      setIsRefreshing(false);
+    },
+    [fetchData],
+  );
 
   useEffect(() => {
-    load();
-  }, [refreshCount, manualRefreshCount]);
+    load(currentCursor);
+  }, [load, refreshCount, manualRefreshCount, currentCursor]);
 
   useInput((input, key) => {
     if (input === "q" || key.escape) {
       exit();
       return;
     }
-    if (input === "r" && !loading) {
+    if (loading) return;
+
+    if (input === "r") {
       triggerManualRefresh();
       setManualRefreshCount((c) => c + 1);
+      return;
+    }
+
+    if (!paginated) return;
+
+    const canGoNext = data?.pageInfo?.hasNextPage && data.pageInfo.endCursor;
+    const canGoPrev = cursorHistory.length > 0;
+
+    if ((input === "n" || key.rightArrow) && canGoNext) {
+      setCursorHistory((prev) => [...prev, currentCursor]);
+      setCurrentCursor(data!.pageInfo!.endCursor);
+      setPage((p) => p + 1);
+    }
+
+    if ((input === "p" || key.leftArrow) && canGoPrev) {
+      const prev = cursorHistory[cursorHistory.length - 1];
+      setCursorHistory((h) => h.slice(0, -1));
+      setCurrentCursor(prev);
+      setPage((p) => p - 1);
     }
   });
 
@@ -111,7 +148,10 @@ const BalanceView = ({
 
   if (!data) return null;
 
-  const hints: string[] = ["r refresh"];
+  const hints: string[] = [];
+  if (paginated && cursorHistory.length > 0) hints.push("\u2190 prev");
+  if (paginated && data?.pageInfo?.hasNextPage) hints.push("\u2192 next");
+  hints.push("r refresh");
   if (autoRefresh) hints.push(`auto: ${secondsUntilRefresh}s`);
   hints.push("q quit");
   const footer = hints.join("  \u00b7  ");
@@ -153,7 +193,11 @@ const BalanceView = ({
           columns={balanceColumns}
           data={data.rankedBalances}
           title={`Coins · sorted by ${SORT_LABELS[sort]}`}
-          subtitle={`${data.rankedBalances.length} of ${data.total}`}
+          subtitle={
+            paginated
+              ? `Page ${page} \u00b7 ${data.rankedBalances.length} result${data.rankedBalances.length !== 1 ? "s" : ""}`
+              : `${data.rankedBalances.length} of ${data.total}`
+          }
         />
       ) : null}
       <Box paddingLeft={1} paddingBottom={1}>

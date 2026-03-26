@@ -14,6 +14,7 @@ import {
   type SortOption,
   type TypeOption,
   type CoinNode,
+  type PageInfo,
 } from "../lib/types.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
 import { copyToClipboard } from "../lib/clipboard.js";
@@ -48,8 +49,6 @@ const COLUMNS: Column<CoinNode & { rank: number }>[] = [
     color: (c) => formatMcapChange(c.marketCap, c.marketCapDelta24h).color,
   },
 ];
-
-type PageInfo = { endCursor?: string; hasNextPage: boolean };
 
 type ExplorePageResult = {
   coins: CoinNode[];

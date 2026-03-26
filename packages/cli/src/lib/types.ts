@@ -10,6 +10,8 @@ export type SortOption =
 export type CoinType = "trend" | "creator-coin" | "post";
 export type TypeOption = "all" | CoinType;
 
+export type PageInfo = { endCursor?: string; hasNextPage: boolean };
+
 export type CoinNode = {
   name?: string;
   address?: string;

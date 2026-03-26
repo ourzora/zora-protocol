@@ -22,6 +22,7 @@ import {
   type WalletBalanceJson,
 } from "../lib/wallet-balances.js";
 import { track } from "../lib/analytics.js";
+import type { PageInfo } from "../lib/types.js";
 import { apiErrorMessage } from "../lib/errors.js";
 import {
   walletColumns,
@@ -170,6 +171,8 @@ function renderCoins(
   balances: BalanceNode[],
   total: number,
   sort: SortFlag,
+  limit: number,
+  pageInfo?: PageInfo,
 ) {
   const rankedBalances = balances.map((balance, index) => ({
     ...balance,
@@ -181,6 +184,7 @@ function renderCoins(
       coins: rankedBalances.map((balance) =>
         formatBalanceJson(balance, balance.rank),
       ),
+      pageInfo: pageInfo ?? null,
     },
     render: () => {
       if (balances.length === 0) {
@@ -188,12 +192,17 @@ function renderCoins(
         console.log(" Buy coins to see them here:");
         console.log("   zora buy <address> --eth 0.001\n");
       } else {
+        const footer =
+          pageInfo?.hasNextPage && pageInfo.endCursor
+            ? `Next page: zora balance coins --sort ${sort} --limit ${limit} --after ${pageInfo.endCursor}`
+            : undefined;
         renderOnce(
           <Table
             columns={balanceColumns}
             data={rankedBalances}
             title={`Coins · sorted by ${SORT_LABELS[sort]}`}
             subtitle={`${balances.length} of ${total}`}
+            footer={footer}
           />,
         );
       }
@@ -206,6 +215,7 @@ async function fetchCoins(
   address: string,
   sort: SortFlag,
   limit: number,
+  after?: string,
 ) {
   let response: Awaited<ReturnType<typeof getProfileBalances>>;
   try {
@@ -213,6 +223,7 @@ async function fetchCoins(
       identifier: address,
       count: limit,
       sortOption: SORT_MAP[sort],
+      after,
     });
   } catch (err) {
     outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
@@ -230,8 +241,11 @@ async function fetchCoins(
     (e: { node: BalanceNode }) => e.node,
   );
   const total = response.data?.profile?.coinBalances?.count ?? balances.length;
+  const pageInfo = response.data?.profile?.coinBalances?.pageInfo as
+    | PageInfo
+    | undefined;
 
-  return { balances, total };
+  return { balances, total, pageInfo };
 }
 
 function validateCoinOpts(json: boolean, sort: string, limitStr: string) {
@@ -459,19 +473,22 @@ balanceCommand
     "Auto-refresh interval in seconds, requires --live (min 5)",
     "30",
   )
+  .option("--after <cursor>", "Pagination cursor from a previous result")
   .action(async function (this: Command, opts) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
+    const after: string | undefined = opts.after;
     const account = resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
-    const fetchCoinsData = async (): Promise<BalanceData> => {
-      const { balances, total } = await fetchCoins(
+    const fetchCoinsPage = async (cursor?: string): Promise<BalanceData> => {
+      const { balances, total, pageInfo } = await fetchCoins(
         json,
         account.address,
         sort,
         limit,
+        cursor,
       );
       const rankedBalances = balances.map((balance, index) => ({
         ...balance,
@@ -482,29 +499,39 @@ balanceCommand
         walletBalancesJson: [],
         rankedBalances,
         total,
+        pageInfo,
       };
     };
 
     if (json) {
-      const data = await fetchCoinsData();
-      renderCoins(json, data.rankedBalances, data.total, sort);
+      const data = await fetchCoinsPage(after);
+      renderCoins(
+        json,
+        data.rankedBalances,
+        data.total,
+        sort,
+        limit,
+        data.pageInfo,
+      );
     } else if (live) {
       await renderLive(
         <BalanceView
-          fetchData={fetchCoinsData}
+          fetchData={fetchCoinsPage}
           sort={sort}
           mode="coins"
+          initialCursor={after}
           autoRefresh={live}
           intervalSeconds={intervalSeconds}
         />,
       );
     } else {
-      const { balances, total } = await fetchCoins(
+      const { balances, total, pageInfo } = await fetchCoins(
         json,
         account.address,
         sort,
         limit,
+        after,
       );
-      renderCoins(json, balances, total, sort);
+      renderCoins(json, balances, total, sort, limit, pageInfo);
     }
   });
