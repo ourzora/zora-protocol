@@ -1,5 +1,19 @@
 # @zoralabs/cli
 
+## 0.3.0
+
+### Minor Changes
+
+- acfd23ec0: Add `profile` command to view a wallet's posts and holdings
+  - `zora profile [address]` displays created coins and coin balances for any wallet or profile handle
+  - Supports table, json, and live output modes
+  - Live mode renders switchable tabs (Posts / Holdings) with keyboard navigation and auto-refresh
+  - Defaults to the user's configured wallet when no identifier is provided
+
+### Patch Changes
+
+- 150043e81: Truncate coin addresses in explore table to prevent line wrapping and column bleed
+
 ## 0.2.4
 
 ### Patch Changes
