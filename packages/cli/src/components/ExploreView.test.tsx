@@ -357,10 +357,10 @@ describe("ExploreView", () => {
     await vi.waitFor(() => {
       expect(lastFrame()).toContain("TestCoin");
     });
-    expect(lastFrame()).toContain("auto:");
+    expect(lastFrame()).toMatch(/r refresh \(\d+s\)/);
   });
 
-  it("does not show auto hint when autoRefresh is not set", async () => {
+  it("does not show countdown when autoRefresh is not set", async () => {
     const { lastFrame } = render(
       <ExploreView
         fetchPage={() =>
@@ -378,6 +378,7 @@ describe("ExploreView", () => {
     await vi.waitFor(() => {
       expect(lastFrame()).toContain("TestCoin");
     });
-    expect(lastFrame()).not.toContain("auto:");
+    expect(lastFrame()).toContain("r refresh");
+    expect(lastFrame()).not.toMatch(/r refresh \(\d+s\)/);
   });
 });

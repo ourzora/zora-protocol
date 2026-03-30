@@ -160,8 +160,10 @@ const ProfileView = ({
 
   if (!data) return null;
 
-  const hints: string[] = ["\u2190 \u2192 switch tab", "r refresh"];
-  if (autoRefresh) hints.push(`auto: ${secondsUntilRefresh}s`);
+  const hints: string[] = [
+    "\u2190 \u2192 switch tab",
+    autoRefresh ? `r refresh (${secondsUntilRefresh}s)` : "r refresh",
+  ];
   hints.push("q quit");
   const footer = hints.join("  \u00b7  ");
 

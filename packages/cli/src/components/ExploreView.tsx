@@ -263,8 +263,7 @@ const ExploreView = ({
   hints.push("c copy address");
   if (cursorHistory.length > 0) hints.push("\u2190 prev");
   if (pageInfo?.hasNextPage) hints.push("\u2192 next");
-  hints.push("r refresh");
-  if (autoRefresh) hints.push(`auto: ${secondsUntilRefresh}s`);
+  hints.push(autoRefresh ? `r refresh (${secondsUntilRefresh}s)` : "r refresh");
   hints.push("q quit");
   const footer =
     hints.join("  \u00b7  ") + (copyFeedback ? `  ${copyFeedback}` : "");

@@ -122,12 +122,11 @@ describe("BalanceView", () => {
     await vi.waitFor(() => {
       expect(lastFrame()).toContain("Wallet");
     });
-    expect(lastFrame()).toContain("auto:");
-    expect(lastFrame()).toContain("r refresh");
+    expect(lastFrame()).toMatch(/r refresh \(\d+s\)/);
     expect(lastFrame()).toContain("q quit");
   });
 
-  it("does not show auto hint when autoRefresh is false", async () => {
+  it("does not show countdown when autoRefresh is false", async () => {
     const { lastFrame } = render(
       <BalanceView
         fetchData={() => Promise.resolve(makeBalanceData())}
@@ -139,7 +138,8 @@ describe("BalanceView", () => {
     await vi.waitFor(() => {
       expect(lastFrame()).toContain("Wallet");
     });
-    expect(lastFrame()).not.toContain("auto:");
+    expect(lastFrame()).toContain("r refresh");
+    expect(lastFrame()).not.toMatch(/r refresh \(\d+s\)/);
   });
 
   it("refreshes on r key press", async () => {
