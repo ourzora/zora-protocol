@@ -14,7 +14,9 @@ import { sendCommand } from "./commands/send.js";
 import { setupCommand } from "./commands/setup.js";
 import { walletCommand } from "./commands/wallet.js";
 import { renderOnce } from "./lib/render.js";
-import { Zorb } from "./components/Zorb.js";
+import { StyledHelp } from "./components/StyledHelp.js";
+import { StyledHelpHeader } from "./components/StyledHelpHeader.js";
+import { parseHelpSections } from "./lib/parse-help.js";
 import { supportsTruecolor } from "./lib/zorb-pixels.js";
 import { identify, shutdownAnalytics } from "./lib/analytics.js";
 
@@ -32,12 +34,40 @@ const version =
         readFileSync(new URL("../package.json", import.meta.url), "utf-8"),
       ).version;
 
+/** Intercepts Commander help text and renders it with bordered boxes in truecolor terminals. */
+function styledHelpWriteOut(showHeader: boolean) {
+  return (str: string) => {
+    if (supportsTruecolor()) {
+      const sections = parseHelpSections(str);
+      if (sections.length > 0) {
+        const header = showHeader ? (
+          <StyledHelpHeader sections={sections} />
+        ) : undefined;
+        renderOnce(<StyledHelp sections={sections} header={header} />);
+        return;
+      }
+    }
+    process.stdout.write(str);
+  };
+}
+
 const buildProgram = (): Command => {
   const program = new Command()
     .name("zora")
-    .description("Zora CLI")
+    .description("A developer CLI for the Zora platform")
     .version(version)
     .option("--json", "Output as JSON (for scripts and automation)", false);
+
+  // Account for border (2) + paddingX (2) = 4 chars of box overhead
+  const helpWidth = (process.stdout.columns || 80) - 4;
+
+  program.configureHelp({ helpWidth });
+  program.configureOutput({ writeOut: styledHelpWriteOut(true) });
+
+  // Show styled help when invoked with no subcommand (bare `zora`).
+  program.action(() => {
+    program.outputHelp();
+  });
 
   program.addCommand(authCommand);
   program.addCommand(balanceCommand);
@@ -50,6 +80,16 @@ const buildProgram = (): Command => {
   program.addCommand(walletCommand);
   program.addCommand(sellCommand);
   program.addCommand(sendCommand);
+
+  // configureOutput is not inherited by subcommands, so apply it recursively.
+  const applyToSubcommands = (parent: Command) => {
+    for (const cmd of parent.commands) {
+      cmd.configureHelp({ helpWidth });
+      cmd.configureOutput({ writeOut: styledHelpWriteOut(false) });
+      applyToSubcommands(cmd);
+    }
+  };
+  applyToSubcommands(program);
 
   // Show help instead of proceeding when a command is called without its arguments.
   // Args are declared as [optional] so Commander doesn't error before this hook runs —
@@ -68,14 +108,6 @@ const buildProgram = (): Command => {
 const program = buildProgram();
 
 if (!process.env.VITEST) {
-  const showingHelp =
-    process.argv.length <= 2 ||
-    process.argv.includes("--help") ||
-    process.argv.includes("-h");
-  if (showingHelp && !process.argv.includes("--json") && supportsTruecolor()) {
-    renderOnce(<Zorb size={20} />);
-  }
-
   console.warn(
     "\x1b[33m⚠ Beta:\x1b[0m This CLI is in beta and should be used with caution.",
   );
