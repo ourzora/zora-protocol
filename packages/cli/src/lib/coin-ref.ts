@@ -1,10 +1,115 @@
 import { getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
 import type { CoinType } from "./types.js";
+import { formatCompactUsd } from "./format.js";
 
 export type CoinRef =
   | { kind: "address"; address: string }
   | { kind: "prefixed"; type: CoinType; name: string }
   | { kind: "ambiguous"; name: string };
+
+// --- Positional arg parsing ---
+
+const TYPE_KEYWORDS = new Set<string>(["creator-coin", "trend"]);
+
+export type ParsedCoinArgs =
+  | { kind: "typed"; type: CoinType; identifier: string }
+  | { kind: "address"; address: string }
+  | { kind: "ambiguous-name"; name: string };
+
+export class CoinArgError extends Error {
+  suggestion?: string;
+  constructor(message: string, suggestion?: string) {
+    super(message);
+    this.suggestion = suggestion;
+  }
+}
+
+export function parsePositionalCoinArgs(
+  firstArg: string,
+  secondArg: string | undefined,
+): ParsedCoinArgs {
+  if (TYPE_KEYWORDS.has(firstArg)) {
+    if (!secondArg) {
+      throw new CoinArgError(
+        `Missing identifier after "${firstArg}".`,
+        `Usage: zora <command> ${firstArg} <name>`,
+      );
+    }
+    return { kind: "typed", type: firstArg as CoinType, identifier: secondArg };
+  }
+
+  if (firstArg.startsWith("0x")) {
+    return { kind: "address", address: firstArg };
+  }
+
+  return { kind: "ambiguous-name", name: firstArg };
+}
+
+export function coinArgsToRef(parsed: ParsedCoinArgs): CoinRef {
+  switch (parsed.kind) {
+    case "typed":
+      return { kind: "prefixed", type: parsed.type, name: parsed.identifier };
+    case "address":
+      return { kind: "address", address: parsed.address };
+    case "ambiguous-name":
+      return { kind: "ambiguous", name: parsed.name };
+  }
+}
+
+// --- Ambiguous name resolution ---
+
+export type AmbiguousResult =
+  | { kind: "found"; coin: ResolvedCoin }
+  | { kind: "ambiguous"; creator: ResolvedCoin; trend: ResolvedCoin }
+  | { kind: "not-found"; message: string };
+
+export async function resolveAmbiguousName(
+  name: string,
+): Promise<AmbiguousResult> {
+  const [creatorResult, trendResult] = await Promise.all([
+    resolveByCreatorName(name),
+    resolveByTrendTicker(name),
+  ]);
+
+  const creatorFound =
+    creatorResult.kind === "found" ? creatorResult.coin : null;
+  const trendFound = trendResult.kind === "found" ? trendResult.coin : null;
+
+  if (creatorFound && trendFound) {
+    return { kind: "ambiguous", creator: creatorFound, trend: trendFound };
+  }
+
+  if (creatorFound) {
+    return { kind: "found", coin: creatorFound };
+  }
+
+  if (trendFound) {
+    return { kind: "found", coin: trendFound };
+  }
+
+  return {
+    kind: "not-found",
+    message: `No coin found matching "${name}".`,
+  };
+}
+
+export function formatAmbiguousError(
+  name: string,
+  creator: ResolvedCoin,
+  trend: ResolvedCoin,
+  command: string,
+): { message: string; suggestion: string } {
+  const creatorMcap = formatCompactUsd(creator.marketCap);
+  const trendMcap = formatCompactUsd(trend.marketCap);
+  return {
+    message: [
+      `Multiple coins match "${name}":`,
+      `  creator-coin  ${creator.name}  ${creatorMcap} mcap`,
+      `  trend         ${trend.name}  ${trendMcap} mcap`,
+    ].join("\n"),
+    suggestion: `Use: zora ${command} creator-coin ${name}  or  zora ${command} trend ${name}`,
+  };
+}
 
 export interface ResolvedCoin {
   name: string;
@@ -29,7 +134,7 @@ const COIN_TYPE_MAP: Record<string, CoinType> = {
   TREND: "trend",
 };
 
-function mapCoinType(raw: string | undefined): CoinType | "unknown" {
+export function mapCoinType(raw: string | undefined): CoinType | "unknown" {
   if (!raw) return "unknown";
   return COIN_TYPE_MAP[raw] ?? "unknown";
 }

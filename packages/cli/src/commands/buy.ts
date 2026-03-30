@@ -25,11 +25,24 @@ import {
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
+import {
+  parsePositionalCoinArgs,
+  coinArgsToRef,
+  resolveAmbiguousName,
+  resolveCoin,
+  formatAmbiguousError,
+  CoinArgError,
+  mapCoinType,
+} from "../lib/coin-ref.js";
 import { tradeErrorMessage, apiErrorMessage } from "../lib/errors.js";
 
 export const buyCommand = new Command("buy")
   .description("Buy a coin")
-  .argument("[address]", "Coin contract address (0x…)")
+  .argument(
+    "[typeOrId]",
+    "Type prefix (creator-coin, trend) or coin address/name",
+  )
+  .argument("[identifier]", "Coin name (when type prefix is given)")
   .option("--eth <value>", "Buy with ETH amount")
   .option("--usd <value>", "Buy with USD equivalent (use with --token)")
   .option("--token <asset>", "Token to spend: eth, usdc, zora", "eth")
@@ -39,12 +52,84 @@ export const buyCommand = new Command("buy")
   .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
   .option("--debug", "Print full quote request/response JSON")
-  .action(async function (this: Command, coinAddress: string, opts) {
+  .action(async function (
+    this: Command,
+    typeOrId: string,
+    identifier: string | undefined,
+    opts,
+  ) {
     const json = getJson(this);
     const debug = opts.debug === true;
 
-    if (!isAddress(coinAddress)) {
-      outputErrorAndExit(json, `Invalid address: ${coinAddress}`);
+    let parsed;
+    try {
+      parsed = parsePositionalCoinArgs(typeOrId, identifier);
+    } catch (err) {
+      if (err instanceof CoinArgError) {
+        outputErrorAndExit(json, err.message, err.suggestion);
+      }
+      throw err;
+    }
+
+    const apiKey = getApiKey();
+    if (apiKey) {
+      setApiKey(apiKey);
+    }
+
+    let coinAddress: string;
+
+    if (parsed.kind === "address") {
+      if (!isAddress(parsed.address)) {
+        outputErrorAndExit(json, `Invalid address: ${parsed.address}`);
+        return;
+      }
+      coinAddress = parsed.address;
+    } else if (parsed.kind === "ambiguous-name") {
+      let ambResult;
+      try {
+        ambResult = await resolveAmbiguousName(parsed.name);
+      } catch (err) {
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return;
+      }
+
+      if (ambResult.kind === "not-found") {
+        outputErrorAndExit(json, ambResult.message);
+        return;
+      }
+
+      if (ambResult.kind === "ambiguous") {
+        const { message, suggestion } = formatAmbiguousError(
+          parsed.name,
+          ambResult.creator,
+          ambResult.trend,
+          "buy",
+        );
+        outputErrorAndExit(json, message, suggestion);
+        return;
+      }
+
+      coinAddress = ambResult.coin.address;
+    } else {
+      // typed
+      const ref = coinArgsToRef(parsed);
+      try {
+        const result = await resolveCoin(ref);
+        if (result.kind === "not-found") {
+          outputErrorAndExit(json, result.message, result.suggestion);
+          return;
+        }
+        coinAddress = result.coin.address;
+      } catch (err) {
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return;
+      }
     }
 
     const tokenKey = opts.token.toLowerCase() as string;
@@ -72,11 +157,6 @@ export const buyCommand = new Command("buy")
     }
     const slippage = slippagePct / 100;
 
-    const apiKey = getApiKey();
-    if (apiKey) {
-      setApiKey(apiKey);
-    }
-
     const account = resolveAccount(json);
     const { publicClient, walletClient } = createClients(account);
 
@@ -92,6 +172,7 @@ export const buyCommand = new Command("buy")
     }
     const coinName = token.name;
     const coinSymbol = token.symbol;
+    const coinType = mapCoinType(token.coinType);
 
     let amountIn: bigint;
 
@@ -300,6 +381,7 @@ export const buyCommand = new Command("buy")
       printQuote(json, {
         coinName,
         coinSymbol,
+        coinType,
         address: coinAddress,
         spendAmount: `${spendFormatted} ${inputToken.symbol}`,
         amountIn,
@@ -328,6 +410,7 @@ export const buyCommand = new Command("buy")
       printQuote(false, {
         coinName,
         coinSymbol,
+        coinType,
         address: coinAddress,
         spendAmount: `${spendFormatted} ${inputToken.symbol}`,
         amountIn,
@@ -397,6 +480,7 @@ export const buyCommand = new Command("buy")
     printTradeResult(json, {
       coinName,
       coinSymbol,
+      coinType,
       address: coinAddress,
       spendAmount,
       amountIn,

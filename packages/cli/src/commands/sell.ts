@@ -28,6 +28,15 @@ import {
   printDebugResponse,
 } from "../lib/trade-helpers.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
+import {
+  parsePositionalCoinArgs,
+  coinArgsToRef,
+  resolveAmbiguousName,
+  resolveCoin,
+  formatAmbiguousError,
+  CoinArgError,
+  mapCoinType,
+} from "../lib/coin-ref.js";
 import { tradeErrorMessage, apiErrorMessage } from "../lib/errors.js";
 
 type OutputAsset = TradeTokenKey;
@@ -37,6 +46,7 @@ function printSellQuote(
   info: {
     coinName: string;
     coinSymbol: string;
+    coinType: string;
     address: string;
     soldFormatted: string;
     amountIn: bigint;
@@ -68,7 +78,8 @@ function printSellQuote(
     return;
   }
 
-  console.log(`\n Sell ${info.coinName} (${info.coinSymbol})\n`);
+  console.log(`\n Sell \x1b[1m${info.coinName}\x1b[0m`);
+  console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
   console.log(`   Amount       ${info.soldFormatted} ${info.coinSymbol}`);
   console.log(
     `   You get      ~${info.receivedFormatted} ${info.outputSymbol}`,
@@ -81,6 +92,7 @@ function printSellResult(
   info: {
     coinName: string;
     coinSymbol: string;
+    coinType: string;
     address: string;
     amountIn: bigint;
     coinDecimals: number;
@@ -122,7 +134,8 @@ function printSellResult(
     return;
   }
 
-  console.log(`\n Sold ${info.coinName}\n`);
+  console.log(`\n Sold \x1b[1m${info.coinName}\x1b[0m`);
+  console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
   console.log(`   Sold         ${info.soldFormatted} ${info.coinSymbol}`);
   console.log(
     `   Received     ${info.receivedSource === "quote" ? "~" : ""}${receivedFormatted} ${info.outputSymbol}`,
@@ -135,7 +148,11 @@ function printSellResult(
 
 export const sellCommand = new Command("sell")
   .description("Sell a coin")
-  .argument("[address]", "Coin contract address (0x…)")
+  .argument(
+    "[typeOrId]",
+    "Type prefix (creator-coin, trend) or coin address/name",
+  )
+  .argument("[identifier]", "Coin name (when type prefix is given)")
   .option("--amount <value>", "Sell specific number of coins")
   .option("--usd <value>", "Sell USD equivalent worth of coins")
   .option("--percent <value>", "Sell percentage of coin balance")
@@ -146,12 +163,84 @@ export const sellCommand = new Command("sell")
   .option("--yes", "Skip confirmation and execute directly")
   .option("--slippage <pct>", "Slippage tolerance percent", "1")
   .option("--debug", "Print full quote request/response JSON")
-  .action(async function (this: Command, coinAddress: string, opts) {
+  .action(async function (
+    this: Command,
+    typeOrId: string,
+    identifier: string | undefined,
+    opts,
+  ) {
     const json = getJson(this);
     const debug = opts.debug === true;
 
-    if (!isAddress(coinAddress)) {
-      outputErrorAndExit(json, `Invalid address: ${coinAddress}`);
+    let parsed;
+    try {
+      parsed = parsePositionalCoinArgs(typeOrId, identifier);
+    } catch (err) {
+      if (err instanceof CoinArgError) {
+        outputErrorAndExit(json, err.message, err.suggestion);
+      }
+      throw err;
+    }
+
+    const apiKey = getApiKey();
+    if (apiKey) {
+      setApiKey(apiKey);
+    }
+
+    let coinAddress: string;
+
+    if (parsed.kind === "address") {
+      if (!isAddress(parsed.address)) {
+        outputErrorAndExit(json, `Invalid address: ${parsed.address}`);
+        return;
+      }
+      coinAddress = parsed.address;
+    } else if (parsed.kind === "ambiguous-name") {
+      let ambResult;
+      try {
+        ambResult = await resolveAmbiguousName(parsed.name);
+      } catch (err) {
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return;
+      }
+
+      if (ambResult.kind === "not-found") {
+        outputErrorAndExit(json, ambResult.message);
+        return;
+      }
+
+      if (ambResult.kind === "ambiguous") {
+        const { message, suggestion } = formatAmbiguousError(
+          parsed.name,
+          ambResult.creator,
+          ambResult.trend,
+          "sell",
+        );
+        outputErrorAndExit(json, message, suggestion);
+        return;
+      }
+
+      coinAddress = ambResult.coin.address;
+    } else {
+      // typed
+      const ref = coinArgsToRef(parsed);
+      try {
+        const result = await resolveCoin(ref);
+        if (result.kind === "not-found") {
+          outputErrorAndExit(json, result.message, result.suggestion);
+          return;
+        }
+        coinAddress = result.coin.address;
+      } catch (err) {
+        outputErrorAndExit(
+          json,
+          `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+        );
+        return;
+      }
     }
 
     const output: "static" | "json" = json ? "json" : "static";
@@ -184,11 +273,6 @@ export const sellCommand = new Command("sell")
     }
     const slippage = slippagePct / 100;
 
-    const apiKey = getApiKey();
-    if (apiKey) {
-      setApiKey(apiKey);
-    }
-
     const account = resolveAccount(json);
     const { publicClient, walletClient } = createClients(account);
 
@@ -205,6 +289,7 @@ export const sellCommand = new Command("sell")
 
     const coinName = token.name;
     const coinSymbol = token.symbol;
+    const coinType = mapCoinType(token.coinType);
     const coinDecimals = Number(token.decimals ?? 18);
 
     let amountIn: bigint;
@@ -371,6 +456,7 @@ export const sellCommand = new Command("sell")
       printSellQuote(output, {
         coinName,
         coinSymbol,
+        coinType,
         address: coinAddress,
         soldFormatted,
         amountIn,
@@ -401,6 +487,7 @@ export const sellCommand = new Command("sell")
       printSellQuote("static", {
         coinName,
         coinSymbol,
+        coinType,
         address: coinAddress,
         soldFormatted,
         amountIn,
@@ -475,6 +562,7 @@ export const sellCommand = new Command("sell")
     printSellResult(output, {
       coinName,
       coinSymbol,
+      coinType,
       address: coinAddress,
       amountIn,
       coinDecimals,

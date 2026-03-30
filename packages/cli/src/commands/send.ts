@@ -11,7 +11,14 @@ import { setApiKey } from "@zoralabs/coins-sdk";
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
-import { parseCoinRef, resolveCoin } from "../lib/coin-ref.js";
+import {
+  parsePositionalCoinArgs,
+  coinArgsToRef,
+  resolveAmbiguousName,
+  resolveCoin,
+  formatAmbiguousError,
+  CoinArgError,
+} from "../lib/coin-ref.js";
 import {
   GAS_RESERVE,
   getAmountMode,
@@ -26,7 +33,6 @@ import {
   type TradeTokenKey,
 } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
-import type { CoinType } from "../lib/types.js";
 
 const SEND_AMOUNT_CHECKS = {
   amount: (opts: Record<string, unknown>) => opts.amount !== undefined,
@@ -34,7 +40,7 @@ const SEND_AMOUNT_CHECKS = {
   all: (opts: Record<string, unknown>) => opts.all === true,
 } as const;
 
-const VALID_TYPES: readonly CoinType[] = ["creator-coin", "post", "trend"];
+const KNOWN_TOKEN_NAMES = new Set(["eth", "usdc", "zora"]);
 
 function printSendPreview(info: {
   name: string;
@@ -97,19 +103,22 @@ function printSendResult(
 
 export const sendCommand = new Command("send")
   .description("Send coins or ETH to an address")
-  .argument("[identifier]", "Coin address, name, or token (eth, usdc, zora)")
+  .argument(
+    "[typeOrId]",
+    "Token (eth, usdc, zora), type prefix (creator-coin, trend), or coin address/name",
+  )
+  .argument("[identifier]", "Coin name (when type prefix is given)")
   .option("--to <address>", "Recipient address (0x...)")
-  .option("--type <type>", "Coin type: creator-coin, post, trend")
   .option("--amount <value>", "Send specific amount")
   .option("--percent <value>", "Send percentage of balance (1-100)")
   .option("--all", "Send entire balance")
   .option("--yes", "Skip confirmation")
   .action(async function (
     this: Command,
-    identifier: string,
+    firstArg: string,
+    secondArg: string | undefined,
     opts: {
       to?: string;
-      type?: string;
       amount?: string;
       percent?: string;
       all?: boolean;
@@ -135,14 +144,6 @@ export const sendCommand = new Command("send")
     }
     const recipient = opts.to as Address;
 
-    if (opts.type !== undefined && !VALID_TYPES.includes(opts.type as any)) {
-      outputErrorAndExit(
-        json,
-        `Invalid --type value: ${opts.type}.`,
-        `Supported: ${VALID_TYPES.join(", ")}`,
-      );
-    }
-
     const amountMode = getAmountMode(
       json,
       opts,
@@ -150,13 +151,11 @@ export const sendCommand = new Command("send")
       "--amount, --percent, or --all",
     );
 
-    const isEth = identifier.toLowerCase() === "eth";
+    // Check known tokens first (eth, usdc, zora)
+    const isKnownToken = KNOWN_TOKEN_NAMES.has(firstArg.toLowerCase());
+    const isEth = firstArg.toLowerCase() === "eth";
 
     if (isEth) {
-      if (opts.type) {
-        outputErrorAndExit(json, "--type is not valid when sending ETH.");
-      }
-
       const account = resolveAccount(json);
       const { publicClient, walletClient } = createClients(account);
 
@@ -308,18 +307,13 @@ export const sendCommand = new Command("send")
       });
     } else {
       // ERC-20 path: known token (usdc, zora) or coin resolution
-      const knownTokenKey = identifier.toLowerCase() as TradeTokenKey;
+      const knownTokenKey = firstArg.toLowerCase() as TradeTokenKey;
       const knownToken =
-        knownTokenKey !== "eth" && knownTokenKey in BASE_TRADE_TOKENS
+        isKnownToken &&
+        knownTokenKey !== "eth" &&
+        knownTokenKey in BASE_TRADE_TOKENS
           ? BASE_TRADE_TOKENS[knownTokenKey]
           : undefined;
-
-      if (knownToken && opts.type) {
-        outputErrorAndExit(
-          json,
-          `--type is not valid when sending ${knownToken.symbol}.`,
-        );
-      }
 
       let tokenAddress: Address;
       let tokenName: string;
@@ -334,24 +328,64 @@ export const sendCommand = new Command("send")
           setApiKey(apiKey);
         }
 
-        const ref = parseCoinRef(identifier, opts.type);
-
-        let result;
+        let parsed;
         try {
-          result = await resolveCoin(ref);
+          parsed = parsePositionalCoinArgs(firstArg, secondArg);
         } catch (err) {
-          outputErrorAndExit(
-            json,
-            `Request failed: ${err instanceof Error ? err.message : String(err)}`,
-          );
+          if (err instanceof CoinArgError) {
+            outputErrorAndExit(json, err.message, err.suggestion);
+          }
+          throw err;
         }
 
-        if (result.kind === "not-found") {
-          outputErrorAndExit(json, result.message, result.suggestion);
-        }
+        if (parsed.kind === "ambiguous-name") {
+          let ambResult;
+          try {
+            ambResult = await resolveAmbiguousName(parsed.name);
+          } catch (err) {
+            outputErrorAndExit(
+              json,
+              `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+            return;
+          }
 
-        tokenAddress = result.coin.address as Address;
-        tokenName = result.coin.name;
+          if (ambResult.kind === "not-found") {
+            outputErrorAndExit(json, ambResult.message);
+            return;
+          }
+
+          if (ambResult.kind === "ambiguous") {
+            const { message, suggestion } = formatAmbiguousError(
+              parsed.name,
+              ambResult.creator,
+              ambResult.trend,
+              "send",
+            );
+            outputErrorAndExit(json, message, suggestion);
+            return;
+          }
+
+          tokenAddress = ambResult.coin.address as Address;
+          tokenName = ambResult.coin.name;
+        } else {
+          const ref = coinArgsToRef(parsed);
+          try {
+            const result = await resolveCoin(ref);
+            if (result.kind === "not-found") {
+              outputErrorAndExit(json, result.message, result.suggestion);
+              return;
+            }
+            tokenAddress = result.coin.address as Address;
+            tokenName = result.coin.name;
+          } catch (err) {
+            outputErrorAndExit(
+              json,
+              `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+            );
+            return;
+          }
+        }
       }
 
       const account = resolveAccount(json);

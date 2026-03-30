@@ -19,6 +19,8 @@ import confirm from "@inquirer/confirm";
 import {
   createTradeCall,
   getCoin,
+  getProfile,
+  getTrend,
   setApiKey,
   tradeCoin,
 } from "@zoralabs/coins-sdk";
@@ -95,6 +97,12 @@ describe("sell command", () => {
         },
       },
     } as Awaited<ReturnType<typeof getCoin>>);
+    vi.mocked(getProfile).mockResolvedValue({
+      data: { profile: null },
+    } as Awaited<ReturnType<typeof getProfile>>);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: { trendCoin: null },
+    } as Awaited<ReturnType<typeof getTrend>>);
     vi.mocked(createTradeCall).mockResolvedValue({
       quote: {
         amountOut: "20000000",
@@ -167,12 +175,12 @@ describe("sell command", () => {
     stderrSpy.mockRestore();
   });
 
-  it("exits with error for invalid address", async () => {
+  it("exits with error when name is not found", async () => {
     await expect(runSell(["not-an-address", "--amount", "1"])).rejects.toThrow(
       "process.exit(1)",
     );
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid address"),
+      expect.stringContaining("No coin found"),
     );
   });
 
@@ -280,7 +288,7 @@ describe("sell command", () => {
       runSell([COIN_ADDRESS, "--amount", "1", "--yes"]),
     ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Transaction failed"),
+      expect.stringContaining("tx reverted"),
     );
   });
 
@@ -385,7 +393,7 @@ describe("sell command", () => {
     await runSell([COIN_ADDRESS, "--amount", "1.5", "--to", "usdc", "--yes"]);
 
     const output = logSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(output).toContain("Sold Test Coin");
+    expect(output).toContain("Sold \x1b[1mTest Coin\x1b[0m");
     expect(output).toContain("TEST");
   });
 
@@ -497,7 +505,7 @@ describe("sell command", () => {
     await runSell([COIN_ADDRESS, "--amount", "1", "--quote"]);
 
     const output = logSpy.mock.calls.map((call) => call[0]).join("\n");
-    expect(output).toContain("Sell Test Coin");
+    expect(output).toContain("Sell \x1b[1mTest Coin\x1b[0m");
     expect(tradeCoin).not.toHaveBeenCalled();
   });
 

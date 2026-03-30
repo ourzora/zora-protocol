@@ -7,7 +7,13 @@ vi.mock("../lib/config.js", () => ({
 }));
 vi.mock("../lib/render.js");
 
-import { setApiKey, getCoin, getTrend, apiGet } from "@zoralabs/coins-sdk";
+import {
+  setApiKey,
+  getCoin,
+  getProfile,
+  getTrend,
+  apiGet,
+} from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { priceHistoryCommand } from "./price-history.jsx";
 
@@ -76,15 +82,6 @@ describe("priceHistoryCommand", () => {
     );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid --interval"),
-    );
-  });
-
-  it("exits with error for invalid --type", async () => {
-    await expect(parseJson("0x1234", "--type", "banana")).rejects.toThrow(
-      "exit 1",
-    );
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid --type"),
     );
   });
 
@@ -184,7 +181,7 @@ describe("priceHistoryCommand", () => {
       makePriceHistoryResponse("oneWeek", points) as any,
     );
 
-    await parseJson("geese", "--type", "trend", "--interval", "1w");
+    await parseJson("trend", "geese", "--interval", "1w");
 
     expect(getTrend).toHaveBeenCalledWith({ ticker: "geese" });
     const output = parsedOutput() as any;

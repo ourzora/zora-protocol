@@ -6,6 +6,7 @@ vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
 }));
 vi.mock("../lib/render.js");
+vi.mock("../lib/analytics.js");
 
 import { setApiKey, getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
@@ -29,23 +30,16 @@ describe("getCommand", () => {
 
   function parseJson(...args: string[]) {
     const program = createProgram(getCommand);
-    return program.parseAsync(["get", ...args, "--json"], { from: "user" });
+    return program.parseAsync(["get", ...args, "--json"], {
+      from: "user",
+    });
   }
 
   function parsedOutput(): unknown {
     return JSON.parse(logSpy.mock.calls.map((c) => c[0]).join("\n"));
   }
 
-  it("exits with error for invalid --type", async () => {
-    await expect(parseJson("something", "--type", "banana")).rejects.toThrow(
-      "exit 1",
-    );
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid --type"),
-    );
-  });
-
-  it("resolves trend by ticker with --type trend", async () => {
+  it("resolves trend by ticker with positional prefix", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getTrend).mockResolvedValue({
       data: {
@@ -62,7 +56,7 @@ describe("getCommand", () => {
       },
     } as any);
 
-    await parseJson("geese", "--type", "trend");
+    await parseJson("trend", "geese");
 
     expect(getTrend).toHaveBeenCalledWith({ ticker: "geese" });
     expect(parsedOutput()).toMatchObject({
@@ -79,20 +73,9 @@ describe("getCommand", () => {
       data: { trendCoin: null },
     } as any);
 
-    await expect(parseJson("unknown", "--type", "trend")).rejects.toThrow(
-      "exit 1",
-    );
+    await expect(parseJson("trend", "unknown")).rejects.toThrow("exit 1");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("No trend coin found"),
-    );
-  });
-
-  it("exits with error for --type post", async () => {
-    await expect(parseJson("something", "--type", "post")).rejects.toThrow(
-      "exit 1",
-    );
-    expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Posts can only be looked up by address"),
     );
   });
 
@@ -166,7 +149,7 @@ describe("getCommand", () => {
     expect(parsedOutput()).toMatchObject({ name: "NoKeyCoin" });
   });
 
-  it("resolves creator-coin by name with --type", async () => {
+  it("resolves creator-coin by name with positional prefix", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getProfile).mockResolvedValue({
       data: {
@@ -188,7 +171,7 @@ describe("getCommand", () => {
       },
     } as any);
 
-    await parseJson("jacob", "--type", "creator-coin");
+    await parseJson("creator-coin", "jacob");
 
     expect(getProfile).toHaveBeenCalledWith({ identifier: "jacob" });
     expect(getCoin).toHaveBeenCalledWith({ address: "0xcoin" });
@@ -198,69 +181,7 @@ describe("getCommand", () => {
     });
   });
 
-  it("exits with error when --type mismatches coin type", async () => {
-    vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoin).mockResolvedValue({
-      data: {
-        zora20Token: {
-          name: "CreatorCoin",
-          address: "0x1234",
-          coinType: "CREATOR",
-          marketCap: "100",
-        },
-      },
-    } as any);
-
-    await expect(parseJson("0x1234", "--type", "post")).rejects.toThrow(
-      "exit 1",
-    );
-    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
-    expect(output).toContain("is a creator-coin, not a post");
-    expect(output).toContain("zora get 0x1234 --type creator-coin");
-  });
-
-  it("allows --type trend with address", async () => {
-    vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoin).mockResolvedValue({
-      data: {
-        zora20Token: {
-          name: "SomeTrend",
-          address: "0xtrend",
-          coinType: "TREND",
-          marketCap: "200",
-        },
-      },
-    } as any);
-
-    await parseJson("0xtrend", "--type", "trend");
-
-    expect(getCoin).toHaveBeenCalledWith({ address: "0xtrend" });
-    expect(parsedOutput()).toMatchObject({
-      name: "SomeTrend",
-      coinType: "trend",
-    });
-  });
-
-  it("allows --type post with address", async () => {
-    vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoin).mockResolvedValue({
-      data: {
-        zora20Token: {
-          name: "SomePost",
-          address: "0xpost",
-          coinType: "CONTENT",
-          marketCap: "100",
-        },
-      },
-    } as any);
-
-    await parseJson("0xpost", "--type", "post");
-
-    expect(getCoin).toHaveBeenCalledWith({ address: "0xpost" });
-    expect(parsedOutput()).toMatchObject({ name: "SomePost" });
-  });
-
-  it("resolves bare name as creator-coin lookup", async () => {
+  it("resolves bare name when only creator-coin matches", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getProfile).mockResolvedValue({
       data: {
@@ -277,10 +198,112 @@ describe("getCommand", () => {
         },
       },
     } as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: { trendCoin: null },
+    } as any);
 
     await parseJson("alice");
 
     expect(getProfile).toHaveBeenCalledWith({ identifier: "alice" });
+    expect(getTrend).toHaveBeenCalledWith({ ticker: "alice" });
     expect(parsedOutput()).toMatchObject({ name: "alice" });
+  });
+
+  it("resolves bare name when only trend matches", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getProfile).mockResolvedValue({
+      data: { profile: null },
+    } as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: {
+        trendCoin: {
+          name: "VIBES",
+          address: "0xvibes",
+          coinType: "TREND",
+          marketCap: "300000",
+          marketCapDelta24h: "10000",
+          volume24h: "50000",
+          uniqueHolders: 800,
+          createdAt: "2026-03-15T09:00:00Z",
+        },
+      },
+    } as any);
+
+    await parseJson("vibes");
+
+    expect(getTrend).toHaveBeenCalledWith({ ticker: "vibes" });
+    expect(parsedOutput()).toMatchObject({
+      name: "VIBES",
+      coinType: "trend",
+    });
+  });
+
+  it("returns both matches when bare name matches creator-coin and trend", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getProfile).mockResolvedValue({
+      data: {
+        profile: { handle: "dupe", creatorCoin: { address: "0xcreator" } },
+      },
+    } as any);
+    vi.mocked(getCoin).mockResolvedValue({
+      data: {
+        zora20Token: {
+          name: "dupe",
+          address: "0xcreator",
+          coinType: "CREATOR",
+          marketCap: "2000000",
+          marketCapDelta24h: "0",
+          volume24h: "0",
+          uniqueHolders: 100,
+        },
+      },
+    } as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: {
+        trendCoin: {
+          name: "dupe",
+          address: "0xtrend",
+          coinType: "TREND",
+          marketCap: "400000",
+          marketCapDelta24h: "0",
+          volume24h: "0",
+          uniqueHolders: 50,
+        },
+      },
+    } as any);
+
+    await parseJson("dupe");
+
+    const output = parsedOutput() as any;
+    expect(output.matches).toHaveLength(2);
+    expect(output.matches[0]).toMatchObject({ type: "creator-coin" });
+    expect(output.matches[1]).toMatchObject({ type: "trend" });
+    expect(output.hint).toContain("zora get creator-coin dupe");
+    expect(output.hint).toContain("zora get trend dupe");
+  });
+
+  it("exits with error when bare name matches nothing", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getProfile).mockResolvedValue({
+      data: { profile: null },
+    } as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: { trendCoin: null },
+    } as any);
+
+    await expect(parseJson("nonexistent")).rejects.toThrow("exit 1");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No coin found"),
+    );
+  });
+
+  it("exits with error when type prefix given without identifier", async () => {
+    await expect(parseJson("creator-coin")).rejects.toThrow("exit 1");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("Missing identifier after"),
+    );
+    const output = parsedOutput() as any;
+    expect(output.error).toContain('Missing identifier after "creator-coin"');
+    expect(output.suggestion).toBeDefined();
   });
 });

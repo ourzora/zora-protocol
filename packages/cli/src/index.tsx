@@ -96,7 +96,7 @@ const buildProgram = (): Command => {
   // don't filter by arg.required here, since they're all intentionally optional.
   program.hook("preAction", (_thisCommand, actionCommand) => {
     const expected = actionCommand.registeredArguments.length;
-    if (expected > 0 && actionCommand.args.length < expected) {
+    if (expected > 0 && actionCommand.args.length === 0) {
       actionCommand.outputHelp();
       process.exit(1);
     }

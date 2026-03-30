@@ -21,6 +21,8 @@ import confirm from "@inquirer/confirm";
 import {
   createTradeCall,
   getCoin,
+  getProfile,
+  getTrend,
   setApiKey,
   tradeCoin,
 } from "@zoralabs/coins-sdk";
@@ -97,6 +99,12 @@ describe("buy command", () => {
         },
       },
     } as Awaited<ReturnType<typeof getCoin>>);
+    vi.mocked(getProfile).mockResolvedValue({
+      data: { profile: null },
+    } as Awaited<ReturnType<typeof getProfile>>);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: { trendCoin: null },
+    } as Awaited<ReturnType<typeof getTrend>>);
     vi.mocked(createTradeCall).mockResolvedValue({
       quote: {
         amountOut: "2000000000000000000",
@@ -245,12 +253,12 @@ describe("buy command", () => {
     });
   });
 
-  it("exits when address is invalid", async () => {
+  it("exits when name is not found", async () => {
     await expect(
       runBuy(["not-an-address", "--eth", "0.1", "--yes"]),
     ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Invalid address: not-an-address"),
+      expect.stringContaining("No coin found"),
     );
   });
 
@@ -393,7 +401,7 @@ describe("buy command", () => {
       runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
     ).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Transaction failed"),
+      expect.stringContaining("tx reverted"),
     );
   });
 
@@ -426,7 +434,7 @@ describe("buy command", () => {
     await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
 
     expect(logSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Bought Test Coin"),
+      expect.stringContaining("Bought \x1b[1mTest Coin\x1b[0m"),
     );
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Spent"));
     expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Received"));
@@ -461,7 +469,9 @@ describe("buy command", () => {
     await expect(
       runBuy(["not-an-address", "--eth", "0.1", "--yes", "--json"]),
     ).rejects.toThrow("process.exit(1)");
-    expect(logSpy).toHaveBeenCalledWith(expect.stringContaining('"error"'));
+    const output = logSpy.mock.calls.map((c) => c[0]).join("");
+    expect(output).toContain('"error"');
+    expect(output).toContain("No coin found");
   });
 
   describe("--usd flag", () => {
@@ -580,7 +590,7 @@ describe("buy command", () => {
 
       expect(tradeCoin).not.toHaveBeenCalled();
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Buy Test Coin (TEST)"),
+        expect.stringContaining("Buy \x1b[1mTest Coin\x1b[0m"),
       );
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("Amount"));
       expect(logSpy).toHaveBeenCalledWith(expect.stringContaining("You get"));

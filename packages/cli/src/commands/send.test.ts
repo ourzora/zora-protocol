@@ -13,7 +13,7 @@ vi.mock("../lib/analytics.js");
 vi.mock("../lib/wallet-balances.js");
 
 import confirm from "@inquirer/confirm";
-import { setApiKey, getCoin, getProfile } from "@zoralabs/coins-sdk";
+import { setApiKey, getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { createClients, resolveAccount } from "../lib/wallet.js";
 import { track } from "../lib/analytics.js";
@@ -62,6 +62,9 @@ describe("send command", () => {
     });
 
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
+    vi.mocked(getTrend).mockResolvedValue({
+      data: { trendCoin: null },
+    } as any);
     vi.mocked(resolveAccount).mockReturnValue({
       address: ACCOUNT_ADDRESS,
     } as ReturnType<typeof resolveAccount>);
@@ -117,40 +120,6 @@ describe("send command", () => {
       ).rejects.toThrow("process.exit(1)");
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Only one amount flag"),
-      );
-    });
-
-    it("exits with error for invalid --type value", async () => {
-      await expect(
-        runSend([
-          COIN_ADDRESS,
-          "--to",
-          RECIPIENT_ADDRESS,
-          "--type",
-          "banana",
-          "--amount",
-          "1",
-        ]),
-      ).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Invalid --type"),
-      );
-    });
-
-    it("exits with error when --type is used with eth", async () => {
-      await expect(
-        runSend([
-          "eth",
-          "--to",
-          RECIPIENT_ADDRESS,
-          "--type",
-          "creator-coin",
-          "--amount",
-          "0.1",
-        ]),
-      ).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("--type is not valid when sending ETH"),
       );
     });
   });
@@ -441,7 +410,7 @@ describe("send command", () => {
       );
     });
 
-    it("resolves coin by creator name with --type", async () => {
+    it("resolves coin by creator name with type prefix", async () => {
       vi.mocked(getProfile).mockResolvedValue({
         data: {
           profile: {
@@ -452,9 +421,8 @@ describe("send command", () => {
       } as any);
 
       await runSend([
-        "jacob",
-        "--type",
         "creator-coin",
+        "jacob",
         "--to",
         RECIPIENT_ADDRESS,
         "--amount",
@@ -739,23 +707,6 @@ describe("send command", () => {
 
       expect(getCoin).not.toHaveBeenCalled();
       expect(walletClient.writeContract).toHaveBeenCalled();
-    });
-
-    it("rejects --type with known tokens", async () => {
-      await expect(
-        runSend([
-          "usdc",
-          "--to",
-          RECIPIENT_ADDRESS,
-          "--type",
-          "creator-coin",
-          "--amount",
-          "10",
-        ]),
-      ).rejects.toThrow("process.exit(1)");
-      expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("--type is not valid when sending USDC"),
-      );
     });
 
     it("outputs JSON for known token send", async () => {
