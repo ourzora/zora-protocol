@@ -151,6 +151,7 @@ export type QuoteInfo = {
   coinSymbol: string;
   coinType: string;
   address: string;
+  amountUsd?: string;
   amountIn: bigint;
   inputTokenSymbol: string;
   inputTokenDecimals: number;
@@ -187,7 +188,9 @@ export const printQuote = (json: boolean, info: QuoteInfo): void => {
 
   console.log(`\n Buy \x1b[1m${info.coinName}\x1b[0m`);
   console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
-  console.log(`   Amount       ${spendFormatted} ${info.inputTokenSymbol}`);
+  console.log(
+    `   Amount       ${spendFormatted} ${info.inputTokenSymbol}${info.amountUsd ? ` (${info.amountUsd})` : ""}`,
+  );
   console.log(`   You get      ~${coinsFormatted} ${info.coinSymbol}`);
   console.log(`   Slippage     ${info.slippagePct}%\n`);
 };
@@ -197,6 +200,7 @@ export type TradeResultInfo = {
   coinSymbol: string;
   coinType: string;
   address: string;
+  amountUsd?: string;
   amountIn: bigint;
   inputTokenSymbol: string;
   inputTokenDecimals: number;
@@ -236,7 +240,9 @@ export const printTradeResult = (
 
   console.log(`\n Bought \x1b[1m${info.coinName}\x1b[0m`);
   console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
-  console.log(`   Spent        ${spentFormatted} ${info.inputTokenSymbol}`);
+  console.log(
+    `   Spent        ${spentFormatted} ${info.inputTokenSymbol}${info.amountUsd ? ` (${info.amountUsd})` : ""}`,
+  );
   console.log(`   Received     ${receivedFormatted} ${info.coinSymbol}`);
   console.log(`   Tx           ${info.txHash}\n`);
 };

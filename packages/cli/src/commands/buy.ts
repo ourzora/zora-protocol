@@ -10,7 +10,7 @@ import {
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
-import { formatAmountDisplay } from "../lib/format.js";
+import { formatAmountDisplay, formatUsd } from "../lib/format.js";
 import {
   GAS_RESERVE,
   BUY_AMOUNT_CHECKS,
@@ -389,8 +389,14 @@ export const buyCommand = new Command("buy")
       slippagePct,
     };
 
+    // USD annotation for non-stablecoin inputs
+    const amountUsd =
+      swapAmountUsd != null && inputToken.fixedPriceUsd == null
+        ? `${amountMode === "usd" ? "" : "~"}${formatUsd(swapAmountUsd)}`
+        : undefined;
+
     if (opts.quote) {
-      printQuote(json, quoteInfo);
+      printQuote(json, { ...quoteInfo, amountUsd });
       track("cli_buy", {
         action: "quote",
         coin_address: coinAddress,
@@ -407,7 +413,7 @@ export const buyCommand = new Command("buy")
     }
 
     if (!opts.yes) {
-      printQuote(false, quoteInfo);
+      printQuote(false, { ...quoteInfo, amountUsd });
 
       const ok = await confirm({
         message: "Confirm?",
@@ -470,6 +476,7 @@ export const buyCommand = new Command("buy")
       coinSymbol,
       coinType,
       address: coinAddress,
+      amountUsd,
       amountIn,
       inputTokenSymbol: inputToken.symbol,
       inputTokenDecimals: inputToken.decimals,

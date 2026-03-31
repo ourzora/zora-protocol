@@ -11,6 +11,7 @@ import {
   formatCreatedAt,
   styledText,
   formatAmountDisplay,
+  formatUsd,
 } from "./format.js";
 
 describe("formatCompactUsd", () => {
@@ -134,6 +135,30 @@ describe("formatAmountDisplay", () => {
 
   it("works with non-18 decimal tokens", () => {
     expect(formatAmountDisplay(1230000n, 6)).toBe("1.23");
+  });
+});
+
+describe("formatUsd", () => {
+  it("formats whole dollar amounts with two decimals", () => {
+    expect(formatUsd(10)).toBe("$10.00");
+  });
+
+  it("formats cents correctly", () => {
+    expect(formatUsd(0.5)).toBe("$0.50");
+  });
+
+  it("rounds to two decimal places", () => {
+    expect(formatUsd(1.999)).toBe("$2.00");
+    expect(formatUsd(1.234)).toBe("$1.23");
+  });
+
+  it("formats large values with comma separators", () => {
+    expect(formatUsd(1234.56)).toBe("$1,234.56");
+    expect(formatUsd(1000000)).toBe("$1,000,000.00");
+  });
+
+  it("formats zero", () => {
+    expect(formatUsd(0)).toBe("$0.00");
   });
 });
 

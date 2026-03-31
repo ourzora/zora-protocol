@@ -16,6 +16,7 @@ import {
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import { formatUsd } from "../lib/format.js";
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { formatAmountDisplay } from "../lib/format.js";
@@ -56,6 +57,7 @@ function printSellQuote(
     outputSymbol: string;
     outputDecimals: number;
     slippagePct: number;
+    receivedUsd?: string;
   },
 ): void {
   if (output === "json") {
@@ -82,7 +84,7 @@ function printSellQuote(
   console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
   console.log(`   Amount       ${info.soldFormatted} ${info.coinSymbol}`);
   console.log(
-    `   You get      ~${info.receivedFormatted} ${info.outputSymbol}`,
+    `   You get      ~${info.receivedFormatted} ${info.outputSymbol}${info.receivedUsd ? ` (${info.receivedUsd})` : ""}`,
   );
   console.log(`   Slippage     ${info.slippagePct}%\n`);
 }
@@ -102,6 +104,7 @@ function printSellResult(
     outputDecimals: number;
     receivedSource: "receipt" | "quote";
     txHash: string;
+    receivedUsd?: string;
   },
 ): void {
   const receivedAmount = formatUnits(
@@ -138,7 +141,7 @@ function printSellResult(
   console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
   console.log(`   Sold         ${info.soldFormatted} ${info.coinSymbol}`);
   console.log(
-    `   Received     ${info.receivedSource === "quote" ? "~" : ""}${receivedFormatted} ${info.outputSymbol}`,
+    `   Received     ${info.receivedSource === "quote" ? "~" : ""}${receivedFormatted} ${info.outputSymbol}${info.receivedUsd ? ` (${info.receivedUsd})` : ""}`,
   );
   if (info.receivedSource === "quote") {
     console.log("   Note         based on quote");
@@ -378,18 +381,23 @@ export const sellCommand = new Command("sell")
       }
     }
 
+    // Fetch coin price and output token price in parallel
+    const needsCoinPrice = amountMode !== "usd";
+    const needsOutputPrice = outputToken.fixedPriceUsd == null;
+    const [coinPriceUsd, outputPriceUsd] = await Promise.all([
+      needsCoinPrice ? fetchTokenPriceUsd(coinAddress) : Promise.resolve(null),
+      needsOutputPrice
+        ? fetchTokenPriceUsd(outputToken.priceAddress)
+        : Promise.resolve(null),
+    ]);
+
     let swapAmountUsd: number | undefined;
     if (amountMode === "usd") {
       swapAmountUsd = parsePercentageLikeValue(opts.usd);
-    } else {
-      const coinPriceUsd = await fetchTokenPriceUsd(coinAddress);
-      if (coinPriceUsd !== null && coinPriceUsd > 0) {
-        swapAmountUsd = Number(
-          (Number(formatUnits(amountIn, coinDecimals)) * coinPriceUsd).toFixed(
-            2,
-          ),
-        );
-      }
+    } else if (coinPriceUsd !== null && coinPriceUsd > 0) {
+      swapAmountUsd = Number(
+        (Number(formatUnits(amountIn, coinDecimals)) * coinPriceUsd).toFixed(2),
+      );
     }
 
     const tradeParameters = {
@@ -451,6 +459,15 @@ export const sellCommand = new Command("sell")
       outputToken.decimals,
     );
 
+    // USD annotation for non-stablecoin outputs
+    let receivedUsd: string | undefined;
+    if (outputPriceUsd != null) {
+      const outAmount = Number(
+        formatUnits(BigInt(quoteAmountOut), outputToken.decimals),
+      );
+      receivedUsd = `~${formatUsd(outAmount * outputPriceUsd)}`;
+    }
+
     // --quote: print quote and exit
     if (opts.quote) {
       printSellQuote(output, {
@@ -466,6 +483,7 @@ export const sellCommand = new Command("sell")
         outputSymbol: outputToken.symbol,
         outputDecimals: outputToken.decimals,
         slippagePct,
+        receivedUsd,
       });
       track("cli_sell", {
         action: "quote",
@@ -497,6 +515,7 @@ export const sellCommand = new Command("sell")
         outputSymbol: outputToken.symbol,
         outputDecimals: outputToken.decimals,
         slippagePct,
+        receivedUsd,
       });
 
       const ok = await confirm({
@@ -559,6 +578,14 @@ export const sellCommand = new Command("sell")
       }
     }
 
+    // Recompute USD annotation from actual received amount
+    if (outputPriceUsd != null) {
+      const actualAmount = Number(
+        formatUnits(receivedAmountOut, outputToken.decimals),
+      );
+      receivedUsd = `~${formatUsd(actualAmount * outputPriceUsd)}`;
+    }
+
     printSellResult(output, {
       coinName,
       coinSymbol,
@@ -572,6 +599,7 @@ export const sellCommand = new Command("sell")
       outputDecimals: outputToken.decimals,
       receivedSource,
       txHash,
+      receivedUsd,
     });
 
     track("cli_sell", {
