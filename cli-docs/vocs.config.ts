@@ -162,14 +162,14 @@ export default defineConfig({
     generateMarkdown: true,
   },
   topNav: [
-    { text: "Docs", link: "/getting-started" },
-    { text: "SKILL.md", link: "/skill" },
+    { text: "humans", link: "/getting-started" },
+    { text: "agents", link: "/skill" },
     {
       text: "npm",
       link: "https://www.npmjs.com/package/@zoralabs/cli",
     },
     {
-      text: "GitHub",
+      text: "source",
       link: "https://github.com/ourzora/zora-protocol/tree/main/packages/cli",
     },
     {
@@ -183,7 +183,7 @@ export default defineConfig({
       link: "/getting-started",
     },
     {
-      text: "SKILL.md",
+      text: "Agents",
       link: "/skill",
     },
     {
