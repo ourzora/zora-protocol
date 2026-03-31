@@ -1,0 +1,96 @@
+---
+layout: landing
+---
+
+import { HomePage } from "vocs/components";
+import { CopyBox } from "../components/CopyBox";
+import { TerminalAnimation } from "../components/TerminalAnimation";
+import { AsciiFooter } from "../components/AsciiFooter";
+import { FadeIn } from "../components/FadeIn";
+import { HeroGrid } from "../components/HeroGrid";
+
+export const skillUrl = (() => {
+  const root =
+    typeof import.meta !== "undefined" && import.meta.env?.VITE_SITE_ROOT_URL;
+  if (root) return `${root}/skill.md`;
+  if (typeof window !== "undefined")
+    return `${window.location.origin}/skill.md`;
+  return "https://yoursite.com/skill.md";
+})();
+
+<HeroGrid>
+  <div
+    style={{
+      margin: 0,
+      lineHeight: 1.1,
+      fontSize: "3.75rem",
+      fontWeight: 700,
+      textWrap: "balance",
+      maxWidth: "80%",
+    }}
+  >
+    {"Now your agents can trade what\u2019s trending."}
+  </div>
+  <div
+    style={{
+      fontSize: "1.125rem",
+      fontWeight: 420,
+      color: "var(--zora-fg-neutral)",
+      maxWidth: 600,
+    }}
+  >
+    {
+      "Zora, now on your command line. Explore coins, check prices, manage wallets, and execute trades from your terminal or AI agent."
+    }
+  </div>
+  <div style={{ maxWidth: 500 }}>
+    <CopyBox>{"npx @zoralabs/cli"}</CopyBox>
+  </div>
+  <div style={{ display: "flex", gap: "0.5rem" }}>
+    <HomePage.Button href="/getting-started" variant="accent">
+      Get Started
+    </HomePage.Button>
+    <HomePage.Button href="/skill">View Skill</HomePage.Button>
+  </div>
+  <div
+    className="terminal-animation hero-terminal-bg"
+    style={{ gridColumn: "1 / -1", display: "flex", justifyContent: "center" }}
+  >
+    <TerminalAnimation />
+  </div>
+</HeroGrid>
+
+<div className="features-grid">
+  <FadeIn>
+    <div className="feature-card">
+      <h3>Set up in one command</h3>
+      <p>
+        Create a wallet, configure your API key, and start trading — all from{" "}
+        <code>zora setup</code>.
+      </p>
+      <a href="/getting-started">Get Started →</a>
+    </div>
+  </FadeIn>
+  <FadeIn>
+    <div className="feature-card">
+      <h3>Browse, trade, track</h3>
+      <p>
+        Browse trending coins, execute trades, and track your portfolio — all
+        from your terminal.
+      </p>
+      <a href="/commands/explore">View Commands →</a>
+    </div>
+  </FadeIn>
+  <FadeIn>
+    <div className="feature-card">
+      <h3>Give your AI agent a skill</h3>
+      <p>
+        Drop a SKILL.md into Claude, GPT, or any agent and let it trade
+        autonomously.
+      </p>
+      <a href="/skill">View Skills →</a>
+    </div>
+  </FadeIn>
+</div>
+
+<AsciiFooter />

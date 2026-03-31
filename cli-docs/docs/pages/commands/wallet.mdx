@@ -1,0 +1,58 @@
+# wallet
+
+Manage your Zora wallet. Requires a wallet configured via [setup](/commands/setup) or `ZORA_PRIVATE_KEY`.
+
+```bash
+zora wallet [command]
+```
+
+## Subcommands
+
+| Subcommand      | Description                              |
+| --------------- | ---------------------------------------- |
+| `wallet info`   | Show wallet address and storage location |
+| `wallet export` | Print the raw private key to stdout      |
+
+## Examples
+
+### Show wallet info
+
+```bash
+npx @zoralabs/cli wallet info
+```
+
+```
+ Wallet
+
+ Address  0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E
+ Source   ~/.config/zora/wallet.json
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli wallet info --json
+```
+
+```json
+{
+  "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+  "source": "~/.config/zora/wallet.json"
+}
+```
+
+### Export private key
+
+```bash
+npx @zoralabs/cli wallet export
+```
+
+:::warning
+This prints the raw private key to stdout. Only use in secure environments. Never share or log this value.
+:::
+
+### Export with confirmation skip
+
+```bash
+npx @zoralabs/cli wallet export --yes
+```

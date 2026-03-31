@@ -1,0 +1,8 @@
+{
+  "git": {
+    "deploymentEnabled": false
+  },
+  "buildCommand": "pnpm run build:site",
+  "outputDirectory": "dist",
+  "$schema": "https://openapi.vercel.sh/vercel.json"
+}

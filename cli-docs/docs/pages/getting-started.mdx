@@ -1,0 +1,153 @@
+# Getting Started
+
+## Install
+
+Requires **Node.js 24+**.
+
+```bash
+npm install -g @zoralabs/cli
+```
+
+Or run any command directly without installing:
+
+```bash
+npx @zoralabs/cli explore
+```
+
+## Browse Coins
+
+Start exploring coins immediately — no wallet or API key needed:
+
+```bash
+# Top coins by market cap
+zora explore --sort mcap
+
+# Trending coins
+zora explore --sort trending
+
+# New coins
+zora explore --sort new --type creator-coin
+```
+
+## Look Up a Coin
+
+```bash
+# By contract address
+zora get 0x71e764a744af3fe52f598154e4a15f888737dae5
+
+# By creator name (for creator coins)
+zora get jakeward --type creator-coin
+```
+
+Example output:
+
+```
+BAGOFUCKS
+  Address     0x71e764a744af3fe52f598154e4a15f888737dae5
+  Type        post
+  Market Cap  $877,476.85
+  24h Δ       $189,062.70
+  Volume 24h  $13,046.67
+  Holders     409
+  Creator     jakeward
+  Created     6 days ago
+```
+
+## Set Up a Wallet
+
+Trading commands (`buy`, `sell`, `send`) require a wallet. Create one:
+
+```bash
+# Interactive — choose to create or import
+zora setup
+
+# Non-interactive — generate a new wallet
+zora setup --create
+```
+
+```json
+{
+  "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+  "source": "~/.config/zora/wallet.json"
+}
+```
+
+:::warning
+The private key is stored at `~/.config/zora/wallet.json` with restricted permissions. This is the only copy — losing it means losing access to the wallet.
+:::
+
+Alternatively, set the `ZORA_PRIVATE_KEY` environment variable:
+
+```bash
+export ZORA_PRIVATE_KEY=0x...
+```
+
+## Configure an API Key (Optional)
+
+Read-only commands work without an API key but may be rate-limited. Get a key at [zora.co/settings/developer](https://zora.co/settings/developer):
+
+```bash
+zora auth configure
+# Prompts for your API key
+
+zora auth status --json
+```
+
+```json
+{
+  "authenticated": true,
+  "key": "f7c3502c...3458",
+  "source": "~/.config/zora/config.json"
+}
+```
+
+Or set via environment variable:
+
+```bash
+export ZORA_API_KEY=your-key-here
+```
+
+## Make a Trade
+
+```bash
+# Buy with 0.01 ETH
+zora buy 0x71e764a744af3fe52f598154e4a15f888737dae5 --eth 0.01
+
+# Get a quote without executing
+zora buy 0x71e764a744af3fe52f598154e4a15f888737dae5 --eth 0.01 --quote
+
+# Sell 50% of a position
+zora sell 0x71e764a744af3fe52f598154e4a15f888737dae5 --percent 50
+
+# Send ETH to another address
+zora send eth --to 0x... --amount 0.1
+```
+
+## Check Balances
+
+```bash
+# Interactive live-updating view
+zora balance
+
+# JSON snapshot
+zora balance --json
+```
+
+## JSON Mode
+
+Every command supports `--json` for machine-readable output. This is essential for scripting and AI agent integration:
+
+```bash
+zora explore --json --sort trending --limit 5
+zora get 0x... --json
+zora balance --json
+```
+
+See the [JSON Mode & Scripting](/guides/json-mode) guide and [AI Agent Integration](/guides/ai-agents) guide for more.
+
+## Next Steps
+
+- [Command Reference](/commands/explore) — detailed docs for every command
+- [AI Agent Integration](/guides/ai-agents) — build agents that trade coins
+- [JSON Mode & Scripting](/guides/json-mode) — automation patterns
+- [Configuration](/guides/configuration) — environment variables and config files

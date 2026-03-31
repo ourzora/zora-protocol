@@ -1,0 +1,128 @@
+# JSON Mode & Scripting
+
+Every Zora CLI command supports `--json` for machine-readable output. This makes the CLI a powerful building block for shell scripts, CI/CD pipelines, and automated workflows.
+
+## JSON Flag
+
+```bash
+npx @zoralabs/cli <command> --json
+```
+
+When `--json` is passed:
+
+- Output is structured JSON on stdout
+- The beta warning goes to stderr (won't interfere with parsing)
+- Interactive prompts are replaced by `--yes` behavior where applicable
+- Errors return a JSON object with `error` and optional `suggestion` fields
+
+## Shell Scripting Examples
+
+### Get the market cap of a coin
+
+```bash
+npx @zoralabs/cli get jacob --type creator-coin --json | jq -r '.marketCap'
+# 434988.18
+```
+
+### List trending coin addresses
+
+```bash
+npx @zoralabs/cli explore --json --sort trending --limit 5 | jq -r '.coins[].address'
+# 0x50f88fe97f72...
+# 0x834f77c66f90...
+# 0xa1dacbd0a9bf...
+```
+
+### Check if a coin is up in the last 24h
+
+```bash
+change=$(npx @zoralabs/cli price-history 0x9b13358e3a02... --json --interval 24h | jq '.change')
+if (( $(echo "$change > 0" | bc -l) )); then
+  echo "Coin is up ${change}%"
+fi
+```
+
+### Get wallet address
+
+```bash
+addr=$(npx @zoralabs/cli wallet info --json | jq -r '.address')
+echo "Wallet: $addr"
+# Wallet: 0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E
+```
+
+### Buy if trending and price is rising
+
+```bash
+#!/bin/bash
+# Find trending coins and buy ones with positive 24h momentum
+
+coins=$(npx @zoralabs/cli explore --json --sort trending --limit 5 | jq -r '.coins[].address')
+
+for addr in $coins; do
+  change=$(npx @zoralabs/cli price-history "$addr" --json --interval 24h | jq '.change')
+
+  if (( $(echo "$change > 5" | bc -l) )); then
+    echo "Buying $addr (up ${change}%)"
+    npx @zoralabs/cli buy "$addr" --eth 0.001 --yes --json
+  fi
+done
+```
+
+## Output Modes
+
+Commands with live data (`explore`, `balance`, `profile`) support three mutually exclusive output modes:
+
+| Flag       | Behavior                                           |
+| ---------- | -------------------------------------------------- |
+| `--live`   | Interactive, auto-refreshing terminal UI (default) |
+| `--static` | Single snapshot, then exit                         |
+| `--json`   | Structured JSON, then exit                         |
+
+These three flags cannot be combined. `--json` is the best choice for scripting.
+
+## Pagination
+
+The `explore` command supports cursor-based pagination:
+
+```bash
+# First page
+result=$(npx @zoralabs/cli explore --json --sort mcap --limit 10)
+echo "$result" | jq '.coins[].name'
+
+# Next page
+cursor=$(echo "$result" | jq -r '.nextCursor')
+npx @zoralabs/cli explore --json --sort mcap --limit 10 --after "$cursor"
+```
+
+## Error Handling
+
+All errors in `--json` mode return a consistent format:
+
+```json
+{
+  "error": "Insufficient ETH balance",
+  "suggestion": "Current balance: 0.001 ETH. Need at least 0.01 ETH."
+}
+```
+
+Check for the `error` field to handle failures:
+
+```bash
+result=$(npx @zoralabs/cli buy 0x... --eth 0.01 --yes --json 2>&1)
+error=$(echo "$result" | jq -r '.error // empty')
+
+if [ -n "$error" ]; then
+  echo "Trade failed: $error"
+  exit 1
+fi
+```
+
+## Environment Variables for Scripting
+
+```bash
+export ZORA_PRIVATE_KEY=0x...      # Wallet (avoids interactive setup)
+export ZORA_API_KEY=your-key       # Higher rate limits
+export ZORA_NO_ANALYTICS=1         # Disable telemetry
+```
+
+See [Environment Variables](/reference/environment-variables) for the full list.

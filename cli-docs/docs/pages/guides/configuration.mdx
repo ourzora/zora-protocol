@@ -1,0 +1,101 @@
+# Configuration
+
+The Zora CLI stores configuration in `~/.config/zora/` with two files:
+
+| File          | Contents              | Permissions |
+| ------------- | --------------------- | ----------- |
+| `config.json` | API key, analytics ID | `0600`      |
+| `wallet.json` | Encrypted private key | `0600`      |
+
+On Windows, the config directory is `%APPDATA%\zora\` or `~\AppData\Roaming\zora\`.
+
+## API Key
+
+An API key is optional. Without one, read-only commands work but may be rate-limited.
+
+### Configure via CLI
+
+```bash
+npx @zoralabs/cli auth configure
+# Prompts for your API key and saves to config.json
+```
+
+### Configure via Environment Variable
+
+```bash
+export ZORA_API_KEY=your-key-here
+```
+
+The environment variable takes precedence over the config file.
+
+### Get an API Key
+
+Generate one at [zora.co/settings/developer](https://zora.co/settings/developer).
+
+## Wallet
+
+Trading commands (`buy`, `sell`, `send`, `balance`) require a wallet.
+
+### Create via CLI
+
+```bash
+npx @zoralabs/cli setup --create
+```
+
+### Import via CLI
+
+```bash
+npx @zoralabs/cli setup
+# Interactive prompt to paste a private key
+```
+
+### Configure via Environment Variable
+
+```bash
+export ZORA_PRIVATE_KEY=0x...
+```
+
+The environment variable takes precedence over the wallet file. This is recommended for CI/CD, containers, and agent runtimes.
+
+:::warning
+The wallet file at `~/.config/zora/wallet.json` is the only copy of the private key. Back it up securely. Losing it means losing access to the wallet and funds.
+:::
+
+## All Environment Variables
+
+| Variable            | Description                                |
+| ------------------- | ------------------------------------------ |
+| `ZORA_API_KEY`      | API key (overrides config file)            |
+| `ZORA_PRIVATE_KEY`  | Wallet private key (overrides wallet file) |
+| `ZORA_API_TARGET`   | Override API base URL (for dev/staging)    |
+| `ZORA_NO_ANALYTICS` | Set to `1` to disable analytics            |
+| `DO_NOT_TRACK`      | Set to `1` to disable analytics            |
+
+## Analytics
+
+The CLI collects anonymous usage analytics via PostHog. No personal data is collected — only command names, success/failure status, and CLI version.
+
+Opt out by setting either:
+
+```bash
+export ZORA_NO_ANALYTICS=1
+# or
+export DO_NOT_TRACK=1
+```
+
+## Agent Configuration
+
+For AI agents and automated environments, configure everything via environment variables to avoid interactive prompts:
+
+```bash
+export ZORA_PRIVATE_KEY=0x...
+export ZORA_API_KEY=your-key-here
+export ZORA_NO_ANALYTICS=1
+```
+
+Then use `--json` and `--yes` flags on all commands:
+
+```bash
+npx @zoralabs/cli balance --json
+npx @zoralabs/cli buy 0x... --eth 0.01 --yes --json
+```

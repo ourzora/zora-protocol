@@ -1,0 +1,56 @@
+# Environment Variables
+
+All configuration can be set via environment variables, which take precedence over config files.
+
+## Authentication
+
+| Variable           | Description                                                                                                                                          |
+| ------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ZORA_API_KEY`     | API key for higher rate limits. Overrides `~/.config/zora/config.json`. Get one at [zora.co/settings/developer](https://zora.co/settings/developer). |
+| `ZORA_PRIVATE_KEY` | Wallet private key (hex, with or without `0x` prefix). Overrides `~/.config/zora/wallet.json`.                                                       |
+
+## Advanced
+
+| Variable            | Description                                                                      |
+| ------------------- | -------------------------------------------------------------------------------- |
+| `ZORA_API_TARGET`   | Override the API base URL. Useful for local development or staging environments. |
+| `ZORA_NO_ANALYTICS` | Set to `1` to disable anonymous usage analytics.                                 |
+| `DO_NOT_TRACK`      | Set to `1` to disable analytics (standard convention).                           |
+
+## Example: Agent Setup
+
+```bash
+# Full agent configuration — no interactive prompts needed
+export ZORA_PRIVATE_KEY=0xabcdef1234567890...
+export ZORA_API_KEY=your-api-key-here
+export ZORA_NO_ANALYTICS=1
+```
+
+## Example: .env File
+
+```bash
+# .env
+ZORA_PRIVATE_KEY=0xabcdef1234567890...
+ZORA_API_KEY=your-api-key-here
+ZORA_NO_ANALYTICS=1
+```
+
+Load with your preferred tool:
+
+```bash
+# Node.js
+node --env-file .env your-script.js
+
+# Shell
+source .env && npx @zoralabs/cli balance --json
+
+# Docker
+docker run --env-file .env your-agent
+```
+
+## Precedence
+
+| Setting | 1st (highest)              | 2nd                          | 3rd (lowest)            |
+| ------- | -------------------------- | ---------------------------- | ----------------------- |
+| API Key | `ZORA_API_KEY` env var     | `~/.config/zora/config.json` | None (rate-limited)     |
+| Wallet  | `ZORA_PRIVATE_KEY` env var | `~/.config/zora/wallet.json` | Error (wallet required) |

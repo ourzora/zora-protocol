@@ -1,0 +1,82 @@
+# setup
+
+Create or import a wallet for trading. Required before using `buy`, `sell`, `send`, or `balance`.
+
+```bash
+zora setup [options]
+```
+
+## Options
+
+| Flag       | Description                                 |
+| ---------- | ------------------------------------------- |
+| `--create` | Create a new wallet without prompting       |
+| `--force`  | Overwrite existing wallet without prompting |
+| `--yes`    | Skip interactive prompt                     |
+| `--json`   | Machine-readable JSON output                |
+
+## Examples
+
+### Interactive setup
+
+```bash
+npx @zoralabs/cli setup
+```
+
+```
+ Zora Wallet Setup
+
+ ? What would you like to do?
+   ❯ Create a new wallet
+     Import an existing private key
+```
+
+### Create a new wallet (non-interactive)
+
+```bash
+npx @zoralabs/cli setup --create
+```
+
+```
+ Wallet created
+
+ Address  0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E
+ Saved    ~/.config/zora/wallet.json
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli setup --create --json
+```
+
+```json
+{
+  "address": "0xb4a06BdD9e0E60FFE22E4E7590842bfD2069034E",
+  "source": "~/.config/zora/wallet.json"
+}
+```
+
+### Overwrite existing wallet
+
+```bash
+npx @zoralabs/cli setup --create --force
+```
+
+## Storage
+
+The private key is saved to `~/.config/zora/wallet.json` with `0600` permissions (owner-only read/write).
+
+:::warning
+This file contains the only copy of the wallet's private key. Losing it means losing access to the wallet and any funds it holds. Back it up securely.
+:::
+
+## Alternative: Environment Variable
+
+Instead of using `setup`, set the `ZORA_PRIVATE_KEY` environment variable:
+
+```bash
+export ZORA_PRIVATE_KEY=0x...
+```
+
+This takes precedence over the wallet file and is useful for CI/CD, containers, and agent runtimes.

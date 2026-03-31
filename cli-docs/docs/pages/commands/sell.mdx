@@ -1,0 +1,93 @@
+# sell
+
+Sell a coin. Requires a [wallet](/commands/setup).
+
+```bash
+zora sell [options] [address]
+```
+
+## Arguments
+
+| Argument  | Description                     |
+| --------- | ------------------------------- |
+| `address` | Coin contract address (`0x...`) |
+
+## Options
+
+| Flag                | Description                          | Default |
+| ------------------- | ------------------------------------ | ------- |
+| `--amount <value>`  | Sell specific number of coins        | —       |
+| `--usd <value>`     | Sell USD equivalent worth of coins   | —       |
+| `--percent <value>` | Sell percentage of coin balance      | —       |
+| `--all`             | Sell entire coin balance             | —       |
+| `--to <asset>`      | Receive asset: `eth`, `usdc`, `zora` | `eth`   |
+| `--token <asset>`   | Alias for `--to`                     | `eth`   |
+| `--slippage <pct>`  | Slippage tolerance percent           | `1`     |
+| `--quote`           | Print quote and exit without trading | —       |
+| `--yes`             | Skip confirmation prompt             | —       |
+| `--debug`           | Print full request/response JSON     | —       |
+| `--json`            | Machine-readable JSON output         | —       |
+
+:::info
+Amount flags (`--amount`, `--usd`, `--percent`, `--all`) are mutually exclusive — use exactly one.
+:::
+
+## Examples
+
+### Sell 50% of jacob position
+
+```bash
+npx @zoralabs/cli sell 0x9b13358e3a023507e7046c18f508a958cda75f54 --percent 50
+```
+
+```
+ Sell jacob (creator-coin)
+
+ Selling           10.31 jacob (50%)
+ Estimated receive 0.005 ETH
+ Receive as        ETH
+
+ Confirm? (y/n)
+```
+
+### Sell entire position
+
+```bash
+npx @zoralabs/cli sell 0x9b13358e3a023507e7046c18f508a958cda75f54 --all
+```
+
+### Sell and receive USDC instead of ETH
+
+```bash
+npx @zoralabs/cli sell 0x9b13358e3a023507e7046c18f508a958cda75f54 --all --to usdc
+```
+
+### Sell a specific amount
+
+```bash
+npx @zoralabs/cli sell 0x9b13358e3a023507e7046c18f508a958cda75f54 --amount 100
+```
+
+### Get a sell quote
+
+```bash
+npx @zoralabs/cli sell 0x9b13358e3a023507e7046c18f508a958cda75f54 --all --quote
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli sell 0x... --all --yes --json
+```
+
+```json
+{
+  "action": "trade",
+  "coin": "jacob",
+  "soldAmount": "20.63",
+  "received": "0.01",
+  "receivedToken": "ETH",
+  "txHash": "0xdef456...",
+  "explorerUrl": "https://basescan.org/tx/0xdef456..."
+}
+```

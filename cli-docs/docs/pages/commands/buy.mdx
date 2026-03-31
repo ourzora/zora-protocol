@@ -1,0 +1,107 @@
+# buy
+
+Buy a coin. Requires a [wallet](/commands/setup).
+
+```bash
+zora buy [options] [address]
+```
+
+## Arguments
+
+| Argument  | Description                     |
+| --------- | ------------------------------- |
+| `address` | Coin contract address (`0x...`) |
+
+## Options
+
+| Flag                | Description                           | Default |
+| ------------------- | ------------------------------------- | ------- |
+| `--eth <value>`     | Buy with ETH amount                   | —       |
+| `--usd <value>`     | Buy with USD equivalent               | —       |
+| `--percent <value>` | Buy with percentage of token balance  | —       |
+| `--all`             | Swap entire token balance for coin    | —       |
+| `--token <asset>`   | Token to spend: `eth`, `usdc`, `zora` | `eth`   |
+| `--slippage <pct>`  | Slippage tolerance percent            | `1`     |
+| `--quote`           | Print quote and exit without trading  | —       |
+| `--yes`             | Skip confirmation prompt              | —       |
+| `--debug`           | Print full request/response JSON      | —       |
+| `--json`            | Machine-readable JSON output          | —       |
+
+:::info
+Amount flags (`--eth`, `--usd`, `--percent`, `--all`) are mutually exclusive — use exactly one.
+:::
+
+## Examples
+
+### Buy the jacob creator coin with 0.01 ETH
+
+```bash
+npx @zoralabs/cli buy 0x9b13358e3a023507e7046c18f508a958cda75f54 --eth 0.01
+```
+
+```
+ Buy jacob (creator-coin)
+
+ Spend             0.01 ETH
+ Estimated receive 20.63 jacob
+ Price per coin    $0.000485
+
+ Confirm? (y/n)
+```
+
+### Buy with USDC
+
+```bash
+npx @zoralabs/cli buy 0x9b13358e3a023507e7046c18f508a958cda75f54 --usd 10 --token usdc
+```
+
+### Buy with 50% of ETH balance
+
+```bash
+npx @zoralabs/cli buy 0x9b13358e3a023507e7046c18f508a958cda75f54 --percent 50
+```
+
+### Get a quote without executing
+
+```bash
+npx @zoralabs/cli buy 0x9b13358e3a023507e7046c18f508a958cda75f54 --eth 0.05 --quote
+```
+
+### Non-interactive for scripting
+
+```bash
+npx @zoralabs/cli buy 0x9b13358e3a023507e7046c18f508a958cda75f54 --eth 0.01 --yes --json
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli buy 0x... --eth 0.01 --yes --json
+```
+
+**Quote response:**
+
+```json
+{
+  "action": "quote",
+  "coin": "jacob",
+  "spendAmount": "0.01",
+  "spendToken": "ETH",
+  "estimatedReceive": "20.63",
+  "pricePerCoin": "0.000485"
+}
+```
+
+**Trade execution response:**
+
+```json
+{
+  "action": "trade",
+  "coin": "jacob",
+  "spendAmount": "0.01",
+  "spendToken": "ETH",
+  "received": "20.63",
+  "txHash": "0xabc123...",
+  "explorerUrl": "https://basescan.org/tx/0xabc123..."
+}
+```

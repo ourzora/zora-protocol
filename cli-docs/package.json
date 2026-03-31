@@ -1,0 +1,27 @@
+{
+  "name": "cli-docs",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "copy:skill": "cp ../packages/cli/SKILL.md docs/public/skill.md",
+    "dev": "pnpm copy:skill && vocs dev",
+    "build": "tsc --noEmit",
+    "build:site": "pnpm copy:skill && vocs build",
+    "preview": "vocs preview",
+    "render:video": "npx remotion render remotion/index.ts TerminalDemo docs/public/terminal-demo.webm --codec=vp8 --public-dir=docs/public && npx remotion render remotion/index.ts TerminalDemo docs/public/terminal-demo.gif --codec=gif --every-nth-frame=2 --public-dir=docs/public",
+    "studio": "npx remotion studio remotion/index.ts --public-dir=docs/public"
+  },
+  "dependencies": {
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
+    "vocs": "^1.4.1"
+  },
+  "devDependencies": {
+    "@remotion/cli": "4.0.441",
+    "@remotion/renderer": "4.0.441",
+    "@types/react": "^19.2.14",
+    "remotion": "4.0.441",
+    "typescript": "^5.8.3"
+  }
+}

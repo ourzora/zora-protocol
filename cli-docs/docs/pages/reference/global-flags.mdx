@@ -1,0 +1,45 @@
+# Global Flags
+
+These flags are available on every Zora CLI command.
+
+| Flag              | Description                                                 |
+| ----------------- | ----------------------------------------------------------- |
+| `--json`          | Output structured JSON instead of formatted terminal output |
+| `--version`, `-V` | Print the CLI version number                                |
+| `--help`, `-h`    | Display help for a command                                  |
+
+## --json
+
+All commands support `--json` for machine-readable output. When enabled:
+
+- Structured JSON is written to stdout
+- The beta warning is written to stderr
+- Interactive prompts are disabled
+- Errors return `{ "error": "...", "suggestion": "..." }`
+
+```bash
+npx @zoralabs/cli get jacob --type creator-coin --json
+```
+
+## Per-Command Flags
+
+Commands with live data (`explore`, `balance`, `profile`) support additional display mode flags:
+
+| Flag                  | Description                                | Default                    |
+| --------------------- | ------------------------------------------ | -------------------------- |
+| `--live`              | Interactive live-updating display          | default for these commands |
+| `--static`            | Static snapshot (single render, then exit) | —                          |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`                       |
+
+These flags are mutually exclusive with `--json`. Use one of: `--json`, `--live`, or `--static`.
+
+## Trade Flags
+
+Commands that execute transactions (`buy`, `sell`, `send`) support:
+
+| Flag               | Description                                              |
+| ------------------ | -------------------------------------------------------- |
+| `--yes`            | Skip confirmation prompt and execute immediately         |
+| `--quote`          | Preview the trade without executing (buy, sell only)     |
+| `--slippage <pct>` | Slippage tolerance percent (buy, sell only, default: 1%) |
+| `--debug`          | Print full request/response JSON (buy, sell only)        |
