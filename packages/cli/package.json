@@ -17,6 +17,7 @@
     "build:js": "tsup",
     "zora": "tsx src/index.tsx",
     "test": "vitest run",
+    "test:js": "pnpm run test",
     "test:coverage": "vitest run --coverage",
     "build:binary": "V=$(node -p \"require('./package.json').version\") && bun build ./src/index.tsx --compile --define \"PKG_VERSION=\\\"$V\\\"\" --outfile ./bin/zora",
     "build:binary:all": "pnpm run build:binary:mac-arm64 && pnpm run build:binary:mac-x64 && pnpm run build:binary:linux-x64 && pnpm run build:binary:linux-arm64 && pnpm run build:binary:windows-x64",
