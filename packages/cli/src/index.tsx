@@ -54,14 +54,20 @@ function styledHelpWriteOut(showHeader: boolean) {
 const buildProgram = (): Command => {
   const program = new Command()
     .name("zora")
-    .description("A developer CLI for the Zora platform")
+    .description("Trade what's trending. Run `zora setup` to get started.")
     .version(version)
     .option("--json", "Output as JSON (for scripts and automation)", false);
 
   // Account for border (2) + paddingX (2) = 4 chars of box overhead
   const helpWidth = (process.stdout.columns || 80) - 4;
 
-  program.configureHelp({ helpWidth });
+  program.configureHelp({
+    helpWidth,
+    commandDescription: (cmd) => {
+      if (!cmd.parent && supportsTruecolor()) return "";
+      return cmd.description();
+    },
+  });
   program.configureOutput({ writeOut: styledHelpWriteOut(true) });
 
   // Show styled help when invoked with no subcommand (bare `zora`).

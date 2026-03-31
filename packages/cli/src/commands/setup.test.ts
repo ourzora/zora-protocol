@@ -5,6 +5,10 @@ vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
   savePrivateKey: vi.fn(),
   getWalletPath: vi.fn(() => "/tmp/.zora/wallet.json"),
+  getApiKey: vi.fn(),
+  getEnvApiKey: vi.fn(),
+  saveApiKey: vi.fn(),
+  getConfigPath: vi.fn(() => "/tmp/.zora/config.json"),
 }));
 
 vi.mock("viem/accounts", () => ({
@@ -15,11 +19,26 @@ vi.mock("viem/accounts", () => ({
 vi.mock("../lib/prompt.js", () => ({
   selectOrDefault: vi.fn(),
   passwordOrFail: vi.fn(),
+  confirmOrDefault: vi.fn(),
+  passwordOrSkip: vi.fn(),
 }));
 
-import { getPrivateKey, savePrivateKey } from "../lib/config.js";
+import {
+  getPrivateKey,
+  savePrivateKey,
+  getWalletPath,
+  getApiKey,
+  getEnvApiKey,
+  saveApiKey,
+  getConfigPath,
+} from "../lib/config.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { selectOrDefault, passwordOrFail } from "../lib/prompt.js";
+import {
+  selectOrDefault,
+  passwordOrFail,
+  confirmOrDefault,
+  passwordOrSkip,
+} from "../lib/prompt.js";
 import { setupCommand } from "./setup.js";
 
 const MOCK_KEY = ("0x" + "a".repeat(64)) as `0x${string}`;
@@ -36,6 +55,7 @@ describe("setup command", () => {
   let exitSpy: ReturnType<typeof vi.spyOn>;
 
   beforeEach(() => {
+    vi.resetAllMocks();
     logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
@@ -46,6 +66,11 @@ describe("setup command", () => {
     vi.mocked(privateKeyToAccount).mockReturnValue({
       address: MOCK_ADDRESS,
     } as ReturnType<typeof privateKeyToAccount>);
+    vi.mocked(getApiKey).mockReturnValue(undefined);
+    vi.mocked(getEnvApiKey).mockReturnValue(undefined);
+    vi.mocked(getWalletPath).mockReturnValue("/tmp/.zora/wallet.json");
+    vi.mocked(getConfigPath).mockReturnValue("/tmp/.zora/config.json");
+    vi.mocked(passwordOrSkip).mockResolvedValue("");
     delete process.env.ZORA_PRIVATE_KEY;
   });
 
@@ -53,8 +78,18 @@ describe("setup command", () => {
     logSpy.mockRestore();
     errorSpy.mockRestore();
     exitSpy.mockRestore();
-    vi.clearAllMocks();
     delete process.env.ZORA_PRIVATE_KEY;
+  });
+
+  describe("step indicators", () => {
+    it("prints [1/3], [2/3], [3/3] step indicators", async () => {
+      await runSetup(["--create"]);
+
+      const allOutput = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(allOutput).toContain("[1/3]");
+      expect(allOutput).toContain("[2/3]");
+      expect(allOutput).toContain("[3/3]");
+    });
   });
 
   describe("--create flag (no prompt)", () => {
@@ -146,28 +181,42 @@ describe("setup command", () => {
     });
   });
 
-  describe("existing wallet guard", () => {
-    it("exits with error if wallet exists and --force not set", async () => {
+  describe("existing wallet (re-runnable)", () => {
+    it("prompts to overwrite when wallet exists", async () => {
       vi.mocked(getPrivateKey).mockReturnValue(MOCK_KEY);
+      vi.mocked(confirmOrDefault).mockResolvedValue(false);
 
-      await expect(runSetup(["--create"])).rejects.toThrow("process.exit(1)");
+      await runSetup(["--create"]);
 
-      const allOutput = [
-        ...logSpy.mock.calls.map((c) => c[0]),
-        ...errorSpy.mock.calls.map((c) => c[0]),
-      ].join("\n");
-      expect(allOutput).toContain("--force");
-      expect(savePrivateKey).not.toHaveBeenCalled();
+      expect(confirmOrDefault).toHaveBeenCalledWith(
+        expect.objectContaining({
+          message: "Overwrite wallet configuration?",
+        }),
+        false,
+      );
     });
 
-    it("shows truncated existing address before blocking", async () => {
+    it("skips wallet when user declines overwrite", async () => {
       vi.mocked(getPrivateKey).mockReturnValue(MOCK_KEY);
+      vi.mocked(confirmOrDefault).mockResolvedValue(false);
 
-      await expect(runSetup(["--create"])).rejects.toThrow("process.exit(1)");
+      await runSetup(["--create"]);
 
+      expect(savePrivateKey).not.toHaveBeenCalled();
       expect(logSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Wallet already configured:"),
+        expect.stringContaining("Keeping existing wallet"),
       );
+    });
+
+    it("proceeds with creation when user accepts overwrite", async () => {
+      vi.mocked(getPrivateKey).mockReturnValue(MOCK_KEY);
+      vi.mocked(confirmOrDefault).mockResolvedValue(true);
+      const newKey = ("0x" + "b".repeat(64)) as `0x${string}`;
+      vi.mocked(generatePrivateKey).mockReturnValue(newKey);
+
+      await runSetup(["--create"]);
+
+      expect(savePrivateKey).toHaveBeenCalledWith(newKey);
     });
 
     it("overwrites existing wallet when --force is set", async () => {
@@ -285,6 +334,110 @@ describe("setup command", () => {
         ...errorSpy.mock.calls.map((c) => c[0]),
       ].join("\n");
       expect(allOutput).toContain("Couldn't save to");
+    });
+  });
+
+  describe("API key step", () => {
+    it("saves API key when user provides one", async () => {
+      vi.mocked(passwordOrSkip).mockResolvedValue("my-api-key");
+
+      await runSetup(["--create"]);
+
+      expect(saveApiKey).toHaveBeenCalledWith("my-api-key");
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("API key saved"),
+      );
+    });
+
+    it("skips API key when user presses Enter", async () => {
+      vi.mocked(passwordOrSkip).mockResolvedValue("");
+
+      await runSetup(["--create"]);
+
+      expect(saveApiKey).not.toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Skipped API key"),
+      );
+    });
+
+    it("detects ZORA_API_KEY env var override", async () => {
+      vi.mocked(getEnvApiKey).mockReturnValue("env-key");
+
+      await runSetup(["--create"]);
+
+      expect(saveApiKey).not.toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("ZORA_API_KEY environment variable"),
+      );
+    });
+
+    it("prompts to overwrite existing API key", async () => {
+      vi.mocked(getApiKey).mockReturnValue("existing-key");
+      vi.mocked(confirmOrDefault)
+        .mockResolvedValueOnce(true) // wallet overwrite prompt (if wallet exists)
+        .mockResolvedValueOnce(false); // API key overwrite
+
+      await runSetup(["--create"]);
+
+      expect(confirmOrDefault).toHaveBeenCalledWith(
+        expect.objectContaining({ message: "Overwrite API key?" }),
+        false,
+      );
+      expect(saveApiKey).not.toHaveBeenCalled();
+    });
+  });
+
+  describe("--yes mode", () => {
+    it("creates wallet and skips API key in non-interactive mode", async () => {
+      await runSetup(["--create", "--yes"]);
+
+      expect(savePrivateKey).toHaveBeenCalledWith(MOCK_KEY);
+      expect(saveApiKey).not.toHaveBeenCalled();
+    });
+
+    it("skips wallet when existing and --yes without --force", async () => {
+      vi.mocked(getPrivateKey).mockReturnValue(MOCK_KEY);
+
+      await runSetup(["--create", "--yes"]);
+
+      expect(savePrivateKey).not.toHaveBeenCalled();
+      expect(logSpy).toHaveBeenCalledWith(
+        expect.stringContaining("Keeping existing wallet"),
+      );
+    });
+
+    it("overwrites wallet with --yes --force", async () => {
+      vi.mocked(getPrivateKey).mockReturnValue(MOCK_KEY);
+      const newKey = ("0x" + "b".repeat(64)) as `0x${string}`;
+      vi.mocked(generatePrivateKey).mockReturnValue(newKey);
+
+      await runSetup(["--create", "--yes", "--force"]);
+
+      expect(savePrivateKey).toHaveBeenCalledWith(newKey);
+    });
+  });
+
+  describe("--json output", () => {
+    it("outputs combined JSON structure", async () => {
+      await runSetup(["--json", "--create", "--yes"]);
+
+      const jsonCalls = logSpy.mock.calls
+        .map((c) => c[0])
+        .filter((s) => typeof s === "string");
+      const jsonOutput = jsonCalls.find((s) => {
+        try {
+          JSON.parse(s);
+          return true;
+        } catch {
+          return false;
+        }
+      });
+      expect(jsonOutput).toBeDefined();
+      const parsed = JSON.parse(jsonOutput!);
+      expect(parsed).toHaveProperty("wallet");
+      expect(parsed).toHaveProperty("apiKey");
+      expect(parsed.wallet.action).toBe("created");
+      expect(parsed.apiKey).toBe("skipped");
     });
   });
 });

@@ -20,7 +20,20 @@ export function StyledHelpHeader({
         <Zorb size={20} />
       </Box>
       <Box flexDirection="column" flexGrow={1} justifyContent="center">
-        <Text bold>Zora CLI</Text>
+        <Text bold>
+          <Text backgroundColor="#3fff00" color="black">
+            {" "}
+            Zora CLI{" "}
+          </Text>
+        </Text>
+        <Text>
+          <Text dimColor>Trade what's trending. Run</Text>{" "}
+          <Text backgroundColor="#3fff00" color="black">
+            {" "}
+            zora setup{" "}
+          </Text>{" "}
+          <Text dimColor>to get started.</Text>
+        </Text>
       </Box>
     </Box>
   );

@@ -8,9 +8,15 @@ import {
   outputData,
 } from "../lib/output.js";
 import { confirmOrDefault } from "../lib/prompt.js";
-import { NO_WALLET_CONFIGURED, NO_WALLET_SUGGESTION } from "../lib/strings.js";
+import {
+  NO_WALLET_CONFIGURED,
+  NO_WALLET_SUGGESTION,
+  DEPOSIT_SOURCES,
+  BACKUP_WARNING,
+} from "../lib/strings.js";
 import { normalizeKey } from "../lib/wallet.js";
 import { track } from "../lib/analytics.js";
+import { configureWallet } from "../lib/wallet-setup.js";
 
 const resolvePrivateKey = ():
   | { key: string; source: "env" | "file" }
@@ -109,6 +115,60 @@ walletCommand
     console.log(resolved.key);
 
     track("cli_wallet_export", {
+      output_format: json ? "json" : "text",
+    });
+  });
+
+walletCommand
+  .command("configure")
+  .description("Create or import a wallet")
+  .option("--create", "Create a new wallet without prompting")
+  .option("--force", "Overwrite existing wallet without prompting")
+  .option("--yes", "Skip interactive prompt and execute directly")
+  .action(async function (
+    this: Command,
+    options: { create?: boolean; force?: boolean },
+  ) {
+    const json = getJson(this);
+    const nonInteractive = getYes(this);
+
+    const result = await configureWallet({
+      json,
+      nonInteractive,
+      create: options.create,
+      force: options.force,
+      promptOverwrite: false,
+    });
+
+    outputData(json, {
+      json: result,
+      render: () => {
+        if (result.action === "env_detected") {
+          console.log("  Using wallet from ZORA_PRIVATE_KEY.\n");
+          console.log(`  Address: ${result.address}\n`);
+          console.log(
+            `  Deposit ETH or USDC on Base to start trading.\n\n  ${DEPOSIT_SOURCES}`,
+          );
+        } else if (
+          result.action === "created" ||
+          result.action === "imported"
+        ) {
+          const verb = result.action === "created" ? "created" : "imported";
+          console.log(`\n\u2713 Wallet ${verb}\n`);
+          console.log(`  Address:     ${result.address}`);
+          console.log(`  Private key: saved to ${result.path}\n`);
+          console.log(`  ${BACKUP_WARNING}\n`);
+          console.log(
+            `  Deposit ETH or USDC on Base to start trading.\n\n  ${DEPOSIT_SOURCES}`,
+          );
+        } else if (result.action === "skipped") {
+          console.log(`  Wallet already configured: ${result.address}\n`);
+        }
+      },
+    });
+
+    track("cli_wallet_config", {
+      action: result.action,
       output_format: json ? "json" : "text",
     });
   });

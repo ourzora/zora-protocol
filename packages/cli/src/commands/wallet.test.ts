@@ -3,6 +3,7 @@ import { createProgram } from "../test/create-program.js";
 
 vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
+  savePrivateKey: vi.fn(),
   getWalletPath: vi.fn(() => "/home/user/.config/zora/wallet.json"),
   getAnalyticsId: vi.fn(),
   getApiKey: vi.fn(),
@@ -12,16 +13,23 @@ vi.mock("../lib/config.js", () => ({
 vi.mock("../lib/analytics.js");
 
 vi.mock("viem/accounts", () => ({
+  generatePrivateKey: vi.fn(),
   privateKeyToAccount: vi.fn(),
 }));
 
 vi.mock("../lib/prompt.js", () => ({
   confirmOrDefault: vi.fn(),
+  selectOrDefault: vi.fn(),
+  passwordOrFail: vi.fn(),
 }));
 
-import { getPrivateKey, getWalletPath } from "../lib/config.js";
-import { privateKeyToAccount } from "viem/accounts";
-import { confirmOrDefault } from "../lib/prompt.js";
+import { getPrivateKey, savePrivateKey, getWalletPath } from "../lib/config.js";
+import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
+import {
+  confirmOrDefault,
+  selectOrDefault,
+  passwordOrFail,
+} from "../lib/prompt.js";
 import { walletCommand } from "./wallet.js";
 
 const MOCK_KEY = "0x" + "a".repeat(64);
@@ -220,6 +228,70 @@ describe("wallet export", () => {
     await runWallet(["export", "--force"]);
 
     expect(logSpy).toHaveBeenCalledWith(MOCK_KEY);
+    logSpy.mockRestore();
+  });
+});
+
+describe("wallet configure", () => {
+  const NEW_KEY = ("0x" + "b".repeat(64)) as `0x${string}`;
+
+  it("creates a new wallet with --create", async () => {
+    vi.mocked(generatePrivateKey).mockReturnValue(NEW_KEY);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runWallet(["configure", "--create"]);
+
+    expect(savePrivateKey).toHaveBeenCalledWith(NEW_KEY);
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("\u2713 Wallet created"),
+    );
+    logSpy.mockRestore();
+  });
+
+  it("imports a key via prompt", async () => {
+    vi.mocked(selectOrDefault).mockResolvedValue("import" as never);
+    vi.mocked(passwordOrFail).mockResolvedValue("a".repeat(64));
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runWallet(["configure"]);
+
+    expect(savePrivateKey).toHaveBeenCalledWith("a".repeat(64));
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("\u2713 Wallet imported"),
+    );
+    logSpy.mockRestore();
+  });
+
+  it("errors when wallet exists without --force", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(MOCK_KEY);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`process.exit(${code})`);
+    });
+
+    await expect(runWallet(["configure", "--create"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+
+    const allOutput = [
+      ...logSpy.mock.calls.map((c) => c[0]),
+      ...errorSpy.mock.calls.map((c) => c[0]),
+    ].join("\n");
+    expect(allOutput).toContain("--force");
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+    exitSpy.mockRestore();
+  });
+
+  it("overwrites wallet with --force", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(MOCK_KEY);
+    vi.mocked(generatePrivateKey).mockReturnValue(NEW_KEY);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+
+    await runWallet(["configure", "--create", "--force"]);
+
+    expect(savePrivateKey).toHaveBeenCalledWith(NEW_KEY);
     logSpy.mockRestore();
   });
 });

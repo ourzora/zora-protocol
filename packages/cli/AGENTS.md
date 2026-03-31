@@ -57,35 +57,35 @@ All commands support `--json` (global flag) for machine-readable output. Command
 
 | Command         | Description                                               | Wallet required |
 | --------------- | --------------------------------------------------------- | --------------- |
+| `setup`         | Guided first-time setup (wallet + API key + deposit info) | —               |
 | `explore`       | Browse top, new, and highest volume coins                 | No              |
 | `get`           | Look up a coin by address or name                         | No              |
 | `price-history` | Display price history for a coin                          | No              |
 | `auth`          | Configure or check API key status                         | No              |
-| `setup`         | Set up a wallet (generate or import private key)          | —               |
 | `buy`           | Buy a coin                                                | Yes             |
 | `sell`          | Sell a coin                                               | Yes             |
 | `balance`       | Show wallet balances (ETH, USDC, ZORA) and coin positions | Yes             |
-| `wallet`        | Show wallet address, storage location, or export key      | Yes             |
+| `wallet`        | Show wallet address, export key, or configure wallet      | Yes             |
 
-## Wallet
+## Setup
 
-Commands marked "Wallet required" need a private key to sign transactions. Set one up with:
+`zora setup` is a guided 3-step flow: wallet configuration, API key (optional), and deposit instructions. It is re-runnable — existing configuration is detected and can be kept or overwritten.
 
-- `zora setup --create` — generates a new key, saves it, prints the address
-- `zora setup` — interactive prompt to create or import an existing key
-- `--force` overwrites an existing wallet
+- `zora setup` — interactive 3-step flow
+- `zora setup --create` — skip wallet prompt, generate a new key
+- `zora setup --yes` — non-interactive, accept all defaults
+- `zora setup --force` — overwrite existing wallet and API key
 
 The private key is saved to `~/.config/zora/wallet.json` (0600 perms). **Never delete or modify this file** — it contains the only copy of the wallet's private key. Loss means loss of funds.
 
-`ZORA_PRIVATE_KEY` env var can be used instead of a saved wallet file.
+`ZORA_PRIVATE_KEY` and `ZORA_API_KEY` env vars take precedence over saved config files.
 
-## API auth
+### Advanced
 
-- **API key is optional** — read-only commands work without one, but are subject to rate limiting
-- Get an API key from: https://zora.co/settings/developer
-- `zora auth configure` — prompts for key; `zora auth status` — shows current config
-- Config stored at `~/.config/zora/config.json` (0600 perms)
-- `ZORA_API_KEY` env var takes precedence over config file
+To configure wallet or API key individually (without running the full setup flow):
+
+- `zora wallet configure` — create or import a wallet (`--create`, `--force`)
+- `zora auth configure` — save an API key; `zora auth status` — check current config
 
 ## SDK patterns
 

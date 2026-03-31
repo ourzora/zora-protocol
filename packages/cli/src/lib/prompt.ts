@@ -50,4 +50,12 @@ const passwordOrFail = async (
   return password(opts);
 };
 
-export { confirmOrDefault, selectOrDefault, passwordOrFail };
+const passwordOrSkip = async (
+  opts: PasswordOpts,
+  nonInteractive: boolean,
+): Promise<string> => {
+  if (nonInteractive) return "";
+  return password(opts);
+};
+
+export { confirmOrDefault, selectOrDefault, passwordOrFail, passwordOrSkip };
