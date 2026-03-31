@@ -27,6 +27,8 @@ import {
   GetContentCoinPoolConfigResponse,
   GetCreatorCoinPoolConfigData,
   GetCreatorCoinPoolConfigResponse,
+  GetCreatorLivestreamCommentsData,
+  GetCreatorLivestreamCommentsResponse,
 } from "../client/types.gen";
 import {
   getCoin as getCoinSDK,
@@ -43,6 +45,7 @@ import {
   getTraderLeaderboard as getTraderLeaderboardSDK,
   getContentCoinPoolConfig as getContentCoinPoolConfigSDK,
   getCreatorCoinPoolConfig as getCreatorCoinPoolConfigSDK,
+  getCreatorLivestreamComments as getCreatorLivestreamCommentsSDK,
 } from "../client/sdk.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
@@ -258,6 +261,25 @@ export const getCreatorCoinPoolConfig = async (
   options?: RequestOptionsType<GetCreatorCoinPoolConfigData>,
 ): Promise<RequestResult<GetCreatorCoinPoolConfigResponse>> => {
   return await getCreatorCoinPoolConfigSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCreatorLivestreamCommentsQuery =
+  GetCreatorLivestreamCommentsData["query"];
+export type {
+  GetCreatorLivestreamCommentsQuery,
+  GetCreatorLivestreamCommentsData,
+};
+export type { GetCreatorLivestreamCommentsResponse } from "../client/types.gen";
+
+export const getCreatorLivestreamComments = async (
+  query: GetCreatorLivestreamCommentsQuery,
+  options?: RequestOptionsType<GetCreatorLivestreamCommentsData>,
+): Promise<RequestResult<GetCreatorLivestreamCommentsResponse>> => {
+  return await getCreatorLivestreamCommentsSDK({
     query,
     ...getApiKeyMeta(),
     ...options,

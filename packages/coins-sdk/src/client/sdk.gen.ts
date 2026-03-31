@@ -14,6 +14,8 @@ import type {
   GetCoinCommentsResponse,
   GetCoinHoldersData,
   GetCoinHoldersResponse,
+  GetCoinPriceHistoryData,
+  GetCoinPriceHistoryResponse,
   GetCoinSwapsData,
   GetCoinSwapsResponse,
   GetCoinsData,
@@ -26,6 +28,8 @@ import type {
   SetCreateUploadJwtResponse,
   GetCreatorCoinPoolConfigData,
   GetCreatorCoinPoolConfigResponse,
+  GetCreatorLivestreamCommentsData,
+  GetCreatorLivestreamCommentsResponse,
   GetExploreData,
   GetExploreResponse,
   GetFeaturedCreatorsData,
@@ -165,6 +169,28 @@ export const getCoinHolders = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * zoraSDK_coinPriceHistory query
+ */
+export const getCoinPriceHistory = <ThrowOnError extends boolean = false>(
+  options: Options<GetCoinPriceHistoryData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetCoinPriceHistoryResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/coinPriceHistory",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_coinSwaps query
  */
 export const getCoinSwaps = <ThrowOnError extends boolean = false>(
@@ -296,6 +322,30 @@ export const getCreatorCoinPoolConfig = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/creatorCoinPoolConfig",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_creatorLivestreamComments query
+ */
+export const getCreatorLivestreamComments = <
+  ThrowOnError extends boolean = false,
+>(
+  options: Options<GetCreatorLivestreamCommentsData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetCreatorLivestreamCommentsResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/creatorLivestreamComments",
     ...options,
   });
 };
