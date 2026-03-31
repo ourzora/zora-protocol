@@ -19,13 +19,12 @@ import {
   formatAmbiguousError,
   CoinArgError,
 } from "../lib/coin-ref.js";
+import { formatAmountDisplay } from "../lib/format.js";
 import {
   GAS_RESERVE,
   getAmountMode,
   parsePercentageLikeValue,
-  formatAmountDisplay,
 } from "../lib/trade-helpers.js";
-import { formatEthDisplay } from "../lib/format.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
 import {
   BASE_TRADE_TOKENS,
@@ -197,14 +196,14 @@ export const sendCommand = new Command("send")
         if (amount + GAS_RESERVE > balance) {
           outputErrorAndExit(
             json,
-            `Insufficient balance. Have ${formatEthDisplay(balance)} ETH (need to reserve ~${formatEthDisplay(GAS_RESERVE)} ETH for gas).`,
+            `Insufficient balance. Have ${formatAmountDisplay(balance, 18)} ETH (need to reserve ~${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas).`,
           );
         }
       } else {
         if (balance <= GAS_RESERVE) {
           outputErrorAndExit(
             json,
-            `Balance too low (${formatEthDisplay(balance)} ETH). Need >${formatEthDisplay(GAS_RESERVE)} ETH for gas.`,
+            `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas.`,
           );
         }
 
@@ -234,7 +233,7 @@ export const sendCommand = new Command("send")
         }
       }
 
-      const amountFormatted = formatEthDisplay(amount);
+      const amountFormatted = formatAmountDisplay(amount, 18);
 
       let amountUsd: number | null = null;
       const ethPriceUsd = await fetchTokenPriceUsd(WETH_ADDRESS);

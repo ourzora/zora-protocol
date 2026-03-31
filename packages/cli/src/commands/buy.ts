@@ -10,7 +10,7 @@ import {
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
-import { formatEthDisplay, formatCoinsDisplay } from "../lib/format.js";
+import { formatAmountDisplay } from "../lib/format.js";
 import {
   GAS_RESERVE,
   BUY_AMOUNT_CHECKS,
@@ -277,7 +277,7 @@ export const buyCommand = new Command("buy")
       if (isEth && balance <= gasReserve) {
         outputErrorAndExit(
           json,
-          `Balance too low (${formatEthDisplay(balance)} ETH). Need >${formatEthDisplay(GAS_RESERVE)} ETH for gas.`,
+          `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas.`,
         );
       }
 
@@ -377,27 +377,20 @@ export const buyCommand = new Command("buy")
       );
     }
 
-    const spendAmount = formatUnits(amountIn, inputToken.decimals);
-    const spendFormatted = new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 6,
-    }).format(Number(spendAmount));
-    const coinsOut = formatUnits(BigInt(amountOut), 18);
-    const coinsFormatted = formatCoinsDisplay(coinsOut);
+    const quoteInfo = {
+      coinName,
+      coinSymbol,
+      coinType,
+      address: coinAddress,
+      amountIn,
+      inputTokenSymbol: inputToken.symbol,
+      inputTokenDecimals: inputToken.decimals,
+      amountOut,
+      slippagePct,
+    };
 
     if (opts.quote) {
-      printQuote(json, {
-        coinName,
-        coinSymbol,
-        coinType,
-        address: coinAddress,
-        spendAmount: `${spendFormatted} ${inputToken.symbol}`,
-        amountIn,
-        inputTokenSymbol: inputToken.symbol,
-        inputTokenDecimals: inputToken.decimals,
-        coinsFormatted,
-        amountOut,
-        slippagePct,
-      });
+      printQuote(json, quoteInfo);
       track("cli_buy", {
         action: "quote",
         coin_address: coinAddress,
@@ -414,19 +407,7 @@ export const buyCommand = new Command("buy")
     }
 
     if (!opts.yes) {
-      printQuote(false, {
-        coinName,
-        coinSymbol,
-        coinType,
-        address: coinAddress,
-        spendAmount: `${spendFormatted} ${inputToken.symbol}`,
-        amountIn,
-        inputTokenSymbol: inputToken.symbol,
-        inputTokenDecimals: inputToken.decimals,
-        coinsFormatted,
-        amountOut,
-        slippagePct,
-      });
+      printQuote(false, quoteInfo);
 
       const ok = await confirm({
         message: "Confirm?",
@@ -489,7 +470,6 @@ export const buyCommand = new Command("buy")
       coinSymbol,
       coinType,
       address: coinAddress,
-      spendAmount,
       amountIn,
       inputTokenSymbol: inputToken.symbol,
       inputTokenDecimals: inputToken.decimals,

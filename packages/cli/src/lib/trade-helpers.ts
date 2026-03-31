@@ -8,7 +8,7 @@ import {
   type TransactionReceipt,
 } from "viem";
 import { outputErrorAndExit, outputJson } from "./output.js";
-import { formatCoinsDisplay } from "./format.js";
+import { formatAmountDisplay } from "./format.js";
 
 export const GAS_RESERVE = parseEther("0.00001");
 
@@ -59,34 +59,6 @@ export const parsePercentageLikeValue = (value: string): number | undefined => {
 
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : undefined;
-};
-
-export const formatAmountDisplay = (
-  amount: bigint,
-  decimals: number,
-): string => {
-  const formatted = formatUnits(amount, decimals);
-  const parts = formatted.split(".");
-
-  if (!parts[1]) {
-    return new Intl.NumberFormat("en-US", {
-      maximumFractionDigits: 2,
-    }).format(Number(formatted));
-  }
-
-  const twoDecimal = `${parts[0]}.${parts[1].slice(0, 2)}`;
-
-  let maxDecimals = 2;
-  if (Number(twoDecimal) === 0 && amount > 0n) {
-    const sigIndex = parts[1].search(/[1-9]/);
-    maxDecimals = sigIndex === -1 ? 6 : Math.min(sigIndex + 4, parts[1].length);
-  }
-
-  const truncated = `${parts[0]}.${parts[1].slice(0, maxDecimals)}`;
-
-  return new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: maxDecimals,
-  }).format(Number(truncated));
 };
 
 export const getReceivedAmountFromReceipt = ({
@@ -179,11 +151,9 @@ export type QuoteInfo = {
   coinSymbol: string;
   coinType: string;
   address: string;
-  spendAmount: string;
   amountIn: bigint;
   inputTokenSymbol: string;
   inputTokenDecimals: number;
-  coinsFormatted: string;
   amountOut: string;
   slippagePct: number;
 };
@@ -209,10 +179,16 @@ export const printQuote = (json: boolean, info: QuoteInfo): void => {
     return;
   }
 
+  const spendFormatted = formatAmountDisplay(
+    info.amountIn,
+    info.inputTokenDecimals,
+  );
+  const coinsFormatted = formatAmountDisplay(BigInt(info.amountOut), 18);
+
   console.log(`\n Buy \x1b[1m${info.coinName}\x1b[0m`);
   console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
-  console.log(`   Amount       ${info.spendAmount}`);
-  console.log(`   You get      ~${info.coinsFormatted} ${info.coinSymbol}`);
+  console.log(`   Amount       ${spendFormatted} ${info.inputTokenSymbol}`);
+  console.log(`   You get      ~${coinsFormatted} ${info.coinSymbol}`);
   console.log(`   Slippage     ${info.slippagePct}%\n`);
 };
 
@@ -221,7 +197,6 @@ export type TradeResultInfo = {
   coinSymbol: string;
   coinType: string;
   address: string;
-  spendAmount: string;
   amountIn: bigint;
   inputTokenSymbol: string;
   inputTokenDecimals: number;
@@ -233,9 +208,6 @@ export const printTradeResult = (
   json: boolean,
   info: TradeResultInfo,
 ): void => {
-  const receivedAmount = formatUnits(info.receivedAmountOut, 18);
-  const receivedFormatted = formatCoinsDisplay(receivedAmount);
-
   if (json) {
     outputJson({
       action: "buy",
@@ -247,7 +219,7 @@ export const printTradeResult = (
         symbol: info.inputTokenSymbol,
       },
       received: {
-        amount: receivedAmount,
+        amount: formatUnits(info.receivedAmountOut, 18),
         raw: info.receivedAmountOut.toString(),
         symbol: info.coinSymbol,
       },
@@ -256,9 +228,15 @@ export const printTradeResult = (
     return;
   }
 
+  const spentFormatted = formatAmountDisplay(
+    info.amountIn,
+    info.inputTokenDecimals,
+  );
+  const receivedFormatted = formatAmountDisplay(info.receivedAmountOut, 18);
+
   console.log(`\n Bought \x1b[1m${info.coinName}\x1b[0m`);
   console.log(` ${info.coinType} \u00b7 ${info.address}\n`);
-  console.log(`   Spent        ${info.spendAmount} ${info.inputTokenSymbol}`);
+  console.log(`   Spent        ${spentFormatted} ${info.inputTokenSymbol}`);
   console.log(`   Received     ${receivedFormatted} ${info.coinSymbol}`);
   console.log(`   Tx           ${info.txHash}\n`);
 };

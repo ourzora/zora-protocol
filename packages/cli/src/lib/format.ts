@@ -1,5 +1,5 @@
 import { format, formatDistanceStrict } from "date-fns";
-import { formatEther } from "viem";
+import { formatUnits } from "viem";
 
 const ANSI_CODES = {
   dim: ["\x1b[2m", "\x1b[22m"],
@@ -89,18 +89,35 @@ export function formatCreatedAt(
   return `${formatRelativeTime(date, now)} (${formatAbsoluteTime(date)})`;
 }
 
-export const formatEthDisplay = (wei: bigint): string => {
-  const eth = formatEther(wei);
-  const parts = eth.split(".");
-  if (!parts[1]) return eth;
-  const trimmed = parts[1].replace(/0+$/, "") || "0";
-  return `${parts[0]}.${trimmed}`;
+export const formatAmountDisplay = (
+  amount: bigint,
+  decimals: number,
+): string => {
+  const formatted = formatUnits(amount, decimals);
+  const parts = formatted.split(".");
+
+  if (!parts[1]) {
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: 2,
+    }).format(Number(formatted));
+  }
+
+  const twoDecimal = `${parts[0]}.${parts[1].slice(0, 2)}`;
+
+  if (Number(twoDecimal) === 0 && amount > 0n) {
+    const sigIndex = parts[1].search(/[1-9]/);
+    const maxDecimals =
+      sigIndex === -1 ? 6 : Math.min(sigIndex + 4, parts[1].length);
+    const truncated = `${parts[0]}.${parts[1].slice(0, maxDecimals)}`;
+    return new Intl.NumberFormat("en-US", {
+      maximumFractionDigits: maxDecimals,
+    }).format(Number(truncated));
+  }
+
+  return new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(Number(formatted));
 };
 
-export const truncateAddress = (address: string): string =>
+export const truncateAddress = (address: string) =>
   `${address.slice(0, 6)}\u2026${address.slice(-4)}`;
-
-export const formatCoinsDisplay = (coinsOut: string): string =>
-  new Intl.NumberFormat("en-US", {
-    maximumFractionDigits: 2,
-  }).format(Number(coinsOut));

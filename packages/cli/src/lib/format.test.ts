@@ -10,8 +10,7 @@ import {
   formatAbsoluteTime,
   formatCreatedAt,
   styledText,
-  formatEthDisplay,
-  formatCoinsDisplay,
+  formatAmountDisplay,
 } from "./format.js";
 
 describe("formatCompactUsd", () => {
@@ -91,31 +90,50 @@ describe("formatMcapChange", () => {
   });
 });
 
-describe("formatEthDisplay", () => {
-  it("formats whole ETH amounts", () => {
-    expect(formatEthDisplay(parseEther("1"))).toBe("1");
+describe("formatAmountDisplay", () => {
+  it("returns '0' for zero amount", () => {
+    expect(formatAmountDisplay(0n, 18)).toBe("0");
   });
 
-  it("trims trailing zeros", () => {
-    expect(formatEthDisplay(parseEther("0.1"))).toBe("0.1");
+  it("formats whole ETH amounts with no unnecessary decimals", () => {
+    expect(formatAmountDisplay(parseEther("10"), 18)).toBe("10");
   });
 
-  it("preserves significant decimals", () => {
-    expect(formatEthDisplay(parseEther("0.001"))).toBe("0.001");
-  });
-});
-
-describe("formatCoinsDisplay", () => {
-  it("formats with commas", () => {
-    expect(formatCoinsDisplay("1234567")).toBe("1,234,567");
+  it("rounds normal amounts to 2 decimal places", () => {
+    expect(formatAmountDisplay(parseEther("1.23456"), 18)).toBe("1.23");
+    expect(formatAmountDisplay(parseEther("1234.5678"), 18)).toBe("1,234.57");
   });
 
-  it("limits to 2 decimal places", () => {
-    expect(formatCoinsDisplay("1234.5678")).toBe("1,234.57");
+  it("preserves 2-decimal amounts that are already visible", () => {
+    expect(formatAmountDisplay(parseEther("0.05"), 18)).toBe("0.05");
   });
 
-  it("handles small values", () => {
-    expect(formatCoinsDisplay("0.5")).toBe("0.5");
+  it("expands decimals for amounts under 0.01 ETH", () => {
+    expect(formatAmountDisplay(parseEther("0.001234"), 18)).toBe("0.001234");
+  });
+
+  it("handles amounts under 0.000001 ETH", () => {
+    expect(formatAmountDisplay(100000000000n, 18)).toBe("0.0000001");
+  });
+
+  it("shows 4 significant digits for very small amounts", () => {
+    expect(formatAmountDisplay(parseEther("0.00001234"), 18)).toBe(
+      "0.00001234",
+    );
+  });
+
+  it("handles 1 wei", () => {
+    const result = formatAmountDisplay(1n, 18);
+    expect(result).not.toBe("0");
+    expect(Number(result)).toBeGreaterThan(0);
+  });
+
+  it("formats large amounts with comma separators", () => {
+    expect(formatAmountDisplay(parseEther("1234.56"), 18)).toBe("1,234.56");
+  });
+
+  it("works with non-18 decimal tokens", () => {
+    expect(formatAmountDisplay(1230000n, 6)).toBe("1.23");
   });
 });
 

@@ -18,11 +18,11 @@ import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import { formatAmountDisplay } from "../lib/format.js";
 import {
   SELL_AMOUNT_CHECKS,
   getAmountMode,
   parsePercentageLikeValue,
-  formatAmountDisplay,
   getReceivedAmountFromReceipt,
   printDebugRequest,
   printDebugResponse,
