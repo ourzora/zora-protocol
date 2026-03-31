@@ -1,5 +1,13 @@
 # @zoralabs/cli
 
+## 1.0.1
+
+### Patch Changes
+
+- Update CLI README documentation and feedback links
+  - Point documentation link to cli.zora.com
+  - Update feedback contacts to x.com/zorasupport and support.zora.co
+
 ## 1.0.0
 
 ### Major Changes

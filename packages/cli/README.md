@@ -70,8 +70,8 @@ To configure wallet or API key individually (without running the full setup flow
 
 ## Documentation
 
-Full documentation is available at [docs.zora.co](https://docs.zora.co/).
+Full documentation is available at [cli.zora.com](https://cli.zora.com/).
 
 ## Feedback
 
-Reach out at [x.com/zoradevs](https://x.com/zoradevs) or [warpcast/~/channel/zora-devs](https://warpcast.com/~/channel/zora-devs).
+Reach out at [x.com/zorasupport](https://x.com/zorasupport) or [support.zora.co](https://support.zora.co).
