@@ -100,9 +100,17 @@ const buildProgram = (): Command => {
   // Show help instead of proceeding when a command is called without its arguments.
   // Args are declared as [optional] so Commander doesn't error before this hook runs —
   // don't filter by arg.required here, since they're all intentionally optional.
+  // Commands that have optional arguments with meaningful defaults (e.g. profile
+  // defaults to the user's own wallet) are exempt from the "show help" check.
+  const argOptionalCommands = new Set(["profile"]);
+
   program.hook("preAction", (_thisCommand, actionCommand) => {
     const expected = actionCommand.registeredArguments.length;
-    if (expected > 0 && actionCommand.args.length === 0) {
+    if (
+      expected > 0 &&
+      actionCommand.args.length === 0 &&
+      !argOptionalCommands.has(actionCommand.name())
+    ) {
       actionCommand.outputHelp();
       process.exit(1);
     }

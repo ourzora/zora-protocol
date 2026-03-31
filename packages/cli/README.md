@@ -6,7 +6,7 @@ A command-line tool for interacting with the [Zora](https://zora.co) protocol. E
 
 ## Install
 
-Requires **Node.js 24+**.
+Requires **Node.js 20+**.
 
 ```bash
 npm install -g @zoralabs/cli
@@ -63,7 +63,7 @@ The private key is stored locally at `~/.config/zora/wallet.json` with restricte
 
 ### Advanced
 
-To configure wallet or API key individually (without running the full setup flow):
+To configure wallet or API key individually (without running the full setup flow). All commands work without an API key but may be rate-limited:
 
 - `zora wallet configure` — create or import a wallet (`--create`, `--force`)
 - `zora auth configure` — save an API key; `zora auth status` — check current config

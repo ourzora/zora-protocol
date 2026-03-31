@@ -7,7 +7,7 @@ Trade commands require `--yes` to skip confirmation prompts.
 ## Environment Variables
 
 - `ZORA_PRIVATE_KEY` — Wallet private key (hex, with or without 0x prefix)
-- `ZORA_API_KEY` — API key for higher rate limits (get one at zora.co/settings/developer)
+- `ZORA_API_KEY` — API key for higher rate limits (optional, all commands work without one). Get one at zora.co/settings/developer
 
 ## Read Commands (no wallet needed)
 
@@ -17,7 +17,7 @@ Trade commands require `--yes` to skip confirmation prompts.
 npx @zoralabs/cli explore --json --sort <sort> --type <type> --limit <n>
 ```
 
-Sort: mcap, volume, new, gainers, last-traded, last-traded-unique, trending, featured
+Sort: mcap, volume, new, trending, featured
 Type: all, creator-coin, post, trend
 Returns: `{ "coins": [...], "nextCursor": "..." }`
 

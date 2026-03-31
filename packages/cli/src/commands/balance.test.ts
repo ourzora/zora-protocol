@@ -172,15 +172,6 @@ describe("balance command", () => {
     );
   });
 
-  it("exits with error when no API key is configured", async () => {
-    vi.mocked(getApiKey).mockReturnValue(undefined);
-
-    await expect(runBalance()).rejects.toThrow("process.exit(1)");
-    expect(errorSpy).toHaveBeenCalledWith(
-      expect.stringContaining("Not authenticated"),
-    );
-  });
-
   it("exits with error when no wallet is configured", async () => {
     vi.mocked(getPrivateKey).mockReturnValue(undefined);
 

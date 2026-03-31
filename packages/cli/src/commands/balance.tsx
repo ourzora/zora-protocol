@@ -132,13 +132,9 @@ function resolveContext(json: boolean) {
   const account = resolveAccount(json);
 
   const apiKey = getApiKey();
-  if (!apiKey) {
-    outputErrorAndExit(
-      json,
-      "Not authenticated. Run 'zora auth configure' to set your API key.",
-    );
+  if (apiKey) {
+    setApiKey(apiKey);
   }
-  setApiKey(apiKey);
 
   return account;
 }

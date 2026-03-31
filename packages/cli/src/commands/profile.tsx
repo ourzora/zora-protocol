@@ -37,15 +37,11 @@ const extractErrorMessage = (error: unknown): string => {
   return JSON.stringify(error);
 };
 
-const resolveApiKey = (json: boolean) => {
+const resolveApiKey = () => {
   const apiKey = getApiKey();
-  if (!apiKey) {
-    outputErrorAndExit(
-      json,
-      "Not authenticated. Run 'zora auth configure' to set your API key.",
-    );
+  if (apiKey) {
+    setApiKey(apiKey);
   }
-  setApiKey(apiKey);
 };
 
 type PostJson = {
@@ -177,7 +173,7 @@ export const profileCommand = new Command("profile")
   .action(async function (this: Command, identifierArg?: string) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    resolveApiKey(json);
+    resolveApiKey();
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     let identifier = identifierArg;

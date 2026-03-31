@@ -4,7 +4,7 @@ Developer CLI tool for interacting with the Zora platform. Package: `@zoralabs/c
 
 ## Tech stack
 
-- **TypeScript** with `tsup` for bundling (ESM, Node 24+)
+- **TypeScript** with `tsup` for bundling (ESM, Node 20+)
 - **Commander** for CLI framework (arg parsing, subcommands, auto help)
 - **Ink** (React for terminals) for rendering table output, spinners, and styled text
 - **React 19** — peer dependency for Ink 6
@@ -41,7 +41,7 @@ pnpm build                             # production build to dist/
 packages/cli/
 ├── src/
 │   ├── index.tsx      # entry point, registers commands
-│   ├── commands/      # one file per CLI command (auth, balance, buy, sell, explore, get, price-history, setup, wallet)
+│   ├── commands/      # one file per CLI command (auth, balance, buy, sell, explore, get, price-history, profile, send, setup, wallet)
 │   ├── components/    # Ink (React) components for terminal UI (tables, coin detail, zorb art)
 │   ├── lib/           # shared utilities (formatting, config, wallet, output helpers, coin resolution)
 │   └── test/          # vitest global setup and test helpers
@@ -65,7 +65,9 @@ All commands support `--json` (global flag) for machine-readable output. Command
 | `buy`           | Buy a coin                                                | Yes             |
 | `sell`          | Sell a coin                                               | Yes             |
 | `balance`       | Show wallet balances (ETH, USDC, ZORA) and coin positions | Yes             |
+| `send`          | Send tokens to another address                            | Yes             |
 | `wallet`        | Show wallet address, export key, or configure wallet      | Yes             |
+| `profile`       | View creator or user profiles                             | No              |
 
 ## Setup
 
@@ -86,6 +88,8 @@ To configure wallet or API key individually (without running the full setup flow
 
 - `zora wallet configure` — create or import a wallet (`--create`, `--force`)
 - `zora auth configure` — save an API key; `zora auth status` — check current config
+
+**API key is optional** — all commands work without one, but requests may be rate-limited.
 
 ## SDK patterns
 
