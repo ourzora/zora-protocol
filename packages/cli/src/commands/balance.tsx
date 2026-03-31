@@ -11,6 +11,7 @@ import {
 import { renderOnce, renderLive } from "../lib/render.js";
 import { BalanceView, type BalanceData } from "../components/BalanceView.js";
 import { Table } from "../components/table.js";
+import { computeMarketCapChange24h } from "../lib/format.js";
 import { resolveAccount } from "../lib/wallet.js";
 import {
   parseRawBalance,
@@ -100,16 +101,10 @@ const formatBalanceJson = (
     priceUsdValue !== null
       ? Number((parseRawBalance(balance.balance) * priceUsdValue).toFixed(6))
       : null;
-  const marketCapChange24h =
-    marketCap !== null &&
-    marketCapDelta24h !== null &&
-    marketCap - marketCapDelta24h !== 0
-      ? Number(
-          ((marketCapDelta24h / (marketCap - marketCapDelta24h)) * 100).toFixed(
-            4,
-          ),
-        )
-      : null;
+  const marketCapChange24h = computeMarketCapChange24h(
+    marketCap,
+    marketCapDelta24h,
+  );
 
   return {
     rank,

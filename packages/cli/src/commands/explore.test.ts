@@ -9,6 +9,7 @@ import {
 } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import { renderLive } from "../lib/render.js";
+import { COIN_TYPE_DISPLAY } from "../lib/types.js";
 
 vi.mock("@zoralabs/coins-sdk");
 
@@ -377,5 +378,268 @@ describe("exploreCommand action", () => {
     expect(warnSpy).toHaveBeenCalledWith(
       expect.stringContaining("--refresh has no effect without --live"),
     );
+  });
+
+  it("converts numeric string fields to numbers in JSON output", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "NumericCoin",
+                address: "0xabc",
+                marketCap: "1234567",
+                marketCapDelta24h: "50000",
+                volume24h: "99999",
+                totalVolume: "500000",
+                tokenPrice: { priceInUsdc: "0.0042" },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    const coin = parsed.coins[0];
+
+    expect(typeof coin.marketCap).toBe("number");
+    expect(coin.marketCap).toBe(1234567);
+    expect(typeof coin.marketCapDelta24h).toBe("number");
+    expect(coin.marketCapDelta24h).toBe(50000);
+    expect(typeof coin.volume24h).toBe("number");
+    expect(coin.volume24h).toBe(99999);
+    expect(typeof coin.totalVolume).toBe("number");
+    expect(coin.totalVolume).toBe(500000);
+    expect(typeof coin.priceUsd).toBe("number");
+    expect(coin.priceUsd).toBe(0.0042);
+  });
+
+  it("returns null for missing numeric fields in JSON output", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "MinimalCoin",
+                address: "0xmin",
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    const coin = parsed.coins[0];
+
+    expect(coin.marketCap).toBeNull();
+    expect(coin.marketCapDelta24h).toBeNull();
+    expect(coin.marketCapChange24h).toBeNull();
+    expect(coin.volume24h).toBeNull();
+    expect(coin.totalVolume).toBeNull();
+    expect(coin.priceUsd).toBeNull();
+    expect(coin.uniqueHolders).toBeNull();
+    expect(coin.createdAt).toBeNull();
+  });
+
+  it("computes marketCapChange24h in JSON output", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "ChangeCoin",
+                address: "0xchg",
+                marketCap: "1100",
+                marketCapDelta24h: "100",
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    const coin = parsed.coins[0];
+
+    // previous=1000, delta=100 → 100/1000*100 = 10%
+    expect(coin.marketCapChange24h).toBe(10);
+  });
+
+  it("maps COIN_TYPE_DISPLAY values in JSON output", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            { node: { name: "A", address: "0xa", coinType: "CONTENT" } },
+            { node: { name: "B", address: "0xb", coinType: "CREATOR" } },
+            { node: { name: "C", address: "0xc", coinType: "TREND" } },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+
+    expect(parsed.coins[0].coinType).toBe("post");
+    expect(parsed.coins[1].coinType).toBe("creator-coin");
+    expect(parsed.coins[2].coinType).toBe("trend");
+  });
+
+  it("passes through unknown coinType values", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: { name: "D", address: "0xd", coinType: "UNKNOWN_TYPE" },
+            },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    expect(parsed.coins[0].coinType).toBe("UNKNOWN_TYPE");
+  });
+
+  it("flattens social accounts in JSON output", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "SocialCoin",
+                address: "0xsoc",
+                creatorProfile: {
+                  handle: "creator1",
+                  socialAccounts: {
+                    twitter: {
+                      username: "creator1_tw",
+                      followerCount: 5000,
+                    },
+                    farcaster: { username: "creator1_fc" },
+                  },
+                },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    const coin = parsed.coins[0];
+
+    expect(coin.creatorHandle).toBe("creator1");
+    expect(coin.socialAccounts.twitter).toEqual({
+      username: "creator1_tw",
+      followerCount: 5000,
+    });
+    expect(coin.socialAccounts.farcaster).toEqual({ username: "creator1_fc" });
+    expect(coin.socialAccounts.instagram).toBeNull();
+    expect(coin.socialAccounts.tiktok).toBeNull();
+  });
+
+  it("returns null socialAccounts when creatorProfile has no socialAccounts", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            {
+              node: {
+                name: "NoSocial",
+                address: "0xns",
+                creatorProfile: { handle: "nosocial" },
+              },
+            },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    expect(parsed.coins[0].socialAccounts).toBeNull();
+    expect(parsed.coins[0].creatorHandle).toBe("nosocial");
+  });
+
+  it("does not include pageRank in JSON output", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
+      data: {
+        exploreList: {
+          edges: [
+            { node: { name: "Coin1", address: "0x1" } },
+            { node: { name: "Coin2", address: "0x2" } },
+          ],
+        },
+      },
+    });
+
+    const program = createProgram(exploreCommand);
+    await program.parseAsync(["explore", "--json"], { from: "user" });
+
+    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
+    const parsed = JSON.parse(output);
+    expect(parsed.coins[0]).not.toHaveProperty("pageRank");
+    expect(parsed.coins[1]).not.toHaveProperty("pageRank");
+  });
+});
+
+describe("COIN_TYPE_DISPLAY", () => {
+  it("maps CONTENT to post", () => {
+    expect(COIN_TYPE_DISPLAY["CONTENT"]).toBe("post");
+  });
+
+  it("maps CREATOR to creator-coin", () => {
+    expect(COIN_TYPE_DISPLAY["CREATOR"]).toBe("creator-coin");
+  });
+
+  it("maps TREND to trend", () => {
+    expect(COIN_TYPE_DISPLAY["TREND"]).toBe("trend");
+  });
+
+  it("returns undefined for unknown types", () => {
+    expect(COIN_TYPE_DISPLAY["UNKNOWN"]).toBeUndefined();
   });
 });

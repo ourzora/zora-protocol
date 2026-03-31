@@ -119,5 +119,30 @@ export const formatAmountDisplay = (
   }).format(Number(formatted));
 };
 
+export const formatCoinsDisplay = (coinsOut: string): string =>
+  new Intl.NumberFormat("en-US", {
+    maximumFractionDigits: 2,
+  }).format(Number(coinsOut));
+
+/**
+ * Compute the 24h market cap percentage change from current market cap and its
+ * absolute delta. Returns null when either input is missing or the previous
+ * market cap was zero (avoiding division by zero).
+ */
+export function computeMarketCapChange24h(
+  marketCap: number | null,
+  marketCapDelta24h: number | null,
+): number | null {
+  if (
+    marketCap === null ||
+    marketCapDelta24h === null ||
+    marketCap - marketCapDelta24h === 0
+  )
+    return null;
+  return Number(
+    ((marketCapDelta24h / (marketCap - marketCapDelta24h)) * 100).toFixed(4),
+  );
+}
+
 export const truncateAddress = (address: string) =>
   `${address.slice(0, 6)}\u2026${address.slice(-4)}`;

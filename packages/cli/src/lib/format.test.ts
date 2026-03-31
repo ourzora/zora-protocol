@@ -11,6 +11,7 @@ import {
   formatCreatedAt,
   styledText,
   formatAmountDisplay,
+  computeMarketCapChange24h,
   formatUsd,
 } from "./format.js";
 
@@ -301,6 +302,48 @@ describe("formatCreatedAt", () => {
     const result = formatCreatedAt("2026-03-13T12:00:00Z", now);
     expect(result).toContain("3 days ago");
     expect(result).toMatch(/\(\d{4}-\d{2}-\d{2} \d{1,2}:\d{2} [AP]M\)/);
+  });
+});
+
+describe("computeMarketCapChange24h", () => {
+  it("returns null when marketCap is null", () => {
+    expect(computeMarketCapChange24h(null, 100)).toBeNull();
+  });
+
+  it("returns null when delta is null", () => {
+    expect(computeMarketCapChange24h(1000, null)).toBeNull();
+  });
+
+  it("returns null when both are null", () => {
+    expect(computeMarketCapChange24h(null, null)).toBeNull();
+  });
+
+  it("returns null when previous market cap would be zero (delta equals cap)", () => {
+    expect(computeMarketCapChange24h(500, 500)).toBeNull();
+  });
+
+  it("computes positive percentage change", () => {
+    // current=1100, delta=100 → previous=1000 → 100/1000*100 = 10%
+    expect(computeMarketCapChange24h(1100, 100)).toBe(10);
+  });
+
+  it("computes negative percentage change", () => {
+    // current=900, delta=-100 → previous=1000 → -100/1000*100 = -10%
+    expect(computeMarketCapChange24h(900, -100)).toBe(-10);
+  });
+
+  it("returns 0 when delta is 0", () => {
+    expect(computeMarketCapChange24h(1000, 0)).toBe(0);
+  });
+
+  it("handles large values", () => {
+    // current=5_500_000, delta=500_000 → previous=5_000_000 → 10%
+    expect(computeMarketCapChange24h(5_500_000, 500_000)).toBe(10);
+  });
+
+  it("rounds to 4 decimal places", () => {
+    // current=1003, delta=3 → previous=1000 → 3/1000*100 = 0.3
+    expect(computeMarketCapChange24h(1003, 3)).toBe(0.3);
   });
 });
 

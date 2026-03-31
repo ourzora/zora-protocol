@@ -28,6 +28,7 @@ import {
   outputJson,
 } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
+import { computeMarketCapChange24h } from "../lib/format.js";
 import { apiErrorMessage } from "../lib/errors.js";
 import {
   SORT_LABELS,
@@ -46,6 +47,132 @@ import {
 } from "../components/ExploreView.js";
 
 type SdkQueryFn = (opts: { count: number; after?: string }) => Promise<any>;
+
+type SocialAccount = {
+  username?: string;
+  displayName?: string;
+  followerCount?: number;
+  id?: string;
+};
+
+type RawExploreNode = {
+  name?: string;
+  description?: string;
+  address?: string;
+  symbol?: string;
+  coinType?: string;
+  chainId?: number;
+  platformBlocked?: boolean;
+  totalSupply?: string;
+  marketCap?: string;
+  marketCapDelta24h?: string;
+  volume24h?: string;
+  totalVolume?: string;
+  uniqueHolders?: number;
+  createdAt?: string;
+  creatorAddress?: string;
+  creatorProfile?: {
+    handle?: string;
+    socialAccounts?: {
+      instagram?: SocialAccount;
+      tiktok?: SocialAccount;
+      twitter?: SocialAccount;
+      farcaster?: SocialAccount;
+    };
+  };
+  mediaContent?: {
+    mimeType?: string;
+    originalUri?: string;
+    previewImage?: { medium?: string };
+  };
+  tokenPrice?: { priceInUsdc?: string };
+};
+
+type FormattedSocialAccounts = {
+  instagram: SocialAccount | null;
+  tiktok: SocialAccount | null;
+  twitter: SocialAccount | null;
+  farcaster: SocialAccount | null;
+};
+
+type FormattedExploreCoinJson = {
+  name: string | null;
+  description: string | null;
+  symbol: string | null;
+  coinType: string | null;
+  chainId: number | null;
+  address: string | null;
+  platformBlocked: boolean;
+  totalSupply: string | null;
+  creatorAddress: string | null;
+  creatorHandle: string | null;
+  socialAccounts: FormattedSocialAccounts | null;
+  mediaContentMimeType: string | null;
+  mediaContentOriginalUri: string | null;
+  previewImage: string | null;
+  priceUsd: number | null;
+  marketCap: number | null;
+  marketCapDelta24h: number | null;
+  marketCapChange24h: number | null;
+  volume24h: number | null;
+  totalVolume: number | null;
+  uniqueHolders: number | null;
+  createdAt: string | null;
+};
+
+const formatExploreCoinJson = (
+  node: RawExploreNode,
+): FormattedExploreCoinJson => {
+  const marketCap = node.marketCap ? Number(node.marketCap) : null;
+  const marketCapDelta24h = node.marketCapDelta24h
+    ? Number(node.marketCapDelta24h)
+    : null;
+  const marketCapChange24h = computeMarketCapChange24h(
+    marketCap,
+    marketCapDelta24h,
+  );
+  const priceUsd = node.tokenPrice?.priceInUsdc
+    ? Number(node.tokenPrice.priceInUsdc)
+    : null;
+  const coinType = node.coinType
+    ? (COIN_TYPE_DISPLAY[node.coinType] ?? node.coinType)
+    : null;
+
+  const socials = node.creatorProfile?.socialAccounts;
+  const socialAccounts: FormattedSocialAccounts | null = socials
+    ? {
+        instagram: socials.instagram ?? null,
+        tiktok: socials.tiktok ?? null,
+        twitter: socials.twitter ?? null,
+        farcaster: socials.farcaster ?? null,
+      }
+    : null;
+
+  return {
+    name: node.name ?? null,
+    description: node.description ?? null,
+    symbol: node.symbol ?? null,
+    coinType,
+    chainId: node.chainId ?? null,
+    address: node.address ?? null,
+    platformBlocked: node.platformBlocked ?? false,
+    totalSupply: node.totalSupply ?? null,
+    creatorAddress: node.creatorAddress ?? null,
+    creatorHandle: node.creatorProfile?.handle ?? null,
+    socialAccounts,
+    mediaContentMimeType: node.mediaContent?.mimeType ?? null,
+    mediaContentOriginalUri: node.mediaContent?.originalUri ?? null,
+    previewImage: node.mediaContent?.previewImage?.medium ?? null,
+    priceUsd,
+    marketCap,
+    marketCapDelta24h,
+    marketCapChange24h,
+    volume24h: node.volume24h ? Number(node.volume24h) : null,
+    totalVolume: node.totalVolume ? Number(node.totalVolume) : null,
+    uniqueHolders: node.uniqueHolders ?? null,
+    createdAt: node.createdAt ?? null,
+  };
+};
 
 export const QUERY_MAP: Record<
   SortOption,
@@ -184,7 +311,10 @@ export const exploreCommand = new Command("explore")
       }
 
       const edges = response.data?.exploreList?.edges ?? [];
-      const coins: CoinNode[] = edges.map((e: any) => e.node);
+      const rawNodes: RawExploreNode[] = edges.map((e: any) => e.node);
+      const coins = rawNodes.map((node, i) =>
+        formatExploreCoinJson(node),
+      );
       const pageInfo = response.data?.exploreList?.pageInfo as
         | { endCursor?: string; hasNextPage: boolean }
         | undefined;
