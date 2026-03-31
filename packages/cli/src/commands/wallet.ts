@@ -32,9 +32,11 @@ const resolvePrivateKey = ():
   return undefined;
 };
 
-export const walletCommand = new Command("wallet").description(
-  "Manage your Zora wallet",
-);
+export const walletCommand = new Command("wallet")
+  .description("Manage your Zora wallet")
+  .action(function (this: Command) {
+    this.outputHelp();
+  });
 
 walletCommand
   .command("info")

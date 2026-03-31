@@ -16,9 +16,13 @@ import { passwordOrFail } from "../lib/prompt.js";
 import { track } from "../lib/analytics.js";
 import { fsErrorMessage } from "../lib/errors.js";
 
-export const authCommand = new Command("auth").description(
-  "Manage API key authentication.\nAPI key is optional — without one, requests are rate-limited.\nGet a key at https://zora.co/settings/developer",
-);
+export const authCommand = new Command("auth")
+  .description(
+    "Manage API key authentication.\nAPI key is optional — without one, requests are rate-limited.\nGet a key at https://zora.co/settings/developer",
+  )
+  .action(function (this: Command) {
+    this.outputHelp();
+  });
 
 authCommand
   .command("configure")

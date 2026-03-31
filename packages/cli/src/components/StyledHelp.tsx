@@ -22,6 +22,9 @@ export function StyledHelp({
   return (
     <Box flexDirection="column" gap={1}>
       {header}
+      <Box paddingX={1}>
+        <Text color="yellow">⚠ Beta:</Text><Text> This CLI is in beta and should be used with caution.</Text>
+      </Box>
       {sections.map((section, i) => {
         const hasTwoColumns = TWO_COLUMN_REGEX.test(section.content);
         const rows: KeyValueRow[] | null = hasTwoColumns

@@ -48,6 +48,9 @@ function styledHelpWriteOut(showHeader: boolean) {
       }
     }
     process.stdout.write(str);
+    process.stdout.write(
+      "\n\x1b[33m⚠ Beta:\x1b[0m This CLI is in beta and should be used with caution.\n",
+    );
   };
 }
 
@@ -122,10 +125,6 @@ const buildProgram = (): Command => {
 const program = buildProgram();
 
 if (!process.env.VITEST) {
-  console.warn(
-    "\x1b[33m⚠ Beta:\x1b[0m This CLI is in beta and should be used with caution.",
-  );
-
   identify();
 
   try {
