@@ -2,7 +2,7 @@
 
 ## Install
 
-Requires **Node.js 24+**.
+Requires **Node.js 20+**.
 
 ```bash
 npm install -g @zoralabs/cli
@@ -19,14 +19,14 @@ npx @zoralabs/cli explore
 Start exploring coins immediately — no wallet or API key needed:
 
 ```bash
-# Top coins by market cap
+# Top creator coins by market cap
 zora explore --sort mcap
 
 # Trending coins
 zora explore --sort trending
 
 # New coins
-zora explore --sort new --type creator-coin
+zora explore --sort new
 ```
 
 ## Look Up a Coin
@@ -36,7 +36,7 @@ zora explore --sort new --type creator-coin
 zora get 0x71e764a744af3fe52f598154e4a15f888737dae5
 
 # By creator name (for creator coins)
-zora get jakeward --type creator-coin
+zora get creator-coin jakeward
 ```
 
 Example output:

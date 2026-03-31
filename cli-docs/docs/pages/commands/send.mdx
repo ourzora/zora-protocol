@@ -3,26 +3,26 @@
 Send coins or tokens to another address. Requires a [wallet](/commands/setup).
 
 ```bash
-zora send [options] [identifier]
+zora send [typeOrId] [identifier] [options]
 ```
 
 ## Arguments
 
-| Argument     | Description                                                  |
-| ------------ | ------------------------------------------------------------ |
-| `identifier` | Token to send: `eth`, `usdc`, `zora`, or a coin address/name |
+| Argument     | Description                                                                                |
+| ------------ | ------------------------------------------------------------------------------------------ |
+| `typeOrId`   | Token (`eth`, `usdc`, `zora`), type prefix (`creator-coin`, `trend`), or coin address/name |
+| `identifier` | Coin name — only needed when a type prefix is provided                                     |
 
 ## Options
 
-| Flag                | Description                                |
-| ------------------- | ------------------------------------------ |
-| `--to <address>`    | Recipient address (`0x...`) — required     |
-| `--type <type>`     | Coin type: `creator-coin`, `post`, `trend` |
-| `--amount <value>`  | Send specific amount                       |
-| `--percent <value>` | Send percentage of balance (1–100)         |
-| `--all`             | Send entire balance                        |
-| `--yes`             | Skip confirmation prompt                   |
-| `--json`            | Machine-readable JSON output               |
+| Flag                | Description                            |
+| ------------------- | -------------------------------------- |
+| `--to <address>`    | Recipient address (`0x...`) — required |
+| `--amount <value>`  | Send specific amount                   |
+| `--percent <value>` | Send percentage of balance (1–100)     |
+| `--all`             | Send entire balance                    |
+| `--yes`             | Skip confirmation prompt               |
+| `--json`            | Machine-readable JSON output           |
 
 :::info
 Amount flags (`--amount`, `--percent`, `--all`) are mutually exclusive — use exactly one.
@@ -54,7 +54,11 @@ npx @zoralabs/cli send usdc --to 0x3a5d...8d142 --amount 50
 ### Send jacob creator coins
 
 ```bash
+# By address
 npx @zoralabs/cli send 0x9b13358e3a023507e7046c18f508a958cda75f54 --to 0x3a5d...8d142 --all
+
+# By name with type prefix
+npx @zoralabs/cli send creator-coin jacob --to 0x3a5d...8d142 --all
 ```
 
 ### Send 25% of ZORA balance

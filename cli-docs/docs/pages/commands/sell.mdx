@@ -3,14 +3,15 @@
 Sell a coin. Requires a [wallet](/commands/setup).
 
 ```bash
-zora sell [options] [address]
+zora sell [typeOrId] [identifier] [options]
 ```
 
 ## Arguments
 
-| Argument  | Description                     |
-| --------- | ------------------------------- |
-| `address` | Coin contract address (`0x...`) |
+| Argument     | Description                                                                |
+| ------------ | -------------------------------------------------------------------------- |
+| `typeOrId`   | Type prefix (`creator-coin`, `trend`) or coin address/name when used alone |
+| `identifier` | Coin name — only needed when a type prefix is provided                     |
 
 ## Options
 
@@ -37,7 +38,11 @@ Amount flags (`--amount`, `--usd`, `--percent`, `--all`) are mutually exclusive 
 ### Sell 50% of jacob position
 
 ```bash
+# By address
 npx @zoralabs/cli sell 0x9b13358e3a023507e7046c18f508a958cda75f54 --percent 50
+
+# By name with type prefix
+npx @zoralabs/cli sell creator-coin jacob --percent 50
 ```
 
 ```

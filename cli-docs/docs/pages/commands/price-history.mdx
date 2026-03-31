@@ -3,20 +3,20 @@
 Display price history for a coin with an ASCII sparkline chart.
 
 ```bash
-zora price-history [options] [identifier]
+zora price-history [typeOrId] [identifier] [options]
 ```
 
 ## Arguments
 
-| Argument     | Description                    |
-| ------------ | ------------------------------ |
-| `identifier` | Coin address (`0x...`) or name |
+| Argument     | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `typeOrId`   | Type prefix (`creator-coin`, `trend`) or coin address/name when used alone  |
+| `identifier` | Coin address (`0x...`) or name — only needed when a type prefix is provided |
 
 ## Options
 
 | Flag                    | Description                                | Default |
 | ----------------------- | ------------------------------------------ | ------- |
-| `--type <type>`         | Coin type: `creator-coin`, `post`, `trend` | —       |
 | `--interval <interval>` | Time range: `1h`, `24h`, `1w`, `1m`, `ALL` | `1w`    |
 | `--json`                | Machine-readable JSON output               | —       |
 
@@ -25,7 +25,7 @@ zora price-history [options] [identifier]
 ### Weekly price chart for jacob creator coin
 
 ```bash
-npx @zoralabs/cli price-history jacob --type creator-coin
+npx @zoralabs/cli price-history creator-coin jacob
 ```
 
 ```
@@ -42,19 +42,19 @@ npx @zoralabs/cli price-history jacob --type creator-coin
 ### 24-hour chart for zora trend
 
 ```bash
-npx @zoralabs/cli price-history zora --type trend --interval 24h
+npx @zoralabs/cli price-history trend zora --interval 24h
 ```
 
 ### All-time chart
 
 ```bash
-npx @zoralabs/cli price-history jacob --type creator-coin --interval ALL
+npx @zoralabs/cli price-history creator-coin jacob --interval ALL
 ```
 
 ### JSON output
 
 ```bash
-npx @zoralabs/cli price-history jacob --type creator-coin --json --interval 1w
+npx @zoralabs/cli price-history creator-coin jacob --json --interval 1w
 ```
 
 ```json

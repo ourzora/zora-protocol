@@ -3,30 +3,30 @@
 Look up a single coin by address or name.
 
 ```bash
-zora get [options] [identifier]
+zora get [typeOrId] [identifier]
 ```
 
 ## Arguments
 
-| Argument     | Description                            |
-| ------------ | -------------------------------------- |
-| `identifier` | Coin address (`0x...`) or creator name |
+| Argument     | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `typeOrId`   | Type prefix (`creator-coin`, `trend`) or coin address/name when used alone  |
+| `identifier` | Coin address (`0x...`) or name — only needed when a type prefix is provided |
 
 ## Options
 
-| Flag            | Description                                |
-| --------------- | ------------------------------------------ |
-| `--type <type>` | Coin type: `creator-coin`, `post`, `trend` |
-| `--json`        | Machine-readable JSON output               |
+| Flag     | Description                  |
+| -------- | ---------------------------- |
+| `--json` | Machine-readable JSON output |
 
-The `--type` flag disambiguates when a name could match multiple coin types. When using an address, the type is resolved automatically.
+Use a type prefix to disambiguate when a name could match multiple coin types. When using an address, the type is resolved automatically.
 
 ## Examples
 
 ### Look up the jacob creator coin
 
 ```bash
-npx @zoralabs/cli get jacob --type creator-coin
+npx @zoralabs/cli get creator-coin jacob
 ```
 
 ```
@@ -43,7 +43,7 @@ npx @zoralabs/cli get jacob --type creator-coin
 ### Look up the zora trend coin
 
 ```bash
-npx @zoralabs/cli get zora --type trend
+npx @zoralabs/cli get trend zora
 ```
 
 ```
@@ -66,7 +66,7 @@ npx @zoralabs/cli get 0x9b13358e3a023507e7046c18f508a958cda75f54
 ### JSON output
 
 ```bash
-npx @zoralabs/cli get jacob --type creator-coin --json
+npx @zoralabs/cli get creator-coin jacob --json
 ```
 
 ```json

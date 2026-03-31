@@ -3,9 +3,11 @@
 import { CopyBox } from "../components/CopyBox";
 
 export const skillUrl = (() => {
-  const root = typeof import.meta !== "undefined" && import.meta.env?.VITE_SITE_ROOT_URL;
+  const root =
+    typeof import.meta !== "undefined" && import.meta.env?.VITE_SITE_ROOT_URL;
   if (root) return `${root}/skill.md`;
-  if (typeof window !== "undefined") return `${window.location.origin}/skill.md`;
+  if (typeof window !== "undefined")
+    return `${window.location.origin}/skill.md`;
   return "https://yoursite.com/skill.md";
 })();
 
@@ -67,14 +69,14 @@ Trade commands require `--yes` to skip confirmation prompts.
 npx @zoralabs/cli explore --json --sort <sort> --type <type> --limit <n>
 ```
 
-Sort: mcap, volume, new, gainers, last-traded, last-traded-unique, trending, featured
+Sort: mcap, volume, new, trending, featured
 Type: all, creator-coin, post, trend
 Returns: `{ "coins": [...], "nextCursor": "..." }`
 
 ### Look up a coin
 
 ```bash
-npx @zoralabs/cli get <address-or-name> --json [--type creator-coin|post|trend]
+npx @zoralabs/cli get [creator-coin|trend] <address-or-name> --json
 ```
 
 Returns: `{ "name", "address", "coinType", "marketCap", "volume24h", "uniqueHolders", "createdAt", "creatorHandle" }`
@@ -82,7 +84,7 @@ Returns: `{ "name", "address", "coinType", "marketCap", "volume24h", "uniqueHold
 ### Price history
 
 ```bash
-npx @zoralabs/cli price-history <address-or-name> --json --interval <1h|24h|1w|1m|ALL>
+npx @zoralabs/cli price-history [creator-coin|trend] <address-or-name> --json --interval <1h|24h|1w|1m|ALL>
 ```
 
 Returns: `{ "coin", "interval", "high", "low", "change", "prices": [{ "timestamp", "price" }] }`
@@ -108,10 +110,11 @@ Returns: `{ "authenticated": true/false, "key": "masked", "source": "path" }`
 ### Buy a coin
 
 ```bash
-npx @zoralabs/cli buy <address> --eth <amount> --json --yes
-npx @zoralabs/cli buy <address> --usd <amount> --token usdc --json --yes
-npx @zoralabs/cli buy <address> --percent <1-100> --json --yes
-npx @zoralabs/cli buy <address> --all --token zora --json --yes
+npx @zoralabs/cli buy <address-or-name> --eth <amount> --json --yes
+npx @zoralabs/cli buy creator-coin <name> --eth <amount> --json --yes
+npx @zoralabs/cli buy <address-or-name> --usd <amount> --token usdc --json --yes
+npx @zoralabs/cli buy <address-or-name> --percent <1-100> --json --yes
+npx @zoralabs/cli buy <address-or-name> --all --token zora --json --yes
 ```
 
 Use `--quote` to preview without executing.
@@ -120,9 +123,9 @@ Returns: `{ "action": "trade", "coin", "received", "txHash", "explorerUrl" }`
 ### Sell a coin
 
 ```bash
-npx @zoralabs/cli sell <address> --all --json --yes
-npx @zoralabs/cli sell <address> --percent 50 --json --yes
-npx @zoralabs/cli sell <address> --amount <n> --to usdc --json --yes
+npx @zoralabs/cli sell <address-or-name> --all --json --yes
+npx @zoralabs/cli sell creator-coin <name> --percent 50 --json --yes
+npx @zoralabs/cli sell <address-or-name> --amount <n> --to usdc --json --yes
 ```
 
 Returns: `{ "action": "trade", "coin", "soldAmount", "received", "txHash" }`
@@ -132,7 +135,8 @@ Returns: `{ "action": "trade", "coin", "soldAmount", "received", "txHash" }`
 ```bash
 npx @zoralabs/cli send eth --to <address> --amount <n> --json --yes
 npx @zoralabs/cli send usdc --to <address> --amount <n> --json --yes
-npx @zoralabs/cli send <coin-address> --to <address> --all --json --yes
+npx @zoralabs/cli send <address-or-name> --to <address> --all --json --yes
+npx @zoralabs/cli send creator-coin <name> --to <address> --all --json --yes
 ```
 
 Returns: `{ "action": "send", "asset", "amount", "to", "txHash" }`
@@ -160,10 +164,10 @@ Always check for the `error` field before processing results.
 
 ## Coin Types
 
-- `creator-coin` — A creator's personal token (look up by handle: `get jacob --type creator-coin`)
+- `creator-coin` — A creator's personal token (look up by handle: `get creator-coin jacob`)
 - `post` — A coin created from a post/content
-- `trend` — A trend topic coin (look up by ticker: `get zora --type trend`)
+- `trend` — A trend topic coin (look up by ticker: `get trend zora`)
 
-When looking up by name, use `--type` to disambiguate.
+When looking up by name, use a type prefix to disambiguate.
 When looking up by address (0x...), the type is resolved automatically.
 ````

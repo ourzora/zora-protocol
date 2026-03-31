@@ -8,29 +8,26 @@ zora explore [options]
 
 ## Options
 
-| Flag                  | Description                                                 | Default |
-| --------------------- | ----------------------------------------------------------- | ------- |
-| `--sort <sort>`       | Sort order (see below)                                      | `mcap`  |
-| `--type <type>`       | Filter by coin type: `all`, `creator-coin`, `post`, `trend` | `post`  |
-| `--limit <n>`         | Number of results (max 20)                                  | `10`    |
-| `--after <cursor>`    | Pagination cursor from a previous result                    | —       |
-| `--live`              | Interactive live-updating display                           | default |
-| `--static`            | Static snapshot (single render)                             | —       |
-| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5)                  | `30`    |
-| `--json`              | Machine-readable JSON output                                | —       |
+| Flag                  | Description                                                 | Default        |
+| --------------------- | ----------------------------------------------------------- | -------------- |
+| `--sort <sort>`       | Sort order (see below)                                      | `mcap`         |
+| `--type <type>`       | Filter by coin type: `all`, `creator-coin`, `post`, `trend` | `creator-coin` |
+| `--limit <n>`         | Number of results (max 20)                                  | `10`           |
+| `--after <cursor>`    | Pagination cursor from a previous result                    | —              |
+| `--live`              | Interactive live-updating display                           | default        |
+| `--static`            | Static snapshot (single render)                             | —              |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5)                  | `30`           |
+| `--json`              | Machine-readable JSON output                                | —              |
 
 ### Sort Options
 
-| Value                | Description                            |
-| -------------------- | -------------------------------------- |
-| `mcap`               | Highest market cap                     |
-| `volume`             | Highest 24h volume                     |
-| `new`                | Most recently created                  |
-| `gainers`            | Biggest 24h price increase             |
-| `last-traded`        | Most recently traded                   |
-| `last-traded-unique` | Most recently traded by unique wallets |
-| `trending`           | Trending (algorithmic)                 |
-| `featured`           | Editorially featured                   |
+| Value      | Description            |
+| ---------- | ---------------------- |
+| `mcap`     | Highest market cap     |
+| `volume`   | Highest 24h volume     |
+| `new`      | Most recently created  |
+| `trending` | Trending (algorithmic) |
+| `featured` | Editorially featured   |
 
 :::info
 Not all sort/type combinations are valid. The CLI reports supported options if an invalid combination is used.

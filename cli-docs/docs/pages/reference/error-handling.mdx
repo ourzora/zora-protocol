@@ -49,10 +49,10 @@ The CLI exits with code `1` on errors.
 
 ### Coin Resolution
 
-| Error                  | Cause                                | Fix                                                         |
-| ---------------------- | ------------------------------------ | ----------------------------------------------------------- |
-| `Coin not found`       | Address or name doesn't match a coin | Verify the address or use `--type` to disambiguate          |
-| `Ambiguous identifier` | Name matches multiple coin types     | Add `--type creator-coin`, `--type post`, or `--type trend` |
+| Error                  | Cause                                | Fix                                                        |
+| ---------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| `Coin not found`       | Address or name doesn't match a coin | Verify the address or use a type prefix to disambiguate    |
+| `Ambiguous identifier` | Name matches multiple coin types     | Use a type prefix: `creator-coin <name>` or `trend <name>` |
 
 ### Invalid Options
 
