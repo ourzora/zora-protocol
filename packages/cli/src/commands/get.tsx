@@ -14,7 +14,7 @@ import {
 import { renderOnce } from "../lib/render.js";
 import { CoinDetail } from "../components/CoinDetail.js";
 import { track } from "../lib/analytics.js";
-import { apiErrorMessage } from "../lib/errors.js";
+import { apiErrorMessage, bannedCoinMessage } from "../lib/errors.js";
 
 function formatCoinJson(coin: ResolvedCoin): Record<string, unknown> {
   return {
@@ -139,6 +139,11 @@ export const getCommand = new Command("get")
 
     if (result.kind === "not-found") {
       outputErrorAndExit(json, result.message);
+      return;
+    }
+
+    if (result.coin.platformBlocked) {
+      outputErrorAndExit(json, bannedCoinMessage(result.coin.address));
       return;
     }
 

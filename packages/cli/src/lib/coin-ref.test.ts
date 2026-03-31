@@ -297,6 +297,7 @@ describe("resolveCoin", () => {
         createdAt: "2026-03-01T14:30:00Z",
         creatorAddress: "0xcreator",
         creatorHandle: "alice",
+        platformBlocked: false,
       },
     });
   });
@@ -480,6 +481,7 @@ describe("resolveCoin", () => {
         createdAt: undefined,
         creatorAddress: undefined,
         creatorHandle: undefined,
+        platformBlocked: false,
       },
     });
   });

@@ -34,7 +34,11 @@ import {
   CoinArgError,
   mapCoinType,
 } from "../lib/coin-ref.js";
-import { tradeErrorMessage, apiErrorMessage } from "../lib/errors.js";
+import {
+  tradeErrorMessage,
+  apiErrorMessage,
+  bannedCoinBuyMessage,
+} from "../lib/errors.js";
 
 export const buyCommand = new Command("buy")
   .description("Buy a coin")
@@ -169,6 +173,9 @@ export const buyCommand = new Command("buy")
     }
     if (!token) {
       outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
+    }
+    if (token.platformBlocked) {
+      outputErrorAndExit(json, bannedCoinBuyMessage(coinAddress));
     }
     const coinName = token.name;
     const coinSymbol = token.symbol;

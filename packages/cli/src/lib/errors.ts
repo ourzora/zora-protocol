@@ -48,6 +48,14 @@ export function apiErrorMessage(err: unknown): string {
   return formatError(err);
 }
 
+export function bannedCoinMessage(address: string): string {
+  return `The coin at ${address} is unavailable because it violates the Zora terms of service.`;
+}
+
+export function bannedCoinBuyMessage(address: string): string {
+  return `Unable to buy ${address} because it violates the Zora terms of service. Already own this coin? Run zora sell ${address} --all to exit your position.`;
+}
+
 /**
  * Filesystem error boundary for auth, setup, config.
  * Gives actionable messages for permission/path issues.

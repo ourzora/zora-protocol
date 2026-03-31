@@ -286,6 +286,26 @@ describe("buy command", () => {
     );
   });
 
+  it("exits with banned message when coin is platformBlocked", async () => {
+    vi.mocked(getCoin).mockResolvedValue({
+      data: {
+        zora20Token: {
+          name: "BannedCoin",
+          symbol: "BANNED",
+          platformBlocked: true,
+        },
+      },
+    } as Awaited<ReturnType<typeof getCoin>>);
+
+    await expect(
+      runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining(`Unable to buy ${COIN_ADDRESS}`),
+    );
+    expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("zora sell"));
+  });
+
   it("exits when --eth value is invalid", async () => {
     await expect(
       runBuy([COIN_ADDRESS, "--eth", "abc", "--yes"]),

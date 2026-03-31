@@ -18,6 +18,7 @@ import {
   MAX_SPARKLINE_WIDTH,
 } from "../lib/sparkline.js";
 import { track } from "../lib/analytics.js";
+import { bannedCoinMessage } from "../lib/errors.js";
 
 const VALID_INTERVALS = ["1h", "24h", "1w", "1m", "ALL"] as const;
 type Interval = (typeof VALID_INTERVALS)[number];
@@ -291,6 +292,11 @@ export const priceHistoryCommand = new Command("price-history")
 
     if (result.kind === "not-found") {
       outputErrorAndExit(json, result.message, result.suggestion);
+      return;
+    }
+
+    if (result.coin.platformBlocked) {
+      outputErrorAndExit(json, bannedCoinMessage(result.coin.address));
       return;
     }
 

@@ -97,6 +97,28 @@ describe("priceHistoryCommand", () => {
     );
   });
 
+  it("exits with banned message when coin is platformBlocked", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoin).mockResolvedValue({
+      data: {
+        zora20Token: {
+          name: "BannedCoin",
+          address: "0xbanned",
+          coinType: "CONTENT",
+          platformBlocked: true,
+          marketCap: "100",
+        },
+      },
+    } as any);
+
+    await expect(parseJson("0xbanned")).rejects.toThrow("exit 1");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining(
+        "The coin at 0xbanned is unavailable because it violates the Zora terms of service",
+      ),
+    );
+  });
+
   it("exits with error when no price data in interval", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
     vi.mocked(getCoin).mockResolvedValue(

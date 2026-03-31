@@ -122,6 +122,7 @@ export interface ResolvedCoin {
   createdAt: string | undefined;
   creatorAddress: string | undefined;
   creatorHandle: string | undefined;
+  platformBlocked: boolean;
 }
 
 export type ResolveCoinResult =
@@ -151,6 +152,7 @@ function coinFromToken(token: any): ResolvedCoin {
     createdAt: token.createdAt,
     creatorAddress: token.creatorAddress,
     creatorHandle: token.creatorProfile?.handle,
+    platformBlocked: token.platformBlocked ?? false,
   };
 }
 
