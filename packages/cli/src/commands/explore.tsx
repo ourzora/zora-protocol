@@ -4,9 +4,6 @@ import {
   getCoinsTopVolume24h,
   getCoinsMostValuable,
   getCoinsNew,
-  getCoinsTopGainers,
-  getCoinsLastTraded,
-  getCoinsLastTradedUnique,
   getExploreTopVolumeAll24h,
   getExploreTopVolumeCreators24h,
   getExploreNewAll,
@@ -72,15 +69,6 @@ export const QUERY_MAP: Record<
     "creator-coin": getCreatorCoins,
     post: getCoinsNew,
   },
-  gainers: {
-    post: getCoinsTopGainers,
-  },
-  "last-traded": {
-    post: getCoinsLastTraded,
-  },
-  "last-traded-unique": {
-    post: getCoinsLastTradedUnique,
-  },
   trending: {
     all: getTrendingAll,
     trend: getTrendingTrends,
@@ -128,7 +116,7 @@ export const exploreCommand = new Command("explore")
   .option(
     "--type <type>",
     "Filter by type: all, trend, creator-coin, post (availability varies by sort)",
-    "post",
+    "creator-coin",
   )
   .option("--limit <n>", "Number of results (max 20)", "10")
   .option("--after <cursor>", "Pagination cursor from a previous result")

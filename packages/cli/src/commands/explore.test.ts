@@ -3,7 +3,7 @@ import { QUERY_MAP, exploreCommand } from "./explore.jsx";
 import { createProgram } from "../test/create-program.js";
 import {
   getCoinsMostValuable,
-  getCoinsTopGainers,
+  getMostValuableCreatorCoins,
   getTrendingPosts,
   setApiKey,
 } from "@zoralabs/coins-sdk";
@@ -41,23 +41,6 @@ describe("QUERY_MAP", () => {
     expect(QUERY_MAP.new.trend).toBeDefined();
     expect(QUERY_MAP.new["creator-coin"]).toBeDefined();
     expect(QUERY_MAP.new.post).toBeDefined();
-  });
-
-  it("gainers supports only post", () => {
-    expect(QUERY_MAP.gainers.post).toBeDefined();
-    expect(QUERY_MAP.gainers.all).toBeUndefined();
-    expect(QUERY_MAP.gainers["creator-coin"]).toBeUndefined();
-    expect(QUERY_MAP.gainers.trend).toBeUndefined();
-  });
-
-  it("last-traded supports only post", () => {
-    expect(QUERY_MAP["last-traded"].post).toBeDefined();
-    expect(QUERY_MAP["last-traded"].all).toBeUndefined();
-  });
-
-  it("last-traded-unique supports only post", () => {
-    expect(QUERY_MAP["last-traded-unique"].post).toBeDefined();
-    expect(QUERY_MAP["last-traded-unique"].all).toBeUndefined();
   });
 
   it("trending supports all, trend, creator-coin, post", () => {
@@ -106,7 +89,7 @@ describe("exploreCommand action", () => {
   it("exits with error for unsupported --type for given --sort", async () => {
     const program = createProgram(exploreCommand);
     await expect(
-      program.parseAsync(["explore", "--sort", "gainers", "--type", "all"], {
+      program.parseAsync(["explore", "--sort", "featured", "--type", "all"], {
         from: "user",
       }),
     ).rejects.toThrow("exit 1");
@@ -151,7 +134,7 @@ describe("exploreCommand action", () => {
 
   it("outputs JSON for --json", async () => {
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
-    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
       data: {
         exploreList: {
           edges: [
@@ -170,7 +153,7 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await program.parseAsync(["explore", "--json"], { from: "user" });
 
-    expect(getCoinsMostValuable).toHaveBeenCalledWith({
+    expect(getMostValuableCreatorCoins).toHaveBeenCalledWith({
       count: 10,
       after: undefined,
     });
@@ -195,7 +178,7 @@ describe("exploreCommand action", () => {
     expect(renderLive).toHaveBeenCalled();
     const element = vi.mocked(renderLive).mock.calls[0][0] as any;
     expect(element.props.sort).toBe("mcap");
-    expect(element.props.type).toBe("post");
+    expect(element.props.type).toBe("creator-coin");
     expect(element.props.limit).toBe(10);
     expect(element.props.initialCursor).toBeUndefined();
     expect(exitSpy).not.toHaveBeenCalled();
@@ -252,46 +235,9 @@ describe("exploreCommand action", () => {
     expect(exitSpy).not.toHaveBeenCalled();
   });
 
-  it("fetches top gainers", async () => {
-    vi.mocked(getApiKey).mockReturnValue("test-api-key");
-    vi.mocked(getCoinsTopGainers).mockResolvedValue({
-      data: {
-        exploreList: {
-          edges: [
-            {
-              node: {
-                name: "GainerCoin",
-                address: "0xgainer",
-                coinType: "CONTENT",
-                marketCap: "300000",
-                volume24h: "8000",
-                marketCapDelta24h: "150000",
-              },
-            },
-          ],
-        },
-      },
-    });
-
-    const program = createProgram(exploreCommand);
-    await program.parseAsync(["explore", "--sort", "gainers", "--json"], {
-      from: "user",
-    });
-
-    expect(setApiKey).toHaveBeenCalledWith("test-api-key");
-    expect(getCoinsTopGainers).toHaveBeenCalledWith({
-      count: 10,
-      after: undefined,
-    });
-
-    const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
-    expect(output).toContain("GainerCoin");
-    expect(exitSpy).not.toHaveBeenCalled();
-  });
-
   it("passes --after cursor to SDK function in JSON mode", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
       data: { exploreList: { edges: [], pageInfo: { hasNextPage: false } } },
     });
 
@@ -300,7 +246,7 @@ describe("exploreCommand action", () => {
       from: "user",
     });
 
-    expect(getCoinsMostValuable).toHaveBeenCalledWith({
+    expect(getMostValuableCreatorCoins).toHaveBeenCalledWith({
       count: 10,
       after: "abc123",
     });
@@ -308,7 +254,7 @@ describe("exploreCommand action", () => {
 
   it("includes pageInfo in JSON output", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
       data: {
         exploreList: {
           edges: [
@@ -339,7 +285,7 @@ describe("exploreCommand action", () => {
 
   it("includes pageInfo null in JSON when not present", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
       data: {
         exploreList: {
           edges: [
@@ -365,7 +311,7 @@ describe("exploreCommand action", () => {
 
   it("outputs consistent JSON shape for empty results", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
       data: {
         exploreList: {
           edges: [],
@@ -418,7 +364,7 @@ describe("exploreCommand action", () => {
 
   it("warns when --refresh is used without --live", async () => {
     vi.mocked(getApiKey).mockReturnValue(undefined as any);
-    vi.mocked(getCoinsMostValuable).mockResolvedValue({
+    vi.mocked(getMostValuableCreatorCoins).mockResolvedValue({
       data: { exploreList: { edges: [] } },
     });
 

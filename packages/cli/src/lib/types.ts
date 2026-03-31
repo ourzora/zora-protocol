@@ -1,12 +1,4 @@
-export type SortOption =
-  | "mcap"
-  | "volume"
-  | "new"
-  | "gainers"
-  | "last-traded"
-  | "last-traded-unique"
-  | "trending"
-  | "featured";
+export type SortOption = "mcap" | "volume" | "new" | "trending" | "featured";
 export type CoinType = "trend" | "creator-coin" | "post";
 export type TypeOption = "all" | CoinType;
 
@@ -25,9 +17,6 @@ export const SORT_LABELS: Record<SortOption, string> = {
   mcap: "Top by Market Cap",
   volume: "Top by 24h Volume",
   new: "New",
-  gainers: "Top Gainers (24h)",
-  "last-traded": "Last Traded",
-  "last-traded-unique": "Last Traded (Unique)",
   trending: "Trending",
   featured: "Featured",
 };
