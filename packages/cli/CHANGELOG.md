@@ -1,5 +1,11 @@
 # @zoralabs/cli
 
+## 1.0.0
+
+### Major Changes
+
+- 7d6785e3d: Official ZORA CLI Beta Release
+
 ## 0.3.1
 
 ### Patch Changes
