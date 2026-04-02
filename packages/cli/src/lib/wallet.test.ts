@@ -260,4 +260,81 @@ describe("createCliRpcTransport", () => {
       }),
     ).rejects.toThrow("CLI RPC request failed: rate limited");
   });
+
+  it("preserves JSON-RPC error code and data for structured errors", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: undefined,
+      error: { code: 3, message: "execution reverted", data: "0xdeadbeef" },
+    } as never);
+
+    const transport = createCliRpcTransport();
+
+    try {
+      await transport.request({ method: "eth_call", params: [] });
+      expect.fail("should have thrown");
+    } catch (err: any) {
+      expect(err.message).toBe("execution reverted");
+      expect(err.code).toBe(3);
+      expect(err.data).toBe("0xdeadbeef");
+    }
+  });
+
+  it("preserves code/data from payload-level JSON-RPC errors", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: {
+        error: {
+          code: 3,
+          message: "execution reverted",
+          data: "0x0a3b5765",
+        },
+      },
+      error: undefined,
+    } as never);
+
+    const transport = createCliRpcTransport();
+
+    try {
+      await transport.request({ method: "eth_call", params: [] });
+      expect.fail("should have thrown");
+    } catch (err: any) {
+      expect(err.message).toBe("execution reverted");
+      expect(err.code).toBe(3);
+      expect(err.data).toBe("0x0a3b5765");
+    }
+  });
+
+  it("unwraps nested error.data payloads into raw revert hex", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: undefined,
+      error: {
+        code: 3,
+        message: "execution reverted",
+        data: { data: "0x0a3b5765" },
+      },
+    } as never);
+
+    const transport = createCliRpcTransport();
+
+    try {
+      await transport.request({ method: "eth_call", params: [] });
+      expect.fail("should have thrown");
+    } catch (err: any) {
+      expect(err.message).toBe("execution reverted");
+      expect(err.code).toBe(3);
+      expect(err.data).toBe("0x0a3b5765");
+    }
+  });
+
+  it("falls back to formatted string for errors without code", async () => {
+    vi.mocked(apiPost).mockResolvedValue({
+      data: undefined,
+      error: { message: "something weird" },
+    } as never);
+
+    const transport = createCliRpcTransport();
+
+    await expect(
+      transport.request({ method: "eth_call", params: [] }),
+    ).rejects.toThrow("CLI RPC request failed: something weird");
+  });
 });

@@ -1,9 +1,14 @@
 import { describe, it, expect } from "vitest";
 import {
   BaseError as ViemBaseError,
+  ContractFunctionRevertedError,
   InsufficientFundsError,
   NonceTooLowError,
+  createPublicClient,
+  custom,
+  encodeErrorResult,
 } from "viem";
+import { base } from "viem/chains";
 import {
   formatError,
   tradeErrorMessage,
@@ -59,6 +64,118 @@ describe("tradeErrorMessage", () => {
 
   it("truncates unknown errors", () => {
     expect(tradeErrorMessage(new Error("oops"))).toBe("oops");
+  });
+
+  it("decodes SlippageBoundsExceeded revert into friendly message", () => {
+    const abi = [
+      { type: "error" as const, name: "SlippageBoundsExceeded", inputs: [] },
+    ];
+    const data = encodeErrorResult({
+      abi,
+      errorName: "SlippageBoundsExceeded",
+    });
+    const inner = new ContractFunctionRevertedError({
+      abi,
+      data,
+      functionName: "sell",
+    });
+    const outer = new ViemBaseError("execution reverted", { cause: inner });
+    expect(tradeErrorMessage(outer)).toMatch(/Price moved too much/);
+    expect(tradeErrorMessage(outer)).toMatch(/--slippage/);
+  });
+
+  it("decodes InsufficientLiquidity revert into friendly message", () => {
+    const abi = [
+      { type: "error" as const, name: "InsufficientLiquidity", inputs: [] },
+    ];
+    const data = encodeErrorResult({ abi, errorName: "InsufficientLiquidity" });
+    const inner = new ContractFunctionRevertedError({
+      abi,
+      data,
+      functionName: "sell",
+    });
+    const outer = new ViemBaseError("execution reverted", { cause: inner });
+    expect(tradeErrorMessage(outer)).toMatch(/Not enough liquidity/);
+  });
+
+  it("decodes OnlyWeth revert into friendly message", () => {
+    const abi = [{ type: "error" as const, name: "OnlyWeth", inputs: [] }];
+    const data = encodeErrorResult({ abi, errorName: "OnlyWeth" });
+    const inner = new Error("revert");
+    (inner as any).data = data;
+    const outer = new ViemBaseError("call failed", { cause: inner });
+    expect(tradeErrorMessage(outer)).toBe("This function only accepts WETH.");
+  });
+
+  it("shows raw error name for unknown contract errors", () => {
+    const abi = [{ type: "error" as const, name: "SomeNewError", inputs: [] }];
+    const data = encodeErrorResult({ abi, errorName: "SomeNewError" });
+    const inner = new ContractFunctionRevertedError({
+      abi,
+      data,
+      functionName: "swap",
+    });
+    const outer = new ViemBaseError("execution reverted", { cause: inner });
+    expect(tradeErrorMessage(outer)).toBe("Transaction reverted: SomeNewError");
+  });
+
+  it("decodes revert data from cause chain when no ContractFunctionRevertedError", () => {
+    const abi = [
+      { type: "error" as const, name: "SlippageBoundsExceeded", inputs: [] },
+    ];
+    const data = encodeErrorResult({
+      abi,
+      errorName: "SlippageBoundsExceeded",
+    });
+    // Simulate an error chain where raw data is in a nested cause
+    const inner = new Error("revert");
+    (inner as any).data = data;
+    const outer = new ViemBaseError("call failed", { cause: inner });
+    expect(tradeErrorMessage(outer)).toMatch(/Price moved too much/);
+  });
+
+  it("decodes nested object revert data from a real viem call error", async () => {
+    const abi = [
+      { type: "error" as const, name: "SlippageBoundsExceeded", inputs: [] },
+    ];
+    const data = encodeErrorResult({
+      abi,
+      errorName: "SlippageBoundsExceeded",
+    });
+    const client = createPublicClient({
+      chain: base,
+      transport: custom({
+        async request() {
+          const err = new Error("execution reverted");
+          (err as any).code = 3;
+          (err as any).data = { data };
+          throw err;
+        },
+      }),
+    });
+
+    try {
+      await client.call({
+        to: "0x0000000000000000000000000000000000000000",
+        data: "0x",
+      });
+      expect.fail("should have thrown");
+    } catch (err) {
+      expect(tradeErrorMessage(err)).toMatch(/Price moved too much/);
+    }
+  });
+
+  it("shows reason string from ContractFunctionRevertedError", () => {
+    const inner = new ContractFunctionRevertedError({
+      abi: [],
+      functionName: "sell",
+    });
+    // Manually set the reason (simulates a require("insufficient balance") revert)
+    (inner as any).reason = "insufficient balance";
+    const outer = new ViemBaseError("execution reverted", { cause: inner });
+    expect(tradeErrorMessage(outer)).toBe(
+      "Transaction reverted: insufficient balance",
+    );
   });
 });
 

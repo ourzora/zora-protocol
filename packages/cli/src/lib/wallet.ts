@@ -41,6 +41,44 @@ function formatRpcError(error: unknown): string {
   return JSON.stringify(error);
 }
 
+function extractRpcHexData(data: unknown): string | undefined {
+  if (typeof data === "string" && data.startsWith("0x") && data.length >= 10) {
+    return data;
+  }
+
+  if (data && typeof data === "object" && "data" in data) {
+    return extractRpcHexData((data as { data?: unknown }).data);
+  }
+
+  return undefined;
+}
+
+/**
+ * Build an Error that preserves JSON-RPC code/data so viem can classify it
+ * (e.g. code 3 → ContractFunctionRevertedError with revert bytes).
+ */
+function buildRpcError(rpcError: unknown): Error {
+  if (
+    rpcError &&
+    typeof rpcError === "object" &&
+    "code" in rpcError &&
+    typeof (rpcError as { code: unknown }).code === "number"
+  ) {
+    const typed = rpcError as {
+      code: number;
+      message?: string;
+      data?: unknown;
+    };
+    const err = new Error(typed.message ?? "RPC error");
+    (err as any).code = typed.code;
+    if (typed.data !== undefined) {
+      (err as any).data = extractRpcHexData(typed.data) ?? typed.data;
+    }
+    return err;
+  }
+  return new Error(`CLI RPC request failed: ${formatRpcError(rpcError)}`);
+}
+
 export function createCliRpcTransport(chainId: number = base.id) {
   return custom({
     async request({
@@ -62,9 +100,7 @@ export function createCliRpcTransport(chainId: number = base.id) {
       }
 
       if (response.error) {
-        throw new Error(
-          `CLI RPC request failed: ${formatRpcError(response.error)}`,
-        );
+        throw buildRpcError(response.error);
       }
 
       const payload = response.data;
@@ -75,9 +111,7 @@ export function createCliRpcTransport(chainId: number = base.id) {
         "error" in payload &&
         payload.error
       ) {
-        throw new Error(
-          `CLI RPC request failed: ${formatRpcError(payload.error)}`,
-        );
+        throw buildRpcError(payload.error);
       }
 
       if (payload && typeof payload === "object" && "result" in payload) {
