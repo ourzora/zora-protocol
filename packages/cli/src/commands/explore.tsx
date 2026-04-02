@@ -312,9 +312,7 @@ export const exploreCommand = new Command("explore")
 
       const edges = response.data?.exploreList?.edges ?? [];
       const rawNodes: RawExploreNode[] = edges.map((e: any) => e.node);
-      const coins = rawNodes.map((node, i) =>
-        formatExploreCoinJson(node),
-      );
+      const coins = rawNodes.map((node, i) => formatExploreCoinJson(node));
       const pageInfo = response.data?.exploreList?.pageInfo as
         | { endCursor?: string; hasNextPage: boolean }
         | undefined;

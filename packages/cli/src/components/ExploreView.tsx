@@ -21,7 +21,11 @@ import { copyToClipboard } from "../lib/clipboard.js";
 
 const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   { header: "#", width: 4, accessor: (c) => String(c.rank) },
-  { header: "Name", width: 20, accessor: (c) => c.name ?? "Unknown" },
+  {
+    header: "Name",
+    width: 20,
+    accessor: (c) => c.name ?? "Unknown",
+  },
   {
     header: "Address",
     width: 14,
@@ -164,7 +168,7 @@ const ExploreView = ({
       return;
     }
 
-    if (input === "c") {
+    if (input === "c" || key.return) {
       const coin = coins[selectedRow];
       if (coin?.address) {
         const ok = copyToClipboard(coin.address);
@@ -260,7 +264,7 @@ const ExploreView = ({
 
   const hints: string[] = [];
   hints.push("\u2191\u2193 select");
-  hints.push("c copy address");
+  hints.push("enter/c copy address");
   if (cursorHistory.length > 0) hints.push("\u2190 prev");
   if (pageInfo?.hasNextPage) hints.push("\u2192 next");
   hints.push(autoRefresh ? `r refresh (${secondsUntilRefresh}s)` : "r refresh");
