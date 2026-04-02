@@ -123,3 +123,29 @@ pnpm run build:binary:windows-x64 # → ./bin/zora-windows-x64.exe
 ```
 
 The `bin/` directory is gitignored. Requires `bun` to be installed (`npm install -g bun`).
+
+## Releases and changesets
+
+The CLI is published to npm as `@zoralabs/cli`. Releases are managed via [changesets](https://github.com/changesets/changesets) — the monorepo's automated versioning and publishing system.
+
+**When to add a changeset:** Any PR that adds functionality, changes behavior, or fixes a bug in the CLI should include a changeset. Skip changesets for changes that only touch tests, docs, or CI config.
+
+**How to add one:**
+
+```bash
+pnpm changeset add --empty
+```
+
+This creates a file in `.changeset/` at the repo root. Edit it to reference the CLI package:
+
+```md
+---
+"@zoralabs/cli": patch
+---
+
+Short description of what changed
+```
+
+Use `patch` for bug fixes, `minor` for new features, and `major` for breaking changes.
+
+**What happens next:** When the PR merges to `main`, the changesets action opens (or updates) a "Version Packages" PR that bumps versions in `package.json` and updates `CHANGELOG.md`. If multiple PRs with changesets merge before the Version Packages PR is merged, they all accumulate into it. When that PR is finally merged, all pending packages are published to npm in one go.

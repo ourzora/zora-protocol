@@ -7,37 +7,36 @@ Please review this pull request and provide feedback on:
 - Test coverage
 
 **Important: Changeset Validation**
-If this PR modifies contract code (_.sol files in packages/_/src/), validate changesets:
+If this PR modifies source code in published packages (packages/_/src/\*\*/_.{ts,tsx,js,jsx,sol}), validate that a changeset exists for each affected package. This applies to all published @zoralabs/\* packages, not just contract code. TypeScript/JavaScript packages (e.g., @zoralabs/coins-sdk, @zoralabs/cli) follow the same changeset requirements as Solidity packages.
+
+Specifically, if this PR modifies contract code (_.sol files in packages/_/src/) or TypeScript/JavaScript code (_.ts, _.tsx, _.js, _.jsx files in packages/\*/src/), validate changesets:
 
 1. **Identify what changed in this PR**:
-
    - Examine the PR diff provided by the action (NOT hardcoded `main`)
-   - Identify which Solidity files and functions were modified
+   - Identify which source files (Solidity, TypeScript, JavaScript) were modified
    - Read commit messages in the PR to understand the changes
 
 2. **Check for changesets added in this PR**:
-
    - Look at the diff to see if any `.changeset/*.md` files were added or modified
    - Separate changesets that exist in base branch (upstream) vs added in this PR
 
 3. **For stacked diffs, determine if upstream changesets cover this PR**:
-
    - If changesets exist in base branch, read their content
    - Assess if the upstream changeset descriptions match the contract changes in THIS PR
    - A changeset only covers this PR if it specifically describes the changes made here
 
 4. **Validate changeset relevance**:
-
    - A changeset is valid for this PR if it:
      - Mentions the specific contract or function being modified in this PR
      - Describes the actual change being made (e.g., "fix double-counting", "add new feature")
      - Targets the correct package (e.g., "@zoralabs/coins" for packages/coins/src changes)
 
-5. **If contract code changed but no relevant changeset**:
+5. **If source code changed but no relevant changeset**:
    - Determine if changes are related to an upstream changeset (if this is a stacked diff)
    - If related to upstream changeset: suggest updating the existing changeset
    - If new/unrelated changes: remind author to create new changeset using `pnpm changeset add --empty`
-   - According to CLAUDE.md: "When updating contract code, make a changeset for the corresponding contract package"
+   - For contract code: changeset targets the corresponding contract package (e.g., "@zoralabs/coins")
+   - For TypeScript/JavaScript code: changeset targets the corresponding package (e.g., "@zoralabs/coins-sdk", "@zoralabs/cli")
 
 **Important: ABI Stability**
 If this PR modifies interface files (I*.sol files in packages/*/src/):
@@ -55,10 +54,12 @@ If this PR modifies interface files (I*.sol files in packages/*/src/):
    - ❌ Removing functions requires `@custom:deprecated` annotation in a prior release
 
 3. **Deprecation workflow** (required before removal):
+
    ```solidity
    /// @custom:deprecated Use newFunction() instead. Will be removed in vX.Y.
    function oldFunction(...) external;
    ```
+
    - First PR: Add `@custom:deprecated` annotation, run `pnpm run abi-check:generate`, release
    - Second PR (later): Remove the function, run `pnpm run abi-check:generate`
 
