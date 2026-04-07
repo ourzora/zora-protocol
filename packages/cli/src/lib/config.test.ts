@@ -28,18 +28,13 @@ describe("getEnvApiKey", () => {
   });
 
   it("exits with error when env var is empty string", async () => {
-    const exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getEnvApiKey } = await loadConfig();
     process.env.ZORA_API_KEY = "";
-    getEnvApiKey();
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(() => getEnvApiKey()).toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("ZORA_API_KEY is set but empty"),
     );
-    exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
 });
@@ -70,18 +65,13 @@ describe("getApiKey", () => {
   });
 
   it("empty env var exits with error", async () => {
-    const exitSpy = vi
-      .spyOn(process, "exit")
-      .mockImplementation(() => undefined as never);
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     const { getApiKey } = await loadConfig();
     process.env.ZORA_API_KEY = "";
-    getApiKey();
-    expect(exitSpy).toHaveBeenCalledWith(1);
+    expect(() => getApiKey()).toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("ZORA_API_KEY is set but empty"),
     );
-    exitSpy.mockRestore();
     errorSpy.mockRestore();
   });
 

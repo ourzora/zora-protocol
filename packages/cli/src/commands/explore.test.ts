@@ -80,7 +80,7 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await expect(
       program.parseAsync(["explore", "--sort", "invalid"], { from: "user" }),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid --sort"),
@@ -93,7 +93,7 @@ describe("exploreCommand action", () => {
       program.parseAsync(["explore", "--sort", "featured", "--type", "all"], {
         from: "user",
       }),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid --type"),
@@ -104,7 +104,7 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await expect(
       program.parseAsync(["explore", "--limit", "abc"], { from: "user" }),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid --limit"),
@@ -115,7 +115,7 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await expect(
       program.parseAsync(["explore", "--limit", "25"], { from: "user" }),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid --limit"),
@@ -334,7 +334,7 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await expect(
       program.parseAsync(["explore", "--json", "--live"], { from: "user" }),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("cannot be used together"),
@@ -345,7 +345,7 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await expect(
       program.parseAsync(["explore", "--live", "--static"], { from: "user" }),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("cannot be used together"),
@@ -356,7 +356,7 @@ describe("exploreCommand action", () => {
     const program = createProgram(exploreCommand);
     await expect(
       program.parseAsync(["explore", "--json", "--static"], { from: "user" }),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
 
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("cannot be used together"),

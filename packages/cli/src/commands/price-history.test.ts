@@ -78,7 +78,7 @@ describe("priceHistoryCommand", () => {
 
   it("exits with error for invalid --interval", async () => {
     await expect(parseJson("0x1234", "--interval", "banana")).rejects.toThrow(
-      "exit 1",
+      "process.exit(1)",
     );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid --interval"),
@@ -91,7 +91,7 @@ describe("priceHistoryCommand", () => {
       data: { zora20Token: undefined },
     } as any);
 
-    await expect(parseJson("0xdead")).rejects.toThrow("exit 1");
+    await expect(parseJson("0xdead")).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("No coin found"),
     );
@@ -111,7 +111,7 @@ describe("priceHistoryCommand", () => {
       },
     } as any);
 
-    await expect(parseJson("0xbanned")).rejects.toThrow("exit 1");
+    await expect(parseJson("0xbanned")).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining(
         "The coin at 0xbanned is unavailable because it violates the Zora terms of service",
@@ -137,7 +137,7 @@ describe("priceHistoryCommand", () => {
     } as any);
 
     await expect(parseJson("0x1234", "--interval", "1h")).rejects.toThrow(
-      "exit 1",
+      "process.exit(1)",
     );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("No price data found"),

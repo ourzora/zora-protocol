@@ -3,6 +3,7 @@ import { createPublicClient, createWalletClient, custom } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
 import { getPrivateKey } from "./config.js";
+import { safeExit, ERROR } from "./exit.js";
 import { formatError } from "./errors.js";
 
 export const normalizeKey = (key: string): `0x${string}` =>
@@ -18,7 +19,7 @@ export const resolveAccount = (
     console.error(
       "No wallet configured. Run 'zora setup' to create or import one.",
     );
-    return process.exit(1);
+    safeExit(ERROR);
   }
 
   try {
@@ -26,7 +27,7 @@ export const resolveAccount = (
   } catch (err) {
     console.error(`✗ Invalid private key: ${formatError(err)}`);
     console.error("  Run 'zora setup --force' to replace it.");
-    return process.exit(1);
+    safeExit(ERROR);
   }
 };
 

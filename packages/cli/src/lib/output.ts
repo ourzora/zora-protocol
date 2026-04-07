@@ -1,4 +1,5 @@
 import type { Command } from "commander";
+import { safeExit, ERROR } from "./exit.js";
 
 type OutputMode = "static" | "json" | "live";
 
@@ -53,7 +54,7 @@ const outputErrorAndExit = (
       console.error(`\x1b[2m${suggestion}\x1b[0m`);
     }
   }
-  process.exit(1);
+  safeExit(ERROR);
 };
 
 const outputData = (

@@ -8,6 +8,7 @@ import {
   outputData,
 } from "../lib/output.js";
 import { confirmOrDefault } from "../lib/prompt.js";
+import { safeExit, SUCCESS } from "../lib/exit.js";
 import {
   NO_WALLET_CONFIGURED,
   NO_WALLET_SUGGESTION,
@@ -110,7 +111,7 @@ walletCommand
 
       if (!ok) {
         console.error("Aborted.");
-        process.exit(0);
+        safeExit(SUCCESS);
       }
     }
 

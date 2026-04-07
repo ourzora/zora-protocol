@@ -19,6 +19,7 @@ import { StyledHelpHeader } from "./components/StyledHelpHeader.js";
 import { parseHelpSections } from "./lib/parse-help.js";
 import { supportsTruecolor } from "./lib/zorb-pixels.js";
 import { identify, shutdownAnalytics } from "./lib/analytics.js";
+import { CliExitError, safeExit, ERROR } from "./lib/exit.js";
 
 declare const PKG_VERSION: string | undefined;
 
@@ -115,7 +116,7 @@ const buildProgram = (): Command => {
       !argOptionalCommands.has(actionCommand.name())
     ) {
       actionCommand.outputHelp();
-      process.exit(1);
+      safeExit(ERROR);
     }
   });
 
@@ -127,16 +128,23 @@ const program = buildProgram();
 if (!process.env.VITEST) {
   identify();
 
+  let exitCode: number | null = null;
   try {
     await program.parseAsync();
   } catch (err) {
     if (err instanceof ExitPromptError) {
       console.log("\nAborted.");
-      process.exit(0);
+      exitCode = 0;
+    } else if (err instanceof CliExitError) {
+      exitCode = err.exitCode;
+    } else {
+      throw err;
     }
-    throw err;
   } finally {
     await shutdownAnalytics();
+  }
+  if (exitCode !== null) {
+    process.exit(exitCode);
   }
 }
 

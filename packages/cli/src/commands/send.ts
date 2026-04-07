@@ -11,6 +11,7 @@ import { setApiKey } from "@zoralabs/coins-sdk";
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import { safeExit, SUCCESS } from "../lib/exit.js";
 import {
   parsePositionalCoinArgs,
   coinArgsToRef,
@@ -255,7 +256,7 @@ export const sendCommand = new Command("send")
         const ok = await confirm({ message: "Confirm?", default: false });
         if (!ok) {
           console.error("Aborted.");
-          process.exit(0);
+          safeExit(SUCCESS);
         }
       }
 
@@ -511,7 +512,7 @@ export const sendCommand = new Command("send")
         const ok = await confirm({ message: "Confirm?", default: false });
         if (!ok) {
           console.error("Aborted.");
-          process.exit(0);
+          safeExit(SUCCESS);
         }
       }
 

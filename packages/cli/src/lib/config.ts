@@ -7,6 +7,7 @@ import {
 } from "node:fs";
 import { join } from "node:path";
 import { formatError } from "./errors.js";
+import { safeExit, ERROR } from "./exit.js";
 import { homedir, platform } from "node:os";
 
 function getConfigDir(): string {
@@ -132,7 +133,7 @@ export function getEnvApiKey(): string | undefined {
     console.error(
       "ZORA_API_KEY is set but empty. Provide a valid key or unset the variable.",
     );
-    process.exit(1);
+    safeExit(ERROR);
   }
   return envKey;
 }

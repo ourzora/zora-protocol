@@ -18,13 +18,10 @@ describe("outputErrorAndExit", () => {
 
   it("prints styled error to stderr in non-json mode", () => {
     const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(process, "exit").mockImplementation((code) => {
-      throw new Error(`exit ${code}`);
-    });
 
     expect(() =>
       outputErrorAndExit(false, "Something broke", "Try again"),
-    ).toThrow("exit 1");
+    ).toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Something broke"),
     );
@@ -33,12 +30,9 @@ describe("outputErrorAndExit", () => {
 
   it("prints JSON error to stdout in json mode", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(process, "exit").mockImplementation((code) => {
-      throw new Error(`exit ${code}`);
-    });
 
     expect(() => outputErrorAndExit(true, "Bad request", "Use --help")).toThrow(
-      "exit 1",
+      "process.exit(1)",
     );
     const output = JSON.parse(logSpy.mock.calls[0][0]);
     expect(output.error).toBe("Bad request");
@@ -47,11 +41,10 @@ describe("outputErrorAndExit", () => {
 
   it("omits suggestion in JSON when not provided", () => {
     const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
-    vi.spyOn(process, "exit").mockImplementation((code) => {
-      throw new Error(`exit ${code}`);
-    });
 
-    expect(() => outputErrorAndExit(true, "Not found")).toThrow("exit 1");
+    expect(() => outputErrorAndExit(true, "Not found")).toThrow(
+      "process.exit(1)",
+    );
     const output = JSON.parse(logSpy.mock.calls[0][0]);
     expect(output.error).toBe("Not found");
     expect(output.suggestion).toBeUndefined();

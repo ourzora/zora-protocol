@@ -73,7 +73,9 @@ describe("getCommand", () => {
       data: { trendCoin: null },
     } as any);
 
-    await expect(parseJson("trend", "unknown")).rejects.toThrow("exit 1");
+    await expect(parseJson("trend", "unknown")).rejects.toThrow(
+      "process.exit(1)",
+    );
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("No trend coin found"),
     );
@@ -118,7 +120,7 @@ describe("getCommand", () => {
       data: { zora20Token: undefined },
     } as any);
 
-    await expect(parseJson("0xdead")).rejects.toThrow("exit 1");
+    await expect(parseJson("0xdead")).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("No coin found"),
     );
@@ -128,7 +130,7 @@ describe("getCommand", () => {
     vi.mocked(getApiKey).mockReturnValue("test-key");
     vi.mocked(getCoin).mockRejectedValue(new Error("Network error"));
 
-    await expect(parseJson("0x1234")).rejects.toThrow("exit 1");
+    await expect(parseJson("0x1234")).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("Network error"),
     );
@@ -195,7 +197,7 @@ describe("getCommand", () => {
       },
     } as any);
 
-    await expect(parseJson("0xbanned")).rejects.toThrow("exit 1");
+    await expect(parseJson("0xbanned")).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining(
         "The coin at 0xbanned is unavailable because it violates the Zora terms of service",
@@ -313,14 +315,14 @@ describe("getCommand", () => {
       data: { trendCoin: null },
     } as any);
 
-    await expect(parseJson("nonexistent")).rejects.toThrow("exit 1");
+    await expect(parseJson("nonexistent")).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("No coin found"),
     );
   });
 
   it("exits with error when type prefix given without identifier", async () => {
-    await expect(parseJson("creator-coin")).rejects.toThrow("exit 1");
+    await expect(parseJson("creator-coin")).rejects.toThrow("process.exit(1)");
     expect(logSpy).toHaveBeenCalledWith(
       expect.stringContaining("Missing identifier after"),
     );

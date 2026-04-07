@@ -16,6 +16,7 @@ import {
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import { safeExit, SUCCESS, ERROR } from "../lib/exit.js";
 import { formatUsd } from "../lib/format.js";
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
@@ -439,7 +440,7 @@ export const sellCommand = new Command("sell")
       if (errorType === "LIQUIDITY" || msg.includes("Not enough liquidity")) {
         if (json) {
           outputJson({ error: errorBody ?? msg });
-          process.exit(1);
+          safeExit(ERROR);
         }
         outputErrorAndExit(
           json,
@@ -524,7 +525,7 @@ export const sellCommand = new Command("sell")
       });
       if (!ok) {
         console.error("Aborted.");
-        process.exit(0);
+        safeExit(SUCCESS);
       }
     }
 

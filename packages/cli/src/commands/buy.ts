@@ -10,6 +10,7 @@ import {
 import { resolveAccount, createClients } from "../lib/wallet.js";
 import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import { safeExit, SUCCESS, ERROR } from "../lib/exit.js";
 import { formatAmountDisplay, formatUsd } from "../lib/format.js";
 import {
   GAS_RESERVE,
@@ -363,7 +364,7 @@ export const buyCommand = new Command("buy")
       if (errorType === "LIQUIDITY" || msg.includes("Not enough liquidity")) {
         if (json) {
           outputJson({ error: errorBody ?? msg });
-          process.exit(1);
+          safeExit(ERROR);
         }
         outputErrorAndExit(
           json,
@@ -420,7 +421,7 @@ export const buyCommand = new Command("buy")
         default: false,
       });
       if (!ok) {
-        process.exit(0);
+        safeExit(SUCCESS);
       }
     }
 

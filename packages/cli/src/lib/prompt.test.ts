@@ -59,12 +59,9 @@ describe("passwordOrFail", () => {
 
   it("exits with error when nonInteractive is true", async () => {
     vi.spyOn(console, "error").mockImplementation(() => {});
-    vi.spyOn(process, "exit").mockImplementation((code) => {
-      throw new Error(`exit ${code}`);
-    });
 
     await expect(
       passwordOrFail(false, { message: "Key:" }, true),
-    ).rejects.toThrow("exit 1");
+    ).rejects.toThrow("process.exit(1)");
   });
 });
