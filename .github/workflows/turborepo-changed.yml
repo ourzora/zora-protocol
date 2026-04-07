@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@f43a0e5ff2bd294095638e18286ca9a3d1956744 # v3
         with:
           fetch-depth: 2 # Get 2 commits
 
@@ -25,6 +25,6 @@ jobs:
 
       - name: Any packages changed in last commit?
         id: turborepoChanges
-        uses: "94726/action-turborepo-changes@v1.1.1"
+        uses: "94726/action-turborepo-changes@6bb75425be5455ba39431196f12e246a2f37d375"  # v1.1.1
         with:
           from: HEAD^1 # Check for changes since previous commit

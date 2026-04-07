@@ -1,43 +1,53 @@
-name: Vercel Deployment
-env:
-  VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
-  VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID }}
+name: Vercel Coins Docs Deployment
 on:
   push:
     branches:
       - main
+  workflow_dispatch:
+
 jobs:
   Deploy:
+    # only publish when running on the zora-protocol repo or when manually triggered
+    if: github.event.repository.name == 'zora-protocol' || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     env:
       TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
       TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_DOCS_PROJECT_ID }}
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
       - name: Cache turbo build setup
-        uses: actions/cache@v4
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
           path: .turbo
           key: ${{ runner.os }}-turbo-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-turbo-
 
-      - name: Install node deps and founry
+      - name: Install node deps and foundry
         uses: ./.github/actions/setup_deps
 
       - name: Install Vercel CLI
         run: npm install --global vercel@latest
 
+      - name: RM Vercel Cache
+        run: rm -rf .vercel
+
       - name: Pull Vercel Environment Information
+        working-directory: ./docs
         run: vercel pull --yes --environment=production --token=${{ secrets.VERCEL_TOKEN }}
 
       - name: Build Project Artifacts
+        working-directory: ./docs
         run: vercel build --prod --token=${{ secrets.VERCEL_TOKEN }}
         env:
           GOOGLE_ANALYTICS_TAG_ID: ${{ secrets.DOCS_GOOGLE_ANALYTICS_TAG_ID }}
+          NODE_OPTIONS: " --max-old-space-size=8192"
 
       - name: Deploy Project Artifacts to Vercel
         run: vercel deploy --prebuilt --prod --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./docs

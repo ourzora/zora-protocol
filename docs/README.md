@@ -21,7 +21,7 @@ It is built on the [vocs](https://vocs.dev) framework.
 Before running the dev server, from the root of the monorepo:
 
 ```bash
-pnpm run build
+pnpm run build:site
 ```
 
 Then, from the `docs` directory, start the dev server:

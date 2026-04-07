@@ -1,0 +1,247 @@
+import {
+  GetCoinCommentsData,
+  GetCoinCommentsResponse,
+  GetCoinData,
+  GetCoinHoldersData,
+  GetCoinHoldersResponse,
+  GetCoinResponse,
+  GetCoinsData,
+  GetCoinsResponse,
+  GetCoinSwapsData,
+  GetCoinSwapsResponse,
+  GetProfileBalancesData,
+  GetProfileBalancesResponse,
+  GetProfileCoinsData,
+  GetProfileCoinsResponse,
+  GetProfileData,
+  GetProfileResponse,
+  GetFeaturedCreatorsData,
+  GetFeaturedCreatorsResponse,
+  GetTraderLeaderboardData,
+  GetTraderLeaderboardResponse,
+  GetProfileSocialResponse,
+  GetProfileSocialData,
+  GetContentCoinPoolConfigData,
+  GetContentCoinPoolConfigResponse,
+  GetCreatorCoinPoolConfigData,
+  GetCreatorCoinPoolConfigResponse,
+} from "../client/types.gen";
+import {
+  getCoin as getCoinSDK,
+  getCoins as getCoinsSDK,
+  getCoinComments as getCoinCommentsSDK,
+  getCoinHolders as getCoinHoldersSDK,
+  getCoinSwaps as getCoinSwapsSDK,
+  getProfile as getProfileSDK,
+  getProfileBalances as getProfileBalancesSDK,
+  getProfileCoins as getProfileCoinsSDK,
+  getProfileSocial as getProfileSocialSDK,
+  getFeaturedCreators as getFeaturedCreatorsSDK,
+  getTraderLeaderboard as getTraderLeaderboardSDK,
+  getContentCoinPoolConfig as getContentCoinPoolConfigSDK,
+  getCreatorCoinPoolConfig as getCreatorCoinPoolConfigSDK,
+} from "../client/sdk.gen";
+import { getApiKeyMeta } from "./api-key";
+import { RequestOptionsType } from "./query-types";
+import { RequestResult } from "@hey-api/client-fetch";
+
+export type { RequestResult };
+
+type GetCoinQuery = GetCoinData["query"];
+export type { GetCoinQuery, GetCoinData };
+export type { GetCoinResponse } from "../client/types.gen";
+
+export type CoinData = NonNullable<GetCoinResponse["zora20Token"]>;
+
+export const getCoin = async (
+  query: GetCoinQuery,
+  options?: RequestOptionsType<GetCoinData>,
+): Promise<RequestResult<GetCoinResponse>> => {
+  return await getCoinSDK({
+    ...options,
+    query,
+    ...getApiKeyMeta(),
+  });
+};
+
+type GetCoinsQuery = GetCoinsData["query"];
+export type { GetCoinsQuery, GetCoinsData };
+export type { GetCoinsResponse } from "../client/types.gen";
+
+export const getCoins = async (
+  query: GetCoinsQuery,
+  options?: RequestOptionsType<GetCoinsData>,
+): Promise<RequestResult<GetCoinsResponse>> => {
+  return await getCoinsSDK({
+    query: {
+      coins: query.coins.map((coinData) => JSON.stringify(coinData)) as any,
+    },
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinHoldersQuery = GetCoinHoldersData["query"];
+export type { GetCoinHoldersQuery, GetCoinHoldersData };
+export type { GetCoinHoldersResponse } from "../client/types.gen";
+
+export const getCoinHolders = async (
+  query: GetCoinHoldersQuery,
+  options?: RequestOptionsType<GetCoinHoldersData>,
+): Promise<RequestResult<GetCoinHoldersResponse>> => {
+  return await getCoinHoldersSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinSwapsQuery = GetCoinSwapsData["query"];
+export type { GetCoinSwapsQuery, GetCoinSwapsData };
+export type { GetCoinSwapsResponse } from "../client/types.gen";
+
+export const getCoinSwaps = async (
+  query: GetCoinSwapsQuery,
+  options?: RequestOptionsType<GetCoinSwapsData>,
+): Promise<RequestResult<GetCoinSwapsResponse>> => {
+  return await getCoinSwapsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinCommentsQuery = GetCoinCommentsData["query"];
+export type { GetCoinCommentsQuery, GetCoinCommentsData };
+export type { GetCoinCommentsResponse } from "../client/types.gen";
+
+export const getCoinComments = async (
+  query: GetCoinCommentsQuery,
+  options?: RequestOptionsType<GetCoinCommentsData>,
+): Promise<RequestResult<GetCoinCommentsResponse>> => {
+  return await getCoinCommentsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetProfileQuery = GetProfileData["query"];
+export type { GetProfileQuery, GetProfileData };
+export type { GetProfileResponse } from "../client/types.gen";
+
+export const getProfile = async (
+  query: GetProfileQuery,
+  options?: RequestOptionsType<GetProfileData>,
+): Promise<RequestResult<GetProfileResponse>> => {
+  return await getProfileSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetProfileCoinsQuery = GetProfileCoinsData["query"];
+export type { GetProfileCoinsQuery, GetProfileCoinsData };
+export type { GetProfileCoinsResponse } from "../client/types.gen";
+
+export const getProfileCoins = async (
+  query: GetProfileCoinsQuery,
+  options?: RequestOptionsType<GetProfileCoinsData>,
+): Promise<RequestResult<GetProfileCoinsResponse>> => {
+  return await getProfileCoinsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetProfileBalancesQuery = GetProfileBalancesData["query"];
+export type { GetProfileBalancesQuery, GetProfileBalancesData };
+export type { GetProfileBalancesResponse } from "../client/types.gen";
+
+export const getProfileBalances = async (
+  query: GetProfileBalancesQuery,
+  options?: RequestOptionsType<GetProfileBalancesData>,
+): Promise<RequestResult<GetProfileBalancesResponse>> => {
+  return await getProfileBalancesSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetProfileSocialQuery = GetProfileSocialData["query"];
+export type { GetProfileSocialQuery, GetProfileSocialData };
+export type { GetProfileSocialResponse } from "../client/types.gen";
+
+export const getProfileSocial = async (
+  query: GetProfileSocialQuery,
+  options?: RequestOptionsType<GetProfileSocialData>,
+): Promise<RequestResult<GetProfileSocialResponse>> => {
+  return await getProfileSocialSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetFeaturedCreatorsQuery = GetFeaturedCreatorsData["query"];
+export type { GetFeaturedCreatorsQuery, GetFeaturedCreatorsData };
+export type { GetFeaturedCreatorsResponse } from "../client/types.gen";
+
+export const getFeaturedCreators = async (
+  query: GetFeaturedCreatorsQuery = {},
+  options?: RequestOptionsType<GetFeaturedCreatorsData>,
+): Promise<RequestResult<GetFeaturedCreatorsResponse>> => {
+  return await getFeaturedCreatorsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetTraderLeaderboardQuery = GetTraderLeaderboardData["query"];
+export type { GetTraderLeaderboardQuery, GetTraderLeaderboardData };
+export type { GetTraderLeaderboardResponse } from "../client/types.gen";
+
+export const getTraderLeaderboard = async (
+  query: GetTraderLeaderboardQuery = {},
+  options?: RequestOptionsType<GetTraderLeaderboardData>,
+): Promise<RequestResult<GetTraderLeaderboardResponse>> => {
+  return await getTraderLeaderboardSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetContentCoinPoolConfigQuery = GetContentCoinPoolConfigData["query"];
+export type { GetContentCoinPoolConfigQuery, GetContentCoinPoolConfigData };
+export type { GetContentCoinPoolConfigResponse } from "../client/types.gen";
+
+export const getContentCoinPoolConfig = async (
+  query: GetContentCoinPoolConfigQuery,
+  options?: RequestOptionsType<GetContentCoinPoolConfigData>,
+): Promise<RequestResult<GetContentCoinPoolConfigResponse>> => {
+  return await getContentCoinPoolConfigSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCreatorCoinPoolConfigQuery = GetCreatorCoinPoolConfigData["query"];
+export type { GetCreatorCoinPoolConfigQuery, GetCreatorCoinPoolConfigData };
+export type { GetCreatorCoinPoolConfigResponse } from "../client/types.gen";
+
+export const getCreatorCoinPoolConfig = async (
+  query: GetCreatorCoinPoolConfigQuery,
+  options?: RequestOptionsType<GetCreatorCoinPoolConfigData>,
+): Promise<RequestResult<GetCreatorCoinPoolConfigResponse>> => {
+  return await getCreatorCoinPoolConfigSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};

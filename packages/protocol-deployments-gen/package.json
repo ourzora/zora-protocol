@@ -7,6 +7,7 @@
   "version": "0.0.0",
   "scripts": {
     "build": "pnpm run wagmi:generate",
+    "build:js": "pnpm run build",
     "wagmi:generate": "wagmi generate && pnpm exec rename-generated-abi-casing ./generated/wagmi.ts"
   },
   "dependencies": {
@@ -15,9 +16,13 @@
     "@zoralabs/sparks-contracts": "workspace:^",
     "@zoralabs/shared-scripts": "workspace:^",
     "@zoralabs/comments-contracts": "workspace:^",
+    "@zoralabs/shared-contracts": "workspace:^",
     "@zoralabs/smart-wallet-contracts": "workspace:^",
     "@zoralabs/erc20z": "workspace:^",
-    "@zoralabs/cointags-contracts": "workspace:^"
+    "@zoralabs/cointags-contracts": "workspace:^",
+    "@zoralabs/coins": "workspace:^",
+    "@zoralabs/coins-deployments": "workspace:^",
+    "@zoralabs/limit-orders": "workspace:^"
   },
   "devDependencies": {
     "@zoralabs/tsconfig": "workspace:^",

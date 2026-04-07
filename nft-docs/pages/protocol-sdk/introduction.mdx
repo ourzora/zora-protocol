@@ -1,0 +1,151 @@
+---
+title: Protocol SDK Introduction
+description: Zora Protocol SDKs are a suite of typescript libraries and utilities that simplify interacting with the Zora protocol
+---
+
+# Zora NFT Protocol SDKs
+
+The Zora NFT Protocol SDKs are a suite of typescript libraries and utilities that simplify interacting with the Zora protocol contracts.
+
+## Protocol Deployments Package
+
+The [Protocol Deployments](/protocol-sdk/protocol-deployments) package provides contract ABIs, deployed addresses, and typescript types for the Zora Contracts. These bundled configs and ABIs can be used in conjunction with wagmi or viem to interact with the Zora contracts in typescript without needing to write any solidity.
+
+```ts twoslash
+import {
+  protocolRewardsABI,
+  zoraCreator1155FactoryImplABI,
+  protocolRewardsAddress,
+  zoraCreator1155FactoryImplAddress,
+} from "@zoralabs/protocol-deployments";
+```
+
+## Protocol SDK
+
+The Protocol SDK is a typescript package that simplifies interacting with the Zora protocol by generating required transactions for our contracts.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/config.ts]
+
+// @filename: example.ts
+// ---cut---
+import { publicClient, chain } from './config';
+import { createCollectorClient } from "@zoralabs/protocol-sdk";
+
+const tokenContract = "0x1234567890123456789012345678901234567890";
+const tokenId = 1n;
+const mintToAddress = "0x71907e8Ae7aeFb58ceC8eb46DAf4fc78c29E5173";
+const quantityToMint = 1;
+const minterAccount = "0xCb8454D64AFeB46455cB4847C53279F6cdCbFb5e";
+
+const collectorClient = createCollectorClient({ 
+  chainId: chain.id, 
+  publicClient 
+});
+
+// prepare a transaction to mint an 1155 token
+const { parameters } = await collectorClient.mint({
+  mintType: "1155",
+  // 1155 contract address
+  tokenContract,
+  // id of the token to mint
+  tokenId,
+  // address that will receive the minted tokens
+  mintRecipient: mintToAddress,
+  // quantity of tokens to mint
+  quantityToMint,
+  // account to execute the mint transaction
+  minterAccount,
+});
+
+// simulate the transaction
+const { request } = await publicClient.simulateContract(parameters);
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/config.ts]
+```
+
+
+:::
+
+### Installation
+
+To add `@zoralabs/protocol-sdk` to your project, install the required packages:
+
+:::code-group
+
+```bash [pnpm]
+pnpm add @zoralabs/protocol-sdk viem@2.x
+```
+
+```bash [npm]
+npm install @zoralabs/protocol-sdk viem@2.x
+```
+
+```bash [yarn]
+yarn add @zoralabs/protocol-sdk viem@2.x
+```
+:::
+
+If using wagmi install `@tanstack/react-query` as well:
+
+```bash
+npm install @zoralabs/protocol-sdk viem@2.x @tanstack/react-query
+```
+
+
+### Usage
+
+The Zora Protocol SDK contains both a Creator Client and a Collector Client. The Creator Client is used to 
+create and manage Zora creator 1155 contracts and tokens, while the Collector Client is used to mint 
+Zora creator 1155, 721, and premints.
+
+:::code-group
+
+```ts twoslash [example.ts]
+// @filename: config.ts
+// [!include ~/snippets/protocol-sdk/config.ts]
+
+// @filename: example.ts
+// ---cut---
+import { publicClient, chain } from './config';
+import { 
+  createCreatorClient, 
+  createCollectorClient } from "@zoralabs/protocol-sdk";
+
+const creatorClient = createCreatorClient({ 
+  chainId: chain.id, 
+  publicClient 
+});
+// @noErrors
+creatorClient.
+//            ^|
+
+
+
+
+
+const collectorClient = createCollectorClient({ 
+  chainId: chain.id, 
+  publicClient 
+});
+// @noErrors
+collectorClient.
+//              ^|
+
+
+
+
+
+
+```
+
+```ts twoslash [config.ts]
+// [!include ~/snippets/protocol-sdk/config.ts]
+```
+
+:::

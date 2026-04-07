@@ -1,0 +1,402 @@
+# Profile Queries
+
+The Coins SDK provides several query functions to retrieve information about user profiles and their coin holdings. This page details the available profile query functions, their parameters, and includes usage examples.
+
+Queries:
+
+- [`getProfile`](#getprofile)
+- [`getProfileCoins`](#getprofilecoins)
+- [`getProfileBalances`](#getprofilebalances)
+
+## Available Queries
+
+### getProfile
+
+The `getProfile` function retrieves detailed information about a user's profile, including their handle, display name, bio, and profile image.
+
+#### Parameters
+
+```ts twoslash
+type GetProfileParams = {
+  identifier: string; // The user's wallet address or zora handle
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+// @errors: 2307
+import { getProfile } from "@zoralabs/coins-sdk";
+
+async function fetchUserProfile() {
+  const response = await getProfile({
+    identifier: "0xUserWalletAddress",
+  });
+
+  // TODO: fix profile graphql types
+  const profile: any = response?.data?.profile;
+
+  if (profile) {
+    console.log("Profile Details:");
+    console.log("- Handle:", profile.handle);
+    console.log("- Display Name:", profile.displayName);
+    console.log("- Bio:", profile.bio);
+
+    // Access profile image if available
+    if (profile.avatar?.medium) {
+      console.log("- Profile Image:", profile.avatar.medium);
+    }
+
+    // Access linked wallets if available
+    if (
+      (profile?.linkedWallets && profile?.linkedWallets?.edges?.length) ||
+      0 > 0
+    ) {
+      console.log("Linked Wallets:");
+      profile?.linkedWallets?.edges?.forEach((link: any) => {
+        console.log(
+          `- ${link?.node?.walletType}: ${link?.node?.walletAddress}`,
+        );
+      });
+    }
+
+    // Access Creator Coin if available
+    if (profile?.creatorCoin) {
+      console.log("Creator Coin:");
+      console.log("- Address:", profile.creatorCoin.address);
+      console.log("- Market Cap:", profile.creatorCoin.marketCap);
+      console.log(
+        "- 24h Market Cap Change:",
+        profile.creatorCoin.marketCapDelta24h,
+      );
+    }
+  } else {
+    console.log("Profile not found or user has not set up a profile");
+  }
+
+  return response;
+}
+```
+
+#### Response Structure
+
+The response includes a `profile` object with the following properties:
+
+```ts twoslash
+type ProfileData = {
+  profile?: {
+    id?: string; // Globally unique ID for the profile
+    handle?: string; // Username/handle
+    platformBlocked?: boolean; // Whether the profile is blocked on the platform (most applications should exclude blocked profiles from visibility)
+    displayName?: string; // User's display name
+    bio?: string; // User's biography/description
+    username?: string; // Username
+    website?: string; // User's website URL
+    avatar?: {
+      // Profile image data
+      small?: string; // Small version of profile image
+      medium?: string; // Medium version of profile image
+      blurhash?: string; // Blurhash for image loading
+    };
+    publicWallet?: {
+      // Public wallet information
+      walletAddress?: string; // User's wallet address
+    };
+    socialAccounts?: {
+      // Connected social accounts (followerCount available for each platform - see API types for details)
+      instagram?: {
+        username?: string; // Instagram username
+        displayName?: string; // Instagram display name
+        followerCount?: number; // Instagram follower count
+      };
+      tiktok?: {
+        username?: string; // TikTok username
+        displayName?: string; // TikTok display name
+        followerCount?: number; // TikTok follower count
+      };
+      twitter?: {
+        username?: string; // Twitter/X username
+        displayName?: string; // Twitter/X display name
+        followerCount?: number; // Twitter/X follower count
+      };
+      farcaster?: {
+        username?: string; // Farcaster username
+        displayName?: string; // Farcaster display name
+        followerCount?: number; // Farcaster follower count
+        id?: string; // Farcaster ID (FID)
+      };
+    };
+    linkedWallets?: {
+      // Connected wallets
+      edges?: Array<{
+        node?: {
+          walletType?: "PRIVY" | "EXTERNAL" | "SMART_WALLET";
+          walletAddress?: string;
+        };
+      }>;
+    };
+    creatorCoin?: {
+      // User's Creator Coin (if they have one)
+      address?: string; // Creator Coin contract address
+      marketCap?: string; // Current market capitalization
+      marketCapDelta24h?: string; // 24-hour market cap change
+    };
+  };
+};
+```
+
+### getProfileCoins
+
+The `getProfileCoins` function retrieves information about coins created by a specific user, including detailed coin metadata and trading information.
+
+#### Parameters
+
+```ts twoslash
+type GetProfileCoinsParams = {
+  identifier: string; // The user's wallet address or zora handle
+  count?: number; // Optional: Number of coins to return per page (default: 20)
+  after?: string; // Optional: Pagination cursor for fetching next page
+  chainIds?: Array<number>; // Optional: Filter by specific chain IDs
+  platformReferrerAddress?: Array<string>; // Optional: Filter by platform referrer addresses
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+// @errors: 2307
+import { getProfileCoins } from "@zoralabs/coins-sdk";
+
+async function fetchUserCreatedCoins() {
+  const response = await getProfileCoins({
+    identifier: "0xUserWalletAddress", // Can also be zora user profile handle
+    count: 20, // Optional: number of coins per page
+    after: undefined, // Optional: for pagination
+  });
+
+  const profile = response.data?.profile;
+
+  if (profile?.createdCoins) {
+    console.log(`Found ${profile.createdCoins.count} created coins`);
+
+    profile.createdCoins.edges?.forEach((edge, index) => {
+      const coin = edge.node;
+      console.log(`Coin ${index + 1}:`);
+      console.log("- Name:", coin.name);
+      console.log("- Symbol:", coin.symbol);
+      console.log("- Description:", coin.description);
+      console.log("- Market Cap:", coin.marketCap);
+      console.log("- Total Supply:", coin.totalSupply);
+      console.log("- Unique Holders:", coin.uniqueHolders);
+
+      if (coin.mediaContent?.previewImage?.medium) {
+        console.log("- Image:", coin.mediaContent.previewImage.medium);
+      }
+    });
+  } else {
+    console.log("User has not created any coins");
+  }
+
+  return response;
+}
+```
+
+#### Response Structure
+
+The response includes a `profile` object containing `createdCoins`:
+
+```ts twoslash
+type ProfileCoinsData = {
+  profile?: {
+    id?: string; // Globally unique ID for the profile
+    handle?: string; // Username/handle
+    platformBlocked?: boolean; // Whether the profile is blocked on the platform (most applications should exclude blocked profiles from visibility)
+    avatar?: {
+      // Profile avatar
+      previewImage?: {
+        blurhash?: string; // Blurhash for image loading
+        medium?: string; // Medium version of profile image
+        small?: string; // Small version of profile image
+      };
+    };
+    createdCoins?: {
+      // Coins created by this user
+      count?: number; // Total number of created coins
+      edges?: Array<{
+        node?: {
+          id?: string; // Coin ID
+          name?: string; // Coin name
+          symbol?: string; // Trading symbol
+          description?: string; // Coin description
+          address?: string; // Coin contract address
+          platformBlocked?: boolean; // Whether the coin is blocked on the platform (most applications should exclude blocked coins from visibility)
+          chainId?: number; // Chain ID where coin exists
+          totalSupply?: string; // Total supply of the coin
+          totalVolume?: string; // Total trading volume
+          volume24h?: string; // 24-hour trading volume
+          marketCap?: string; // Current market capitalization
+          marketCapDelta24h?: string; // 24h market cap change
+          uniqueHolders?: number; // Number of unique holders
+          createdAt?: string; // Creation timestamp
+          creatorAddress?: string; // Creator's wallet address
+          tokenUri?: string; // Token metadata URI
+          mediaContent?: {
+            // Associated media
+            mimeType?: string;
+            originalUri?: string;
+            previewImage?: {
+              small?: string;
+              medium?: string;
+              blurhash?: string;
+            };
+          };
+          uniswapV4PoolKey?: {
+            // Uniswap V4 pool information
+            token0Address?: string;
+            token1Address?: string;
+            fee?: number;
+            tickSpacing?: number;
+            hookAddress?: string;
+          };
+          uniswapV3PoolAddress?: string; // Uniswap V3 pool address
+        };
+      }>;
+      pageInfo?: {
+        // Pagination information
+        hasNextPage?: boolean; // Whether more results exist
+        endCursor?: string; // Cursor for next page
+      };
+    };
+  };
+};
+```
+
+### getProfileBalances
+
+The `getProfileBalances` function retrieves a list of all coin balances held by a specific user, including the coin details and current value.
+
+#### Parameters
+
+```ts twoslash
+type GetProfileBalancesParams = {
+  address: string; // The user's wallet address
+  after?: string; // Optional: Pagination cursor for fetching next page
+  count?: number; // Optional: Number of balances to return per page
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+// @errors: 2307
+import { getProfileBalances } from "@zoralabs/coins-sdk";
+
+async function fetchUserBalances() {
+  const response = await getProfileBalances({
+    identifier: "0xUserWalletAddress", // Can also be zora user profile handle
+    count: 20, // Optional: number of balances per page
+    after: undefined, // Optional: for pagination
+  });
+
+  const profile: any = response.data?.profile;
+
+  console.log(`Found ${profile.coinBalances?.length || 0} coin balances`);
+
+  profile.coinBalances?.forEach((balance: any, index: number) => {
+    console.log(balance);
+  });
+
+  // For pagination
+  if (profile.coinBalances?.pageInfo?.endCursor) {
+    console.log("Next page cursor:", profile.coinBalances?.pageInfo?.endCursor);
+  }
+
+  return response;
+}
+```
+
+#### Paginating Through All Balances
+
+If a user holds many coins, you might need to paginate through all of their balances:
+
+```ts twoslash
+// @errors: 2307
+import { getProfileBalances } from "@zoralabs/coins-sdk";
+
+async function fetchAllUserBalances(userAddress: string) {
+  let allBalances: any[] = [];
+  let cursor = undefined;
+  const pageSize = 20;
+
+  // Continue fetching until no more pages
+  do {
+    const response = await getProfileBalances({
+      identifier: userAddress, // UserAddress or zora handle
+      count: pageSize,
+      after: cursor,
+    });
+
+    const profile: any = response.data?.profile;
+
+    // Add balances to our collection
+    if (profile && profile.coinBalances) {
+      allBalances = [
+        ...allBalances,
+        ...profile.coinBalances.edges.map((edge: any) => edge.node),
+      ];
+    }
+
+    // Update cursor for next page
+    cursor = profile?.coinBalances?.pageInfo?.endCursor;
+
+    // Break if no more results
+    if (!cursor || profile?.coinBalances?.edges?.length === 0) {
+      break;
+    }
+  } while (true);
+
+  console.log(`Fetched ${allBalances.length} total coin balances`);
+  return allBalances;
+}
+```
+
+#### Response Structure
+
+The response includes a `balances` array and pagination information:
+
+```ts twoslash
+type Response = {
+  balances?: Array<{
+    id?: string; // Unique identifier for this balance
+    token?: {
+      // Coin information
+      id?: string; // Coin ID
+      name?: string; // Coin name
+      symbol?: string; // Trading symbol
+      address?: string; // Coin contract address
+      chainId?: number; // Chain ID
+      totalSupply?: string; // Total supply of the coin
+      marketCap?: string; // Current market capitalization
+      volume24h?: string; // 24-hour trading volume
+      createdAt?: string; // Creation timestamp
+      uniqueHolders?: number; // Number of unique holders
+      media?: {
+        // Media associated with the coin
+        previewImage?: string;
+        medium?: string;
+        blurhash?: string;
+      };
+    };
+    amount?: {
+      // Balance amount
+      amountRaw?: string; // Raw amount (in base units)
+      amountDecimal?: number; // Decimal representation
+    };
+    valueUsd?: string; // Estimated USD value
+    timestamp?: string; // Last updated timestamp
+  }>;
+  pagination?: {
+    cursor?: string; // Cursor for the next page
+  };
+};
+```

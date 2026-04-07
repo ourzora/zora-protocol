@@ -1,0 +1,118 @@
+# @zoralabs/coins-deployments
+
+## 1.0.10
+
+### Patch Changes
+
+- 50134ebc: Add TrendCoin support
+  - New `TrendCoin` contract: 100% supply in liquidity pool, 0% swap fees
+  - `deployTrendCoin` factory method with ticker uniqueness enforcement and post-deploy hook support
+  - Owner-configurable pool parameters via `setTrendCoinPoolConfig()`
+  - Metadata manager role for updatable contract URIs
+  - Ticker validation and URI encoding for trend coin symbols
+
+- Updated dependencies [50134ebc]
+  - @zoralabs/coins@2.6.0
+  - @zoralabs/limit-orders@0.2.7
+
+## 1.0.9
+
+### Patch Changes
+
+- Updated dependencies [78dffbdc]
+- Updated dependencies [1ccca8ef]
+  - @zoralabs/coins@2.5.1
+  - @zoralabs/limit-orders@0.2.7
+
+## 1.0.8
+
+### Patch Changes
+
+- 267e03c9: Fix deployment architecture to prevent TrustedMsgSenderProviderLookup redeployment
+  - Remove TrustedMsgSenderProviderLookup deployment from deployImpls() function
+  - Add validateExternalDependencies() function to validate all external dependencies before deployment
+  - Ensure lookup contract is only deployed once using DeployTrustedMsgSenderLookup.s.sol script
+
+- Updated dependencies [ee8921b7]
+  - @zoralabs/limit-orders@0.2.7
+
+## 1.0.7
+
+### Patch Changes
+
+- Updated dependencies [df0b0a1d]
+- Updated dependencies [b374124a]
+  - @zoralabs/limit-orders@0.2.6
+
+## 1.0.6
+
+### Patch Changes
+
+- Updated dependencies [9a46fe15]
+  - @zoralabs/limit-orders@0.2.5
+
+## 1.0.5
+
+### Patch Changes
+
+- Updated dependencies [3a8a5a05]
+- Updated dependencies [53957bf7]
+- Updated dependencies [816ceb35]
+  - @zoralabs/limit-orders@0.2.4
+  - @zoralabs/coins@2.5.0
+
+## 1.0.4
+
+### Patch Changes
+
+- Updated dependencies [98e02520]
+- Updated dependencies [91a82b2f]
+- Updated dependencies [e9ffd038]
+- Updated dependencies [479df7f0]
+  - @zoralabs/limit-orders@0.2.3
+  - @zoralabs/coins@2.4.2
+
+## 1.0.3
+
+### Patch Changes
+
+- Updated dependencies [bb2c2b76]
+  - @zoralabs/limit-orders@0.2.2
+
+## 1.0.2
+
+### Patch Changes
+
+- Updated dependencies [dd012477]
+- Updated dependencies [517d3f74]
+- Updated dependencies [0b183d5e]
+- Updated dependencies [e84a6902]
+- Updated dependencies [17bf2b5e]
+- Updated dependencies [928b4f65]
+- Updated dependencies [3d0bb73c]
+- Updated dependencies [a61e0250]
+- Updated dependencies [14f1314a]
+- Updated dependencies [d2703bab]
+- Updated dependencies [851ca567]
+- Updated dependencies [4ce5e4b6]
+- Updated dependencies [9486742f]
+- Updated dependencies [2cb9cb30]
+- Updated dependencies [eec53af3]
+- Updated dependencies [83726a0e]
+- Updated dependencies [0a104aa2]
+- Updated dependencies [b718117b]
+- Updated dependencies [d6323749]
+- Updated dependencies [2b054307]
+- Updated dependencies [05579fbc]
+- Updated dependencies [5303b406]
+- Updated dependencies [16b3146c]
+  - @zoralabs/limit-orders@0.2.1
+
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [cf172fdb]
+- Updated dependencies [c59a6fac]
+  - @zoralabs/coins@2.4.1
+  - @zoralabs/limit-orders@0.2.0

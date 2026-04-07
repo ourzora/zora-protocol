@@ -1,3 +1,5 @@
 packages:
   - 'packages/*'
+  - 'legacy/*'
   - 'docs'
+  - 'nft-docs'

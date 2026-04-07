@@ -1,0 +1,165 @@
+---
+id: trend-coins
+title: Trend Coins
+---
+
+import { Callout } from "vocs/components";
+
+# Trend Coins
+
+Trend Coins are a lightweight coin type designed for trading on trending topics, memes, and cultural moments. They feature ultra-low fees (0.01%) and a sniper tax that decays from 99% to the base fee over 10 seconds.
+
+## Overview
+
+Unlike Creator Coins and Content Coins, Trend Coins have:
+
+- **0.01% trading fee** (1 basis point) — 100x lower than standard coins
+- **Sniper Tax** — 99% fee at launch, decaying linearly to 0.01% over 10 seconds
+- **100% liquidity** — entire 1B token supply goes into the pool, no creator allocation
+- **Unique tickers** — case-insensitive ticker uniqueness enforced on-chain
+- **Simplified creation** — no payout recipient or platform referrer required
+
+## Fee Structure
+
+### Sniper Tax (Launch Fee)
+
+Trend Coins share the same anti-sniping mechanism as other coin types. In the first 10 seconds after creation, a dynamic fee decays linearly from **99% to the base fee**:
+
+| Time After Creation | Fee     |
+| ------------------- | ------- |
+| 0 seconds           | 99%     |
+| 2.5 seconds         | ~74.5%  |
+| 5 seconds           | ~50%    |
+| 7.5 seconds         | ~25.5%  |
+| 10+ seconds         | 0.01%   |
+
+```
+fee = 99% - (elapsed_seconds / 10) × (99% - 1%)
+```
+
+<Callout type="info">
+  The initial supply purchase during deployment bypasses the sniper tax entirely and uses the standard 1% fee. This ensures fair initial liquidity setup.
+</Callout>
+
+### Post-Launch Fee: 0.01% (1 bps)
+
+After the 10-second sniper tax period, Trend Coins settle to a **0.01% fee** — significantly lower than the 1% fee on Creator and Content Coins. This makes Trend Coins optimized for high-frequency, low-friction trading.
+
+| Coin Type    | Post-Launch Fee |
+| ------------ | --------------- |
+| Creator Coin | 1% (10,000 pips) |
+| Content Coin | 1% (10,000 pips) |
+| Trend Coin   | 0.01% (100 pips) |
+
+### Reward Distribution
+
+Trend Coin fees are distributed differently from Creator and Content Coins. Since there is no creator, platform referrer, or LP remint, **100% of collected fees go to the protocol**:
+
+| Recipient | % of Fees |
+| --------- | --------- |
+| Protocol  | 100%      |
+
+This contrasts with Creator/Content Coins where fees are split across creator, platform referral, trade referral, Doppler, protocol, and LP rewards.
+
+## Token Supply
+
+Trend Coins allocate **100% of their 1 billion token supply** to the liquidity pool:
+
+| Allocation         | Amount    | Details                            |
+| ------------------ | --------- | ---------------------------------- |
+| **Liquidity Pool** | 1B tokens | Full supply available for trading  |
+| **Creator**        | 0 tokens  | No creator allocation or vesting   |
+| **Total Supply**   | 1B tokens | Fixed maximum supply               |
+
+## Deployment
+
+### Factory Function
+
+Trend Coins are deployed through the `deployTrendCoin` function on the ZoraFactory:
+
+```solidity
+function deployTrendCoin(
+    string calldata symbol,
+    address postDeployHook,
+    bytes calldata postDeployHookData
+) external payable returns (address coin, bytes memory postDeployHookDataOut);
+```
+
+### Parameters
+
+- **`symbol`**: The ticker symbol for the coin (also used as the name). Must contain only valid ticker characters and must be unique (case-insensitive).
+- **`postDeployHook`**: Optional contract address to call after deployment (`address(0)` if none)
+- **`postDeployHookData`**: Data to pass to the post-deployment hook (empty bytes if none)
+
+### Ticker Uniqueness
+
+Trend Coin tickers are **globally unique** and **case-insensitive**. Attempting to deploy a Trend Coin with a ticker already in use (regardless of casing) will revert with `TickerAlreadyUsed`.
+
+The ticker hash is also used as the deployment salt, making Trend Coin addresses deterministic based on the ticker.
+
+### Address Prediction
+
+You can predict the address of a Trend Coin before deployment:
+
+```solidity
+function trendCoinAddress(string calldata symbol) external view returns (address);
+```
+
+### Metadata
+
+Trend Coin metadata is derived automatically from the ticker:
+
+- **Name**: same as the ticker symbol
+- **Token URI**: `https://trends.theme.wtf/trend/{symbol}`
+
+Metadata can only be updated by the designated metadata manager contract.
+
+## Pool Configuration
+
+Trend Coins use a pre-configured multi-curve Doppler pool optimized for trend-style trading. The pool is backed by ZORA and uses three liquidity curves with different price ranges and supply allocations:
+
+| Curve | Supply Share | Description           |
+| ----- | ------------ | --------------------- |
+| 1     | 5%           | Wide discovery range  |
+| 2     | 12.5%        | Medium trading range  |
+| 3     | 20%          | Tight price range     |
+
+<Callout type="info">
+  The pool configuration for Trend Coins is managed by the factory owner via `setTrendCoinPoolConfig`. Individual deployers do not need to provide pool configuration bytes.
+</Callout>
+
+## Events
+
+The factory emits a `TrendCoinCreated` event on deployment:
+
+```solidity
+event TrendCoinCreated(
+    address indexed caller,
+    string symbol,
+    address coin,
+    PoolKey poolKey,
+    bytes32 poolKeyHash,
+    bytes poolConfig,
+    string version
+);
+```
+
+### Indexing
+
+- Trend Coins are identified by the `TrendCoinCreated` event (distinct from `CoinCreatedV4` and `CreatorCoinCreated`)
+- The `caller` is the `msg.sender` that triggered deployment
+- No `payoutRecipient` or `platformReferrer` fields (these are always `address(0)` for Trend Coins)
+
+## Comparison with Other Coin Types
+
+| Feature              | Creator Coin          | Content Coin          | Trend Coin           |
+| -------------------- | --------------------- | --------------------- | -------------------- |
+| **Trading Fee**      | 1%                    | 1%                    | 0.01% (1 bps)        |
+| **Sniper Tax**       | 99% → 1% over 10s    | 99% → 1% over 10s    | 99% → 0.01% over 10s |
+| **Liquidity Supply** | 500M (50%)            | 990M (99%)            | 1B (100%)            |
+| **Creator Alloc.**   | 500M vesting (5 yrs)  | 10M instant           | None                 |
+| **Fee Recipients**   | Creator, referrers, protocol, Doppler, LP | Same | Protocol only |
+| **LP Remint**        | 20% of fees           | 20% of fees           | None                 |
+| **Backing Currency** | ZORA                  | Creator Coin          | ZORA                 |
+| **Ticker Unique**    | No                    | No                    | Yes (case-insensitive) |
+| **Deploy Function**  | `deployCreatorCoin()` | `deploy()`            | `deployTrendCoin()`  |

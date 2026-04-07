@@ -1,0 +1,52 @@
+[profile.default]
+fs_permissions = [
+  { access = "read", path = "./versions" },
+  { access = "read", path = "../1155-contracts/chainConfigs" },
+  { access = "read", path = "./package.json" },
+  { access = "read", path = "../erc20z" },
+  { access = "read", path = "../comments" },
+  { access = "read", path = "../sparks/deterministicConfig" },
+  { access = "read", path = "../sparks/addresses" },
+  { access = "read", path = "../erc20z/addresses" },
+  { access = "readwrite", path = "../1155-contracts/deterministicConfig" },
+  { access = "readwrite", path = "../1155-contracts/addresses" },
+]
+libs = ['_imagine', 'node_modules', 'script']
+allow_paths = [
+  "node_modules/@zoralabs/protocol-rewards",
+  "node_modules/@zoralabs/zora-1155-contracts",
+]
+optimizer = true
+optimizer_runs = 50
+via_ir = true
+solc_version = '0.8.17'
+out = 'out'
+src = 'src'
+evm_version = 'cancun'
+
+[profile.dev]
+optimizer = false
+optimizer_runs = 0
+via_ir = false
+
+[rpc_endpoints]
+sepolia = "https://sepolia.gateway.tenderly.co/${TENDERLY_KEY}"
+mainnet = "https://mainnet.gateway.tenderly.co/${TENDERLY_KEY}"
+base = "https://base.gateway.tenderly.co/${TENDERLY_KEY}"
+base_sepolia = "https://base-sepolia.gateway.tenderly.co/${TENDERLY_KEY}"
+optimism = "https://optimism.gateway.tenderly.co/${TENDERLY_KEY}"
+pgn = "https://rpc.publicgoods.network"
+pgn_sepolia = "https://sepolia.publicgoods.network"
+zora = "https://rpc.zora.energy/${CONDUIT_KEY}"
+zora_sepolia = "https://sepolia.rpc.zora.energy/${CONDUIT_KEY}"
+arbitrum_one = "https://arbitrum.gateway.tenderly.co/${TENDERLY_KEY}"
+arbitrum_sepolia = "https://arbitrum-sepolia.gateway.tenderly.co/${TENDERLY_KEY}"
+blast = "https://blast.gateway.tenderly.co/${TENDERLY_KEY}"
+blast_sepolia = "https://sepolia.blast.io"
+
+# See more config options https://github.com/foundry-rs/foundry/tree/master/config
+[profile.default.zksync]
+compile = true
+fallback_oz = true
+mode = '1'
+zksolc='1.5.7'

@@ -1,0 +1,17 @@
+Bash(gh pr view:*)
+Bash(gh pr diff:*)
+Bash(gh pr list:*)
+Bash(git diff:*)
+Bash(git log:*)
+Bash(git show:*)
+Bash(ls .changeset/)
+Bash(cat .changeset/*)
+Bash(pnpm changeset status)
+Bash(cat PROTOCOL_KNOWLEDGE.md)
+Bash(find packages -name *.sol -path */src/*)
+Bash(git diff --name-only main...HEAD)
+Bash(forge test:*)
+Bash(FOUNDRY_PROFILE=dev forge test:*)
+Read
+Glob
+Grep

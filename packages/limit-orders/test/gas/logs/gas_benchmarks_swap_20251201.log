@@ -1,0 +1,27 @@
+Compiling 1 files with Solc 0.8.28
+Solc 0.8.28 finished in 28.29s
+Compiler run successful!
+
+Ran 18 tests for test/gas/LimitOrderSwapGas.t.sol:LimitOrderSwapGasTest
+[PASS] test_gas_hop1_swap_create5_fill10() (gas: 8103292)
+[PASS] test_gas_hop1_swap_create5_fill25() (gas: 13364745)
+[PASS] test_gas_hop1_swap_create5_fill5() (gas: 6372150)
+[PASS] test_gas_hop1_swap_create5_fill50() (gas: 23312531)
+[PASS] test_gas_hop2_swap_create5_fill10() (gas: 11385994)
+[PASS] test_gas_hop2_swap_create5_fill25() (gas: 17144425)
+[PASS] test_gas_hop2_swap_create5_fill5() (gas: 9485181)
+[PASS] test_gas_hop2_swap_create5_fill50() (gas: 26916911)
+[PASS] test_gas_hop3_swap_create5_fill0() (gas: 5932665)
+[PASS] test_gas_hop3_swap_create5_fill10() (gas: 14088859)
+[PASS] test_gas_hop3_swap_create5_fill25() (gas: 19866108)
+[PASS] test_gas_hop3_swap_create5_fill5() (gas: 12182264)
+[PASS] test_gas_hop3_swap_create5_fill50() (gas: 29670228)
+[PASS] test_gas_hop4_swap_create5_fill0() (gas: 5963338)
+[PASS] test_gas_hop4_swap_create5_fill10() (gas: 14303856)
+[PASS] test_gas_hop4_swap_create5_fill25() (gas: 20082719)
+[PASS] test_gas_hop4_swap_create5_fill5() (gas: 12396378)
+[PASS] test_gas_hop4_swap_create5_fill50() (gas: 29889559)
+Suite result: ok. 18 passed; 0 failed; 0 skipped; finished in 32.68s (143.80s CPU time)
+
+
+Ran 1 test suite in 32.71s (32.68s CPU time): 18 tests passed, 0 failed, 0 skipped (18 total tests)

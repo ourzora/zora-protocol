@@ -1,35 +1,46 @@
-import VitePluginRadar from "vite-plugin-radar";
+import { VitePluginRadar } from "vite-plugin-radar";
 import { defineConfig } from "vocs";
-import vercel from "vite-plugin-vercel";
+import remarkMermaid from "remark-mermaidjs";
+import path from "path";
 
 export default defineConfig({
   title: "ZORA Docs",
   titleTemplate: "%s | ZORA Docs",
-  iconUrl: "https://docs.zora.co/Zorb.png",
-  logoUrl: "https://docs.zora.co/Zorb.png",
-  ogImageUrl: "https://docs.zora.co/og.png",
+  iconUrl: "/brand/zorb-logo.png",
+  logoUrl: "/brand/zorb-logo.png",
+  ogImageUrl: "https://docs.zora.co/brand/og.jpg",
   basePath: process.env.BASE_PATH,
   rootDir: ".",
   topNav: [
     {
-      text: "Contracts",
-      link: "/contracts/intro",
-      match: "/contracts",
+      text: "Coins SDK",
+      link: "/coins/sdk",
+      match: "/coins/sdk",
     },
     {
-      text: "SDKs",
-      link: "/protocol-sdk/introduction",
-      match: "/protocol-sdk",
+      text: "Coins Protocol",
+      link: "/coins",
+      match: "/coins",
     },
     {
       text: "Changelogs",
-      link: "/changelogs/protocol-sdk",
-      match: "/changelogs",
+      items: [
+        {
+          text: "Coins Contracts",
+          link: "/changelogs/coins",
+          match: "/changelogs/coins",
+        },
+        {
+          text: "Coins SDK",
+          link: "/changelogs/coins-sdk",
+          match: "/changelogs/coins-sdk",
+        },
+      ],
     },
     {
-      text: "Zora Network",
-      link: "/zora-network/intro",
-      match: "/zora-network",
+      text: "Legacy NFT Docs",
+      link: "https://nft-docs.zora.co",
+      match: "/nft",
     },
   ],
   socials: [
@@ -37,196 +48,159 @@ export default defineConfig({
       icon: "github",
       link: "https://github.com/ourzora/zora-protocol",
     },
+    {
+      icon: "x",
+      link: "https://x.com/zoradevs",
+    },
   ],
   sidebar: {
-    "/contracts": [
+    "/coins/contracts": [
       {
-        text: "NFT Smart Contracts",
+        text: "Coins Contracts",
         items: [
           {
-            text: "Introduction",
-            link: "/contracts/intro",
-          },
-          { text: "Deployments", link: "/contracts/deployments" },
-          {
-            text: "Factories",
-            link: "/contracts/factories",
+            text: "Creating a Coin",
+            link: "/coins/contracts/creating-a-coin",
           },
           {
-            text: "Protocol Rewards",
-            link: "/contracts/rewards",
+            text: "Trend Coins",
+            link: "/coins/contracts/trend-coins",
           },
           {
-            text: "Events",
-            link: "/contracts/events",
+            text: "Architecture",
+            link: "/coins/contracts/architecture",
           },
           {
-            text: "1155 Contracts",
-            collapsed: false,
-            items: [
-              {
-                text: "Creating a Contract",
-                link: "/contracts/Deploy1155Contract",
-              },
-              {
-                text: "Contract and Token Metadata",
-                link: "/contracts/Metadata",
-              },
-              {
-                text: "Creating a Token",
-                link: "/contracts/Creating1155Token",
-              },
-              {
-                text: "Selling an Token",
-                link: "/contracts/Selling1155",
-              },
-              {
-                text: "Minting Tokens",
-                link: "/contracts/Minting1155",
-              },
-              {
-                text: "Permission",
-                link: "/contracts/Permissions1155",
-              },
-              {
-                text: "Timed Sale with Secondary",
-                link: "/contracts/ZoraTimedSaleStrategy",
-              },
-              {
-                text: "ERC20 Minter",
-                link: "/contracts/ERC20Minter",
-              },
-            ],
+            text: "Hook System",
+            link: "/coins/contracts/hook",
           },
           {
-            text: "721 Contracts",
-            collapsed: true,
-            items: [
-              {
-                text: "ZORANFTCreator",
-                link: "/contracts/ZORANFTCreator",
-              },
-              {
-                text: "ERC721Drop",
-                link: "/contracts/ERC721Drop",
-              },
-              {
-                text: "EditionMetadataRenderer",
-                link: "/contracts/EditionMetadataRenderer",
-              },
-              {
-                text: "JSONExtensionRegistry",
-                link: "/contracts/JSONExtensionRegistry",
-              },
-              {
-                text: "DropMetadataRenderer",
-                link: "/contracts/DropMetadataRenderer",
-              },
-            ],
+            text: "Hook Registry",
+            link: "/coins/contracts/hook-registry",
           },
           {
-            text: "Comments",
-            link: "/contracts/Comments",
+            text: "Coin Rewards",
+            link: "/coins/contracts/rewards",
           },
           {
-            text: "Cointags",
-            link: "/contracts/cointags",
+            text: "Earning Rewards as a Developer",
+            link: "/coins/contracts/earning-referral-rewards",
+          },
+          {
+            text: "Liquidity Migration",
+            link: "/coins/contracts/liquidity-migration",
+          },
+          {
+            text: "Metadata",
+            link: "/coins/contracts/metadata",
           },
         ],
       },
     ],
-    "/protocol-sdk": [
+    "/coins": [
       {
-        text: "Protocol SDKs",
+        text: "Coins",
         items: [
           {
             text: "Introduction",
-            link: "/protocol-sdk/introduction",
+            link: "/coins",
           },
           {
-            text: "Protocol Deployments Package",
-            link: "/protocol-sdk/protocol-deployments",
-          },
-          {
-            text: "Creator Client",
+            text: "SDK",
             items: [
               {
-                text: "create 1155s",
-                link: "/protocol-sdk/creator/onchain",
+                text: "Getting Started",
+                link: "/coins/sdk",
+              },
+              {
+                text: "Create Coin",
+                link: "/coins/sdk/create-coin",
+              },
+              {
+                text: "Coins Metadata Builder",
+                link: "/coins/sdk/metadata-builder",
+              },
+              {
+                text: "Trade Coin",
+                link: "/coins/sdk/trade-coin",
+              },
+              {
+                text: "Update Coin",
+                link: "/coins/sdk/update-coin",
+              },
+              {
+                text: "Public REST API",
+                link: "/coins/sdk/public-rest-api",
+              },
+              {
+                text: "Coin Queries",
                 items: [
                   {
-                    text: "erc-20 mints",
-                    link: "/protocol-sdk/creator/erc20-mints",
+                    text: "Queries Overview",
+                    link: "/coins/sdk/queries",
                   },
                   {
-                    text: "split payouts",
-                    link: "/protocol-sdk/creator/splits",
+                    text: "Coin Details",
+                    link: "/coins/sdk/queries/coin",
+                  },
+                  {
+                    text: "Profile",
+                    link: "/coins/sdk/queries/profile",
+                  },
+                  {
+                    text: "Explore Coins",
+                    link: "/coins/sdk/queries/explore",
+                  },
+                  {
+                    text: "Leaderboard",
+                    link: "/coins/sdk/queries/leaderboard",
                   },
                 ],
               },
-              {
-                text: "create 1155s gaslessly (premints)",
-                link: "/protocol-sdk/creator/premint",
-              },
             ],
           },
           {
-            text: "Protocol Rewards and Secondary Royalties",
+            text: "Contracts",
             items: [
               {
-                text: "getRewardsBalances",
-                link: "/protocol-sdk/creator/getRewardsBalances",
+                text: "Creating a Coin",
+                link: "/coins/contracts/creating-a-coin",
               },
               {
-                text: "withdrawRewards",
-                link: "/protocol-sdk/creator/withdrawRewards",
-              },
-            ],
-          },
-          {
-            text: "Metadata",
-            items: [
-              {
-                text: "building token metadata",
-                link: "/protocol-sdk/metadata/token-metadata",
+                text: "Trend Coins",
+                link: "/coins/contracts/trend-coins",
               },
               {
-                text: "building contract metadata",
-                link: "/protocol-sdk/metadata/contract-metadata",
-              },
-            ],
-          },
-          {
-            text: "Collector Client",
-            items: [
-              {
-                text: "getToken",
-                link: "/protocol-sdk/collect/getToken",
+                text: "Architecture",
+                link: "/coins/contracts/architecture",
               },
               {
-                text: "getTokensOfContract",
-                link: "/protocol-sdk/collect/getTokensOfContract",
+                text: "Hook System",
+                link: "/coins/contracts/hook",
               },
               {
-                text: "mint",
-                link: "/protocol-sdk/collect/mint",
-              },
-            ],
-          },
-          {
-            text: "Secondary Market",
-            items: [
-              {
-                text: "buy1155OnSecondary",
-                link: "/protocol-sdk/collect/buy1155OnSecondary",
+                text: "Hook Registry",
+                link: "/coins/contracts/hook-registry",
               },
               {
-                text: "sell1155OnSecondary",
-                link: "/protocol-sdk/collect/sell1155OnSecondary",
+                text: "Coin Rewards",
+                link: "/coins/contracts/rewards",
               },
               {
-                text: "getSecondaryInfo",
-                link: "/protocol-sdk/collect/getSecondaryInfo",
+                text: "Earning Rewards as a Developer",
+                link: "/coins/contracts/earning-referral-rewards",
+              },
+              {
+                text: "Liquidity Migration",
+                link: "/coins/contracts/liquidity-migration",
+              },
+              {
+                text: "Metadata",
+                link: "/coins/contracts/metadata",
+              },
+              {
+                text: "Coins License",
+                link: "/coins/license",
               },
             ],
           },
@@ -238,57 +212,37 @@ export default defineConfig({
         text: "Changelogs",
         items: [
           {
-            text: "@zoralabs/protocol-sdk",
-            link: "/changelogs/protocol-sdk",
+            text: "@zoralabs/coins",
+            link: "/changelogs/coins",
           },
           {
-            text: "@zoralabs/protocol-deployments",
-            link: "/changelogs/protocol-deployments",
-          },
-          {
-            text: "@zoralabs/zora-1155-contracts",
-            link: "/changelogs/1155-contracts",
-          },
-          {
-            text: "@zoralabs/cointags-contracts",
-            link: "/changelogs/cointags",
-          },
-        ],
-      },
-    ],
-    "/zora-network": [
-      {
-        text: "ZORA Network",
-        items: [
-          {
-            text: "Introduction",
-            link: "/zora-network/intro",
-          },
-          { text: "Network", link: "/zora-network/network" },
-          { text: "ETH vs ZORA", link: "/zora-network/ethvszora" },
-          { text: "Bridging", link: "/zora-network/bridging" },
-          { text: "API Access", link: "/zora-network/api-access" },
-          { text: "Contracts", link: "/zora-network/contracts" },
-          { text: "Metamask", link: "/zora-network/metamask" },
-          { text: "Deployments", link: "/zora-network/deployments" },
-          {
-            text: "Status",
-            link: "https://status.zora.energy/",
+            text: "@zoralabs/coins-sdk",
+            link: "/changelogs/coins-sdk",
           },
         ],
       },
     ],
   },
+  markdown: {
+    remarkPlugins: [remarkMermaid],
+  },
   vite: {
+    build: {
+      outDir: ".vercel/output",
+    },
+    resolve: {
+      alias: {
+        "@components": path.resolve(process.cwd(), "components"),
+      },
+    },
     plugins: [
-      vercel(),
       ...(process.env.NODE_ENV === "production"
         ? [
             VitePluginRadar({
               analytics: {
                 id: "G-CDE92MLBTZ",
               },
-            }),
+            }) as any,
           ]
         : []),
     ],

@@ -1,0 +1,53 @@
+name: Vercel NFT Docs Preview Deployment
+on:
+  push:
+    branches-ignore:
+      - main
+jobs:
+  changed:
+    uses: ./.github/workflows/turborepo-changed.yml
+
+  Deploy-Preview:
+    needs: changed
+    if: ${{ contains(needs.changed.outputs.changed, 'nft-docs') }}
+    runs-on: ubuntu-latest
+    env:
+      TURBO_TOKEN: ${{ secrets.TURBO_TOKEN }}
+      TURBO_TEAM: ${{ vars.TURBO_TEAM }}
+      VERCEL_ORG_ID: ${{ vars.VERCEL_ORG_ID }}
+      VERCEL_PROJECT_ID: ${{ vars.VERCEL_NFT_DOCS_PROJECT_ID }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+
+      - name: Cache turbo build setup
+        uses: actions/cache@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
+        with:
+          path: .turbo
+          key: ${{ runner.os }}-turbo-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-turbo-
+
+      - name: Install node deps and foundry
+        uses: ./.github/actions/setup_deps
+
+      - name: Install Vercel CLI
+        run: npm install --global vercel@latest
+
+      - name: RM Vercel Cache
+        run: rm -rf .vercel
+
+      - name: Pull Vercel Environment Information
+        run: vercel pull --yes --environment=preview --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./nft-docs
+
+      - name: Build Project Artifacts
+        env:
+          NODE_OPTIONS: " --max-old-space-size=8192"
+        run: vercel build --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./nft-docs
+
+      - name: Deploy Project Artifacts to Vercel
+        run: vercel deploy --prebuilt --token=${{ secrets.VERCEL_TOKEN }}
+        working-directory: ./nft-docs

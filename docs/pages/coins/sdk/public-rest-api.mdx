@@ -1,0 +1,174 @@
+# Public REST API
+
+The Coins SDK provides a REST API that can be accessed from any programming language that supports HTTP requests. This allows developers to query coin data, profile information, and market metrics without needing to use JavaScript.
+
+## API Documentation
+
+Full interactive API documentation with a dynamic editor and OpenAPI definition file is available at:
+
+**[https://api-sdk.zora.engineering/docs](https://api-sdk.zora.engineering/docs)**
+
+The documentation includes:
+
+- Interactive API explorer
+- Request/response examples
+- OpenAPI specification download
+- Real-time testing capabilities
+
+## Authentication
+
+### API Key Setup
+
+Authentication is strongly recommended for all API requests to prevent rate limiting and ensure reliability in production environments.
+
+To obtain an API key:
+
+1. Log in or create an account on [Zora](https://zora.co)
+2. Navigate to [Developer Settings on Zora](https://zora.co/settings/developer)
+3. Create an API key
+4. Use the API key in the `api-key` header with all requests
+
+### Using the API Key
+
+Include the API key in the request header:
+
+```bash
+curl -H "api-key: your-api-key-here" \
+  https://api-sdk.zora.engineering/api/endpoint
+```
+
+## API Endpoints
+
+The REST API provides the same functionality as the SDK functions. The API paths and function names map directly to the SDK functions documented in [Coin Queries](/coins/sdk/queries).
+
+### Main Endpoint Categories
+
+1. **Coin Data**: Retrieve information about specific coins including metadata, market data, and comments
+2. **Profile Data**: Access user/wallet information including holdings and activity
+3. **Explore Data**: Discover coins through curated lists (new, trending, top gainers, etc.)
+
+### Example Request
+
+```bash
+# Get coin information
+curl -H "api-key: your-api-key-here" \
+  "https://api-sdk.zora.engineering/coin?address=0xCoinContractAddress&chain=8453"
+```
+
+```bash
+# Get profile balances
+curl -H "api-key: your-api-key-here" \
+  "https://api-sdk.zora.engineering/profile?identifier=0xUserAddress"
+```
+
+## Using with Different Languages
+
+### Python Example
+
+```python
+import requests
+
+API_KEY = "your-api-key-here"
+BASE_URL = "https://api-sdk.zora.engineering/api"
+
+headers = {
+    "api-key": API_KEY
+}
+
+# Get coin data
+response = requests.get(
+    f"{BASE_URL}/coin",
+    headers=headers,
+    params={
+        "address": "0xCoinContractAddress",
+        "chain": 8453
+    }
+)
+
+coin_data = response.json()
+print(coin_data)
+```
+
+### Go Example
+
+```go
+package main
+
+import (
+    "encoding/json"
+    "fmt"
+    "io"
+    "net/http"
+)
+
+const (
+    APIKey  = "your-api-key-here"
+    BaseURL = "https://api-sdk.zora.engineering/api"
+)
+
+func getCoin(address string, chain int) (map[string]interface{}, error) {
+    url := fmt.Sprintf("%s/coin?address=%s&chain=%d", BaseURL, address, chain)
+
+    req, err := http.NewRequest("GET", url, nil)
+    if err != nil {
+        return nil, err
+    }
+
+    req.Header.Set("api-key", APIKey)
+
+    client := &http.Client{}
+    resp, err := client.Do(req)
+    if err != nil {
+        return nil, err
+    }
+    defer resp.Body.Close()
+
+    body, err := io.ReadAll(resp.Body)
+    if err != nil {
+        return nil, err
+    }
+
+    var result map[string]interface{}
+    err = json.Unmarshal(body, &result)
+    return result, err
+}
+```
+
+### Ruby Example
+
+```ruby
+require 'net/http'
+require 'json'
+require 'uri'
+
+API_KEY = 'your-api-key-here'
+BASE_URL = 'https://api-sdk.zora.engineering/api'
+
+def get_coin(address, chain = 8453)
+  uri = URI("#{BASE_URL}/coin")
+  uri.query = URI.encode_www_form(address: address, chain: chain)
+
+  request = Net::HTTP::Get.new(uri)
+  request['api-key'] = API_KEY
+
+  response = Net::HTTP.start(uri.hostname, uri.port, use_ssl: true) do |http|
+    http.request(request)
+  end
+
+  JSON.parse(response.body)
+end
+
+coin_data = get_coin('0xCoinContractAddress')
+puts coin_data
+```
+
+## Rate Limiting
+
+Without an API key, requests are subject to high rate limiting. Using an API key significantly increases the available rate limit for users.
+If your use case exceeds this, please contact the team and discuss enterprise access.
+
+## Related Documentation
+
+- [Coin Queries](/coins/sdk/queries) - Complete reference for all available queries
+- [SDK Getting Started](/coins/sdk) - Using the JavaScript/TypeScript SDK
+- [Interactive API Docs](https://api-sdk.zora.engineering/docs) - Test and explore the API

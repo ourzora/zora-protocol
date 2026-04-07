@@ -1,5 +1,3 @@
-import {Icons} from './Icons';
-
 function Card({
   title,
   icon,
@@ -8,14 +6,12 @@ function Card({
 }: {
   title: string;
   href: string;
-  icon: keyof typeof Icons;
+  icon: string;
   children: React.ReactNode;
 }) {
-  const Icon = Icons[icon];
-
   return (
     <a href={href} className="BoxCard">
-      <Icon />
+      <img alt={icon} src={`/brand/${icon}.png`} />
       <strong>{title}</strong>
       <div>{children}</div>
     </a>

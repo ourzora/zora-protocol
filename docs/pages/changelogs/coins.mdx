@@ -1,0 +1,390 @@
+# Coins Changelog
+
+
+## 2.6.0
+
+### Minor Changes
+
+- [50134ebc](https://github.com/ourzora/zora-protocol/commit/50134ebc): Add TrendCoin support
+  - New `TrendCoin` contract: 100% supply in liquidity pool, 0% swap fees
+  - `deployTrendCoin` factory method with ticker uniqueness enforcement and post-deploy hook support
+  - Owner-configurable pool parameters via `setTrendCoinPoolConfig()`
+  - Metadata manager role for updatable contract URIs
+  - Ticker validation and URI encoding for trend coin symbols
+
+## 2.5.1
+
+### Patch Changes
+
+- [78dffbdc](https://github.com/ourzora/zora-protocol/commit/78dffbdc): Including uniswap v4 errors in lob and swap router abis, and including some uniswap v4 contracts and abis.
+- [1ccca8ef](https://github.com/ourzora/zora-protocol/commit/1ccca8ef): Fix swap fee distribution when price limits cause partial execution
+
+  When swapping large fee amounts, swaps can hit sqrtPriceLimit and only partially execute, leaving unsettled currency deltas. The hook now checks all currencies in the payout swap path (both the input currency and all intermediates) and takes/distributes any positive deltas as rewards. This ensures all collected fees are properly distributed even when swaps don't fully execute due to price constraints.
+
+## 2.5.0
+
+### Minor Changes
+
+- [816ceb35](https://github.com/ourzora/zora-protocol/commit/816ceb35): Add launch fee: time-based dynamic fee that decays from 99% to 1% over 10 seconds after coin creation
+  - New coins record creation timestamp and expose it via `IHasCreationInfo` interface
+  - Hook calculates dynamic fee based on elapsed time since creation
+  - Initial supply purchase bypasses the fee via transient storage flag
+  - Legacy coins without the interface receive normal 1% LP fee
+
+## 2.4.2
+
+### Patch Changes
+
+- [479df7f0](https://github.com/ourzora/zora-protocol/commit/479df7f0): Fix ETH settlement by adding missing sync before settle in V3ToV4SwapLib
+
+  Added a `poolManager.sync(inputCurrency)` call before settling when the input currency is ETH. This ensures the pool state is properly synchronized before the settlement occurs, making the behavior consistent with the ERC20 handling path which already includes this sync step.
+
+## 2.4.1
+
+### Patch Changes
+
+- [cf172fdb](https://github.com/ourzora/zora-protocol/commit/cf172fdb): Make call to calculatePositions external to save on contract size
+
+## 2.4.0
+
+### Minor Changes
+
+- [09fb2528](https://github.com/ourzora/zora-protocol/commit/09fb2528): Make trusted senders in coin hooks modifiable
+
+  Trusted message senders can now be added or removed after hook deployment instead of being hardcoded at deployment time.
+
+### Patch Changes
+
+- [b41a2773](https://github.com/ourzora/zora-protocol/commit/b41a2773): Fix double-counting of fees in burnPositions during liquidity migration
+
+  Previously, the `burnPositions()` function was incorrectly adding `feesAccrued` to `callerDelta` when recording burned position amounts. Since `callerDelta` already includes accrued fees, this caused fees to be double-counted. This resulted in inflated token amounts being recorded in `BurnedPosition` structs, which could lead to `ERC20InsufficientBalance` errors when attempting to mint positions on a new hook during migration.
+
+  The fix:
+  - Use only `callerDelta` values directly without adding `feesAccrued`
+  - Add defensive balance checking in `mintPositions()` to cap liquidity at available token amounts
+  - Prevents migration failures from any remaining rounding discrepancies between burn and mint operations
+
+- [8dc766eb](https://github.com/ourzora/zora-protocol/commit/8dc766eb): Fix incorrect senderIsTrusted logic for address(0) in ZoraV4CoinHook
+
+  Removes the special case handling for address(0) in the \_getOriginalMsgSender function that was incorrectly setting senderIsTrusted to true. This behavior was unintentionally changed in commit 09fb2528 which added special handling for address(0). This fix restores the original behavior where address(0) returns false for senderIsTrusted,
+
+## 2.3.1
+
+### Patch Changes
+
+- [3c274d9d](https://github.com/ourzora/zora-protocol/commit/3c274d9d): Created a buy supply with v4 hook, for buying initial supply of a creator coin, supporting doing a v3 and v4 swap to buy the creator coin. updated the encoding function for buying initial supply to work with the v3 to v4 swap
+
+## 2.3.0
+
+### Minor Changes
+
+- [7df94915](https://github.com/ourzora/zora-protocol/commit/7df94915): Enable buying initial supply when deploying creator coin and refactor factory internals
+  - Add new `deployCreatorCoin` overload with `postDeployHook` parameter that supports ETH transfers
+  - Refactored internal factory implementation to share more code between deployment methods
+  - Enables buying initial supply during creator coin deployment via post-deploy hooks
+
+### Patch Changes
+
+- [6a7e2b7b](https://github.com/ourzora/zora-protocol/commit/6a7e2b7b): Fix LP position duplication when deploying coins. If two positions are created with the same tick ranges, they are merged and stored as one position. This reduces gas costs during swapping as there are less LP positions to iterate through when collecting fees.
+- [5093c5ef](https://github.com/ourzora/zora-protocol/commit/5093c5ef): Add bounds checking to prevent risky forced downcasting of currency deltas
+- [9c6d241a](https://github.com/ourzora/zora-protocol/commit/9c6d241a): Fix ETH transfer failures in reward distribution when platform referrers cannot accept ETH
+  - Prevent swaps from reverting when platform referrers cannot accept ETH - in this case, the rewards are redirected to the protocol recipient as backup.
+  - Ensures coin functionality remains intact even with ETH-incompatible platform referrers
+
+- [44a179b0](https://github.com/ourzora/zora-protocol/commit/44a179b0): Flatten hooks into single hook implementation
+
+  Consolidates multiple hook contracts into a single unified hook for simplified architecture and better maintainability.
+
+- [d3808d55](https://github.com/ourzora/zora-protocol/commit/d3808d55): Adjust creator coin vesting duration to account for leap years
+  - Changed CREATOR*VESTING_DURATION from 5 * 365 days to 5 \_ 365.25 days
+  - Addresses Cantina audit finding about 1.25 day shortfall in 5-year vesting period
+
+- [b571fe54](https://github.com/ourzora/zora-protocol/commit/b571fe54): Consolidate and clarify coin constants
+  - Renamed `CREATOR_LAUNCH_REWARD` to `CONTENT_COIN_INITIAL_CREATOR_SUPPLY` for clarity
+  - Renamed `CREATOR_VESTING_SUPPLY` to `CREATOR_COIN_CREATOR_VESTING_SUPPLY` for consistency
+  - Removed redundant `POOL_LAUNCH_SUPPLY` constant (use `CONTENT_COIN_MARKET_SUPPLY` instead)
+  - Changed library constants from `public` to `internal`
+  - Made supply constants derived from calculations to show relationships clearly
+
+- [32d683d6](https://github.com/ourzora/zora-protocol/commit/32d683d6): Fix stale PoolKey mapping after migration in ZoraV4CoinHook
+
+  Delete the old pool key from the poolCoins mapping after successful liquidity migration to prevent future operations on migrated pools.
+
+- [44a179b0](https://github.com/ourzora/zora-protocol/commit/44a179b0): Ignore collecting from liquidity positions with empty fee growth
+- [00b982bb](https://github.com/ourzora/zora-protocol/commit/00b982bb): Fix liquidity migration bug: when migrating liquidity to a hook with a different fee, the old fee was kept. This will now make sure that the new fee is used after migration. Also make sure to use the new tick spacing after migration.
+
+## 2.2.1
+
+### Patch Changes
+
+- [c96e0c5e](https://github.com/ourzora/zora-protocol/commit/c96e0c5e): Fix bug where liquidity cannot be migrated if there is a position with 0 liquidity
+
+## 2.2.0
+
+### Minor Changes
+
+- [adf98059](https://github.com/ourzora/zora-protocol/commit/adf98059): Adds platform referral and trade referral functionality to creator coins, and unifies the fee structure between content and creator coins with a simplified 1% total fee.
+
+  ## New Features:
+  - Platform referral and trade referral functionality for creator coins (previously only supported on content coins)
+  - Unified fee structure: Both content and creator coins use identical 1% fee distribution
+
+  ### Fee Changes - Content Coins
+
+  | Recipient         | Before (3% total fee) | After (1% total fee) |
+  | ----------------- | --------------------- | -------------------- |
+  |                   | % of Fee              | % of Fee             |
+  | Creator           | 33.33%                | 50%                  |
+  | Platform Referral | 10%                   | 20%                  |
+  | Trade Referral    | 10%                   | 4%                   |
+  | Doppler           | 3.33%                 | 1%                   |
+  | Protocol          | 10%                   | 5%                   |
+  | LP Rewards        | 33.33%                | 20%                  |
+
+  ### Fee Changes - Creator Coins
+
+  | Recipient         | Before (3% total fee) | After (1% total fee) |
+  | ----------------- | --------------------- | -------------------- |
+  |                   | % of Fee              | % of Fee             |
+  | Creator           | 33.33%                | 50%                  |
+  | Platform Referral | -                     | 20%                  |
+  | Trade Referral    | -                     | 4%                   |
+  | Doppler           | -                     | 1%                   |
+  | Protocol          | 33.33%                | 5%                   |
+  | LP Rewards        | 33.33%                | 20%                  |
+
+  **Implementation Changes:**
+  - Consolidated reward logic into `CoinRewardsV4.distributeMarketRewards()`
+
+  **Backwards Compatibility:**
+  - Existing `CreatorCoinRewards` event is still emitted for backwards compatibility when rewards are distributed for a CreatorCoin
+  - Additionally, when market rewards are distributed for a CreatorCoin, the same `CoinMarketRewardsV4` event that is already emitted for ContentCoins is now also emitted
+
+## 2.1.2
+
+### Patch Changes
+
+- [8b85ab94](https://github.com/ourzora/zora-protocol/commit/8b85ab94): Removed some unused constants
+
+## 2.1.1
+
+### Patch Changes
+
+- [498e5c9d](https://github.com/ourzora/zora-protocol/commit/498e5c9d): Consolidated POOL_LAUNCH_SUPPLY into a single constant
+
+## 2.1.0
+
+### Minor Changes
+
+- [dac72691](https://github.com/ourzora/zora-protocol/commit/dac72691): Remove Uniswap V3 support and refactor coin architecture
+
+  **Removal of V3 Support:**
+  - Removed support for creating coins based on Uniswap V3 - only V4 coins are supported
+  - Default coin deployment now creates Uniswap V4 coins when no config is provided (previously created V3)
+  - Removed V3-specific test files and utilities
+  - Updated remaining tests to use V4 deployment methods
+  - Removed V3 configuration functions and encoders
+  - Added revert logic for V3 deployment attempts in factory deploy functions
+
+  **Architecture Refactoring:**
+  - Merged BaseCoinV4 functionality into BaseCoin.sol to consolidate Uniswap V4 integration
+  - Combined ICoinV4 interface with ICoin interface to simplify the interface hierarchy
+  - Updated ContentCoin and CreatorCoin to inherit directly from BaseCoin
+  - Removed duplicate files: BaseCoinV4.sol and ICoinV4.sol
+  - Updated all imports and references throughout the codebase
+  - This is an internal refactoring that doesn't change external functionality
+
+### Patch Changes
+
+- [deb9175b](https://github.com/ourzora/zora-protocol/commit/deb9175b): Enforce 32 bytes for decoding trade referral address from hook data
+
+## 2.0.0
+
+### Major Changes
+
+- [acb9ff94](https://github.com/ourzora/zora-protocol/commit/acb9ff94): Move ZoraFactoryImpl to 2-step ownable with same storage slots
+
+  This change updates the factory contract to use Ownable2StepUpgradeable instead of OwnableUpgradeable. The change maintains storage slot compatibility while adding the two-step ownership transfer pattern for enhanced security.
+
+  Key changes:
+  - ZoraFactoryImpl now inherits from Ownable2StepUpgradeable
+  - Adds pendingOwner() function
+  - Requires acceptOwnership() call to complete ownership transfers
+  - Maintains storage slot compatibility for upgrades
+
+### Patch Changes
+
+- [65d36dbb](https://github.com/ourzora/zora-protocol/commit/65d36dbb): Refactor coinv4 into basecoinv4 and content coin
+
+  This refactoring splits the coinv4 implementation into a base coin contract and content coin contract for better modularity and separation of concerns.
+
+## 1.1.2
+
+### Patch Changes
+
+- [522a7c33](https://github.com/ourzora/zora-protocol/commit/522a7c33): Update LICENSE for coins
+- [5c561b01](https://github.com/ourzora/zora-protocol/commit/5c561b01): Fixed bug where hooks could not receive taken eth for paying out rewards
+
+## 1.1.1
+
+### Patch Changes
+
+- [604cd3ab](https://github.com/ourzora/zora-protocol/commit/604cd3ab): When migrating liquidity to a new hook, dont execute any after swap logic in the original hook
+- [588da84e](https://github.com/ourzora/zora-protocol/commit/588da84e): Fix market supply calculation
+- [f6300031](https://github.com/ourzora/zora-protocol/commit/f6300031): Added ability for hooks to have liquidity be migrated to
+
+## 1.1.0
+
+### Minor Changes
+
+- [73784d07](https://github.com/ourzora/zora-protocol/commit/73784d07): Added creator coins, contracts and hooks, enabling creator coins with vesting to be created.
+
+### Patch Changes
+
+- [3d5e77fe](https://github.com/ourzora/zora-protocol/commit/3d5e77fe): Coin name and symbol can be updated by an owner
+- [9adcb702](https://github.com/ourzora/zora-protocol/commit/9adcb702): Added the AutoSwapper contract
+- [52edc9d5](https://github.com/ourzora/zora-protocol/commit/52edc9d5): Don't auto-withdraw vested creator coins on every swap
+- [73784d07](https://github.com/ourzora/zora-protocol/commit/73784d07): A coins initial liquidity can be migrated from one hook to the next, given that the upgrade path is approved
+
+## 1.0.1
+
+### Patch Changes
+
+- [8cd56863](https://github.com/ourzora/zora-protocol/commit/8cd56863): BuySupplyWithSwapRouterHook supports v4 coins
+
+## 1.0.0
+
+### Major Changes
+
+- [73e95f69](https://github.com/ourzora/zora-protocol/commit/73e95f69): Upgraded coins to use Uniswap V4:
+
+  **New CoinV4 Implementation:**
+  - Migrated from Uniswap V3 to Uniswap V4, with logic moved into a hook.
+  - Automatic LP fee collection and multi-hop reward distribution on every swap
+  - New `ZoraV4CoinHook` handles afterSwap operations
+  - Support for complex multi-position liquidity curves and discovery positions
+  - Multi-hop fee swapping through intermediate currencies (e.g., ContentCoin → BackingCoin → Zora)
+
+  **Factory Updates:**
+  - Updated `deploy()` function signature with new `poolConfig`, `message`, and `salt` parameters
+  - Automatic V3/V4 version selection based on pool configuration
+  - Deterministic coin deployment with salt support
+  - New `CoinCreatedV4` event for V4 coin deployments
+
+  **Reward System Changes:**
+  - Increased trade referral rewards from 10% to 15% (1500 basis points)
+  - Automatic reward distribution in single backing currency
+
+  **New Interfaces and Events:**
+  - Added `IHasPoolKey` and `IHasSwapPath` interfaces for V4 functionality
+  - New `Swapped` event with detailed swap and price information
+  - New `CoinMarketRewardsV4` event for reward distribution tracking
+
+  **Breaking Changes:**
+  - New deterministic factory deploy function with salt
+
+### Patch Changes
+
+- [6b8bdd9d](https://github.com/ourzora/zora-protocol/commit/6b8bdd9d): Remove ability to create coin with legacy pool config
+
+## 0.9.0
+
+### Minor Changes
+
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): - Publishing new coins hooks in `@zoralabs/protocol-deployments`
+  - In coins, pulling ISwapRouter from `@zoralabs/shared-contracts`, and updated the shared interface to match the full interface of the ISwapRouter. This new interface is published in `@zoralabs/protocol-deployments`.
+  - Removed publishing of the factory addresses directly in the wagmi config of the coins package, as that's inconsistent with the rest of the packages.
+  - Updated the `@zoralabs/coins-sdk` to use `@zoralabs/protocol-deployments` for abis and addresses, which significantly reduces the dependency tree of it and has it follow the patterns of the other sdk packages.
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): added deployWithHook to the coin factory
+
+### Patch Changes
+
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): Refactored some reusable code into helper functions for the Coin factory
+
+## 0.8.0
+
+### Minor Changes
+
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): - Publishing new coins hooks in `@zoralabs/protocol-deployments`
+  - In coins, pulling ISwapRouter from `@zoralabs/shared-contracts`, and updated the shared interface to match the full interface of the ISwapRouter. This new interface is published in `@zoralabs/protocol-deployments`.
+  - Removed publishing of the factory addresses directly in the wagmi config of the coins package, as that's inconsistent with the rest of the packages.
+  - Updated the `@zoralabs/coins-sdk` to use `@zoralabs/protocol-deployments` for abis and addresses, which significantly reduces the dependency tree of it and has it follow the patterns of the other sdk packages.
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): added deployWithHook to the coin factory
+
+### Patch Changes
+
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): Refactored some reusable code into helper functions for the Coin factory
+
+## 0.7.1
+
+### Patch Changes
+
+- [265dcbeb](https://github.com/ourzora/zora-protocol/commit/265dcbeb): Fixed factory address for wagmi
+
+## 0.7.0
+
+### Minor Changes
+
+- [23f723dd](https://github.com/ourzora/zora-protocol/commit/23f723dd): Integrate doppler for liquidity management with uniswap v3
+
+## 0.7.0-doppler.0
+
+### Minor Changes
+
+- [96ab8907](https://github.com/ourzora/zora-protocol/commit/96ab8907): Integrate doppler for liquidity management with uniswap v3
+
+## 0.6.1
+
+### Patch Changes
+
+- [b9f717db](https://github.com/ourzora/zora-protocol/commit/b9f717db): Export IUniswapV3Pool interface
+
+## 0.6.0
+
+### Minor Changes
+
+- [55bc4bf3](https://github.com/ourzora/zora-protocol/commit/55bc4bf3): Update WETH tick and use as the minimum
+
+## 0.5.0
+
+### Minor Changes
+
+- [39ffa77c](https://github.com/ourzora/zora-protocol/commit/39ffa77c): Add coin refunds for large sells with little liquidity
+
+## 0.4.0
+
+### Minor Changes
+
+- [e6ee19ce](https://github.com/ourzora/zora-protocol/commit/e6ee19ce): Updated launch rewards - 10m coins for creator; remaining 990m for market
+
+## 0.3.1
+
+### Patch Changes
+
+- [11854bbe](https://github.com/ourzora/zora-protocol/commit/11854bbe): Updated factory impl abi to return coins purchased on deploy
+
+## 0.3.0
+
+### Minor Changes
+
+- [e1a3d68f](https://github.com/ourzora/zora-protocol/commit/e1a3d68f): Refactored coin interface imports
+
+## 0.2.0
+
+### Minor Changes
+
+- [9fa218c9](https://github.com/ourzora/zora-protocol/commit/9fa218c9): - Final events in preparation for V1 release
+  - Updated the starting tick for WETH pools
+
+## 0.1.1
+
+### Patch Changes
+
+- [1e10ac74](https://github.com/ourzora/zora-protocol/commit/1e10ac74): - Fixed coins package visibility
+  - Renamed export to `coinFactory*`
+
+## 0.1.0
+
+### Minor Changes
+
+- [e42eb013](https://github.com/ourzora/zora-protocol/commit/e42eb013): Initial setup

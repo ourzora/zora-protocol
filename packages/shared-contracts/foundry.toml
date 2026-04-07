@@ -13,7 +13,7 @@ optimizer_runs = 500000
 out = 'out'
 script = 'script'
 src = 'src'
-solc_version = '0.8.20'
+solc_version = '0.8.23'
 via_ir = true
 
 [profile.dev]

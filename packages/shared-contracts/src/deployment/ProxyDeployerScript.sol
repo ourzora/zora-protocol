@@ -167,8 +167,15 @@ contract ProxyDeployerScript is CommonBase {
         );
     }
 
-    function chainConfigPath() internal view returns (string memory) {
-        return string.concat("../shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json");
+    function isDevEnvironment() internal view returns (bool) {
+        return vm.envOr("DEV", false);
+    }
+
+    function chainConfigPath() internal view virtual returns (string memory) {
+        if (isDevEnvironment()) {
+            return string.concat("./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), "_dev.json");
+        }
+        return string.concat("./node_modules/@zoralabs/shared-contracts/chainConfigs/", vm.toString(block.chainid), ".json");
     }
 
     function getChainConfigJson() internal view returns (string memory) {
@@ -222,6 +229,62 @@ contract ProxyDeployerScript is CommonBase {
 
         if (keccak256(bytes(symbol)) != keccak256(bytes("UNI-V3-POS"))) {
             revert("NonFungiblePositionManager does not have symbol UNI-V3-POS. Invalid address configured");
+        }
+    }
+
+    function getUniswapV3Factory() internal view returns (address uniswapV3Factory) {
+        uniswapV3Factory = getChainConfigJson().readAddress(".UNISWAP_V3_FACTORY");
+
+        if (uniswapV3Factory == address(0)) {
+            revert("UniswapV3Factory address not configured");
+        }
+
+        if (uniswapV3Factory.code.length == 0) {
+            revert("No code at UniswapV3Factory address");
+        }
+    }
+
+    function getDopplerAirlock() internal view returns (address airlock) {
+        airlock = getChainConfigJson().readAddress(".DOPPLER_AIRLOCK");
+
+        if (airlock == address(0)) {
+            revert("Airlock address not configured");
+        }
+
+        if (airlock.code.length == 0) {
+            revert("No code at Airlock address");
+        }
+    }
+
+    function getUniswapV4PoolManager() internal view returns (address uniswapV4PoolManager) {
+        uniswapV4PoolManager = getChainConfigJson().readAddress(".UNISWAP_V4_POOL_MANAGER");
+
+        if (uniswapV4PoolManager == address(0)) {
+            revert("UniswapV4PoolManager address not configured");
+        }
+    }
+
+    function getUniswapV4PositionManager() internal view returns (address uniswapV4PositionManager) {
+        uniswapV4PositionManager = getChainConfigJson().readAddress(".UNISWAP_V4_POSITION_MANAGER");
+
+        if (uniswapV4PositionManager == address(0)) {
+            revert("UniswapV4PositionManager address not configured");
+        }
+    }
+
+    function getUniswapPermit2() internal view returns (address permit2) {
+        permit2 = getChainConfigJson().readAddress(".UNISWAP_PERMIT2");
+
+        if (permit2 == address(0)) {
+            revert("UniswapPermit2 address not configured");
+        }
+    }
+
+    function getUniswapUniversalRouter() internal view returns (address universalRouter) {
+        universalRouter = getChainConfigJson().readAddress(".UNISWAP_UNIVERSAL_ROUTER");
+
+        if (universalRouter == address(0)) {
+            revert("UniswapUniversalRouter address not configured");
         }
     }
 
@@ -306,5 +369,14 @@ contract ProxyDeployerScript is CommonBase {
         if (vm.keyExists(json, keyPrefix)) {
             num = vm.parseUint(json.readString(keyPrefix));
         }
+    }
+
+    // Helper function for reading bytes32 from JSON
+    function readBytes32OrDefaultToZero(string memory json, string memory key) internal view returns (bytes32 data) {
+        string memory keyPrefix = getKeyPrefix(key);
+        if (vm.keyExists(json, keyPrefix)) {
+            data = json.readBytes32(keyPrefix);
+        }
+        // else returns bytes32(0) by default
     }
 }

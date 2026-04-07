@@ -1,0 +1,203 @@
+# Coin Queries
+
+The Coins SDK provides several query functions to fetch information about specific coins. This page details the available coin query functions, their parameters, and includes usage examples.
+
+## Available Queries
+
+### getCoin
+
+The `getCoin` function retrieves detailed information about a specific coin, including its metadata, market data, and creator information.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinParams = {
+  address: string; // The coin contract address
+  chain?: number; // Optional: The chain ID (defaults to Base: 8453)
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+// [!include ~/snippets/coins/queries/getCoin.ts]
+```
+
+#### Response Structure
+
+The response includes a `data` object containing a `zora20Token` object with the following properties:
+
+```ts twoslash
+import { GetCoinResponse } from "@zoralabs/coins-sdk";
+
+// The Zora20Token type is imported from the SDK's generated types.
+// It includes detailed information about a specific coin, such as its metadata, market data, and creator information.
+type Zora20Token = GetCoinResponse["zora20Token"];
+//    ^?
+
+//
+```
+
+**Key Response Fields:**
+
+- `platformBlocked`: Boolean indicating whether the coin is blocked on the platform (most applications should exclude blocked coins from visibility)
+- `creatorProfile.platformBlocked`: Boolean indicating whether the creator's profile is blocked on the platform (most applications should exclude blocked profiles from visibility)
+- `address`: The coin's contract address
+- `name`, `symbol`: Coin identification
+- `marketCap`, `totalSupply`, `volume24h`: Market metrics
+- `tokenPrice`: Pricing information in USDC and pool token
+- `creatorProfile`: Profile information for the coin creator, including social accounts and avatar
+- `mediaContent`: Associated media like images or videos
+- `uniqueHolders`: Number of unique token holders
+- `uniswapV4PoolKey`: Uniswap V4 pool configuration details
+
+### getCoins
+
+The `getCoins` function retrieves information about multiple coins at once, useful for batch processing or displaying multiple coins.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinsParams = {
+  coins: {
+    collectionAddress: string;
+    chainId: number;
+  }[];
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+// [!include ~/snippets/coins/queries/getCoins.ts]
+```
+
+#### Response Structure
+
+The response includes a `zora20Tokens` array containing objects with the same structure as the `zora20Token` object in the `getCoin` response.
+
+### getCoinHolders
+
+The `getCoinHolders` function retrieves information about who holds a specific coin, including their balances and profile information.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinHoldersParams = {
+  chainId: number; // The chain ID
+  address: string; // The coin contract address
+  after?: string; // Optional: Pagination cursor for fetching next page
+  count?: number; // Optional: Number of holders to return per page
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+import { getCoinHolders } from "@zoralabs/coins-sdk";
+
+const response = await getCoinHolders({
+  chainId: 8453, // Base mainnet
+  address: "0x1234567890123456789012345678901234567890",
+  count: 20, // Get first 20 holders
+});
+
+if (response.data?.zora20Token?.tokenBalances) {
+  const holders = response.data.zora20Token.tokenBalances.edges;
+  console.log(`Found ${holders.length} holders`);
+
+  holders.forEach(({ node }) => {
+    console.log(`Address: ${node.ownerAddress}`);
+    console.log(`Balance: ${node.balance}`);
+    console.log(`Profile: ${node.ownerProfile?.handle || "No profile"}`);
+  });
+}
+```
+
+#### Response Structure
+
+The response includes holder information with balances and profile data, plus pagination support.
+
+### getCoinSwaps
+
+The `getCoinSwaps` function retrieves swap activities for a specific coin, showing buy/sell transactions and trading activity.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinSwapsParams = {
+  address: string; // The coin contract address
+  chain?: number; // Optional: The chain ID (defaults to Base: 8453)
+  after?: string; // Optional: Pagination cursor for fetching next page
+  first?: number; // Optional: Number of swaps to return per page
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+import { getCoinSwaps } from "@zoralabs/coins-sdk";
+
+const response = await getCoinSwaps({
+  address: "0x1234567890123456789012345678901234567890",
+  chain: 8453, // Base mainnet
+  first: 10, // Get first 10 swaps
+});
+
+if (response.data?.zora20Token?.swapActivities) {
+  const swaps = response.data.zora20Token.swapActivities.edges;
+  console.log(`Found ${swaps.length} swaps`);
+
+  swaps.forEach(({ node }) => {
+    console.log(`Activity: ${node.activityType}`); // "BUY" or "SELL"
+    console.log(`Amount: ${node.coinAmount}`);
+    console.log(`From: ${node.senderAddress}`);
+    console.log(`Timestamp: ${node.blockTimestamp}`);
+  });
+}
+```
+
+#### Response Structure
+
+The response includes swap activity data with transaction details, amounts, and user information.
+
+### getCoinComments
+
+The `getCoinComments` function retrieves comments associated with a specific coin, useful for displaying community engagement.
+
+#### Parameters
+
+```ts twoslash
+type GetCoinCommentsParams = {
+  address: string; // The coin contract address
+  chain?: number; // Optional: The chain ID (defaults to Base: 8453)
+  after?: string; // Optional: Pagination cursor for fetching next page
+  count?: number; // Optional: Number of comments to return per page
+};
+```
+
+#### Usage Example
+
+```ts twoslash
+// [!include ~/snippets/coins/queries/getCoinComments.ts]
+```
+
+#### Paginating Through All Comments
+
+To fetch all comments for a coin, you can use pagination:
+
+```ts twoslash
+// [!include ~/snippets/coins/queries/getCoinCommentsPagination.ts]
+```
+
+#### Response Structure
+
+The response includes a `comments` array and pagination information:
+
+## Error Handling
+
+All query functions follow the same error handling pattern. When an error occurs, the promise is rejected with an error object that includes details about what went wrong.
+
+```ts twoslash
+// [!include ~/snippets/coins/queries/queryErrors.ts]
+```

@@ -4,14 +4,17 @@
   "license": "MIT",
   "scripts": {
     "build": "turbo run build",
+    "build:js": "turbo run build:js",
     "test": "turbo run test",
     "dev": "turbo run dev",
     "docs:preview": "pnpm run --filter docs preview",
+    "build:docs:coins": "pnpm turbo run 'docs#build:site'",
+    "build:docs:nft": "pnpm turbo run 'nft-docs#build:site'",
     "update-version": "changeset version && pnpm docs:copy-changelogs && turbo run update-contract-version",
     "docs:copy-changelogs": "pnpm --filter=docs copy-changelog",
     "lint": "turbo run lint",
     "format": "turbo run format",
-    "release": "turbo run build && changeset publish",
+    "release": "turbo run build:js && changeset publish",
     "changesets": "changesets",
     "prepare": "husky install",
     "run-lint-staged": "lint-staged"
@@ -24,7 +27,7 @@
     "prettier": "^3.0.3",
     "prettier-plugin-solidity": "^1.4.1",
     "tsx": "^4.19.0",
-    "turbo": "^2.0.9"
+    "turbo": "^2.5.3"
   },
   "name": "zora-protocol",
   "lint-staged": {
@@ -34,19 +37,31 @@
     "*.mjs": "prettier --write",
     "*.json": "prettier --write"
   },
-  "packageManager": "pnpm@9.6.0",
+  "packageManager": "pnpm@10.19.0+sha512.c9fc7236e92adf5c8af42fd5bf1612df99c2ceb62f27047032f4720b33f8eacdde311865e91c411f2774f618d82f320808ecb51718bfa82c060c4ba7c76a32b8",
   "ignore": [
     "*.template.sol"
   ],
   "engines": {
-    "node": ">=16",
+    "node": ">=22",
     "pnpm": ">=3"
   },
   "pnpm": {
     "overrides": {
-      "viem": "^2.21.21",
+      "viem": "2.22.12",
       "@wagmi/cli": "^2.1.0",
-      "@solidity-parser/parser": "0.19.0"
+      "@solidity-parser/parser": "0.19.0",
+      "ds-test": "https://github.com/dapphub/ds-test#cd98eff28324bfac652e63a239a60632a761790b",
+      "forge-std": "https://github.com/foundry-rs/forge-std#v1.9.4",
+      "tsx": "^4.19.4",
+      "typescript": "^5.8.3",
+      "tsup": "^8.4.0",
+      "vitest": "^2.1.9",
+      "elliptic": "^6.6.1",
+      "ejs": "^3.1.7",
+      "pbkdf2": "^3.1.3",
+      "form-data": "^4.0.4",
+      "braces": "^3.0.3",
+      "sha.js": "^2.4.12"
     }
   }
 }

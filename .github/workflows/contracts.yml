@@ -3,54 +3,6 @@ name: "Contracts"
 on: "push"
 
 jobs:
-  contracts-erc20z:
-    name: ERC20Z Contracts
-    uses: ./.github/workflows/contract.yml
-    secrets: inherit
-    with:
-      package_folder: packages/erc20z
-      name: ERC20Z
-      ignore_coverage_files: '"*lib*" "*Zora1155*" "*uniswap*"'
-      # fixes stack too deep temporarily
-      coverage_args: "--ir-minimum"
-
-  contracts-1155:
-    name: 1155 Contracts
-    uses: ./.github/workflows/contract.yml
-    secrets: inherit
-    with:
-      package_folder: packages/1155-contracts
-      ignore_coverage_files: '"*DeploymentConfig*" "*Redeem*" "*deployment*" "*packages*" "*test*"'
-      name: 1155 Contracts
-
-  contracts-protocol-rewards:
-    name: Protocol Rewards
-    uses: ./.github/workflows/contract.yml
-    secrets: inherit
-    with:
-      package_folder: packages/protocol-rewards
-      name: Rewards
-      ignore_coverage_files: '"*lib*"'
-      skip_storage_layout: true
-
-  contracts-sparks:
-    name: Sparks
-    uses: ./.github/workflows/contract.yml
-    secrets: inherit
-    with:
-      package_folder: packages/sparks
-      ignore_coverage_files: '"*Ownable*" "*Mock*" "*BatchDataHelper*" "*test*" "*script*" "src/deployment/*"'
-      skip_storage_layout: true
-      name: Sparks
-
-  contracts-1155-deployments:
-    name: 1155 Deployments
-    uses: ./.github/workflows/deployment.yml
-    secrets: inherit
-    with:
-      package_folder: packages/1155-deployments
-      precache: "pnpm run generate"
-
   contracts-comments:
     name: Comments
     uses: ./.github/workflows/contract.yml
@@ -61,12 +13,48 @@ jobs:
       ignore_coverage_files: '"*lib*" "*mock*"'
       skip_storage_layout: true
 
-  contracts-cointags:
-    name: Cointags
+  contracts-coins:
+    name: Coins
     uses: ./.github/workflows/contract.yml
     secrets: inherit
     with:
-      package_folder: packages/cointags
-      name: Cointags
-      ignore_coverage_files: '"*script*"'
+      package_folder: packages/coins
+      name: Coins
       skip_storage_layout: true
+      ignore_coverage_files: '"*test*" "*src/utils/uniswap/*" "*src/libs/CoinLegacy.sol" "*src/deployment/CoinsDeployerBase.sol"'
+      coverage_args: "--ir-minimum"
+
+  contracts-coins-deployments:
+    name: Coins Deployments
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/coins-deployments
+      name: Coins Deployments
+      skip_storage_layout: true
+      skip_abi_stability: true
+      skip_coverage: true
+      skip_contract_sizes: true
+      skip_tests: true
+
+  contracts-limit-orders:
+    name: Limit Orders
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/limit-orders
+      name: Limit Orders
+      skip_storage_layout: true
+      ignore_coverage_files: '"*test*" "*src/utils/uniswap/*"'
+      coverage_args: "--ir-minimum"
+
+  contracts-incentive:
+    name: Incentive
+    uses: ./.github/workflows/contract.yml
+    secrets: inherit
+    with:
+      package_folder: packages/incentive-contracts
+      name: Incentive
+      ignore_coverage_files: '"*test*" "*script*"'
+      skip_storage_layout: true
+      skip_abi_stability: true

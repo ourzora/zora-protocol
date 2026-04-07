@@ -20,25 +20,40 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Set initial test ${{ inputs.name }} status
-        uses: myrotvorets/set-commit-status-action@v2.0.0
+        uses: myrotvorets/set-commit-status-action@968047d472cada5abe7920db2b2e539e54e4610e # v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           status: pending
           context: Test ${{ inputs.name }} status
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
 
-      - name: Install node deps and founry
+      - name: Install node deps and foundry
         uses: ./.github/actions/setup_deps
 
       - name: Run precache command
         if: ${{ inputs.precache != null }}
         run: cd ${{ inputs.package_folder}} && ${{ inputs.precache }}
 
-      - name: Load foundry cache
-        uses: ./.github/actions/cache_foundry_build
+      - name: Compute cache key
+        id: cache-key
+        run: |
+          CACHE_KEY=$(.github/scripts/compute-foundry-cache-key.sh "${{ inputs.package_folder }}")
+          echo "key=$CACHE_KEY" >> $GITHUB_OUTPUT
+
+          RESTORE_KEYS=$(.github/scripts/compute-foundry-cache-restore-keys.sh "${{ inputs.package_folder }}")
+          echo "restore-keys<<EOF" >> $GITHUB_OUTPUT
+          echo "$RESTORE_KEYS" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Restore foundry cache
+        uses: actions/cache/restore@d4323d4df104b026a6aa633fdb11d772146be0bf # v4
         with:
-          package_folder: ${{ inputs.package_folder }}
+          path: |
+            ${{ inputs.package_folder }}/cache
+            ${{ inputs.package_folder }}/out
+          key: ${{ steps.cache-key.outputs.key }}
+          restore-keys: ${{ steps.cache-key.outputs.restore-keys }}
 
       - name: Build contracts
         run: |
@@ -49,11 +64,10 @@ jobs:
           cd ${{ inputs.package_folder}} && pnpm run test
         env:
           TENDERLY_KEY: ${{ secrets.TENDERLY_KEY }}
-          ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
           CONDUIT_KEY: ${{ secrets.CONDUIT_KEY }}
 
       - name: Set initial test ${{ inputs.name }} status
-        uses: myrotvorets/set-commit-status-action@v2.0.0
+        uses: myrotvorets/set-commit-status-action@968047d472cada5abe7920db2b2e539e54e4610e # v2.0.0
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           status: ${{ job.status }}

@@ -1,0 +1,376 @@
+// SPDX-License-Identifier: ZORA-DELAYED-OSL-v1
+// This software is licensed under the Zora Delayed Open Source License.
+// Under this license, you may use, copy, modify, and distribute this software for
+// non-commercial purposes only. Commercial use and competitive products are prohibited
+// until the "Open Date" (3 years from first public distribution or earlier at Zora's discretion),
+// at which point this software automatically becomes available under the MIT License.
+// Full license terms available at: https://docs.zora.co/coins/license
+pragma solidity ^0.8.28;
+
+import {PoolKey} from "@uniswap/v4-core/src/types/PoolKey.sol";
+import {IPoolManager} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {PathKey} from "@uniswap/v4-periphery/src/libraries/PathKey.sol";
+import {ModifyLiquidityParams} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {SafeCast} from "@uniswap/v4-core/src/libraries/SafeCast.sol";
+import {TickMath} from "@uniswap/v4-core/src/libraries/TickMath.sol";
+import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
+import {LpPosition} from "../types/LpPosition.sol";
+import {V4Liquidity} from "./V4Liquidity.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {StateLibrary} from "@uniswap/v4-core/src/libraries/StateLibrary.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import {DopplerMath} from "../libs/DopplerMath.sol";
+import {LiquidityAmounts} from "../utils/uniswap/LiquidityAmounts.sol";
+import {IHasRewardsRecipients} from "../interfaces/IHasRewardsRecipients.sol";
+import {ICoin} from "../interfaces/ICoin.sol";
+import {IZoraV4CoinHook} from "../interfaces/IZoraV4CoinHook.sol";
+import {IHasSwapPath} from "../interfaces/ICoin.sol";
+import {UniV4SwapToCurrency} from "./UniV4SwapToCurrency.sol";
+import {ICreatorCoinHook} from "../interfaces/ICreatorCoinHook.sol";
+import {IHasCoinType} from "../interfaces/ICoin.sol";
+import {IERC165} from "@openzeppelin/contracts/utils/introspection/IERC165.sol";
+import {ICreatorCoin} from "../interfaces/ICreatorCoin.sol";
+import {CoinConstants} from "./CoinConstants.sol";
+
+library CoinRewardsV4 {
+    using SafeERC20 for IERC20;
+
+    function getTradeReferral(bytes calldata hookData) internal pure returns (address) {
+        return hookData.length >= 20 ? abi.decode(hookData, (address)) : address(0);
+    }
+
+    /// @dev Swaps collected fees through the payout path and distributes all deltas as rewards.
+    ///      This handles partial swap execution where swaps may hit price limits and leave unsettled deltas.
+    ///      After executing the swap path, all positive deltas (both intermediate and final) are taken and distributed.
+    /// @param poolManager The pool manager instance
+    /// @param fees0 The amount of fees collected in currency0
+    /// @param fees1 The amount of fees collected in currency1
+    /// @param payoutSwapPath The swap path for converting fees to the payout currency
+    /// @param coin The coin interface for getting reward recipients
+    /// @param tradeReferrer The trade referrer address
+    /// @param coinType The coin type for proper event emission
+    function swapFeesToPayoutAndDistribute(
+        IPoolManager poolManager,
+        uint128 fees0,
+        uint128 fees1,
+        IHasSwapPath.PayoutSwapPath memory payoutSwapPath,
+        IHasRewardsRecipients coin,
+        address tradeReferrer,
+        IHasCoinType.CoinType coinType
+    ) internal {
+        // Execute the swap path - may only partially execute if hitting price limits
+        UniV4SwapToCurrency.swapToPath(poolManager, fees0, fees1, payoutSwapPath.currencyIn, payoutSwapPath.path);
+
+        // After swap path execution, iterate through all currencies and take/distribute any positive deltas
+        // This handles cases where swaps only partially execute, leaving unsettled amounts
+
+        // Check currencyIn — partial swap remainder lives here
+        _takeAndDistributeIfPositiveDelta(poolManager, payoutSwapPath.currencyIn, coin, tradeReferrer, coinType);
+
+        // Check all intermediate currencies in the path (includes the other pool currency as path[0])
+        for (uint256 i = 0; i < payoutSwapPath.path.length; i++) {
+            Currency intermediateCurrency = payoutSwapPath.path[i].intermediateCurrency;
+            _takeAndDistributeIfPositiveDelta(poolManager, intermediateCurrency, coin, tradeReferrer, coinType);
+        }
+    }
+
+    /// @dev Checks if a currency has a positive delta, and if so, takes it and distributes as rewards
+    /// @param poolManager The pool manager instance
+    /// @param currency The currency to check
+    /// @param coin The coin interface for getting reward recipients
+    /// @param tradeReferrer The trade referrer address
+    /// @param coinType The coin type for proper event emission
+    function _takeAndDistributeIfPositiveDelta(
+        IPoolManager poolManager,
+        Currency currency,
+        IHasRewardsRecipients coin,
+        address tradeReferrer,
+        IHasCoinType.CoinType coinType
+    ) private {
+        int256 delta = TransientStateLibrary.currencyDelta(poolManager, address(this), currency);
+        // Only take if there's a positive delta
+        // Note: delta might be 0 if we already took from this currency in a previous call
+        if (delta > 0) {
+            uint128 amount = uint128(uint256(delta));
+            poolManager.take(currency, address(this), amount);
+            distributeMarketRewards(currency, amount, coin, tradeReferrer, coinType);
+        }
+    }
+
+    /// @dev Computes the LP reward and remaining amount for market rewards from the total amount
+    function computeLpReward(uint128 totalBackingAmount) internal pure returns (uint128 lpRewardAmount) {
+        lpRewardAmount = uint128(calculateReward(uint256(totalBackingAmount), CoinConstants.LP_REWARD_BPS));
+    }
+
+    function convertDeltaToPositiveUint128(int256 delta) internal pure returns (uint128) {
+        if (delta < 0) {
+            revert SafeCast.SafeCastOverflow();
+        }
+        if (delta > int256(uint256(type(uint128).max))) {
+            revert SafeCast.SafeCastOverflow();
+        }
+        return uint128(uint256(delta));
+    }
+
+    function getCurrencyZeroBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
+        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency0));
+    }
+
+    function getCurrencyOneBalance(IPoolManager poolManager, PoolKey calldata key) internal view returns (uint128) {
+        return convertDeltaToPositiveUint128(TransientStateLibrary.currencyDelta(poolManager, address(this), key.currency1));
+    }
+
+    /// @notice Mints LP rewards by creating new liquidity positions from collected fees
+    /// @dev Splits collected fees between LP rewards and market rewards, then mints new LP positions
+    ///      with the LP reward portion. The remaining amount becomes market rewards for distribution.
+    /// @param poolManager The pool manager instance
+    /// @param key The pool key identifying the specific pool
+    /// @param fees0 The amount of fees collected in currency0
+    /// @param fees1 The amount of fees collected in currency1
+    /// @return marketRewardsAmount0 The amount of currency0 remaining for market rewards
+    /// @return marketRewardsAmount1 The amount of currency1 remaining for market rewards
+    function mintLpReward(
+        IPoolManager poolManager,
+        PoolKey calldata key,
+        int128 fees0,
+        int128 fees1,
+        IHasCoinType.CoinType coinType
+    ) internal returns (uint128 marketRewardsAmount0, uint128 marketRewardsAmount1) {
+        if (coinType == IHasCoinType.CoinType.Trend) {
+            marketRewardsAmount0 = fees0 > 0 ? uint128(fees0) : 0;
+            marketRewardsAmount1 = fees1 > 0 ? uint128(fees1) : 0;
+            return (marketRewardsAmount0, marketRewardsAmount1);
+        }
+
+        if (fees0 > 0) {
+            uint128 lpRewardAmount0 = computeLpReward(uint128(fees0));
+            if (lpRewardAmount0 > 0) {
+                _modifyLiquidity(poolManager, key, lpRewardAmount0, true);
+            }
+        }
+
+        if (fees1 > 0) {
+            uint128 lpRewardAmount1 = computeLpReward(uint128(fees1));
+            if (lpRewardAmount1 > 0) {
+                _modifyLiquidity(poolManager, key, lpRewardAmount1, false);
+            }
+        }
+
+        marketRewardsAmount0 = getCurrencyZeroBalance(poolManager, key);
+        marketRewardsAmount1 = getCurrencyOneBalance(poolManager, key);
+    }
+
+    /// @notice Mints a single-sided LP position
+    /// @dev The position is created for a single tick spacing range, either entirely above or below the current tick, to ensure only one currency is required
+    function _modifyLiquidity(IPoolManager poolManager, PoolKey calldata key, uint128 lpRewardAmount, bool isFeesToken0) private {
+        // Get the current tick to determine where to place the new position.
+        (, int24 currentTick, , ) = StateLibrary.getSlot0(poolManager, key.toId());
+
+        int24 tickLower;
+        int24 tickUpper;
+
+        if (isFeesToken0) {
+            // For token0 fees, the position must be entirely above the current tick
+            // We set the lower tick to be at least two tick spacings away to ensure it's not in the active range
+            int24 minTickLower = currentTick + (key.tickSpacing * 2);
+            tickLower = DopplerMath.alignTickToTickSpacing(true, minTickLower, key.tickSpacing);
+            tickUpper = tickLower + key.tickSpacing;
+        } else {
+            // For token1 fees, the position must be entirely below the current tick
+            // We set the upper tick to be at least two tick spacings away
+            int24 maxTickUpper = currentTick - (key.tickSpacing * 2);
+            tickUpper = DopplerMath.alignTickToTickSpacing(false, maxTickUpper, key.tickSpacing);
+            tickLower = tickUpper - key.tickSpacing;
+        }
+
+        uint160 sqrtPriceA = TickMath.getSqrtPriceAtTick(tickLower);
+        uint160 sqrtPriceB = TickMath.getSqrtPriceAtTick(tickUpper);
+
+        uint128 liquidity = isFeesToken0
+            ? LiquidityAmounts.getLiquidityForAmount0(sqrtPriceA, sqrtPriceB, lpRewardAmount)
+            : LiquidityAmounts.getLiquidityForAmount1(sqrtPriceA, sqrtPriceB, lpRewardAmount);
+
+        if (liquidity > 0) {
+            ModifyLiquidityParams memory params = ModifyLiquidityParams({
+                tickLower: tickLower,
+                tickUpper: tickUpper,
+                liquidityDelta: SafeCast.toInt256(liquidity),
+                salt: 0
+            });
+            poolManager.modifyLiquidity(key, params, "");
+        }
+    }
+
+    /// @notice Distributes collected market fees as rewards to various recipients including creator, referrers, protocol, and doppler
+    /// @dev Calculates reward amounts based on predefined basis points and transfers the specified currency to each recipient
+    /// @param currency The currency token to distribute as rewards (can be native ETH if address is zero)
+    /// @param fees The total amount of fees collected to be distributed
+    /// @param coin The coin contract instance that implements IHasRewardsRecipients to get recipient addresses
+    /// @param tradeReferrer The address of the trade referrer who should receive trade referral rewards (can be zero address)
+    /// @param coinType The type of coin (Creator or Content) which affects reward distribution percentages
+    function distributeMarketRewards(
+        Currency currency,
+        uint128 fees,
+        IHasRewardsRecipients coin,
+        address tradeReferrer,
+        IHasCoinType.CoinType coinType
+    ) internal {
+        address payoutRecipient = coin.payoutRecipient();
+        address platformReferrer = coin.platformReferrer();
+        address protocolRewardRecipient = coin.protocolRewardRecipient();
+        address doppler = coin.dopplerFeeRecipient();
+
+        MarketRewards memory rewards = _distributeCurrencyRewards(
+            currency,
+            fees,
+            payoutRecipient,
+            platformReferrer,
+            protocolRewardRecipient,
+            doppler,
+            tradeReferrer,
+            coinType
+        );
+
+        IZoraV4CoinHook.MarketRewardsV4 memory marketRewards = IZoraV4CoinHook.MarketRewardsV4({
+            creatorPayoutAmountCurrency: rewards.creatorAmount,
+            creatorPayoutAmountCoin: 0,
+            platformReferrerAmountCurrency: rewards.platformReferrerAmount,
+            platformReferrerAmountCoin: 0,
+            tradeReferrerAmountCurrency: rewards.tradeReferrerAmount,
+            tradeReferrerAmountCoin: 0,
+            protocolAmountCurrency: rewards.protocolAmount,
+            protocolAmountCoin: 0,
+            dopplerAmountCurrency: rewards.dopplerAmount,
+            dopplerAmountCoin: 0
+        });
+
+        emit IZoraV4CoinHook.CoinMarketRewardsV4(
+            address(coin),
+            Currency.unwrap(currency),
+            payoutRecipient,
+            platformReferrer,
+            tradeReferrer,
+            protocolRewardRecipient,
+            doppler,
+            marketRewards
+        );
+
+        if (coinType == IHasCoinType.CoinType.Creator) {
+            emit ICreatorCoinHook.CreatorCoinRewards(
+                address(coin),
+                Currency.unwrap(currency),
+                payoutRecipient,
+                protocolRewardRecipient,
+                rewards.creatorAmount,
+                rewards.protocolAmount
+            );
+        }
+    }
+
+    struct MarketRewards {
+        uint256 platformReferrerAmount;
+        uint256 tradeReferrerAmount;
+        uint256 protocolAmount;
+        uint256 creatorAmount;
+        uint256 dopplerAmount;
+    }
+
+    function _distributeCurrencyRewards(
+        Currency currency,
+        uint128 fee,
+        address payoutRecipient,
+        address platformReferrer,
+        address protocolRewardRecipient,
+        address doppler,
+        address tradeReferral,
+        IHasCoinType.CoinType coinType
+    ) internal returns (MarketRewards memory rewards) {
+        if (coinType == IHasCoinType.CoinType.Trend) {
+            rewards.protocolAmount = fee;
+            _transferCurrency(currency, fee, protocolRewardRecipient, address(0));
+            return rewards;
+        }
+
+        rewards = _computeMarketRewards(fee, tradeReferral != address(0), platformReferrer != address(0), coinType);
+
+        // Notes on ETH transfer fallback behavior:
+        // - If the platform referrer is immutable; if it is set to an address that cannot receive ETH, it can brick swaps on the coin, as they would revert.
+        // - Both the creator recipient and trade referral are changeable, the former via updating the payout recipient on the coin, and the latter via updating the trade referrer argument when doing a swap;
+        // therefore we do not need to worry about permanently bricking swaps, and don't need a backup recipient.
+        _transferCurrency(currency, rewards.platformReferrerAmount, platformReferrer, protocolRewardRecipient);
+        _transferCurrency(currency, rewards.tradeReferrerAmount, tradeReferral, address(0));
+        _transferCurrency(currency, rewards.creatorAmount, payoutRecipient, address(0));
+        _transferCurrency(currency, rewards.dopplerAmount, doppler, protocolRewardRecipient);
+        _transferCurrency(currency, rewards.protocolAmount, protocolRewardRecipient, address(0));
+    }
+
+    function _transferCurrency(Currency currency, uint256 amount, address to, address backupRecipient) internal {
+        if (amount == 0 || to == address(0)) {
+            return;
+        }
+
+        if (currency.isAddressZero()) {
+            (bool success, ) = payable(to).call{value: amount}("");
+            if (!success) {
+                if (backupRecipient == address(0)) {
+                    revert ICoin.EthTransferFailed();
+                } else {
+                    _transferCurrency(currency, amount, backupRecipient, address(0));
+                }
+            }
+        } else {
+            IERC20(Currency.unwrap(currency)).safeTransfer(to, amount);
+        }
+    }
+
+    function _computeMarketRewards(
+        uint128 fee,
+        bool hasTradeReferral,
+        bool hasCreateReferral,
+        IHasCoinType.CoinType coinType
+    ) internal pure returns (MarketRewards memory rewards) {
+        if (fee == 0) {
+            return rewards;
+        }
+
+        uint256 totalAmount = uint256(fee);
+
+        // TrendCoins: 100% of market rewards go to protocol (80% of total fees, with 20% already going to LPs)
+        if (coinType == IHasCoinType.CoinType.Trend) {
+            rewards.protocolAmount = totalAmount;
+            return rewards;
+        }
+
+        rewards.platformReferrerAmount = hasCreateReferral ? calculateReward(totalAmount, CoinConstants.CREATE_REFERRAL_REWARD_BPS) : 0;
+        rewards.tradeReferrerAmount = hasTradeReferral ? calculateReward(totalAmount, CoinConstants.TRADE_REFERRAL_REWARD_BPS) : 0;
+        rewards.creatorAmount = calculateReward(totalAmount, CoinConstants.CREATOR_REWARD_BPS);
+        rewards.dopplerAmount = calculateReward(totalAmount, CoinConstants.DOPPLER_REWARD_BPS);
+        rewards.protocolAmount = totalAmount - rewards.platformReferrerAmount - rewards.tradeReferrerAmount - rewards.creatorAmount - rewards.dopplerAmount;
+    }
+
+    function calculateReward(uint256 amount, uint256 bps) internal pure returns (uint256) {
+        return (amount * bps) / 10_000;
+    }
+
+    function getCoinType(IHasRewardsRecipients coin) internal view returns (IHasCoinType.CoinType) {
+        // first check if the coin supports the IHasCoinType interface - if it does, we can use that
+        if (IERC165(address(coin)).supportsInterface(type(IHasCoinType).interfaceId)) {
+            return IHasCoinType(address(coin)).coinType();
+        }
+
+        // see if its a legacy creator coin
+        return isLegacyCreatorCoin(coin) ? IHasCoinType.CoinType.Creator : IHasCoinType.CoinType.Content;
+    }
+
+    function isLegacyCreatorCoin(IHasRewardsRecipients coin) internal view returns (bool) {
+        // try to call the method `getClaimableAmount` on the legacy creator coin, if it succeeds, then it is a legacy creator coin,
+        // otherwise we can assume it is a content coin
+        try ICreatorCoin(address(coin)).getClaimableAmount() returns (uint256) {
+            return true;
+        } catch {
+            return false;
+        }
+    }
+}

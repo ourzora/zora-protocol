@@ -1,0 +1,162 @@
+# Contract Architecture
+
+This page provides a technical overview of how the Coins protocol contracts work together to enable coin creation, trading, and automatic reward distribution.
+
+## Architecture Overview
+
+```mermaid
+classDiagram
+    %% Uniswap V4 Package
+    class IPoolManager {
+        +initialize()
+        +modifyLiquidity()
+        +swap()
+        +take()
+    }
+    
+    %% Factory Package
+    class ZoraFactoryImpl {
+        +deploy(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, postDeployHook, postDeployHookData, coinSalt)
+        +deployCreatorCoin(payoutRecipient, owners, uri, name, symbol, poolConfig, platformReferrer, coinSalt)
+        +deployTrendCoin(symbol, postDeployHook, postDeployHookData)
+        +coinAddress(msgSender, name, symbol, poolConfig, platformReferrer, coinSalt)
+        +trendCoinAddress(symbol)
+        +coinImpl()
+        +trendCoinImpl()
+    }
+    
+    %% Coins Package
+    class BaseCoinV4 {
+        <<abstract>>
+        #poolManager: IPoolManager
+        #poolKey: PoolKey
+        +migrateLiquidity()
+        +getPayoutSwapPath()
+    }
+    
+    class CreatorCoin {
+        -currency: ZORA
+        -vestingSchedule: VestingSchedule
+        +claimVesting()
+        +getClaimableAmount()
+    }
+    
+    class ContentCoin {
+        -backingCurrency: CreatorCoin
+        +rewardsDistributionMethodology()
+    }
+    
+    class TrendCoin {
+        -currency: ZORA
+        -fee: 0.01% (1 bps)
+        +initializeTrendCoin()
+        +coinType() Trend
+    }
+    
+    %% Hooks Package
+    class ZoraV4CoinHook {
+        +afterInitialize()
+        +beforeSwap()
+        +afterSwap()
+        -collectFees()
+        -mintLpReward()
+        -_calculateLaunchFee()
+        +_distributeMarketRewards()
+    }
+    
+    class ZORAToken {
+        ZORA Token
+    }
+    
+    %% Inheritance relationships
+    BaseCoinV4 <|-- CreatorCoin
+    BaseCoinV4 <|-- ContentCoin
+    BaseCoinV4 <|-- TrendCoin
+    
+    %% Factory relationships
+    ZoraFactoryImpl ..> CreatorCoin : creates
+    ZoraFactoryImpl ..> ContentCoin : creates
+    ZoraFactoryImpl ..> TrendCoin : creates
+    
+    %% Hook relationships
+    ZoraV4CoinHook --> IPoolManager : uses
+    ZoraV4CoinHook --> BaseCoinV4 : manages rewards
+    
+    %% Pool Manager relationships
+    BaseCoinV4 --> IPoolManager : integrates with
+    CreatorCoin --> ZoraV4CoinHook : uses hook
+    ContentCoin --> ZoraV4CoinHook : uses hook
+    TrendCoin --> ZoraV4CoinHook : uses hook
+    
+    %% Currency relationships
+    ContentCoin --> CreatorCoin : backed by
+    CreatorCoin --> ZORAToken : backed by
+    TrendCoin --> ZORAToken : backed by
+```
+
+*Visual overview of how contracts work together in the Zora Coins system*
+
+## Core Components
+
+### Coins Contracts
+
+**BaseCoinV4 (Abstract)**
+- Base implementation for all coin types
+- Integrates with Uniswap V4 PoolManager
+- Handles liquidity migration between hook versions
+- Manages pool key and basic coin functionality
+
+**CreatorCoin**
+- One per creator, backed by ZORA tokens
+- 1 billion total supply with 5-year vesting schedule
+- 500M tokens vest to creator, 500M available for trading
+- 1% trading fee split across creator, referrers, protocol, and LP
+
+**ContentCoin**
+- Multiple per creator, backed by creator's coin
+- 1 billion total supply with instant creator allocation
+- 10M tokens to creator immediately, 990M available for trading
+- 1% trading fee with the same reward split as Creator Coins
+
+**[TrendCoin](/coins/contracts/trend-coins)**
+- Lightweight coins for trending topics and cultural moments
+- 1 billion total supply, 100% allocated to liquidity pool
+- No creator allocation, no payout recipient, no platform referrer
+- 0.01% (1 bps) trading fee — 100x lower than Creator/Content Coins
+- Sniper Tax: 99% fee at launch decaying to 0.01% over 10 seconds
+- All fees go to protocol; no LP remint
+- Unique, case-insensitive tickers enforced on-chain
+
+### Factory Contract
+
+**ZoraFactoryImpl**
+- Deploys new coins with deterministic addresses
+- Supports custom pool configurations and post-deployment hooks
+- Creates Uniswap V4 pools automatically with appropriate hook contracts
+- Provides address prediction before deployment
+
+Key functions:
+- `deploy()` - General coin deployment with full customization
+- `deployCreatorCoin()` - Simplified Creator Coin deployment
+- `deployTrendCoin()` - Trend Coin deployment with unique ticker enforcement
+- `coinAddress()` - Predict deployment address for Content/Creator Coins
+- `trendCoinAddress()` - Predict deployment address for Trend Coins
+
+### Hook System
+
+The protocol uses a unified hook architecture:
+
+**BaseZoraV4CoinHook (Abstract)**
+- Contains all shared hook functionality for both coin types
+- Implements Uniswap V4 hook interface (`afterSwap`, `afterInitialize`)
+- Handles pool initialization, fee collection, and currency conversion
+- Supports migration to new hook versions while preserving liquidity
+
+Core functionality:
+- Collects trading fees from liquidity positions
+- Splits fees between LP rewards and market rewards
+- Converts fees to backing currency via multi-hop swaps
+- Distributes rewards based on coin type via unified logic
+
+> History: Prior to v2.3.0 the protocol used two hooks (`ContentCoinHook` and `CreatorCoinHook`). This was consolidated into `ZoraV4CoinHook` for a single, unified implementation.
+

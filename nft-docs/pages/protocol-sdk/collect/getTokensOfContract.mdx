@@ -1,0 +1,87 @@
+# `getTokensOfContract`
+
+**Both onchain** and **premint (gaslessly created)** tokens of a Zora 1155 contract can be retrieved using the Collector Client function 
+`getTokensOfContract()` and passing a token contract address. The function returns a `tokens` array with an item for each token of the contract.
+Each item in `tokens` contains information the token in the `token` object, and has a function
+`prepareMint`.  The `prepareMint` function takes a quantity to mint and returns the transaction parameters to mint the token, costs to mint the token, and any necessary
+erc20 approvals that must be executed before minting the token.
+
+## Usage
+
+```tsx twoslash
+import { 
+  useChainId, 
+  usePublicClient, 
+  useAccount,
+  useWriteContract 
+} from 'wagmi';
+import { getTokensOfContract } from "@zoralabs/protocol-sdk";
+
+const chainId = useChainId();
+const publicClient = usePublicClient();
+
+// get the item that can be minted, and a function to prepare 
+// a mint transaction
+const { tokens, contract } = await getTokensOfContract({
+  // collection address to mint
+  tokenContract: "0x1234567890123456789012345678901234567890",
+  publicClient
+});
+
+
+// the function returns an array of `tokens`, with each item
+// containing information  about the item that can be minted
+// @noErrors
+tokens[0]!.token.
+//               ^|
+
+
+
+
+
+
+
+// The `prepareMint` function of the any returned token
+// can be used to prepare a transaction to mint x quantity of 
+// that token to a recipient
+const { address } = useAccount();
+const { parameters, costs } = tokens[0]!.prepareMint({
+  minterAccount: address!,
+  quantityToMint: 3n
+});
+
+const { writeContract } = useWriteContract();
+
+// When the button is clicked, the transaction to mint 3 tokens 
+// of the first returned token is written to the network
+<button onClick={() => writeContract(parameters)}></button>
+
+// costs to mint the 3 tokens can be retrieved 
+// from the returned `cost` object
+// @noErrors
+costs.
+//    ^|
+
+
+
+```
+
+## Return Type
+
+Returns an array of [MintableReturn](/protocol-sdk/collect/getToken#return-type) objects.
+
+## Parameters
+
+### tokenContract
+
+`Address`
+
+The address of the 1155 contract to get the tokens of.
+
+### preferredSaleType (optional)
+
+`"fixedPrice" | "erc20" | "allowlist" | "premint" | "timed"`
+
+Optional preferred sale type of the minter to use for the token, only applicable for onchain 1155s.
+
+

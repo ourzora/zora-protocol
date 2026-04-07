@@ -7,31 +7,46 @@ import { HomePage } from 'vocs/components'
 import { HomePageLogo } from "../components/HomePageLogo";
 
 <HomePage.Root>
-  <HomePageLogo dark="/zora-wordmark-white.svg" light="/zora-wordmark-black.svg" /> 
-  <HomePage.Tagline>Explore our guides and examples to integrate Zora </HomePage.Tagline>
-  <img src="/zora-docs-hero-image.png"  className="hero-image" />
-<p>Build your project using the Zora Protocol and plug into over $25m of rewards out of the box. We’ve created a series of tools that make it easy to get started building on Zora.</p>
+  {/* <HomePageLogo dark="/zora-wordmark-white.svg" light="/zora-wordmark-black.svg" />  */}
+  {/* <HomePage.>Explore our developer tools and resources to integrate Zora </HomePage.Tagline> */}
+  {/* <HomePage.Tagline>Explore our developer tools and resources to integrate Zora </HomePage.Tagline> */}
+
+  <div className="HomePageBanner">
+  <div className="HomePageContent">
+    <h1>Zora for Developers</h1>
+    <h3>Explore our developer tools and<br /> resources to integrate Zora</h3>
+    </div>
+  </div>
+
+
+
+  {/* <img src="/zora-docs-hero-image.png"  className="hero-image" /> */}
+
+  <div className="HomePageTagline">Build your project on Zora and plug into our business and distribution network.<br />
+    Our Coins SDK lets developers create engaging experiences for creators and traders.</div>
 </HomePage.Root>
 
+  <div className="HomePageContent">
   <CardContainer>
-    <Card title="Create a contract" icon="PaintBrush" href="/protocol-sdk/creator/premint">
-      Create a new ZORA ERC-1155 NFT contract without needing to pay any gas using the SDK
+    <Card title="Create a coin" icon="create-coin" href="/coins/sdk/create-coin">
+      Create Zora coins using the SDK
     </Card>
-    <Card title="Mint NFTs" icon="CubeTransparent" href="/protocol-sdk/collect/mint">
-      Mint any ZORA ERC-1155 or ERC-721 Token using the SDK
+    <Card title="Query coins" icon="query-coins" href="/coins/sdk/queries/coin">
+      Query coin details, profile balances, coin activity and more using the SDK
     </Card>
-    <Card title="Earn Protocol Rewards" icon="Rocket" href="/protocol-sdk/collect/mint#earning-mint-referral-rewards">
-      Earn by interacting with the ZORA protocol and referring users
+    <Card title="Coins Protocol" icon="coins-contracts" href="/coins">
+      Learn how Zora's Coin Protocol works and start building with it
     </Card>
-    <Card title="Secondary Market" icon="Sparkles" href="/protocol-sdk/collect/buy1155OnSecondary">
-      Buy and sell 1155s on an onchain secondary market
+    <Card title="Earn Rewards as a Developer" icon="coins-metadata" href="/coins/contracts/earning-referral-rewards">
+      Learn how to earn rewards as a developer building on the coins protocol
     </Card>
-    <Card title="Get Support" icon="Info" href="//support.zora.co">
-      Learn more about the product or get in touch with support
+    <Card title="Support" icon="support" href="//support.zora.co">
+      Get in touch with our Support team
     </Card>
-    <Card title="Visit Zora" icon="Plus" href="//zora.co">
-      Create and collect on Zora
+    <Card title="Visit Zora" icon="visit-zora" href="//zora.co">
+      Create and trade Zora coins
     </Card>
   </CardContainer>
+  </div>
 
   

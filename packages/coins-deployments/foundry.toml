@@ -1,0 +1,32 @@
+[profile.default]
+src = "src"
+test = "test"
+script = "script"
+libs = ["node_modules"]
+via_ir = true
+optimizer = true
+solc_version = '0.8.28'
+optimizer_runs = 100
+dynamic_test_linking = true
+fs_permissions = [
+  { access = "readwrite", path = "./addresses" },
+  { access = "read", path = "./package.json" },
+  { access = "readwrite", path = "./deterministicConfig" },
+  { access = "read", path = "../shared-contracts/chainConfigs" },
+  { access = "read", path = "../shared-contracts/deterministicConfig" },
+  { access = "read", path = "../coins/src" },
+  { access = "read", path = "../limit-orders/src" },
+  { access = "read", path = "../limit-orders/node_modules" }
+]
+
+[profile.dev]
+via_ir = true
+optimizer = false
+
+[profile.ci.fuzz]
+runs = 100
+
+[rpc_endpoints]
+base = "https://base.gateway.tenderly.co/${TENDERLY_KEY}"
+mainnet = "https://mainnet.gateway.tenderly.co/${TENDERLY_KEY}"
+zora = "https://rpc.zora.energy/${CONDUIT_KEY}"

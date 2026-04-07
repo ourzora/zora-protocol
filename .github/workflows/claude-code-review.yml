@@ -1,0 +1,75 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+    # Run on contract code changes and other important files
+    paths:
+      - "packages/*/src/**/*.sol"
+      - "packages/*/test/**/*.sol"
+      - "packages/*/script/**/*.sol"
+      - "packages/*/src/**/*.ts"
+      - "packages/*/src/**/*.tsx"
+      - "packages/*/src/**/*.js"
+      - "packages/*/src/**/*.jsx"
+      - ".changeset/**/*.md"
+      - ".github/**/*"
+      - "docs/**/*"
+      - "src/**/*.ts"
+      - "src/**/*.tsx"
+      - "src/**/*.js"
+      - "src/**/*.jsx"
+      - "*.md"
+
+jobs:
+  claude-review:
+    # Optional: Filter by PR author
+    # if: |
+    #   github.event.pull_request.user.login == 'external-contributor' ||
+    #   github.event.pull_request.user.login == 'new-developer' ||
+    #   github.event.pull_request.author_association == 'FIRST_TIME_CONTRIBUTOR'
+
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+      issues: read
+      id-token: write
+      actions: read
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Read review prompt
+        id: prompt
+        run: |
+          echo "content<<EOF" >> $GITHUB_OUTPUT
+          cat .github/claude-code-review-prompt.md >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Read allowed tools
+        id: allowed-tools
+        run: |
+          # Read allowed tools file and join lines with commas
+          tools=$(cat .github/claude-code-review-allowed-tools.txt | tr '\n' ',' | sed 's/,$//')
+          echo "list=$tools" >> $GITHUB_OUTPUT
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@beta
+        with:
+          anthropic_api_key: ${{ secrets.ANTHROPIC_API_KEY }}
+
+          # Prompt is read from .github/claude-code-review-prompt.md
+          # This allows editing the prompt without triggering workflow validation issues
+          direct_prompt: ${{ steps.prompt.outputs.content }}
+
+          # Use sticky comments to update existing comment instead of creating new ones
+          use_sticky_comment: true
+
+          # Allowed tools list is read from .github/claude-code-review-allowed-tools.txt
+          # This allows editing the allowed tools without triggering workflow validation issues
+          allowed_tools: ${{ steps.allowed-tools.outputs.list }}

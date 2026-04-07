@@ -1,6 +1,198 @@
 # @zoralabs/protocol-deployments Changelog
 
 
+## 0.7.5
+
+### Patch Changes
+
+- [625684d2](https://github.com/ourzora/zora-protocol/commit/625684d2): Deploy Coin hook and implementations v2.5.1 to Base
+- [50134ebc](https://github.com/ourzora/zora-protocol/commit/50134ebc): Add TrendCoin support
+  - New `TrendCoin` contract: 100% supply in liquidity pool, 0% swap fees
+  - `deployTrendCoin` factory method with ticker uniqueness enforcement and post-deploy hook support
+  - Owner-configurable pool parameters via `setTrendCoinPoolConfig()`
+  - Metadata manager role for updatable contract URIs
+  - Ticker validation and URI encoding for trend coin symbols
+
+## 0.7.4
+
+### Patch Changes
+
+- [78dffbdc](https://github.com/ourzora/zora-protocol/commit/78dffbdc): Including uniswap v4 errors in lob and swap router abis, and including some uniswap v4 contracts and abis.
+
+## 0.7.3
+
+### Patch Changes
+
+- [67d27f1d](https://github.com/ourzora/zora-protocol/commit/67d27f1d): Deploy upgraded coin implementations for limit-orders v0.2.7 to Base
+  - Deploy ContentCoin to 0x9dE4D209B34b6121C3533Ab1B35236aCC6453fF3 (production)
+  - Deploy CreatorCoin to 0xE305FAA8d197f360Da45fE253B709CA373eDe337 (production)
+  - Deploy ZoraV4CoinHook to 0xF6d0A13609bb5779Bc5D639F2bA3Bfda83D4D0C0 (production)
+  - Deploy ZoraFactoryImpl to 0x5eD16Aa75831210793Db14523cf64F43c7F8a159 (production)
+  - Deploy ContentCoin to 0x888A2bFbE54C33b75b87701D50dd520248078DD7 (dev)
+  - Deploy CreatorCoin to 0x82F6177e6344c9Fb49A9379D1fFf8466a0ad1943 (dev)
+  - Deploy ZoraV4CoinHook to 0x6DA72eD8725Af7824A16Cce07A15e4a849c650C0 (dev)
+  - Deploy ZoraFactoryImpl to 0xAEB677F11dfF19BF4b593f67D5CcD32730069D13 (dev)
+
+- [27f588b2](https://github.com/ourzora/zora-protocol/commit/27f588b2): Deploy ZoraLimitOrderBook version 0.2.7 to Base mainnet
+  - Deploy ZoraLimitOrderBook version 0.2.7 to 0x7777777C783bAD88daCaf9A19E04238341E4497B (production)
+  - Deploy SwapWithLimitOrders version 0.2.7 to 0x77777777Eb762Cf86F634763e79d17dE44330887 (production)
+
+## 0.7.2
+
+### Patch Changes
+
+- [668bfa3c](https://github.com/ourzora/zora-protocol/commit/668bfa3c): Deploy limit orders version 0.2.6 to Base
+  - Deploy ZoraLimitOrderBook version 0.2.6 to 0x7777777A5906659b67CE61511489Ae76DA63920f (production)
+  - Deploy SwapWithLimitOrders version 0.2.6 to 0x7777777f62529Ea64736E24ad9ad3E4a39eB97c2 (production)
+  - Deploy ZoraLimitOrderBook version 0.2.6 to 0xCe2C8032F85aB6a7148138F8a1235d2b17D53Dc5 (dev)
+  - Deploy SwapWithLimitOrders version 0.2.6 to 0x1F35FB3E07e68bC1Bf020c2d59cBF91Ccf5736b8 (dev)
+
+## 0.7.1
+
+### Patch Changes
+
+- [9af2904a](https://github.com/ourzora/zora-protocol/commit/9af2904a): Deploy limit order contracts version 0.2.5 to Base mainnet
+  - Deploy ZoraLimitOrderBook version 0.2.5 to 0x77777774d70B1E9D6f705f99dA7c02e4E768dF09 (production)
+  - Deploy SwapWithLimitOrders version 0.2.5 to 0x7777777A1F22faaB216f502B5D0BAAdE8c734F30 (production)
+  - Deploy ZoraLimitOrderBook version 0.2.5 to 0xA017F02f8307759bf2c305eA84D5d23529937EfF (dev)
+  - Deploy SwapWithLimitOrders version 0.2.5 to 0x0C4a29c2256aF82107f413bAa44e687ba2930414 (dev)
+
+## 0.7.0
+
+### Minor Changes
+
+- [5d656794](https://github.com/ourzora/zora-protocol/commit/5d656794): Add dev contract exports for Base mainnet development deployments
+  - Add `devCoinFactoryAddress` and `devCoinFactoryABI` exports for dev Coin factory
+  - Add `devZoraLimitOrderBookAddress` and `devZoraLimitOrderBookABI` exports for dev limit order book
+  - Add `devZoraRouterAddress` and `devZoraRouterABI` exports for dev router
+  - Add `devBuySupplyWithSwapRouterHookABI` export (address empty due to zero address in deployment)
+  - Fix bug in getLimitOrdersContracts that was not filtering out dev files
+
+## 0.6.5
+
+### Patch Changes
+
+- [9391359c](https://github.com/ourzora/zora-protocol/commit/9391359c): Reduced hook code size by removing extra liquidity minting step during migration. Small leftover token amounts from rounding are now left as burned rather than being minted into the last position.
+
+## 0.6.4
+
+### Patch Changes
+
+- [3c274d9d](https://github.com/ourzora/zora-protocol/commit/3c274d9d): Created a buy supply with v4 hook, for buying initial supply of a creator coin, supporting doing a v3 and v4 swap to buy the creator coin. updated the encoding function for buying initial supply to work with the v3 to v4 swap
+
+## 0.6.3
+
+### Patch Changes
+
+- [131c719a](https://github.com/ourzora/zora-protocol/commit/131c719a): Deployed v2.2.0 of coins to Base
+- [cdaa9d25](https://github.com/ourzora/zora-protocol/commit/cdaa9d25): Fix critical security vulnerabilities with pnpm overrides
+  - Added pnpm overrides to eliminate critical vulnerabilities
+  - Fixed vitest RCE vulnerability (^2.1.9)
+  - Fixed elliptic private key extraction vulnerability (^6.6.1)
+  - Fixed ejs template injection vulnerability (^3.1.7)
+  - Fixed pbkdf2 input validation vulnerability (^3.1.3)
+  - Fixed form-data boundary generation vulnerability (^4.0.4)
+  - Fixed braces ReDoS vulnerability (^3.0.3)
+  - Fixed sha.js type checking vulnerability (^2.4.12)
+
+## 0.6.2
+
+### Patch Changes
+
+- [262d1539](https://github.com/ourzora/zora-protocol/commit/262d1539): updating deployments abis for new factory functions for coins
+
+## 0.6.1
+
+### Patch Changes
+
+- [9035ce3b](https://github.com/ourzora/zora-protocol/commit/9035ce3b): Upgrade coins factory to support creator coins
+
+## 0.6.0
+
+### Minor Changes
+
+- [73784d07](https://github.com/ourzora/zora-protocol/commit/73784d07): Deployed latest coins and hooks, including creator coins.
+
+### Patch Changes
+
+- [9adcb702](https://github.com/ourzora/zora-protocol/commit/9adcb702): Added AutoSwapper
+- [9adcb702](https://github.com/ourzora/zora-protocol/commit/9adcb702): Added uniswap QuoterV2 to protocol-deployments
+
+## 0.5.10
+
+### Patch Changes
+
+- [8cd56863](https://github.com/ourzora/zora-protocol/commit/8cd56863): BuySupplyWithSwapRouterHook supports v4 coins
+
+## 0.5.6
+
+### Patch Changes
+
+- [73e95f69](https://github.com/ourzora/zora-protocol/commit/73e95f69): Published CoinsV4 pool config encoding helper
+- [0c50e8e7](https://github.com/ourzora/zora-protocol/commit/0c50e8e7): Published uniswap v4 abis and addresses. Fixed encoding of v4 coin config
+
+## 0.5.5
+
+### Patch Changes
+
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): - Publishing new coins hooks in `@zoralabs/protocol-deployments`
+  - In coins, pulling ISwapRouter from `@zoralabs/shared-contracts`, and updated the shared interface to match the full interface of the ISwapRouter. This new interface is published in `@zoralabs/protocol-deployments`.
+  - Removed publishing of the factory addresses directly in the wagmi config of the coins package, as that's inconsistent with the rest of the packages.
+  - Updated the `@zoralabs/coins-sdk` to use `@zoralabs/protocol-deployments` for abis and addresses, which significantly reduces the dependency tree of it and has it follow the patterns of the other sdk packages.
+- [ce3022d8](https://github.com/ourzora/zora-protocol/commit/ce3022d8): Deployed latest Coins and Deployment hooks to base mainnet
+- [ce3022d8](https://github.com/ourzora/zora-protocol/commit/ce3022d8): Fix hook return value from encode hook generators
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): Added helper methods to encode data for the post deploy hooks when creating coins
+- [9ed0ce76](https://github.com/ourzora/zora-protocol/commit/9ed0ce76): Deployed latest coin factory and hooks to base-sepolia
+
+## 0.5.4
+
+### Patch Changes
+
+- [23f723dd](https://github.com/ourzora/zora-protocol/commit/23f723dd): Integrate doppler for liquidity management with uniswap v3
+
+## 0.5.4-doppler.0
+
+### Patch Changes
+
+- [96ab8907](https://github.com/ourzora/zora-protocol/commit/96ab8907): Integrate doppler for liquidity management with uniswap v3
+
+## 0.5.3
+
+### Patch Changes
+
+- [70b039ce](https://github.com/ourzora/zora-protocol/commit/70b039ce): Deployed ZoraFactory for coins to deterministic 7777777 addresses on base and base sepolia
+
+## 0.5.2
+
+### Patch Changes
+
+- [ed9f7741](https://github.com/ourzora/zora-protocol/commit/ed9f7741): Updated coin ABI for updated buy/sell return values
+
+## 0.5.1
+
+### Patch Changes
+
+- [11854bbe](https://github.com/ourzora/zora-protocol/commit/11854bbe): Updated factory impl abi to return coins purchased on deploy
+
+## 0.5.0
+
+### Minor Changes
+
+- [e1a3d68f](https://github.com/ourzora/zora-protocol/commit/e1a3d68f): Refactored coin interface imports
+
+## 0.4.2
+
+### Patch Changes
+
+- [1e10ac74](https://github.com/ourzora/zora-protocol/commit/1e10ac74): - Fixed coins package visibility
+  - Renamed export to `coinFactory*`
+
+## 0.4.1
+
+### Patch Changes
+
+- [855112de](https://github.com/ourzora/zora-protocol/commit/855112de): Add initial coins
+
 ## 0.4.0
 
 ### Minor Changes
@@ -127,7 +319,6 @@
 ### Patch Changes
 
 - [9cdd81ac](https://github.com/ourzora/zora-protocol/commit/9cdd81ac): Deployed latest version of 1155 contracts, 1155 factory, preminter, and mints manager to:
-
   - blast
   - Optimism mainnet
   - Base
@@ -319,7 +510,6 @@
 
 - 4d79b49: Deployed to zora sepolia
 - b62e471: created new package `protocol-deployments` that includes the deployed contract addresses.
-
   - 1155-contracts js no longer exports deployed addresses, just the abis
   - premint-sdk imports deployed addresses from `protocol-deployments
 

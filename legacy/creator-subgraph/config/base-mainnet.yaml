@@ -1,0 +1,43 @@
+chainid: "8453"
+network: base
+grafting:
+  base: "QmWTEsQA1GVWJ3KM7HF2dgbomJoa9mJoo6yFZACFdrJgtb"
+  block: "21374000"
+factories1155:
+  - address: "0x9b24FD165a371042e5CA81e8d066d25CAD11EDE7"
+    startBlock: "1496186"
+    version: "1"
+  - address: "0x777777C338d93e2C7adf08D102d45CA7CC4Ed021"
+    startBlock: "4784084"
+    version: "2"
+factories721:
+  - address: "0x58C3ccB2dcb9384E5AB9111CD1a5DEA916B0f33c"
+    startBlock: "1461362"
+    version: "1"
+protocolRewards:
+  - address: "0x7777777A456fF23D9b6851184472c08FBDa73e32"
+    startBlock: "2123378"
+    version: "1"
+  - address: "0x7777777F279eba3d3Ad8F4E708545291A6fDBA8B"
+    startBlock: "2336418"
+    version: "2"
+erc20Minter:
+  - address: "0x777777E8850d8D6d98De2B5f64fae401F96eFF31"
+    startBlock: "12341612"
+    version: "1"
+zoraTimedSaleStrategy:
+  - address: "0x777777722D078c97c6ad07d9f36801e653E356Ae"
+    startBlock: "17918252"
+    version: "1"
+comments:
+  - address: "0x7777777C2B3132e03a65721a41745C07170a5877"
+    startBlock: "21374810"
+    version: "1"
+cointagsFactory:
+  - address: "0x7777777BbD0b88aD5F3b5f4c89C6B60D74b9774F"
+    startBlock: "23885333"
+    version: "1"
+zoraSparks:
+  - address: "0x7777777b3eA6C126942BB14dD5C3C11D365C385D"
+    startBlock: "23920884"
+    version: "1"

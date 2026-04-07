@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/comments-contracts",
-  "version": "0.0.2",
+  "version": "0.1.0",
   "author": "oveddan",
   "license": "MIT",
   "type": "module",
@@ -19,15 +19,19 @@
     "prettier:check": "prettier --check 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "prettier:write": "prettier --write 'src/**/*.sol' 'test/**/*.sol' 'script/**/*.sol'",
     "test": "forge test -vv",
+    "abi-check:check": "../../scripts/abi-check.sh check",
+    "abi-check:generate": "../../scripts/abi-check.sh generate",
     "dev": "FOUNDRY_PROFILE=dev forge test --watch -vvv",
     "test-gas": "forge test --gas-report",
     "storage-inspect:check": "./script/storage-check.sh check ZoraTimedSaleStrategyImpl",
     "storage-inspect:generate": "./script/storage-check.sh generate ZoraTimedSaleStrategyImpl",
+    "build:contracts:minimal": "forge build --skip test --skip script --no-metadata",
     "build:sizes": "forge build src/ --sizes",
     "copy-abis": "pnpm exec bundle-abis",
     "coverage": "FOUNDRY_PROFILE=default forge coverage --report lcov",
-    "build": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
-    "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
+    "build": "forge build",
+    "build:js": "pnpm run wagmi:generate && pnpm run copy-abis && pnpm run prettier:write && tsup",
+    "wagmi:generate": "pnpm run build:contracts:minimal && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
     "update-contract-version": "pnpm exec update-contract-version"
   },
   "devDependencies": {
@@ -35,7 +39,7 @@
     "@openzeppelin/contracts-upgradeable": "5.0.2",
     "@turnkey/api-key-stamper": "^0.3.1",
     "@turnkey/http": "^2.5.1",
-    "@turnkey/viem": "^0.4.4",
+    "@turnkey/viem": "^0.6.8",
     "@types/node": "^20.1.2",
     "@wagmi/cli": "^1.0.1",
     "@zoralabs/chains": "^1.3.1",
@@ -55,7 +59,7 @@
     "tsup": "^7.2.0",
     "tsx": "^3.13.0",
     "typescript": "^5.2.2",
-    "viem": "^2.21.18"
+    "viem": "2.22.12"
   },
   "dependencies": {
     "abitype": "^1.0.2",

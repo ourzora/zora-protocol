@@ -1,0 +1,43 @@
+# Coin Queries
+
+The Coins SDK provides a comprehensive set of query functions to fetch information about coins, profiles, and related data.
+
+## Overview
+
+The query functions are divided into several categories:
+
+1. **[Coin Queries](/coins/sdk/queries/coin)**: Retrieve information on specific coins such as metadata, market data, and comments
+2. **[Profile Queries](/coins/sdk/queries/profile)**: Retrieve information associated with users/wallets like holdings and activity
+3. **[Explore Queries](/coins/sdk/queries/explore)**: Retrieve information about all coins (new, trending, top gainers, etc.)
+4. **[Leaderboard](/coins/sdk/queries/leaderboard)**: Featured creators and weekly trader leaderboard (defaults to current week/year if not specified)
+
+## Using the REST API
+
+The Coins SDK can be used from any programming language via the **[Public REST API](/coins/sdk/public-rest-api)**. This includes:
+
+- Interactive API documentation with live testing
+- Authentication with API keys
+- Code examples in multiple languages (Python, Go, Ruby, etc.)
+- OpenAPI specification
+
+For JavaScript/TypeScript usage, continue reading below. For other languages, see the [Public REST API documentation](/coins/sdk/public-rest-api).
+
+## API Key Setup
+
+Before using the API queries in a high-usage production environment, set up an API key:
+
+```ts twoslash
+import { setApiKey } from "@zoralabs/coins-sdk";
+
+// Set up your API key
+setApiKey("your-api-key-here");
+```
+
+To obtain an API key:
+
+1. Log in or create an account on [Zora](https://zora.co)
+2. Navigate to [Developer Settings](https://zora.co/settings/developer)
+3. Create an API key
+4. Use the API key in the SDK
+
+For detailed authentication instructions and REST API usage, see the [Public REST API documentation](/coins/sdk/public-rest-api).

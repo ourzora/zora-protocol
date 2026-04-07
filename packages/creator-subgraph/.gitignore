@@ -1,5 +1,0 @@
-build/
-generated/
-.DS_Store
-subgraph.yaml
-graph-abis/**/*.json

@@ -17,10 +17,13 @@ import {
   zoraTimedSaleStrategyImplABI,
   royaltiesABI,
   secondarySwapABI,
+} from "@zoralabs/erc20z";
+import {
   iwethABI,
   iSwapRouterABI,
   iUniswapV3PoolABI,
-} from "@zoralabs/erc20z";
+  iQuoterV2ABI,
+} from "@zoralabs/shared-contracts";
 import {
   commentsImplABI,
   callerAndCommenterImplABI,
@@ -31,6 +34,22 @@ import {
   cointagFactoryImplABI,
   cointagImplABI,
 } from "@zoralabs/cointags-contracts";
+import {
+  zoraFactoryImplABI,
+  baseCoinABI,
+  buySupplyWithV4SwapHookABI,
+  iPoolConfigEncodingABI,
+  iPermit2ABI,
+  iPoolManagerABI,
+  iUniversalRouterABI,
+  creatorCoinABI,
+  autoSwapperABI,
+  zoraV4CoinHookABI,
+} from "@zoralabs/coins";
+import {
+  swapWithLimitOrdersABI,
+  zoraLimitOrderBookABI,
+} from "@zoralabs/limit-orders";
 
 type Address = `0x${string}`;
 
@@ -103,13 +122,20 @@ const toConfig = (
   }));
 };
 
+const legacyBaseFolder = "../../legacy/";
+
 const get1155Contracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../1155-deployments/addresses");
+  const addressesFiles = readdirSync(
+    `${legacyBaseFolder}/1155-contracts/addresses`,
+  );
 
   const protocolRewardsConfig = JSON.parse(
-    readFileSync("../protocol-rewards/deterministicConfig.json", "utf-8"),
+    readFileSync(
+      `${legacyBaseFolder}/protocol-rewards/deterministicConfig.json`,
+      "utf-8",
+    ),
   ) as {
     expectedAddress: Address;
   };
@@ -120,7 +146,10 @@ const get1155Contracts = (): ContractConfig[] => {
       chainId: parseInt(file.split(".")[0]),
       config: {
         ...(JSON.parse(
-          readFileSync(`../1155-deployments/addresses/${file}`, "utf-8"),
+          readFileSync(
+            `${legacyBaseFolder}/1155-contracts/addresses/${file}`,
+            "utf-8",
+          ),
         ) as {
           FIXED_PRICE_SALE_STRATEGY: Address;
           MERKLE_MINT_SALE_STRATEGY: Address;
@@ -215,6 +244,9 @@ const getSharedAddresses = () => {
       ) as {
         WETH: Address;
         UNISWAP_SWAP_ROUTER: Address;
+        UNISWAP_UNIVERSAL_ROUTER: Address;
+        UNISWAP_PERMIT2: Address;
+        UNISWAP_QUOTER_V2: Address;
       },
     };
   });
@@ -235,6 +267,38 @@ const getSharedAddresses = () => {
     storedConfigs,
   });
 
+  addAddress({
+    abi: iQuoterV2ABI,
+    addresses,
+    configKey: "UNISWAP_QUOTER_V2",
+    contractName: "UniswapQuoterV2",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iPermit2ABI,
+    addresses,
+    configKey: "UNISWAP_PERMIT2",
+    contractName: "Permit2",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iPoolManagerABI,
+    addresses,
+    configKey: "UNISWAP_V4_POOL_MANAGER",
+    contractName: "UniswapV4PoolManager",
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: iUniversalRouterABI,
+    addresses,
+    configKey: "UNISWAP_UNIVERSAL_ROUTER",
+    contractName: "UniversalRouter",
+    storedConfigs,
+  });
+
   return [
     ...toConfig(addresses),
     {
@@ -246,13 +310,13 @@ const getSharedAddresses = () => {
 
 const getSparksAddresses = () => {
   const addresses: Addresses = {};
-  const addressesFiles = readdirSync("../sparks/addresses");
+  const addressesFiles = readdirSync(`${legacyBaseFolder}/sparks/addresses`);
 
   const storedConfigs = addressesFiles.map((file) => {
     return {
       chainId: parseInt(file.split(".")[0]),
       config: JSON.parse(
-        readFileSync(`../sparks/addresses/${file}`, "utf-8"),
+        readFileSync(`${legacyBaseFolder}/sparks/addresses/${file}`, "utf-8"),
       ) as {
         SPARKS_MANAGER: Address;
         SPARKS_1155: Address;
@@ -355,14 +419,14 @@ const getSmartWalletContracts = () => {
 const getErc20zContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../erc20z/addresses");
+  const addressesFiles = readdirSync(`${legacyBaseFolder}/erc20z/addresses`);
 
   const storedConfigs = addressesFiles.map((file) => {
     return {
       chainId: parseInt(file.split(".")[0]),
       config: {
         ...(JSON.parse(
-          readFileSync(`../erc20z/addresses/${file}`, "utf-8"),
+          readFileSync(`${legacyBaseFolder}/erc20z/addresses/${file}`, "utf-8"),
         ) as {
           SWAP_HELPER: Address;
           ERC20Z: Address;
@@ -453,13 +517,13 @@ const getCommentsContracts = (): ContractConfig[] => {
 const getCointagsContracts = (): ContractConfig[] => {
   const addresses: Addresses = {};
 
-  const addressesFiles = readdirSync("../cointags/addresses");
+  const addressesFiles = readdirSync(`${legacyBaseFolder}/cointags/addresses`);
 
   const storedConfigs = addressesFiles.map((file) => {
     return {
       chainId: parseInt(file.split(".")[0]),
       config: JSON.parse(
-        readFileSync(`../cointags/addresses/${file}`, "utf-8"),
+        readFileSync(`${legacyBaseFolder}/cointags/addresses/${file}`, "utf-8"),
       ) as {
         COINTAG_FACTORY: Address;
       },
@@ -483,6 +547,127 @@ const getCointagsContracts = (): ContractConfig[] => {
   ];
 };
 
+// Helper to get coins deployment stored configs
+const getCoinsDeploymentConfigs = <T>({ dev }: { dev: boolean }) => {
+  const addressesFiles = readdirSync("../coins-deployments/addresses", {
+    withFileTypes: true,
+  })
+    .filter((dirent) => dirent.isFile())
+    .map((dirent) => dirent.name);
+
+  const filteredFiles = dev
+    ? addressesFiles.filter((file) => file.includes("_dev"))
+    : addressesFiles.filter((file) => !file.includes("dev"));
+
+  return filteredFiles.map((file) => ({
+    // Dev files: "8453_dev.json" -> split("_")[0]
+    // Prod files: "8453.json" -> split(".")[0]
+    chainId: parseInt(dev ? file.split("_")[0] : file.split(".")[0]),
+    config: JSON.parse(
+      readFileSync(`../coins-deployments/addresses/${file}`, "utf-8"),
+    ) as T,
+  }));
+};
+
+// Shared coin errors used by both coins and limit orders
+const coinErrors = [
+  ...extractErrors(baseCoinABI),
+  ...extractErrors(zoraV4CoinHookABI),
+];
+
+const coinErrorsWithLob = [
+  ...coinErrors,
+  // since the hook is calling fill on lob, we may get an lob error
+  ...extractErrors(zoraLimitOrderBookABI),
+];
+
+const makeCoinsContracts = ({ dev }: { dev: boolean }): ContractConfig[] => {
+  const addresses: Addresses = {};
+  const prefix = dev ? "Dev" : "";
+
+  const storedConfigs = getCoinsDeploymentConfigs<{
+    ZORA_FACTORY: Address;
+    BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK: Address;
+  }>({ dev });
+
+  addAddress({
+    abi: [
+      ...zoraFactoryImplABI,
+      ...extractErrors(buySupplyWithV4SwapHookABI),
+      ...coinErrorsWithLob,
+    ],
+    addresses,
+    configKey: "ZORA_FACTORY",
+    contractName: `${prefix}CoinFactory`,
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: buySupplyWithV4SwapHookABI,
+    addresses,
+    configKey: "BUY_SUPPLY_WITH_SWAP_ROUTER_HOOK",
+    contractName: `${prefix}BuySupplyWithSwapRouterHook`,
+    storedConfigs,
+  });
+
+  // Only include ABI-only contracts for production (not dev)
+  if (!dev) {
+    return [
+      ...toConfig(addresses),
+      { abi: baseCoinABI, name: "Coin" },
+      { abi: autoSwapperABI, name: "AutoSwapper" },
+      { abi: creatorCoinABI, name: "CoinV4" },
+      { abi: iPoolConfigEncodingABI, name: "PoolConfigEncoding" },
+    ];
+  }
+
+  return toConfig(addresses);
+};
+
+const makeLimitOrdersContracts = ({
+  dev,
+}: {
+  dev: boolean;
+}): ContractConfig[] => {
+  const addresses: Addresses = {};
+  const prefix = dev ? "Dev" : "";
+
+  const storedConfigs = getCoinsDeploymentConfigs<{
+    ZORA_LIMIT_ORDER_BOOK: Address;
+    ZORA_ROUTER: Address;
+  }>({ dev });
+
+  const limitOrderBookAbiWithErrors = [...zoraLimitOrderBookABI, ...coinErrors, ...extractErrors(iPoolManagerABI)];
+
+  addAddress({
+    abi: limitOrderBookAbiWithErrors,
+    addresses,
+    configKey: "ZORA_LIMIT_ORDER_BOOK",
+    contractName: `${prefix}ZoraLimitOrderBook`,
+    storedConfigs,
+  });
+
+  addAddress({
+    abi: [
+      ...swapWithLimitOrdersABI,
+      ...extractErrors(limitOrderBookAbiWithErrors),
+      ...extractErrors(iUniversalRouterABI),
+    ],
+    addresses,
+    configKey: "ZORA_ROUTER",
+    contractName: `${prefix}ZoraRouter`,
+    storedConfigs,
+  });
+
+  return toConfig(addresses);
+};
+
+const getCoinsContracts = () => makeCoinsContracts({ dev: false });
+const getLimitOrdersContracts = () => makeLimitOrdersContracts({ dev: false });
+const getDevCoinsContracts = () => makeCoinsContracts({ dev: true });
+const getDevLimitOrdersContracts = () =>
+  makeLimitOrdersContracts({ dev: true });
+
 export default defineConfig({
   out: "./generated/wagmi.ts",
   contracts: [
@@ -493,6 +678,10 @@ export default defineConfig({
     ...getSparksAddresses(),
     ...getSmartWalletContracts(),
     ...getCointagsContracts(),
+    ...getCoinsContracts(),
+    ...getLimitOrdersContracts(),
+    ...getDevCoinsContracts(),
+    ...getDevLimitOrdersContracts(),
     {
       abi: iPremintDefinitionsABI,
       name: "IPremintDefinitions",

@@ -1,0 +1,127 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.13;
+
+import {ZoraV4CoinHook} from "../../src/hooks/ZoraV4CoinHook.sol";
+import {IPoolManager, PoolKey} from "@uniswap/v4-core/src/interfaces/IPoolManager.sol";
+import {IDeployedCoinVersionLookup} from "../../src/interfaces/IDeployedCoinVersionLookup.sol";
+import {IZoraLimitOrderBookCoinsInterface} from "../../src/interfaces/IZoraLimitOrderBookCoinsInterface.sol";
+import {IZoraHookRegistry} from "../../src/interfaces/IZoraHookRegistry.sol";
+import {IHasRewardsRecipients} from "../../src/interfaces/IHasRewardsRecipients.sol";
+import {Currency} from "@uniswap/v4-core/src/types/Currency.sol";
+import {SwapParams} from "@uniswap/v4-core/src/types/PoolOperation.sol";
+import {BalanceDelta} from "@uniswap/v4-core/src/types/BalanceDelta.sol";
+import {TransientStateLibrary} from "@uniswap/v4-core/src/libraries/TransientStateLibrary.sol";
+import {CoinCommon} from "../../src/libs/CoinCommon.sol";
+import {V4Liquidity} from "../../src/libs/V4Liquidity.sol";
+import {BaseHook} from "@uniswap/v4-periphery/src/utils/BaseHook.sol";
+import {ICoin, IHasSwapPath, IHasCoinType} from "../../src/interfaces/ICoin.sol";
+import {UniV4SwapToCurrency} from "../../src/libs/UniV4SwapToCurrency.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {CoinRewardsV4} from "../../src/libs/CoinRewardsV4.sol";
+import {IHooksUpgradeGate} from "../../src/interfaces/IHooksUpgradeGate.sol";
+import {ITrustedMsgSenderProviderLookup} from "../../src/interfaces/ITrustedMsgSenderProviderLookup.sol";
+
+/// @dev Test util - meant to be able to etched where a normal zora hook is, to gather the fees from swaps but not distribute them
+contract FeeEstimatorHook is ZoraV4CoinHook {
+    struct FeeEstimatorState {
+        uint128 fees0;
+        uint128 fees1;
+        Currency afterSwapCurrency;
+        uint128 afterSwapCurrencyAmount;
+        BalanceDelta lastDelta;
+        SwapParams lastSwapParams;
+        uint256 currencyBalanceChange;
+        uint256 coinBalanceChange;
+    }
+
+    constructor(
+        IPoolManager _poolManager,
+        IDeployedCoinVersionLookup _coinVersionLookup,
+        ITrustedMsgSenderProviderLookup trustedMsgSenderLookup,
+        IHooksUpgradeGate upgradeGate,
+        IZoraLimitOrderBookCoinsInterface zoraLimitOrderBook,
+        IZoraHookRegistry zoraHookRegistry
+    ) ZoraV4CoinHook(_poolManager, _coinVersionLookup, trustedMsgSenderLookup, upgradeGate, zoraLimitOrderBook, zoraHookRegistry) {}
+
+    FeeEstimatorState public feeState;
+
+    function getFeeState() public view returns (FeeEstimatorState memory) {
+        return feeState;
+    }
+
+    function _afterSwap(
+        address,
+        PoolKey calldata key,
+        SwapParams calldata params,
+        BalanceDelta _delta,
+        bytes calldata
+    ) internal override returns (bytes4, int128) {
+        bytes32 poolKeyHash = CoinCommon.hashPoolKey(key);
+
+        // get the coin address and positions for the pool key; they must have been set in the afterInitialize callback
+        address coin = poolCoins[poolKeyHash].coin;
+        require(coin != address(0), NoCoinForHook(key));
+
+        {
+            uint256 coinBalanceBefore = IERC20(coin).balanceOf(address(this));
+            uint256 currencyBalanceBefore = IERC20(ICoin(coin).currency()).balanceOf(address(this));
+
+            int128 fee0;
+            int128 fee1;
+
+            (fee0, fee1) = V4Liquidity.collectFees(poolManager, key, poolCoins[poolKeyHash].positions);
+
+            IHasCoinType.CoinType coinType = CoinRewardsV4.getCoinType(IHasRewardsRecipients(coin));
+            (uint128 remainingFee0, uint128 remainingFee1) = CoinRewardsV4.mintLpReward(poolManager, key, fee0, fee1, coinType);
+
+            // Execute the swap path to estimate the payout amount, but don't distribute
+            // This mirrors the logic in ZoraV4CoinHook._afterSwap
+            IHasSwapPath.PayoutSwapPath memory payoutSwapPath = IHasSwapPath(coin).getPayoutSwapPath(coinVersionLookup);
+
+            // Execute swap and track all deltas that result
+            UniV4SwapToCurrency.swapToPath(poolManager, remainingFee0, remainingFee1, payoutSwapPath.currencyIn, payoutSwapPath.path);
+
+            // Take all positive deltas and sum them to get total payout amount
+            uint128 totalPayout = 0;
+
+            // Check currencyIn for positive delta
+            int256 deltaIn = TransientStateLibrary.currencyDelta(poolManager, address(this), payoutSwapPath.currencyIn);
+            if (deltaIn > 0) {
+                uint128 amount = uint128(uint256(deltaIn));
+                poolManager.take(payoutSwapPath.currencyIn, address(this), amount);
+                totalPayout += amount;
+            }
+
+            // Check all intermediate currencies for positive deltas
+            for (uint256 i = 0; i < payoutSwapPath.path.length; i++) {
+                Currency intermediateCurrency = payoutSwapPath.path[i].intermediateCurrency;
+                int256 delta = TransientStateLibrary.currencyDelta(poolManager, address(this), intermediateCurrency);
+                if (delta > 0) {
+                    uint128 amount = uint128(uint256(delta));
+                    poolManager.take(intermediateCurrency, address(this), amount);
+                    totalPayout += amount;
+                    // Track the last positive currency as the payout currency
+                    feeState.afterSwapCurrency = intermediateCurrency;
+                }
+            }
+
+            feeState.afterSwapCurrencyAmount = totalPayout;
+
+            feeState.fees0 += uint128(fee0);
+            feeState.fees1 += uint128(fee1);
+
+            uint256 coinBalanceAfter = IERC20(coin).balanceOf(address(this));
+            uint256 currencyBalanceAfter = IERC20(ICoin(coin).currency()).balanceOf(address(this));
+
+            feeState.coinBalanceChange = coinBalanceAfter - coinBalanceBefore;
+            feeState.currencyBalanceChange = currencyBalanceAfter - currencyBalanceBefore;
+        }
+
+        feeState.lastDelta = _delta;
+        feeState.lastSwapParams = params;
+
+        return (BaseHook.afterSwap.selector, 0);
+    }
+
+    function _distributeMarketRewards(Currency currency, uint128 fees, IHasRewardsRecipients coin, address tradeReferrer) internal override {}
+}

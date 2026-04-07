@@ -120,10 +120,27 @@ contract Comments_mintAndCommentTest is Test {
         });
     }
 
-    function test_delegateComment_revertsWhenNotOwnerOrCreator() public {
+    function test_delegateComment_nonOwnerCanCommentWithSpark() public {
         address notOwner = makeAddr("notOwner");
         vm.prank(notOwner);
-        vm.expectRevert(IComments.NotTokenHolderOrAdmin.selector);
+
         mockDelegateCommenter.forwardComment(address(mock1155), tokenId1, "test");
+    }
+
+    function test_delegateComment_canCommentWithZeroSparks() public {
+        // Delegate commenter should be able to comment with 0 spark value
+        vm.prank(commenter);
+        mockDelegateCommenter.forwardComment(address(mock1155), tokenId1, "test comment with 0 sparks");
+
+        // Verify the comment was created successfully
+        IComments.CommentIdentifier memory expectedCommentIdentifier = IComments.CommentIdentifier({
+            commenter: commenter,
+            contractAddress: address(mock1155),
+            tokenId: tokenId1,
+            nonce: bytes32(0)
+        });
+
+        (, bool exists) = comments.hashAndCheckCommentExists(expectedCommentIdentifier);
+        assertTrue(exists, "Comment should exist");
     }
 }
