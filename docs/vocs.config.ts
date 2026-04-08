@@ -13,6 +13,11 @@ export default defineConfig({
   rootDir: ".",
   topNav: [
     {
+      text: "Agents ᴺᴱᵂ",
+      link: "/agents",
+      match: "/agents",
+    },
+    {
       text: "Coins SDK",
       link: "/coins/sdk",
       match: "/coins/sdk",
@@ -20,7 +25,7 @@ export default defineConfig({
     {
       text: "Coins Protocol",
       link: "/coins",
-      match: "/coins",
+      match: "/coins/contracts",
     },
     {
       text: "Changelogs",
@@ -104,6 +109,10 @@ export default defineConfig({
           {
             text: "Introduction",
             link: "/coins",
+          },
+          {
+            text: "Agents  ᴺᴱᵂ",
+            link: "/agents",
           },
           {
             text: "SDK",

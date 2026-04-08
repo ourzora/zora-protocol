@@ -1,0 +1,41 @@
+# ZORA Docs
+
+> Documentation for the ZORA Coins Protocol — a protocol for creating and trading ERC-20 media coins on Base.
+
+## Coins Protocol
+
+- [Introduction](https://docs.zora.co/coins): Overview of the ZORA Coins Protocol, coin types (creator, content, trend), fee structures, and how trading works through Uniswap V4 pools.
+
+## Coins SDK
+
+- [Getting Started](https://docs.zora.co/coins/sdk): Installation, setup, and API key configuration for the @zoralabs/coins-sdk TypeScript library.
+- [Create Coin](https://docs.zora.co/coins/sdk/create-coin): Deploy new ERC-20 coins using createCoin() and createCoinCall(), with parameters for metadata, currency, and market cap.
+- [Metadata Builder](https://docs.zora.co/coins/sdk/metadata-builder): Build and upload coin metadata to IPFS using the SDK's built-in metadata builder and uploader utilities.
+- [Trade Coin](https://docs.zora.co/coins/sdk/trade-coin): Swap between ETH and ERC-20 coins using tradeCoin() with permit-based gasless approvals, slippage control, and multi-hop routing.
+- [Update Coin](https://docs.zora.co/coins/sdk/update-coin): Update coin metadata URIs and payout recipients using updateCoinURI() and setPayoutRecipient().
+- [Coin Queries Overview](https://docs.zora.co/coins/sdk/queries): Overview of query categories for coins, profiles, explore feeds, and leaderboards.
+- [Coin Details](https://docs.zora.co/coins/sdk/queries/coin): Query individual coins with getCoin(), batch with getCoins(), plus getCoinHolders(), getCoinSwaps(), and getCoinComments().
+- [Profile Queries](https://docs.zora.co/coins/sdk/queries/profile): Query user profiles, created coins, and balances with getProfile(), getProfileCoins(), and getProfileBalances().
+- [Explore Coins](https://docs.zora.co/coins/sdk/queries/explore): Discover coins by top gainers, volume, market cap, newest, last traded, and creator coins.
+- [Onchain Queries](https://docs.zora.co/coins/sdk/queries/onchain): Direct onchain data queries for coin state and pool information.
+
+## Coins Contracts
+
+- [Getting Started](https://docs.zora.co/coins/contracts): Overview of the Coins contract system and how to interact with it.
+- [Creating a Coin](https://docs.zora.co/coins/contracts/creating-a-coin): Contract-level guide for deploying coins via the ZoraFactory, including deploy(), deployCreatorCoin(), and deployTrendCoin() functions.
+- [Trend Coins](https://docs.zora.co/coins/contracts/trend-coins): Lightweight coin type for trending topics with 0.01% fees, case-insensitive tickers, and full supply in the liquidity pool.
+- [Architecture](https://docs.zora.co/coins/contracts/architecture): Technical overview of how factory, coin, and hook contracts interact on Uniswap V4.
+- [Hook System](https://docs.zora.co/coins/contracts/hook): Unified ZoraV4CoinHook contract handling fee collection, sniper tax, and reward distribution.
+- [Hook Registry](https://docs.zora.co/coins/contracts/hook-registry): Canonical registry of Zora Uniswap V4 hook addresses by chain.
+- [Coin Factory](https://docs.zora.co/coins/contracts/factory): ZoraFactory at 0x777777751622c0d3258f214F9DF38E35BF45baF3 with deploy functions and deterministic address prediction.
+- [Coin Contract](https://docs.zora.co/coins/contracts/coin): BaseCoinV4 implementation, ERC-20 interface, owner management, and Uniswap V4 pool integration.
+- [Coin Metadata](https://docs.zora.co/coins/contracts/metadata): EIP-7572 metadata standard, JSON schema, and IPFS URI requirements for coin metadata.
+- [Protocol Rewards](https://docs.zora.co/coins/contracts/rewards): Fee structure (1% for creator/content coins, 0.01% for trend coins), reward splits between creator, platform referral, trade referral, and protocol.
+- [Earning Rewards as a Developer](https://docs.zora.co/coins/contracts/earning-referral-rewards): How to earn platform referral (20%) and trade referral (4%) rewards by integrating coin creation and trading.
+- [Liquidity Migration](https://docs.zora.co/coins/contracts/liquidity-migration): System for upgrading coins to new hook versions while preserving liquidity.
+- [Coins License](https://docs.zora.co/coins/license): ZORA-DELAYED-OSL-v1 license terms for Coins protocol source code.
+
+## Optional
+
+- [Coins Contracts Changelog](https://docs.zora.co/changelogs/coins): Release history for @zoralabs/coins contract packages.
+- [Coins SDK Changelog](https://docs.zora.co/changelogs/coins-sdk): Release history for @zoralabs/coins-sdk.
