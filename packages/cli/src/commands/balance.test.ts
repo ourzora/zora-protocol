@@ -203,6 +203,7 @@ describe("balance command", () => {
       rank: 1,
       name: "Test Coin",
       symbol: "TEST",
+      type: "post",
       coinType: "CONTENT",
       chainId: 8453,
       address: "0x123",

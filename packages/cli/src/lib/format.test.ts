@@ -13,6 +13,8 @@ import {
   formatAmountDisplay,
   computeMarketCapChange24h,
   formatUsd,
+  formatCoinType,
+  formatCoinName,
 } from "./format.js";
 
 describe("formatCompactUsd", () => {
@@ -358,5 +360,69 @@ describe("truncateAddress", () => {
     expect(truncateAddress("0xabcdefabcdefabcdefabcdefabcdefabcdefabcd")).toBe(
       "0xabcd\u2026abcd",
     );
+  });
+});
+
+describe("formatCoinType", () => {
+  it("maps CONTENT to post", () => {
+    expect(formatCoinType("CONTENT")).toBe("post");
+  });
+
+  it("maps CREATOR to creator-coin", () => {
+    expect(formatCoinType("CREATOR")).toBe("creator-coin");
+  });
+
+  it("maps TREND to trend", () => {
+    expect(formatCoinType("TREND")).toBe("trend");
+  });
+
+  it("returns empty string for undefined", () => {
+    expect(formatCoinType(undefined)).toBe("");
+  });
+
+  it("returns raw value for unknown types", () => {
+    expect(formatCoinType("UNKNOWN_TYPE")).toBe("UNKNOWN_TYPE");
+  });
+});
+
+describe("formatCoinName", () => {
+  it("returns name when present", () => {
+    expect(formatCoinName({ name: "My Coin" })).toBe("My Coin");
+  });
+
+  it("returns Unknown for undefined coin", () => {
+    expect(formatCoinName(undefined)).toBe("Unknown");
+  });
+
+  it("returns Unknown for coin with no name", () => {
+    expect(formatCoinName({})).toBe("Unknown");
+  });
+
+  it("returns truncated address for CONTENT coin without name", () => {
+    expect(
+      formatCoinName({
+        coinType: "CONTENT",
+        address: "0x1234567890abcdef1234567890abcdef12345678",
+      }),
+    ).toBe("0x1234\u20265678");
+  });
+
+  it("returns name for CONTENT coin that has a name", () => {
+    expect(
+      formatCoinName({
+        name: "My Post",
+        coinType: "CONTENT",
+        address: "0x1234567890abcdef1234567890abcdef12345678",
+      }),
+    ).toBe("My Post");
+  });
+
+  it("does not truncate address for non-CONTENT coins", () => {
+    expect(
+      formatCoinName({
+        coinType: "CREATOR",
+        address: "0x1234567890abcdef1234567890abcdef12345678",
+      }),
+    ).toBe("Unknown");
   });
 });

@@ -14,6 +14,7 @@ import type {
   WalletBalanceJson,
 } from "../lib/wallet-balances.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
+import { copyToClipboard } from "../lib/clipboard.js";
 import type { PageInfo } from "../lib/types.js";
 
 type BalanceMode = "full" | "wallet" | "coins";
@@ -62,6 +63,8 @@ const BalanceView = ({
     useAutoRefresh(intervalSeconds, autoRefresh);
   const [manualRefreshCount, setManualRefreshCount] = useState(0);
   const hasLoadedOnce = useRef(false);
+  const [selectedRow, setSelectedRow] = useState(0);
+  const [copyFeedback, setCopyFeedback] = useState<string | null>(null);
 
   const load = useCallback(
     async (cursor?: string) => {
@@ -88,12 +91,42 @@ const BalanceView = ({
     load(currentCursor);
   }, [load, refreshCount, manualRefreshCount, currentCursor]);
 
+  const showCoins = mode === "full" || mode === "coins";
+
+  useEffect(() => {
+    if (data && showCoins) {
+      setSelectedRow((r) =>
+        Math.min(r, Math.max(0, data.rankedBalances.length - 1)),
+      );
+    }
+  }, [data, showCoins]);
+
   useInput((input, key) => {
     if (input === "q" || key.escape) {
       exit();
       return;
     }
     if (loading) return;
+
+    if (showCoins && data && data.rankedBalances.length > 0) {
+      if (key.upArrow || input === "k") {
+        setSelectedRow((r) => Math.max(0, r - 1));
+        return;
+      }
+      if (key.downArrow || input === "j") {
+        setSelectedRow((r) => Math.min(data.rankedBalances.length - 1, r + 1));
+        return;
+      }
+      if (input === "c" || key.return) {
+        const coin = data.rankedBalances[selectedRow]?.coin;
+        if (coin?.address) {
+          const ok = copyToClipboard(coin.address);
+          setCopyFeedback(ok ? "Copied!" : "Copy failed");
+          setTimeout(() => setCopyFeedback(null), 1500);
+        }
+        return;
+      }
+    }
 
     if (input === "r") {
       triggerManualRefresh();
@@ -110,6 +143,7 @@ const BalanceView = ({
       setCursorHistory((prev) => [...prev, currentCursor]);
       setCurrentCursor(data!.pageInfo!.endCursor);
       setPage((p) => p + 1);
+      setSelectedRow(0);
     }
 
     if ((input === "p" || key.leftArrow) && canGoPrev) {
@@ -117,6 +151,7 @@ const BalanceView = ({
       setCursorHistory((h) => h.slice(0, -1));
       setCurrentCursor(prev);
       setPage((p) => p - 1);
+      setSelectedRow(0);
     }
   });
 
@@ -149,14 +184,18 @@ const BalanceView = ({
   if (!data) return null;
 
   const hints: string[] = [];
+  if (showCoins && data.rankedBalances.length > 0) {
+    hints.push("\u2191\u2193 select");
+    hints.push("enter/c copy address");
+  }
   if (paginated && cursorHistory.length > 0) hints.push("\u2190 prev");
   if (paginated && data?.pageInfo?.hasNextPage) hints.push("\u2192 next");
   hints.push(autoRefresh ? `r refresh (${secondsUntilRefresh}s)` : "r refresh");
   hints.push("q quit");
-  const footer = hints.join("  \u00b7  ");
+  const footer =
+    hints.join("  \u00b7  ") + (copyFeedback ? `  ${copyFeedback}` : "");
 
   const showWallet = mode === "full" || mode === "wallet";
-  const showCoins = mode === "full" || mode === "coins";
 
   return (
     <Box flexDirection="column">
@@ -197,6 +236,7 @@ const BalanceView = ({
               ? `Page ${page} \u00b7 ${data.rankedBalances.length} result${data.rankedBalances.length !== 1 ? "s" : ""}`
               : `${data.rankedBalances.length} of ${data.total}`
           }
+          selectedRow={selectedRow}
         />
       ) : null}
       <Box paddingLeft={1} paddingBottom={1}>

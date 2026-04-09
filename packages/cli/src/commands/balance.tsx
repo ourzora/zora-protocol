@@ -11,7 +11,7 @@ import {
 import { renderOnce, renderLive } from "../lib/render.js";
 import { BalanceView, type BalanceData } from "../components/BalanceView.js";
 import { Table } from "../components/table.js";
-import { computeMarketCapChange24h } from "../lib/format.js";
+import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
 import { resolveAccount } from "../lib/wallet.js";
 import {
   parseRawBalance,
@@ -45,6 +45,7 @@ type FormattedBalanceJson = {
   rank: number;
   name: string | null;
   symbol: string | null;
+  type: string | null;
   coinType: string | null;
   chainId: number | null;
   address: string | null;
@@ -110,6 +111,7 @@ const formatBalanceJson = (
     rank,
     name: balance.coin?.name ?? null,
     symbol: balance.coin?.symbol ?? null,
+    type: formatCoinType(balance.coin?.coinType) || null,
     coinType: balance.coin?.coinType ?? null,
     chainId: balance.coin?.chainId ?? null,
     address: balance.coin?.address ?? null,

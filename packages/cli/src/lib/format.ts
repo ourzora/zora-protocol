@@ -1,5 +1,6 @@
 import { format, formatDistanceStrict } from "date-fns";
 import { formatUnits } from "viem";
+import { COIN_TYPE_DISPLAY } from "./types.js";
 
 const ANSI_CODES = {
   dim: ["\x1b[2m", "\x1b[22m"],
@@ -146,3 +147,20 @@ export function computeMarketCapChange24h(
 
 export const truncateAddress = (address: string) =>
   `${address.slice(0, 6)}\u2026${address.slice(-4)}`;
+
+export function formatCoinType(coinType?: string): string {
+  if (!coinType) return "";
+  return COIN_TYPE_DISPLAY[coinType] ?? coinType;
+}
+
+export function formatCoinName(coin?: {
+  name?: string;
+  address?: string;
+  coinType?: string;
+}): string {
+  if (!coin) return "Unknown";
+  if (coin.coinType === "CONTENT" && !coin.name && coin.address) {
+    return truncateAddress(coin.address);
+  }
+  return coin.name ?? "Unknown";
+}

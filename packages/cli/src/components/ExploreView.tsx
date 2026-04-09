@@ -5,12 +5,13 @@ import { Table, type Column } from "./table.js";
 import {
   formatCompactUsd,
   formatMcapChange,
+  formatCoinType,
+  formatCoinName,
   truncateAddress,
 } from "../lib/format.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
-  COIN_TYPE_DISPLAY,
   type SortOption,
   type TypeOption,
   type CoinNode,
@@ -24,7 +25,7 @@ const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   {
     header: "Name",
     width: 20,
-    accessor: (c) => c.name ?? "Unknown",
+    accessor: (c) => formatCoinName(c),
   },
   {
     header: "Address",
@@ -34,7 +35,7 @@ const COLUMNS: Column<CoinNode & { rank: number }>[] = [
   {
     header: "Type",
     width: 14,
-    accessor: (c) => COIN_TYPE_DISPLAY[c.coinType ?? ""] ?? c.coinType ?? "",
+    accessor: (c) => formatCoinType(c.coinType),
   },
   {
     header: "Market Cap",

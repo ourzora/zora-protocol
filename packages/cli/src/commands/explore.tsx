@@ -33,12 +33,16 @@ import { apiErrorMessage } from "../lib/errors.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
-  COIN_TYPE_DISPLAY,
   type SortOption,
   type TypeOption,
   type CoinNode,
 } from "../lib/types.js";
-import { formatCompactUsd, formatMcapChange } from "../lib/format.js";
+import {
+  formatCompactUsd,
+  formatMcapChange,
+  formatCoinType,
+  formatCoinName,
+} from "../lib/format.js";
 import { renderLive, renderOnce } from "../lib/render.js";
 import { Table, type Column } from "../components/table.js";
 import {
@@ -134,9 +138,7 @@ const formatExploreCoinJson = (
   const priceUsd = node.tokenPrice?.priceInUsdc
     ? Number(node.tokenPrice.priceInUsdc)
     : null;
-  const coinType = node.coinType
-    ? (COIN_TYPE_DISPLAY[node.coinType] ?? node.coinType)
-    : null;
+  const coinType = formatCoinType(node.coinType) || null;
 
   const socials = node.creatorProfile?.socialAccounts;
   const socialAccounts: FormattedSocialAccounts | null = socials
@@ -210,12 +212,12 @@ export const QUERY_MAP: Record<
 
 const STATIC_COLUMNS: Column<CoinNode & { rank: number }>[] = [
   { header: "#", width: 4, accessor: (c) => String(c.rank) },
-  { header: "Name", width: 20, accessor: (c) => c.name ?? "Unknown" },
+  { header: "Name", width: 20, accessor: (c) => formatCoinName(c) },
   { header: "Address", width: 48, accessor: (c) => c.address ?? "" },
   {
     header: "Type",
     width: 14,
-    accessor: (c) => COIN_TYPE_DISPLAY[c.coinType ?? ""] ?? c.coinType ?? "",
+    accessor: (c) => formatCoinType(c.coinType),
   },
   {
     header: "Market Cap",

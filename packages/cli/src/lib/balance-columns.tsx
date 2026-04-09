@@ -1,5 +1,11 @@
 import type { Column } from "../components/table.js";
-import { formatCompactUsd, formatMcapChange } from "./format.js";
+import {
+  formatCompactUsd,
+  formatMcapChange,
+  formatCoinType,
+  formatCoinName,
+  truncateAddress,
+} from "./format.js";
 import { formatBalanceAsUsd, formatBalance } from "./balance-format.js";
 import type { WalletBalance } from "./wallet-balances.js";
 
@@ -54,14 +60,19 @@ const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
   { header: "#", width: 5, accessor: (row) => String(row.rank) },
   {
     header: "Name",
-    width: 24,
-    accessor: (row) => row.coin?.name ?? "Unknown",
+    width: 20,
+    accessor: (row) => formatCoinName(row.coin),
   },
   {
-    header: "Symbol",
-    width: 12,
-    noTruncate: true,
-    accessor: (row) => row.coin?.symbol ?? "",
+    header: "Address",
+    width: 14,
+    accessor: (row) =>
+      row.coin?.address ? truncateAddress(row.coin.address) : "",
+  },
+  {
+    header: "Type",
+    width: 14,
+    accessor: (row) => formatCoinType(row.coin?.coinType),
   },
   {
     header: "Balance",
