@@ -63,6 +63,24 @@ export type AmbiguousResult =
   | { kind: "ambiguous"; creator: ResolvedCoin; trend: ResolvedCoin }
   | { kind: "not-found"; message: string };
 
+export async function resolveAmbiguousByNameAndBalance(
+  name: string,
+  getBalance: (address: string) => Promise<bigint>,
+): Promise<AmbiguousResult> {
+  const result = await resolveAmbiguousName(name);
+  if (result.kind !== "ambiguous") return result;
+
+  const [creatorBal, trendBal] = await Promise.all([
+    getBalance(result.creator.address),
+    getBalance(result.trend.address),
+  ]);
+  if (creatorBal > 0n && trendBal === 0n)
+    return { kind: "found", coin: result.creator };
+  if (trendBal > 0n && creatorBal === 0n)
+    return { kind: "found", coin: result.trend };
+  return result;
+}
+
 export async function resolveAmbiguousName(
   name: string,
 ): Promise<AmbiguousResult> {

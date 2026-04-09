@@ -553,6 +553,113 @@ describe("sell command", () => {
     });
   });
 
+  describe("ambiguous name auto-resolution by balance", () => {
+    const CREATOR_ADDRESS =
+      "0xaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa" as Address;
+    const TREND_ADDRESS =
+      "0xbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb" as Address;
+
+    function setupAmbiguous() {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            creatorCoin: { address: CREATOR_ADDRESS },
+          },
+        },
+      } as Awaited<ReturnType<typeof getProfile>>);
+      vi.mocked(getCoin).mockResolvedValue({
+        data: {
+          zora20Token: {
+            name: "Test Coin",
+            symbol: "TEST",
+            decimals: 18,
+            address: CREATOR_ADDRESS,
+            coinType: "CREATOR",
+            marketCap: "1000",
+            uniqueHolders: 10,
+          },
+        },
+      } as Awaited<ReturnType<typeof getCoin>>);
+      vi.mocked(getTrend).mockResolvedValue({
+        data: {
+          trendCoin: {
+            name: "Test Trend",
+            symbol: "TREND",
+            address: TREND_ADDRESS,
+            coinType: "TREND",
+            marketCap: "2000",
+            decimals: 18,
+            uniqueHolders: 5,
+          },
+        },
+      } as Awaited<ReturnType<typeof getTrend>>);
+    }
+
+    it("auto-selects creator-coin when user only holds that", async () => {
+      setupAmbiguous();
+      publicClient.readContract.mockImplementation(
+        async ({ address }: { address: Address }) => {
+          if (address === CREATOR_ADDRESS) return 1000000000000000000n;
+          if (address === TREND_ADDRESS) return 0n;
+          return 0n;
+        },
+      );
+
+      await runSell(["testname", "--amount", "1", "--yes"]);
+
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sell: expect.objectContaining({ address: CREATOR_ADDRESS }),
+        }),
+      );
+    });
+
+    it("auto-selects trend when user only holds that", async () => {
+      setupAmbiguous();
+      publicClient.readContract.mockImplementation(
+        async ({ address }: { address: Address }) => {
+          if (address === TREND_ADDRESS) return 1000000000000000000n;
+          if (address === CREATOR_ADDRESS) return 0n;
+          return 0n;
+        },
+      );
+
+      await runSell(["testname", "--amount", "1", "--yes"]);
+
+      expect(createTradeCall).toHaveBeenCalledWith(
+        expect.objectContaining({
+          sell: expect.objectContaining({ address: TREND_ADDRESS }),
+        }),
+      );
+    });
+
+    it("shows ambiguous error when user holds both", async () => {
+      setupAmbiguous();
+      publicClient.readContract.mockResolvedValue(1000000000000000000n);
+
+      await expect(
+        runSell(["testname", "--amount", "1", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Multiple coins match "testname"'),
+      );
+    });
+
+    it("shows ambiguous error when user holds neither", async () => {
+      setupAmbiguous();
+      publicClient.readContract.mockResolvedValue(0n);
+
+      await expect(
+        runSell(["testname", "--amount", "1", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.stringContaining('Multiple coins match "testname"'),
+      );
+    });
+  });
+
   it("shows suggestion when quote fails", async () => {
     vi.mocked(createTradeCall).mockRejectedValue(new Error("bad request"));
 

@@ -8,6 +8,7 @@ import {
   resolveCoin,
   parsePositionalCoinArgs,
   resolveAmbiguousName,
+  resolveAmbiguousByNameAndBalance,
   coinArgsToRef,
   CoinArgError,
 } from "./coin-ref.js";
@@ -259,6 +260,136 @@ describe("resolveAmbiguousName", () => {
     if (result.kind === "not-found") {
       expect(result.message).toContain("nobody");
     }
+  });
+});
+
+describe("resolveAmbiguousByNameAndBalance", () => {
+  const creatorCoin = {
+    name: "alice",
+    address: "0xalice",
+    coinType: "CREATOR",
+    marketCap: "5000000",
+    marketCapDelta24h: "100000",
+    volume24h: "250000",
+    uniqueHolders: 1000,
+    createdAt: "2026-01-01T00:00:00Z",
+    creatorAddress: "0xcreator",
+    creatorProfile: { handle: "alice" },
+  };
+
+  const trendCoin = {
+    name: "alice",
+    address: "0xalicetrend",
+    coinType: "TREND",
+    marketCap: "3000000",
+    marketCapDelta24h: "50000",
+    volume24h: "100000",
+    uniqueHolders: 500,
+    createdAt: "2026-02-01T00:00:00Z",
+  };
+
+  function setupBothCoins() {
+    vi.mocked(getProfile).mockResolvedValue({
+      data: {
+        profile: {
+          handle: "alice",
+          creatorCoin: { address: "0xalice" },
+        },
+      },
+    } as any);
+    vi.mocked(getCoin).mockResolvedValue({
+      data: { zora20Token: creatorCoin },
+    } as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      data: { trendCoin: trendCoin },
+    } as any);
+  }
+
+  it("returns found for creator-coin when only that has balance", async () => {
+    setupBothCoins();
+    const getBalance = vi.fn(async (addr: string) =>
+      addr === "0xalice" ? 1000n : 0n,
+    );
+
+    const result = await resolveAmbiguousByNameAndBalance("alice", getBalance);
+
+    expect(result.kind).toBe("found");
+    if (result.kind === "found") {
+      expect(result.coin.address).toBe("0xalice");
+    }
+  });
+
+  it("returns found for trend when only that has balance", async () => {
+    setupBothCoins();
+    const getBalance = vi.fn(async (addr: string) =>
+      addr === "0xalicetrend" ? 500n : 0n,
+    );
+
+    const result = await resolveAmbiguousByNameAndBalance("alice", getBalance);
+
+    expect(result.kind).toBe("found");
+    if (result.kind === "found") {
+      expect(result.coin.address).toBe("0xalicetrend");
+    }
+  });
+
+  it("returns ambiguous when user holds both", async () => {
+    setupBothCoins();
+    const getBalance = vi.fn(async () => 1000n);
+
+    const result = await resolveAmbiguousByNameAndBalance("alice", getBalance);
+
+    expect(result.kind).toBe("ambiguous");
+  });
+
+  it("returns ambiguous when user holds neither", async () => {
+    setupBothCoins();
+    const getBalance = vi.fn(async () => 0n);
+
+    const result = await resolveAmbiguousByNameAndBalance("alice", getBalance);
+
+    expect(result.kind).toBe("ambiguous");
+  });
+
+  it("passes through found when only one coin type exists", async () => {
+    vi.mocked(getProfile).mockResolvedValue({
+      data: {
+        profile: {
+          handle: "alice",
+          creatorCoin: { address: "0xalice" },
+        },
+      },
+    } as any);
+    vi.mocked(getCoin).mockResolvedValue({
+      data: { zora20Token: creatorCoin },
+    } as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      error: { error: "not found" },
+      data: undefined,
+    } as any);
+
+    const getBalance = vi.fn();
+    const result = await resolveAmbiguousByNameAndBalance("alice", getBalance);
+
+    expect(result.kind).toBe("found");
+    expect(getBalance).not.toHaveBeenCalled();
+  });
+
+  it("passes through not-found when no coin exists", async () => {
+    vi.mocked(getProfile).mockResolvedValue({
+      error: { error: "not found" },
+      data: undefined,
+    } as any);
+    vi.mocked(getTrend).mockResolvedValue({
+      error: { error: "not found" },
+      data: undefined,
+    } as any);
+
+    const getBalance = vi.fn();
+    const result = await resolveAmbiguousByNameAndBalance("nobody", getBalance);
+
+    expect(result.kind).toBe("not-found");
+    expect(getBalance).not.toHaveBeenCalled();
   });
 });
 

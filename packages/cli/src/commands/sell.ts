@@ -33,7 +33,7 @@ import { track, shutdownAnalytics } from "../lib/analytics.js";
 import {
   parsePositionalCoinArgs,
   coinArgsToRef,
-  resolveAmbiguousName,
+  resolveAmbiguousByNameAndBalance,
   resolveCoin,
   formatAmbiguousError,
   CoinArgError,
@@ -192,6 +192,7 @@ export const sellCommand = new Command("sell")
     }
 
     let coinAddress: string;
+    let earlyAccount: ReturnType<typeof resolveAccount> | undefined;
 
     if (parsed.kind === "address") {
       if (!isAddress(parsed.address)) {
@@ -202,8 +203,24 @@ export const sellCommand = new Command("sell")
     } else if (parsed.kind === "ambiguous-name") {
       let ambResult;
       try {
-        ambResult = await resolveAmbiguousName(parsed.name);
+        earlyAccount = resolveAccount(json);
+        const { publicClient: earlyPublicClient } = createClients(earlyAccount);
+        ambResult = await resolveAmbiguousByNameAndBalance(
+          parsed.name,
+          (addr) =>
+            earlyPublicClient.readContract({
+              abi: erc20Abi,
+              address: addr as Address,
+              functionName: "balanceOf",
+              args: [earlyAccount!.address],
+            }),
+        );
       } catch (err) {
+        if (debug) {
+          console.error(
+            `[debug] resolve failed: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
         outputErrorAndExit(
           json,
           `Request failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -277,7 +294,7 @@ export const sellCommand = new Command("sell")
     }
     const slippage = slippagePct / 100;
 
-    const account = resolveAccount(json);
+    const account = earlyAccount ?? resolveAccount(json);
     const { publicClient, walletClient } = createClients(account);
 
     let token;
