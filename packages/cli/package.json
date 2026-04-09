@@ -7,12 +7,14 @@
     "zora": "./dist/index.js"
   },
   "files": [
-    "dist"
+    "dist",
+    "scripts"
   ],
   "publishConfig": {
     "access": "public"
   },
   "scripts": {
+    "postinstall": "node scripts/postinstall.mjs",
     "build": "tsup",
     "build:js": "tsup",
     "zora": "tsx src/index.tsx",
