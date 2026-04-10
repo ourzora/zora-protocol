@@ -40,6 +40,8 @@ import type {
   GetProfileResponse,
   GetProfileBalancesData,
   GetProfileBalancesResponse,
+  GetProfileBySocialHandleData,
+  GetProfileBySocialHandleResponse,
   GetProfileCoinsData,
   GetProfileCoinsResponse,
   GetProfileSocialData,
@@ -54,6 +56,8 @@ import type {
   GetTrendCoinResponse,
   GetTrendsByNameData,
   GetTrendsByNameResponse,
+  GetWalletTradeActivityData,
+  GetWalletTradeActivityResponse,
   PostQuoteData,
   PostQuoteResponse,
   PostQuoteError,
@@ -461,6 +465,28 @@ export const getProfileBalances = <ThrowOnError extends boolean = false>(
 };
 
 /**
+ * zoraSDK_profileBySocialHandle query
+ */
+export const getProfileBySocialHandle = <ThrowOnError extends boolean = false>(
+  options: Options<GetProfileBySocialHandleData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetProfileBySocialHandleResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/profileBySocialHandle",
+    ...options,
+  });
+};
+
+/**
  * zoraSDK_profileCoins query
  */
 export const getProfileCoins = <ThrowOnError extends boolean = false>(
@@ -610,6 +636,28 @@ export const getTrendsByName = <ThrowOnError extends boolean = false>(
       },
     ],
     url: "/trendsByName",
+    ...options,
+  });
+};
+
+/**
+ * zoraSDK_walletTradeActivity query
+ */
+export const getWalletTradeActivity = <ThrowOnError extends boolean = false>(
+  options: Options<GetWalletTradeActivityData, ThrowOnError>,
+) => {
+  return (options.client ?? _heyApiClient).get<
+    GetWalletTradeActivityResponse,
+    unknown,
+    ThrowOnError
+  >({
+    security: [
+      {
+        name: "api-key",
+        type: "apiKey",
+      },
+    ],
+    url: "/walletTradeActivity",
     ...options,
   });
 };

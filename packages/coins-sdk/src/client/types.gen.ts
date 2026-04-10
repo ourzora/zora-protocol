@@ -899,6 +899,9 @@ export type GetCoinsResponses = {
    * Successful operation
    */
   200: {
+    /**
+     * Batch-resolve Zora ERC-20 coins. Returns nulls for unknown IDs. Preserves input order.
+     */
     zora20Tokens: Array<{
       /**
        * The Globally Unique ID of this object
@@ -1389,7 +1392,7 @@ export type SetCreateUploadJwtResponses = {
    */
   200: {
     /**
-     * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+     * Generate a signed JWT for media uploads, authenticated via API key.
      */
     createUploadJwtFromApiKey: string;
   };
@@ -2821,6 +2824,165 @@ export type GetProfileBalancesResponses = {
 
 export type GetProfileBalancesResponse =
   GetProfileBalancesResponses[keyof GetProfileBalancesResponses];
+
+export type GetProfileBySocialHandleData = {
+  body?: never;
+  path?: never;
+  query: {
+    platform: "TWITTER" | "TIKTOK" | "FARCASTER" | "INSTAGRAM";
+    handle: string;
+  };
+  url: "/profileBySocialHandle";
+};
+
+export type GetProfileBySocialHandleErrors = {
+  /**
+   * Bad request
+   */
+  400: unknown;
+  /**
+   * Internal server error
+   */
+  500: unknown;
+};
+
+export type GetProfileBySocialHandleResponses = {
+  /**
+   * Successful operation
+   */
+  200: {
+    profileBySocialHandle?: {
+      /**
+       * The Globally Unique ID of this object
+       */
+      id: string;
+      /**
+       * Manually set username, or truncated wallet address if the profile isn't a GraphQLAccountProfile. For full wallet address, use the profile_id field instead.
+       */
+      handle: string;
+      /**
+       * The `Boolean` scalar type represents `true` or `false`.
+       */
+      platformBlocked: boolean;
+      avatar?: {
+        previewImage: {
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          blurhash?: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          medium: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          small: string;
+        };
+      };
+      socialAccounts: {
+        instagram?: {
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          username?: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          displayName?: string;
+          /**
+           * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+           */
+          followerCount?: number;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          id?: string;
+        };
+        tiktok?: {
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          username?: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          displayName?: string;
+          /**
+           * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+           */
+          followerCount?: number;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          id?: string;
+        };
+        twitter?: {
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          username?: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          displayName?: string;
+          /**
+           * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+           */
+          followerCount?: number;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          id?: string;
+        };
+        farcaster?: {
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          username?: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          displayName?: string;
+          /**
+           * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+           */
+          followerCount?: number;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          id?: string;
+        };
+      };
+      creatorCoin?: {
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        symbol: string;
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        marketCap: string;
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        marketCapDelta24h: string;
+        multichainAddress: string;
+      };
+      /**
+       * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+       */
+      username: string;
+      /**
+       * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+       */
+      displayName?: string;
+    };
+  };
+};
+
+export type GetProfileBySocialHandleResponse =
+  GetProfileBySocialHandleResponses[keyof GetProfileBySocialHandleResponses];
 
 export type GetProfileCoinsData = {
   body?: never;
@@ -4405,6 +4567,264 @@ export type GetTrendsByNameResponses = {
 
 export type GetTrendsByNameResponse =
   GetTrendsByNameResponses[keyof GetTrendsByNameResponses];
+
+export type GetWalletTradeActivityData = {
+  body?: never;
+  path?: never;
+  query: {
+    identifier: string;
+    after?: string;
+    first?: number;
+  };
+  url: "/walletTradeActivity";
+};
+
+export type GetWalletTradeActivityErrors = {
+  /**
+   * Bad request
+   */
+  400: unknown;
+  /**
+   * Internal server error
+   */
+  500: unknown;
+};
+
+export type GetWalletTradeActivityResponses = {
+  /**
+   * Successful operation
+   */
+  200: {
+    walletAddressTradeActivity: {
+      /**
+       * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+       */
+      count: number;
+      edges: Array<{
+        node: {
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          transactionHash: string;
+          /**
+           * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+           */
+          transactionLogIndex?: number;
+          /**
+           * Date with time (isoformat)
+           */
+          blockTimestamp: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          coinAmount: string;
+          coin?: {
+            /**
+             * The `Boolean` scalar type represents `true` or `false`.
+             */
+            platformBlocked: boolean;
+            address: string;
+            coinType: "CREATOR" | "CONTENT" | "TREND";
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            name: string;
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            symbol: string;
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            description: string;
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            tokenUri?: string;
+            mediaContent?: {
+              previewImage?: {
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                small: string;
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                blurhash?: string;
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                medium: string;
+              };
+            };
+            creatorAddress?: string;
+            creatorProfile?: {
+              /**
+               * The Globally Unique ID of this object
+               */
+              id: string;
+              /**
+               * Manually set username, or truncated wallet address if the profile isn't a GraphQLAccountProfile. For full wallet address, use the profile_id field instead.
+               */
+              handle: string;
+              /**
+               * The `Boolean` scalar type represents `true` or `false`.
+               */
+              platformBlocked: boolean;
+              avatar?: {
+                previewImage: {
+                  /**
+                   * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                   */
+                  blurhash?: string;
+                  /**
+                   * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                   */
+                  medium: string;
+                  /**
+                   * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                   */
+                  small: string;
+                };
+              };
+            };
+            uniswapPoolAddress: string;
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            totalSupply: string;
+          };
+          /**
+           * The Globally Unique ID of this object
+           */
+          id: string;
+          swapActivityType?: "BUY" | "SELL";
+          currencyAmountWithPrice: {
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            amountUsd?: string;
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            priceUsdc?: string;
+            /**
+             * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+             */
+            priceDelta24h?: string;
+            currencyAmount: {
+              /**
+               * Ethereum address of the currency
+               */
+              currencyAddress: string;
+              /**
+               * Amount of the currency, in float format accounting for currency decimals
+               */
+              amountDecimal: number;
+              /**
+               * Raw amount of the currency, in wei. Not formatted with decimals
+               */
+              amountRaw: string;
+            };
+          };
+          senderProfile?: {
+            /**
+             * The Globally Unique ID of this object
+             */
+            id: string;
+            /**
+             * Manually set username, or truncated wallet address if the profile isn't a GraphQLAccountProfile. For full wallet address, use the profile_id field instead.
+             */
+            handle: string;
+            /**
+             * The `Boolean` scalar type represents `true` or `false`.
+             */
+            platformBlocked: boolean;
+            avatar?: {
+              previewImage: {
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                blurhash?: string;
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                medium: string;
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                small: string;
+              };
+            };
+          };
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          orderId: string;
+          /**
+           * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+           */
+          initialBuyAmount?: string;
+          /**
+           * The `Float` scalar type represents signed double-precision fractional values as specified by [IEEE 754](https://en.wikipedia.org/wiki/IEEE_floating_point).
+           */
+          initialBuyAmountUsd?: number;
+          /**
+           * The `Int` scalar type represents non-fractional signed whole numeric values. Int can represent values between -(2^31) and 2^31 - 1.
+           */
+          multiplier: number;
+          makerProfile?: {
+            /**
+             * The Globally Unique ID of this object
+             */
+            id: string;
+            /**
+             * Manually set username, or truncated wallet address if the profile isn't a GraphQLAccountProfile. For full wallet address, use the profile_id field instead.
+             */
+            handle: string;
+            /**
+             * The `Boolean` scalar type represents `true` or `false`.
+             */
+            platformBlocked: boolean;
+            avatar?: {
+              previewImage: {
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                blurhash?: string;
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                medium: string;
+                /**
+                 * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+                 */
+                small: string;
+              };
+            };
+          };
+        };
+        /**
+         * The `String` scalar type represents textual data, represented as UTF-8 character sequences. The String type is most often used by GraphQL to represent free-form human-readable text.
+         */
+        cursor: string;
+      }>;
+      pageInfo: {
+        /**
+         * When paginating forwards, the cursor to continue.
+         */
+        endCursor?: string;
+        /**
+         * When paginating forwards, are there more items?
+         */
+        hasNextPage: boolean;
+      };
+    };
+  };
+};
+
+export type GetWalletTradeActivityResponse =
+  GetWalletTradeActivityResponses[keyof GetWalletTradeActivityResponses];
 
 export type PostQuoteData = {
   body?: {

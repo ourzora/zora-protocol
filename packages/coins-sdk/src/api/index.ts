@@ -10,6 +10,10 @@ export type * from "./queries";
 export * from "./create";
 export type * from "./create";
 
+// Export all of the social queries
+export * from "./social";
+export type * from "./social";
+
 // Only export the set function for external use.
 // All other exports are for internal use.
 export { setApiKey } from "./api-key";
