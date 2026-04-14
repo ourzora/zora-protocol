@@ -45,10 +45,8 @@ import {
 } from "../lib/format.js";
 import { renderLive, renderOnce } from "../lib/render.js";
 import { Table, type Column } from "../components/table.js";
-import {
-  ExploreView,
-  type ExplorePageResult,
-} from "../components/ExploreView.js";
+import { ExploreView } from "../components/ExploreView.js";
+import type { PageResult } from "../components/PaginatedTableView.js";
 
 type SdkQueryFn = (opts: { count: number; after?: string }) => Promise<any>;
 
@@ -333,7 +331,9 @@ export const exploreCommand = new Command("explore")
     } else {
       const { live, intervalSeconds } = getLiveConfig(this, output);
 
-      const fetchPage = async (cursor?: string): Promise<ExplorePageResult> => {
+      const fetchPage = async (
+        cursor?: string,
+      ): Promise<PageResult<CoinNode>> => {
         const response = await queryFn({ count: limit, after: cursor });
         if (response.error) {
           const msg =
@@ -343,9 +343,9 @@ export const exploreCommand = new Command("explore")
           throw new Error(msg);
         }
         const edges = response.data?.exploreList?.edges ?? [];
-        const coins: CoinNode[] = edges.map((e: any) => e.node);
+        const items: CoinNode[] = edges.map((e: any) => e.node);
         const pageInfo = response.data?.exploreList?.pageInfo;
-        return { coins, pageInfo };
+        return { items, pageInfo };
       };
 
       if (live) {
@@ -371,7 +371,7 @@ export const exploreCommand = new Command("explore")
           output_format: "live",
         });
       } else {
-        const { coins } = await fetchPage(after).catch((err) =>
+        const { items } = await fetchPage(after).catch((err) =>
           outputErrorAndExit(
             false,
             `Request failed: ${err instanceof Error ? err.message : String(err)}`,
@@ -382,7 +382,7 @@ export const exploreCommand = new Command("explore")
           type !== "all"
             ? `${SORT_LABELS[sort]} \u00b7 ${TYPE_LABELS[type]}`
             : SORT_LABELS[sort];
-        const rankedCoins = coins.map((c, i) => ({
+        const rankedCoins = items.map((c, i) => ({
           ...c,
           rank: i + 1,
         }));
@@ -397,7 +397,7 @@ export const exploreCommand = new Command("explore")
           limit,
           live: false,
           paginated: after !== undefined,
-          result_count: coins.length,
+          result_count: items.length,
           output_format: "static",
         });
       }

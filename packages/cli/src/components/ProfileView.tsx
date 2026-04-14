@@ -1,26 +1,10 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { Box, Text, useInput, useApp } from "ink";
 import Spinner from "ink-spinner";
-import { Table, type Column } from "./table.js";
-import {
-  formatCompactUsd,
-  formatMcapChange,
-  formatRelativeTime,
-} from "../lib/format.js";
+import { Table } from "./table.js";
+import { postColumns, type PostNode } from "./ProfilePostsView.js";
 import { balanceColumns, type BalanceNode } from "../lib/balance-columns.js";
-import { COIN_TYPE_DISPLAY } from "../lib/types.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
-
-type PostNode = {
-  name: string;
-  address: string;
-  coinType: "CREATOR" | "CONTENT" | "TREND";
-  symbol: string;
-  marketCap?: string;
-  marketCapDelta24h?: string;
-  volume24h?: string;
-  createdAt?: string;
-};
 
 type ProfileData = {
   posts: PostNode[];
@@ -31,42 +15,6 @@ type ProfileData = {
 
 const TAB_NAMES = ["Posts", "Holdings"] as const;
 type TabIndex = 0 | 1;
-
-const postColumns: Column<PostNode & { rank: number }>[] = [
-  { header: "#", width: 4, accessor: (c) => String(c.rank) },
-  { header: "Name", width: 20, accessor: (c) => c.name ?? "Unknown" },
-  {
-    header: "Type",
-    width: 14,
-    accessor: (c) => COIN_TYPE_DISPLAY[c.coinType ?? ""] ?? c.coinType ?? "",
-  },
-  {
-    header: "Market Cap",
-    width: 12,
-    accessor: (c) => formatCompactUsd(c.marketCap),
-  },
-  {
-    header: "24h Vol",
-    width: 12,
-    accessor: (c) => formatCompactUsd(c.volume24h),
-  },
-  {
-    header: "24h Change",
-    width: 11,
-    accessor: (c) => formatMcapChange(c.marketCap, c.marketCapDelta24h).text,
-    color: (c) => formatMcapChange(c.marketCap, c.marketCapDelta24h).color,
-  },
-  {
-    header: "Created",
-    width: 16,
-    accessor: (c) => {
-      if (!c.createdAt) return "-";
-      const date = new Date(c.createdAt);
-      if (isNaN(date.getTime())) return "-";
-      return formatRelativeTime(date);
-    },
-  },
-];
 
 type ProfileViewProps = {
   fetchData: () => Promise<ProfileData>;

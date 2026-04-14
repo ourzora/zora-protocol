@@ -64,22 +64,6 @@ describe("BalanceView", () => {
     expect(lastFrame()).not.toContain("Coins");
   });
 
-  it("shows only coins table in coins mode", async () => {
-    const { lastFrame } = render(
-      <BalanceView
-        fetchData={() => Promise.resolve(makeBalanceData())}
-        sort="usd-value"
-        mode="coins"
-      />,
-    );
-
-    await vi.waitFor(() => {
-      expect(lastFrame()).toContain("TestCoin");
-    });
-    expect(lastFrame()).not.toContain("Wallet");
-    expect(lastFrame()).toContain("Coins");
-  });
-
   it("shows empty state when no coins", async () => {
     const { lastFrame } = render(
       <BalanceView

@@ -10,6 +10,8 @@ import {
 } from "../lib/output.js";
 import { renderOnce, renderLive } from "../lib/render.js";
 import { BalanceView, type BalanceData } from "../components/BalanceView.js";
+import { BalanceCoinsView } from "../components/BalanceCoinsView.js";
+import type { PageResult } from "../components/PaginatedTableView.js";
 import { Table } from "../components/table.js";
 import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
 import { resolveAccount } from "../lib/wallet.js";
@@ -475,7 +477,9 @@ balanceCommand
     const account = resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
-    const fetchCoinsPage = async (cursor?: string): Promise<BalanceData> => {
+    const fetchCoinsPage = async (
+      cursor?: string,
+    ): Promise<PageResult<BalanceNode>> => {
       const { balances, total, pageInfo } = await fetchCoins(
         json,
         account.address,
@@ -483,35 +487,18 @@ balanceCommand
         limit,
         cursor,
       );
-      const rankedBalances = balances.map((balance, index) => ({
-        ...balance,
-        rank: index + 1,
-      }));
-      return {
-        walletBalances: [],
-        walletBalancesJson: [],
-        rankedBalances,
-        total,
-        pageInfo,
-      };
+      return { items: balances, count: total, pageInfo };
     };
 
     if (json) {
-      const data = await fetchCoinsPage(after);
-      renderCoins(
-        json,
-        data.rankedBalances,
-        data.total,
-        sort,
-        limit,
-        data.pageInfo,
-      );
+      const { items, count, pageInfo } = await fetchCoinsPage(after);
+      renderCoins(json, items, count ?? items.length, sort, limit, pageInfo);
     } else if (live) {
       await renderLive(
-        <BalanceView
-          fetchData={fetchCoinsPage}
+        <BalanceCoinsView
+          fetchPage={fetchCoinsPage}
           sort={sort}
-          mode="coins"
+          limit={limit}
           initialCursor={after}
           autoRefresh={live}
           intervalSeconds={intervalSeconds}

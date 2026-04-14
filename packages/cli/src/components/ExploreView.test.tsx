@@ -30,7 +30,7 @@ describe("ExploreView", () => {
       <ExploreView
         fetchPage={() =>
           Promise.resolve({
-            coins: [makeCoin()],
+            items: [makeCoin()],
             pageInfo: { hasNextPage: false },
           })
         }
@@ -52,7 +52,7 @@ describe("ExploreView", () => {
     const { lastFrame } = render(
       <ExploreView
         fetchPage={() =>
-          Promise.resolve({ coins: [], pageInfo: { hasNextPage: false } })
+          Promise.resolve({ items: [], pageInfo: { hasNextPage: false } })
         }
         sort="mcap"
         type="post"
@@ -87,7 +87,7 @@ describe("ExploreView", () => {
       <ExploreView
         fetchPage={() =>
           Promise.resolve({
-            coins: [makeCoin()],
+            items: [makeCoin()],
             pageInfo: { endCursor: "cursor_abc", hasNextPage: true },
           })
         }
@@ -108,11 +108,11 @@ describe("ExploreView", () => {
     const fetchPage = vi
       .fn()
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page1Coin" })],
+        items: [makeCoin({ name: "Page1Coin" })],
         pageInfo: { endCursor: "cursor_page2", hasNextPage: true },
       })
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page2Coin" })],
+        items: [makeCoin({ name: "Page2Coin" })],
         pageInfo: { hasNextPage: false },
       });
 
@@ -137,11 +137,11 @@ describe("ExploreView", () => {
     const fetchPage = vi
       .fn()
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page1Coin" })],
+        items: [makeCoin({ name: "Page1Coin" })],
         pageInfo: { endCursor: "cursor_page2", hasNextPage: true },
       })
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page2Coin" })],
+        items: [makeCoin({ name: "Page2Coin" })],
         pageInfo: { hasNextPage: false },
       });
 
@@ -167,58 +167,15 @@ describe("ExploreView", () => {
     expect(fetchPage).toHaveBeenCalledTimes(2);
   });
 
-  it("re-fetches when cache is stale", async () => {
-    const fetchPage = vi
-      .fn()
-      .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page1Coin" })],
-        pageInfo: { endCursor: "cursor_page2", hasNextPage: true },
-      })
-      .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page2Coin" })],
-        pageInfo: { hasNextPage: false },
-      })
-      .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page1Fresh" })],
-        pageInfo: { endCursor: "cursor_page2", hasNextPage: true },
-      });
-
-    const { lastFrame, stdin } = render(
-      <ExploreView
-        fetchPage={fetchPage}
-        sort="mcap"
-        type="post"
-        limit={10}
-        cacheTtlMs={0}
-      />,
-    );
-
-    await vi.waitFor(() => {
-      expect(lastFrame()).toContain("Page1Coin");
-    });
-
-    stdin.write("n");
-    await vi.waitFor(() => {
-      expect(lastFrame()).toContain("Page2Coin");
-    });
-
-    stdin.write("p");
-    await vi.waitFor(() => {
-      expect(lastFrame()).toContain("Page1Fresh");
-    });
-    // 3 fetches: cache expired (TTL=0), so page 1 re-fetched
-    expect(fetchPage).toHaveBeenCalledTimes(3);
-  });
-
   it("shows prev hint after navigating forward", async () => {
     const fetchPage = vi
       .fn()
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page1Coin" })],
+        items: [makeCoin({ name: "Page1Coin" })],
         pageInfo: { endCursor: "cursor_page2", hasNextPage: true },
       })
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Page2Coin" })],
+        items: [makeCoin({ name: "Page2Coin" })],
         pageInfo: { hasNextPage: false },
       });
 
@@ -240,7 +197,7 @@ describe("ExploreView", () => {
 
   it("uses initialCursor for first fetch", async () => {
     const fetchPage = vi.fn().mockResolvedValue({
-      coins: [makeCoin()],
+      items: [makeCoin()],
       pageInfo: { hasNextPage: false },
     });
 
@@ -264,11 +221,11 @@ describe("ExploreView", () => {
     const fetchPage = vi
       .fn()
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Coin1" }), makeCoin({ name: "Coin2" })],
+        items: [makeCoin({ name: "Coin1" }), makeCoin({ name: "Coin2" })],
         pageInfo: { endCursor: "c2", hasNextPage: true },
       })
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "Coin3" })],
+        items: [makeCoin({ name: "Coin3" })],
         pageInfo: { hasNextPage: false },
       });
 
@@ -292,11 +249,11 @@ describe("ExploreView", () => {
     const fetchPage = vi
       .fn()
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "OldData" })],
+        items: [makeCoin({ name: "OldData" })],
         pageInfo: { hasNextPage: false },
       })
       .mockResolvedValueOnce({
-        coins: [makeCoin({ name: "FreshData" })],
+        items: [makeCoin({ name: "FreshData" })],
         pageInfo: { hasNextPage: false },
       });
 
@@ -321,7 +278,7 @@ describe("ExploreView", () => {
       <ExploreView
         fetchPage={() =>
           Promise.resolve({
-            coins: [makeCoin()],
+            items: [makeCoin()],
             pageInfo: { hasNextPage: false },
           })
         }
@@ -342,7 +299,7 @@ describe("ExploreView", () => {
       <ExploreView
         fetchPage={() =>
           Promise.resolve({
-            coins: [makeCoin()],
+            items: [makeCoin()],
             pageInfo: { hasNextPage: false },
           })
         }
@@ -365,7 +322,7 @@ describe("ExploreView", () => {
       <ExploreView
         fetchPage={() =>
           Promise.resolve({
-            coins: [makeCoin()],
+            items: [makeCoin()],
             pageInfo: { hasNextPage: false },
           })
         }
