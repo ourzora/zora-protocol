@@ -4,6 +4,8 @@ import {
   GetCoinData,
   GetCoinHoldersData,
   GetCoinHoldersResponse,
+  GetCoinPriceHistoryData,
+  GetCoinPriceHistoryResponse,
   GetCoinResponse,
   GetCoinsData,
   GetCoinsResponse,
@@ -35,6 +37,7 @@ import {
   getCoins as getCoinsSDK,
   getCoinComments as getCoinCommentsSDK,
   getCoinHolders as getCoinHoldersSDK,
+  getCoinPriceHistory as getCoinPriceHistorySDK,
   getCoinSwaps as getCoinSwapsSDK,
   getProfile as getProfileSDK,
   getProfileBalances as getProfileBalancesSDK,
@@ -96,6 +99,21 @@ export const getCoinHolders = async (
   options?: RequestOptionsType<GetCoinHoldersData>,
 ): Promise<RequestResult<GetCoinHoldersResponse>> => {
   return await getCoinHoldersSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCoinPriceHistoryQuery = GetCoinPriceHistoryData["query"];
+export type { GetCoinPriceHistoryQuery, GetCoinPriceHistoryData };
+export type { GetCoinPriceHistoryResponse } from "../client/types.gen";
+
+export const getCoinPriceHistory = async (
+  query: GetCoinPriceHistoryQuery,
+  options?: RequestOptionsType<GetCoinPriceHistoryData>,
+): Promise<RequestResult<GetCoinPriceHistoryResponse>> => {
+  return await getCoinPriceHistorySDK({
     query,
     ...getApiKeyMeta(),
     ...options,
