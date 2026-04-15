@@ -3,6 +3,7 @@ import { PaginatedTableView, type PageResult } from "./PaginatedTableView.js";
 import {
   balanceColumns,
   SORT_LABELS,
+  API_KEY_BANNER,
   type BalanceNode,
   type SortFlag,
 } from "../lib/balance-columns.js";
@@ -14,6 +15,7 @@ type BalanceCoinsViewProps = {
   initialCursor?: string;
   autoRefresh?: boolean;
   intervalSeconds?: number;
+  hasApiKey?: boolean;
 };
 
 const emptyState = (
@@ -36,20 +38,28 @@ const BalanceCoinsView = ({
   initialCursor,
   autoRefresh,
   intervalSeconds,
+  hasApiKey = false,
 }: BalanceCoinsViewProps) => {
   return (
-    <PaginatedTableView<BalanceNode>
-      fetchPage={fetchPage}
-      columns={balanceColumns}
-      title={`Coins \u00b7 sorted by ${SORT_LABELS[sort]}`}
-      loadingText="Loading…"
-      emptyState={emptyState}
-      getAddress={(item) => item.coin?.address}
-      limit={limit}
-      initialCursor={initialCursor}
-      autoRefresh={autoRefresh}
-      intervalSeconds={intervalSeconds}
-    />
+    <Box flexDirection="column">
+      <PaginatedTableView<BalanceNode>
+        fetchPage={fetchPage}
+        columns={balanceColumns}
+        title={`Coins \u00b7 sorted by ${SORT_LABELS[sort]}`}
+        loadingText="Loading…"
+        emptyState={emptyState}
+        getAddress={(item) => item.coin?.address}
+        limit={limit}
+        initialCursor={initialCursor}
+        autoRefresh={autoRefresh}
+        intervalSeconds={intervalSeconds}
+      />
+      {!hasApiKey && (
+        <Box paddingLeft={1}>
+          <Text dimColor>{API_KEY_BANNER}</Text>
+        </Box>
+      )}
+    </Box>
   );
 };
 

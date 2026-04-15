@@ -16,8 +16,8 @@ import { Table } from "../components/table.js";
 import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
 import { resolveAccount } from "../lib/wallet.js";
 import {
-  parseRawBalance,
   normalizeTokenAmount,
+  computeBalanceUsdValue,
 } from "../lib/balance-format.js";
 import {
   fetchWalletBalances,
@@ -31,6 +31,7 @@ import {
   walletColumns,
   balanceColumns,
   SORT_LABELS,
+  API_KEY_BANNER,
   type SortFlag,
   type BalanceNode,
 } from "../lib/balance-columns.js";
@@ -39,6 +40,7 @@ export {
   walletColumns,
   balanceColumns,
   SORT_LABELS,
+  API_KEY_BANNER,
   type SortFlag,
   type BalanceNode,
 };
@@ -100,10 +102,13 @@ const formatBalanceJson = (
     ? Number(balance.coin.totalVolume)
     : null;
   const priceUsdValue = priceUsd ? Number(priceUsd) : null;
-  const usdValue =
-    priceUsdValue !== null
-      ? Number((parseRawBalance(balance.balance) * priceUsdValue).toFixed(6))
-      : null;
+
+  const usdValue = computeBalanceUsdValue(
+    balance.balance,
+    balance.valuation?.marketValueUsd,
+    priceUsd,
+  );
+
   const marketCapChange24h = computeMarketCapChange24h(
     marketCap,
     marketCapDelta24h,
@@ -140,7 +145,7 @@ function resolveContext(json: boolean) {
     setApiKey(apiKey);
   }
 
-  return account;
+  return { account, hasApiKey: !!apiKey };
 }
 
 function renderWallet(
@@ -168,6 +173,7 @@ function renderCoins(
   sort: SortFlag,
   limit: number,
   pageInfo?: PageInfo,
+  hasApiKey?: boolean,
 ) {
   const rankedBalances = balances.map((balance, index) => ({
     ...balance,
@@ -192,13 +198,20 @@ function renderCoins(
             ? `Next page: zora balance coins --sort ${sort} --limit ${limit} --after ${pageInfo.endCursor}`
             : undefined;
         renderOnce(
-          <Table
-            columns={balanceColumns}
-            data={rankedBalances}
-            title={`Coins · sorted by ${SORT_LABELS[sort]}`}
-            subtitle={`${balances.length} of ${total}`}
-            footer={footer}
-          />,
+          <Box flexDirection="column">
+            <Table
+              columns={balanceColumns}
+              data={rankedBalances}
+              title={`Coins · sorted by ${SORT_LABELS[sort]}`}
+              subtitle={`${balances.length} of ${total}`}
+              footer={footer}
+            />
+            {!hasApiKey && (
+              <Box paddingLeft={1}>
+                <Text dimColor>{API_KEY_BANNER}</Text>
+              </Box>
+            )}
+          </Box>,
         );
       }
     },
@@ -277,7 +290,7 @@ export const balanceCommand = new Command("balance")
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const account = resolveContext(json);
+    const { account, hasApiKey } = resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const sort: SortFlag = "usd-value";
@@ -346,6 +359,7 @@ export const balanceCommand = new Command("balance")
           mode="full"
           autoRefresh={live}
           intervalSeconds={intervalSeconds}
+          hasApiKey={hasApiKey}
         />,
       );
 
@@ -382,12 +396,19 @@ export const balanceCommand = new Command("balance")
               </Box>
             </Box>
           ) : (
-            <Table
-              columns={balanceColumns}
-              data={data.rankedBalances}
-              title={`Coins · sorted by ${SORT_LABELS[sort]}`}
-              subtitle={`${data.rankedBalances.length} of ${data.total}`}
-            />
+            <>
+              <Table
+                columns={balanceColumns}
+                data={data.rankedBalances}
+                title={`Coins · sorted by ${SORT_LABELS[sort]}`}
+                subtitle={`${data.rankedBalances.length} of ${data.total}`}
+              />
+              {!hasApiKey && (
+                <Box paddingLeft={1}>
+                  <Text dimColor>{API_KEY_BANNER}</Text>
+                </Box>
+              )}
+            </>
           )}
         </Box>,
       );
@@ -416,7 +437,7 @@ balanceCommand
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const account = resolveContext(json);
+    const { account } = resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const fetchSpendableData = async (): Promise<BalanceData> => {
@@ -474,7 +495,7 @@ balanceCommand
     const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
     const after: string | undefined = opts.after;
-    const account = resolveContext(json);
+    const { account, hasApiKey } = resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const fetchCoinsPage = async (
@@ -502,6 +523,7 @@ balanceCommand
           initialCursor={after}
           autoRefresh={live}
           intervalSeconds={intervalSeconds}
+          hasApiKey={hasApiKey}
         />,
       );
     } else {
@@ -512,6 +534,6 @@ balanceCommand
         limit,
         after,
       );
-      renderCoins(json, balances, total, sort, limit, pageInfo);
+      renderCoins(json, balances, total, sort, limit, pageInfo, hasApiKey);
     }
   });

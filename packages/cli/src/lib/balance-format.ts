@@ -28,12 +28,40 @@ export const normalizeTokenAmount = (
   }
 };
 
+/**
+ * Compute the USD value of a coin balance.
+ *
+ * When a pre-computed `marketValueUsd` is available (from SDK valuation),
+ * it is preferred. Otherwise the value is derived from the raw token
+ * balance and the per-token price.
+ *
+ * Returns `null` when no value can be determined.
+ */
+export const computeBalanceUsdValue = (
+  balance: string,
+  marketValueUsd?: string,
+  priceInUsdc?: string,
+): number | null => {
+  if (marketValueUsd != null && marketValueUsd !== "") {
+    const parsed = Number(marketValueUsd);
+    if (!Number.isFinite(parsed)) return null;
+    return Number(parsed.toFixed(6));
+  }
+
+  if (!priceInUsdc) return null;
+  const price = Number(priceInUsdc);
+  if (!Number.isFinite(price)) return null;
+
+  const value = parseRawBalance(balance) * price;
+  return Number(value.toFixed(6));
+};
+
 export const formatBalanceAsUsd = (
   balance: string,
   priceInUsdc?: string,
 ): string => {
-  if (!priceInUsdc) return "-";
-  const value = parseRawBalance(balance) * Number(priceInUsdc);
+  const value = computeBalanceUsdValue(balance, undefined, priceInUsdc);
+  if (value === null) return "-";
   if (value < 0.01) return "<$0.01";
   return formatUsd(value);
 };

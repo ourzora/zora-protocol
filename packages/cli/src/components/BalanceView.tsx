@@ -8,6 +8,7 @@ import {
   type BalanceNode,
   type SortFlag,
   SORT_LABELS,
+  API_KEY_BANNER,
 } from "../lib/balance-columns.js";
 import type {
   WalletBalance,
@@ -31,6 +32,7 @@ type BalanceViewProps = {
   mode?: BalanceMode;
   autoRefresh?: boolean;
   intervalSeconds?: number;
+  hasApiKey?: boolean;
 };
 
 const BalanceView = ({
@@ -39,6 +41,7 @@ const BalanceView = ({
   mode = "full",
   autoRefresh = false,
   intervalSeconds = 30,
+  hasApiKey = false,
 }: BalanceViewProps) => {
   const { exit } = useApp();
   const [loading, setLoading] = useState(true);
@@ -195,6 +198,11 @@ const BalanceView = ({
           selectedRow={selectedRow}
         />
       ) : null}
+      {!hasApiKey && showCoins && data.rankedBalances.length > 0 && (
+        <Box paddingLeft={1}>
+          <Text dimColor>{API_KEY_BANNER}</Text>
+        </Box>
+      )}
       <Box paddingLeft={1} paddingBottom={1}>
         <Text dimColor>{footer}</Text>
       </Box>

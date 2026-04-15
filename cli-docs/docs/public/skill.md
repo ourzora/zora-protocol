@@ -7,7 +7,7 @@ Trade commands require `--yes` to skip confirmation prompts.
 ## Environment Variables
 
 - `ZORA_PRIVATE_KEY` — Wallet private key (hex, with or without 0x prefix)
-- `ZORA_API_KEY` — API key for higher rate limits (get one at zora.co/settings/developer)
+- `ZORA_API_KEY` — API key for higher rate limits and more accurate coin valuations in `balance` (get one at zora.co/settings/developer)
 
 ## Read Commands (no wallet needed)
 

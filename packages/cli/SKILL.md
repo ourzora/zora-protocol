@@ -40,7 +40,11 @@ Returns:
 
 ```json
 {
-  "wallet": { "action": "created", "address": "0x...", "path": "/path/to/wallet.json" },
+  "wallet": {
+    "action": "created",
+    "address": "0x...",
+    "path": "/path/to/wallet.json"
+  },
   "apiKey": "saved"
 }
 ```
@@ -53,12 +57,12 @@ After creating or importing, fund the wallet by sending ETH on Base to the retur
 
 ### API key (optional)
 
-Get one at zora.co/settings/developer. Unlocks higher rate limits but is not required — all commands work without one. The `setup` command prompts for an API key after wallet configuration.
+Get one at zora.co/settings/developer. Unlocks higher rate limits and more accurate coin valuations in `balance` but is not required — all commands work without one. The `setup` command prompts for an API key after wallet configuration.
 
 ### Environment Variables
 
 - `ZORA_PRIVATE_KEY` — Wallet private key (hex, with or without 0x prefix). If set, the CLI uses this instead of the saved wallet.
-- `ZORA_API_KEY` — API key for higher rate limits.
+- `ZORA_API_KEY` — API key for higher rate limits and more accurate coin valuations in `balance`.
 
 ### Auth status
 
@@ -336,6 +340,7 @@ npx @zoralabs/cli buy <identifier> --all --json --yes
 Amount flags: `--eth <n>`, `--usd <n>`, `--percent <1-100>`, `--all`
 
 Other flags:
+
 - `--token <eth|usdc|zora>` — which token to spend (default `eth`)
 - `--slippage <0-99>` — slippage tolerance (default 1%)
 - `--quote` — dry-run / preview the trade without executing
@@ -365,7 +370,11 @@ Returns:
   "coin": "jacob",
   "address": "0x1234...5678",
   "spend": { "amount": "0.01", "raw": "10000000000000000", "symbol": "ETH" },
-  "estimated": { "amount": "1000.5", "raw": "1000500000000000000000", "symbol": "jacob" },
+  "estimated": {
+    "amount": "1000.5",
+    "raw": "1000500000000000000000",
+    "symbol": "jacob"
+  },
   "slippage": 1
 }
 ```
@@ -384,6 +393,7 @@ npx @zoralabs/cli sell <identifier> --amount <n> --json --yes
 Amount flags: `--usd <n>`, `--percent <1-100>`, `--all`, `--amount <n>` (specific token quantity)
 
 Other flags:
+
 - `--to <eth|usdc|zora>` — which token to receive (default `eth`)
 - `--slippage <0-99>` — slippage tolerance (default 1%)
 - `--quote` — dry-run / preview the trade without executing
@@ -419,8 +429,16 @@ Returns:
   "action": "quote",
   "coin": "jacob",
   "address": "0x1234...5678",
-  "sell": { "amount": "1000.5", "raw": "1000500000000000000000", "symbol": "jacob" },
-  "estimated": { "amount": "0.01", "raw": "10000000000000000", "symbol": "ETH" },
+  "sell": {
+    "amount": "1000.5",
+    "raw": "1000500000000000000000",
+    "symbol": "jacob"
+  },
+  "estimated": {
+    "amount": "0.01",
+    "raw": "10000000000000000",
+    "symbol": "ETH"
+  },
   "slippage": 1
 }
 ```
@@ -478,9 +496,30 @@ npx @zoralabs/cli balance coins --json --sort <sort> --limit <n> --after <cursor
 ```json
 {
   "wallet": [
-    { "name": "Ether", "symbol": "ETH", "address": null, "balance": "1.5", "priceUsd": 3500.5, "usdValue": 5250.75 },
-    { "name": "USD Coin", "symbol": "USDC", "address": "0xa0b8...eb48", "balance": "1000.00", "priceUsd": 1.0, "usdValue": 1000.0 },
-    { "name": "ZORA", "symbol": "ZORA", "address": "0x7122...037f", "balance": "500.5", "priceUsd": 2.35, "usdValue": 1176.18 }
+    {
+      "name": "Ether",
+      "symbol": "ETH",
+      "address": null,
+      "balance": "1.5",
+      "priceUsd": 3500.5,
+      "usdValue": 5250.75
+    },
+    {
+      "name": "USD Coin",
+      "symbol": "USDC",
+      "address": "0xa0b8...eb48",
+      "balance": "1000.00",
+      "priceUsd": 1.0,
+      "usdValue": 1000.0
+    },
+    {
+      "name": "ZORA",
+      "symbol": "ZORA",
+      "address": "0x7122...037f",
+      "balance": "500.5",
+      "priceUsd": 2.35,
+      "usdValue": 1176.18
+    }
   ],
   "coins": [
     {

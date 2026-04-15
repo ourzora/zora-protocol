@@ -63,7 +63,7 @@ The private key is stored locally at `~/.config/zora/wallet.json` with restricte
 
 ### Advanced
 
-To configure wallet or API key individually (without running the full setup flow). All commands work without an API key but may be rate-limited:
+To configure wallet or API key individually (without running the full setup flow). All commands work without an API key but may be rate-limited. An API key also provides more accurate coin valuations in `zora balance` by using the SDK's liquidity-aware pricing:
 
 - `zora wallet configure` — create or import a wallet (`--create`, `--force`)
 - `zora auth configure` — save an API key; `zora auth status` — check current config

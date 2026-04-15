@@ -148,7 +148,7 @@ describe("balance command", () => {
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
     vi.mocked(getPrivateKey).mockReturnValue("0x" + "a".repeat(64));
     vi.mocked(privateKeyToAccount).mockReturnValue({
-      address: "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045",
+      address: "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
     } as never);
 
     setupTokenInfoMock();
@@ -339,7 +339,7 @@ describe("balance command", () => {
     vi.mocked(getPrivateKey).mockReturnValue(undefined);
     process.env.ZORA_PRIVATE_KEY = "0x" + "b".repeat(64);
     vi.mocked(privateKeyToAccount).mockReturnValue({
-      address: "0x1234567890abcdef1234567890abcdef12345678",
+      address: "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
     } as never);
 
     vi.mocked(getProfileBalances).mockResolvedValue(emptyCoinsPayload as never);

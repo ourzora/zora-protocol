@@ -2,17 +2,25 @@ import type { Column } from "../components/table.js";
 import {
   formatCompactUsd,
   formatMcapChange,
+  formatUsd,
   formatCoinType,
   formatCoinName,
   truncateAddress,
 } from "./format.js";
-import { formatBalanceAsUsd, formatBalance } from "./balance-format.js";
+import { formatBalance, computeBalanceUsdValue } from "./balance-format.js";
 import type { WalletBalance } from "./wallet-balances.js";
 
 type SortFlag = "usd-value" | "balance" | "market-cap" | "price-change";
 
+type BalanceValuation = {
+  marketValueUsd?: string;
+  faceValueUsd?: string;
+  blockNumber?: number;
+};
+
 type BalanceNode = {
   balance: string;
+  valuation?: BalanceValuation;
   coin?: {
     address?: string;
     name?: string;
@@ -82,8 +90,16 @@ const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
   {
     header: "USD Value",
     width: 14,
-    accessor: (row) =>
-      formatBalanceAsUsd(row.balance, row.coin?.tokenPrice?.priceInUsdc),
+    accessor: (row) => {
+      const value = computeBalanceUsdValue(
+        row.balance,
+        row.valuation?.marketValueUsd,
+        row.coin?.tokenPrice?.priceInUsdc,
+      );
+      if (value === null) return "-";
+      if (value < 0.01) return "<$0.01";
+      return formatUsd(value);
+    },
   },
   {
     header: "Market Cap",
@@ -100,10 +116,15 @@ const balanceColumns: Column<BalanceNode & { rank: number }>[] = [
   },
 ];
 
+const API_KEY_BANNER =
+  "Valuation is more accurately evaluated when using an API key. Run `zora setup` to configure one.";
+
 export {
   walletColumns,
   balanceColumns,
   SORT_LABELS,
+  API_KEY_BANNER,
   type SortFlag,
   type BalanceNode,
+  type BalanceValuation,
 };
