@@ -31,6 +31,8 @@ import {
   GetCreatorCoinPoolConfigResponse,
   GetCreatorLivestreamCommentsData,
   GetCreatorLivestreamCommentsResponse,
+  GetWalletTradeActivityData,
+  GetWalletTradeActivityResponse,
 } from "../client/types.gen";
 import {
   getCoin as getCoinSDK,
@@ -49,6 +51,7 @@ import {
   getContentCoinPoolConfig as getContentCoinPoolConfigSDK,
   getCreatorCoinPoolConfig as getCreatorCoinPoolConfigSDK,
   getCreatorLivestreamComments as getCreatorLivestreamCommentsSDK,
+  getWalletTradeActivity as getWalletTradeActivitySDK,
 } from "../client/sdk.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
@@ -298,6 +301,21 @@ export const getCreatorLivestreamComments = async (
   options?: RequestOptionsType<GetCreatorLivestreamCommentsData>,
 ): Promise<RequestResult<GetCreatorLivestreamCommentsResponse>> => {
   return await getCreatorLivestreamCommentsSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetWalletTradeActivityQuery = GetWalletTradeActivityData["query"];
+export type { GetWalletTradeActivityQuery, GetWalletTradeActivityData };
+export type { GetWalletTradeActivityResponse } from "../client/types.gen";
+
+export const getWalletTradeActivity = async (
+  query: GetWalletTradeActivityQuery,
+  options?: RequestOptionsType<GetWalletTradeActivityData>,
+): Promise<RequestResult<GetWalletTradeActivityResponse>> => {
+  return await getWalletTradeActivitySDK({
     query,
     ...getApiKeyMeta(),
     ...options,
