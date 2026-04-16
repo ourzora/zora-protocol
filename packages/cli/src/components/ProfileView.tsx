@@ -3,18 +3,24 @@ import { Box, Text, useInput, useApp } from "ink";
 import Spinner from "ink-spinner";
 import { Table } from "./table.js";
 import { postColumns, type PostNode } from "./ProfilePostsView.js";
+import { tradeColumns, type TradeNode } from "./ProfileTradesView.js";
 import { balanceColumns, type BalanceNode } from "../lib/balance-columns.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
 
 type ProfileData = {
   posts: PostNode[];
   postsCount: number;
+  postsError?: string;
   holdings: (BalanceNode & { rank: number })[];
   holdingsCount: number;
+  holdingsError?: string;
+  trades: (TradeNode & { rank: number })[];
+  tradesCount: number;
+  tradesError?: string;
 };
 
-const TAB_NAMES = ["Posts", "Holdings"] as const;
-type TabIndex = 0 | 1;
+const TAB_NAMES = ["Posts", "Holdings", "Trades"] as const;
+type TabIndex = 0 | 1 | 2;
 
 type ProfileViewProps = {
   fetchData: () => Promise<ProfileData>;
@@ -72,11 +78,16 @@ const ProfileView = ({
       triggerManualRefresh();
       setManualRefreshCount((c) => c + 1);
     }
-    if (key.leftArrow || input === "1") {
-      setActiveTab(0);
+    if (input === "1") setActiveTab(0);
+    if (input === "2") setActiveTab(1);
+    if (input === "3") setActiveTab(2);
+    if (key.leftArrow) {
+      setActiveTab((t) => (t > 0 ? ((t - 1) as TabIndex) : t));
     }
-    if (key.rightArrow || input === "2") {
-      setActiveTab(1);
+    if (key.rightArrow) {
+      setActiveTab((t) =>
+        t < TAB_NAMES.length - 1 ? ((t + 1) as TabIndex) : t,
+      );
     }
   });
 
@@ -109,7 +120,7 @@ const ProfileView = ({
   if (!data) return null;
 
   const hints: string[] = [
-    "\u2190 \u2192 switch tab",
+    "1/2/3 or \u2190 \u2192 switch tab",
     autoRefresh ? `r refresh (${secondsUntilRefresh}s)` : "r refresh",
   ];
   hints.push("q quit");
@@ -137,7 +148,16 @@ const ProfileView = ({
       </Box>
 
       {activeTab === 0 ? (
-        rankedPosts.length === 0 ? (
+        data.postsError ? (
+          <Box
+            flexDirection="column"
+            paddingLeft={1}
+            paddingTop={1}
+            paddingBottom={1}
+          >
+            <Text dimColor>Could not load posts: {data.postsError}</Text>
+          </Box>
+        ) : rankedPosts.length === 0 ? (
           <Box
             flexDirection="column"
             paddingLeft={1}
@@ -154,21 +174,57 @@ const ProfileView = ({
             subtitle={`${rankedPosts.length} of ${data.postsCount}`}
           />
         )
-      ) : data.holdings.length === 0 ? (
+      ) : activeTab === 1 ? (
+        data.holdingsError ? (
+          <Box
+            flexDirection="column"
+            paddingLeft={1}
+            paddingTop={1}
+            paddingBottom={1}
+          >
+            <Text dimColor>Could not load holdings: {data.holdingsError}</Text>
+          </Box>
+        ) : data.holdings.length === 0 ? (
+          <Box
+            flexDirection="column"
+            paddingLeft={1}
+            paddingTop={1}
+            paddingBottom={1}
+          >
+            <Text>No holdings found for this profile.</Text>
+          </Box>
+        ) : (
+          <Table
+            columns={balanceColumns}
+            data={data.holdings}
+            title="Holdings"
+            subtitle={`${data.holdings.length} of ${data.holdingsCount}`}
+          />
+        )
+      ) : data.tradesError ? (
         <Box
           flexDirection="column"
           paddingLeft={1}
           paddingTop={1}
           paddingBottom={1}
         >
-          <Text>No holdings found for this profile.</Text>
+          <Text dimColor>Could not load trades: {data.tradesError}</Text>
+        </Box>
+      ) : data.trades.length === 0 ? (
+        <Box
+          flexDirection="column"
+          paddingLeft={1}
+          paddingTop={1}
+          paddingBottom={1}
+        >
+          <Text>No trades found for this profile.</Text>
         </Box>
       ) : (
         <Table
-          columns={balanceColumns}
-          data={data.holdings}
-          title="Holdings"
-          subtitle={`${data.holdings.length} of ${data.holdingsCount}`}
+          columns={tradeColumns}
+          data={data.trades}
+          title="Trades"
+          subtitle={`${data.trades.length} of ${data.tradesCount}`}
         />
       )}
 

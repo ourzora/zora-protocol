@@ -22,6 +22,7 @@ type PostNode = {
 const postColumns: Column<PostNode & { rank: number }>[] = [
   { header: "#", width: 4, accessor: (c) => String(c.rank) },
   { header: "Name", width: 20, accessor: (c) => c.name ?? "Unknown" },
+  { header: "Address", width: 22, accessor: (c) => c.address ?? "" },
   {
     header: "Type",
     width: 14,

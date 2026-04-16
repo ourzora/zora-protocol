@@ -17,6 +17,23 @@ const makeProfileData = (overrides?: Partial<ProfileData>): ProfileData => ({
   postsCount: 1,
   holdings: [],
   holdingsCount: 0,
+  trades: [
+    {
+      transactionHash: "0xabc123",
+      blockTimestamp: new Date().toISOString(),
+      coinAmount: "1000000000000000000000",
+      swapActivityType: "BUY",
+      coin: {
+        address: "0x1234567890abcdef1234567890abcdef12345678",
+        name: "Test Trade Coin",
+        symbol: "TTC",
+        coinType: "CREATOR",
+      },
+      currencyAmountWithPrice: { amountUsd: "25.50" },
+      rank: 1,
+    },
+  ],
+  tradesCount: 1,
   ...overrides,
 });
 
@@ -76,6 +93,116 @@ describe("ProfileView", () => {
     });
     expect(lastFrame()).toContain("r refresh");
     expect(lastFrame()).not.toMatch(/r refresh \(\d+s\)/);
+  });
+
+  it("switches to trades tab on key 3", async () => {
+    const { lastFrame, stdin } = render(
+      <ProfileView
+        fetchData={() => Promise.resolve(makeProfileData())}
+        identifier="testuser"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Posts]");
+    });
+
+    stdin.write("3");
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Trades]");
+    });
+    expect(lastFrame()).toContain("Test Trade Coin");
+  });
+
+  it("switches to holdings tab on key 2", async () => {
+    const { lastFrame, stdin } = render(
+      <ProfileView
+        fetchData={() => Promise.resolve(makeProfileData())}
+        identifier="testuser"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Posts]");
+    });
+
+    stdin.write("2");
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Holdings]");
+    });
+    expect(lastFrame()).toContain("No holdings found");
+  });
+
+  it("shows empty state for trades tab", async () => {
+    const { lastFrame, stdin } = render(
+      <ProfileView
+        fetchData={() =>
+          Promise.resolve(makeProfileData({ trades: [], tradesCount: 0 }))
+        }
+        identifier="testuser"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Posts]");
+    });
+
+    stdin.write("3");
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Trades]");
+    });
+    expect(lastFrame()).toContain("No trades found");
+  });
+
+  it("shows section error when trades fail", async () => {
+    const { lastFrame, stdin } = render(
+      <ProfileView
+        fetchData={() =>
+          Promise.resolve(makeProfileData({ tradesError: "API timeout" }))
+        }
+        identifier="testuser"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Posts]");
+    });
+    // Posts tab still works
+    expect(lastFrame()).toContain("Test Post");
+
+    stdin.write("3");
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Trades]");
+    });
+    expect(lastFrame()).toContain("Could not load trades");
+    expect(lastFrame()).toContain("API timeout");
+  });
+
+  it("shows section error when posts fail", async () => {
+    const { lastFrame } = render(
+      <ProfileView
+        fetchData={() =>
+          Promise.resolve(
+            makeProfileData({
+              postsError: "Server error",
+              posts: [],
+              postsCount: 0,
+            }),
+          )
+        }
+        identifier="testuser"
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Posts]");
+    });
+    expect(lastFrame()).toContain("Could not load posts");
+    expect(lastFrame()).toContain("Server error");
   });
 
   it("shows error state", async () => {

@@ -308,13 +308,39 @@ npx @zoralabs/cli profile posts [handle-or-address] --json --limit <n> --after <
 }
 ```
 
-For a quick overview without pagination, `profile` returns both posts and holdings in a single call:
+To view a profile's trade activity (buys and sells):
+
+```bash
+npx @zoralabs/cli profile trades [handle-or-address] --json --limit <n> --after <cursor>
+```
+
+```json
+{
+  "trades": [
+    {
+      "rank": 1,
+      "side": "BUY",
+      "coinName": "jacob",
+      "coinSymbol": "jacob",
+      "coinType": "CREATOR",
+      "coinAddress": "0x1234...5678",
+      "coinAmount": "1000500000000000000000",
+      "amountUsd": "25.50",
+      "transactionHash": "0xabcd...ef01",
+      "timestamp": "2025-01-15T10:30:00Z"
+    }
+  ],
+  "pageInfo": { "endCursor": "abc123", "hasNextPage": true }
+}
+```
+
+For a quick overview without pagination, `profile` returns posts, holdings, and trades in a single call:
 
 ```bash
 npx @zoralabs/cli profile [handle-or-address] --json
 ```
 
-This doesn't support pagination, so use the individual `profile posts` and `profile holdings` commands when you need to page through results.
+This doesn't support pagination, so use the individual `profile posts`, `profile holdings`, and `profile trades` commands when you need to page through results.
 
 ## Trading & Wallet Operations (requires wallet)
 

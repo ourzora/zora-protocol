@@ -3,6 +3,7 @@ import { Box, Text } from "ink";
 import {
   getProfileCoins,
   getProfileBalances,
+  getWalletTradeActivity,
   setApiKey,
 } from "@zoralabs/coins-sdk";
 import { getApiKey, getPrivateKey } from "../lib/config.js";
@@ -23,6 +24,11 @@ import {
   type PostNode,
 } from "../components/ProfilePostsView.js";
 import { ProfileHoldingsView } from "../components/ProfileHoldingsView.js";
+import {
+  ProfileTradesView,
+  tradeColumns,
+  type TradeNode,
+} from "../components/ProfileTradesView.js";
 import type { PageResult } from "../components/PaginatedTableView.js";
 import { balanceColumns, type BalanceNode } from "../lib/balance-columns.js";
 import {
@@ -70,6 +76,32 @@ type HoldingJson = {
   marketCap: number | null;
 };
 
+type TradeJson = {
+  rank: number;
+  side: string;
+  coinName: string | null;
+  coinSymbol: string | null;
+  coinType: string | null;
+  coinAddress: string | null;
+  coinAmount: string;
+  amountUsd: string | null;
+  transactionHash: string;
+  timestamp: string;
+};
+
+export const formatTradeJson = (trade: TradeNode, rank: number): TradeJson => ({
+  rank,
+  side: trade.swapActivityType ?? "UNKNOWN",
+  coinName: trade.coin?.name ?? null,
+  coinSymbol: trade.coin?.symbol ?? null,
+  coinType: trade.coin?.coinType ?? null,
+  coinAddress: trade.coin?.address ?? null,
+  coinAmount: trade.coinAmount,
+  amountUsd: trade.currencyAmountWithPrice.amountUsd ?? null,
+  transactionHash: trade.transactionHash,
+  timestamp: trade.blockTimestamp,
+});
+
 const formatPostJson = (post: PostNode, rank: number): PostJson => ({
   rank,
   name: post.name,
@@ -106,57 +138,87 @@ const formatHoldingJson = (
   };
 };
 
+export const extractSectionError = (
+  result: PromiseSettledResult<{ error?: unknown; data?: unknown }>,
+): string | undefined => {
+  if (result.status === "rejected") {
+    return result.reason instanceof Error
+      ? result.reason.message
+      : String(result.reason);
+  }
+  if (result.value.error) {
+    return extractErrorMessage(result.value.error);
+  }
+  return undefined;
+};
+
 const fetchProfileData = async (identifier: string): Promise<ProfileData> => {
-  const [postsResult, holdingsResult] = await Promise.allSettled([
+  const [postsResult, holdingsResult, tradesResult] = await Promise.allSettled([
     getProfileCoins({ identifier, count: 20 }),
     getProfileBalances({ identifier, count: 20, sortOption: "USD_VALUE" }),
+    getWalletTradeActivity({ identifier, first: 20 }),
   ]);
 
-  if (postsResult.status === "rejected") {
+  const postsError = extractSectionError(postsResult);
+  const holdingsError = extractSectionError(holdingsResult);
+  const tradesError = extractSectionError(tradesResult);
+
+  // If all three failed, throw so the whole command errors
+  if (postsError && holdingsError && tradesError) {
     throw new Error(
-      postsResult.reason instanceof Error
-        ? postsResult.reason.message
-        : String(postsResult.reason),
+      `All requests failed — posts: ${postsError}, holdings: ${holdingsError}, trades: ${tradesError}`,
     );
   }
 
-  if (holdingsResult.status === "rejected") {
-    throw new Error(
-      holdingsResult.reason instanceof Error
-        ? holdingsResult.reason.message
-        : String(holdingsResult.reason),
-    );
+  let posts: PostNode[] = [];
+  let postsCount = 0;
+  if (!postsError && postsResult.status === "fulfilled") {
+    const postEdges =
+      postsResult.value.data?.profile?.createdCoins?.edges ?? [];
+    posts = postEdges.map((e: { node: PostNode }) => e.node);
+    postsCount =
+      postsResult.value.data?.profile?.createdCoins?.count ?? posts.length;
   }
 
-  if (postsResult.value.error) {
-    throw new Error(
-      `API error (posts): ${extractErrorMessage(postsResult.value.error)}`,
-    );
-  }
-
-  if (holdingsResult.value.error) {
-    throw new Error(
-      `API error (holdings): ${extractErrorMessage(holdingsResult.value.error)}`,
-    );
-  }
-
-  const postEdges = postsResult.value.data?.profile?.createdCoins?.edges ?? [];
-  const posts: PostNode[] = postEdges.map((e: { node: PostNode }) => e.node);
-  const postsCount =
-    postsResult.value.data?.profile?.createdCoins?.count ?? posts.length;
-
-  const holdingEdges =
-    holdingsResult.value.data?.profile?.coinBalances?.edges ?? [];
-  const holdings: (BalanceNode & { rank: number })[] = holdingEdges.map(
-    (e: { node: BalanceNode }, i: number) => ({
+  let holdings: (BalanceNode & { rank: number })[] = [];
+  let holdingsCount = 0;
+  if (!holdingsError && holdingsResult.status === "fulfilled") {
+    const holdingEdges =
+      holdingsResult.value.data?.profile?.coinBalances?.edges ?? [];
+    holdings = holdingEdges.map((e: { node: BalanceNode }, i: number) => ({
       ...e.node,
       rank: i + 1,
-    }),
-  );
-  const holdingsCount =
-    holdingsResult.value.data?.profile?.coinBalances?.count ?? holdings.length;
+    }));
+    holdingsCount =
+      holdingsResult.value.data?.profile?.coinBalances?.count ??
+      holdings.length;
+  }
 
-  return { posts, postsCount, holdings, holdingsCount };
+  let trades: (TradeNode & { rank: number })[] = [];
+  let tradesCount = 0;
+  if (!tradesError && tradesResult.status === "fulfilled") {
+    const tradeEdges =
+      tradesResult.value.data?.walletAddressTradeActivity?.edges ?? [];
+    trades = tradeEdges.map((e: { node: TradeNode }, i: number) => ({
+      ...e.node,
+      rank: i + 1,
+    }));
+    tradesCount =
+      tradesResult.value.data?.walletAddressTradeActivity?.count ??
+      trades.length;
+  }
+
+  return {
+    posts,
+    postsCount,
+    postsError,
+    holdings,
+    holdingsCount,
+    holdingsError,
+    trades,
+    tradesCount,
+    tradesError,
+  };
 };
 
 const resolveIdentifier = (
@@ -185,7 +247,7 @@ const resolveIdentifier = (
 };
 
 export const profileCommand = new Command("profile")
-  .description("View profile activity (posts and holdings)")
+  .description("View profile activity (posts, holdings, and trades)")
   .argument(
     "[identifier]",
     "Wallet address or profile handle (defaults to your wallet)",
@@ -215,8 +277,15 @@ export const profileCommand = new Command("profile")
 
       outputData(json, {
         json: {
-          posts: data.posts.map((p, i) => formatPostJson(p, i + 1)),
-          holdings: data.holdings.map(formatHoldingJson),
+          posts: data.postsError
+            ? { error: data.postsError }
+            : data.posts.map((p, i) => formatPostJson(p, i + 1)),
+          holdings: data.holdingsError
+            ? { error: data.holdingsError }
+            : data.holdings.map(formatHoldingJson),
+          trades: data.tradesError
+            ? { error: data.tradesError }
+            : data.trades.map((t) => formatTradeJson(t, t.rank)),
         },
         render: () => {},
       });
@@ -226,6 +295,7 @@ export const profileCommand = new Command("profile")
         output_format: "json",
         posts_count: data.postsCount,
         holdings_count: data.holdingsCount,
+        trades_count: data.tradesCount,
       });
     } else if (live) {
       const fetchData = () => fetchProfileData(identifier);
@@ -257,7 +327,11 @@ export const profileCommand = new Command("profile")
 
       renderOnce(
         <Box flexDirection="column">
-          {rankedPosts.length === 0 ? (
+          {data.postsError ? (
+            <Box paddingLeft={1} paddingTop={1} paddingBottom={1}>
+              <Text dimColor>Could not load posts: {data.postsError}</Text>
+            </Box>
+          ) : rankedPosts.length === 0 ? (
             <Box
               flexDirection="column"
               paddingLeft={1}
@@ -276,7 +350,13 @@ export const profileCommand = new Command("profile")
               subtitle={`${rankedPosts.length} of ${data.postsCount}`}
             />
           )}
-          {data.holdings.length === 0 ? (
+          {data.holdingsError ? (
+            <Box paddingLeft={1} paddingTop={1} paddingBottom={1}>
+              <Text dimColor>
+                Could not load holdings: {data.holdingsError}
+              </Text>
+            </Box>
+          ) : data.holdings.length === 0 ? (
             <Box
               flexDirection="column"
               paddingLeft={1}
@@ -295,6 +375,29 @@ export const profileCommand = new Command("profile")
               subtitle={`${data.holdings.length} of ${data.holdingsCount}`}
             />
           )}
+          {data.tradesError ? (
+            <Box paddingLeft={1} paddingTop={1} paddingBottom={1}>
+              <Text dimColor>Could not load trades: {data.tradesError}</Text>
+            </Box>
+          ) : data.trades.length === 0 ? (
+            <Box
+              flexDirection="column"
+              paddingLeft={1}
+              paddingTop={1}
+              paddingBottom={1}
+            >
+              <Box>
+                <Text>No trades found for this profile.</Text>
+              </Box>
+            </Box>
+          ) : (
+            <Table
+              columns={tradeColumns}
+              data={data.trades}
+              title="Trades"
+              subtitle={`${data.trades.length} of ${data.tradesCount}`}
+            />
+          )}
         </Box>,
       );
 
@@ -303,6 +406,7 @@ export const profileCommand = new Command("profile")
         output_format: "static",
         posts_count: data.postsCount,
         holdings_count: data.holdingsCount,
+        trades_count: data.tradesCount,
       });
     }
   });
@@ -626,6 +730,153 @@ profileCommand
         identifier,
         output_format: "static",
         sort,
+        count: result.count,
+      });
+    }
+  });
+
+// --- Trades subcommand ---
+
+async function fetchTradesPage(
+  identifier: string,
+  count: number,
+  after?: string,
+): Promise<PageResult<TradeNode>> {
+  const response = await getWalletTradeActivity({
+    identifier,
+    first: count,
+    after,
+  });
+
+  if (response.error) {
+    throw new Error(`API error: ${extractErrorMessage(response.error)}`);
+  }
+
+  const edges = response.data?.walletAddressTradeActivity?.edges ?? [];
+  const items: TradeNode[] = edges.map((e: { node: TradeNode }) => e.node);
+  const total =
+    response.data?.walletAddressTradeActivity?.count ?? items.length;
+  const pageInfo = response.data?.walletAddressTradeActivity?.pageInfo as
+    | PageInfo
+    | undefined;
+
+  return { items, count: total, pageInfo };
+}
+
+profileCommand
+  .command("trades")
+  .description("View profile trade activity (buys and sells) with pagination")
+  .argument(
+    "[identifier]",
+    "Wallet address or profile handle (defaults to your wallet)",
+  )
+  .option("--limit <n>", "Number of results per page (max 20)", "10")
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
+  .option("--after <cursor>", "Pagination cursor from a previous result")
+  .action(async function (this: Command, identifierArg?: string) {
+    const output = getOutputMode(this, "live");
+    const json = output === "json";
+    resolveApiKey();
+    const opts = this.opts();
+    const after: string | undefined = opts.after;
+    const limit = Math.min(20, Math.max(1, parseInt(opts.limit, 10) || 10));
+    const { live, intervalSeconds } = getLiveConfig(this, output);
+    const identifier = resolveIdentifier(identifierArg, json);
+
+    if (json) {
+      const result = await fetchTradesPage(identifier, limit, after).catch(
+        (err) =>
+          outputErrorAndExit(
+            json,
+            `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+      );
+      outputData(json, {
+        json: {
+          trades: result.items.map((t, i) => formatTradeJson(t, i + 1)),
+          pageInfo: result.pageInfo ?? null,
+        },
+        render: () => {},
+      });
+
+      track("cli_profile_trades", {
+        identifier,
+        output_format: "json",
+        count: result.count,
+      });
+    } else if (live) {
+      const fetchPage = (cursor?: string) =>
+        fetchTradesPage(identifier, limit, cursor);
+
+      await renderLive(
+        <ProfileTradesView
+          fetchPage={fetchPage}
+          identifier={identifier}
+          limit={limit}
+          autoRefresh={live}
+          intervalSeconds={intervalSeconds}
+        />,
+      );
+
+      track("cli_profile_trades", {
+        identifier,
+        output_format: "live",
+        live,
+        interval: intervalSeconds,
+      });
+    } else {
+      const result = await fetchTradesPage(identifier, limit, after).catch(
+        (err) =>
+          outputErrorAndExit(
+            json,
+            `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+      );
+      const rankedTrades = result.items.map((t, i) => ({
+        ...t,
+        rank: i + 1,
+      }));
+
+      if (rankedTrades.length === 0) {
+        renderOnce(
+          <Box
+            flexDirection="column"
+            paddingLeft={1}
+            paddingTop={1}
+            paddingBottom={1}
+          >
+            <Text>No trades found for this profile.</Text>
+            <Box marginTop={1} flexDirection="column">
+              <Text dimColor>Buy coins to see trades here:</Text>
+              <Text dimColor> zora buy {"<address>"} --eth 0.001</Text>
+            </Box>
+          </Box>,
+        );
+      } else {
+        const footer =
+          result.pageInfo?.hasNextPage && result.pageInfo.endCursor
+            ? `Next page: zora profile trades ${identifier} --limit ${limit} --after ${result.pageInfo.endCursor}`
+            : undefined;
+        renderOnce(
+          <Table
+            columns={tradeColumns}
+            data={rankedTrades}
+            title="Trades"
+            subtitle={`${rankedTrades.length} of ${result.count}`}
+            footer={footer}
+          />,
+        );
+      }
+
+      track("cli_profile_trades", {
+        identifier,
+        output_format: "static",
         count: result.count,
       });
     }
