@@ -7,7 +7,6 @@ import { balanceCommand } from "./commands/balance.js";
 import { buyCommand } from "./commands/buy.js";
 import { exploreCommand } from "./commands/explore.jsx";
 import { getCommand } from "./commands/get.jsx";
-import { priceHistoryCommand } from "./commands/price-history.jsx";
 import { sellCommand } from "./commands/sell.js";
 import { profileCommand } from "./commands/profile.js";
 import { sendCommand } from "./commands/send.js";
@@ -84,7 +83,6 @@ const buildProgram = (): Command => {
   program.addCommand(buyCommand);
   program.addCommand(exploreCommand);
   program.addCommand(getCommand);
-  program.addCommand(priceHistoryCommand);
   program.addCommand(profileCommand);
   program.addCommand(setupCommand);
   program.addCommand(walletCommand);

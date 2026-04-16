@@ -25,26 +25,26 @@ zora explore
 zora get <address-or-name>
 
 # Check price history
-zora price-history <address-or-name>
+zora get price-history <address-or-name>
 ```
 
 ## Commands
 
-All commands support `--json` for machine-readable output. Commands with live data (`explore`, `balance`, `profile`) also support `--live` (interactive, default) and `--static` (snapshot). Use `--refresh <seconds>` to set the auto-refresh interval in `--live` mode.
+All commands support `--json` for machine-readable output. Commands with live data (`explore`, `get`, `balance`, `profile`) also support `--live` (interactive, default) and `--static` (snapshot). Use `--refresh <seconds>` to set the auto-refresh interval in `--live` mode.
 
-| Command         | Description                                               | Wallet required |
-| --------------- | --------------------------------------------------------- | --------------- |
-| `setup`         | Guided first-time setup (wallet + API key + deposit info) | —               |
-| `explore`       | Browse top, new, and highest volume coins                 | No              |
-| `get`           | Look up a coin by address or name                         | No              |
-| `price-history` | Display price history for a coin                          | No              |
-| `auth`          | Configure or check API key status                         | No              |
-| `profile`       | View creator or user profiles                             | No              |
-| `buy`           | Buy a coin                                                | Yes             |
-| `sell`          | Sell a coin                                               | Yes             |
-| `balance`       | Show wallet balances (ETH, USDC, ZORA) and coin positions | Yes             |
-| `wallet`        | Show wallet address, export key, or configure wallet      | Yes             |
-| `send`          | Send tokens to another address                            | Yes             |
+| Command             | Description                                               | Wallet required |
+| ------------------- | --------------------------------------------------------- | --------------- |
+| `setup`             | Guided first-time setup (wallet + API key + deposit info) | —               |
+| `explore`           | Browse top, new, and highest volume coins                 | No              |
+| `get`               | Look up a coin by address or name                         | No              |
+| `get price-history` | Display price history for a coin                          | No              |
+| `auth`              | Configure or check API key status                         | No              |
+| `profile`           | View creator or user profiles                             | No              |
+| `buy`               | Buy a coin                                                | Yes             |
+| `sell`              | Sell a coin                                               | Yes             |
+| `balance`           | Show wallet balances (ETH, USDC, ZORA) and coin positions | Yes             |
+| `wallet`            | Show wallet address, export key, or configure wallet      | Yes             |
+| `send`              | Send tokens to another address                            | Yes             |
 
 Run `zora --help` or `zora <command> --help` for detailed usage.
 

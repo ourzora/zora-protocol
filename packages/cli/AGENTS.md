@@ -41,7 +41,7 @@ pnpm build                             # production build to dist/
 packages/cli/
 ├── src/
 │   ├── index.tsx      # entry point, registers commands
-│   ├── commands/      # one file per CLI command (auth, balance, buy, sell, explore, get, price-history, profile, send, setup, wallet)
+│   ├── commands/      # one file per CLI command (auth, balance, buy, sell, explore, get, profile, send, setup, wallet)
 │   ├── components/    # Ink (React) components for terminal UI (tables, coin detail, zorb art)
 │   ├── lib/           # shared utilities (formatting, config, wallet, output helpers, coin resolution)
 │   └── test/          # vitest global setup and test helpers
@@ -53,21 +53,21 @@ packages/cli/
 
 ## Commands
 
-All commands support `--json` (global flag) for machine-readable output. Commands with live data (explore, balance, profile) also support `--live` (interactive, default) and `--static` (snapshot). These three flags are mutually exclusive.
+All commands support `--json` (global flag) for machine-readable output. Commands with live data (explore, get, balance, profile) also support `--live` (interactive, default) and `--static` (snapshot). These three flags are mutually exclusive.
 
-| Command         | Description                                               | Wallet required |
-| --------------- | --------------------------------------------------------- | --------------- |
-| `setup`         | Guided first-time setup (wallet + API key + deposit info) | —               |
-| `explore`       | Browse top, new, and highest volume coins                 | No              |
-| `get`           | Look up a coin by address or name                         | No              |
-| `price-history` | Display price history for a coin                          | No              |
-| `auth`          | Configure or check API key status                         | No              |
-| `buy`           | Buy a coin                                                | Yes             |
-| `sell`          | Sell a coin                                               | Yes             |
-| `balance`       | Show wallet balances (ETH, USDC, ZORA) and coin positions | Yes             |
-| `send`          | Send tokens to another address                            | Yes             |
-| `wallet`        | Show wallet address, export key, or configure wallet      | Yes             |
-| `profile`       | View creator or user profiles                             | No              |
+| Command             | Description                                                         | Wallet required |
+| ------------------- | ------------------------------------------------------------------- | --------------- |
+| `setup`             | Guided first-time setup (wallet + API key + deposit info)           | —               |
+| `explore`           | Browse top, new, and highest volume coins                           | No              |
+| `get`               | Look up a coin by address or name (tabbed: Summary + Price History) | No              |
+| `get price-history` | Display price history for a coin                                    | No              |
+| `auth`              | Configure or check API key status                                   | No              |
+| `buy`               | Buy a coin                                                          | Yes             |
+| `sell`              | Sell a coin                                                         | Yes             |
+| `balance`           | Show wallet balances (ETH, USDC, ZORA) and coin positions           | Yes             |
+| `send`              | Send tokens to another address                                      | Yes             |
+| `wallet`            | Show wallet address, export key, or configure wallet                | Yes             |
+| `profile`           | View creator or user profiles                                       | No              |
 
 ## Setup
 
@@ -94,7 +94,7 @@ To configure wallet or API key individually (without running the full setup flow
 ## SDK patterns
 
 - `--json` is a global flag — when present, commands output structured JSON instead of styled terminal output. Use `getJson(this)` from `src/lib/output.ts` to check it, and `outputData` to handle both paths.
-- `--live` and `--static` are per-command flags on explore, balance, and profile. They control presentation mode (interactive vs snapshot). Use `getOutputMode(this, "live")` then pass the result to `getLiveConfig(this, output)` from `src/lib/output.ts`. `--refresh <seconds>` is also per-command and sets the auto-refresh interval for `--live` mode (min 5s, default 30s).
+- `--live` and `--static` are per-command flags on explore, get, balance, and profile. They control presentation mode (interactive vs snapshot). Use `getOutputMode(this, "live")` then pass the result to `getLiveConfig(this, output)` from `src/lib/output.ts`. `--refresh <seconds>` is also per-command and sets the auto-refresh interval for `--live` mode (min 5s, default 30s).
 - `--json`, `--live`, and `--static` are mutually exclusive — `getOutputMode()` validates this.
 - SDK query functions return `{ error, data }` — always check `error` first
 - Coin resolution (`src/lib/coin-ref.ts`): `parseCoinRef` parses identifiers, `resolveCoin` does the async SDK lookup

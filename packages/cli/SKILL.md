@@ -192,7 +192,7 @@ npx @zoralabs/cli get trend <ticker> --json
 ```
 
 - **Address:** `get 0x1234...` — always unambiguous, works for any coin type
-- **Bare name:** `get jacob` — tries both creator-coin and trend; if ambiguous, returns `{ "matches": [...], "hint": "..." }` instead of a single coin — use a typed form to disambiguate
+- **Bare name:** `get jacob` — tries both creator-coin and trend; if ambiguous, returns an error with a suggestion to use a typed form to disambiguate
 - **Typed name:** `get creator-coin jacob` or `get trend zora` — disambiguates when using a name
 
 Returns:
@@ -208,9 +208,21 @@ Returns:
   "uniqueHolders": 350,
   "createdAt": "2025-01-15T10:30:00Z",
   "creatorAddress": "0xabcd...ef01",
-  "creatorHandle": "jacob"
+  "creatorHandle": "jacob",
+  "priceHistory": {
+    "interval": "1w",
+    "high": 0.00523,
+    "low": 0.00412,
+    "change": 0.023,
+    "prices": [
+      { "timestamp": "2025-01-01T00:00:00Z", "price": 0.00512 },
+      { "timestamp": "2025-01-02T00:00:00Z", "price": 0.00523 }
+    ]
+  }
 }
 ```
+
+`priceHistory` is `null` when no price data is available. `change` is `null` when the first price is 0.
 
 ### Explore → Get mapping
 
@@ -228,7 +240,7 @@ Alternatively, use the `coinType` from explore to build a typed lookup: `get cre
 ### Price history
 
 ```bash
-npx @zoralabs/cli price-history <address-or-name> --json --interval <1h|24h|1w|1m|ALL>
+npx @zoralabs/cli get price-history <address-or-name> --json --interval <1h|24h|1w|1m|ALL>
 ```
 
 Default interval: `1w`
@@ -238,7 +250,7 @@ Returns:
 ```json
 {
   "coin": "jacob",
-  "type": "creator-coin",
+  "coinType": "creator-coin",
   "interval": "1w",
   "high": 0.00523,
   "low": 0.00412,
@@ -624,7 +636,7 @@ npx @zoralabs/cli sell 0x<address> --percent 50 --yes --json
 # 1. Get current state
 npx @zoralabs/cli get 0x<address> --json
 # 2. Check price history
-npx @zoralabs/cli price-history 0x<address> --interval 24h --json
+npx @zoralabs/cli get price-history 0x<address> --interval 24h --json
 # 3. Check who's creating coins
 npx @zoralabs/cli profile <handle> --json
 ```
