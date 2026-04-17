@@ -11,6 +11,7 @@ vi.mock("../lib/analytics.js");
 import {
   setApiKey,
   getCoin,
+  getCoinSwaps,
   getProfile,
   getTrend,
   apiGet,
@@ -587,5 +588,195 @@ describe("get price-history subcommand", () => {
     const output = parsedOutput() as any;
     expect(output.interval).toBe("ALL");
     expect(output.prices).toHaveLength(2);
+  });
+});
+
+// --- trades subcommand tests ---
+
+const makeSwapEdge = (
+  overrides?: Partial<import("../components/CoinTradesView.js").TradeSwapNode>,
+) => ({
+  node: {
+    activityType: "BUY" as const,
+    coinAmount: "1000000000000000000",
+    blockTimestamp: "2026-04-10T12:00:00Z",
+    senderAddress: "0xabcdef1234567890abcdef1234567890abcdef12",
+    senderProfile: { handle: "alice" },
+    currencyAmountWithPrice: { priceUsdc: "5.25" },
+    transactionHash: "0xtx1",
+    ...overrides,
+  },
+  cursor: "cursor1",
+});
+
+describe("get trades subcommand", () => {
+  let logSpy: ReturnType<typeof vi.spyOn>;
+
+  beforeEach(() => {
+    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    vi.spyOn(console, "error").mockImplementation(() => {});
+    vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`exit ${code}`);
+    });
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  const parseJson = (...args: string[]) => {
+    const program = createProgram(getCommand);
+    return program.parseAsync(["get", "trades", ...args, "--json"], {
+      from: "user",
+    });
+  };
+
+  const parsedOutput = (): any =>
+    JSON.parse(logSpy.mock.calls.map((c) => c[0]).join("\n"));
+
+  it("outputs trades JSON for a coin by address", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoin).mockResolvedValue(
+      makeCoinResponse("TestCoin", "0x1234") as any,
+    );
+    vi.mocked(getCoinSwaps).mockResolvedValue({
+      data: {
+        zora20Token: {
+          swapActivities: {
+            edges: [
+              makeSwapEdge(),
+              makeSwapEdge({
+                activityType: "SELL",
+                senderAddress: "0x9999",
+                senderProfile: undefined,
+                coinAmount: "500000000000000000",
+                currencyAmountWithPrice: { priceUsdc: "2.10" },
+                transactionHash: "0xtx2",
+                blockTimestamp: "2026-04-10T11:00:00Z",
+              }),
+            ],
+            count: 2,
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      },
+    } as any);
+
+    await parseJson("0x1234");
+
+    const output = parsedOutput();
+    expect(output.coin).toMatchObject({ name: "TestCoin", address: "0x1234" });
+    expect(output.trades).toHaveLength(2);
+    expect(output.trades[0]).toMatchObject({
+      type: "BUY",
+      senderHandle: "alice",
+      valueUsd: "5.25",
+    });
+    expect(output.trades[1]).toMatchObject({
+      type: "SELL",
+      senderHandle: null,
+      valueUsd: "2.10",
+    });
+  });
+
+  it("outputs empty trades array when no swaps exist", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoin).mockResolvedValue(
+      makeCoinResponse("EmptyCoin", "0xempty") as any,
+    );
+    vi.mocked(getCoinSwaps).mockResolvedValue({
+      data: {
+        zora20Token: {
+          swapActivities: {
+            edges: [],
+            count: 0,
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      },
+    } as any);
+
+    await parseJson("0xempty");
+
+    const output = parsedOutput();
+    expect(output.trades).toEqual([]);
+  });
+
+  it("exits with error when coin not found", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoin).mockResolvedValue({
+      data: { zora20Token: undefined },
+    } as any);
+
+    await expect(parseJson("0xdead")).rejects.toThrow("process.exit(1)");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("No coin found"),
+    );
+  });
+
+  it("exits with error when getCoinSwaps throws", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoin).mockResolvedValue(
+      makeCoinResponse("TestCoin", "0x1234") as any,
+    );
+    vi.mocked(getCoinSwaps).mockRejectedValue(new Error("API rate limited"));
+
+    await expect(parseJson("0x1234")).rejects.toThrow("process.exit(1)");
+    expect(logSpy).toHaveBeenCalledWith(
+      expect.stringContaining("API rate limited"),
+    );
+  });
+
+  it("includes pageInfo when next page exists", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoin).mockResolvedValue(
+      makeCoinResponse("BigCoin", "0xbig") as any,
+    );
+    vi.mocked(getCoinSwaps).mockResolvedValue({
+      data: {
+        zora20Token: {
+          swapActivities: {
+            edges: [makeSwapEdge()],
+            count: 50,
+            pageInfo: { hasNextPage: true, endCursor: "cursor-abc" },
+          },
+        },
+      },
+    } as any);
+
+    await parseJson("0xbig", "--limit", "1");
+
+    const output = parsedOutput();
+    expect(output.trades).toHaveLength(1);
+    expect(output.pageInfo).toMatchObject({
+      hasNextPage: true,
+      endCursor: "cursor-abc",
+    });
+  });
+
+  it("passes --after cursor to getCoinSwaps", async () => {
+    vi.mocked(getApiKey).mockReturnValue(undefined as any);
+    vi.mocked(getCoin).mockResolvedValue(
+      makeCoinResponse("TestCoin", "0x1234") as any,
+    );
+    vi.mocked(getCoinSwaps).mockResolvedValue({
+      data: {
+        zora20Token: {
+          swapActivities: {
+            edges: [],
+            count: 0,
+            pageInfo: { hasNextPage: false, endCursor: null },
+          },
+        },
+      },
+    } as any);
+
+    await parseJson("0x1234", "--after", "my-cursor");
+
+    expect(getCoinSwaps).toHaveBeenCalledWith({
+      address: "0x1234",
+      first: 10,
+      after: "my-cursor",
+    });
   });
 });

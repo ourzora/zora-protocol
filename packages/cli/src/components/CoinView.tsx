@@ -3,6 +3,8 @@ import { Box, Text, useInput, useApp } from "ink";
 import Spinner from "ink-spinner";
 import { CoinDetail } from "./CoinDetail.js";
 import { PriceHistory } from "./PriceHistory.js";
+import { Table, type Column } from "./table.js";
+import { coinTradeColumns, type TradeSwapNode } from "./CoinTradesView.js";
 import type { ResolvedCoin } from "../lib/coin-ref.js";
 import type { Interval } from "../lib/price-history.js";
 import { useAutoRefresh } from "../hooks/use-auto-refresh.js";
@@ -18,10 +20,17 @@ export type PriceHistoryData = {
 export type CoinViewData = {
   coin: ResolvedCoin;
   priceHistory: PriceHistoryData | null;
+  trades: TradeSwapNode[];
 };
 
-const TAB_NAMES = ["Price History"] as const;
-type TabIndex = 0;
+const TAB_NAMES = ["Price History", "Trades"] as const;
+type TabIndex = 0 | 1;
+
+// Reuse coinTradeColumns from CoinTradesView, dropping the "#" rank column.
+// Cast to Column<TradeSwapNode> since we've removed the rank-dependent column.
+const TRADE_TAB_COLUMNS = coinTradeColumns.filter(
+  (col) => col.header !== "#",
+) as Column<TradeSwapNode>[];
 
 type CoinViewProps = {
   fetchData: () => Promise<CoinViewData>;
@@ -83,8 +92,7 @@ const CoinView = ({
     if (key.leftArrow || input === "1") {
       setActiveTab(0);
     }
-    // Ready for future tabs:
-    // if (key.rightArrow || input === "2") setActiveTab(1);
+    if (key.rightArrow || input === "2") setActiveTab(1);
   });
 
   if (error && !data) {
@@ -145,6 +153,19 @@ const CoinView = ({
             paddingBottom={1}
           >
             <Text>No price data available.</Text>
+          </Box>
+        );
+      case 1:
+        return data.trades.length > 0 ? (
+          <Table columns={TRADE_TAB_COLUMNS} data={data.trades} />
+        ) : (
+          <Box
+            flexDirection="column"
+            paddingLeft={1}
+            paddingTop={1}
+            paddingBottom={1}
+          >
+            <Text>No trades found.</Text>
           </Box>
         );
     }

@@ -26,6 +26,9 @@ zora get <address-or-name>
 
 # Check price history
 zora get price-history <address-or-name>
+
+# View recent trades on a coin
+zora get trades <address-or-name>
 ```
 
 ## Commands
@@ -38,6 +41,7 @@ All commands support `--json` for machine-readable output. Commands with live da
 | `explore`           | Browse top, new, and highest volume coins                 | No              |
 | `get`               | Look up a coin by address or name                         | No              |
 | `get price-history` | Display price history for a coin                          | No              |
+| `get trades`        | Show recent buy/sell activity on a coin                   | No              |
 | `auth`              | Configure or check API key status                         | No              |
 | `profile`           | View creator or user profiles                             | No              |
 | `buy`               | Buy a coin                                                | Yes             |

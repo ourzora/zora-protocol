@@ -37,13 +37,7 @@ import {
 } from "../lib/balance-format.js";
 import { COIN_TYPE_DISPLAY, type PageInfo } from "../lib/types.js";
 import { track } from "../lib/analytics.js";
-
-const extractErrorMessage = (error: unknown): string => {
-  if (typeof error === "object" && error !== null && "error" in error) {
-    return String((error as Record<string, unknown>).error);
-  }
-  return JSON.stringify(error);
-};
+import { extractErrorMessage } from "../lib/errors.js";
 
 const resolveApiKey = () => {
   const apiKey = getApiKey();

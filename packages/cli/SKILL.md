@@ -131,7 +131,7 @@ Commands that prompt for confirmation without `--yes`:
 
 ## Pagination
 
-The `explore` and `balance coins` commands support cursor-based pagination.
+The `explore`, `balance coins`, and `get trades` commands support cursor-based pagination.
 
 - `--limit <1-20>` — results per page (default 10, max 20)
 - `--after <cursor>` — fetch the next page by passing the `endCursor` from the previous response
@@ -218,11 +218,22 @@ Returns:
       { "timestamp": "2025-01-01T00:00:00Z", "price": 0.00512 },
       { "timestamp": "2025-01-02T00:00:00Z", "price": 0.00523 }
     ]
-  }
+  },
+  "trades": [
+    {
+      "type": "BUY",
+      "sender": "0xabcd...ef01",
+      "senderHandle": "alice",
+      "coinAmount": "1000500000000000000000",
+      "valueUsd": "25.50",
+      "timestamp": "2025-01-15T10:30:00Z",
+      "transactionHash": "0x9876...5432"
+    }
+  ]
 }
 ```
 
-`priceHistory` is `null` when no price data is available. `change` is `null` when the first price is 0.
+`priceHistory` is `null` when no price data is available. `change` is `null` when the first price is 0. `trades` is always an array (empty `[]` when no trade data is available).
 
 ### Explore → Get mapping
 
@@ -263,6 +274,36 @@ Returns:
 ```
 
 `change` is `null` when the first price in the interval is 0.
+
+### Coin trades
+
+```bash
+npx @zoralabs/cli get trades <address-or-name> --json --limit <n> --after <cursor>
+```
+
+Default limit: `10` (max 20). Supports the same coin resolution as `get` (address, bare name, typed name).
+
+Returns:
+
+```json
+{
+  "coin": { "name": "jacob", "address": "0x1234...5678" },
+  "trades": [
+    {
+      "type": "BUY",
+      "sender": "0xabcd...ef01",
+      "senderHandle": "alice",
+      "coinAmount": "1000500000000000000000",
+      "valueUsd": "25.50",
+      "timestamp": "2025-01-15T10:30:00Z",
+      "transactionHash": "0x9876...5432"
+    }
+  ],
+  "pageInfo": { "endCursor": "cursor123", "hasNextPage": true }
+}
+```
+
+`senderHandle` is `null` when the sender has no Zora profile. `type` is `"BUY"` or `"SELL"`. When `hasNextPage` is `true`, pass `--after <endCursor>` to get the next page.
 
 ### Creator/user profile
 
@@ -637,6 +678,8 @@ npx @zoralabs/cli sell 0x<address> --percent 50 --yes --json
 npx @zoralabs/cli get 0x<address> --json
 # 2. Check price history
 npx @zoralabs/cli get price-history 0x<address> --interval 24h --json
-# 3. Check who's creating coins
+# 3. Check recent buy/sell activity
+npx @zoralabs/cli get trades 0x<address> --json
+# 4. Check who's creating coins
 npx @zoralabs/cli profile <handle> --json
 ```

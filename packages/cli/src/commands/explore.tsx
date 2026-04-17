@@ -29,7 +29,7 @@ import {
 } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 import { computeMarketCapChange24h } from "../lib/format.js";
-import { apiErrorMessage } from "../lib/errors.js";
+import { apiErrorMessage, extractErrorMessage } from "../lib/errors.js";
 import {
   SORT_LABELS,
   TYPE_LABELS,
@@ -303,11 +303,10 @@ export const exploreCommand = new Command("explore")
       }
 
       if (response.error) {
-        const msg =
-          typeof response.error === "object" && response.error.error
-            ? response.error.error
-            : JSON.stringify(response.error);
-        outputErrorAndExit(json, `API error: ${msg}`);
+        outputErrorAndExit(
+          json,
+          `API error: ${extractErrorMessage(response.error)}`,
+        );
       }
 
       const edges = response.data?.exploreList?.edges ?? [];
@@ -336,11 +335,7 @@ export const exploreCommand = new Command("explore")
       ): Promise<PageResult<CoinNode>> => {
         const response = await queryFn({ count: limit, after: cursor });
         if (response.error) {
-          const msg =
-            typeof response.error === "object" && response.error.error
-              ? response.error.error
-              : JSON.stringify(response.error);
-          throw new Error(msg);
+          throw new Error(extractErrorMessage(response.error));
         }
         const edges = response.data?.exploreList?.edges ?? [];
         const items: CoinNode[] = edges.map((e: any) => e.node);

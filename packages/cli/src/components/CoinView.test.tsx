@@ -24,6 +24,7 @@ const makeCoinViewData = (overrides?: Partial<CoinViewData>): CoinViewData => ({
     sparklineText: "▁▂▃▅▇",
     interval: "1w",
   },
+  trades: [],
   ...overrides,
 });
 
@@ -147,7 +148,7 @@ describe("CoinView", () => {
     expect(lastFrame()).toContain("[Price History]");
   });
 
-  it("does not show tab switch hint with single tab", async () => {
+  it("shows tab switch hint with multiple tabs", async () => {
     const { lastFrame } = render(
       <CoinView fetchData={() => Promise.resolve(makeCoinViewData())} />,
     );
@@ -155,6 +156,68 @@ describe("CoinView", () => {
     await vi.waitFor(() => {
       expect(lastFrame()).toContain("[Price History]");
     });
-    expect(lastFrame()).not.toContain("switch tab");
+    expect(lastFrame()).toContain("Trades");
+    expect(lastFrame()).toContain("switch tab");
+  });
+
+  it("renders trade data when switching to Trades tab", async () => {
+    const trades = [
+      {
+        activityType: "BUY" as const,
+        coinAmount: "1000000000000000000",
+        blockTimestamp: "2026-04-10T12:00:00Z",
+        senderAddress: "0xabcdef1234567890abcdef1234567890abcdef12",
+        senderProfile: { handle: "alice" },
+        currencyAmountWithPrice: { priceUsdc: "5.25" },
+        transactionHash: "0xtx1",
+      },
+      {
+        activityType: "SELL" as const,
+        coinAmount: "500000000000000000",
+        blockTimestamp: "2026-04-10T11:00:00Z",
+        senderAddress: "0x9999000000000000000000000000000000009999",
+        currencyAmountWithPrice: { priceUsdc: "2.10" },
+        transactionHash: "0xtx2",
+      },
+    ];
+
+    const { lastFrame, stdin } = render(
+      <CoinView
+        fetchData={() => Promise.resolve(makeCoinViewData({ trades }))}
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Price History]");
+    });
+
+    // Switch to Trades tab
+    stdin.write("2");
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Trades]");
+    });
+    expect(lastFrame()).toContain("BUY");
+    expect(lastFrame()).toContain("alice");
+    expect(lastFrame()).toContain("$5.25");
+  });
+
+  it("shows empty message on Trades tab when trades is empty", async () => {
+    const { lastFrame, stdin } = render(
+      <CoinView
+        fetchData={() => Promise.resolve(makeCoinViewData({ trades: [] }))}
+      />,
+    );
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Price History]");
+    });
+
+    stdin.write("2");
+
+    await vi.waitFor(() => {
+      expect(lastFrame()).toContain("[Trades]");
+    });
+    expect(lastFrame()).toContain("No trades found");
   });
 });

@@ -10,11 +10,38 @@ import {
 } from "viem";
 import { base } from "viem/chains";
 import {
+  extractErrorMessage,
   formatError,
   tradeErrorMessage,
   apiErrorMessage,
   fsErrorMessage,
 } from "./errors.js";
+
+describe("extractErrorMessage", () => {
+  it("extracts .error from an object", () => {
+    expect(extractErrorMessage({ error: "Something went wrong" })).toBe(
+      "Something went wrong",
+    );
+  });
+
+  it("stringifies non-object errors", () => {
+    expect(extractErrorMessage("raw string")).toBe('"raw string"');
+  });
+
+  it("stringifies objects without .error field", () => {
+    expect(extractErrorMessage({ message: "not the right field" })).toBe(
+      '{"message":"not the right field"}',
+    );
+  });
+
+  it("handles null", () => {
+    expect(extractErrorMessage(null)).toBe("null");
+  });
+
+  it("coerces non-string .error to string", () => {
+    expect(extractErrorMessage({ error: 404 })).toBe("404");
+  });
+});
 
 describe("formatError", () => {
   it("stringifies non-Error values", () => {

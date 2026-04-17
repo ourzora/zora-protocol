@@ -26,7 +26,7 @@ import {
 } from "../lib/wallet-balances.js";
 import { track } from "../lib/analytics.js";
 import type { PageInfo } from "../lib/types.js";
-import { apiErrorMessage } from "../lib/errors.js";
+import { apiErrorMessage, extractErrorMessage } from "../lib/errors.js";
 import {
   walletColumns,
   balanceColumns,
@@ -76,13 +76,6 @@ const SORT_MAP: Record<
 };
 
 const SORT_OPTIONS = Object.keys(SORT_LABELS).join(", ");
-
-const extractErrorMessage = (error: unknown): string => {
-  if (typeof error === "object" && error !== null && "error" in error) {
-    return String((error as Record<string, unknown>).error);
-  }
-  return JSON.stringify(error);
-};
 
 const formatBalanceJson = (
   balance: BalanceNode,

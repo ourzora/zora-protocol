@@ -218,6 +218,17 @@ export function apiErrorMessage(err: unknown): string {
   return formatError(err);
 }
 
+/**
+ * Extract a human-readable message from an SDK response error object.
+ * Handles both `{ error: "message" }` objects and raw values.
+ */
+export function extractErrorMessage(error: unknown): string {
+  if (typeof error === "object" && error !== null && "error" in error) {
+    return String((error as Record<string, unknown>).error);
+  }
+  return JSON.stringify(error);
+}
+
 export function bannedCoinMessage(address: string): string {
   return `The coin at ${address} is unavailable because it violates the Zora terms of service.`;
 }

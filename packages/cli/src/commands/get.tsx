@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { Box, Text } from "ink";
-import { setApiKey } from "@zoralabs/coins-sdk";
+import { setApiKey, getCoinSwaps } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import {
   getJson,
@@ -18,10 +18,19 @@ import {
   CoinArgError,
   type ResolvedCoin,
 } from "../lib/coin-ref.js";
+import { truncateAddress } from "../lib/format.js";
 import { renderOnce, renderLive } from "../lib/render.js";
 import { CoinDetail } from "../components/CoinDetail.js";
 import { PriceHistory } from "../components/PriceHistory.js";
 import { CoinView, type CoinViewData } from "../components/CoinView.js";
+import { Table } from "../components/table.js";
+import {
+  CoinTradesView,
+  coinTradeColumns,
+  type TradeSwapNode,
+} from "../components/CoinTradesView.js";
+import type { PageResult } from "../components/PaginatedTableView.js";
+import type { PageInfo } from "../lib/types.js";
 import {
   VALID_INTERVALS,
   type Interval,
@@ -35,7 +44,11 @@ import {
   MAX_SPARKLINE_WIDTH,
 } from "../lib/sparkline.js";
 import { track } from "../lib/analytics.js";
-import { bannedCoinMessage } from "../lib/errors.js";
+import {
+  apiErrorMessage,
+  bannedCoinMessage,
+  extractErrorMessage,
+} from "../lib/errors.js";
 
 // --- Shared helpers ---
 
@@ -177,6 +190,16 @@ async function buildPriceHistoryData(
   };
 }
 
+async function fetchRecentTrades(address: string): Promise<TradeSwapNode[]> {
+  try {
+    const response = await getCoinSwaps({ address, first: 10 });
+    const edges = response.data?.zora20Token?.swapActivities?.edges ?? [];
+    return edges.map((e: { node: TradeSwapNode; cursor: string }) => e.node);
+  } catch {
+    return [];
+  }
+}
+
 // --- Main get command ---
 
 export const getCommand = new Command("get")
@@ -210,12 +233,10 @@ export const getCommand = new Command("get")
     );
 
     if (json) {
-      let prices;
-      try {
-        prices = await fetchPriceHistory(coin.address, interval as Interval);
-      } catch {
-        prices = [];
-      }
+      const [prices, trades] = await Promise.all([
+        fetchPriceHistory(coin.address, interval as Interval).catch(() => []),
+        fetchRecentTrades(coin.address),
+      ]);
 
       outputData(json, {
         json: {
@@ -237,6 +258,15 @@ export const getCommand = new Command("get")
                   })),
                 }
               : null,
+          trades: trades.map((t) => ({
+            type: t.activityType ?? null,
+            sender: t.senderAddress,
+            senderHandle: t.senderProfile?.handle ?? null,
+            coinAmount: t.coinAmount,
+            valueUsd: t.currencyAmountWithPrice.priceUsdc ?? null,
+            timestamp: t.blockTimestamp,
+            transactionHash: t.transactionHash,
+          })),
         },
         render: () => {},
       });
@@ -253,10 +283,10 @@ export const getCommand = new Command("get")
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     if (live) {
-      const initialPriceHistory = await buildPriceHistoryData(
-        coin.address,
-        interval as Interval,
-      );
+      const [initialPriceHistory, initialTrades] = await Promise.all([
+        buildPriceHistoryData(coin.address, interval as Interval),
+        fetchRecentTrades(coin.address),
+      ]);
 
       const fetchData = async (): Promise<CoinViewData> => {
         const { coin: freshCoin } = await resolveCoinOrThrow(
@@ -264,17 +294,21 @@ export const getCommand = new Command("get")
           identifier,
           "get",
         );
-        const priceHistory = await buildPriceHistoryData(
-          freshCoin.address,
-          interval as Interval,
-        );
-        return { coin: freshCoin, priceHistory };
+        const [priceHistory, trades] = await Promise.all([
+          buildPriceHistoryData(freshCoin.address, interval as Interval),
+          fetchRecentTrades(freshCoin.address),
+        ]);
+        return { coin: freshCoin, priceHistory, trades };
       };
 
       await renderLive(
         <CoinView
           fetchData={fetchData}
-          initialData={{ coin, priceHistory: initialPriceHistory }}
+          initialData={{
+            coin,
+            priceHistory: initialPriceHistory,
+            trades: initialTrades,
+          }}
           autoRefresh={live}
           intervalSeconds={intervalSeconds}
         />,
@@ -288,10 +322,10 @@ export const getCommand = new Command("get")
         interval: intervalSeconds,
       });
     } else {
-      const priceHistory = await buildPriceHistoryData(
-        coin.address,
-        interval as Interval,
-      );
+      const [priceHistory, trades] = await Promise.all([
+        buildPriceHistoryData(coin.address, interval as Interval),
+        fetchRecentTrades(coin.address),
+      ]);
 
       renderOnce(
         <Box flexDirection="column">
@@ -310,6 +344,17 @@ export const getCommand = new Command("get")
           ) : (
             <Box paddingLeft={1} paddingBottom={1}>
               <Text dimColor>No price data available.</Text>
+            </Box>
+          )}
+          {trades.length > 0 ? (
+            <Table
+              columns={coinTradeColumns.filter((c) => c.header !== "#")}
+              data={trades}
+              title="Recent Trades"
+            />
+          ) : (
+            <Box paddingLeft={1} paddingBottom={1}>
+              <Text dimColor>No trades found.</Text>
             </Box>
           )}
         </Box>,
@@ -431,4 +476,182 @@ getCommand
       data_points: prices.length,
       output_format: json ? "json" : "text",
     });
+  });
+
+// --- trades subcommand ---
+
+function formatTradeJson(node: TradeSwapNode) {
+  return {
+    type: node.activityType ?? null,
+    sender: node.senderAddress,
+    senderHandle: node.senderProfile?.handle ?? null,
+    coinAmount: node.coinAmount,
+    valueUsd: node.currencyAmountWithPrice.priceUsdc ?? null,
+    timestamp: node.blockTimestamp,
+    transactionHash: node.transactionHash,
+  };
+}
+
+async function fetchTradesPage(
+  address: string,
+  count: number,
+  after?: string,
+): Promise<PageResult<TradeSwapNode>> {
+  const response = await getCoinSwaps({ address, first: count, after });
+
+  if (response.error) {
+    throw new Error(extractErrorMessage(response.error));
+  }
+
+  const swapActivities = response.data?.zora20Token?.swapActivities;
+  const edges = swapActivities?.edges ?? [];
+  const items: TradeSwapNode[] = edges.map(
+    (e: { node: TradeSwapNode; cursor: string }) => e.node,
+  );
+  const count_ = swapActivities?.count ?? items.length;
+  const pageInfo = swapActivities?.pageInfo as PageInfo | undefined;
+
+  return { items, count: count_, pageInfo };
+}
+
+getCommand
+  .command("trades")
+  .description("Show recent buy/sell activity on a coin")
+  .argument("[typeOrId]", "Type prefix (creator-coin, trend) or identifier")
+  .argument(
+    "[identifier]",
+    "Coin address (0x...) or name (when type prefix is given)",
+  )
+  .option("--limit <n>", "Number of results (default 10, max 20)", "10")
+  .option("--after <cursor>", "Pagination cursor from a previous result")
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
+  .action(async function (
+    this: Command,
+    typeOrId: string,
+    identifier: string | undefined,
+  ) {
+    const output = getOutputMode(this, "live");
+    const json = output === "json";
+
+    const limit = Math.min(
+      20,
+      Math.max(1, parseInt(this.opts().limit, 10) || 10),
+    );
+    const after: string | undefined = this.opts().after;
+
+    if (output === "live" && after) {
+      outputErrorAndExit(
+        false,
+        "--after cannot be used in live mode.",
+        "Use --static or --json to paginate with a cursor.",
+      );
+    }
+
+    const { coin } = await resolveAndValidateCoin(
+      json,
+      typeOrId,
+      identifier,
+      "get trades",
+    );
+
+    if (json) {
+      const result = await fetchTradesPage(coin.address, limit, after).catch(
+        (err) =>
+          outputErrorAndExit(
+            json,
+            `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+          ),
+      );
+
+      outputData(json, {
+        json: {
+          coin: { name: coin.name, address: coin.address },
+          trades: result.items.map(formatTradeJson),
+          pageInfo: result.pageInfo ?? null,
+        },
+        render: () => {},
+      });
+
+      track("cli_get_trades", {
+        result_count: result.items.length,
+        output_format: "json",
+      });
+    } else {
+      const { live, intervalSeconds } = getLiveConfig(this, output);
+
+      if (live) {
+        const fetchPage = (cursor?: string) =>
+          fetchTradesPage(coin.address, limit, cursor);
+
+        await renderLive(
+          <CoinTradesView
+            fetchPage={fetchPage}
+            coinName={coin.name}
+            limit={limit}
+            autoRefresh={live}
+            intervalSeconds={intervalSeconds}
+          />,
+        );
+
+        track("cli_get_trades", {
+          output_format: "live",
+          live,
+          interval: intervalSeconds,
+        });
+      } else {
+        const result = await fetchTradesPage(coin.address, limit, after).catch(
+          (err) =>
+            outputErrorAndExit(
+              json,
+              `Request failed: ${err instanceof Error ? err.message : String(err)}`,
+            ),
+        );
+
+        const rankedTrades = result.items.map((t, i) => ({
+          ...t,
+          rank: i + 1,
+        }));
+
+        if (rankedTrades.length === 0) {
+          renderOnce(
+            <Box
+              flexDirection="column"
+              paddingLeft={1}
+              paddingTop={1}
+              paddingBottom={1}
+            >
+              <Text>
+                No trades found for {coin.name} ({truncateAddress(coin.address)}
+                )
+              </Text>
+            </Box>,
+          );
+        } else {
+          const footer =
+            result.pageInfo?.hasNextPage && result.pageInfo.endCursor
+              ? `Next page: zora get trades ${typeOrId}${identifier ? " " + identifier : ""} --limit ${limit} --after ${result.pageInfo.endCursor}`
+              : undefined;
+          renderOnce(
+            <Table
+              columns={coinTradeColumns}
+              data={rankedTrades}
+              title={`Recent trades \u00b7 ${coin.name}`}
+              subtitle={`${rankedTrades.length} of ${result.count}`}
+              footer={footer}
+            />,
+          );
+        }
+
+        track("cli_get_trades", {
+          result_count: result.items.length,
+          output_format: "static",
+        });
+      }
+    }
   });
