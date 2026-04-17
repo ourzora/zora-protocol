@@ -21,10 +21,14 @@ import {
   GetTraderLeaderboardResponse,
   GetProfileSocialResponse,
   GetProfileSocialData,
+  GetTokenInfoData,
+  GetTokenInfoResponse,
   GetContentCoinPoolConfigData,
   GetContentCoinPoolConfigResponse,
   GetCreatorCoinPoolConfigData,
   GetCreatorCoinPoolConfigResponse,
+  GetCreatorLivestreamCommentsData,
+  GetCreatorLivestreamCommentsResponse,
 } from "../client/types.gen";
 import {
   getCoin as getCoinSDK,
@@ -36,10 +40,12 @@ import {
   getProfileBalances as getProfileBalancesSDK,
   getProfileCoins as getProfileCoinsSDK,
   getProfileSocial as getProfileSocialSDK,
+  getTokenInfo as getTokenInfoSDK,
   getFeaturedCreators as getFeaturedCreatorsSDK,
   getTraderLeaderboard as getTraderLeaderboardSDK,
   getContentCoinPoolConfig as getContentCoinPoolConfigSDK,
   getCreatorCoinPoolConfig as getCreatorCoinPoolConfigSDK,
+  getCreatorLivestreamComments as getCreatorLivestreamCommentsSDK,
 } from "../client/sdk.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
@@ -186,6 +192,21 @@ export const getProfileSocial = async (
   });
 };
 
+type GetTokenInfoQuery = GetTokenInfoData["query"];
+export type { GetTokenInfoQuery, GetTokenInfoData };
+export type { GetTokenInfoResponse } from "../client/types.gen";
+
+export const getTokenInfo = async (
+  query: GetTokenInfoQuery,
+  options?: RequestOptionsType<GetTokenInfoData>,
+): Promise<RequestResult<GetTokenInfoResponse>> => {
+  return await getTokenInfoSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
 type GetFeaturedCreatorsQuery = GetFeaturedCreatorsData["query"];
 export type { GetFeaturedCreatorsQuery, GetFeaturedCreatorsData };
 export type { GetFeaturedCreatorsResponse } from "../client/types.gen";
@@ -240,6 +261,25 @@ export const getCreatorCoinPoolConfig = async (
   options?: RequestOptionsType<GetCreatorCoinPoolConfigData>,
 ): Promise<RequestResult<GetCreatorCoinPoolConfigResponse>> => {
   return await getCreatorCoinPoolConfigSDK({
+    query,
+    ...getApiKeyMeta(),
+    ...options,
+  });
+};
+
+type GetCreatorLivestreamCommentsQuery =
+  GetCreatorLivestreamCommentsData["query"];
+export type {
+  GetCreatorLivestreamCommentsQuery,
+  GetCreatorLivestreamCommentsData,
+};
+export type { GetCreatorLivestreamCommentsResponse } from "../client/types.gen";
+
+export const getCreatorLivestreamComments = async (
+  query: GetCreatorLivestreamCommentsQuery,
+  options?: RequestOptionsType<GetCreatorLivestreamCommentsData>,
+): Promise<RequestResult<GetCreatorLivestreamCommentsResponse>> => {
+  return await getCreatorLivestreamCommentsSDK({
     query,
     ...getApiKeyMeta(),
     ...options,

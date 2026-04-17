@@ -1,0 +1,91 @@
+# balance
+
+Show wallet balances and coin positions. Requires a [wallet](/commands/setup).
+
+```bash
+zora balance [options]
+```
+
+## Subcommands
+
+| Subcommand          | Description                                  |
+| ------------------- | -------------------------------------------- |
+| `balance spendable` | Show wallet token balances (ETH, USDC, ZORA) |
+| `balance coins`     | Show coin positions                          |
+
+Running `balance` with no subcommand shows both.
+
+## Options
+
+| Flag                  | Description                                | Default |
+| --------------------- | ------------------------------------------ | ------- |
+| `--live`              | Interactive live-updating display          | default |
+| `--static`            | Static snapshot                            | —       |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
+| `--json`              | Machine-readable JSON output               | —       |
+
+## Examples
+
+### Show full balance
+
+```bash
+npx @zoralabs/cli balance --static
+```
+
+```
+ Wallet Balances
+
+ Token   Balance        Value
+ ETH     0.0542         $105.23
+ USDC    25.00          $25.00
+ ZORA    1,250.00       $15.63
+
+ Coin Positions
+
+ #  Name     Type          Balance      Value
+ 1  jacob    creator-coin  20.63        $10.01
+ 2  zora     trend         1,500.00     $11.10
+```
+
+### Show only spendable tokens
+
+```bash
+npx @zoralabs/cli balance spendable --static
+```
+
+### Show only coin positions
+
+```bash
+npx @zoralabs/cli balance coins --static
+```
+
+### Live auto-refreshing view
+
+```bash
+npx @zoralabs/cli balance --live --refresh 10
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli balance --json
+```
+
+```json
+{
+  "spendable": [
+    { "token": "ETH", "balance": "0.0542", "valueUsd": "105.23" },
+    { "token": "USDC", "balance": "25.00", "valueUsd": "25.00" },
+    { "token": "ZORA", "balance": "1250.00", "valueUsd": "15.63" }
+  ],
+  "coins": [
+    {
+      "name": "jacob",
+      "coinType": "creator-coin",
+      "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+      "balance": "20.63",
+      "valueUsd": "10.01"
+    }
+  ]
+}
+```

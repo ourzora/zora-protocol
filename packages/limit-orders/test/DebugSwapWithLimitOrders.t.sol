@@ -58,13 +58,7 @@ contract DebugSwapWithLimitOrders is Test {
         // Etch the modified SwapWithLimitOrders (with console.log) onto the deployed router address
         deployCodeTo(
             "SwapWithLimitOrders.sol:SwapWithLimitOrders",
-            abi.encode(
-                IPoolManager(POOL_MANAGER),
-                IZoraLimitOrderBook(LIMIT_ORDER_BOOK),
-                ISwapRouter(SWAP_ROUTER),
-                PERMIT2,
-                OWNER
-            ),
+            abi.encode(IPoolManager(POOL_MANAGER), IZoraLimitOrderBook(LIMIT_ORDER_BOOK), ISwapRouter(SWAP_ROUTER), PERMIT2, OWNER),
             ZORA_ROUTER
         );
 
@@ -84,7 +78,7 @@ contract DebugSwapWithLimitOrders is Test {
             LIMIT_ORDER_BOOK,
             ZORA_HOOK_REGISTRY
         );
-        (IHooks newHook,) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), hookCreationCode, bytes32(0));
+        (IHooks newHook, ) = HooksDeployment.deployHookWithExistingOrNewSalt(address(this), hookCreationCode, bytes32(0));
         vm.etch(HOOKS, address(newHook).code);
 
         // Also etch onto the hook used by intermediate pools in the payout swap path
@@ -172,9 +166,7 @@ contract DebugSwapWithLimitOrders is Test {
         vm.startPrank(CALLER);
 
         // Approve Permit2 for universal router
-        UniV4SwapHelper.approveTokenWithPermit2(
-            IPermit2(PERMIT2), UNIVERSAL_ROUTER, INPUT_CURRENCY, type(uint160).max, type(uint48).max
-        );
+        UniV4SwapHelper.approveTokenWithPermit2(IPermit2(PERMIT2), UNIVERSAL_ROUTER, INPUT_CURRENCY, type(uint160).max, type(uint48).max);
 
         // Build pool key for pool 0
         PoolKey memory pool0 = PoolKey({

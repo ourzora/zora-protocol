@@ -1,0 +1,784 @@
+/*
+ * Zora CLI Documentation
+ *
+ * Brand: ABC Monument Grotesk (variable font, weights 300-900)
+ * Mono: SF Mono, ui-monospace
+ * Rules: No italics. No border-radius. Emphasis via weight.
+ * Colors: Zora Design System tokens (hex grays + P3 accents)
+ */
+
+/* ================================================================
+ * Font Face — ABC Monument Grotesk Variable
+ * ================================================================ */
+
+@font-face {
+  font-family: "ABC Monument Grotesk";
+  src:
+    url("/fonts/ABCMonumentGroteskVariableVF.woff2") format("woff2"),
+    url("/fonts/ABCMonumentGroteskVariableVF.woff") format("woff");
+  font-weight: 300 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ABC Monument Grotesk Mono";
+  src:
+    url("/fonts/ABCMonumentGroteskMono-Regular.woff2") format("woff2"),
+    url("/fonts/ABCMonumentGroteskMono-Regular.woff") format("woff");
+  font-weight: 400;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "ABC Monument Grotesk Mono";
+  src:
+    url("/fonts/ABCMonumentGroteskMono-Bold.woff2") format("woff2"),
+    url("/fonts/ABCMonumentGroteskMono-Bold.woff") format("woff");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+/* ================================================================
+ * Zora Design System Tokens
+ *
+ * Semantic color tokens from the Zora design system.
+ * Grays, surfaces, borders, and accent colors.
+ * ================================================================ */
+
+:root {
+  /* Text */
+  --zora-fg-primary: #121212;
+  --zora-fg-neutral: #4d4d4d;
+  --zora-fg-faded: #878787;
+  --zora-fg-tertiary: #b5b5b5;
+  --zora-fg-disabled: #b3b3b3;
+
+  /* Surfaces */
+  --zora-bg-page: #ffffff;
+  --zora-bg-page-faded: #f7f7f7;
+  --zora-bg-base: #fafafa;
+  --zora-bg-raised: #fafafa;
+  --zora-bg-overlay: #ffffff;
+  --zora-bg-neutral-faded: #f5f5f5;
+  --zora-bg-neutral: #e5e5e5;
+  --zora-bg-neutral-highlighted: #e9e9e9;
+  --zora-bg-disabled: #f3f3f3;
+  --zora-bg-primary: #121212;
+  --zora-bg-primary-faded: #f5f5f5;
+  --zora-bg-primary-highlighted: #333333;
+
+  /* Borders */
+  --zora-border-faded: #f2f2f2;
+  --zora-border-neutral: #e6e6e6;
+  --zora-border-primary-faded: #dddddd;
+  --zora-border-primary: #121212;
+  --zora-border-disabled: #e2e2e2;
+
+  /* Accent — green (buy/success) */
+  --zora-green: #00df00;
+  --zora-green-faded: #e8fedc;
+  --zora-green-hover: #009f00;
+
+  /* Accent — pink (sell/error) */
+  --zora-pink: #ff00f0;
+  --zora-pink-faded: #ff9af9;
+
+  /* ---- Vocs overrides: replace default blue/purple accent ---- */
+  --vocs-color_textAccent: #121212;
+  --vocs-color_textAccentHover: #333333;
+  --vocs-color_backgroundAccent: #121212;
+  --vocs-color_backgroundAccentHover: #333333;
+  --vocs-color_backgroundAccentText: #ffffff;
+  --vocs-color_borderAccent: #121212;
+  --vocs-color_heading: #121212;
+  --vocs-color_title: #121212;
+  --vocs-color_text: #4d4d4d;
+  --vocs-color_text2: #878787;
+  --vocs-color_text3: #b5b5b5;
+  --vocs-color_background: #ffffff;
+  --vocs-color_background2: #f7f7f7;
+  --vocs-color_background3: #f5f5f5;
+  --vocs-color_background4: #e9e9e9;
+  --vocs-color_background5: #e5e5e5;
+  --vocs-color_border: #e6e6e6;
+  --vocs-color_border2: #dddddd;
+
+  /* Sidebar: white background */
+  --vocs-color_backgroundDark: #ffffff;
+}
+
+:root.dark {
+  /* Text */
+  --zora-fg-primary: #f3f3f3;
+  --zora-fg-neutral: #d9d9d9;
+  --zora-fg-faded: #989898;
+  --zora-fg-tertiary: #7a7a7a;
+  --zora-fg-disabled: #7a7a7a;
+
+  /* Surfaces */
+  --zora-bg-page: #000000;
+  --zora-bg-page-faded: #0d0d0d;
+  --zora-bg-base: #141414;
+  --zora-bg-raised: #1b1b1b;
+  --zora-bg-overlay: #292929;
+  --zora-bg-neutral-faded: #323232;
+  --zora-bg-neutral: #555555;
+  --zora-bg-neutral-highlighted: #484848;
+  --zora-bg-disabled: #313131;
+  --zora-bg-primary: #f3f3f3;
+  --zora-bg-primary-faded: #323232;
+  --zora-bg-primary-highlighted: #ffffff;
+
+  /* Borders */
+  --zora-border-faded: #282828;
+  --zora-border-neutral: #414141;
+  --zora-border-primary-faded: #404040;
+  --zora-border-primary: #ffffff;
+  --zora-border-disabled: #404040;
+
+  /* Accent — green (buy/success) */
+  --zora-green-faded: #002d00;
+  --zora-green-hover: #92f940;
+
+  /* Accent — pink (sell/error) — identical in both modes */
+
+  /* ---- Vocs overrides: dark mode ---- */
+  --vocs-color_textAccent: #f3f3f3;
+  --vocs-color_textAccentHover: #d9d9d9;
+  --vocs-color_backgroundAccent: #f3f3f3;
+  --vocs-color_backgroundAccentHover: #ffffff;
+  --vocs-color_backgroundAccentText: #000000;
+  --vocs-color_borderAccent: #f3f3f3;
+  --vocs-color_heading: #f3f3f3;
+  --vocs-color_title: #f3f3f3;
+  --vocs-color_text: #d9d9d9;
+  --vocs-color_text2: #989898;
+  --vocs-color_text3: #7a7a7a;
+  --vocs-color_background: #000000;
+  --vocs-color_background2: #0d0d0d;
+  --vocs-color_background3: #141414;
+  --vocs-color_background4: #1b1b1b;
+  --vocs-color_background5: #292929;
+  --vocs-color_border: #414141;
+  --vocs-color_border2: #404040;
+
+  /* Sidebar: black background */
+  --vocs-color_backgroundDark: #000000;
+}
+
+/* ================================================================
+ * Global Typography
+ * ================================================================ */
+
+:root {
+  --font-sans: "ABC Monument Grotesk", system-ui, -apple-system, sans-serif;
+  --font-mono:
+    "ABC Monument Grotesk Mono", "SF Mono", ui-monospace, SFMono-Regular, Menlo,
+    Consolas, monospace;
+}
+
+body,
+.vocs_Content {
+  font-family: var(--font-sans);
+  font-weight: 420;
+  letter-spacing: 0;
+  color: var(--zora-fg-primary);
+}
+
+::selection {
+  background: #00df00;
+  color: #000000;
+}
+
+code,
+pre,
+kbd,
+.vocs_CodeBlock {
+  font-family: var(--font-mono);
+}
+
+/* ================================================================
+ * Headings
+ *
+ * font-medium (500) for headings, no italics, sharp corners.
+ * ================================================================ */
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.vocs_H1,
+.vocs_H2,
+.vocs_H3,
+.vocs_H4,
+.vocs_H5,
+.vocs_H6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  font-style: normal;
+  letter-spacing: 0;
+  color: var(--zora-fg-primary);
+}
+
+h1,
+.vocs_H1 {
+  font-size: 2.25rem;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+h2,
+.vocs_H2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  letter-spacing: 0;
+}
+
+h3,
+.vocs_H3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+/* Sidebar section labels */
+.vocs_Sidebar h4,
+.vocs_Sidebar_group {
+  font-family: var(--font-sans);
+  font-weight: 500;
+  color: var(--zora-fg-faded);
+}
+
+/* Nav */
+.vocs_DesktopTopNav_logoSection,
+.vocs_MobileTopNav_logoSection,
+.vocs_DesktopTopNav,
+.vocs_DesktopTopNav_item,
+.vocs_NavigationMenu {
+  font-family: var(--font-sans) !important;
+  font-weight: 500;
+}
+
+/* ================================================================
+ * Border Radius — match zora.co
+ * ================================================================ */
+
+.vocs_CodeBlock,
+.vocs_CodeGroup,
+.vocs_Tabs,
+.vocs_Callout,
+.vocs_Content code:not(pre code) {
+  border-radius: 0 !important;
+}
+
+/* ================================================================
+ * Content Styles
+ * ================================================================ */
+
+/* Code blocks */
+.vocs_CodeBlock {
+  border: 1px solid var(--zora-border-neutral);
+}
+
+/* Collapse adjacent code block borders */
+.vocs_CodeBlock + .vocs_CodeBlock {
+  border-top: none;
+  margin-top: 0 !important;
+}
+
+/* Section separation */
+.vocs_Content article > * + h2,
+.vocs_Content article > * + h3 {
+  margin-top: 2.5rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--zora-border-faded);
+}
+
+/* Inline code */
+.vocs_Content code:not(pre code) {
+  padding: 0.15em 0.35em;
+  font-size: 0.9em;
+  background: var(--zora-bg-neutral-faded);
+  color: var(--zora-fg-primary);
+}
+
+/* Tables */
+.vocs_Content table {
+  border-collapse: collapse;
+  width: 100%;
+}
+
+.vocs_Content table th,
+.vocs_Content table td {
+  padding: 0.6rem 1rem;
+  text-align: left;
+  border-bottom: 1px solid var(--zora-border-faded);
+}
+
+.vocs_Content table th {
+  font-weight: 500;
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0;
+  color: var(--zora-fg-faded);
+}
+
+/* Callouts */
+.vocs_Callout {
+  padding: 1rem 1.25rem;
+  border-color: var(--zora-border-neutral);
+}
+
+/* Links — no underline on hover */
+.vocs_Content a:hover {
+  text-decoration: none;
+}
+
+/* ================================================================
+ * Shell Prompt Styling
+ * ================================================================ */
+
+.vocs_CodeBlock .vocs_Pre_wrapper {
+  position: relative;
+}
+
+/* Code-group tab bar */
+.vocs_CodeBlock [role="tablist"] {
+  border-bottom: 1px solid var(--zora-border-neutral);
+}
+
+/* Copy button */
+.vocs_CopyButton {
+  color: var(--zora-fg-tertiary);
+  transition: color 0.15s ease;
+}
+
+.vocs_CopyButton:hover {
+  color: var(--zora-fg-primary);
+}
+
+/* ================================================================
+ * Sidebar — 50% larger text + animated chevrons
+ * ================================================================ */
+
+.vocs_Sidebar a,
+.vocs_Sidebar_item,
+.vocs_Sidebar_link {
+  font-size: 0.9375rem;
+  color: var(--zora-fg-neutral);
+}
+
+/* Active sidebar item */
+.vocs_Sidebar a[data-active="true"] {
+  color: var(--zora-fg-primary);
+  font-weight: 500;
+}
+
+/* Non-active sidebar items: greyed out */
+.vocs_Sidebar a:not([data-active="true"]) {
+  color: var(--zora-fg-faded);
+}
+
+/* Sidebar section collapse chevron animation */
+.vocs_Sidebar_sectionCollapse {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.vocs_Sidebar_sectionCollapse[data-state="closed"] {
+  transform: rotate(-90deg);
+}
+
+.vocs_Sidebar_sectionCollapse[data-state="open"] {
+  transform: rotate(0deg);
+}
+
+/* Sidebar section header hover */
+.vocs_Sidebar_sectionHeader {
+  transition: color 0.15s ease;
+}
+
+.vocs_Sidebar_sectionHeader:hover {
+  color: var(--zora-fg-primary);
+}
+
+/* Sidebar dividers */
+.vocs_Sidebar_divider {
+  border-color: var(--zora-border-faded);
+}
+
+/* ================================================================
+ * Buttons — zora.co style
+ *
+ * Primary: solid black bg, white text, rounded
+ * Secondary: light gray bg, gray border, dark text, rounded
+ * Both fade on hover
+ * ================================================================ */
+
+.vocs_Button_button,
+.vocs_HomePage_button {
+  border-radius: 0 !important;
+  font-weight: 500;
+  transition: opacity 0.4s ease;
+}
+
+/* Accent (primary) button — solid black/white */
+.vocs_Button_button_accent {
+  background-color: var(--zora-bg-primary) !important;
+  color: var(--zora-bg-page) !important;
+  border-color: var(--zora-bg-primary) !important;
+}
+
+.vocs_Button_button_accent:hover {
+  opacity: 0.8;
+}
+
+/* Secondary button — ghost */
+.vocs_Button_button:not(.vocs_Button_button_accent) {
+  background-color: transparent !important;
+  color: var(--zora-fg-neutral) !important;
+  border-color: var(--zora-border-neutral) !important;
+}
+
+.vocs_Button_button:not(.vocs_Button_button_accent):hover {
+  opacity: 0.7;
+}
+
+/* Links — smooth color transition */
+.vocs_Content a {
+  transition: color 0.15s ease;
+}
+
+/* ================================================================
+ * Top Nav
+ * ================================================================ */
+
+.vocs_DesktopTopNav {
+  border-bottom-color: var(--zora-border-faded);
+}
+
+.vocs_DesktopSearch_search {
+  border-radius: 0 !important;
+  font-weight: 500;
+}
+
+[data-layout="landing"] .vocs_DesktopSearch_search {
+  display: none;
+}
+
+.vocs_DesktopTopNav_item {
+  color: var(--zora-fg-neutral);
+  transition: none;
+  padding: 2px 6px;
+}
+
+.vocs_DesktopTopNav_item:hover {
+  color: var(--zora-fg-primary);
+  background-color: var(--zora-green);
+}
+
+/* ================================================================
+ * Homepage
+ * ================================================================ */
+
+.vocs_HomePage_tagline {
+  font-family: var(--font-sans);
+  font-size: 3.75rem !important;
+  font-weight: 700 !important;
+  letter-spacing: 0;
+  line-height: 1.1 !important;
+  color: var(--zora-fg-primary) !important;
+}
+
+.vocs_HomePage_description {
+  font-weight: 420 !important;
+}
+
+/* Landing page: remove content max-width so hero is full bleed */
+[data-layout="landing"] .vocs_Content,
+[data-layout="landing"] .vocs_DocsLayout_content {
+  max-width: 100% !important;
+  padding: 0;
+}
+
+/* Landing page shared padding */
+[data-layout="landing"] {
+  --hero-pad: calc(
+    max(
+        calc((100vw - var(--vocs-content_width)) / 2),
+        var(--vocs-sidebar_width)
+      ) -
+      var(--vocs-sidebar_width) + var(--vocs-sidebar_horizontalPadding)
+  );
+}
+
+/* Hero */
+.hero-grid {
+  padding: 128px var(--hero-pad) 0;
+}
+
+@media (max-width: 768px) {
+  .hero-grid {
+    padding: 96px var(--vocs-space_16) 0;
+  }
+}
+
+/* Hero terminal background */
+.hero-terminal-bg {
+  background: url("/hero-bg.jpg") center / cover no-repeat;
+  padding: 128px 2rem;
+  margin-top: 32px;
+}
+
+/* Hero: hide terminal on mobile */
+@media (max-width: 768px) {
+  .hero-grid .terminal-animation {
+    display: none !important;
+  }
+}
+
+/* ================================================================
+ * Features Grid
+ * ================================================================ */
+
+.features-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  gap: 3rem 4rem;
+  padding: 96px var(--hero-pad);
+}
+
+.features-grid .feature-card {
+  padding-top: 1.5rem;
+}
+
+.features-grid .feature-card h3 {
+  font-size: 1.875rem;
+  font-weight: 600;
+  margin: 0 0 0.75rem !important;
+  border: none !important;
+  padding: 0 !important;
+}
+
+.features-grid .feature-card p {
+  font-size: 1.125rem;
+  font-weight: 420;
+  color: var(--zora-fg-neutral);
+  line-height: 1.5;
+  margin: 0 0 1rem;
+}
+
+.features-grid .feature-card a {
+  font-weight: 500;
+  font-size: 0.9375rem;
+  color: var(--zora-fg-primary);
+  text-decoration: none;
+  padding: 2px 6px;
+  margin-left: -6px;
+  transition: none;
+}
+
+.features-grid .feature-card a:hover {
+  color: var(--zora-fg-primary);
+  background-color: var(--zora-green);
+}
+
+@media (max-width: 768px) {
+  .features-grid {
+    grid-template-columns: 1fr;
+    gap: 2rem;
+    padding: 64px var(--vocs-space_16);
+  }
+}
+
+/* Hide empty Vocs footer on landing page */
+[data-layout="landing"] .vocs_Footer {
+  display: none;
+}
+
+/* ================================================================
+ * ASCII Footer
+ * ================================================================ */
+
+.ascii-footer-wrap {
+  background: linear-gradient(
+    to bottom,
+    var(--zora-bg-page),
+    var(--zora-bg-neutral)
+  );
+  padding: 64px var(--hero-pad) 48px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  overflow: hidden;
+}
+
+.ascii-footer {
+  --mx: -9999px;
+  --my: -9999px;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  line-height: 1.15;
+  background: radial-gradient(
+    circle 150px at var(--mx) var(--my),
+    var(--zora-green),
+    var(--zora-fg-tertiary)
+  ) !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  color: transparent;
+  -webkit-text-fill-color: transparent;
+  cursor: default;
+  user-select: none;
+  margin: 0;
+  padding: 0 !important;
+  border: none !important;
+}
+
+.ascii-footer-top {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+
+.ascii-footer-heading {
+  font-family: var(--font-sans);
+  font-size: 1.125rem;
+  font-weight: 500;
+  color: var(--zora-fg-neutral);
+  margin: 0 0 1rem;
+}
+
+.ascii-footer-links {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  font-family: var(--font-sans);
+  font-size: 1.875rem;
+  font-weight: 500;
+}
+
+.ascii-footer-links a {
+  color: var(--zora-fg-primary);
+  text-decoration: none;
+  padding: 2px 6px;
+  margin-left: -6px;
+  transition: none;
+}
+
+.ascii-footer-links a:hover {
+  color: var(--zora-fg-primary);
+  background-color: var(--zora-green);
+}
+
+@media (max-width: 1100px) {
+  .ascii-footer {
+    font-size: 0.55rem;
+  }
+
+  .ascii-footer-top {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 2rem;
+  }
+}
+
+@media (max-width: 768px) {
+  .ascii-footer {
+    font-size: 0.35rem;
+  }
+
+  .ascii-footer-wrap {
+    padding: 48px var(--vocs-space_16) 32px;
+  }
+
+  .ascii-footer-links {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 0.5rem 1.5rem;
+  }
+}
+
+/* ================================================================
+ * Enter Transitions
+ * ================================================================ */
+
+.hero-grid > * {
+  opacity: 0;
+  transform: translateY(16px);
+  transition:
+    opacity 600ms ease-out,
+    transform 600ms ease-out;
+}
+.hero-grid.hero-loaded > * {
+  opacity: 1;
+  transform: translateY(0);
+}
+.hero-grid.hero-loaded > *:nth-child(1) {
+  transition-delay: 0ms;
+}
+.hero-grid.hero-loaded > *:nth-child(2) {
+  transition-delay: 80ms;
+}
+.hero-grid.hero-loaded > *:nth-child(3) {
+  transition-delay: 160ms;
+}
+.hero-grid.hero-loaded > *:nth-child(4) {
+  transition-delay: 240ms;
+}
+.hero-grid.hero-loaded > *:nth-child(5) {
+  transition-delay: 400ms;
+}
+
+/* Scroll-triggered fade-in */
+.fade-in {
+  opacity: 0;
+  transform: translateY(20px);
+  transition:
+    opacity 500ms ease-out,
+    transform 500ms ease-out;
+}
+.fade-in-visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Stagger feature cards */
+.features-grid .fade-in:nth-child(1) {
+  transition-delay: 0ms;
+}
+.features-grid .fade-in:nth-child(2) {
+  transition-delay: 100ms;
+}
+.features-grid .fade-in:nth-child(3) {
+  transition-delay: 200ms;
+}
+
+/* ASCII footer entrance — links fade in when visible */
+.ascii-footer-wrap .ascii-footer-links {
+  opacity: 0;
+  transition: opacity 400ms ease-out;
+}
+.ascii-footer-wrap.visible .ascii-footer-links {
+  opacity: 1;
+}
+
+/* Respect reduced motion */
+@media (prefers-reduced-motion: reduce) {
+  .hero-grid > *,
+  .fade-in {
+    opacity: 1 !important;
+    transform: none !important;
+    transition: none !important;
+  }
+
+  .ascii-footer-wrap .ascii-footer-links {
+    opacity: 1 !important;
+    transition: none !important;
+  }
+}

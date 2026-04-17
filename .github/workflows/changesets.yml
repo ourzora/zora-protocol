@@ -11,6 +11,10 @@ jobs:
   release:
     name: Release
     runs-on: ubuntu-latest
+    environment: npm-publish
+    outputs:
+      published: ${{ steps.changesets.outputs.published }}
+      publishedPackages: ${{ steps.changesets.outputs.publishedPackages }}
     steps:
       - name: Checkout Repo
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
@@ -28,3 +32,53 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+  cli-binaries:
+    name: Build and upload CLI binaries
+    needs: release
+    if: >-
+      needs.release.outputs.published == 'true' &&
+      contains(needs.release.outputs.publishedPackages, '"name":"@zoralabs/cli"')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4
+        with:
+          ref: main
+
+      - name: Extract CLI version
+        id: cli-version
+        run: |
+          VERSION=$(echo '${{ needs.release.outputs.publishedPackages }}' | jq -r '.[] | select(.name == "@zoralabs/cli") | .version')
+          echo "version=$VERSION" >> "$GITHUB_OUTPUT"
+          echo "tag=@zoralabs/cli@$VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Install node deps and foundry
+        uses: ./.github/actions/setup_deps
+
+      - name: Install Bun
+        uses: oven-sh/setup-bun@v2
+
+      - name: Build binaries for all platforms
+        working-directory: packages/cli
+        run: pnpm run build:binary:all
+
+      - name: Generate checksums
+        working-directory: packages/cli/bin
+        run: |
+          sha256sum zora-darwin-arm64 zora-darwin-x64 zora-linux-x64 zora-linux-arm64 zora-windows-x64.exe > checksums-sha256.txt
+          cat checksums-sha256.txt
+
+      - name: Upload binaries to GitHub Release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          TAG="${{ steps.cli-version.outputs.tag }}"
+          gh release upload "$TAG" \
+            packages/cli/bin/zora-darwin-arm64 \
+            packages/cli/bin/zora-darwin-x64 \
+            packages/cli/bin/zora-linux-x64 \
+            packages/cli/bin/zora-linux-arm64 \
+            packages/cli/bin/zora-windows-x64.exe \
+            packages/cli/bin/checksums-sha256.txt \
+            --clobber

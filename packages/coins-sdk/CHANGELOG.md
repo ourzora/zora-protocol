@@ -1,5 +1,49 @@
 # @zoralabs/coins-sdk
 
+## 0.5.2
+
+### Patch Changes
+
+- 278d7705e: Add new Valuation fields to coin balances endpoint, coin price history endpoint, and creator livestream comments endpoint
+
+  Only works with api-key authenticated calls otherwise valuation response is null.
+
+- b41ed41f9: Fix JWT refresh loop on uploads
+
+## 0.5.1
+
+### Patch Changes
+
+- 78df4fc6: Updated to allow for a different base URL for testing
+
+## 0.5.0
+
+### Minor Changes
+
+- e174b53f: Add `getTrend` and `getTrends` for looking up trend coins
+  - `getTrend({ ticker })` — look up a single trend coin by ticker (case-insensitive, server-side)
+  - `getTrends({ name })` — search trend coins by name with pagination
+  - Also exports `TrendCoinResponse` and `TrendsByNameResponse` types for consumers
+
+## 0.4.9
+
+### Patch Changes
+
+- ef523acf: Add new endpoints for trend coins
+
+## 0.4.8
+
+### Patch Changes
+
+- 7dda692d: Add a top-level `getTokenInfo` query export to the coins SDK
+
+## 0.4.7
+
+### Patch Changes
+
+- 0c0d8e85: Add explore wrappers for trending and trend list types
+  Add `getMostValuableAll` wrapper for querying most valuable coins across all coin types
+
 ## 0.4.6
 
 ### Patch Changes

@@ -14,10 +14,20 @@ export type UploadResult = {
 };
 
 /**
+ * Options for file upload operations
+ */
+export type UploadOptions = {
+  /** AbortSignal to cancel the upload */
+  signal?: AbortSignal;
+  /** Timeout in milliseconds for the upload request (no default) */
+  timeout?: number;
+};
+
+/**
  * Interface for file uploaders (IPFS, Arweave, etc.)
  */
 export interface Uploader {
-  upload(file: File): Promise<UploadResult>;
+  upload(file: File, options?: UploadOptions): Promise<UploadResult>;
 }
 
 export type CreateMetadataParameters = {

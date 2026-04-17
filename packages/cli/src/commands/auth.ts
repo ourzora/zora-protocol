@@ -1,0 +1,129 @@
+import { Command } from "commander";
+import {
+  getApiKey,
+  getEnvApiKey,
+  saveApiKey,
+  getConfigPath,
+} from "../lib/config.js";
+import { maskKey } from "../lib/mask-key.js";
+import {
+  getJson,
+  getYes,
+  outputErrorAndExit,
+  outputData,
+} from "../lib/output.js";
+import { passwordOrFail } from "../lib/prompt.js";
+import { track } from "../lib/analytics.js";
+import { fsErrorMessage } from "../lib/errors.js";
+
+export const authCommand = new Command("auth")
+  .description(
+    "Manage API key authentication.\nAPI key is optional — without one, requests are rate-limited.\nGet a key at https://zora.co/settings/developer",
+  )
+  .action(function (this: Command) {
+    this.outputHelp();
+  });
+
+authCommand
+  .command("configure")
+  .description("Set your Zora API key")
+  .option("--yes", "Skip interactive prompt and execute directly")
+  .action(async function (this: Command) {
+    const json = getJson(this);
+    const nonInteractive = getYes(this);
+
+    if (getEnvApiKey()) {
+      outputData(json, {
+        json: {
+          status: "env_override",
+          message: "API key is set via ZORA_API_KEY environment variable.",
+        },
+        render: () =>
+          console.log(
+            "API key is set via ZORA_API_KEY environment variable. Unset it to configure manually.",
+          ),
+      });
+      return;
+    }
+
+    const existing = getApiKey();
+    if (existing) {
+      console.log(`Current key: ${maskKey(existing)}`);
+    }
+
+    console.log("Get your API key from: https://zora.co/settings/developer\n");
+
+    const apiKey = await passwordOrFail(
+      json,
+      { message: "Paste your API key:" },
+      nonInteractive,
+    );
+
+    const trimmed = apiKey.trim();
+    if (!trimmed) {
+      outputErrorAndExit(
+        json,
+        "No API key provided.",
+        "Usage: zora auth configure",
+      );
+    }
+
+    try {
+      saveApiKey(trimmed);
+      outputData(json, {
+        json: { saved: true, path: getConfigPath() },
+        render: () => console.log(`API key saved to ${getConfigPath()}`),
+      });
+      track("cli_auth_configure", {
+        output_format: json ? "json" : "text",
+      });
+    } catch (err) {
+      outputErrorAndExit(
+        json,
+        `Failed to save API key: ${fsErrorMessage(err, getConfigPath())}`,
+      );
+    }
+  });
+
+authCommand
+  .command("status")
+  .description("Check authentication status")
+  .action(function (this: Command) {
+    const json = getJson(this);
+    const apiKey = getApiKey();
+
+    if (!apiKey) {
+      outputData(json, {
+        json: { authenticated: false },
+        render: () => {
+          console.log(
+            "No API key configured. The CLI works without one, but requests are rate-limited.",
+          );
+          console.log(
+            "Run 'zora auth configure' to set an API key for higher rate limits.",
+          );
+        },
+      });
+      track("cli_auth_status", {
+        authenticated: false,
+        source: null,
+        output_format: json ? "json" : "text",
+      });
+      return;
+    }
+
+    const source = getEnvApiKey() ? "env (ZORA_API_KEY)" : getConfigPath();
+    outputData(json, {
+      json: { authenticated: true, key: maskKey(apiKey), source },
+      render: () => {
+        console.log(`Authenticated: ${maskKey(apiKey)}`);
+        console.log(`Source: ${source}`);
+      },
+    });
+
+    track("cli_auth_status", {
+      authenticated: true,
+      source: getEnvApiKey() ? "env" : "file",
+      output_format: json ? "json" : "text",
+    });
+  });

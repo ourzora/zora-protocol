@@ -1,0 +1,100 @@
+# get
+
+Look up a single coin by address or name.
+
+```bash
+zora get [typeOrId] [identifier]
+```
+
+## Arguments
+
+| Argument     | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `typeOrId`   | Type prefix (`creator-coin`, `trend`) or coin address/name when used alone  |
+| `identifier` | Coin address (`0x...`) or name — only needed when a type prefix is provided |
+
+## Options
+
+| Flag     | Description                  |
+| -------- | ---------------------------- |
+| `--json` | Machine-readable JSON output |
+
+Use a type prefix to disambiguate when a name could match multiple coin types. When using an address, the type is resolved automatically.
+
+## Examples
+
+### Look up the jacob creator coin
+
+```bash
+npx @zoralabs/cli get creator-coin jacob
+```
+
+```
+ jacob
+ creator-coin · 0x9b13358e3a023507e7046c18f508a958cda75f54
+
+ Market Cap        $435.0K
+ 24h Volume        $0.5
+ 24h Change        +1.9%
+ Holders           6,171
+ Created           9 months ago (2025-06-20 4:31 PM)
+```
+
+### Look up the zora trend coin
+
+```bash
+npx @zoralabs/cli get trend zora
+```
+
+```
+ zora
+ trend · 0x2748009c2c5d46b78a3a7bdfd5b121edfb72f519
+
+ Market Cap        $6.6K
+ 24h Volume        $0
+ 24h Change        +1.8%
+ Holders           22
+ Created           18 days ago (2026-03-12 3:43 PM)
+```
+
+### Look up by address
+
+```bash
+npx @zoralabs/cli get 0x9b13358e3a023507e7046c18f508a958cda75f54
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli get creator-coin jacob --json
+```
+
+```json
+{
+  "name": "jacob",
+  "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "coinType": "creator-coin",
+  "marketCap": "434988.18",
+  "marketCapDelta24h": "8220.7",
+  "volume24h": "0.49",
+  "uniqueHolders": 6171,
+  "createdAt": "2025-06-20T16:31:57",
+  "creatorAddress": "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
+  "creatorHandle": "jacob"
+}
+```
+
+### JSON Fields
+
+| Field               | Type   | Description                        |
+| ------------------- | ------ | ---------------------------------- |
+| `name`              | string | Coin display name                  |
+| `address`           | string | Contract address on Base           |
+| `coinType`          | string | `post`, `creator-coin`, or `trend` |
+| `marketCap`         | string | Market cap in USD                  |
+| `marketCapDelta24h` | string | 24h market cap change in USD       |
+| `volume24h`         | string | 24h trading volume in USD          |
+| `uniqueHolders`     | number | Number of unique holder addresses  |
+| `createdAt`         | string | ISO 8601 creation timestamp        |
+| `creatorAddress`    | string | Creator's wallet address           |
+| `creatorHandle`     | string | Creator's Zora handle              |

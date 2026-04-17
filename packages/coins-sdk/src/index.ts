@@ -32,8 +32,15 @@ export type * from "./api/queries";
 export * from "./api/explore";
 export type * from "./api/explore";
 
+// API Social Actions
+export * from "./api/social";
+export type * from "./api/social";
+
 // API Key Setter
 export { setApiKey } from "./api/api-key";
+
+// Raw API helpers
+export { apiGet, apiPost, setApiBaseUrl } from "./api/api-raw";
 
 // Metadata Validation Utils
 export * from "./metadata";

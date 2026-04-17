@@ -1,0 +1,53 @@
+# Agents
+
+Use the Zora Coins SDK skill to give your AI agent full context on the Zora Coins Protocol. Add the skill to any tool-use capable LLM and it can help you create, trade, and query coins.
+
+## Quick Start
+
+Copy and paste the following prompt into your agent's configuration:
+
+```
+Fetch and follow the Zora Coins SDK skill from https://docs.zora.co/skill.md
+```
+
+## What's in the Skill
+
+The skill file covers:
+
+- **Protocol overview** — Coin types, fee structures, reward distribution
+- **SDK reference** — Creating, trading, updating, and querying coins with `@zoralabs/coins-sdk`
+- **REST API** — HTTP endpoints for non-TypeScript languages
+- **Contract reference** — Factory addresses, deployment functions, hook system
+- **Links** — Direct links to full documentation for each topic
+
+## Integration
+
+### Claude Code
+
+Add to your project's `CLAUDE.md`:
+
+```markdown
+Fetch and follow the Zora Coins SDK skill from https://docs.zora.co/skill.md
+```
+
+### Cursor
+
+Add to `.cursorrules` in your project root:
+
+```
+Fetch and follow the Zora Coins SDK skill from https://docs.zora.co/skill.md
+```
+
+### Custom Agents
+
+Include the skill URL in your system prompt. The agent needs the ability to fetch URLs and parse markdown.
+
+```
+You have access to the Zora Coins SDK. Reference: https://docs.zora.co/skill.md
+```
+
+## Resources
+
+- [View the skill file](https://docs.zora.co/skill.md)
+- [LLM-readable docs index](https://docs.zora.co/llms.txt)
+- [Getting Started with the SDK](/coins/sdk)

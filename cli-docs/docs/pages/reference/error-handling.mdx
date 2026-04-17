@@ -1,0 +1,79 @@
+# Error Handling
+
+All Zora CLI errors follow a consistent format. In `--json` mode, errors return a structured object.
+
+## Error Format
+
+### Terminal Mode
+
+```
+Error: Insufficient ETH balance
+Current balance: 0.001 ETH. Need at least 0.01 ETH.
+```
+
+### JSON Mode
+
+```json
+{
+  "error": "Insufficient ETH balance",
+  "suggestion": "Current balance: 0.001 ETH. Need at least 0.01 ETH."
+}
+```
+
+The CLI exits with code `1` on errors.
+
+## Common Errors
+
+### Authentication
+
+| Error             | Cause                             | Fix                                                                                    |
+| ----------------- | --------------------------------- | -------------------------------------------------------------------------------------- |
+| `Rate limited`    | Too many requests without API key | Set `ZORA_API_KEY`                                                                     |
+| `Invalid API key` | Key is malformed or expired       | Generate a new key at [zora.co/settings/developer](https://zora.co/settings/developer) |
+
+### Wallet
+
+| Error                  | Cause                          | Fix                                                              |
+| ---------------------- | ------------------------------ | ---------------------------------------------------------------- |
+| `No wallet configured` | Trading command without wallet | Run `npx @zoralabs/cli setup --create` or set `ZORA_PRIVATE_KEY` |
+| `Permission denied`    | Cannot read wallet file        | Check file permissions on `~/.config/zora/wallet.json`           |
+
+### Trading
+
+| Error                        | Cause                             | Fix                                                   |
+| ---------------------------- | --------------------------------- | ----------------------------------------------------- |
+| `Insufficient ETH balance`   | Not enough ETH for the trade      | Reduce amount or add funds                            |
+| `Insufficient token balance` | Not enough of the specified token | Check balance with `npx @zoralabs/cli balance --json` |
+| `Slippage exceeded`          | Price moved beyond tolerance      | Increase `--slippage` or retry                        |
+| `Transaction reverted`       | On-chain execution failed         | Check the coin address and try again                  |
+
+### Coin Resolution
+
+| Error                  | Cause                                | Fix                                                        |
+| ---------------------- | ------------------------------------ | ---------------------------------------------------------- |
+| `Coin not found`       | Address or name doesn't match a coin | Verify the address or use a type prefix to disambiguate    |
+| `Ambiguous identifier` | Name matches multiple coin types     | Use a type prefix: `creator-coin <name>` or `trend <name>` |
+
+### Invalid Options
+
+| Error                                      | Cause                               | Fix                                                  |
+| ------------------------------------------ | ----------------------------------- | ---------------------------------------------------- |
+| `--json, --static cannot be used together` | Mutually exclusive flags            | Use one of `--json`, `--live`, or `--static`         |
+| `Amount flags are mutually exclusive`      | Multiple amount flags passed        | Use one of `--eth`, `--usd`, `--percent`, or `--all` |
+| `Invalid sort/type combination`            | Sort doesn't support the given type | CLI prints supported options                         |
+
+## Handling Errors in Scripts
+
+```bash
+result=$(npx @zoralabs/cli buy 0x... --eth 0.01 --yes --json 2>&1)
+error=$(echo "$result" | jq -r '.error // empty')
+
+if [ -n "$error" ]; then
+  suggestion=$(echo "$result" | jq -r '.suggestion // empty')
+  echo "Failed: $error"
+  [ -n "$suggestion" ] && echo "Hint: $suggestion"
+  exit 1
+fi
+
+echo "Trade successful: $(echo "$result" | jq -r '.txHash')"
+```

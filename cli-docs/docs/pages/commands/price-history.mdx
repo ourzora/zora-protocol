@@ -1,0 +1,87 @@
+# price-history
+
+Display price history for a coin with an ASCII sparkline chart.
+
+```bash
+zora price-history [typeOrId] [identifier] [options]
+```
+
+## Arguments
+
+| Argument     | Description                                                                 |
+| ------------ | --------------------------------------------------------------------------- |
+| `typeOrId`   | Type prefix (`creator-coin`, `trend`) or coin address/name when used alone  |
+| `identifier` | Coin address (`0x...`) or name — only needed when a type prefix is provided |
+
+## Options
+
+| Flag                    | Description                                | Default |
+| ----------------------- | ------------------------------------------ | ------- |
+| `--interval <interval>` | Time range: `1h`, `24h`, `1w`, `1m`, `ALL` | `1w`    |
+| `--json`                | Machine-readable JSON output               | —       |
+
+## Examples
+
+### Weekly price chart for jacob creator coin
+
+```bash
+npx @zoralabs/cli price-history creator-coin jacob
+```
+
+```
+ Coin              jacob
+ Type              creator-coin
+ Interval          1w
+ High              $0.0004846
+ Low               $0.0004302
+ Change            -9.9%
+
+ █▇▇▇▇▆▆▆▇▇██████▆▆▅▅▅▄▂▂▁▁▁▂▃▁▂▂▂
+```
+
+### 24-hour chart for zora trend
+
+```bash
+npx @zoralabs/cli price-history trend zora --interval 24h
+```
+
+### All-time chart
+
+```bash
+npx @zoralabs/cli price-history creator-coin jacob --interval ALL
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli price-history creator-coin jacob --json --interval 1w
+```
+
+```json
+{
+  "coin": "jacob",
+  "type": "creator-coin",
+  "interval": "1w",
+  "high": 0.0004846,
+  "low": 0.0004302,
+  "change": -9.94,
+  "prices": [
+    { "timestamp": "2026-03-23T17:55:00", "price": 0.000483 },
+    { "timestamp": "2026-03-24T06:31:15", "price": 0.0004791 },
+    { "timestamp": "2026-03-26T12:00:00", "price": 0.000465 },
+    { "timestamp": "2026-03-30T00:00:00", "price": 0.000435 }
+  ]
+}
+```
+
+### JSON Fields
+
+| Field      | Type   | Description                                 |
+| ---------- | ------ | ------------------------------------------- |
+| `coin`     | string | Coin display name                           |
+| `type`     | string | Coin type                                   |
+| `interval` | string | Requested time interval                     |
+| `high`     | number | Highest price in USD during interval        |
+| `low`      | number | Lowest price in USD during interval         |
+| `change`   | number | Percentage change over interval             |
+| `prices`   | array  | Array of `{ timestamp, price }` data points |

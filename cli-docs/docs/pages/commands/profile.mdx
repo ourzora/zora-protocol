@@ -1,0 +1,92 @@
+# profile
+
+View a creator or user profile — posts and holdings.
+
+```bash
+zora profile [options] [identifier]
+```
+
+## Arguments
+
+| Argument     | Description                                                           |
+| ------------ | --------------------------------------------------------------------- |
+| `identifier` | Wallet address or profile handle. Defaults to your wallet if omitted. |
+
+## Options
+
+| Flag                  | Description                                | Default |
+| --------------------- | ------------------------------------------ | ------- |
+| `--live`              | Interactive live-updating display          | default |
+| `--static`            | Static snapshot                            | —       |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
+| `--json`              | Machine-readable JSON output               | —       |
+
+## Examples
+
+### View jacob's profile
+
+```bash
+npx @zoralabs/cli profile jacob --static
+```
+
+```
+ jacob
+ Creator coin: 0x9b13358e3a023507e7046c18f508a958cda75f54
+
+ Posts
+
+ #  Name                 Type  Address             Market Cap  Vol 24h  Change
+ 1  soho                 post  0xe036370af91f...   $1,593.53   $0       -1.7%
+ 2  text campaign, 2022  post  0xa493535ddc64...   $1,506.26   $0       +11.3%
+ 3  soho, nyc (2022)     post  0x8c72907e098e...   $1,718.44   $0       -1.2%
+ 4  intersection         post  0xc5c6a1e3ccf9...   $2,063.96   $0       -2.6%
+```
+
+### View your own profile
+
+```bash
+npx @zoralabs/cli profile --static
+```
+
+Uses the wallet configured via `zora setup` or `ZORA_PRIVATE_KEY`.
+
+### View by wallet address
+
+```bash
+npx @zoralabs/cli profile 0x3a5df03dd1a001d7055284c2c2c147cbbc78d142 --static
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli profile jacob --json
+```
+
+```json
+{
+  "posts": [
+    {
+      "rank": 1,
+      "name": "soho",
+      "symbol": "soho",
+      "coinType": "post",
+      "address": "0xe036370af91f9e1d6d15fc594141628676d5dd56",
+      "marketCap": "1593.53",
+      "marketCapDelta24h": "-28.31",
+      "volume24h": "0.0",
+      "createdAt": "2026-03-12T16:29:23"
+    },
+    {
+      "rank": 2,
+      "name": "text campaign, 2022",
+      "symbol": "text",
+      "coinType": "post",
+      "address": "0xa493535ddc64cdeef9b33ce31c94ac35ee869a35",
+      "marketCap": "1506.26",
+      "marketCapDelta24h": "152.49",
+      "volume24h": "0.0",
+      "createdAt": "2026-03-12T16:28:09"
+    }
+  ]
+}
+```

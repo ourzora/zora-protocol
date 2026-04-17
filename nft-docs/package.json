@@ -1,6 +1,6 @@
 {
   "name": "nft-docs",
-  "version": "0.0.40",
+  "version": "0.0.43",
   "type": "module",
   "private": true,
   "scripts": {
@@ -17,7 +17,6 @@
     "@types/node": "^20.13.0",
     "@types/react": "latest",
     "@vanilla-extract/css": "^1.15.3",
-    "@zoralabs/coins-sdk": "workspace:*",
     "@zoralabs/protocol-deployments": "workspace:*",
     "@zoralabs/protocol-sdk": "workspace:*",
     "react": "^18.2.0",

@@ -1,5 +1,16 @@
-import { getExplore as getExploreSDK } from "../client/sdk.gen";
-import type { GetExploreData, GetExploreResponse } from "../client/types.gen";
+import {
+  getExplore as getExploreSDK,
+  getTrendCoin as getTrendCoinSDK,
+  getTrendsByName as getTrendsByNameSDK,
+} from "../client/sdk.gen";
+import type {
+  GetExploreData,
+  GetExploreResponse,
+  GetTrendCoinData,
+  GetTrendCoinResponse,
+  GetTrendsByNameData,
+  GetTrendsByNameResponse,
+} from "../client/types.gen";
 import { getApiKeyMeta } from "./api-key";
 import { RequestOptionsType } from "./query-types";
 
@@ -16,6 +27,10 @@ export type ListType = GetExploreData["query"]["listType"];
 export type { ExploreResponse };
 
 export type { GetExploreData };
+
+export type TrendCoinResponse = { data?: GetTrendCoinResponse };
+
+export type TrendsByNameResponse = { data?: GetTrendsByNameResponse };
 
 /**
  * Creates an explore query with the specified list type
@@ -167,6 +182,28 @@ export const getMostValuableAll = (
   options?: RequestOptionsType<GetExploreData>,
 ): Promise<ExploreResponse> =>
   createExploreQuery(query, "MOST_VALUABLE_ALL", options);
+
+/** Look up a single trend coin by ticker (case-insensitive) */
+export const getTrend = (
+  query: GetTrendCoinData["query"],
+  options?: RequestOptionsType<GetTrendCoinData>,
+): Promise<TrendCoinResponse> =>
+  getTrendCoinSDK({
+    ...options,
+    query,
+    ...getApiKeyMeta(),
+  });
+
+/** Search trend coins by name, with fuzzy search (paginated) */
+export const getTrends = (
+  query: GetTrendsByNameData["query"],
+  options?: RequestOptionsType<GetTrendsByNameData>,
+): Promise<TrendsByNameResponse> =>
+  getTrendsByNameSDK({
+    ...options,
+    query,
+    ...getApiKeyMeta(),
+  });
 
 /** Generic explore query for any list type */
 export const getExploreList = (

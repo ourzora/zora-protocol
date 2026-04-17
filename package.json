@@ -10,6 +10,8 @@
     "docs:preview": "pnpm run --filter docs preview",
     "build:docs:coins": "pnpm turbo run 'docs#build:site'",
     "build:docs:nft": "pnpm turbo run 'nft-docs#build:site'",
+    "build:docs:cli": "pnpm turbo run 'cli-docs#build:site'",
+    "dev:cli-docs": "pnpm run --filter cli-docs dev",
     "update-version": "changeset version && pnpm docs:copy-changelogs && turbo run update-contract-version",
     "docs:copy-changelogs": "pnpm --filter=docs copy-changelog",
     "lint": "turbo run lint",

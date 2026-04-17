@@ -17,4 +17,6 @@ line_length = 150
 quote_style = "double"
 tab_width = 4
 
+[profile.dev]
+
 # See more config options https://github.com/foundry-rs/foundry/tree/master/config

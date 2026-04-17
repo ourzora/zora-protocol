@@ -1,0 +1,84 @@
+# auth
+
+Manage API key authentication. An API key is optional — without one, requests are rate-limited.
+
+```bash
+zora auth [command]
+```
+
+## Subcommands
+
+| Subcommand       | Description                         |
+| ---------------- | ----------------------------------- |
+| `auth configure` | Save an API key                     |
+| `auth status`    | Check current authentication status |
+
+## Get an API Key
+
+Get a key at [zora.co/settings/developer](https://zora.co/settings/developer). The key is stored at `~/.config/zora/config.json` with restricted permissions.
+
+## Examples
+
+### Save an API key
+
+```bash
+npx @zoralabs/cli auth configure
+```
+
+```
+ Enter your Zora API key: ********
+
+ API key saved to ~/.config/zora/config.json
+```
+
+### Check authentication status
+
+```bash
+npx @zoralabs/cli auth status
+```
+
+```
+ Authenticated
+
+ Key     f7c3502c...3458
+ Source  ~/.config/zora/config.json
+```
+
+### JSON output
+
+```bash
+npx @zoralabs/cli auth status --json
+```
+
+```json
+{
+  "authenticated": true,
+  "key": "f7c3502c...3458",
+  "source": "~/.config/zora/config.json"
+}
+```
+
+When no key is configured:
+
+```json
+{
+  "authenticated": false
+}
+```
+
+## Environment Variable
+
+The `ZORA_API_KEY` environment variable takes precedence over the config file:
+
+```bash
+export ZORA_API_KEY=your-key-here
+npx @zoralabs/cli auth status --json
+```
+
+```json
+{
+  "authenticated": true,
+  "key": "your-key...here",
+  "source": "ZORA_API_KEY"
+}
+```

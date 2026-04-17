@@ -3,3 +3,4 @@ packages:
   - 'legacy/*'
   - 'docs'
   - 'nft-docs'
+  - 'cli-docs'

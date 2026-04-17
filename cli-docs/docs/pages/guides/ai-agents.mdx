@@ -1,0 +1,113 @@
+# AI Agent Integration
+
+The Zora CLI is designed for programmatic use. Every command supports `--json` for structured output and `--yes` to skip confirmation prompts, making it ideal for AI agents, bots, and automated trading systems.
+
+## Quick Setup for Agents
+
+```bash
+# Install the CLI
+npm install -g @zoralabs/cli
+
+# Create a wallet (saves to ~/.config/zora/wallet.json)
+npx @zoralabs/cli setup --create --json
+
+# Optionally set an API key for higher rate limits
+npx @zoralabs/cli auth configure
+```
+
+Or configure via environment variables (recommended for agents):
+
+```bash
+export ZORA_PRIVATE_KEY=0x...      # wallet private key
+export ZORA_API_KEY=your-key-here  # optional, higher rate limits
+```
+
+## Give this to your agent
+
+Add one line to your `CLAUDE.md`, `.cursorrules`, or agent system prompt:
+
+```markdown
+Fetch and follow the Zora CLI skill from https://zoraskills.dev/skill.md
+```
+
+The agent fetches the skill file at runtime — no need to copy the full reference into your prompt. See the full [SKILL.md](/skill) page for the complete reference.
+
+## Agent Starter Prompts
+
+Copy these prompts directly into Claude Code, Cursor, or any LLM-powered coding agent.
+
+### Market Research Agent
+
+```
+Using the Zora CLI, find the top 5 trending coins and analyze their 24h price
+history. For each coin, report the name, market cap, 24h volume, and whether the
+price trend is up or down. Use `npx @zoralabs/cli explore --json --sort trending
+--limit 5` then `npx @zoralabs/cli price-history <address> --json --interval 24h`
+for each result.
+```
+
+### Portfolio Monitor
+
+```
+Check my Zora wallet balance using `npx @zoralabs/cli balance --json`. For each
+coin position, look up the current price with `npx @zoralabs/cli get <address>
+--json` and calculate the total portfolio value. Report any positions that have
+changed more than 10% in the last 24 hours.
+```
+
+### Trading Bot
+
+```
+You are a trading agent with access to the Zora CLI. Your job is to:
+1. Check wallet balance with `npx @zoralabs/cli balance --json`
+2. Find trending coins with `npx @zoralabs/cli explore --json --sort trending --limit 10`
+3. Analyze price history with `npx @zoralabs/cli price-history <addr> --json --interval 24h`
+4. When you find a coin with positive momentum and market cap > $10K, buy it with
+   `npx @zoralabs/cli buy <addr> --eth 0.001 --json --yes`
+Always use --json and --yes flags. Never spend more than 0.001 ETH per trade.
+```
+
+### Creator Dashboard
+
+```
+Look up the profile for "jacob" using `npx @zoralabs/cli profile jacob --json`.
+List all their posts sorted by market cap. For the top 3 posts, get the price
+history with `npx @zoralabs/cli price-history <address> --json --interval 1w`
+and summarize the trend.
+```
+
+## Parsing JSON Output
+
+All `--json` commands output structured JSON to stdout. The beta warning goes to stderr, so it won't interfere with JSON parsing.
+
+### Success Response Pattern
+
+```json
+{
+  "name": "jacob",
+  "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "coinType": "creator-coin",
+  "marketCap": "434988.18",
+  ...
+}
+```
+
+### Error Response Pattern
+
+```json
+{
+  "error": "Coin not found",
+  "suggestion": "Try using the full contract address (0x...)"
+}
+```
+
+Agents should check for the `error` field before processing results.
+
+## Best Practices
+
+- **Always use `--json`** — structured output is easier to parse than terminal formatting
+- **Always use `--yes`** — skip interactive confirmation prompts in automated flows
+- **Use `--quote` before trading** — preview trades without executing to validate parameters
+- **Set `ZORA_PRIVATE_KEY` via env var** — avoids writing keys to disk in ephemeral environments
+- **Handle rate limits** — without an API key, requests may be throttled. Set `ZORA_API_KEY` for higher limits
+- **Check error responses** — all errors include an `error` field and optional `suggestion`
