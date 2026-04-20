@@ -1,6 +1,6 @@
 {
   "name": "@zoralabs/cli",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Zora CLI tool",
   "type": "module",
   "bin": {

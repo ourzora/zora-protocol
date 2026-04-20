@@ -1,5 +1,17 @@
 # @zoralabs/coins-sdk
 
+## 0.6.0
+
+### Minor Changes
+
+- 8baf100b2: Add getCoinPriceHistory and getCreatorLivestreamComments query functions
+  - getCoinPriceHistory retrieves historical price data across multiple time periods
+  - getCreatorLivestreamComments fetches paginated comments from creator livestreams
+
+### Patch Changes
+
+- bcfc04153: Add `getWalletTradeActivity` query to fetch trade activity for a wallet address
+
 ## 0.5.2
 
 ### Patch Changes
