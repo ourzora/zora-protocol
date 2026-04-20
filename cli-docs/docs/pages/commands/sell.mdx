@@ -33,6 +33,10 @@ zora sell [typeOrId] [identifier] [options]
 Amount flags (`--amount`, `--usd`, `--percent`, `--all`) are mutually exclusive — use exactly one.
 :::
 
+:::tip
+When a coin name matches both a creator-coin and a trend, the sell command auto-detects which one to sell based on the wallet's holdings. If only one type is held, it is selected automatically. If both or neither are held, a type prefix is required to disambiguate.
+:::
+
 ## Examples
 
 ### Sell 50% of jacob position

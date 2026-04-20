@@ -42,9 +42,9 @@ npx @zoralabs/cli balance --static
 
  Coin Positions
 
- #  Name     Type          Balance      Value
- 1  jacob    creator-coin  20.63        $10.01
- 2  zora     trend         1,500.00     $11.10
+ #  Name     Address           Type          Balance      Value
+ 1  jacob    0x9b13...5f54     creator-coin  20.63        $10.01
+ 2  zora     0x2748...f519     trend         1,500.00     $11.10
 ```
 
 ### Show only spendable tokens
@@ -64,6 +64,8 @@ npx @zoralabs/cli balance coins --static
 ```bash
 npx @zoralabs/cli balance --live --refresh 10
 ```
+
+In live mode, use arrow keys to select rows and press `Enter` or `c` to copy a coin address.
 
 ### JSON output
 
@@ -89,3 +91,39 @@ npx @zoralabs/cli balance --json
   ]
 }
 ```
+
+:::info
+USD values are more accurate when a Zora API key is configured. Without one, the CLI falls back to `balance × priceInUsdc`. Set `ZORA_API_KEY` for SDK-based valuations.
+:::
+
+---
+
+## balance coins
+
+Show coin positions with sorting and pagination.
+
+```bash
+zora balance coins [options]
+```
+
+### Options
+
+| Flag                  | Description                                                   | Default     |
+| --------------------- | ------------------------------------------------------------- | ----------- |
+| `--sort <sort>`       | Sort by: `usd-value`, `balance`, `market-cap`, `price-change` | `usd-value` |
+| `--limit <n>`         | Number of results (max 20)                                    | `10`        |
+| `--after <cursor>`    | Pagination cursor from a previous result                      | —           |
+| `--live`              | Interactive live-updating display                             | default     |
+| `--static`            | Static snapshot                                               | —           |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5)                    | `30`        |
+| `--json`              | Machine-readable JSON output                                  | —           |
+
+### Interactive Controls
+
+| Key         | Action             |
+| ----------- | ------------------ |
+| `↑`/`↓`     | Navigate rows      |
+| `Enter`/`c` | Copy coin address  |
+| `←`/`→`     | Previous/next page |
+| `r`         | Refresh            |
+| `q`         | Quit               |

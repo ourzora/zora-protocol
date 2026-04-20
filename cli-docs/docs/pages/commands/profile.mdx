@@ -1,6 +1,6 @@
 # profile
 
-View a creator or user profile — posts and holdings.
+View a creator or user profile — posts, holdings, and trade activity. The default view shows all three as tabbed panels.
 
 ```bash
 zora profile [options] [identifier]
@@ -20,6 +20,14 @@ zora profile [options] [identifier]
 | `--static`            | Static snapshot                            | —       |
 | `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
 | `--json`              | Machine-readable JSON output               | —       |
+
+## Subcommands
+
+| Subcommand         | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `profile posts`    | Browse created coins with pagination             |
+| `profile holdings` | Browse coin holdings with pagination and sorting |
+| `profile trades`   | Browse buy/sell trade history with pagination    |
 
 ## Examples
 
@@ -75,18 +83,121 @@ npx @zoralabs/cli profile jacob --json
       "marketCapDelta24h": "-28.31",
       "volume24h": "0.0",
       "createdAt": "2026-03-12T16:29:23"
-    },
-    {
-      "rank": 2,
-      "name": "text campaign, 2022",
-      "symbol": "text",
-      "coinType": "post",
-      "address": "0xa493535ddc64cdeef9b33ce31c94ac35ee869a35",
-      "marketCap": "1506.26",
-      "marketCapDelta24h": "152.49",
-      "volume24h": "0.0",
-      "createdAt": "2026-03-12T16:28:09"
     }
   ]
 }
 ```
+
+---
+
+## profile posts
+
+Browse a profile's created coins with cursor-based pagination.
+
+```bash
+zora profile posts [identifier] [options]
+```
+
+### Options
+
+| Flag                  | Description                                | Default |
+| --------------------- | ------------------------------------------ | ------- |
+| `--limit <n>`         | Number of results per page (max 20)        | `10`    |
+| `--after <cursor>`    | Pagination cursor from a previous result   | —       |
+| `--live`              | Interactive live-updating display          | default |
+| `--static`            | Static snapshot                            | —       |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
+| `--json`              | Machine-readable JSON output               | —       |
+
+### Examples
+
+```bash
+npx @zoralabs/cli profile posts jacob --static --limit 5
+```
+
+---
+
+## profile holdings
+
+Browse a profile's coin holdings with pagination and sorting.
+
+```bash
+zora profile holdings [identifier] [options]
+```
+
+### Options
+
+| Flag                  | Description                                                   | Default     |
+| --------------------- | ------------------------------------------------------------- | ----------- |
+| `--sort <sort>`       | Sort by: `usd-value`, `balance`, `market-cap`, `price-change` | `usd-value` |
+| `--limit <n>`         | Number of results per page (max 20)                           | `10`        |
+| `--after <cursor>`    | Pagination cursor from a previous result                      | —           |
+| `--live`              | Interactive live-updating display                             | default     |
+| `--static`            | Static snapshot                                               | —           |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5)                    | `30`        |
+| `--json`              | Machine-readable JSON output                                  | —           |
+
+### Examples
+
+#### Holdings sorted by market cap
+
+```bash
+npx @zoralabs/cli profile holdings jacob --sort market-cap --static
+```
+
+```
+ Holdings — jacob
+
+ #  Name     Address           Type          Balance      USD Value  Market Cap  Change
+ 1  jacob    0x9b13...5f54     creator-coin  20.63        $10.01     $435.0K     +1.9%
+ 2  zora     0x2748...f519     trend         1,500.00     $11.10     $6.6K       +1.8%
+```
+
+---
+
+## profile trades
+
+Browse buy/sell trade history with pagination.
+
+```bash
+zora profile trades [identifier] [options]
+```
+
+### Options
+
+| Flag                  | Description                                | Default |
+| --------------------- | ------------------------------------------ | ------- |
+| `--limit <n>`         | Number of results per page (max 20)        | `10`    |
+| `--after <cursor>`    | Pagination cursor from a previous result   | —       |
+| `--live`              | Interactive live-updating display          | default |
+| `--static`            | Static snapshot                            | —       |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
+| `--json`              | Machine-readable JSON output               | —       |
+
+### Examples
+
+```bash
+npx @zoralabs/cli profile trades jacob --static
+```
+
+```
+ Trades — jacob
+
+ #  Side  Coin Name  Amount      USD Value  Tx Hash
+ 1  BUY   zora       1,500.00    $11.10     0xabc1...
+ 2  SELL  soho       200.00      $3.50      0xdef2...
+```
+
+---
+
+## Interactive Controls
+
+All profile subcommands support the same navigation in live mode:
+
+| Key         | Action             |
+| ----------- | ------------------ |
+| `↑`/`↓`     | Navigate rows      |
+| `Enter`/`c` | Copy address       |
+| `←`/`→`     | Previous/next page |
+| `r`         | Refresh            |
+| `q`         | Quit               |

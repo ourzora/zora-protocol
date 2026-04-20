@@ -191,13 +191,37 @@ export default defineConfig({
       collapsed: false,
       items: [
         { text: "explore", link: "/commands/explore" },
-        { text: "get", link: "/commands/get" },
-        { text: "price-history", link: "/commands/price-history" },
+        {
+          text: "get",
+          link: "/commands/get",
+          items: [
+            {
+              text: "get price-history",
+              link: "/commands/get#get-price-history",
+            },
+            { text: "get trades", link: "/commands/get#get-trades" },
+            { text: "get holders", link: "/commands/get#get-holders" },
+          ],
+        },
         { text: "buy", link: "/commands/buy" },
         { text: "sell", link: "/commands/sell" },
         { text: "send", link: "/commands/send" },
         { text: "balance", link: "/commands/balance" },
-        { text: "profile", link: "/commands/profile" },
+        {
+          text: "profile",
+          link: "/commands/profile",
+          items: [
+            { text: "profile posts", link: "/commands/profile#profile-posts" },
+            {
+              text: "profile holdings",
+              link: "/commands/profile#profile-holdings",
+            },
+            {
+              text: "profile trades",
+              link: "/commands/profile#profile-trades",
+            },
+          ],
+        },
         { text: "auth", link: "/commands/auth" },
         { text: "setup", link: "/commands/setup" },
         { text: "wallet", link: "/commands/wallet" },
