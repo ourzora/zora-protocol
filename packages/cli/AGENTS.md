@@ -55,20 +55,21 @@ packages/cli/
 
 All commands support `--json` (global flag) for machine-readable output. Commands with live data (explore, get, balance, profile) also support `--live` (interactive, default) and `--static` (snapshot). These three flags are mutually exclusive.
 
-| Command             | Description                                                        | Wallet required |
-| ------------------- | ------------------------------------------------------------------ | --------------- |
-| `setup`             | Guided first-time setup (wallet + API key + deposit info)          | —               |
-| `explore`           | Browse top, new, and highest volume coins                          | No              |
-| `get`               | Look up a coin by address or name (tabbed: Price History + Trades) | No              |
-| `get price-history` | Display price history for a coin                                   | No              |
-| `get trades`        | Show recent buy/sell activity on a coin                            | No              |
-| `auth`              | Configure or check API key status                                  | No              |
-| `buy`               | Buy a coin                                                         | Yes             |
-| `sell`              | Sell a coin                                                        | Yes             |
-| `balance`           | Show wallet balances (ETH, USDC, ZORA) and coin positions          | Yes             |
-| `send`              | Send tokens to another address                                     | Yes             |
-| `wallet`            | Show wallet address, export key, or configure wallet               | Yes             |
-| `profile`           | View creator or user profiles                                      | No              |
+| Command             | Description                                                                         | Wallet required |
+| ------------------- | ----------------------------------------------------------------------------------- | --------------- |
+| `setup`             | Guided first-time setup (wallet + API key + deposit info)                           | —               |
+| `explore`           | Browse top, new, and highest volume coins                                           | No              |
+| `get`               | Look up a coin by address or name (tabbed: Summary, Price History, Trades, Holders) | No              |
+| `get price-history` | Display price history for a coin                                                    | No              |
+| `get trades`        | Show recent buy/sell activity on a coin                                             | No              |
+| `get holders`       | Show top holders of a coin                                                          | No              |
+| `auth`              | Configure or check API key status                                                   | No              |
+| `buy`               | Buy a coin                                                                          | Yes             |
+| `sell`              | Sell a coin                                                                         | Yes             |
+| `balance`           | Show wallet balances (ETH, USDC, ZORA) and coin positions                           | Yes             |
+| `send`              | Send tokens to another address                                                      | Yes             |
+| `wallet`            | Show wallet address, export key, or configure wallet                                | Yes             |
+| `profile`           | View creator or user profiles                                                       | No              |
 
 ## Setup
 

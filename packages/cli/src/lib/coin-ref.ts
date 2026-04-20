@@ -136,6 +136,7 @@ export interface ResolvedCoin {
   marketCap: string;
   marketCapDelta24h: string;
   volume24h: string;
+  totalSupply: string;
   uniqueHolders: number;
   createdAt: string | undefined;
   creatorAddress: string | undefined;
@@ -166,6 +167,7 @@ function coinFromToken(token: any): ResolvedCoin {
     marketCap: token.marketCap ?? "0",
     marketCapDelta24h: token.marketCapDelta24h ?? "0",
     volume24h: token.volume24h ?? "0",
+    totalSupply: token.totalSupply ?? "0",
     uniqueHolders: token.uniqueHolders ?? 0,
     createdAt: token.createdAt,
     creatorAddress: token.creatorAddress,

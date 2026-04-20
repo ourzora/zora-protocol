@@ -4,6 +4,7 @@ import Spinner from "ink-spinner";
 import { CoinDetail } from "./CoinDetail.js";
 import { PriceHistory } from "./PriceHistory.js";
 import { Table, type Column } from "./table.js";
+import { makeHolderColumns, type HolderNode } from "./CoinHoldersView.js";
 import { coinTradeColumns, type TradeSwapNode } from "./CoinTradesView.js";
 import type { ResolvedCoin } from "../lib/coin-ref.js";
 import type { Interval } from "../lib/price-history.js";
@@ -17,14 +18,21 @@ export type PriceHistoryData = {
   interval: Interval;
 };
 
+export type HoldersData = {
+  holders: HolderNode[];
+  totalCount: number;
+  error?: string;
+};
+
 export type CoinViewData = {
   coin: ResolvedCoin;
   priceHistory: PriceHistoryData | null;
   trades: TradeSwapNode[];
+  holders: HoldersData | null;
 };
 
-const TAB_NAMES = ["Price History", "Trades"] as const;
-type TabIndex = 0 | 1;
+const TAB_NAMES = ["Price History", "Trades", "Holders"] as const;
+type TabIndex = 0 | 1 | 2;
 
 // Reuse coinTradeColumns from CoinTradesView, dropping the "#" rank column.
 // Cast to Column<TradeSwapNode> since we've removed the rank-dependent column.
@@ -89,10 +97,15 @@ const CoinView = ({
       triggerManualRefresh();
       setManualRefreshCount((c) => c + 1);
     }
-    if (key.leftArrow || input === "1") {
-      setActiveTab(0);
+    if (key.leftArrow) {
+      setActiveTab((t) => Math.max(0, t - 1) as TabIndex);
     }
-    if (key.rightArrow || input === "2") setActiveTab(1);
+    if (key.rightArrow) {
+      setActiveTab((t) => Math.min(2, t + 1) as TabIndex);
+    }
+    if (input === "1") setActiveTab(0);
+    if (input === "2") setActiveTab(1);
+    if (input === "3") setActiveTab(2);
   });
 
   if (error && !data) {
@@ -168,6 +181,51 @@ const CoinView = ({
             <Text>No trades found.</Text>
           </Box>
         );
+      case 2: {
+        const holders = data.holders;
+        if (!holders || holders.error) {
+          return (
+            <Box
+              flexDirection="column"
+              paddingLeft={1}
+              paddingTop={1}
+              paddingBottom={1}
+            >
+              <Text dimColor>
+                {holders?.error
+                  ? `Could not load holders: ${holders.error}`
+                  : "Holder data not available."}
+              </Text>
+            </Box>
+          );
+        }
+        if (holders.holders.length === 0) {
+          return (
+            <Box
+              flexDirection="column"
+              paddingLeft={1}
+              paddingTop={1}
+              paddingBottom={1}
+            >
+              <Text>No holders found for this coin.</Text>
+            </Box>
+          );
+        }
+        const totalSupplyNum = Number(data.coin.totalSupply);
+        const columns = makeHolderColumns({ totalSupplyNum });
+        const rankedHolders = holders.holders.map((h, i) => ({
+          ...h,
+          rank: i + 1,
+        }));
+        return (
+          <Table
+            columns={columns}
+            data={rankedHolders}
+            title="Holders"
+            subtitle={`${rankedHolders.length} of ${holders.totalCount}`}
+          />
+        );
+      }
     }
   };
 

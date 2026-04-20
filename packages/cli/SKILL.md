@@ -131,7 +131,7 @@ Commands that prompt for confirmation without `--yes`:
 
 ## Pagination
 
-The `explore`, `balance coins`, and `get trades` commands support cursor-based pagination.
+The `explore`, `balance coins`, `get trades`, and `get holders` commands support cursor-based pagination.
 
 - `--limit <1-20>` — results per page (default 10, max 20)
 - `--after <cursor>` — fetch the next page by passing the `endCursor` from the previous response
@@ -304,6 +304,38 @@ Returns:
 ```
 
 `senderHandle` is `null` when the sender has no Zora profile. `type` is `"BUY"` or `"SELL"`. When `hasNextPage` is `true`, pass `--after <endCursor>` to get the next page.
+
+### Top holders
+
+```bash
+npx @zoralabs/cli get holders <address-or-name> --json --limit <n> --after <cursor>
+```
+
+Supports type prefixes: `get holders creator-coin <name>`, `get holders trend <ticker>`.
+
+Returns:
+
+```json
+{
+  "coin": "jacob",
+  "address": "0x1234...5678",
+  "coinType": "creator-coin",
+  "totalHolders": 62605,
+  "holders": [
+    {
+      "rank": 1,
+      "handle": "jessepollak",
+      "address": "0xaaa...bbb",
+      "balance": "125M",
+      "balanceRaw": "125000000000000000000000000",
+      "ownershipPercent": 12.5
+    }
+  ],
+  "nextCursor": "abc123"
+}
+```
+
+`nextCursor` is only present when there are more pages.
 
 ### Creator/user profile
 
@@ -680,6 +712,8 @@ npx @zoralabs/cli get 0x<address> --json
 npx @zoralabs/cli get price-history 0x<address> --interval 24h --json
 # 3. Check recent buy/sell activity
 npx @zoralabs/cli get trades 0x<address> --json
-# 4. Check who's creating coins
+# 4. See top holders
+npx @zoralabs/cli get holders 0x<address> --json
+# 5. Check who's creating coins
 npx @zoralabs/cli profile <handle> --json
 ```

@@ -1,6 +1,6 @@
 import { Command } from "commander";
 import { Box, Text } from "ink";
-import { setApiKey, getCoinSwaps } from "@zoralabs/coins-sdk";
+import { setApiKey, getCoinHolders, getCoinSwaps } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
 import {
   getJson,
@@ -9,6 +9,9 @@ import {
   outputErrorAndExit,
   outputData,
 } from "../lib/output.js";
+import { Table } from "../components/table.js";
+import { BASE_CHAIN_ID } from "../lib/constants.js";
+import { formatBalance, parseRawBalance } from "../lib/balance-format.js";
 import {
   parsePositionalCoinArgs,
   coinArgsToRef,
@@ -23,7 +26,6 @@ import { renderOnce, renderLive } from "../lib/render.js";
 import { CoinDetail } from "../components/CoinDetail.js";
 import { PriceHistory } from "../components/PriceHistory.js";
 import { CoinView, type CoinViewData } from "../components/CoinView.js";
-import { Table } from "../components/table.js";
 import {
   CoinTradesView,
   coinTradeColumns,
@@ -31,6 +33,11 @@ import {
 } from "../components/CoinTradesView.js";
 import type { PageResult } from "../components/PaginatedTableView.js";
 import type { PageInfo } from "../lib/types.js";
+import {
+  CoinHoldersView,
+  makeHolderColumns,
+  type HolderNode,
+} from "../components/CoinHoldersView.js";
 import {
   VALID_INTERVALS,
   type Interval,
@@ -190,6 +197,55 @@ async function buildPriceHistoryData(
   };
 }
 
+async function fetchHoldersPageForCoin(
+  address: string,
+  count: number,
+  after?: string,
+): Promise<PageResult<HolderNode>> {
+  const result = await getCoinHolders({
+    chainId: BASE_CHAIN_ID,
+    address,
+    count,
+    after,
+  });
+
+  const token = result.data?.zora20Token;
+  if (!token) return { items: [] };
+
+  const items: HolderNode[] = token.tokenBalances.edges.map((e) => ({
+    balance: e.node.balance,
+    ownerAddress: e.node.ownerAddress,
+    ownerProfile:
+      e.node.ownerProfile && !e.node.ownerProfile.platformBlocked
+        ? { handle: e.node.ownerProfile.handle }
+        : undefined,
+  }));
+
+  return {
+    items,
+    count: token.tokenBalances.count,
+    pageInfo: token.tokenBalances.pageInfo,
+  };
+}
+
+async function buildHoldersData(
+  address: string,
+): Promise<CoinViewData["holders"]> {
+  try {
+    const result = await fetchHoldersPageForCoin(address, 10);
+    return {
+      holders: result.items,
+      totalCount: result.count ?? result.items.length,
+    };
+  } catch (err) {
+    return {
+      holders: [],
+      totalCount: 0,
+      error: err instanceof Error ? err.message : String(err),
+    };
+  }
+}
+
 async function fetchRecentTrades(address: string): Promise<TradeSwapNode[]> {
   try {
     const response = await getCoinSwaps({ address, first: 10 });
@@ -283,10 +339,12 @@ export const getCommand = new Command("get")
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     if (live) {
-      const [initialPriceHistory, initialTrades] = await Promise.all([
-        buildPriceHistoryData(coin.address, interval as Interval),
-        fetchRecentTrades(coin.address),
-      ]);
+      const [initialPriceHistory, initialTrades, initialHolders] =
+        await Promise.all([
+          buildPriceHistoryData(coin.address, interval as Interval),
+          fetchRecentTrades(coin.address),
+          buildHoldersData(coin.address),
+        ]);
 
       const fetchData = async (): Promise<CoinViewData> => {
         const { coin: freshCoin } = await resolveCoinOrThrow(
@@ -294,11 +352,12 @@ export const getCommand = new Command("get")
           identifier,
           "get",
         );
-        const [priceHistory, trades] = await Promise.all([
+        const [priceHistory, trades, holders] = await Promise.all([
           buildPriceHistoryData(freshCoin.address, interval as Interval),
           fetchRecentTrades(freshCoin.address),
+          buildHoldersData(freshCoin.address),
         ]);
-        return { coin: freshCoin, priceHistory, trades };
+        return { coin: freshCoin, priceHistory, trades, holders };
       };
 
       await renderLive(
@@ -308,6 +367,7 @@ export const getCommand = new Command("get")
             coin,
             priceHistory: initialPriceHistory,
             trades: initialTrades,
+            holders: initialHolders,
           }}
           autoRefresh={live}
           intervalSeconds={intervalSeconds}
@@ -650,6 +710,186 @@ getCommand
 
         track("cli_get_trades", {
           result_count: result.items.length,
+          output_format: "static",
+        });
+      }
+    }
+  });
+
+// --- holders subcommand ---
+
+getCommand
+  .command("holders")
+  .description("Show top holders of a coin")
+  .argument("[typeOrId]", "Type prefix (creator-coin, trend) or identifier")
+  .argument(
+    "[identifier]",
+    "Coin address (0x...) or name (when type prefix is given)",
+  )
+  .option("--limit <n>", "Number of results per page (max 20)", "10")
+  .option("--after <cursor>", "Pagination cursor from a previous result")
+  .option("--live", "Interactive live-updating display (default)")
+  .option("--static", "Static snapshot")
+  .option(
+    "--refresh <seconds>",
+    "Auto-refresh interval in seconds, requires --live (min 5)",
+    "30",
+  )
+  .action(async function (
+    this: Command,
+    typeOrId: string,
+    identifier: string | undefined,
+  ) {
+    const output = getOutputMode(this, "live");
+    const json = output === "json";
+    const opts = this.opts();
+    const limit = parseInt(opts.limit, 10);
+    const after: string | undefined = opts.after;
+
+    if (isNaN(limit) || limit <= 0 || limit > 20) {
+      outputErrorAndExit(
+        json,
+        `Invalid --limit value: ${opts.limit}. Must be an integer between 1 and 20.`,
+        "Usage: zora get holders --limit 10",
+      );
+    }
+
+    if (output === "live" && after) {
+      outputErrorAndExit(
+        false,
+        "--after cannot be used in live mode.",
+        "Use --static or --json to paginate with a cursor.",
+      );
+    }
+
+    const { coin, lookupType } = await resolveAndValidateCoin(
+      json,
+      typeOrId,
+      identifier,
+      "get holders",
+    );
+
+    const totalSupply = Number(coin.totalSupply);
+
+    if (json) {
+      let result: PageResult<HolderNode>;
+      try {
+        result = await fetchHoldersPageForCoin(coin.address, limit, after);
+      } catch (err) {
+        outputErrorAndExit(
+          json,
+          `Failed to fetch holders: ${err instanceof Error ? err.message : String(err)}`,
+        );
+      }
+
+      outputData(json, {
+        json: {
+          coin: coin.name,
+          address: coin.address,
+          coinType: coin.coinType,
+          totalHolders: result.count ?? 0,
+          holders: result.items.map((h, i) => ({
+            rank: i + 1,
+            handle: h.ownerProfile?.handle ?? h.ownerAddress,
+            address: h.ownerAddress,
+            balance: formatBalance(h.balance),
+            balanceRaw: h.balance,
+            ownershipPercent:
+              totalSupply > 0
+                ? (parseRawBalance(h.balance) / totalSupply) * 100
+                : 0,
+          })),
+          ...(result.pageInfo?.hasNextPage && result.pageInfo.endCursor
+            ? { nextCursor: result.pageInfo.endCursor }
+            : {}),
+        },
+        render: () => {},
+      });
+
+      track("cli_get_holders", {
+        lookup_type: lookupType,
+        coin_type: coin.coinType,
+        limit,
+        total_holders: result.count ?? 0,
+        output_format: "json",
+      });
+    } else {
+      const { live, intervalSeconds } = getLiveConfig(this, output);
+
+      if (live) {
+        const fetchPage = (cursor?: string) =>
+          fetchHoldersPageForCoin(coin.address, limit, cursor);
+
+        await renderLive(
+          <CoinHoldersView
+            fetchPage={fetchPage}
+            coinName={coin.name}
+            totalSupplyNum={totalSupply}
+            limit={limit}
+            autoRefresh={live}
+            intervalSeconds={intervalSeconds}
+          />,
+        );
+
+        track("cli_get_holders", {
+          lookup_type: lookupType,
+          coin_type: coin.coinType,
+          limit,
+          output_format: "live",
+          interval: intervalSeconds,
+        });
+      } else {
+        let result: PageResult<HolderNode>;
+        try {
+          result = await fetchHoldersPageForCoin(coin.address, limit, after);
+        } catch (err) {
+          outputErrorAndExit(
+            json,
+            `Failed to fetch holders: ${err instanceof Error ? err.message : String(err)}`,
+          );
+        }
+
+        if (result.items.length === 0) {
+          renderOnce(
+            <Box
+              flexDirection="column"
+              paddingLeft={1}
+              paddingTop={1}
+              paddingBottom={1}
+            >
+              <Text>No holders found for {coin.name}.</Text>
+            </Box>,
+          );
+        } else {
+          const holderColumns = makeHolderColumns({
+            totalSupplyNum: totalSupply,
+          });
+          const rankedItems = result.items.map((item, i) => ({
+            ...item,
+            rank: i + 1,
+          }));
+
+          const footer =
+            result.pageInfo?.hasNextPage && result.pageInfo.endCursor
+              ? `Next page: zora get holders ${coin.address} --limit ${limit} --after ${result.pageInfo.endCursor}`
+              : undefined;
+
+          renderOnce(
+            <Table
+              columns={holderColumns}
+              data={rankedItems}
+              title={`Top holders · ${coin.name}`}
+              subtitle={`${rankedItems.length} of ${result.count ?? rankedItems.length}`}
+              footer={footer}
+            />,
+          );
+        }
+
+        track("cli_get_holders", {
+          lookup_type: lookupType,
+          coin_type: coin.coinType,
+          limit,
+          total_holders: result.count ?? 0,
           output_format: "static",
         });
       }

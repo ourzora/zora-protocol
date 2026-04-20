@@ -10,8 +10,10 @@ const makeCoin = (overrides?: Partial<ResolvedCoin>): ResolvedCoin => ({
   marketCap: "5000000",
   marketCapDelta24h: "100000",
   volume24h: "250000",
+  totalSupply: "1000000000",
   uniqueHolders: 1200,
   createdAt: "2026-01-01T00:00:00Z",
+  platformBlocked: false,
   ...overrides,
 });
 
@@ -25,6 +27,7 @@ const makeCoinViewData = (overrides?: Partial<CoinViewData>): CoinViewData => ({
     interval: "1w",
   },
   trades: [],
+  holders: null,
   ...overrides,
 });
 
@@ -148,7 +151,7 @@ describe("CoinView", () => {
     expect(lastFrame()).toContain("[Price History]");
   });
 
-  it("shows tab switch hint with multiple tabs", async () => {
+  it("shows tab switch hint and all tab names", async () => {
     const { lastFrame } = render(
       <CoinView fetchData={() => Promise.resolve(makeCoinViewData())} />,
     );
@@ -156,8 +159,9 @@ describe("CoinView", () => {
     await vi.waitFor(() => {
       expect(lastFrame()).toContain("[Price History]");
     });
-    expect(lastFrame()).toContain("Trades");
     expect(lastFrame()).toContain("switch tab");
+    expect(lastFrame()).toContain("Trades");
+    expect(lastFrame()).toContain("Holders");
   });
 
   it("renders trade data when switching to Trades tab", async () => {
