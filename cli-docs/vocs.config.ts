@@ -232,7 +232,6 @@ export default defineConfig({
       collapsed: false,
       items: [
         { text: "AI Agent Integration", link: "/guides/ai-agents" },
-        { text: "Agent Skills", link: "/guides/agent-skills" },
         { text: "JSON Mode & Scripting", link: "/guides/json-mode" },
         { text: "Configuration", link: "/guides/configuration" },
       ],
