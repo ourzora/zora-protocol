@@ -185,6 +185,7 @@ export default defineConfig({
     {
       text: "Agents",
       link: "/skill",
+      items: [{ text: "Skills", link: "/guides/agent-skills" }],
     },
     {
       text: "Commands",
@@ -231,7 +232,6 @@ export default defineConfig({
       text: "Guides",
       collapsed: false,
       items: [
-        { text: "AI Agent Integration", link: "/guides/ai-agents" },
         { text: "JSON Mode & Scripting", link: "/guides/json-mode" },
         { text: "Configuration", link: "/guides/configuration" },
       ],

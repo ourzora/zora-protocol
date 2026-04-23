@@ -1,0 +1,11 @@
+{
+  "name": "zora-trading-skills",
+  "description": "Agent trading skills for the Zora protocol — copy-trading, early buying, watchlists, and take-profit. Powered by the Zora CLI.",
+  "version": "1.0.0",
+  "author": {
+    "name": "Zora"
+  },
+  "repository": "https://github.com/ourzora/zora-protocol",
+  "license": "MIT",
+  "homepage": "https://zora.co"
+}

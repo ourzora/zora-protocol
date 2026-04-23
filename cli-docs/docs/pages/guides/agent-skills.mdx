@@ -1,0 +1,69 @@
+# Skills
+
+> **For humans** setting up an agent. The skills themselves (the markdown files the agent fetches) are what the agent actually reads and follows — this page is the install + scheduling guide for the person wiring them up.
+
+Pre-built trading strategies that compose Zora CLI commands into automated workflows. Each skill is a markdown prompt file an agent follows step-by-step — ship it to Claude Code, Cursor, Windsurf, or any LLM that can read markdown and invoke shell commands.
+
+## Available Skills
+
+| Skill                 | Category  | Description                                                                  |
+| --------------------- | --------- | -----------------------------------------------------------------------------|
+| `/copy-trader`        | Social    | Mirror another user's trades, like existing holdings, future trades, or both |
+| `/early-buyer`        | Discovery | Auto-buy new coin launches from creators you follow                          |
+| `/watchlist`          | Discovery | Track coins and alert when market cap hits configured thresholds             |
+| `/take-profit`        | Risk      | Auto-sell positions at configured take-profit or stop-loss price targets     |
+
+Every skill runs as a single iteration per invocation and persists state to a local JSON file. Re-invoke to run the next cycle, or use the agent's native scheduling (see [Scheduling](#scheduling) below).
+
+## Prerequisites
+
+Skills invoke the Zora CLI. No install required — use it via `npx`:
+
+```bash
+npx @zoralabs/cli --version
+```
+
+Run `npx @zoralabs/cli setup` once to configure a wallet. To avoid the `npx` prefix, install globally: `npm install -g @zoralabs/cli`.
+
+## Install
+
+The easiest way — the CLI detects your agent (`.claude`, `.cursor`, `.windsurf`) and drops the skill file into the right place:
+
+```bash
+npx @zoralabs/cli skills add copy-trader   # install one
+npx @zoralabs/cli skills add --all         # install all four
+npx @zoralabs/cli skills list              # see what's available
+```
+
+Override auto-detection with `--agent claude|cursor|windsurf` or `--dir <path>`.
+
+### Prefer a prompt-only install?
+
+If you'd rather have your agent fetch the skills on demand, paste this into `CLAUDE.md`, `.cursorrules`, `.windsurfrules`, or whatever system-prompt file the agent reads:
+
+```markdown
+Fetch and follow the Zora trading skills:
+
+- https://zoraskills.dev/skill/copy-trader.md
+- https://zoraskills.dev/skill/early-buyer.md
+- https://zoraskills.dev/skill/watchlist.md
+- https://zoraskills.dev/skill/take-profit.md
+```
+
+The agent fetches each file on first use and runs the skill when invoked.
+
+## Scheduling
+
+Skills run once per invocation. To poll on an interval, use the scheduler for the agent:
+
+- **Claude Code** — `/loop 30m /copy-trader` invokes the skill every 30 minutes
+- **Cursor / Windsurf** — use their scheduled task / cron-equivalent to re-invoke the skill command
+- **Cron / shell** — script a shell loop or cron entry that runs `zora` commands directly using the skill file as a reference
+- **Manual** — just re-invoke the skill when you want the next cycle
+
+State persists in files like `.copy-trader-state.json` in the working directory, so each invocation picks up where the last left off. Add these patterns to `.gitignore` to avoid committing them.
+
+## Resources
+
+- [Agents](/skill) — full CLI command reference that skills build on
+- [Skill source files](https://github.com/ourzora/zora-protocol/tree/main/packages/cli/skills) — browse or contribute on GitHub

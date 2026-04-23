@@ -11,6 +11,7 @@ import { sellCommand } from "./commands/sell.js";
 import { profileCommand } from "./commands/profile.js";
 import { sendCommand } from "./commands/send.js";
 import { setupCommand } from "./commands/setup.js";
+import { skillsCommand } from "./commands/skills.js";
 import { walletCommand } from "./commands/wallet.js";
 import { renderOnce } from "./lib/render.js";
 import { StyledHelp } from "./components/StyledHelp.js";
@@ -85,6 +86,7 @@ const buildProgram = (): Command => {
   program.addCommand(getCommand);
   program.addCommand(profileCommand);
   program.addCommand(setupCommand);
+  program.addCommand(skillsCommand);
   program.addCommand(walletCommand);
   program.addCommand(sellCommand);
   program.addCommand(sendCommand);
