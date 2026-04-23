@@ -4,12 +4,17 @@ import { fileURLToPath } from "node:url";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const repoRoot = resolve(__dirname, "..", "..");
-const skillsSrc = resolve(repoRoot, "packages/cli/skills");
-const skillDest = resolve(__dirname, "..", "docs/public/skill");
+const cliPkg = resolve(repoRoot, "packages/cli");
+const skillsSrc = resolve(cliPkg, "skills");
+const publicDir = resolve(__dirname, "..", "docs/public");
+const skillDest = resolve(publicDir, "skill");
 
 const SKILLS = ["copy-trader", "early-buyer", "watchlist", "take-profit"];
 
 await mkdir(skillDest, { recursive: true });
+
+// Copy the CLI agent reference (SKILL.md → /skill.md)
+await cp(resolve(cliPkg, "SKILL.md"), resolve(publicDir, "skill.md"));
 
 // Copy and link-rewrite each skill
 for (const name of SKILLS) {
@@ -31,4 +36,6 @@ await cp(
   resolve(skillDest, "cli-setup.md"),
 );
 
-console.log(`Copied ${SKILLS.length} skills + cli-setup to ${skillDest}`);
+console.log(
+  `Copied CLI SKILL.md + ${SKILLS.length} agent skills + cli-setup to ${publicDir}`,
+);

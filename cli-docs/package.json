@@ -4,11 +4,10 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "copy:skill": "cp ../packages/cli/SKILL.md docs/public/skill.md",
     "copy:skills": "node scripts/copy-skills.mjs",
-    "dev": "pnpm copy:skill && pnpm copy:skills && vocs dev",
+    "dev": "pnpm copy:skills && vocs dev",
     "build": "tsc --noEmit",
-    "build:site": "pnpm copy:skill && pnpm copy:skills && vocs build",
+    "build:site": "pnpm copy:skills && vocs build",
     "preview": "vocs preview",
     "render:video": "npx remotion render remotion/index.ts TerminalDemo docs/public/terminal-demo.webm --codec=vp8 --public-dir=docs/public && npx remotion render remotion/index.ts TerminalDemo docs/public/terminal-demo.gif --codec=gif --every-nth-frame=2 --public-dir=docs/public",
     "studio": "npx remotion studio remotion/index.ts --public-dir=docs/public"
