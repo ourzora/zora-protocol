@@ -1,0 +1,63 @@
+import { Address, Hash, PublicClient, WalletClient, encodeFunctionData } from 'viem';
+
+// Типизация для поддержки EIP-5792 (capabilities)
+interface CreateCoinParams {
+  name: string;
+  symbol: string;
+  config: string;
+  // Параметр для спонсирования транзакций
+  capabilities?: {
+    paymasterService?: {
+      url: string;
+    };
+  };
+}
+
+/**
+ * Функция создания коина с поддержкой спонсирования газа
+ */
+export async function createCoin(
+  walletClient: WalletClient,
+  publicClient: PublicClient,
+  params: CreateCoinParams
+): Promise<Hash | any> {
+  const { name, symbol, config, capabilities } = params;
+  const account = walletClient.account;
+
+  if (!account) throw new Error("Кошелек не подключен");
+
+  // 1. Подготавливаем данные вызова (calldata)
+  // Это реализует предложение @iainnash использовать структуру 'call'
+  const callData = encodeFunctionData({
+    abi: [/* Zora ABI здесь */],
+    functionName: 'createCoin',
+    args: [name, symbol, config],
+  });
+
+  const contractAddress: Address = '0x...'; // Адрес контракта Zora
+
+  // 2. Если переданы capabilities, используем sendCalls (EIP-5792)
+  if (capabilities) {
+    console.log("Используется стандарт EIP-5792 для спонсируемой транзакции...");
+    
+    // Метод sendCalls позволяет передать транзакцию паймейстеру
+    return await (walletClient as any).sendCalls({
+      account,
+      calls: [
+        {
+          to: contractAddress,
+          data: callData,
+          value: BigInt(0),
+        },
+      ],
+      capabilities,
+    });
+  }
+
+  // 3. Если capabilities нет, отправляем обычную транзакцию
+  return await walletClient.sendTransaction({
+    account,
+    to: contractAddress,
+    data: callData,
+  });
+}
