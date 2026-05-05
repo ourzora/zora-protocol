@@ -16,7 +16,7 @@
   },
   "scripts": {
     "build": "pnpm run wagmi:generate && pnpm run copy-abis && tsup",
-    "build:js": "pnpm run build",
+    "build:js": "if command -v forge >/dev/null 2>&1; then pnpm run build; else echo \"forge not found; building with fallback ABI\" && tsup; fi",
     "wagmi:generate": "FOUNDRY_PROFILE=dev forge build && wagmi generate && pnpm exec rename-generated-abi-casing ./package/wagmiGenerated.ts",
     "update-contract-version": "pnpm exec update-contract-version",
     "copy-abis": "pnpm exec bundle-abis"
