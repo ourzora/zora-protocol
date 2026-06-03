@@ -40,7 +40,7 @@ export type * from "./api/social";
 export { setApiKey } from "./api/api-key";
 
 // Raw API helpers
-export { apiGet, apiPost, setApiBaseUrl } from "./api/api-raw";
+export { apiGet, apiPost, apiUrl, setApiBaseUrl } from "./api/api-raw";
 
 // Metadata Validation Utils
 export * from "./metadata";

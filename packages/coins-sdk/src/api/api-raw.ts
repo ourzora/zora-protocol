@@ -8,6 +8,10 @@ export const apiGet = (path: string, data?: Record<string, unknown>) =>
 export const apiPost = (path: string, data?: Record<string, unknown>) =>
   client.post({ url: path, body: data, ...getApiKeyMeta() });
 
+export const apiUrl = (path: string) => {
+  return `${client.getConfig().baseUrl}${path}`;
+};
+
 export const setApiBaseUrl = (baseUrl: string) => {
   client.setConfig(createConfig({ baseUrl }));
 };
