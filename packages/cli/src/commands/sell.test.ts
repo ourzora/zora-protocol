@@ -81,13 +81,17 @@ describe("sell command", () => {
     });
 
     vi.mocked(getApiKey).mockReturnValue("test-api-key");
-    vi.mocked(resolveAccount).mockReturnValue({
-      address: ACCOUNT_ADDRESS,
-    } as ReturnType<typeof resolveAccount>);
+    vi.mocked(resolveAccount).mockReturnValue(
+      Promise.resolve({
+        privateKeyAccount: {
+          address: ACCOUNT_ADDRESS,
+        },
+      }) as ReturnType<typeof resolveAccount>,
+    );
     vi.mocked(createClients).mockReturnValue({
       publicClient,
       walletClient,
-    } as ReturnType<typeof createClients>);
+    } as unknown as ReturnType<typeof createClients>);
     vi.mocked(getCoin).mockResolvedValue({
       data: {
         zora20Token: {

@@ -5,6 +5,7 @@ vi.mock("@zoralabs/coins-sdk");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
   getPrivateKey: vi.fn(),
+  getSmartWalletAddress: vi.fn(),
 }));
 vi.mock("viem/accounts");
 vi.mock("../lib/render.js", () => ({

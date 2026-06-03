@@ -130,8 +130,8 @@ const formatBalanceJson = (
 
 // --- Shared helpers ---
 
-function resolveContext(json: boolean) {
-  const account = resolveAccount(json);
+async function resolveContext(json: boolean) {
+  const account = (await resolveAccount(json)).privateKeyAccount;
 
   const apiKey = getApiKey();
   if (apiKey) {
@@ -283,7 +283,7 @@ export const balanceCommand = new Command("balance")
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const { account, hasApiKey } = resolveContext(json);
+    const { account, hasApiKey } = await resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const sort: SortFlag = "usd-value";
@@ -430,7 +430,7 @@ balanceCommand
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const { account } = resolveContext(json);
+    const { account } = await resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const fetchSpendableData = async (): Promise<BalanceData> => {
@@ -488,7 +488,7 @@ balanceCommand
     const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
     const after: string | undefined = opts.after;
-    const { account, hasApiKey } = resolveContext(json);
+    const { account, hasApiKey } = await resolveContext(json);
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
     const fetchCoinsPage = async (

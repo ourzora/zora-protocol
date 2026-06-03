@@ -162,8 +162,10 @@ export const buyCommand = new Command("buy")
     }
     const slippage = slippagePct / 100;
 
-    const account = resolveAccount(json);
-    const { publicClient, walletClient } = createClients(account);
+    const account = (await resolveAccount(json)).privateKeyAccount;
+    const { publicClient, walletClient } = createClients({
+      privateKeyAccount: account,
+    });
 
     let token;
     try {

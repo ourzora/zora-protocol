@@ -5,6 +5,7 @@ import {
   formatUnits,
   isAddress,
   parseUnits,
+  PrivateKeyAccount,
   type Address,
 } from "viem";
 import {
@@ -192,7 +193,7 @@ export const sellCommand = new Command("sell")
     }
 
     let coinAddress: string;
-    let earlyAccount: ReturnType<typeof resolveAccount> | undefined;
+    let earlyAccount: PrivateKeyAccount | undefined;
 
     if (parsed.kind === "address") {
       if (!isAddress(parsed.address)) {
@@ -203,8 +204,10 @@ export const sellCommand = new Command("sell")
     } else if (parsed.kind === "ambiguous-name") {
       let ambResult;
       try {
-        earlyAccount = resolveAccount(json);
-        const { publicClient: earlyPublicClient } = createClients(earlyAccount);
+        earlyAccount = (await resolveAccount(json)).privateKeyAccount;
+        const { publicClient: earlyPublicClient } = createClients({
+          privateKeyAccount: earlyAccount,
+        });
         ambResult = await resolveAmbiguousByNameAndBalance(
           parsed.name,
           (addr) =>
@@ -294,8 +297,11 @@ export const sellCommand = new Command("sell")
     }
     const slippage = slippagePct / 100;
 
-    const account = earlyAccount ?? resolveAccount(json);
-    const { publicClient, walletClient } = createClients(account);
+    const account =
+      earlyAccount ?? (await resolveAccount(json)).privateKeyAccount;
+    const { publicClient, walletClient } = createClients({
+      privateKeyAccount: account,
+    });
 
     let token;
     try {

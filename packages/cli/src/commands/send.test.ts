@@ -65,9 +65,13 @@ describe("send command", () => {
     vi.mocked(getTrend).mockResolvedValue({
       data: { trendCoin: null },
     } as any);
-    vi.mocked(resolveAccount).mockReturnValue({
-      address: ACCOUNT_ADDRESS,
-    } as ReturnType<typeof resolveAccount>);
+    vi.mocked(resolveAccount).mockReturnValue(
+      Promise.resolve({
+        privateKeyAccount: {
+          address: ACCOUNT_ADDRESS,
+        },
+      }) as ReturnType<typeof resolveAccount>,
+    );
     vi.mocked(createClients).mockReturnValue({
       publicClient,
       walletClient,

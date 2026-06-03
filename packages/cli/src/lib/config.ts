@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { formatError } from "./errors.js";
 import { safeExit, ERROR } from "./exit.js";
 import { homedir, platform } from "node:os";
+import { Address, isAddress } from "viem";
 
 function getConfigDir(): string {
   if (platform() === "win32") {
@@ -37,6 +38,7 @@ interface Config {
 interface Wallet {
   version: number;
   privateKey: string;
+  smartWalletAddress?: Address;
 }
 
 function assertVersion(
@@ -114,6 +116,13 @@ function readWallet(): Wallet | undefined {
   if (typeof obj.privateKey !== "string" || !obj.privateKey) {
     throw new Error(`${WALLET_FILE}: missing or invalid "privateKey" field`);
   }
+  if (
+    obj.smartWalletAddress &&
+    (typeof obj.smartWalletAddress !== "string" ||
+      !isAddress(obj.smartWalletAddress))
+  ) {
+    throw new Error(`${WALLET_FILE}: invalid "smartWalletAddress" field`);
+  }
   return parsed as Wallet;
 }
 
@@ -153,7 +162,19 @@ export function getPrivateKey(): string | undefined {
 }
 
 export function savePrivateKey(privateKey: string): void {
-  writeWallet({ privateKey });
+  const wallet = readWallet();
+  writeWallet({ ...wallet, privateKey });
+}
+
+export function getSmartWalletAddress(): Address | undefined {
+  return readWallet()?.smartWalletAddress;
+}
+
+export function saveSmartWalletAddress(smartWalletAddress: Address): void {
+  // we ignore if there's issues with the current wallet file (wallet would be undefined)
+  // we simply want to store the smart wallet address in it
+  const wallet = readWallet() as Wallet;
+  writeWallet({ ...wallet, smartWalletAddress });
 }
 
 export function getWalletPath(): string {

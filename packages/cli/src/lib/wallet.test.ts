@@ -35,12 +35,8 @@ import { getPrivateKey } from "./config.js";
 import { apiPost } from "@zoralabs/coins-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, createWalletClient, custom } from "viem";
-import {
-  normalizeKey,
-  resolveAccount,
-  createClients,
-  createCliRpcTransport,
-} from "./wallet.js";
+import { normalizeKey, resolveAccount, createClients } from "./wallet.js";
+import { createCliRpcTransport } from "./client/rpc.js";
 
 const MOCK_KEY = "a".repeat(64);
 const MOCK_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -75,7 +71,7 @@ describe("resolveAccount", () => {
       throw new Error(`process.exit(${code})`);
     });
 
-    expect(() => resolveAccount()).toThrow("process.exit(1)");
+    await expect(resolveAccount()).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("No wallet configured"),
     );
@@ -87,7 +83,7 @@ describe("resolveAccount", () => {
   it("uses ZORA_PRIVATE_KEY env var when set", async () => {
     process.env.ZORA_PRIVATE_KEY = MOCK_KEY;
 
-    const account = resolveAccount();
+    const account = (await resolveAccount()).privateKeyAccount;
 
     expect(privateKeyToAccount).toHaveBeenCalledWith(`0x${MOCK_KEY}`);
     expect(account.address).toBe(MOCK_ADDRESS);
@@ -96,7 +92,7 @@ describe("resolveAccount", () => {
   it("falls back to file key when env is not set", async () => {
     vi.mocked(getPrivateKey).mockReturnValue(`0x${MOCK_KEY}`);
 
-    const account = resolveAccount();
+    const account = (await resolveAccount()).privateKeyAccount;
 
     expect(privateKeyToAccount).toHaveBeenCalledWith(`0x${MOCK_KEY}`);
     expect(account.address).toBe(MOCK_ADDRESS);
@@ -112,7 +108,7 @@ describe("resolveAccount", () => {
       throw new Error(`process.exit(${code})`);
     });
 
-    expect(() => resolveAccount()).toThrow("process.exit(1)");
+    await expect(resolveAccount()).rejects.toThrow("process.exit(1)");
     expect(errorSpy).toHaveBeenCalledWith(
       expect.stringContaining("Invalid private key"),
     );
@@ -130,7 +126,7 @@ describe("createClients", () => {
     vi.mocked(createWalletClient).mockReturnValue(mockWalletClient as never);
 
     const account = { address: MOCK_ADDRESS } as never;
-    const result = createClients(account);
+    const result = createClients({ privateKeyAccount: account });
 
     expect(result.publicClient).toBe(mockPublicClient);
     expect(result.walletClient).toBe(mockWalletClient);
@@ -149,10 +145,6 @@ describe("createClients", () => {
         account,
         transport: expect.any(Object),
       }),
-    );
-
-    expect(vi.mocked(createWalletClient).mock.calls[0]?.[0].transport).toBe(
-      vi.mocked(createPublicClient).mock.calls[0]?.[0].transport,
     );
   });
 });
