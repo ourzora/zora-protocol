@@ -2,13 +2,16 @@ import { permit2ABI, permit2Address } from "@zoralabs/protocol-deployments";
 import {
   Account,
   Address,
+  encodeFunctionData,
   erc20Abi,
-  WalletClient,
-  maxUint256,
   Hex,
+  maxUint256,
+  WalletClient,
 } from "viem";
+import { BundlerClient, SmartAccount } from "viem/account-abstraction";
 import { base } from "viem/chains";
 import { postQuote, PostQuoteResponse } from "../client";
+import { GenericCall, toUserOperationCalls } from "../utils/calls";
 import { GenericPublicClient } from "../utils/genericPublicClient";
 
 type TradeERC20 = {
@@ -92,6 +95,110 @@ export type TradeParameters = {
   permitActiveSeconds?: number;
 };
 
+type SignPermitTypedData = (params: {
+  domain: { name: string; chainId: number; verifyingContract: Address };
+  types: typeof PERMIT_SINGLE_TYPES;
+  primaryType: "PermitSingle";
+  message: Permit;
+}) => Promise<Hex>;
+
+/**
+ * Resolves the permit2 requirements for a trade quote.
+ *
+ * For each permit the quote requires, reads the on-chain permit2 nonce and the
+ * token's permit2 allowance, signs the permit2 `PermitSingle` typed data with the
+ * provided signer, and — when the token's permit2 allowance is insufficient —
+ * collects the ERC20 `approve(permit2, max)` call needed before the trade.
+ *
+ * The approval is returned as a {@link GenericCall} rather than executed, so the
+ * caller decides how to run it: `tradeCoin` (EOA) sends it as a prior
+ * transaction; `tradeCoinSmartWallet` batches it into the trade's user operation.
+ */
+async function resolveTradePermits({
+  quote,
+  owner,
+  publicClient,
+  signTypedData,
+}: {
+  quote: PostQuoteResponse;
+  owner: Address;
+  publicClient: GenericPublicClient;
+  signTypedData: SignPermitTypedData;
+}): Promise<{
+  signatures: SignatureWithPermit<PermitStringAmounts>[];
+  approvalCalls: GenericCall[];
+}> {
+  const signatures: SignatureWithPermit<PermitStringAmounts>[] = [];
+  const approvalCalls: GenericCall[] = [];
+
+  if (!quote.permits) {
+    return { signatures, approvalCalls };
+  }
+
+  for (const permit of quote.permits) {
+    // permit2 allowance returns [amount, expiration, nonce]
+    const [, , nonce] = await publicClient.readContract({
+      abi: permit2ABI,
+      address: permit2Address[base.id],
+      functionName: "allowance",
+      args: [
+        owner,
+        permit.permit.details.token as Address,
+        permit.permit.spender as Address,
+      ],
+    });
+
+    const permitToken = permit.permit.details.token as Address;
+    const allowance = await publicClient.readContract({
+      abi: erc20Abi,
+      address: permitToken,
+      functionName: "allowance",
+      args: [owner, permit2Address[base.id]],
+    });
+
+    if (allowance < BigInt(permit.permit.details.amount)) {
+      approvalCalls.push({
+        to: permitToken,
+        data: encodeFunctionData({
+          abi: erc20Abi,
+          functionName: "approve",
+          args: [permit2Address[base.id], maxUint256],
+        }),
+        value: 0n,
+      });
+    }
+
+    const message: Permit = {
+      details: {
+        token: permit.permit.details.token as Address,
+        amount: BigInt(permit.permit.details.amount!),
+        expiration: Number(permit.permit.details.expiration!),
+        nonce,
+      },
+      spender: permit.permit.spender as Address,
+      sigDeadline: BigInt(permit.permit.sigDeadline!),
+    };
+
+    const signature = await signTypedData({
+      domain: {
+        name: "Permit2",
+        chainId: base.id,
+        verifyingContract: permit2Address[base.id],
+      },
+      primaryType: "PermitSingle",
+      types: PERMIT_SINGLE_TYPES,
+      message,
+    });
+
+    signatures.push({
+      signature,
+      permit: convertBigIntToString(message),
+    });
+  }
+
+  return { signatures, approvalCalls };
+}
+
 export async function tradeCoin({
   tradeParameters,
   walletClient,
@@ -113,77 +220,33 @@ export async function tradeCoin({
   if (!account) {
     throw new Error("Account is required");
   }
+  const resolvedAccount = account;
+  const owner =
+    typeof resolvedAccount === "string"
+      ? resolvedAccount
+      : resolvedAccount.address;
 
   // Set default recipient to wallet sender address if not provided
   if (!tradeParameters.recipient) {
-    tradeParameters.recipient =
-      typeof account === "string" ? account : account.address;
+    tradeParameters.recipient = owner;
   }
 
-  // todo replace any
-  const signatures: { signature: Hex; permit: any }[] = [];
-  if (quote.permits) {
-    for (const permit of quote.permits) {
-      // return values: amount, expiration, nonce
-      const [, , nonce] = await publicClient.readContract({
-        abi: permit2ABI,
-        address: permit2Address[base.id],
-        functionName: "allowance",
-        args: [
-          typeof account === "string" ? account : account.address,
-          permit.permit.details.token as Address,
-          permit.permit.spender as Address,
-        ],
-      });
-      const permitToken = permit.permit.details.token as Address;
-      const allowance = await publicClient.readContract({
-        abi: erc20Abi,
-        address: permitToken,
-        functionName: "allowance",
-        args: [
-          typeof account === "string" ? account : account.address,
-          permit2Address[base.id],
-        ],
-      });
-      if (allowance < BigInt(permit.permit.details.amount)) {
-        const approvalTx = await walletClient.writeContract({
-          abi: erc20Abi,
-          address: permitToken,
-          functionName: "approve",
-          chain: base,
-          args: [permit2Address[base.id], maxUint256],
-          account,
-        });
-        await publicClient.waitForTransactionReceipt({
-          hash: approvalTx,
-        });
-      }
-      const message = {
-        details: {
-          token: permit.permit.details.token as Address,
-          amount: BigInt(permit.permit.details.amount!),
-          expiration: Number(permit.permit.details.expiration!),
-          nonce: nonce,
-        },
-        spender: permit.permit.spender as Address,
-        sigDeadline: BigInt(permit.permit.sigDeadline!),
-      };
-      const signature = await walletClient.signTypedData({
-        domain: {
-          name: "Permit2",
-          chainId: base.id,
-          verifyingContract: permit2Address[base.id],
-        },
-        primaryType: "PermitSingle",
-        types: PERMIT_SINGLE_TYPES,
-        message,
-        account,
-      });
-      signatures.push({
-        signature,
-        permit: convertBigIntToString(message),
-      });
-    }
+  const { signatures, approvalCalls } = await resolveTradePermits({
+    quote,
+    owner,
+    publicClient,
+    signTypedData: (typedData) =>
+      walletClient.signTypedData({ ...typedData, account: resolvedAccount }),
+  });
+
+  // EOA path: execute each required permit2 approval as its own transaction
+  for (const approvalCall of approvalCalls) {
+    const approvalTx = await walletClient.sendTransaction({
+      ...approvalCall,
+      account: resolvedAccount,
+      chain: base,
+    });
+    await publicClient.waitForTransactionReceipt({ hash: approvalTx });
   }
 
   const newQuote = await createTradeCall({
@@ -196,7 +259,7 @@ export async function tradeCoin({
     data: newQuote.call.data as Hex,
     value: BigInt(newQuote.call.value),
     chain: base,
-    account,
+    account: resolvedAccount,
   };
 
   // simulate call
@@ -223,6 +286,81 @@ export async function tradeCoin({
 }
 
 /**
+ * Executes a trade from the caller's smart wallet via a user operation.
+ *
+ * Mirrors {@link tradeCoin} but routes through a bundler client: the smart
+ * account is both the token holder and the permit2 signer (ERC-1271), and any
+ * required permit2 approval is batched into the same user operation as the trade
+ * (rather than sent as a prior transaction). Returns the settled transaction
+ * receipt.
+ */
+export async function tradeCoinSmartWallet({
+  tradeParameters,
+  bundlerClient,
+  account,
+  publicClient,
+}: {
+  tradeParameters: TradeParameters;
+  bundlerClient: BundlerClient;
+  account?: SmartAccount;
+  publicClient: GenericPublicClient;
+}) {
+  const resolvedAccount = account ?? bundlerClient.account;
+  if (!resolvedAccount) {
+    throw new Error("Account is required");
+  }
+
+  const owner = resolvedAccount.address;
+
+  // The smart wallet is both the sender (token holder) and the permit signer.
+  const params: TradeParameters = {
+    ...tradeParameters,
+    sender: owner,
+    recipient: tradeParameters.recipient ?? owner,
+  };
+
+  const quote = await createTradeCall(params);
+
+  const { signatures, approvalCalls } = await resolveTradePermits({
+    quote,
+    owner,
+    publicClient,
+    signTypedData: (typedData) => resolvedAccount.signTypedData(typedData),
+  });
+
+  const newQuote = await createTradeCall({
+    ...params,
+    signatures,
+  });
+
+  const tradeCall: GenericCall = {
+    to: newQuote.call.target as Address,
+    data: newQuote.call.data as Hex,
+    value: BigInt(newQuote.call.value),
+  };
+
+  // Batch any required permit2 approvals + the trade into one user operation
+  const calls = toUserOperationCalls([...approvalCalls, tradeCall]);
+
+  const userOpHash = await bundlerClient.sendUserOperation({
+    account: resolvedAccount,
+    calls,
+  });
+
+  const userOpReceipt = await bundlerClient.waitForUserOperationReceipt({
+    hash: userOpHash,
+  });
+
+  if (!userOpReceipt.success) {
+    throw new Error(
+      `User operation reverted${userOpReceipt.reason ? `: ${userOpReceipt.reason}` : ""}`,
+    );
+  }
+
+  return userOpReceipt.receipt;
+}
+
+/**
  * Validates the parameters for a trade.
  *
  * Asserts slippage is within bounds and a non-zero input amount is provided.
@@ -241,6 +379,12 @@ export function validateTradeParameters(
 }
 
 export async function createTradeCall(
+  tradeParameters: TradeParameters,
+): Promise<PostQuoteResponse> {
+  return createQuote(tradeParameters);
+}
+
+async function createQuote(
   tradeParameters: TradeParameters,
 ): Promise<PostQuoteResponse> {
   validateTradeParameters(tradeParameters);

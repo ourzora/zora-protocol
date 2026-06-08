@@ -1,7 +1,9 @@
 export {
   createCoin,
+  createCoinSmartWallet,
   createCoinCall,
   validateCreateCoinCalls,
+  validateCreateCoinSmartWalletCalls,
   getCoinCreateFromLogs,
   CreateConstants,
 } from "./actions/createCoin";
@@ -15,6 +17,7 @@ export type {
 
 export {
   updateCoinURI,
+  updateCoinURISmartWallet,
   updateCoinURICall,
   validateUpdateCoinURI,
 } from "./actions/updateCoinURI";
@@ -22,6 +25,7 @@ export type { UpdateCoinURIArgs } from "./actions/updateCoinURI";
 
 export {
   updatePayoutRecipient,
+  updatePayoutRecipientSmartWallet,
   updatePayoutRecipientCall,
   validateUpdatePayoutRecipient,
 } from "./actions/updatePayoutRecipient";
@@ -29,14 +33,25 @@ export type { UpdatePayoutRecipientArgs } from "./actions/updatePayoutRecipient"
 
 export {
   tradeCoin,
+  tradeCoinSmartWallet,
   createTradeCall,
   validateTradeParameters,
 } from "./actions/tradeCoin";
 export type { TradeParameters } from "./actions/tradeCoin";
 
 // Normalized call types + user-operation adapter
-export { toUserOperationCalls } from "./actions/calls";
-export type { GenericCall, UserOperationCall } from "./actions/calls";
+export {
+  toGenericCall,
+  toUserOperationCalls,
+  isContractCall,
+  isSendCall,
+} from "./utils/calls";
+export type {
+  GenericCall,
+  UserOperationCall,
+  ContractCall,
+  SendCall,
+} from "./utils/calls";
 
 // API Read Actions
 export * from "./api/queries";

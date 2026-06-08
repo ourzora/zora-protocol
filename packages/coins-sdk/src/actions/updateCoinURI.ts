@@ -1,5 +1,4 @@
 import { coinABI } from "@zoralabs/protocol-deployments";
-import { validateClientNetwork } from "../utils/validateClientNetwork";
 import {
   Account,
   Address,
@@ -7,8 +6,11 @@ import {
   SimulateContractParameters,
   WalletClient,
 } from "viem";
-import { GenericPublicClient } from "../utils/genericPublicClient";
+import { BundlerClient, SmartAccount } from "viem/account-abstraction";
 import { getAttribution } from "../utils/attribution";
+import { toGenericCall, toUserOperationCalls } from "../utils/calls";
+import { GenericPublicClient } from "../utils/genericPublicClient";
+import { validateClientNetwork } from "../utils/validateClientNetwork";
 
 export type UpdateCoinURIArgs = {
   coin: Address;
@@ -50,17 +52,70 @@ export async function updateCoinURI(
   account?: Account | Address,
 ) {
   validateClientNetwork(publicClient);
+
   const call = updateCoinURICall(args);
+
   const { request } = await publicClient.simulateContract({
     ...call,
     account: account ?? walletClient.account,
   });
+
   const hash = await walletClient.writeContract(request);
+
   const receipt = await publicClient.waitForTransactionReceipt({ hash });
+
   const eventLogs = parseEventLogs({ abi: coinABI, logs: receipt.logs });
   const uriUpdated = eventLogs.find(
     (log) => log.eventName === "ContractURIUpdated",
   );
 
   return { hash, receipt, uriUpdated };
+}
+
+/**
+ * Updates a coin's URI from the caller's smart wallet via a user operation.
+ *
+ * Builds the `setContractURI` call, submits it through the bundler client (which
+ * wraps it in the smart wallet's `execute`), and parses the result. Mirrors
+ * {@link updateCoinURI}'s return shape (`hash` is the settled transaction hash,
+ * `receipt` the underlying transaction receipt).
+ */
+export async function updateCoinURISmartWallet(
+  args: UpdateCoinURIArgs,
+  bundlerClient: BundlerClient,
+  publicClient: GenericPublicClient,
+  account?: SmartAccount,
+) {
+  validateClientNetwork(publicClient);
+
+  // updateCoinURICall validates the args and assembles the contract call
+  const call = updateCoinURICall(args);
+
+  const calls = toUserOperationCalls([toGenericCall(call)]);
+
+  const userOpHash = await bundlerClient.sendUserOperation({
+    account: account ?? bundlerClient.account!,
+    calls,
+  });
+
+  const userOpReceipt = await bundlerClient.waitForUserOperationReceipt({
+    hash: userOpHash,
+  });
+
+  if (!userOpReceipt.success) {
+    throw new Error(
+      `User operation reverted${userOpReceipt.reason ? `: ${userOpReceipt.reason}` : ""}`,
+    );
+  }
+
+  const eventLogs = parseEventLogs({ abi: coinABI, logs: userOpReceipt.logs });
+  const uriUpdated = eventLogs.find(
+    (log) => log.eventName === "ContractURIUpdated",
+  );
+
+  return {
+    hash: userOpReceipt.receipt.transactionHash,
+    receipt: userOpReceipt.receipt,
+    uriUpdated,
+  };
 }
