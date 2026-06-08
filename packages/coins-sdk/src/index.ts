@@ -1,6 +1,7 @@
 export {
   createCoin,
   createCoinCall,
+  validateCreateCoinCalls,
   getCoinCreateFromLogs,
   CreateConstants,
 } from "./actions/createCoin";
@@ -12,17 +13,30 @@ export type {
   ContentCoinCurrency,
 } from "./actions/createCoin";
 
-export { updateCoinURI, updateCoinURICall } from "./actions/updateCoinURI";
+export {
+  updateCoinURI,
+  updateCoinURICall,
+  validateUpdateCoinURI,
+} from "./actions/updateCoinURI";
 export type { UpdateCoinURIArgs } from "./actions/updateCoinURI";
 
 export {
   updatePayoutRecipient,
   updatePayoutRecipientCall,
+  validateUpdatePayoutRecipient,
 } from "./actions/updatePayoutRecipient";
 export type { UpdatePayoutRecipientArgs } from "./actions/updatePayoutRecipient";
 
-export { tradeCoin, createTradeCall } from "./actions/tradeCoin";
+export {
+  tradeCoin,
+  createTradeCall,
+  validateTradeParameters,
+} from "./actions/tradeCoin";
 export type { TradeParameters } from "./actions/tradeCoin";
+
+// Normalized call types + user-operation adapter
+export { toUserOperationCalls } from "./actions/calls";
+export type { GenericCall, UserOperationCall } from "./actions/calls";
 
 // API Read Actions
 export * from "./api/queries";

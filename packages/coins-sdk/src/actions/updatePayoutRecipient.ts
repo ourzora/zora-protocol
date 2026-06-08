@@ -3,6 +3,7 @@ import { validateClientNetwork } from "../utils/validateClientNetwork";
 import {
   Account,
   Address,
+  isAddress,
   parseEventLogs,
   SimulateContractParameters,
   WalletClient,
@@ -15,10 +16,28 @@ export type UpdatePayoutRecipientArgs = {
   newPayoutRecipient: string;
 };
 
-export function updatePayoutRecipientCall({
+/**
+ * Validates the arguments for updating a coin's payout recipient.
+ *
+ * Asserts the new payout recipient is a valid address. Shared by the
+ * contract-call builder (`updatePayoutRecipientCall`) and the user-operation path
+ * so both validate identically.
+ */
+export function validateUpdatePayoutRecipient({
   newPayoutRecipient,
-  coin,
-}: UpdatePayoutRecipientArgs): SimulateContractParameters {
+}: UpdatePayoutRecipientArgs): void {
+  if (!isAddress(newPayoutRecipient)) {
+    throw new Error("Payout recipient must be a valid address");
+  }
+}
+
+export function updatePayoutRecipientCall(
+  args: UpdatePayoutRecipientArgs,
+): SimulateContractParameters {
+  validateUpdatePayoutRecipient(args);
+
+  const { coin, newPayoutRecipient } = args;
+
   return {
     abi: coinABI,
     address: coin,

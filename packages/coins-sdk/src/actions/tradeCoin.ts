@@ -222,15 +222,28 @@ export async function tradeCoin({
   return receipt;
 }
 
-export async function createTradeCall(
+/**
+ * Validates the parameters for a trade.
+ *
+ * Asserts slippage is within bounds and a non-zero input amount is provided.
+ * Shared by the quote builder (`createTradeCall`) and the user-operation path so
+ * both validate identically before any network request is made.
+ */
+export function validateTradeParameters(
   tradeParameters: TradeParameters,
-): Promise<PostQuoteResponse> {
+): void {
   if (tradeParameters.slippage && tradeParameters.slippage > 1) {
     throw new Error("Slippage must be less than 1, max 0.99");
   }
   if (tradeParameters.amountIn === BigInt(0)) {
     throw new Error("Amount in must be greater than 0");
   }
+}
+
+export async function createTradeCall(
+  tradeParameters: TradeParameters,
+): Promise<PostQuoteResponse> {
+  validateTradeParameters(tradeParameters);
 
   const quote = await postQuote({
     body: {

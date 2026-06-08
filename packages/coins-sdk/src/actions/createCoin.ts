@@ -20,6 +20,7 @@ import { ValidMetadataURI } from "../uploader/types";
 import { getChainFromId } from "../utils/getChainFromId";
 import { postCreateContent } from "../api";
 import { rethrowDecodedRevert } from "../utils/rethrowDecodedRevert";
+import { GenericCall } from "./calls";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
   typeof zoraFactoryImplABI,
@@ -120,6 +121,44 @@ export async function createCoinCall({
 }
 
 /**
+ * Validates the assembled calls for creating a coin.
+ *
+ * Asserts the invariants this SDK version supports: a single call, targeting the
+ * coin factory for the given chain, with no attached value (no buy-on-create).
+ * Shared by both the EOA execution path (`createCoin`) and the user-operation
+ * path so both validate identically.
+ */
+export function validateCreateCoinCalls(
+  calls: GenericCall[],
+  chainId: number,
+): void {
+  if (calls.length !== 1) {
+    throw new Error("Only one call is supported for this SDK version");
+  }
+
+  const createContentCall = calls[0];
+
+  if (!createContentCall) {
+    throw new Error("Failed to load create content calldata from API");
+  }
+
+  const coinFactoryAddressForChain =
+    coinFactoryAddress[chainId as keyof typeof coinFactoryAddress];
+
+  // Sanity check that the call is for the correct factory contract
+  if (!isAddressEqual(createContentCall.to, coinFactoryAddressForChain)) {
+    throw new Error("Creator coin is not supported for this SDK version");
+  }
+
+  // Sanity check to ensure no buy orders are sent with these parameters
+  if (createContentCall.value !== 0n) {
+    throw new Error(
+      "Creator coin and purchase is not supported for this SDK version.",
+    );
+  }
+}
+
+/**
  * Gets the deployed coin address from transaction receipt logs
  * @param receipt Transaction receipt containing the CoinCreated event
  * @returns The deployment information if found
@@ -160,30 +199,9 @@ export async function createCoin({
     chainId,
   });
 
-  if (callRequest.calls.length !== 1) {
-    throw new Error("Only one call is supported for this SDK version");
-  }
+  validateCreateCoinCalls(callRequest.calls, chainId);
 
-  const createContentCall = callRequest.calls[0];
-
-  if (!createContentCall) {
-    throw new Error("Failed to load create content calldata from API");
-  }
-
-  const coinFactoryAddressForChain =
-    coinFactoryAddress[call.chainId as keyof typeof coinFactoryAddress];
-
-  // Sanity check that the call is for the correct factory contract
-  if (!isAddressEqual(createContentCall.to, coinFactoryAddressForChain)) {
-    throw new Error("Creator coin is not supported for this SDK version");
-  }
-
-  // Sanity check to ensure no buy orders are sent with there parameters
-  if (createContentCall.value !== 0n) {
-    throw new Error(
-      "Creator coin and purchase is not supported for this SDK version.",
-    );
-  }
+  const createContentCall = callRequest.calls[0]!;
 
   // Prefer a LocalAccount from the wallet client when available to ensure
   // offline signing (eth_sendRawTransaction) instead of wallet_sendTransaction

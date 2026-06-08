@@ -15,13 +15,24 @@ export type UpdateCoinURIArgs = {
   newURI: string;
 };
 
-export function updateCoinURICall({
-  newURI,
-  coin,
-}: UpdateCoinURIArgs): SimulateContractParameters {
+/**
+ * Validates the arguments for updating a coin's URI.
+ *
+ * Asserts the new URI is an `ipfs://` URI. Shared by the contract-call builder
+ * (`updateCoinURICall`) and the user-operation path so both validate identically.
+ */
+export function validateUpdateCoinURI({ newURI }: UpdateCoinURIArgs): void {
   if (!newURI.startsWith("ipfs://")) {
     throw new Error("URI needs to be an ipfs:// prefix uri");
   }
+}
+
+export function updateCoinURICall(
+  args: UpdateCoinURIArgs,
+): SimulateContractParameters {
+  validateUpdateCoinURI(args);
+
+  const { coin, newURI } = args;
 
   return {
     abi: coinABI,
