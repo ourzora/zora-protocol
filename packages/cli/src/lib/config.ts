@@ -9,6 +9,7 @@ import { join } from "node:path";
 import { formatError } from "./errors.js";
 import { safeExit, ERROR } from "./exit.js";
 import { homedir, platform } from "node:os";
+import { Address, isAddress } from "viem";
 
 function getConfigDir(): string {
   if (platform() === "win32") {
@@ -28,6 +29,8 @@ const WALLET_FILE = join(CONFIG_DIR, "wallet.json");
 const CONFIG_VERSION = 1;
 const WALLET_VERSION = 1;
 
+const PRIVATE_KEY_REGEX = /(^|\b)(0x)?[0-9a-fA-F]{64}(\b|$)/;
+
 interface Config {
   version: number;
   apiKey?: string;
@@ -37,6 +40,7 @@ interface Config {
 interface Wallet {
   version: number;
   privateKey: string;
+  smartWalletAddress?: Address;
 }
 
 function assertVersion(
@@ -114,14 +118,48 @@ function readWallet(): Wallet | undefined {
   if (typeof obj.privateKey !== "string" || !obj.privateKey) {
     throw new Error(`${WALLET_FILE}: missing or invalid "privateKey" field`);
   }
+  if (
+    obj.smartWalletAddress &&
+    (typeof obj.smartWalletAddress !== "string" ||
+      !isAddress(obj.smartWalletAddress))
+  ) {
+    throw new Error(`${WALLET_FILE}: invalid "smartWalletAddress" field`);
+  }
   return parsed as Wallet;
 }
 
-function writeWallet(wallet: Omit<Wallet, "version">): void {
+function writeWallet(wallet: Partial<Omit<Wallet, "version">>): void {
   mkdirSync(CONFIG_DIR, { recursive: true });
+  let currentWalletRaw: string | undefined;
+  let currentWallet: Wallet | undefined;
+  if (existsSync(WALLET_FILE)) {
+    // to enable partial updates, we read the current wallet file and merge the new wallet data with it
+    // we specifically *don't* use readWallet() here to avoid any validation checks from throwing errors
+    // (this allows us to override corrupted entries)
+    try {
+      currentWalletRaw = readFileSync(WALLET_FILE, "utf-8");
+      currentWallet = JSON.parse(currentWalletRaw) as Wallet;
+    } catch (err) {
+      // if we fail to parse the contents, we warn the user and try to create a new wallet file
+      console.warn(
+        `Warning: Malformed wallet file ${WALLET_FILE}: ${formatError(err)}.`,
+      );
+      console.info(`Attempting to recover by creating a new wallet file.`);
+      // try to extract the private key from the current wallet file (so we don't lose it during the recovery process)
+      // if it's already corrupted, there's nothing we can do...
+      const privateKey = currentWalletRaw?.match(PRIVATE_KEY_REGEX)?.[0];
+      if (privateKey) {
+        currentWallet = { privateKey, version: WALLET_VERSION };
+      }
+    }
+  }
   writeSecure(
     WALLET_FILE,
-    JSON.stringify({ ...wallet, version: WALLET_VERSION }, null, 2) + "\n",
+    JSON.stringify(
+      { ...currentWallet, ...wallet, version: WALLET_VERSION },
+      null,
+      2,
+    ) + "\n",
   );
 }
 
@@ -154,6 +192,14 @@ export function getPrivateKey(): string | undefined {
 
 export function savePrivateKey(privateKey: string): void {
   writeWallet({ privateKey });
+}
+
+export function getSmartWalletAddress(): Address | undefined {
+  return readWallet()?.smartWalletAddress;
+}
+
+export function saveSmartWalletAddress(smartWalletAddress: Address): void {
+  writeWallet({ smartWalletAddress });
 }
 
 export function getWalletPath(): string {

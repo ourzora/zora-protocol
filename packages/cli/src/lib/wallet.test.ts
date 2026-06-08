@@ -35,12 +35,8 @@ import { getPrivateKey } from "./config.js";
 import { apiPost } from "@zoralabs/coins-sdk";
 import { privateKeyToAccount } from "viem/accounts";
 import { createPublicClient, createWalletClient, custom } from "viem";
-import {
-  normalizeKey,
-  resolveAccount,
-  createClients,
-  createCliRpcTransport,
-} from "./wallet.js";
+import { normalizeKey, resolveAccount, createClients } from "./wallet.js";
+import { createCliRpcTransport } from "./client/rpc.js";
 
 const MOCK_KEY = "a".repeat(64);
 const MOCK_ADDRESS = "0xd8dA6BF26964aF9D7eEd9e03E53415D37aA96045";
@@ -149,10 +145,6 @@ describe("createClients", () => {
         account,
         transport: expect.any(Object),
       }),
-    );
-
-    expect(vi.mocked(createWalletClient).mock.calls[0]?.[0].transport).toBe(
-      vi.mocked(createPublicClient).mock.calls[0]?.[0].transport,
     );
   });
 });

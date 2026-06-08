@@ -17,6 +17,7 @@
     "postinstall": "node scripts/postinstall.mjs",
     "build": "tsup",
     "build:js": "tsup",
+    "check": "tsc --noEmit",
     "zora": "tsx src/index.tsx",
     "test": "vitest run",
     "test:js": "pnpm run test",
