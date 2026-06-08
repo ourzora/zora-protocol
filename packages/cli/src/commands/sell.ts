@@ -203,7 +203,7 @@ export const sellCommand = new Command("sell")
     } else if (parsed.kind === "ambiguous-name") {
       let ambResult;
       try {
-        earlyAccount = resolveAccount(json);
+        earlyAccount = resolveAccount();
         const { publicClient: earlyPublicClient } = createClients(earlyAccount);
         ambResult = await resolveAmbiguousByNameAndBalance(
           parsed.name,
@@ -287,14 +287,14 @@ export const sellCommand = new Command("sell")
 
     const slippagePct = parsePercentageLikeValue(opts.slippage);
     if (slippagePct === undefined || slippagePct < 0 || slippagePct > 99) {
-      outputErrorAndExit(
+      return outputErrorAndExit(
         json,
         "Invalid --slippage value. Must be between 0 and 99.",
       );
     }
     const slippage = slippagePct / 100;
 
-    const account = earlyAccount ?? resolveAccount(json);
+    const account = earlyAccount ?? resolveAccount();
     const { publicClient, walletClient } = createClients(account);
 
     let token;
@@ -302,10 +302,13 @@ export const sellCommand = new Command("sell")
       const response = await getCoin({ address: coinAddress });
       token = response.data?.zora20Token;
     } catch (err) {
-      outputErrorAndExit(json, `Failed to fetch coin: ${apiErrorMessage(err)}`);
+      return outputErrorAndExit(
+        json,
+        `Failed to fetch coin: ${apiErrorMessage(err)}`,
+      );
     }
     if (!token) {
-      outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
+      return outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
     }
 
     const coinName = token.name;

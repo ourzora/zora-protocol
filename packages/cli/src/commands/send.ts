@@ -156,7 +156,7 @@ export const sendCommand = new Command("send")
     const isEth = firstArg.toLowerCase() === "eth";
 
     if (isEth) {
-      const account = resolveAccount(json);
+      const account = resolveAccount();
       const { publicClient, walletClient } = createClients(account);
 
       const balance = await publicClient.getBalance({
@@ -388,7 +388,7 @@ export const sendCommand = new Command("send")
         }
       }
 
-      const account = resolveAccount(json);
+      const account = resolveAccount();
       const { publicClient, walletClient } = createClients(account);
 
       let balance: bigint;

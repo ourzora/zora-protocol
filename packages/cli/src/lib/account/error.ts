@@ -42,7 +42,7 @@ export const handleAccountError = (err: unknown): boolean => {
   // handle missing private key
   if (err instanceof NoPrivateKeyError) {
     console.error(
-      "No wallet configured. Run 'zora setup' to create or import one.",
+      "No wallet configured. Run 'zora setup' to create or import one. You can also configure a wallet using the ZORA_PRIVATE_KEY environment variable.",
     );
     handled = true;
   }
@@ -55,7 +55,7 @@ export const handleAccountError = (err: unknown): boolean => {
   // handle missing smart wallet address
   if (err instanceof NoSmartWalletAddressError) {
     console.error(
-      "No smart wallet configured. Run 'zora setup' to create or import one.",
+      "No smart wallet configured. Run 'zora setup' to create or import one. You can also configure a smart wallet using the ZORA_SMART_WALLET_ADDRESS environment variable.",
     );
     handled = true;
   }

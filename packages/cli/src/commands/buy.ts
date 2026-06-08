@@ -155,14 +155,14 @@ export const buyCommand = new Command("buy")
 
     const slippagePct = parsePercentageLikeValue(opts.slippage);
     if (slippagePct === undefined || slippagePct < 0 || slippagePct > 99) {
-      outputErrorAndExit(
+      return outputErrorAndExit(
         json,
         "Invalid --slippage value. Must be between 0 and 99.",
       );
     }
     const slippage = slippagePct / 100;
 
-    const account = resolveAccount(json);
+    const account = resolveAccount();
     const { publicClient, walletClient } = createClients(account);
 
     let token;
@@ -170,13 +170,16 @@ export const buyCommand = new Command("buy")
       const response = await getCoin({ address: coinAddress });
       token = response.data?.zora20Token;
     } catch (err) {
-      outputErrorAndExit(json, `Failed to fetch coin: ${apiErrorMessage(err)}`);
+      return outputErrorAndExit(
+        json,
+        `Failed to fetch coin: ${apiErrorMessage(err)}`,
+      );
     }
     if (!token) {
-      outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
+      return outputErrorAndExit(json, `Coin not found: ${coinAddress}`);
     }
     if (token.platformBlocked) {
-      outputErrorAndExit(json, bannedCoinBuyMessage(coinAddress));
+      return outputErrorAndExit(json, bannedCoinBuyMessage(coinAddress));
     }
     const coinName = token.name;
     const coinSymbol = token.symbol;

@@ -3,31 +3,23 @@ import { getPrivateKey, getSmartWalletAddress } from "../config.js";
 import { formatError } from "../errors.js";
 import { ERROR, safeExit } from "../exit.js";
 import {
-  createSmartWalletAccount,
-  type SmartWalletAccount,
-} from "./smart-wallet.js";
-import { createPrivateKeyAccount, type PrivateKeyAccount } from "./wallet.js";
-import {
   handleAccountError,
-  InvalidPrivateKeyError,
   InvalidSmartWalletAddressError,
   NoPrivateKeyError,
   NoSmartWalletAddressError,
 } from "./error.js";
+import {
+  createSmartWalletAccount,
+  type SmartWalletAccount,
+} from "./smart-wallet.js";
+import { createPrivateKeyAccount, type PrivateKeyAccount } from "./wallet.js";
 
 export { normalizeKey } from "./wallet.js";
-export type { PrivateKeyAccount };
-export type { SmartWalletAccount };
+export type { PrivateKeyAccount, SmartWalletAccount };
 
-const resolvePrivateKey = (json = false) => {
-  let privateKey: string | undefined;
-
-  if (json) {
-    privateKey = getPrivateKey();
-  } else {
-    // fallback to private key from config file if env var is not set
-    privateKey = process.env.ZORA_PRIVATE_KEY ?? getPrivateKey();
-  }
+const resolvePrivateKey = () => {
+  // fallback to private key from config file if env var is not set
+  const privateKey = process.env.ZORA_PRIVATE_KEY || getPrivateKey();
 
   if (!privateKey) {
     throw new NoPrivateKeyError();
@@ -36,17 +28,11 @@ const resolvePrivateKey = (json = false) => {
   return privateKey;
 };
 
-const resolveSmartWalletAddress = (json = false) => {
-  let smartWalletAddress: Address | undefined;
-
-  if (json) {
-    smartWalletAddress = getSmartWalletAddress();
-  } else {
-    // fallback to smart wallet address from config file if env var is not set
-    smartWalletAddress =
-      (process.env.ZORA_SMART_WALLET_ADDRESS as Address | undefined) ??
-      getSmartWalletAddress();
-  }
+const resolveSmartWalletAddress = () => {
+  // fallback to smart wallet address from config file if env var is not set
+  const smartWalletAddress =
+    (process.env.ZORA_SMART_WALLET_ADDRESS as Address | undefined) ||
+    getSmartWalletAddress();
 
   if (!smartWalletAddress) {
     throw new NoSmartWalletAddressError();
@@ -62,11 +48,23 @@ const resolveSmartWalletAddress = (json = false) => {
 /**
  * Resolves a private key account from the environment or configuration file
  *
- * Note: We leave this function intact with the pre-existing API for backwards compatibility
+ * Note:
+ * We leave this function intact with the pre-existing API for backwards compatibility.
+ * The json parameter has never been used and will be removed in a future release.
+ *
+ * @deprecated Use resolvePrivateKeyAccount instead to resolve a private key account specifically.
+ * Alternatively, use resolveAccounts to resolve both a private key account and a smart wallet account.
  */
-export const resolveAccount = (json = false) => {
+export const resolveAccount = (_json = false) => {
+  return resolvePrivateKeyAccount();
+};
+
+/**
+ * Resolves a private key account from the environment or configuration file
+ */
+export const resolvePrivateKeyAccount = () => {
   try {
-    const privateKey = resolvePrivateKey(json);
+    const privateKey = resolvePrivateKey();
     const privateKeyAccount = createPrivateKeyAccount(privateKey);
     return privateKeyAccount;
   } catch (err) {
@@ -83,10 +81,10 @@ export const resolveAccount = (json = false) => {
 /**
  * Resolves a smart wallet account from the environment or configuration file
  */
-export const resolveSmartWalletAccount = async (json = false) => {
+export const resolveSmartWalletAccount = async () => {
   try {
-    const privateKey = resolvePrivateKey(json);
-    const smartWalletAddress = resolveSmartWalletAddress(json);
+    const privateKey = resolvePrivateKey();
+    const smartWalletAddress = resolveSmartWalletAddress();
     const smartWalletAccount = await createSmartWalletAccount({
       smartWalletAddress,
       privateKey,
@@ -106,9 +104,7 @@ export const resolveSmartWalletAccount = async (json = false) => {
 /**
  * Resolves a private key account and an optional smart wallet account from the environment or configuration file
  */
-export const resolveAccounts = async (
-  json = false,
-): Promise<{
+export const resolveAccounts = async (): Promise<{
   privateKeyAccount: PrivateKeyAccount;
   smartWalletAccount: SmartWalletAccount | undefined;
 }> => {
@@ -117,11 +113,11 @@ export const resolveAccounts = async (
   let smartWalletAccount: SmartWalletAccount | undefined;
 
   // resolve the private key account - if this fails, the program will exit with an error
-  privateKeyAccount = resolveAccount(json);
+  privateKeyAccount = resolvePrivateKeyAccount();
 
   // resolve the smart wallet address - if this fails, continue depending on the error
   try {
-    smartWalletAddress = resolveSmartWalletAddress(json);
+    smartWalletAddress = resolveSmartWalletAddress();
   } catch (err) {
     if (err instanceof NoSmartWalletAddressError) {
       // ignore when no smart wallet address is configured
@@ -140,7 +136,7 @@ export const resolveAccounts = async (
   // finally, if we have a smart wallet address, resolve the smart wallet account
   if (smartWalletAddress) {
     // resolve the smart wallet account - if this fails, exit with error
-    smartWalletAccount = await resolveSmartWalletAccount(json);
+    smartWalletAccount = await resolveSmartWalletAccount();
   }
 
   return { privateKeyAccount, smartWalletAccount };

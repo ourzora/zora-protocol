@@ -2,6 +2,7 @@ import {
   normalizeKey,
   resolveAccount,
   resolveAccounts,
+  resolvePrivateKeyAccount,
   resolveSmartWalletAccount,
 } from "./account/index.js";
 import { createClients } from "./client/index.js";
@@ -16,5 +17,6 @@ export {
   normalizeKey,
   resolveAccount,
   resolveAccounts,
+  resolvePrivateKeyAccount,
   resolveSmartWalletAccount,
 };
