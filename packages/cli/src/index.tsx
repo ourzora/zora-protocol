@@ -2,6 +2,7 @@ import { Command } from "commander";
 import { ExitPromptError } from "@inquirer/core";
 import { readFileSync } from "node:fs";
 import { setApiBaseUrl } from "@zoralabs/coins-sdk";
+import { agentCommand } from "./commands/agent.js";
 import { authCommand } from "./commands/auth.js";
 import { balanceCommand } from "./commands/balance.js";
 import { buyCommand } from "./commands/buy.js";
@@ -79,6 +80,7 @@ const buildProgram = (): Command => {
     program.outputHelp();
   });
 
+  program.addCommand(agentCommand);
   program.addCommand(authCommand);
   program.addCommand(balanceCommand);
   program.addCommand(buyCommand);
