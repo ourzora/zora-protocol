@@ -106,7 +106,12 @@ export async function createFirstPost(params: {
       json: {
         chainId: BASE_CHAIN_ID,
         ownerAddress: smartWallet.toLowerCase(),
-        adminAddresses: [...owners, smartWallet],
+        // NOTE: `adminAddressess` is misspelled ON PURPOSE. The Zora BFF's zod
+        // schema for this mutation keys on that exact (mis)spelling and rejects
+        // the request ("expected array, received undefined") if it's renamed to
+        // the correct `adminAddresses`. Verified against the live endpoint — do
+        // not "fix" the spelling.
+        adminAddressess: [...owners, smartWallet],
         name: card.greeting,
         ticker: card.ticker,
         contractURI: contractUri,

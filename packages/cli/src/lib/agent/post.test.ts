@@ -72,17 +72,18 @@ describe("createFirstPost", () => {
     );
   });
 
-  it("sends correctly-spelled adminAddresses (owners + smart wallet)", async () => {
+  it("sends adminAddressess (the BFF's misspelled key) with owners + smart wallet", async () => {
     await createFirstPost(params());
     const call = vi.mocked(trpcRequest).mock.calls[0];
     expect(call[1]).toBe("create.createCreateERC20UserOperationV2");
+    // The BFF's zod schema keys on the misspelled `adminAddressess`; the correctly
+    // spelled key is rejected as a missing required array. See the note in post.ts.
     expect(call[2].json).toMatchObject({
-      adminAddresses: [...OWNERS, SMART],
+      adminAddressess: [...OWNERS, SMART],
       contractURI: "ipfs://meta",
       ticker: "GM",
     });
-    // The misspelled key must not be present.
-    expect(call[2].json).not.toHaveProperty("adminAddressess");
+    expect(call[2].json).not.toHaveProperty("adminAddresses");
   });
 
   it("throws when the backend returns no UserOp", async () => {
