@@ -55,6 +55,7 @@ describe("signSimulateSubmit", () => {
       hash: "0xtx",
       success: true,
       reason: undefined,
+      logs: [],
     });
     expect(result.sponsored).toBe(true);
     expect(result.simulation).toBe("ExecutionResult");

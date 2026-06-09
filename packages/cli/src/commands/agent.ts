@@ -196,9 +196,7 @@ agentCommand
             ? "\n✓ Agent ready (dry run — coin + post simulated, not minted)"
             : "\n✓ Agent ready",
         );
-        console.log(
-          `  Profile:      @${result.username}  (https://zora.co/@${result.username})`,
-        );
+        console.log(`  Profile:      @${result.username}`);
         console.log(`  Wallet (EOA): ${result.address}`);
         console.log(`  Smart wallet: ${result.smartWallet}`);
         console.log(`  Privy DID:    ${result.did}`);
@@ -223,6 +221,14 @@ agentCommand
                   : ""
             }`,
           );
+        }
+        console.log("\n  Links:");
+        console.log(`    Profile:      ${result.profileUrl}`);
+        if (result.coin?.url) {
+          console.log(`    Creator coin: ${result.coin.url}`);
+        }
+        if (result.post?.url) {
+          console.log(`    First post:   ${result.post.url}`);
         }
         if (resolved.generated) {
           console.log(

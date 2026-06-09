@@ -29,6 +29,8 @@ export interface SubmittedUserOp {
   hash: string;
   success: boolean;
   reason?: string;
+  /** Raw tx logs from submitUserOperation (used to resolve the deployed coin address). */
+  logs?: unknown[];
 }
 
 export interface FinalizeResult {
@@ -92,6 +94,11 @@ export async function signSimulateSubmit(params: {
   return {
     sponsored: isSponsored(op),
     simulation: sim.detail,
-    submitted: { hash: data.hash, success: data.success, reason: data.reason },
+    submitted: {
+      hash: data.hash,
+      success: data.success,
+      reason: data.reason,
+      logs: Array.isArray(data.logs) ? data.logs : [],
+    },
   };
 }

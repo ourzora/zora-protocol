@@ -51,6 +51,7 @@ beforeEach(() => {
     ticker: "GM",
     imageUri: "ipfs://i",
     contractUri: "ipfs://c",
+    coinAddress: "0x1f6835c4996fad83c8af2afa00056adf9234fe72",
   });
 });
 
@@ -62,6 +63,10 @@ describe("onboardAgent", () => {
     expect(result.embedded).toBe(EMBEDDED);
     expect(result.coin?.hash).toBe("0xco");
     expect(result.post?.hash).toBe("0xpo");
+    expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
+    expect(result.post?.url).toBe(
+      "https://zora.co/coin/base:0x1f6835c4996fad83c8af2afa00056adf9234fe72",
+    );
     expect(createAgentProfile).toHaveBeenCalledTimes(1);
     expect(provisionSmartWallet).toHaveBeenCalledTimes(1);
     expect(createCreatorCoin).toHaveBeenCalledTimes(1);

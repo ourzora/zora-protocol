@@ -11,6 +11,7 @@ import { ipfsUpload, trpcRequest } from "./zora-client.js";
 import { signSimulateSubmit } from "./submit.js";
 
 const CARD = { greeting: "gm", ticker: "GM", pngBase64: "AAAA" };
+const COIN = "0x1f6835c4996fad83c8af2afa00056adf9234fe72";
 const SMART = "0xSmart00000000000000000000000000000000aaaa";
 const OWNERS = [
   "0xEmbedded0000000000000000000000000000bbbb",
@@ -102,5 +103,43 @@ describe("createFirstPost", () => {
     expect(signSimulateSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ dryRun: true }),
     );
+  });
+
+  it("resolves the post coin address from the submit logs", async () => {
+    vi.mocked(signSimulateSubmit).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: { hash: "0xpost", success: true, logs: [{ address: COIN }] },
+    });
+    const client = { readContract: vi.fn(async () => "gm") };
+    const result = await createFirstPost(params({ client }));
+    expect(result.coinAddress?.toLowerCase()).toBe(COIN);
+  });
+
+  it("leaves coinAddress undefined when no log name matches the greeting", async () => {
+    vi.mocked(signSimulateSubmit).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: { hash: "0xpost", success: true, logs: [{ address: COIN }] },
+    });
+    const client = { readContract: vi.fn(async () => "a different coin") };
+    const result = await createFirstPost(params({ client }));
+    expect(result.coinAddress).toBeUndefined();
+  });
+
+  it("ignores malformed logs without throwing or reading", async () => {
+    vi.mocked(signSimulateSubmit).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: {
+        hash: "0xpost",
+        success: true,
+        logs: [{}, { address: null }, "junk"],
+      },
+    });
+    const client = { readContract: vi.fn() };
+    const result = await createFirstPost(params({ client }));
+    expect(result.coinAddress).toBeUndefined();
+    expect(client.readContract).not.toHaveBeenCalled();
   });
 });

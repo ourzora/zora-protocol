@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import type { Address, LocalAccount } from "viem";
+import { getAddress, type Address, type LocalAccount } from "viem";
 import {
   BASE_CHAIN_ID,
   ipfsUpload,
@@ -15,6 +15,53 @@ export interface FirstPostResult extends FinalizeResult {
   ticker: string;
   imageUri: string;
   contractUri: string;
+  /** The deployed content-coin address, when minted (resolved from the submit logs). */
+  coinAddress?: Address;
+}
+
+const NAME_ABI = [
+  {
+    type: "function",
+    name: "name",
+    stateMutability: "view",
+    inputs: [],
+    outputs: [{ type: "string" }],
+  },
+] as const;
+
+/**
+ * Find the deployed coin among the submit logs by matching its on-chain name.
+ *
+ * Best-effort: makes up to one `readContract` (`name()`) call per unique log
+ * address, and returns undefined if none matches (the API omits `logs`, the log
+ * shape is unexpected, or the names differ). Callers treat a missing result as
+ * "no post URL" — the post itself already succeeded, so the absent link is a
+ * skipped convenience, not an error.
+ */
+async function findDeployedCoin(
+  client: ChainClient,
+  logs: unknown[],
+  expectedName: string,
+): Promise<Address | undefined> {
+  const seen = new Set<string>();
+  for (const log of logs) {
+    const address = (log as { address?: string })?.address;
+    if (!address || seen.has(address.toLowerCase())) continue;
+    seen.add(address.toLowerCase());
+    try {
+      const name = await client.readContract({
+        address: getAddress(address),
+        abi: NAME_ABI,
+        functionName: "name",
+      });
+      if (name === expectedName) return getAddress(address);
+    } catch {
+      // not a coin / no name() — skip
+    }
+  }
+  // No log matched — intentionally silent: the post already succeeded, and the
+  // coin URL is a best-effort convenience the caller simply omits when absent.
+  return undefined;
 }
 
 /**
@@ -83,11 +130,19 @@ export async function createFirstPost(params: {
     raw: data as RawUserOperation,
     dryRun,
   });
+  const coinAddress = finalize.submitted
+    ? await findDeployedCoin(
+        client,
+        finalize.submitted.logs ?? [],
+        card.greeting,
+      )
+    : undefined;
   return {
     ...finalize,
     greeting: card.greeting,
     ticker: card.ticker,
     imageUri,
     contractUri,
+    coinAddress,
   };
 }

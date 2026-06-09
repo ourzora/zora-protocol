@@ -37,7 +37,13 @@ const ONBOARD_RESULT: OnboardResult = {
   smartWallet: "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8",
   isNewUser: true,
   dryRun: false,
-  coin: { hash: "0xco001", sponsored: true, simulation: "ExecutionResult" },
+  profileUrl: "https://zora.co/@keen_cedar_9807",
+  coin: {
+    hash: "0xco001",
+    sponsored: true,
+    simulation: "ExecutionResult",
+    url: "https://zora.co/@keen_cedar_9807/creator-coin",
+  },
   post: {
     hash: "0xp0001",
     greeting: "gm frens",
@@ -45,6 +51,9 @@ const ONBOARD_RESULT: OnboardResult = {
     sponsored: true,
     simulation: "ExecutionResult",
     imageUri: "ipfs://image",
+    contractUri: "ipfs://meta",
+    coinAddress: "0x1f6835c4996fad83c8af2afa00056adf9234fe72",
+    url: "https://zora.co/coin/base:0x1f6835c4996fad83c8af2afa00056adf9234fe72",
   },
 };
 
@@ -162,6 +171,10 @@ describe("zora agent create", () => {
     expect(output).toContain(ONBOARD_RESULT.smartWallet);
     expect(output).toContain(ONBOARD_RESULT.accessToken);
     expect(output).toContain("gm frens");
+    expect(output).toContain("Links:");
+    expect(output).toContain(
+      "https://zora.co/coin/base:0x1f6835c4996fad83c8af2afa00056adf9234fe72",
+    );
   });
 
   it("exits with an error when onboarding fails", async () => {

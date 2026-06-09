@@ -95,7 +95,7 @@ zora agent create --json
 zora agent create --private-key 0x... --skip-post
 ```
 
-The output includes the agent's profile handle, its smart wallet, and a **Privy access token** (a session JWT, ~1h) to send as `Authorization: Bearer <token>` for further Zora API calls. The EOA is resolved from `--private-key`, then `ZORA_PRIVATE_KEY`, then the saved CLI wallet (`~/.config/zora/wallet.json`); otherwise a new one is generated and saved — back it up, as it owns the agent. The first post's artwork is a bundled, Zora-themed greeting card (no avatar/username, so it stays appropriate permanently).
+The output includes the agent's profile handle, its smart wallet, **links to the new profile, creator coin, and first post**, and a **Privy access token** (a session JWT, ~1h) to send as `Authorization: Bearer <token>` for further Zora API calls. The EOA is resolved from `--private-key`, then `ZORA_PRIVATE_KEY`, then the saved CLI wallet (`~/.config/zora/wallet.json`); otherwise a new one is generated and saved — back it up, as it owns the agent. The first post's artwork is a bundled, Zora-themed greeting card (no avatar/username, so it stays appropriate permanently).
 
 ## Documentation
 

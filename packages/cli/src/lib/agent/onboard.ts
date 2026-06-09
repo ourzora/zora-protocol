@@ -46,7 +46,14 @@ export interface OnboardResult {
   smartWallet: Address;
   isNewUser: boolean;
   dryRun: boolean;
-  coin?: { hash?: string; sponsored: boolean; simulation: string };
+  /** The agent's Zora profile URL. */
+  profileUrl: string;
+  coin?: {
+    hash?: string;
+    sponsored: boolean;
+    simulation: string;
+    url?: string;
+  };
   post?: {
     hash?: string;
     greeting: string;
@@ -55,10 +62,13 @@ export interface OnboardResult {
     simulation: string;
     imageUri: string;
     contractUri: string;
+    coinAddress?: Address;
+    url?: string;
   };
 }
 
 const DEFAULT_BASE_RPC = "https://mainnet.base.org";
+const ZORA_BASE_URL = "https://zora.co";
 
 /**
  * Stand up a complete Zora agent identity from an EOA, with no human interaction:
@@ -133,6 +143,7 @@ export async function onboardAgent(
     smartWallet: smartWallet.address,
     isNewUser,
     dryRun,
+    profileUrl: `${ZORA_BASE_URL}/@${profile.username}`,
   };
 
   // 5. Creator coin.
@@ -151,6 +162,9 @@ export async function onboardAgent(
       hash: coin.submitted?.hash,
       sponsored: coin.sponsored,
       simulation: coin.simulation,
+      url: dryRun
+        ? undefined
+        : `${ZORA_BASE_URL}/@${profile.username}/creator-coin`,
     };
   }
 
@@ -176,6 +190,10 @@ export async function onboardAgent(
       simulation: post.simulation,
       imageUri: post.imageUri,
       contractUri: post.contractUri,
+      coinAddress: post.coinAddress,
+      url: post.coinAddress
+        ? `${ZORA_BASE_URL}/coin/base:${post.coinAddress.toLowerCase()}`
+        : undefined,
     };
   }
 
