@@ -5,11 +5,11 @@ import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 import { formatError } from "../lib/errors.js";
 import {
-  createPrivyAccount,
   ZORA_PRIVY_APP_ID,
   DEFAULT_SIWE_ORIGIN,
   DEFAULT_SIWE_CHAIN_ID,
 } from "../lib/privy.js";
+import { onboardAgent } from "../lib/agent/onboard.js";
 
 const PRIVATE_KEY_RE = /^(0x)?[0-9a-fA-F]{64}$/;
 const normalizeKey = (key: string): `0x${string}` =>
@@ -105,7 +105,7 @@ function resolveAgentKey(
 
 export const agentCommand = new Command("agent")
   .description(
-    "Create and manage a Zora agent identity.\nSigns in with an EOA to create a headless Privy account.",
+    "Create and manage a Zora agent identity.\nStands up an identity from an EOA — a headless Privy account and a Zora profile — with no human interaction.",
   )
   .action(function (this: Command) {
     this.outputHelp();
@@ -114,7 +114,7 @@ export const agentCommand = new Command("agent")
 agentCommand
   .command("create")
   .description(
-    "Create a Privy account locally from an EOA (headless SIWE) and print the Privy access token to authenticate to the Zora API.",
+    "Create a Zora agent from an EOA, unattended: a headless Privy account (Sign-In-With-Ethereum) and a Zora profile. Prints a Privy access token for further Zora API calls.",
   )
   .option(
     "--private-key <key>",
@@ -145,57 +145,47 @@ agentCommand
 
     const resolved = resolveAgentKey(json, options.privateKey);
 
-    let privy;
+    let result;
     try {
-      privy = await createPrivyAccount({
+      result = await onboardAgent({
         privateKey: resolved.key,
         appId: options.appId,
         origin: options.origin,
         chainId,
+        onProgress: json
+          ? undefined
+          : (_step, detail) => console.log(`• ${detail} ...`),
       });
     } catch (err) {
       return outputErrorAndExit(
         json,
-        `Could not create a Privy account: ${formatError(err)}`,
-        "Check the Privy app id allows this origin and has CAPTCHA disabled for headless sign-in.",
+        `Agent onboarding failed: ${formatError(err)}`,
+        "Re-run to retry — the profile is idempotent.",
       );
     }
 
     track("cli_agent_create", {
-      is_new_user: privy.isNewUser,
+      is_new_user: result.isNewUser,
       generated_wallet: resolved.generated,
       output_format: json ? "json" : "text",
     });
 
     outputData(json, {
-      json: {
-        address: privy.address,
-        did: privy.did,
-        isNewUser: privy.isNewUser,
-        accessToken: privy.accessToken,
-        walletSource: resolved.source,
-      },
+      json: { ...result, walletSource: resolved.source },
       render: () => {
-        console.log("✓ Privy account ready");
-        console.log(`  Wallet:    ${privy.address}`);
-        console.log(`  Privy DID: ${privy.did}`);
+        console.log("\n✓ Agent ready");
         console.log(
-          `  New user:  ${privy.isNewUser ? "yes" : "no (re-authenticated)"}`,
+          `  Profile:      @${result.username}  (https://zora.co/@${result.username})`,
         );
+        console.log(`  Wallet (EOA): ${result.address}`);
+        console.log(`  Privy DID:    ${result.did}`);
         if (resolved.generated) {
           console.log(
-            `  A new wallet was generated and saved to ${resolved.source}. Back it up.`,
+            `\n  A new wallet was generated and saved to ${resolved.source}. Back it up — it owns this agent.`,
           );
         }
         console.log("\n  Access token (Authorization: Bearer, ~1h):");
-        console.log(`  ${privy.accessToken}`);
-        console.log("\nNext steps:");
-        console.log(
-          "  • Use the access token as a Bearer token to call the Zora API.",
-        );
-        console.log(
-          "  • The token is short-lived (~1h); rerun `zora agent create` for a fresh one.",
-        );
+        console.log(`  ${result.accessToken}`);
       },
     });
   });

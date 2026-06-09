@@ -4,4 +4,4 @@
 
 Add `zora agent create` for headless agent onboarding.
 
-Create a Privy account locally from an EOA via Sign-In-With-Ethereum — no Privy dashboard, email, or OTP required — and get a Privy access token (a short-lived JWT). This is the credential the Zora backend accepts to authenticate the agent's Privy identity, not a `zora.co/settings/developer` API key. The command resolves an EOA (`--private-key`, `ZORA_PRIVATE_KEY`, the saved CLI wallet, or a freshly generated one), signs in, and prints the Privy DID plus the access token to send as `Authorization: Bearer <token>`.
+From an EOA and with no human interaction, `zora agent create` creates a headless Privy account (Sign-In-With-Ethereum — no dashboard, email, or OTP) and a Zora profile. Authentication uses only the Privy session — never a `zora.co/settings/developer` API key. The EOA is resolved from `--private-key`, `ZORA_PRIVATE_KEY`, the saved CLI wallet, or a freshly generated one, and the command prints the profile handle plus a Privy access token to send as `Authorization: Bearer <token>`.

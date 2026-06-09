@@ -79,10 +79,10 @@ To configure wallet or API key individually (without running the full setup flow
 
 ## Agents
 
-Create a Privy account from an EOA using headless Sign-In-With-Ethereum — no Privy dashboard, email, or OTP required — and get a **Privy access token** (a short-lived JWT). This is the credential the Zora backend accepts to authenticate the agent's Privy identity (the same token type the Zora web app uses) — not a `zora.co/settings/developer` API key.
+`zora agent create` creates a Zora agent identity from an EOA, with no human interaction: a headless Privy account (Sign-In-With-Ethereum — no Privy dashboard, email, or OTP) and a Zora profile. It authenticates with only the Privy session — never a `zora.co/settings/developer` API key.
 
 ```bash
-# Sign in with a wallet (created/reused automatically) and print an access token
+# Create the agent's Privy account + Zora profile
 zora agent create
 
 # JSON output for automation
@@ -92,7 +92,7 @@ zora agent create --json
 zora agent create --private-key 0x...
 ```
 
-The printed access token is the Privy session JWT (~1h). Send it as `Authorization: Bearer <token>` to authenticate the agent's Privy identity to Zora. The EOA is resolved from `--private-key`, then `ZORA_PRIVATE_KEY`, then the saved CLI wallet (`~/.config/zora/wallet.json`); otherwise a new one is generated and saved.
+The output includes the agent's profile handle and a **Privy access token** (a session JWT, ~1h) to send as `Authorization: Bearer <token>` for further Zora API calls. The EOA is resolved from `--private-key`, then `ZORA_PRIVATE_KEY`, then the saved CLI wallet (`~/.config/zora/wallet.json`); otherwise a new one is generated and saved.
 
 ## Documentation
 
