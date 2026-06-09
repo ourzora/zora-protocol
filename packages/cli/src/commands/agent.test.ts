@@ -33,6 +33,8 @@ const ONBOARD_RESULT: OnboardResult = {
   did: "did:privy:test123",
   accessToken: "header.payload.signature",
   username: "keen_cedar_9807",
+  embedded: "0xEeE0000000000000000000000000000000000001",
+  smartWallet: "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8",
   isNewUser: true,
 };
 
@@ -72,8 +74,8 @@ describe("zora agent create", () => {
 
     expect(parsed).toMatchObject({
       address: ONBOARD_RESULT.address,
-      did: ONBOARD_RESULT.did,
       username: "keen_cedar_9807",
+      smartWallet: ONBOARD_RESULT.smartWallet,
       accessToken: ONBOARD_RESULT.accessToken,
       walletSource: "/home/u/.config/zora/wallet.json",
     });
@@ -84,6 +86,13 @@ describe("zora agent create", () => {
         origin: "https://zora.com",
         chainId: 8453,
       }),
+    );
+  });
+
+  it("passes --rpc-url through", async () => {
+    await runAgent(["create", "--json", "--rpc-url", "https://rpc.test"]);
+    expect(onboardAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ rpcUrl: "https://rpc.test" }),
     );
   });
 
@@ -124,7 +133,7 @@ describe("zora agent create", () => {
     const output = log.output();
     log.restore();
     expect(output).toContain("keen_cedar_9807");
-    expect(output).toContain(ONBOARD_RESULT.address);
+    expect(output).toContain(ONBOARD_RESULT.smartWallet);
     expect(output).toContain(ONBOARD_RESULT.accessToken);
   });
 

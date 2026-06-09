@@ -44,6 +44,13 @@ export interface CreatePrivyAccountOptions {
   authBase?: string;
 }
 
+/** A Privy linked account (an external or embedded wallet, OAuth login, etc.). */
+export interface PrivyLinkedAccount {
+  type?: string;
+  address?: string;
+  wallet_client_type?: string;
+}
+
 export interface PrivyAccount {
   /** The EOA address that signed in. */
   address: string;
@@ -58,6 +65,8 @@ export interface PrivyAccount {
   identityToken?: string;
   /** True when this call created a brand-new Privy user (vs. re-authenticating). */
   isNewUser: boolean;
+  /** The Privy user's linked accounts (wallets, etc.). */
+  linkedAccounts: PrivyLinkedAccount[];
 }
 
 interface PrivyPostResult {
@@ -152,5 +161,27 @@ export async function createPrivyAccount(
     accessToken: auth.json.token,
     identityToken: auth.json.identity_token,
     isNewUser: Boolean(auth.json.is_new_user),
+    linkedAccounts: (auth.json.user.linked_accounts ??
+      []) as PrivyLinkedAccount[],
   };
+}
+
+/**
+ * The agent's embedded (Privy-managed) wallet address from its linked accounts,
+ * if one has been provisioned. The embedded wallet appears after the agent's
+ * profile is created (`createAgentProfile`), so this may be undefined immediately
+ * after the first sign-in.
+ */
+export function findEmbeddedWallet(
+  linkedAccounts: PrivyLinkedAccount[],
+): `0x${string}` | undefined {
+  const embedded = linkedAccounts.find(
+    (a) => a.type === "wallet" && a.wallet_client_type === "privy",
+  );
+  const address = embedded?.address;
+  // Validate the prefix at runtime: the linked-account address is typed as a
+  // plain string, so a non-0x value would otherwise slip past the cast and only
+  // fail later inside viem's on-chain calls, where the error is far less clear.
+  if (!address?.startsWith("0x")) return undefined;
+  return address as `0x${string}`;
 }

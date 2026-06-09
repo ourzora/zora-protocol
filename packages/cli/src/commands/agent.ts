@@ -105,7 +105,7 @@ function resolveAgentKey(
 
 export const agentCommand = new Command("agent")
   .description(
-    "Create and manage a Zora agent identity.\nStands up an identity from an EOA — a headless Privy account and a Zora profile — with no human interaction.",
+    "Create and manage a Zora agent identity.\nStands up an identity from an EOA — a headless Privy account, a Zora profile, and a smart wallet — with no human interaction.",
   )
   .action(function (this: Command) {
     this.outputHelp();
@@ -114,7 +114,7 @@ export const agentCommand = new Command("agent")
 agentCommand
   .command("create")
   .description(
-    "Create a Zora agent from an EOA, unattended: a headless Privy account (Sign-In-With-Ethereum) and a Zora profile. Prints a Privy access token for further Zora API calls.",
+    "Create a Zora agent from an EOA, unattended: a headless Privy account (Sign-In-With-Ethereum), a Zora profile, and a sponsored smart wallet. Prints a Privy access token for further Zora API calls.",
   )
   .option(
     "--private-key <key>",
@@ -127,6 +127,7 @@ agentCommand
     "EVM chain id for SIWE",
     String(DEFAULT_SIWE_CHAIN_ID),
   )
+  .option("--rpc-url <url>", "Base RPC URL (defaults to the public endpoint)")
   .action(async function (
     this: Command,
     options: {
@@ -134,6 +135,7 @@ agentCommand
       appId: string;
       origin: string;
       chainId: string;
+      rpcUrl?: string;
     },
   ) {
     const json = getJson(this);
@@ -152,6 +154,7 @@ agentCommand
         appId: options.appId,
         origin: options.origin,
         chainId,
+        rpcUrl: options.rpcUrl,
         onProgress: json
           ? undefined
           : (_step, detail) => console.log(`• ${detail} ...`),
@@ -160,7 +163,7 @@ agentCommand
       return outputErrorAndExit(
         json,
         `Agent onboarding failed: ${formatError(err)}`,
-        "Re-run to retry — the profile is idempotent.",
+        "Re-run to retry — the profile and smart wallet are idempotent.",
       );
     }
 
@@ -178,6 +181,7 @@ agentCommand
           `  Profile:      @${result.username}  (https://zora.co/@${result.username})`,
         );
         console.log(`  Wallet (EOA): ${result.address}`);
+        console.log(`  Smart wallet: ${result.smartWallet}`);
         console.log(`  Privy DID:    ${result.did}`);
         if (resolved.generated) {
           console.log(

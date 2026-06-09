@@ -1,6 +1,10 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
-import { createPrivyAccount, ZORA_PRIVY_APP_ID } from "./privy.js";
+import {
+  createPrivyAccount,
+  findEmbeddedWallet,
+  ZORA_PRIVY_APP_ID,
+} from "./privy.js";
 
 // Anvil test account #0 — a known-valid secp256k1 key.
 const TEST_PK =
@@ -45,6 +49,7 @@ describe("createPrivyAccount", () => {
       accessToken: "the.access.jwt",
       identityToken: "the.identity.jwt",
       isNewUser: true,
+      linkedAccounts: [],
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -127,5 +132,25 @@ describe("createPrivyAccount", () => {
     await expect(createPrivyAccount({ privateKey: TEST_PK })).rejects.toThrow(
       "siwe/authenticate failed",
     );
+  });
+});
+
+describe("findEmbeddedWallet", () => {
+  it("returns the Privy embedded wallet address", () => {
+    expect(
+      findEmbeddedWallet([
+        { type: "wallet", address: "0xExt", wallet_client_type: "metamask" },
+        { type: "wallet", address: "0xEmb", wallet_client_type: "privy" },
+      ]),
+    ).toBe("0xEmb");
+  });
+
+  it("returns undefined when there is no embedded wallet", () => {
+    expect(
+      findEmbeddedWallet([
+        { type: "wallet", address: "0xExt", wallet_client_type: "metamask" },
+      ]),
+    ).toBeUndefined();
+    expect(findEmbeddedWallet([])).toBeUndefined();
   });
 });

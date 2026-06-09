@@ -1,13 +1,90 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
+import type { Address, Hex } from "viem";
 
+/**
+ * The subset of a viem PublicClient the agent flow uses. Kept structural so a
+ * client created in another module doesn't trip viem's duplicate-type checks,
+ * and so tests can pass a lightweight fake.
+ */
+export interface ChainClient {
+  readContract(args: any): Promise<any>;
+  getCode(args: { address: Address }): Promise<Hex | undefined>;
+  call(args: { to: Address; data: Hex }): Promise<unknown>;
+}
+
+/** Zora BFF (tRPC) base — takes the RAW Privy token (no "Bearer"). */
+export const ZORA_TRPC_BASE = "https://zora.co/api/trpc";
 /** Zora universal GraphQL — takes `Authorization: Bearer <token>`. */
 export const ZORA_GRAPHQL = "https://api.zora.co/universal/graphql";
 export const ZORA_ORIGIN = "https://zora.co";
 
-// Cloudflare's WAF 403s non-browser User-Agents on the Zora + Privy endpoints.
+/** ZoraAccountManager (Coinbase smart-wallet factory wrapper) on Base. */
+export const ZORA_ACCOUNT_MANAGER: Address =
+  "0x0Ba958A449701907302e28F5955fa9d16dDC45c3";
+/** Base mainnet. */
+export const BASE_CHAIN_ID = 8453;
+/** GraphQL `EChainName` enum value for Base mainnet. */
+export const BASE_CHAIN_NAME = "BaseMainnet";
+/** Deterministic-address nonce the Zora flow uses when deploying the smart wallet. */
+export const SMART_WALLET_NONCE = 1n;
+
+// Cloudflare's WAF 403s non-browser User-Agents on the Zora + Privy + Base RPC endpoints.
 export const BROWSER_USER_AGENT =
   "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/124.0.0.0 Safari/537.36";
+
+/** A superjson-encoded tRPC input: `{ json, meta? }`. */
+export interface SuperjsonInput {
+  json: unknown;
+  meta?: { values: Record<string, string[]> };
+}
+
+export interface TrpcResult {
+  status: number;
+  /** The unwrapped `result.data.json`, when present. */
+  data: any;
+  /** An error message, when the call failed. */
+  error?: string;
+  text: string;
+}
+
+/** POST a non-batch superjson mutation to the Zora tRPC BFF (raw token). */
+export async function trpcRequest(
+  token: string,
+  proc: string,
+  input: SuperjsonInput,
+): Promise<TrpcResult> {
+  const res = await fetch(`${ZORA_TRPC_BASE}/${proc}`, {
+    method: "POST",
+    headers: {
+      authorization: token,
+      "content-type": "application/json",
+      origin: ZORA_ORIGIN,
+      "user-agent": BROWSER_USER_AGENT,
+    },
+    body: JSON.stringify(input),
+  });
+  const text = await res.text();
+  let parsed: any;
+  try {
+    parsed = JSON.parse(text);
+  } catch {
+    return {
+      status: res.status,
+      data: undefined,
+      error: `non-JSON response (HTTP ${res.status})`,
+      text,
+    };
+  }
+  const data = parsed?.result?.data?.json;
+  const error =
+    data === undefined
+      ? parsed?.error?.json?.message ||
+        parsed?.error?.message ||
+        `HTTP ${res.status}`
+      : undefined;
+  return { status: res.status, data, error, text };
+}
 
 export interface GraphqlResult {
   status: number;
