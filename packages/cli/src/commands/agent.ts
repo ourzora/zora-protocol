@@ -105,7 +105,7 @@ function resolveAgentKey(
 
 export const agentCommand = new Command("agent")
   .description(
-    "Create and manage a Zora agent identity.\nStands up an identity from an EOA — a headless Privy account, a Zora profile, and a smart wallet — with no human interaction.",
+    "Create and manage a Zora agent identity.\nStands up an identity from an EOA — a headless Privy account, profile, smart wallet, and creator coin — with no human interaction.",
   )
   .action(function (this: Command) {
     this.outputHelp();
@@ -114,7 +114,7 @@ export const agentCommand = new Command("agent")
 agentCommand
   .command("create")
   .description(
-    "Create a Zora agent from an EOA, unattended: a headless Privy account (Sign-In-With-Ethereum), a Zora profile, and a sponsored smart wallet. Prints a Privy access token for further Zora API calls.",
+    "Create a Zora agent from an EOA, unattended: a headless Privy account, a Zora profile, a sponsored smart wallet, and a creator coin. Prints a Privy access token for further Zora API calls.",
   )
   .option(
     "--private-key <key>",
@@ -128,6 +128,11 @@ agentCommand
     String(DEFAULT_SIWE_CHAIN_ID),
   )
   .option("--rpc-url <url>", "Base RPC URL (defaults to the public endpoint)")
+  .option(
+    "--dry-run",
+    "Create the account, profile, and smart wallet, but simulate the creator coin instead of minting it",
+  )
+  .option("--skip-coin", "Skip creating the creator coin")
   .action(async function (
     this: Command,
     options: {
@@ -136,6 +141,8 @@ agentCommand
       origin: string;
       chainId: string;
       rpcUrl?: string;
+      dryRun?: boolean;
+      skipCoin?: boolean;
     },
   ) {
     const json = getJson(this);
@@ -155,6 +162,8 @@ agentCommand
         origin: options.origin,
         chainId,
         rpcUrl: options.rpcUrl,
+        dryRun: Boolean(options.dryRun),
+        skipCoin: Boolean(options.skipCoin),
         onProgress: json
           ? undefined
           : (_step, detail) => console.log(`• ${detail} ...`),
@@ -163,26 +172,43 @@ agentCommand
       return outputErrorAndExit(
         json,
         `Agent onboarding failed: ${formatError(err)}`,
-        "Re-run to retry — the profile and smart wallet are idempotent.",
+        "Re-run to retry — the profile and smart wallet are idempotent. Use --skip-coin to resume past a completed step.",
       );
     }
 
     track("cli_agent_create", {
       is_new_user: result.isNewUser,
       generated_wallet: resolved.generated,
+      dry_run: result.dryRun,
+      minted_coin: Boolean(result.coin?.hash),
       output_format: json ? "json" : "text",
     });
 
     outputData(json, {
       json: { ...result, walletSource: resolved.source },
       render: () => {
-        console.log("\n✓ Agent ready");
+        console.log(
+          result.dryRun
+            ? "\n✓ Agent ready (dry run — creator coin simulated, not minted)"
+            : "\n✓ Agent ready",
+        );
         console.log(
           `  Profile:      @${result.username}  (https://zora.co/@${result.username})`,
         );
         console.log(`  Wallet (EOA): ${result.address}`);
         console.log(`  Smart wallet: ${result.smartWallet}`);
         console.log(`  Privy DID:    ${result.did}`);
+        if (result.coin) {
+          console.log(
+            `  Creator coin: ${
+              result.dryRun
+                ? "simulated ✓"
+                : result.coin.hash
+                  ? `minted — tx ${result.coin.hash}`
+                  : "—"
+            }`,
+          );
+        }
         if (resolved.generated) {
           console.log(
             `\n  A new wallet was generated and saved to ${resolved.source}. Back it up — it owns this agent.`,

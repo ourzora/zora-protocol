@@ -27,6 +27,8 @@ export const BASE_CHAIN_ID = 8453;
 export const BASE_CHAIN_NAME = "BaseMainnet";
 /** Deterministic-address nonce the Zora flow uses when deploying the smart wallet. */
 export const SMART_WALLET_NONCE = 1n;
+/** Owner index of the external EOA (index 0 is the browser-only embedded wallet). */
+export const EXTERNAL_OWNER_INDEX = 1;
 
 // Cloudflare's WAF 403s non-browser User-Agents on the Zora + Privy + Base RPC endpoints.
 export const BROWSER_USER_AGENT =

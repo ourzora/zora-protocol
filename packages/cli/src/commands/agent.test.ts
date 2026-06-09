@@ -36,6 +36,8 @@ const ONBOARD_RESULT: OnboardResult = {
   embedded: "0xEeE0000000000000000000000000000000000001",
   smartWallet: "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8",
   isNewUser: true,
+  dryRun: false,
+  coin: { hash: "0xco001", sponsored: true, simulation: "ExecutionResult" },
 };
 
 function runAgent(args: string[]) {
@@ -85,14 +87,27 @@ describe("zora agent create", () => {
         appId: "test-app-id",
         origin: "https://zora.com",
         chainId: 8453,
+        dryRun: false,
+        skipCoin: false,
       }),
     );
   });
 
-  it("passes --rpc-url through", async () => {
-    await runAgent(["create", "--json", "--rpc-url", "https://rpc.test"]);
+  it("passes --dry-run, --skip-coin and --rpc-url through", async () => {
+    await runAgent([
+      "create",
+      "--json",
+      "--dry-run",
+      "--skip-coin",
+      "--rpc-url",
+      "https://rpc.test",
+    ]);
     expect(onboardAgent).toHaveBeenCalledWith(
-      expect.objectContaining({ rpcUrl: "https://rpc.test" }),
+      expect.objectContaining({
+        dryRun: true,
+        skipCoin: true,
+        rpcUrl: "https://rpc.test",
+      }),
     );
   });
 
@@ -135,6 +150,7 @@ describe("zora agent create", () => {
     expect(output).toContain("keen_cedar_9807");
     expect(output).toContain(ONBOARD_RESULT.smartWallet);
     expect(output).toContain(ONBOARD_RESULT.accessToken);
+    expect(output).toContain("Creator coin");
   });
 
   it("exits with an error when onboarding fails", async () => {
