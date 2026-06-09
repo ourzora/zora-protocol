@@ -14,7 +14,7 @@ import { BalanceCoinsView } from "../components/BalanceCoinsView.js";
 import type { PageResult } from "../components/PaginatedTableView.js";
 import { Table } from "../components/table.js";
 import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
-import { resolveAccount } from "../lib/wallet.js";
+import { resolveAccount, resolveAccounts } from "../lib/wallet.js";
 import {
   normalizeTokenAmount,
   computeBalanceUsdValue,
@@ -130,15 +130,20 @@ const formatBalanceJson = (
 
 // --- Shared helpers ---
 
-function resolveContext() {
-  const account = resolveAccount();
+async function resolveContext() {
+  const { privateKeyAccount: account, smartWalletAccount } =
+    await resolveAccounts();
 
   const apiKey = getApiKey();
   if (apiKey) {
     setApiKey(apiKey);
   }
 
-  return { account, hasApiKey: !!apiKey };
+  return {
+    account,
+    smartWalletAccount,
+    hasApiKey: !!apiKey,
+  };
 }
 
 function renderWallet(
@@ -283,16 +288,18 @@ export const balanceCommand = new Command("balance")
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const { account, hasApiKey } = resolveContext();
+    const { account, smartWalletAccount, hasApiKey } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
+
+    const walletAddress = smartWalletAccount?.address ?? account.address;
 
     const sort: SortFlag = "usd-value";
     const limit = 10;
 
     const fetchBalanceData = async (): Promise<BalanceData> => {
       const [walletResult, coinsResult] = await Promise.allSettled([
-        fetchWalletBalances(account.address),
-        fetchCoins(json, account.address, sort, limit),
+        fetchWalletBalances(walletAddress),
+        fetchCoins(json, walletAddress, sort, limit),
       ]);
 
       if (
@@ -430,11 +437,13 @@ balanceCommand
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const { account } = resolveContext();
+    const { account, smartWalletAccount } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
+    const walletAddress = smartWalletAccount?.address ?? account.address;
+
     const fetchSpendableData = async (): Promise<BalanceData> => {
-      const walletResult = await fetchWalletBalances(account.address);
+      const walletResult = await fetchWalletBalances(walletAddress);
       return {
         walletBalances: walletResult.walletBalances,
         walletBalancesJson: walletResult.walletBalancesJson,
@@ -462,7 +471,7 @@ balanceCommand
         />,
       );
     } else {
-      const walletResult = await fetchWalletBalances(account.address).catch(
+      const walletResult = await fetchWalletBalances(walletAddress).catch(
         (err) =>
           outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
@@ -488,15 +497,17 @@ balanceCommand
     const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
     const after: string | undefined = opts.after;
-    const { account, hasApiKey } = resolveContext();
+    const { account, smartWalletAccount, hasApiKey } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
+
+    const walletAddress = smartWalletAccount?.address ?? account.address;
 
     const fetchCoinsPage = async (
       cursor?: string,
     ): Promise<PageResult<BalanceNode>> => {
       const { balances, total, pageInfo } = await fetchCoins(
         json,
-        account.address,
+        walletAddress,
         sort,
         limit,
         cursor,
@@ -522,7 +533,7 @@ balanceCommand
     } else {
       const { balances, total, pageInfo } = await fetchCoins(
         json,
-        account.address,
+        walletAddress,
         sort,
         limit,
         after,

@@ -5,8 +5,12 @@ vi.mock("@zoralabs/coins-sdk");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
   getPrivateKey: vi.fn(),
+  getSmartWalletAddress: vi.fn(),
 }));
 vi.mock("viem/accounts");
+vi.mock("../lib/account/smart-wallet.js", () => ({
+  createSmartWalletAccount: vi.fn(),
+}));
 vi.mock("../lib/render.js", () => ({
   renderOnce: vi.fn(),
   renderLive: vi.fn(),
@@ -31,8 +35,13 @@ import {
   getTokenInfo,
   setApiKey,
 } from "@zoralabs/coins-sdk";
-import { getApiKey, getPrivateKey } from "../lib/config.js";
+import {
+  getApiKey,
+  getPrivateKey,
+  getSmartWalletAddress,
+} from "../lib/config.js";
 import { privateKeyToAccount } from "viem/accounts";
+import { createSmartWalletAccount } from "../lib/account/smart-wallet.js";
 import { renderOnce, renderLive } from "../lib/render.js";
 import { createPublicClient } from "viem";
 import { balanceCommand } from "./balance.js";
@@ -665,6 +674,77 @@ describe("balance command", () => {
           after: "cursor_xyz",
         }),
       );
+    });
+  });
+
+  describe("smart wallet path", () => {
+    const SMART_WALLET_ADDRESS = "0x1234567890123456789012345678901234567890";
+    const EOA_ADDRESS = "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142";
+
+    beforeEach(() => {
+      vi.mocked(getSmartWalletAddress).mockReturnValue(SMART_WALLET_ADDRESS);
+      vi.mocked(createSmartWalletAccount).mockResolvedValue({
+        address: SMART_WALLET_ADDRESS,
+      } as never);
+    });
+
+    afterEach(() => {
+      delete process.env.ZORA_SMART_WALLET_ADDRESS;
+    });
+
+    it("queries the smart wallet address for coin balances", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        coinBalancesPayload as never,
+      );
+
+      await runBalance(["--json"]);
+
+      expect(getProfileBalances).toHaveBeenCalledWith(
+        expect.objectContaining({ identifier: SMART_WALLET_ADDRESS }),
+      );
+    });
+
+    it("falls back to the EOA address when no smart wallet is configured", async () => {
+      vi.mocked(getSmartWalletAddress).mockReturnValue(undefined);
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        coinBalancesPayload as never,
+      );
+
+      await runBalance(["--json"]);
+
+      expect(getProfileBalances).toHaveBeenCalledWith(
+        expect.objectContaining({ identifier: EOA_ADDRESS }),
+      );
+    });
+
+    it("coins subcommand queries the smart wallet address", async () => {
+      vi.mocked(getProfileBalances).mockResolvedValue(
+        coinBalancesPayload as never,
+      );
+
+      await runBalance(["coins", "--json"]);
+
+      expect(getProfileBalances).toHaveBeenCalledWith(
+        expect.objectContaining({ identifier: SMART_WALLET_ADDRESS }),
+      );
+    });
+
+    it("spendable subcommand fetches wallet balances for the smart wallet address", async () => {
+      const getBalanceSpy = vi.fn().mockResolvedValue(1000000000000000000n);
+      vi.mocked(createPublicClient).mockReturnValue({
+        getBalance: getBalanceSpy,
+        multicall: vi.fn().mockResolvedValue([
+          { status: "success", result: 0n },
+          { status: "success", result: 0n },
+        ]),
+      } as unknown as ReturnType<typeof createPublicClient>);
+
+      await runBalance(["spendable", "--json"]);
+
+      expect(getBalanceSpy).toHaveBeenCalledWith({
+        address: SMART_WALLET_ADDRESS,
+      });
+      expect(getProfileBalances).not.toHaveBeenCalled();
     });
   });
 });
