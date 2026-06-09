@@ -1,7 +1,9 @@
 import { describe, it, expect, vi, afterEach } from "vitest";
 import {
   graphqlRequest,
+  ipfsUpload,
   ZORA_GRAPHQL,
+  ZORA_IPFS_UPLOAD,
   ZORA_ORIGIN,
   BROWSER_USER_AGENT,
 } from "./zora-client.js";
@@ -84,5 +86,62 @@ describe("graphqlRequest", () => {
     expect(result.status).toBe(403);
     expect(result.data).toBeUndefined();
     expect(result.errors?.[0]?.message).toBe("forbidden");
+  });
+});
+
+describe("ipfsUpload", () => {
+  const bytes = new Uint8Array([1, 2, 3]);
+
+  /** A `fetch` stand-in whose `ok` tracks status (ipfsUpload checks `res.ok`). */
+  function ipfsFetch(status: number, body: string) {
+    const fn = vi.fn();
+    fn.mockResolvedValue({
+      status,
+      ok: status >= 200 && status < 300,
+      text: async () => body,
+    });
+    return fn;
+  }
+
+  it("uploads via the Zora IPFS service and returns an ipfs:// URI", async () => {
+    const fetchMock = ipfsFetch(
+      200,
+      JSON.stringify({ name: "f.png", cid: "bafyimg" }),
+    );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const uri = await ipfsUpload("tok-1", "f.png", bytes, "image/png");
+
+    expect(uri).toBe("ipfs://bafyimg");
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe(ZORA_IPFS_UPLOAD);
+    expect(init.method).toBe("POST");
+    expect(init.headers).toMatchObject({ authorization: "Bearer tok-1" });
+  });
+
+  it("picks the CID of the line matching the filename", async () => {
+    const body =
+      JSON.stringify({ name: "other", cid: "bafyother" }) +
+      "\n" +
+      JSON.stringify({ name: "metadata.json", cid: "bafymeta" });
+    vi.stubGlobal("fetch", ipfsFetch(200, body));
+
+    expect(
+      await ipfsUpload("t", "metadata.json", bytes, "application/json"),
+    ).toBe("ipfs://bafymeta");
+  });
+
+  it("throws on a non-OK response", async () => {
+    vi.stubGlobal("fetch", ipfsFetch(500, "upstream boom"));
+    await expect(ipfsUpload("t", "f.png", bytes, "image/png")).rejects.toThrow(
+      /IPFS upload failed \(HTTP 500\)/,
+    );
+  });
+
+  it("throws when no CID is returned", async () => {
+    vi.stubGlobal("fetch", ipfsFetch(200, JSON.stringify({ name: "f.png" })));
+    await expect(ipfsUpload("t", "f.png", bytes, "image/png")).rejects.toThrow(
+      /no CID/,
+    );
   });
 });

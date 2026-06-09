@@ -105,7 +105,7 @@ function resolveAgentKey(
 
 export const agentCommand = new Command("agent")
   .description(
-    "Create and manage a Zora agent identity.\nStands up an identity from an EOA — a headless Privy account, profile, smart wallet, and creator coin — with no human interaction.",
+    "Create and manage a Zora agent identity.\nStands up a full identity from an EOA — Privy account, profile, smart wallet, coin, and first post — with no human interaction.",
   )
   .action(function (this: Command) {
     this.outputHelp();
@@ -114,7 +114,7 @@ export const agentCommand = new Command("agent")
 agentCommand
   .command("create")
   .description(
-    "Create a Zora agent from an EOA, unattended: a headless Privy account, a Zora profile, a sponsored smart wallet, and a creator coin. Prints a Privy access token for further Zora API calls.",
+    "Create a complete Zora agent from an EOA, end to end and unattended: headless Privy account, profile, smart wallet, creator coin, and a first post. Every on-chain step is sponsored, so the agent needs no ETH.",
   )
   .option(
     "--private-key <key>",
@@ -130,9 +130,10 @@ agentCommand
   .option("--rpc-url <url>", "Base RPC URL (defaults to the public endpoint)")
   .option(
     "--dry-run",
-    "Create the account, profile, and smart wallet, but simulate the creator coin instead of minting it",
+    "Create the account, profile, and smart wallet, but simulate the coin + post instead of minting them",
   )
   .option("--skip-coin", "Skip creating the creator coin")
+  .option("--skip-post", "Skip publishing the first post")
   .action(async function (
     this: Command,
     options: {
@@ -143,6 +144,7 @@ agentCommand
       rpcUrl?: string;
       dryRun?: boolean;
       skipCoin?: boolean;
+      skipPost?: boolean;
     },
   ) {
     const json = getJson(this);
@@ -164,6 +166,7 @@ agentCommand
         rpcUrl: options.rpcUrl,
         dryRun: Boolean(options.dryRun),
         skipCoin: Boolean(options.skipCoin),
+        skipPost: Boolean(options.skipPost),
         onProgress: json
           ? undefined
           : (_step, detail) => console.log(`• ${detail} ...`),
@@ -172,7 +175,7 @@ agentCommand
       return outputErrorAndExit(
         json,
         `Agent onboarding failed: ${formatError(err)}`,
-        "Re-run to retry — the profile and smart wallet are idempotent. Use --skip-coin to resume past a completed step.",
+        "Re-run to retry — the profile and smart wallet are idempotent. Use --skip-coin / --skip-post to resume past a completed step.",
       );
     }
 
@@ -181,6 +184,7 @@ agentCommand
       generated_wallet: resolved.generated,
       dry_run: result.dryRun,
       minted_coin: Boolean(result.coin?.hash),
+      minted_post: Boolean(result.post?.hash),
       output_format: json ? "json" : "text",
     });
 
@@ -189,7 +193,7 @@ agentCommand
       render: () => {
         console.log(
           result.dryRun
-            ? "\n✓ Agent ready (dry run — creator coin simulated, not minted)"
+            ? "\n✓ Agent ready (dry run — coin + post simulated, not minted)"
             : "\n✓ Agent ready",
         );
         console.log(
@@ -206,6 +210,17 @@ agentCommand
                 : result.coin.hash
                   ? `minted — tx ${result.coin.hash}`
                   : "—"
+            }`,
+          );
+        }
+        if (result.post) {
+          console.log(
+            `  First post:   "${result.post.greeting}"${
+              result.dryRun
+                ? " (simulated ✓)"
+                : result.post.hash
+                  ? ` — minted, tx ${result.post.hash}`
+                  : ""
             }`,
           );
         }

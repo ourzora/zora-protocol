@@ -9,6 +9,7 @@ import {
 import { createAgentProfile } from "./profile.js";
 import { provisionSmartWallet } from "./smart-wallet.js";
 import { createCreatorCoin } from "./coin.js";
+import { createFirstPost } from "./post.js";
 
 /** A progress step the caller can render. */
 export type OnboardStep =
@@ -16,7 +17,8 @@ export type OnboardStep =
   | "profile"
   | "embedded"
   | "smartWallet"
-  | "coin";
+  | "coin"
+  | "post";
 
 export interface OnboardOptions {
   privateKey: `0x${string}`;
@@ -25,9 +27,10 @@ export interface OnboardOptions {
   chainId?: number;
   /** Base RPC URL (defaults to the public endpoint). */
   rpcUrl?: string;
-  /** Simulate the creator coin instead of minting it. */
+  /** Simulate the coin + post instead of minting them. */
   dryRun?: boolean;
   skipCoin?: boolean;
+  skipPost?: boolean;
   /** Max attempts to poll for the embedded wallet after profile creation. */
   embeddedAttempts?: number;
   onProgress?: (step: OnboardStep, detail: string) => void;
@@ -44,15 +47,24 @@ export interface OnboardResult {
   isNewUser: boolean;
   dryRun: boolean;
   coin?: { hash?: string; sponsored: boolean; simulation: string };
+  post?: {
+    hash?: string;
+    greeting: string;
+    ticker: string;
+    sponsored: boolean;
+    simulation: string;
+    imageUri: string;
+    contractUri: string;
+  };
 }
 
 const DEFAULT_BASE_RPC = "https://mainnet.base.org";
 
 /**
- * Stand up a Zora agent identity from an EOA, with no human interaction:
- * Privy account → Zora profile → smart wallet → creator coin. Every on-chain
- * step is paymaster-sponsored, so the agent needs no ETH; with `dryRun`, the
- * coin is simulated rather than minted. (The first post builds on this.)
+ * Stand up a complete Zora agent identity from an EOA, with no human interaction:
+ * Privy account → profile → smart wallet → creator coin → first post. Every
+ * on-chain step is paymaster-sponsored, so the agent needs no ETH. Returns the
+ * created identity; with `dryRun`, the coin + post are simulated, not minted.
  */
 export async function onboardAgent(
   opts: OnboardOptions,
@@ -123,7 +135,7 @@ export async function onboardAgent(
     dryRun,
   };
 
-  // 5. Creator coin — signed by the external EOA owner (#1) of the smart wallet.
+  // 5. Creator coin.
   if (!opts.skipCoin) {
     progress(
       "coin",
@@ -139,6 +151,31 @@ export async function onboardAgent(
       hash: coin.submitted?.hash,
       sponsored: coin.sponsored,
       simulation: coin.simulation,
+    };
+  }
+
+  // 6. First post.
+  if (!opts.skipPost) {
+    progress(
+      "post",
+      dryRun ? "simulating the first post" : "publishing the first post",
+    );
+    const post = await createFirstPost({
+      token: privy.accessToken,
+      account,
+      client,
+      smartWallet: smartWallet.address,
+      owners: smartWallet.owners,
+      dryRun,
+    });
+    result.post = {
+      hash: post.submitted?.hash,
+      greeting: post.greeting,
+      ticker: post.ticker,
+      sponsored: post.sponsored,
+      simulation: post.simulation,
+      imageUri: post.imageUri,
+      contractUri: post.contractUri,
     };
   }
 

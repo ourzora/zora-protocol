@@ -16,6 +16,9 @@ export interface ChainClient {
 export const ZORA_TRPC_BASE = "https://zora.co/api/trpc";
 /** Zora universal GraphQL — takes `Authorization: Bearer <token>`. */
 export const ZORA_GRAPHQL = "https://api.zora.co/universal/graphql";
+/** Zora IPFS uploader — takes `Authorization: Bearer <token>`, multipart body. */
+export const ZORA_IPFS_UPLOAD =
+  "https://ipfs-uploader.zora.co/api/v0/add?cid-version=1";
 export const ZORA_ORIGIN = "https://zora.co";
 
 /** ZoraAccountManager (Coinbase smart-wallet factory wrapper) on Base. */
@@ -140,4 +143,45 @@ export async function graphqlRequest(
     errors: parsed?.errors,
     text,
   };
+}
+
+/**
+ * Upload a file to Zora's IPFS service and return its `ipfs://<cid>` URI.
+ * Auth is `Bearer` here (unlike the raw-token tRPC). The response is
+ * newline-delimited JSON (`{ name, cid, size }` per line).
+ */
+export async function ipfsUpload(
+  token: string,
+  filename: string,
+  bytes: Uint8Array,
+  mimeType: string,
+): Promise<string> {
+  const form = new FormData();
+  form.append(
+    filename,
+    new Blob([bytes as BlobPart], { type: mimeType }),
+    filename,
+  );
+  const res = await fetch(ZORA_IPFS_UPLOAD, {
+    method: "POST",
+    headers: {
+      authorization: `Bearer ${token}`,
+      "user-agent": BROWSER_USER_AGENT,
+    },
+    body: form,
+  });
+  const text = await res.text();
+  if (!res.ok) {
+    throw new Error(
+      `IPFS upload failed (HTTP ${res.status}): ${text.slice(0, 200)}`,
+    );
+  }
+  const lines = text
+    .trim()
+    .split("\n")
+    .map((line) => JSON.parse(line) as { name: string; cid: string });
+  const match =
+    lines.find((l) => l.name === filename) ?? lines[lines.length - 1];
+  if (!match?.cid) throw new Error("IPFS upload returned no CID");
+  return `ipfs://${match.cid}`;
 }

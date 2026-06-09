@@ -38,6 +38,14 @@ const ONBOARD_RESULT: OnboardResult = {
   isNewUser: true,
   dryRun: false,
   coin: { hash: "0xco001", sponsored: true, simulation: "ExecutionResult" },
+  post: {
+    hash: "0xp0001",
+    greeting: "gm frens",
+    ticker: "GMFRENS",
+    sponsored: true,
+    simulation: "ExecutionResult",
+    imageUri: "ipfs://image",
+  },
 };
 
 function runAgent(args: string[]) {
@@ -68,7 +76,7 @@ describe("zora agent create", () => {
     else process.env.ZORA_PRIVATE_KEY = originalEnv;
   });
 
-  it("onboards with the saved wallet and outputs the result as JSON", async () => {
+  it("runs the full onboarding with the saved wallet and outputs JSON", async () => {
     const log = captureLog();
     await runAgent(["create", "--json"]);
     const parsed = JSON.parse(log.output());
@@ -89,16 +97,18 @@ describe("zora agent create", () => {
         chainId: 8453,
         dryRun: false,
         skipCoin: false,
+        skipPost: false,
       }),
     );
   });
 
-  it("passes --dry-run, --skip-coin and --rpc-url through", async () => {
+  it("passes --dry-run, --skip-coin, --skip-post and --rpc-url through", async () => {
     await runAgent([
       "create",
       "--json",
       "--dry-run",
       "--skip-coin",
+      "--skip-post",
       "--rpc-url",
       "https://rpc.test",
     ]);
@@ -106,6 +116,7 @@ describe("zora agent create", () => {
       expect.objectContaining({
         dryRun: true,
         skipCoin: true,
+        skipPost: true,
         rpcUrl: "https://rpc.test",
       }),
     );
@@ -150,7 +161,7 @@ describe("zora agent create", () => {
     expect(output).toContain("keen_cedar_9807");
     expect(output).toContain(ONBOARD_RESULT.smartWallet);
     expect(output).toContain(ONBOARD_RESULT.accessToken);
-    expect(output).toContain("Creator coin");
+    expect(output).toContain("gm frens");
   });
 
   it("exits with an error when onboarding fails", async () => {

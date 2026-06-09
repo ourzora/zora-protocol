@@ -79,20 +79,23 @@ To configure wallet or API key individually (without running the full setup flow
 
 ## Agents
 
-`zora agent create` creates a Zora agent identity from an EOA, with no human interaction: a headless Privy account (Sign-In-With-Ethereum — no Privy dashboard, email, or OTP) and a Zora profile. It authenticates with only the Privy session — never a `zora.co/settings/developer` API key.
+`zora agent create` stands up a complete Zora agent identity from an EOA, with no human interaction: a headless Privy account (Sign-In-With-Ethereum — no Privy dashboard, email, or OTP), a Zora profile, a smart wallet, a creator coin, and a first post. Every on-chain step is paymaster-sponsored, so the agent needs no ETH, and it authenticates with only the Privy session — never a `zora.co/settings/developer` API key.
 
 ```bash
-# Create the agent's Privy account + Zora profile
+# Full onboarding: account → profile → smart wallet → creator coin → first post
 zora agent create
+
+# Dry run: create the account, profile, and smart wallet, but simulate the coin + post
+zora agent create --dry-run
 
 # JSON output for automation
 zora agent create --json
 
-# Use a specific key without saving it
-zora agent create --private-key 0x...
+# Use a specific key without saving it, and skip steps as needed
+zora agent create --private-key 0x... --skip-post
 ```
 
-The output includes the agent's profile handle and a **Privy access token** (a session JWT, ~1h) to send as `Authorization: Bearer <token>` for further Zora API calls. The EOA is resolved from `--private-key`, then `ZORA_PRIVATE_KEY`, then the saved CLI wallet (`~/.config/zora/wallet.json`); otherwise a new one is generated and saved.
+The output includes the agent's profile handle, its smart wallet, and a **Privy access token** (a session JWT, ~1h) to send as `Authorization: Bearer <token>` for further Zora API calls. The EOA is resolved from `--private-key`, then `ZORA_PRIVATE_KEY`, then the saved CLI wallet (`~/.config/zora/wallet.json`); otherwise a new one is generated and saved — back it up, as it owns the agent. The first post's artwork is a bundled, Zora-themed greeting card (no avatar/username, so it stays appropriate permanently).
 
 ## Documentation
 
