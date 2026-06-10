@@ -41,7 +41,7 @@ const encodeOwner = (owner: Address): Hex =>
   encodeAbiParameters([{ type: "address" }], [owner]);
 
 /** Deterministic smart-wallet address for an owner set (via ZoraAccountManager). */
-async function predictAddress(
+export async function predictAddress(
   client: ChainClient,
   owners: Address[],
 ): Promise<Address> {
@@ -53,7 +53,7 @@ async function predictAddress(
   });
 }
 
-async function isDeployed(
+export async function isDeployed(
   client: ChainClient,
   address: Address,
 ): Promise<boolean> {

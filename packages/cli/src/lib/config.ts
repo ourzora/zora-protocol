@@ -35,6 +35,8 @@ interface Config {
   version: number;
   apiKey?: string;
   analyticsId?: string;
+  /** Epoch ms of the last background DM check (throttles the new-DM notice). */
+  dmCheckAt?: number;
 }
 
 /**
@@ -284,6 +286,17 @@ export function saveAnalyticsId(id: string): void {
   if (configReadOnly) return;
   const config = readConfig();
   config.analyticsId = id;
+  writeConfig(config);
+}
+
+export function getDmCheckAt(): number | undefined {
+  return readConfig().dmCheckAt;
+}
+
+export function saveDmCheckAt(ms: number): void {
+  if (configReadOnly) return;
+  const config = readConfig();
+  config.dmCheckAt = ms;
   writeConfig(config);
 }
 
