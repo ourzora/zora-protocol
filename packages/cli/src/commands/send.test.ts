@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { type Address, getAddress, parseEther } from "viem";
+import { type Address, getAddress, parseEther, PrivateKeyAccount } from "viem";
 import { createProgram } from "../test/create-program.js";
 
 vi.mock("@inquirer/confirm");
@@ -15,7 +15,7 @@ vi.mock("../lib/wallet-balances.js");
 import confirm from "@inquirer/confirm";
 import { setApiKey, getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
 import { getApiKey } from "../lib/config.js";
-import { createClients, resolveAccount } from "../lib/wallet.js";
+import { createClients, resolveAccounts } from "../lib/wallet.js";
 import { track } from "../lib/analytics.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { sendCommand } from "./send.js";
@@ -65,9 +65,12 @@ describe("send command", () => {
     vi.mocked(getTrend).mockResolvedValue({
       data: { trendCoin: null },
     } as any);
-    vi.mocked(resolveAccount).mockReturnValue({
-      address: ACCOUNT_ADDRESS,
-    } as ReturnType<typeof resolveAccount>);
+    vi.mocked(resolveAccounts).mockResolvedValue({
+      privateKeyAccount: {
+        address: ACCOUNT_ADDRESS,
+      } as PrivateKeyAccount,
+      smartWalletAccount: undefined,
+    } as Awaited<ReturnType<typeof resolveAccounts>>);
     vi.mocked(createClients).mockReturnValue({
       publicClient,
       walletClient,
