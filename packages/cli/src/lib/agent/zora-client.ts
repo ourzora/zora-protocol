@@ -10,6 +10,13 @@ export interface ChainClient {
   readContract(args: any): Promise<any>;
   getCode(args: { address: Address }): Promise<Hex | undefined>;
   call(args: { to: Address; data: Hex }): Promise<unknown>;
+  /**
+   * Fetch a mined transaction's receipt. Used to resolve a deployed coin's
+   * address from the transaction's authoritative on-chain logs when the inline
+   * `submitUserOperation` logs are absent. Optional so lightweight test fakes
+   * (and any caller that doesn't need it) can omit it.
+   */
+  getTransactionReceipt?(args: { hash: Hex }): Promise<{ logs?: unknown[] }>;
 }
 
 /** Zora BFF (tRPC) base — takes the RAW Privy token (no "Bearer"). */

@@ -128,8 +128,10 @@ describe("onboardAgent", () => {
     expect(createCreatorCoin).toHaveBeenCalledWith(
       expect.objectContaining({ dryRun: true }),
     );
+    // The injected clock must reach createFirstPost so its receipt-poll loop is
+    // time-controllable from onboardAgent (no real setTimeout delays in tests).
     expect(createFirstPost).toHaveBeenCalledWith(
-      expect.objectContaining({ dryRun: true }),
+      expect.objectContaining({ dryRun: true, sleep: noSleep }),
     );
   });
 
@@ -144,5 +146,60 @@ describe("onboardAgent", () => {
     expect(createFirstPost).not.toHaveBeenCalled();
     expect(result.coin).toBeUndefined();
     expect(result.post).toBeUndefined();
+  });
+
+  it("keeps the identity (and profile link) when the coin step fails", async () => {
+    vi.mocked(createCreatorCoin).mockRejectedValue(new Error("coin boom"));
+    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    // The account already exists, so a coin failure must not discard it.
+    expect(result.username).toBe("keen_cedar_9807");
+    expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
+    expect(result.coin).toBeUndefined();
+    expect(result.coinError).toMatch(/coin boom/);
+    // The post still runs after a coin failure.
+    expect(result.post?.hash).toBe("0xpo");
+  });
+
+  it("keeps the identity (and profile link) when the post step fails", async () => {
+    vi.mocked(createFirstPost).mockRejectedValue(new Error("post boom"));
+    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
+    expect(result.post).toBeUndefined();
+    expect(result.postError).toMatch(/post boom/);
+    expect(result.coin?.hash).toBe("0xco");
+  });
+
+  it("falls back to the profile URL for the post link when the coin address is unresolved", async () => {
+    vi.mocked(createFirstPost).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: { hash: "0xpo", success: true },
+      greeting: "gm",
+      ticker: "GM",
+      imageUri: "ipfs://i",
+      contractUri: "ipfs://c",
+      // no coinAddress — the resolver couldn't pin the content coin down
+    });
+    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    expect(result.post?.coinAddress).toBeUndefined();
+    expect(result.post?.url).toBe("https://zora.co/@keen_cedar_9807");
+  });
+
+  it("does not fabricate a post link on a dry run", async () => {
+    vi.mocked(createFirstPost).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      greeting: "gm",
+      ticker: "GM",
+      imageUri: "ipfs://i",
+      contractUri: "ipfs://c",
+      // dry run: nothing minted, no coinAddress
+    });
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      dryRun: true,
+    });
+    expect(result.post?.url).toBeUndefined();
   });
 });

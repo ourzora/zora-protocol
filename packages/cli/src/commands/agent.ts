@@ -257,6 +257,8 @@ agentCommand
       dry_run: result.dryRun,
       minted_coin: Boolean(result.coin?.hash),
       minted_post: Boolean(result.post?.hash),
+      coin_failed: Boolean(result.coinError),
+      post_failed: Boolean(result.postError),
       output_format: json ? "json" : "text",
     });
 
@@ -287,6 +289,8 @@ agentCommand
                   : "—"
             }`,
           );
+        } else if (result.coinError) {
+          console.log(`  Creator coin: failed — ${result.coinError}`);
         }
         if (result.post) {
           console.log(
@@ -298,6 +302,8 @@ agentCommand
                   : ""
             }`,
           );
+        } else if (result.postError) {
+          console.log(`  First post:   failed — ${result.postError}`);
         }
         console.log("\n  Links:");
         console.log(`    Profile:      ${result.profileUrl}`);
@@ -305,7 +311,22 @@ agentCommand
           console.log(`    Creator coin: ${result.coin.url}`);
         }
         if (result.post?.url) {
-          console.log(`    First post:   ${result.post.url}`);
+          // The post link falls back to the profile URL when the content-coin
+          // address couldn't be resolved; flag that so the duplicate isn't
+          // mistaken for the precise post link.
+          const note = result.post.coinAddress
+            ? ""
+            : "  (first post — shown on the profile; coin still indexing)";
+          console.log(`    First post:   ${result.post.url}${note}`);
+        }
+        if (result.coinError || result.postError) {
+          console.log(
+            "\n  Note: the account was created, but a best-effort step did not complete.",
+          );
+          console.log(
+            "  Re-run to retry — the profile and smart wallet are idempotent;",
+          );
+          console.log("  use --skip-coin / --skip-post to resume past a step.");
         }
         if (resolved.generated) {
           console.log(

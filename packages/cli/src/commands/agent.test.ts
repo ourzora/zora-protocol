@@ -184,6 +184,53 @@ describe("zora agent create", () => {
     );
   });
 
+  it("still prints the profile link when the first post step failed", async () => {
+    vi.mocked(onboardAgent).mockResolvedValue({
+      ...ONBOARD_RESULT,
+      post: undefined,
+      postError: "post boom",
+    });
+    const log = captureLog();
+    await runAgent(["create"]);
+    const output = log.output();
+    log.restore();
+    // The account was created, so its profile link must still be reported.
+    expect(output).toContain("https://zora.co/@keen_cedar_9807");
+    expect(output).toContain("First post:   failed — post boom");
+    expect(output).toContain("account was created");
+  });
+
+  it("includes profileUrl and postError in --json when the post step failed", async () => {
+    vi.mocked(onboardAgent).mockResolvedValue({
+      ...ONBOARD_RESULT,
+      post: undefined,
+      postError: "post boom",
+    });
+    const log = captureLog();
+    await runAgent(["create", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(parsed.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
+    expect(parsed.postError).toBe("post boom");
+  });
+
+  it("notes the profile fallback when the post coin address is unresolved", async () => {
+    vi.mocked(onboardAgent).mockResolvedValue({
+      ...ONBOARD_RESULT,
+      post: {
+        ...ONBOARD_RESULT.post!,
+        coinAddress: undefined,
+        url: ONBOARD_RESULT.profileUrl,
+      },
+    });
+    const log = captureLog();
+    await runAgent(["create"]);
+    const output = log.output();
+    log.restore();
+    expect(output).toContain("First post:   https://zora.co/@keen_cedar_9807");
+    expect(output).toContain("shown on the profile");
+  });
+
   it("exits with an error when onboarding fails", async () => {
     vi.mocked(onboardAgent).mockRejectedValue(new Error("boom"));
     await expect(runAgent(["create"])).rejects.toThrow("process.exit(1)");

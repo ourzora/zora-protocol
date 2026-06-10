@@ -46,7 +46,7 @@ export interface OnboardResult {
   smartWallet: Address;
   isNewUser: boolean;
   dryRun: boolean;
-  /** The agent's Zora profile URL. */
+  /** The agent's Zora profile URL. Always set once the account exists. */
   profileUrl: string;
   coin?: {
     hash?: string;
@@ -54,6 +54,11 @@ export interface OnboardResult {
     simulation: string;
     url?: string;
   };
+  /**
+   * Set when the (non-fatal) creator-coin step failed *after* the account was
+   * already created. The identity above is still valid and worth reporting.
+   */
+  coinError?: string;
   post?: {
     hash?: string;
     greeting: string;
@@ -63,8 +68,19 @@ export interface OnboardResult {
     imageUri: string;
     contractUri: string;
     coinAddress?: Address;
+    /**
+     * A link to the first post. The precise content-coin URL when the coin
+     * address resolved, otherwise the agent's profile URL (where the post is
+     * visible) so a link is always available. `undefined` only on a dry run,
+     * where nothing was minted. Check `coinAddress` to tell the two apart.
+     */
     url?: string;
   };
+  /**
+   * Set when the (non-fatal) first-post step failed *after* the account was
+   * already created. The identity above is still valid and worth reporting.
+   */
+  postError?: string;
 }
 
 const DEFAULT_BASE_RPC = "https://mainnet.base.org";
@@ -75,6 +91,12 @@ const ZORA_BASE_URL = "https://zora.co";
  * Privy account → profile → smart wallet → creator coin → first post. Every
  * on-chain step is paymaster-sponsored, so the agent needs no ETH. Returns the
  * created identity; with `dryRun`, the coin + post are simulated, not minted.
+ *
+ * The account (Privy + profile + smart wallet) is the core deliverable: a
+ * failure in any of those throws. The creator coin and first post run *after*
+ * the account exists and are best-effort — if either fails, its error is
+ * recorded on `coinError` / `postError` and onboarding still resolves with the
+ * full identity (and its profile link) rather than discarding everything.
  */
 export async function onboardAgent(
   opts: OnboardOptions,
@@ -146,56 +168,78 @@ export async function onboardAgent(
     profileUrl: `${ZORA_BASE_URL}/@${profile.username}`,
   };
 
-  // 5. Creator coin.
+  // 5. Creator coin (best-effort — the account already exists at this point).
   if (!opts.skipCoin) {
     progress(
       "coin",
       dryRun ? "simulating the creator coin" : "minting the creator coin",
     );
-    const coin = await createCreatorCoin({
-      token: privy.accessToken,
-      account,
-      client,
-      dryRun,
-    });
-    result.coin = {
-      hash: coin.submitted?.hash,
-      sponsored: coin.sponsored,
-      simulation: coin.simulation,
-      url: dryRun
-        ? undefined
-        : `${ZORA_BASE_URL}/@${profile.username}/creator-coin`,
-    };
+    try {
+      const coin = await createCreatorCoin({
+        token: privy.accessToken,
+        account,
+        client,
+        dryRun,
+      });
+      result.coin = {
+        hash: coin.submitted?.hash,
+        sponsored: coin.sponsored,
+        simulation: coin.simulation,
+        url: dryRun
+          ? undefined
+          : `${ZORA_BASE_URL}/@${profile.username}/creator-coin`,
+      };
+    } catch (err) {
+      result.coinError = errorMessage(err);
+    }
   }
 
-  // 6. First post.
+  // 6. First post (best-effort — the account already exists at this point).
   if (!opts.skipPost) {
     progress(
       "post",
       dryRun ? "simulating the first post" : "publishing the first post",
     );
-    const post = await createFirstPost({
-      token: privy.accessToken,
-      account,
-      client,
-      smartWallet: smartWallet.address,
-      owners: smartWallet.owners,
-      dryRun,
-    });
-    result.post = {
-      hash: post.submitted?.hash,
-      greeting: post.greeting,
-      ticker: post.ticker,
-      sponsored: post.sponsored,
-      simulation: post.simulation,
-      imageUri: post.imageUri,
-      contractUri: post.contractUri,
-      coinAddress: post.coinAddress,
-      url: post.coinAddress
-        ? `${ZORA_BASE_URL}/coin/base:${post.coinAddress.toLowerCase()}`
-        : undefined,
-    };
+    try {
+      const post = await createFirstPost({
+        token: privy.accessToken,
+        account,
+        client,
+        smartWallet: smartWallet.address,
+        owners: smartWallet.owners,
+        dryRun,
+        // Forward the injected clock so the receipt-poll loop is controllable
+        // from onboardAgent (tests inject a no-op sleep; prod uses setTimeout).
+        sleep,
+      });
+      result.post = {
+        hash: post.submitted?.hash,
+        greeting: post.greeting,
+        ticker: post.ticker,
+        sponsored: post.sponsored,
+        simulation: post.simulation,
+        imageUri: post.imageUri,
+        contractUri: post.contractUri,
+        coinAddress: post.coinAddress,
+        // Always expose a link to the first post once it's minted: the precise
+        // content-coin URL when the address resolved, else the profile (where
+        // the post is visible) so the link is never silently dropped. On a dry
+        // run nothing was minted, so there's no link.
+        url: dryRun
+          ? undefined
+          : post.coinAddress
+            ? `${ZORA_BASE_URL}/coin/base:${post.coinAddress.toLowerCase()}`
+            : result.profileUrl,
+      };
+    } catch (err) {
+      result.postError = errorMessage(err);
+    }
   }
 
   return result;
+}
+
+/** Extract a human-readable message from an unknown thrown value. */
+function errorMessage(err: unknown): string {
+  return err instanceof Error ? err.message : String(err);
 }

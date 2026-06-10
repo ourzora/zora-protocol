@@ -1,5 +1,5 @@
 import { Buffer } from "node:buffer";
-import { getAddress, type Address, type LocalAccount } from "viem";
+import { getAddress, type Address, type Hex, type LocalAccount } from "viem";
 import {
   BASE_CHAIN_ID,
   ipfsUpload,
@@ -15,9 +15,19 @@ export interface FirstPostResult extends FinalizeResult {
   ticker: string;
   imageUri: string;
   contractUri: string;
-  /** The deployed content-coin address, when minted (resolved from the submit logs). */
+  /**
+   * The deployed content-coin address, when minted. Resolved from the inline
+   * `submitUserOperation` logs when present, otherwise from the mined
+   * transaction's receipt (see {@link resolveCoinAddress}). Still best-effort:
+   * absent only if both sources are unavailable.
+   */
   coinAddress?: Address;
 }
+
+/** How many times to poll for the transaction receipt before giving up. */
+const DEFAULT_RECEIPT_ATTEMPTS = 5;
+/** Delay between receipt polls. */
+const RECEIPT_POLL_MS = 2000;
 
 const NAME_ABI = [
   {
@@ -30,13 +40,11 @@ const NAME_ABI = [
 ] as const;
 
 /**
- * Find the deployed coin among the submit logs by matching its on-chain name.
+ * Find the deployed coin among a set of logs by matching its on-chain name.
  *
- * Best-effort: makes up to one `readContract` (`name()`) call per unique log
- * address, and returns undefined if none matches (the API omits `logs`, the log
- * shape is unexpected, or the names differ). Callers treat a missing result as
- * "no post URL" — the post itself already succeeded, so the absent link is a
- * skipped convenience, not an error.
+ * Makes up to one `readContract` (`name()`) call per unique log address, and
+ * returns undefined if none matches (the logs are empty, the shape is
+ * unexpected, or the names differ).
  */
 async function findDeployedCoin(
   client: ChainClient,
@@ -59,8 +67,62 @@ async function findDeployedCoin(
       // not a coin / no name() — skip
     }
   }
-  // No log matched — intentionally silent: the post already succeeded, and the
-  // coin URL is a best-effort convenience the caller simply omits when absent.
+  return undefined;
+}
+
+/**
+ * Resolve the deployed content-coin address for a submitted first post.
+ *
+ * Two sources, in order:
+ *   1. The inline logs returned by `submitUserOperation` (no extra RPC).
+ *   2. The mined transaction's receipt logs, fetched by hash — the authoritative
+ *      source. The inline logs are frequently empty (notably under CI/headless
+ *      runs), which previously left every post without a link; the receipt is
+ *      always populated once the sponsored tx confirms, so we poll for it.
+ *
+ * Still best-effort: any RPC hiccup just leaves the address unresolved (the post
+ * itself already succeeded), so the caller can fall back to a profile link
+ * rather than failing.
+ */
+async function resolveCoinAddress(
+  client: ChainClient,
+  submitted: { hash: string; logs?: unknown[] },
+  expectedName: string,
+  opts: {
+    receiptAttempts?: number;
+    sleep?: (ms: number) => Promise<void>;
+  } = {},
+): Promise<Address | undefined> {
+  // 1. Fast path — inline submit logs, when the backend returned them.
+  const fromInline = await findDeployedCoin(
+    client,
+    submitted.logs ?? [],
+    expectedName,
+  );
+  if (fromInline) return fromInline;
+
+  // 2. Receipt fallback — fetch the mined transaction's authoritative logs.
+  if (!client.getTransactionReceipt || !submitted.hash) return undefined;
+  const attempts = opts.receiptAttempts ?? DEFAULT_RECEIPT_ATTEMPTS;
+  const sleep =
+    opts.sleep ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)));
+  for (let attempt = 0; attempt < attempts; attempt++) {
+    try {
+      const receipt = await client.getTransactionReceipt({
+        hash: submitted.hash as Hex,
+      });
+      // A fetched receipt is final — its logs won't change — so scan it once
+      // and return whatever we find (the matched address, or undefined). The
+      // retry budget is reserved for the fetch itself failing below; re-polling
+      // a receipt we already have would only re-read identical logs.
+      const logs = Array.isArray(receipt?.logs) ? receipt.logs : [];
+      return await findDeployedCoin(client, logs, expectedName);
+    } catch {
+      // Receipt not yet available (the tx is still confirming) or a transient
+      // RPC error — this is the only case worth retrying.
+    }
+    if (attempt < attempts - 1) await sleep(RECEIPT_POLL_MS);
+  }
   return undefined;
 }
 
@@ -79,6 +141,9 @@ export async function createFirstPost(params: {
   dryRun: boolean;
   /** Override the random card (e.g. for tests). */
   card?: FirstPostCard;
+  /** Max attempts to poll for the tx receipt when resolving the coin address. */
+  receiptAttempts?: number;
+  sleep?: (ms: number) => Promise<void>;
 }): Promise<FirstPostResult> {
   const { token, account, client, smartWallet, owners, dryRun } = params;
   const card = params.card ?? pickFirstPostCard();
@@ -136,11 +201,10 @@ export async function createFirstPost(params: {
     dryRun,
   });
   const coinAddress = finalize.submitted
-    ? await findDeployedCoin(
-        client,
-        finalize.submitted.logs ?? [],
-        card.greeting,
-      )
+    ? await resolveCoinAddress(client, finalize.submitted, card.greeting, {
+        receiptAttempts: params.receiptAttempts,
+        sleep: params.sleep,
+      })
     : undefined;
   return {
     ...finalize,

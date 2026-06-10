@@ -143,4 +143,77 @@ describe("createFirstPost", () => {
     expect(result.coinAddress).toBeUndefined();
     expect(client.readContract).not.toHaveBeenCalled();
   });
+
+  it("resolves the coin address from the tx receipt when inline logs are empty", async () => {
+    // The common CI case: submitUserOperation returns no inline logs, so the
+    // address must come from the mined transaction's receipt.
+    vi.mocked(signSimulateSubmit).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: { hash: "0xposttx", success: true, logs: [] },
+    });
+    const readContract = vi.fn(async () => "gm");
+    const getTransactionReceipt = vi.fn(async () => ({
+      logs: [{ address: COIN }],
+    }));
+    const client = { readContract, getTransactionReceipt };
+    const result = await createFirstPost(
+      params({ client, sleep: async () => {} }),
+    );
+    expect(getTransactionReceipt).toHaveBeenCalledWith({ hash: "0xposttx" });
+    expect(result.coinAddress?.toLowerCase()).toBe(COIN);
+  });
+
+  it("prefers inline logs and never fetches the receipt when they match", async () => {
+    vi.mocked(signSimulateSubmit).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: { hash: "0xposttx", success: true, logs: [{ address: COIN }] },
+    });
+    const getTransactionReceipt = vi.fn();
+    const client = {
+      readContract: vi.fn(async () => "gm"),
+      getTransactionReceipt,
+    };
+    const result = await createFirstPost(params({ client }));
+    expect(result.coinAddress?.toLowerCase()).toBe(COIN);
+    expect(getTransactionReceipt).not.toHaveBeenCalled();
+  });
+
+  it("polls then gives up gracefully when the receipt fetch keeps failing", async () => {
+    vi.mocked(signSimulateSubmit).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: { hash: "0xposttx", success: true, logs: [] },
+    });
+    const getTransactionReceipt = vi.fn(async () => {
+      throw new Error("receipt not found");
+    });
+    const client = { readContract: vi.fn(), getTransactionReceipt };
+    const result = await createFirstPost(
+      params({ client, sleep: async () => {}, receiptAttempts: 3 }),
+    );
+    expect(getTransactionReceipt).toHaveBeenCalledTimes(3);
+    expect(result.coinAddress).toBeUndefined();
+  });
+
+  it("fetches a successful receipt only once even when the coin isn't in its logs", async () => {
+    // A fetched receipt is final, so an unmatched coin must not trigger re-polls
+    // — that would just re-read identical logs and waste the retry budget.
+    vi.mocked(signSimulateSubmit).mockResolvedValue({
+      sponsored: true,
+      simulation: "ExecutionResult",
+      submitted: { hash: "0xposttx", success: true, logs: [] },
+    });
+    const getTransactionReceipt = vi.fn(async () => ({
+      logs: [{ address: COIN }],
+    }));
+    const readContract = vi.fn(async () => "a different coin");
+    const client = { readContract, getTransactionReceipt };
+    const result = await createFirstPost(
+      params({ client, sleep: async () => {}, receiptAttempts: 5 }),
+    );
+    expect(getTransactionReceipt).toHaveBeenCalledTimes(1);
+    expect(result.coinAddress).toBeUndefined();
+  });
 });
