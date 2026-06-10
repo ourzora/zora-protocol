@@ -32,6 +32,7 @@ import {
 import { formatAmountDisplay } from "../lib/format.js";
 import {
   GAS_RESERVE,
+  estimateSmartWalletGasReserve,
   getAmountMode,
   parsePercentageLikeValue,
 } from "../lib/trade-helpers.js";
@@ -223,6 +224,12 @@ export const sendCommand = new Command("send")
         );
       }
 
+      // A smart wallet pays gas from its own ETH via the user-operation
+      // prefund, so it must reserve more than the EOA's fixed GAS_RESERVE.
+      const gasReserve = smartWalletAccount
+        ? await estimateSmartWalletGasReserve(publicClient, "transfer")
+        : GAS_RESERVE;
+
       let amount: bigint;
 
       if (amountMode === "amount") {
@@ -247,21 +254,21 @@ export const sendCommand = new Command("send")
             "Amount too small — rounds to zero at 18 decimal places.",
           );
         }
-        if (amount + GAS_RESERVE > balance) {
+        if (amount + gasReserve > balance) {
           return outputErrorAndExit(
             json,
-            `Insufficient balance. Have ${formatAmountDisplay(balance, 18)} ETH (need to reserve ~${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas).`,
+            `Insufficient balance. Have ${formatAmountDisplay(balance, 18)} ETH (need to reserve ~${formatAmountDisplay(gasReserve, 18)} ETH for gas).`,
           );
         }
       } else {
-        if (balance <= GAS_RESERVE) {
+        if (balance <= gasReserve) {
           return outputErrorAndExit(
             json,
-            `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas.`,
+            `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(gasReserve, 18)} ETH for gas.`,
           );
         }
 
-        const spendable = balance - GAS_RESERVE;
+        const spendable = balance - gasReserve;
 
         if (amountMode === "all") {
           amount = spendable;

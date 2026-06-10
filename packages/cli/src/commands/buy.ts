@@ -31,6 +31,7 @@ import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import {
   BUY_AMOUNT_CHECKS,
   GAS_RESERVE,
+  estimateSmartWalletGasReserve,
   getAmountMode,
   getReceivedAmountFromReceipt,
   parsePercentageLikeValue,
@@ -278,12 +279,18 @@ export const buyCommand = new Command("buy")
         );
       }
 
-      const gasReserve = isEth ? GAS_RESERVE : 0n;
+      // A smart wallet pays gas from its own ETH via the user-operation
+      // prefund, so it must reserve more than the EOA's fixed GAS_RESERVE.
+      const gasReserve = isEth
+        ? smartWalletAccount
+          ? await estimateSmartWalletGasReserve(publicClient, "swap")
+          : GAS_RESERVE
+        : 0n;
 
       if (isEth && balance <= gasReserve) {
         return outputErrorAndExit(
           json,
-          `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas.`,
+          `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(gasReserve, 18)} ETH for gas.`,
         );
       }
 
