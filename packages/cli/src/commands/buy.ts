@@ -1,45 +1,46 @@
-import { Command } from "commander";
 import confirm from "@inquirer/confirm";
-import { parseUnits, formatUnits, isAddress, type Address } from "viem";
 import {
-  setApiKey,
+  createQuote,
   getCoin,
+  setApiKey,
   tradeCoin,
-  createTradeCall,
+  tradeCoinSmartWallet,
 } from "@zoralabs/coins-sdk";
-import { resolveAccount, createClients } from "../lib/wallet.js";
-import { getApiKey } from "../lib/config.js";
-import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
-import { safeExit, SUCCESS, ERROR } from "../lib/exit.js";
-import { formatAmountDisplay, formatUsd } from "../lib/format.js";
+import { Command } from "commander";
+import { formatUnits, isAddress, parseUnits, type Address } from "viem";
+import { shutdownAnalytics, track } from "../lib/analytics.js";
 import {
-  GAS_RESERVE,
-  BUY_AMOUNT_CHECKS,
-  getAmountMode,
-  parsePercentageLikeValue,
-  getReceivedAmountFromReceipt,
-  printQuote,
-  printTradeResult,
-  printDebugRequest,
-  printDebugResponse,
-} from "../lib/trade-helpers.js";
-import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
-import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
-import { track, shutdownAnalytics } from "../lib/analytics.js";
-import {
-  parsePositionalCoinArgs,
+  CoinArgError,
   coinArgsToRef,
+  formatAmbiguousError,
+  mapCoinType,
+  parsePositionalCoinArgs,
   resolveAmbiguousName,
   resolveCoin,
-  formatAmbiguousError,
-  CoinArgError,
-  mapCoinType,
 } from "../lib/coin-ref.js";
+import { getApiKey } from "../lib/config.js";
+import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import {
-  tradeErrorMessage,
   apiErrorMessage,
   bannedCoinBuyMessage,
+  tradeErrorMessage,
 } from "../lib/errors.js";
+import { ERROR, safeExit, SUCCESS } from "../lib/exit.js";
+import { formatAmountDisplay, formatUsd } from "../lib/format.js";
+import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import {
+  BUY_AMOUNT_CHECKS,
+  GAS_RESERVE,
+  getAmountMode,
+  getReceivedAmountFromReceipt,
+  parsePercentageLikeValue,
+  printDebugRequest,
+  printDebugResponse,
+  printQuote,
+  printTradeResult,
+} from "../lib/trade-helpers.js";
+import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import { createClients, resolveAccounts } from "../lib/wallet.js";
 
 export const buyCommand = new Command("buy")
   .description("Buy a coin")
@@ -85,8 +86,7 @@ export const buyCommand = new Command("buy")
 
     if (parsed.kind === "address") {
       if (!isAddress(parsed.address)) {
-        outputErrorAndExit(json, `Invalid address: ${parsed.address}`);
-        return;
+        return outputErrorAndExit(json, `Invalid address: ${parsed.address}`);
       }
       coinAddress = parsed.address;
     } else if (parsed.kind === "ambiguous-name") {
@@ -94,16 +94,14 @@ export const buyCommand = new Command("buy")
       try {
         ambResult = await resolveAmbiguousName(parsed.name);
       } catch (err) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           `Request failed: ${err instanceof Error ? err.message : String(err)}`,
         );
-        return;
       }
 
       if (ambResult.kind === "not-found") {
-        outputErrorAndExit(json, ambResult.message);
-        return;
+        return outputErrorAndExit(json, ambResult.message);
       }
 
       if (ambResult.kind === "ambiguous") {
@@ -113,8 +111,7 @@ export const buyCommand = new Command("buy")
           ambResult.trend,
           "buy",
         );
-        outputErrorAndExit(json, message, suggestion);
-        return;
+        return outputErrorAndExit(json, message, suggestion);
       }
 
       coinAddress = ambResult.coin.address;
@@ -124,22 +121,20 @@ export const buyCommand = new Command("buy")
       try {
         const result = await resolveCoin(ref);
         if (result.kind === "not-found") {
-          outputErrorAndExit(json, result.message, result.suggestion);
-          return;
+          return outputErrorAndExit(json, result.message, result.suggestion);
         }
         coinAddress = result.coin.address;
       } catch (err) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           `Request failed: ${err instanceof Error ? err.message : String(err)}`,
         );
-        return;
       }
     }
 
     const tokenKey = opts.token.toLowerCase() as string;
     if (!(tokenKey in BASE_TRADE_TOKENS)) {
-      outputErrorAndExit(
+      return outputErrorAndExit(
         json,
         `Invalid --token value: ${opts.token}. Use: eth, usdc, zora`,
       );
@@ -162,8 +157,14 @@ export const buyCommand = new Command("buy")
     }
     const slippage = slippagePct / 100;
 
-    const account = resolveAccount();
-    const { publicClient, walletClient } = createClients(account);
+    const { privateKeyAccount, smartWalletAccount } = await resolveAccounts();
+    const { publicClient, walletClient, bundlerClient } = createClients(
+      privateKeyAccount,
+      smartWalletAccount,
+    );
+
+    const walletAddress =
+      smartWalletAccount?.address ?? privateKeyAccount.address;
 
     let token;
     try {
@@ -190,11 +191,10 @@ export const buyCommand = new Command("buy")
     if (amountMode === "usd") {
       const usdVal = parsePercentageLikeValue(opts.usd);
       if (usdVal === undefined || usdVal <= 0) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           "Invalid --usd value. Must be a positive number.",
         );
-        return;
       }
 
       let priceUsd: number;
@@ -203,11 +203,10 @@ export const buyCommand = new Command("buy")
       } else {
         const fetched = await fetchTokenPriceUsd(inputToken.priceAddress);
         if (fetched === null) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             `Failed to fetch ${inputToken.symbol} price.`,
           );
-          return;
         }
         priceUsd = fetched;
       }
@@ -219,7 +218,10 @@ export const buyCommand = new Command("buy")
       );
 
       if (amountIn === 0n) {
-        outputErrorAndExit(json, "Calculated amount is zero. USD too small.");
+        return outputErrorAndExit(
+          json,
+          "Calculated amount is zero. USD too small.",
+        );
       }
 
       if (debug) {
@@ -230,7 +232,7 @@ export const buyCommand = new Command("buy")
     } else if (amountMode === "eth") {
       const val = parsePercentageLikeValue(opts.eth);
       if (val === undefined || val <= 0) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           "Invalid --eth value. Must be a positive number.",
         );
@@ -238,7 +240,7 @@ export const buyCommand = new Command("buy")
       try {
         amountIn = parseUnits(opts.eth, inputToken.decimals);
       } catch {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           "Invalid --eth value. Must be a positive number.",
         );
@@ -249,7 +251,7 @@ export const buyCommand = new Command("buy")
 
       if (isEth) {
         balance = await publicClient.getBalance({
-          address: account.address,
+          address: walletAddress,
         });
       } else {
         const tokenAddress = (inputToken.trade as { address: Address }).address;
@@ -265,21 +267,21 @@ export const buyCommand = new Command("buy")
             },
           ],
           functionName: "balanceOf",
-          args: [account.address],
+          args: [walletAddress],
         });
       }
 
       if (balance === 0n) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
-          `No ${inputToken.symbol} balance. Deposit ${inputToken.symbol} to ${account.address} on Base.`,
+          `No ${inputToken.symbol} balance. Deposit ${inputToken.symbol} to ${walletAddress} on Base.`,
         );
       }
 
       const gasReserve = isEth ? GAS_RESERVE : 0n;
 
       if (isEth && balance <= gasReserve) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas.`,
         );
@@ -292,7 +294,7 @@ export const buyCommand = new Command("buy")
       } else {
         const pct = parsePercentageLikeValue(opts.percent);
         if (pct === undefined || pct <= 0 || pct > 100) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Invalid --percent value. Must be between 0 and 100.",
           );
@@ -304,7 +306,7 @@ export const buyCommand = new Command("buy")
             : (spendableBalance * BigInt(Math.round(pct * 100))) / 10000n;
 
         if (amountIn === 0n) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Calculated amount is zero. Balance too low.",
           );
@@ -333,7 +335,7 @@ export const buyCommand = new Command("buy")
       buy: { type: "erc20" as const, address: coinAddress as Address },
       amountIn,
       slippage,
-      sender: account.address,
+      sender: walletAddress,
     };
 
     if (debug) {
@@ -342,14 +344,14 @@ export const buyCommand = new Command("buy")
 
     let amountOut: string;
     try {
-      const quote = await createTradeCall(tradeParameters);
+      const quote = await createQuote(tradeParameters);
 
       if (debug) {
         printDebugResponse("buy", quote as unknown as Record<string, unknown>);
       }
 
       if (!quote.quote?.amountOut || quote.quote.amountOut === "0") {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           "Quote returned zero output. Amount may be too small.",
         );
@@ -367,14 +369,14 @@ export const buyCommand = new Command("buy")
       if (errorType === "LIQUIDITY" || msg.includes("Not enough liquidity")) {
         if (json) {
           outputJson({ error: errorBody ?? msg });
-          safeExit(ERROR);
+          return safeExit(ERROR);
         }
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           "Not enough available liquidity for your swap. Please try swapping fewer tokens.",
         );
       }
-      outputErrorAndExit(
+      return outputErrorAndExit(
         json,
         `Quote failed: ${apiErrorMessage(err)}`,
         "Check the coin address is valid and try again. Use --debug for full error details.",
@@ -428,18 +430,35 @@ export const buyCommand = new Command("buy")
       }
     }
 
-    let receipt: Awaited<ReturnType<typeof tradeCoin>>;
+    if (!!smartWalletAccount && !bundlerClient) {
+      return outputErrorAndExit(
+        json,
+        "Failed to obtain bundler client for your smart wallet. Please try again. If the problem persists, ensure your smart wallet is setup correctly.",
+      );
+    }
+
+    // let receipt: Awaited<ReturnType<typeof tradeCoin>>;
+    let receipt: Awaited<
+      ReturnType<typeof tradeCoinSmartWallet | typeof tradeCoin>
+    >;
     let txHash: string;
     let receivedAmountOut = BigInt(amountOut);
     let swapLogIndex: number | null = null;
     const swapCoinType = token.coinType ?? null;
     try {
-      receipt = await tradeCoin({
-        tradeParameters,
-        walletClient,
-        publicClient,
-        account,
-      });
+      receipt = !!smartWalletAccount
+        ? await tradeCoinSmartWallet({
+            tradeParameters,
+            bundlerClient: bundlerClient!,
+            publicClient,
+            account: smartWalletAccount,
+          })
+        : await tradeCoin({
+            tradeParameters,
+            walletClient,
+            publicClient,
+            account: privateKeyAccount,
+          });
     } catch (err) {
       track("cli_buy", {
         action: "trade",
@@ -456,15 +475,16 @@ export const buyCommand = new Command("buy")
         error_type: err instanceof Error ? err.constructor.name : "unknown",
       });
       await shutdownAnalytics();
-      outputErrorAndExit(json, tradeErrorMessage(err));
+      return outputErrorAndExit(json, tradeErrorMessage(err));
     }
+
     txHash = receipt.transactionHash;
 
     try {
       const result = getReceivedAmountFromReceipt({
         receipt,
         tokenAddress: coinAddress as Address,
-        recipient: account.address,
+        recipient: walletAddress,
       });
       receivedAmountOut = result.amount;
       swapLogIndex = result.logIndex;
