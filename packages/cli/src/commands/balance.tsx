@@ -1,48 +1,44 @@
+import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
 import { Command } from "commander";
 import { Box, Text } from "ink";
-import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
-import { getApiKey } from "../lib/config.js";
+import { BalanceCoinsView } from "../components/BalanceCoinsView.js";
+import { BalanceView, type BalanceData } from "../components/BalanceView.js";
+import type { PageResult } from "../components/PaginatedTableView.js";
+import { Table } from "../components/table.js";
+import { track } from "../lib/analytics.js";
 import {
-  getOutputMode,
+  API_KEY_BANNER,
+  balanceColumns,
+  SORT_LABELS,
+  walletColumns,
+  type BalanceNode,
+  type SortFlag,
+} from "../lib/balance-columns.js";
+import {
+  computeBalanceUsdValue,
+  normalizeTokenAmount,
+} from "../lib/balance-format.js";
+import { getApiKey } from "../lib/config.js";
+import { apiErrorMessage, extractErrorMessage } from "../lib/errors.js";
+import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
+import {
   getLiveConfig,
+  getOutputMode,
   outputData,
   outputErrorAndExit,
 } from "../lib/output.js";
-import { renderOnce, renderLive } from "../lib/render.js";
-import { BalanceView, type BalanceData } from "../components/BalanceView.js";
-import { BalanceCoinsView } from "../components/BalanceCoinsView.js";
-import type { PageResult } from "../components/PaginatedTableView.js";
-import { Table } from "../components/table.js";
-import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
-import { resolveAccount, resolveAccounts } from "../lib/wallet.js";
-import {
-  normalizeTokenAmount,
-  computeBalanceUsdValue,
-} from "../lib/balance-format.js";
-import {
-  fetchWalletBalances,
-  type WalletBalance,
-  type WalletBalanceJson,
-} from "../lib/wallet-balances.js";
-import { track } from "../lib/analytics.js";
+import { renderLive, renderOnce } from "../lib/render.js";
 import type { PageInfo } from "../lib/types.js";
-import { apiErrorMessage, extractErrorMessage } from "../lib/errors.js";
-import {
-  walletColumns,
-  balanceColumns,
-  SORT_LABELS,
-  API_KEY_BANNER,
-  type SortFlag,
-  type BalanceNode,
-} from "../lib/balance-columns.js";
+import { fetchWalletBalances } from "../lib/wallet-balances.js";
+import { resolveAccounts } from "../lib/wallet.js";
 
 export {
-  walletColumns,
+  API_KEY_BANNER,
   balanceColumns,
   SORT_LABELS,
-  API_KEY_BANNER,
-  type SortFlag,
+  walletColumns,
   type BalanceNode,
+  type SortFlag,
 };
 
 type FormattedBalanceJson = {
@@ -232,11 +228,11 @@ async function fetchCoins(
       after,
     });
   } catch (err) {
-    outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
+    return outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
   }
 
   if (response.error) {
-    outputErrorAndExit(
+    return outputErrorAndExit(
       json,
       `API error: ${extractErrorMessage(response.error)}`,
     );
