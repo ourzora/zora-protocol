@@ -3,7 +3,11 @@ import { createProgram } from "../test/create-program.js";
 import { agentCommand } from "./agent.js";
 import { onboardAgent } from "../lib/agent/onboard.js";
 import type { OnboardResult } from "../lib/agent/onboard.js";
-import { getPrivateKey, savePrivateKey } from "../lib/config.js";
+import {
+  getPrivateKey,
+  savePrivateKey,
+  saveAgentWallet,
+} from "../lib/config.js";
 import { generatePrivateKey } from "viem/accounts";
 
 vi.mock("../lib/agent/onboard.js", () => ({ onboardAgent: vi.fn() }));
@@ -17,6 +21,7 @@ vi.mock("../lib/privy.js", () => ({
 vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
   savePrivateKey: vi.fn(),
+  saveAgentWallet: vi.fn(),
   getWalletPath: vi.fn(() => "/home/u/.config/zora/wallet.json"),
 }));
 
@@ -97,6 +102,8 @@ describe("zora agent create", () => {
       smartWallet: ONBOARD_RESULT.smartWallet,
       accessToken: ONBOARD_RESULT.accessToken,
       walletSource: "/home/u/.config/zora/wallet.json",
+      walletPath: "/home/u/.config/zora/wallet.json",
+      savedToWallet: true,
     });
     expect(onboardAgent).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -206,5 +213,76 @@ describe("zora agent create", () => {
     vi.mocked(getPrivateKey).mockReturnValue("not-a-valid-key");
     await expect(runAgent(["create"])).rejects.toThrow("process.exit(1)");
     expect(onboardAgent).not.toHaveBeenCalled();
+  });
+
+  it("saves the full agent identity to the wallet file (saved-wallet key)", async () => {
+    await runAgent(["create", "--json"]);
+    expect(saveAgentWallet).toHaveBeenCalledWith({
+      address: ONBOARD_RESULT.address,
+      embeddedWalletAddress: ONBOARD_RESULT.embedded,
+      smartWalletAddress: ONBOARD_RESULT.smartWallet,
+      did: ONBOARD_RESULT.did,
+      username: ONBOARD_RESULT.username,
+      profileUrl: ONBOARD_RESULT.profileUrl,
+      createdAt: expect.any(String),
+    });
+  });
+
+  it("saves the agent identity for a freshly generated wallet", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(undefined);
+    await runAgent(["create", "--json"]);
+    expect(savePrivateKey).toHaveBeenCalledWith(GENERATED_PK);
+    expect(saveAgentWallet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        address: ONBOARD_RESULT.address,
+        embeddedWalletAddress: ONBOARD_RESULT.embedded,
+        smartWalletAddress: ONBOARD_RESULT.smartWallet,
+      }),
+    );
+  });
+
+  it("persists the agent identity even with --dry-run", async () => {
+    vi.mocked(onboardAgent).mockResolvedValue({
+      ...ONBOARD_RESULT,
+      dryRun: true,
+    });
+    await runAgent(["create", "--dry-run", "--json"]);
+    expect(saveAgentWallet).toHaveBeenCalledWith(
+      expect.objectContaining({
+        smartWalletAddress: ONBOARD_RESULT.smartWallet,
+        embeddedWalletAddress: ONBOARD_RESULT.embedded,
+      }),
+    );
+  });
+
+  it("does not touch the wallet file when the key comes from --private-key", async () => {
+    const warn = vi.spyOn(console, "error").mockImplementation(() => {});
+    await runAgent(["create", "--private-key", "b".repeat(64), "--json"]);
+    expect(saveAgentWallet).not.toHaveBeenCalled();
+    warn.mockRestore();
+  });
+
+  it("does not touch the wallet file when the key comes from ZORA_PRIVATE_KEY", async () => {
+    process.env.ZORA_PRIVATE_KEY = `0x${"c".repeat(64)}`;
+    await runAgent(["create", "--json"]);
+    expect(saveAgentWallet).not.toHaveBeenCalled();
+  });
+
+  it("warns but still completes when saving the identity fails", async () => {
+    vi.mocked(saveAgentWallet).mockImplementation(() => {
+      throw new Error("EACCES: permission denied");
+    });
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const log = captureLog();
+    // Resolves (the command does not exit non-zero) — the agent already exists.
+    await runAgent(["create", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    // Assert before restoring — mockRestore() also clears the call history.
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("couldn't save its details"),
+    );
+    expect(parsed.savedToWallet).toBe(false);
+    errorSpy.mockRestore();
   });
 });

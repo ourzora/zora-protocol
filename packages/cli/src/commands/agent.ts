@@ -2,7 +2,12 @@ import { Command } from "commander";
 import { readFileSync } from "node:fs";
 import { basename, extname } from "node:path";
 import { generatePrivateKey } from "viem/accounts";
-import { getPrivateKey, savePrivateKey, getWalletPath } from "../lib/config.js";
+import {
+  getPrivateKey,
+  savePrivateKey,
+  saveAgentWallet,
+  getWalletPath,
+} from "../lib/config.js";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 import { formatError } from "../lib/errors.js";
@@ -217,9 +222,38 @@ agentCommand
       );
     }
 
+    // Persist the agent's full identity (EOA, embedded + smart wallet, Privy DID,
+    // and profile) to the wallet file so it can be recovered later. We only write
+    // when the wallet file is the home of this key — it was generated or already
+    // stored there — so we never persist a key supplied via --private-key or
+    // ZORA_PRIVATE_KEY, nor clobber an unrelated saved wallet. The smart + embedded
+    // wallets are real even under --dry-run, so we persist regardless. The agent
+    // already exists on-chain here, so a write failure is a warning, not a hard error.
+    const walletPath = getWalletPath();
+    let savedToWallet = false;
+    if (resolved.source === walletPath) {
+      try {
+        saveAgentWallet({
+          address: result.address,
+          embeddedWalletAddress: result.embedded,
+          smartWalletAddress: result.smartWallet,
+          did: result.did,
+          username: result.username,
+          profileUrl: result.profileUrl,
+          createdAt: new Date().toISOString(),
+        });
+        savedToWallet = true;
+      } catch (err) {
+        console.error(
+          `⚠ Created the agent but couldn't save its details to ${walletPath}: ${formatError(err)}`,
+        );
+      }
+    }
+
     track("cli_agent_create", {
       is_new_user: result.isNewUser,
       generated_wallet: resolved.generated,
+      saved_to_wallet: savedToWallet,
       dry_run: result.dryRun,
       minted_coin: Boolean(result.coin?.hash),
       minted_post: Boolean(result.post?.hash),
@@ -227,7 +261,12 @@ agentCommand
     });
 
     outputData(json, {
-      json: { ...result, walletSource: resolved.source },
+      json: {
+        ...result,
+        walletSource: resolved.source,
+        walletPath,
+        savedToWallet,
+      },
       render: () => {
         console.log(
           result.dryRun
@@ -270,7 +309,12 @@ agentCommand
         }
         if (resolved.generated) {
           console.log(
-            `\n  A new wallet was generated and saved to ${resolved.source}. Back it up — it owns this agent.`,
+            `\n  A new wallet was generated and saved to ${walletPath}. Back it up — it owns this agent.`,
+          );
+        }
+        if (savedToWallet) {
+          console.log(
+            `${resolved.generated ? "" : "\n"}  Agent identity saved to ${walletPath} — EOA, embedded + smart wallet, Privy DID, and profile.`,
           );
         }
         console.log("\n  Access token (Authorization: Bearer, ~1h):");

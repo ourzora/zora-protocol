@@ -37,10 +37,34 @@ interface Config {
   analyticsId?: string;
 }
 
+/**
+ * The full identity of an agent created by `zora agent create`. Persisted under
+ * the `agent` key of the wallet file; its presence marks the wallet as
+ * agent-owned (see {@link isAgentWallet}).
+ */
+export interface AgentWalletInfo {
+  /** EOA address derived from the wallet `privateKey` — the agent's owner key. */
+  address: Address;
+  /** Privy embedded wallet address provisioned during onboarding. */
+  embeddedWalletAddress: Address;
+  /** Smart wallet (account) address that holds the agent's coins and posts. */
+  smartWalletAddress: Address;
+  /** Privy DID for the agent's account. */
+  did: string;
+  /** Zora profile handle (without the leading `@`). */
+  username: string;
+  /** Public Zora profile URL. */
+  profileUrl: string;
+  /** ISO-8601 timestamp recorded when the agent was created. */
+  createdAt: string;
+}
+
 interface Wallet {
   version: number;
   privateKey: string;
   smartWalletAddress?: Address;
+  /** Present when this wallet was created by `zora agent create`. */
+  agent?: AgentWalletInfo;
 }
 
 function assertVersion(
@@ -125,7 +149,32 @@ function readWallet(): Wallet | undefined {
   ) {
     throw new Error(`${WALLET_FILE}: invalid "smartWalletAddress" field`);
   }
+  if (obj.agent !== undefined) {
+    assertValidAgentInfo(obj.agent, WALLET_FILE);
+  }
   return parsed as Wallet;
+}
+
+function assertValidAgentInfo(value: unknown, filePath: string): void {
+  if (typeof value !== "object" || value === null) {
+    throw new Error(`${filePath}: invalid "agent" field — expected an object`);
+  }
+  const agent = value as Record<string, unknown>;
+  for (const field of [
+    "address",
+    "embeddedWalletAddress",
+    "smartWalletAddress",
+  ] as const) {
+    const addr = agent[field];
+    if (typeof addr !== "string" || !isAddress(addr)) {
+      throw new Error(`${filePath}: invalid "agent.${field}" field`);
+    }
+  }
+  for (const field of ["did", "username", "profileUrl", "createdAt"] as const) {
+    if (typeof agent[field] !== "string" || !agent[field]) {
+      throw new Error(`${filePath}: missing or invalid "agent.${field}" field`);
+    }
+  }
 }
 
 function writeWallet(wallet: Partial<Omit<Wallet, "version">>): void {
@@ -200,6 +249,27 @@ export function getSmartWalletAddress(): Address | undefined {
 
 export function saveSmartWalletAddress(smartWalletAddress: Address): void {
   writeWallet({ smartWalletAddress });
+}
+
+/** Returns the agent identity if this wallet was created by `zora agent create`. */
+export function getAgentWallet(): AgentWalletInfo | undefined {
+  return readWallet()?.agent;
+}
+
+/** True when the wallet file records an agent identity. */
+export function isAgentWallet(): boolean {
+  return getAgentWallet() !== undefined;
+}
+
+/**
+ * Persist the full identity created by `zora agent create`. Records the agent
+ * metadata under the `agent` key and mirrors the smart wallet address to the
+ * top-level field so the trading commands resolve it automatically (see
+ * {@link getSmartWalletAddress}). Merges into any existing wallet file, leaving
+ * the stored private key untouched.
+ */
+export function saveAgentWallet(agent: AgentWalletInfo): void {
+  writeWallet({ smartWalletAddress: agent.smartWalletAddress, agent });
 }
 
 export function getWalletPath(): string {

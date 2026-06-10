@@ -257,3 +257,100 @@ describe("getWalletPath", () => {
     );
   });
 });
+
+const AGENT_INFO = {
+  address: "0xabc0000000000000000000000000000000000001",
+  embeddedWalletAddress: "0xeee0000000000000000000000000000000000001",
+  smartWalletAddress: "0xd1373e4119dd2c4c23f11f9cdc97a464790acbc8",
+  did: "did:privy:test123",
+  username: "keen_cedar_9807",
+  profileUrl: "https://zora.co/@keen_cedar_9807",
+  createdAt: "2026-06-10T00:00:00.000Z",
+} as const;
+
+describe("saveAgentWallet / getAgentWallet / isAgentWallet", () => {
+  it("reports no agent identity when no wallet file exists", async () => {
+    const { getAgentWallet, isAgentWallet } = await loadConfig();
+    expect(getAgentWallet()).toBeUndefined();
+    expect(isAgentWallet()).toBe(false);
+  });
+
+  it("reports no agent identity for a key-only wallet", async () => {
+    const { savePrivateKey, getAgentWallet, isAgentWallet } =
+      await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    expect(getAgentWallet()).toBeUndefined();
+    expect(isAgentWallet()).toBe(false);
+  });
+
+  it("saves and retrieves the full agent identity", async () => {
+    const { savePrivateKey, saveAgentWallet, getAgentWallet, isAgentWallet } =
+      await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    saveAgentWallet(AGENT_INFO);
+    expect(getAgentWallet()).toEqual(AGENT_INFO);
+    expect(isAgentWallet()).toBe(true);
+  });
+
+  it("mirrors the smart wallet address to the top-level field", async () => {
+    const { savePrivateKey, saveAgentWallet, getSmartWalletAddress } =
+      await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    saveAgentWallet(AGENT_INFO);
+    expect(getSmartWalletAddress()).toBe(AGENT_INFO.smartWalletAddress);
+  });
+
+  it("preserves an existing private key when saving the identity", async () => {
+    const { savePrivateKey, saveAgentWallet, getPrivateKey } =
+      await loadConfig();
+    const key = "0x" + "a".repeat(64);
+    savePrivateKey(key);
+    saveAgentWallet(AGENT_INFO);
+    expect(getPrivateKey()).toBe(key);
+  });
+
+  it("writes version 1, the agent block, and sets file permissions to 0600", async () => {
+    const { savePrivateKey, saveAgentWallet, getAgentWallet, getWalletPath } =
+      await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    saveAgentWallet(AGENT_INFO);
+    const content = JSON.parse(readFileSync(getWalletPath(), "utf-8"));
+    expect(content.version).toBe(1);
+    expect(content.agent).toEqual(AGENT_INFO);
+    expect(statSync(getWalletPath()).mode & 0o777).toBe(0o600);
+    // the written file round-trips through readWallet() without throwing
+    expect(getAgentWallet()).toEqual(AGENT_INFO);
+  });
+
+  it("throws when the agent block has an invalid address", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({
+        version: 1,
+        privateKey: "0x" + "a".repeat(64),
+        agent: { ...AGENT_INFO, smartWalletAddress: "not-an-address" },
+      }),
+    );
+    const { getAgentWallet } = await loadConfig();
+    expect(() => getAgentWallet()).toThrow(
+      /invalid "agent.smartWalletAddress"/,
+    );
+  });
+
+  it("throws when the agent block is missing a required string field", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({
+        version: 1,
+        privateKey: "0x" + "a".repeat(64),
+        agent: { ...AGENT_INFO, did: undefined },
+      }),
+    );
+    const { getAgentWallet } = await loadConfig();
+    expect(() => getAgentWallet()).toThrow(/missing or invalid "agent.did"/);
+  });
+});
