@@ -9,6 +9,13 @@ import {
   saveAgentWallet,
 } from "../lib/config.js";
 import { generatePrivateKey } from "viem/accounts";
+import {
+  createPrivyAccount,
+  sendEmailCode,
+  linkEmailWithCode,
+  hasLinkedEmail,
+} from "../lib/privy.js";
+import { inputOrFail } from "../lib/prompt.js";
 
 vi.mock("../lib/agent/onboard.js", () => ({ onboardAgent: vi.fn() }));
 
@@ -16,7 +23,13 @@ vi.mock("../lib/privy.js", () => ({
   ZORA_PRIVY_APP_ID: "test-app-id",
   DEFAULT_SIWE_ORIGIN: "https://zora.com",
   DEFAULT_SIWE_CHAIN_ID: 8453,
+  createPrivyAccount: vi.fn(),
+  sendEmailCode: vi.fn(),
+  linkEmailWithCode: vi.fn(),
+  hasLinkedEmail: vi.fn(),
 }));
+
+vi.mock("../lib/prompt.js", () => ({ inputOrFail: vi.fn() }));
 
 vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
@@ -331,5 +344,181 @@ describe("zora agent create", () => {
     );
     expect(parsed.savedToWallet).toBe(false);
     errorSpy.mockRestore();
+  });
+});
+
+describe("zora agent connect-email", () => {
+  const PRIVY_ACCOUNT = {
+    address: "0xAbC0000000000000000000000000000000000001",
+    did: "did:privy:test123",
+    accessToken: "header.payload.signature",
+    isNewUser: false,
+    linkedAccounts: [],
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.ZORA_PRIVATE_KEY;
+    vi.mocked(getPrivateKey).mockReturnValue(SAVED_PK);
+    vi.mocked(createPrivyAccount).mockResolvedValue(PRIVY_ACCOUNT);
+    vi.mocked(hasLinkedEmail).mockReturnValue(false);
+    vi.mocked(sendEmailCode).mockResolvedValue(undefined);
+    vi.mocked(inputOrFail).mockResolvedValue("123456");
+    vi.mocked(linkEmailWithCode).mockResolvedValue({
+      email: "a@b.com",
+      linkedAccounts: [{ type: "email", address: "a@b.com" }],
+    });
+  });
+
+  it("signs in, sends a code, links the email, and outputs JSON", async () => {
+    const log = captureLog();
+    await runAgent(["connect-email", "--email", "a@b.com", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+
+    expect(createPrivyAccount).toHaveBeenCalledWith(
+      expect.objectContaining({
+        privateKey: SAVED_PK,
+        appId: "test-app-id",
+        origin: "https://zora.com",
+        chainId: 8453,
+      }),
+    );
+    expect(sendEmailCode).toHaveBeenCalledWith(
+      expect.objectContaining({
+        accessToken: PRIVY_ACCOUNT.accessToken,
+        email: "a@b.com",
+      }),
+    );
+    // Only the code is prompted when --email is supplied.
+    expect(inputOrFail).toHaveBeenCalledTimes(1);
+    expect(linkEmailWithCode).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "a@b.com", code: "123456" }),
+    );
+    expect(parsed).toMatchObject({
+      email: "a@b.com",
+      did: PRIVY_ACCOUNT.did,
+      address: PRIVY_ACCOUNT.address,
+      alreadyLinked: false,
+      walletSource: "/home/u/.config/zora/wallet.json",
+    });
+  });
+
+  it("prompts for the email when --email is omitted, before sending the code", async () => {
+    vi.mocked(inputOrFail)
+      .mockResolvedValueOnce("a@b.com") // email prompt
+      .mockResolvedValueOnce("123456"); // code prompt
+    await runAgent(["connect-email", "--json"]);
+    expect(inputOrFail).toHaveBeenCalledTimes(2);
+    // sendEmailCode received the prompted address, so the prompt ran first.
+    expect(sendEmailCode).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "a@b.com" }),
+    );
+    expect(linkEmailWithCode).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "a@b.com", code: "123456" }),
+    );
+  });
+
+  it("short-circuits when the email is already linked", async () => {
+    vi.mocked(hasLinkedEmail).mockReturnValue(true);
+    const log = captureLog();
+    await runAgent(["connect-email", "--email", "a@b.com", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(sendEmailCode).not.toHaveBeenCalled();
+    expect(linkEmailWithCode).not.toHaveBeenCalled();
+    expect(parsed).toMatchObject({
+      email: "a@b.com",
+      alreadyLinked: true,
+      walletSource: "/home/u/.config/zora/wallet.json",
+    });
+  });
+
+  it("fails before sending a code when --yes is set without --email", async () => {
+    // inputOrFail is the real non-interactive guard; simulate its exit here.
+    vi.mocked(inputOrFail).mockImplementation(() => {
+      throw new Error("process.exit(1)");
+    });
+    await expect(runAgent(["connect-email", "--yes"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(createPrivyAccount).toHaveBeenCalled();
+    expect(sendEmailCode).not.toHaveBeenCalled();
+  });
+
+  it("fails before sending a code when --yes is set with --email (not yet linked)", async () => {
+    await expect(
+      runAgent(["connect-email", "--email", "a@b.com", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(createPrivyAccount).toHaveBeenCalled();
+    // No OTP is sent and no code prompt is shown — we bail before step 4.
+    expect(sendEmailCode).not.toHaveBeenCalled();
+    expect(inputOrFail).not.toHaveBeenCalled();
+  });
+
+  it("still short-circuits with --yes when the email is already linked", async () => {
+    vi.mocked(hasLinkedEmail).mockReturnValue(true);
+    const log = captureLog();
+    await runAgent(["connect-email", "--email", "a@b.com", "--yes", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(sendEmailCode).not.toHaveBeenCalled();
+    expect(parsed).toMatchObject({ alreadyLinked: true });
+  });
+
+  it("rejects an invalid --email before signing in", async () => {
+    await expect(
+      runAgent(["connect-email", "--email", "not-an-email"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(createPrivyAccount).not.toHaveBeenCalled();
+  });
+
+  it("rejects an invalid --chain-id", async () => {
+    await expect(
+      runAgent(["connect-email", "--email", "a@b.com", "--chain-id", "abc"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(createPrivyAccount).not.toHaveBeenCalled();
+  });
+
+  it("exits when Privy sign-in fails", async () => {
+    vi.mocked(createPrivyAccount).mockRejectedValue(new Error("network"));
+    await expect(
+      runAgent(["connect-email", "--email", "a@b.com"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(sendEmailCode).not.toHaveBeenCalled();
+  });
+
+  it("exits when sending the code fails", async () => {
+    vi.mocked(sendEmailCode).mockRejectedValue(new Error("boom"));
+    await expect(
+      runAgent(["connect-email", "--email", "a@b.com"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(linkEmailWithCode).not.toHaveBeenCalled();
+  });
+
+  it("exits when no code is entered", async () => {
+    vi.mocked(inputOrFail).mockResolvedValue("   ");
+    await expect(
+      runAgent(["connect-email", "--email", "a@b.com"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(linkEmailWithCode).not.toHaveBeenCalled();
+  });
+
+  it("exits when linking fails (wrong or expired code)", async () => {
+    vi.mocked(linkEmailWithCode).mockRejectedValue(new Error("bad code"));
+    await expect(
+      runAgent(["connect-email", "--email", "a@b.com"]),
+    ).rejects.toThrow("process.exit(1)");
+  });
+
+  it("renders a human-readable summary without --json", async () => {
+    const log = captureLog();
+    await runAgent(["connect-email", "--email", "a@b.com"]);
+    const output = log.output();
+    log.restore();
+    expect(output).toContain("Email linked");
+    expect(output).toContain("a@b.com");
+    expect(output).toContain(PRIVY_ACCOUNT.did);
+    expect(output).not.toContain(PRIVY_ACCOUNT.accessToken);
   });
 });

@@ -8,7 +8,12 @@ import {
   saveAgentWallet,
   getWalletPath,
 } from "../lib/config.js";
-import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
+import {
+  getJson,
+  getYes,
+  outputData,
+  outputErrorAndExit,
+} from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 import { formatError } from "../lib/errors.js";
 import {
@@ -16,12 +21,17 @@ import {
   DEFAULT_SIWE_ORIGIN,
   DEFAULT_SIWE_CHAIN_ID,
   createPrivyAccount,
+  sendEmailCode,
+  linkEmailWithCode,
+  hasLinkedEmail,
 } from "../lib/privy.js";
+import { inputOrFail } from "../lib/prompt.js";
 import { onboardAgent } from "../lib/agent/onboard.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
 import { ipfsUpload } from "../lib/agent/zora-client.js";
 
 const PRIVATE_KEY_RE = /^(0x)?[0-9a-fA-F]{64}$/;
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const normalizeKey = (key: string): `0x${string}` =>
   (key.startsWith("0x") ? key : `0x${key}`) as `0x${string}`;
 
@@ -340,6 +350,199 @@ agentCommand
         }
         console.log("\n  Access token (Authorization: Bearer, ~1h):");
         console.log(`  ${result.accessToken}`);
+      },
+    });
+  });
+
+agentCommand
+  .command("connect-email")
+  .description(
+    "Link an email to your agent's Privy account via an emailed one-time code. " +
+      "Signs in with your EOA (Sign-In-With-Ethereum), sends a code to the email, " +
+      "and attaches it to the account once you enter the code.",
+  )
+  .option("--email <addr>", "Email to link (prompted if omitted)")
+  .option(
+    "--private-key <key>",
+    "EOA private key to sign in with (default: ZORA_PRIVATE_KEY, then your saved wallet, else a new one is generated)",
+  )
+  .option("--app-id <id>", "Privy app id", ZORA_PRIVY_APP_ID)
+  .option("--origin <url>", "SIWE origin", DEFAULT_SIWE_ORIGIN)
+  .option(
+    "--chain-id <id>",
+    "EVM chain id for SIWE",
+    String(DEFAULT_SIWE_CHAIN_ID),
+  )
+  .option(
+    "--yes",
+    "Skip interactive prompts — this command needs the emailed code, so it will error",
+  )
+  .action(async function (
+    this: Command,
+    options: {
+      email?: string;
+      privateKey?: string;
+      appId: string;
+      origin: string;
+      chainId: string;
+      yes?: boolean;
+    },
+  ) {
+    const json = getJson(this);
+    const nonInteractive = getYes(this);
+
+    const chainId = Number(options.chainId);
+    if (!Number.isInteger(chainId) || chainId <= 0) {
+      return outputErrorAndExit(json, `Invalid --chain-id: ${options.chainId}`);
+    }
+
+    // Validate a passed --email before doing any network work.
+    let email = options.email?.trim();
+    if (email !== undefined && !EMAIL_RE.test(email)) {
+      return outputErrorAndExit(
+        json,
+        `--email isn't a valid email address: ${options.email}`,
+      );
+    }
+
+    const resolved = resolveAgentKey(json, options.privateKey);
+
+    // 1. Sign in to Privy with the EOA (reuses the saved wallet) to get a session.
+    let account;
+    try {
+      account = await createPrivyAccount({
+        privateKey: resolved.key,
+        appId: options.appId,
+        origin: options.origin,
+        chainId,
+      });
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Could not sign in to Privy with your wallet: ${formatError(err)}`,
+        "Check your network connection and try again.",
+      );
+    }
+
+    // 2. The target email is needed before the already-linked check and the
+    //    send, so prompt for it now if it wasn't passed.
+    if (!email) {
+      email = (
+        await inputOrFail(json, { message: "Email to link:" }, nonInteractive)
+      ).trim();
+      if (!EMAIL_RE.test(email)) {
+        return outputErrorAndExit(json, "That isn't a valid email address.");
+      }
+    }
+
+    // 3. Already linked? Nothing to send.
+    if (hasLinkedEmail(account.linkedAccounts, email)) {
+      track("cli_agent_connect_email", {
+        already_linked: true,
+        generated_wallet: resolved.generated,
+        output_format: json ? "json" : "text",
+      });
+      return outputData(json, {
+        json: {
+          email,
+          did: account.did,
+          address: account.address,
+          alreadyLinked: true,
+          linkedAccounts: account.linkedAccounts,
+          walletSource: resolved.source,
+        },
+        render: () => {
+          console.log(`\n✓ ${email} is already linked to this account.`);
+          console.log(`  Privy DID: ${account.did}`);
+        },
+      });
+    }
+
+    // The emailed code must be entered interactively, so fail BEFORE sending an
+    // OTP the user couldn't complete. (The already-linked path above needs no
+    // code, so it still works non-interactively.)
+    if (nonInteractive) {
+      return outputErrorAndExit(
+        json,
+        "This command requires interactive input. Remove --yes to proceed.",
+        "Run without --yes so you can enter the emailed code.",
+      );
+    }
+
+    // 4. Send the one-time code to the email.
+    try {
+      await sendEmailCode({
+        accessToken: account.accessToken,
+        email,
+        appId: options.appId,
+        origin: options.origin,
+        cookie: account.cookie,
+      });
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Could not send a code to ${email}: ${formatError(err)}`,
+        "Check the address and try again in a moment.",
+      );
+    }
+    if (!json) console.log(`\n• Sent a code to ${email}. Check your inbox.`);
+
+    // 5. Prompt for the code from the email.
+    const code = (
+      await inputOrFail(json, { message: "Enter the code:" }, nonInteractive)
+    ).trim();
+    if (!code) {
+      return outputErrorAndExit(
+        json,
+        "No code entered.",
+        "Re-run `zora agent connect-email` to request a new code.",
+      );
+    }
+
+    // 6. Verify the code and link the email to the account.
+    let result;
+    try {
+      result = await linkEmailWithCode({
+        accessToken: account.accessToken,
+        email,
+        code,
+        appId: options.appId,
+        origin: options.origin,
+        cookie: account.cookie,
+      });
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Could not link ${email}: ${formatError(err)}`,
+        "The code may be wrong or expired, or the email may belong to another account. Re-run `zora agent connect-email` to try again.",
+      );
+    }
+
+    track("cli_agent_connect_email", {
+      already_linked: false,
+      generated_wallet: resolved.generated,
+      output_format: json ? "json" : "text",
+    });
+
+    outputData(json, {
+      json: {
+        email: result.email,
+        did: account.did,
+        address: account.address,
+        alreadyLinked: false,
+        linkedAccounts: result.linkedAccounts,
+        walletSource: resolved.source,
+      },
+      render: () => {
+        console.log("\n✓ Email linked");
+        console.log(`  Email:        ${result.email}`);
+        console.log(`  Wallet (EOA): ${account.address}`);
+        console.log(`  Privy DID:    ${account.did}`);
+        if (account.isNewUser) {
+          console.log(
+            "\n  A new Privy account was created for this wallet, with the email linked to it.",
+          );
+        }
       },
     });
   });

@@ -34,6 +34,7 @@
     "@inkjs/ui": "^2.0.0",
     "@inquirer/confirm": "^6.0.8",
     "@inquirer/core": "^11.1.5",
+    "@inquirer/input": "^5.1.2",
     "@inquirer/password": "^5.0.8",
     "@inquirer/select": "^5.1.0",
     "@zoralabs/coins-sdk": "workspace:*",

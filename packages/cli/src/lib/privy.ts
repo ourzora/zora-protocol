@@ -67,6 +67,12 @@ export interface PrivyAccount {
   isNewUser: boolean;
   /** The Privy user's linked accounts (wallets, etc.). */
   linkedAccounts: PrivyLinkedAccount[];
+  /**
+   * The session `Cookie` header value from the SIWE handshake. Forward it to
+   * Privy's authenticated write endpoints (e.g. linking an email), which
+   * authorize via these cookies rather than the bearer token alone.
+   */
+  cookie?: string;
 }
 
 interface PrivyPostResult {
@@ -74,6 +80,115 @@ interface PrivyPostResult {
   status: number;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   json: any;
+  /** Raw `Set-Cookie` values Privy returned (its session cookies). */
+  setCookies: string[];
+}
+
+interface PrivyAuthPostOptions {
+  /** Privy app id, sent as the `privy-app-id` header. */
+  appId: string;
+  /** Origin the request is scoped to (an allowed origin on the app). */
+  origin: string;
+  /** Privy auth API base. */
+  authBase: string;
+  /**
+   * When set, sent as `Authorization: Bearer <accessToken>` — required for
+   * calls that act on the authenticated user (e.g. linking an email).
+   */
+  accessToken?: string;
+  /**
+   * When set, sent as the `Cookie` header. Privy's authenticated write
+   * endpoints (e.g. `passwordless/link`) authorize via the session cookies set
+   * by `siwe/authenticate`; a headless client must forward them itself (the
+   * `Authorization` bearer alone is not accepted there).
+   */
+  cookie?: string;
+}
+
+/**
+ * POST JSON to an `auth.privy.io` endpoint with the headers Privy's WAF
+ * expects (a browser User-Agent, the app id, and the scoped origin), plus an
+ * optional bearer token and session cookie. Mirrors the Privy browser SDK's
+ * internal fetch, including the session cookies a browser sends automatically.
+ */
+async function privyAuthPost(
+  path: string,
+  body: unknown,
+  opts: PrivyAuthPostOptions,
+): Promise<PrivyPostResult> {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+    Accept: "application/json",
+    "privy-app-id": opts.appId,
+    origin: opts.origin,
+    "User-Agent": BROWSER_USER_AGENT,
+  };
+  if (opts.accessToken) {
+    headers.Authorization = `Bearer ${opts.accessToken}`;
+  }
+  if (opts.cookie) {
+    headers.Cookie = opts.cookie;
+  }
+  const res = await fetch(`${opts.authBase}${path}`, {
+    method: "POST",
+    headers,
+    body: JSON.stringify(body),
+  });
+  const json = await res.json().catch(() => null);
+  return {
+    ok: res.ok,
+    status: res.status,
+    json,
+    setCookies: readSetCookies(res),
+  };
+}
+
+/** Read `Set-Cookie` values off a fetch Response, tolerating test mocks. */
+function readSetCookies(res: Response): string[] {
+  const headers = res.headers as
+    | (Headers & { getSetCookie?: () => string[] })
+    | undefined;
+  if (!headers) return [];
+  if (typeof headers.getSetCookie === "function") return headers.getSetCookie();
+  const single = headers.get?.("set-cookie");
+  return single ? [single] : [];
+}
+
+/**
+ * Fold `Set-Cookie` values into a `Cookie` header string (`name=value; ...`),
+ * starting from any existing jar. Only each cookie's `name=value` is kept;
+ * attributes (`Path`, `HttpOnly`, …) are dropped, as a client must.
+ */
+function mergeCookies(
+  existing: string | undefined,
+  setCookies: string[],
+): string | undefined {
+  const jar = new Map<string, string>();
+  for (const pair of existing?.split("; ") ?? []) {
+    const eq = pair.indexOf("=");
+    if (eq > 0) jar.set(pair.slice(0, eq), pair.slice(eq + 1));
+  }
+  for (const sc of setCookies) {
+    const nameValue = sc.split(";", 1)[0];
+    const eq = nameValue.indexOf("=");
+    if (eq > 0) {
+      jar.set(nameValue.slice(0, eq).trim(), nameValue.slice(eq + 1).trim());
+    }
+  }
+  if (jar.size === 0) return existing;
+  return Array.from(jar, ([k, v]) => `${k}=${v}`).join("; ");
+}
+
+/** Append Privy's response body (its error message) to a failure message. */
+function privyErrorDetail(json: unknown): string {
+  if (json && typeof json === "object") {
+    const o = json as Record<string, unknown>;
+    const msg = o.error ?? o.message ?? o.code;
+    if (typeof msg === "string" && msg) return `: ${msg}`;
+    const serialized = JSON.stringify(json);
+    if (serialized && serialized !== "{}") return `: ${serialized}`;
+  }
+  return "";
 }
 
 /**
@@ -103,30 +218,19 @@ export async function createPrivyAccount(
 
   const account = privateKeyToAccount(privateKey);
   const domain = new URL(origin).host;
-  const headers = {
-    "Content-Type": "application/json",
-    "privy-app-id": appId,
-    origin,
-    "User-Agent": BROWSER_USER_AGENT,
-  };
-
-  const post = async (
-    path: string,
-    body: unknown,
-  ): Promise<PrivyPostResult> => {
-    const res = await fetch(`${authBase}${path}`, {
-      method: "POST",
-      headers,
-      body: JSON.stringify(body),
-    });
-    const json = await res.json().catch(() => null);
-    return { ok: res.ok, status: res.status, json };
-  };
+  // Accumulate Privy's session cookies across the handshake so authenticated
+  // write endpoints (e.g. passwordless/link) can be called afterward.
+  let cookie: string | undefined;
+  const post = (path: string, body: unknown) =>
+    privyAuthPost(path, body, { appId, origin, authBase, cookie });
 
   const init = await post("/api/v1/siwe/init", { address: account.address });
   if (!init.ok || !init.json?.nonce) {
-    throw new Error(`Privy siwe/init failed (HTTP ${init.status}).`);
+    throw new Error(
+      `Privy siwe/init failed (HTTP ${init.status})${privyErrorDetail(init.json)}.`,
+    );
   }
+  cookie = mergeCookies(cookie, init.setCookies);
 
   const message = createSiweMessage({
     address: account.address,
@@ -152,8 +256,11 @@ export async function createPrivyAccount(
     mode: "login-or-sign-up",
   });
   if (!auth.ok || !auth.json?.token || !auth.json?.user?.id) {
-    throw new Error(`Privy siwe/authenticate failed (HTTP ${auth.status}).`);
+    throw new Error(
+      `Privy siwe/authenticate failed (HTTP ${auth.status})${privyErrorDetail(auth.json)}.`,
+    );
   }
+  cookie = mergeCookies(cookie, auth.setCookies);
 
   return {
     address: account.address,
@@ -163,6 +270,7 @@ export async function createPrivyAccount(
     isNewUser: Boolean(auth.json.is_new_user),
     linkedAccounts: (auth.json.user.linked_accounts ??
       []) as PrivyLinkedAccount[],
+    cookie,
   };
 }
 
@@ -184,4 +292,127 @@ export function findEmbeddedWallet(
   // fail later inside viem's on-chain calls, where the error is far less clear.
   if (!address?.startsWith("0x")) return undefined;
   return address as `0x${string}`;
+}
+
+export interface SendEmailCodeOptions {
+  /** Privy session access token from {@link createPrivyAccount}. */
+  accessToken: string;
+  /** Email address to send the one-time code to. */
+  email: string;
+  /** Privy app id. Defaults to {@link ZORA_PRIVY_APP_ID}. */
+  appId?: string;
+  /** Origin the request is scoped to. Defaults to {@link DEFAULT_SIWE_ORIGIN}. */
+  origin?: string;
+  /** Privy auth API base. Override only for testing. */
+  authBase?: string;
+  /** Session cookie from {@link createPrivyAccount} (Privy's authenticated session). */
+  cookie?: string;
+}
+
+/**
+ * Send a one-time code to {@link SendEmailCodeOptions.email} via Privy's
+ * passwordless flow, so it can then be attached to the authenticated user with
+ * {@link linkEmailWithCode}. CAPTCHA is disabled on the Zora app, so no captcha
+ * `token` is sent.
+ *
+ * @throws if Privy rejects the request (non-2xx).
+ */
+export async function sendEmailCode(opts: SendEmailCodeOptions): Promise<void> {
+  const {
+    accessToken,
+    email,
+    appId = ZORA_PRIVY_APP_ID,
+    origin = DEFAULT_SIWE_ORIGIN,
+    authBase = PRIVY_AUTH_BASE,
+    cookie,
+  } = opts;
+
+  const res = await privyAuthPost(
+    "/api/v1/passwordless/init",
+    { email },
+    { appId, origin, authBase, accessToken, cookie },
+  );
+  if (!res.ok) {
+    throw new Error(
+      `Privy passwordless/init failed (HTTP ${res.status})${privyErrorDetail(res.json)}.`,
+    );
+  }
+}
+
+export interface LinkEmailWithCodeOptions {
+  /** Privy session access token for the user the email is linked to. */
+  accessToken: string;
+  /** Email address being linked (the one the code was sent to). */
+  email: string;
+  /** The one-time code from the email. */
+  code: string;
+  /** Privy app id. Defaults to {@link ZORA_PRIVY_APP_ID}. */
+  appId?: string;
+  /** Origin the request is scoped to. Defaults to {@link DEFAULT_SIWE_ORIGIN}. */
+  origin?: string;
+  /** Privy auth API base. Override only for testing. */
+  authBase?: string;
+  /** Session cookie from {@link createPrivyAccount} (Privy's authenticated session). */
+  cookie?: string;
+}
+
+export interface LinkEmailResult {
+  /** The email now linked to the user (as recorded by Privy). */
+  email: string;
+  /** The user's linked accounts after the email was attached. */
+  linkedAccounts: PrivyLinkedAccount[];
+}
+
+/**
+ * Verify {@link LinkEmailWithCodeOptions.code} and attach the email to the
+ * Privy user identified by the access token — linking it to the existing
+ * account rather than logging in as a new user.
+ *
+ * @throws if the code is wrong/expired, the email belongs to another user, or
+ *   Privy otherwise rejects the request (non-2xx).
+ */
+export async function linkEmailWithCode(
+  opts: LinkEmailWithCodeOptions,
+): Promise<LinkEmailResult> {
+  const {
+    accessToken,
+    email,
+    code,
+    appId = ZORA_PRIVY_APP_ID,
+    origin = DEFAULT_SIWE_ORIGIN,
+    authBase = PRIVY_AUTH_BASE,
+    cookie,
+  } = opts;
+
+  const res = await privyAuthPost(
+    "/api/v1/passwordless/link",
+    { email, code },
+    { appId, origin, authBase, accessToken, cookie },
+  );
+  if (!res.ok || !res.json?.linked_accounts) {
+    throw new Error(
+      `Privy passwordless/link failed (HTTP ${res.status})${privyErrorDetail(res.json)}.`,
+    );
+  }
+
+  const linkedAccounts = res.json.linked_accounts as PrivyLinkedAccount[];
+  const linkedEmail =
+    linkedAccounts.find((a) => a.type === "email" && a.address)?.address ??
+    email;
+
+  return { email: linkedEmail, linkedAccounts };
+}
+
+/**
+ * Whether `email` is already linked to these accounts (case-insensitive),
+ * letting the caller skip re-sending a code for an email already on the account.
+ */
+export function hasLinkedEmail(
+  linkedAccounts: PrivyLinkedAccount[],
+  email: string,
+): boolean {
+  const target = email.trim().toLowerCase();
+  return linkedAccounts.some(
+    (a) => a.type === "email" && a.address?.toLowerCase() === target,
+  );
 }
