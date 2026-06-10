@@ -1,4 +1,6 @@
 import { Command } from "commander";
+import { readFileSync } from "node:fs";
+import { basename, extname } from "node:path";
 import { generatePrivateKey } from "viem/accounts";
 import { getPrivateKey, savePrivateKey, getWalletPath } from "../lib/config.js";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
@@ -8,8 +10,11 @@ import {
   ZORA_PRIVY_APP_ID,
   DEFAULT_SIWE_ORIGIN,
   DEFAULT_SIWE_CHAIN_ID,
+  createPrivyAccount,
 } from "../lib/privy.js";
 import { onboardAgent } from "../lib/agent/onboard.js";
+import { updateAgentProfile } from "../lib/agent/update-profile.js";
+import { ipfsUpload } from "../lib/agent/zora-client.js";
 
 const PRIVATE_KEY_RE = /^(0x)?[0-9a-fA-F]{64}$/;
 const normalizeKey = (key: string): `0x${string}` =>
@@ -26,11 +31,16 @@ interface ResolvedKey {
  *   1. --private-key flag
  *   2. ZORA_PRIVATE_KEY env var
  *   3. the saved CLI wallet (wallet.json)
- *   4. generate a fresh key and persist it
+ *   4. generate a fresh key and persist it (only when `allowGenerate`)
+ *
+ * `allowGenerate` is false for commands that act on an existing agent (e.g.
+ * `update`): minting a fresh wallet there would point at a different, empty
+ * identity, so we error out instead.
  */
 function resolveAgentKey(
   json: boolean,
   override: string | undefined,
+  { allowGenerate = true }: { allowGenerate?: boolean } = {},
 ): ResolvedKey {
   if (override !== undefined) {
     if (!PRIVATE_KEY_RE.test(override.trim())) {
@@ -91,6 +101,14 @@ function resolveAgentKey(
     };
   }
 
+  if (!allowGenerate) {
+    return outputErrorAndExit(
+      json,
+      "No agent wallet found.",
+      "Pass --private-key, set ZORA_PRIVATE_KEY, or run `zora agent create` first.",
+    );
+  }
+
   const generated = generatePrivateKey();
   try {
     savePrivateKey(generated);
@@ -101,6 +119,26 @@ function resolveAgentKey(
     );
   }
   return { key: generated, source: getWalletPath(), generated: true };
+}
+
+const AVATAR_MIME_BY_EXT: Record<string, string> = {
+  ".png": "image/png",
+  ".jpg": "image/jpeg",
+  ".jpeg": "image/jpeg",
+  ".gif": "image/gif",
+  ".webp": "image/webp",
+};
+
+/** Read a local image and upload it to IPFS, returning its `ipfs://` URI. */
+async function uploadAvatar(token: string, path: string): Promise<string> {
+  const mime = AVATAR_MIME_BY_EXT[extname(path).toLowerCase()];
+  if (!mime) {
+    throw new Error(
+      `Unsupported avatar image "${path}". Use a PNG, JPG, GIF, or WebP file.`,
+    );
+  }
+  const bytes = new Uint8Array(readFileSync(path));
+  return ipfsUpload(token, basename(path), bytes, mime);
 }
 
 export const agentCommand = new Command("agent")
@@ -237,6 +275,142 @@ agentCommand
         }
         console.log("\n  Access token (Authorization: Bearer, ~1h):");
         console.log(`  ${result.accessToken}`);
+      },
+    });
+  });
+
+agentCommand
+  .command("update")
+  .description(
+    "Update an existing agent's profile — username, bio, and/or avatar. Signs in with the agent's EOA (its Privy account) and edits that agent's Zora profile.",
+  )
+  .option(
+    "--private-key <key>",
+    "EOA private key to sign in with (default: ZORA_PRIVATE_KEY, then your saved wallet)",
+  )
+  .option("--username <name>", "New username (also updates the display name)")
+  .option("--bio <text>", 'New bio (pass "" to clear it)')
+  .option(
+    "--avatar <path>",
+    "Path to a local image (PNG/JPG/GIF/WebP) to upload as the new avatar",
+  )
+  .option("--app-id <id>", "Privy app id", ZORA_PRIVY_APP_ID)
+  .option("--origin <url>", "SIWE origin", DEFAULT_SIWE_ORIGIN)
+  .option(
+    "--chain-id <id>",
+    "EVM chain id for SIWE",
+    String(DEFAULT_SIWE_CHAIN_ID),
+  )
+  .action(async function (
+    this: Command,
+    options: {
+      privateKey?: string;
+      username?: string;
+      bio?: string;
+      avatar?: string;
+      appId: string;
+      origin: string;
+      chainId: string;
+    },
+  ) {
+    const json = getJson(this);
+
+    // Commander leaves an omitted option `undefined`; an explicit empty value
+    // (e.g. `--bio ""`) comes through as "". We forward only provided fields, so
+    // omitted = unchanged and "" = clear (server-side), and require at least one.
+    if (
+      options.username === undefined &&
+      options.bio === undefined &&
+      options.avatar === undefined
+    ) {
+      return outputErrorAndExit(
+        json,
+        "Nothing to update.",
+        "Pass at least one of --username, --bio, or --avatar.",
+      );
+    }
+
+    const chainId = Number(options.chainId);
+    if (!Number.isInteger(chainId) || chainId <= 0) {
+      return outputErrorAndExit(json, `Invalid --chain-id: ${options.chainId}`);
+    }
+
+    const resolved = resolveAgentKey(json, options.privateKey, {
+      allowGenerate: false,
+    });
+
+    let privy;
+    try {
+      privy = await createPrivyAccount({
+        privateKey: resolved.key,
+        appId: options.appId,
+        origin: options.origin,
+        chainId,
+      });
+    } catch (err) {
+      return outputErrorAndExit(json, `Sign-in failed: ${formatError(err)}`);
+    }
+
+    let avatarUri: string | undefined;
+    if (options.avatar !== undefined) {
+      if (options.avatar === "") {
+        // An empty value clears the avatar server-side — nothing to upload.
+        avatarUri = "";
+      } else {
+        try {
+          avatarUri = await uploadAvatar(privy.accessToken, options.avatar);
+        } catch (err) {
+          return outputErrorAndExit(
+            json,
+            `Avatar upload failed: ${formatError(err)}`,
+          );
+        }
+      }
+    }
+
+    let profile;
+    try {
+      profile = await updateAgentProfile(privy.accessToken, {
+        username: options.username,
+        bio: options.bio,
+        avatarUri,
+      });
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Profile update failed: ${formatError(err)}`,
+        "Check the new username isn't taken and the EOA owns an agent account.",
+      );
+    }
+
+    track("cli_agent_update", {
+      updated_username: options.username !== undefined,
+      updated_bio: options.bio !== undefined,
+      updated_avatar: options.avatar !== undefined,
+      output_format: json ? "json" : "text",
+    });
+
+    const profileUrl = `https://zora.co/@${profile.username}`;
+    outputData(json, {
+      json: {
+        username: profile.username,
+        avatarUri: profile.avatarUri,
+        profileUrl,
+      },
+      render: () => {
+        console.log("\n✓ Profile updated");
+        console.log(`  Profile: @${profile.username}`);
+        if (options.bio !== undefined) {
+          console.log(
+            `  Bio:     ${options.bio === "" ? "(cleared)" : options.bio}`,
+          );
+        }
+        if (options.avatar !== undefined) {
+          console.log(
+            `  Avatar:  ${options.avatar === "" ? "(cleared)" : profile.avatarUri}`,
+          );
+        }
+        console.log(`\n  Link: ${profileUrl}`);
       },
     });
   });
