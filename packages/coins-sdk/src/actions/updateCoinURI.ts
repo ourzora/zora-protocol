@@ -10,6 +10,10 @@ import { BundlerClient, SmartAccount } from "viem/account-abstraction";
 import { getAttribution } from "../utils/attribution";
 import { toGenericCall, toUserOperationCalls } from "../utils/calls";
 import { GenericPublicClient } from "../utils/genericPublicClient";
+import {
+  prepareUserOperation,
+  submitUserOperation,
+} from "../utils/userOperation";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 
 export type UpdateCoinURIArgs = {
@@ -86,6 +90,11 @@ export async function updateCoinURISmartWallet(
   publicClient: GenericPublicClient,
   account?: SmartAccount,
 ) {
+  const resolvedAccount = account ?? bundlerClient.account;
+  if (!resolvedAccount) {
+    throw new Error("Account is required");
+  }
+
   validateClientNetwork(publicClient);
 
   // updateCoinURICall validates the args and assembles the contract call
@@ -93,13 +102,16 @@ export async function updateCoinURISmartWallet(
 
   const calls = toUserOperationCalls([toGenericCall(call)]);
 
-  const userOpHash = await bundlerClient.sendUserOperation({
-    account: account ?? bundlerClient.account!,
+  const userOp = await prepareUserOperation({
+    bundlerClient,
+    account: resolvedAccount,
     calls,
   });
 
-  const userOpReceipt = await bundlerClient.waitForUserOperationReceipt({
-    hash: userOpHash,
+  const userOpReceipt = await submitUserOperation({
+    bundlerClient,
+    account: resolvedAccount,
+    userOperation: userOp,
   });
 
   if (!userOpReceipt.success) {

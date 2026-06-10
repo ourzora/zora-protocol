@@ -6,6 +6,7 @@ import {
   erc20Abi,
   Hex,
   maxUint256,
+  TransactionReceipt,
   WalletClient,
 } from "viem";
 import { BundlerClient, SmartAccount } from "viem/account-abstraction";
@@ -13,6 +14,10 @@ import { base } from "viem/chains";
 import { postQuote, PostQuoteResponse } from "../client";
 import { GenericCall, toUserOperationCalls } from "../utils/calls";
 import { GenericPublicClient } from "../utils/genericPublicClient";
+import {
+  prepareUserOperation,
+  submitUserOperation,
+} from "../utils/userOperation";
 
 type TradeERC20 = {
   type: "erc20";
@@ -211,7 +216,7 @@ export async function tradeCoin({
   account?: Account | Address;
   publicClient: GenericPublicClient;
   validateTransaction?: boolean;
-}) {
+}): Promise<TransactionReceipt> {
   const quote = await createTradeCall(tradeParameters);
 
   if (!account) {
@@ -342,13 +347,16 @@ export async function tradeCoinSmartWallet({
   // Batch any required permit2 approvals + the trade into one user operation
   const calls = toUserOperationCalls([...approvalCalls, tradeCall]);
 
-  const userOpHash = await bundlerClient.sendUserOperation({
+  const userOp = await prepareUserOperation({
+    bundlerClient,
     account: resolvedAccount,
     calls,
   });
 
-  const userOpReceipt = await bundlerClient.waitForUserOperationReceipt({
-    hash: userOpHash,
+  const userOpReceipt = await submitUserOperation({
+    bundlerClient,
+    account: resolvedAccount,
+    userOperation: userOp,
   });
 
   if (!userOpReceipt.success) {
@@ -384,7 +392,7 @@ export async function createTradeCall(
   return createQuote(tradeParameters);
 }
 
-async function createQuote(
+export async function createQuote(
   tradeParameters: TradeParameters,
 ): Promise<PostQuoteResponse> {
   validateTradeParameters(tradeParameters);

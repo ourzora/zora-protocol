@@ -35,6 +35,7 @@ export {
   tradeCoin,
   tradeCoinSmartWallet,
   createTradeCall,
+  createQuote,
   validateTradeParameters,
 } from "./actions/tradeCoin";
 export type { TradeParameters } from "./actions/tradeCoin";
@@ -52,6 +53,14 @@ export type {
   ContractCall,
   SendCall,
 } from "./utils/calls";
+
+// User Operation Utils
+export {
+  prepareUserOperation,
+  submitUserOperation,
+  CoinbaseGasError,
+} from "./utils/userOperation";
+export type { PreparedUserOperation } from "./utils/userOperation";
 
 // API Read Actions
 export * from "./api/queries";
