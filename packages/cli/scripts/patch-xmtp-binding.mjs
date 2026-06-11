@@ -58,13 +58,25 @@ if (targets.length === 0) {
   process.exit(0);
 }
 
+// Resolve Apple's toolchain by absolute path so the patch still applies when run
+// inside a Nix shell (or anything else that shadows these tools on PATH) — the
+// case that left the binding broken for some contributors. `/usr/bin/{otool,
+// install_name_tool,codesign}` are Apple stubs that dispatch through the active
+// Xcode toolchain regardless of PATH. Falls back to a bare PATH lookup if the
+// system copy isn't where we expect.
+const systemTool = (name) =>
+  existsSync(`/usr/bin/${name}`) ? `/usr/bin/${name}` : name;
+const OTOOL = systemTool("otool");
+const INSTALL_NAME_TOOL = systemTool("install_name_tool");
+const CODESIGN = systemTool("codesign");
+
 const run = (cmd, args) => execFileSync(cmd, args, { encoding: "utf8" });
 
 let patched = 0;
 for (const file of targets) {
   let deps;
   try {
-    deps = run("otool", ["-L", file]);
+    deps = run(OTOOL, ["-L", file]);
   } catch (err) {
     // Xcode command line tools unavailable — warn but don't fail the build.
     log(
@@ -91,10 +103,10 @@ for (const file of targets) {
     const tmp = `${file}.patching`;
     copyFileSync(file, tmp);
     renameSync(tmp, file);
-    run("install_name_tool", ["-change", bad, SYSTEM_LIBICONV, file]);
+    run(INSTALL_NAME_TOOL, ["-change", bad, SYSTEM_LIBICONV, file]);
     // Editing load commands invalidates the signature; re-sign ad-hoc so the
     // embedded binary still loads under macOS code-signing checks.
-    run("codesign", ["-f", "-s", "-", file]);
+    run(CODESIGN, ["-f", "-s", "-", file]);
     patched += 1;
   } catch (err) {
     // Best-effort: never fail the caller (build / postinstall). On a stock Mac
