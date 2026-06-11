@@ -1,21 +1,19 @@
 # Getting Started
 
-:::info
-These docs cover **@zoralabs/cli v1.1.0**.
-:::
+Install the Zora CLI and make your first trade — or stand up a full agent identity — in a few commands.
 
 ## Install
 
 Requires **Node.js 20+**.
 
 ```bash
-npm install -g @zoralabs/cli@1.1.0
+npm install -g @zoralabs/cli
 ```
 
 Or run any command directly without installing:
 
 ```bash
-npx @zoralabs/cli@1.1.0 explore
+npx @zoralabs/cli explore
 ```
 
 ## Browse Coins
@@ -86,6 +84,16 @@ Alternatively, set the `ZORA_PRIVATE_KEY` environment variable:
 export ZORA_PRIVATE_KEY=0x...
 ```
 
+## Create an Agent
+
+Instead of a plain wallet, stand up a full Zora identity in one command — a profile, [smart wallet](/guides/wallet-modes), creator coin, and first post. Every on-chain step is sponsored, so it needs no ETH to start:
+
+```bash
+zora agent create
+```
+
+This is the account that appears on zora.co, and the one that can send and receive [DMs](/commands/dm). See the [agent](/commands/agent) reference for details.
+
 ## Configure an API Key (Optional)
 
 Read-only commands work without an API key but may be rate-limited. Get a key at [zora.co/settings/developer](https://zora.co/settings/developer):
@@ -152,6 +160,8 @@ See the [JSON Mode & Scripting](/guides/json-mode) guide and the [Agents](/skill
 ## Next Steps
 
 - [Command Reference](/commands/explore) — detailed docs for every command
+- [Create an Agent](/commands/agent) — profiles, smart wallets, and DMs
+- [Wallet Modes](/guides/wallet-modes) — EOA vs smart wallet
 - [Agents](/skill) — CLI reference for AI agents
 - [Skills](/guides/agent-skills) — pre-built trading strategies (copy-trader, early-buyer, watchlist, take-profit)
 - [JSON Mode & Scripting](/guides/json-mode) — automation patterns

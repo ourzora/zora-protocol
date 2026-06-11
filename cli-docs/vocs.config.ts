@@ -185,7 +185,6 @@ export default defineConfig({
     {
       text: "Agents",
       link: "/skill",
-      items: [{ text: "Skills", link: "/guides/agent-skills" }],
     },
     {
       text: "Commands",
@@ -226,6 +225,20 @@ export default defineConfig({
         { text: "auth", link: "/commands/auth" },
         { text: "setup", link: "/commands/setup" },
         { text: "wallet", link: "/commands/wallet" },
+        {
+          text: "agent",
+          link: "/commands/agent",
+          items: [
+            { text: "agent create", link: "/commands/agent#agent-create" },
+            {
+              text: "agent connect-email",
+              link: "/commands/agent#agent-connect-email",
+            },
+            { text: "agent update", link: "/commands/agent#agent-update" },
+          ],
+        },
+        { text: "dm", link: "/commands/dm" },
+        { text: "skills", link: "/commands/skills" },
       ],
     },
     {
@@ -234,6 +247,8 @@ export default defineConfig({
       items: [
         { text: "JSON Mode & Scripting", link: "/guides/json-mode" },
         { text: "Configuration", link: "/guides/configuration" },
+        { text: "Wallet Modes", link: "/guides/wallet-modes" },
+        { text: "Skills", link: "/guides/agent-skills" },
       ],
     },
     {

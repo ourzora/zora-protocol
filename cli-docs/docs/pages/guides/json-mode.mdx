@@ -36,7 +36,7 @@ npx @zoralabs/cli explore --json --sort trending --limit 5 | jq -r '.coins[].add
 ### Check if a coin is up in the last 24h
 
 ```bash
-change=$(npx @zoralabs/cli price-history 0x9b13358e3a02... --json --interval 24h | jq '.change')
+change=$(npx @zoralabs/cli get price-history 0x9b13358e3a02... --json --interval 24h | jq '.change')
 if (( $(echo "$change > 0" | bc -l) )); then
   echo "Coin is up ${change}%"
 fi
@@ -59,7 +59,7 @@ echo "Wallet: $addr"
 coins=$(npx @zoralabs/cli explore --json --sort trending --limit 5 | jq -r '.coins[].address')
 
 for addr in $coins; do
-  change=$(npx @zoralabs/cli price-history "$addr" --json --interval 24h | jq '.change')
+  change=$(npx @zoralabs/cli get price-history "$addr" --json --interval 24h | jq '.change')
 
   if (( $(echo "$change > 5" | bc -l) )); then
     echo "Buying $addr (up ${change}%)"

@@ -8,10 +8,11 @@ zora wallet [command]
 
 ## Subcommands
 
-| Subcommand      | Description                              |
-| --------------- | ---------------------------------------- |
-| `wallet info`   | Show wallet address and storage location |
-| `wallet export` | Print the raw private key to stdout      |
+| Subcommand         | Description                              |
+| ------------------ | ---------------------------------------- |
+| `wallet info`      | Show wallet address and storage location |
+| `wallet export`    | Print the raw private key to stdout      |
+| `wallet configure` | Create or import a wallet                |
 
 ## Examples
 
@@ -56,3 +57,15 @@ This prints the raw private key to stdout. Only use in secure environments. Neve
 ```bash
 npx @zoralabs/cli wallet export --yes
 ```
+
+### Create or import a wallet
+
+```bash
+npx @zoralabs/cli wallet configure
+```
+
+Prompts to create a new wallet or import an existing private key. Pass `--create` to generate one without prompting, or `--force` to overwrite an existing wallet.
+
+:::warning
+`--force` will overwrite the wallet at `~/.config/zora/wallet.json`. If that wallet owns a Zora agent, its smart wallet becomes unreachable — use a separate wallet file instead.
+:::

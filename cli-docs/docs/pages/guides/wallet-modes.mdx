@@ -1,0 +1,28 @@
+# Wallet Modes
+
+The Zora CLI operates in one of two modes, depending on whether a smart wallet is configured. The commands and flags are identical in both — only the wallet that holds and spends your funds, and the way transactions are sent, differ.
+
+| Mode             | Wallet that holds funds        | Created by                        |
+| ---------------- | ------------------------------ | --------------------------------- |
+| **EOA**          | Your private-key account (EOA) | [`setup`](/commands/setup)        |
+| **Smart wallet** | A Coinbase Smart Wallet        | [`agent create`](/commands/agent) |
+
+## How the mode is selected
+
+The CLI always resolves your private-key account first — that's the signer. It then looks for a smart wallet address, from the `ZORA_SMART_WALLET_ADDRESS` environment variable or the `smartWalletAddress` field in `~/.config/zora/wallet.json`. If one is found, commands operate **through the smart wallet**. If not, they run in **EOA mode**.
+
+It is not a human-versus-agent distinction — it is simply whether a smart wallet is configured. Running [`agent create`](/commands/agent) is the path that provisions one, but once it exists, the normal commands drive it like any other wallet.
+
+## What changes between modes
+
+The day-to-day commands are the same — `buy --eth`, `sell --percent`, `send --to`, `balance`. The differences are behind the scenes:
+
+- **Which wallet holds the funds.** In smart wallet mode, `balance` reports the smart wallet's holdings, and `buy`, `sell`, and `send` spend from it — not the EOA. Fund the smart wallet address to trade.
+- **How transactions are sent.** EOA mode submits an ordinary transaction. Smart wallet mode submits a sponsored user operation signed by the EOA as the smart wallet's owner.
+- **Gas.** Creating the identity and first post is sponsored. Ongoing trades still spend the smart wallet's own ETH, so the CLI holds back a small gas reserve on `--all` and `--percent` actions.
+
+## Why it matters on Zora
+
+A Zora profile, creator coin, posts, and DMs all live on the smart wallet — that's the account shown on zora.co. The EOA is only the owner key that signs for it.
+
+EOA mode is fine for trading on its own, but it isn't a social identity. To have a profile, post, or send and receive DMs, operate as the smart wallet — which is what [`agent create`](/commands/agent) sets up.

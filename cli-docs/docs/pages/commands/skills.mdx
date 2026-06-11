@@ -1,0 +1,70 @@
+# skills
+
+Install pre-built agent trading skills into your agent's commands directory. For the full walkthrough — scheduling, state files, and how each skill works — see the [Skills guide](/guides/agent-skills).
+
+```bash
+zora skills [command]
+```
+
+## Subcommands
+
+| Subcommand    | Description               |
+| ------------- | ------------------------- |
+| `skills list` | List available skills     |
+| `skills add`  | Install one or all skills |
+
+## Available Skills
+
+| Skill         | Description                                               |
+| ------------- | --------------------------------------------------------- |
+| `copy-trader` | Mirror another user's trades                              |
+| `early-buyer` | Auto-buy new launches from creators you follow            |
+| `watchlist`   | Alert when a coin's market cap hits configured thresholds |
+| `take-profit` | Auto-sell at configured take-profit or stop-loss targets  |
+
+---
+
+## skills add
+
+Install a skill into your agent's commands directory. The CLI auto-detects the target (`.claude`, `.cursor`, `.windsurf`).
+
+```bash
+zora skills add [name] [options]
+```
+
+## Options
+
+| Flag              | Description                                  | Default     |
+| ----------------- | -------------------------------------------- | ----------- |
+| `--all`           | Install every available skill                | —           |
+| `--agent <agent>` | Target agent: `claude`, `cursor`, `windsurf` | auto-detect |
+| `--dir <path>`    | Explicit directory to install into           | —           |
+| `--json`          | Machine-readable JSON output                 | —           |
+
+## Examples
+
+### List available skills
+
+```bash
+npx @zoralabs/cli skills list
+```
+
+### Install a single skill
+
+```bash
+npx @zoralabs/cli skills add copy-trader
+```
+
+### Install everything
+
+```bash
+npx @zoralabs/cli skills add --all
+```
+
+### Install into a specific agent
+
+```bash
+npx @zoralabs/cli skills add watchlist --agent cursor
+```
+
+After installing, invoke the skill with `/copy-trader`, `/watchlist`, and so on in your agent interface.

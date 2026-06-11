@@ -160,7 +160,7 @@ zora get price-history [typeOrId] [identifier] [options]
 
 | Flag                    | Description                                | Default |
 | ----------------------- | ------------------------------------------ | ------- |
-| `--interval <interval>` | Time range: `1h`, `4h`, `1d`, `1w`         | `1w`    |
+| `--interval <interval>` | Time range: `1h`, `24h`, `1w`, `1m`, `ALL` | `1w`    |
 | `--live`                | Interactive live-updating display          | default |
 | `--static`              | Static snapshot                            | —       |
 | `--refresh <seconds>`   | Auto-refresh interval in live mode (min 5) | `30`    |
@@ -188,7 +188,7 @@ npx @zoralabs/cli get price-history creator-coin jacob
 #### 24-hour chart for zora trend
 
 ```bash
-npx @zoralabs/cli get price-history trend zora --interval 1d
+npx @zoralabs/cli get price-history trend zora --interval 24h
 ```
 
 #### JSON output
