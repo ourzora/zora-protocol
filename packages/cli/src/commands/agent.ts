@@ -7,6 +7,7 @@ import {
   savePrivateKey,
   saveAgentWallet,
   getWalletPath,
+  peekAgentWallet,
 } from "../lib/config.js";
 import {
   getJson,
@@ -14,6 +15,7 @@ import {
   outputData,
   outputErrorAndExit,
 } from "../lib/output.js";
+import { confirmAgentAction } from "../lib/agent-guard.js";
 import { track } from "../lib/analytics.js";
 import { formatError } from "../lib/errors.js";
 import {
@@ -187,6 +189,10 @@ agentCommand
   )
   .option("--skip-coin", "Skip creating the creator coin")
   .option("--skip-post", "Skip publishing the first post")
+  .option(
+    "--force",
+    "Proceed even if an agent already exists on this wallet, without confirming",
+  )
   .action(async function (
     this: Command,
     options: {
@@ -198,6 +204,7 @@ agentCommand
       dryRun?: boolean;
       skipCoin?: boolean;
       skipPost?: boolean;
+      force?: boolean;
     },
   ) {
     const json = getJson(this);
@@ -208,6 +215,23 @@ agentCommand
     }
 
     const resolved = resolveAgentKey(json, options.privateKey);
+
+    // Re-running create on a wallet that already owns an agent mints ANOTHER
+    // coin + post (recovering a half-finished run is --skip-coin/--skip-post,
+    // not a re-run), so confirm first. --dry-run mints nothing, so skip it there.
+    if (!options.dryRun) {
+      const existingAgent = peekAgentWallet();
+      if (existingAgent) {
+        await confirmAgentAction({
+          json,
+          force: options.force,
+          warning:
+            `You already have an agent: @${existingAgent.username} (smart wallet ${existingAgent.smartWalletAddress}).\n` +
+            `Re-running 'agent create' mints ANOTHER creator coin and first post unless you pass --skip-coin / --skip-post.`,
+          question: `Create another coin + post for @${existingAgent.username}?`,
+        });
+      }
+    }
 
     let result;
     try {
@@ -569,6 +593,10 @@ agentCommand
     "EVM chain id for SIWE",
     String(DEFAULT_SIWE_CHAIN_ID),
   )
+  .option(
+    "--force",
+    "Skip the confirmation when changing an existing agent's username",
+  )
   .action(async function (
     this: Command,
     options: {
@@ -579,6 +607,7 @@ agentCommand
       appId: string;
       origin: string;
       chainId: string;
+      force?: boolean;
     },
   ) {
     const json = getJson(this);
@@ -606,6 +635,23 @@ agentCommand
     const resolved = resolveAgentKey(json, options.privateKey, {
       allowGenerate: false,
     });
+
+    // Changing an established agent's username rewrites its public handle (and
+    // profile URL); the old handle may then be claimed by someone else. Confirm
+    // before renaming. Bio/avatar edits are reversible, so they're not gated.
+    if (options.username !== undefined) {
+      const existingAgent = peekAgentWallet();
+      if (existingAgent && existingAgent.username !== options.username) {
+        await confirmAgentAction({
+          json,
+          force: options.force,
+          warning:
+            `This changes @${existingAgent.username}'s public username to @${options.username}.\n` +
+            `The old handle may be claimed by someone else, and links to it can break.`,
+          question: `Rename @${existingAgent.username} to @${options.username}?`,
+        });
+      }
+    }
 
     let privy;
     try {

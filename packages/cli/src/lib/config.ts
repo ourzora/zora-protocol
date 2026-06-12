@@ -214,6 +214,44 @@ function writeWallet(wallet: Partial<Omit<Wallet, "version">>): void {
   );
 }
 
+/**
+ * Reads and parses the wallet file WITHOUT the strict validation `readWallet`
+ * applies, returning `undefined` on any problem instead of throwing. Used by the
+ * destructive-action guards so they can still detect an agent even when the
+ * wallet file is otherwise malformed (e.g. a corrupt key).
+ */
+function peekWalletFile(): Record<string, unknown> | undefined {
+  if (!existsSync(WALLET_FILE)) return undefined;
+  try {
+    const parsed: unknown = JSON.parse(readFileSync(WALLET_FILE, "utf-8"));
+    return typeof parsed === "object" && parsed !== null
+      ? (parsed as Record<string, unknown>)
+      : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * Returns the recorded agent identity if one is present, reading defensively so
+ * a malformed wallet file never throws (unlike {@link getAgentWallet}). Guards
+ * that protect an agent setup use this so they fire even on a partially-corrupt
+ * file; it shape-checks only the fields those guards display.
+ */
+export function peekAgentWallet(): AgentWalletInfo | undefined {
+  const agent = peekWalletFile()?.agent as AgentWalletInfo | undefined;
+  if (
+    agent &&
+    typeof agent === "object" &&
+    typeof agent.username === "string" &&
+    typeof agent.smartWalletAddress === "string" &&
+    typeof agent.address === "string"
+  ) {
+    return agent;
+  }
+  return undefined;
+}
+
 /** Returns the env-var key if set (errors on empty), or undefined if unset. */
 export function getEnvApiKey(): string | undefined {
   const envKey = process.env.ZORA_API_KEY;
@@ -241,7 +279,30 @@ export function getPrivateKey(): string | undefined {
   return readWallet()?.privateKey;
 }
 
+const stripKeyPrefix = (key: string): string =>
+  key.trim().toLowerCase().replace(/^0x/, "");
+
 export function savePrivateKey(privateKey: string): void {
+  // If the wallet records an agent identity and the key is actually changing,
+  // that identity no longer applies — the recorded agent was owned by the OLD
+  // key. Drop it (and the mirrored smart wallet address) so the file can never
+  // describe an agent whose key it no longer holds. Replacing the key with the
+  // same value (e.g. a re-save) leaves the identity intact; a missing stored key
+  // counts as a change, so a stale agent block can't survive alongside a new key.
+  const current = peekWalletFile();
+  const currentKey =
+    typeof current?.privateKey === "string" ? current.privateKey : undefined;
+  if (
+    current?.agent &&
+    (!currentKey || stripKeyPrefix(currentKey) !== stripKeyPrefix(privateKey))
+  ) {
+    writeWallet({
+      privateKey,
+      agent: undefined,
+      smartWalletAddress: undefined,
+    });
+    return;
+  }
   writeWallet({ privateKey });
 }
 

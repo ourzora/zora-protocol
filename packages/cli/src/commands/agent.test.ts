@@ -7,8 +7,10 @@ import {
   getPrivateKey,
   savePrivateKey,
   saveAgentWallet,
+  peekAgentWallet,
 } from "../lib/config.js";
 import { generatePrivateKey } from "viem/accounts";
+import { confirmAgentAction } from "../lib/agent-guard.js";
 import {
   createPrivyAccount,
   sendEmailCode,
@@ -16,6 +18,7 @@ import {
   hasLinkedEmail,
 } from "../lib/privy.js";
 import { inputOrFail } from "../lib/prompt.js";
+import { updateAgentProfile } from "../lib/agent/update-profile.js";
 
 vi.mock("../lib/agent/onboard.js", () => ({ onboardAgent: vi.fn() }));
 
@@ -35,7 +38,16 @@ vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
   savePrivateKey: vi.fn(),
   saveAgentWallet: vi.fn(),
+  peekAgentWallet: vi.fn(),
   getWalletPath: vi.fn(() => "/home/u/.config/zora/wallet.json"),
+}));
+
+// The guard's own behavior is unit-tested in agent-guard.test.ts; here we only
+// assert the commands wire it up correctly, so stub it to a no-op (proceed).
+vi.mock("../lib/agent-guard.js", () => ({ confirmAgentAction: vi.fn() }));
+
+vi.mock("../lib/agent/update-profile.js", () => ({
+  updateAgentProfile: vi.fn(),
 }));
 
 vi.mock("../lib/analytics.js", () => ({ track: vi.fn() }));
@@ -74,6 +86,16 @@ const ONBOARD_RESULT: OnboardResult = {
     url: "https://zora.co/coin/base:0x1f6835c4996fad83c8af2afa00056adf9234fe72",
   },
 };
+
+const AGENT_INFO = {
+  address: "0xAbC0000000000000000000000000000000000001",
+  embeddedWalletAddress: "0xEeE0000000000000000000000000000000000001",
+  smartWalletAddress: "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8",
+  did: "did:privy:test123",
+  username: "keen_cedar_9807",
+  profileUrl: "https://zora.co/@keen_cedar_9807",
+  createdAt: "2026-06-10T00:00:00.000Z",
+} as const;
 
 function runAgent(args: string[]) {
   const program = createProgram(agentCommand);
@@ -344,6 +366,94 @@ describe("zora agent create", () => {
     );
     expect(parsed.savedToWallet).toBe(false);
     errorSpy.mockRestore();
+  });
+
+  describe("re-run guard (existing agent)", () => {
+    it("confirms before re-minting when the wallet already owns an agent", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+      await runAgent(["create", "--json"]);
+      expect(confirmAgentAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          question: expect.stringContaining("keen_cedar_9807"),
+        }),
+      );
+      // The guard stub proceeds, so onboarding still runs.
+      expect(onboardAgent).toHaveBeenCalled();
+    });
+
+    it("does not confirm on a first run (no existing agent)", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(undefined);
+      await runAgent(["create", "--json"]);
+      expect(confirmAgentAction).not.toHaveBeenCalled();
+    });
+
+    it("does not confirm under --dry-run (nothing is minted)", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+      await runAgent(["create", "--dry-run", "--json"]);
+      expect(confirmAgentAction).not.toHaveBeenCalled();
+    });
+
+    it("forwards --force so the guard can skip the prompt", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+      await runAgent(["create", "--force", "--json"]);
+      expect(confirmAgentAction).toHaveBeenCalledWith(
+        expect.objectContaining({ force: true }),
+      );
+    });
+  });
+});
+
+describe("zora agent update", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.ZORA_PRIVATE_KEY;
+    vi.mocked(getPrivateKey).mockReturnValue(SAVED_PK);
+    vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+    vi.mocked(createPrivyAccount).mockResolvedValue({
+      accessToken: "header.payload.signature",
+      address: AGENT_INFO.address,
+      did: AGENT_INFO.did,
+      isNewUser: false,
+      linkedAccounts: [],
+    } as never);
+    vi.mocked(updateAgentProfile).mockResolvedValue({
+      username: "fresh_handle",
+      avatarUri: undefined,
+    } as never);
+  });
+
+  it("confirms before changing an existing agent's username", async () => {
+    await runAgent(["update", "--username", "fresh_handle", "--json"]);
+    expect(confirmAgentAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: expect.stringContaining("keen_cedar_9807"),
+      }),
+    );
+    expect(updateAgentProfile).toHaveBeenCalled();
+  });
+
+  it("forwards --force so the rename confirmation can be skipped", async () => {
+    await runAgent([
+      "update",
+      "--username",
+      "fresh_handle",
+      "--force",
+      "--json",
+    ]);
+    expect(confirmAgentAction).toHaveBeenCalledWith(
+      expect.objectContaining({ force: true }),
+    );
+  });
+
+  it("does not confirm when only the bio changes", async () => {
+    await runAgent(["update", "--bio", "gm", "--json"]);
+    expect(confirmAgentAction).not.toHaveBeenCalled();
+    expect(updateAgentProfile).toHaveBeenCalled();
+  });
+
+  it("does not confirm when the username is unchanged", async () => {
+    await runAgent(["update", "--username", AGENT_INFO.username, "--json"]);
+    expect(confirmAgentAction).not.toHaveBeenCalled();
   });
 });
 

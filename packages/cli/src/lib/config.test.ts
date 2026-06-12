@@ -354,3 +354,110 @@ describe("saveAgentWallet / getAgentWallet / isAgentWallet", () => {
     expect(() => getAgentWallet()).toThrow(/missing or invalid "agent.did"/);
   });
 });
+
+describe("savePrivateKey drops a stale agent identity", () => {
+  it("removes the agent block when the key actually changes", async () => {
+    const {
+      savePrivateKey,
+      saveAgentWallet,
+      getAgentWallet,
+      getSmartWalletAddress,
+      getPrivateKey,
+      peekAgentWallet,
+    } = await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    saveAgentWallet(AGENT_INFO);
+    expect(getAgentWallet()).toEqual(AGENT_INFO);
+
+    // The recorded agent was owned by the old key — replacing it invalidates it.
+    savePrivateKey("0x" + "b".repeat(64));
+    expect(getPrivateKey()).toBe("0x" + "b".repeat(64));
+    expect(getAgentWallet()).toBeUndefined();
+    expect(peekAgentWallet()).toBeUndefined();
+    expect(getSmartWalletAddress()).toBeUndefined();
+  });
+
+  it("keeps the agent block when the same key is re-saved", async () => {
+    const { savePrivateKey, saveAgentWallet, getAgentWallet } =
+      await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    saveAgentWallet(AGENT_INFO);
+    savePrivateKey("0x" + "a".repeat(64));
+    expect(getAgentWallet()).toEqual(AGENT_INFO);
+  });
+
+  it("compares keys ignoring a 0x prefix", async () => {
+    const { savePrivateKey, saveAgentWallet, getAgentWallet } =
+      await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    saveAgentWallet(AGENT_INFO);
+    savePrivateKey("a".repeat(64));
+    expect(getAgentWallet()).toEqual(AGENT_INFO);
+  });
+
+  it("drops the agent block when the file has an agent but no stored key", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    // An agent block with no privateKey can't belong to the key being saved, so
+    // the stale identity must not survive alongside the new key.
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({ version: 1, agent: AGENT_INFO }),
+    );
+    const { savePrivateKey, getPrivateKey, peekAgentWallet } =
+      await loadConfig();
+    savePrivateKey("0x" + "b".repeat(64));
+    expect(getPrivateKey()).toBe("0x" + "b".repeat(64));
+    expect(peekAgentWallet()).toBeUndefined();
+  });
+});
+
+describe("peekAgentWallet", () => {
+  it("returns undefined when no wallet file exists", async () => {
+    const { peekAgentWallet } = await loadConfig();
+    expect(peekAgentWallet()).toBeUndefined();
+  });
+
+  it("returns the agent identity from a valid wallet file", async () => {
+    const { savePrivateKey, saveAgentWallet, peekAgentWallet } =
+      await loadConfig();
+    savePrivateKey("0x" + "a".repeat(64));
+    saveAgentWallet(AGENT_INFO);
+    expect(peekAgentWallet()).toMatchObject({
+      username: AGENT_INFO.username,
+      smartWalletAddress: AGENT_INFO.smartWalletAddress,
+    });
+  });
+
+  it("detects an agent even when the wallet file is otherwise malformed", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    // A corrupt private key would make readWallet() throw, but the guard must
+    // still recognize the agent so it can protect it.
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({ version: 1, privateKey: 12345, agent: AGENT_INFO }),
+    );
+    const { peekAgentWallet, getAgentWallet } = await loadConfig();
+    expect(() => getAgentWallet()).toThrow();
+    expect(peekAgentWallet()).toMatchObject({ username: AGENT_INFO.username });
+  });
+
+  it("returns undefined when the agent block is missing the address field", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    const { address: _omit, ...agentWithoutAddress } = AGENT_INFO;
+    writeFileSync(
+      join(configDir, "wallet.json"),
+      JSON.stringify({
+        version: 1,
+        privateKey: "0x" + "a".repeat(64),
+        agent: agentWithoutAddress,
+      }),
+    );
+    const { peekAgentWallet } = await loadConfig();
+    // The guard reads agent.address; without it, treat the block as unusable
+    // rather than risk a TypeError downstream.
+    expect(peekAgentWallet()).toBeUndefined();
+  });
+});

@@ -5,6 +5,7 @@ vi.mock("../lib/config.js", () => ({
   getPrivateKey: vi.fn(),
   savePrivateKey: vi.fn(),
   getWalletPath: vi.fn(() => "/home/user/.config/zora/wallet.json"),
+  peekAgentWallet: vi.fn(),
   getAnalyticsId: vi.fn(),
   getApiKey: vi.fn(),
   saveAnalyticsId: vi.fn(),
@@ -23,7 +24,12 @@ vi.mock("../lib/prompt.js", () => ({
   passwordOrFail: vi.fn(),
 }));
 
-import { getPrivateKey, savePrivateKey, getWalletPath } from "../lib/config.js";
+import {
+  getPrivateKey,
+  savePrivateKey,
+  getWalletPath,
+  peekAgentWallet,
+} from "../lib/config.js";
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
 import {
   confirmOrDefault,
@@ -293,5 +299,81 @@ describe("wallet configure", () => {
 
     expect(savePrivateKey).toHaveBeenCalledWith(NEW_KEY);
     logSpy.mockRestore();
+  });
+});
+
+describe("wallet configure (agent wallet)", () => {
+  const AGENT = {
+    address: "0xAbC0000000000000000000000000000000000001",
+    embeddedWalletAddress: "0xEeE0000000000000000000000000000000000001",
+    smartWalletAddress: "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8",
+    did: "did:privy:test",
+    username: "keen_cedar_9807",
+    profileUrl: "https://zora.co/@keen_cedar_9807",
+    createdAt: "2026-06-10T00:00:00.000Z",
+  } as const;
+  const REPLACEMENT = ("0x" + "b".repeat(64)) as `0x${string}`;
+
+  it("refuses to overwrite non-interactively, even with --force --yes", async () => {
+    vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`process.exit(${code})`);
+    });
+
+    await expect(
+      runWallet(["configure", "--create", "--force", "--yes"]),
+    ).rejects.toThrow("process.exit(1)");
+
+    expect(savePrivateKey).not.toHaveBeenCalled();
+    const out = [
+      ...logSpy.mock.calls.map((c) => c[0]),
+      ...errorSpy.mock.calls.map((c) => c[0]),
+    ].join("\n");
+    expect(out).toContain("keen_cedar_9807");
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+    exitSpy.mockRestore();
+  });
+
+  it("prompts before overwriting and proceeds when confirmed", async () => {
+    vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+    vi.mocked(confirmOrDefault).mockResolvedValue(true);
+    vi.mocked(generatePrivateKey).mockReturnValue(REPLACEMENT);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
+    await runWallet(["configure", "--create"]);
+
+    expect(confirmOrDefault).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("keen_cedar_9807"),
+      }),
+      false,
+    );
+    expect(savePrivateKey).toHaveBeenCalledWith(REPLACEMENT);
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+  });
+
+  it("treats --force as no bypass: still prompts, aborts when declined", async () => {
+    vi.mocked(peekAgentWallet).mockReturnValue(AGENT);
+    vi.mocked(confirmOrDefault).mockResolvedValue(false);
+    const logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation((code) => {
+      throw new Error(`process.exit(${code})`);
+    });
+
+    await expect(
+      runWallet(["configure", "--create", "--force"]),
+    ).rejects.toThrow("process.exit(0)");
+
+    expect(confirmOrDefault).toHaveBeenCalled();
+    expect(savePrivateKey).not.toHaveBeenCalled();
+    logSpy.mockRestore();
+    errorSpy.mockRestore();
+    exitSpy.mockRestore();
   });
 });
