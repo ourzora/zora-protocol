@@ -6,20 +6,26 @@ import {
   Account,
   Address,
   ContractEventArgsFromTopics,
+  decodeFunctionData,
   Hex,
   isAddressEqual,
   parseEventLogs,
   TransactionReceipt,
   WalletClient,
 } from "viem";
+import { BundlerClient } from "viem/account-abstraction";
 import { base } from "viem/chains";
 import { postCreateContent } from "../api";
 import { validateMetadataURIContent } from "../metadata";
 import { ValidMetadataURI } from "../uploader/types";
-import { GenericCall } from "../utils/calls";
+import { GenericCall, toUserOperationCalls } from "../utils/calls";
 import { GenericPublicClient } from "../utils/genericPublicClient";
 import { getChainFromId } from "../utils/getChainFromId";
 import { rethrowDecodedRevert } from "../utils/rethrowDecodedRevert";
+import {
+  prepareUserOperation,
+  submitUserOperation,
+} from "../utils/userOperation";
 import { validateClientNetwork } from "../utils/validateClientNetwork";
 
 export type CoinDeploymentLogArgs = ContractEventArgsFromTopics<
@@ -234,6 +240,52 @@ type CreateCoinOptions = {
   skipValidateTransaction?: boolean;
 };
 
+/** Minimal ABI for the Coinbase Smart Wallet `execute` method, used to unwrap a routed call. */
+const coinbaseSmartWalletExecuteABI = [
+  {
+    type: "function",
+    name: "execute",
+    stateMutability: "payable",
+    inputs: [
+      { name: "target", type: "address" },
+      { name: "value", type: "uint256" },
+      { name: "data", type: "bytes" },
+    ],
+    outputs: [],
+  },
+] as const;
+
+/**
+ * Unwraps the smart wallet `execute(target, value, data)` call that the API
+ * returns under smart wallet routing into its inner factory call.
+ *
+ * The bundler/account (`toCoinbaseSmartAccount.encodeCalls`) re-wraps a single
+ * call in `execute` when forming the user operation, so the inner call — not the
+ * pre-wrapped one — must be fed to the user-operation path; passing the wrapped
+ * call would double-wrap it. The inner call still executes with the smart wallet
+ * as `msg.sender`, so the deployed coin's CREATE2 address is unchanged (the API's
+ * predicted address remains valid).
+ *
+ * Throws if the call is not a recognizable `execute` call, so an unexpected shape
+ * fails loudly rather than silently double-wrapping.
+ */
+function unwrapSmartWalletExecuteCall(call: GenericCall): GenericCall {
+  let decoded;
+  try {
+    decoded = decodeFunctionData({
+      abi: coinbaseSmartWalletExecuteABI,
+      data: call.data,
+    });
+  } catch {
+    throw new Error(
+      "Expected a smart wallet `execute` call from smart wallet routing, but the routed call could not be decoded.",
+    );
+  }
+
+  const [target, value, data] = decoded.args;
+  return { to: target, value, data };
+}
+
 /**
  * Selects the account used to sign and send the create transaction.
  *
@@ -358,13 +410,17 @@ export async function createCoin({
 }
 
 /**
- * Creates a coin owned by the caller's smart wallet, executed by an owner EOA.
+ * Creates a coin owned by the caller's smart wallet via a user operation.
  *
  * Requests smart wallet routing from the API, which resolves the creator's
- * linked smart wallet and returns a call wrapped in the smart wallet's `execute`.
- * That call is submitted as a normal transaction by the owner EOA in
- * `walletClient` (the smart wallet becomes the coin's deployer/owner). No bundler
- * or gas abstraction is involved.
+ * linked smart wallet and returns the deploy wrapped in the smart wallet's
+ * `execute`. That wrapped call is unwrapped to its inner factory call and
+ * submitted as a user operation through `bundlerClient` — so the smart wallet
+ * deploys and owns the coin while gas is paid from the smart wallet's
+ * user-operation prefund (rather than from an owner EOA). The bundler/account
+ * re-wraps the inner call in `execute` itself, and the smart wallet remains
+ * `msg.sender`, so the deployed coin's CREATE2 address matches the API's
+ * prediction.
  *
  * Mirrors {@link createCoin}'s return shape. Throws if the API did not apply
  * routing (e.g. the creator has no linked smart wallet) — use {@link createCoin}
@@ -372,16 +428,23 @@ export async function createCoin({
  */
 export async function createCoinSmartWallet({
   call,
-  walletClient,
+  bundlerClient,
   publicClient,
-  options,
 }: {
   call: CreateCoinArgs;
-  walletClient: WalletClient;
+  bundlerClient: BundlerClient;
   publicClient: GenericPublicClient;
+  // `options` is accepted for signature parity with createCoin but does not
+  // apply to the user-operation path: the account comes from the bundler client,
+  // and gas/validation are handled by the bundler during preparation.
   options?: CreateCoinOptions;
 }) {
   validateClientNetwork(publicClient);
+
+  const account = bundlerClient.account;
+  if (!account) {
+    throw new Error("Account is required: the bundler client has no account");
+  }
 
   const chainId = call.chainId ?? publicClient.chain.id;
 
@@ -393,15 +456,43 @@ export async function createCoinSmartWallet({
 
   validateCreateCoinSmartWalletCalls(calls, { usedSmartWalletRouting });
 
-  const smartWalletExecuteCall = calls[0]!;
+  // Unwrap the routed `execute` call so the bundler re-wraps the inner call
+  // itself instead of double-wrapping (see unwrapSmartWalletExecuteCall).
+  const innerCall = unwrapSmartWalletExecuteCall(calls[0]!);
 
-  const account = selectExecutionAccount(walletClient, options?.account);
-
-  return executeCreateContentCall({
-    createContentCall: smartWalletExecuteCall,
+  const userOperation = await prepareUserOperation({
+    bundlerClient,
     account,
-    walletClient,
-    publicClient,
-    skipValidateTransaction: options?.skipValidateTransaction,
+    calls: toUserOperationCalls([innerCall]),
   });
+
+  const userOpReceipt = await submitUserOperation({
+    bundlerClient,
+    account,
+    userOperation,
+  });
+
+  if (!userOpReceipt.success) {
+    throw new Error(
+      `User operation reverted${userOpReceipt.reason ? `: ${userOpReceipt.reason}` : ""}`,
+    );
+  }
+
+  // Parse the deployment from this user operation's own logs (not the whole
+  // bundle's), so a co-bundled CoinCreatedV4 can't be misattributed.
+  const eventLogs = parseEventLogs({
+    abi: zoraFactoryImplABI,
+    logs: userOpReceipt.logs,
+  });
+  const deployment = eventLogs.find(
+    (log) => log.eventName === "CoinCreatedV4",
+  )?.args;
+
+  return {
+    hash: userOpReceipt.receipt.transactionHash,
+    receipt: userOpReceipt.receipt,
+    address: deployment?.coin,
+    deployment,
+    chain: getChainFromId(publicClient.chain.id),
+  };
 }
