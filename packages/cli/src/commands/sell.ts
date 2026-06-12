@@ -40,6 +40,7 @@ import {
 } from "../lib/trade-helpers.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { createClients, resolveAccounts } from "../lib/wallet.js";
+import { gasErrorSuggestion } from "../lib/gas.js";
 
 type OutputAsset = TradeTokenKey;
 
@@ -608,7 +609,14 @@ export const sellCommand = new Command("sell")
         error_type: err instanceof Error ? err.constructor.name : "unknown",
       });
       await shutdownAnalytics();
-      return outputErrorAndExit(json, tradeErrorMessage(err));
+      return outputErrorAndExit(
+        json,
+        tradeErrorMessage(err),
+        gasErrorSuggestion(
+          err,
+          accounts.smartWalletAccount ?? accounts.privateKeyAccount,
+        ),
+      );
     }
 
     txHash = receipt.transactionHash;

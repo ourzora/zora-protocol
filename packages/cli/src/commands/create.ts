@@ -20,6 +20,7 @@ import { getApiKey } from "../lib/config.js";
 import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { safeExit, SUCCESS } from "../lib/exit.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
+import { gasErrorSuggestion } from "../lib/gas.js";
 
 /** Image extensions accepted by the metadata uploader, mapped to their MIME type. */
 const IMAGE_MIME_BY_EXT: Record<string, string> = {
@@ -299,6 +300,7 @@ export const createCommand = new Command("create")
       return outputErrorAndExit(
         json,
         `Failed to create coin: ${err instanceof Error ? err.message : String(err)}`,
+        gasErrorSuggestion(err, smartWalletAccount ?? privateKeyAccount),
       );
     }
 

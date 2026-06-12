@@ -1,5 +1,15 @@
-import { Command } from "commander";
 import confirm from "@inquirer/confirm";
+import {
+  getProfile,
+  prepareUserOperation,
+  setApiKey,
+  submitUserOperation,
+  toGenericCall,
+  toUserOperationCalls,
+  type ContractCall,
+  type SendCall,
+} from "@zoralabs/coins-sdk";
+import { Command } from "commander";
 import {
   erc20Abi,
   formatUnits,
@@ -8,42 +18,33 @@ import {
   type Address,
 } from "viem";
 import type { BundlerClient, SmartAccount } from "viem/account-abstraction";
+import { shutdownAnalytics, track } from "../lib/analytics.js";
 import {
-  setApiKey,
-  getProfile,
-  prepareUserOperation,
-  submitUserOperation,
-  toGenericCall,
-  toUserOperationCalls,
-  type ContractCall,
-  type SendCall,
-} from "@zoralabs/coins-sdk";
-import { resolveAccounts, createClients } from "../lib/wallet.js";
-import { getApiKey } from "../lib/config.js";
-import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
-import { safeExit, SUCCESS } from "../lib/exit.js";
-import {
-  parsePositionalCoinArgs,
+  CoinArgError,
   coinArgsToRef,
+  formatAmbiguousError,
+  parsePositionalCoinArgs,
   resolveAmbiguousName,
   resolveCoin,
-  formatAmbiguousError,
-  CoinArgError,
 } from "../lib/coin-ref.js";
-import { formatAmountDisplay } from "../lib/format.js";
-import {
-  GAS_RESERVE,
-  estimateSmartWalletGasReserve,
-  getAmountMode,
-  parsePercentageLikeValue,
-} from "../lib/trade-helpers.js";
-import { track, shutdownAnalytics } from "../lib/analytics.js";
+import { getApiKey } from "../lib/config.js";
 import {
   BASE_TRADE_TOKENS,
   WETH_ADDRESS,
   type TradeTokenKey,
 } from "../lib/constants.js";
+import { safeExit, SUCCESS } from "../lib/exit.js";
+import { formatAmountDisplay } from "../lib/format.js";
+import { gasErrorSuggestion } from "../lib/gas.js";
+import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import {
+  estimateSmartWalletGasReserve,
+  GAS_RESERVE,
+  getAmountMode,
+  parsePercentageLikeValue,
+} from "../lib/trade-helpers.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import { createClients, resolveAccounts } from "../lib/wallet.js";
 
 const SEND_AMOUNT_CHECKS = {
   amount: (opts: Record<string, unknown>) => opts.amount !== undefined,
@@ -427,6 +428,7 @@ export const sendCommand = new Command("send")
         return outputErrorAndExit(
           json,
           `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
+          gasErrorSuggestion(err, smartWalletAccount ?? privateKeyAccount),
         );
       }
 
@@ -694,6 +696,7 @@ export const sendCommand = new Command("send")
         return outputErrorAndExit(
           json,
           `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
+          gasErrorSuggestion(err, smartWalletAccount ?? privateKeyAccount),
         );
       }
 

@@ -81,19 +81,23 @@ type CoinbaseBundlerError = {
 export class CoinbaseGasError extends Error {
   cause: unknown;
   details: string;
+  required?: bigint;
+  available?: bigint;
   constructor(error: CoinbaseBundlerError) {
     let message: string;
+    let available: bigint | undefined;
+    let required: bigint | undefined;
 
     const match = error.details.match(
       /precheck failed: sender balance and deposit together is (\d+)? but must be at least (\d+)? to pay for this operation/,
     );
 
     if (match) {
-      const balance = match[1] ? BigInt(match[1]) : undefined;
-      const required = match[2] ? BigInt(match[2]) : undefined;
+      available = match[1] ? BigInt(match[1]) : undefined;
+      required = match[2] ? BigInt(match[2]) : undefined;
 
-      if (balance !== undefined && required !== undefined) {
-        message = `Insufficient balance. You need at least ${formatEther(required)} ETH to pay for this operation, but you only have ${formatEther(balance)} ETH.`;
+      if (available !== undefined && required !== undefined) {
+        message = `Insufficient balance. You need at least ${formatEther(required)} ETH to pay for this operation, but you only have ${formatEther(available)} ETH.`;
       } else if (required !== undefined) {
         message = `Insufficient balance. Make sure you have at least ${formatEther(required)} ETH in your wallet.`;
       } else {
@@ -106,6 +110,8 @@ export class CoinbaseGasError extends Error {
     super(message);
     this.cause = error.cause;
     this.details = error.details;
+    this.available = available;
+    this.required = required;
   }
 }
 
