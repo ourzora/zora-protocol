@@ -18,9 +18,21 @@ import {
   hasLinkedEmail,
 } from "../lib/privy.js";
 import { inputOrFail } from "../lib/prompt.js";
+import { loadAvatar } from "../lib/agent/avatar.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
 
 vi.mock("../lib/agent/onboard.js", () => ({ onboardAgent: vi.fn() }));
+
+// Mock the avatar module so the command test stays off the filesystem; the
+// read/MIME logic itself is covered by avatar.test.ts.
+vi.mock("../lib/agent/avatar.js", () => ({
+  loadAvatar: vi.fn(() => ({
+    filename: "me.png",
+    bytes: new Uint8Array([1, 2, 3]),
+    mimeType: "image/png",
+  })),
+  uploadAvatar: vi.fn(),
+}));
 
 vi.mock("../lib/privy.js", () => ({
   ZORA_PRIVY_APP_ID: "test-app-id",
@@ -366,6 +378,93 @@ describe("zora agent create", () => {
     );
     expect(parsed.savedToWallet).toBe(false);
     errorSpy.mockRestore();
+  });
+
+  it("passes --username and --bio through to onboardAgent", async () => {
+    await runAgent([
+      "create",
+      "--json",
+      "--username",
+      "agent_smith",
+      "--bio",
+      "gm",
+    ]);
+    expect(onboardAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ username: "agent_smith", bio: "gm" }),
+    );
+  });
+
+  it("reads --avatar up front and forwards its bytes + MIME to onboardAgent", async () => {
+    await runAgent(["create", "--json", "--avatar", "/tmp/me.png"]);
+    expect(loadAvatar).toHaveBeenCalledWith("/tmp/me.png");
+    expect(onboardAgent).toHaveBeenCalledWith(
+      expect.objectContaining({
+        avatar: {
+          filename: "me.png",
+          bytes: expect.any(Uint8Array),
+          mimeType: "image/png",
+        },
+      }),
+    );
+  });
+
+  it("does not pass profile fields when none are supplied", async () => {
+    await runAgent(["create", "--json"]);
+    expect(loadAvatar).not.toHaveBeenCalled();
+    expect(onboardAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ username: undefined, bio: undefined }),
+    );
+    const call = vi.mocked(onboardAgent).mock.calls[0]![0];
+    expect(call.avatar).toBeUndefined();
+  });
+
+  it("rejects an empty --username before onboarding", async () => {
+    await expect(runAgent(["create", "--username", ""])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(onboardAgent).not.toHaveBeenCalled();
+  });
+
+  it("rejects an unsupported --avatar before onboarding", async () => {
+    vi.mocked(loadAvatar).mockImplementationOnce(() => {
+      throw new Error('Unsupported avatar image "x.txt". Use a PNG, JPG, ...');
+    });
+    await expect(runAgent(["create", "--avatar", "x.txt"])).rejects.toThrow(
+      "process.exit(1)",
+    );
+    expect(onboardAgent).not.toHaveBeenCalled();
+  });
+
+  it("shows the chosen bio and avatar in the human-readable summary", async () => {
+    vi.mocked(onboardAgent).mockResolvedValue({
+      ...ONBOARD_RESULT,
+      username: "agent_smith",
+      avatarUri: "ipfs://av",
+      profileUrl: "https://zora.co/@agent_smith",
+    });
+    const log = captureLog();
+    await runAgent([
+      "create",
+      "--username",
+      "agent_smith",
+      "--bio",
+      "gm frens",
+      "--avatar",
+      "/tmp/me.png",
+    ]);
+    const output = log.output();
+    log.restore();
+    expect(output).toContain("@agent_smith");
+    expect(output).toContain("Bio:          gm frens");
+    expect(output).toContain("ipfs://av");
+  });
+
+  it("includes the applied bio in --json output", async () => {
+    const log = captureLog();
+    await runAgent(["create", "--json", "--bio", "gm frens"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(parsed.bio).toBe("gm frens");
   });
 
   describe("re-run guard (existing agent)", () => {

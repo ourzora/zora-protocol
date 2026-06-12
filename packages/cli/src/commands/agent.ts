@@ -1,6 +1,4 @@
 import { Command } from "commander";
-import { readFileSync } from "node:fs";
-import { basename, extname } from "node:path";
 import { generatePrivateKey } from "viem/accounts";
 import {
   getPrivateKey,
@@ -30,7 +28,11 @@ import {
 import { inputOrFail } from "../lib/prompt.js";
 import { onboardAgent } from "../lib/agent/onboard.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
-import { ipfsUpload } from "../lib/agent/zora-client.js";
+import {
+  loadAvatar,
+  uploadAvatar,
+  type AvatarFile,
+} from "../lib/agent/avatar.js";
 
 const PRIVATE_KEY_RE = /^(0x)?[0-9a-fA-F]{64}$/;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -138,26 +140,6 @@ function resolveAgentKey(
   return { key: generated, source: getWalletPath(), generated: true };
 }
 
-const AVATAR_MIME_BY_EXT: Record<string, string> = {
-  ".png": "image/png",
-  ".jpg": "image/jpeg",
-  ".jpeg": "image/jpeg",
-  ".gif": "image/gif",
-  ".webp": "image/webp",
-};
-
-/** Read a local image and upload it to IPFS, returning its `ipfs://` URI. */
-async function uploadAvatar(token: string, path: string): Promise<string> {
-  const mime = AVATAR_MIME_BY_EXT[extname(path).toLowerCase()];
-  if (!mime) {
-    throw new Error(
-      `Unsupported avatar image "${path}". Use a PNG, JPG, GIF, or WebP file.`,
-    );
-  }
-  const bytes = new Uint8Array(readFileSync(path));
-  return ipfsUpload(token, basename(path), bytes, mime);
-}
-
 export const agentCommand = new Command("agent")
   .description(
     "Create and manage a Zora agent identity.\nStands up a full identity from an EOA — Privy account, profile, smart wallet, coin, and first post — with no human interaction.",
@@ -190,6 +172,15 @@ agentCommand
   .option("--skip-coin", "Skip creating the creator coin")
   .option("--skip-post", "Skip publishing the first post")
   .option(
+    "--username <name>",
+    "Set the agent's username (also sets the display name; must be available). Default: an auto-assigned handle.",
+  )
+  .option("--bio <text>", "Set the agent's bio. Default: an auto-assigned bio.")
+  .option(
+    "--avatar <path>",
+    "Set the agent's avatar from a local image (PNG/JPG/GIF/WebP). Default: an auto-assigned avatar.",
+  )
+  .option(
     "--force",
     "Proceed even if an agent already exists on this wallet, without confirming",
   )
@@ -204,6 +195,9 @@ agentCommand
       dryRun?: boolean;
       skipCoin?: boolean;
       skipPost?: boolean;
+      username?: string;
+      bio?: string;
+      avatar?: string;
       force?: boolean;
     },
   ) {
@@ -212,6 +206,28 @@ agentCommand
     const chainId = Number(options.chainId);
     if (!Number.isInteger(chainId) || chainId <= 0) {
       return outputErrorAndExit(json, `Invalid --chain-id: ${options.chainId}`);
+    }
+
+    // An explicit empty handle is rejected server-side; catch it up front with a
+    // clearer message. (`--bio ""` is allowed — it clears the auto-assigned bio.)
+    if (options.username !== undefined && options.username.trim() === "") {
+      return outputErrorAndExit(
+        json,
+        "--username can't be empty.",
+        "Pass a handle, or omit --username to get an auto-assigned one.",
+      );
+    }
+
+    // Read + validate the avatar before any on-chain work, so a bad image fails
+    // fast rather than after a real agent identity has been minted. The upload
+    // itself happens inside onboardAgent, once it holds the Privy session token.
+    let avatar: AvatarFile | undefined;
+    if (options.avatar !== undefined) {
+      try {
+        avatar = loadAvatar(options.avatar);
+      } catch (err) {
+        return outputErrorAndExit(json, formatError(err));
+      }
     }
 
     const resolved = resolveAgentKey(json, options.privateKey);
@@ -244,6 +260,9 @@ agentCommand
         dryRun: Boolean(options.dryRun),
         skipCoin: Boolean(options.skipCoin),
         skipPost: Boolean(options.skipPost),
+        username: options.username,
+        bio: options.bio,
+        avatar,
         onProgress: json
           ? undefined
           : (_step, detail) => console.log(`• ${detail} ...`),
@@ -293,12 +312,18 @@ agentCommand
       minted_post: Boolean(result.post?.hash),
       coin_failed: Boolean(result.coinError),
       post_failed: Boolean(result.postError),
+      set_username: options.username !== undefined,
+      set_bio: options.bio !== undefined,
+      set_avatar: options.avatar !== undefined,
       output_format: json ? "json" : "text",
     });
 
     outputData(json, {
       json: {
         ...result,
+        // `bio` isn't echoed back by the profile mutation, so surface the value
+        // that was applied (omitted from JSON when --bio wasn't passed).
+        bio: options.bio,
         walletSource: resolved.source,
         walletPath,
         savedToWallet,
@@ -310,6 +335,14 @@ agentCommand
             : "\n✓ Agent ready",
         );
         console.log(`  Profile:      @${result.username}`);
+        if (options.bio !== undefined) {
+          console.log(
+            `  Bio:          ${options.bio === "" ? "(none)" : options.bio}`,
+          );
+        }
+        if (options.avatar !== undefined && result.avatarUri) {
+          console.log(`  Avatar:       ${result.avatarUri}`);
+        }
         console.log(`  Wallet (EOA): ${result.address}`);
         console.log(`  Smart wallet: ${result.smartWallet}`);
         console.log(`  Privy DID:    ${result.did}`);

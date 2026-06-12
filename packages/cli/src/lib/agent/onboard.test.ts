@@ -5,6 +5,8 @@ vi.mock("../privy.js", () => ({
   findEmbeddedWallet: vi.fn(),
 }));
 vi.mock("./profile.js", () => ({ createAgentProfile: vi.fn() }));
+vi.mock("./update-profile.js", () => ({ updateAgentProfile: vi.fn() }));
+vi.mock("./zora-client.js", () => ({ ipfsUpload: vi.fn() }));
 vi.mock("./smart-wallet.js", () => ({ provisionSmartWallet: vi.fn() }));
 vi.mock("./coin.js", () => ({ createCreatorCoin: vi.fn() }));
 vi.mock("./post.js", () => ({ createFirstPost: vi.fn() }));
@@ -12,6 +14,8 @@ vi.mock("./post.js", () => ({ createFirstPost: vi.fn() }));
 import { onboardAgent } from "./onboard.js";
 import { createPrivyAccount, findEmbeddedWallet } from "../privy.js";
 import { createAgentProfile } from "./profile.js";
+import { updateAgentProfile } from "./update-profile.js";
+import { ipfsUpload } from "./zora-client.js";
 import { provisionSmartWallet } from "./smart-wallet.js";
 import { createCreatorCoin } from "./coin.js";
 import { createFirstPost } from "./post.js";
@@ -34,6 +38,11 @@ beforeEach(() => {
   vi.mocked(createAgentProfile).mockResolvedValue({
     username: "keen_cedar_9807",
   });
+  // By default the update echoes back a profile; individual tests override it.
+  vi.mocked(updateAgentProfile).mockResolvedValue({
+    username: "keen_cedar_9807",
+  });
+  vi.mocked(ipfsUpload).mockResolvedValue("ipfs://uploaded-avatar");
   vi.mocked(provisionSmartWallet).mockResolvedValue({
     address: SMART,
     owners: [EMBEDDED, SMART],
@@ -183,6 +192,125 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
     expect(result.post?.coinAddress).toBeUndefined();
     expect(result.post?.url).toBe("https://zora.co/@keen_cedar_9807");
+  });
+
+  it("leaves the auto-assigned profile untouched when no profile fields are given", async () => {
+    await onboardAgent({ privateKey: PK, sleep: noSleep });
+    expect(updateAgentProfile).not.toHaveBeenCalled();
+    expect(ipfsUpload).not.toHaveBeenCalled();
+  });
+
+  it("applies a chosen username + bio, and downstream URLs use the new handle", async () => {
+    vi.mocked(updateAgentProfile).mockResolvedValue({
+      username: "agent_smith",
+    });
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      username: "agent_smith",
+      bio: "I trade memecoins",
+    });
+    // No avatar → a single text-field call, and no avatarUri key.
+    expect(updateAgentProfile).toHaveBeenCalledTimes(1);
+    expect(updateAgentProfile).toHaveBeenCalledWith("tok", {
+      username: "agent_smith",
+      bio: "I trade memecoins",
+    });
+    expect(ipfsUpload).not.toHaveBeenCalled();
+    expect(result.username).toBe("agent_smith");
+    expect(result.profileUrl).toBe("https://zora.co/@agent_smith");
+    expect(result.coin?.url).toBe("https://zora.co/@agent_smith/creator-coin");
+  });
+
+  it("uploads the avatar and forwards its URI to updateAgentProfile", async () => {
+    vi.mocked(ipfsUpload).mockResolvedValue("ipfs://avatarcid");
+    vi.mocked(updateAgentProfile).mockResolvedValue({
+      username: "keen_cedar_9807",
+      avatarUri: "ipfs://avatarcid",
+    });
+    const avatar = {
+      filename: "me.png",
+      bytes: new Uint8Array([1, 2, 3]),
+      mimeType: "image/png",
+    };
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      avatar,
+    });
+    expect(ipfsUpload).toHaveBeenCalledWith(
+      "tok",
+      "me.png",
+      avatar.bytes,
+      "image/png",
+    );
+    // Avatar only (no username/bio) → a single avatar-only call.
+    expect(updateAgentProfile).toHaveBeenCalledTimes(1);
+    expect(updateAgentProfile).toHaveBeenCalledWith("tok", {
+      avatarUri: "ipfs://avatarcid",
+    });
+    expect(result.avatarUri).toBe("ipfs://avatarcid");
+  });
+
+  it("applies the username before uploading the avatar when both are set", async () => {
+    vi.mocked(ipfsUpload).mockResolvedValue("ipfs://avatarcid");
+    vi.mocked(updateAgentProfile)
+      .mockResolvedValueOnce({ username: "agent_smith" })
+      .mockResolvedValueOnce({
+        username: "agent_smith",
+        avatarUri: "ipfs://avatarcid",
+      });
+    const avatar = {
+      filename: "me.png",
+      bytes: new Uint8Array([1, 2, 3]),
+      mimeType: "image/png",
+    };
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      username: "agent_smith",
+      avatar,
+    });
+    // The text fields go up first (validates the handle), then the avatar.
+    expect(updateAgentProfile).toHaveBeenNthCalledWith(1, "tok", {
+      username: "agent_smith",
+      bio: undefined,
+    });
+    expect(ipfsUpload).toHaveBeenCalledWith(
+      "tok",
+      "me.png",
+      avatar.bytes,
+      "image/png",
+    );
+    expect(updateAgentProfile).toHaveBeenNthCalledWith(2, "tok", {
+      avatarUri: "ipfs://avatarcid",
+    });
+    expect(result.username).toBe("agent_smith");
+    expect(result.avatarUri).toBe("ipfs://avatarcid");
+  });
+
+  it("does not upload the avatar when the chosen username is unavailable", async () => {
+    vi.mocked(updateAgentProfile).mockRejectedValue(
+      new Error("username unavailable"),
+    );
+    const avatar = {
+      filename: "me.png",
+      bytes: new Uint8Array([1, 2, 3]),
+      mimeType: "image/png",
+    };
+    await expect(
+      onboardAgent({
+        privateKey: PK,
+        sleep: noSleep,
+        username: "taken",
+        avatar,
+      }),
+    ).rejects.toThrow(/username unavailable/);
+    // The handle is validated first, so the slow upload never runs, and the
+    // coin/post steps don't run either.
+    expect(ipfsUpload).not.toHaveBeenCalled();
+    expect(createCreatorCoin).not.toHaveBeenCalled();
+    expect(createFirstPost).not.toHaveBeenCalled();
   });
 
   it("does not fabricate a post link on a dry run", async () => {

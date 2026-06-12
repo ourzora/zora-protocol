@@ -7,6 +7,9 @@ import {
   type PrivyAccount,
 } from "../privy.js";
 import { createAgentProfile } from "./profile.js";
+import { updateAgentProfile } from "./update-profile.js";
+import type { AvatarFile } from "./avatar.js";
+import { ipfsUpload } from "./zora-client.js";
 import { provisionSmartWallet } from "./smart-wallet.js";
 import { createCreatorCoin } from "./coin.js";
 import { createFirstPost } from "./post.js";
@@ -31,6 +34,16 @@ export interface OnboardOptions {
   dryRun?: boolean;
   skipCoin?: boolean;
   skipPost?: boolean;
+  /**
+   * Optional profile fields to apply at creation. Each is independent: omit one
+   * to keep Zora's auto-assigned value. `username` is availability-checked
+   * server-side (and also sets the display name); `bio` of `""` clears the
+   * default bio; `avatar` is a local image, already read by the caller, that is
+   * uploaded to IPFS during onboarding.
+   */
+  username?: string;
+  bio?: string;
+  avatar?: AvatarFile;
   /** Max attempts to poll for the embedded wallet after profile creation. */
   embeddedAttempts?: number;
   onProgress?: (step: OnboardStep, detail: string) => void;
@@ -42,6 +55,8 @@ export interface OnboardResult {
   did: string;
   accessToken: string;
   username: string;
+  /** The profile's avatar URI (the chosen one if `--avatar` was set, else the auto-assigned default). */
+  avatarUri?: string;
   embedded: Address;
   smartWallet: Address;
   isNewUser: boolean;
@@ -129,7 +144,48 @@ export async function onboardAgent(
 
   // 2. Profile — idempotent, and provisions the embedded wallet server-side.
   progress("profile", "creating the Zora profile");
-  const profile = await createAgentProfile(privy.accessToken);
+  let profile = await createAgentProfile(privy.accessToken);
+
+  // 2b. Apply any caller-chosen profile fields (username / bio / avatar). This
+  //     is optional — with none provided the auto-assigned profile is kept. We
+  //     do it here, before the smart wallet, coin, and first post, so that a
+  //     taken username fails fast (before those steps run) and every downstream
+  //     link and the coin's metadata use the chosen handle.
+  if (
+    opts.username !== undefined ||
+    opts.bio !== undefined ||
+    opts.avatar !== undefined
+  ) {
+    const chosen = [
+      opts.username !== undefined ? "username" : undefined,
+      opts.bio !== undefined ? "bio" : undefined,
+      opts.avatar ? "avatar" : undefined,
+    ].filter((field): field is string => field !== undefined);
+    progress(
+      "profile",
+      `applying the chosen ${new Intl.ListFormat("en", { type: "conjunction" }).format(chosen)}`,
+    );
+
+    // Apply the text fields (username / bio) first: it's a cheap call that also
+    // validates the username's availability, so a taken handle fails here —
+    // before the (potentially slow) IPFS avatar upload runs.
+    if (opts.username !== undefined || opts.bio !== undefined) {
+      profile = await updateAgentProfile(privy.accessToken, {
+        username: opts.username,
+        bio: opts.bio,
+      });
+    }
+    // Then upload and apply the avatar.
+    if (opts.avatar) {
+      const avatarUri = await ipfsUpload(
+        privy.accessToken,
+        opts.avatar.filename,
+        opts.avatar.bytes,
+        opts.avatar.mimeType,
+      );
+      profile = await updateAgentProfile(privy.accessToken, { avatarUri });
+    }
+  }
 
   // 3. Wait for the embedded wallet to appear, re-authenticating to refresh.
   progress("embedded", "waiting for the embedded wallet");
@@ -161,6 +217,7 @@ export async function onboardAgent(
     did: privy.did,
     accessToken: privy.accessToken,
     username: profile.username,
+    avatarUri: profile.avatarUri,
     embedded,
     smartWallet: smartWallet.address,
     isNewUser,
