@@ -65,6 +65,10 @@ describe("send command", () => {
     vi.mocked(getTrend).mockResolvedValue({
       data: { trendCoin: null },
     } as any);
+    // Default: no profile resolves (address-path reverse lookups return no name).
+    vi.mocked(getProfile).mockResolvedValue({
+      data: { profile: null },
+    } as any);
     vi.mocked(resolveAccounts).mockResolvedValue({
       privateKeyAccount: {
         address: ACCOUNT_ADDRESS,
@@ -99,12 +103,12 @@ describe("send command", () => {
       await expect(runSend(["eth", "--amount", "0.1"])).rejects.toThrow();
     });
 
-    it("exits with error when --to is not a valid address", async () => {
+    it("exits with error when --to cannot be resolved to a profile or address", async () => {
       await expect(
-        runSend(["eth", "--to", "not-an-address", "--amount", "0.1"]),
+        runSend(["eth", "--to", "not-a-known-profile", "--amount", "0.1"]),
       ).rejects.toThrow("process.exit(1)");
       expect(errorSpy).toHaveBeenCalledWith(
-        expect.stringContaining("Invalid recipient address"),
+        expect.stringContaining("No Zora profile or wallet found"),
       );
     });
 
@@ -124,6 +128,105 @@ describe("send command", () => {
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining("Only one amount flag"),
       );
+    });
+  });
+
+  // --- Recipient resolution ---
+
+  describe("recipient resolution", () => {
+    it("resolves a profile name to its public wallet address", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "vitalik",
+            displayName: "Vitalik",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+
+      await runSend(["eth", "--to", "vitalik", "--amount", "0.1", "--yes"]);
+
+      expect(getProfile).toHaveBeenCalledWith({ identifier: "vitalik" });
+      // The ETH transfer goes to the profile's resolved wallet address.
+      expect(walletClient.sendTransaction).toHaveBeenCalledWith(
+        expect.objectContaining({ to: RECIPIENT_ADDRESS }),
+      );
+    });
+
+    it("shows the profile name in the preview when --to is a profile", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "vitalik",
+            displayName: "Vitalik",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", "vitalik", "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).toContain(RECIPIENT_ADDRESS);
+      expect(preview).toContain("@vitalik");
+    });
+
+    it("reverse-resolves a profile name for an address recipient in the preview", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "vitalik",
+            displayName: "Vitalik",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      expect(getProfile).toHaveBeenCalledWith({
+        identifier: RECIPIENT_ADDRESS,
+      });
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).toContain("@vitalik");
+    });
+
+    it("does not show a profile line when an address has no profile", async () => {
+      // Default getProfile mock returns { profile: null }.
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).not.toContain("Profile ");
+    });
+
+    it("ignores a truncated-address placeholder handle as a profile name", async () => {
+      vi.mocked(getProfile).mockResolvedValue({
+        data: {
+          profile: {
+            handle: "0x1234…5678",
+            publicWallet: { walletAddress: RECIPIENT_ADDRESS },
+          },
+        },
+      } as any);
+      vi.mocked(confirm).mockResolvedValue(false);
+
+      await expect(
+        runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1"]),
+      ).rejects.toThrow("process.exit(0)");
+
+      const preview = logSpy.mock.calls.map((c) => c[0]).join("\n");
+      expect(preview).not.toContain("Profile ");
     });
   });
 

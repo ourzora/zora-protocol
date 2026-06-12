@@ -10,6 +10,7 @@ import {
 import type { BundlerClient, SmartAccount } from "viem/account-abstraction";
 import {
   setApiKey,
+  getProfile,
   prepareUserOperation,
   submitUserOperation,
   toGenericCall,
@@ -52,12 +53,91 @@ const SEND_AMOUNT_CHECKS = {
 
 const KNOWN_TOKEN_NAMES = new Set(["eth", "usdc", "zora"]);
 
+type ResolvedRecipient = {
+  address: Address;
+  handle?: string;
+  username?: string;
+  displayName?: string;
+};
+
+/**
+ * A non-empty, non-placeholder profile name. When a profile lookup misses, the
+ * API returns the truncated wallet address as the `handle` (e.g. "0x1234…5678"),
+ * which we don't want to surface as if it were a real profile name.
+ */
+function isPlaceholderName(name: string): boolean {
+  return name.startsWith("0x") || name.includes("…") || name.includes("...");
+}
+
+/**
+ * Resolves the `--to` argument to a recipient address. Accepts either a 0x
+ * address (with a best-effort profile-name reverse lookup) or a Zora profile
+ * identifier (resolved to its preferred public wallet address). Exits with an
+ * error if a profile identifier can't be resolved to a wallet.
+ */
+async function resolveRecipient(
+  identifier: string,
+  json = false,
+): Promise<ResolvedRecipient> {
+  const isIdentifierAddress = isAddress(identifier);
+
+  try {
+    const response = await getProfile({ identifier });
+    const profile = response?.data?.profile;
+    const address = isIdentifierAddress
+      ? (identifier as Address)
+      : profile?.publicWallet?.walletAddress;
+    if (!address || !isAddress(address)) {
+      return outputErrorAndExit(
+        json,
+        !address
+          ? `No Zora profile or wallet found for "${identifier}".`
+          : "Provide a valid 0x address or an existing Zora profile name.",
+      );
+    }
+    return {
+      address: address,
+      handle:
+        profile?.handle && !isPlaceholderName(profile.handle)
+          ? `@${profile.handle}`
+          : undefined,
+      username:
+        profile?.username && !isPlaceholderName(profile.username)
+          ? profile.username
+          : undefined,
+      displayName:
+        profile?.displayName && !isPlaceholderName(profile.displayName)
+          ? profile.displayName
+          : undefined,
+    };
+  } catch (err) {
+    return isIdentifierAddress
+      ? { address: identifier as Address }
+      : outputErrorAndExit(
+          json,
+          `Failed to resolve profile "${identifier}": ${err instanceof Error ? err.message : String(err)}`,
+          "Make sure to provide a valid 0x address or an existing Zora profile name and try again.",
+        );
+  }
+}
+
+function printRecipient(recipient: ResolvedRecipient): void {
+  console.log(`   To           ${recipient.address}`);
+  if (recipient.handle) {
+    console.log(`   Handle       ${recipient.handle}`);
+  } else if (recipient.username) {
+    console.log(`   Username     ${recipient.username}`);
+  } else if (recipient.displayName) {
+    console.log(`   Display Name ${recipient.displayName}`);
+  }
+}
+
 function printSendPreview(info: {
   name: string;
   symbol: string;
   amountFormatted: string;
   amountUsd: number | null;
-  to: string;
+  recipient: ResolvedRecipient;
 }): void {
   const usdStr =
     info.amountUsd != null ? ` ($${info.amountUsd.toFixed(2)})` : "";
@@ -65,7 +145,9 @@ function printSendPreview(info: {
   console.log(
     `   Amount       ${info.amountFormatted} ${info.symbol}${usdStr}`,
   );
-  console.log(`   To           ${info.to}`);
+
+  printRecipient(info.recipient);
+
   console.log(`\n   Ensure receiving wallet can receive on Base.`);
   console.log("");
 }
@@ -80,7 +162,7 @@ function printSendResult(
     decimals: number;
     amountFormatted: string;
     amountUsd: number | null;
-    to: string;
+    recipient: ResolvedRecipient;
     txHash: string;
   },
 ): void {
@@ -95,7 +177,7 @@ function printSendResult(
         symbol: info.symbol,
         amountUsd: info.amountUsd,
       },
-      to: info.to,
+      to: info.recipient.address,
       tx: info.txHash,
     });
     return;
@@ -103,11 +185,14 @@ function printSendResult(
 
   const usdStr =
     info.amountUsd != null ? ` ($${info.amountUsd.toFixed(2)})` : "";
+
   console.log(`\n Sent ${info.name}\n`);
   console.log(
     `   Amount       ${info.amountFormatted} ${info.symbol}${usdStr}`,
   );
-  console.log(`   To           ${info.to}`);
+
+  printRecipient(info.recipient);
+
   console.log(`   Tx           ${info.txHash}\n`);
 }
 
@@ -143,13 +228,13 @@ async function sendCallViaSmartWallet(
 }
 
 export const sendCommand = new Command("send")
-  .description("Send coins or ETH to an address")
+  .description("Send coins or ETH to an address or Zora profile")
   .argument(
     "[typeOrId]",
     "Token (eth, usdc, zora), type prefix (creator-coin, trend), or coin address/name",
   )
   .argument("[identifier]", "Coin name (when type prefix is given)")
-  .option("--to <address>", "Recipient address (0x...)")
+  .option("--to <recipient>", "Recipient: address (0x...) or Zora profile name")
   .option("--amount <value>", "Send specific amount")
   .option("--percent <value>", "Send percentage of balance (1-100)")
   .option("--all", "Send entire balance")
@@ -172,18 +257,17 @@ export const sendCommand = new Command("send")
       return outputErrorAndExit(
         json,
         "Missing --to flag.",
-        "Usage: zora send <identifier> --to <address>",
+        "Usage: zora send <identifier> --to <address|profile>",
       );
     }
 
-    if (!isAddress(opts.to)) {
-      return outputErrorAndExit(
-        json,
-        `Invalid recipient address: ${opts.to}`,
-        "Must be a valid 0x address.",
-      );
+    // The API key (when set) raises rate limits for the profile lookups below.
+    const apiKey = getApiKey();
+    if (apiKey) {
+      setApiKey(apiKey);
     }
-    const recipient = opts.to as Address;
+
+    const resolvedRecipient = await resolveRecipient(opts.to, json);
 
     const amountMode = getAmountMode(
       json,
@@ -310,7 +394,7 @@ export const sendCommand = new Command("send")
           symbol: "ETH",
           amountFormatted,
           amountUsd,
-          to: recipient,
+          recipient: resolvedRecipient,
         });
 
         const ok = await confirm({ message: "Confirm?", default: false });
@@ -324,12 +408,12 @@ export const sendCommand = new Command("send")
       try {
         txHash = smartWalletAccount
           ? await sendCallViaSmartWallet(
-              { to: recipient, value: amount },
+              { to: resolvedRecipient.address, value: amount },
               bundlerClient!,
               smartWalletAccount,
             )
           : await walletClient.sendTransaction({
-              to: recipient,
+              to: resolvedRecipient.address,
               value: amount,
             });
       } catch (err) {
@@ -362,7 +446,7 @@ export const sendCommand = new Command("send")
         decimals: 18,
         amountFormatted,
         amountUsd,
-        to: recipient,
+        recipient: resolvedRecipient,
         txHash,
       });
 
@@ -393,11 +477,6 @@ export const sendCommand = new Command("send")
         tokenAddress = trade.address;
         tokenName = knownToken.symbol;
       } else {
-        const apiKey = getApiKey();
-        if (apiKey) {
-          setApiKey(apiKey);
-        }
-
         let parsed;
         try {
           parsed = parsePositionalCoinArgs(firstArg, secondArg);
@@ -572,7 +651,7 @@ export const sendCommand = new Command("send")
           symbol,
           amountFormatted,
           amountUsd,
-          to: recipient,
+          recipient: resolvedRecipient,
         });
 
         const ok = await confirm({ message: "Confirm?", default: false });
@@ -590,7 +669,7 @@ export const sendCommand = new Command("send")
                 abi: erc20Abi,
                 address: tokenAddress,
                 functionName: "transfer",
-                args: [recipient, amount],
+                args: [resolvedRecipient.address, amount],
               },
               bundlerClient!,
               smartWalletAccount,
@@ -599,7 +678,7 @@ export const sendCommand = new Command("send")
               abi: erc20Abi,
               address: tokenAddress,
               functionName: "transfer",
-              args: [recipient, amount],
+              args: [resolvedRecipient.address, amount],
             });
       } catch (err) {
         track("cli_send", {
@@ -632,7 +711,7 @@ export const sendCommand = new Command("send")
         decimals,
         amountFormatted,
         amountUsd,
-        to: recipient,
+        recipient: resolvedRecipient,
         txHash,
       });
 
