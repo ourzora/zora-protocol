@@ -1,6 +1,6 @@
 # skills
 
-Install pre-built agent trading skills into your agent's commands directory. For the full walkthrough — scheduling, state files, and how each skill works — see the [Skills guide](/guides/agent-skills).
+Install pre-built agent skills into your agent's skills directory. For the full walkthrough — scheduling, state files, and how each skill works — see the [Skills guide](/guides/agent-skills).
 
 ```bash
 zora skills [command]
@@ -15,18 +15,21 @@ zora skills [command]
 
 ## Available Skills
 
-| Skill         | Description                                               |
-| ------------- | --------------------------------------------------------- |
-| `copy-trader` | Mirror another user's trades                              |
-| `early-buyer` | Auto-buy new launches from creators you follow            |
-| `watchlist`   | Alert when a coin's market cap hits configured thresholds |
-| `take-profit` | Auto-sell at configured take-profit or stop-loss targets  |
+| Skill         | Description                                                      |
+| ------------- | ---------------------------------------------------------------- |
+| `onboarding`  | Set up on Zora — profile, smart wallet, creator coin, first post |
+| `copy-trader` | Mirror another user's trades                                     |
+| `early-buyer` | Auto-buy new launches from creators you follow                   |
+| `watchlist`   | Alert when a coin's market cap hits configured thresholds        |
+| `take-profit` | Auto-sell at configured take-profit or stop-loss targets         |
 
 ---
 
 ## skills add
 
-Install a skill into your agent's commands directory. The CLI auto-detects the target (`.claude`, `.cursor`, `.windsurf`).
+Install a skill into your agent's skills directory. The CLI fetches the skill from `https://agents.zora.com/skill/<name>.md` and writes it to `<harness>/skills/zora-<name>/SKILL.md` — for example `.claude/skills/zora-onboarding/SKILL.md`. The `zora-` prefix namespaces the install, and the containing folder name is what the harness uses as the command (e.g. `/zora-onboarding`).
+
+The CLI auto-detects the target harness by looking for a `.claude`, `.cursor`, `.windsurf`, `.openclaw`, or `.hermes` directory in the current working directory (in that order), falling back to `.claude` when none is found.
 
 ```bash
 zora skills add [name] [options]
@@ -34,12 +37,12 @@ zora skills add [name] [options]
 
 ## Options
 
-| Flag              | Description                                  | Default     |
-| ----------------- | -------------------------------------------- | ----------- |
-| `--all`           | Install every available skill                | —           |
-| `--agent <agent>` | Target agent: `claude`, `cursor`, `windsurf` | auto-detect |
-| `--dir <path>`    | Explicit directory to install into           | —           |
-| `--json`          | Machine-readable JSON output                 | —           |
+| Flag              | Description                                                        | Default     |
+| ----------------- | ------------------------------------------------------------------ | ----------- |
+| `--all`           | Install every available skill                                      | —           |
+| `--agent <agent>` | Target agent: `claude`, `cursor`, `windsurf`, `openclaw`, `hermes` | auto-detect |
+| `--dir <path>`    | Explicit directory to install into                                 | —           |
+| `--json`          | Machine-readable JSON output                                       | —           |
 
 ## Examples
 
@@ -67,4 +70,4 @@ npx @zoralabs/cli skills add --all
 npx @zoralabs/cli skills add watchlist --agent cursor
 ```
 
-After installing, invoke the skill with `/copy-trader`, `/watchlist`, and so on in your agent interface.
+After installing, invoke the skill with `/zora-copy-trader`, `/zora-watchlist`, and so on in your agent interface.

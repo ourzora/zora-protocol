@@ -29,9 +29,26 @@ zora explore [options]
 | `trending` | Trending (algorithmic) |
 | `featured` | Editorially featured   |
 
-:::info
-Not all sort/type combinations are valid. The CLI reports supported options if an invalid combination is used.
-:::
+### Type Options
+
+| Value          | Description             |
+| -------------- | ----------------------- |
+| `all`          | All coin types combined |
+| `creator-coin` | Creator coins           |
+| `post`         | Content (post) coins    |
+| `trend`        | Trend coins             |
+
+### Valid sort/type combinations
+
+Not every sort works with every type. The CLI reports the supported types if an invalid combination is used.
+
+| Sort       | `all` | `creator-coin` | `post` | `trend` |
+| ---------- | :---: | :------------: | :----: | :-----: |
+| `mcap`     |   ✓   |       ✓        |   ✓    |    ✓    |
+| `volume`   |   ✓   |       ✓        |   ✓    |    ✓    |
+| `new`      |   ✓   |       ✓        |   ✓    |    ✓    |
+| `trending` |   ✓   |       ✓        |   ✓    |    ✓    |
+| `featured` |   —   |       ✓        |   ✓    |    —    |
 
 ## Examples
 
@@ -68,28 +85,85 @@ npx @zoralabs/cli explore --json --sort mcap --type all --limit 2
 {
   "coins": [
     {
-      "name": "jacob",
-      "symbol": "jacob",
-      "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
-      "coinType": "CREATOR",
-      "marketCap": "434988.18",
-      "marketCapDelta24h": "8220.7",
-      "volume24h": "0.49",
-      "createdAt": "2025-06-20T16:31:57",
-      "creatorProfile": { "handle": "jacob" },
-      "chainId": 8453
+      "name": "jessepollak",
+      "description": "",
+      "symbol": "jessepollak",
+      "coinType": "creator-coin",
+      "chainId": 8453,
+      "address": "0x50f88fe97f72cd3e75b9eb4f747f59bceba80d59",
+      "platformBlocked": false,
+      "totalSupply": "1000000000",
+      "creatorAddress": "0x2211d1d0020daea8039e46cf1367962070d77da9",
+      "creatorHandle": "jessepollak",
+      "socialAccounts": {
+        "instagram": null,
+        "tiktok": null,
+        "twitter": {
+          "username": "jessepollak",
+          "displayName": "jesse.base.eth",
+          "followerCount": 353511,
+          "id": null
+        },
+        "farcaster": {
+          "username": "jessepollak",
+          "displayName": "jesse.base.eth",
+          "followerCount": 382392,
+          "id": "99"
+        }
+      },
+      "mediaContentMimeType": null,
+      "mediaContentOriginalUri": "ipfs://bafybeidh46av35qajqef3ubz5ezr2hkxxn5yscegijvikia3oeqk6osvzu",
+      "previewImage": "https://...",
+      "priceUsd": 0.0008405589788996953,
+      "marketCap": 839194.3,
+      "marketCapDelta24h": 7694.62,
+      "marketCapChange24h": 0.9254,
+      "volume24h": 2120.97,
+      "totalVolume": 40178208.98,
+      "uniqueHolders": 63725,
+      "createdAt": "2025-11-20T17:00:11+00:00"
     }
   ],
-  "nextCursor": "eyJsYXN0X..."
+  "pageInfo": {
+    "endCursor": "eyJjb2luX3ByaWNlX3VzZGMiOiAwLjAwMD...",
+    "hasNextPage": true
+  }
 }
 ```
 
+Note that in JSON output `coinType` is the lowercase display form (`creator-coin`, `post`, `trend`) and numeric fields (`priceUsd`, `marketCap`, `volume24h`, …) are JSON numbers, not strings.
+
+### JSON Fields
+
+| Field                | Type           | Description                                                                         |
+| -------------------- | -------------- | ----------------------------------------------------------------------------------- |
+| `name`               | string \| null | Coin display name                                                                   |
+| `symbol`             | string \| null | Coin ticker symbol                                                                  |
+| `coinType`           | string \| null | `creator-coin`, `post`, or `trend`                                                  |
+| `chainId`            | number \| null | Chain ID (`8453` for Base)                                                          |
+| `address`            | string \| null | Contract address                                                                    |
+| `platformBlocked`    | boolean        | Whether the coin is blocked on the Zora platform                                    |
+| `totalSupply`        | string \| null | Total token supply                                                                  |
+| `creatorAddress`     | string \| null | Creator's wallet address                                                            |
+| `creatorHandle`      | string \| null | Creator's Zora handle                                                               |
+| `socialAccounts`     | object \| null | Creator's linked `instagram`, `tiktok`, `twitter`, `farcaster` (each may be `null`) |
+| `priceUsd`           | number \| null | Current token price in USD                                                          |
+| `marketCap`          | number \| null | Market cap in USD                                                                   |
+| `marketCapDelta24h`  | number \| null | 24h market cap change in USD                                                        |
+| `marketCapChange24h` | number \| null | 24h market cap change as a fraction (e.g. `0.0925` = +9.25%)                        |
+| `volume24h`          | number \| null | 24h trading volume in USD                                                           |
+| `totalVolume`        | number \| null | All-time trading volume in USD                                                      |
+| `uniqueHolders`      | number \| null | Number of unique holder addresses                                                   |
+| `createdAt`          | string \| null | ISO 8601 creation timestamp                                                         |
+
+The response also includes `mediaContentMimeType`, `mediaContentOriginalUri`, `previewImage`, and `description` fields for media metadata.
+
 ### Pagination
 
-Use the `nextCursor` value from a previous response to fetch the next page:
+Use the `endCursor` from `pageInfo` to fetch the next page. `hasNextPage` indicates whether more results exist:
 
 ```bash
-npx @zoralabs/cli explore --json --sort mcap --after "eyJsYXN0X..."
+npx @zoralabs/cli explore --json --sort mcap --after "eyJjb2luX3ByaWNlX3VzZGMiOiAwLjAwMD..."
 ```
 
 ## Interactive Controls

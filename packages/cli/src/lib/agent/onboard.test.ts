@@ -24,6 +24,14 @@ const PK = `0x${"a".repeat(64)}` as const;
 const EMBEDDED = "0xEeE0000000000000000000000000000000000001" as const;
 const SMART = "0xd1373e4119dD2C4C23f11F9cDc97A464790acbC8" as const;
 const noSleep = async () => {};
+// First-post inputs: the post is published only when both are supplied, so
+// tests that expect a post spread these into the onboardAgent call.
+const POST_IMAGE = {
+  filename: "bg.png",
+  bytes: new Uint8Array([1, 2, 3]),
+  mimeType: "image/png",
+};
+const POST_ARGS = { caption: "gm", postImage: POST_IMAGE } as const;
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -56,7 +64,7 @@ beforeEach(() => {
     sponsored: true,
     simulation: "ExecutionResult",
     submitted: { hash: "0xpo", success: true },
-    greeting: "gm",
+    caption: "gm",
     ticker: "GM",
     imageUri: "ipfs://i",
     contractUri: "ipfs://c",
@@ -66,7 +74,11 @@ beforeEach(() => {
 
 describe("onboardAgent", () => {
   it("runs all steps and returns the assembled identity", async () => {
-    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      ...POST_ARGS,
+    });
     expect(result.username).toBe("keen_cedar_9807");
     expect(result.smartWallet).toBe(SMART);
     expect(result.embedded).toBe(EMBEDDED);
@@ -132,6 +144,7 @@ describe("onboardAgent", () => {
       privateKey: PK,
       sleep: noSleep,
       dryRun: true,
+      ...POST_ARGS,
     });
     expect(result.dryRun).toBe(true);
     expect(createCreatorCoin).toHaveBeenCalledWith(
@@ -157,9 +170,40 @@ describe("onboardAgent", () => {
     expect(result.post).toBeUndefined();
   });
 
+  it("skips the first post when no caption + image are given", async () => {
+    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    expect(createFirstPost).not.toHaveBeenCalled();
+    expect(result.post).toBeUndefined();
+    // The coin still runs — only the post is gated on the caption + image.
+    expect(createCreatorCoin).toHaveBeenCalledTimes(1);
+  });
+
+  it("forwards caption, image, derived handle, title, and description to the post", async () => {
+    await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      ...POST_ARGS,
+      postTitle: "My Coin",
+      postDescription: "the description",
+    });
+    expect(createFirstPost).toHaveBeenCalledWith(
+      expect.objectContaining({
+        caption: "gm",
+        image: { bytes: POST_IMAGE.bytes, mimeType: "image/png" },
+        handle: "zora.co/keen_cedar_9807",
+        title: "My Coin",
+        description: "the description",
+      }),
+    );
+  });
+
   it("keeps the identity (and profile link) when the coin step fails", async () => {
     vi.mocked(createCreatorCoin).mockRejectedValue(new Error("coin boom"));
-    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      ...POST_ARGS,
+    });
     // The account already exists, so a coin failure must not discard it.
     expect(result.username).toBe("keen_cedar_9807");
     expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
@@ -171,7 +215,11 @@ describe("onboardAgent", () => {
 
   it("keeps the identity (and profile link) when the post step fails", async () => {
     vi.mocked(createFirstPost).mockRejectedValue(new Error("post boom"));
-    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      ...POST_ARGS,
+    });
     expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
     expect(result.post).toBeUndefined();
     expect(result.postError).toMatch(/post boom/);
@@ -183,13 +231,17 @@ describe("onboardAgent", () => {
       sponsored: true,
       simulation: "ExecutionResult",
       submitted: { hash: "0xpo", success: true },
-      greeting: "gm",
+      caption: "gm",
       ticker: "GM",
       imageUri: "ipfs://i",
       contractUri: "ipfs://c",
       // no coinAddress — the resolver couldn't pin the content coin down
     });
-    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      ...POST_ARGS,
+    });
     expect(result.post?.coinAddress).toBeUndefined();
     expect(result.post?.url).toBe("https://zora.co/@keen_cedar_9807");
   });
@@ -317,7 +369,7 @@ describe("onboardAgent", () => {
     vi.mocked(createFirstPost).mockResolvedValue({
       sponsored: true,
       simulation: "ExecutionResult",
-      greeting: "gm",
+      caption: "gm",
       ticker: "GM",
       imageUri: "ipfs://i",
       contractUri: "ipfs://c",
@@ -327,6 +379,7 @@ describe("onboardAgent", () => {
       privateKey: PK,
       sleep: noSleep,
       dryRun: true,
+      ...POST_ARGS,
     });
     expect(result.post?.url).toBeUndefined();
   });

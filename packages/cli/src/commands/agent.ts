@@ -30,6 +30,7 @@ import { onboardAgent } from "../lib/agent/onboard.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
 import {
   loadAvatar,
+  loadImageFile,
   uploadAvatar,
   type AvatarFile,
 } from "../lib/agent/avatar.js";
@@ -181,6 +182,19 @@ agentCommand
     "Set the agent's avatar from a local image (PNG/JPG/GIF/WebP). Default: an auto-assigned avatar.",
   )
   .option(
+    "--caption <text>",
+    "First-post meme caption, rendered as the big centered text on the card. Required (with --image) to publish a first post.",
+  )
+  .option(
+    "--image <path>",
+    "First-post background photo from a local image (PNG/JPG/GIF/WebP). Required (with --caption) to publish a first post.",
+  )
+  .option("--title <text>", "First-post coin name. Default: the caption.")
+  .option(
+    "--description <text>",
+    "First-post coin description. Default: the caption.",
+  )
+  .option(
     "--force",
     "Proceed even if an agent already exists on this wallet, without confirming",
   )
@@ -198,6 +212,10 @@ agentCommand
       username?: string;
       bio?: string;
       avatar?: string;
+      caption?: string;
+      image?: string;
+      title?: string;
+      description?: string;
       force?: boolean;
     },
   ) {
@@ -225,6 +243,28 @@ agentCommand
     if (options.avatar !== undefined) {
       try {
         avatar = loadAvatar(options.avatar);
+      } catch (err) {
+        return outputErrorAndExit(json, formatError(err));
+      }
+    }
+
+    // The first post needs both a caption and a background image. Require them
+    // together: passing only one is a mistake (an incomplete card), and passing
+    // neither simply skips the post. Validate + read the image up front, for the
+    // same fail-fast reason as the avatar above.
+    const hasCaption = Boolean(options.caption && options.caption.trim());
+    const hasImage = options.image !== undefined;
+    if (hasCaption !== hasImage && !options.skipPost) {
+      return outputErrorAndExit(
+        json,
+        "To publish a first post, pass both --caption and --image.",
+        "Pass both, or omit both to skip the first post.",
+      );
+    }
+    let postImage: AvatarFile | undefined;
+    if (hasImage) {
+      try {
+        postImage = loadImageFile(options.image!, "Post image");
       } catch (err) {
         return outputErrorAndExit(json, formatError(err));
       }
@@ -263,6 +303,10 @@ agentCommand
         username: options.username,
         bio: options.bio,
         avatar,
+        caption: options.caption,
+        postImage,
+        postTitle: options.title,
+        postDescription: options.description,
         onProgress: json
           ? undefined
           : (_step, detail) => console.log(`• ${detail} ...`),
@@ -315,6 +359,8 @@ agentCommand
       set_username: options.username !== undefined,
       set_bio: options.bio !== undefined,
       set_avatar: options.avatar !== undefined,
+      set_caption: hasCaption,
+      set_image: hasImage,
       output_format: json ? "json" : "text",
     });
 
@@ -361,7 +407,7 @@ agentCommand
         }
         if (result.post) {
           console.log(
-            `  First post:   "${result.post.greeting}"${
+            `  First post:   "${result.post.caption}"${
               result.dryRun
                 ? " (simulated ✓)"
                 : result.post.hash

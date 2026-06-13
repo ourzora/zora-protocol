@@ -5,12 +5,17 @@ vi.mock("./zora-client.js", async (importOriginal) => {
   return { ...actual, ipfsUpload: vi.fn(), trpcRequest: vi.fn() };
 });
 vi.mock("./submit.js", () => ({ signSimulateSubmit: vi.fn() }));
+// Stub the card renderer — Satori/resvg are heavy and exercised separately; here
+// we only care that createFirstPost wires the card PNG through to IPFS.
+vi.mock("./render-card.js", () => ({
+  renderFirstPostCard: vi.fn(async () => Buffer.from("PNG")),
+}));
 
-import { createFirstPost } from "./post.js";
+import { createFirstPost, deriveTicker } from "./post.js";
 import { ipfsUpload, trpcRequest } from "./zora-client.js";
 import { signSimulateSubmit } from "./submit.js";
+import { renderFirstPostCard } from "./render-card.js";
 
-const CARD = { greeting: "gm", ticker: "GM", pngBase64: "AAAA" };
 const COIN = "0x1f6835c4996fad83c8af2afa00056adf9234fe72";
 const SMART = "0xSmart00000000000000000000000000000000aaaa";
 const OWNERS = [
@@ -26,7 +31,9 @@ const params = (over = {}) =>
     smartWallet: SMART,
     owners: OWNERS,
     dryRun: false,
-    card: CARD,
+    caption: "gm",
+    image: { bytes: new Uint8Array([1, 2, 3]), mimeType: "image/png" },
+    handle: "zora.co/alice",
     ...over,
   }) as Parameters<typeof createFirstPost>[0];
 
@@ -53,8 +60,11 @@ describe("createFirstPost", () => {
 
     expect(result.imageUri).toBe("ipfs://img");
     expect(result.contractUri).toBe("ipfs://meta");
-    expect(result.greeting).toBe("gm");
+    expect(result.caption).toBe("gm");
     expect(result.ticker).toBe("GM");
+    expect(renderFirstPostCard).toHaveBeenCalledWith(
+      expect.objectContaining({ caption: "gm", handle: "zora.co/alice" }),
+    );
     expect(result.submitted?.hash).toBe("0xpost");
     expect(ipfsUpload).toHaveBeenNthCalledWith(
       1,
@@ -117,7 +127,7 @@ describe("createFirstPost", () => {
     expect(result.coinAddress?.toLowerCase()).toBe(COIN);
   });
 
-  it("leaves coinAddress undefined when no log name matches the greeting", async () => {
+  it("leaves coinAddress undefined when no log name matches the coin name", async () => {
     vi.mocked(signSimulateSubmit).mockResolvedValue({
       sponsored: true,
       simulation: "ExecutionResult",
@@ -215,5 +225,37 @@ describe("createFirstPost", () => {
     );
     expect(getTransactionReceipt).toHaveBeenCalledTimes(1);
     expect(result.coinAddress).toBeUndefined();
+  });
+
+  it("defaults the coin name + description to the caption", async () => {
+    await createFirstPost(params({ caption: "hello world" }));
+    const meta = JSON.parse(vi.mocked(ipfsUpload).mock.calls[1][2].toString());
+    expect(meta.name).toBe("hello world");
+    expect(meta.description).toBe("hello world");
+    expect(meta.symbol).toBe("HELLOWORLD");
+  });
+
+  it("uses --title / --description for metadata when provided", async () => {
+    await createFirstPost(
+      params({ title: "My Post", description: "a longer description" }),
+    );
+    const meta = JSON.parse(vi.mocked(ipfsUpload).mock.calls[1][2].toString());
+    expect(meta.name).toBe("My Post");
+    expect(meta.description).toBe("a longer description");
+    // Ticker derives from the title, not the caption, when a title is set.
+    expect(meta.symbol).toBe("MYPOST");
+  });
+});
+
+describe("deriveTicker", () => {
+  it("uppercases alphanumerics and caps at 10 characters", () => {
+    expect(deriveTicker("gm")).toBe("GM");
+    expect(deriveTicker("hello, world!")).toBe("HELLOWORLD");
+    expect(deriveTicker("supercalifragilistic")).toBe("SUPERCALIF");
+  });
+
+  it("falls back to POST when nothing usable remains", () => {
+    expect(deriveTicker("🦭✨")).toBe("POST");
+    expect(deriveTicker("   ")).toBe("POST");
   });
 });

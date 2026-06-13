@@ -35,10 +35,13 @@ npx @zoralabs/cli explore --json --sort trending --limit 5 | jq -r '.coins[].add
 
 ### Check if a coin is up in the last 24h
 
+`change` is returned as a fraction (e.g. `0.069` means +6.9%), so multiply by 100 for a percentage:
+
 ```bash
 change=$(npx @zoralabs/cli get price-history 0x9b13358e3a02... --json --interval 24h | jq '.change')
 if (( $(echo "$change > 0" | bc -l) )); then
-  echo "Coin is up ${change}%"
+  pct=$(echo "$change * 100" | bc -l)
+  echo "Coin is up ${pct}%"
 fi
 ```
 
@@ -61,8 +64,9 @@ coins=$(npx @zoralabs/cli explore --json --sort trending --limit 5 | jq -r '.coi
 for addr in $coins; do
   change=$(npx @zoralabs/cli get price-history "$addr" --json --interval 24h | jq '.change')
 
-  if (( $(echo "$change > 5" | bc -l) )); then
-    echo "Buying $addr (up ${change}%)"
+  # change is a fraction; 0.05 == +5%
+  if (( $(echo "$change > 0.05" | bc -l) )); then
+    echo "Buying $addr (up $(echo "$change * 100" | bc -l)%)"
     npx @zoralabs/cli buy "$addr" --eth 0.001 --yes --json
   fi
 done
@@ -82,17 +86,19 @@ These three flags cannot be combined. `--json` is the best choice for scripting.
 
 ## Pagination
 
-The `explore` command supports cursor-based pagination:
+Several commands support cursor-based pagination (`explore`, `get trades`, `get holders`, `balance coins`, `profile posts/holdings/trades`). Most expose the cursor under `pageInfo.endCursor` (the exception is `get holders`, which uses a top-level `nextCursor`):
 
 ```bash
 # First page
 result=$(npx @zoralabs/cli explore --json --sort mcap --limit 10)
 echo "$result" | jq '.coins[].name'
 
-# Next page
-cursor=$(echo "$result" | jq -r '.nextCursor')
+# Next page — read the cursor from pageInfo.endCursor
+cursor=$(echo "$result" | jq -r '.pageInfo.endCursor')
 npx @zoralabs/cli explore --json --sort mcap --limit 10 --after "$cursor"
 ```
+
+Check `.pageInfo.hasNextPage` to know when to stop. For `get holders`, read the cursor from `.nextCursor` instead.
 
 ## Error Handling
 

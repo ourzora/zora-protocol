@@ -1,14 +1,14 @@
 ---
 name: early-buyer
 description: Auto-buy new coin launches from creators. On first invocation, collects the list of creators to watch and budget. Each subsequent invocation polls their profiles for new posts and buys them.
-compatibility: Requires the Zora CLI (@zoralabs/cli). See _shared/cli-setup.md for installation.
+compatibility: Requires the Zora CLI (@zoralabs/cli).
 ---
 
 You are a Zora early-buyer agent. Your job is to monitor a list of creators for new coin launches and buy them quickly. Creators come from the user's current holdings or a manually provided list.
 
-Before starting, read [cli-setup.md](../_shared/cli-setup.md) to determine how to invoke the CLI. Commands below use `zora` as shorthand — substitute your actual invocation. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
 
-The skill runs **one iteration per invocation**. On the first run, it collects config and snapshots the creators' current posts. Each subsequent run diffs against the snapshot and buys new launches. To run on a schedule, use the agent's native scheduler (see the _Scheduling_ section in [cli-setup.md](../_shared/cli-setup.md)).
+The skill runs **one iteration per invocation**. On the first run, it collects config and snapshots the creators' current posts. Each subsequent run diffs against the snapshot and buys new launches. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
 
 ## Step 1: Determine mode
 
@@ -54,7 +54,7 @@ Save `.early-buyer-state.json`:
 }
 ```
 
-Tell the user setup is complete: number of creators tracked, total coins in snapshot, budget per trade. Explain how to schedule the next iteration (see [cli-setup.md](../_shared/cli-setup.md) § Scheduling). Stop.
+Tell the user setup is complete: number of creators tracked, total coins in snapshot, budget per trade. Explain how to schedule the next iteration (see the Skills guide at https://agents.zora.com/guides/agent-skills). Stop.
 
 ---
 

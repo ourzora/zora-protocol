@@ -2,10 +2,12 @@
 
 The Zora CLI stores configuration in `~/.config/zora/` with two files:
 
-| File          | Contents              | Permissions |
-| ------------- | --------------------- | ----------- |
-| `config.json` | API key, analytics ID | `0600`      |
-| `wallet.json` | Encrypted private key | `0600`      |
+| File          | Contents                                                | Permissions |
+| ------------- | ------------------------------------------------------- | ----------- |
+| `config.json` | API key, anonymous analytics ID, DM-check timestamp     | `0600`      |
+| `wallet.json` | Private key (plain text), smart wallet & agent metadata | `0600`      |
+
+The private key in `wallet.json` is stored in plain text — it is protected by file permissions (`0600`, owner read/write only), not encryption. Both files are versioned (`version: 1`) so the CLI can validate and migrate them.
 
 On Windows, the config directory is `%APPDATA%\zora\` or `~\AppData\Roaming\zora\`.
 
@@ -63,13 +65,15 @@ The wallet file at `~/.config/zora/wallet.json` is the only copy of the private 
 
 ## All Environment Variables
 
-| Variable            | Description                                |
-| ------------------- | ------------------------------------------ |
-| `ZORA_API_KEY`      | API key (overrides config file)            |
-| `ZORA_PRIVATE_KEY`  | Wallet private key (overrides wallet file) |
-| `ZORA_API_TARGET`   | Override API base URL (for dev/staging)    |
-| `ZORA_NO_ANALYTICS` | Set to `1` to disable analytics            |
-| `DO_NOT_TRACK`      | Set to `1` to disable analytics            |
+| Variable                    | Description                                                                          |
+| --------------------------- | ------------------------------------------------------------------------------------ |
+| `ZORA_API_KEY`              | API key (overrides config file)                                                      |
+| `ZORA_PRIVATE_KEY`          | Wallet private key (overrides wallet file)                                           |
+| `ZORA_API_TARGET`           | Override API base URL (for dev/staging)                                              |
+| `ZORA_SMART_WALLET_ADDRESS` | Smart wallet address to use for trading/posting when not recorded in the wallet file |
+| `ZORA_NO_ANALYTICS`         | Set to `1` to disable analytics                                                      |
+| `DO_NOT_TRACK`              | Set to `1` to disable analytics                                                      |
+| `NO_COLOR`                  | Set to disable colored terminal output                                               |
 
 ## Analytics
 

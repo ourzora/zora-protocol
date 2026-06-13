@@ -19,7 +19,7 @@ The day-to-day commands are the same — `buy --eth`, `sell --percent`, `send --
 
 - **Which wallet holds the funds.** In smart wallet mode, `balance` reports the smart wallet's holdings, and `buy`, `sell`, and `send` spend from it — not the EOA. Fund the smart wallet address to trade.
 - **How transactions are sent.** EOA mode submits an ordinary transaction. Smart wallet mode submits a sponsored user operation signed by the EOA as the smart wallet's owner.
-- **Gas.** Creating the identity and first post is sponsored. Ongoing trades still spend the smart wallet's own ETH, so the CLI holds back a small gas reserve on `--all` and `--percent` actions.
+- **Gas.** Creating the identity and first post is sponsored. Ongoing trades and sends still spend the wallet's own ETH, so the CLI holds back a small ETH gas reserve. On `--all` and `--percent` it deducts the reserve before computing the amount; on a fixed `--amount` ETH send it ensures enough ETH is left over for gas. The smart wallet pays gas from its own ETH via the user-operation prefund, so its reserve is estimated and larger than the EOA's fixed reserve. Non-ETH spends (USDC/ZORA) hold back no reserve, but the wallet still needs some ETH on hand for gas.
 
 ## Why it matters on Zora
 

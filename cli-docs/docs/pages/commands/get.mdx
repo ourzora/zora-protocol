@@ -104,40 +104,69 @@ npx @zoralabs/cli get creator-coin jacob --json
   "name": "jacob",
   "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
   "coinType": "creator-coin",
-  "marketCap": "434988.18",
-  "marketCapDelta24h": "8220.7",
-  "volume24h": "0.49",
-  "uniqueHolders": 6171,
-  "createdAt": "2025-06-20T16:31:57",
+  "marketCap": "199301.60",
+  "marketCapDelta24h": "5663.62",
+  "volume24h": "4.68",
+  "uniqueHolders": 6153,
+  "createdAt": "2025-06-20T16:31:57+00:00",
   "creatorAddress": "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
   "creatorHandle": "jacob",
+  "priceHistory": {
+    "interval": "1w",
+    "high": 0.00021927832273363457,
+    "low": 0.00019906116289646506,
+    "change": -0.06901341654483199,
+    "prices": [
+      {
+        "timestamp": "2026-06-06T13:35:25+00:00",
+        "price": 0.00021407569497853066
+      }
+    ]
+  },
   "trades": [
     {
-      "side": "BUY",
-      "trader": "0xabc1...2345",
-      "amount": "100.5",
-      "valueUsd": "5.23",
-      "txHash": "0xdef1..."
+      "type": "SELL",
+      "sender": "0x5c7c5afb48779b1d0b60295849c61810ee155d5f",
+      "senderHandle": "goldy044",
+      "coinAmount": "11736457131240480162225",
+      "valueUsd": "0.00803864105315444601505",
+      "timestamp": "2026-06-11T16:48:23+00:00",
+      "transactionHash": "0x7bd25398491043ffcb8fec11bea0453fda980b590368f6eddcfc50488acbfc7a"
     }
   ]
 }
 ```
 
+The base `get --json` always uses the `1w` interval for `priceHistory`. For other intervals use [`get price-history`](#get-price-history).
+
 ### JSON Fields
 
-| Field               | Type   | Description                        |
-| ------------------- | ------ | ---------------------------------- |
-| `name`              | string | Coin display name                  |
-| `address`           | string | Contract address on Base           |
-| `coinType`          | string | `post`, `creator-coin`, or `trend` |
-| `marketCap`         | string | Market cap in USD                  |
-| `marketCapDelta24h` | string | 24h market cap change in USD       |
-| `volume24h`         | string | 24h trading volume in USD          |
-| `uniqueHolders`     | number | Number of unique holder addresses  |
-| `createdAt`         | string | ISO 8601 creation timestamp        |
-| `creatorAddress`    | string | Creator's wallet address           |
-| `creatorHandle`     | string | Creator's Zora handle              |
-| `trades`            | array  | Recent swap activity               |
+| Field               | Type           | Description                                                                                                                              |
+| ------------------- | -------------- | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`              | string         | Coin display name                                                                                                                        |
+| `address`           | string         | Contract address on Base                                                                                                                 |
+| `coinType`          | string         | `post`, `creator-coin`, or `trend`                                                                                                       |
+| `marketCap`         | string         | Market cap in USD                                                                                                                        |
+| `marketCapDelta24h` | string         | 24h market cap change in USD                                                                                                             |
+| `volume24h`         | string         | 24h trading volume in USD                                                                                                                |
+| `uniqueHolders`     | number         | Number of unique holder addresses                                                                                                        |
+| `createdAt`         | string \| null | ISO 8601 creation timestamp                                                                                                              |
+| `creatorAddress`    | string \| null | Creator's wallet address                                                                                                                 |
+| `creatorHandle`     | string \| null | Creator's Zora handle                                                                                                                    |
+| `priceHistory`      | object \| null | `1w` price history — `interval`, `high`, `low`, `change`, `prices[]` (see [get price-history](#get-price-history)). `null` when no data. |
+| `trades`            | array          | Up to 10 most recent swaps                                                                                                               |
+
+Each entry in `trades` has these fields:
+
+| Field             | Type           | Description                             |
+| ----------------- | -------------- | --------------------------------------- |
+| `type`            | string \| null | `BUY` or `SELL`                         |
+| `sender`          | string         | Trader's wallet address                 |
+| `senderHandle`    | string \| null | Trader's Zora handle, if any            |
+| `coinAmount`      | string         | Coin amount traded, in base units (wei) |
+| `valueUsd`        | string \| null | Trade value in USD                      |
+| `timestamp`       | string         | ISO 8601 timestamp                      |
+| `transactionHash` | string         | Transaction hash                        |
 
 ---
 
@@ -200,29 +229,35 @@ npx @zoralabs/cli get price-history creator-coin jacob --json --interval 1w
 ```json
 {
   "coin": "jacob",
-  "type": "creator-coin",
+  "coinType": "creator-coin",
   "interval": "1w",
-  "high": 0.0004846,
-  "low": 0.0004302,
-  "change": -9.94,
+  "high": 0.00021927832273363457,
+  "low": 0.00019906116289646506,
+  "change": -0.06901341654483199,
   "prices": [
-    { "timestamp": "2026-03-23T17:55:00", "price": 0.000483 },
-    { "timestamp": "2026-03-24T06:31:15", "price": 0.0004791 }
+    {
+      "timestamp": "2026-06-06T13:35:25+00:00",
+      "price": 0.00021407569497853066
+    },
+    {
+      "timestamp": "2026-06-06T17:47:30+00:00",
+      "price": 0.00020894721962625066
+    }
   ]
 }
 ```
 
 #### JSON Fields
 
-| Field      | Type   | Description                                 |
-| ---------- | ------ | ------------------------------------------- |
-| `coin`     | string | Coin display name                           |
-| `type`     | string | Coin type                                   |
-| `interval` | string | Requested time interval                     |
-| `high`     | number | Highest price in USD during interval        |
-| `low`      | number | Lowest price in USD during interval         |
-| `change`   | number | Percentage change over interval             |
-| `prices`   | array  | Array of `{ timestamp, price }` data points |
+| Field      | Type           | Description                                                                                  |
+| ---------- | -------------- | -------------------------------------------------------------------------------------------- |
+| `coin`     | string         | Coin display name                                                                            |
+| `coinType` | string         | `post`, `creator-coin`, or `trend`                                                           |
+| `interval` | string         | Requested time interval                                                                      |
+| `high`     | number         | Highest price in USD during interval                                                         |
+| `low`      | number         | Lowest price in USD during interval                                                          |
+| `change`   | number \| null | Change over interval as a fraction (e.g. `-0.069` = -6.9%); `null` if the first price is `0` |
+| `prices`   | array          | Array of `{ timestamp, price }` data points                                                  |
 
 ---
 
@@ -277,18 +312,43 @@ npx @zoralabs/cli get trades creator-coin jacob --json
 
 ```json
 {
+  "coin": {
+    "name": "jacob",
+    "address": "0x9b13358e3a023507e7046c18f508a958cda75f54"
+  },
   "trades": [
     {
-      "side": "BUY",
-      "trader": "0xabc1...2345",
-      "amount": "1250.00",
-      "valueUsd": "5.23",
-      "txHash": "0xdef1..."
+      "type": "SELL",
+      "sender": "0x5c7c5afb48779b1d0b60295849c61810ee155d5f",
+      "senderHandle": "goldy044",
+      "coinAmount": "11736457131240480162225",
+      "valueUsd": "0.00803864105315444601505",
+      "timestamp": "2026-06-11T16:48:23+00:00",
+      "transactionHash": "0x7bd25398491043ffcb8fec11bea0453fda980b590368f6eddcfc50488acbfc7a"
     }
   ],
-  "nextCursor": "eyJsYXN0X..."
+  "pageInfo": {
+    "endCursor": "eyJibG9ja19jb250ZXh0LmJsb2NrX3RpbWVzdGFtcCI6...",
+    "hasNextPage": true
+  }
 }
 ```
+
+#### JSON Fields
+
+| Field             | Type           | Description                                 |
+| ----------------- | -------------- | ------------------------------------------- |
+| `coin`            | object         | `{ name, address }` of the resolved coin    |
+| `type`            | string \| null | `BUY` or `SELL`                             |
+| `sender`          | string         | Trader's wallet address                     |
+| `senderHandle`    | string \| null | Trader's Zora handle, if any                |
+| `coinAmount`      | string         | Coin amount traded, in base units (wei)     |
+| `valueUsd`        | string \| null | Trade value in USD                          |
+| `timestamp`       | string         | ISO 8601 timestamp                          |
+| `transactionHash` | string         | Transaction hash                            |
+| `pageInfo`        | object         | `{ endCursor, hasNextPage }` for pagination |
+
+Pass `pageInfo.endCursor` to `--after` to fetch the next page.
 
 ### Interactive Controls
 
@@ -355,17 +415,47 @@ npx @zoralabs/cli get holders creator-coin jacob --json
 
 ```json
 {
+  "coin": "jacob",
+  "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "coinType": "creator-coin",
+  "totalHolders": 5940,
   "holders": [
     {
-      "address": "0xabc1...2345",
-      "handle": "jacob.eth",
-      "balance": "50000.00",
-      "ownershipPercent": "12.5"
+      "rank": 1,
+      "handle": "0x4985...2b2b",
+      "address": "0x498581ff718922c3f8e6a244956af099b2652b2b",
+      "balance": "443.4M",
+      "balanceRaw": "443433860557465628587652278",
+      "ownershipPercent": 44.34338605574656
     }
   ],
-  "nextCursor": "eyJsYXN0X..."
+  "nextCursor": "eyJiYWxhbmNlIjogIjAwMD..."
 }
 ```
+
+#### JSON Fields
+
+| Field          | Type   | Description                                                     |
+| -------------- | ------ | --------------------------------------------------------------- |
+| `coin`         | string | Coin display name                                               |
+| `address`      | string | Coin contract address                                           |
+| `coinType`     | string | `post`, `creator-coin`, or `trend`                              |
+| `totalHolders` | number | Total holder count across all pages                             |
+| `holders`      | array  | Holder entries for the requested page (see below)               |
+| `nextCursor`   | string | Cursor for the next page — only present when more results exist |
+
+Each entry in `holders` has these fields:
+
+| Field              | Type   | Description                                          |
+| ------------------ | ------ | ---------------------------------------------------- |
+| `rank`             | number | Position within the page (1-based)                   |
+| `handle`           | string | Holder's Zora handle, or a truncated address if none |
+| `address`          | string | Holder's wallet address                              |
+| `balance`          | string | Human-readable balance (e.g. `443.4M`)               |
+| `balanceRaw`       | string | Raw balance in base units (wei)                      |
+| `ownershipPercent` | number | Percentage of total supply held                      |
+
+Pass `nextCursor` to `--after` to fetch the next page.
 
 ### Interactive Controls
 

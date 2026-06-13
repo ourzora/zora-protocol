@@ -88,7 +88,7 @@ const ONBOARD_RESULT: OnboardResult = {
   },
   post: {
     hash: "0xp0001",
-    greeting: "gm frens",
+    caption: "gm frens",
     ticker: "GMFRENS",
     sponsored: true,
     simulation: "ExecutionResult",

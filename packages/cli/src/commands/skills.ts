@@ -4,8 +4,7 @@ import { resolve, join } from "node:path";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { track } from "../lib/analytics.js";
 
-const DEFAULT_SKILLS_BASE_URL = "https://zoraskills.dev/skill";
-const SHARED_FILE = "cli-setup";
+const DEFAULT_SKILLS_BASE_URL = "https://agents.zora.com/skill";
 
 const getSkillsBaseUrl = (): string =>
   process.env.ZORA_SKILLS_BASE_URL || DEFAULT_SKILLS_BASE_URL;
@@ -17,6 +16,12 @@ type SkillMeta = {
 };
 
 const SKILLS: SkillMeta[] = [
+  {
+    name: "onboarding",
+    category: "Onboarding",
+    description:
+      "Set up on Zora for the first time — publish your profile, create your smart wallet and creator coin, and post your first meme",
+  },
   {
     name: "copy-trader",
     category: "Social",
@@ -42,23 +47,41 @@ const SKILLS: SkillMeta[] = [
   },
 ];
 
-type Agent = "claude" | "cursor" | "windsurf";
+type Agent = "claude" | "cursor" | "windsurf" | "openclaw" | "hermes";
 
-const AGENT_COMMAND_DIRS: Record<Agent, string> = {
-  claude: ".claude/commands",
-  cursor: ".cursor/commands",
-  windsurf: ".windsurf/commands",
+const AGENT_ORDER: Agent[] = [
+  "claude",
+  "cursor",
+  "windsurf",
+  "openclaw",
+  "hermes",
+];
+
+// Each skill installs as its own folder containing a SKILL.md:
+//   <skills-dir>/zora-<name>/SKILL.md
+// The folder name is what the harness uses as the command (e.g. /zora-onboarding),
+// so the zora- prefix namespaces the install. Loose .md files and grouping subfolders
+// are NOT discovered by Claude Code — one folder per skill, file named SKILL.md.
+const SKILL_PREFIX = "zora-";
+
+const AGENT_SKILLS_DIRS: Record<Agent, string> = {
+  claude: ".claude/skills",
+  cursor: ".cursor/skills",
+  windsurf: ".windsurf/skills",
+  openclaw: ".openclaw/skills",
+  hermes: ".hermes/skills",
 };
 
 const AGENT_ROOT_DIRS: Record<Agent, string> = {
   claude: ".claude",
   cursor: ".cursor",
   windsurf: ".windsurf",
+  openclaw: ".openclaw",
+  hermes: ".hermes",
 };
 
 const detectAgent = (cwd: string): Agent | null => {
-  const order: Agent[] = ["claude", "cursor", "windsurf"];
-  for (const agent of order) {
+  for (const agent of AGENT_ORDER) {
     if (existsSync(join(cwd, AGENT_ROOT_DIRS[agent]))) return agent;
   }
   return null;
@@ -77,7 +100,7 @@ const fetchSkill = async (name: string): Promise<string> => {
 
 export const skillsCommand = new Command("skills")
   .description(
-    "Install pre-built agent trading skills (copy-trader, early-buyer, watchlist, take-profit)",
+    "Install pre-built agent skills — onboarding (onboarding) and trading (copy-trader, early-buyer, watchlist, take-profit)",
   )
   .action(function (this: Command) {
     this.outputHelp();
@@ -93,7 +116,7 @@ skillsCommand
       render: () => {
         console.log("Available skills:\n");
         for (const s of SKILLS) {
-          console.log(`  /${s.name.padEnd(14)} ${s.description}`);
+          console.log(`  ${s.name.padEnd(16)} ${s.description}`);
         }
         console.log("\nInstall with: zora skills add <name>");
       },
@@ -104,12 +127,12 @@ skillsCommand
 skillsCommand
   .command("add [name]")
   .description(
-    "Install a skill into your agent's commands directory (auto-detects .claude, .cursor, .windsurf)",
+    "Install a skill into your agent's skills directory (auto-detects .claude, .cursor, .windsurf, .openclaw, .hermes)",
   )
   .option("--all", "Install all skills")
   .option(
     "--agent <agent>",
-    "Target agent: claude, cursor, windsurf (default: auto-detect)",
+    "Target agent: claude, cursor, windsurf, openclaw, hermes (default: auto-detect)",
   )
   .option("--dir <path>", "Explicit directory to install into")
   .action(async function (this: Command, name?: string) {
@@ -140,19 +163,19 @@ skillsCommand
       outDir = resolve(dirFlag);
       resolvedAgent = "custom";
     } else if (agentFlag) {
-      if (!AGENT_COMMAND_DIRS[agentFlag]) {
+      if (!AGENT_SKILLS_DIRS[agentFlag]) {
         return outputErrorAndExit(
           json,
           `Unknown agent: ${agentFlag}`,
-          "Supported: claude, cursor, windsurf",
+          `Supported: ${AGENT_ORDER.join(", ")}`,
         );
       }
-      outDir = resolve(process.cwd(), AGENT_COMMAND_DIRS[agentFlag]);
+      outDir = resolve(process.cwd(), AGENT_SKILLS_DIRS[agentFlag]);
       resolvedAgent = agentFlag;
     } else {
       const detected = detectAgent(process.cwd());
       resolvedAgent = detected ?? "claude";
-      outDir = resolve(process.cwd(), AGENT_COMMAND_DIRS[resolvedAgent]);
+      outDir = resolve(process.cwd(), AGENT_SKILLS_DIRS[resolvedAgent]);
     }
 
     const names = installAll ? SKILLS.map((s) => s.name) : [name!];
@@ -170,13 +193,14 @@ skillsCommand
     const installed: { name: string; path: string }[] = [];
     const errors: { name: string; error: string }[] = [];
 
-    const filesToFetch = [...names, SHARED_FILE];
-    for (const file of filesToFetch) {
+    for (const file of names) {
       try {
         const content = await fetchSkill(file);
-        const outPath = join(outDir, `${file}.md`);
+        const skillDir = join(outDir, `${SKILL_PREFIX}${file}`);
+        mkdirSync(skillDir, { recursive: true });
+        const outPath = join(skillDir, "SKILL.md");
         writeFileSync(outPath, content);
-        installed.push({ name: file, path: outPath });
+        installed.push({ name: `${SKILL_PREFIX}${file}`, path: outPath });
       } catch (err) {
         errors.push({
           name: file,
@@ -210,9 +234,8 @@ skillsCommand
         for (const { name, error } of errors) {
           console.error(`\x1b[31m✗\x1b[0m ${name}: ${error}`);
         }
-        const skillsInstalled = installed.filter((i) => i.name !== SHARED_FILE);
-        if (skillsInstalled.length > 0) {
-          const firstSkill = skillsInstalled[0]!.name;
+        if (installed.length > 0) {
+          const firstSkill = installed[0]!.name;
           console.log(
             `\nInvoke by typing /${firstSkill} in your agent to get started.`,
           );

@@ -15,14 +15,14 @@ zora send [typeOrId] [identifier] [options]
 
 ## Options
 
-| Flag                | Description                            |
-| ------------------- | -------------------------------------- |
-| `--to <address>`    | Recipient address (`0x...`) — required |
-| `--amount <value>`  | Send specific amount                   |
-| `--percent <value>` | Send percentage of balance (1–100)     |
-| `--all`             | Send entire balance                    |
-| `--yes`             | Skip confirmation prompt               |
-| `--json`            | Machine-readable JSON output           |
+| Flag                | Description                                                        |
+| ------------------- | ------------------------------------------------------------------ |
+| `--to <recipient>`  | Recipient — an address (`0x...`) or a Zora profile name — required |
+| `--amount <value>`  | Send specific amount                                               |
+| `--percent <value>` | Send percentage of balance (1–100)                                 |
+| `--all`             | Send entire balance                                                |
+| `--yes`             | Skip confirmation prompt                                           |
+| `--json`            | Machine-readable JSON output                                       |
 
 :::info
 Amount flags (`--amount`, `--percent`, `--all`) are mutually exclusive — use exactly one.
@@ -67,6 +67,14 @@ npx @zoralabs/cli send creator-coin jacob --to 0x3a5d...8d142 --all
 npx @zoralabs/cli send zora --to 0x3a5d...8d142 --percent 25
 ```
 
+### Send to a Zora profile name
+
+`--to` accepts a Zora profile name as well as an address — the CLI resolves it to the profile's wallet:
+
+```bash
+npx @zoralabs/cli send eth --to jacob --amount 0.05
+```
+
 ### Non-interactive for scripting
 
 ```bash
@@ -75,13 +83,38 @@ npx @zoralabs/cli send eth --to 0x3a5d...8d142 --amount 0.1 --yes --json
 
 ### JSON output
 
+For an ETH send, `address` is `null`:
+
 ```json
 {
   "action": "send",
-  "asset": "ETH",
-  "amount": "0.1",
+  "coin": "ETH",
+  "address": null,
+  "sent": {
+    "amount": "0.1",
+    "raw": "100000000000000000",
+    "symbol": "ETH",
+    "amountUsd": 250.0
+  },
   "to": "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
-  "txHash": "0x789abc...",
-  "explorerUrl": "https://basescan.org/tx/0x789abc..."
+  "tx": "0x789abc..."
+}
+```
+
+For an ERC-20 send (`usdc`, `zora`, or a coin), `address` is the token contract:
+
+```json
+{
+  "action": "send",
+  "coin": "JACOB",
+  "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "sent": {
+    "amount": "100",
+    "raw": "100000000000000000000",
+    "symbol": "JACOB",
+    "amountUsd": 4.85
+  },
+  "to": "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
+  "tx": "0x789abc..."
 }
 ```

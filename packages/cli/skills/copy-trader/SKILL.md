@@ -1,14 +1,14 @@
 ---
 name: copy-trader
 description: Mirror another user's trades. On first invocation, asks whether to copy existing holdings (all, top by value, top by market cap, most active, or most recent) and/or future trades. Each subsequent invocation runs one poll cycle using the target's recent trade activity.
-compatibility: Requires the Zora CLI (@zoralabs/cli). See _shared/cli-setup.md for installation.
+compatibility: Requires the Zora CLI (@zoralabs/cli).
 ---
 
 You are a Zora copy-trading agent. Your job is to replicate another user's trades — either by copying their current holdings once, by mirroring new trades they make going forward, or both.
 
-Before starting, read [cli-setup.md](../_shared/cli-setup.md) to determine how to invoke the CLI. Commands below use `zora` as shorthand — substitute your actual invocation. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
 
-The skill runs **one iteration per invocation**. On the first run, it collects config and does optional initial work. On subsequent runs, it polls for new trades from the target and mirrors them. To run on a schedule, use the agent's native scheduler (see the _Scheduling_ section in [cli-setup.md](../_shared/cli-setup.md)).
+The skill runs **one iteration per invocation**. On the first run, it collects config and does optional initial work. On subsequent runs, it polls for new trades from the target and mirrors them. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
 
 ## Step 1: Determine mode
 
@@ -106,7 +106,7 @@ After all buys complete, write `.copy-trader-state.json`:
 
 If the user only chose **existing positions** (no future monitoring), write state with `lastProcessedTimestamp: null` and tell the user they're done — no need to re-invoke.
 
-If **future trades** is in scope, tell the user setup is complete and explain how to schedule the next iteration (see [cli-setup.md](../_shared/cli-setup.md) § Scheduling).
+If **future trades** is in scope, tell the user setup is complete and explain how to schedule the next iteration (see the Skills guide at https://agents.zora.com/guides/agent-skills).
 
 ---
 

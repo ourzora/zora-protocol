@@ -35,15 +35,17 @@ describe("skills list", () => {
     vi.restoreAllMocks();
   });
 
-  it("lists the four skills with categories and descriptions", async () => {
+  it("lists the skills with categories and descriptions", async () => {
     const program = createProgram(skillsCommand);
     await program.parseAsync(["skills", "list"], { from: "user" });
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
-    expect(output).toContain("/copy-trader");
-    expect(output).toContain("/early-buyer");
-    expect(output).toContain("/watchlist");
-    expect(output).toContain("/take-profit");
+    expect(output).toContain("onboarding");
+    expect(output).toContain("copy-trader");
+    expect(output).toContain("early-buyer");
+    expect(output).toContain("watchlist");
+    expect(output).toContain("take-profit");
+    expect(output).not.toContain("/zora-");
   });
 
   it("returns JSON output with --json", async () => {
@@ -52,8 +54,9 @@ describe("skills list", () => {
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
     const parsed = JSON.parse(output);
-    expect(parsed.skills).toHaveLength(4);
+    expect(parsed.skills).toHaveLength(5);
     expect(parsed.skills.map((s: { name: string }) => s.name)).toEqual([
+      "onboarding",
       "copy-trader",
       "early-buyer",
       "watchlist",
@@ -63,13 +66,13 @@ describe("skills list", () => {
 });
 
 describe("skills add", () => {
-  let logSpy: ReturnType<typeof vi.spyOn>;
   let errorSpy: ReturnType<typeof vi.spyOn>;
   let tmpDir: string;
   let originalCwd: string;
 
   beforeEach(() => {
-    logSpy = vi.spyOn(console, "log").mockImplementation(() => {});
+    // suppress console.log output; not asserted on in these tests
+    vi.spyOn(console, "log").mockImplementation(() => {});
     errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
     tmpDir = mkdtempSync(join(tmpdir(), "zora-skills-test-"));
     originalCwd = process.cwd();
@@ -82,7 +85,7 @@ describe("skills add", () => {
     vi.restoreAllMocks();
   });
 
-  it("installs a skill and the shared cli-setup to .claude/commands by default", async () => {
+  it("installs a skill to .claude/skills/zora-<name>/SKILL.md by default", async () => {
     mockFetchOk("# Skill body");
 
     const program = createProgram(skillsCommand);
@@ -90,10 +93,8 @@ describe("skills add", () => {
       from: "user",
     });
 
-    const skillPath = join(tmpDir, ".claude/commands/copy-trader.md");
-    const setupPath = join(tmpDir, ".claude/commands/cli-setup.md");
+    const skillPath = join(tmpDir, ".claude/skills/zora-copy-trader/SKILL.md");
     expect(existsSync(skillPath)).toBe(true);
-    expect(existsSync(setupPath)).toBe(true);
     expect(readFileSync(skillPath, "utf8")).toBe("# Skill body");
   });
 
@@ -104,15 +105,15 @@ describe("skills add", () => {
     await program.parseAsync(["skills", "add", "--all"], { from: "user" });
 
     for (const name of [
+      "onboarding",
       "copy-trader",
       "early-buyer",
       "watchlist",
       "take-profit",
-      "cli-setup",
     ]) {
-      expect(existsSync(join(tmpDir, ".claude/commands", `${name}.md`))).toBe(
-        true,
-      );
+      expect(
+        existsSync(join(tmpDir, ".claude/skills", `zora-${name}`, "SKILL.md")),
+      ).toBe(true);
     }
   });
 
@@ -125,9 +126,9 @@ describe("skills add", () => {
       { from: "user" },
     );
 
-    expect(existsSync(join(tmpDir, ".cursor/commands/copy-trader.md"))).toBe(
-      true,
-    );
+    expect(
+      existsSync(join(tmpDir, ".cursor/skills/zora-copy-trader/SKILL.md")),
+    ).toBe(true);
   });
 
   it("respects --dir override", async () => {
@@ -139,7 +140,9 @@ describe("skills add", () => {
       { from: "user" },
     );
 
-    expect(existsSync(join(tmpDir, "custom-dir/copy-trader.md"))).toBe(true);
+    expect(
+      existsSync(join(tmpDir, "custom-dir/zora-copy-trader/SKILL.md")),
+    ).toBe(true);
   });
 
   it("errors on unknown skill name", async () => {

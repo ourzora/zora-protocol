@@ -6,12 +6,13 @@ import {
   trpcRequest,
   type ChainClient,
 } from "./zora-client.js";
-import { pickFirstPostCard, type FirstPostCard } from "./first-post-cards.js";
+import { renderFirstPostCard } from "./render-card.js";
 import type { RawUserOperation } from "./user-op.js";
 import { signSimulateSubmit, type FinalizeResult } from "./submit.js";
 
 export interface FirstPostResult extends FinalizeResult {
-  greeting: string;
+  /** The caption rendered on the card; also the coin name when no title is given. */
+  caption: string;
   ticker: string;
   imageUri: string;
   contractUri: string;
@@ -127,10 +128,26 @@ async function resolveCoinAddress(
 }
 
 /**
- * Publish the agent's first post — a Zora content coin whose media is a bundled
- * greeting card. Uploads the card image + metadata to IPFS, builds the (sponsored)
- * content-coin UserOp, then signs + submits it exactly like the creator coin.
- * With `dryRun`, the card + metadata are uploaded but nothing is minted.
+ * Derive a coin ticker from a caption/title: uppercase alphanumerics only,
+ * capped at 10 characters, with a sensible fallback when nothing usable remains
+ * (e.g. an emoji-only caption).
+ */
+export function deriveTicker(text: string): string {
+  const cleaned = text
+    .toUpperCase()
+    .replace(/[^A-Z0-9]/g, "")
+    .slice(0, 10);
+  return cleaned || "POST";
+}
+
+/**
+ * Publish the agent's first post — a Zora content coin whose media is a meme card
+ * rendered from the brand template: the caller's photo (`image`) as the full-bleed
+ * background, `caption` as the big centered text, and `handle` as the faint footer.
+ * The card PNG + metadata are uploaded to IPFS, then the (sponsored) content-coin
+ * UserOp is built, signed, and submitted exactly like the creator coin. `title`
+ * and `description` set the coin metadata (defaulting to the caption); with
+ * `dryRun`, the card + metadata are uploaded but nothing is minted.
  */
 export async function createFirstPost(params: {
   token: string;
@@ -139,21 +156,38 @@ export async function createFirstPost(params: {
   smartWallet: Address;
   owners: Address[];
   dryRun: boolean;
-  /** Override the random card (e.g. for tests). */
-  card?: FirstPostCard;
+  /** The big centered meme caption (required). */
+  caption: string;
+  /** The background photo (required): raw bytes + MIME type. */
+  image: { bytes: Uint8Array; mimeType: string };
+  /** The faint footer handle, e.g. "zora.co/alice". */
+  handle: string;
+  /** Coin name; defaults to the caption when omitted. */
+  title?: string;
+  /** Coin description; defaults to the caption when omitted. */
+  description?: string;
   /** Max attempts to poll for the tx receipt when resolving the coin address. */
   receiptAttempts?: number;
   sleep?: (ms: number) => Promise<void>;
 }): Promise<FirstPostResult> {
   const { token, account, client, smartWallet, owners, dryRun } = params;
-  const card = params.card ?? pickFirstPostCard();
-  const png = Buffer.from(card.pngBase64, "base64");
+  const { caption, image, handle } = params;
+  const name = params.title?.trim() || caption;
+  const description = params.description?.trim() || caption;
+  const ticker = deriveTicker(name);
+
+  const png = await renderFirstPostCard({
+    image: image.bytes,
+    mimeType: image.mimeType,
+    caption,
+    handle,
+  });
 
   const imageUri = await ipfsUpload(token, "first-post.png", png, "image/png");
   const metadata = {
-    name: card.greeting,
-    description: card.greeting,
-    symbol: card.ticker,
+    name,
+    description,
+    symbol: ticker,
     image: imageUri,
     content: { uri: imageUri, mime: "image/png" },
   };
@@ -177,8 +211,8 @@ export async function createFirstPost(params: {
         // the correct `adminAddresses`. Verified against the live endpoint — do
         // not "fix" the spelling.
         adminAddressess: [...owners, smartWallet],
-        name: card.greeting,
-        ticker: card.ticker,
+        name,
+        ticker,
         contractURI: contractUri,
         value: "0",
         customPairCurrencyAddress: null,
@@ -201,15 +235,15 @@ export async function createFirstPost(params: {
     dryRun,
   });
   const coinAddress = finalize.submitted
-    ? await resolveCoinAddress(client, finalize.submitted, card.greeting, {
+    ? await resolveCoinAddress(client, finalize.submitted, name, {
         receiptAttempts: params.receiptAttempts,
         sleep: params.sleep,
       })
     : undefined;
   return {
     ...finalize,
-    greeting: card.greeting,
-    ticker: card.ticker,
+    caption,
+    ticker,
     imageUri,
     contractUri,
     coinAddress,

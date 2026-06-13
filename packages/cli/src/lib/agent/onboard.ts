@@ -44,6 +44,17 @@ export interface OnboardOptions {
   username?: string;
   bio?: string;
   avatar?: AvatarFile;
+  /**
+   * First-post content. The post is published only when both `caption` and
+   * `postImage` are provided (and `skipPost` is not set): `caption` is the big
+   * centered meme text, `postImage` is the background photo (already read by the
+   * caller). `postTitle`/`postDescription` set the coin metadata, each defaulting
+   * to the caption. The footer handle is derived from the agent's username.
+   */
+  caption?: string;
+  postImage?: AvatarFile;
+  postTitle?: string;
+  postDescription?: string;
   /** Max attempts to poll for the embedded wallet after profile creation. */
   embeddedAttempts?: number;
   onProgress?: (step: OnboardStep, detail: string) => void;
@@ -76,7 +87,7 @@ export interface OnboardResult {
   coinError?: string;
   post?: {
     hash?: string;
-    greeting: string;
+    caption: string;
     ticker: string;
     sponsored: boolean;
     simulation: string;
@@ -252,7 +263,9 @@ export async function onboardAgent(
   }
 
   // 6. First post (best-effort — the account already exists at this point).
-  if (!opts.skipPost) {
+  // Published only when the caller supplied both a caption and a background
+  // image; otherwise there's nothing to render, so the step is skipped.
+  if (!opts.skipPost && opts.caption && opts.postImage) {
     progress(
       "post",
       dryRun ? "simulating the first post" : "publishing the first post",
@@ -265,13 +278,21 @@ export async function onboardAgent(
         smartWallet: smartWallet.address,
         owners: smartWallet.owners,
         dryRun,
+        caption: opts.caption,
+        image: {
+          bytes: opts.postImage.bytes,
+          mimeType: opts.postImage.mimeType,
+        },
+        handle: `zora.co/${result.username}`,
+        title: opts.postTitle,
+        description: opts.postDescription,
         // Forward the injected clock so the receipt-poll loop is controllable
         // from onboardAgent (tests inject a no-op sleep; prod uses setTimeout).
         sleep,
       });
       result.post = {
         hash: post.submitted?.hash,
-        greeting: post.greeting,
+        caption: post.caption,
         ticker: post.ticker,
         sponsored: post.sponsored,
         simulation: post.simulation,

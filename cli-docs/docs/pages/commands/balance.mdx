@@ -75,22 +75,49 @@ npx @zoralabs/cli balance --json
 
 ```json
 {
-  "spendable": [
-    { "token": "ETH", "balance": "0.0542", "valueUsd": "105.23" },
-    { "token": "USDC", "balance": "25.00", "valueUsd": "25.00" },
-    { "token": "ZORA", "balance": "1250.00", "valueUsd": "15.63" }
+  "wallet": [
+    {
+      "name": "Ether",
+      "symbol": "ETH",
+      "address": null,
+      "balance": "0.0542",
+      "priceUsd": 1664.27,
+      "usdValue": 90.2
+    },
+    {
+      "name": "ZORA",
+      "symbol": "ZORA",
+      "address": "0x1111111111166b7FE7bd91427724B487980aFc69",
+      "balance": "1250.00",
+      "priceUsd": 0.0082,
+      "usdValue": 10.25
+    }
   ],
   "coins": [
     {
+      "rank": 1,
       "name": "jacob",
-      "coinType": "creator-coin",
+      "symbol": "jacob",
+      "type": "creator-coin",
+      "coinType": "CREATOR",
+      "chainId": 8453,
       "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+      "creatorHandle": "jacob",
+      "previewImage": "https://...",
       "balance": "20.63",
-      "valueUsd": "10.01"
+      "usdValue": 10.01,
+      "priceUsd": 0.000485,
+      "marketCap": 435000,
+      "marketCapDelta24h": 8220.7,
+      "marketCapChange24h": 0.019,
+      "volume24h": 0.49,
+      "totalVolume": 12345.6
     }
   ]
 }
 ```
+
+The spendable token list is under the `wallet` key (not `spendable`). `coins[].type` is the lowercase display form (`creator-coin`, `post`, `trend`) while `coins[].coinType` is the raw API enum (`CREATOR`, `CONTENT`, `TREND`). Numeric fields are JSON numbers; `usdValue`, `priceUsd`, `marketCap*` may be `null`. The base `balance --json` returns both `wallet` and `coins`; `balance spendable --json` returns only `{ "wallet": [...] }`; `balance coins --json` returns `{ "coins": [...], "pageInfo": { ... } }`.
 
 :::info
 USD values are more accurate when a Zora API key is configured. Without one, the CLI falls back to `balance × priceInUsdc`. Set `ZORA_API_KEY` for SDK-based valuations.

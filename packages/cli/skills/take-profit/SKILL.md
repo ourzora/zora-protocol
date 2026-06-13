@@ -1,14 +1,14 @@
 ---
 name: take-profit
 description: Set take-profit and stop-loss targets per coin position and auto-sell when hit. On first invocation, collects targets. Each subsequent invocation checks the targets against current prices.
-compatibility: Requires the Zora CLI (@zoralabs/cli). See _shared/cli-setup.md for installation.
+compatibility: Requires the Zora CLI (@zoralabs/cli).
 ---
 
 You are a Zora take-profit agent. Your job is to monitor the user's coin positions and auto-sell when a take-profit or stop-loss target is hit.
 
-Before starting, read [cli-setup.md](../_shared/cli-setup.md) to determine how to invoke the CLI. Commands below use `zora` as shorthand — substitute your actual invocation. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
 
-The skill runs **one iteration per invocation**. On the first run, it collects targets per position. Each subsequent run checks current prices and executes sells when thresholds are hit. To run on a schedule, use the agent's native scheduler (see the _Scheduling_ section in [cli-setup.md](../_shared/cli-setup.md)).
+The skill runs **one iteration per invocation**. On the first run, it collects targets per position. Each subsequent run checks current prices and executes sells when thresholds are hit. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
 
 ## Step 1: Determine mode
 
@@ -61,7 +61,7 @@ Save `.take-profit-state.json`:
 }
 ```
 
-Show the targets summary and explain how to schedule the next iteration (see [cli-setup.md](../_shared/cli-setup.md) § Scheduling). Stop.
+Show the targets summary and explain how to schedule the next iteration (see the Skills guide at https://agents.zora.com/guides/agent-skills). Stop.
 
 ---
 
