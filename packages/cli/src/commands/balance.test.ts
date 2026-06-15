@@ -200,6 +200,11 @@ describe("balance command", () => {
     expect(logSpy).toHaveBeenCalledTimes(1);
     const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
 
+    // Wallet address indicates which wallet the balances belong to
+    expect(output.walletAddress).toBe(
+      "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
+    );
+
     // Wallet section includes ETH, USDC, and ZORA (since mock returns >0)
     expect(output.wallet).toBeDefined();
     expect(output.wallet.length).toBeGreaterThanOrEqual(2);
@@ -472,6 +477,9 @@ describe("balance command", () => {
       expect(logSpy).toHaveBeenCalledTimes(1);
       const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
       expect(output.wallet).toBeDefined();
+      expect(output.walletAddress).toBe(
+        "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
+      );
       expect(output.coins).toBeUndefined();
     });
 
@@ -493,6 +501,9 @@ describe("balance command", () => {
       expect(logSpy).toHaveBeenCalledTimes(1);
       const output = JSON.parse(String(logSpy.mock.calls[0]?.[0]));
       expect(output.coins).toBeDefined();
+      expect(output.walletAddress).toBe(
+        "0x3a5df03dd1a001d7055284c2c2c147cbbc78d142",
+      );
       expect(output.wallet).toBeUndefined();
     });
 

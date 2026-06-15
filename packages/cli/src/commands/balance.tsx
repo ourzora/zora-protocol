@@ -144,10 +144,11 @@ async function resolveContext() {
 
 function renderWallet(
   json: boolean,
+  walletAddress: string,
   walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>,
 ) {
   outputData(json, {
-    json: { wallet: walletResult.walletBalancesJson },
+    json: { walletAddress, wallet: walletResult.walletBalancesJson },
     render: () => {
       renderOnce(
         <Table
@@ -162,6 +163,7 @@ function renderWallet(
 
 function renderCoins(
   json: boolean,
+  walletAddress: string,
   balances: BalanceNode[],
   total: number,
   sort: SortFlag,
@@ -176,6 +178,7 @@ function renderCoins(
 
   outputData(json, {
     json: {
+      walletAddress,
       coins: rankedBalances.map((balance) =>
         formatBalanceJson(balance, balance.rank),
       ),
@@ -331,6 +334,7 @@ export const balanceCommand = new Command("balance")
 
       outputData(json, {
         json: {
+          walletAddress,
           wallet: data.walletBalancesJson,
           coins: data.rankedBalances.map((balance) =>
             formatBalanceJson(balance, balance.rank),
@@ -453,7 +457,7 @@ balanceCommand
         outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
       outputData(json, {
-        json: { wallet: data.walletBalancesJson },
+        json: { walletAddress, wallet: data.walletBalancesJson },
         render: () => {},
       });
     } else if (live) {
@@ -471,7 +475,7 @@ balanceCommand
         (err) =>
           outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
-      renderWallet(json, walletResult);
+      renderWallet(json, walletAddress, walletResult);
     }
   });
 
@@ -513,7 +517,15 @@ balanceCommand
 
     if (json) {
       const { items, count, pageInfo } = await fetchCoinsPage(after);
-      renderCoins(json, items, count ?? items.length, sort, limit, pageInfo);
+      renderCoins(
+        json,
+        walletAddress,
+        items,
+        count ?? items.length,
+        sort,
+        limit,
+        pageInfo,
+      );
     } else if (live) {
       await renderLive(
         <BalanceCoinsView
@@ -534,6 +546,15 @@ balanceCommand
         limit,
         after,
       );
-      renderCoins(json, balances, total, sort, limit, pageInfo, hasApiKey);
+      renderCoins(
+        json,
+        walletAddress,
+        balances,
+        total,
+        sort,
+        limit,
+        pageInfo,
+        hasApiKey,
+      );
     }
   });
