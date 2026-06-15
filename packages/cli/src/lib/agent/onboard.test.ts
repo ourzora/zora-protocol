@@ -12,7 +12,7 @@ vi.mock("./smart-wallet.js", () => ({ provisionSmartWallet: vi.fn() }));
 vi.mock("./coin.js", () => ({ createCreatorCoin: vi.fn() }));
 vi.mock("./post.js", () => ({ createFirstPost: vi.fn() }));
 
-import { onboardAgent } from "./onboard.js";
+import { onboardAgent, createAgentCoin } from "./onboard.js";
 import { findEmbeddedWallet } from "../privy.js";
 import {
   ensurePrivySession,
@@ -97,6 +97,7 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
+      withCoin: true,
       ...POST_ARGS,
     });
     expect(result.username).toBe("keen_cedar_9807");
@@ -159,6 +160,7 @@ describe("onboardAgent", () => {
       privateKey: PK,
       sleep: noSleep,
       dryRun: true,
+      withCoin: true,
       ...POST_ARGS,
     });
     expect(result.dryRun).toBe(true);
@@ -172,25 +174,38 @@ describe("onboardAgent", () => {
     );
   });
 
-  it("skips the coin and post when asked", async () => {
-    const result = await onboardAgent({
-      privateKey: PK,
-      sleep: noSleep,
-      skipCoin: true,
-      skipPost: true,
-    });
+  it("creates neither the coin nor the post by default", async () => {
+    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
     expect(createCreatorCoin).not.toHaveBeenCalled();
     expect(createFirstPost).not.toHaveBeenCalled();
     expect(result.coin).toBeUndefined();
     expect(result.post).toBeUndefined();
   });
 
-  it("skips the first post when no caption + image are given", async () => {
-    const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
+  it("creates the creator coin only when withCoin is set", async () => {
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      withCoin: true,
+    });
+    expect(createCreatorCoin).toHaveBeenCalledTimes(1);
+    expect(result.coin?.hash).toBe("0xco");
+    // The post is still gated on caption + image, independent of the coin.
     expect(createFirstPost).not.toHaveBeenCalled();
     expect(result.post).toBeUndefined();
-    // The coin still runs — only the post is gated on the caption + image.
-    expect(createCreatorCoin).toHaveBeenCalledTimes(1);
+  });
+
+  it("publishes the first post from caption + image without creating the coin", async () => {
+    const result = await onboardAgent({
+      privateKey: PK,
+      sleep: noSleep,
+      ...POST_ARGS,
+    });
+    expect(createFirstPost).toHaveBeenCalledTimes(1);
+    expect(result.post?.hash).toBe("0xpo");
+    // The coin is opt-in, so it doesn't run just because a post was requested.
+    expect(createCreatorCoin).not.toHaveBeenCalled();
+    expect(result.coin).toBeUndefined();
   });
 
   it("forwards caption, image, derived handle, title, and description to the post", async () => {
@@ -217,6 +232,7 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
+      withCoin: true,
       ...POST_ARGS,
     });
     // The account already exists, so a coin failure must not discard it.
@@ -233,6 +249,7 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
+      withCoin: true,
       ...POST_ARGS,
     });
     expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
@@ -274,6 +291,7 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
+      withCoin: true,
       username: "agent_smith",
       bio: "I trade memecoins",
     });
@@ -397,5 +415,32 @@ describe("onboardAgent", () => {
       ...POST_ARGS,
     });
     expect(result.post?.url).toBeUndefined();
+  });
+});
+
+describe("createAgentCoin", () => {
+  it("signs in, resolves the profile, and mints the creator coin", async () => {
+    const result = await createAgentCoin({ privateKey: PK });
+    expect(ensurePrivySession).toHaveBeenCalledTimes(1);
+    expect(createAgentProfile).toHaveBeenCalledTimes(1);
+    expect(createCreatorCoin).toHaveBeenCalledTimes(1);
+    expect(result.username).toBe("keen_cedar_9807");
+    expect(result.coin.hash).toBe("0xco");
+    expect(result.coin.url).toBe(
+      "https://zora.co/@keen_cedar_9807/creator-coin",
+    );
+    expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
+    // It mints only the coin — no smart-wallet re-provision, no post.
+    expect(provisionSmartWallet).not.toHaveBeenCalled();
+    expect(createFirstPost).not.toHaveBeenCalled();
+  });
+
+  it("passes dryRun through and omits the coin URL", async () => {
+    const result = await createAgentCoin({ privateKey: PK, dryRun: true });
+    expect(result.dryRun).toBe(true);
+    expect(result.coin.url).toBeUndefined();
+    expect(createCreatorCoin).toHaveBeenCalledWith(
+      expect.objectContaining({ dryRun: true }),
+    );
   });
 });

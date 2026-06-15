@@ -32,7 +32,11 @@ export interface OnboardOptions {
   rpcUrl?: string;
   /** Simulate the coin + post instead of minting them. */
   dryRun?: boolean;
-  skipCoin?: boolean;
+  /**
+   * Create the agent's creator coin as part of onboarding. Off by default — opt
+   * in with this flag, or create it later with {@link createAgentCoin}.
+   */
+  withCoin?: boolean;
   skipPost?: boolean;
   /**
    * Optional profile fields to apply at creation. Each is independent: omit one
@@ -113,10 +117,12 @@ const DEFAULT_BASE_RPC = "https://mainnet.base.org";
 const ZORA_BASE_URL = "https://zora.co";
 
 /**
- * Stand up a complete Zora agent identity from an EOA, with no human interaction:
- * Privy account → profile → smart wallet → creator coin → first post. Every
- * on-chain step is paymaster-sponsored, so the agent needs no ETH. Returns the
- * created identity; with `dryRun`, the coin + post are simulated, not minted.
+ * Stand up a Zora agent identity from an EOA, with no human interaction:
+ * Privy account → profile → smart wallet. The creator coin (opt in with
+ * `withCoin`) and the first post (opt in by supplying `caption` + `postImage`)
+ * are created on top only when requested. Every on-chain step is
+ * paymaster-sponsored, so the agent needs no ETH. Returns the created identity;
+ * with `dryRun`, the coin + post are simulated, not minted.
  *
  * The account (Privy + profile + smart wallet) is the core deliverable: a
  * failure in any of those throws. The creator coin and first post run *after*
@@ -237,8 +243,10 @@ export async function onboardAgent(
     profileUrl: `${ZORA_BASE_URL}/@${profile.username}`,
   };
 
-  // 5. Creator coin (best-effort — the account already exists at this point).
-  if (!opts.skipCoin) {
+  // 5. Creator coin — opt-in (best-effort — the account already exists at this
+  //    point). Off by default; pass `withCoin`, or create it after the fact with
+  //    `createAgentCoin`.
+  if (opts.withCoin) {
     progress(
       "coin",
       dryRun ? "simulating the creator coin" : "minting the creator coin",
@@ -321,4 +329,95 @@ export async function onboardAgent(
 /** Extract a human-readable message from an unknown thrown value. */
 function errorMessage(err: unknown): string {
   return err instanceof Error ? err.message : String(err);
+}
+
+export interface CreateAgentCoinOptions {
+  privateKey: `0x${string}`;
+  appId?: string;
+  origin?: string;
+  chainId?: number;
+  /** Base RPC URL (defaults to the public endpoint). */
+  rpcUrl?: string;
+  /** Simulate the creator coin instead of minting it. */
+  dryRun?: boolean;
+  onProgress?: (step: OnboardStep, detail: string) => void;
+}
+
+export interface AgentCoinResult {
+  address: Address;
+  did: string;
+  accessToken: string;
+  username: string;
+  /** The agent's Zora profile URL. */
+  profileUrl: string;
+  dryRun: boolean;
+  coin: {
+    hash?: string;
+    sponsored: boolean;
+    simulation: string;
+    url?: string;
+  };
+}
+
+/**
+ * Create the agent's creator coin for an account that already exists — the
+ * companion to onboarding with `withCoin` off. Signs in (reusing the cached
+ * Privy session when present), resolves the agent's profile (idempotent — the
+ * coin's name/ticker come from the handle server-side), then mints the sponsored
+ * creator coin. The smart wallet that executes the deploy is resolved server-side
+ * from the session, so no local re-provisioning is needed. With `dryRun`, stops
+ * after a successful simulation.
+ */
+export async function createAgentCoin(
+  opts: CreateAgentCoinOptions,
+): Promise<AgentCoinResult> {
+  const progress = opts.onProgress ?? (() => {});
+  const dryRun = Boolean(opts.dryRun);
+  const account = privateKeyToAccount(opts.privateKey);
+  const client = createPublicClient({
+    chain: base,
+    transport: http(opts.rpcUrl ?? DEFAULT_BASE_RPC),
+  });
+
+  progress("privy", "signing in with the agent EOA");
+  const session = await ensurePrivySession({
+    privateKey: opts.privateKey,
+    appId: opts.appId,
+    origin: opts.origin,
+    chainId: opts.chainId,
+  });
+
+  // The creator coin is tied to the agent's profile (its name/ticker are derived
+  // from the handle server-side). createAgentProfile is idempotent, so on an
+  // existing agent this just resolves the profile and gives us the handle.
+  progress("profile", "resolving the Zora profile");
+  const profile = await createAgentProfile(session.accessToken);
+
+  progress(
+    "coin",
+    dryRun ? "simulating the creator coin" : "minting the creator coin",
+  );
+  const coin = await createCreatorCoin({
+    token: session.accessToken,
+    account,
+    client,
+    dryRun,
+  });
+
+  return {
+    address: account.address,
+    did: session.did,
+    accessToken: session.accessToken,
+    username: profile.username,
+    profileUrl: `${ZORA_BASE_URL}/@${profile.username}`,
+    dryRun,
+    coin: {
+      hash: coin.submitted?.hash,
+      sponsored: coin.sponsored,
+      simulation: coin.simulation,
+      url: dryRun
+        ? undefined
+        : `${ZORA_BASE_URL}/@${profile.username}/creator-coin`,
+    },
+  };
 }

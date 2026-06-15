@@ -1,8 +1,8 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { createProgram } from "../test/create-program.js";
 import { agentCommand } from "./agent.js";
-import { onboardAgent } from "../lib/agent/onboard.js";
-import type { OnboardResult } from "../lib/agent/onboard.js";
+import { onboardAgent, createAgentCoin } from "../lib/agent/onboard.js";
+import type { OnboardResult, AgentCoinResult } from "../lib/agent/onboard.js";
 import {
   getPrivateKey,
   savePrivateKey,
@@ -21,7 +21,10 @@ import { inputOrFail } from "../lib/prompt.js";
 import { loadAvatar } from "../lib/agent/avatar.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
 
-vi.mock("../lib/agent/onboard.js", () => ({ onboardAgent: vi.fn() }));
+vi.mock("../lib/agent/onboard.js", () => ({
+  onboardAgent: vi.fn(),
+  createAgentCoin: vi.fn(),
+}));
 
 // Mock the avatar module so the command test stays off the filesystem; the
 // read/MIME logic itself is covered by avatar.test.ts.
@@ -109,6 +112,21 @@ const AGENT_INFO = {
   createdAt: "2026-06-10T00:00:00.000Z",
 } as const;
 
+const COIN_RESULT: AgentCoinResult = {
+  address: "0xAbC0000000000000000000000000000000000001",
+  did: "did:privy:test123",
+  accessToken: "header.payload.signature",
+  username: "keen_cedar_9807",
+  profileUrl: "https://zora.co/@keen_cedar_9807",
+  dryRun: false,
+  coin: {
+    hash: "0xco001",
+    sponsored: true,
+    simulation: "ExecutionResult",
+    url: "https://zora.co/@keen_cedar_9807/creator-coin",
+  },
+};
+
 function runAgent(args: string[]) {
   const program = createProgram(agentCommand);
   return program.parseAsync(["agent", ...args], { from: "user" });
@@ -159,18 +177,18 @@ describe("zora agent create", () => {
         origin: "https://zora.com",
         chainId: 8453,
         dryRun: false,
-        skipCoin: false,
+        withCoin: false,
         skipPost: false,
       }),
     );
   });
 
-  it("passes --dry-run, --skip-coin, --skip-post and --rpc-url through", async () => {
+  it("passes --dry-run, --with-coin, --skip-post and --rpc-url through", async () => {
     await runAgent([
       "create",
       "--json",
       "--dry-run",
-      "--skip-coin",
+      "--with-coin",
       "--skip-post",
       "--rpc-url",
       "https://rpc.test",
@@ -178,11 +196,39 @@ describe("zora agent create", () => {
     expect(onboardAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         dryRun: true,
-        skipCoin: true,
+        withCoin: true,
         skipPost: true,
         rpcUrl: "https://rpc.test",
       }),
     );
+  });
+
+  it("creates no coin by default — the render points at `agent coin`", async () => {
+    vi.mocked(onboardAgent).mockResolvedValue({
+      ...ONBOARD_RESULT,
+      coin: undefined,
+    });
+    const log = captureLog();
+    await runAgent(["create"]);
+    const output = log.output();
+    log.restore();
+    expect(output).toContain("Creator coin: none");
+    expect(output).toContain("zora agent coin");
+  });
+
+  it("notes dry-run in the header even when nothing was simulated", async () => {
+    vi.mocked(onboardAgent).mockResolvedValue({
+      ...ONBOARD_RESULT,
+      dryRun: true,
+      coin: undefined,
+      post: undefined,
+    });
+    const log = captureLog();
+    await runAgent(["create", "--dry-run"]);
+    const output = log.output();
+    log.restore();
+    expect(output).toContain("dry run");
+    expect(output).toContain("no coin/post requested");
   });
 
   it("uses --private-key over the saved wallet, and warns about shell-history exposure", async () => {
@@ -470,13 +516,23 @@ describe("zora agent create", () => {
   describe("re-run guard (existing agent)", () => {
     it("confirms before re-minting when the wallet already owns an agent", async () => {
       vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
-      await runAgent(["create", "--json"]);
+      // --with-coin makes this run actually mint, which is what's guarded.
+      await runAgent(["create", "--with-coin", "--json"]);
       expect(confirmAgentAction).toHaveBeenCalledWith(
         expect.objectContaining({
           question: expect.stringContaining("keen_cedar_9807"),
         }),
       );
       // The guard stub proceeds, so onboarding still runs.
+      expect(onboardAgent).toHaveBeenCalled();
+    });
+
+    it("does not confirm on a bare re-run that mints nothing", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+      // No --with-coin and no --caption/--image: the re-run mints nothing, so the
+      // idempotent account resolution needs no confirmation.
+      await runAgent(["create", "--json"]);
+      expect(confirmAgentAction).not.toHaveBeenCalled();
       expect(onboardAgent).toHaveBeenCalled();
     });
 
@@ -494,7 +550,7 @@ describe("zora agent create", () => {
 
     it("forwards --force so the guard can skip the prompt", async () => {
       vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
-      await runAgent(["create", "--force", "--json"]);
+      await runAgent(["create", "--with-coin", "--force", "--json"]);
       expect(confirmAgentAction).toHaveBeenCalledWith(
         expect.objectContaining({ force: true }),
       );
@@ -818,5 +874,103 @@ describe("zora agent connect-email", () => {
     expect(output).toContain("a@b.com");
     expect(output).toContain(PRIVY_ACCOUNT.did);
     expect(output).not.toContain(PRIVY_ACCOUNT.accessToken);
+  });
+});
+
+describe("zora agent coin", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    delete process.env.ZORA_PRIVATE_KEY;
+    vi.mocked(getPrivateKey).mockReturnValue(SAVED_PK);
+    vi.mocked(createAgentCoin).mockResolvedValue(COIN_RESULT);
+  });
+
+  it("creates the creator coin and outputs JSON", async () => {
+    const log = captureLog();
+    await runAgent(["coin", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+    expect(parsed).toMatchObject({
+      username: "keen_cedar_9807",
+      coin: { hash: "0xco001" },
+      walletSource: "/home/u/.config/zora/wallet.json",
+    });
+    expect(createAgentCoin).toHaveBeenCalledWith(
+      expect.objectContaining({
+        privateKey: SAVED_PK,
+        appId: "test-app-id",
+        origin: "https://zora.com",
+        chainId: 8453,
+        dryRun: false,
+      }),
+    );
+  });
+
+  it("passes --dry-run and --rpc-url through", async () => {
+    await runAgent([
+      "coin",
+      "--json",
+      "--dry-run",
+      "--rpc-url",
+      "https://rpc.test",
+    ]);
+    expect(createAgentCoin).toHaveBeenCalledWith(
+      expect.objectContaining({ dryRun: true, rpcUrl: "https://rpc.test" }),
+    );
+  });
+
+  it("renders a human-readable summary", async () => {
+    const log = captureLog();
+    await runAgent(["coin"]);
+    const output = log.output();
+    log.restore();
+    expect(output).toContain("Creator coin created");
+    expect(output).toContain("keen_cedar_9807");
+    expect(output).toContain(COIN_RESULT.coin.url);
+  });
+
+  it("does not generate a wallet when none is configured (acts on an existing agent)", async () => {
+    vi.mocked(getPrivateKey).mockReturnValue(undefined);
+    await expect(runAgent(["coin"])).rejects.toThrow("process.exit(1)");
+    expect(generatePrivateKey).not.toHaveBeenCalled();
+    expect(createAgentCoin).not.toHaveBeenCalled();
+  });
+
+  it("exits with an error when coin creation fails", async () => {
+    vi.mocked(createAgentCoin).mockRejectedValue(new Error("boom"));
+    await expect(runAgent(["coin"])).rejects.toThrow("process.exit(1)");
+  });
+
+  it("confirms before minting when the wallet already owns an agent", async () => {
+    vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+    await runAgent(["coin", "--json"]);
+    expect(confirmAgentAction).toHaveBeenCalledWith(
+      expect.objectContaining({
+        question: expect.stringContaining("keen_cedar_9807"),
+      }),
+    );
+    // The guard stub proceeds, so the coin is still minted.
+    expect(createAgentCoin).toHaveBeenCalled();
+  });
+
+  it("does not confirm when no agent is saved on the wallet", async () => {
+    vi.mocked(peekAgentWallet).mockReturnValue(undefined);
+    await runAgent(["coin", "--json"]);
+    expect(confirmAgentAction).not.toHaveBeenCalled();
+    expect(createAgentCoin).toHaveBeenCalled();
+  });
+
+  it("does not confirm under --dry-run (nothing is minted)", async () => {
+    vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+    await runAgent(["coin", "--dry-run", "--json"]);
+    expect(confirmAgentAction).not.toHaveBeenCalled();
+  });
+
+  it("forwards --force so the guard can skip the prompt", async () => {
+    vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+    await runAgent(["coin", "--force", "--json"]);
+    expect(confirmAgentAction).toHaveBeenCalledWith(
+      expect.objectContaining({ force: true }),
+    );
   });
 });

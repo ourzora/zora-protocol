@@ -26,7 +26,7 @@ import {
   hasLinkedEmail,
 } from "../lib/privy.js";
 import { inputOrFail } from "../lib/prompt.js";
-import { onboardAgent } from "../lib/agent/onboard.js";
+import { onboardAgent, createAgentCoin } from "../lib/agent/onboard.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
 import {
   loadAvatar,
@@ -143,7 +143,7 @@ function resolveAgentKey(
 
 export const agentCommand = new Command("agent")
   .description(
-    "Create and manage a Zora agent identity.\nStands up a full identity from an EOA — Privy account, profile, smart wallet, coin, and first post — with no human interaction.",
+    "Create and manage a Zora agent identity.\nStands up an identity from an EOA — Privy account, profile, and smart wallet — with no human interaction. The creator coin is opt-in: add it with `agent create --with-coin` or later with `agent coin`.",
   )
   .action(function (this: Command) {
     this.outputHelp();
@@ -152,7 +152,7 @@ export const agentCommand = new Command("agent")
 agentCommand
   .command("create")
   .description(
-    "Create a complete Zora agent from an EOA, end to end and unattended: headless Privy account, profile, smart wallet, creator coin, and a first post. Every on-chain step is sponsored, so the agent needs no ETH.",
+    "Create a Zora agent from an EOA, end to end and unattended: headless Privy account, profile, and smart wallet. The creator coin is opt-in (--with-coin, or `agent coin` later); a first post is published when --caption and --image are supplied. Every on-chain step is sponsored, so the agent needs no ETH.",
   )
   .option(
     "--private-key <key>",
@@ -168,9 +168,9 @@ agentCommand
   .option("--rpc-url <url>", "Base RPC URL (defaults to the public endpoint)")
   .option(
     "--dry-run",
-    "Create the account, profile, and smart wallet, but simulate the coin + post instead of minting them",
+    "Create the account, profile, and smart wallet, but simulate the opted-in coin + post instead of minting them",
   )
-  .option("--skip-coin", "Skip creating the creator coin")
+  .option("--with-coin", "Also create the agent's creator coin")
   .option("--skip-post", "Skip publishing the first post")
   .option(
     "--username <name>",
@@ -207,7 +207,7 @@ agentCommand
       chainId: string;
       rpcUrl?: string;
       dryRun?: boolean;
-      skipCoin?: boolean;
+      withCoin?: boolean;
       skipPost?: boolean;
       username?: string;
       bio?: string;
@@ -272,10 +272,13 @@ agentCommand
 
     const resolved = resolveAgentKey(json, options.privateKey);
 
-    // Re-running create on a wallet that already owns an agent mints ANOTHER
-    // coin + post (recovering a half-finished run is --skip-coin/--skip-post,
-    // not a re-run), so confirm first. --dry-run mints nothing, so skip it there.
-    if (!options.dryRun) {
+    // Re-running create on a wallet that already owns an agent re-mints whatever
+    // is opted in: another creator coin (--with-coin) and/or another first post
+    // (--caption + --image). Only confirm when this run would actually mint
+    // something — a bare re-run just re-resolves the idempotent account.
+    // --dry-run mints nothing, so skip it there too.
+    const wouldMint = Boolean(options.withCoin) || (hasCaption && hasImage);
+    if (!options.dryRun && wouldMint) {
       const existingAgent = peekAgentWallet();
       if (existingAgent) {
         await confirmAgentAction({
@@ -283,8 +286,8 @@ agentCommand
           force: options.force,
           warning:
             `You already have an agent: @${existingAgent.username} (smart wallet ${existingAgent.smartWalletAddress}).\n` +
-            `Re-running 'agent create' mints ANOTHER creator coin and first post unless you pass --skip-coin / --skip-post.`,
-          question: `Create another coin + post for @${existingAgent.username}?`,
+            `Re-running 'agent create' will mint another creator coin and/or first post for it.`,
+          question: `Create another coin/post for @${existingAgent.username}?`,
         });
       }
     }
@@ -298,7 +301,7 @@ agentCommand
         chainId,
         rpcUrl: options.rpcUrl,
         dryRun: Boolean(options.dryRun),
-        skipCoin: Boolean(options.skipCoin),
+        withCoin: Boolean(options.withCoin),
         skipPost: Boolean(options.skipPost),
         username: options.username,
         bio: options.bio,
@@ -315,7 +318,7 @@ agentCommand
       return outputErrorAndExit(
         json,
         `Agent onboarding failed: ${formatError(err)}`,
-        "Re-run to retry — the profile and smart wallet are idempotent. Use --skip-coin / --skip-post to resume past a completed step.",
+        "Re-run to retry — the profile and smart wallet are idempotent. Add the creator coin later with `zora agent coin`.",
       );
     }
 
@@ -352,6 +355,7 @@ agentCommand
       generated_wallet: resolved.generated,
       saved_to_wallet: savedToWallet,
       dry_run: result.dryRun,
+      with_coin: Boolean(options.withCoin),
       minted_coin: Boolean(result.coin?.hash),
       minted_post: Boolean(result.post?.hash),
       coin_failed: Boolean(result.coinError),
@@ -375,10 +379,13 @@ agentCommand
         savedToWallet,
       },
       render: () => {
+        const simulated = result.dryRun && (result.coin || result.post);
         console.log(
-          result.dryRun
+          simulated
             ? "\n✓ Agent ready (dry run — coin + post simulated, not minted)"
-            : "\n✓ Agent ready",
+            : result.dryRun
+              ? "\n✓ Agent ready (dry run — account + smart wallet created; no coin/post requested)"
+              : "\n✓ Agent ready",
         );
         console.log(`  Profile:      @${result.username}`);
         if (options.bio !== undefined) {
@@ -404,6 +411,8 @@ agentCommand
           );
         } else if (result.coinError) {
           console.log(`  Creator coin: failed — ${result.coinError}`);
+        } else if (!result.dryRun) {
+          console.log("  Creator coin: none — add one with `zora agent coin`");
         }
         if (result.post) {
           console.log(
@@ -436,10 +445,14 @@ agentCommand
           console.log(
             "\n  Note: the account was created, but a best-effort step did not complete.",
           );
-          console.log(
-            "  Re-run to retry — the profile and smart wallet are idempotent;",
-          );
-          console.log("  use --skip-coin / --skip-post to resume past a step.");
+          if (result.coinError) {
+            console.log("  Create the coin later with `zora agent coin`.");
+          }
+          if (result.postError) {
+            console.log(
+              "  Re-run with --caption / --image to retry the first post.",
+            );
+          }
         }
         if (resolved.generated) {
           console.log(
@@ -450,6 +463,128 @@ agentCommand
           console.log(
             `${resolved.generated ? "" : "\n"}  Agent identity saved to ${walletPath} — EOA, embedded + smart wallet, Privy DID, and profile.`,
           );
+        }
+        console.log("\n  Access token (Authorization: Bearer, ~1h):");
+        console.log(`  ${result.accessToken}`);
+      },
+    });
+  });
+
+agentCommand
+  .command("coin")
+  .description(
+    "Create the agent's creator coin for an existing agent. Signs in with the agent's EOA (reusing its cached Privy session), then mints the sponsored creator coin — its name and ticker come from the profile. Needs no ETH. Use this when `agent create` was run without --with-coin.",
+  )
+  .option(
+    "--private-key <key>",
+    "EOA private key to sign in with (default: ZORA_PRIVATE_KEY, then your saved wallet)",
+  )
+  .option("--app-id <id>", "Privy app id", ZORA_PRIVY_APP_ID)
+  .option("--origin <url>", "SIWE origin", DEFAULT_SIWE_ORIGIN)
+  .option(
+    "--chain-id <id>",
+    "EVM chain id for SIWE",
+    String(DEFAULT_SIWE_CHAIN_ID),
+  )
+  .option("--rpc-url <url>", "Base RPC URL (defaults to the public endpoint)")
+  .option("--dry-run", "Simulate the creator coin instead of minting it")
+  .option(
+    "--force",
+    "Skip the confirmation before minting (e.g. to deliberately mint another coin)",
+  )
+  .action(async function (
+    this: Command,
+    options: {
+      privateKey?: string;
+      appId: string;
+      origin: string;
+      chainId: string;
+      rpcUrl?: string;
+      dryRun?: boolean;
+      force?: boolean;
+    },
+  ) {
+    const json = getJson(this);
+
+    const chainId = Number(options.chainId);
+    if (!Number.isInteger(chainId) || chainId <= 0) {
+      return outputErrorAndExit(json, `Invalid --chain-id: ${options.chainId}`);
+    }
+
+    // Acts on an existing agent — don't generate a fresh wallet (that would point
+    // at a different, empty identity with no profile to attach a coin to).
+    const resolved = resolveAgentKey(json, options.privateKey, {
+      allowGenerate: false,
+    });
+
+    // Minting a creator coin is an irreversible on-chain action, and running this
+    // again mints ANOTHER coin. Confirm first when the wallet already owns an agent
+    // (parity with `agent create --with-coin`). --dry-run mints nothing, so skip it
+    // there; --json (scripted) and --force proceed without prompting.
+    if (!options.dryRun) {
+      const existingAgent = peekAgentWallet();
+      if (existingAgent) {
+        await confirmAgentAction({
+          json,
+          force: options.force,
+          warning:
+            `Minting a creator coin for @${existingAgent.username} (smart wallet ${existingAgent.smartWalletAddress}).\n` +
+            `Running 'agent coin' again will mint ANOTHER creator coin.`,
+          question: `Mint the creator coin for @${existingAgent.username}?`,
+        });
+      }
+    }
+
+    let result;
+    try {
+      result = await createAgentCoin({
+        privateKey: resolved.key,
+        appId: options.appId,
+        origin: options.origin,
+        chainId,
+        rpcUrl: options.rpcUrl,
+        dryRun: Boolean(options.dryRun),
+        onProgress: json
+          ? undefined
+          : (_step, detail) => console.log(`• ${detail} ...`),
+      });
+    } catch (err) {
+      return outputErrorAndExit(
+        json,
+        `Creating the creator coin failed: ${formatError(err)}`,
+        "Run `zora agent create` first if this EOA has no agent yet; otherwise re-run to retry.",
+      );
+    }
+
+    track("cli_agent_coin", {
+      dry_run: result.dryRun,
+      minted_coin: Boolean(result.coin.hash),
+      output_format: json ? "json" : "text",
+    });
+
+    outputData(json, {
+      json: { ...result, walletSource: resolved.source },
+      render: () => {
+        console.log(
+          result.dryRun
+            ? "\n✓ Creator coin simulated (dry run — not minted)"
+            : "\n✓ Creator coin created",
+        );
+        console.log(`  Profile:      @${result.username}`);
+        console.log(`  Wallet (EOA): ${result.address}`);
+        console.log(
+          `  Creator coin: ${
+            result.dryRun
+              ? "simulated ✓"
+              : result.coin.hash
+                ? `minted — tx ${result.coin.hash}`
+                : "—"
+          }`,
+        );
+        console.log("\n  Links:");
+        console.log(`    Profile:      ${result.profileUrl}`);
+        if (result.coin.url) {
+          console.log(`    Creator coin: ${result.coin.url}`);
         }
         console.log("\n  Access token (Authorization: Bearer, ~1h):");
         console.log(`  ${result.accessToken}`);
