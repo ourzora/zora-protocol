@@ -1,8 +1,9 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
 
-vi.mock("../privy.js", () => ({
-  createPrivyAccount: vi.fn(),
-  findEmbeddedWallet: vi.fn(),
+vi.mock("../privy.js", () => ({ findEmbeddedWallet: vi.fn() }));
+vi.mock("../privy-session.js", () => ({
+  ensurePrivySession: vi.fn(),
+  refreshPrivyLinkedAccounts: vi.fn(),
 }));
 vi.mock("./profile.js", () => ({ createAgentProfile: vi.fn() }));
 vi.mock("./update-profile.js", () => ({ updateAgentProfile: vi.fn() }));
@@ -12,7 +13,12 @@ vi.mock("./coin.js", () => ({ createCreatorCoin: vi.fn() }));
 vi.mock("./post.js", () => ({ createFirstPost: vi.fn() }));
 
 import { onboardAgent } from "./onboard.js";
-import { createPrivyAccount, findEmbeddedWallet } from "../privy.js";
+import { findEmbeddedWallet } from "../privy.js";
+import {
+  ensurePrivySession,
+  refreshPrivyLinkedAccounts,
+  type PrivySession,
+} from "../privy-session.js";
 import { createAgentProfile } from "./profile.js";
 import { updateAgentProfile } from "./update-profile.js";
 import { ipfsUpload } from "./zora-client.js";
@@ -33,15 +39,29 @@ const POST_IMAGE = {
 };
 const POST_ARGS = { caption: "gm", postImage: POST_IMAGE } as const;
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  vi.mocked(createPrivyAccount).mockResolvedValue({
+function session(overrides: Partial<PrivySession> = {}): PrivySession {
+  return {
     address: "0xExternal000000000000000000000000000000001",
     did: "did:privy:x",
+    appId: "app",
+    origin: "https://zora.com",
     accessToken: "tok",
-    isNewUser: true,
+    accessTokenExpiresAt: 1_900_000_000_000,
+    refreshToken: "refresh",
     linkedAccounts: [],
-  });
+    linkedAccountsKnown: true,
+    isNewUser: true,
+    source: "siwe",
+    ...overrides,
+  };
+}
+
+beforeEach(() => {
+  vi.clearAllMocks();
+  vi.mocked(ensurePrivySession).mockResolvedValue(session());
+  vi.mocked(refreshPrivyLinkedAccounts).mockResolvedValue(
+    session({ isNewUser: false, source: "refresh" }),
+  );
   vi.mocked(findEmbeddedWallet).mockReturnValue(EMBEDDED);
   vi.mocked(createAgentProfile).mockResolvedValue({
     username: "keen_cedar_9807",
@@ -88,21 +108,24 @@ describe("onboardAgent", () => {
     expect(result.post?.url).toBe(
       "https://zora.co/coin/base:0x1f6835c4996fad83c8af2afa00056adf9234fe72",
     );
+    expect(ensurePrivySession).toHaveBeenCalledTimes(1);
     expect(createAgentProfile).toHaveBeenCalledTimes(1);
     expect(provisionSmartWallet).toHaveBeenCalledTimes(1);
     expect(createCreatorCoin).toHaveBeenCalledTimes(1);
     expect(createFirstPost).toHaveBeenCalledTimes(1);
   });
 
-  it("re-authenticates until the embedded wallet appears", async () => {
+  it("refreshes the session until the embedded wallet appears", async () => {
     vi.mocked(findEmbeddedWallet)
       .mockReturnValueOnce(undefined)
       .mockReturnValueOnce(undefined)
       .mockReturnValue(EMBEDDED);
     await onboardAgent({ privateKey: PK, sleep: noSleep });
+    // The initial session is reused; each poll iteration refreshes it (no SIWE).
+    expect(ensurePrivySession).toHaveBeenCalledTimes(1);
     expect(
-      vi.mocked(createPrivyAccount).mock.calls.length,
-    ).toBeGreaterThanOrEqual(3);
+      vi.mocked(refreshPrivyLinkedAccounts).mock.calls.length,
+    ).toBeGreaterThanOrEqual(2);
   });
 
   it("throws if the embedded wallet never appears", async () => {
@@ -110,27 +133,19 @@ describe("onboardAgent", () => {
     await expect(
       onboardAgent({ privateKey: PK, sleep: noSleep, embeddedAttempts: 2 }),
     ).rejects.toThrow(/embedded wallet/i);
+    expect(refreshPrivyLinkedAccounts).toHaveBeenCalledTimes(2);
   });
 
-  it("reports isNewUser from the first sign-in, not the re-auth", async () => {
-    // A genuinely new user: the first SIWE registers (is_new_user=true), but the
-    // re-auth that picks up the embedded wallet returns the same user as a
-    // returning one (false). The result must reflect the first sign-in.
-    vi.mocked(createPrivyAccount)
-      .mockResolvedValueOnce({
-        address: "0xExternal000000000000000000000000000000001",
-        did: "did:privy:x",
-        accessToken: "tok",
-        isNewUser: true,
-        linkedAccounts: [],
-      })
-      .mockResolvedValue({
-        address: "0xExternal000000000000000000000000000000001",
-        did: "did:privy:x",
-        accessToken: "tok",
-        isNewUser: false,
-        linkedAccounts: [],
-      });
+  it("reports isNewUser from the first sign-in, not the refresh", async () => {
+    // A genuinely new user: the initial SIWE registers (is_new_user=true), but the
+    // refresh that picks up the embedded wallet reports a returning user (false).
+    // The result must reflect the first sign-in.
+    vi.mocked(ensurePrivySession).mockResolvedValue(
+      session({ isNewUser: true }),
+    );
+    vi.mocked(refreshPrivyLinkedAccounts).mockResolvedValue(
+      session({ isNewUser: false, source: "refresh" }),
+    );
     vi.mocked(findEmbeddedWallet)
       .mockReturnValueOnce(undefined)
       .mockReturnValue(EMBEDDED);

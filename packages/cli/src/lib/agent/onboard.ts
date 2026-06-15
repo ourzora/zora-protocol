@@ -1,11 +1,11 @@
 import { createPublicClient, http, type Address } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
+import { findEmbeddedWallet } from "../privy.js";
 import {
-  createPrivyAccount,
-  findEmbeddedWallet,
-  type PrivyAccount,
-} from "../privy.js";
+  ensurePrivySession,
+  refreshPrivyLinkedAccounts,
+} from "../privy-session.js";
 import { createAgentProfile } from "./profile.js";
 import { updateAgentProfile } from "./update-profile.js";
 import type { AvatarFile } from "./avatar.js";
@@ -137,25 +137,22 @@ export async function onboardAgent(
     transport: http(opts.rpcUrl ?? DEFAULT_BASE_RPC),
   });
 
-  const signIn = (): Promise<PrivyAccount> =>
-    createPrivyAccount({
-      privateKey: opts.privateKey,
-      appId: opts.appId,
-      origin: opts.origin,
-      chainId: opts.chainId,
-    });
-
-  // 1. Privy account (headless SIWE).
+  // 1. Privy session (cached access token, refresh, or headless SIWE).
   progress("privy", "signing in with the agent EOA");
-  let privy = await signIn();
-  // Capture is_new_user from the *first* sign-in. Privy only sets it on initial
-  // registration; the embedded-wallet poll below re-authenticates (always as a
-  // returning user), which would otherwise clobber it to false for new agents.
-  const isNewUser = privy.isNewUser;
+  let session = await ensurePrivySession({
+    privateKey: opts.privateKey,
+    appId: opts.appId,
+    origin: opts.origin,
+    chainId: opts.chainId,
+  });
+  // Capture is_new_user from the *first* sign-in. Privy only sets it when SIWE
+  // registers a brand-new user; the embedded-wallet poll below re-fetches the
+  // session (always as a returning user), which would otherwise clobber it.
+  const isNewUser = session.isNewUser;
 
   // 2. Profile — idempotent, and provisions the embedded wallet server-side.
   progress("profile", "creating the Zora profile");
-  let profile = await createAgentProfile(privy.accessToken);
+  let profile = await createAgentProfile(session.accessToken);
 
   // 2b. Apply any caller-chosen profile fields (username / bio / avatar). This
   //     is optional — with none provided the auto-assigned profile is kept. We
@@ -181,7 +178,7 @@ export async function onboardAgent(
     // validates the username's availability, so a taken handle fails here —
     // before the (potentially slow) IPFS avatar upload runs.
     if (opts.username !== undefined || opts.bio !== undefined) {
-      profile = await updateAgentProfile(privy.accessToken, {
+      profile = await updateAgentProfile(session.accessToken, {
         username: opts.username,
         bio: opts.bio,
       });
@@ -189,23 +186,27 @@ export async function onboardAgent(
     // Then upload and apply the avatar.
     if (opts.avatar) {
       const avatarUri = await ipfsUpload(
-        privy.accessToken,
+        session.accessToken,
         opts.avatar.filename,
         opts.avatar.bytes,
         opts.avatar.mimeType,
       );
-      profile = await updateAgentProfile(privy.accessToken, { avatarUri });
+      profile = await updateAgentProfile(session.accessToken, { avatarUri });
     }
   }
 
-  // 3. Wait for the embedded wallet to appear, re-authenticating to refresh.
+  // 3. Wait for the embedded wallet to appear, refreshing the session to re-read
+  //    the linked accounts (refresh-first, so we don't burn the SIWE quota).
   progress("embedded", "waiting for the embedded wallet");
-  let embedded = findEmbeddedWallet(privy.linkedAccounts);
+  let embedded = findEmbeddedWallet(session.linkedAccounts);
   const maxAttempts = opts.embeddedAttempts ?? 8;
   for (let attempt = 0; !embedded && attempt < maxAttempts; attempt++) {
     await sleep(3000);
-    privy = await signIn();
-    embedded = findEmbeddedWallet(privy.linkedAccounts);
+    session = await refreshPrivyLinkedAccounts(session, {
+      privateKey: opts.privateKey,
+      chainId: opts.chainId,
+    });
+    embedded = findEmbeddedWallet(session.linkedAccounts);
   }
   if (!embedded) {
     throw new Error(
@@ -216,7 +217,7 @@ export async function onboardAgent(
   // 4. Smart wallet (deploy + resolve + link + owner-sync).
   progress("smartWallet", "provisioning the smart wallet");
   const smartWallet = await provisionSmartWallet({
-    token: privy.accessToken,
+    token: session.accessToken,
     client,
     embedded,
     external: account.address,
@@ -225,8 +226,8 @@ export async function onboardAgent(
 
   const result: OnboardResult = {
     address: account.address,
-    did: privy.did,
-    accessToken: privy.accessToken,
+    did: session.did,
+    accessToken: session.accessToken,
     username: profile.username,
     avatarUri: profile.avatarUri,
     embedded,
@@ -244,7 +245,7 @@ export async function onboardAgent(
     );
     try {
       const coin = await createCreatorCoin({
-        token: privy.accessToken,
+        token: session.accessToken,
         account,
         client,
         dryRun,
@@ -272,7 +273,7 @@ export async function onboardAgent(
     );
     try {
       const post = await createFirstPost({
-        token: privy.accessToken,
+        token: session.accessToken,
         account,
         client,
         smartWallet: smartWallet.address,

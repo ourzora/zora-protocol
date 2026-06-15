@@ -258,6 +258,121 @@ describe("getWalletPath", () => {
   });
 });
 
+describe("Privy session store", () => {
+  const fullSession = {
+    address: "0x000000000000000000000000000000000000c0de",
+    appId: "app-123",
+    origin: "https://zora.com",
+    did: "did:privy:abc",
+    accessToken: "access.jwt",
+    accessTokenExpiresAt: 1_900_000_000_000,
+    refreshToken: "refresh-token",
+    identityToken: "identity.jwt",
+  };
+
+  it("returns undefined when no session file exists", async () => {
+    const { getPrivySession } = await loadConfig();
+    expect(getPrivySession()).toBeUndefined();
+  });
+
+  it("saves and round-trips a session", async () => {
+    const { savePrivySession, getPrivySession } = await loadConfig();
+    savePrivySession(fullSession);
+    expect(getPrivySession()).toEqual({ ...fullSession, version: 1 });
+  });
+
+  it("writes version: 1 and 0600 permissions", async () => {
+    const { savePrivySession, getSessionPath } = await loadConfig();
+    savePrivySession(fullSession);
+    const content = JSON.parse(readFileSync(getSessionPath(), "utf-8"));
+    expect(content.version).toBe(1);
+    expect(statSync(getSessionPath()).mode & 0o777).toBe(0o600);
+  });
+
+  it("clears the session", async () => {
+    const { savePrivySession, clearPrivySession, getPrivySession } =
+      await loadConfig();
+    savePrivySession(fullSession);
+    clearPrivySession();
+    expect(getPrivySession()).toBeUndefined();
+  });
+
+  it("clearPrivySession is a no-op when there is no session", async () => {
+    const { clearPrivySession, getPrivySession } = await loadConfig();
+    expect(() => clearPrivySession()).not.toThrow();
+    expect(getPrivySession()).toBeUndefined();
+  });
+
+  it("warns and ignores a corrupt session file", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(join(configDir, "session.json"), "not json{{{");
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { getPrivySession } = await loadConfig();
+    expect(getPrivySession()).toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("could not parse"),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it("warns and ignores a session with an unsupported version", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(
+      join(configDir, "session.json"),
+      JSON.stringify({ ...fullSession, version: 99 }),
+    );
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { getPrivySession } = await loadConfig();
+    expect(getPrivySession()).toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("unsupported version"),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it("warns and ignores a session missing required fields", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    writeFileSync(
+      join(configDir, "session.json"),
+      JSON.stringify({ version: 1, address: "0xabc" }),
+    );
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { getPrivySession } = await loadConfig();
+    expect(getPrivySession()).toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("missing required fields"),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it("warns and ignores a session missing the did field", async () => {
+    const configDir = join(getTestHomeDir(), ".config", "zora");
+    mkdirSync(configDir, { recursive: true });
+    const { did: _omit, ...withoutDid } = fullSession;
+    writeFileSync(
+      join(configDir, "session.json"),
+      JSON.stringify({ version: 1, ...withoutDid }),
+    );
+    const errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    const { getPrivySession } = await loadConfig();
+    expect(getPrivySession()).toBeUndefined();
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("missing required fields"),
+    );
+    errorSpy.mockRestore();
+  });
+
+  it("getSessionPath returns a path under ~/.config/zora/", async () => {
+    const { getSessionPath } = await loadConfig();
+    expect(getSessionPath()).toBe(
+      join(getTestHomeDir(), ".config", "zora", "session.json"),
+    );
+  });
+});
+
 const AGENT_INFO = {
   address: "0xabc0000000000000000000000000000000000001",
   embeddedWalletAddress: "0xeee0000000000000000000000000000000000001",

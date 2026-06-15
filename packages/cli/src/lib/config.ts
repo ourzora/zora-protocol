@@ -4,6 +4,7 @@ import {
   readFileSync,
   writeFileSync,
   chmodSync,
+  rmSync,
 } from "node:fs";
 import { join } from "node:path";
 import { formatError } from "./errors.js";
@@ -26,8 +27,11 @@ const CONFIG_FILE = join(CONFIG_DIR, "config.json");
 
 const WALLET_FILE = join(CONFIG_DIR, "wallet.json");
 
+const SESSION_FILE = join(CONFIG_DIR, "session.json");
+
 const CONFIG_VERSION = 1;
 const WALLET_VERSION = 1;
+const SESSION_VERSION = 1;
 
 const PRIVATE_KEY_REGEX = /(^|\b)(0x)?[0-9a-fA-F]{64}(\b|$)/;
 
@@ -363,4 +367,84 @@ export function saveDmCheckAt(ms: number): void {
 
 export function getConfigPath(): string {
   return CONFIG_FILE;
+}
+
+/**
+ * A cached Privy session. Bound to one (`address`, `appId`, `origin`) so a session
+ * is never reused for a different key, app, or origin. Persisted with 0600
+ * permissions because it holds long-lived bearer credentials.
+ */
+export interface StoredPrivySession {
+  version: number;
+  /** The EOA that owns this session. */
+  address: string;
+  appId: string;
+  origin: string;
+  did: string;
+  accessToken: string;
+  /** Epoch ms at which the access token expires. */
+  accessTokenExpiresAt: number;
+  /** Refresh token to exchange for a new access token; absent if Privy didn't issue one. */
+  refreshToken?: string;
+  identityToken?: string;
+}
+
+/**
+ * The cached Privy session, or undefined if there is none. A corrupt, unversioned,
+ * or structurally-invalid file is treated as absent (with a warning) rather than
+ * throwing — the caller simply re-authenticates.
+ */
+export function getPrivySession(): StoredPrivySession | undefined {
+  if (!existsSync(SESSION_FILE)) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(SESSION_FILE, "utf-8"));
+  } catch (err) {
+    console.error(
+      `Warning: could not parse ${SESSION_FILE}: ${formatError(err)}. Ignoring the cached Privy session.`,
+    );
+    return undefined;
+  }
+  try {
+    assertVersion(parsed, SESSION_VERSION, SESSION_FILE);
+  } catch (err) {
+    console.error(
+      `Warning: ${formatError(err)}. Ignoring the cached Privy session.`,
+    );
+    return undefined;
+  }
+  const obj = parsed as Record<string, unknown>;
+  if (
+    typeof obj.address !== "string" ||
+    typeof obj.appId !== "string" ||
+    typeof obj.origin !== "string" ||
+    typeof obj.did !== "string" ||
+    typeof obj.accessToken !== "string" ||
+    typeof obj.accessTokenExpiresAt !== "number"
+  ) {
+    console.error(
+      `Warning: ${SESSION_FILE} is missing required fields. Ignoring the cached Privy session.`,
+    );
+    return undefined;
+  }
+  return parsed as StoredPrivySession;
+}
+
+export function savePrivySession(
+  session: Omit<StoredPrivySession, "version">,
+): void {
+  mkdirSync(CONFIG_DIR, { recursive: true });
+  writeSecure(
+    SESSION_FILE,
+    JSON.stringify({ ...session, version: SESSION_VERSION }, null, 2) + "\n",
+  );
+}
+
+/** Remove the cached session (e.g. on sign-out). A no-op if there is none. */
+export function clearPrivySession(): void {
+  if (existsSync(SESSION_FILE)) rmSync(SESSION_FILE, { force: true });
+}
+
+export function getSessionPath(): string {
+  return SESSION_FILE;
 }

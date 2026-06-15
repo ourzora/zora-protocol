@@ -2,7 +2,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { privateKeyToAccount } from "viem/accounts";
 import {
   createPrivyAccount,
+  refreshPrivySession,
+  PrivySessionExpiredError,
   findEmbeddedWallet,
+  parseSetCookie,
+  accessTokenExpiry,
   sendEmailCode,
   linkEmailWithCode,
   hasLinkedEmail,
@@ -16,6 +20,15 @@ const EXPECTED_ADDRESS = privateKeyToAccount(TEST_PK).address;
 // viem's createSiweMessage requires the nonce to be alphanumeric and >= 8 chars
 // (as real Privy nonces are).
 const VALID_NONCE = "abcdef1234567890";
+
+/** A JWT-shaped string carrying `payload` as its (decodable) middle segment. */
+function jwt(payload: Record<string, unknown>): string {
+  const b64 = Buffer.from(JSON.stringify(payload)).toString("base64url");
+  return `eyJhbGciOiJIUzI1NiJ9.${b64}.sig`;
+}
+
+const ACCESS_EXP = 1_900_000_000; // seconds since epoch
+const ACCESS_JWT = jwt({ exp: ACCESS_EXP });
 
 function jsonResponse(body: unknown, status = 200, setCookies?: string[]) {
   return {
@@ -43,12 +56,19 @@ describe("createPrivyAccount", () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ nonce: VALID_NONCE }))
       .mockResolvedValueOnce(
-        jsonResponse({
-          token: "the.access.jwt",
-          identity_token: "the.identity.jwt",
-          user: { id: "did:privy:abc" },
-          is_new_user: true,
-        }),
+        jsonResponse(
+          {
+            token: ACCESS_JWT,
+            identity_token: "the.identity.jwt",
+            user: { id: "did:privy:abc" },
+            is_new_user: true,
+          },
+          200,
+          [
+            "privy-refresh-token=refresh-abc; Path=/; HttpOnly; Secure",
+            "privy-token=ignored; Path=/",
+          ],
+        ),
       );
 
     const result = await createPrivyAccount({ privateKey: TEST_PK });
@@ -56,10 +76,15 @@ describe("createPrivyAccount", () => {
     expect(result).toEqual({
       address: EXPECTED_ADDRESS,
       did: "did:privy:abc",
-      accessToken: "the.access.jwt",
+      accessToken: ACCESS_JWT,
+      accessTokenExpiresAt: ACCESS_EXP * 1000,
+      refreshToken: "refresh-abc",
       identityToken: "the.identity.jwt",
       isNewUser: true,
       linkedAccounts: [],
+      // Privy's session cookies, accumulated across the handshake (main's
+      // `cookie` field) — used by authenticated write endpoints like email link.
+      cookie: "privy-refresh-token=refresh-abc; privy-token=ignored",
     });
 
     expect(fetchMock).toHaveBeenCalledTimes(2);
@@ -86,11 +111,22 @@ describe("createPrivyAccount", () => {
     expect(authBody.signature).toMatch(/^0x[0-9a-f]+$/i);
   });
 
+  it("leaves refreshToken undefined when no cookie is set", async () => {
+    fetchMock
+      .mockResolvedValueOnce(jsonResponse({ nonce: VALID_NONCE }))
+      .mockResolvedValueOnce(
+        jsonResponse({ token: ACCESS_JWT, user: { id: "did:privy:abc" } }),
+      );
+
+    const result = await createPrivyAccount({ privateKey: TEST_PK });
+    expect(result.refreshToken).toBeUndefined();
+  });
+
   it("honors a custom appId, origin, and chainId", async () => {
     fetchMock
       .mockResolvedValueOnce(jsonResponse({ nonce: VALID_NONCE }))
       .mockResolvedValueOnce(
-        jsonResponse({ token: "t", user: { id: "did:privy:z" } }),
+        jsonResponse({ token: ACCESS_JWT, user: { id: "did:privy:z" } }),
       );
 
     await createPrivyAccount({
@@ -161,6 +197,179 @@ describe("createPrivyAccount", () => {
     expect(result.cookie).toBe("privy-token=abc; privy-session=xyz");
     // the authenticate call carries the cookie that init set
     expect(fetchMock.mock.calls[1][1].headers.Cookie).toBe("privy-token=abc");
+  });
+});
+
+describe("refreshPrivySession", () => {
+  const fetchMock = vi.fn();
+
+  beforeEach(() => {
+    fetchMock.mockReset();
+    vi.stubGlobal("fetch", fetchMock);
+  });
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("exchanges the refresh token for a fresh access + rotated refresh token", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({
+        token: ACCESS_JWT,
+        refresh_token: "rotated-refresh",
+        identity_token: "id-jwt",
+        user: {
+          id: "did:privy:abc",
+          linked_accounts: [{ type: "wallet", address: "0xabc" }],
+        },
+      }),
+    );
+
+    const result = await refreshPrivySession({ refreshToken: "old-refresh" });
+
+    expect(result).toEqual({
+      accessToken: ACCESS_JWT,
+      accessTokenExpiresAt: ACCESS_EXP * 1000,
+      refreshToken: "rotated-refresh",
+      identityToken: "id-jwt",
+      did: "did:privy:abc",
+      linkedAccounts: [{ type: "wallet", address: "0xabc" }],
+    });
+
+    const [url, init] = fetchMock.mock.calls[0];
+    expect(url).toBe("https://auth.privy.io/api/v1/sessions");
+    expect(init.method).toBe("POST");
+    expect(init.headers["privy-app-id"]).toBe(ZORA_PRIVY_APP_ID);
+    expect(init.headers.origin).toBe("https://zora.com");
+    expect(init.headers["User-Agent"]).toContain("Mozilla/5.0");
+    expect(init.headers.Cookie).toBe("privy-refresh-token=old-refresh");
+    expect(JSON.parse(init.body)).toEqual({ refresh_token: "old-refresh" });
+  });
+
+  it("reads a rotated refresh token from Set-Cookie when absent from the body", async () => {
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ token: ACCESS_JWT }, 200, [
+        "privy-refresh-token=cookie-refresh; Path=/; HttpOnly",
+      ]),
+    );
+
+    const result = await refreshPrivySession({ refreshToken: "old-refresh" });
+    expect(result.refreshToken).toBe("cookie-refresh");
+  });
+
+  it("keeps the sent refresh token when none is returned", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ token: ACCESS_JWT }));
+    const result = await refreshPrivySession({ refreshToken: "old-refresh" });
+    expect(result.refreshToken).toBe("old-refresh");
+  });
+
+  it('ignores the "deprecated" body sentinel and uses the rotated cookie', async () => {
+    // Privy returns refresh_token: "deprecated" in the body and the real rotated
+    // token only in the Set-Cookie. Using the body sentinel would 400 the next
+    // refresh, so the cookie must win.
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ token: ACCESS_JWT, refresh_token: "deprecated" }, 200, [
+        "privy-refresh-token=real-rotated-token; Path=/; HttpOnly",
+      ]),
+    );
+    const result = await refreshPrivySession({ refreshToken: "old-refresh" });
+    expect(result.refreshToken).toBe("real-rotated-token");
+  });
+
+  it('never returns the "deprecated" sentinel as the refresh token', async () => {
+    // Body sentinel, no cookie → fall back to the token we sent, never "deprecated".
+    fetchMock.mockResolvedValueOnce(
+      jsonResponse({ token: ACCESS_JWT, refresh_token: "deprecated" }),
+    );
+    const result = await refreshPrivySession({ refreshToken: "old-refresh" });
+    expect(result.refreshToken).toBe("old-refresh");
+  });
+
+  it("returns undefined linkedAccounts when the response carries no user", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ token: ACCESS_JWT }));
+    const result = await refreshPrivySession({ refreshToken: "old-refresh" });
+    expect(result.linkedAccounts).toBeUndefined();
+    expect(result.did).toBeUndefined();
+  });
+
+  it("honors a custom appId and origin", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ token: ACCESS_JWT }));
+    await refreshPrivySession({
+      refreshToken: "r",
+      appId: "custom-app",
+      origin: "https://example.test",
+    });
+    const init = fetchMock.mock.calls[0][1];
+    expect(init.headers["privy-app-id"]).toBe("custom-app");
+    expect(init.headers.origin).toBe("https://example.test");
+  });
+
+  it("throws PrivySessionExpiredError when the token is rejected", async () => {
+    fetchMock.mockResolvedValueOnce(jsonResponse({ error: "expired" }, 401));
+    const err = await refreshPrivySession({ refreshToken: "old" }).catch(
+      (e) => e,
+    );
+    expect(err).toBeInstanceOf(PrivySessionExpiredError);
+    expect(err.status).toBe(401);
+  });
+
+  it("throws a distinct (non-expired) error on a 200 with no token", async () => {
+    // A malformed 2xx body must not be reported as a rejected/expired token.
+    fetchMock.mockResolvedValueOnce(jsonResponse({ user: { id: "x" } }, 200));
+    const err = await refreshPrivySession({ refreshToken: "old" }).catch(
+      (e) => e,
+    );
+    expect(err).toBeInstanceOf(Error);
+    expect(err).not.toBeInstanceOf(PrivySessionExpiredError);
+    expect(err.message).toMatch(/no token/i);
+  });
+});
+
+describe("accessTokenExpiry", () => {
+  it("reads the exp claim (in ms) from a JWT", () => {
+    expect(accessTokenExpiry(jwt({ exp: ACCESS_EXP }))).toBe(ACCESS_EXP * 1000);
+  });
+
+  it("falls back to ~1h from now for an undecodable token", () => {
+    const before = Date.now();
+    const expiry = accessTokenExpiry("not.a.jwt");
+    expect(expiry).toBeGreaterThanOrEqual(before + 60 * 60 * 1000 - 1000);
+    expect(expiry).toBeLessThanOrEqual(Date.now() + 60 * 60 * 1000 + 1000);
+  });
+
+  it("falls back when the token has no exp claim", () => {
+    const before = Date.now();
+    const expiry = accessTokenExpiry(jwt({ sub: "x" }));
+    expect(expiry).toBeGreaterThanOrEqual(before + 60 * 60 * 1000 - 1000);
+  });
+
+  it("falls back for a token that isn't a JWT", () => {
+    const before = Date.now();
+    const expiry = accessTokenExpiry("opaque-token");
+    expect(expiry).toBeGreaterThanOrEqual(before + 60 * 60 * 1000 - 1000);
+  });
+});
+
+describe("parseSetCookie", () => {
+  it("returns the value of the named cookie", () => {
+    expect(
+      parseSetCookie(
+        ["other=1; Path=/", "privy-refresh-token=abc123; HttpOnly; Secure"],
+        "privy-refresh-token",
+      ),
+    ).toBe("abc123");
+  });
+
+  it("returns undefined when the cookie is absent", () => {
+    expect(parseSetCookie(["other=1"], "privy-refresh-token")).toBeUndefined();
+  });
+
+  it("treats an explicitly-cleared (empty) cookie as undefined", () => {
+    expect(
+      parseSetCookie(
+        ["privy-refresh-token=; Max-Age=0"],
+        "privy-refresh-token",
+      ),
+    ).toBeUndefined();
   });
 });
 

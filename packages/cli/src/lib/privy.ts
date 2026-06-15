@@ -61,6 +61,16 @@ export interface PrivyAccount {
    * `Authorization: Bearer <accessToken>` to the Zora GraphQL/tRPC endpoints.
    */
   accessToken: string;
+  /** Epoch ms at which {@link accessToken} expires, read from its JWT `exp` claim. */
+  accessTokenExpiresAt: number;
+  /**
+   * Long-lived refresh token, read from the `privy-refresh-token` Set-Cookie that
+   * `siwe/authenticate` returns (it is not in the JSON body). Exchange it at
+   * `/api/v1/sessions` — see {@link refreshPrivySession} — for a fresh access token
+   * without re-running SIWE, which Privy rate-limits to ~60 calls/week. Undefined if
+   * Privy did not set the cookie.
+   */
+  refreshToken?: string;
   /** Privy identity token, when returned. */
   identityToken?: string;
   /** True when this call created a brand-new Privy user (vs. re-authenticating). */
@@ -266,12 +276,173 @@ export async function createPrivyAccount(
     address: account.address,
     did: auth.json.user.id,
     accessToken: auth.json.token,
+    accessTokenExpiresAt: accessTokenExpiry(auth.json.token),
+    refreshToken: parseSetCookie(auth.setCookies, "privy-refresh-token"),
     identityToken: auth.json.identity_token,
     isNewUser: Boolean(auth.json.is_new_user),
     linkedAccounts: (auth.json.user.linked_accounts ??
       []) as PrivyLinkedAccount[],
     cookie,
   };
+}
+
+export interface RefreshPrivySessionOptions {
+  /** The `privy-refresh-token` value captured from a prior authenticate/refresh. */
+  refreshToken: string;
+  /** Privy app id. Defaults to {@link ZORA_PRIVY_APP_ID}. */
+  appId?: string;
+  /** Origin the session is scoped to. Defaults to {@link DEFAULT_SIWE_ORIGIN}. */
+  origin?: string;
+  /** Privy auth API base. Override only for testing. */
+  authBase?: string;
+}
+
+export interface PrivyRefreshResult {
+  /** A fresh short-lived access token (JWT). */
+  accessToken: string;
+  /** Epoch ms at which {@link accessToken} expires, from its JWT `exp` claim. */
+  accessTokenExpiresAt: number;
+  /**
+   * The rotated refresh token. Privy rotates the refresh token on every exchange,
+   * so callers must persist this and discard the one they sent. Falls back to the
+   * sent token if Privy returns neither a body field nor a Set-Cookie.
+   */
+  refreshToken: string;
+  /** Privy identity token, when returned. */
+  identityToken?: string;
+  /** The Privy user DID, when the response includes the user object. */
+  did?: string;
+  /**
+   * The user's linked accounts when the sessions endpoint returns the user object,
+   * or `undefined` when it does not. Callers that need the *current* linked accounts
+   * (e.g. embedded-wallet polling) must re-authenticate when this is `undefined`.
+   */
+  linkedAccounts?: PrivyLinkedAccount[];
+}
+
+/** Thrown when a refresh-token exchange at `/api/v1/sessions` is rejected (e.g. 401). */
+export class PrivySessionExpiredError extends Error {
+  constructor(public readonly status: number) {
+    super(`Privy session refresh rejected (HTTP ${status}).`);
+    this.name = "PrivySessionExpiredError";
+  }
+}
+
+/**
+ * Exchange a Privy refresh token for a fresh access token via `POST
+ * /api/v1/sessions`, without re-running the SIWE handshake.
+ *
+ * `siwe/authenticate` is rate-limited (~60 calls/week per app), so long-lived or
+ * frequently-invoked agents must refresh rather than re-sign in each time their
+ * ~1h access token expires. The refresh token is sent both in the JSON body and
+ * as a `privy-refresh-token` cookie, mirroring the browser SDK so Privy's WAF
+ * accepts the call from a non-browser context.
+ *
+ * Throws {@link PrivySessionExpiredError} when the token is rejected, so callers
+ * can fall back to a full {@link createPrivyAccount}.
+ */
+export async function refreshPrivySession(
+  opts: RefreshPrivySessionOptions,
+): Promise<PrivyRefreshResult> {
+  const {
+    refreshToken,
+    appId = ZORA_PRIVY_APP_ID,
+    origin = DEFAULT_SIWE_ORIGIN,
+    authBase = PRIVY_AUTH_BASE,
+  } = opts;
+
+  // Send the refresh token both in the body and as the `privy-refresh-token`
+  // cookie, mirroring the browser SDK so Privy's WAF accepts the headless call.
+  const res = await privyAuthPost(
+    "/api/v1/sessions",
+    { refresh_token: refreshToken },
+    { appId, origin, authBase, cookie: `privy-refresh-token=${refreshToken}` },
+  );
+  if (!res.ok) {
+    throw new PrivySessionExpiredError(res.status);
+  }
+  if (!res.json?.token) {
+    // A 2xx with no token is a malformed/unexpected response, not a rejected
+    // refresh token — surface it distinctly so a genuine expiry isn't masked by
+    // a misleading "rejected (HTTP 200)".
+    throw new Error(
+      `Privy session refresh returned no token (HTTP ${res.status}).`,
+    );
+  }
+
+  const json = res.json;
+  const linkedAccounts = Array.isArray(json.user?.linked_accounts)
+    ? (json.user.linked_accounts as PrivyLinkedAccount[])
+    : undefined;
+
+  return {
+    accessToken: json.token,
+    accessTokenExpiresAt: accessTokenExpiry(json.token),
+    // Privy rotates the refresh token via the `privy-refresh-token` Set-Cookie.
+    // The JSON `refresh_token` field is now the literal sentinel "deprecated"
+    // (Privy stopped returning the real token in the body), so it must never be
+    // used as a token — sending it back yields HTTP 400 "Invalid auth token".
+    // Prefer the rotated cookie; only fall back to a *real* body token, then to
+    // the token we sent.
+    refreshToken:
+      parseSetCookie(res.setCookies, "privy-refresh-token") ??
+      (typeof json.refresh_token === "string" &&
+      json.refresh_token !== "deprecated"
+        ? json.refresh_token
+        : undefined) ??
+      refreshToken,
+    identityToken:
+      typeof json.identity_token === "string" ? json.identity_token : undefined,
+    did: typeof json.user?.id === "string" ? json.user.id : undefined,
+    linkedAccounts,
+  };
+}
+
+/** Default access-token lifetime used when a token's `exp` can't be read (~1h). */
+const DEFAULT_ACCESS_TOKEN_TTL_MS = 60 * 60 * 1000;
+
+/**
+ * The epoch-ms expiry of a Privy access token, from its JWT `exp` claim. Falls back
+ * to ~1h from now when the token can't be decoded, so callers always get a usable
+ * (if conservative) expiry.
+ */
+export function accessTokenExpiry(jwt: string): number {
+  const exp = decodeJwtExp(jwt);
+  return exp !== undefined
+    ? exp * 1000
+    : Date.now() + DEFAULT_ACCESS_TOKEN_TTL_MS;
+}
+
+/** The `exp` claim (seconds since epoch) of a JWT, or undefined if unreadable. */
+function decodeJwtExp(jwt: string): number | undefined {
+  const segments = jwt.split(".");
+  if (segments.length < 2) return undefined;
+  try {
+    const payload = JSON.parse(
+      Buffer.from(segments[1], "base64url").toString("utf-8"),
+    );
+    return typeof payload?.exp === "number" ? payload.exp : undefined;
+  } catch {
+    return undefined;
+  }
+}
+
+/**
+ * The value of the named cookie from a list of `Set-Cookie` header values, or
+ * undefined if absent or explicitly cleared (empty value).
+ */
+export function parseSetCookie(
+  setCookies: string[],
+  name: string,
+): string | undefined {
+  const prefix = `${name}=`;
+  for (const cookie of setCookies) {
+    if (cookie.startsWith(prefix)) {
+      const value = cookie.slice(prefix.length).split(";", 1)[0];
+      return value || undefined;
+    }
+  }
+  return undefined;
 }
 
 /**
