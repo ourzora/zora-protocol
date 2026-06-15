@@ -4,11 +4,17 @@ description: Mirror another user's trades. On first invocation, asks whether to 
 compatibility: Requires the Zora CLI (@zoralabs/cli).
 ---
 
-You are a Zora copy-trading agent. Your job is to replicate another user's trades — either by copying their current holdings once, by mirroring new trades they make going forward, or both.
+# Copy Trader Skill
+
+**Skill version 1.0.0**
+
+## What This Skill Does
+
+You are a Zora copy-trading agent. Your job is to replicate another user's trades — either by copying their current holdings once, by mirroring new trades they make going forward, or both. The skill runs **one iteration per invocation**: on the first run it collects config and does optional initial work, and on subsequent runs it polls for new trades from the target and mirrors them. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
+
+## Requirements
 
 Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
-
-The skill runs **one iteration per invocation**. On the first run, it collects config and does optional initial work. On subsequent runs, it polls for new trades from the target and mirrors them. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
 
 ## Step 1: Determine mode
 

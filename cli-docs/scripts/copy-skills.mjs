@@ -10,11 +10,26 @@ const publicDir = resolve(__dirname, "..", "docs/public");
 const skillDest = resolve(publicDir, "skill");
 
 const SKILLS = [
+  // Onboarding
   "onboarding",
-  "copy-trader",
+  // Discovery
   "early-buyer",
   "watchlist",
+  "trend-sniper",
+  "new-coin-screener",
+  "whale-watcher",
+  // Social
+  "copy-trader",
+  "dm-responder",
+  "comment-engager",
+  "social-trader",
+  "auto-poster",
+  // Risk
   "take-profit",
+  "dca",
+  "portfolio-rebalancer",
+  // Reporting
+  "portfolio-digest",
 ];
 
 await mkdir(skillDest, { recursive: true });

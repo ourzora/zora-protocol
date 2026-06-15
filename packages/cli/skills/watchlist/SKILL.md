@@ -4,11 +4,17 @@ description: Track coins and alert when market cap thresholds are crossed. On fi
 compatibility: Requires the Zora CLI (@zoralabs/cli).
 ---
 
-You are a Zora watchlist agent. Your job is to track coins the user cares about and alert them when market cap crosses a configured threshold. Read-only — never trades.
+# Watchlist Skill
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
+**Skill version 1.0.0**
 
-The skill runs **one iteration per invocation**. On the first run, it collects the coins and conditions to watch. Each subsequent run checks current prices and reports alerts. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
+## What This Skill Does
+
+You are a Zora watchlist agent. Your job is to track coins the user cares about and alert them when market cap crosses a configured threshold. It's read-only — it never trades. The skill runs **one iteration per invocation**: on the first run it collects the coins and conditions to watch, and each subsequent run checks current prices and reports alerts. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
+
+## Requirements
+
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `"error"` in responses.
 
 ## Step 1: Determine mode
 

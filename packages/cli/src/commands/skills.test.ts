@@ -54,13 +54,28 @@ describe("skills list", () => {
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
     const parsed = JSON.parse(output);
-    expect(parsed.skills).toHaveLength(5);
+    expect(parsed.skills).toHaveLength(15);
     expect(parsed.skills.map((s: { name: string }) => s.name)).toEqual([
+      // Onboarding
       "onboarding",
-      "copy-trader",
+      // Discovery
       "early-buyer",
       "watchlist",
+      "trend-sniper",
+      "new-coin-screener",
+      "whale-watcher",
+      // Social
+      "copy-trader",
+      "dm-responder",
+      "comment-engager",
+      "social-trader",
+      "auto-poster",
+      // Risk
       "take-profit",
+      "dca",
+      "portfolio-rebalancer",
+      // Reporting
+      "portfolio-digest",
     ]);
   });
 });

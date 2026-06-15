@@ -15,19 +15,17 @@ type SkillMeta = {
   description: string;
 };
 
+// Grouped by category (Onboarding → Discovery → Social → Risk → Reporting) so
+// `skills list` and the docs present them in the same order.
 const SKILLS: SkillMeta[] = [
+  // Onboarding
   {
     name: "onboarding",
     category: "Onboarding",
     description:
       "Set up on Zora for the first time — publish your profile, create your smart wallet and creator coin, and post your first meme",
   },
-  {
-    name: "copy-trader",
-    category: "Social",
-    description:
-      "Mirror another user's trades — existing holdings, future trades, or both",
-  },
+  // Discovery
   {
     name: "early-buyer",
     category: "Discovery",
@@ -40,10 +38,79 @@ const SKILLS: SkillMeta[] = [
       "Track coins and alert when market cap hits configured thresholds",
   },
   {
+    name: "trend-sniper",
+    category: "Discovery",
+    description:
+      "Watch the global trending feed and snipe new trend coins on appearance or a volume spike",
+  },
+  {
+    name: "new-coin-screener",
+    category: "Discovery",
+    description:
+      "Poll the global new-coin feed and auto-buy launches that pass a market-cap/holder screen",
+  },
+  {
+    name: "whale-watcher",
+    category: "Discovery",
+    description:
+      "Watch top holders and large trades on chosen coins, then alert or auto-trade on whale moves",
+  },
+  // Social
+  {
+    name: "copy-trader",
+    category: "Social",
+    description:
+      "Mirror another user's trades — existing holdings, future trades, or both",
+  },
+  {
+    name: "dm-responder",
+    category: "Social",
+    description:
+      "Auto-triage and respond to DMs — approve/deny requests, greet new conversations, and flag keyword matches by rule",
+  },
+  {
+    name: "comment-engager",
+    category: "Social",
+    description:
+      "Read and reply to comments on coins you hold, in your own voice, to build social presence",
+  },
+  {
+    name: "social-trader",
+    category: "Social",
+    description:
+      "Follow specific creators and buy their new post coins or growing creator coins",
+  },
+  {
+    name: "auto-poster",
+    category: "Social",
+    description:
+      "Publish a new post on a schedule to keep your agent active and in-character",
+  },
+  // Risk
+  {
     name: "take-profit",
     category: "Risk",
     description:
       "Auto-sell positions at configured take-profit or stop-loss price targets",
+  },
+  {
+    name: "dca",
+    category: "Risk",
+    description:
+      "Dollar-cost-average a fixed amount into chosen coins each iteration, with budget caps",
+  },
+  {
+    name: "portfolio-rebalancer",
+    category: "Risk",
+    description:
+      "Rebalance holdings back to target allocations when they drift past a tolerance band",
+  },
+  // Reporting
+  {
+    name: "portfolio-digest",
+    category: "Reporting",
+    description:
+      "Read-only periodic portfolio and PnL digest, optionally delivered to the operator by DM",
   },
 ];
 
@@ -100,7 +167,7 @@ const fetchSkill = async (name: string): Promise<string> => {
 
 export const skillsCommand = new Command("skills")
   .description(
-    "Install pre-built agent skills — onboarding (onboarding) and trading (copy-trader, early-buyer, watchlist, take-profit)",
+    "Install pre-built agent skills — onboarding plus discovery, social, risk, and reporting strategies (run `skills list` to see them all)",
   )
   .action(function (this: Command) {
     this.outputHelp();

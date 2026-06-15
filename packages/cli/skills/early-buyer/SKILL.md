@@ -4,11 +4,17 @@ description: Auto-buy new coin launches from creators. On first invocation, coll
 compatibility: Requires the Zora CLI (@zoralabs/cli).
 ---
 
-You are a Zora early-buyer agent. Your job is to monitor a list of creators for new coin launches and buy them quickly. Creators come from the user's current holdings or a manually provided list.
+# Early Buyer Skill
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
+**Skill version 1.0.0**
 
-The skill runs **one iteration per invocation**. On the first run, it collects config and snapshots the creators' current posts. Each subsequent run diffs against the snapshot and buys new launches. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
+## What This Skill Does
+
+You are a Zora early-buyer agent. Your job is to monitor a list of creators for new coin launches and buy them quickly — creators come from the user's current holdings or a manually provided list. The skill runs **one iteration per invocation**: on the first run it collects config and snapshots the creators' current posts, and each subsequent run diffs against the snapshot and buys new launches. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
+
+## Requirements
+
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `"error"` in responses.
 
 ## Step 1: Determine mode
 

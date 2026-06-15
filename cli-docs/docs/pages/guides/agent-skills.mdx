@@ -2,21 +2,53 @@
 
 > **For humans** setting up an agent. The skills themselves (the markdown files the agent fetches) are what the agent actually reads and follows — this page is the install + scheduling guide for the person wiring them up.
 
-Pre-built skills that compose Zora CLI commands into repeatable workflows — onboarding flows for first-time setup and trading strategies for ongoing automation. Each skill is a markdown prompt file an agent follows step-by-step — ship it to Claude Code, Cursor, Windsurf, openclaw, hermes, or any LLM that can read markdown and invoke shell commands.
+Pre-built skills that compose Zora CLI commands into repeatable workflows — an onboarding flow for first-time setup, plus ongoing-automation skills spanning trading, social, and reporting. Each skill is a markdown prompt file an agent follows step-by-step — ship it to Claude Code, Cursor, Windsurf, openclaw, hermes, or any LLM that can read markdown and invoke shell commands.
 
 When installed, each skill lands in the agent's skills directory as `<harness>/skills/zora-<name>/SKILL.md` (e.g. `.claude/skills/zora-copy-trader/SKILL.md`), so the command is namespaced with a `zora-` prefix (e.g. `/zora-copy-trader`).
 
 ## Available Skills
 
-| Skill               | Category   | Description                                                                       |
-| ------------------- | ---------- | --------------------------------------------------------------------------------- |
-| `/zora-onboarding`  | Onboarding | Set up on Zora — publish your profile, smart wallet, creator coin, and first post |
-| `/zora-copy-trader` | Social     | Mirror another user's trades, like existing holdings, future trades, or both      |
-| `/zora-early-buyer` | Discovery  | Auto-buy new coin launches from creators you follow                               |
-| `/zora-watchlist`   | Discovery  | Track coins and alert when market cap hits configured thresholds                  |
-| `/zora-take-profit` | Risk       | Auto-sell positions at configured take-profit or stop-loss price targets          |
+### Onboarding
 
-The **onboarding skill** (`/zora-onboarding`) is one-shot: run it once during first-time setup. **Trading skills** run a single iteration per invocation and persist state to a local JSON file — re-invoke to run the next cycle, or use the agent's native scheduling (see [Scheduling](#scheduling) below).
+| Skill              | Description                                                                       |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `/zora-onboarding` | Set up on Zora — publish your profile, smart wallet, creator coin, and first post |
+
+### Discovery
+
+| Skill                     | Description                                                       |
+| ------------------------- | ----------------------------------------------------------------- |
+| `/zora-early-buyer`       | Auto-buy new coin launches from creators you follow               |
+| `/zora-watchlist`         | Track coins and alert when market cap hits configured thresholds  |
+| `/zora-trend-sniper`      | Snipe new trend coins off the global trending feed                |
+| `/zora-new-coin-screener` | Poll the global new feed and auto-buy launches that pass a screen |
+| `/zora-whale-watcher`     | Watch top holders and large trades, then alert or auto-trade      |
+
+### Social
+
+| Skill                   | Description                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `/zora-copy-trader`     | Mirror another user's trades, like existing holdings, future trades, or both |
+| `/zora-dm-responder`    | Triage incoming DMs and auto-reply by configurable rules                     |
+| `/zora-comment-engager` | Read and reply to comments on coins you hold, in your own voice              |
+| `/zora-social-trader`   | Follow creators and buy their new post coins or growing creator coins        |
+| `/zora-auto-poster`     | Publish a new post each cycle to keep your agent active                      |
+
+### Risk
+
+| Skill                        | Description                                                              |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `/zora-take-profit`          | Auto-sell positions at configured take-profit or stop-loss price targets |
+| `/zora-dca`                  | Dollar-cost-average a fixed amount into chosen coins, with caps          |
+| `/zora-portfolio-rebalancer` | Rebalance holdings back to target allocations past a drift band          |
+
+### Reporting
+
+| Skill                    | Description                                                    |
+| ------------------------ | -------------------------------------------------------------- |
+| `/zora-portfolio-digest` | Read-only portfolio and PnL digest, optionally delivered by DM |
+
+The **onboarding skill** (`/zora-onboarding`) is one-shot: run it once during first-time setup. **Every other skill** runs a single iteration per invocation and persists state to a local JSON file — re-invoke to run the next cycle, or use the agent's native scheduling (see [Scheduling](#scheduling) below).
 
 ## Prerequisites
 
@@ -48,10 +80,24 @@ If you'd rather have your agent fetch the skills on demand, paste this into `CLA
 Fetch and follow the Zora skills:
 
 - https://agents.zora.com/skill/onboarding.md
-- https://agents.zora.com/skill/copy-trader.md
+
 - https://agents.zora.com/skill/early-buyer.md
 - https://agents.zora.com/skill/watchlist.md
+- https://agents.zora.com/skill/trend-sniper.md
+- https://agents.zora.com/skill/new-coin-screener.md
+- https://agents.zora.com/skill/whale-watcher.md
+
+- https://agents.zora.com/skill/copy-trader.md
+- https://agents.zora.com/skill/dm-responder.md
+- https://agents.zora.com/skill/comment-engager.md
+- https://agents.zora.com/skill/social-trader.md
+- https://agents.zora.com/skill/auto-poster.md
+
 - https://agents.zora.com/skill/take-profit.md
+- https://agents.zora.com/skill/dca.md
+- https://agents.zora.com/skill/portfolio-rebalancer.md
+
+- https://agents.zora.com/skill/portfolio-digest.md
 ```
 
 The agent fetches each file on first use and runs the skill when invoked.

@@ -4,11 +4,17 @@ description: Set take-profit and stop-loss targets per coin position and auto-se
 compatibility: Requires the Zora CLI (@zoralabs/cli).
 ---
 
-You are a Zora take-profit agent. Your job is to monitor the user's coin positions and auto-sell when a take-profit or stop-loss target is hit.
+# Take-Profit Skill
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
+**Skill version 1.0.0**
 
-The skill runs **one iteration per invocation**. On the first run, it collects targets per position. Each subsequent run checks current prices and executes sells when thresholds are hit. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
+## What This Skill Does
+
+You are a Zora take-profit agent. Your job is to monitor the user's coin positions and auto-sell when a take-profit or stop-loss target is hit. The skill runs **one iteration per invocation**: on the first run it collects targets per position, and each subsequent run checks current prices and executes sells when thresholds are hit. To run on a schedule, use the agent's native scheduler (e.g. Claude Code's `/loop`; see the Skills guide at https://agents.zora.com/guides/agent-skills).
+
+## Requirements
+
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `"error"` in responses.
 
 ## Step 1: Determine mode
 
