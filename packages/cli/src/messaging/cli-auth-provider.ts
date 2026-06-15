@@ -1,8 +1,10 @@
 import { createPublicClient, http, type Address, type Hex } from "viem";
 import { base } from "viem/chains";
 import { privateKeyToAccount } from "viem/accounts";
-import { createPrivyAccount, findEmbeddedWallet } from "../lib/privy.js";
+import { findEmbeddedWallet } from "../lib/privy.js";
+import { ensurePrivySession, type PrivySession } from "../lib/privy-session.js";
 import {
+  getAgentWallet,
   getSmartWalletAddress,
   saveSmartWalletAddress,
 } from "../lib/config.js";
@@ -21,10 +23,28 @@ export interface CliSmartWalletProviderOptions {
   privateKey: Hex;
   /** Base RPC URL, used only when the smart wallet address must be derived. */
   rpcUrl?: string;
-  /** Privy app id. Defaults to the Zora production app via {@link createPrivyAccount}. */
+  /** Privy app id. Defaults to the Zora production app via {@link ensurePrivySession}. */
   appId?: string;
   /** Injected chain client, for tests. Production derives one from `rpcUrl`. */
   client?: ChainClient;
+}
+
+/**
+ * Resolve the Privy embedded wallet — smart-wallet owner #0. Prefer the linked
+ * accounts on the session, but only when this run actually read them: a SIWE
+ * sign-in always does, a refresh-token exchange does only when Privy returns the
+ * user object, and a cached-token reuse never does (see
+ * {@link PrivySession.linkedAccountsKnown}). When they're absent, fall back to
+ * the embedded address `zora agent create` persisted. May be undefined — the
+ * only step that strictly needs it is deriving a smart wallet address that isn't
+ * already configured.
+ */
+function resolveEmbeddedWallet(session: PrivySession): Address | undefined {
+  if (session.linkedAccountsKnown) {
+    const fromSession = findEmbeddedWallet(session.linkedAccounts);
+    if (fromSession) return fromSession;
+  }
+  return getAgentWallet()?.embeddedWalletAddress;
 }
 
 /**
@@ -36,11 +56,16 @@ export interface CliSmartWalletProviderOptions {
  */
 async function resolveSmartWalletAddress(
   external: Address,
-  embedded: Address,
+  embedded: Address | undefined,
   opts: CliSmartWalletProviderOptions,
 ): Promise<Address> {
   const configured = getSmartWalletAddress();
   if (configured) return configured;
+
+  // Deriving the address requires the embedded owner. Without it — e.g. a cached
+  // session whose linked accounts were never read and no persisted agent
+  // identity — there's nothing to derive from, so onboarding hasn't happened here.
+  if (!embedded) throw new Error(NEEDS_AGENT_CREATE);
 
   const client =
     opts.client ??
@@ -76,14 +101,16 @@ export const createCliSmartWalletProvider = async (
 ): Promise<PrivyAuthProvider> => {
   const account = privateKeyToAccount(opts.privateKey);
 
-  // Headless SIWE with the agent EOA — yields the Privy JWT for authenticated
-  // UAPI calls and the linked accounts that expose the embedded (owner #0) wallet.
-  const privy = await createPrivyAccount({
+  // Reuse the cached Privy session, or refresh it via the long-lived refresh
+  // token, falling back to a full SIWE sign-in only when neither is available.
+  // SIWE is rate-limited (~60/week per app), so re-running it on every `zora dm`
+  // invocation — and on the background new-DM check that follows other commands —
+  // would quickly exhaust that budget. See {@link ensurePrivySession}.
+  const session = await ensurePrivySession({
     privateKey: opts.privateKey,
     appId: opts.appId,
   });
-  const embedded = findEmbeddedWallet(privy.linkedAccounts);
-  if (!embedded) throw new Error(NEEDS_AGENT_CREATE);
+  const embedded = resolveEmbeddedWallet(session);
 
   const smartWallet = await resolveSmartWalletAddress(
     account.address,
@@ -92,18 +119,23 @@ export const createCliSmartWalletProvider = async (
   );
 
   // Owners in deploy order: index 0 = embedded (Privy), index 1 = external EOA.
-  // Never return null — getOwnerIndexForWallet would then fall back to index 0
-  // while we sign with the external key, producing an invalid ERC-1271 signature.
-  const owners: SmartWalletOwner[] = [
-    { ownerAddress: embedded, ownerIndex: 0 },
-    { ownerAddress: account.address, ownerIndex: 1 },
-  ];
+  // We sign as the external EOA, so the index lookup only needs to *find* it;
+  // include the embedded owner when known so the set is accurate. The list must
+  // always contain the external EOA — getOwnerIndexForWallet otherwise falls back
+  // to index 0 while we sign with the external key, producing an invalid
+  // ERC-1271 signature.
+  const owners: SmartWalletOwner[] = embedded
+    ? [
+        { ownerAddress: embedded, ownerIndex: 0 },
+        { ownerAddress: account.address, ownerIndex: 1 },
+      ]
+    : [{ ownerAddress: account.address, ownerIndex: 1 }];
 
   return {
     getSmartWalletAddress: () => smartWallet,
     getOwnerAddress: () => account.address,
     getOwners: () => owners,
     signHash: (hash: Hex) => account.sign({ hash }),
-    getAccessToken: async () => privy.accessToken,
+    getAccessToken: async () => session.accessToken,
   };
 };
