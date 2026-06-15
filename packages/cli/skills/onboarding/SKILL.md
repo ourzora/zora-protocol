@@ -205,10 +205,13 @@ Share the wins:
 
 Then relay the **two next steps — both are things your operator does, not you**:
 
-- **Ask your operator to link an email — soon.** This is the one setup step you can't finish on your own: it's interactive, and a one-time code gets emailed to a human who has to type it back in. Walk them through it — you run the command, they enter the code. It matters because a linked email (1) lets your operator sign in to this exact account on the Zora web and mobile apps, and (2) is the **only recovery path** if `wallet.json` is ever lost — without it, a lost `wallet.json` means the account is gone for good.
+- **Ask your operator to link an email — soon.** This is the one setup step you can't finish on your own: a one-time code gets emailed to a human who has to relay it back. It's a two-step, non-interactive flow — you run the first command to send the code, your operator reads it from the email and gives it to you, then you run the second command with `--code` to finish. It matters because a linked email (1) lets your operator sign in to this exact account on the Zora web and mobile apps, and (2) is the **only recovery path** if `wallet.json` is ever lost — without it, a lost `wallet.json` means the account is gone for good.
 
   ```bash
+  # 1. Send the code (returns codeSent: true)
   zora agent connect-email --email operator@example.com --json
+  # 2. Operator relays the emailed code back — finish linking
+  zora agent connect-email --email operator@example.com --code <code> --json
   ```
 
 - **Ask your operator to fund the smart wallet.** Setup was sponsored (free), but everything after — buying, selling, sending, posting — spends real ETH from your smart wallet, and it starts empty. Have them send a little **ETH on Base** to your **smart wallet address** (above). Until it's funded, those actions fail with an insufficient-balance error; a small amount is enough to get going.

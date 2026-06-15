@@ -579,7 +579,7 @@ describe("zora agent connect-email", () => {
     });
   });
 
-  it("signs in, sends a code, links the email, and outputs JSON", async () => {
+  it("sends a code and stops for a follow-up run when --code is omitted (JSON)", async () => {
     const log = captureLog();
     await runAgent(["connect-email", "--email", "a@b.com", "--json"]);
     const parsed = JSON.parse(log.output());
@@ -599,10 +599,44 @@ describe("zora agent connect-email", () => {
         email: "a@b.com",
       }),
     );
-    // Only the code is prompted when --email is supplied.
-    expect(inputOrFail).toHaveBeenCalledTimes(1);
+    // JSON is non-interactive, so the code is never prompted for or verified —
+    // the operator re-runs with --code instead.
+    expect(inputOrFail).not.toHaveBeenCalled();
+    expect(linkEmailWithCode).not.toHaveBeenCalled();
+    expect(parsed).toMatchObject({
+      email: "a@b.com",
+      did: PRIVY_ACCOUNT.did,
+      address: PRIVY_ACCOUNT.address,
+      codeSent: true,
+      alreadyLinked: false,
+      walletSource: "/home/u/.config/zora/wallet.json",
+      status: "awaiting_code",
+    });
+    // The response is self-describing: a new agent learns the exact follow-up
+    // command from the payload without prior knowledge of --code.
+    expect(parsed.nextStep).toContain("--code <code>");
+    expect(parsed.nextStep).toContain("--email a@b.com");
+    expect(typeof parsed.message).toBe("string");
+  });
+
+  it("links the email with a supplied --code without sending a new one (JSON)", async () => {
+    const log = captureLog();
+    await runAgent([
+      "connect-email",
+      "--email",
+      "a@b.com",
+      "--code",
+      "999999",
+      "--json",
+    ]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
+
+    // A code was provided, so no fresh code is sent and nothing is prompted.
+    expect(sendEmailCode).not.toHaveBeenCalled();
+    expect(inputOrFail).not.toHaveBeenCalled();
     expect(linkEmailWithCode).toHaveBeenCalledWith(
-      expect.objectContaining({ email: "a@b.com", code: "123456" }),
+      expect.objectContaining({ email: "a@b.com", code: "999999" }),
     );
     expect(parsed).toMatchObject({
       email: "a@b.com",
@@ -613,11 +647,44 @@ describe("zora agent connect-email", () => {
     });
   });
 
-  it("prompts for the email when --email is omitted, before sending the code", async () => {
+  it("links interactively with a supplied --code without sending a new one", async () => {
+    const log = captureLog();
+    await runAgent(["connect-email", "--email", "a@b.com", "--code", "777777"]);
+    const output = log.output();
+    log.restore();
+    // --code is supplied, so even interactively no code is sent or prompted.
+    expect(sendEmailCode).not.toHaveBeenCalled();
+    expect(inputOrFail).not.toHaveBeenCalled();
+    expect(linkEmailWithCode).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "a@b.com", code: "777777" }),
+    );
+    expect(output).toContain("Email linked");
+  });
+
+  it("sends a code and prints a --yes follow-up hint with --yes alone (no --json)", async () => {
+    const log = captureLog();
+    await runAgent(["connect-email", "--email", "a@b.com", "--yes"]);
+    const output = log.output();
+    log.restore();
+    // --yes is non-interactive, so the code is sent but never prompted/verified.
+    expect(sendEmailCode).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "a@b.com" }),
+    );
+    expect(inputOrFail).not.toHaveBeenCalled();
+    expect(linkEmailWithCode).not.toHaveBeenCalled();
+    // The render() branch must print the follow-up command, mirroring the
+    // non-interactive flag the caller used (--yes, not --json).
+    expect(output).toContain("Sent a code to a@b.com");
+    expect(output).toContain(
+      "zora agent connect-email --email a@b.com --code <code> --yes",
+    );
+  });
+
+  it("prompts for the email then the code interactively when neither is passed", async () => {
     vi.mocked(inputOrFail)
       .mockResolvedValueOnce("a@b.com") // email prompt
       .mockResolvedValueOnce("123456"); // code prompt
-    await runAgent(["connect-email", "--json"]);
+    await runAgent(["connect-email"]);
     expect(inputOrFail).toHaveBeenCalledTimes(2);
     // sendEmailCode received the prompted address, so the prompt ran first.
     expect(sendEmailCode).toHaveBeenCalledWith(
@@ -655,14 +722,36 @@ describe("zora agent connect-email", () => {
     expect(sendEmailCode).not.toHaveBeenCalled();
   });
 
-  it("fails before sending a code when --yes is set with --email (not yet linked)", async () => {
-    await expect(
-      runAgent(["connect-email", "--email", "a@b.com", "--yes"]),
-    ).rejects.toThrow("process.exit(1)");
+  it("sends a code and stops for a follow-up run when --yes is set with --email (not yet linked)", async () => {
+    const log = captureLog();
+    await runAgent(["connect-email", "--email", "a@b.com", "--yes", "--json"]);
+    const parsed = JSON.parse(log.output());
+    log.restore();
     expect(createPrivyAccount).toHaveBeenCalled();
-    // No OTP is sent and no code prompt is shown — we bail before step 4.
+    // The code is sent, but --yes is non-interactive so it's never prompted or
+    // verified — the operator re-runs with --code.
+    expect(sendEmailCode).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "a@b.com" }),
+    );
+    expect(inputOrFail).not.toHaveBeenCalled();
+    expect(linkEmailWithCode).not.toHaveBeenCalled();
+    expect(parsed).toMatchObject({ codeSent: true, alreadyLinked: false });
+  });
+
+  it("links with --yes when --code is supplied", async () => {
+    await runAgent([
+      "connect-email",
+      "--email",
+      "a@b.com",
+      "--code",
+      "424242",
+      "--yes",
+    ]);
     expect(sendEmailCode).not.toHaveBeenCalled();
     expect(inputOrFail).not.toHaveBeenCalled();
+    expect(linkEmailWithCode).toHaveBeenCalledWith(
+      expect.objectContaining({ email: "a@b.com", code: "424242" }),
+    );
   });
 
   it("still short-circuits with --yes when the email is already linked", async () => {

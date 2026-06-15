@@ -477,13 +477,18 @@ agentCommand
     String(DEFAULT_SIWE_CHAIN_ID),
   )
   .option(
+    "--code <code>",
+    "One-time code from the linking email. Pass it to finish linking without a prompt; omit it to send a fresh code.",
+  )
+  .option(
     "--yes",
-    "Skip interactive prompts — this command needs the emailed code, so it will error",
+    "Skip interactive prompts. Without --code the code is sent and the command exits so you can re-run with --code <code>.",
   )
   .action(async function (
     this: Command,
     options: {
       email?: string;
+      code?: string;
       privateKey?: string;
       appId: string;
       origin: string;
@@ -493,6 +498,11 @@ agentCommand
   ) {
     const json = getJson(this);
     const nonInteractive = getYes(this);
+    // The emailed code can't be prompted for in JSON or --yes mode. In that
+    // case the flow is split across two runs: one to send the code, one with
+    // --code to finish linking.
+    const canPrompt = !json && !nonInteractive;
+    const code = options.code?.trim();
 
     const chainId = Number(options.chainId);
     if (!Number.isInteger(chainId) || chainId <= 0) {
@@ -531,7 +541,7 @@ agentCommand
     //    send, so prompt for it now if it wasn't passed.
     if (!email) {
       email = (
-        await inputOrFail(json, { message: "Email to link:" }, nonInteractive)
+        await inputOrFail(json, { message: "Email to link:" }, !canPrompt)
       ).trim();
       if (!EMAIL_RE.test(email)) {
         return outputErrorAndExit(json, "That isn't a valid email address.");
@@ -561,45 +571,73 @@ agentCommand
       });
     }
 
-    // The emailed code must be entered interactively, so fail BEFORE sending an
-    // OTP the user couldn't complete. (The already-linked path above needs no
-    // code, so it still works non-interactively.)
-    if (nonInteractive) {
-      return outputErrorAndExit(
-        json,
-        "This command requires interactive input. Remove --yes to proceed.",
-        "Run without --yes so you can enter the emailed code.",
-      );
-    }
+    // 4. Resolve the one-time code. If --code was passed, use it directly and
+    //    skip sending a fresh one; the operator already received it from a
+    //    prior run. Otherwise send a code now.
+    let codeToVerify = code;
+    if (!codeToVerify) {
+      try {
+        await sendEmailCode({
+          accessToken: account.accessToken,
+          email,
+          appId: options.appId,
+          origin: options.origin,
+          cookie: account.cookie,
+        });
+      } catch (err) {
+        return outputErrorAndExit(
+          json,
+          `Could not send a code to ${email}: ${formatError(err)}`,
+          "Check the address and try again in a moment.",
+        );
+      }
 
-    // 4. Send the one-time code to the email.
-    try {
-      await sendEmailCode({
-        accessToken: account.accessToken,
-        email,
-        appId: options.appId,
-        origin: options.origin,
-        cookie: account.cookie,
-      });
-    } catch (err) {
-      return outputErrorAndExit(
-        json,
-        `Could not send a code to ${email}: ${formatError(err)}`,
-        "Check the address and try again in a moment.",
-      );
-    }
-    if (!json) console.log(`\n• Sent a code to ${email}. Check your inbox.`);
+      // Non-interactive (JSON or --yes): we can't prompt for the emailed code,
+      // so stop here and let the operator re-run with --code to finish linking.
+      if (!canPrompt) {
+        track("cli_agent_connect_email", {
+          code_sent: true,
+          already_linked: false,
+          generated_wallet: resolved.generated,
+          output_format: json ? "json" : "text",
+        });
+        // Mirror whichever non-interactive flag the caller used so the
+        // suggested follow-up command matches how they're driving the CLI.
+        const nextStep = `zora agent connect-email --email ${email} --code <code> ${json ? "--json" : "--yes"}`;
+        return outputData(json, {
+          json: {
+            email,
+            did: account.did,
+            address: account.address,
+            codeSent: true,
+            alreadyLinked: false,
+            walletSource: resolved.source,
+            // Make the response self-describing for non-interactive agents:
+            // tell them the flow isn't done and exactly how to finish it.
+            status: "awaiting_code",
+            message: `A one-time code was emailed to ${email}. Ask the operator for the code, then run the command in nextStep with it.`,
+            nextStep,
+          },
+          render: () => {
+            console.log(`\n• Sent a code to ${email}. Check your inbox.`);
+            console.log(`  Re-run with the code to finish: ${nextStep}`);
+          },
+        });
+      }
 
-    // 5. Prompt for the code from the email.
-    const code = (
-      await inputOrFail(json, { message: "Enter the code:" }, nonInteractive)
-    ).trim();
-    if (!code) {
-      return outputErrorAndExit(
-        json,
-        "No code entered.",
-        "Re-run `zora agent connect-email` to request a new code.",
-      );
+      if (!json) console.log(`\n• Sent a code to ${email}. Check your inbox.`);
+
+      // 5. Prompt for the code from the email.
+      codeToVerify = (
+        await inputOrFail(json, { message: "Enter the code:" }, nonInteractive)
+      ).trim();
+      if (!codeToVerify) {
+        return outputErrorAndExit(
+          json,
+          "No code entered.",
+          "Re-run `zora agent connect-email` to request a new code.",
+        );
+      }
     }
 
     // 6. Verify the code and link the email to the account.
@@ -608,7 +646,7 @@ agentCommand
       result = await linkEmailWithCode({
         accessToken: account.accessToken,
         email,
-        code,
+        code: codeToVerify,
         appId: options.appId,
         origin: options.origin,
         cookie: account.cookie,
