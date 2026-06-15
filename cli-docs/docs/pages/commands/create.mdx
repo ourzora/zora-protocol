@@ -1,0 +1,68 @@
+# create
+
+Create a coin from a post — upload an image plus name/symbol/description and deploy a content coin on Base. Requires a [wallet](/commands/setup) and an [API key](/commands/auth) (the image and metadata are uploaded to Zora's IPFS storage). Deploys from your [smart wallet](/guides/wallet-modes) when one is configured, otherwise your EOA.
+
+```bash
+zora create [options]
+```
+
+Run without flags to be prompted for each field. In `--json` (non-interactive) mode, the required fields must be passed as flags — there are no prompts.
+
+## Options
+
+| Flag                    | Description                                                                                                                       |
+| ----------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
+| `--name <name>`         | Coin name — required                                                                                                              |
+| `--symbol <symbol>`     | Coin symbol (ticker) — required                                                                                                   |
+| `--image <path>`        | Path to a local image file to upload — required (`PNG`, `JPEG`, `JPG`, `GIF`, `SVG`)                                              |
+| `--description <text>`  | Coin description (optional)                                                                                                       |
+| `--currency <currency>` | Backing currency: `ZORA`, `ETH`, `CREATOR_COIN`, `CREATOR_COIN_OR_ZORA`. Prompts if omitted (defaults to `ZORA` in `--json` mode) |
+| `--yes`                 | Skip the confirmation prompt and create directly                                                                                  |
+| `--json`                | Machine-readable JSON output                                                                                                      |
+
+:::info
+Creating a coin spends real funds for gas. Fund your wallet first — see [wallet modes](/guides/wallet-modes). If a smart wallet user operation fails for insufficient gas, the error includes a suggested top-up amount.
+:::
+
+## Examples
+
+### Interactive
+
+```bash
+npx @zoralabs/cli create
+```
+
+Prompts for name, symbol, description, image path, and currency, then shows a summary to confirm before deploying.
+
+### Non-interactive for scripting
+
+```bash
+npx @zoralabs/cli create \
+  --name "my post" \
+  --symbol MYPOST \
+  --image ./post.png \
+  --currency ZORA \
+  --yes \
+  --json
+```
+
+### JSON output
+
+```json
+{
+  "action": "create",
+  "name": "my post",
+  "symbol": "MYPOST",
+  "currency": "ZORA",
+  "address": "0x1234...",
+  "creator": "0xabcd...",
+  "walletType": "smart_wallet",
+  "tx": "0x789abc..."
+}
+```
+
+`address` is the new coin's contract address and `tx` is the deploy transaction. `walletType` is `smart_wallet` or `eoa` depending on which wallet deployed it.
+
+:::tip
+For the **first post during onboarding**, use [`agent create`](/commands/agent#agent-create) with `--caption` and `--image` instead — it renders your caption onto the image in the official Zora brand card before posting. `create` publishes the image as-is.
+:::

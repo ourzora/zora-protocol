@@ -1,48 +1,44 @@
+import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
 import { Command } from "commander";
 import { Box, Text } from "ink";
-import { getProfileBalances, setApiKey } from "@zoralabs/coins-sdk";
-import { getApiKey } from "../lib/config.js";
+import { BalanceCoinsView } from "../components/BalanceCoinsView.js";
+import { BalanceView, type BalanceData } from "../components/BalanceView.js";
+import type { PageResult } from "../components/PaginatedTableView.js";
+import { Table } from "../components/table.js";
+import { track } from "../lib/analytics.js";
 import {
-  getOutputMode,
+  API_KEY_BANNER,
+  balanceColumns,
+  SORT_LABELS,
+  walletColumns,
+  type BalanceNode,
+  type SortFlag,
+} from "../lib/balance-columns.js";
+import {
+  computeBalanceUsdValue,
+  normalizeTokenAmount,
+} from "../lib/balance-format.js";
+import { getApiKey } from "../lib/config.js";
+import { apiErrorMessage, extractErrorMessage } from "../lib/errors.js";
+import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
+import {
   getLiveConfig,
+  getOutputMode,
   outputData,
   outputErrorAndExit,
 } from "../lib/output.js";
-import { renderOnce, renderLive } from "../lib/render.js";
-import { BalanceView, type BalanceData } from "../components/BalanceView.js";
-import { BalanceCoinsView } from "../components/BalanceCoinsView.js";
-import type { PageResult } from "../components/PaginatedTableView.js";
-import { Table } from "../components/table.js";
-import { computeMarketCapChange24h, formatCoinType } from "../lib/format.js";
-import { resolveAccount } from "../lib/wallet.js";
-import {
-  normalizeTokenAmount,
-  computeBalanceUsdValue,
-} from "../lib/balance-format.js";
-import {
-  fetchWalletBalances,
-  type WalletBalance,
-  type WalletBalanceJson,
-} from "../lib/wallet-balances.js";
-import { track } from "../lib/analytics.js";
+import { renderLive, renderOnce } from "../lib/render.js";
 import type { PageInfo } from "../lib/types.js";
-import { apiErrorMessage, extractErrorMessage } from "../lib/errors.js";
-import {
-  walletColumns,
-  balanceColumns,
-  SORT_LABELS,
-  API_KEY_BANNER,
-  type SortFlag,
-  type BalanceNode,
-} from "../lib/balance-columns.js";
+import { fetchWalletBalances } from "../lib/wallet-balances.js";
+import { resolveAccounts } from "../lib/wallet.js";
 
 export {
-  walletColumns,
+  API_KEY_BANNER,
   balanceColumns,
   SORT_LABELS,
-  API_KEY_BANNER,
-  type SortFlag,
+  walletColumns,
   type BalanceNode,
+  type SortFlag,
 };
 
 type FormattedBalanceJson = {
@@ -130,23 +126,29 @@ const formatBalanceJson = (
 
 // --- Shared helpers ---
 
-function resolveContext(json: boolean) {
-  const account = resolveAccount(json);
+async function resolveContext() {
+  const { privateKeyAccount: account, smartWalletAccount } =
+    await resolveAccounts();
 
   const apiKey = getApiKey();
   if (apiKey) {
     setApiKey(apiKey);
   }
 
-  return { account, hasApiKey: !!apiKey };
+  return {
+    account,
+    smartWalletAccount,
+    hasApiKey: !!apiKey,
+  };
 }
 
 function renderWallet(
   json: boolean,
+  walletAddress: string,
   walletResult: Awaited<ReturnType<typeof fetchWalletBalances>>,
 ) {
   outputData(json, {
-    json: { wallet: walletResult.walletBalancesJson },
+    json: { walletAddress, wallet: walletResult.walletBalancesJson },
     render: () => {
       renderOnce(
         <Table
@@ -161,6 +163,7 @@ function renderWallet(
 
 function renderCoins(
   json: boolean,
+  walletAddress: string,
   balances: BalanceNode[],
   total: number,
   sort: SortFlag,
@@ -175,6 +178,7 @@ function renderCoins(
 
   outputData(json, {
     json: {
+      walletAddress,
       coins: rankedBalances.map((balance) =>
         formatBalanceJson(balance, balance.rank),
       ),
@@ -227,11 +231,11 @@ async function fetchCoins(
       after,
     });
   } catch (err) {
-    outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
+    return outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`);
   }
 
   if (response.error) {
-    outputErrorAndExit(
+    return outputErrorAndExit(
       json,
       `API error: ${extractErrorMessage(response.error)}`,
     );
@@ -283,16 +287,18 @@ export const balanceCommand = new Command("balance")
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const { account, hasApiKey } = resolveContext(json);
+    const { account, smartWalletAccount, hasApiKey } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
+
+    const walletAddress = smartWalletAccount?.address ?? account.address;
 
     const sort: SortFlag = "usd-value";
     const limit = 10;
 
     const fetchBalanceData = async (): Promise<BalanceData> => {
       const [walletResult, coinsResult] = await Promise.allSettled([
-        fetchWalletBalances(account.address),
-        fetchCoins(json, account.address, sort, limit),
+        fetchWalletBalances(walletAddress),
+        fetchCoins(json, walletAddress, sort, limit),
       ]);
 
       if (
@@ -328,6 +334,7 @@ export const balanceCommand = new Command("balance")
 
       outputData(json, {
         json: {
+          walletAddress,
           wallet: data.walletBalancesJson,
           coins: data.rankedBalances.map((balance) =>
             formatBalanceJson(balance, balance.rank),
@@ -430,11 +437,13 @@ balanceCommand
   .action(async function (this: Command) {
     const output = getOutputMode(this, "live");
     const json = output === "json";
-    const { account } = resolveContext(json);
+    const { account, smartWalletAccount } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
 
+    const walletAddress = smartWalletAccount?.address ?? account.address;
+
     const fetchSpendableData = async (): Promise<BalanceData> => {
-      const walletResult = await fetchWalletBalances(account.address);
+      const walletResult = await fetchWalletBalances(walletAddress);
       return {
         walletBalances: walletResult.walletBalances,
         walletBalancesJson: walletResult.walletBalancesJson,
@@ -448,7 +457,7 @@ balanceCommand
         outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
       outputData(json, {
-        json: { wallet: data.walletBalancesJson },
+        json: { walletAddress, wallet: data.walletBalancesJson },
         render: () => {},
       });
     } else if (live) {
@@ -462,11 +471,11 @@ balanceCommand
         />,
       );
     } else {
-      const walletResult = await fetchWalletBalances(account.address).catch(
+      const walletResult = await fetchWalletBalances(walletAddress).catch(
         (err) =>
           outputErrorAndExit(json, `Request failed: ${apiErrorMessage(err)}`),
       );
-      renderWallet(json, walletResult);
+      renderWallet(json, walletAddress, walletResult);
     }
   });
 
@@ -488,15 +497,17 @@ balanceCommand
     const json = output === "json";
     const { sort, limit } = validateCoinOpts(json, opts.sort, opts.limit);
     const after: string | undefined = opts.after;
-    const { account, hasApiKey } = resolveContext(json);
+    const { account, smartWalletAccount, hasApiKey } = await resolveContext();
     const { live, intervalSeconds } = getLiveConfig(this, output);
+
+    const walletAddress = smartWalletAccount?.address ?? account.address;
 
     const fetchCoinsPage = async (
       cursor?: string,
     ): Promise<PageResult<BalanceNode>> => {
       const { balances, total, pageInfo } = await fetchCoins(
         json,
-        account.address,
+        walletAddress,
         sort,
         limit,
         cursor,
@@ -506,7 +517,15 @@ balanceCommand
 
     if (json) {
       const { items, count, pageInfo } = await fetchCoinsPage(after);
-      renderCoins(json, items, count ?? items.length, sort, limit, pageInfo);
+      renderCoins(
+        json,
+        walletAddress,
+        items,
+        count ?? items.length,
+        sort,
+        limit,
+        pageInfo,
+      );
     } else if (live) {
       await renderLive(
         <BalanceCoinsView
@@ -522,11 +541,20 @@ balanceCommand
     } else {
       const { balances, total, pageInfo } = await fetchCoins(
         json,
-        account.address,
+        walletAddress,
         sort,
         limit,
         after,
       );
-      renderCoins(json, balances, total, sort, limit, pageInfo, hasApiKey);
+      renderCoins(
+        json,
+        walletAddress,
+        balances,
+        total,
+        sort,
+        limit,
+        pageInfo,
+        hasApiKey,
+      );
     }
   });

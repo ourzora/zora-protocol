@@ -1,6 +1,6 @@
 # profile
 
-View a creator or user profile — posts and holdings.
+View a creator or user profile — posts, holdings, and trade activity. The default view shows all three as tabbed panels.
 
 ```bash
 zora profile [options] [identifier]
@@ -20,6 +20,14 @@ zora profile [options] [identifier]
 | `--static`            | Static snapshot                            | —       |
 | `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
 | `--json`              | Machine-readable JSON output               | —       |
+
+## Subcommands
+
+| Subcommand         | Description                                      |
+| ------------------ | ------------------------------------------------ |
+| `profile posts`    | Browse created coins with pagination             |
+| `profile holdings` | Browse coin holdings with pagination and sorting |
+| `profile trades`   | Browse buy/sell trade history with pagination    |
 
 ## Examples
 
@@ -67,26 +75,197 @@ npx @zoralabs/cli profile jacob --json
   "posts": [
     {
       "rank": 1,
-      "name": "soho",
-      "symbol": "soho",
+      "name": "zorbset",
+      "symbol": "zorbset",
       "coinType": "post",
-      "address": "0xe036370af91f9e1d6d15fc594141628676d5dd56",
-      "marketCap": "1593.53",
-      "marketCapDelta24h": "-28.31",
+      "address": "0xd47367c439957f9d579316b967ec52bfc7eb9360",
+      "marketCap": "1413.12",
+      "marketCapDelta24h": "-322.05",
       "volume24h": "0.0",
-      "createdAt": "2026-03-12T16:29:23"
-    },
+      "createdAt": "2026-04-07T17:46:21+00:00"
+    }
+  ],
+  "holdings": [
     {
-      "rank": 2,
-      "name": "text campaign, 2022",
-      "symbol": "text",
-      "coinType": "post",
-      "address": "0xa493535ddc64cdeef9b33ce31c94ac35ee869a35",
-      "marketCap": "1506.26",
-      "marketCapDelta24h": "152.49",
-      "volume24h": "0.0",
-      "createdAt": "2026-03-12T16:28:09"
+      "rank": 1,
+      "name": "11am",
+      "symbol": "11am",
+      "coinType": "CREATOR",
+      "address": "0xafd3a55ae8c86fb550495223f92f1af192e163fd",
+      "balance": "5803712.566298828968261585",
+      "usdValue": 711.83734,
+      "priceUsd": 0.00012265206653238635,
+      "marketCap": 122508.07
+    }
+  ],
+  "trades": [
+    {
+      "rank": 1,
+      "side": "BUY",
+      "coinName": "rawtoast",
+      "coinSymbol": "rawtoast",
+      "coinType": "CREATOR",
+      "coinAddress": "0x1ccea55321305930256b7537aa7b5b7911c95344",
+      "coinAmount": "83144102051173213991969",
+      "amountUsd": "1.06",
+      "transactionHash": "0x4897defd07ecb9e9f7bd7c907dba7461bba216896e19b77f80bf1b22a18d0fd1",
+      "timestamp": "2026-05-19T16:19:27+00:00"
     }
   ]
 }
 ```
+
+The base `profile --json` output returns up to 20 of each section (no pagination cursors). If a section fails it is replaced by an `{ "error": "..." }` object instead of an array.
+
+### JSON Fields
+
+**`posts[]`** (created coins): `rank`, `name`, `symbol`, `coinType` (lowercase `post` / `creator-coin` / `trend`), `address`, `marketCap`, `marketCapDelta24h`, `volume24h` (all strings), `createdAt`.
+
+**`holdings[]`** (coin balances): `rank`, `name`, `symbol`, `coinType` (raw enum: `CONTENT` / `CREATOR` / `TREND`), `address`, `balance` (human-readable token amount), `usdValue` (number \| null), `priceUsd` (number \| null), `marketCap` (number \| null).
+
+**`trades[]`** (buy/sell activity): `rank`, `side` (`BUY` / `SELL`), `coinName`, `coinSymbol`, `coinType` (raw enum), `coinAddress`, `coinAmount` (base units / wei), `amountUsd` (string \| null), `transactionHash`, `timestamp`.
+
+:::warning
+`coinType` is not consistent across sections: `posts` uses the lowercase display form (`post`, `creator-coin`, `trend`) while `holdings` and `trades` return the raw API enum (`CONTENT`, `CREATOR`, `TREND`).
+:::
+
+---
+
+## profile posts
+
+Browse a profile's created coins with cursor-based pagination.
+
+```bash
+zora profile posts [identifier] [options]
+```
+
+### Options
+
+| Flag                  | Description                                | Default |
+| --------------------- | ------------------------------------------ | ------- |
+| `--limit <n>`         | Number of results per page (max 20)        | `10`    |
+| `--after <cursor>`    | Pagination cursor from a previous result   | —       |
+| `--live`              | Interactive live-updating display          | default |
+| `--static`            | Static snapshot                            | —       |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
+| `--json`              | Machine-readable JSON output               | —       |
+
+### Examples
+
+```bash
+npx @zoralabs/cli profile posts jacob --static --limit 5
+```
+
+In `--json` mode, the subcommand wraps results in a paginated envelope:
+
+```json
+{
+  "posts": [
+    {
+      "rank": 1,
+      "name": "zorbset",
+      "symbol": "zorbset",
+      "coinType": "post",
+      "address": "0xd47367c439957f9d579316b967ec52bfc7eb9360",
+      "marketCap": "1413.12",
+      "marketCapDelta24h": "-322.05",
+      "volume24h": "0.0",
+      "createdAt": "2026-04-07T17:46:21+00:00"
+    }
+  ],
+  "pageInfo": { "hasNextPage": true, "endCursor": "eyJ..." }
+}
+```
+
+Pass `pageInfo.endCursor` to `--after` to fetch the next page.
+
+---
+
+## profile holdings
+
+Browse a profile's coin holdings with pagination and sorting.
+
+```bash
+zora profile holdings [identifier] [options]
+```
+
+### Options
+
+| Flag                  | Description                                                   | Default     |
+| --------------------- | ------------------------------------------------------------- | ----------- |
+| `--sort <sort>`       | Sort by: `usd-value`, `balance`, `market-cap`, `price-change` | `usd-value` |
+| `--limit <n>`         | Number of results per page (max 20)                           | `10`        |
+| `--after <cursor>`    | Pagination cursor from a previous result                      | —           |
+| `--live`              | Interactive live-updating display                             | default     |
+| `--static`            | Static snapshot                                               | —           |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5)                    | `30`        |
+| `--json`              | Machine-readable JSON output                                  | —           |
+
+### Examples
+
+#### Holdings sorted by market cap
+
+```bash
+npx @zoralabs/cli profile holdings jacob --sort market-cap --static
+```
+
+```
+ Holdings — jacob
+
+ #  Name     Address           Type          Balance      USD Value  Market Cap  Change
+ 1  jacob    0x9b13...5f54     creator-coin  20.63        $10.01     $435.0K     +1.9%
+ 2  zora     0x2748...f519     trend         1,500.00     $11.10     $6.6K       +1.8%
+```
+
+In `--json` mode the response is `{ "holdings": [...], "pageInfo": { ... } }`, where each holding has the fields described under the base [JSON Fields](#json-fields) (`coinType` is the raw enum `CONTENT` / `CREATOR` / `TREND`).
+
+---
+
+## profile trades
+
+Browse buy/sell trade history with pagination.
+
+```bash
+zora profile trades [identifier] [options]
+```
+
+### Options
+
+| Flag                  | Description                                | Default |
+| --------------------- | ------------------------------------------ | ------- |
+| `--limit <n>`         | Number of results per page (max 20)        | `10`    |
+| `--after <cursor>`    | Pagination cursor from a previous result   | —       |
+| `--live`              | Interactive live-updating display          | default |
+| `--static`            | Static snapshot                            | —       |
+| `--refresh <seconds>` | Auto-refresh interval in live mode (min 5) | `30`    |
+| `--json`              | Machine-readable JSON output               | —       |
+
+### Examples
+
+```bash
+npx @zoralabs/cli profile trades jacob --static
+```
+
+```
+ Trades — jacob
+
+ #  Side  Coin Name  Amount      USD Value  Tx Hash
+ 1  BUY   zora       1,500.00    $11.10     0xabc1...
+ 2  SELL  soho       200.00      $3.50      0xdef2...
+```
+
+In `--json` mode the response is `{ "trades": [...], "pageInfo": { ... } }`, with the trade fields described under the base [JSON Fields](#json-fields).
+
+---
+
+## Interactive Controls
+
+All profile subcommands support the same navigation in live mode:
+
+| Key         | Action             |
+| ----------- | ------------------ |
+| `↑`/`↓`     | Navigate rows      |
+| `Enter`/`c` | Copy address       |
+| `←`/`→`     | Previous/next page |
+| `r`         | Refresh            |
+| `q`         | Quit               |

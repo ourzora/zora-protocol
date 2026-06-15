@@ -1,6 +1,6 @@
 # sell
 
-Sell a coin. Requires a [wallet](/commands/setup).
+Sell a coin. Requires a [wallet](/commands/setup). Sells from your [smart wallet](/guides/wallet-modes) when one is configured, otherwise your EOA.
 
 ```bash
 zora sell [typeOrId] [identifier] [options]
@@ -31,6 +31,10 @@ zora sell [typeOrId] [identifier] [options]
 
 :::info
 Amount flags (`--amount`, `--usd`, `--percent`, `--all`) are mutually exclusive — use exactly one.
+:::
+
+:::tip
+When a coin name matches both a creator-coin and a trend, the sell command auto-detects which one to sell based on the wallet's holdings. If only one type is held, it is selected automatically. If both or neither are held, a type prefix is required to disambiguate.
 :::
 
 ## Examples
@@ -85,14 +89,49 @@ npx @zoralabs/cli sell 0x9b13358e3a023507e7046c18f508a958cda75f54 --all --quote
 npx @zoralabs/cli sell 0x... --all --yes --json
 ```
 
+**Quote response** (`--quote --json`):
+
 ```json
 {
-  "action": "trade",
-  "coin": "jacob",
-  "soldAmount": "20.63",
-  "received": "0.01",
-  "receivedToken": "ETH",
-  "txHash": "0xdef456...",
-  "explorerUrl": "https://basescan.org/tx/0xdef456..."
+  "action": "quote",
+  "coin": "JACOB",
+  "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "sell": {
+    "amount": "20.63",
+    "raw": "20630000000000000000",
+    "symbol": "JACOB"
+  },
+  "estimated": {
+    "amount": "0.01",
+    "raw": "10000000000000000",
+    "symbol": "ETH"
+  },
+  "slippage": 1
 }
 ```
+
+**Sell execution response** (`--yes --json`):
+
+```json
+{
+  "action": "sell",
+  "coin": "JACOB",
+  "address": "0x9b13358e3a023507e7046c18f508a958cda75f54",
+  "sold": {
+    "amount": "20.63",
+    "raw": "20630000000000000000",
+    "symbol": "JACOB"
+  },
+  "received": {
+    "amount": "0.01",
+    "raw": "10000000000000000",
+    "symbol": "ETH",
+    "source": "quote"
+  },
+  "tx": "0xdef456..."
+}
+```
+
+:::info
+`received.source` is `"receipt"` when the actual amount could be read from the transaction logs (ERC-20 outputs like `usdc` or `zora`), or `"quote"` when it falls back to the estimated quote amount (the case for ETH outputs). When `source` is `"quote"`, the received amount is an estimate.
+:::

@@ -1,0 +1,105 @@
+# skills
+
+Install pre-built agent skills into your agent's skills directory. For the full walkthrough — scheduling, state files, and how each skill works — see the [Skills guide](/guides/agent-skills).
+
+```bash
+zora skills [command]
+```
+
+## Subcommands
+
+| Subcommand    | Description               |
+| ------------- | ------------------------- |
+| `skills list` | List available skills     |
+| `skills add`  | Install one or all skills |
+
+## Available Skills
+
+### Onboarding
+
+| Skill        | Description                                                      |
+| ------------ | ---------------------------------------------------------------- |
+| `onboarding` | Set up on Zora — profile, smart wallet, creator coin, first post |
+
+### Discovery
+
+| Skill               | Description                                                |
+| ------------------- | ---------------------------------------------------------- |
+| `early-buyer`       | Auto-buy new launches from creators you follow             |
+| `watchlist`         | Alert when a coin's market cap hits configured thresholds  |
+| `trend-sniper`      | Snipe new trend coins off the global trending feed         |
+| `new-coin-screener` | Auto-buy new launches that pass a market-cap/holder screen |
+| `whale-watcher`     | Watch top holders and large trades; alert or auto-trade    |
+
+### Social
+
+| Skill             | Description                                                    |
+| ----------------- | -------------------------------------------------------------- |
+| `copy-trader`     | Mirror another user's trades                                   |
+| `dm-responder`    | Triage and auto-reply to incoming DMs by rule                  |
+| `comment-engager` | Read and reply to comments on coins you hold                   |
+| `social-trader`   | Buy followed creators' new post coins or growing creator coins |
+| `auto-poster`     | Publish a new post on a schedule to stay active                |
+
+### Risk
+
+| Skill                  | Description                                              |
+| ---------------------- | -------------------------------------------------------- |
+| `take-profit`          | Auto-sell at configured take-profit or stop-loss targets |
+| `dca`                  | Dollar-cost-average a fixed amount into chosen coins     |
+| `portfolio-rebalancer` | Rebalance holdings back to target allocations            |
+
+### Reporting
+
+| Skill              | Description                                         |
+| ------------------ | --------------------------------------------------- |
+| `portfolio-digest` | Read-only portfolio and PnL digest, optionally DM'd |
+
+---
+
+## skills add
+
+Install a skill into your agent's skills directory. The CLI fetches the skill from `https://agents.zora.com/skill/<name>.md` and writes it to `<harness>/skills/zora-<name>/SKILL.md` — for example `.claude/skills/zora-onboarding/SKILL.md`. The `zora-` prefix namespaces the install, and the containing folder name is what the harness uses as the command (e.g. `/zora-onboarding`).
+
+The CLI auto-detects the target harness by looking for a `.claude`, `.cursor`, `.windsurf`, `.openclaw`, or `.hermes` directory in the current working directory (in that order), falling back to `.claude` when none is found.
+
+```bash
+zora skills add [name] [options]
+```
+
+## Options
+
+| Flag              | Description                                                        | Default     |
+| ----------------- | ------------------------------------------------------------------ | ----------- |
+| `--all`           | Install every available skill                                      | —           |
+| `--agent <agent>` | Target agent: `claude`, `cursor`, `windsurf`, `openclaw`, `hermes` | auto-detect |
+| `--dir <path>`    | Explicit directory to install into                                 | —           |
+| `--json`          | Machine-readable JSON output                                       | —           |
+
+## Examples
+
+### List available skills
+
+```bash
+npx @zoralabs/cli skills list
+```
+
+### Install a single skill
+
+```bash
+npx @zoralabs/cli skills add copy-trader
+```
+
+### Install everything
+
+```bash
+npx @zoralabs/cli skills add --all
+```
+
+### Install into a specific agent
+
+```bash
+npx @zoralabs/cli skills add watchlist --agent cursor
+```
+
+After installing, invoke the skill with `/zora-copy-trader`, `/zora-watchlist`, and so on in your agent interface.

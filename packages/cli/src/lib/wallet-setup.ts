@@ -1,7 +1,13 @@
 import { generatePrivateKey, privateKeyToAccount } from "viem/accounts";
-import { getPrivateKey, savePrivateKey, getWalletPath } from "./config.js";
+import {
+  getPrivateKey,
+  savePrivateKey,
+  getWalletPath,
+  peekAgentWallet,
+} from "./config.js";
 import { outputErrorAndExit } from "./output.js";
 import { selectOrDefault, passwordOrFail, confirmOrDefault } from "./prompt.js";
+import { confirmAgentWalletOverwrite } from "./agent-guard.js";
 import { SAVE_ERROR_HINT } from "./strings.js";
 import { normalizeKey } from "./wallet.js";
 import { formatError } from "./errors.js";
@@ -54,42 +60,51 @@ export async function configureWallet(
     return { action: "env_detected", address: account.address };
   }
 
-  let existing: string | undefined;
-  if (!opts.force) {
-    try {
-      existing = getPrivateKey();
-    } catch (err) {
-      outputErrorAndExit(
-        json,
-        `\u2717 Could not read wallet: ${formatError(err)}`,
-        "Run 'zora setup --force' to overwrite it.",
-      );
-    }
-  }
-
-  if (existing) {
-    const account = toAccount(json, existing, "Stored private key");
-    const truncated = `${account.address.slice(0, 6)}\u2026${account.address.slice(-4)}`;
-    const warning = walletExistsWarning(truncated);
-
-    if (promptOverwrite) {
-      if (nonInteractive) {
-        return { action: "skipped", address: account.address, warning };
-      }
-      const overwrite = await confirmOrDefault(
-        { message: "Overwrite wallet configuration?", default: false },
-        false,
-      );
-      if (!overwrite) {
-        return { action: "skipped", address: account.address, warning };
-      }
-    } else {
-      if (!opts.force) {
+  // An agent wallet's key owns its on-chain account, so replacing it is
+  // irreversible \u2014 guard it explicitly and independently of --force (which on
+  // the human path just means "overwrite my hot wallet"). The guard either
+  // returns (user confirmed interactively) or exits the process.
+  const agent = peekAgentWallet();
+  if (agent) {
+    await confirmAgentWalletOverwrite({ json, nonInteractive, agent });
+  } else {
+    let existing: string | undefined;
+    if (!opts.force) {
+      try {
+        existing = getPrivateKey();
+      } catch (err) {
         outputErrorAndExit(
           json,
-          `${warning}\nWallet already exists.`,
-          "Use --force to overwrite.",
+          `\u2717 Could not read wallet: ${formatError(err)}`,
+          "Run 'zora setup --force' to overwrite it.",
         );
+      }
+    }
+
+    if (existing) {
+      const account = toAccount(json, existing, "Stored private key");
+      const truncated = `${account.address.slice(0, 6)}\u2026${account.address.slice(-4)}`;
+      const warning = walletExistsWarning(truncated);
+
+      if (promptOverwrite) {
+        if (nonInteractive) {
+          return { action: "skipped", address: account.address, warning };
+        }
+        const overwrite = await confirmOrDefault(
+          { message: "Overwrite wallet configuration?", default: false },
+          false,
+        );
+        if (!overwrite) {
+          return { action: "skipped", address: account.address, warning };
+        }
+      } else {
+        if (!opts.force) {
+          outputErrorAndExit(
+            json,
+            `${warning}\nWallet already exists.`,
+            "Use --force to overwrite.",
+          );
+        }
       }
     }
   }

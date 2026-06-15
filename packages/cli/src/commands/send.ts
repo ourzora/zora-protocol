@@ -1,5 +1,15 @@
-import { Command } from "commander";
 import confirm from "@inquirer/confirm";
+import {
+  getProfile,
+  prepareUserOperation,
+  setApiKey,
+  submitUserOperation,
+  toGenericCall,
+  toUserOperationCalls,
+  type ContractCall,
+  type SendCall,
+} from "@zoralabs/coins-sdk";
+import { Command } from "commander";
 import {
   erc20Abi,
   formatUnits,
@@ -7,32 +17,34 @@ import {
   parseUnits,
   type Address,
 } from "viem";
-import { setApiKey } from "@zoralabs/coins-sdk";
-import { resolveAccount, createClients } from "../lib/wallet.js";
-import { getApiKey } from "../lib/config.js";
-import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
-import { safeExit, SUCCESS } from "../lib/exit.js";
+import type { BundlerClient, SmartAccount } from "viem/account-abstraction";
+import { shutdownAnalytics, track } from "../lib/analytics.js";
 import {
-  parsePositionalCoinArgs,
+  CoinArgError,
   coinArgsToRef,
+  formatAmbiguousError,
+  parsePositionalCoinArgs,
   resolveAmbiguousName,
   resolveCoin,
-  formatAmbiguousError,
-  CoinArgError,
 } from "../lib/coin-ref.js";
-import { formatAmountDisplay } from "../lib/format.js";
-import {
-  GAS_RESERVE,
-  getAmountMode,
-  parsePercentageLikeValue,
-} from "../lib/trade-helpers.js";
-import { track, shutdownAnalytics } from "../lib/analytics.js";
+import { getApiKey } from "../lib/config.js";
 import {
   BASE_TRADE_TOKENS,
   WETH_ADDRESS,
   type TradeTokenKey,
 } from "../lib/constants.js";
+import { safeExit, SUCCESS } from "../lib/exit.js";
+import { formatAmountDisplay } from "../lib/format.js";
+import { gasErrorSuggestion } from "../lib/gas.js";
+import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
+import {
+  estimateSmartWalletGasReserve,
+  GAS_RESERVE,
+  getAmountMode,
+  parsePercentageLikeValue,
+} from "../lib/trade-helpers.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
+import { createClients, resolveAccounts } from "../lib/wallet.js";
 
 const SEND_AMOUNT_CHECKS = {
   amount: (opts: Record<string, unknown>) => opts.amount !== undefined,
@@ -42,12 +54,91 @@ const SEND_AMOUNT_CHECKS = {
 
 const KNOWN_TOKEN_NAMES = new Set(["eth", "usdc", "zora"]);
 
+type ResolvedRecipient = {
+  address: Address;
+  handle?: string;
+  username?: string;
+  displayName?: string;
+};
+
+/**
+ * A non-empty, non-placeholder profile name. When a profile lookup misses, the
+ * API returns the truncated wallet address as the `handle` (e.g. "0x1234…5678"),
+ * which we don't want to surface as if it were a real profile name.
+ */
+function isPlaceholderName(name: string): boolean {
+  return name.startsWith("0x") || name.includes("…") || name.includes("...");
+}
+
+/**
+ * Resolves the `--to` argument to a recipient address. Accepts either a 0x
+ * address (with a best-effort profile-name reverse lookup) or a Zora profile
+ * identifier (resolved to its preferred public wallet address). Exits with an
+ * error if a profile identifier can't be resolved to a wallet.
+ */
+async function resolveRecipient(
+  identifier: string,
+  json = false,
+): Promise<ResolvedRecipient> {
+  const isIdentifierAddress = isAddress(identifier);
+
+  try {
+    const response = await getProfile({ identifier });
+    const profile = response?.data?.profile;
+    const address = isIdentifierAddress
+      ? (identifier as Address)
+      : profile?.publicWallet?.walletAddress;
+    if (!address || !isAddress(address)) {
+      return outputErrorAndExit(
+        json,
+        !address
+          ? `No Zora profile or wallet found for "${identifier}".`
+          : "Provide a valid 0x address or an existing Zora profile name.",
+      );
+    }
+    return {
+      address: address,
+      handle:
+        profile?.handle && !isPlaceholderName(profile.handle)
+          ? `@${profile.handle}`
+          : undefined,
+      username:
+        profile?.username && !isPlaceholderName(profile.username)
+          ? profile.username
+          : undefined,
+      displayName:
+        profile?.displayName && !isPlaceholderName(profile.displayName)
+          ? profile.displayName
+          : undefined,
+    };
+  } catch (err) {
+    return isIdentifierAddress
+      ? { address: identifier as Address }
+      : outputErrorAndExit(
+          json,
+          `Failed to resolve profile "${identifier}": ${err instanceof Error ? err.message : String(err)}`,
+          "Make sure to provide a valid 0x address or an existing Zora profile name and try again.",
+        );
+  }
+}
+
+function printRecipient(recipient: ResolvedRecipient): void {
+  console.log(`   To           ${recipient.address}`);
+  if (recipient.handle) {
+    console.log(`   Handle       ${recipient.handle}`);
+  } else if (recipient.username) {
+    console.log(`   Username     ${recipient.username}`);
+  } else if (recipient.displayName) {
+    console.log(`   Display Name ${recipient.displayName}`);
+  }
+}
+
 function printSendPreview(info: {
   name: string;
   symbol: string;
   amountFormatted: string;
   amountUsd: number | null;
-  to: string;
+  recipient: ResolvedRecipient;
 }): void {
   const usdStr =
     info.amountUsd != null ? ` ($${info.amountUsd.toFixed(2)})` : "";
@@ -55,7 +146,9 @@ function printSendPreview(info: {
   console.log(
     `   Amount       ${info.amountFormatted} ${info.symbol}${usdStr}`,
   );
-  console.log(`   To           ${info.to}`);
+
+  printRecipient(info.recipient);
+
   console.log(`\n   Ensure receiving wallet can receive on Base.`);
   console.log("");
 }
@@ -70,7 +163,7 @@ function printSendResult(
     decimals: number;
     amountFormatted: string;
     amountUsd: number | null;
-    to: string;
+    recipient: ResolvedRecipient;
     txHash: string;
   },
 ): void {
@@ -85,7 +178,7 @@ function printSendResult(
         symbol: info.symbol,
         amountUsd: info.amountUsd,
       },
-      to: info.to,
+      to: info.recipient.address,
       tx: info.txHash,
     });
     return;
@@ -93,22 +186,56 @@ function printSendResult(
 
   const usdStr =
     info.amountUsd != null ? ` ($${info.amountUsd.toFixed(2)})` : "";
+
   console.log(`\n Sent ${info.name}\n`);
   console.log(
     `   Amount       ${info.amountFormatted} ${info.symbol}${usdStr}`,
   );
-  console.log(`   To           ${info.to}`);
+
+  printRecipient(info.recipient);
+
   console.log(`   Tx           ${info.txHash}\n`);
 }
 
+/**
+ * Sends a single call (ETH transfer or ERC-20 transfer) from a smart wallet by
+ * batching it into a user operation, mirroring the EOA path's single
+ * transaction. Returns the settled transaction hash.
+ */
+async function sendCallViaSmartWallet(
+  call: ContractCall | SendCall,
+  bundlerClient: BundlerClient,
+  account: SmartAccount,
+): Promise<`0x${string}`> {
+  const userOperation = await prepareUserOperation({
+    bundlerClient,
+    account,
+    calls: toUserOperationCalls([toGenericCall(call)]),
+  });
+
+  const receipt = await submitUserOperation({
+    bundlerClient,
+    account,
+    userOperation,
+  });
+
+  if (!receipt.success) {
+    throw new Error(
+      `User operation reverted${receipt.reason ? `: ${receipt.reason}` : ""}`,
+    );
+  }
+
+  return receipt.receipt.transactionHash;
+}
+
 export const sendCommand = new Command("send")
-  .description("Send coins or ETH to an address")
+  .description("Send coins or ETH to an address or Zora profile")
   .argument(
     "[typeOrId]",
     "Token (eth, usdc, zora), type prefix (creator-coin, trend), or coin address/name",
   )
   .argument("[identifier]", "Coin name (when type prefix is given)")
-  .option("--to <address>", "Recipient address (0x...)")
+  .option("--to <recipient>", "Recipient: address (0x...) or Zora profile name")
   .option("--amount <value>", "Send specific amount")
   .option("--percent <value>", "Send percentage of balance (1-100)")
   .option("--all", "Send entire balance")
@@ -128,21 +255,20 @@ export const sendCommand = new Command("send")
     const json = getJson(this);
 
     if (!opts.to) {
-      outputErrorAndExit(
+      return outputErrorAndExit(
         json,
         "Missing --to flag.",
-        "Usage: zora send <identifier> --to <address>",
+        "Usage: zora send <identifier> --to <address|profile>",
       );
     }
 
-    if (!isAddress(opts.to)) {
-      outputErrorAndExit(
-        json,
-        `Invalid recipient address: ${opts.to}`,
-        "Must be a valid 0x address.",
-      );
+    // The API key (when set) raises rate limits for the profile lookups below.
+    const apiKey = getApiKey();
+    if (apiKey) {
+      setApiKey(apiKey);
     }
-    const recipient = opts.to as Address;
+
+    const resolvedRecipient = await resolveRecipient(opts.to, json);
 
     const amountMode = getAmountMode(
       json,
@@ -151,31 +277,50 @@ export const sendCommand = new Command("send")
       "--amount, --percent, or --all",
     );
 
+    const { privateKeyAccount, smartWalletAccount } = await resolveAccounts();
+    const { publicClient, walletClient, bundlerClient } = createClients(
+      privateKeyAccount,
+      smartWalletAccount,
+    );
+
+    if (!!smartWalletAccount && !bundlerClient) {
+      return outputErrorAndExit(
+        json,
+        "Failed to obtain bundler client for your smart wallet. Please try again. If the problem persists, ensure your smart wallet is setup correctly.",
+      );
+    }
+
+    const walletAddress =
+      smartWalletAccount?.address ?? privateKeyAccount.address;
+
     // Check known tokens first (eth, usdc, zora)
     const isKnownToken = KNOWN_TOKEN_NAMES.has(firstArg.toLowerCase());
     const isEth = firstArg.toLowerCase() === "eth";
 
     if (isEth) {
-      const account = resolveAccount(json);
-      const { publicClient, walletClient } = createClients(account);
-
       const balance = await publicClient.getBalance({
-        address: account.address,
+        address: walletAddress,
       });
 
       if (balance === 0n) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
-          `No ETH balance. Deposit ETH to ${account.address} on Base.`,
+          `No ETH balance. Deposit ETH to ${walletAddress} on Base.`,
         );
       }
+
+      // A smart wallet pays gas from its own ETH via the user-operation
+      // prefund, so it must reserve more than the EOA's fixed GAS_RESERVE.
+      const gasReserve = smartWalletAccount
+        ? await estimateSmartWalletGasReserve(publicClient, "transfer")
+        : GAS_RESERVE;
 
       let amount: bigint;
 
       if (amountMode === "amount") {
         const val = parsePercentageLikeValue(opts.amount!);
         if (val === undefined || val <= 0) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Invalid --amount value. Must be a positive number.",
           );
@@ -183,39 +328,39 @@ export const sendCommand = new Command("send")
         try {
           amount = parseUnits(opts.amount!, 18);
         } catch {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Invalid --amount value. Must be a valid ETH amount.",
           );
         }
         if (amount === 0n) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Amount too small — rounds to zero at 18 decimal places.",
           );
         }
-        if (amount + GAS_RESERVE > balance) {
-          outputErrorAndExit(
+        if (amount + gasReserve > balance) {
+          return outputErrorAndExit(
             json,
-            `Insufficient balance. Have ${formatAmountDisplay(balance, 18)} ETH (need to reserve ~${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas).`,
+            `Insufficient balance. Have ${formatAmountDisplay(balance, 18)} ETH (need to reserve ~${formatAmountDisplay(gasReserve, 18)} ETH for gas).`,
           );
         }
       } else {
-        if (balance <= GAS_RESERVE) {
-          outputErrorAndExit(
+        if (balance <= gasReserve) {
+          return outputErrorAndExit(
             json,
-            `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(GAS_RESERVE, 18)} ETH for gas.`,
+            `Balance too low (${formatAmountDisplay(balance, 18)} ETH). Need >${formatAmountDisplay(gasReserve, 18)} ETH for gas.`,
           );
         }
 
-        const spendable = balance - GAS_RESERVE;
+        const spendable = balance - gasReserve;
 
         if (amountMode === "all") {
           amount = spendable;
         } else {
           const pct = parsePercentageLikeValue(opts.percent!);
           if (pct === undefined || pct <= 0 || pct > 100) {
-            outputErrorAndExit(
+            return outputErrorAndExit(
               json,
               "Invalid --percent value. Must be between 0 and 100.",
             );
@@ -226,7 +371,7 @@ export const sendCommand = new Command("send")
               : (spendable * BigInt(Math.round(pct * 100))) / 10000n;
 
           if (amount === 0n) {
-            outputErrorAndExit(
+            return outputErrorAndExit(
               json,
               "Calculated amount is zero. Balance too low.",
             );
@@ -250,22 +395,28 @@ export const sendCommand = new Command("send")
           symbol: "ETH",
           amountFormatted,
           amountUsd,
-          to: recipient,
+          recipient: resolvedRecipient,
         });
 
         const ok = await confirm({ message: "Confirm?", default: false });
         if (!ok) {
           console.error("Aborted.");
-          safeExit(SUCCESS);
+          return safeExit(SUCCESS);
         }
       }
 
       let txHash: string;
       try {
-        txHash = await walletClient.sendTransaction({
-          to: recipient,
-          value: amount,
-        });
+        txHash = smartWalletAccount
+          ? await sendCallViaSmartWallet(
+              { to: resolvedRecipient.address, value: amount },
+              bundlerClient!,
+              smartWalletAccount,
+            )
+          : await walletClient.sendTransaction({
+              to: resolvedRecipient.address,
+              value: amount,
+            });
       } catch (err) {
         track("cli_send", {
           asset: "eth",
@@ -274,15 +425,20 @@ export const sendCommand = new Command("send")
           error_type: err instanceof Error ? err.constructor.name : "unknown",
         });
         await shutdownAnalytics();
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
+          gasErrorSuggestion(err, smartWalletAccount ?? privateKeyAccount),
         );
       }
 
-      await publicClient.waitForTransactionReceipt({
-        hash: txHash as `0x${string}`,
-      });
+      // Smart wallet sends settle inside the user operation; only EOA
+      // transactions need an explicit receipt wait.
+      if (!smartWalletAccount) {
+        await publicClient.waitForTransactionReceipt({
+          hash: txHash as `0x${string}`,
+        });
+      }
 
       printSendResult(json, {
         name: "ETH",
@@ -292,7 +448,7 @@ export const sendCommand = new Command("send")
         decimals: 18,
         amountFormatted,
         amountUsd,
-        to: recipient,
+        recipient: resolvedRecipient,
         txHash,
       });
 
@@ -323,17 +479,12 @@ export const sendCommand = new Command("send")
         tokenAddress = trade.address;
         tokenName = knownToken.symbol;
       } else {
-        const apiKey = getApiKey();
-        if (apiKey) {
-          setApiKey(apiKey);
-        }
-
         let parsed;
         try {
           parsed = parsePositionalCoinArgs(firstArg, secondArg);
         } catch (err) {
           if (err instanceof CoinArgError) {
-            outputErrorAndExit(json, err.message, err.suggestion);
+            return outputErrorAndExit(json, err.message, err.suggestion);
           }
           throw err;
         }
@@ -343,16 +494,14 @@ export const sendCommand = new Command("send")
           try {
             ambResult = await resolveAmbiguousName(parsed.name);
           } catch (err) {
-            outputErrorAndExit(
+            return outputErrorAndExit(
               json,
               `Request failed: ${err instanceof Error ? err.message : String(err)}`,
             );
-            return;
           }
 
           if (ambResult.kind === "not-found") {
-            outputErrorAndExit(json, ambResult.message);
-            return;
+            return outputErrorAndExit(json, ambResult.message);
           }
 
           if (ambResult.kind === "ambiguous") {
@@ -362,8 +511,7 @@ export const sendCommand = new Command("send")
               ambResult.trend,
               "send",
             );
-            outputErrorAndExit(json, message, suggestion);
-            return;
+            return outputErrorAndExit(json, message, suggestion);
           }
 
           tokenAddress = ambResult.coin.address as Address;
@@ -373,23 +521,22 @@ export const sendCommand = new Command("send")
           try {
             const result = await resolveCoin(ref);
             if (result.kind === "not-found") {
-              outputErrorAndExit(json, result.message, result.suggestion);
-              return;
+              return outputErrorAndExit(
+                json,
+                result.message,
+                result.suggestion,
+              );
             }
             tokenAddress = result.coin.address as Address;
             tokenName = result.coin.name;
           } catch (err) {
-            outputErrorAndExit(
+            return outputErrorAndExit(
               json,
               `Request failed: ${err instanceof Error ? err.message : String(err)}`,
             );
-            return;
           }
         }
       }
-
-      const account = resolveAccount(json);
-      const { publicClient, walletClient } = createClients(account);
 
       let balance: bigint;
       let decimals: number;
@@ -400,7 +547,7 @@ export const sendCommand = new Command("send")
           abi: erc20Abi,
           address: tokenAddress,
           functionName: "balanceOf",
-          args: [account.address],
+          args: [walletAddress],
         });
         decimals = knownToken.decimals;
         symbol = knownToken.symbol;
@@ -410,7 +557,7 @@ export const sendCommand = new Command("send")
             abi: erc20Abi,
             address: tokenAddress,
             functionName: "balanceOf",
-            args: [account.address],
+            args: [walletAddress],
           }),
           publicClient.readContract({
             abi: erc20Abi,
@@ -429,7 +576,7 @@ export const sendCommand = new Command("send")
       }
 
       if (balance === 0n) {
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           `No ${symbol} balance. Buy some first or pick a different wallet.`,
         );
@@ -440,7 +587,7 @@ export const sendCommand = new Command("send")
       if (amountMode === "amount") {
         const val = parsePercentageLikeValue(opts.amount!);
         if (val === undefined || val <= 0) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Invalid --amount value. Must be a positive number.",
           );
@@ -448,19 +595,19 @@ export const sendCommand = new Command("send")
         try {
           amount = parseUnits(opts.amount!, decimals);
         } catch {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Invalid --amount value for token decimals.",
           );
         }
         if (amount === 0n) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             `Amount too small — rounds to zero at ${decimals} decimal places.`,
           );
         }
         if (amount > balance) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             `Insufficient balance. Have ${formatAmountDisplay(balance, decimals)} ${symbol}.`,
           );
@@ -470,7 +617,7 @@ export const sendCommand = new Command("send")
       } else {
         const pct = parsePercentageLikeValue(opts.percent!);
         if (pct === undefined || pct <= 0 || pct > 100) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Invalid --percent value. Must be between 0 and 100.",
           );
@@ -481,7 +628,7 @@ export const sendCommand = new Command("send")
             : (balance * BigInt(Math.round(pct * 100))) / 10000n;
 
         if (amount === 0n) {
-          outputErrorAndExit(
+          return outputErrorAndExit(
             json,
             "Calculated amount is zero. Balance too low.",
           );
@@ -506,24 +653,35 @@ export const sendCommand = new Command("send")
           symbol,
           amountFormatted,
           amountUsd,
-          to: recipient,
+          recipient: resolvedRecipient,
         });
 
         const ok = await confirm({ message: "Confirm?", default: false });
         if (!ok) {
           console.error("Aborted.");
-          safeExit(SUCCESS);
+          return safeExit(SUCCESS);
         }
       }
 
       let txHash: `0x${string}`;
       try {
-        txHash = await walletClient.writeContract({
-          abi: erc20Abi,
-          address: tokenAddress,
-          functionName: "transfer",
-          args: [recipient, amount],
-        });
+        txHash = smartWalletAccount
+          ? await sendCallViaSmartWallet(
+              {
+                abi: erc20Abi,
+                address: tokenAddress,
+                functionName: "transfer",
+                args: [resolvedRecipient.address, amount],
+              },
+              bundlerClient!,
+              smartWalletAccount,
+            )
+          : await walletClient.writeContract({
+              abi: erc20Abi,
+              address: tokenAddress,
+              functionName: "transfer",
+              args: [resolvedRecipient.address, amount],
+            });
       } catch (err) {
         track("cli_send", {
           asset: knownToken ? knownTokenKey : "coin",
@@ -535,13 +693,18 @@ export const sendCommand = new Command("send")
           error_type: err instanceof Error ? err.constructor.name : "unknown",
         });
         await shutdownAnalytics();
-        outputErrorAndExit(
+        return outputErrorAndExit(
           json,
           `Transaction failed: ${err instanceof Error ? err.message : String(err)}`,
+          gasErrorSuggestion(err, smartWalletAccount ?? privateKeyAccount),
         );
       }
 
-      await publicClient.waitForTransactionReceipt({ hash: txHash });
+      // Smart wallet sends settle inside the user operation; only EOA
+      // transactions need an explicit receipt wait.
+      if (!smartWalletAccount) {
+        await publicClient.waitForTransactionReceipt({ hash: txHash });
+      }
 
       printSendResult(json, {
         name: tokenName,
@@ -551,7 +714,7 @@ export const sendCommand = new Command("send")
         decimals,
         amountFormatted,
         amountUsd,
-        to: recipient,
+        recipient: resolvedRecipient,
         txHash,
       });
 

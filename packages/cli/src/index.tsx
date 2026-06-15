@@ -2,15 +2,20 @@ import { Command } from "commander";
 import { ExitPromptError } from "@inquirer/core";
 import { readFileSync } from "node:fs";
 import { setApiBaseUrl } from "@zoralabs/coins-sdk";
+import { agentCommand } from "./commands/agent.js";
 import { authCommand } from "./commands/auth.js";
 import { balanceCommand } from "./commands/balance.js";
 import { buyCommand } from "./commands/buy.js";
+import { commentCommand } from "./commands/comment.js";
+import { createCommand } from "./commands/create.js";
+import { dmCommand } from "./commands/dm.js";
 import { exploreCommand } from "./commands/explore.jsx";
 import { getCommand } from "./commands/get.jsx";
 import { sellCommand } from "./commands/sell.js";
 import { profileCommand } from "./commands/profile.js";
 import { sendCommand } from "./commands/send.js";
 import { setupCommand } from "./commands/setup.js";
+import { skillsCommand } from "./commands/skills.js";
 import { walletCommand } from "./commands/wallet.js";
 import { renderOnce } from "./lib/render.js";
 import { StyledHelp } from "./components/StyledHelp.js";
@@ -19,6 +24,8 @@ import { parseHelpSections } from "./lib/parse-help.js";
 import { supportsTruecolor } from "./lib/zorb-pixels.js";
 import { identify, shutdownAnalytics } from "./lib/analytics.js";
 import { CliExitError, safeExit, ERROR } from "./lib/exit.js";
+import { getJson } from "./lib/output.js";
+import { maybeNotifyNewDms } from "./messaging/notify.js";
 
 declare const PKG_VERSION: string | undefined;
 
@@ -78,13 +85,18 @@ const buildProgram = (): Command => {
     program.outputHelp();
   });
 
+  program.addCommand(agentCommand);
   program.addCommand(authCommand);
   program.addCommand(balanceCommand);
   program.addCommand(buyCommand);
+  program.addCommand(commentCommand);
+  program.addCommand(createCommand);
+  program.addCommand(dmCommand);
   program.addCommand(exploreCommand);
   program.addCommand(getCommand);
   program.addCommand(profileCommand);
   program.addCommand(setupCommand);
+  program.addCommand(skillsCommand);
   program.addCommand(walletCommand);
   program.addCommand(sellCommand);
   program.addCommand(sendCommand);
@@ -116,6 +128,16 @@ const buildProgram = (): Command => {
       actionCommand.outputHelp();
       safeExit(ERROR);
     }
+  });
+
+  // After a successful command, surface any new DMs / message requests
+  // (throttled + best-effort; see notify.ts). Skipped for dm commands (you're
+  // already there) and for --json output (keep machine-readable output clean).
+  program.hook("postAction", async (_thisCommand, actionCommand) => {
+    const underDm =
+      actionCommand.name() === "dm" || actionCommand.parent?.name() === "dm";
+    if (underDm || getJson(actionCommand)) return;
+    await maybeNotifyNewDms();
   });
 
   return program;

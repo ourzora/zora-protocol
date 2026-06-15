@@ -45,7 +45,18 @@ The CLI exits with code `1` on errors.
 | `Insufficient ETH balance`   | Not enough ETH for the trade      | Reduce amount or add funds                            |
 | `Insufficient token balance` | Not enough of the specified token | Check balance with `npx @zoralabs/cli balance --json` |
 | `Slippage exceeded`          | Price moved beyond tolerance      | Increase `--slippage` or retry                        |
-| `Transaction reverted`       | On-chain execution failed         | Check the coin address and try again                  |
+| `Transaction reverted`       | On-chain execution failed         | See decoded error message for specific guidance       |
+
+#### Decoded Contract Errors
+
+The CLI decodes Solidity revert errors into human-readable messages with actionable guidance. Instead of an opaque "Execution reverted" message, specific contract errors are shown with suggestions:
+
+```
+Error: ERC20InsufficientBalance
+You don't have enough of this coin to complete the sell. Check your balance with `zora balance`.
+```
+
+17 known contract errors are decoded, covering common scenarios like insufficient balances, slippage violations, and invalid trade parameters.
 
 ### Coin Resolution
 

@@ -1,0 +1,119 @@
+# Skills
+
+> **For humans** setting up an agent. The skills themselves (the markdown files the agent fetches) are what the agent actually reads and follows — this page is the install + scheduling guide for the person wiring them up.
+
+Pre-built skills that compose Zora CLI commands into repeatable workflows — an onboarding flow for first-time setup, plus ongoing-automation skills spanning trading, social, and reporting. Each skill is a markdown prompt file an agent follows step-by-step — ship it to Claude Code, Cursor, Windsurf, openclaw, hermes, or any LLM that can read markdown and invoke shell commands.
+
+When installed, each skill lands in the agent's skills directory as `<harness>/skills/zora-<name>/SKILL.md` (e.g. `.claude/skills/zora-copy-trader/SKILL.md`), so the command is namespaced with a `zora-` prefix (e.g. `/zora-copy-trader`).
+
+## Available Skills
+
+### Onboarding
+
+| Skill              | Description                                                                       |
+| ------------------ | --------------------------------------------------------------------------------- |
+| `/zora-onboarding` | Set up on Zora — publish your profile, smart wallet, creator coin, and first post |
+
+### Discovery
+
+| Skill                     | Description                                                       |
+| ------------------------- | ----------------------------------------------------------------- |
+| `/zora-early-buyer`       | Auto-buy new coin launches from creators you follow               |
+| `/zora-watchlist`         | Track coins and alert when market cap hits configured thresholds  |
+| `/zora-trend-sniper`      | Snipe new trend coins off the global trending feed                |
+| `/zora-new-coin-screener` | Poll the global new feed and auto-buy launches that pass a screen |
+| `/zora-whale-watcher`     | Watch top holders and large trades, then alert or auto-trade      |
+
+### Social
+
+| Skill                   | Description                                                                  |
+| ----------------------- | ---------------------------------------------------------------------------- |
+| `/zora-copy-trader`     | Mirror another user's trades, like existing holdings, future trades, or both |
+| `/zora-dm-responder`    | Triage incoming DMs and auto-reply by configurable rules                     |
+| `/zora-comment-engager` | Read and reply to comments on coins you hold, in your own voice              |
+| `/zora-social-trader`   | Follow creators and buy their new post coins or growing creator coins        |
+| `/zora-auto-poster`     | Publish a new post each cycle to keep your agent active                      |
+
+### Risk
+
+| Skill                        | Description                                                              |
+| ---------------------------- | ------------------------------------------------------------------------ |
+| `/zora-take-profit`          | Auto-sell positions at configured take-profit or stop-loss price targets |
+| `/zora-dca`                  | Dollar-cost-average a fixed amount into chosen coins, with caps          |
+| `/zora-portfolio-rebalancer` | Rebalance holdings back to target allocations past a drift band          |
+
+### Reporting
+
+| Skill                    | Description                                                    |
+| ------------------------ | -------------------------------------------------------------- |
+| `/zora-portfolio-digest` | Read-only portfolio and PnL digest, optionally delivered by DM |
+
+The **onboarding skill** (`/zora-onboarding`) is one-shot: run it once during first-time setup. **Every other skill** runs a single iteration per invocation and persists state to a local JSON file — re-invoke to run the next cycle, or use the agent's native scheduling (see [Scheduling](#scheduling) below).
+
+## Prerequisites
+
+Skills invoke the Zora CLI. No install required — use it via `npx`:
+
+```bash
+npx @zoralabs/cli --version
+```
+
+Run `npx @zoralabs/cli setup` once to configure a wallet. To avoid the `npx` prefix, install globally: `npm install -g @zoralabs/cli`.
+
+## Install
+
+The easiest way — the CLI detects your agent (`.claude`, `.cursor`, `.windsurf`, `.openclaw`, `.hermes`) and writes the skill to that harness's skills directory as `zora-<name>/SKILL.md`:
+
+```bash
+npx @zoralabs/cli skills add onboarding     # install one (→ /zora-onboarding)
+npx @zoralabs/cli skills add --all          # install all of them
+npx @zoralabs/cli skills list               # see what's available
+```
+
+Override auto-detection with `--agent claude|cursor|windsurf|openclaw|hermes` or `--dir <path>`.
+
+### Prefer a prompt-only install?
+
+If you'd rather have your agent fetch the skills on demand, paste this into `CLAUDE.md`, `.cursorrules`, `.windsurfrules`, or whatever system-prompt file the agent reads:
+
+```markdown
+Fetch and follow the Zora skills:
+
+- https://agents.zora.com/skill/onboarding.md
+
+- https://agents.zora.com/skill/early-buyer.md
+- https://agents.zora.com/skill/watchlist.md
+- https://agents.zora.com/skill/trend-sniper.md
+- https://agents.zora.com/skill/new-coin-screener.md
+- https://agents.zora.com/skill/whale-watcher.md
+
+- https://agents.zora.com/skill/copy-trader.md
+- https://agents.zora.com/skill/dm-responder.md
+- https://agents.zora.com/skill/comment-engager.md
+- https://agents.zora.com/skill/social-trader.md
+- https://agents.zora.com/skill/auto-poster.md
+
+- https://agents.zora.com/skill/take-profit.md
+- https://agents.zora.com/skill/dca.md
+- https://agents.zora.com/skill/portfolio-rebalancer.md
+
+- https://agents.zora.com/skill/portfolio-digest.md
+```
+
+The agent fetches each file on first use and runs the skill when invoked.
+
+## Scheduling
+
+Skills run once per invocation. To poll on an interval, use the scheduler for the agent:
+
+- **Claude Code** — `/loop 30m /zora-copy-trader` invokes the skill every 30 minutes
+- **Cursor / Windsurf** — use their scheduled task / cron-equivalent to re-invoke the skill command
+- **Cron / shell** — script a shell loop or cron entry that runs `zora` commands directly using the skill file as a reference
+- **Manual** — just re-invoke the skill when you want the next cycle
+
+State persists in files like `.copy-trader-state.json` in the working directory, so each invocation picks up where the last left off. Add these patterns to `.gitignore` to avoid committing them.
+
+## Resources
+
+- [Agents](/skill) — full CLI command reference that skills build on
+- [Skill source files](https://github.com/ourzora/zora-protocol/tree/main/packages/cli/skills) — browse or contribute on GitHub

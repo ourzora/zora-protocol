@@ -9,13 +9,22 @@ All configuration can be set via environment variables, which take precedence ov
 | `ZORA_API_KEY`     | API key for higher rate limits. Overrides `~/.config/zora/config.json`. Get one at [zora.co/settings/developer](https://zora.co/settings/developer). |
 | `ZORA_PRIVATE_KEY` | Wallet private key (hex, with or without `0x` prefix). Overrides `~/.config/zora/wallet.json`.                                                       |
 
+## Wallet
+
+| Variable                    | Description                                                                                                                                                                |
+| --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ZORA_SMART_WALLET_ADDRESS` | Smart wallet address to use as the trading account, with the EOA (`ZORA_PRIVATE_KEY` / saved wallet) acting as its owner/signer. See [wallet modes](/guides/wallet-modes). |
+
 ## Advanced
 
-| Variable            | Description                                                                      |
-| ------------------- | -------------------------------------------------------------------------------- |
-| `ZORA_API_TARGET`   | Override the API base URL. Useful for local development or staging environments. |
-| `ZORA_NO_ANALYTICS` | Set to `1` to disable anonymous usage analytics.                                 |
-| `DO_NOT_TRACK`      | Set to `1` to disable analytics (standard convention).                           |
+| Variable               | Description                                                                        |
+| ---------------------- | ---------------------------------------------------------------------------------- |
+| `ZORA_API_TARGET`      | Override the API base URL. Useful for local development or staging environments.   |
+| `ZORA_PROFILE_API`     | Override the profile/messaging API base URL (defaults to the Zora SDK endpoint).   |
+| `ZORA_SKILLS_BASE_URL` | Override the base URL the `skills` command fetches pre-built skills from.          |
+| `ZORA_DM_NOTIFY`       | Set to `always` to bypass the DM notification throttle and surface why it's quiet. |
+| `ZORA_NO_ANALYTICS`    | Set to `1` to disable anonymous usage analytics.                                   |
+| `DO_NOT_TRACK`         | Set to `1` to disable analytics (standard convention).                             |
 
 ## Example: Agent Setup
 
@@ -50,7 +59,8 @@ docker run --env-file .env your-agent
 
 ## Precedence
 
-| Setting | 1st (highest)              | 2nd                          | 3rd (lowest)            |
-| ------- | -------------------------- | ---------------------------- | ----------------------- |
-| API Key | `ZORA_API_KEY` env var     | `~/.config/zora/config.json` | None (rate-limited)     |
-| Wallet  | `ZORA_PRIVATE_KEY` env var | `~/.config/zora/wallet.json` | Error (wallet required) |
+| Setting      | 1st (highest)                       | 2nd                          | 3rd (lowest)             |
+| ------------ | ----------------------------------- | ---------------------------- | ------------------------ |
+| API Key      | `ZORA_API_KEY` env var              | `~/.config/zora/config.json` | None (rate-limited)      |
+| Wallet       | `ZORA_PRIVATE_KEY` env var          | `~/.config/zora/wallet.json` | Error (wallet required)  |
+| Smart wallet | `ZORA_SMART_WALLET_ADDRESS` env var | Saved agent smart wallet     | None (EOA used directly) |

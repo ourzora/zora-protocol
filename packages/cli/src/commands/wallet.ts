@@ -1,6 +1,11 @@
 import { Command } from "commander";
+import { Address, isAddress } from "viem";
 import { privateKeyToAccount } from "viem/accounts";
-import { getPrivateKey, getWalletPath } from "../lib/config.js";
+import {
+  getPrivateKey,
+  getSmartWalletAddress,
+  getWalletPath,
+} from "../lib/config.js";
 import {
   getJson,
   getYes,
@@ -33,6 +38,32 @@ const resolvePrivateKey = ():
   return undefined;
 };
 
+/**
+ * Resolves the configured smart wallet (Zora account) address, mirroring the
+ * precedence used elsewhere: the `ZORA_SMART_WALLET_ADDRESS` env var wins,
+ * otherwise the address stored in the wallet file. Returns `undefined` when none
+ * is configured (EOA-only wallet) and an `invalid` marker when a value is set but
+ * is not a valid address, so callers can surface the misconfiguration.
+ */
+const resolveSmartWalletAddress = ():
+  | { address: Address; source: "env" | "file" }
+  | { invalid: true; source: "env" | "file" }
+  | undefined => {
+  const envAddress = process.env.ZORA_SMART_WALLET_ADDRESS;
+  if (envAddress) {
+    return isAddress(envAddress)
+      ? { address: envAddress, source: "env" }
+      : { invalid: true, source: "env" };
+  }
+  const fileAddress = getSmartWalletAddress();
+  if (fileAddress !== undefined) {
+    return isAddress(fileAddress)
+      ? { address: fileAddress, source: "file" }
+      : { invalid: true, source: "file" };
+  }
+  return undefined;
+};
+
 export const walletCommand = new Command("wallet")
   .description("Manage your Zora wallet")
   .action(function (this: Command) {
@@ -50,7 +81,7 @@ walletCommand
       outputErrorAndExit(json, NO_WALLET_CONFIGURED, NO_WALLET_SUGGESTION);
     }
 
-    let account;
+    let account: ReturnType<typeof privateKeyToAccount> | undefined;
     try {
       account = privateKeyToAccount(normalizeKey(resolved.key));
     } catch {
@@ -68,16 +99,50 @@ walletCommand
     const source =
       resolved.source === "env" ? "env (ZORA_PRIVATE_KEY)" : getWalletPath();
 
+    const smartWallet = resolveSmartWalletAddress();
+    if (smartWallet && "invalid" in smartWallet) {
+      const where =
+        smartWallet.source === "env"
+          ? "ZORA_SMART_WALLET_ADDRESS"
+          : getWalletPath();
+      const suggestion =
+        smartWallet.source === "env"
+          ? "Set ZORA_SMART_WALLET_ADDRESS to a valid address or unset it."
+          : "Run 'zora setup --force' to reconfigure it.";
+      outputErrorAndExit(
+        json,
+        `✗ Configured smart wallet address (${where}) is not a valid address.`,
+        suggestion,
+      );
+    }
+
+    // The smart wallet (Zora account) is the user-facing wallet that holds coins
+    // and posts; the EOA only owns it. Lead with the smart wallet when configured
+    // and fall back to the EOA for wallets that have no smart wallet yet.
+    const smartWalletAddress =
+      smartWallet && "address" in smartWallet ? smartWallet.address : undefined;
+
     outputData(json, {
-      json: { address: account.address, source },
+      json: {
+        address: smartWalletAddress ?? account.address,
+        smartWalletAddress: smartWalletAddress ?? null,
+        ownerAddress: account.address,
+        source,
+      },
       render: () => {
-        console.log(`  Address: ${account.address}`);
+        if (smartWalletAddress) {
+          console.log(`  Smart wallet: ${smartWalletAddress}`);
+          console.log(`  Owner (EOA):  ${account.address}`);
+        } else {
+          console.log(`  Address: ${account.address}`);
+        }
         console.log(`  Source:  ${source}`);
       },
     });
 
     track("cli_wallet_info", {
       source: resolved.source,
+      has_smart_wallet: smartWalletAddress !== undefined,
       output_format: json ? "json" : "text",
     });
   });
