@@ -18,7 +18,8 @@ import {
   resolveAmbiguousName,
   resolveCoin,
 } from "../lib/coin-ref.js";
-import { getApiKey } from "../lib/config.js";
+import { getApiKey, getBudget, saveBudget } from "../lib/config.js";
+import { evaluate, appendSpend } from "../lib/agent/budget.js";
 import { BASE_TRADE_TOKENS, type TradeTokenKey } from "../lib/constants.js";
 import {
   apiErrorMessage,
@@ -438,6 +439,34 @@ export const buyCommand = new Command("buy")
       }
     }
 
+    // ── Budget enforcement ──────────────────────────────────────────
+    const budget = getBudget();
+    if (
+      budget &&
+      !budget.optedOut &&
+      budget.limitUsd !== null &&
+      swapAmountUsd != null
+    ) {
+      const now = new Date();
+      const evaluation = evaluate(budget, swapAmountUsd, now);
+      if (!evaluation.allowed) {
+        track("cli_buy", {
+          action: "budget_blocked",
+          coin_address: coinAddress,
+          swap_amount_usd: swapAmountUsd,
+          budget_limit: evaluation.limitUsd,
+          budget_spent: evaluation.spent,
+          budget_remaining: evaluation.remaining,
+        });
+        return outputErrorAndExit(
+          json,
+          evaluation.reason!,
+          "Adjust your budget: zora agent budget set <amount> | zora agent budget reset | zora agent budget set --no-limit",
+        );
+      }
+    }
+    // ────────────────────────────────────────────────────────────────
+
     if (!!smartWalletAccount && !bundlerClient) {
       return outputErrorAndExit(
         json,
@@ -506,6 +535,18 @@ export const buyCommand = new Command("buy")
       );
       console.warn(`Tx: ${txHash}`);
     }
+
+    // ── Record spend in budget ledger ───────────────────────────────
+    if (budget && !budget.optedOut && swapAmountUsd != null) {
+      const now = new Date();
+      const updated = appendSpend(
+        budget,
+        { at: now.toISOString(), usd: swapAmountUsd, skill: `buy ${coinSymbol}` },
+        now,
+      );
+      saveBudget(updated);
+    }
+    // ────────────────────────────────────────────────────────────────
 
     printTradeResult(json, {
       coinName,

@@ -133,6 +133,10 @@ Read `.auto-poster-state.json`, present the current `config`, and ask the user w
 
 ---
 
+## Global Spending Budget
+
+This skill **publishes** posts (it mints coins via `zora create`); it does not place trades, so the agent's global spending budget (`zora agent budget`) — which caps _trading_ spend across skills — does not gate posting. Posting frequency is governed by `dailyCap` above. The trading skills (`dca`, `trend-sniper`, `copy-trader`, `early-buyer`, `social-trader`, `new-coin-screener`, `whale-watcher`) are the ones that consult the global budget before spending.
+
 ## Safety Guards
 
 - **Posts are PERMANENT once minted.** Compose each one deliberately — there is no undo and no edit after publishing.

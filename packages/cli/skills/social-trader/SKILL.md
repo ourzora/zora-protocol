@@ -170,6 +170,20 @@ Save the updated state and stop.
 
 ---
 
+## Global Spending Budget
+
+Beyond this skill's own `perIterationCap`/`totalCap`, the agent may have a **global, wallet-level spending budget** (set with `zora agent budget set`) that caps total spend across _all_ skills. Honor it on every buy:
+
+**Before each buy**, check the global budget with the buy's ETH amount:
+```bash
+zora agent budget check --eth <amount> --json
+```
+If the response is `"allowed": false`, **skip the buy**, log the `reason`, and stop buying for this iteration — the global cap is reached. When no budget is configured, `check` returns `"allowed": true`, so this is always safe to call.
+
+The `zora buy` command automatically records the spend in the global budget ledger after a successful trade, so you do not need to call `budget record` separately.
+
+This is on top of — not a replacement for — the spend caps below.
+
 ## Safety Guards
 
 - **Respect the spend caps** — never let a single iteration exceed `perIterationCap`, and never let `spentTotal` exceed `totalCap`.

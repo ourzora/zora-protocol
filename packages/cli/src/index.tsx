@@ -116,14 +116,30 @@ const buildProgram = (): Command => {
   // don't filter by arg.required here, since they're all intentionally optional.
   // Commands that have optional arguments with meaningful defaults (e.g. profile
   // defaults to the user's own wallet) are exempt from the "show help" check.
-  const argOptionalCommands = new Set(["profile"]);
+  // Exempt by full command path (e.g. "agent budget set"), not bare leaf name,
+  // so the exemption can't accidentally suppress the help guard for an unrelated
+  // future subcommand that happens to share a name. `agent budget set [amount]`
+  // is here because its amount is optional — `--no-limit` opts out instead of
+  // passing one, and its own action validates that exactly one is present.
+  const argOptionalCommands = new Set(["profile", "agent budget set"]);
+
+  const fullCommandPath = (cmd: Command): string => {
+    const parts: string[] = [];
+    let c: Command | null = cmd;
+    // Walk up to (but not including) the root program, which has no parent.
+    while (c && c.parent) {
+      parts.unshift(c.name());
+      c = c.parent;
+    }
+    return parts.join(" ");
+  };
 
   program.hook("preAction", (_thisCommand, actionCommand) => {
     const expected = actionCommand.registeredArguments.length;
     if (
       expected > 0 &&
       actionCommand.args.length === 0 &&
-      !argOptionalCommands.has(actionCommand.name())
+      !argOptionalCommands.has(fullCommandPath(actionCommand))
     ) {
       actionCommand.outputHelp();
       safeExit(ERROR);

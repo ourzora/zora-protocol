@@ -29,9 +29,12 @@ const WALLET_FILE = join(CONFIG_DIR, "wallet.json");
 
 const SESSION_FILE = join(CONFIG_DIR, "session.json");
 
+const BUDGET_FILE = join(CONFIG_DIR, "budget.json");
+
 const CONFIG_VERSION = 1;
 const WALLET_VERSION = 1;
 const SESSION_VERSION = 1;
+const BUDGET_VERSION = 1;
 
 const PRIVATE_KEY_REGEX = /(^|\b)(0x)?[0-9a-fA-F]{64}(\b|$)/;
 
@@ -447,4 +450,100 @@ export function clearPrivySession(): void {
 
 export function getSessionPath(): string {
   return SESSION_FILE;
+}
+
+/** The window a global spending budget resets over. */
+export type BudgetPeriod = "daily" | "weekly" | "lifetime";
+
+/** One recorded spend, appended to the ledger after a successful trade. */
+export interface BudgetEntry {
+  /** USD value of the trade. */
+  usd: number;
+  /** The skill (or caller) that made the spend, e.g. "dca". */
+  skill: string;
+  /** Transaction hash, when known. */
+  txHash?: string;
+  /** ISO-8601 timestamp of the spend. */
+  at: string;
+}
+
+/**
+ * The agent's global, wallet-level spending budget. Stored separately from the
+ * wallet/config so it carries its own append-only ledger. `limitUsd` is the cap
+ * for the active window; `null` means no cap is set. `optedOut` records an
+ * explicit "no limit, go ahead" acknowledgement — distinct from simply never
+ * having configured a budget (no file at all). The active spend is computed from
+ * `ledger` against `windowStart`, not stored, so the ledger stays a full audit
+ * trail (see {@link spentInWindow}).
+ */
+export interface BudgetState {
+  version: number;
+  limitUsd: number | null;
+  period: BudgetPeriod;
+  optedOut: boolean;
+  /** ISO-8601 start of the active window (for daily/weekly); ignored for lifetime. */
+  windowStart: string;
+  ledger: BudgetEntry[];
+}
+
+function isBudgetPeriod(value: unknown): value is BudgetPeriod {
+  return value === "daily" || value === "weekly" || value === "lifetime";
+}
+
+/**
+ * The stored global budget, or undefined if none is configured. A corrupt,
+ * unversioned, or structurally-invalid file is treated as absent (with a
+ * warning) rather than throwing, matching {@link readConfig}'s behavior — a
+ * missing budget simply means "no global cap".
+ */
+export function getBudget(): BudgetState | undefined {
+  if (!existsSync(BUDGET_FILE)) return undefined;
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(readFileSync(BUDGET_FILE, "utf-8"));
+  } catch (err) {
+    console.error(
+      `Warning: could not parse ${BUDGET_FILE}: ${formatError(err)}. Re-run 'zora agent budget set' to reset it.`,
+    );
+    return undefined;
+  }
+  try {
+    assertVersion(parsed, BUDGET_VERSION, BUDGET_FILE);
+  } catch (err) {
+    console.error(
+      `Warning: ${formatError(err)}. Delete ${BUDGET_FILE} or run 'zora agent budget set' to reset it.`,
+    );
+    return undefined;
+  }
+  const obj = parsed as Record<string, unknown>;
+  if (
+    (obj.limitUsd !== null && typeof obj.limitUsd !== "number") ||
+    !isBudgetPeriod(obj.period) ||
+    typeof obj.optedOut !== "boolean" ||
+    typeof obj.windowStart !== "string" ||
+    !Array.isArray(obj.ledger)
+  ) {
+    console.error(
+      `Warning: ${BUDGET_FILE} is missing required fields. Run 'zora agent budget set' to reset it.`,
+    );
+    return undefined;
+  }
+  return parsed as BudgetState;
+}
+
+export function saveBudget(state: Omit<BudgetState, "version">): void {
+  mkdirSync(CONFIG_DIR, { recursive: true });
+  writeSecure(
+    BUDGET_FILE,
+    JSON.stringify({ ...state, version: BUDGET_VERSION }, null, 2) + "\n",
+  );
+}
+
+/** Remove the stored budget (e.g. `zora agent budget reset --clear`). No-op if absent. */
+export function clearBudget(): void {
+  if (existsSync(BUDGET_FILE)) rmSync(BUDGET_FILE, { force: true });
+}
+
+export function getBudgetPath(): string {
+  return BUDGET_FILE;
 }

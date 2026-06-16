@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import confirm from "@inquirer/confirm";
 import { generatePrivateKey } from "viem/accounts";
 import {
   getPrivateKey,
@@ -6,7 +7,20 @@ import {
   saveAgentWallet,
   getWalletPath,
   peekAgentWallet,
+  getBudget,
+  saveBudget,
+  clearBudget,
+  getBudgetPath,
+  type BudgetPeriod,
 } from "../lib/config.js";
+import {
+  appendSpend,
+  evaluate,
+  periodMs,
+  usdFromEth,
+} from "../lib/agent/budget.js";
+import { formatUsd } from "../lib/format.js";
+import { safeExit, SUCCESS } from "../lib/exit.js";
 import {
   getJson,
   getYes,
@@ -1006,6 +1020,462 @@ agentCommand
           );
         }
         console.log(`\n  Link: ${profileUrl}`);
+      },
+    });
+  });
+
+const DEFAULT_BUDGET_PERIOD: BudgetPeriod = "weekly";
+
+/** Parse and validate a `--period` value, exiting with a clear error otherwise. */
+function parseBudgetPeriod(json: boolean, raw: string): BudgetPeriod {
+  if (raw === "daily" || raw === "weekly" || raw === "lifetime") return raw;
+  return outputErrorAndExit(
+    json,
+    `Invalid --period: ${raw}`,
+    "Use one of: daily, weekly, lifetime.",
+  );
+}
+
+/**
+ * Resolve a spend amount to USD from exactly one of `--usd` / `--eth`. An ETH
+ * amount is converted at the current price (shared with the trading commands).
+ * Exits with an error on a missing/ambiguous/invalid amount.
+ */
+async function resolveSpendUsd(
+  json: boolean,
+  options: { usd?: string; eth?: string },
+): Promise<number> {
+  const hasUsd = options.usd !== undefined;
+  const hasEth = options.eth !== undefined;
+  if (hasUsd === hasEth) {
+    return outputErrorAndExit(
+      json,
+      "Pass exactly one of --usd or --eth.",
+      "e.g. --usd 25 or --eth 0.01",
+    );
+  }
+  const raw = (hasUsd ? options.usd : options.eth) as string;
+  const amount = Number(raw);
+  if (!Number.isFinite(amount) || amount <= 0) {
+    return outputErrorAndExit(
+      json,
+      `Invalid amount: ${raw}`,
+      "Pass a positive number.",
+    );
+  }
+  if (hasUsd) return amount;
+  try {
+    return await usdFromEth(amount);
+  } catch (err) {
+    return outputErrorAndExit(json, formatError(err));
+  }
+}
+
+const budgetCommand = agentCommand
+  .command("budget")
+  .description(
+    "Set and track a global, wallet-level spending budget that applies across all agent skills.\n" +
+      "Skills consult `budget check` before a trade and call `budget record` after — a shared ceiling on top of each skill's own caps.",
+  )
+  .action(function (this: Command) {
+    this.outputHelp();
+  });
+
+budgetCommand
+  .command("set [amount]")
+  .description(
+    "Set a global spending budget in USD (e.g. `set 250 --period weekly`), or opt out of any cap with --no-limit.",
+  )
+  .option(
+    "--period <period>",
+    "Budget window the cap resets over: daily, weekly, or lifetime",
+    DEFAULT_BUDGET_PERIOD,
+  )
+  .option(
+    "--no-limit",
+    "Explicitly run with no spending cap — acknowledges the full wallet balance can be spent",
+  )
+  .action(async function (
+    this: Command,
+    amount: string | undefined,
+    options: { period: string; limit: boolean },
+  ) {
+    const json = getJson(this);
+    // Commander maps `--no-limit` to `limit === false`; omitted leaves it true.
+    const optedOut = options.limit === false;
+    const period = parseBudgetPeriod(json, options.period);
+
+    if (optedOut && amount !== undefined) {
+      return outputErrorAndExit(
+        json,
+        "Pass an amount or --no-limit, not both.",
+        "Use `set <amount>` to cap spending, or `set --no-limit` to opt out.",
+      );
+    }
+
+    let limitUsd: number | null;
+    if (optedOut) {
+      limitUsd = null;
+    } else {
+      if (amount === undefined) {
+        return outputErrorAndExit(
+          json,
+          "Set a USD amount, or pass --no-limit to opt out.",
+          "e.g. `zora agent budget set 250 --period weekly`",
+        );
+      }
+      limitUsd = Number(amount);
+      if (!Number.isFinite(limitUsd) || limitUsd <= 0) {
+        return outputErrorAndExit(
+          json,
+          `Invalid budget amount: ${amount}`,
+          "Pass a positive USD amount, e.g. 250.",
+        );
+      }
+    }
+
+    // Preserve any existing ledger and window start so adjusting the cap keeps
+    // the spend already recorded — matching the per-skill "edit cap, keep spend"
+    // behavior. A brand-new budget starts its window now.
+    const existing = getBudget();
+    saveBudget({
+      limitUsd,
+      period,
+      optedOut,
+      windowStart: existing?.windowStart ?? new Date().toISOString(),
+      ledger: existing?.ledger ?? [],
+    });
+
+    track("cli_agent_budget", {
+      action: "set",
+      opted_out: optedOut,
+      period,
+      output_format: json ? "json" : "text",
+    });
+
+    outputData(json, {
+      json: { limitUsd, period, optedOut, path: getBudgetPath() },
+      render: () => {
+        if (optedOut) {
+          console.log("\n✓ Global budget: no limit (opted out)");
+          console.log(
+            "  All skills may spend up to the full wallet balance. Set a cap any time with `zora agent budget set <amount>`.",
+          );
+        } else {
+          console.log(
+            `\n✓ Global budget set: ${formatUsd(limitUsd as number)} (${period})`,
+          );
+          console.log(
+            "  All trading skills will check this cap before each trade.",
+          );
+        }
+        console.log(`  Saved to ${getBudgetPath()}`);
+      },
+    });
+  });
+
+budgetCommand
+  .command("info")
+  .description(
+    "Show the global budget: the cap, the period, how much has been spent in the active window, and what's left.",
+  )
+  .action(async function (this: Command) {
+    const json = getJson(this);
+    const state = getBudget();
+
+    if (!state) {
+      return outputData(json, {
+        json: { configured: false, limitUsd: null, optedOut: false },
+        render: () => {
+          console.log("\n• No global budget configured.");
+          console.log(
+            "  Set one with `zora agent budget set <amount>`, or opt out with `zora agent budget set --no-limit`.",
+          );
+        },
+      });
+    }
+
+    const now = new Date();
+    const result = evaluate(state, 0, now);
+    const ms = periodMs(state.period);
+    const resetsAt =
+      ms === null
+        ? null
+        : new Date(new Date(result.windowStart).getTime() + ms).toISOString();
+
+    track("cli_agent_budget", {
+      action: "info",
+      opted_out: state.optedOut,
+      period: state.period,
+      output_format: json ? "json" : "text",
+    });
+
+    outputData(json, {
+      json: {
+        configured: true,
+        limitUsd: state.limitUsd,
+        period: state.period,
+        optedOut: state.optedOut,
+        spent: Number(result.spent.toFixed(6)),
+        remaining:
+          result.remaining === null
+            ? null
+            : Number(result.remaining.toFixed(6)),
+        windowStart: result.windowStart,
+        resetsAt,
+        entries: state.ledger.length,
+        path: getBudgetPath(),
+      },
+      render: () => {
+        console.log("\nGlobal spending budget");
+        if (state.optedOut || state.limitUsd === null) {
+          console.log("  Limit:     no limit (opted out)");
+          console.log(`  Spent:     ${formatUsd(result.spent)} (tracked)`);
+        } else {
+          console.log(
+            `  Limit:     ${formatUsd(state.limitUsd)} per ${state.period}`,
+          );
+          console.log(`  Spent:     ${formatUsd(result.spent)}`);
+          console.log(
+            `  Remaining: ${formatUsd(Math.max(0, result.remaining ?? 0))}`,
+          );
+        }
+        if (resetsAt) console.log(`  Window resets: ${resetsAt}`);
+        console.log(`  Trades recorded: ${state.ledger.length}`);
+      },
+    });
+  });
+
+budgetCommand
+  .command("check")
+  .description(
+    "Check whether a prospective spend fits the global budget. Skills call this before a trade and read `allowed` in the JSON.",
+  )
+  .option("--usd <amount>", "Prospective spend in USD")
+  .option(
+    "--eth <amount>",
+    "Prospective spend in ETH (converted to USD at the current price)",
+  )
+  .action(async function (
+    this: Command,
+    options: { usd?: string; eth?: string },
+  ) {
+    const json = getJson(this);
+
+    // No budget configured or opted out → nothing to enforce; every spend is
+    // allowed. Check this BEFORE resolving the amount, so an ETH amount never
+    // triggers a price fetch here — a price-feed outage must not break the
+    // unconditional call.
+    const state = getBudget();
+    if (!state || state.optedOut) {
+      return outputData(json, {
+        json: {
+          allowed: true,
+          configured: !!state,
+          optedOut: state?.optedOut ?? false,
+          limitUsd: null,
+          remaining: null,
+        },
+        render: () => {
+          if (!state) {
+            console.log("✓ Allowed — no global budget configured.");
+          } else {
+            console.log("✓ Allowed — budget opted out (no limit).");
+          }
+        },
+      });
+    }
+
+    const usd = await resolveSpendUsd(json, options);
+    const result = evaluate(state, usd, new Date());
+
+    outputData(json, {
+      json: {
+        allowed: result.allowed,
+        configured: true,
+        usd: Number(usd.toFixed(6)),
+        limitUsd: result.limitUsd,
+        spent: Number(result.spent.toFixed(6)),
+        remaining:
+          result.remaining === null
+            ? null
+            : Number(result.remaining.toFixed(6)),
+        reason: result.reason,
+      },
+      render: () => {
+        if (result.allowed) {
+          console.log(
+            `✓ Allowed — ${formatUsd(usd)} fits${
+              result.remaining === null
+                ? " (no limit)"
+                : ` (${formatUsd(Math.max(0, result.remaining))} remaining)`
+            }.`,
+          );
+        } else {
+          console.log(`✗ Blocked — ${result.reason}`);
+        }
+      },
+    });
+  });
+
+budgetCommand
+  .command("record")
+  .description(
+    "Record a completed spend in the global budget ledger. Skills call this after a successful trade.",
+  )
+  .option("--usd <amount>", "USD value of the trade")
+  .option(
+    "--eth <amount>",
+    "ETH value of the trade (converted to USD at the current price)",
+  )
+  .requiredOption("--skill <name>", "The skill making the spend, e.g. dca")
+  .option("--tx <hash>", "Transaction hash of the trade")
+  .action(async function (
+    this: Command,
+    options: { usd?: string; eth?: string; skill: string; tx?: string },
+  ) {
+    const json = getJson(this);
+
+    // No budget configured or opted out → nothing to record against, but succeed
+    // quietly so skills can call `record` unconditionally after a trade (mirrors
+    // `check`). Checked BEFORE resolving the amount so an ETH amount never
+    // triggers a price fetch here — a price-feed outage must not break the
+    // unconditional call.
+    const state = getBudget();
+    if (!state || state.optedOut) {
+      return outputData(json, {
+        json: {
+          recorded: false,
+          configured: !!state,
+          optedOut: state?.optedOut ?? false,
+          skill: options.skill,
+        },
+        render: () => {
+          if (!state) {
+            console.log(
+              "• No global budget configured — nothing to record. Set one with `zora agent budget set <amount>`.",
+            );
+          } else {
+            console.log(
+              "• Budget opted out (no limit) — nothing to record.",
+            );
+          }
+        },
+      });
+    }
+
+    const usd = await resolveSpendUsd(json, options);
+    const now = new Date();
+    const updated = appendSpend(
+      state,
+      {
+        usd,
+        skill: options.skill,
+        ...(options.tx ? { txHash: options.tx } : {}),
+        at: now.toISOString(),
+      },
+      now,
+    );
+    saveBudget(updated);
+
+    const result = evaluate(updated, 0, now);
+
+    track("cli_agent_budget", {
+      action: "record",
+      skill: options.skill,
+      period: state.period,
+      output_format: json ? "json" : "text",
+    });
+
+    outputData(json, {
+      json: {
+        recorded: {
+          usd: Number(usd.toFixed(6)),
+          skill: options.skill,
+          txHash: options.tx,
+        },
+        spent: Number(result.spent.toFixed(6)),
+        remaining:
+          result.remaining === null
+            ? null
+            : Number(result.remaining.toFixed(6)),
+        limitUsd: state.limitUsd,
+      },
+      render: () => {
+        console.log(`\n✓ Recorded ${formatUsd(usd)} (${options.skill})`);
+        console.log(`  Spent:     ${formatUsd(result.spent)}`);
+        if (result.remaining !== null) {
+          console.log(
+            `  Remaining: ${formatUsd(Math.max(0, result.remaining))}`,
+          );
+        }
+      },
+    });
+  });
+
+budgetCommand
+  .command("reset")
+  .description(
+    "Clear the recorded spend and restart the budget window, keeping the cap and period. Use --clear to remove the budget entirely.",
+  )
+  .option(
+    "--clear",
+    "Remove the budget entirely (delete the file) instead of just clearing spend",
+  )
+  .option("--yes", "Skip the confirmation prompt")
+  .action(async function (this: Command, options: { clear?: boolean }) {
+    const json = getJson(this);
+    const state = getBudget();
+
+    if (!state) {
+      return outputData(json, {
+        json: { reset: false, configured: false },
+        render: () =>
+          console.log("\n• No global budget configured — nothing to reset."),
+      });
+    }
+
+    if (!json && !getYes(this)) {
+      const ok = await confirm({
+        message: options.clear
+          ? "Remove the global budget entirely?"
+          : "Clear recorded spend and restart the budget window?",
+        default: false,
+      });
+      if (!ok) safeExit(SUCCESS);
+    }
+
+    if (options.clear) {
+      clearBudget();
+    } else {
+      saveBudget({
+        limitUsd: state.limitUsd,
+        period: state.period,
+        optedOut: state.optedOut,
+        windowStart: new Date().toISOString(),
+        ledger: [],
+      });
+    }
+
+    track("cli_agent_budget", {
+      action: "reset",
+      cleared: Boolean(options.clear),
+      output_format: json ? "json" : "text",
+    });
+
+    outputData(json, {
+      json: { reset: true, cleared: Boolean(options.clear) },
+      render: () => {
+        if (options.clear) {
+          console.log("\n✓ Global budget removed.");
+        } else {
+          console.log("\n✓ Spend cleared and budget window restarted.");
+          if (state.limitUsd !== null) {
+            console.log(
+              `  Limit unchanged: ${formatUsd(state.limitUsd)} per ${state.period}`,
+            );
+          }
+        }
       },
     });
   });

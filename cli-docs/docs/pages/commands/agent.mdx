@@ -8,11 +8,12 @@ zora agent [command]
 
 ## Subcommands
 
-| Subcommand            | Description                                              |
-| --------------------- | -------------------------------------------------------- |
-| `agent create`        | Create a complete agent identity, end to end             |
-| `agent connect-email` | Link an email to the agent's account via a one-time code |
-| `agent update`        | Update the agent's profile (username, bio, avatar)       |
+| Subcommand            | Description                                                     |
+| --------------------- | --------------------------------------------------------------- |
+| `agent create`        | Create a complete agent identity, end to end                    |
+| `agent connect-email` | Link an email to the agent's account via a one-time code        |
+| `agent update`        | Update the agent's profile (username, bio, avatar)              |
+| `agent budget`        | Set and track a global, wallet-level spending budget for skills |
 
 ---
 
@@ -254,3 +255,137 @@ npx @zoralabs/cli agent update --username new-handle --json
   "profileUrl": "https://zora.co/@new-handle"
 }
 ```
+
+---
+
+## agent budget
+
+Set and track a **global, wallet-level spending budget** that applies across all agent [skills](/guides/agent-skills). Each trading skill already has its own per-skill caps; the global budget is a single shared ceiling on top of them, so total spend across every skill stays bounded — or, if the operator opts out, an explicit acknowledgement that the full wallet balance can be spent.
+
+The budget is denominated in **USD** and stored in `~/.config/zora/budget.json` alongside an append-only ledger of recorded spends. ETH amounts are converted to USD at the current price.
+
+```bash
+zora agent budget [command]
+```
+
+| Subcommand      | Description                                                        |
+| --------------- | ------------------------------------------------------------------ |
+| `budget set`    | Set the USD cap and period, or opt out of any limit                |
+| `budget info`   | Show the cap, period, spend in the active window, and what's left  |
+| `budget check`  | Test whether a prospective spend fits the budget (used by skills)  |
+| `budget record` | Record a completed spend in the ledger (used by skills)            |
+| `budget reset`  | Clear recorded spend and restart the window (or remove the budget) |
+
+:::info
+**How it works.** The `buy` and `send` commands enforce the budget directly — they block trades that would exceed the cap and automatically record successful trades in the ledger. Skills run `budget check` before a trade to decide whether to proceed, but they do not need to call `budget record` afterward since `buy` handles it. When no budget is configured or the budget is opted out, `check` always returns `"allowed": true`, so skills can call it unconditionally.
+:::
+
+### agent budget set
+
+Set a global spending budget in USD, or opt out of any cap with `--no-limit`.
+
+```bash
+zora agent budget set <amount> [options]
+zora agent budget set --no-limit
+```
+
+| Flag                | Description                                                                    | Default  |
+| ------------------- | ------------------------------------------------------------------------------ | -------- |
+| `<amount>`          | The USD cap (a positive number). Omit only when using `--no-limit`.            | —        |
+| `--period <period>` | The window the cap resets over: `daily`, `weekly`, or `lifetime`               | `weekly` |
+| `--no-limit`        | Explicitly run with no cap — acknowledges the full wallet balance can be spent | —        |
+| `--json`            | Machine-readable JSON output                                                   | —        |
+
+Adjusting the cap keeps any spend already recorded (the ledger and window are preserved), matching the per-skill "edit cap, keep spend" behavior.
+
+```bash
+npx @zoralabs/cli agent budget set 250 --period weekly
+```
+
+```
+ ✓ Global budget set: $250.00 (weekly)
+   All trading skills will check this cap before each trade.
+   Saved to ~/.config/zora/budget.json
+```
+
+### agent budget info
+
+Show the current budget and how much of it has been used in the active window.
+
+```bash
+npx @zoralabs/cli agent budget info
+```
+
+```
+ Global spending budget
+   Limit:     $250.00 per weekly
+   Spent:     $30.00
+   Remaining: $220.00
+   Window resets: 2026-06-23T00:00:00.000Z
+   Trades recorded: 1
+```
+
+### agent budget check
+
+Check whether a prospective spend fits the budget. Skills call this before a trade and read `allowed` in the JSON. Pass exactly one of `--usd` or `--eth`.
+
+```bash
+zora agent budget check --usd <amount> [options]
+zora agent budget check --eth <amount> [options]
+```
+
+| Flag             | Description                                              |
+| ---------------- | -------------------------------------------------------- |
+| `--usd <amount>` | Prospective spend in USD                                 |
+| `--eth <amount>` | Prospective spend in ETH (converted to USD at the price) |
+| `--json`         | Machine-readable JSON output                             |
+
+```bash
+npx @zoralabs/cli agent budget check --usd 80 --json
+```
+
+```json
+{
+  "allowed": false,
+  "configured": true,
+  "usd": 80,
+  "limitUsd": 100,
+  "spent": 30,
+  "remaining": 70,
+  "reason": "A $80.00 spend would exceed the weekly budget of $100.00 ($30.00 already spent, $70.00 remaining)."
+}
+```
+
+### agent budget record
+
+Record a completed spend in the ledger. The `buy` command auto-records trades, so this is mainly for custom integrations or manual adjustments. Pass exactly one of `--usd` or `--eth`.
+
+```bash
+zora agent budget record --usd <amount> --skill <name> [options]
+```
+
+| Flag             | Description                                            | Default |
+| ---------------- | ------------------------------------------------------ | ------- |
+| `--usd <amount>` | USD value of the trade                                 | —       |
+| `--eth <amount>` | ETH value of the trade (converted to USD at the price) | —       |
+| `--skill <name>` | The skill making the spend, e.g. `dca` (required)      | —       |
+| `--tx <hash>`    | Transaction hash of the trade                          | —       |
+| `--json`         | Machine-readable JSON output                           | —       |
+
+```bash
+npx @zoralabs/cli agent budget record --usd 30 --skill dca --tx 0xabc... --json
+```
+
+### agent budget reset
+
+Clear the recorded spend and restart the budget window, keeping the cap and period. Pass `--clear` to remove the budget entirely.
+
+```bash
+zora agent budget reset [options]
+```
+
+| Flag      | Description                                                      | Default |
+| --------- | ---------------------------------------------------------------- | ------- |
+| `--clear` | Remove the budget entirely (delete the file) instead of clearing | —       |
+| `--yes`   | Skip the confirmation prompt                                     | —       |
+| `--json`  | Machine-readable JSON output                                     | —       |

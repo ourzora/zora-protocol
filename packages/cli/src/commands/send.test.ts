@@ -5,6 +5,8 @@ import { createProgram } from "../test/create-program.js";
 vi.mock("@inquirer/confirm");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
+  getBudget: vi.fn(),
+  saveBudget: vi.fn(),
 }));
 vi.mock("../lib/wallet.js");
 
@@ -14,7 +16,7 @@ vi.mock("../lib/wallet-balances.js");
 
 import confirm from "@inquirer/confirm";
 import { setApiKey, getCoin, getProfile, getTrend } from "@zoralabs/coins-sdk";
-import { getApiKey } from "../lib/config.js";
+import { getApiKey, getBudget, saveBudget } from "../lib/config.js";
 import { createClients, resolveAccounts } from "../lib/wallet.js";
 import { track } from "../lib/analytics.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
@@ -843,6 +845,211 @@ describe("send command", () => {
       expect(errorSpy).toHaveBeenCalledWith(
         expect.stringContaining("No USDC balance"),
       );
+    });
+  });
+
+  describe("budget enforcement", () => {
+    beforeEach(() => {
+      vi.mocked(getBudget).mockReturnValue(undefined);
+    });
+
+    describe("ETH send", () => {
+      it("blocks an ETH send when spend exceeds budget cap", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 100,
+          period: "lifetime",
+          optedOut: false,
+          windowStart: "2026-06-01T00:00:00.000Z",
+          ledger: [{ usd: 80, skill: "dca", at: "2026-06-02T00:00:00.000Z" }],
+        });
+        // fetchTokenPriceUsd returns 2500, so 0.1 ETH = $250 which exceeds remaining $20
+        await expect(
+          runSend(["eth", "--to", RECIPIENT_ADDRESS, "--amount", "0.1", "--yes"]),
+        ).rejects.toThrow("process.exit(1)");
+
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("exceed"));
+        expect(walletClient.sendTransaction).not.toHaveBeenCalled();
+        expect(track).toHaveBeenCalledWith(
+          "cli_send",
+          expect.objectContaining({ action: "budget_blocked" }),
+        );
+      });
+
+      it("allows an ETH send when spend is under budget cap", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 500,
+          period: "weekly",
+          optedOut: false,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(walletClient.sendTransaction).toHaveBeenCalled();
+      });
+
+      it("records spend in ledger after successful ETH send", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 500,
+          period: "weekly",
+          optedOut: false,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(saveBudget).toHaveBeenCalledWith(
+          expect.objectContaining({
+            ledger: expect.arrayContaining([
+              expect.objectContaining({
+                usd: 250, // 0.1 ETH * $2500
+                skill: expect.stringContaining("send ETH"),
+              }),
+            ]),
+          }),
+        );
+      });
+
+      it("does not enforce budget when no budget is configured", async () => {
+        vi.mocked(getBudget).mockReturnValue(undefined);
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(walletClient.sendTransaction).toHaveBeenCalled();
+        expect(saveBudget).not.toHaveBeenCalled();
+      });
+
+      it("does not enforce budget when opted out", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: null,
+          period: "weekly",
+          optedOut: true,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          "eth",
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.1",
+          "--yes",
+        ]);
+
+        expect(walletClient.sendTransaction).toHaveBeenCalled();
+        expect(saveBudget).not.toHaveBeenCalled();
+      });
+    });
+
+    describe("ERC-20 send", () => {
+      beforeEach(() => {
+        vi.mocked(getCoin).mockResolvedValue({
+          data: {
+            zora20Token: {
+              name: "Test Coin",
+              address: COIN_ADDRESS,
+              coinType: "CREATOR",
+              marketCap: "5000000",
+            },
+          },
+        } as any);
+
+        publicClient.readContract.mockImplementation(
+          ({ functionName }: { functionName: string }) => {
+            if (functionName === "balanceOf") return 1000000000000000000n;
+            if (functionName === "decimals") return 18;
+            if (functionName === "symbol") return "TEST";
+            return 0n;
+          },
+        );
+      });
+
+      it("blocks an ERC-20 send when spend exceeds budget cap", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 100,
+          period: "lifetime",
+          optedOut: false,
+          windowStart: "2026-06-01T00:00:00.000Z",
+          ledger: [{ usd: 95, skill: "dca", at: "2026-06-02T00:00:00.000Z" }],
+        });
+        // Token price from fetchTokenPriceUsd = $2500, 0.5 tokens = $1250 > remaining $5
+        await expect(
+          runSend([
+            COIN_ADDRESS,
+            "--to",
+            RECIPIENT_ADDRESS,
+            "--amount",
+            "0.5",
+            "--yes",
+          ]),
+        ).rejects.toThrow("process.exit(1)");
+
+        expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("exceed"));
+        expect(walletClient.writeContract).not.toHaveBeenCalled();
+        expect(track).toHaveBeenCalledWith(
+          "cli_send",
+          expect.objectContaining({ action: "budget_blocked" }),
+        );
+      });
+
+      it("records spend in ledger after successful ERC-20 send", async () => {
+        vi.mocked(getBudget).mockReturnValue({
+          version: 1,
+          limitUsd: 5000,
+          period: "weekly",
+          optedOut: false,
+          windowStart: new Date().toISOString(),
+          ledger: [],
+        });
+
+        await runSend([
+          COIN_ADDRESS,
+          "--to",
+          RECIPIENT_ADDRESS,
+          "--amount",
+          "0.5",
+          "--yes",
+        ]);
+
+        expect(saveBudget).toHaveBeenCalledWith(
+          expect.objectContaining({
+            ledger: expect.arrayContaining([
+              expect.objectContaining({
+                skill: expect.stringContaining("send TEST"),
+              }),
+            ]),
+          }),
+        );
+      });
     });
   });
 });
