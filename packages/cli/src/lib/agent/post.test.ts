@@ -245,6 +245,21 @@ describe("createFirstPost", () => {
     // Ticker derives from the title, not the caption, when a title is set.
     expect(meta.symbol).toBe("MYPOST");
   });
+
+  it("uses a provided ticker verbatim instead of deriving one", async () => {
+    await createFirstPost(params({ title: "My Post", ticker: "wagmi" }));
+    const meta = JSON.parse(vi.mocked(ipfsUpload).mock.calls[1][2].toString());
+    // The forced ticker wins over the title-derived "MYPOST".
+    expect(meta.symbol).toBe("wagmi");
+  });
+
+  it("rejects an invalid forced ticker before uploading anything", async () => {
+    await expect(
+      createFirstPost(params({ ticker: "this-is-way-too-long-and-invalid" })),
+    ).rejects.toThrow(/Ticker/);
+    expect(ipfsUpload).not.toHaveBeenCalled();
+    expect(signSimulateSubmit).not.toHaveBeenCalled();
+  });
 });
 
 describe("deriveTicker", () => {
@@ -254,8 +269,10 @@ describe("deriveTicker", () => {
     expect(deriveTicker("supercalifragilistic")).toBe("SUPERCALIF");
   });
 
-  it("falls back to POST when nothing usable remains", () => {
+  it("falls back to POST when too little usable text remains", () => {
     expect(deriveTicker("🦭✨")).toBe("POST");
     expect(deriveTicker("   ")).toBe("POST");
+    // A single alphanumeric is below the 2-char minimum, so it falls back too.
+    expect(deriveTicker("x")).toBe("POST");
   });
 });

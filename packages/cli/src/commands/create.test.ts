@@ -191,6 +191,40 @@ describe("create command", () => {
     );
   });
 
+  it("exits with error for a ticker that is too long", async () => {
+    await expect(
+      runCreate([
+        "--name",
+        "My Coin",
+        "--symbol",
+        "WAYTOOLONGTICKERVALUE1",
+        "--image",
+        "/tmp/image.png",
+        "--yes",
+      ]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("20 characters or fewer"),
+    );
+  });
+
+  it("exits with error for a ticker with disallowed characters", async () => {
+    await expect(
+      runCreate([
+        "--name",
+        "My Coin",
+        "--symbol",
+        "MY COIN",
+        "--image",
+        "/tmp/image.png",
+        "--yes",
+      ]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining("letters and numbers"),
+    );
+  });
+
   // --- Prompting ---
 
   it("prompts for missing fields", async () => {

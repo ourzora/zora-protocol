@@ -26,6 +26,7 @@ import {
   hasLinkedEmail,
 } from "../lib/privy.js";
 import { inputOrFail } from "../lib/prompt.js";
+import { validateTicker } from "../lib/ticker.js";
 import { onboardAgent, createAgentCoin } from "../lib/agent/onboard.js";
 import { updateAgentProfile } from "../lib/agent/update-profile.js";
 import {
@@ -191,6 +192,10 @@ agentCommand
   )
   .option("--title <text>", "First-post coin name. Default: the caption.")
   .option(
+    "--ticker <symbol>",
+    "First-post coin ticker (2–20 letters/numbers). Required to publish a first post.",
+  )
+  .option(
     "--description <text>",
     "First-post coin description. Default: the caption.",
   )
@@ -215,6 +220,7 @@ agentCommand
       caption?: string;
       image?: string;
       title?: string;
+      ticker?: string;
       description?: string;
       force?: boolean;
     },
@@ -248,6 +254,15 @@ agentCommand
       }
     }
 
+    // A custom first-post ticker is forced as-is, so reject an invalid one up
+    // front (before any on-chain work) rather than letting it fail mid-mint.
+    if (options.ticker !== undefined) {
+      const tickerError = validateTicker(options.ticker);
+      if (tickerError) {
+        return outputErrorAndExit(json, tickerError, "Pass a valid --ticker.");
+      }
+    }
+
     // The first post needs both a caption and a background image. Require them
     // together: passing only one is a mistake (an incomplete card), and passing
     // neither simply skips the post. Validate + read the image up front, for the
@@ -259,6 +274,18 @@ agentCommand
         json,
         "To publish a first post, pass both --caption and --image.",
         "Pass both, or omit both to skip the first post.",
+      );
+    }
+
+    // A first post must have an explicit ticker — we don't silently auto-derive
+    // one for the published coin. Require --ticker whenever a post will be minted
+    // (both caption + image present and the post isn't skipped).
+    const willPost = hasCaption && hasImage && !options.skipPost;
+    if (willPost && options.ticker === undefined) {
+      return outputErrorAndExit(
+        json,
+        "Publishing a first post requires a --ticker.",
+        "Pass --ticker <symbol> (2–20 letters/numbers), or omit --caption/--image to skip the post.",
       );
     }
     let postImage: AvatarFile | undefined;
@@ -309,6 +336,7 @@ agentCommand
         caption: options.caption,
         postImage,
         postTitle: options.title,
+        postTicker: options.ticker,
         postDescription: options.description,
         onProgress: json
           ? undefined
@@ -365,6 +393,7 @@ agentCommand
       set_avatar: options.avatar !== undefined,
       set_caption: hasCaption,
       set_image: hasImage,
+      set_ticker: options.ticker !== undefined,
       output_format: json ? "json" : "text",
     });
 

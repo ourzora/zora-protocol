@@ -53,12 +53,14 @@ export interface OnboardOptions {
    * `postImage` are provided (and `skipPost` is not set): `caption` is the big
    * centered meme text, `postImage` is the background photo (already read by the
    * caller). `postTitle`/`postDescription` set the coin metadata, each defaulting
-   * to the caption. The footer handle is derived from the agent's username.
+   * to the caption; `postTicker` forces the coin's ticker (validated; defaults to
+   * one derived from the title). The footer handle is derived from the username.
    */
   caption?: string;
   postImage?: AvatarFile;
   postTitle?: string;
   postDescription?: string;
+  postTicker?: string;
   /** Max attempts to poll for the embedded wallet after profile creation. */
   embeddedAttempts?: number;
   onProgress?: (step: OnboardStep, detail: string) => void;
@@ -295,6 +297,7 @@ export async function onboardAgent(
         handle: `zora.co/${result.username}`,
         title: opts.postTitle,
         description: opts.postDescription,
+        ticker: opts.postTicker,
         // Forward the injected clock so the receipt-poll loop is controllable
         // from onboardAgent (tests inject a no-op sleep; prod uses setTimeout).
         sleep,

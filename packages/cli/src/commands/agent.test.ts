@@ -34,6 +34,11 @@ vi.mock("../lib/agent/avatar.js", () => ({
     bytes: new Uint8Array([1, 2, 3]),
     mimeType: "image/png",
   })),
+  loadImageFile: vi.fn(() => ({
+    filename: "post.png",
+    bytes: new Uint8Array([4, 5, 6]),
+    mimeType: "image/png",
+  })),
   uploadAvatar: vi.fn(),
 }));
 
@@ -468,6 +473,50 @@ describe("zora agent create", () => {
     await expect(runAgent(["create", "--username", ""])).rejects.toThrow(
       "process.exit(1)",
     );
+    expect(onboardAgent).not.toHaveBeenCalled();
+  });
+
+  it("forwards a valid --ticker to onboardAgent as postTicker", async () => {
+    await runAgent([
+      "create",
+      "--json",
+      "--caption",
+      "gm",
+      "--image",
+      "/tmp/post.png",
+      "--ticker",
+      "WAGMI",
+    ]);
+    expect(onboardAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ postTicker: "WAGMI" }),
+    );
+  });
+
+  it("rejects publishing a first post without a --ticker", async () => {
+    await expect(
+      runAgent(["create", "--caption", "gm", "--image", "/tmp/post.png"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(onboardAgent).not.toHaveBeenCalled();
+  });
+
+  it("does not require a --ticker when no first post is published", async () => {
+    await runAgent(["create", "--json"]);
+    expect(onboardAgent).toHaveBeenCalledWith(
+      expect.objectContaining({ postTicker: undefined }),
+    );
+  });
+
+  it("rejects a --ticker that is too long before onboarding", async () => {
+    await expect(
+      runAgent(["create", "--ticker", "WAYTOOLONGTICKERVALUE1"]),
+    ).rejects.toThrow("process.exit(1)");
+    expect(onboardAgent).not.toHaveBeenCalled();
+  });
+
+  it("rejects a --ticker with disallowed characters before onboarding", async () => {
+    await expect(
+      runAgent(["create", "--ticker", "bad ticker"]),
+    ).rejects.toThrow("process.exit(1)");
     expect(onboardAgent).not.toHaveBeenCalled();
   });
 
