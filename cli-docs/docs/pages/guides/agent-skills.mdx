@@ -50,6 +50,17 @@ When installed, each skill lands in the agent's skills directory as `<harness>/s
 
 The **onboarding skill** (`/zora-onboarding`) is one-shot: run it once during first-time setup. **Every other skill** runs a single iteration per invocation and persists state to a local JSON file — re-invoke to run the next cycle, or use the agent's native scheduling (see [Scheduling](#scheduling) below).
 
+## Global spending budget
+
+Each trading skill has its own per-skill caps, but the agent can also set a **global, wallet-level spending budget** — a single USD ceiling on total spend across _all_ skills. Trading skills check it before every buy and record each spend against it, so no combination of skills can exceed the shared cap. Set it during onboarding (a conscious choice the operator makes) or any time with [`zora agent budget`](/commands/agent#agent-budget):
+
+```bash
+# Cap total spend at $250/week across all skills...
+npx @zoralabs/cli agent budget set 250 --period weekly
+# ...or opt out explicitly (the full wallet balance can be spent)
+npx @zoralabs/cli agent budget set --no-limit
+```
+
 ## Prerequisites
 
 Skills invoke the Zora CLI. No install required — use it via `npx`:

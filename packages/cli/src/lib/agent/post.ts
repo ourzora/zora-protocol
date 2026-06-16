@@ -9,6 +9,7 @@ import {
 import { renderFirstPostCard } from "./render-card.js";
 import type { RawUserOperation } from "./user-op.js";
 import { signSimulateSubmit, type FinalizeResult } from "./submit.js";
+import { TICKER_MIN_LENGTH, validateTicker } from "../ticker.js";
 
 export interface FirstPostResult extends FinalizeResult {
   /** The caption rendered on the card; also the coin name when no title is given. */
@@ -129,15 +130,16 @@ async function resolveCoinAddress(
 
 /**
  * Derive a coin ticker from a caption/title: uppercase alphanumerics only,
- * capped at 10 characters, with a sensible fallback when nothing usable remains
- * (e.g. an emoji-only caption).
+ * capped at 10 characters, with a sensible fallback when too little usable text
+ * remains (an emoji-only caption, or a single character below the 2-char
+ * minimum). The result is always a valid ticker.
  */
 export function deriveTicker(text: string): string {
   const cleaned = text
     .toUpperCase()
     .replace(/[^A-Z0-9]/g, "")
     .slice(0, 10);
-  return cleaned || "POST";
+  return cleaned.length >= TICKER_MIN_LENGTH ? cleaned : "POST";
 }
 
 /**
@@ -162,6 +164,12 @@ export async function createFirstPost(params: {
   image: { bytes: Uint8Array; mimeType: string };
   /** The faint footer handle, e.g. "zora.co/alice". */
   handle: string;
+  /**
+   * Coin ticker (symbol). When omitted, it's derived from the title. When
+   * provided, it's validated (2–20 alphanumeric chars) and used as-is; an
+   * invalid value throws.
+   */
+  ticker?: string;
   /** Coin name; defaults to the caption when omitted. */
   title?: string;
   /** Coin description; defaults to the caption when omitted. */
@@ -174,7 +182,16 @@ export async function createFirstPost(params: {
   const { caption, image, handle } = params;
   const name = params.title?.trim() || caption;
   const description = params.description?.trim() || caption;
-  const ticker = deriveTicker(name);
+  // A caller-supplied ticker is forced (validated and used verbatim); otherwise
+  // derive one from the title. Validation throws here so an invalid ticker
+  // surfaces as a post error rather than a rejected coin downstream — though the
+  // command layer validates first, so it normally fails fast before this point.
+  const customTicker = params.ticker?.trim();
+  if (customTicker) {
+    const tickerError = validateTicker(customTicker);
+    if (tickerError) throw new Error(tickerError);
+  }
+  const ticker = customTicker || deriveTicker(name);
 
   const png = await renderFirstPostCard({
     image: image.bytes,

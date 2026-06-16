@@ -10,6 +10,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 vi.mock("@inquirer/confirm");
 vi.mock("../lib/config.js", () => ({
   getApiKey: vi.fn(),
+  getBudget: vi.fn(),
+  saveBudget: vi.fn(),
 }));
 vi.mock("../lib/wallet.js");
 
@@ -28,7 +30,7 @@ import {
   tradeCoin,
 } from "@zoralabs/coins-sdk";
 import { track } from "../lib/analytics.js";
-import { getApiKey } from "../lib/config.js";
+import { getApiKey, getBudget, saveBudget } from "../lib/config.js";
 import { fetchTokenPriceUsd } from "../lib/wallet-balances.js";
 import { createClients, resolveAccounts } from "../lib/wallet.js";
 import { createProgram } from "../test/create-program.js";
@@ -808,6 +810,98 @@ describe("buy command", () => {
       // formatUnits(10000000, 6) = "10"
       expect(parsed.spent.amount).toBe("10");
       expect(parsed.spent.symbol).toBe("USDC");
+    });
+  });
+
+  describe("budget enforcement", () => {
+    beforeEach(() => {
+      vi.mocked(getBudget).mockReturnValue(undefined);
+    });
+
+    it("blocks a buy when spend exceeds budget cap", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: 100,
+        period: "lifetime",
+        optedOut: false,
+        windowStart: "2026-06-01T00:00:00.000Z",
+        ledger: [{ usd: 80, skill: "dca", at: "2026-06-02T00:00:00.000Z" }],
+      });
+      // fetchTokenPriceUsd returns 2500, so 0.1 ETH = $250 which exceeds remaining $20
+      await expect(
+        runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]),
+      ).rejects.toThrow("process.exit(1)");
+
+      expect(errorSpy).toHaveBeenCalledWith(expect.stringContaining("exceed"));
+      expect(tradeCoin).not.toHaveBeenCalled();
+      expect(track).toHaveBeenCalledWith(
+        "cli_buy",
+        expect.objectContaining({ action: "budget_blocked" }),
+      );
+    });
+
+    it("allows a buy when spend is under budget cap", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: 500,
+        period: "weekly",
+        optedOut: false,
+        windowStart: new Date().toISOString(),
+        ledger: [],
+      });
+      // 0.1 ETH * $2500 = $250, under $500 cap
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(tradeCoin).toHaveBeenCalled();
+    });
+
+    it("records spend in ledger after successful trade", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: 500,
+        period: "weekly",
+        optedOut: false,
+        windowStart: new Date().toISOString(),
+        ledger: [],
+      });
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(saveBudget).toHaveBeenCalledWith(
+        expect.objectContaining({
+          ledger: expect.arrayContaining([
+            expect.objectContaining({
+              usd: 250, // 0.1 ETH * $2500
+              skill: expect.stringContaining("buy"),
+            }),
+          ]),
+        }),
+      );
+    });
+
+    it("does not enforce budget when no budget is configured", async () => {
+      vi.mocked(getBudget).mockReturnValue(undefined);
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(tradeCoin).toHaveBeenCalled();
+      expect(saveBudget).not.toHaveBeenCalled();
+    });
+
+    it("does not enforce budget when opted out", async () => {
+      vi.mocked(getBudget).mockReturnValue({
+        version: 1,
+        limitUsd: null,
+        period: "weekly",
+        optedOut: true,
+        windowStart: new Date().toISOString(),
+        ledger: [],
+      });
+
+      await runBuy([COIN_ADDRESS, "--eth", "0.1", "--yes"]);
+
+      expect(tradeCoin).toHaveBeenCalled();
+      expect(saveBudget).not.toHaveBeenCalled();
     });
   });
 });

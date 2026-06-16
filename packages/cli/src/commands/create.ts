@@ -21,6 +21,7 @@ import { getJson, outputErrorAndExit, outputJson } from "../lib/output.js";
 import { safeExit, SUCCESS } from "../lib/exit.js";
 import { track, shutdownAnalytics } from "../lib/analytics.js";
 import { gasErrorSuggestion } from "../lib/gas.js";
+import { validateTicker } from "../lib/ticker.js";
 
 /** Image extensions accepted by the metadata uploader, mapped to their MIME type. */
 const IMAGE_MIME_BY_EXT: Record<string, string> = {
@@ -150,6 +151,13 @@ export const createCommand = new Command("create")
       message: "Coin symbol (ticker):",
       flag: "--symbol",
     });
+
+    // Reject a ticker the platform would refuse (too short/long, or with
+    // disallowed characters) before uploading metadata or touching the chain.
+    const tickerError = validateTicker(symbol);
+    if (tickerError) {
+      return outputErrorAndExit(json, tickerError, "Pass a valid --symbol.");
+    }
     const description = await resolveField(opts.description, {
       json,
       message: "Description (optional):",

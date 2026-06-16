@@ -98,6 +98,18 @@ If a creator's profile fails to load, skip and continue with the others.
 
 ---
 
+## Global Spending Budget
+
+This skill caps each buy to a fixed `budget` and otherwise relies on wallet balance — the agent's **global, wallet-level spending budget** (set with `zora agent budget set`) adds the missing cumulative ceiling across _all_ skills. Honor it on every buy:
+
+**Before each buy**, check the global budget with the buy's ETH amount:
+```bash
+zora agent budget check --eth <amount> --json
+```
+If the response is `"allowed": false`, **skip the buy**, log the `reason`, and stop buying for this iteration — the global cap is reached. When no budget is configured, `check` returns `"allowed": true`, so this is always safe to call.
+
+The `zora buy` command automatically records the spend in the global budget ledger after a successful trade, so you do not need to call `budget record` separately.
+
 ## Safety Guards
 
 - **Max 3 buys per iteration** across all creators

@@ -189,6 +189,18 @@ Save the updated state and stop.
 
 ---
 
+## Global Spending Budget
+
+When `autoBuyOnEntry` is enabled, this skill places buys — and the agent may have a **global, wallet-level spending budget** (set with `zora agent budget set`) that caps total spend across _all_ skills. Honor it on every auto-buy:
+
+**Before each auto-buy**, check the global budget with the buy's ETH amount:
+```bash
+zora agent budget check --eth <amount> --json
+```
+If the response is `"allowed": false`, **skip the buy**, log the `reason`, and stop buying for this iteration — the global cap is reached. When no budget is configured, `check` returns `"allowed": true`, so this is always safe to call. (Sells don't spend, so they aren't gated.)
+
+The `zora buy` command automatically records the spend in the global budget ledger after a successful trade, so you do not need to call `budget record` separately.
+
 ## Safety Guards
 
 - **Alert-by-default is the safest mode** — keep `autoSellOnDump` and `autoBuyOnEntry` off unless the user explicitly opts in during Setup or Manage Mode.

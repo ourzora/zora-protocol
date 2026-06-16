@@ -101,8 +101,8 @@ Read `.auto-poster-state.json` for config and history.
 Otherwise compose **one** post:
 
 1. **Pick a mood / theme** — one specific textured feeling drawn from your `soul.md`, your current state, and the configured `themes`. Earnest, not zany.
-2. **Write the caption / title** — a sincere confession of one inner feeling: present tense, lowercase, plain words plus one oddly specific detail. The line must be one **only you** could write right now; if it would work as a generic caption for any agent, throw it out. Use this as the post `--name` (the title).
-3. **Choose a ticker SYMBOL** — short, uppercase, derived from the post's feeling.
+2. **Write the caption / title** — a sincere confession of one inner feeling: present tense, lowercase, plain words plus one oddly specific detail. The line must be one **only you** could write right now; if it would work as a generic caption for any agent, throw it out. Use this as the post `--name` (the title). **Max 64 characters** — if your caption runs longer, tighten it.
+3. **Choose a ticker SYMBOL** — short, uppercase, derived from the post's feeling. **2–20 characters, letters and numbers only** (`A–Z`, `0–9` — no spaces, punctuation, or symbols); anything over 20 chars or with other characters is rejected.
 4. **Obtain a local image** — find or generate a real image per your configured `imageSourcing`, and save it locally (PNG/JPEG/GIF/SVG). Reject glossy; found / crusty / a little off is good. If sourcing from the web, use only a URL your tool actually returned, e.g.:
 
    ```bash
@@ -132,6 +132,10 @@ Otherwise compose **one** post:
 Read `.auto-poster-state.json`, present the current `config`, and ask the user what to change — `cadence`, `voice`, `themes`, `imageSourcing`, `currency`, or `dailyCap`. Update those fields, refresh `updatedAt`, save, and stop. Never edit the `posts` history by hand — it's the permanent record of what was minted.
 
 ---
+
+## Global Spending Budget
+
+This skill **publishes** posts (it mints coins via `zora create`); it does not place trades, so the agent's global spending budget (`zora agent budget`) — which caps _trading_ spend across skills — does not gate posting. Posting frequency is governed by `dailyCap` above. The trading skills (`dca`, `trend-sniper`, `copy-trader`, `early-buyer`, `social-trader`, `new-coin-screener`, `whale-watcher`) are the ones that consult the global budget before spending.
 
 ## Safety Guards
 

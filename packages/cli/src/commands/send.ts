@@ -27,7 +27,8 @@ import {
   resolveAmbiguousName,
   resolveCoin,
 } from "../lib/coin-ref.js";
-import { getApiKey } from "../lib/config.js";
+import { getApiKey, getBudget, saveBudget } from "../lib/config.js";
+import { evaluate, appendSpend } from "../lib/agent/budget.js";
 import {
   BASE_TRADE_TOKENS,
   WETH_ADDRESS,
@@ -405,6 +406,34 @@ export const sendCommand = new Command("send")
         }
       }
 
+      // ── Budget enforcement ──────────────────────────────────────────
+      const budget = getBudget();
+      if (
+        budget &&
+        !budget.optedOut &&
+        budget.limitUsd !== null &&
+        amountUsd != null
+      ) {
+        const now = new Date();
+        const evaluation = evaluate(budget, amountUsd, now);
+        if (!evaluation.allowed) {
+          track("cli_send", {
+            action: "budget_blocked",
+            asset: "eth",
+            amount_usd: amountUsd,
+            budget_limit: evaluation.limitUsd,
+            budget_spent: evaluation.spent,
+            budget_remaining: evaluation.remaining,
+          });
+          return outputErrorAndExit(
+            json,
+            evaluation.reason!,
+            "Adjust your budget: zora agent budget set <amount> | zora agent budget reset | zora agent budget set --no-limit",
+          );
+        }
+      }
+      // ────────────────────────────────────────────────────────────────
+
       let txHash: string;
       try {
         txHash = smartWalletAccount
@@ -439,6 +468,22 @@ export const sendCommand = new Command("send")
           hash: txHash as `0x${string}`,
         });
       }
+
+      // ── Record spend in budget ledger ───────────────────────────────
+      if (budget && !budget.optedOut && amountUsd != null) {
+        const now = new Date();
+        const updated = appendSpend(
+          budget,
+          {
+            at: now.toISOString(),
+            usd: amountUsd,
+            skill: `send ETH to ${resolvedRecipient.address.slice(0, 10)}...`,
+          },
+          now,
+        );
+        saveBudget(updated);
+      }
+      // ────────────────────────────────────────────────────────────────
 
       printSendResult(json, {
         name: "ETH",
@@ -663,6 +708,35 @@ export const sendCommand = new Command("send")
         }
       }
 
+      // ── Budget enforcement ──────────────────────────────────────────
+      const budget = getBudget();
+      if (
+        budget &&
+        !budget.optedOut &&
+        budget.limitUsd !== null &&
+        amountUsd != null
+      ) {
+        const now = new Date();
+        const evaluation = evaluate(budget, amountUsd, now);
+        if (!evaluation.allowed) {
+          track("cli_send", {
+            action: "budget_blocked",
+            asset: knownToken ? knownTokenKey : "coin",
+            coin_address: tokenAddress,
+            amount_usd: amountUsd,
+            budget_limit: evaluation.limitUsd,
+            budget_spent: evaluation.spent,
+            budget_remaining: evaluation.remaining,
+          });
+          return outputErrorAndExit(
+            json,
+            evaluation.reason!,
+            "Adjust your budget: zora agent budget set <amount> | zora agent budget reset | zora agent budget set --no-limit",
+          );
+        }
+      }
+      // ────────────────────────────────────────────────────────────────
+
       let txHash: `0x${string}`;
       try {
         txHash = smartWalletAccount
@@ -705,6 +779,22 @@ export const sendCommand = new Command("send")
       if (!smartWalletAccount) {
         await publicClient.waitForTransactionReceipt({ hash: txHash });
       }
+
+      // ── Record spend in budget ledger ───────────────────────────────
+      if (budget && !budget.optedOut && amountUsd != null) {
+        const now = new Date();
+        const updated = appendSpend(
+          budget,
+          {
+            at: now.toISOString(),
+            usd: amountUsd,
+            skill: `send ${symbol} to ${resolvedRecipient.address.slice(0, 10)}...`,
+          },
+          now,
+        );
+        saveBudget(updated);
+      }
+      // ────────────────────────────────────────────────────────────────
 
       printSendResult(json, {
         name: tokenName,
