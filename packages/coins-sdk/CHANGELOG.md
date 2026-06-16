@@ -1,5 +1,14 @@
 # @zoralabs/coins-sdk
 
+## 0.7.0
+
+### Minor Changes
+
+- c8374a6a7: Add smart wallet variants for all four SDK actions — createCoinSmartWallet, tradeCoinSmartWallet, updateCoinURISmartWallet, and updatePayoutRecipientSmartWallet — alongside a new enableSmartWalletRouting flag on CreateCoinArgs
+- 663820551: handle bundler client gas errors explicitly so they can be surfaced to users and become actionable
+- 1121bfefe: Move action validation into explicit validation helpers and export them from the sdk, add a consolidated GenericCall type to support future user operation execution flow.
+- e1fa9e73c: Add `apiUrl` helper to allow consumers to construct full api urls.
+
 ## 0.6.0
 
 ### Minor Changes
