@@ -11,6 +11,11 @@ vi.mock("./zora-client.js", () => ({ ipfsUpload: vi.fn() }));
 vi.mock("./smart-wallet.js", () => ({ provisionSmartWallet: vi.fn() }));
 vi.mock("./coin.js", () => ({ createCreatorCoin: vi.fn() }));
 vi.mock("./post.js", () => ({ createFirstPost: vi.fn() }));
+vi.mock("./api-key.js", () => ({ createApiKey: vi.fn() }));
+vi.mock("../config.js", () => ({
+  saveApiKey: vi.fn(),
+  getConfigPath: vi.fn(() => "/tmp/zora/config.json"),
+}));
 
 import { onboardAgent, createAgentCoin } from "./onboard.js";
 import { findEmbeddedWallet } from "../privy.js";
@@ -25,6 +30,8 @@ import { ipfsUpload } from "./zora-client.js";
 import { provisionSmartWallet } from "./smart-wallet.js";
 import { createCreatorCoin } from "./coin.js";
 import { createFirstPost } from "./post.js";
+import { createApiKey } from "./api-key.js";
+import { saveApiKey } from "../config.js";
 
 const PK = `0x${"a".repeat(64)}` as const;
 const EMBEDDED = "0xEeE0000000000000000000000000000000000001" as const;
@@ -66,6 +73,7 @@ beforeEach(() => {
   vi.mocked(createAgentProfile).mockResolvedValue({
     username: "keen_cedar_9807",
   });
+  vi.mocked(createApiKey).mockResolvedValue("zora_api_test");
   // By default the update echoes back a profile; individual tests override it.
   vi.mocked(updateAgentProfile).mockResolvedValue({
     username: "keen_cedar_9807",
@@ -111,6 +119,8 @@ describe("onboardAgent", () => {
     );
     expect(ensurePrivySession).toHaveBeenCalledTimes(1);
     expect(createAgentProfile).toHaveBeenCalledTimes(1);
+    expect(createApiKey).toHaveBeenCalledWith("tok", "AGENT_API_KEY");
+    expect(saveApiKey).toHaveBeenCalledWith("zora_api_test");
     expect(provisionSmartWallet).toHaveBeenCalledTimes(1);
     expect(createCreatorCoin).toHaveBeenCalledTimes(1);
     expect(createFirstPost).toHaveBeenCalledTimes(1);

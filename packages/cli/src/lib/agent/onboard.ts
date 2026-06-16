@@ -13,11 +13,15 @@ import { ipfsUpload } from "./zora-client.js";
 import { provisionSmartWallet } from "./smart-wallet.js";
 import { createCreatorCoin } from "./coin.js";
 import { createFirstPost } from "./post.js";
+import { createApiKey } from "./api-key.js";
+import { getConfigPath, saveApiKey } from "../config.js";
+import { fsErrorMessage } from "../errors.js";
 
 /** A progress step the caller can render. */
 export type OnboardStep =
   | "privy"
   | "profile"
+  | "apiKey"
   | "embedded"
   | "smartWallet"
   | "coin"
@@ -161,6 +165,17 @@ export async function onboardAgent(
   // 2. Profile — idempotent, and provisions the embedded wallet server-side.
   progress("profile", "creating the Zora profile");
   let profile = await createAgentProfile(session.accessToken);
+
+  // 2a. Create an API key for the agent.
+  progress("apiKey", "creating an API key");
+  const apiKey = await createApiKey(session.accessToken, "AGENT_API_KEY");
+  try {
+    saveApiKey(apiKey);
+  } catch (err) {
+    throw new Error(
+      `Failed to save API key: ${fsErrorMessage(err, getConfigPath())}`,
+    );
+  }
 
   // 2b. Apply any caller-chosen profile fields (username / bio / avatar). This
   //     is optional — with none provided the auto-assigned profile is kept. We
