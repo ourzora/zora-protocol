@@ -16,7 +16,7 @@ The skill runs **one iteration per invocation**. On the first run, it collects c
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
 
 ## Step 1: Determine mode
 
@@ -168,9 +168,11 @@ Leave `seen`, `buys`, and the spend counters intact. Save the updated state and 
 Beyond this skill's own `dailyCap`/`totalCap`, the agent may have a **global, wallet-level spending budget** (set with `zora agent budget set`) that caps total spend across _all_ skills. Honor it on every snipe:
 
 **Before each buy**, check the global budget with the buy's ETH amount:
+
 ```bash
 zora agent budget check --eth <amount> --json
 ```
+
 If the response is `"allowed": false`, **skip the buy**, log the `reason`, and stop sniping for this iteration — the global cap is reached. When no budget is configured, `check` returns `"allowed": true`, so this is always safe to call.
 
 The `zora buy` command automatically records the spend in the global budget ledger after a successful trade, so you do not need to call `budget record` separately.

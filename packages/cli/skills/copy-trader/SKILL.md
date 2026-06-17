@@ -14,7 +14,7 @@ You are a Zora copy-trading agent. Your job is to replicate another user's trade
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
 
 ## Step 1: Determine mode
 
@@ -158,9 +158,11 @@ Report a summary: trades processed, trades executed, trades skipped (reason), er
 This skill caps each trade to a fixed `budget` but does not track cumulative spend — the agent's **global, wallet-level spending budget** (set with `zora agent budget set`) provides that shared ceiling across _all_ skills. Honor it on every mirrored buy:
 
 **Before each buy**, check the global budget with the buy's ETH amount:
+
 ```bash
 zora agent budget check --eth <amount> --json
 ```
+
 If the response is `"allowed": false`, **skip the buy**, log the `reason`, and stop mirroring buys for this iteration — the global cap is reached. When no budget is configured, `check` returns `"allowed": true`, so this is always safe to call.
 
 The `zora buy` command automatically records the spend in the global budget ledger after a successful trade, so you do not need to call `budget record` separately.

@@ -14,7 +14,7 @@ You are a Zora auto-poster agent. Your job is to keep your profile active by pub
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `"error"` in every response.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `"error"` in every response.
 
 Posting requires a configured API key **and** a funded smart wallet: `create` spends real gas, so the smart wallet must hold ETH on Base.
 
@@ -129,18 +129,18 @@ Otherwise compose **one** post:
 
 ### Step 5: Edit config
 
-Read `.auto-poster-state.json`, present the current `config`, and ask the user what to change — `cadence`, `voice`, `themes`, `imageSourcing`, `currency`, or `dailyCap`. Update those fields, refresh `updatedAt`, save, and stop. Never edit the `posts` history by hand — it's the permanent record of what was minted.
+Read `.auto-poster-state.json`, present the current `config`, and ask the user what to change — `cadence`, `voice`, `themes`, `imageSourcing`, `currency`, or `dailyCap`. Update those fields, refresh `updatedAt`, save, and stop. Never edit the `posts` history by hand — it's the permanent record of what was published.
 
 ---
 
 ## Global Spending Budget
 
-This skill **publishes** posts (it mints coins via `zora create`); it does not place trades, so the agent's global spending budget (`zora agent budget`) — which caps _trading_ spend across skills — does not gate posting. Posting frequency is governed by `dailyCap` above. The trading skills (`dca`, `trend-sniper`, `copy-trader`, `early-buyer`, `social-trader`, `new-coin-screener`, `whale-watcher`) are the ones that consult the global budget before spending.
+This skill **publishes** posts (it creates coins via `zora create`); it does not place trades, so the agent's global spending budget (`zora agent budget`) — which caps _trading_ spend across skills — does not gate posting. Posting frequency is governed by `dailyCap` above. The trading skills (`dca`, `trend-sniper`, `copy-trader`, `early-buyer`, `social-trader`, `new-coin-screener`, `whale-watcher`) are the ones that consult the global budget before spending.
 
 ## Safety Guards
 
-- **Posts are PERMANENT once minted.** Compose each one deliberately — there is no undo and no edit after publishing.
-- **Never publish near-identical posts.** Always diff your draft against `posts` history before minting.
+- **Posts are PERMANENT once published.** Compose each one deliberately — there is no undo and no edit after publishing.
+- **Never publish near-identical posts.** Always diff your draft against `posts` history before publishing.
 - **Respect the daily cap** — never exceed `dailyCap` posts in a calendar day, and never publish more than one post per invocation.
 - **Requires a funded smart wallet + API key.** Check `zora auth status --json` up front and surface a clear message if the key is missing; `create` also spends gas, so the wallet must hold ETH on Base.
 - **Only increment `postsToday` and append to `posts` after a confirmed publish** (response carries a transaction hash) — never on an errored response.

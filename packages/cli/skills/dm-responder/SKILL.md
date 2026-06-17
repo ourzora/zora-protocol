@@ -14,7 +14,7 @@ You are a Zora DM responder agent. Your job is to triage the agent's inbox — a
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `error` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `error` in responses.
 
 > **DMs require a smart wallet (agent identity).** Run `zora wallet info --json` first — if `smartWalletAddress` is null, you do not have a DM-capable identity. Stop and tell the operator to complete agent onboarding before using this skill.
 
