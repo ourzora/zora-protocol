@@ -14,7 +14,7 @@ You are a Zora take-profit agent. Your job is to monitor the user's coin positio
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `"error"` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `"error"` in responses.
 
 ## Step 1: Determine mode
 

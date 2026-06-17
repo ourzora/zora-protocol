@@ -1,0 +1,148 @@
+/* Zora wallet screen shown in the hero while the word is "wallet".
+   Real DOM; styling mirrors the production wallet (apps/web/components/Wallet).
+   Shares the DM panel's card chrome so the two hero panels read as a set. */
+.panel {
+  display: flex;
+  flex-direction: column;
+  width: clamp(340px, 30vw, 400px);
+  max-width: 100%;
+  margin-inline: auto;
+  background: #ffffff;
+  border: 1px solid #e4e4e4;
+  border-radius: var(--agents-radius);
+  box-shadow: 0 12px 40px rgba(18, 18, 18, 0.18);
+  overflow: hidden;
+  text-align: left;
+}
+
+/* ---- Header: spacer · centered ZORA · search ----------------------------- */
+.header {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  padding: 14px 18px;
+}
+
+.headerSide {
+  display: inline-flex;
+  align-items: center;
+}
+
+.headerEnd {
+  justify-content: flex-end;
+}
+
+/* Real Zora wordmark SVG (prod renders it ~42px wide in #878787). Height-driven,
+   width auto from the viewBox so it never distorts. */
+.wordmark {
+  display: block;
+  height: 16px;
+  width: auto;
+  color: #878787;
+}
+
+.search {
+  display: inline-flex;
+  /* Prod search is the primary foreground (black), not the faded gray. */
+  color: #121212;
+}
+
+.search svg {
+  display: block;
+  width: 22px;
+  height: 22px;
+}
+
+/* ---- Body: label · big value · action row -------------------------------- */
+.body {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 14px 20px 22px;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: 600;
+  letter-spacing: -0.014em;
+  color: #878787;
+}
+
+.value {
+  display: inline-flex;
+  margin-top: 10px;
+  margin-bottom: 26px;
+  /* Big + dramatic for the marketing hero; tight tracking keeps the climbing
+     value (up to ~$9,000.00) from clipping the panel at any width. */
+  font-size: clamp(44px, 5.6vw, 60px);
+  /* Proportional figures (no tabular-nums) so the "$" + digits read like the
+     product's Monument Grotesk display rather than a monospaced ticker. The
+     per-tick width change is small and NumberFlow tweens it, so it reads fine. */
+  font-weight: 600;
+  line-height: 1.04;
+  letter-spacing: -0.04em;
+  color: var(--agents-ink);
+}
+
+/* ---- Action tiles -------------------------------------------------------- */
+.actions {
+  display: flex;
+  gap: 8px;
+  width: 100%;
+}
+
+.actionTile {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  /* Match the prod wallet tile: 8px radius, tight icon→label gap. */
+  gap: 4px;
+  padding: 14px 6px;
+  border-radius: 8px;
+  background: #f5f5f5;
+}
+
+.actionIcon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  color: var(--agents-ink);
+}
+
+.actionIcon svg {
+  display: block;
+  width: 24px;
+  height: 24px;
+}
+
+.cashOutGlyph {
+  display: inline-flex;
+  width: 24px;
+  height: 24px;
+}
+
+.cashOutGlyph svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.actionLabel {
+  /* Prod caption1: 13px semibold #4d4d4d. */
+  font-size: 13px;
+  font-weight: 600;
+  letter-spacing: -0.016em;
+  color: #4d4d4d;
+  white-space: nowrap;
+}
+
+@media (max-width: 768px) {
+  .panel {
+    width: min(360px, 88vw);
+  }
+}

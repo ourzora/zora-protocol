@@ -72,6 +72,7 @@ describe("resolveProfiles", () => {
       handle: "alice",
       displayName: "Alice ⚡️",
       avatarUrl: "https://img/small.png",
+      platformBlocked: false,
     });
     // Hits the public profile endpoint with the address as identifier.
     expect(String(fn.mock.calls[0][0])).toContain(
@@ -144,6 +145,7 @@ describe("resolveProfiles", () => {
       handle: null,
       displayName: null,
       avatarUrl: null,
+      platformBlocked: false,
     });
   });
 });

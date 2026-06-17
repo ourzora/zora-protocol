@@ -1,0 +1,221 @@
+/* Developer Tools — white, centered (Figma nodes 2093:165 / 2093:205 / 2093:196). */
+.section {
+  position: relative;
+  /* Establish a stacking context so the full-bleed ::before band (z-index:-1)
+     sits behind this section's content but ABOVE the page's white background
+     (without this, z-index:-1 falls behind the body and the band is invisible). */
+  isolation: isolate;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1320px;
+  margin-inline: auto;
+  padding: clamp(72px, 11vh, 150px) clamp(20px, 5vw, 80px);
+  /* +16px below the content so the grey band sits slightly taller at the bottom. */
+  padding-bottom: calc(clamp(72px, 11vh, 150px) + 16px);
+  text-align: center;
+}
+
+/* Full-bleed light-grey band behind this section — a couple shades lighter than
+   the AGENT pill/glyph (#b5b5b5) in the closing block below. Painted via a
+   100vw pseudo so the content stays centered without a markup wrapper; the
+   page's overflow-x:hidden clips the bleed so there's no horizontal scroll. */
+.section::before {
+  content: "";
+  position: absolute;
+  inset-block: 0;
+  left: calc(50% - 50vw);
+  width: 100vw;
+  background-color: #f5f5f5;
+  z-index: -1;
+}
+
+/* Heading (node 2093:165) — uses the shared .agentsDisplay scale. */
+.heading {
+  margin-bottom: clamp(40px, 6vh, 72px);
+}
+
+/* Two columns from tablet onward; one column below. */
+.grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: clamp(36px, 4vw, 64px);
+  min-width: 0;
+  width: 100%;
+}
+
+@media (min-width: 768px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+/* Grid cell wrapper (on RevealItem) — stretches to the row height so both
+   columns can pin their snippet box + docs link to a shared baseline. */
+.cell {
+  display: flex;
+  min-width: 0;
+}
+
+/* Each column (CLI / Skill) — left-aligned editorial lockup. The chip, title,
+   body, and snippet box share one left edge. Transparent: no outer card fill. */
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+  gap: clamp(16px, 2.5vh, 24px);
+  text-align: left;
+}
+
+/* Icon sits inline to the LEFT of the title — a horizontal lockup (<icon> CLI). */
+.titleRow {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+/* Bare icon glyph, sized to balance the title beside it. */
+.icon {
+  display: block;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  color: var(--agents-ink);
+}
+
+/* Tight title + body pair — the second tier of the lockup rhythm. Grows to
+   absorb the body-length difference between columns so the snippet boxes below
+   align across the row regardless of how many lines each body wraps to. */
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  width: 100%;
+  min-width: 0;
+  flex: 1;
+  gap: 10px;
+}
+
+.title {
+  font-size: clamp(1.5rem, 2.1vw, 2rem);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  text-align: left;
+}
+
+.body {
+  max-width: min(40ch, 100%);
+  font-size: clamp(1rem, 1.15vw, 1.125rem);
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: rgba(18, 18, 18, 0.68);
+  text-align: left;
+}
+
+/* Command box (the whole box is the copy button). Subtly rounded to match the
+   page's buttons (shared --agents-radius); rests a touch lighter than the
+   section's grey band and pops to pure white on hover. The command truncates
+   with an ellipsis rather than scrolling. */
+.snippet {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  min-height: 44px;
+  padding: 12px 16px;
+  background: #fafafa;
+  border: 1px solid rgba(18, 18, 18, 0.12);
+  border-radius: var(--agents-radius);
+  cursor: pointer;
+  text-align: left;
+  /* Reset native <button> chrome (this is the copy button). */
+  appearance: none;
+  font: inherit;
+  color: inherit;
+}
+
+.snippet:focus-visible {
+  outline: 2px solid var(--agents-green);
+  outline-offset: 2px;
+}
+
+.snippetText {
+  flex: 1;
+  min-width: 0;
+  font-family: var(--agents-mono);
+  font-size: 0.8125rem;
+  line-height: 1.5;
+  color: rgba(18, 18, 18, 0.8);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Fixed-size stage for the morphing copy→check glyph (see CopyMorphIcon — the
+   squares/circle inherit this color via currentColor; the check is brand
+   green inside the component). */
+.copyAffordance {
+  display: inline-flex;
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  color: #969696;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .snippet {
+    transition:
+      background-color 150ms var(--ease-out-quad),
+      border-color 150ms var(--ease-out-quad);
+  }
+
+  .snippet:hover {
+    background: #ffffff;
+    border-color: rgba(18, 18, 18, 0.2);
+  }
+
+  .copyAffordance {
+    transition: color 150ms var(--ease-out-quad);
+  }
+
+  .snippet:hover .copyAffordance:not([data-copied]) {
+    color: var(--agents-ink);
+  }
+}
+
+/* Per-card docs link under the snippet box. */
+.docsLink {
+  font-size: 1rem;
+  line-height: 1.3;
+  color: var(--agents-ink);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.docsLink:focus-visible {
+  outline: 2px solid var(--agents-green);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .docsLink {
+    transition: color 150ms var(--ease-out-quad);
+  }
+
+  .docsLink:hover {
+    color: rgba(18, 18, 18, 0.68);
+  }
+}
+
+/* Compact the icon on phones, matching the Features lockup. */
+@media (max-width: 599px) {
+  .icon {
+    width: 28px;
+    height: 28px;
+  }
+}

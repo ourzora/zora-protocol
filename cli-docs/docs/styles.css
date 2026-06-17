@@ -504,6 +504,28 @@ h3,
   padding: 0;
 }
 
+/* Landing page: float the top nav over the hero burst instead of sitting in a
+   solid white bar. The hero already starts at top:0 behind the fixed header, so
+   dropping the header's background/blur/border reveals the artwork behind the
+   nav links + logo. This is the default (page loads at the top) so there's no
+   white-bar flash before LandingChrome mounts. */
+[data-layout="landing"] .vocs_DocsLayout_gutterTop,
+[data-layout="landing"] .vocs_MobileTopNav {
+  background: transparent !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+  border-bottom: none !important;
+}
+
+/* Once scrolled past the hero, LandingChrome flips <html data-landing-nav>
+   to "solid" and the nav regains a solid bar so it never floats over (and
+   collides with) the white content sections below. */
+html[data-landing-nav="solid"] [data-layout="landing"] .vocs_DocsLayout_gutterTop,
+html[data-landing-nav="solid"] [data-layout="landing"] .vocs_MobileTopNav {
+  background: var(--zora-bg-page) !important;
+  border-bottom: 1px solid var(--zora-border-faded) !important;
+}
+
 /* Landing page shared padding */
 [data-layout="landing"] {
   --hero-pad: calc(
@@ -515,270 +537,13 @@ h3,
   );
 }
 
-/* Hero */
-.hero-grid {
-  padding: 128px var(--hero-pad) 0;
-}
-
-@media (max-width: 768px) {
-  .hero-grid {
-    padding: 96px var(--vocs-space_16) 0;
-  }
-}
-
-/* Hero terminal background */
-.hero-terminal-bg {
-  background: url("/hero-bg.jpg") center / cover no-repeat;
-  padding: 128px 2rem;
-  margin-top: 32px;
-}
-
-/* Hero: hide terminal on mobile */
-@media (max-width: 768px) {
-  .hero-grid .terminal-animation {
-    display: none !important;
-  }
-}
-
-/* ================================================================
- * Features Grid
- * ================================================================ */
-
-.features-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
-  gap: 3rem 4rem;
-  padding: 96px var(--hero-pad);
-}
-
-.features-grid .feature-card {
-  padding-top: 1.5rem;
-}
-
-.features-grid .feature-card h3 {
-  font-size: 1.875rem;
-  font-weight: 600;
-  margin: 0 0 0.75rem !important;
-  border: none !important;
-  padding: 0 !important;
-}
-
-.features-grid .feature-card p {
-  font-size: 1.125rem;
-  font-weight: 420;
-  color: var(--zora-fg-neutral);
-  line-height: 1.5;
-  margin: 0 0 1rem;
-}
-
-.features-grid .feature-card a {
-  font-weight: 500;
-  font-size: 0.9375rem;
-  color: var(--zora-fg-primary);
-  text-decoration: none;
-  padding: 2px 6px;
-  margin-left: -6px;
-  transition: none;
-}
-
-.features-grid .feature-card a:hover {
-  color: var(--zora-fg-primary);
-  background-color: var(--zora-green);
-}
-
-@media (max-width: 768px) {
-  .features-grid {
-    grid-template-columns: 1fr;
-    gap: 2rem;
-    padding: 64px var(--vocs-space_16);
-  }
-}
-
 /* Hide empty Vocs footer on landing page */
 [data-layout="landing"] .vocs_Footer {
   display: none;
 }
 
 /* ================================================================
- * ASCII Footer
+ * Landing page enter transitions live in the landing CSS modules
+ * (docs/components/landing) — the hero/feature/footer reveals are
+ * handled there with motion, so no global transition rules remain here.
  * ================================================================ */
-
-.ascii-footer-wrap {
-  background: linear-gradient(
-    to bottom,
-    var(--zora-bg-page),
-    var(--zora-bg-neutral)
-  );
-  padding: 64px var(--hero-pad) 48px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2rem;
-  overflow: hidden;
-}
-
-.ascii-footer {
-  --mx: -9999px;
-  --my: -9999px;
-  font-family: var(--font-mono);
-  font-size: 0.75rem;
-  line-height: 1.15;
-  background: radial-gradient(
-    circle 150px at var(--mx) var(--my),
-    var(--zora-green),
-    var(--zora-fg-tertiary)
-  ) !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  color: transparent;
-  -webkit-text-fill-color: transparent;
-  cursor: default;
-  user-select: none;
-  margin: 0;
-  padding: 0 !important;
-  border: none !important;
-}
-
-.ascii-footer-top {
-  width: 100%;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-}
-
-.ascii-footer-heading {
-  font-family: var(--font-sans);
-  font-size: 1.125rem;
-  font-weight: 500;
-  color: var(--zora-fg-neutral);
-  margin: 0 0 1rem;
-}
-
-.ascii-footer-links {
-  display: flex;
-  flex-direction: column;
-  gap: 0.5rem;
-  font-family: var(--font-sans);
-  font-size: 1.875rem;
-  font-weight: 500;
-}
-
-.ascii-footer-links a {
-  color: var(--zora-fg-primary);
-  text-decoration: none;
-  padding: 2px 6px;
-  margin-left: -6px;
-  transition: none;
-}
-
-.ascii-footer-links a:hover {
-  color: var(--zora-fg-primary);
-  background-color: var(--zora-green);
-}
-
-@media (max-width: 1100px) {
-  .ascii-footer {
-    font-size: 0.55rem;
-  }
-
-  .ascii-footer-top {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: 2rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .ascii-footer {
-    font-size: 0.35rem;
-  }
-
-  .ascii-footer-wrap {
-    padding: 48px var(--vocs-space_16) 32px;
-  }
-
-  .ascii-footer-links {
-    flex-direction: row;
-    flex-wrap: wrap;
-    gap: 0.5rem 1.5rem;
-  }
-}
-
-/* ================================================================
- * Enter Transitions
- * ================================================================ */
-
-.hero-grid > * {
-  opacity: 0;
-  transform: translateY(16px);
-  transition:
-    opacity 600ms ease-out,
-    transform 600ms ease-out;
-}
-.hero-grid.hero-loaded > * {
-  opacity: 1;
-  transform: translateY(0);
-}
-.hero-grid.hero-loaded > *:nth-child(1) {
-  transition-delay: 0ms;
-}
-.hero-grid.hero-loaded > *:nth-child(2) {
-  transition-delay: 80ms;
-}
-.hero-grid.hero-loaded > *:nth-child(3) {
-  transition-delay: 160ms;
-}
-.hero-grid.hero-loaded > *:nth-child(4) {
-  transition-delay: 240ms;
-}
-.hero-grid.hero-loaded > *:nth-child(5) {
-  transition-delay: 400ms;
-}
-
-/* Scroll-triggered fade-in */
-.fade-in {
-  opacity: 0;
-  transform: translateY(20px);
-  transition:
-    opacity 500ms ease-out,
-    transform 500ms ease-out;
-}
-.fade-in-visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* Stagger feature cards */
-.features-grid .fade-in:nth-child(1) {
-  transition-delay: 0ms;
-}
-.features-grid .fade-in:nth-child(2) {
-  transition-delay: 100ms;
-}
-.features-grid .fade-in:nth-child(3) {
-  transition-delay: 200ms;
-}
-
-/* ASCII footer entrance — links fade in when visible */
-.ascii-footer-wrap .ascii-footer-links {
-  opacity: 0;
-  transition: opacity 400ms ease-out;
-}
-.ascii-footer-wrap.visible .ascii-footer-links {
-  opacity: 1;
-}
-
-/* Respect reduced motion */
-@media (prefers-reduced-motion: reduce) {
-  .hero-grid > *,
-  .fade-in {
-    opacity: 1 !important;
-    transform: none !important;
-    transition: none !important;
-  }
-
-  .ascii-footer-wrap .ascii-footer-links {
-    opacity: 1 !important;
-    transition: none !important;
-  }
-}

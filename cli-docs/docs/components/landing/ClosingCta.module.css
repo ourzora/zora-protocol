@@ -1,0 +1,145 @@
+/* Closing CTA — white, centered, vertically stacked (Figma 2093:148). */
+.section {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  max-width: 1100px;
+  margin-inline: auto;
+  padding: clamp(80px, 12vh, 170px) clamp(20px, 5vw, 80px);
+  gap: clamp(28px, 4vh, 48px);
+  background-color: #ffffff;
+  text-align: center;
+}
+
+/* Reveal stagger wrapper — mirrors the section's column layout so the cascade
+   wrapper introduces no spacing or alignment change vs. the flat markup. */
+.inner {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: clamp(28px, 4vh, 48px);
+}
+
+/* AGENT lockup (node 2093:186): glyph mark + bordered word pill, both #b5b5b5. */
+.lockup {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+}
+
+.lockupGlyph {
+  display: block;
+  /* Track the pill's full height (~1.5× the pill font) so the glyph and pill
+     read at equal height like Figma 2093:187/194 — that height parity is what
+     makes the robot's thick box stroke and the pill's thick border land at the
+     same visual weight. Mirrors the pill font clamp × 1.5. */
+  height: clamp(2.25rem, 8.25vw, 7.5rem);
+  /* agent-glyph.svg uses preserveAspectRatio="none" + width="100%", which nulls
+     its intrinsic ratio — so `width: auto` was resolving to the 300px default
+     and ballooning the lockup. Pin the viewBox ratio (185.216 × 133.837) so the
+     width tracks the height. */
+  aspect-ratio: 185.216 / 133.837;
+  width: auto;
+}
+
+.lockupPill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.1em 0.4em;
+  /* Heavy border to match prod's agent badge — em-based so it tracks the
+     responsive font. Reads a touch heavier than the robot glyph's stroke
+     (stroke-width 13.1 in agent-glyph.svg), per review. */
+  border: 0.2em solid #b5b5b5;
+  /* Rounded-rect with tighter corners than a stadium (prod-style box). */
+  border-radius: 0.4em;
+  color: #b5b5b5;
+  font-weight: 500;
+  /* Min lowered from 2.25rem so the pill shrinks on phones instead of
+     overflowing; ≥ ~436px viewport is unchanged (still 5.5vw → 5rem). */
+  font-size: clamp(1.5rem, 5.5vw, 5rem);
+  line-height: 1;
+  letter-spacing: -0.02em;
+}
+
+/* Headline (node 2093:164) — uses the shared .agentsDisplay scale. */
+.headline {
+  max-width: 900px;
+}
+
+/* Subtext (node 2093:179) — one step above body, muted gray. */
+.subtext {
+  max-width: 760px;
+  color: #767676;
+  font-weight: 500;
+  font-size: clamp(1.375rem, 2.6vw, 2.25rem);
+  line-height: 1.12;
+  letter-spacing: -0.014em;
+  /* Short, centered, prominent → balance the lines (kills the lone "emerge."
+     orphan and reads evenly at every width). */
+  text-wrap: balance;
+}
+
+/* CTAs (nodes 2093:158 / 2093:161) — row, stacking to column on small screens. */
+.actions {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+}
+
+@media (max-width: 520px) {
+  .actions {
+    flex-direction: column;
+    width: 100%;
+  }
+}
+
+.cta {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: clamp(14px, 1.6vh, 20px) clamp(28px, 3.5vw, 44px);
+  border-radius: 999px;
+  font-weight: 500;
+  font-size: clamp(1.0625rem, 1.5vw, 1.35rem);
+  line-height: 1;
+  letter-spacing: -0.014em;
+  cursor: pointer;
+}
+
+@media (max-width: 520px) {
+  .cta {
+    width: 100%;
+  }
+}
+
+.ctaPrimary {
+  background-color: #121212;
+  color: #ffffff;
+  border: 1.5px solid #121212;
+}
+
+.ctaSecondary {
+  background-color: transparent;
+  color: #121212;
+  border: 1.5px solid #121212;
+}
+
+.cta:focus-visible {
+  outline: 2px solid var(--agents-green);
+  outline-offset: 2px;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .ctaPrimary:hover {
+    background-color: #000000;
+  }
+  /* The outlined secondary CTA gets no fill on hover — the framer scale-grow
+     (whileHover) is enough feedback; a gray wash muddied the clean outline. */
+}

@@ -175,6 +175,9 @@ export const createMessagingClient = async (
   const findDm = (peerAddress: Address): Promise<Dm | undefined> =>
     client.conversations.fetchDmByIdentifier(toIdentifier(peerAddress));
 
+  /** Active stream abort controller, if any. */
+  let streamAbort: AbortController | undefined;
+
   return {
     address,
 
@@ -249,7 +252,57 @@ export const createMessagingClient = async (
       await dm.updateConsentState(CONSENT_TO_SDK[consent]);
     },
 
+    streamAllMessages(): AsyncIterable<
+      DmMessage & { peerAddress: Address | null }
+    > {
+      // Initial sync so we don't miss anything that arrived while offline.
+      // The stream itself is a gRPC server-push — no polling, ≈ zero reads at
+      // rest — which avoids the 20 000-read / 5-min XMTP rate limit that
+      // repeated sync+listDms polling hits.
+      const ctrl = new AbortController();
+      streamAbort = ctrl;
+
+      const outerClient = client;
+
+      async function* generate() {
+        // One-time catch-up sync before opening the stream.
+        await outerClient.conversations.sync();
+
+        const stream = await outerClient.conversations.streamAllMessages();
+
+        for await (const message of stream) {
+          if (ctrl.signal.aborted) break;
+
+          // Look up the conversation for this message. If it's a brand-new
+          // sender the local store hasn't seen yet, re-sync conversations so
+          // the first message isn't silently dropped.
+          let convo = outerClient.conversations
+            .listDms()
+            .find((dm) => dm.id === message.conversationId);
+          if (!convo) {
+            await outerClient.conversations.sync();
+            convo = outerClient.conversations
+              .listDms()
+              .find((dm) => dm.id === message.conversationId);
+            if (!convo) continue; // truly not a DM (e.g. group message)
+          }
+
+          const addrByInbox = await addressMapForDm(convo);
+          const dmMessage = toMessage(message, addrByInbox);
+          const peerAddr = addrByInbox.get(convo.peerInboxId) ?? null;
+          yield { ...dmMessage, peerAddress: peerAddr };
+        }
+      }
+
+      return generate();
+    },
+
     async close(): Promise<void> {
+      // Abort any active stream.
+      if (streamAbort) {
+        streamAbort.abort();
+        streamAbort = undefined;
+      }
       // node-sdk v6 exposes no explicit client close; the CLI is short-lived and
       // the SQLite connection is released on process exit. Kept for interface
       // symmetry and future-proofing.

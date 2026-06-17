@@ -1,4 +1,5 @@
 import { Command } from "commander";
+import { createHash } from "node:crypto";
 import { writeFileSync, mkdirSync, existsSync } from "node:fs";
 import { resolve, join } from "node:path";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
@@ -9,51 +10,68 @@ const DEFAULT_SKILLS_BASE_URL = "https://agents.zora.com/skill";
 const getSkillsBaseUrl = (): string =>
   process.env.ZORA_SKILLS_BASE_URL || DEFAULT_SKILLS_BASE_URL;
 
-type SkillMeta = {
+export type SkillMeta = {
   name: string;
   category: string;
   description: string;
+  integrity: string;
 };
 
-// Grouped by category (Onboarding → Discovery → Social → Risk → Reporting) so
+// Grouped by category (Core → Onboarding → Discovery → Social → Risk → Reporting) so
 // `skills list` and the docs present them in the same order.
-const SKILLS: SkillMeta[] = [
+// Integrity hashes are SHA-256 of the skill content, base64-encoded, prefixed with "sha256-".
+// Generate with: npx tsx scripts/generate-skill-hashes.ts
+export const SKILLS: SkillMeta[] = [
+  // Core
+  {
+    name: "cli",
+    category: "Core",
+    description:
+      "The agent's full interface to Zora — set up an identity and trade, browse, look up coins, send tokens, and handle DMs from the CLI",
+    integrity: "sha256-PyvDxJ7pbQ8PI5Lg/p4k7ryJNGHapqt9lRSjAV1KBDY=",
+  },
   // Onboarding
   {
     name: "onboarding",
     category: "Onboarding",
     description:
       "Set up on Zora for the first time — publish your profile, create your smart wallet and creator coin, and post your first meme",
+    integrity: "sha256-8ZSloIyoC232S4QZDyb6PXL94n3OWlhBopHuTpt4Txo=",
   },
   // Discovery
   {
     name: "early-buyer",
     category: "Discovery",
     description: "Auto-buy new coin launches from creators you follow",
+    integrity: "sha256-MsU1e7kShm2X8jLY4nqNh8N+2ZNTKs0FVTzOVXf/rTQ=",
   },
   {
     name: "watchlist",
     category: "Discovery",
     description:
       "Track coins and alert when market cap hits configured thresholds",
+    integrity: "sha256-jWtGdWJ5gZBE4449BPOA6csCLP8b6dq5svubs/cljBk=",
   },
   {
     name: "trend-sniper",
     category: "Discovery",
     description:
       "Watch the global trending feed and snipe new trend coins on appearance or a volume spike",
+    integrity: "sha256-eb6f+uK43inyv10TEXCLOTxZcaMiatnrbhilUdkIm/0=",
   },
   {
     name: "new-coin-screener",
     category: "Discovery",
     description:
       "Poll the global new-coin feed and auto-buy launches that pass a market-cap/holder screen",
+    integrity: "sha256-P/IZ6vn94w+vTwNhxhxMyJInv90ZTlFJJbDJbWGNESs=",
   },
   {
     name: "whale-watcher",
     category: "Discovery",
     description:
       "Watch top holders and large trades on chosen coins, then alert or auto-trade on whale moves",
+    integrity: "sha256-9SMJMageM2VlxlMmoZpja2s0VecSymwSQUP0XSaodfI=",
   },
   // Social
   {
@@ -61,30 +79,35 @@ const SKILLS: SkillMeta[] = [
     category: "Social",
     description:
       "Mirror another user's trades — existing holdings, future trades, or both",
+    integrity: "sha256-Pj6Idrr52zzdwC+byLwRFjcS9EfVItemygm1q2+hbmQ=",
   },
   {
     name: "dm-responder",
     category: "Social",
     description:
       "Auto-triage and respond to DMs — approve/deny requests, greet new conversations, and flag keyword matches by rule",
+    integrity: "sha256-ankYlTwsh6xdjL+uZZhKn4y9jZSwHRzYXxAcfrb3yqU=",
   },
   {
     name: "comment-engager",
     category: "Social",
     description:
       "Read and reply to comments on coins you hold, in your own voice, to build social presence",
+    integrity: "sha256-oHbXs3JIOwaEJ/yubo/xIDC3rMIU5Rq7u3SGT7vIKv0=",
   },
   {
     name: "social-trader",
     category: "Social",
     description:
       "Follow specific creators and buy their new post coins or growing creator coins",
+    integrity: "sha256-T/txP3ctq2NNaWkXOr7nWj4JuZJlKTMMMCWjh6qsmk8=",
   },
   {
     name: "auto-poster",
     category: "Social",
     description:
       "Publish a new post on a schedule to keep your agent active and in-character",
+    integrity: "sha256-7vhcFa9fCArAOKu5hDUaMmR0Pw4SvTjXeVXU8BB9550=",
   },
   // Risk
   {
@@ -92,18 +115,21 @@ const SKILLS: SkillMeta[] = [
     category: "Risk",
     description:
       "Auto-sell positions at configured take-profit or stop-loss price targets",
+    integrity: "sha256-CHtXieeBhnmfYAzazwIGHk7af1sJYHO2ox3nVDJD3yg=",
   },
   {
     name: "dca",
     category: "Risk",
     description:
       "Dollar-cost-average a fixed amount into chosen coins each iteration, with budget caps",
+    integrity: "sha256-xiSCYid81h0btfQV5gNlfsV0sLjc+1DvQSU3ORgYGJI=",
   },
   {
     name: "portfolio-rebalancer",
     category: "Risk",
     description:
       "Rebalance holdings back to target allocations when they drift past a tolerance band",
+    integrity: "sha256-LzeWI1kfOhOr1oeXmLABAfrrUtJ3jm+llOb+wGjo5/Q=",
   },
   // Reporting
   {
@@ -111,6 +137,7 @@ const SKILLS: SkillMeta[] = [
     category: "Reporting",
     description:
       "Read-only periodic portfolio and PnL digest, optionally delivered to the operator by DM",
+    integrity: "sha256-tp8GQTSzRfqdKKT1H/ox8GOv3nRHSDLXbh9iaHTmjp4=",
   },
 ];
 
@@ -154,7 +181,16 @@ const detectAgent = (cwd: string): Agent | null => {
   return null;
 };
 
-const fetchSkill = async (name: string): Promise<string> => {
+export const computeIntegrity = (content: string): string => {
+  const hash = createHash("sha256").update(content, "utf8").digest("base64");
+  return `sha256-${hash}`;
+};
+
+const fetchSkill = async (
+  name: string,
+  expectedIntegrity: string,
+  skipVerify: boolean,
+): Promise<string> => {
   const url = `${getSkillsBaseUrl()}/${name}.md`;
   const response = await fetch(url);
   if (!response.ok) {
@@ -162,7 +198,22 @@ const fetchSkill = async (name: string): Promise<string> => {
       `Failed to fetch ${url}: ${response.status} ${response.statusText}`,
     );
   }
-  return response.text();
+  const content = await response.text();
+
+  if (!skipVerify) {
+    const actual = computeIntegrity(content);
+    if (actual !== expectedIntegrity) {
+      throw new Error(
+        `Skill integrity check failed for "${name}".\n` +
+          `Expected: ${expectedIntegrity}\n` +
+          `Received: ${actual}\n` +
+          `This could indicate a compromised download. ` +
+          `If you trust the source, use --skip-verify.`,
+      );
+    }
+  }
+
+  return content;
 };
 
 export const skillsCommand = new Command("skills")
@@ -173,13 +224,19 @@ export const skillsCommand = new Command("skills")
     this.outputHelp();
   });
 
+// Public skill info without internal integrity field
+type PublicSkillMeta = Omit<SkillMeta, "integrity">;
+
+const getPublicSkills = (): PublicSkillMeta[] =>
+  SKILLS.map(({ integrity: _, ...rest }) => rest);
+
 skillsCommand
   .command("list")
   .description("List available skills")
   .action(function (this: Command) {
     const json = getJson(this);
     outputData(json, {
-      json: { skills: SKILLS },
+      json: { skills: getPublicSkills() },
       render: () => {
         console.log("Available skills:\n");
         for (const s of SKILLS) {
@@ -202,12 +259,14 @@ skillsCommand
     "Target agent: claude, cursor, windsurf, openclaw, hermes (default: auto-detect)",
   )
   .option("--dir <path>", "Explicit directory to install into")
+  .option("--skip-verify", "Skip integrity verification (development only)")
   .action(async function (this: Command, name?: string) {
     const json = getJson(this);
     const opts = this.opts();
     const installAll = opts.all === true;
     const agentFlag = opts.agent as Agent | undefined;
     const dirFlag = opts.dir as string | undefined;
+    const skipVerify = opts.skipVerify === true;
 
     if (!installAll && !name) {
       return outputErrorAndExit(
@@ -260,28 +319,79 @@ skillsCommand
     const installed: { name: string; path: string }[] = [];
     const errors: { name: string; error: string }[] = [];
 
-    for (const file of names) {
+    for (const skillName of names) {
+      const skill = SKILLS.find((s) => s.name === skillName)!;
       try {
-        const content = await fetchSkill(file);
-        const skillDir = join(outDir, `${SKILL_PREFIX}${file}`);
+        const content = await fetchSkill(
+          skillName,
+          skill.integrity,
+          skipVerify,
+        );
+        const skillDir = join(outDir, `${SKILL_PREFIX}${skillName}`);
         mkdirSync(skillDir, { recursive: true });
         const outPath = join(skillDir, "SKILL.md");
         writeFileSync(outPath, content);
-        installed.push({ name: `${SKILL_PREFIX}${file}`, path: outPath });
+        installed.push({ name: `${SKILL_PREFIX}${skillName}`, path: outPath });
       } catch (err) {
         errors.push({
-          name: file,
+          name: skillName,
           error: err instanceof Error ? err.message : String(err),
         });
       }
     }
 
+    // If ALL skills failed, show detailed error and exit
     if (errors.length > 0 && installed.length === 0) {
+      // Check if ANY error is an integrity error (not just the first one)
+      const integrityError = errors.find((e) =>
+        e.error.includes("integrity check failed"),
+      );
       return outputErrorAndExit(
         json,
         `Failed to install: ${errors.map((e) => e.name).join(", ")}`,
-        "Check your network connection and retry.",
+        integrityError
+          ? integrityError.error
+          : "Check your network connection and retry.",
       );
+    }
+
+    // If SOME skills failed (partial install), still exit non-zero for security
+    // Any integrity failure should be treated as a hard error
+    const hasIntegrityErrors = errors.some((e) =>
+      e.error.includes("integrity check failed"),
+    );
+    if (hasIntegrityErrors) {
+      outputData(json, {
+        json: {
+          installed,
+          errors,
+          agent: resolvedAgent,
+          dir: outDir,
+        },
+        render: () => {
+          if (resolvedAgent && resolvedAgent !== "custom") {
+            console.log(`\x1b[2mDetected agent: ${resolvedAgent}\x1b[0m`);
+          }
+          for (const { name, path } of installed) {
+            console.log(`\x1b[32m✓\x1b[0m Installed ${name} → ${path}`);
+          }
+          for (const { name, error } of errors) {
+            console.error(`\x1b[31m✗\x1b[0m ${name}: ${error}`);
+          }
+          console.error(
+            "\n\x1b[31mIntegrity check failed for some skills. This could indicate compromised downloads.\x1b[0m",
+          );
+        },
+      });
+      track("cli_skills_add", {
+        installed_count: installed.length,
+        error_count: errors.length,
+        integrity_errors: true,
+        all: installAll,
+        agent: resolvedAgent ?? "unknown",
+        output_format: json ? "json" : "text",
+      });
+      process.exit(1);
     }
 
     outputData(json, {

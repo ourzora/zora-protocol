@@ -12,6 +12,7 @@ const fakeClient = {
   readMessages: vi.fn(async () => []),
   sendText: vi.fn(),
   setConsent: vi.fn(async () => {}),
+  streamAllMessages: vi.fn(),
   close: vi.fn(async () => {}),
 };
 
@@ -52,6 +53,7 @@ vi.mock("../messaging/uapi.js", () => ({
         handle: "alice",
         displayName: "alice",
         avatarUrl: null,
+        platformBlocked: false,
       });
     return m;
   }),
@@ -71,6 +73,7 @@ import { createMessagingClient } from "../messaging/client.js";
 import {
   checkNewDmConversationAllowed,
   resolveHandleToAddress,
+  resolveProfiles,
 } from "../messaging/uapi.js";
 import { getPrivateKey } from "../lib/config.js";
 import { createCliSmartWalletProvider } from "../messaging/cli-auth-provider.js";
@@ -126,6 +129,7 @@ describe("dm command", () => {
     fakeClient.readMessages.mockClear();
     fakeClient.sendText.mockReset();
     fakeClient.setConsent.mockClear();
+    fakeClient.streamAllMessages.mockReset();
     fakeClient.close.mockClear();
     vi.mocked(createMessagingClient).mockClear();
   });
@@ -199,6 +203,41 @@ describe("dm command", () => {
     await run(["send", PEER, "gm"]);
     const out = jsonOut();
     expect(out).toMatchObject({ sent: true, to: PEER, text: "gm" });
+  });
+
+  it("listen streams incoming messages as JSON and skips self", async () => {
+    fakeClient.streamAllMessages.mockImplementationOnce(() =>
+      (async function* () {
+        yield {
+          id: "m0",
+          senderAddress: fakeClient.address,
+          fromSelf: true,
+          text: "my own message",
+          contentType: "xmtp.org/text:1.0",
+          sentAtMs: 1000,
+          peerAddress: PEER,
+        };
+        yield {
+          id: "m1",
+          senderAddress: PEER,
+          fromSelf: false,
+          text: "gm from a peer",
+          contentType: "xmtp.org/text:1.0",
+          sentAtMs: 2000,
+          peerAddress: PEER,
+        };
+      })(),
+    );
+    await run(["listen"]);
+    // Only the peer message is emitted; the self message is skipped, so the
+    // single logged line parses cleanly.
+    const out = jsonOut();
+    expect(out).toMatchObject({
+      address: PEER,
+      text: "gm from a peer",
+      contentType: "xmtp.org/text:1.0",
+    });
+    expect(fakeClient.close).toHaveBeenCalled();
   });
 
   it("enforces the new-conversation gate in smart-wallet mode (Privy token present)", async () => {
@@ -292,5 +331,27 @@ describe("dm command", () => {
     await expect(run(["send", PEER, "   "])).rejects.toThrow("process.exit(1)");
     const out = jsonOut();
     expect(out.error).toContain("required");
+  });
+
+  it("send blocks interaction with platform-banned profiles", async () => {
+    vi.mocked(resolveProfiles).mockResolvedValueOnce(
+      new Map([
+        [
+          PEER as Address,
+          {
+            address: PEER as Address,
+            handle: "banned-user",
+            displayName: "Banned User",
+            avatarUrl: null,
+            platformBlocked: true,
+          },
+        ],
+      ]),
+    );
+    await expect(run(["send", PEER, "hello"])).rejects.toThrow("process.exit(1)");
+    const out = jsonOut();
+    expect(out.error).toContain("blocked");
+    expect(out.error).toContain("terms of service");
+    expect(fakeClient.sendText).not.toHaveBeenCalled();
   });
 });

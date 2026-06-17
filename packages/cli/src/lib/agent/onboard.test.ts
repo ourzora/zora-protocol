@@ -11,6 +11,11 @@ vi.mock("./zora-client.js", () => ({ ipfsUpload: vi.fn() }));
 vi.mock("./smart-wallet.js", () => ({ provisionSmartWallet: vi.fn() }));
 vi.mock("./coin.js", () => ({ createCreatorCoin: vi.fn() }));
 vi.mock("./post.js", () => ({ createFirstPost: vi.fn() }));
+vi.mock("./api-key.js", () => ({ createApiKey: vi.fn() }));
+vi.mock("../config.js", () => ({
+  saveApiKey: vi.fn(),
+  getConfigPath: vi.fn(() => "/tmp/zora/config.json"),
+}));
 
 import { onboardAgent, createAgentCoin } from "./onboard.js";
 import { findEmbeddedWallet } from "../privy.js";
@@ -25,6 +30,8 @@ import { ipfsUpload } from "./zora-client.js";
 import { provisionSmartWallet } from "./smart-wallet.js";
 import { createCreatorCoin } from "./coin.js";
 import { createFirstPost } from "./post.js";
+import { createApiKey } from "./api-key.js";
+import { saveApiKey } from "../config.js";
 
 const PK = `0x${"a".repeat(64)}` as const;
 const EMBEDDED = "0xEeE0000000000000000000000000000000000001" as const;
@@ -66,6 +73,7 @@ beforeEach(() => {
   vi.mocked(createAgentProfile).mockResolvedValue({
     username: "keen_cedar_9807",
   });
+  vi.mocked(createApiKey).mockResolvedValue("zora_api_test");
   // By default the update echoes back a profile; individual tests override it.
   vi.mocked(updateAgentProfile).mockResolvedValue({
     username: "keen_cedar_9807",
@@ -97,7 +105,6 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
-      withCoin: true,
       ...POST_ARGS,
     });
     expect(result.username).toBe("keen_cedar_9807");
@@ -111,6 +118,8 @@ describe("onboardAgent", () => {
     );
     expect(ensurePrivySession).toHaveBeenCalledTimes(1);
     expect(createAgentProfile).toHaveBeenCalledTimes(1);
+    expect(createApiKey).toHaveBeenCalledWith("tok", "AGENT_API_KEY");
+    expect(saveApiKey).toHaveBeenCalledWith("zora_api_test");
     expect(provisionSmartWallet).toHaveBeenCalledTimes(1);
     expect(createCreatorCoin).toHaveBeenCalledTimes(1);
     expect(createFirstPost).toHaveBeenCalledTimes(1);
@@ -160,7 +169,6 @@ describe("onboardAgent", () => {
       privateKey: PK,
       sleep: noSleep,
       dryRun: true,
-      withCoin: true,
       ...POST_ARGS,
     });
     expect(result.dryRun).toBe(true);
@@ -174,28 +182,28 @@ describe("onboardAgent", () => {
     );
   });
 
-  it("creates neither the coin nor the post by default", async () => {
+  it("creates the coin by default and skips the post without caption + image", async () => {
     const result = await onboardAgent({ privateKey: PK, sleep: noSleep });
-    expect(createCreatorCoin).not.toHaveBeenCalled();
+    expect(createCreatorCoin).toHaveBeenCalledTimes(1);
+    expect(result.coin?.hash).toBe("0xco");
     expect(createFirstPost).not.toHaveBeenCalled();
-    expect(result.coin).toBeUndefined();
     expect(result.post).toBeUndefined();
   });
 
-  it("creates the creator coin only when withCoin is set", async () => {
+  it("skips the creator coin when skipCoin is set", async () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
-      withCoin: true,
+      skipCoin: true,
     });
-    expect(createCreatorCoin).toHaveBeenCalledTimes(1);
-    expect(result.coin?.hash).toBe("0xco");
+    expect(createCreatorCoin).not.toHaveBeenCalled();
+    expect(result.coin).toBeUndefined();
     // The post is still gated on caption + image, independent of the coin.
     expect(createFirstPost).not.toHaveBeenCalled();
     expect(result.post).toBeUndefined();
   });
 
-  it("publishes the first post from caption + image without creating the coin", async () => {
+  it("publishes the first post from caption + image alongside the automatic coin", async () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
@@ -203,9 +211,8 @@ describe("onboardAgent", () => {
     });
     expect(createFirstPost).toHaveBeenCalledTimes(1);
     expect(result.post?.hash).toBe("0xpo");
-    // The coin is opt-in, so it doesn't run just because a post was requested.
-    expect(createCreatorCoin).not.toHaveBeenCalled();
-    expect(result.coin).toBeUndefined();
+    expect(createCreatorCoin).toHaveBeenCalledTimes(1);
+    expect(result.coin?.hash).toBe("0xco");
   });
 
   it("forwards caption, image, derived handle, title, and description to the post", async () => {
@@ -232,7 +239,6 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
-      withCoin: true,
       ...POST_ARGS,
     });
     // The account already exists, so a coin failure must not discard it.
@@ -249,7 +255,6 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
-      withCoin: true,
       ...POST_ARGS,
     });
     expect(result.profileUrl).toBe("https://zora.co/@keen_cedar_9807");
@@ -291,7 +296,6 @@ describe("onboardAgent", () => {
     const result = await onboardAgent({
       privateKey: PK,
       sleep: noSleep,
-      withCoin: true,
       username: "agent_smith",
       bio: "I trade memecoins",
     });

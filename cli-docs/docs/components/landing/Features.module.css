@@ -1,0 +1,87 @@
+/* Features (Figma 2093:215): a row of four equal columns on a white page.
+   Each column is a left-aligned editorial lockup — a hairline icon chip anchors
+   a tight title + body pair. Treated as a transparent "card" (no fill): the chip
+   is the only added chrome. The two-line title reservation keeps chip-tops,
+   title-starts, and body-starts aligned across the row at multi-column widths. */
+.section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  background-color: var(--agents-page);
+  padding: clamp(72px, 11vh, 150px) clamp(20px, 5vw, 80px);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  align-items: start;
+  gap: 42px 32px;
+  width: 100%;
+  max-width: 1320px;
+}
+
+/* Left-aligned lockup: chip → text. The column gap sets the chip→text rhythm. */
+.column {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 20px;
+  text-align: left;
+}
+
+/* Bare icon glyph — the column's anchor (no frame). */
+.icon {
+  display: block;
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  color: var(--agents-ink);
+}
+
+/* Tight title + body pair — the second tier of the lockup rhythm. */
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 10px;
+}
+
+.title {
+  max-width: 100%;
+  font-size: clamp(1.5rem, 2.1vw, 2rem);
+  line-height: 1.04;
+  letter-spacing: -0.01em;
+  text-align: left;
+}
+
+.body {
+  max-width: min(34ch, 100%);
+  font-size: clamp(1rem, 1.15vw, 1.125rem);
+  line-height: 1.3;
+  letter-spacing: 0;
+  color: rgba(18, 18, 18, 0.68);
+  text-align: left;
+}
+
+/* 2 columns on tablet */
+@media (max-width: 1023px) {
+  .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 48px 32px;
+  }
+}
+
+/* single column on phones */
+@media (max-width: 599px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 40px;
+  }
+
+  .icon {
+    width: 36px;
+    height: 36px;
+  }
+}

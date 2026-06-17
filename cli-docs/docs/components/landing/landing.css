@@ -1,0 +1,149 @@
+/*
+ * Zora CLI landing page — design tokens + shared type scale.
+ *
+ * Ported from the agents.zora.com design (ourzora/zora#3475). The marketing
+ * sections are light by design (white page, bright brand green), so these
+ * tokens are theme-independent: the landing renders the same in Vocs light or
+ * dark mode. The brand font (ABC Monument Grotesk) is already registered by
+ * docs/styles.css; this file adds the brand monospace used by the dev-tool
+ * snippets and wallet panel.
+ */
+
+/* Zora brand monospace (shared with the web app's about/writings surfaces). */
+@font-face {
+  font-family: "Arial Mono";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src:
+    url("/fonts/ArialMonoMTPro-Regular.woff2") format("woff2"),
+    url("/fonts/ArialMonoMTPro-Regular.woff") format("woff");
+}
+
+@font-face {
+  font-family: "Arial Mono";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src:
+    url("/fonts/ArialMonoMTPro-Bold.woff2") format("woff2"),
+    url("/fonts/ArialMonoMTPro-Bold.woff") format("woff");
+}
+
+:root {
+  /* Zora brand palette. Brand green = oklch(0.8722 0.287 141.02) / #3fff00. */
+  --agents-green: #3fff00;
+  --agents-green-bright: #6bff42;
+  --agents-green-faded: #e8fedc;
+  --agents-pink: #ff00f0;
+  --agents-ink: #121212;
+  --agents-page: #ffffff;
+  --agents-mono:
+    "Arial Mono", ui-monospace, SFMono-Regular, Menlo, Monaco, monospace;
+
+  /* Shared corner radius — the CTA button's radius is the page's source of
+     truth; command boxes + panels reference it so corners stay consistent. */
+  --agents-radius: 14px;
+
+  /* Easing blueprint — Emil Kowalski "Animations on the Web" */
+  --ease-out-quad: cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-out-cubic: cubic-bezier(0.215, 0.61, 0.355, 1);
+  --ease-out-quart: cubic-bezier(0.165, 0.84, 0.44, 1);
+  --ease-out-expo: cubic-bezier(0.19, 1, 0.22, 1);
+  --ease-in-out-cubic: cubic-bezier(0.645, 0.045, 0.355, 1);
+  --ease-in-out-quart: cubic-bezier(0.77, 0, 0.175, 1);
+
+  /* Fixed z-index scale local to the hero stacking context. */
+  --z-background: 0;
+  --z-content: 10;
+}
+
+/* The landing root. Locks the marketing surface to the brand light palette and
+   the brand font, independent of the Vocs theme the rest of the docs use. */
+.zora-landing {
+  background-color: var(--agents-page);
+  color: var(--agents-ink);
+  font-family: var(--font-sans);
+  /* Monument stylistic sets used across the brand (matches Figma 2093-18). */
+  font-feature-settings:
+    "ss11" 1,
+    "ss05" 1,
+    "calt" 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+.zora-landing *,
+.zora-landing *::before,
+.zora-landing *::after {
+  box-sizing: border-box;
+}
+
+/* `:where()` keeps this at (0,0,1) — same as a bare `a` — so the section CSS
+   modules' own link colors (e.g. the white footer links) win over it instead of
+   inheriting ink. */
+:where(.zora-landing) a {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* Balance large marketing headings; never leave a lone word on a paragraph's
+   last line (orphan/widow). */
+.zora-landing h1,
+.zora-landing h2 {
+  text-wrap: balance;
+}
+
+.zora-landing p {
+  text-wrap: pretty;
+}
+
+/* ---- Marketing type scale (Figma 2093-18; Monument Grotesk Medium) --------
+   Shared across the below-hero sections so they share one scale. The 1920-frame
+   px values (77 / 44 / 33) are expressed as responsive clamps. Kept as plain
+   (0,1,0) classes — same specificity as the CSS-module section classes — so a
+   module's tighter `.title` / `.body` clamps win by source order (landing.css
+   imports before the components, hence before their modules). */
+.agentsDisplay {
+  font-weight: 500;
+  font-size: clamp(2.75rem, 5.5vw, 4.75rem);
+  line-height: 0.92;
+  letter-spacing: -0.03em;
+  color: var(--agents-ink);
+  margin: 0;
+}
+
+.agentsTitle {
+  font-weight: 500;
+  font-size: clamp(1.75rem, 3vw, 2.75rem);
+  line-height: 1;
+  letter-spacing: -0.014em;
+  color: var(--agents-ink);
+  margin: 0;
+}
+
+.agentsBody {
+  font-weight: 500;
+  font-size: clamp(1.125rem, 1.8vw, 1.5rem);
+  line-height: 1.12;
+  letter-spacing: -0.014em;
+  /* AA on white (~4.5:1). */
+  color: #767676;
+  margin: 0;
+}
+
+/* Visually hidden, but kept in the DOM + accessibility tree for screen readers
+   and crawlers (section headings, labels). */
+.agentsLandingSrOnly,
+.zora-landing .srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

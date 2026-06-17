@@ -348,7 +348,7 @@ npx @zoralabs/cli get trades creator-coin jacob --json
 | `transactionHash` | string         | Transaction hash                            |
 | `pageInfo`        | object         | `{ endCursor, hasNextPage }` for pagination |
 
-Pass `pageInfo.endCursor` to `--after` to fetch the next page.
+Pass `pageInfo.endCursor` to `--after` to fetch the next page. `--after` requires `--static` or `--json` — in live mode, page with `←`/`→` instead.
 
 ### Interactive Controls
 
@@ -455,7 +455,7 @@ Each entry in `holders` has these fields:
 | `balanceRaw`       | string | Raw balance in base units (wei)                      |
 | `ownershipPercent` | number | Percentage of total supply held                      |
 
-Pass `nextCursor` to `--after` to fetch the next page.
+Pass `nextCursor` to `--after` to fetch the next page. `--after` requires `--static` or `--json` — in live mode, page with `←`/`→` instead.
 
 ### Interactive Controls
 

@@ -7,6 +7,8 @@ export interface CachedProfile {
   handle: string | null;
   displayName: string | null;
   avatarUrl: string | null;
+  /** True if this profile has been blocked by the platform. */
+  platformBlocked?: boolean;
   /** Epoch ms the entry was fetched, for TTL-based refresh. */
   fetchedAt: number;
 }

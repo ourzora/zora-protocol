@@ -1,0 +1,54 @@
+/* ValueProps (Figma 2093:166): a 2×2 grid on a white page that collapses to a
+   single column on narrow viewports. Each cell is a left-aligned editorial
+   lockup — a tight title + body pair, no added chrome. */
+.section {
+  display: flex;
+  justify-content: center;
+  width: 100%;
+  background-color: var(--agents-page);
+  padding: clamp(72px, 11vh, 150px) clamp(20px, 5vw, 80px);
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: clamp(48px, 7vh, 80px) clamp(48px, 8vw, 130px);
+  width: 100%;
+  max-width: 1320px;
+}
+
+.cell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  text-align: left;
+}
+
+/* Tight title + body pair. */
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  min-width: 0;
+  gap: 10px;
+}
+
+.title {
+  max-width: 100%;
+  text-align: left;
+}
+
+.body {
+  max-width: min(38ch, 100%);
+  text-align: left;
+}
+
+/* single column below 640px */
+@media (max-width: 639px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: clamp(40px, 6vh, 56px);
+  }
+}

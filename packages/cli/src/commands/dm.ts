@@ -3,7 +3,7 @@ import { isAddress, type Address } from "viem";
 import { getJson, outputData, outputErrorAndExit } from "../lib/output.js";
 import { getPrivateKey } from "../lib/config.js";
 import { normalizeKey } from "../lib/wallet.js";
-import { formatError } from "../lib/errors.js";
+import { formatError, bannedProfileMessage } from "../lib/errors.js";
 import { track } from "../lib/analytics.js";
 import { createSmartWalletAuth } from "../messaging/identity.js";
 import { createCliSmartWalletProvider } from "../messaging/cli-auth-provider.js";
@@ -350,6 +350,22 @@ dmCommand
   .action(async function (this: Command, address: string, message: string) {
     const json = getJson(this);
     const peer = await resolvePeer(json, address);
+
+    // Block interaction with platform-banned profiles
+    const profiles = await resolveProfiles([peer]);
+    const profile = profiles.get(peer);
+    if (profile?.platformBlocked) {
+      track("cli_dm_send", {
+        output_format: json ? "json" : "text",
+        success: false,
+        blocked_profile: true,
+      });
+      return outputErrorAndExit(
+        json,
+        bannedProfileMessage(profile.handle ?? peer),
+      );
+    }
+
     if (!message || !message.trim()) {
       return outputErrorAndExit(
         json,
@@ -386,6 +402,81 @@ dmCommand
       }
       throw err;
     } finally {
+      await client.close();
+    }
+  });
+
+dmCommand
+  .command("listen")
+  .description(
+    "Stream incoming DMs in real time (no polling — uses XMTP's server-push stream to avoid rate limits)",
+  )
+  .action(async function (this: Command) {
+    const json = getJson(this);
+    const { client } = await resolveClient(json);
+
+    if (!json) {
+      console.log("Listening for new DMs… (Ctrl+C to stop)\n");
+    }
+
+    const shutdown = () => {
+      client.close().finally(() => process.exit(0));
+    };
+    process.on("SIGINT", shutdown);
+    process.on("SIGTERM", shutdown);
+
+    // Cache resolved peer labels to avoid a UAPI call per message.
+    const labelCache = new Map<string, string>();
+    const cachedPeerLabel = async (peer: Address): Promise<string> => {
+      const cached = labelCache.get(peer);
+      if (cached) return cached;
+      const label = await peerLabel(peer);
+      labelCache.set(peer, label);
+      return label;
+    };
+
+    let messageCount = 0;
+
+    track("cli_dm_listen_start", {
+      output_format: json ? "json" : "text",
+    });
+
+    try {
+      for await (const msg of client.streamAllMessages()) {
+        if (msg.fromSelf) continue;
+
+        messageCount++;
+
+        const who = msg.peerAddress
+          ? await cachedPeerLabel(msg.peerAddress)
+          : "unknown";
+
+        if (json) {
+          console.log(
+            JSON.stringify({
+              from: who,
+              address: msg.peerAddress,
+              text: msg.text,
+              contentType: msg.contentType,
+              sentAt: new Date(msg.sentAtMs).toISOString(),
+            }),
+          );
+        } else {
+          const body = msg.text
+            ? sanitizeMessageText(msg.text)
+            : `[${msg.contentType}]`;
+          const [first = "", ...rest] = body.split("\n");
+          console.log(
+            `← ${who} ${dim(formatAge(msg.sentAtMs))}\n  ${first}`,
+          );
+          for (const line of rest) console.log(`  ${line}`);
+        }
+      }
+    } finally {
+      track("cli_dm_listen_end", {
+        output_format: json ? "json" : "text",
+        message_count: messageCount,
+      });
       await client.close();
     }
   });

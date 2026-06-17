@@ -13,6 +13,8 @@
     "studio": "npx remotion studio remotion/index.ts --public-dir=docs/public"
   },
   "dependencies": {
+    "@number-flow/react": "^0.5.5",
+    "motion": "^12.4.3",
     "react": "^19.2.4",
     "react-dom": "^19.2.4",
     "vocs": "^1.4.1"

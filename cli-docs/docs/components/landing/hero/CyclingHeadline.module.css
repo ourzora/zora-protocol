@@ -1,0 +1,92 @@
+.headline {
+  /* Responsive scale: never reflows the page; clamps between mobile + desktop. */
+  font-size: clamp(2.6rem, 6.6vw, 5.5rem);
+  /* Figma (node 2093:29): Monument Grotesk Medium, not Bold. */
+  font-weight: 500;
+  line-height: 0.92;
+  letter-spacing: -0.04em;
+  /* Monument stylistic sets used across the brand mark. */
+  font-feature-settings:
+    "ss11" 1,
+    "ss05" 1,
+    "calt" 0;
+  color: var(--agents-ink);
+  text-align: center;
+  margin: 0;
+}
+
+/* The whole cycling line as one inline-block box: text-align: center on
+   .headline centres it, inline-block lets it carry the layout re-centre
+   transform, and the prefix + word keep natural inline spacing. */
+.visual {
+  display: inline-block;
+}
+
+/* The cycling word's box — sized to the CURRENT word (no fixed sizer) so the
+   line stays centred and re-centres as the word changes. position: relative
+   anchors the outgoing word, which is pinned over the slot during the wipe. */
+.slot {
+  position: relative;
+  display: inline-flex;
+  align-items: baseline;
+}
+
+/* The incoming word — in normal flow so its width drives the line; the green
+   highlight wipes in left→right via clip-path. z-index keeps it above the
+   outgoing word so the wipe reads as drawing over it. */
+.word {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  align-items: baseline;
+  white-space: nowrap;
+  color: var(--agents-ink);
+  will-change: clip-path;
+}
+
+/* The outgoing word — pinned over the slot beneath the incoming word and clipped
+   to the current word's width (width: 100% of the relative slot), so a longer
+   previous word never spills past the new one while the highlight sweeps across.
+   Decorative + transient. */
+.wordPrevious {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* The cycling word's text box. The green marker itself lives in .highlightInk
+   behind the text so it can fade independently of the ink-coloured text. */
+.highlight {
+  position: relative;
+  color: var(--agents-ink);
+  padding: 0 0.14em;
+  box-decoration-break: clone;
+  -webkit-box-decoration-break: clone;
+}
+
+/* The signature green marker behind the text — solid, saturated brand green,
+   sharp-cornered (a translucent/tinted marker washes out against the same-hue
+   green hero burst). Its opacity is what decays after the punch-in. */
+.highlightInk {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  will-change: opacity;
+  background-color: var(--agents-green);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}

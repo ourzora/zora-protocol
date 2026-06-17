@@ -47,6 +47,7 @@ const fakeClient = (
   readMessages: vi.fn(async () => [msg()]),
   sendText: vi.fn(async () => msg({ fromSelf: true, senderAddress: SELF })),
   setConsent: vi.fn(async () => {}),
+  streamAllMessages: () => (async function* () {})(),
   close: vi.fn(async () => {}),
   ...overrides,
 });

@@ -14,7 +14,7 @@ You are a Zora social-trading agent. This skill follows a set of creators and tr
 
 ## Requirements
 
-Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand. Always use `--json` and check for `"error"` in responses.
+Before starting, make sure you have the Zora CLI basics — if they're not already in your context, fetch the core skill at `https://agents.zora.com/skill.md` (how to invoke the CLI, response shapes, error handling). Commands below use `zora` as shorthand for `npx @zoralabs/cli@latest`. Always use `--json` and check for `"error"` in responses.
 
 ## Step 1: Determine mode
 
@@ -41,6 +41,7 @@ Ask the user:
 4. **Spend caps**:
    - **Per-iteration cap** — max ETH (or USD) to spend in a single iteration.
    - **Total cap** — max ETH (or USD) to spend across the whole run.
+5. **Follow creators?** (optional) — after buying a creator's **creator coin**, also follow them on Zora. This is **free**: you'll already hold their creator coin, which is the coin `zora follow` gates on. Default: no. It does not apply to post-coin buys — those don't grant the creator coin.
 
 ### Step 3: Validate and snapshot
 
@@ -81,7 +82,8 @@ Write `.social-trader-state.json`:
       "marketCapFloor": null
     },
     "perIterationCap": "0.01",
-    "totalCap": "0.1"
+    "totalCap": "0.1",
+    "followCreators": false
   },
   "creators": [
     {
@@ -144,6 +146,7 @@ For **each** creator in `creators`:
       - Quote: `zora buy <address> --eth <budget> --quote --json`. Skip on quote error.
       - If within caps, execute: `zora buy <address> --eth <budget> --yes --json`.
       - On success, add `budget` to the spend counters. Report creator, amount received, tx hash.
+      - **Follow (if `config.followCreators`):** you now hold this creator's creator coin, so following them is free. Run `zora follow <handle> --json` (it's a no-op if you already follow them; ignore an "already following" result). Skip this when `followCreators` is false. Note: only the creator-coin buy above grants the coin — do **not** follow after a post-coin buy in the new-post-coin trigger.
    4. Update `lastCreatorCoinMarketCap` to `current` regardless of whether a buy fired, so the next iteration measures growth from the latest baseline.
 
 After processing all creators, set `spend.spentToday` / `spentTotal` to the accumulated totals, update `updatedAt`, and save state.
@@ -175,9 +178,11 @@ Save the updated state and stop.
 Beyond this skill's own `perIterationCap`/`totalCap`, the agent may have a **global, wallet-level spending budget** (set with `zora agent budget set`) that caps total spend across _all_ skills. Honor it on every buy:
 
 **Before each buy**, check the global budget with the buy's ETH amount:
+
 ```bash
 zora agent budget check --eth <amount> --json
 ```
+
 If the response is `"allowed": false`, **skip the buy**, log the `reason`, and stop buying for this iteration — the global cap is reached. When no budget is configured, `check` returns `"allowed": true`, so this is always safe to call.
 
 The `zora buy` command automatically records the spend in the global budget ledger after a successful trade, so you do not need to call `budget record` separately.

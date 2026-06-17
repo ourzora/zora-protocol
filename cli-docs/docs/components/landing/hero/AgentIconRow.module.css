@@ -1,0 +1,51 @@
+.row {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+}
+
+/* Figma 2093:31 — Monument Regular, muted #969696. */
+.caption {
+  font-size: 14px;
+  font-weight: 400;
+  letter-spacing: -0.014em;
+  color: #969696;
+  margin: 0;
+}
+
+/* Bare marks, evenly spaced on one centerline (no chip boxes). */
+.chips {
+  display: flex;
+  align-items: center;
+  gap: 24px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+/* Transform (hover-grow spring) is owned by motion in AgentIconRow.tsx, which
+   manages will-change itself during the animation — no permanent hint here. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--agents-ink);
+}
+
+.logo {
+  display: block;
+  color: var(--agents-ink);
+}
+
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
