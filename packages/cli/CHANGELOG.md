@@ -1,5 +1,21 @@
 # @zoralabs/cli
 
+## 1.3.0
+
+### Minor Changes
+
+- 6c846990b: Add `zora follow <user>` and `zora unfollow <user>` to follow and unfollow other Zora users from the CLI. The target can be a username (with or without a leading `@`), a wallet address, or an account id. Both commands sign in with the configured wallet's Privy session and report the resulting relationship — including when the follow is mutual — and support `--json`.
+
+  Following a profile requires holding that profile's creator coin: `zora follow` checks the balance first and, when none is held, points to `zora buy` for the right coin instead of following. Unfollowing is never gated.
+
+- 84330e42c: Provision an API key for the Zora Agent during the onboarding process.
+
+### Patch Changes
+
+- bbc51a07c: Make `zora agent create` mint the creator coin automatically by default.
+
+  Pass `--skip-coin` to skip it, or run `zora agent coin` to mint it for an existing agent at any time. 
+
 ## 1.2.0
 
 ### Minor Changes
