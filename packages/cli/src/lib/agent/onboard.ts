@@ -36,11 +36,8 @@ export interface OnboardOptions {
   rpcUrl?: string;
   /** Simulate the coin + post instead of minting them. */
   dryRun?: boolean;
-  /**
-   * Create the agent's creator coin as part of onboarding. Off by default — opt
-   * in with this flag, or create it later with {@link createAgentCoin}.
-   */
-  withCoin?: boolean;
+  /** Skip minting the agent's creator coin during onboarding. */
+  skipCoin?: boolean;
   skipPost?: boolean;
   /**
    * Optional profile fields to apply at creation. Each is independent: omit one
@@ -124,9 +121,9 @@ const ZORA_BASE_URL = "https://zora.co";
 
 /**
  * Stand up a Zora agent identity from an EOA, with no human interaction:
- * Privy account → profile → smart wallet. The creator coin (opt in with
- * `withCoin`) and the first post (opt in by supplying `caption` + `postImage`)
- * are created on top only when requested. Every on-chain step is
+ * Privy account → profile → smart wallet → creator coin. The creator coin is
+ * minted automatically unless `skipCoin` is set; the first post is published
+ * when `caption` + `postImage` are supplied. Every on-chain step is
  * paymaster-sponsored, so the agent needs no ETH. Returns the created identity;
  * with `dryRun`, the coin + post are simulated, not minted.
  *
@@ -260,10 +257,10 @@ export async function onboardAgent(
     profileUrl: `${ZORA_BASE_URL}/@${profile.username}`,
   };
 
-  // 5. Creator coin — opt-in (best-effort — the account already exists at this
-  //    point). Off by default; pass `withCoin`, or create it after the fact with
+  // 5. Creator coin — automatic (best-effort — the account already exists at this
+  //    point). Pass `skipCoin` to skip, or create it after the fact with
   //    `createAgentCoin`.
-  if (opts.withCoin) {
+  if (!opts.skipCoin) {
     progress(
       "coin",
       dryRun ? "simulating the creator coin" : "minting the creator coin",
@@ -379,7 +376,7 @@ export interface AgentCoinResult {
 
 /**
  * Create the agent's creator coin for an account that already exists — the
- * companion to onboarding with `withCoin` off. Signs in (reusing the cached
+ * companion to onboarding with `skipCoin` set. Signs in (reusing the cached
  * Privy session when present), resolves the agent's profile (idempotent — the
  * coin's name/ticker come from the handle server-side), then mints the sponsored
  * creator coin. The smart wallet that executes the deploy is resolved server-side

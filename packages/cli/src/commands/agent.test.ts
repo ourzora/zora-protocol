@@ -182,18 +182,18 @@ describe("zora agent create", () => {
         origin: "https://zora.com",
         chainId: 8453,
         dryRun: false,
-        withCoin: false,
+        skipCoin: false,
         skipPost: false,
       }),
     );
   });
 
-  it("passes --dry-run, --with-coin, --skip-post and --rpc-url through", async () => {
+  it("passes --dry-run, --skip-coin, --skip-post and --rpc-url through", async () => {
     await runAgent([
       "create",
       "--json",
       "--dry-run",
-      "--with-coin",
+      "--skip-coin",
       "--skip-post",
       "--rpc-url",
       "https://rpc.test",
@@ -201,23 +201,23 @@ describe("zora agent create", () => {
     expect(onboardAgent).toHaveBeenCalledWith(
       expect.objectContaining({
         dryRun: true,
-        withCoin: true,
+        skipCoin: true,
         skipPost: true,
         rpcUrl: "https://rpc.test",
       }),
     );
   });
 
-  it("creates no coin by default — the render points at `agent coin`", async () => {
+  it("notes skipped coin in the render when --skip-coin is set", async () => {
     vi.mocked(onboardAgent).mockResolvedValue({
       ...ONBOARD_RESULT,
       coin: undefined,
     });
     const log = captureLog();
-    await runAgent(["create"]);
+    await runAgent(["create", "--skip-coin"]);
     const output = log.output();
     log.restore();
-    expect(output).toContain("Creator coin: none");
+    expect(output).toContain("Creator coin: skipped");
     expect(output).toContain("zora agent coin");
   });
 
@@ -233,7 +233,7 @@ describe("zora agent create", () => {
     const output = log.output();
     log.restore();
     expect(output).toContain("dry run");
-    expect(output).toContain("no coin/post requested");
+    expect(output).toContain("coin + post skipped");
   });
 
   it("uses --private-key over the saved wallet, and warns about shell-history exposure", async () => {
@@ -565,8 +565,8 @@ describe("zora agent create", () => {
   describe("re-run guard (existing agent)", () => {
     it("confirms before re-minting when the wallet already owns an agent", async () => {
       vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
-      // --with-coin makes this run actually mint, which is what's guarded.
-      await runAgent(["create", "--with-coin", "--json"]);
+      // By default the coin is minted, which is what's guarded.
+      await runAgent(["create", "--json"]);
       expect(confirmAgentAction).toHaveBeenCalledWith(
         expect.objectContaining({
           question: expect.stringContaining("keen_cedar_9807"),
@@ -576,11 +576,11 @@ describe("zora agent create", () => {
       expect(onboardAgent).toHaveBeenCalled();
     });
 
-    it("does not confirm on a bare re-run that mints nothing", async () => {
+    it("does not confirm on a bare re-run with --skip-coin and no post", async () => {
       vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
-      // No --with-coin and no --caption/--image: the re-run mints nothing, so the
+      // --skip-coin and no --caption/--image: the re-run mints nothing, so the
       // idempotent account resolution needs no confirmation.
-      await runAgent(["create", "--json"]);
+      await runAgent(["create", "--skip-coin", "--json"]);
       expect(confirmAgentAction).not.toHaveBeenCalled();
       expect(onboardAgent).toHaveBeenCalled();
     });
@@ -599,10 +599,35 @@ describe("zora agent create", () => {
 
     it("forwards --force so the guard can skip the prompt", async () => {
       vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
-      await runAgent(["create", "--with-coin", "--force", "--json"]);
+      await runAgent(["create", "--force", "--json"]);
       expect(confirmAgentAction).toHaveBeenCalledWith(
         expect.objectContaining({ force: true }),
       );
+    });
+
+    it("warning mentions only the post (not the coin) when --skip-coin + caption + image", async () => {
+      vi.mocked(peekAgentWallet).mockReturnValue(AGENT_INFO);
+      await runAgent([
+        "create",
+        "--skip-coin",
+        "--caption",
+        "gm",
+        "--image",
+        "/tmp/post.png",
+        "--ticker",
+        "GM",
+        "--json",
+      ]);
+      expect(confirmAgentAction).toHaveBeenCalledWith(
+        expect.objectContaining({
+          warning: expect.stringContaining("first post"),
+          question: expect.stringContaining("post"),
+        }),
+      );
+      // The warning must NOT claim a creator coin will be minted.
+      const call = vi.mocked(confirmAgentAction).mock.calls[0][0];
+      expect(call.warning).not.toContain("creator coin");
+      expect(call.question).not.toContain("coin");
     });
   });
 });
