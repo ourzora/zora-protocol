@@ -10,6 +10,7 @@ import { commentCommand } from "./commands/comment.js";
 import { createCommand } from "./commands/create.js";
 import { dmCommand } from "./commands/dm.js";
 import { exploreCommand } from "./commands/explore.jsx";
+import { followCommand, unfollowCommand } from "./commands/follow.js";
 import { getCommand } from "./commands/get.jsx";
 import { sellCommand } from "./commands/sell.js";
 import { profileCommand } from "./commands/profile.js";
@@ -93,6 +94,8 @@ const buildProgram = (): Command => {
   program.addCommand(createCommand);
   program.addCommand(dmCommand);
   program.addCommand(exploreCommand);
+  program.addCommand(followCommand);
+  program.addCommand(unfollowCommand);
   program.addCommand(getCommand);
   program.addCommand(profileCommand);
   program.addCommand(setupCommand);
