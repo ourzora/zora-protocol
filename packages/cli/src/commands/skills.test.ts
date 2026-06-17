@@ -5,9 +5,36 @@ import { join } from "node:path";
 
 vi.mock("../lib/analytics.js", () => ({
   track: vi.fn(),
+  identify: vi.fn(),
+  shutdownAnalytics: vi.fn(),
+}));
+
+// Importing the full `buildProgram` pulls in every command module. `../lib/config.js`
+// resolves the config directory at module load (via os.homedir()), which is unsafe
+// under vitest, so mock it out — the skills command itself never touches config.
+vi.mock("../lib/config.js", () => ({
+  getApiKey: vi.fn(),
+  getPrivateKey: vi.fn(),
+  getSmartWalletAddress: vi.fn(),
+  getAgentWallet: vi.fn(),
+  isAgentWallet: vi.fn(),
+  peekAgentWallet: vi.fn(),
+  getEnvApiKey: vi.fn(),
+  getAnalyticsId: vi.fn(),
+  getDmCheckAt: vi.fn(),
+  saveDmCheckAt: vi.fn(),
+  getPrivySession: vi.fn(),
+  getBudget: vi.fn(),
+}));
+
+// buildProgram's postAction hook surfaces new DMs; stub it out so the full-program
+// regression tests below don't hit the network or filesystem for messaging.
+vi.mock("../messaging/notify.js", () => ({
+  maybeNotifyNewDms: vi.fn().mockResolvedValue(undefined),
 }));
 
 import { createProgram } from "../test/create-program.js";
+import { buildProgram } from "../index.js";
 import { skillsCommand, computeIntegrity, SKILLS } from "./skills.js";
 
 const mockFetchOk = (body: string) =>
@@ -54,8 +81,10 @@ describe("skills list", () => {
 
     const output = logSpy.mock.calls.map((c) => c[0]).join("\n");
     const parsed = JSON.parse(output);
-    expect(parsed.skills).toHaveLength(15);
+    expect(parsed.skills).toHaveLength(16);
     expect(parsed.skills.map((s: { name: string }) => s.name)).toEqual([
+      // Core
+      "cli",
       // Onboarding
       "onboarding",
       // Discovery
@@ -313,7 +342,7 @@ describe("skills integrity verification", () => {
     vi.spyOn(globalThis, "fetch").mockImplementation(() => {
       callCount++;
       if (callCount === 1) {
-        // First skill (onboarding) - content matches patched hash
+        // First skill - content matches patched hash
         return Promise.resolve(new Response(validContent, { status: 200 }));
       }
       // All other skills - content won't match their real hashes
@@ -335,12 +364,16 @@ describe("skills integrity verification", () => {
 
       // Verify first skill WAS installed (partial success)
       expect(
-        existsSync(join(tmpDir, ".claude/skills/zora-onboarding/SKILL.md")),
+        existsSync(
+          join(tmpDir, `.claude/skills/zora-${SKILLS[0].name}/SKILL.md`),
+        ),
       ).toBe(true);
 
       // Verify second skill was NOT installed (integrity failure)
       expect(
-        existsSync(join(tmpDir, ".claude/skills/zora-early-buyer/SKILL.md")),
+        existsSync(
+          join(tmpDir, `.claude/skills/zora-${SKILLS[1].name}/SKILL.md`),
+        ),
       ).toBe(false);
 
       // Verify integrity error message and warning appear
@@ -353,6 +386,81 @@ describe("skills integrity verification", () => {
       exitSpy.mockRestore();
       logSpy.mockRestore();
     }
+  });
+});
+
+// These tests drive the FULL `buildProgram()` rather than `createProgram`, because
+// the bug they guard against lived in the root program's `preAction` help-guard hook
+// (index.tsx), not in the skills command itself. The hook shows help and exits when a
+// command declares a positional arg but none is passed — which wrongly killed
+// `skills add --all` (no name needed). `createProgram` doesn't install that hook, so
+// command-level tests can't catch this regression.
+describe("skills add via full program (preAction help-guard)", () => {
+  let errorSpy: ReturnType<typeof vi.spyOn>;
+  let tmpDir: string;
+  let originalCwd: string;
+
+  beforeEach(() => {
+    vi.spyOn(console, "log").mockImplementation(() => {});
+    errorSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    tmpDir = mkdtempSync(join(tmpdir(), "zora-skills-program-test-"));
+    originalCwd = process.cwd();
+    process.chdir(tmpDir);
+  });
+
+  afterEach(() => {
+    process.chdir(originalCwd);
+    rmSync(tmpDir, { recursive: true, force: true });
+    vi.restoreAllMocks();
+  });
+
+  it("installs all skills with --all and no positional name", async () => {
+    mockFetchOk("# body");
+
+    const program = buildProgram();
+    await program.parseAsync(["skills", "add", "--all", "--skip-verify"], {
+      from: "user",
+    });
+
+    for (const name of SKILLS.map((s) => s.name)) {
+      expect(
+        existsSync(join(tmpDir, ".claude/skills", `zora-${name}`, "SKILL.md")),
+      ).toBe(true);
+    }
+  });
+
+  it("installs a single skill by name through the full program", async () => {
+    mockFetchOk("# body");
+
+    const program = buildProgram();
+    await program.parseAsync(
+      ["skills", "add", "copy-trader", "--skip-verify"],
+      { from: "user" },
+    );
+
+    expect(
+      existsSync(join(tmpDir, ".claude/skills/zora-copy-trader/SKILL.md")),
+    ).toBe(true);
+  });
+
+  // With "skills add" exempt from the preAction help-guard, this no longer prints
+  // help — the action runs and its own validation rejects the missing argument.
+  it("errors and exits non-zero when neither a name nor --all is given", async () => {
+    const program = buildProgram();
+    const exitSpy = vi.spyOn(process, "exit").mockImplementation(() => {
+      throw new Error("exit");
+    });
+
+    await expect(
+      program.parseAsync(["skills", "add"], { from: "user" }),
+    ).rejects.toThrow();
+
+    // The action's own validation fires (not the help-guard hook).
+    const output = errorSpy.mock.calls.map((c) => c[0]).join("\n");
+    expect(output).toContain("Missing skill name");
+    // No skills directory should have been created.
+    expect(existsSync(join(tmpDir, ".claude/skills"))).toBe(false);
+    exitSpy.mockRestore();
   });
 });
 

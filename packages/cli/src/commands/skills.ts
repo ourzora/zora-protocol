@@ -17,11 +17,19 @@ export type SkillMeta = {
   integrity: string;
 };
 
-// Grouped by category (Onboarding → Discovery → Social → Risk → Reporting) so
+// Grouped by category (Core → Onboarding → Discovery → Social → Risk → Reporting) so
 // `skills list` and the docs present them in the same order.
 // Integrity hashes are SHA-256 of the skill content, base64-encoded, prefixed with "sha256-".
 // Generate with: npx tsx scripts/generate-skill-hashes.ts
 export const SKILLS: SkillMeta[] = [
+  // Core
+  {
+    name: "cli",
+    category: "Core",
+    description:
+      "The agent's full interface to Zora — set up an identity and trade, browse, look up coins, send tokens, and handle DMs from the CLI",
+    integrity: "sha256-PyvDxJ7pbQ8PI5Lg/p4k7ryJNGHapqt9lRSjAV1KBDY=",
+  },
   // Onboarding
   {
     name: "onboarding",

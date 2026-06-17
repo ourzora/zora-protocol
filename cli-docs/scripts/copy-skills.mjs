@@ -34,8 +34,11 @@ const SKILLS = [
 
 await mkdir(skillDest, { recursive: true });
 
-// Copy the CLI agent reference (SKILL.md → /skill.md)
+// Copy the CLI agent reference (SKILL.md → /skill.md). Also serve it under the
+// /skill/<name>.md convention as /skill/cli.md so `zora skills add cli` can fetch
+// it the same way as the strategy skills below.
 await cp(resolve(cliPkg, "SKILL.md"), resolve(publicDir, "skill.md"));
+await cp(resolve(cliPkg, "SKILL.md"), resolve(skillDest, "cli.md"));
 
 // Copy each skill to /skill/<name>.md
 for (const name of SKILLS) {
