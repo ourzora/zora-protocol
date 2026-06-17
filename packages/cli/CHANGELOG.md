@@ -1,4 +1,18 @@
-# @zoralabs/cli
+# @zoralabs/cli 
+
+## 1.4.0
+
+### Minor Changes
+
+- ff3f2c1a7: Add `zora dm listen` for real-time DM streaming
+
+  Opens a long-lived XMTP server-push stream so agents receive DMs as they arrive instead of polling, avoiding XMTP read rate limits during continuous monitoring.
+
+- cd40b0721: Fix `skills add --all` and add the `cli` skill to the installable list
+
+  `skills add --all` showed help and exited without installing anything. The CLI's help-guard aborted any command that declared a positional argument but received none — but `--all` installs every skill without a name. The `skills add` command is now exempt from that guard, since it validates that exactly one of `--all` or a skill name is provided.
+
+  Also adds the umbrella `cli` skill (the agent's full Zora interface) to `skills list` and `skills add`, installable as `zora-cli`. It is served at `https://agents.zora.com/skill/cli.md` alongside the strategy skills.
 
 ## 1.3.0
 
@@ -14,7 +28,7 @@
 
 - bbc51a07c: Make `zora agent create` mint the creator coin automatically by default.
 
-  Pass `--skip-coin` to skip it, or run `zora agent coin` to mint it for an existing agent at any time. 
+  Pass `--skip-coin` to skip it, or run `zora agent coin` to mint it for an existing agent at any time.
 
 ## 1.2.0
 
